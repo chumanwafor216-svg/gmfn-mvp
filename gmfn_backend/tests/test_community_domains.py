@@ -785,6 +785,77 @@ def test_member_dashboard_hides_quote_and_outsider_is_rejected(
     assert "private member evidence" in dashboard["boundary"]
 
 
+def test_domain_dashboard_guidance_excludes_needs_changes_from_reviewer_queue(
+    client: TestClient,
+):
+    owner = _seed_owner()
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Needs Changes Dashboard Domain",
+                "display_name": "Needs Changes Dashboard Domain",
+                "domain_type": "professional_union",
+                "template_key": "union_professional_body",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain_id = created.json()["community_domain"]["id"]
+
+        with SessionLocal() as db:
+            domain = db.get(CommunityDomain, domain_id)
+            assert domain is not None
+            domain.status = "active"
+            domain.verification_status = "verified"
+            db.commit()
+
+        review = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "domain.setup",
+                "request_note": "Review the setup note before launch.",
+                "payload": {"setup_note": "Needs a clearer title."},
+            },
+        )
+        assert review.status_code == 201, review.text
+        review_id = review.json()["action_review"]["id"]
+
+        with SessionLocal() as db:
+            review_row = db.get(CommunityDomainActionReview, review_id)
+            assert review_row is not None
+            review_row.status = "needs_changes"
+            db.commit()
+
+        dashboard_response = client.get(f"/community-domains/{domain_id}/dashboard")
+        readiness_response = client.get(f"/community-domains/{domain_id}/readiness")
+        operating_map_response = client.get(
+            f"/community-domains/{domain_id}/operating-map"
+        )
+        assert dashboard_response.status_code == 200, dashboard_response.text
+        assert readiness_response.status_code == 200, readiness_response.text
+        assert operating_map_response.status_code == 200, operating_map_response.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    dashboard = dashboard_response.json()["dashboard"]
+    readiness = readiness_response.json()["readiness"]
+    operating_map = operating_map_response.json()["operating_map"]
+
+    assert dashboard["counts"]["open_reviews"] == 0
+    assert dashboard["primary_next_action"]["action_key"] == "view_structure"
+    assert readiness["counts"]["open_reviews"] == 0
+    assert readiness["primary_next_action"]["action_key"] == "review_dashboard"
+    assert operating_map["counts"]["open_reviews"] == 0
+    assert operating_map["primary_next_action"]["action_key"] == "review_dashboard"
+
+    with SessionLocal() as db:
+        review_row = db.get(CommunityDomainActionReview, review_id)
+        assert review_row is not None
+        assert review_row.status == "needs_changes"
+
+
 def test_operating_map_aggregates_domain_package_without_side_effects(
     client: TestClient,
 ):

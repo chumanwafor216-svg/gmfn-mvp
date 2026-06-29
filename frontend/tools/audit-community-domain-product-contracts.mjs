@@ -301,6 +301,18 @@ assertContains(
 );
 
 assertContains(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  /REVIEWER_QUEUE_PENDING_STATUSES = \("pending", "pending_review"\)[\s\S]*def _community_domain_dashboard_payload[\s\S]*CommunityDomainActionReview\.status\.in_\(REVIEWER_QUEUE_PENDING_STATUSES\)[\s\S]*def _community_domain_operating_map_payload[\s\S]*CommunityDomainActionReview\.status\.in_\(REVIEWER_QUEUE_PENDING_STATUSES\)/,
+  "Backend dashboard and operating-map next-action queues must not count needs_changes as pending reviewer work."
+);
+
+assertContains(
+  "gmfn_backend/tests/test_community_domains.py",
+  /test_domain_dashboard_guidance_excludes_needs_changes_from_reviewer_queue[\s\S]*review_row\.status = "needs_changes"[\s\S]*dashboard\["counts"\]\["open_reviews"\] == 0[\s\S]*readiness\["counts"\]\["open_reviews"\] == 0[\s\S]*operating_map\["counts"\]\["open_reviews"\] == 0[\s\S]*review_row\.status == "needs_changes"/,
+  "Backend tests must prove needs_changes remains recorded without driving dashboard reviewer-queue guidance."
+);
+
+assertContains(
   "gmfn_backend/tests/test_community_domains.py",
   /test_member_dashboard_hides_quote_and_outsider_is_rejected[\s\S]*\/dashboard[\s\S]*outsider_dashboard\.status_code == 403[\s\S]*"package_quote" not in dashboard/,
   "Backend tests must prove member dashboard hides quote details and rejects outsiders."

@@ -66,6 +66,7 @@ NODE_LOCAL_ASSIGNABLE_ROLES = {
     "committee_member",
     "line_member",
 }
+REVIEWER_QUEUE_PENDING_STATUSES = ("pending", "pending_review")
 COMMUNITY_DOMAIN_ROLE_PRESETS: list[dict[str, Any]] = [
     {
         "role_key": "owner",
@@ -2693,9 +2694,7 @@ def _community_domain_readiness_payload(
         db.query(CommunityDomainActionReview)
         .filter(CommunityDomainActionReview.community_domain_id == int(domain.id))
         .filter(
-            CommunityDomainActionReview.status.in_(
-                ["pending", "pending_review", "needs_changes"]
-            )
+            CommunityDomainActionReview.status.in_(REVIEWER_QUEUE_PENDING_STATUSES)
         )
         .count()
     )
@@ -3699,9 +3698,7 @@ def _community_domain_dashboard_payload(
         db.query(CommunityDomainActionReview)
         .filter(CommunityDomainActionReview.community_domain_id == int(domain.id))
         .filter(
-            CommunityDomainActionReview.status.in_(
-                ["pending", "pending_review", "needs_changes"]
-            )
+            CommunityDomainActionReview.status.in_(REVIEWER_QUEUE_PENDING_STATUSES)
         )
         .count()
     )
@@ -3854,9 +3851,7 @@ def _community_domain_operating_map_payload(
         db.query(CommunityDomainActionReview)
         .filter(CommunityDomainActionReview.community_domain_id == domain_id)
         .filter(
-            CommunityDomainActionReview.status.in_(
-                ["pending", "pending_review", "needs_changes"]
-            )
+            CommunityDomainActionReview.status.in_(REVIEWER_QUEUE_PENDING_STATUSES)
         )
         .count()
     )
