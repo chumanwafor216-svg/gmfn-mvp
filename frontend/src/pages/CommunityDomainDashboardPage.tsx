@@ -390,6 +390,14 @@ export default function CommunityDomainDashboardPage() {
                             {compactStatus(itemMembership.role)}
                           </strong>
                         </div>
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                          <span style={statusBadge(itemDomain.status)}>
+                            Domain: {compactStatus(itemDomain.status)}
+                          </span>
+                          <span style={statusBadge(itemDomain.verification_status)}>
+                            Verification: {compactStatus(itemDomain.verification_status)}
+                          </span>
+                        </div>
                         <StableCtaLink
                           to={path}
                           kind="primary"

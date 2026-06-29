@@ -76,8 +76,8 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /listMyCommunityDomains[\s\S]*Your Community Domains[\s\S]*Open dashboard/,
-  "Community Domain dashboard page must expose a signed-in selector for the current user's active domains.",
+  /listMyCommunityDomains[\s\S]*Your Community Domains[\s\S]*Domain: \{compactStatus\(itemDomain\.status\)\}[\s\S]*Verification: \{compactStatus\(itemDomain\.verification_status\)\}[\s\S]*Open dashboard/,
+  "Community Domain dashboard page must expose a signed-in selector with safe domain and verification status before opening a domain.",
   { frontend: true }
 );
 
