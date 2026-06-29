@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import PageTopNav from "../components/PageTopNav";
 import { GsnRealisticIcon } from "../components/GsnRealisticIcon";
@@ -201,7 +201,7 @@ export default function CommunityDomainDashboardPage() {
   const [busyQuote, setBusyQuote] = useState(false);
   const [message, setMessage] = useState("");
 
-  async function loadDashboard() {
+  const loadDashboard = useCallback(async () => {
     if (!communityDomainId) {
       setLoading(true);
       setMessage("");
@@ -238,7 +238,7 @@ export default function CommunityDomainDashboardPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [communityDomainId]);
 
   useEffect(() => {
     if (typeof document !== "undefined") {
@@ -248,10 +248,10 @@ export default function CommunityDomainDashboardPage() {
 
   useEffect(() => {
     loadDashboard();
-  }, [communityDomainId]);
+  }, [loadDashboard]);
 
   const domain = dashboard?.community_domain || {};
-  const template = dashboard?.template || {};
+  const template = useMemo(() => dashboard?.template || {}, [dashboard?.template]);
   const status = dashboard?.status || {};
   const counts = dashboard?.counts || {};
   const lanes = Array.isArray(dashboard?.lanes) ? dashboard?.lanes || [] : [];

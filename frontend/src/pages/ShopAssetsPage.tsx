@@ -872,23 +872,23 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
   }, [shopPreviewUrl, productPreviewUrl, productVideoPreviewUrl]);
 
 
-  function showNotice(tone: NoticeTone, text: string) {
+  const showNotice = useCallback((tone: NoticeTone, text: string) => {
     setNotice({ tone, text });
-  }
+  }, []);
 
-  function showProductFormNotice(tone: NoticeTone, text: string) {
+  const showProductFormNotice = useCallback((tone: NoticeTone, text: string) => {
     setProductFormNotice({ tone, text });
     showNotice(tone, text);
-  }
+  }, [showNotice]);
 
-  function showGalleryActionNotice(
+  const showGalleryActionNotice = useCallback((
     tone: NoticeTone,
     text: string,
-    slotNumber = selectedPublicSlot
-  ) {
+    slotNumber = selectedPublicSlotRef.current
+  ) => {
     setGalleryActionNotice({ tone, text, slotNumber });
     showNotice(tone, text);
-  }
+  }, [showNotice]);
 
   function fallbackShopName(): string {
     return (
@@ -1039,7 +1039,13 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
     } finally {
       setLoading(false);
     }
-  }, [props.preferredGmfnId, props.seedProducts, props.seedShop, selectedClanId]);
+  }, [
+    props.preferredGmfnId,
+    props.seedProducts,
+    props.seedShop,
+    selectedClanId,
+    showGalleryActionNotice,
+  ]);
 
   useEffect(() => {
     void loadPage();

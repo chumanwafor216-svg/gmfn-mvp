@@ -333,9 +333,11 @@ export default function CommunityDomainPurchasePage() {
         if (!alive) return;
         const nextTemplates = normalizeTemplateItems(payload);
         setTemplates(nextTemplates);
-        if (!nextTemplates.some((item) => item.template_key === templateKey)) {
-          setTemplateKey(nextTemplates[0]?.template_key || FALLBACK_TEMPLATES[0].template_key);
-        }
+        setTemplateKey((currentTemplateKey) =>
+          nextTemplates.some((item) => item.template_key === currentTemplateKey)
+            ? currentTemplateKey
+            : nextTemplates[0]?.template_key || FALLBACK_TEMPLATES[0].template_key
+        );
       } catch {
         if (alive) {
           setTemplates(FALLBACK_TEMPLATES);

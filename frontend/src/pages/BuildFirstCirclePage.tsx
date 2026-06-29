@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import PageTopNav from "../components/PageTopNav";
 import GsnSnapshotPaperCard from "../components/GsnSnapshotPaperCard";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
@@ -898,7 +898,7 @@ export default function BuildFirstCirclePage() {
     );
   }, [inviteEvidence.relationshipType]);
 
-  function buildJoinInviteMessageForLink(link: string): string {
+  const buildJoinInviteMessageForLink = useCallback((link: string): string => {
     const lines = [
       "Hi! I am inviting you to join me on GSN.",
       `I am building my trusted first circle for ${communityName}.`,
@@ -915,13 +915,13 @@ export default function BuildFirstCirclePage() {
       inviteLink: link,
       messageLines: lines,
     });
-  }
+  }, [communityName, gmfnId, memberName]);
 
   const joinInviteMessage = useMemo(() => {
     return buildJoinInviteMessageForLink(inviteLink);
-  }, [communityName, gmfnId, inviteLink, memberName]);
+  }, [buildJoinInviteMessageForLink, inviteLink]);
 
-  function buildInviteBundleForLink(link: string): string {
+  const buildInviteBundleForLink = useCallback((link: string): string => {
     const rawBundle = inviteBundleText({
       draft,
       memberName,
@@ -936,11 +936,11 @@ export default function BuildFirstCirclePage() {
       inviteLink: link,
       messageLines: [rawBundle],
     });
-  }
+  }, [communityName, draft, gmfnId, memberName]);
 
   const inviteBundle = useMemo(() => {
     return buildInviteBundleForLink(inviteLink);
-  }, [draft, memberName, gmfnId, communityName, inviteLink]);
+  }, [buildInviteBundleForLink, inviteLink]);
 
   const readyCount = Number(progress.readyCount || 0);
   const targetCount = Number(progress.targetCount || 3);
