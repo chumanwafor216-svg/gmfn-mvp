@@ -15,6 +15,7 @@ import {
   getCommunityDomainGovernanceCoverage,
   getCommunityDomainMemberPlacementSummary,
   getCommunityDomainModuleScopeReadiness,
+  getCommunityDomainNotificationScopeReadiness,
   getCommunityDomainReadiness,
   getCommunityDomainReviewerQueue,
   getCommunityDomainRolloutPlan,
@@ -213,6 +214,22 @@ type TrustRelayReadinessLane = {
   bridge_member_status?: string | null;
   destination_domain_status?: string | null;
   relay_path_status?: string | null;
+  next_step?: string | null;
+};
+
+type NotificationScopeReadinessLane = {
+  lane_key?: string | null;
+  label?: string | null;
+  status?: string | null;
+  ready?: boolean;
+  count?: number | string | null;
+  notification_scope_record_status?: string | null;
+  notification_job_status?: string | null;
+  notification_delivery_status?: string | null;
+  audience_list_status?: string | null;
+  public_announcement_status?: string | null;
+  cross_domain_broadcast_status?: string | null;
+  member_list_status?: string | null;
   next_step?: string | null;
 };
 
@@ -612,6 +629,7 @@ export default function CommunityDomainDashboardPage() {
   const [evidenceRecordReadiness, setEvidenceRecordReadiness] = useState<any | null>(null);
   const [evidenceReleaseReadiness, setEvidenceReleaseReadiness] = useState<any | null>(null);
   const [trustRelayReadiness, setTrustRelayReadiness] = useState<any | null>(null);
+  const [notificationScopeReadiness, setNotificationScopeReadiness] = useState<any | null>(null);
   const [quote, setQuote] = useState<any | null>(null);
   const [activeLane, setActiveLane] = useState("structure");
   const [loading, setLoading] = useState(true);
@@ -653,6 +671,7 @@ export default function CommunityDomainDashboardPage() {
       setEvidenceRecordReadiness(null);
       setEvidenceReleaseReadiness(null);
       setTrustRelayReadiness(null);
+      setNotificationScopeReadiness(null);
       try {
         const payload = await listMyCommunityDomains();
         setDomainItems(Array.isArray(payload?.items) ? payload.items : []);
@@ -684,6 +703,7 @@ export default function CommunityDomainDashboardPage() {
     setEvidenceRecordReadiness(null);
     setEvidenceReleaseReadiness(null);
     setTrustRelayReadiness(null);
+    setNotificationScopeReadiness(null);
     try {
       const payload = await getCommunityDomainDashboard(communityDomainId);
       const nextDashboard = (payload?.dashboard || null) as DashboardPayload | null;
@@ -762,6 +782,16 @@ export default function CommunityDomainDashboardPage() {
       } catch {
         setTrustRelayReadiness(null);
       }
+      try {
+        const notificationScopePayload = await getCommunityDomainNotificationScopeReadiness(
+          communityDomainId
+        );
+        setNotificationScopeReadiness(
+          notificationScopePayload?.notification_scope_readiness || null
+        );
+      } catch {
+        setNotificationScopeReadiness(null);
+      }
       const viewerUserId = nextDashboard?.viewer?.user_id;
       if (viewerUserId) {
         try {
@@ -804,6 +834,7 @@ export default function CommunityDomainDashboardPage() {
       setEvidenceRecordReadiness(null);
       setEvidenceReleaseReadiness(null);
       setTrustRelayReadiness(null);
+      setNotificationScopeReadiness(null);
       await loadOwnMembershipRequests();
       setMessage(
         err?.message ||
@@ -931,6 +962,19 @@ export default function CommunityDomainDashboardPage() {
     typeof trustRelayReadiness?.ready_total === "number"
       ? trustRelayReadiness.ready_total
       : visibleTrustRelayLanes.filter((lane) => lane.ready).length;
+  const notificationScopeSummary = notificationScopeReadiness?.summary || {};
+  const visibleNotificationScopeLanes: NotificationScopeReadinessLane[] = Array.isArray(
+    notificationScopeReadiness?.lanes
+  )
+    ? notificationScopeReadiness.lanes
+    : [];
+  const blockedNotificationScopeLanes = visibleNotificationScopeLanes.filter(
+    (lane) => !lane.ready
+  );
+  const notificationScopeReadyTotal =
+    typeof notificationScopeReadiness?.ready_total === "number"
+      ? notificationScopeReadiness.ready_total
+      : visibleNotificationScopeLanes.filter((lane) => lane.ready).length;
   const setupPrimaryAction = setupReadiness?.primary_next_action || dashboard?.primary_next_action;
   const setupPrimaryActionLaneKey = laneForAction(setupPrimaryAction?.action_key);
   const dashboardPrimaryActionLaneKey = laneForAction(dashboard?.primary_next_action?.action_key);
@@ -2494,6 +2538,138 @@ export default function CommunityDomainDashboardPage() {
                         records, expose evidence files, expose storage keys, issue TrustSlips,
                         write Trust Passport entries, create credentials, create marketplace
                         activity, create affiliations, activate billing, or move money.
+                      </div>
+                    </div>
+
+                    <div style={softCard()}>
+                      <div style={sectionLabel()}>Notification scope readiness</div>
+                      <div style={{ ...helperText(), marginTop: 7 }}>
+                        {notificationScopeReadiness
+                          ? `${cleanText(
+                              notificationScopeReadiness.primary_next_action?.label,
+                              "Review notification scope readiness"
+                            )}. ${notificationScopeReadyTotal} of ${visibleNotificationScopeLanes.length} audience checks are ready.`
+                          : "GSN could not load the read-only notification scope readiness view for this Community Domain."}
+                      </div>
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "repeat(auto-fit, minmax(118px, 1fr))",
+                          gap: 8,
+                          marginTop: 10,
+                        }}
+                      >
+                        {[
+                          [
+                            "Scope engine",
+                            compactStatus(notificationScopeSummary.notification_scope_engine_status),
+                          ],
+                          [
+                            "Members",
+                            countValue(notificationScopeSummary.active_member_count),
+                          ],
+                          [
+                            "Scope policies",
+                            notificationScopeSummary.notification_policy_count == null
+                              ? "admin only"
+                              : countValue(notificationScopeSummary.notification_policy_count),
+                          ],
+                          [
+                            "Notifications sent",
+                            countValue(notificationScopeSummary.notifications_sent),
+                          ],
+                        ].map(([label, value]) => (
+                          <div
+                            key={String(label)}
+                            style={{
+                              borderRadius: 14,
+                              background: "#F7FAFF",
+                              border: "1px solid rgba(9,27,46,0.08)",
+                              padding: 10,
+                              minWidth: 0,
+                            }}
+                          >
+                            <div style={{ color: "#617085", fontSize: 12, fontWeight: 850 }}>
+                              {label}
+                            </div>
+                            <div style={{ color: "#07172C", fontWeight: 950, marginTop: 4 }}>
+                              {value}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      {blockedNotificationScopeLanes.length ? (
+                        <div style={{ ...helperText(), marginTop: 9 }}>
+                          Notification scope checks needing attention:{" "}
+                          <strong>
+                            {blockedNotificationScopeLanes
+                              .slice(0, 3)
+                              .map((lane) =>
+                                cleanText(lane.label, lane.lane_key || "notification check")
+                              )
+                              .join(", ")}
+                          </strong>
+                          .
+                        </div>
+                      ) : notificationScopeReadiness ? (
+                        <div style={{ ...helperText(), marginTop: 9 }}>
+                          No blocked notification scope lane is visible, but notification delivery
+                          is still not connected here.
+                        </div>
+                      ) : null}
+                      {visibleNotificationScopeLanes.length ? (
+                        <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
+                          {visibleNotificationScopeLanes.slice(0, 4).map((lane) => (
+                            <div
+                              key={cleanText(
+                                lane.lane_key,
+                                cleanText(lane.label, "notification scope")
+                              )}
+                              style={{
+                                display: "grid",
+                                gridTemplateColumns: "minmax(0, 1fr) auto",
+                                gap: 10,
+                                alignItems: "center",
+                                borderRadius: 14,
+                                border: "1px solid rgba(9,27,46,0.10)",
+                                background: "rgba(255,255,255,0.72)",
+                                padding: "10px 10px 10px 12px",
+                              }}
+                            >
+                              <span style={{ minWidth: 0 }}>
+                                <span style={{ display: "block", fontWeight: 950 }}>
+                                  {cleanText(lane.label, "Notification scope check")}
+                                </span>
+                                <span
+                                  style={{
+                                    display: "block",
+                                    color: "#4F647A",
+                                    fontSize: 12.5,
+                                    lineHeight: 1.45,
+                                    marginTop: 3,
+                                  }}
+                                >
+                                  {cleanText(
+                                    lane.next_step,
+                                    "Keep this as audience planning until a real notification path exists."
+                                  )}
+                                </span>
+                              </span>
+                              <span style={statusBadge(lane.status)}>
+                                {compactStatus(lane.status)}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : null}
+                      <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
+                        This notification scope view is read-only audience planning. It does not
+                        send notifications, create notification jobs, send emails, send SMS, send
+                        WhatsApp messages, send push notifications, create audience lists, publish
+                        public announcements, create cross-domain broadcasts, expose member lists,
+                        create marketplace records, move money, issue TrustSlips, write Trust
+                        Passport entries, or expose private member, review, evidence, marketplace,
+                        or finance records.
                       </div>
                     </div>
                   </>

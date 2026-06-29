@@ -188,6 +188,13 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
+  /getCommunityDomainNotificationScopeReadiness[\s\S]*notificationScopeReadiness[\s\S]*notificationScopeSummary[\s\S]*visibleNotificationScopeLanes[\s\S]*blockedNotificationScopeLanes[\s\S]*activeLane === "modules"[\s\S]*Notification scope readiness[\s\S]*primary_next_action[\s\S]*notification_scope_engine_status[\s\S]*notification_policy_count[\s\S]*notifications_sent[\s\S]*does not\s+send notifications, create notification jobs, send emails, send SMS, send\s+WhatsApp messages, send push notifications, create audience lists, publish\s+public announcements, create cross-domain broadcasts, expose member lists,\s+create marketplace records, move money, issue TrustSlips, write Trust\s+Passport entries, or expose private member, review, evidence, marketplace,\s+or finance records/,
+  "Community Domain dashboard Services lane must show read-only notification scope readiness without implying notification delivery, jobs, email/SMS/WhatsApp/push sending, audience-list creation, public announcements, cross-domain broadcasts, member-list exposure, marketplace records, money movement, TrustSlips, Trust Passport writes, or private record exposure.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
   /activeLane === "identity"[\s\S]*Domain identity[\s\S]*public-safe identity anchor[\s\S]*Code[\s\S]*domain\.domain_name[\s\S]*Owner[\s\S]*domain\.owner_user_id[\s\S]*Template[\s\S]*template\.label[\s\S]*Location[\s\S]*domain\.state[\s\S]*domain\.country[\s\S]*Public profile:[\s\S]*No public profile text is recorded yet[\s\S]*does not expose owner contact details,\s+private member lists, finance records, evidence files, or\s+verification proof/,
   "Community Domain dashboard Identity lane must show a public-safe identity summary without exposing owner contact, private members, finance, evidence, or verification proof.",
   { frontend: true }
