@@ -12361,6 +12361,266 @@ def _community_domain_compliance_map_payload(
     }
 
 
+def _community_domain_appeal_readiness_payload(
+    db: Session,
+    *,
+    domain: CommunityDomain,
+    current_user: User,
+    can_admin: bool,
+) -> dict[str, Any]:
+    domain_id = int(domain.id)
+    root_node = _find_root_node(db, community_domain_id=domain_id)
+    active_member_count = (
+        db.query(CommunityDomainMembership)
+        .filter(CommunityDomainMembership.community_domain_id == domain_id)
+        .filter(CommunityDomainMembership.status == "active")
+        .count()
+    )
+    active_policy_count = (
+        db.query(CommunityDomainPolicy)
+        .filter(CommunityDomainPolicy.community_domain_id == domain_id)
+        .filter(CommunityDomainPolicy.status == "active")
+        .count()
+    )
+    reviews = (
+        db.query(CommunityDomainActionReview)
+        .filter(CommunityDomainActionReview.community_domain_id == domain_id)
+        .all()
+    )
+    comments_count = (
+        db.query(CommunityDomainActionReviewComment)
+        .filter(CommunityDomainActionReviewComment.community_domain_id == domain_id)
+        .count()
+    )
+    evidence_count = (
+        db.query(CommunityDomainActionReviewEvidence)
+        .filter(CommunityDomainActionReviewEvidence.community_domain_id == domain_id)
+        .filter(CommunityDomainActionReviewEvidence.status == "active")
+        .count()
+    )
+    open_review_count = sum(
+        1
+        for review in reviews
+        if _clean_role(review.status, "pending")
+        in {"pending", "pending_review", "needs_changes"}
+    )
+    disputed_review_count = sum(
+        1
+        for review in reviews
+        if _clean_role(review.status, "pending")
+        in {"rejected", "cancelled", "needs_changes"}
+    )
+
+    review_action_counts: dict[str, int] = {}
+    for review in reviews:
+        action_key = _clean_role(review.action_key, "unknown")
+        review_action_counts[action_key] = review_action_counts.get(action_key, 0) + 1
+
+    def route_hint(suffix: str, *, requires_admin: bool) -> Optional[str]:
+        if requires_admin and not can_admin:
+            return None
+        return f"/community-domains/{domain_id}{suffix}"
+
+    def admin_count(value: int) -> Optional[int]:
+        return int(value) if can_admin else None
+
+    def action_count(*prefixes: str) -> int:
+        return sum(
+            count
+            for action_key, count in review_action_counts.items()
+            if any(action_key.startswith(prefix) for prefix in prefixes)
+        )
+
+    def lane(
+        lane_key: str,
+        label: str,
+        signal_count: int,
+        next_step: str,
+        *,
+        route_suffix: str,
+        requires_admin: bool,
+        boundary: str,
+    ) -> dict[str, Any]:
+        status = "appeal_signal_present" if signal_count else "appeal_path_not_connected"
+        return {
+            "lane_key": lane_key,
+            "label": label,
+            "status": status,
+            "ready": False,
+            "signal_count": admin_count(signal_count),
+            "appeal_engine_status": "not_connected_in_this_slice",
+            "route_hint": route_hint(route_suffix, requires_admin=requires_admin),
+            "requires_admin": bool(requires_admin),
+            "next_step": next_step,
+            "boundary": boundary,
+        }
+
+    lanes = [
+        lane(
+            "membership_appeals",
+            "Membership appeals",
+            action_count("domain_member.", "member.", "membership."),
+            "Use current review notes as the signal, but do not treat rejected membership as appealable until an appeal path exists.",
+            route_suffix="/action-reviews",
+            requires_admin=True,
+            boundary=(
+                "Membership appeal readiness only. This does not reopen a rejected "
+                "membership, approve a member, create an appeal, assign a mediator, "
+                "or expose private member records."
+            ),
+        ),
+        lane(
+            "role_assignment_appeals",
+            "Role assignment appeals",
+            action_count("role.", "node_member.", "domain_role."),
+            "Keep role and node placement disputes inside governance review until formal appeals are built.",
+            route_suffix="/roles",
+            requires_admin=True,
+            boundary=(
+                "Role appeal readiness only. This does not grant roles, change node "
+                "placement, decide a dispute, or override Community Domain policy."
+            ),
+        ),
+        lane(
+            "evidence_disputes",
+            "Evidence disputes",
+            action_count("evidence.", "verification."),
+            "Use evidence review records as the current dispute signal without calling them final proof.",
+            route_suffix="/evidence-map",
+            requires_admin=True,
+            boundary=(
+                "Evidence dispute readiness only. This does not verify evidence, "
+                "revoke evidence, publish evidence, issue credentials, issue "
+                "TrustSlips, write Trust Passport entries, or expose storage keys."
+            ),
+        ),
+        lane(
+            "content_spotlight_appeals",
+            "Content and spotlight appeals",
+            action_count("spotlight.", "content.", "notice."),
+            "Keep content or Spotlight blocks as governance signals until a fair appeal path exists.",
+            route_suffix="/activity-map",
+            requires_admin=True,
+            boundary=(
+                "Content appeal readiness only. This does not publish content, "
+                "restore a blocked Spotlight, send notices, create marketplace "
+                "records, or expose private activity."
+            ),
+        ),
+        lane(
+            "shop_vault_visibility_appeals",
+            "Shop and vault visibility appeals",
+            action_count("shop.", "vault."),
+            "Keep shop and vault visibility disputes separate from public discovery and private document access.",
+            route_suffix="/record-privacy-map",
+            requires_admin=True,
+            boundary=(
+                "Shop and vault appeal readiness only. This does not grant shop "
+                "visibility, create vault links, expose storage keys, reveal member "
+                "lists, or share private documents."
+            ),
+        ),
+        lane(
+            "node_scope_appeals",
+            "Node scope appeals",
+            action_count("node.", "structure."),
+            "Treat branch, class, committee, or line disputes as review signals until node-level appeals are real.",
+            route_suffix="/governance-coverage",
+            requires_admin=True,
+            boundary=(
+                "Node scope appeal readiness only. This does not move a node, "
+                "split a hierarchy, create child Community Domains, transfer "
+                "members, or change inheritance."
+            ),
+        ),
+        lane(
+            "payment_activity_appeals",
+            "Paid activity appeals",
+            action_count("paid_activity.", "finance.", "payment.", "dues."),
+            "Keep dues, fees, contributions, or ROSCA disagreements away from money movement until payment appeals are deliberately built.",
+            route_suffix="/node-paid-activity-map",
+            requires_admin=True,
+            boundary=(
+                "Paid activity appeal readiness only. This does not reverse "
+                "payments, create refunds, create receipts, write ledger entries, "
+                "move money, create loans, or make finance decisions."
+            ),
+        ),
+    ]
+
+    if not can_admin:
+        primary_next_action = {
+            "action_key": "ask_domain_admin_to_review_appeal_readiness",
+            "label": "Ask a Community Domain admin to review appeal readiness",
+            "route_hint": None,
+            "requires_admin": True,
+        }
+    elif active_policy_count <= 0:
+        primary_next_action = {
+            "action_key": "add_governance_policy_before_appeals",
+            "label": "Add governance policy before appeals",
+            "route_hint": f"/community-domains/{domain_id}/policies",
+            "requires_admin": True,
+        }
+    elif disputed_review_count:
+        primary_next_action = {
+            "action_key": "review_disputed_decision_signals",
+            "label": "Review disputed decision signals",
+            "route_hint": f"/community-domains/{domain_id}/action-reviews",
+            "requires_admin": True,
+        }
+    elif open_review_count:
+        primary_next_action = {
+            "action_key": "resolve_open_reviews_before_appeals",
+            "label": "Resolve open reviews before appeals",
+            "route_hint": f"/community-domains/{domain_id}/action-reviews/reviewer-queue",
+            "requires_admin": True,
+        }
+    else:
+        primary_next_action = {
+            "action_key": "keep_appeal_path_planning_read_only",
+            "label": "Keep appeal path planning read-only",
+            "route_hint": f"/community-domains/{domain_id}/governance-model",
+            "requires_admin": True,
+        }
+
+    return {
+        "community_domain": _domain_payload(domain, root_node=root_node),
+        "viewer": {
+            "user_id": int(current_user.id),
+            "can_admin": bool(can_admin),
+        },
+        "summary": {
+            "active_member_count": int(active_member_count),
+            "active_policy_count": admin_count(active_policy_count),
+            "review_record_count": admin_count(len(reviews)),
+            "open_review_count": admin_count(open_review_count),
+            "disputed_review_signal_count": admin_count(disputed_review_count),
+            "review_comment_count": admin_count(comments_count),
+            "active_evidence_count": admin_count(evidence_count),
+            "appeal_engine_status": "not_connected_in_this_slice",
+            "appeal_records_created": 0,
+            "mediator_assignment_status": "not_connected_in_this_slice",
+            "appeal_decision_status": "not_connected_in_this_slice",
+        },
+        "lanes": lanes,
+        "ready_total": 0,
+        "blocked_lanes": [item["lane_key"] for item in lanes],
+        "primary_next_action": primary_next_action,
+        "editable": False,
+        "boundary": (
+            "Community Domain appeal readiness is read-only fairness and dispute "
+            "planning. It shows where existing reviews, comments, and evidence "
+            "suggest future appeal paths may be needed, but it does not create "
+            "appeals, reopen rejected membership, assign mediators, decide disputes, "
+            "grant roles, verify or revoke evidence, publish content, grant shop or "
+            "vault access, move nodes, reverse payments, move money, create loans, "
+            "issue TrustSlips, write Trust Passport entries, share records across "
+            "institutions, or expose private member/review/evidence/finance records."
+        ),
+    }
+
+
 def _community_domain_institutional_profile_payload(
     db: Session,
     *,
@@ -15812,6 +16072,27 @@ def get_community_domain_compliance_map(
         "ok": True,
         "community_domain_id": int(domain.id),
         "compliance_map": _community_domain_compliance_map_payload(
+            db,
+            domain=domain,
+            current_user=current_user,
+            can_admin=can_admin,
+        ),
+    }
+
+
+@router.get("/{community_domain_id}/appeal-readiness", response_model=dict[str, Any])
+def get_community_domain_appeal_readiness(
+    community_domain_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_member_scope(db, domain=domain, current_user=current_user)
+    can_admin = _has_domain_admin_scope(db, domain=domain, current_user=current_user)
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "appeal_readiness": _community_domain_appeal_readiness_payload(
             db,
             domain=domain,
             current_user=current_user,

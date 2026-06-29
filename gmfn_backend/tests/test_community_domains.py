@@ -10039,6 +10039,278 @@ def test_member_can_read_compliance_map_but_admin_risk_counts_are_hidden(
     assert "does not certify compliance" in compliance["boundary"]
 
 
+def test_appeal_readiness_projects_dispute_paths_without_appeal_writes(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    member = _seed_user(2, "appeal-readiness-member@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created_domain = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Appeal Readiness Market",
+                "display_name": "Appeal Readiness Market",
+                "domain_type": "market_cooperative",
+                "template_key": "market_cooperative",
+            },
+        )
+        assert created_domain.status_code == 201, created_domain.text
+        domain_id = created_domain.json()["community_domain"]["id"]
+
+        added_member = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": member.id, "role": "trader"},
+        )
+        assert added_member.status_code == 201, added_member.text
+
+        line = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Appeal Line",
+                "node_type": "line",
+                "node_kind": "market_line",
+            },
+        )
+        assert line.status_code == 201, line.text
+        line_id = line.json()["node"]["id"]
+
+        policies = [
+            ("appeal-member-policy", "domain_member.upsert"),
+            ("appeal-role-policy", "node_member.upsert"),
+            ("appeal-evidence-policy", "evidence.issue"),
+            ("appeal-spotlight-policy", "spotlight.publish"),
+            ("appeal-shop-policy", "shop.visibility_grant"),
+            ("appeal-node-policy", "node.status_change"),
+            ("appeal-paid-policy", "paid_activity.collect"),
+        ]
+        for policy_key, action_key in policies:
+            policy = client.post(
+                f"/community-domains/{domain_id}/policies",
+                json={
+                    "policy_key": policy_key,
+                    "action_key": action_key,
+                    "community_node_id": line_id,
+                    "scope_type": "node",
+                    "review_mode": "node_admin_review",
+                    "required_role": "line_admin",
+                },
+            )
+            assert policy.status_code == 201, policy.text
+
+        review_ids: list[int] = []
+        for index, (_, action_key) in enumerate(policies):
+            review_payload: dict[str, object] = {
+                "action_key": action_key,
+                "community_node_id": line_id,
+                "request_note": f"Review appeal signal {index}.",
+                "payload": {"claim": f"appeal signal {index}"},
+            }
+            if action_key == "domain_member.upsert":
+                review_payload.update(
+                    {
+                        "subject_user_id": member.id,
+                        "target_type": "domain_member",
+                        "target_id": str(member.id),
+                        "payload": {
+                            "claim": f"appeal signal {index}",
+                            "user_id": member.id,
+                        },
+                    }
+                )
+            elif action_key == "node_member.upsert":
+                review_payload.update(
+                    {
+                        "subject_user_id": member.id,
+                        "target_type": "node_member",
+                        "target_id": str(member.id),
+                        "payload": {
+                            "claim": f"appeal signal {index}",
+                            "user_id": member.id,
+                        },
+                    }
+                )
+            review = client.post(
+                f"/community-domains/{domain_id}/action-reviews",
+                json=review_payload,
+            )
+            assert review.status_code == 201, review.text
+            review_ids.append(review.json()["action_review"]["id"])
+
+        comment = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review_ids[0]}/comments",
+            json={"body": "Member disputes this outcome."},
+        )
+        assert comment.status_code == 201, comment.text
+
+        evidence = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review_ids[2]}/evidence",
+            json={
+                "evidence_type": "document",
+                "title": "Appeal evidence note",
+                "file_name": "appeal-evidence.pdf",
+                "storage_key": "private/evidence/appeal-evidence.pdf",
+            },
+        )
+        assert evidence.status_code == 201, evidence.text
+
+        with SessionLocal() as db:
+            first_review = db.get(CommunityDomainActionReview, review_ids[0])
+            assert first_review is not None
+            first_review.status = "needs_changes"
+            db.commit()
+            before_counts = {
+                "domains": db.query(CommunityDomain).count(),
+                "nodes": db.query(CommunityNode).count(),
+                "domain_members": db.query(CommunityDomainMembership).count(),
+                "node_members": db.query(CommunityNodeMembership).count(),
+                "policies": db.query(CommunityDomainPolicy).count(),
+                "reviews": db.query(CommunityDomainActionReview).count(),
+                "comments": db.query(CommunityDomainActionReviewComment).count(),
+                "evidence": db.query(CommunityDomainActionReviewEvidence).count(),
+                "clans": db.query(Clan).count(),
+                "trust_slips": db.query(TrustSlip).count(),
+            }
+
+        response = client.get(f"/community-domains/{domain_id}/appeal-readiness")
+        assert response.status_code == 200, response.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    payload = response.json()
+    assert payload["ok"] is True
+    readiness = payload["appeal_readiness"]
+    assert readiness["editable"] is False
+    assert readiness["viewer"] == {"user_id": owner.id, "can_admin": True}
+    assert readiness["summary"] == {
+        "active_member_count": 2,
+        "active_policy_count": 7,
+        "review_record_count": 7,
+        "open_review_count": 7,
+        "disputed_review_signal_count": 1,
+        "review_comment_count": 1,
+        "active_evidence_count": 1,
+        "appeal_engine_status": "not_connected_in_this_slice",
+        "appeal_records_created": 0,
+        "mediator_assignment_status": "not_connected_in_this_slice",
+        "appeal_decision_status": "not_connected_in_this_slice",
+    }
+    assert readiness["ready_total"] == 0
+    assert readiness["primary_next_action"] == {
+        "action_key": "review_disputed_decision_signals",
+        "label": "Review disputed decision signals",
+        "route_hint": f"/community-domains/{domain_id}/action-reviews",
+        "requires_admin": True,
+    }
+
+    lanes = {item["lane_key"]: item for item in readiness["lanes"]}
+    assert set(readiness["blocked_lanes"]) == set(lanes)
+    for lane_key in (
+        "membership_appeals",
+        "role_assignment_appeals",
+        "evidence_disputes",
+        "content_spotlight_appeals",
+        "shop_vault_visibility_appeals",
+        "node_scope_appeals",
+        "payment_activity_appeals",
+    ):
+        assert lanes[lane_key]["status"] == "appeal_signal_present"
+        assert lanes[lane_key]["ready"] is False
+        assert lanes[lane_key]["signal_count"] == 1
+        assert lanes[lane_key]["appeal_engine_status"] == (
+            "not_connected_in_this_slice"
+        )
+    assert lanes["payment_activity_appeals"]["route_hint"].endswith(
+        "/node-paid-activity-map"
+    )
+    assert "read-only fairness and dispute planning" in readiness["boundary"]
+    assert "does not create appeals" in readiness["boundary"]
+    assert "assign mediators" in readiness["boundary"]
+    assert "reverse payments" in readiness["boundary"]
+    assert "private/evidence/appeal-evidence.pdf" not in str(readiness)
+
+    with SessionLocal() as db:
+        after_counts = {
+            "domains": db.query(CommunityDomain).count(),
+            "nodes": db.query(CommunityNode).count(),
+            "domain_members": db.query(CommunityDomainMembership).count(),
+            "node_members": db.query(CommunityNodeMembership).count(),
+            "policies": db.query(CommunityDomainPolicy).count(),
+            "reviews": db.query(CommunityDomainActionReview).count(),
+            "comments": db.query(CommunityDomainActionReviewComment).count(),
+            "evidence": db.query(CommunityDomainActionReviewEvidence).count(),
+            "clans": db.query(Clan).count(),
+            "trust_slips": db.query(TrustSlip).count(),
+        }
+    assert after_counts == before_counts
+
+
+def test_member_can_read_appeal_readiness_but_admin_counts_are_hidden(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    member = _seed_user(2, "appeal-readiness-visible-member@example.com")
+    outsider = _seed_user(3, "appeal-readiness-outsider@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created_domain = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Appeal Readiness School",
+                "display_name": "Appeal Readiness School",
+                "domain_type": "school",
+                "template_key": "school_multi_branch",
+            },
+        )
+        assert created_domain.status_code == 201, created_domain.text
+        domain_id = created_domain.json()["community_domain"]["id"]
+
+        added_member = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": member.id, "role": "member"},
+        )
+        assert added_member.status_code == 201, added_member.text
+
+        app.dependency_overrides[get_current_user] = lambda: member
+        member_map = client.get(f"/community-domains/{domain_id}/appeal-readiness")
+        assert member_map.status_code == 200, member_map.text
+
+        app.dependency_overrides[get_current_user] = lambda: outsider
+        outsider_map = client.get(f"/community-domains/{domain_id}/appeal-readiness")
+        assert outsider_map.status_code == 403, outsider_map.text
+        assert "active Community Domain members" in outsider_map.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    readiness = member_map.json()["appeal_readiness"]
+    assert readiness["viewer"] == {"user_id": member.id, "can_admin": False}
+    assert readiness["summary"]["active_member_count"] == 2
+    assert readiness["summary"]["active_policy_count"] is None
+    assert readiness["summary"]["review_record_count"] is None
+    assert readiness["summary"]["open_review_count"] is None
+    assert readiness["summary"]["disputed_review_signal_count"] is None
+    assert readiness["summary"]["review_comment_count"] is None
+    assert readiness["summary"]["active_evidence_count"] is None
+    assert readiness["summary"]["appeal_records_created"] == 0
+    assert readiness["primary_next_action"] == {
+        "action_key": "ask_domain_admin_to_review_appeal_readiness",
+        "label": "Ask a Community Domain admin to review appeal readiness",
+        "route_hint": None,
+        "requires_admin": True,
+    }
+
+    lanes = {item["lane_key"]: item for item in readiness["lanes"]}
+    for lane in lanes.values():
+        assert lane["status"] == "appeal_path_not_connected"
+        assert lane["ready"] is False
+        assert lane["signal_count"] is None
+        assert lane["route_hint"] is None
+    assert "does not create appeals" in readiness["boundary"]
+    assert "private member/review/evidence/finance records" in readiness["boundary"]
+
+
 def test_service_settings_are_template_projection_without_activation(
     client: TestClient,
 ):

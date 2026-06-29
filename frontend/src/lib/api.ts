@@ -2612,6 +2612,15 @@ export async function getCommunityDomainComplianceMap(
   );
 }
 
+export async function getCommunityDomainAppealReadiness(
+  communityDomainId: number | string
+): Promise<any> {
+  return httpJson(
+    communityDomainPath(communityDomainId, "/appeal-readiness"),
+    "GET"
+  );
+}
+
 export async function listCommunityDomainServiceSettings(
   communityDomainId: number | string
 ): Promise<any> {
