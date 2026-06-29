@@ -209,6 +209,13 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
+  /getCommunityDomainAffiliationReadiness[\s\S]*affiliationReadiness[\s\S]*affiliationSummary[\s\S]*visibleAffiliationLanes[\s\S]*blockedAffiliationLanes[\s\S]*activeLane === "identity"[\s\S]*Affiliation readiness[\s\S]*primary_next_action[\s\S]*bridge_status[\s\S]*domain_affiliation_engine_status[\s\S]*approved_affiliations[\s\S]*pending_affiliations[\s\S]*does not create domain-domain affiliations, create parent Community\s+Domains, create child Community Domains, approve or reject affiliation\s+requests, set social Community links, copy or transfer members, inherit\s+policy, activate billing, verify authority, publish public URLs, create\s+marketplace activity, move money, issue TrustSlips, write Trust Passport\s+entries, or expose private member, node, evidence, review, marketplace,\s+finance, or affiliate records/,
+  "Community Domain dashboard Identity lane must show read-only affiliation readiness without implying domain-domain affiliation creation, parent/child domain creation, affiliation decisions, social Community linking, member transfer, inherited policy, billing, verification, public URLs, marketplace activity, money movement, TrustSlips, Trust Passport writes, or private record exposure.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
   /listCommunityDomainNodeTree[\s\S]*structurePreviewRows[\s\S]*nodeTree[\s\S]*visibleStructureRows[\s\S]*activeLane === "structure"[\s\S]*Structure preview[\s\S]*read-only Community Domain tree[\s\S]*No operating-unit structure has been mapped yet[\s\S]*does not create nodes, change parentage, place\s+members, grant roles, activate billing, or verify a branch/,
   "Community Domain dashboard Structure lane must show a compact read-only node-tree preview without implying structure writes or authority changes.",
   { frontend: true }

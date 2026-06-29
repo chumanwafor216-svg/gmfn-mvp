@@ -12,6 +12,7 @@ import {
   getCommunityDomainDashboard,
   getCommunityDomainEvidenceRecordReadiness,
   getCommunityDomainEvidenceReleaseReadiness,
+  getCommunityDomainAffiliationReadiness,
   getCommunityDomainGovernanceCoverage,
   getCommunityDomainMemberPlacementSummary,
   getCommunityDomainModuleScopeReadiness,
@@ -238,6 +239,15 @@ type TrustMobilityLane = {
   lane_key?: string | null;
   label?: string | null;
   summary?: string | null;
+  status?: string | null;
+  ready?: boolean;
+  count?: number | string | null;
+  next_step?: string | null;
+};
+
+type AffiliationReadinessLane = {
+  lane_key?: string | null;
+  label?: string | null;
   status?: string | null;
   ready?: boolean;
   count?: number | string | null;
@@ -642,6 +652,7 @@ export default function CommunityDomainDashboardPage() {
   const [trustRelayReadiness, setTrustRelayReadiness] = useState<any | null>(null);
   const [notificationScopeReadiness, setNotificationScopeReadiness] = useState<any | null>(null);
   const [trustMobility, setTrustMobility] = useState<any | null>(null);
+  const [affiliationReadiness, setAffiliationReadiness] = useState<any | null>(null);
   const [quote, setQuote] = useState<any | null>(null);
   const [activeLane, setActiveLane] = useState("structure");
   const [loading, setLoading] = useState(true);
@@ -685,6 +696,7 @@ export default function CommunityDomainDashboardPage() {
       setTrustRelayReadiness(null);
       setNotificationScopeReadiness(null);
       setTrustMobility(null);
+      setAffiliationReadiness(null);
       try {
         const payload = await listMyCommunityDomains();
         setDomainItems(Array.isArray(payload?.items) ? payload.items : []);
@@ -718,6 +730,7 @@ export default function CommunityDomainDashboardPage() {
     setTrustRelayReadiness(null);
     setNotificationScopeReadiness(null);
     setTrustMobility(null);
+    setAffiliationReadiness(null);
     try {
       const payload = await getCommunityDomainDashboard(communityDomainId);
       const nextDashboard = (payload?.dashboard || null) as DashboardPayload | null;
@@ -812,6 +825,16 @@ export default function CommunityDomainDashboardPage() {
       } catch {
         setTrustMobility(null);
       }
+      try {
+        const affiliationReadinessPayload = await getCommunityDomainAffiliationReadiness(
+          communityDomainId
+        );
+        setAffiliationReadiness(
+          affiliationReadinessPayload?.affiliation_readiness || null
+        );
+      } catch {
+        setAffiliationReadiness(null);
+      }
       const viewerUserId = nextDashboard?.viewer?.user_id;
       if (viewerUserId) {
         try {
@@ -856,6 +879,7 @@ export default function CommunityDomainDashboardPage() {
       setTrustRelayReadiness(null);
       setNotificationScopeReadiness(null);
       setTrustMobility(null);
+      setAffiliationReadiness(null);
       await loadOwnMembershipRequests();
       setMessage(
         err?.message ||
@@ -1007,6 +1031,19 @@ export default function CommunityDomainDashboardPage() {
     typeof trustMobility?.ready_total === "number"
       ? trustMobility.ready_total
       : visibleTrustMobilityLanes.filter((lane) => lane.ready).length;
+  const affiliationSummary = affiliationReadiness?.summary || {};
+  const visibleAffiliationLanes: AffiliationReadinessLane[] = Array.isArray(
+    affiliationReadiness?.lanes
+  )
+    ? affiliationReadiness.lanes
+    : [];
+  const blockedAffiliationLanes = visibleAffiliationLanes.filter(
+    (lane) => !lane.ready
+  );
+  const affiliationReadyTotal =
+    typeof affiliationReadiness?.ready_total === "number"
+      ? affiliationReadiness.ready_total
+      : visibleAffiliationLanes.filter((lane) => lane.ready).length;
   const setupPrimaryAction = setupReadiness?.primary_next_action || dashboard?.primary_next_action;
   const setupPrimaryActionLaneKey = laneForAction(setupPrimaryAction?.action_key);
   const dashboardPrimaryActionLaneKey = laneForAction(dashboard?.primary_next_action?.action_key);
@@ -2020,6 +2057,142 @@ export default function CommunityDomainDashboardPage() {
                       This identity view does not expose owner contact details,
                       private member lists, finance records, evidence files, or
                       verification proof.
+                    </div>
+                  </div>
+                ) : null}
+
+                {activeLane === "identity" ? (
+                  <div style={softCard()}>
+                    <div style={sectionLabel()}>Affiliation readiness</div>
+                    <div style={{ ...helperText(), marginTop: 7 }}>
+                      {affiliationReadiness
+                        ? `${cleanText(
+                            affiliationReadiness.primary_next_action?.label,
+                            "Review affiliation readiness"
+                          )}. ${affiliationReadyTotal} of ${visibleAffiliationLanes.length} affiliation checks are ready.`
+                        : "GSN could not load the read-only affiliation readiness view for this Community Domain."}
+                    </div>
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "repeat(auto-fit, minmax(118px, 1fr))",
+                        gap: 8,
+                        marginTop: 10,
+                      }}
+                    >
+                      {[
+                        ["Bridge", compactStatus(affiliationSummary.bridge_status)],
+                        [
+                          "Affiliation engine",
+                          compactStatus(
+                            affiliationSummary.domain_affiliation_engine_status
+                          ),
+                        ],
+                        [
+                          "Approved",
+                          affiliationSummary.approved_affiliations == null
+                            ? "admin only"
+                            : countValue(affiliationSummary.approved_affiliations),
+                        ],
+                        [
+                          "Pending",
+                          affiliationSummary.pending_affiliations == null
+                            ? "admin only"
+                            : countValue(affiliationSummary.pending_affiliations),
+                        ],
+                      ].map(([label, value]) => (
+                        <div
+                          key={String(label)}
+                          style={{
+                            borderRadius: 14,
+                            background: "#F7FAFF",
+                            border: "1px solid rgba(9,27,46,0.08)",
+                            padding: 10,
+                            minWidth: 0,
+                          }}
+                        >
+                          <div style={{ color: "#617085", fontSize: 12, fontWeight: 850 }}>
+                            {label}
+                          </div>
+                          <div style={{ color: "#07172C", fontWeight: 950, marginTop: 4 }}>
+                            {value}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    {blockedAffiliationLanes.length ? (
+                      <div style={{ ...helperText(), marginTop: 9 }}>
+                        Affiliation checks needing attention:{" "}
+                        <strong>
+                          {blockedAffiliationLanes
+                            .slice(0, 3)
+                            .map((lane) =>
+                              cleanText(lane.label, lane.lane_key || "affiliation check")
+                            )
+                            .join(", ")}
+                        </strong>
+                        .
+                      </div>
+                    ) : affiliationReadiness ? (
+                      <div style={{ ...helperText(), marginTop: 9 }}>
+                        No blocked affiliation lane is visible, but domain-to-domain affiliation
+                        is still not connected here.
+                      </div>
+                    ) : null}
+                    {visibleAffiliationLanes.length ? (
+                      <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
+                        {visibleAffiliationLanes.slice(0, 4).map((lane) => (
+                          <div
+                            key={cleanText(
+                              lane.lane_key,
+                              cleanText(lane.label, "affiliation")
+                            )}
+                            style={{
+                              display: "grid",
+                              gridTemplateColumns: "minmax(0, 1fr) auto",
+                              gap: 10,
+                              alignItems: "center",
+                              borderRadius: 14,
+                              border: "1px solid rgba(9,27,46,0.10)",
+                              background: "rgba(255,255,255,0.72)",
+                              padding: "10px 10px 10px 12px",
+                            }}
+                          >
+                            <span style={{ minWidth: 0 }}>
+                              <span style={{ display: "block", fontWeight: 950 }}>
+                                {cleanText(lane.label, "Affiliation check")}
+                              </span>
+                              <span
+                                style={{
+                                  display: "block",
+                                  color: "#4F647A",
+                                  fontSize: 12.5,
+                                  lineHeight: 1.45,
+                                  marginTop: 3,
+                                }}
+                              >
+                                {cleanText(
+                                  lane.next_step,
+                                  "Keep this as affiliation planning until a real domain relationship path exists."
+                                )}
+                              </span>
+                            </span>
+                            <span style={statusBadge(lane.status)}>
+                              {compactStatus(lane.status)}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : null}
+                    <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
+                      This affiliation view is read-only parent and child affiliation planning.
+                      It does not create domain-domain affiliations, create parent Community
+                      Domains, create child Community Domains, approve or reject affiliation
+                      requests, set social Community links, copy or transfer members, inherit
+                      policy, activate billing, verify authority, publish public URLs, create
+                      marketplace activity, move money, issue TrustSlips, write Trust Passport
+                      entries, or expose private member, node, evidence, review, marketplace,
+                      finance, or affiliate records.
                     </div>
                   </div>
                 ) : null}
