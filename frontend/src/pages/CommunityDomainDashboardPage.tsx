@@ -8,6 +8,7 @@ import {
   createCommunityDomainPackageQuote,
   decideCommunityDomainActionReview,
   getAccessToken,
+  getCommunityDomainActivityMap,
   getCommunityDomainCapacityPlan,
   getCommunityDomainDashboard,
   getCommunityDomainDelegationMap,
@@ -175,6 +176,15 @@ type RolloutPlanUnit = {
   ready_for_pilot?: boolean;
   member_count?: number | string | null;
   admin_count?: number | string | null;
+  next_step?: string | null;
+};
+
+type ActivityMapLane = {
+  lane_key?: string | null;
+  label?: string | null;
+  status?: string | null;
+  ready?: boolean;
+  count?: number | string | null;
   next_step?: string | null;
 };
 
@@ -688,6 +698,7 @@ export default function CommunityDomainDashboardPage() {
   const [governanceCoverage, setGovernanceCoverage] = useState<any | null>(null);
   const [delegationMap, setDelegationMap] = useState<any | null>(null);
   const [rolloutPlan, setRolloutPlan] = useState<any | null>(null);
+  const [activityMap, setActivityMap] = useState<any | null>(null);
   const [evidenceRecordReadiness, setEvidenceRecordReadiness] = useState<any | null>(null);
   const [evidenceReleaseReadiness, setEvidenceReleaseReadiness] = useState<any | null>(null);
   const [trustRelayReadiness, setTrustRelayReadiness] = useState<any | null>(null);
@@ -736,6 +747,7 @@ export default function CommunityDomainDashboardPage() {
       setGovernanceCoverage(null);
       setDelegationMap(null);
       setRolloutPlan(null);
+      setActivityMap(null);
       setEvidenceRecordReadiness(null);
       setEvidenceReleaseReadiness(null);
       setTrustRelayReadiness(null);
@@ -774,6 +786,7 @@ export default function CommunityDomainDashboardPage() {
     setGovernanceCoverage(null);
     setDelegationMap(null);
     setRolloutPlan(null);
+    setActivityMap(null);
     setEvidenceRecordReadiness(null);
     setEvidenceReleaseReadiness(null);
     setTrustRelayReadiness(null);
@@ -842,6 +855,12 @@ export default function CommunityDomainDashboardPage() {
         setRolloutPlan(rolloutPlanPayload?.rollout_plan || null);
       } catch {
         setRolloutPlan(null);
+      }
+      try {
+        const activityMapPayload = await getCommunityDomainActivityMap(communityDomainId);
+        setActivityMap(activityMapPayload?.activity_map || null);
+      } catch {
+        setActivityMap(null);
       }
       try {
         const readinessPayload = await getCommunityDomainModuleScopeReadiness(communityDomainId);
@@ -959,6 +978,7 @@ export default function CommunityDomainDashboardPage() {
       setGovernanceCoverage(null);
       setDelegationMap(null);
       setRolloutPlan(null);
+      setActivityMap(null);
       setEvidenceRecordReadiness(null);
       setEvidenceReleaseReadiness(null);
       setTrustRelayReadiness(null);
@@ -1066,6 +1086,16 @@ export default function CommunityDomainDashboardPage() {
   const rolloutUnitsNeedingAttention = visibleRolloutUnits.filter(
     (unit) => !unit.ready_for_pilot
   );
+  const activityMapSummary = activityMap?.summary || {};
+  const activityMapTemplate = activityMap?.template || {};
+  const visibleActivityMapLanes: ActivityMapLane[] = Array.isArray(activityMap?.lanes)
+    ? activityMap.lanes
+    : [];
+  const blockedActivityMapLanes = visibleActivityMapLanes.filter((lane) => !lane.ready);
+  const activityMapReadyTotal =
+    typeof activityMap?.ready_total === "number"
+      ? activityMap.ready_total
+      : visibleActivityMapLanes.filter((lane) => lane.ready).length;
   const subscriptionSummary = subscriptionLifecycle?.summary || {};
   const subscriptionPackage = subscriptionLifecycle?.package || {};
   const visibleSubscriptionLanes: SubscriptionLifecycleLane[] = Array.isArray(
@@ -3721,6 +3751,143 @@ export default function CommunityDomainDashboardPage() {
                       the Community Domain, publish a public page, create
                       marketplace activity, create a social Community, move
                       money, or expose private evidence.
+                    </div>
+                  </div>
+                ) : null}
+
+                {activeLane === "structure" ? (
+                  <div style={softCard()}>
+                    <div style={sectionLabel()}>Activity map</div>
+                    <div style={{ ...helperText(), marginTop: 7 }}>
+                      {activityMap
+                        ? `${cleanText(
+                            activityMap.primary_next_action?.label,
+                            "Review activity boundaries"
+                          )}. ${activityMapReadyTotal} of ${visibleActivityMapLanes.length} activity checks are ready.`
+                        : "GSN could not load the read-only activity map for this Community Domain."}
+                    </div>
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "repeat(auto-fit, minmax(118px, 1fr))",
+                        gap: 8,
+                        marginTop: 10,
+                      }}
+                    >
+                      {[
+                        ["Template lanes", activityMapSummary.activity_lane_count],
+                        ["Operating units", activityMapSummary.active_operating_unit_count],
+                        ["Members", activityMapSummary.active_member_count],
+                        [
+                          "Policies",
+                          activityMapSummary.active_policy_count == null
+                            ? "admin only"
+                            : countValue(activityMapSummary.active_policy_count),
+                        ],
+                      ].map(([label, value]) => (
+                        <div
+                          key={String(label)}
+                          style={{
+                            borderRadius: 14,
+                            background: "#F7FAFF",
+                            border: "1px solid rgba(9,27,46,0.08)",
+                            padding: 10,
+                            minWidth: 0,
+                          }}
+                        >
+                          <div style={{ color: "#617085", fontSize: 12, fontWeight: 850 }}>
+                            {label}
+                          </div>
+                          <div style={{ color: "#07172C", fontWeight: 950, marginTop: 4 }}>
+                            {typeof value === "number" ? countValue(value) : value}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 10 }}>
+                      <span style={statusBadge(activityMapTemplate.marketplace_role)}>
+                        Market: {compactStatus(activityMapTemplate.marketplace_role)}
+                      </span>
+                      <span style={statusBadge(activityMapSummary.paid_activity_status)}>
+                        Paid: {compactStatus(activityMapSummary.paid_activity_status)}
+                      </span>
+                      <span style={statusBadge(activityMapSummary.scheduled_activity_status)}>
+                        Scheduled: {compactStatus(activityMapSummary.scheduled_activity_status)}
+                      </span>
+                    </div>
+                    {blockedActivityMapLanes.length ? (
+                      <div style={{ ...helperText(), marginTop: 9 }}>
+                        Activity checks needing attention:{" "}
+                        <strong>
+                          {blockedActivityMapLanes
+                            .slice(0, 3)
+                            .map((lane) =>
+                              cleanText(lane.label, lane.lane_key || "activity check")
+                            )
+                            .join(", ")}
+                        </strong>
+                        .
+                      </div>
+                    ) : activityMap ? (
+                      <div style={{ ...helperText(), marginTop: 9 }}>
+                        No blocked activity lane is visible, but paid activity, scheduled
+                        activity, and Trust Passport writes are still not connected here.
+                      </div>
+                    ) : null}
+                    {visibleActivityMapLanes.length ? (
+                      <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
+                        {visibleActivityMapLanes.slice(0, 4).map((lane) => (
+                          <div
+                            key={cleanText(
+                              lane.lane_key,
+                              cleanText(lane.label, "activity")
+                            )}
+                            style={{
+                              display: "grid",
+                              gridTemplateColumns: "minmax(0, 1fr) auto",
+                              gap: 10,
+                              alignItems: "center",
+                              borderRadius: 14,
+                              border: "1px solid rgba(9,27,46,0.10)",
+                              background: "rgba(255,255,255,0.72)",
+                              padding: "10px 10px 10px 12px",
+                            }}
+                          >
+                            <span style={{ minWidth: 0 }}>
+                              <span style={{ display: "block", fontWeight: 950 }}>
+                                {cleanText(lane.label, "Activity check")}
+                              </span>
+                              <span
+                                style={{
+                                  display: "block",
+                                  color: "#4F647A",
+                                  fontSize: 12.5,
+                                  lineHeight: 1.45,
+                                  marginTop: 3,
+                                }}
+                              >
+                                {cleanText(
+                                  lane.next_step,
+                                  "Keep this as activity planning until a real activity flow exists."
+                                )}
+                              </span>
+                            </span>
+                            <span style={statusBadge(lane.status)}>
+                              {compactStatus(lane.status)}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : null}
+                    <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
+                      This activity map is read-only operating-activity planning. It does
+                      not create activities, events, meetings, classes, services,
+                      programmes, attendance, dues, levies, travel fees, contributions,
+                      tickets, subscriptions, payment instructions, invoices, receipts,
+                      bank matches, ledger entries, payouts, money movement, marketplace
+                      records, shops, listings, demand, Spotlight, notifications,
+                      TrustSlips, Trust Passport entries, public proof, or private member,
+                      review, evidence, or finance exposure.
                     </div>
                   </div>
                 ) : null}

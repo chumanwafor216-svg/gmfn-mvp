@@ -251,6 +251,13 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
+  /getCommunityDomainActivityMap[\s\S]*activityMap[\s\S]*activityMapSummary[\s\S]*activityMapTemplate[\s\S]*visibleActivityMapLanes[\s\S]*blockedActivityMapLanes[\s\S]*activeLane === "structure"[\s\S]*Activity map[\s\S]*primary_next_action[\s\S]*activity_lane_count[\s\S]*active_operating_unit_count[\s\S]*active_policy_count[\s\S]*paid_activity_status[\s\S]*scheduled_activity_status[\s\S]*does\s+not create activities, events, meetings, classes, services,\s+programmes, attendance, dues, levies, travel fees, contributions,\s+tickets, subscriptions, payment instructions, invoices, receipts,\s+bank matches, ledger entries, payouts, money movement, marketplace\s+records, shops, listings, demand, Spotlight, notifications,\s+TrustSlips, Trust Passport entries, public proof, or private member,\s+review, evidence, or finance exposure/,
+  "Community Domain dashboard Structure lane must show read-only activity map planning without implying activity/event/attendance/dues/payment/marketplace/notification/TrustSlip/Trust Passport/public proof/private-record writes.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
   /reviewStatusCounts[\s\S]*governanceReviewCounts[\s\S]*governancePendingCount[\s\S]*governanceApprovedCount[\s\S]*activeLane === "governance"[\s\S]*Governance review pulse[\s\S]*Ready to apply[\s\S]*Access requests[\s\S]*does not decide reviews, apply membership,\s+assign roles, expose private evidence, or bypass reviewer policy/,
   "Community Domain dashboard Governance lane must show a compact review pulse without deciding reviews, applying membership, or exposing private review evidence.",
   { frontend: true }
