@@ -139,9 +139,15 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /getCommunityDomainReviewerQueue[\s\S]*membershipAccessRequests[\s\S]*domain_member\.upsert[\s\S]*decideCommunityDomainActionReview[\s\S]*applyCommunityDomainActionReview[\s\S]*Access requests[\s\S]*Review people asking to enter this domain[\s\S]*Approve only[\s\S]*Approve \+ add member/,
+  /getCommunityDomainReviewerQueue[\s\S]*subject_user_email[\s\S]*reviewUserLabel[\s\S]*reviewRequesterLabel[\s\S]*membershipAccessRequests[\s\S]*domain_member\.upsert[\s\S]*decideCommunityDomainActionReview[\s\S]*applyCommunityDomainActionReview[\s\S]*Access requests[\s\S]*Review people asking to enter this domain[\s\S]*Approve only[\s\S]*Approve \+ add member/,
   "Community Domain dashboard owner/admin view must expose pending access requests through the existing review queue and keep approve separate from apply.",
   { frontend: true }
+);
+
+assertContains(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  /def _action_review_payload[\s\S]*requester = getattr\(row, "requester", None\)[\s\S]*subject = getattr\(row, "subject", None\)[\s\S]*requested_by_user_email[\s\S]*subject_user_email/,
+  "Backend action-review payload must include scoped requester and subject identity labels for owner/admin review queues."
 );
 
 assertContains(

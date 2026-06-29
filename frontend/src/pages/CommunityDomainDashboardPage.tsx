@@ -46,7 +46,11 @@ type ActionReviewItem = {
   id?: number | string;
   action_key?: string;
   requested_by_user_id?: number | string | null;
+  requested_by_user_email?: string | null;
+  requested_by_user_display_name?: string | null;
   subject_user_id?: number | string | null;
+  subject_user_email?: string | null;
+  subject_user_display_name?: string | null;
   target_type?: string | null;
   target_id?: string | number | null;
   status?: string | null;
@@ -215,8 +219,23 @@ function laneDisplayLabel(lane: any, fallback = "Lane"): string {
 
 function reviewUserLabel(review: ActionReviewItem): string {
   return cleanText(
-    review.payload?.user_id || review.subject_user_id || review.target_id,
+    review.subject_user_display_name ||
+      review.subject_user_email ||
+      review.requested_by_user_display_name ||
+      review.requested_by_user_email ||
+      review.payload?.user_id ||
+      review.subject_user_id ||
+      review.target_id,
     "member"
+  );
+}
+
+function reviewRequesterLabel(review: ActionReviewItem): string {
+  return cleanText(
+    review.requested_by_user_display_name ||
+      review.requested_by_user_email ||
+      review.requested_by_user_id,
+    "unknown"
   );
 }
 
@@ -1013,8 +1032,8 @@ export default function CommunityDomainDashboardPage() {
                               User {reviewUserLabel(review)} wants access.
                             </h3>
                             <div style={{ ...helperText(), fontSize: 13 }}>
-                              Requested by user{" "}
-                              <strong>{cleanText(review.requested_by_user_id, "unknown")}</strong>
+                              Requested by{" "}
+                              <strong>{reviewRequesterLabel(review)}</strong>
                               . Target role:{" "}
                               <strong style={{ textTransform: "capitalize" }}>
                                 {compactStatus(review.payload?.role || "member")}

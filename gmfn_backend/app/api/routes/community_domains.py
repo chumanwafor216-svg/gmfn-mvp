@@ -1348,6 +1348,8 @@ def _policy_payload(row: CommunityDomainPolicy) -> dict[str, Any]:
 def _action_review_payload(row: CommunityDomainActionReview) -> dict[str, Any]:
     node = getattr(row, "community_node", None)
     policy = getattr(row, "policy", None)
+    requester = getattr(row, "requester", None)
+    subject = getattr(row, "subject", None)
     decisions = sorted(
         getattr(row, "decisions", []) or [],
         key=lambda item: (item.created_at or datetime.min.replace(tzinfo=timezone.utc), int(item.id or 0)),
@@ -1366,7 +1368,11 @@ def _action_review_payload(row: CommunityDomainActionReview) -> dict[str, Any]:
         "policy_key": getattr(policy, "policy_key", None),
         "action_key": row.action_key,
         "requested_by_user_id": int(row.requested_by_user_id),
+        "requested_by_user_email": getattr(requester, "email", None),
+        "requested_by_user_display_name": getattr(requester, "display_name", None),
         "subject_user_id": int(row.subject_user_id) if row.subject_user_id is not None else None,
+        "subject_user_email": getattr(subject, "email", None),
+        "subject_user_display_name": getattr(subject, "display_name", None),
         "decided_by_user_id": int(row.decided_by_user_id) if row.decided_by_user_id is not None else None,
         "applied_by_user_id": int(row.applied_by_user_id) if row.applied_by_user_id is not None else None,
         "target_type": row.target_type,

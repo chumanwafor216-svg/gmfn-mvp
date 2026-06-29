@@ -18380,7 +18380,9 @@ def test_outsider_can_request_domain_membership_without_auto_membership(
         assert review["status"] == "pending"
         assert review["action_key"] == "domain_member.upsert"
         assert review["requested_by_user_id"] == requester.id
+        assert review["requested_by_user_email"] == "request-domain-membership@example.com"
         assert review["subject_user_id"] == requester.id
+        assert review["subject_user_email"] == "request-domain-membership@example.com"
         assert review["target_type"] == "domain_member"
         assert review["target_id"] == str(requester.id)
         assert review["payload"]["user_id"] == requester.id
@@ -18411,6 +18413,18 @@ def test_outsider_can_request_domain_membership_without_auto_membership(
             assert pending_review.applied_at is None
 
         app.dependency_overrides[get_current_user] = lambda: owner
+        queue = client.get(f"/community-domains/{domain_id}/action-reviews/reviewer-queue")
+        assert queue.status_code == 200, queue.text
+        queue_data = queue.json()
+        assert queue_data["total"] == 1
+        queue_review = queue_data["items"][0]
+        assert queue_review["id"] == review["id"]
+        assert (
+            queue_review["requested_by_user_email"]
+            == "request-domain-membership@example.com"
+        )
+        assert queue_review["subject_user_email"] == "request-domain-membership@example.com"
+
         decision = client.post(
             f"/community-domains/{domain_id}/action-reviews/{review['id']}/decision",
             json={
