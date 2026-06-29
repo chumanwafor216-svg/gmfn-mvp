@@ -844,7 +844,11 @@ def test_domain_dashboard_guidance_excludes_needs_changes_from_reviewer_queue(
     operating_map = operating_map_response.json()["operating_map"]
 
     assert dashboard["counts"]["open_reviews"] == 0
+    assert dashboard["status"]["billing_status"] == "active"
     assert dashboard["primary_next_action"]["action_key"] == "view_structure"
+    dashboard_lanes = {item["lane_key"]: item for item in dashboard["lanes"]}
+    assert dashboard_lanes["billing"]["status"] == "active"
+    assert dashboard_lanes["billing"]["count"] == 1
     assert readiness["counts"]["open_reviews"] == 0
     assert readiness["primary_next_action"]["action_key"] == "review_dashboard"
     assert operating_map["counts"]["open_reviews"] == 0

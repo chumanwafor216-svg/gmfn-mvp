@@ -313,6 +313,18 @@ assertContains(
 );
 
 assertContains(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  /def _community_domain_dashboard_payload[\s\S]*billing_status = "active" if status == "active" else "quote_required"[\s\S]*"lane_key": "billing"[\s\S]*"status": billing_status[\s\S]*"billing_status": billing_status/,
+  "Backend dashboard billing status must reflect an active Community Domain instead of always showing quote_required."
+);
+
+assertContains(
+  "gmfn_backend/tests/test_community_domains.py",
+  /test_domain_dashboard_guidance_excludes_needs_changes_from_reviewer_queue[\s\S]*domain\.status = "active"[\s\S]*dashboard\["status"\]\["billing_status"\] == "active"[\s\S]*dashboard_lanes\["billing"\]\["status"\] == "active"/,
+  "Backend tests must prove active Community Domain dashboards do not keep showing quote-required billing state."
+);
+
+assertContains(
   "gmfn_backend/tests/test_community_domains.py",
   /test_member_dashboard_hides_quote_and_outsider_is_rejected[\s\S]*\/dashboard[\s\S]*outsider_dashboard\.status_code == 403[\s\S]*"package_quote" not in dashboard/,
   "Backend tests must prove member dashboard hides quote details and rejects outsiders."

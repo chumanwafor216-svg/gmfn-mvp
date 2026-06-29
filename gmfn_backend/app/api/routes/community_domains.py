@@ -3704,6 +3704,7 @@ def _community_domain_dashboard_payload(
     )
 
     status = _clean_role(domain.status, "draft")
+    billing_status = "active" if status == "active" else "quote_required"
     if can_admin and status == "draft":
         primary_next_action = {
             "action_key": "package_quote",
@@ -3760,8 +3761,8 @@ def _community_domain_dashboard_payload(
         {
             "lane_key": "billing",
             "label": "Billing",
-            "status": "quote_required",
-            "count": 0,
+            "status": billing_status,
+            "count": 1 if billing_status == "active" else 0,
         },
     ]
 
@@ -3783,7 +3784,7 @@ def _community_domain_dashboard_payload(
             "verification_status": _clean_role(
                 domain.verification_status, "unverified"
             ),
-            "billing_status": "quote_required",
+            "billing_status": billing_status,
             "activation_status": "not_active" if status == "draft" else status,
         },
         "counts": {
