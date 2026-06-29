@@ -71,6 +71,25 @@ const FALLBACK_TEMPLATES: TemplateOption[] = [
   },
 ];
 
+const DOMAIN_ENGINE_POINTS = [
+  {
+    label: "Governance",
+    text: "Give an institution one owned home with clear roles and branches.",
+  },
+  {
+    label: "Trust record",
+    text: "Preserve member, shop, service, and evidence history under one domain.",
+  },
+  {
+    label: "Network reach",
+    text: "Let branches and groups carry trust across the wider GSN network.",
+  },
+  {
+    label: "Opportunity",
+    text: "Turn community-created value into visible, trusted opportunity.",
+  },
+];
+
 function pageShell(): React.CSSProperties {
   return {
     minHeight: "100svh",
@@ -524,6 +543,48 @@ export default function CommunityDomainPurchasePage() {
                 Check the institutional domain name first. A draft request is not a live
                 community, not a payment, and not a verified public record.
               </p>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: isCompact
+                    ? "1fr"
+                    : "repeat(4, minmax(0, 1fr))",
+                  gap: 10,
+                  width: "100%",
+                  maxWidth: 900,
+                  marginTop: 4,
+                }}
+              >
+                {DOMAIN_ENGINE_POINTS.map((point) => (
+                  <div
+                    key={point.label}
+                    style={{
+                      borderRadius: 16,
+                      border: "1px solid rgba(220,231,243,0.16)",
+                      background:
+                        "linear-gradient(180deg, rgba(255,255,255,0.095) 0%, rgba(255,255,255,0.045) 100%)",
+                      padding: "11px 12px",
+                      minHeight: 92,
+                      display: "grid",
+                      alignContent: "start",
+                      gap: 6,
+                    }}
+                  >
+                    <div style={{ ...labelText(), letterSpacing: 1.4 }}>
+                      {point.label}
+                    </div>
+                    <div
+                      style={{
+                        color: "rgba(255,255,255,0.82)",
+                        fontSize: 13,
+                        lineHeight: 1.45,
+                      }}
+                    >
+                      {point.text}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
             {isCompact ? null : <div />}
           </header>

@@ -165,6 +165,13 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainPurchasePage.tsx",
+  /DOMAIN_ENGINE_POINTS[\s\S]*Governance[\s\S]*one owned home with clear roles and branches[\s\S]*Trust record[\s\S]*Preserve member, shop, service, and evidence history under one domain[\s\S]*Network reach[\s\S]*carry trust across the wider GSN network[\s\S]*Opportunity[\s\S]*Turn community-created value into visible, trusted opportunity/,
+  "Community Domain purchase page must present the domain as an institutional engine for governance, trust records, network reach, and opportunity.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainPurchasePage.tsx",
   /PURCHASE_DRAFT_STORAGE_KEY[\s\S]*readPurchaseDraftSnapshot[\s\S]*savePurchaseDraftSnapshot[\s\S]*clearPurchaseDraftSnapshot[\s\S]*Your Community Domain draft details were restored after sign-in[\s\S]*Check the name again before creating the draft[\s\S]*if \(!isSignedIn\)[\s\S]*savePurchaseDraftSnapshot[\s\S]*\/login\?force=1[\s\S]*clearPurchaseDraftSnapshot/,
   "Community Domain purchase sign-in handoff must restore form details without preserving stale availability.",
   { frontend: true }
