@@ -56,7 +56,7 @@ const entryPages = [
 entryPages.forEach((file) => {
   assertVisibleStringsDoNotContain(
     file,
-    /\b(?:MVP|payload|endpoint|internal|module|configuration)\b/i,
+    /\b(?:MVP|payload|endpoint|internal|module|configuration|backend)\b/i,
     "Normal entry strings must not expose builder or backend language."
   );
 });
@@ -95,6 +95,12 @@ assertContains(
   "src/pages/CreateEntryPage.tsx",
   /buildActionBlockedMessage[\s\S]*?showError\(feedbackTargetForFinish[\s\S]*?buildActionSuccessMessage[\s\S]*?Opening First Circle now/,
   "Create Community must explain blockers and show a success handoff before the next route."
+);
+
+assertContains(
+  "src/pages/CreateEntryPage.tsx",
+  /secure sign-in step is no longer active[\s\S]*could not confirm the secure sign-in step/,
+  "Create Community restored-draft recovery must explain sign-in loss without exposing backend language."
 );
 
 assertContains(

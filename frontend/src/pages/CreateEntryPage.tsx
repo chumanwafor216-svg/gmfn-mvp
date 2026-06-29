@@ -1923,7 +1923,7 @@ export default function CreateEntryPage() {
 
         setResumeNotice(
           safeStr(out?.message) ||
-            "Your saved entry is still on this phone, but the secure backend session is no longer active. Start the phone step again."
+            "Your saved entry is still on this phone, but the secure sign-in step is no longer active. Start the phone step again."
         );
         setVerificationId(0);
         setOtpCode("");
@@ -1939,7 +1939,7 @@ export default function CreateEntryPage() {
       })
       .catch(() => {
         setResumeNotice(
-          "GSN restored your local entry details, but could not confirm the secure backend session. If the next step fails, start the phone step again."
+          "GSN restored your saved entry details, but could not confirm the secure sign-in step. If the next step fails, start the phone step again."
         );
       });
   }, [phone, restoredDraft?.verificationId, verificationId]);
