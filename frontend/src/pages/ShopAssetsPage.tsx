@@ -417,7 +417,9 @@ function shopAssetsRequestErrorMessage(error: any): string {
   if (
     lower.includes("failed to fetch") ||
     lower.includes("networkerror") ||
-    lower.includes("load failed")
+    lower.includes("load failed") ||
+    lower.includes("server did not finish") ||
+    lower.includes("check your connection")
   ) {
     return (
       "GSN could not reach the server from this browser. " +

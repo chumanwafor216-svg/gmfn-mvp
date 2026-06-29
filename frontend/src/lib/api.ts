@@ -5228,11 +5228,15 @@ export async function uploadMarketplaceImageFile(
     headers["X-Clan-Id"] = String(effectiveClanId);
   }
 
-  const res = await fetch(buildUrl("/marketplace/media/image"), {
-    method: "POST",
-    headers,
-    body: fd,
-  });
+  const res = await fetchWithTimeout(
+    buildUrl("/marketplace/media/image"),
+    {
+      method: "POST",
+      headers,
+      body: fd,
+    },
+    DEFAULT_MULTIPART_TIMEOUT_MS
+  );
 
   if (!res.ok) throw new HttpStatusError(res.status, await parseError(res));
   return readJsonOrTextSafe(res);
@@ -5266,11 +5270,15 @@ export async function uploadMarketplaceVideoFile(
     headers["X-Clan-Id"] = String(effectiveClanId);
   }
 
-  const res = await fetch(buildUrl("/marketplace/media/video"), {
-    method: "POST",
-    headers,
-    body: fd,
-  });
+  const res = await fetchWithTimeout(
+    buildUrl("/marketplace/media/video"),
+    {
+      method: "POST",
+      headers,
+      body: fd,
+    },
+    DEFAULT_MULTIPART_TIMEOUT_MS
+  );
 
   if (!res.ok) throw new HttpStatusError(res.status, await parseError(res));
   return readJsonOrTextSafe(res);
