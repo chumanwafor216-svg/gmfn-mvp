@@ -183,6 +183,13 @@ function moduleLabel(moduleKey: unknown): string {
   return MODULE_LABELS[key] || key.replace(/_/g, " ").replace(/\b\w/g, (x) => x.toUpperCase());
 }
 
+function laneDisplayLabel(lane: any, fallback = "Lane"): string {
+  const key = cleanText(lane?.lane_key).toLowerCase();
+  const label = cleanText(lane?.label, fallback);
+  if (key === "modules" || label.toLowerCase() === "modules") return "Services";
+  return label;
+}
+
 export default function CommunityDomainDashboardPage() {
   const params = useParams();
   const communityDomainId = cleanText(params.communityDomainId || params.id);
@@ -253,7 +260,7 @@ export default function CommunityDomainDashboardPage() {
   const primaryActionLaneKey = laneForAction(dashboard?.primary_next_action?.action_key);
   const primaryActionLane =
     lanes.find((lane) => lane.lane_key === primaryActionLaneKey) || selectedLane;
-  const primaryActionLaneLabel = cleanText(primaryActionLane?.label, "work");
+  const primaryActionLaneLabel = laneDisplayLabel(primaryActionLane, "work");
   const billingIsActive =
     cleanText(status.billing_status || selectedLane?.status).toLowerCase() === "active";
   const packageReviewActionLabel = isAdmin
@@ -658,7 +665,7 @@ export default function CommunityDomainDashboardPage() {
                     >
                       <span style={{ minWidth: 0 }}>
                         <span style={{ display: "block", fontWeight: 950, fontSize: 14 }}>
-                          {cleanText(lane.label, "Lane")}
+                          {laneDisplayLabel(lane, "Lane")}
                         </span>
                         <span
                           style={{
@@ -683,7 +690,7 @@ export default function CommunityDomainDashboardPage() {
               <div style={{ display: "grid", gap: 12 }}>
                 <div style={sectionLabel()}>Opened lane</div>
                 <h2 style={{ margin: 0, fontSize: 26, lineHeight: 1.1 }}>
-                  {cleanText(selectedLane?.label, "Community Domain setup")}
+                  {laneDisplayLabel(selectedLane, "Community Domain setup")}
                 </h2>
                 <div style={helperText()}>
                   Current state:{" "}
