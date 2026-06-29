@@ -1819,6 +1819,320 @@ def _community_domain_service_settings_payload(
     }
 
 
+MODULE_SCOPE_NODE_MODULES = {
+    "shops",
+    "marketplace",
+    "spotlight",
+    "vault",
+    "verification",
+    "events",
+    "demand",
+    "notifications",
+    "trust_centre",
+}
+MODULE_SCOPE_ACTION_MARKERS: dict[str, tuple[str, ...]] = {
+    "governance": ("domain.settings", "policy", "governance", "action_review"),
+    "members": ("member.", "domain_member", "node_member", "membership"),
+    "departments": ("node.", "structure", "department", "branch"),
+    "shops": ("shop", "vendor"),
+    "marketplace": ("marketplace", "listing", "demand", "vendor"),
+    "spotlight": ("spotlight", "content", "publish"),
+    "vault": ("vault", "document"),
+    "verification": ("verification", "evidence", "credential"),
+    "events": ("event", "meeting", "attendance", "notice"),
+    "demand": ("demand", "request"),
+    "notifications": ("notice", "notification", "announcement"),
+    "analytics": ("analytics", "report", "dashboard"),
+    "trust_centre": ("trust", "evidence", "relay"),
+}
+
+
+def _community_domain_module_scope_readiness_payload(
+    db: Session,
+    *,
+    domain: CommunityDomain,
+    current_user: User,
+    can_admin: bool,
+) -> dict[str, Any]:
+    domain_id = int(domain.id)
+    template = _community_domain_template_for_key(
+        domain.template_key or domain.domain_type
+    )
+    enabled_modules = set(template["default_modules"])
+    ordered_module_keys = list(
+        dict.fromkeys([*template["default_modules"], *COMMUNITY_DOMAIN_MODULE_PRESETS.keys()])
+    )
+    root_node = _find_root_node(db, community_domain_id=domain_id)
+
+    nodes = (
+        db.query(CommunityNode)
+        .filter(CommunityNode.community_domain_id == domain_id)
+        .all()
+    )
+    active_nodes = [
+        node for node in nodes if _clean_role(node.status, "active") == "active"
+    ]
+    active_non_root_nodes = [
+        node for node in active_nodes if node.parent_node_id is not None
+    ]
+    active_node_member_count = (
+        db.query(CommunityNodeMembership)
+        .filter(CommunityNodeMembership.community_domain_id == domain_id)
+        .filter(CommunityNodeMembership.status == "active")
+        .count()
+    )
+    active_policy_rows = (
+        db.query(CommunityDomainPolicy)
+        .filter(CommunityDomainPolicy.community_domain_id == domain_id)
+        .filter(CommunityDomainPolicy.status == "active")
+        .all()
+    )
+    review_rows = (
+        db.query(CommunityDomainActionReview)
+        .filter(CommunityDomainActionReview.community_domain_id == domain_id)
+        .all()
+    )
+    open_review_rows = [
+        row
+        for row in review_rows
+        if _clean_role(row.status, "pending")
+        in {"pending", "pending_review", "needs_changes", "approved"}
+    ]
+
+    def route_hint(suffix: str, *, requires_admin: bool = False) -> Optional[str]:
+        if requires_admin and not can_admin:
+            return None
+        return f"/community-domains/{domain_id}{suffix}"
+
+    def admin_count(value: int) -> Optional[int]:
+        return int(value) if can_admin else None
+
+    def action_matches(module_key: str, action_key: Optional[str]) -> bool:
+        action = _clean_str(action_key).lower()
+        if not action:
+            return False
+        markers = MODULE_SCOPE_ACTION_MARKERS.get(module_key, (module_key,))
+        return any(marker in action for marker in markers)
+
+    policy_counts: dict[str, int] = {}
+    node_policy_counts: dict[str, int] = {}
+    review_counts: dict[str, int] = {}
+    open_review_counts: dict[str, int] = {}
+    for module_key in ordered_module_keys:
+        policy_counts[module_key] = sum(
+            1 for row in active_policy_rows if action_matches(module_key, row.action_key)
+        )
+        node_policy_counts[module_key] = sum(
+            1
+            for row in active_policy_rows
+            if row.community_node_id is not None
+            and action_matches(module_key, row.action_key)
+        )
+        review_counts[module_key] = sum(
+            1 for row in review_rows if action_matches(module_key, row.action_key)
+        )
+        open_review_counts[module_key] = sum(
+            1 for row in open_review_rows if action_matches(module_key, row.action_key)
+        )
+
+    status_counts: dict[str, int] = {}
+    module_items = []
+    for module_key in ordered_module_keys:
+        preset = COMMUNITY_DOMAIN_MODULE_PRESETS.get(
+            module_key,
+            {
+                "label": module_key.replace("_", " ").title(),
+                "summary": "Template-defined Community Domain module.",
+            },
+        )
+        enabled = module_key in enabled_modules
+        node_scoped = module_key in MODULE_SCOPE_NODE_MODULES
+        policy_count = policy_counts.get(module_key, 0)
+        node_policy_count = node_policy_counts.get(module_key, 0)
+        review_count = review_counts.get(module_key, 0)
+        open_review_count = open_review_counts.get(module_key, 0)
+
+        if not enabled:
+            module_scope_status = "optional_module_not_enabled"
+            next_step = "Keep this optional module disabled until the institution actually needs it."
+            ready = False
+            admin_route = "/service-settings"
+        elif node_scoped and not active_non_root_nodes:
+            module_scope_status = "needs_operating_units"
+            next_step = "Model branches, departments, lines, or units before node-scoped modules rely on them."
+            ready = False
+            admin_route = "/rollout-tree"
+        elif node_scoped and int(active_node_member_count) == 0:
+            module_scope_status = "needs_node_participants"
+            next_step = "Place members into operating units before this module can be safely scoped locally."
+            ready = False
+            admin_route = "/node-participation-map"
+        elif policy_count == 0 and module_key in {"governance", "members"}:
+            module_scope_status = "needs_domain_policy"
+            next_step = "Define domain-level policy before this core module carries institutional decisions."
+            ready = False
+            admin_route = "/governance-coverage"
+        elif node_scoped and policy_count == 0:
+            module_scope_status = "needs_scope_policy"
+            next_step = "Define policy for who may use this module at domain, node, or future group scope."
+            ready = False
+            admin_route = "/governance-coverage"
+        elif node_scoped and review_count == 0:
+            module_scope_status = "needs_review_signal"
+            next_step = "Run at least one real review signal before treating this module as ready for scoped operation."
+            ready = False
+            admin_route = "/action-reviews"
+        else:
+            module_scope_status = "ready_for_future_module_scope"
+            next_step = "Keep this as planning readiness until a real CommunityDomainModuleScope table exists."
+            ready = True
+            admin_route = "/service-settings"
+
+        status_counts[module_scope_status] = status_counts.get(module_scope_status, 0) + 1
+        module_items.append(
+            {
+                "module_key": module_key,
+                "label": preset["label"],
+                "summary": preset["summary"],
+                "enabled_by_template": bool(enabled),
+                "module_scope_status": module_scope_status,
+                "ready_for_future_module_scope": bool(ready),
+                "domain_scope_status": (
+                    "template_enabled"
+                    if enabled
+                    else "optional_module_not_enabled"
+                ),
+                "node_scope_status": (
+                    module_scope_status
+                    if node_scoped or module_scope_status == "optional_module_not_enabled"
+                    else "domain_level_module"
+                ),
+                "activity_group_scope_status": (
+                    "future_activity_group_scope_not_connected"
+                    if node_scoped and enabled
+                    else "not_applicable_in_this_slice"
+                ),
+                "active_node_count": len(active_non_root_nodes),
+                "active_node_member_count": admin_count(int(active_node_member_count)),
+                "active_policy_count": admin_count(policy_count),
+                "active_node_policy_count": admin_count(node_policy_count),
+                "review_record_count": admin_count(review_count),
+                "open_review_count": admin_count(open_review_count),
+                "module_scope_record_status": "not_created_in_this_slice",
+                "settings_status": "not_persisted_in_this_slice",
+                "billing_status": "not_activated_in_this_slice",
+                "permission_status": "not_granted_in_this_slice",
+                "route_hint": route_hint(admin_route, requires_admin=True),
+                "requires_admin": True,
+                "next_step": next_step,
+                "boundary": (
+                    "Read-only module-scope readiness item. This does not create "
+                    "CommunityDomainModuleScope records, persist service settings, "
+                    "enable modules, activate billing, grant permissions, create "
+                    "shops, create vault links, publish Spotlight, create events, "
+                    "send notifications, create TrustSlips, write Trust Passport "
+                    "entries, or expose private member activity."
+                ),
+            }
+        )
+
+    if not can_admin:
+        primary_next_action = {
+            "action_key": "ask_domain_admin_to_review_module_scope",
+            "label": "Ask a Community Domain admin to review module scope readiness",
+            "route_hint": None,
+            "requires_admin": True,
+        }
+    elif status_counts.get("needs_operating_units", 0):
+        primary_next_action = {
+            "action_key": "model_operating_units_before_module_scope",
+            "label": "Model operating units before module scope",
+            "route_hint": route_hint("/rollout-tree", requires_admin=True),
+            "requires_admin": True,
+        }
+    elif status_counts.get("needs_node_participants", 0):
+        primary_next_action = {
+            "action_key": "place_members_before_module_scope",
+            "label": "Place members before node-scoped modules",
+            "route_hint": route_hint("/node-participation-map", requires_admin=True),
+            "requires_admin": True,
+        }
+    elif status_counts.get("needs_domain_policy", 0) or status_counts.get(
+        "needs_scope_policy", 0
+    ):
+        primary_next_action = {
+            "action_key": "define_module_scope_policy",
+            "label": "Define policy before module scope",
+            "route_hint": route_hint("/governance-coverage", requires_admin=True),
+            "requires_admin": True,
+        }
+    elif status_counts.get("needs_review_signal", 0):
+        primary_next_action = {
+            "action_key": "review_module_scope_signals",
+            "label": "Review module scope action signals",
+            "route_hint": route_hint("/action-reviews", requires_admin=True),
+            "requires_admin": True,
+        }
+    else:
+        primary_next_action = {
+            "action_key": "review_module_scope_boundaries",
+            "label": "Review module scope boundaries",
+            "route_hint": route_hint("/service-settings", requires_admin=True),
+            "requires_admin": True,
+        }
+
+    return {
+        "community_domain": _domain_payload(domain, root_node=root_node),
+        "viewer": {
+            "user_id": int(current_user.id),
+            "can_admin": bool(can_admin),
+        },
+        "template": {
+            "template_key": template["template_key"],
+            "domain_type": template["domain_type"],
+            "label": template["label"],
+            "default_modules": list(template["default_modules"]),
+        },
+        "summary": {
+            "module_scope_engine_status": "not_connected_in_this_slice",
+            "module_scope_records_created": 0,
+            "service_settings_persisted": 0,
+            "modules_enabled": 0,
+            "billing_activations": 0,
+            "permissions_granted": 0,
+            "notifications_sent": 0,
+            "trust_records_created": 0,
+            "template_module_count": len(enabled_modules),
+            "catalog_module_count": len(ordered_module_keys),
+            "active_node_count": len(active_non_root_nodes),
+            "active_node_member_count": admin_count(int(active_node_member_count)),
+            "active_policy_count": admin_count(len(active_policy_rows)),
+            "review_record_count": admin_count(len(review_rows)),
+            "open_review_count": admin_count(len(open_review_rows)),
+        },
+        "status_counts": status_counts,
+        "modules": module_items,
+        "ready_total": sum(1 for item in module_items if item["ready_for_future_module_scope"]),
+        "blocked_modules": [
+            item["module_key"]
+            for item in module_items
+            if not item["ready_for_future_module_scope"]
+        ],
+        "primary_next_action": primary_next_action,
+        "editable": False,
+        "boundary": (
+            "Community Domain module-scope readiness is read-only module scope "
+            "planning. This endpoint does not create CommunityDomainModuleScope "
+            "records, persist settings, enable or disable modules, activate "
+            "billing, grant permissions, create shops, create marketplace "
+            "records, create demand records, publish Spotlight, create vault "
+            "links, upload files, create meetings or events, send notifications, "
+            "create activity groups, issue TrustSlips, write Trust Passport "
+            "entries, expose private member activity, or move money."
+        ),
+    }
+
+
 def _community_domain_economic_participation_payload(
     db: Session,
     *,
@@ -16823,6 +17137,27 @@ def list_community_domain_service_settings(
         "community_domain_id": int(domain.id),
         "service_settings": _community_domain_service_settings_payload(
             domain,
+            can_admin=can_admin,
+        ),
+    }
+
+
+@router.get("/{community_domain_id}/module-scope-readiness", response_model=dict[str, Any])
+def get_community_domain_module_scope_readiness(
+    community_domain_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_member_scope(db, domain=domain, current_user=current_user)
+    can_admin = _has_domain_admin_scope(db, domain=domain, current_user=current_user)
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "module_scope_readiness": _community_domain_module_scope_readiness_payload(
+            db,
+            domain=domain,
+            current_user=current_user,
             can_admin=can_admin,
         ),
     }

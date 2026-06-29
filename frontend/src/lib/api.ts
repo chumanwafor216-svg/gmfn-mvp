@@ -2645,6 +2645,15 @@ export async function listCommunityDomainServiceSettings(
   return httpJson(communityDomainPath(communityDomainId, "/service-settings"), "GET");
 }
 
+export async function getCommunityDomainModuleScopeReadiness(
+  communityDomainId: number | string
+): Promise<any> {
+  return httpJson(
+    communityDomainPath(communityDomainId, "/module-scope-readiness"),
+    "GET"
+  );
+}
+
 export async function getCommunityDomainEconomicParticipation(
   communityDomainId: number | string
 ): Promise<any> {

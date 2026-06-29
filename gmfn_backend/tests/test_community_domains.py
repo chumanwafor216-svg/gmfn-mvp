@@ -11093,6 +11093,267 @@ def test_member_can_read_service_settings_but_outsider_is_rejected(
     assert "private records" in settings["boundary"]
 
 
+def test_module_scope_readiness_projects_template_modules_without_writes(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    trader = _seed_user(2, "module-scope-trader@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Module Scope Market Domain",
+                "display_name": "Module Scope Market Domain",
+                "domain_type": "market_cooperative",
+                "template_key": "market_cooperative",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain = created.json()["community_domain"]
+        domain_id = domain["id"]
+        root_node_id = domain["root_node"]["id"]
+
+        added = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": trader.id, "role": "member"},
+        )
+        assert added.status_code == 201, added.text
+
+        line = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Electronics Line",
+                "parent_node_id": root_node_id,
+                "node_type": "line",
+                "node_kind": "market_line",
+                "visibility_policy": "members",
+            },
+        )
+        assert line.status_code == 201, line.text
+        line_id = line.json()["node"]["id"]
+
+        placed = client.post(
+            f"/community-domains/{domain_id}/nodes/{line_id}/members",
+            json={"user_id": trader.id, "role": "line_admin"},
+        )
+        assert placed.status_code == 201, placed.text
+
+        for policy_key, action_key, node_id in (
+            ("module-governance-settings", "domain.settings_change", None),
+            ("module-shop-visibility", "shop.visibility_grant", line_id),
+            ("module-spotlight-publish", "spotlight.publish", line_id),
+        ):
+            policy = client.post(
+                f"/community-domains/{domain_id}/policies",
+                json={
+                    "policy_key": policy_key,
+                    "action_key": action_key,
+                    "community_node_id": node_id,
+                    "scope_type": "node" if node_id else "domain",
+                    "review_mode": "node_admin_review" if node_id else "domain_admin_review",
+                    "required_role": "line_admin" if node_id else "domain_admin",
+                },
+            )
+            assert policy.status_code == 201, policy.text
+
+        review = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "shop.visibility_grant",
+                "community_node_id": line_id,
+                "request_note": "Review shop module scope readiness.",
+                "payload": {"module_key": "shops"},
+            },
+        )
+        assert review.status_code == 201, review.text
+
+        with SessionLocal() as db:
+            before_counts = {
+                "domains": db.query(CommunityDomain).count(),
+                "nodes": db.query(CommunityNode).count(),
+                "domain_members": db.query(CommunityDomainMembership).count(),
+                "node_members": db.query(CommunityNodeMembership).count(),
+                "policies": db.query(CommunityDomainPolicy).count(),
+                "reviews": db.query(CommunityDomainActionReview).count(),
+                "evidence": db.query(CommunityDomainActionReviewEvidence).count(),
+                "clans": db.query(Clan).count(),
+                "trust_slips": db.query(TrustSlip).count(),
+            }
+
+        response = client.get(
+            f"/community-domains/{domain_id}/module-scope-readiness"
+        )
+        assert response.status_code == 200, response.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    payload = response.json()
+    assert payload["ok"] is True
+    readiness = payload["module_scope_readiness"]
+    assert readiness["editable"] is False
+    assert readiness["viewer"] == {"user_id": owner.id, "can_admin": True}
+    assert readiness["template"]["template_key"] == "market_cooperative"
+    assert readiness["summary"] == {
+        "module_scope_engine_status": "not_connected_in_this_slice",
+        "module_scope_records_created": 0,
+        "service_settings_persisted": 0,
+        "modules_enabled": 0,
+        "billing_activations": 0,
+        "permissions_granted": 0,
+        "notifications_sent": 0,
+        "trust_records_created": 0,
+        "template_module_count": 7,
+        "catalog_module_count": 14,
+        "active_node_count": 1,
+        "active_node_member_count": 1,
+        "active_policy_count": 3,
+        "review_record_count": 1,
+        "open_review_count": 1,
+    }
+    assert readiness["status_counts"] == {
+        "ready_for_future_module_scope": 3,
+        "needs_domain_policy": 1,
+        "optional_module_not_enabled": 7,
+        "needs_review_signal": 1,
+        "needs_scope_policy": 2,
+    }
+    assert readiness["primary_next_action"] == {
+        "action_key": "define_module_scope_policy",
+        "label": "Define policy before module scope",
+        "route_hint": f"/community-domains/{domain_id}/governance-coverage",
+        "requires_admin": True,
+    }
+
+    modules = {item["module_key"]: item for item in readiness["modules"]}
+    assert modules["governance"]["module_scope_status"] == (
+        "ready_for_future_module_scope"
+    )
+    assert modules["members"]["module_scope_status"] == "needs_domain_policy"
+    assert modules["shops"]["module_scope_status"] == (
+        "ready_for_future_module_scope"
+    )
+    assert modules["shops"]["active_policy_count"] == 1
+    assert modules["shops"]["active_node_policy_count"] == 1
+    assert modules["shops"]["review_record_count"] == 1
+    assert modules["shops"]["activity_group_scope_status"] == (
+        "future_activity_group_scope_not_connected"
+    )
+    assert modules["spotlight"]["module_scope_status"] == "needs_review_signal"
+    assert modules["spotlight"]["active_policy_count"] == 1
+    assert modules["spotlight"]["review_record_count"] == 0
+    assert modules["vault"]["module_scope_status"] == "needs_scope_policy"
+    assert modules["verification"]["module_scope_status"] == "needs_scope_policy"
+    assert modules["analytics"]["module_scope_status"] == (
+        "ready_for_future_module_scope"
+    )
+    assert modules["marketplace"]["module_scope_status"] == (
+        "optional_module_not_enabled"
+    )
+    assert modules["marketplace"]["enabled_by_template"] is False
+    assert modules["marketplace"]["module_scope_record_status"] == (
+        "not_created_in_this_slice"
+    )
+    assert modules["marketplace"]["settings_status"] == "not_persisted_in_this_slice"
+    assert modules["marketplace"]["billing_status"] == "not_activated_in_this_slice"
+    assert modules["marketplace"]["permission_status"] == "not_granted_in_this_slice"
+    assert "CommunityDomainModuleScope" in modules["shops"]["boundary"]
+    assert "Trust Passport entries" in modules["shops"]["boundary"]
+    assert "read-only module scope planning" in readiness["boundary"]
+    assert "does not create CommunityDomainModuleScope records" in readiness["boundary"]
+    assert "persist settings" in readiness["boundary"]
+    assert "enable or disable modules" in readiness["boundary"]
+    assert "grant permissions" in readiness["boundary"]
+    assert "move money" in readiness["boundary"]
+
+    with SessionLocal() as db:
+        after_counts = {
+            "domains": db.query(CommunityDomain).count(),
+            "nodes": db.query(CommunityNode).count(),
+            "domain_members": db.query(CommunityDomainMembership).count(),
+            "node_members": db.query(CommunityNodeMembership).count(),
+            "policies": db.query(CommunityDomainPolicy).count(),
+            "reviews": db.query(CommunityDomainActionReview).count(),
+            "evidence": db.query(CommunityDomainActionReviewEvidence).count(),
+            "clans": db.query(Clan).count(),
+            "trust_slips": db.query(TrustSlip).count(),
+        }
+    assert after_counts == before_counts
+
+
+def test_member_can_read_module_scope_readiness_but_admin_counts_are_hidden(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    member = _seed_user(2, "module-scope-member@example.com")
+    outsider = _seed_user(3, "module-scope-outsider@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Module Scope Member Church",
+                "display_name": "Module Scope Member Church",
+                "domain_type": "religious_body",
+                "template_key": "church_religious_body",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain_id = created.json()["community_domain"]["id"]
+
+        added = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": member.id, "role": "member"},
+        )
+        assert added.status_code == 201, added.text
+
+        app.dependency_overrides[get_current_user] = lambda: member
+        member_readiness = client.get(
+            f"/community-domains/{domain_id}/module-scope-readiness"
+        )
+        assert member_readiness.status_code == 200, member_readiness.text
+
+        app.dependency_overrides[get_current_user] = lambda: outsider
+        outsider_readiness = client.get(
+            f"/community-domains/{domain_id}/module-scope-readiness"
+        )
+        assert outsider_readiness.status_code == 403, outsider_readiness.text
+        assert "active Community Domain members" in outsider_readiness.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    readiness = member_readiness.json()["module_scope_readiness"]
+    assert readiness["viewer"] == {"user_id": member.id, "can_admin": False}
+    assert readiness["summary"]["module_scope_engine_status"] == (
+        "not_connected_in_this_slice"
+    )
+    assert readiness["summary"]["active_node_member_count"] is None
+    assert readiness["summary"]["active_policy_count"] is None
+    assert readiness["summary"]["review_record_count"] is None
+    assert readiness["summary"]["open_review_count"] is None
+    assert readiness["primary_next_action"] == {
+        "action_key": "ask_domain_admin_to_review_module_scope",
+        "label": "Ask a Community Domain admin to review module scope readiness",
+        "route_hint": None,
+        "requires_admin": True,
+    }
+
+    modules = {item["module_key"]: item for item in readiness["modules"]}
+    assert modules["governance"]["active_policy_count"] is None
+    assert modules["governance"]["review_record_count"] is None
+    assert modules["governance"]["route_hint"] is None
+    assert modules["spotlight"]["module_scope_status"] == "needs_operating_units"
+    assert modules["spotlight"]["active_node_member_count"] is None
+    assert modules["spotlight"]["active_policy_count"] is None
+    assert modules["spotlight"]["route_hint"] is None
+    assert modules["marketplace"]["module_scope_status"] == (
+        "optional_module_not_enabled"
+    )
+    assert "private member activity" in readiness["boundary"]
+
+
 def test_economic_participation_projects_market_fit_without_marketplace_writes(
     client: TestClient,
 ):
