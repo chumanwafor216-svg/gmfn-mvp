@@ -125,6 +125,13 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
+  /getCommunityDomainCapacityPlan[\s\S]*capacityPlan[\s\S]*visibleCapacityLanes[\s\S]*attentionCapacityLanes[\s\S]*activeLane === "billing"[\s\S]*Capacity plan[\s\S]*package_name[\s\S]*limits_source[\s\S]*primary_next_action[\s\S]*Capacity attention[\s\S]*Used:[\s\S]*Limit:[\s\S]*Remaining:[\s\S]*does not increase limits, create nodes,\s+add members, assign roles, create shops, meter live shop\s+usage, meter storage usage, change pricing, activate\s+billing, verify authority, move money, publish a public\s+page, or expose private evidence/,
+  "Community Domain dashboard Billing lane must show read-only package capacity without implying limit increases, writes, billing activation, pricing changes, money movement, publishing, or private evidence access.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
   /Owner[\s\S]*cleanText\(domain\.owner_user_id, "not recorded"\)[\s\S]*Domain status[\s\S]*Verification[\s\S]*Billing[\s\S]*Activation[\s\S]*Renewal[\s\S]*compactStatus\(renewalState\)[\s\S]*Community Domain engine[\s\S]*One institutional home for structure, rules, services, and trust[\s\S]*Structure[\s\S]*countValue\(counts\.nodes\)[\s\S]*Governance[\s\S]*countValue\(counts\.active_policies\)[\s\S]*Services[\s\S]*countValue\(moduleKeys\.length\)[\s\S]*Trust relay[\s\S]*compactStatus\(status\.verification_status\)[\s\S]*verification still depends on current status/,
   "Community Domain dashboard must show owner, domain, verification, billing, activation, and renewal facts, then present the existing domain as an operating engine without overclaiming verification.",
   { frontend: true }

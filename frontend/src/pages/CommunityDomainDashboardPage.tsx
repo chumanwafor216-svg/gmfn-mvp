@@ -8,6 +8,7 @@ import {
   createCommunityDomainPackageQuote,
   decideCommunityDomainActionReview,
   getAccessToken,
+  getCommunityDomainCapacityPlan,
   getCommunityDomainDashboard,
   getCommunityDomainMemberPlacementSummary,
   getCommunityDomainModuleScopeReadiness,
@@ -113,6 +114,18 @@ type SetupPlanStep = {
   route_hint?: string | null;
   admin_action_route_hint?: string | null;
   requires_admin?: boolean;
+};
+
+type CapacityPlanLane = {
+  lane_key?: string | null;
+  label?: string | null;
+  metered?: boolean;
+  used?: number | string | null;
+  limit?: number | string | null;
+  remaining?: number | string | null;
+  usage_percent?: number | string | null;
+  status?: string | null;
+  summary?: string | null;
 };
 
 const MODULE_LABELS: Record<string, string> = {
@@ -505,6 +518,7 @@ export default function CommunityDomainDashboardPage() {
   const [moduleScopeReadiness, setModuleScopeReadiness] = useState<any | null>(null);
   const [setupReadiness, setSetupReadiness] = useState<any | null>(null);
   const [setupPlan, setSetupPlan] = useState<any | null>(null);
+  const [capacityPlan, setCapacityPlan] = useState<any | null>(null);
   const [quote, setQuote] = useState<any | null>(null);
   const [activeLane, setActiveLane] = useState("structure");
   const [loading, setLoading] = useState(true);
@@ -540,6 +554,7 @@ export default function CommunityDomainDashboardPage() {
       setModuleScopeReadiness(null);
       setSetupReadiness(null);
       setSetupPlan(null);
+      setCapacityPlan(null);
       try {
         const payload = await listMyCommunityDomains();
         setDomainItems(Array.isArray(payload?.items) ? payload.items : []);
@@ -565,6 +580,7 @@ export default function CommunityDomainDashboardPage() {
     setModuleScopeReadiness(null);
     setSetupReadiness(null);
     setSetupPlan(null);
+    setCapacityPlan(null);
     try {
       const payload = await getCommunityDomainDashboard(communityDomainId);
       const nextDashboard = (payload?.dashboard || null) as DashboardPayload | null;
@@ -588,6 +604,12 @@ export default function CommunityDomainDashboardPage() {
         setSetupPlan(setupPlanPayload?.setup_plan || null);
       } catch {
         setSetupPlan(null);
+      }
+      try {
+        const capacityPlanPayload = await getCommunityDomainCapacityPlan(communityDomainId);
+        setCapacityPlan(capacityPlanPayload?.capacity_plan || null);
+      } catch {
+        setCapacityPlan(null);
       }
       try {
         const readinessPayload = await getCommunityDomainModuleScopeReadiness(communityDomainId);
@@ -631,6 +653,7 @@ export default function CommunityDomainDashboardPage() {
       setModuleScopeReadiness(null);
       setSetupReadiness(null);
       setSetupPlan(null);
+      setCapacityPlan(null);
       await loadOwnMembershipRequests();
       setMessage(
         err?.message ||
@@ -692,6 +715,13 @@ export default function CommunityDomainDashboardPage() {
     ? setupPlan.steps
     : [];
   const openSetupPlanSteps = visibleSetupPlanSteps.filter((step) => !step.completed);
+  const visibleCapacityLanes: CapacityPlanLane[] = Array.isArray(capacityPlan?.lanes)
+    ? capacityPlan.lanes
+    : [];
+  const attentionCapacityLanes = visibleCapacityLanes.filter((lane) => {
+    const statusText = cleanText(lane.status).toLowerCase();
+    return statusText.includes("near") || statusText.includes("over");
+  });
   const setupPrimaryAction = setupReadiness?.primary_next_action || dashboard?.primary_next_action;
   const setupPrimaryActionLaneKey = laneForAction(setupPrimaryAction?.action_key);
   const dashboardPrimaryActionLaneKey = laneForAction(dashboard?.primary_next_action?.action_key);
@@ -1741,6 +1771,93 @@ export default function CommunityDomainDashboardPage() {
                     >
                       {packageReviewActionLabel}
                     </StableButton>
+                  </div>
+                ) : null}
+
+                {activeLane === "billing" ? (
+                  <div style={softCard()}>
+                    <div style={sectionLabel()}>Capacity plan</div>
+                    <div style={{ ...helperText(), marginTop: 7 }}>
+                      {capacityPlan
+                        ? `${cleanText(
+                            capacityPlan.package_name,
+                            "Community Domain package"
+                          )} uses ${cleanText(
+                            capacityPlan.limits_source,
+                            "recorded package allowance"
+                          )}. ${cleanText(
+                            capacityPlan.primary_next_action?.label,
+                            "Review setup before relying on capacity."
+                          )}.`
+                        : "GSN could not load the read-only capacity plan for this view."}
+                    </div>
+                    {attentionCapacityLanes.length ? (
+                      <div style={{ ...helperText(), marginTop: 7, fontSize: 13 }}>
+                        Capacity attention:{" "}
+                        <strong>
+                          {attentionCapacityLanes
+                            .map((lane) => cleanText(lane.label, lane.lane_key || "capacity"))
+                            .join(", ")}
+                        </strong>
+                        .
+                      </div>
+                    ) : capacityPlan ? (
+                      <div style={{ ...helperText(), marginTop: 7, fontSize: 13 }}>
+                        No near-limit or over-limit package lane is visible.
+                      </div>
+                    ) : null}
+                    {visibleCapacityLanes.length ? (
+                      <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
+                        {visibleCapacityLanes.slice(0, 5).map((lane) => {
+                          const used = lane.metered ? countValue(lane.used) : "not metered";
+                          const limit = lane.limit == null ? "not set" : countValue(lane.limit);
+                          const remaining =
+                            lane.remaining == null ? "not metered" : countValue(lane.remaining);
+                          return (
+                            <div
+                              key={cleanText(lane.lane_key, cleanText(lane.label, "capacity"))}
+                              style={{
+                                display: "grid",
+                                gridTemplateColumns: "minmax(0, 1fr) auto",
+                                gap: 10,
+                                alignItems: "center",
+                                borderRadius: 14,
+                                border: "1px solid rgba(9,27,46,0.10)",
+                                background: "rgba(255,255,255,0.72)",
+                                padding: "10px 10px 10px 12px",
+                              }}
+                            >
+                              <span style={{ minWidth: 0 }}>
+                                <span style={{ display: "block", fontWeight: 950 }}>
+                                  {cleanText(lane.label, "Capacity lane")}
+                                </span>
+                                <span
+                                  style={{
+                                    display: "block",
+                                    color: "#4F647A",
+                                    fontSize: 12.5,
+                                    lineHeight: 1.45,
+                                    marginTop: 3,
+                                  }}
+                                >
+                                  Used: {used}. Limit: {limit}. Remaining: {remaining}.
+                                </span>
+                              </span>
+                              <span style={statusBadge(lane.status)}>
+                                {compactStatus(lane.status)}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : null}
+                    <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
+                      This capacity view does not increase limits, create nodes,
+                      add members, assign roles, create shops, meter live shop
+                      usage, meter storage usage, change pricing, activate
+                      billing, verify authority, move money, publish a public
+                      page, or expose private evidence.
+                    </div>
                   </div>
                 ) : null}
 
