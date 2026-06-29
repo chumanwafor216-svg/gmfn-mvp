@@ -17,6 +17,7 @@ import {
   getCommunityDomainReviewerQueue,
   getCommunityDomainRolloutPlan,
   getCommunityDomainSetupPlan,
+  getCommunityDomainTrustRelayReadiness,
   listCommunityDomainActionReviews,
   listCommunityDomainNodeTree,
   listMyCommunityDomainMembershipRequests,
@@ -165,6 +166,19 @@ type RolloutPlanUnit = {
   ready_for_pilot?: boolean;
   member_count?: number | string | null;
   admin_count?: number | string | null;
+  next_step?: string | null;
+};
+
+type TrustRelayReadinessLane = {
+  lane_key?: string | null;
+  label?: string | null;
+  status?: string | null;
+  ready?: boolean;
+  count?: number | string | null;
+  source_domain_status?: string | null;
+  bridge_member_status?: string | null;
+  destination_domain_status?: string | null;
+  relay_path_status?: string | null;
   next_step?: string | null;
 };
 
@@ -561,6 +575,7 @@ export default function CommunityDomainDashboardPage() {
   const [capacityPlan, setCapacityPlan] = useState<any | null>(null);
   const [governanceCoverage, setGovernanceCoverage] = useState<any | null>(null);
   const [rolloutPlan, setRolloutPlan] = useState<any | null>(null);
+  const [trustRelayReadiness, setTrustRelayReadiness] = useState<any | null>(null);
   const [quote, setQuote] = useState<any | null>(null);
   const [activeLane, setActiveLane] = useState("structure");
   const [loading, setLoading] = useState(true);
@@ -599,6 +614,7 @@ export default function CommunityDomainDashboardPage() {
       setCapacityPlan(null);
       setGovernanceCoverage(null);
       setRolloutPlan(null);
+      setTrustRelayReadiness(null);
       try {
         const payload = await listMyCommunityDomains();
         setDomainItems(Array.isArray(payload?.items) ? payload.items : []);
@@ -627,6 +643,7 @@ export default function CommunityDomainDashboardPage() {
     setCapacityPlan(null);
     setGovernanceCoverage(null);
     setRolloutPlan(null);
+    setTrustRelayReadiness(null);
     try {
       const payload = await getCommunityDomainDashboard(communityDomainId);
       const nextDashboard = (payload?.dashboard || null) as DashboardPayload | null;
@@ -677,6 +694,14 @@ export default function CommunityDomainDashboardPage() {
       } catch {
         setModuleScopeReadiness(null);
       }
+      try {
+        const relayReadinessPayload = await getCommunityDomainTrustRelayReadiness(
+          communityDomainId
+        );
+        setTrustRelayReadiness(relayReadinessPayload?.trust_relay_readiness || null);
+      } catch {
+        setTrustRelayReadiness(null);
+      }
       const viewerUserId = nextDashboard?.viewer?.user_id;
       if (viewerUserId) {
         try {
@@ -716,6 +741,7 @@ export default function CommunityDomainDashboardPage() {
       setCapacityPlan(null);
       setGovernanceCoverage(null);
       setRolloutPlan(null);
+      setTrustRelayReadiness(null);
       await loadOwnMembershipRequests();
       setMessage(
         err?.message ||
@@ -805,6 +831,17 @@ export default function CommunityDomainDashboardPage() {
   const rolloutUnitsNeedingAttention = visibleRolloutUnits.filter(
     (unit) => !unit.ready_for_pilot
   );
+  const trustRelaySummary = trustRelayReadiness?.summary || {};
+  const visibleTrustRelayLanes: TrustRelayReadinessLane[] = Array.isArray(
+    trustRelayReadiness?.lanes
+  )
+    ? trustRelayReadiness.lanes
+    : [];
+  const blockedTrustRelayLanes = visibleTrustRelayLanes.filter((lane) => !lane.ready);
+  const trustRelayReadyTotal =
+    typeof trustRelayReadiness?.ready_total === "number"
+      ? trustRelayReadiness.ready_total
+      : visibleTrustRelayLanes.filter((lane) => lane.ready).length;
   const setupPrimaryAction = setupReadiness?.primary_next_action || dashboard?.primary_next_action;
   const setupPrimaryActionLaneKey = laneForAction(setupPrimaryAction?.action_key);
   const dashboardPrimaryActionLaneKey = laneForAction(dashboard?.primary_next_action?.action_key);
@@ -1945,59 +1982,173 @@ export default function CommunityDomainDashboardPage() {
                 ) : null}
 
                 {activeLane === "modules" ? (
-                  <div style={softCard()}>
-                    <div style={sectionLabel()}>Service readiness</div>
-                    <div style={{ ...helperText(), marginTop: 7 }}>
-                      Shops, Spotlight, Vault, Verification, Trust Centre, Analytics, Billing,
-                      and Settings are shown as scoped planning rows for this Community Domain.
-                    </div>
-                    {moduleScopeReadiness?.primary_next_action?.label ? (
+                  <>
+                    <div style={softCard()}>
+                      <div style={sectionLabel()}>Service readiness</div>
                       <div style={{ ...helperText(), marginTop: 7 }}>
-                        Next owner/admin step:{" "}
-                        <strong>{moduleScopeReadiness.primary_next_action.label}</strong>.
+                        Shops, Spotlight, Vault, Verification, Trust Centre, Analytics, Billing,
+                        and Settings are shown as scoped planning rows for this Community Domain.
                       </div>
-                    ) : null}
-                    <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
-                      {serviceReadinessRows.map((row) => (
-                        <div
-                          key={row.key}
-                          style={{
-                            display: "grid",
-                            gridTemplateColumns: "minmax(0, 1fr) auto",
-                            gap: 10,
-                            alignItems: "center",
-                            borderRadius: 14,
-                            border: "1px solid rgba(9,27,46,0.10)",
-                            background: "rgba(255,255,255,0.72)",
-                            padding: "10px 10px 10px 12px",
-                          }}
-                        >
-                          <span style={{ minWidth: 0 }}>
-                            <span style={{ display: "block", fontWeight: 950 }}>
-                              {row.label}
+                      {moduleScopeReadiness?.primary_next_action?.label ? (
+                        <div style={{ ...helperText(), marginTop: 7 }}>
+                          Next owner/admin step:{" "}
+                          <strong>{moduleScopeReadiness.primary_next_action.label}</strong>.
+                        </div>
+                      ) : null}
+                      <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
+                        {serviceReadinessRows.map((row) => (
+                          <div
+                            key={row.key}
+                            style={{
+                              display: "grid",
+                              gridTemplateColumns: "minmax(0, 1fr) auto",
+                              gap: 10,
+                              alignItems: "center",
+                              borderRadius: 14,
+                              border: "1px solid rgba(9,27,46,0.10)",
+                              background: "rgba(255,255,255,0.72)",
+                              padding: "10px 10px 10px 12px",
+                            }}
+                          >
+                            <span style={{ minWidth: 0 }}>
+                              <span style={{ display: "block", fontWeight: 950 }}>
+                                {row.label}
+                              </span>
+                              <span
+                                style={{
+                                  display: "block",
+                                  color: "#4F647A",
+                                  fontSize: 12.5,
+                                  lineHeight: 1.45,
+                                  marginTop: 3,
+                                }}
+                              >
+                                {row.detail}
+                              </span>
                             </span>
-                            <span
+                            <span style={statusBadge(row.status)}>{row.status}</span>
+                          </div>
+                        ))}
+                      </div>
+                      <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
+                        This readiness view does not enable services, activate billing, grant
+                        permissions, publish Spotlight, create shops, open vault links, write Trust
+                        Passport records, or expose private member activity.
+                      </div>
+                    </div>
+
+                    <div style={softCard()}>
+                      <div style={sectionLabel()}>Trust relay readiness</div>
+                      <div style={{ ...helperText(), marginTop: 7 }}>
+                        {trustRelayReadiness
+                          ? `${cleanText(
+                              trustRelayReadiness.primary_next_action?.label,
+                              "Review trust relay readiness"
+                            )}. ${trustRelayReadyTotal} of ${visibleTrustRelayLanes.length} relay checks are ready.`
+                          : "GSN could not load the read-only trust relay readiness view for this Community Domain."}
+                      </div>
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "repeat(auto-fit, minmax(118px, 1fr))",
+                          gap: 8,
+                          marginTop: 10,
+                        }}
+                      >
+                        {[
+                          ["Relay engine", compactStatus(trustRelaySummary.trust_relay_engine_status)],
+                          ["Relay paths", countValue(trustRelaySummary.relay_paths_created)],
+                          ["Bridge members", countValue(trustRelaySummary.bridge_member_candidates)],
+                          ["Open reviews", countValue(trustRelaySummary.open_relay_review_count)],
+                        ].map(([label, value]) => (
+                          <div
+                            key={String(label)}
+                            style={{
+                              borderRadius: 14,
+                              background: "#F7FAFF",
+                              border: "1px solid rgba(9,27,46,0.08)",
+                              padding: 10,
+                              minWidth: 0,
+                            }}
+                          >
+                            <div style={{ color: "#617085", fontSize: 12, fontWeight: 850 }}>
+                              {label}
+                            </div>
+                            <div style={{ color: "#07172C", fontWeight: 950, marginTop: 4 }}>
+                              {value}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      {blockedTrustRelayLanes.length ? (
+                        <div style={{ ...helperText(), marginTop: 9 }}>
+                          Relay checks needing attention:{" "}
+                          <strong>
+                            {blockedTrustRelayLanes
+                              .slice(0, 3)
+                              .map((lane) => cleanText(lane.label, lane.lane_key || "relay check"))
+                              .join(", ")}
+                          </strong>
+                          .
+                        </div>
+                      ) : trustRelayReadiness ? (
+                        <div style={{ ...helperText(), marginTop: 9 }}>
+                          No blocked relay readiness lane is visible, but relay publishing is still
+                          not connected here.
+                        </div>
+                      ) : null}
+                      {visibleTrustRelayLanes.length ? (
+                        <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
+                          {visibleTrustRelayLanes.slice(0, 4).map((lane) => (
+                            <div
+                              key={cleanText(lane.lane_key, cleanText(lane.label, "trust relay"))}
                               style={{
-                                display: "block",
-                                color: "#4F647A",
-                                fontSize: 12.5,
-                                lineHeight: 1.45,
-                                marginTop: 3,
+                                display: "grid",
+                                gridTemplateColumns: "minmax(0, 1fr) auto",
+                                gap: 10,
+                                alignItems: "center",
+                                borderRadius: 14,
+                                border: "1px solid rgba(9,27,46,0.10)",
+                                background: "rgba(255,255,255,0.72)",
+                                padding: "10px 10px 10px 12px",
                               }}
                             >
-                              {row.detail}
-                            </span>
-                          </span>
-                          <span style={statusBadge(row.status)}>{row.status}</span>
+                              <span style={{ minWidth: 0 }}>
+                                <span style={{ display: "block", fontWeight: 950 }}>
+                                  {cleanText(lane.label, "Trust relay check")}
+                                </span>
+                                <span
+                                  style={{
+                                    display: "block",
+                                    color: "#4F647A",
+                                    fontSize: 12.5,
+                                    lineHeight: 1.45,
+                                    marginTop: 3,
+                                  }}
+                                >
+                                  {cleanText(
+                                    lane.next_step,
+                                    "Keep this relay check as planning context until a real relay path exists."
+                                  )}
+                                </span>
+                              </span>
+                              <span style={statusBadge(lane.status)}>
+                                {compactStatus(lane.status)}
+                              </span>
+                            </div>
+                          ))}
                         </div>
-                      ))}
+                      ) : null}
+                      <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
+                        This trust relay view is read-only planning. It does not create relay paths,
+                        record source-domain, bridge-member, or destination-domain rows, publish
+                        proof, repost Spotlight, create cross-domain discovery, share private
+                        records, expose evidence files, expose storage keys, issue TrustSlips,
+                        write Trust Passport entries, create credentials, create marketplace
+                        activity, create affiliations, activate billing, or move money.
+                      </div>
                     </div>
-                    <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-                      This readiness view does not enable services, activate billing, grant
-                      permissions, publish Spotlight, create shops, open vault links, write Trust
-                      Passport records, or expose private member activity.
-                    </div>
-                  </div>
+                  </>
                 ) : null}
 
                 {activeLane === "structure" ? (

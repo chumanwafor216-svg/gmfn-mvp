@@ -167,6 +167,13 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
+  /getCommunityDomainTrustRelayReadiness[\s\S]*trustRelayReadiness[\s\S]*trustRelaySummary[\s\S]*visibleTrustRelayLanes[\s\S]*blockedTrustRelayLanes[\s\S]*activeLane === "modules"[\s\S]*Trust relay readiness[\s\S]*primary_next_action[\s\S]*trust_relay_engine_status[\s\S]*relay_paths_created[\s\S]*bridge_member_candidates[\s\S]*open_relay_review_count[\s\S]*does not create relay paths,\s+record source-domain, bridge-member, or destination-domain rows, publish\s+proof, repost Spotlight, create cross-domain discovery, share private\s+records, expose evidence files, expose storage keys, issue TrustSlips,\s+write Trust Passport entries, create credentials, create marketplace\s+activity, create affiliations, activate billing, or move money/,
+  "Community Domain dashboard Services lane must show read-only trust relay readiness without implying relay path creation, Spotlight reposting, proof publishing, cross-domain discovery, private evidence access, TrustSlip issuing, Trust Passport writes, credentials, marketplace activity, affiliations, billing activation, or money movement.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
   /activeLane === "identity"[\s\S]*Domain identity[\s\S]*public-safe identity anchor[\s\S]*Code[\s\S]*domain\.domain_name[\s\S]*Owner[\s\S]*domain\.owner_user_id[\s\S]*Template[\s\S]*template\.label[\s\S]*Location[\s\S]*domain\.state[\s\S]*domain\.country[\s\S]*Public profile:[\s\S]*No public profile text is recorded yet[\s\S]*does not expose owner contact details,\s+private member lists, finance records, evidence files, or\s+verification proof/,
   "Community Domain dashboard Identity lane must show a public-safe identity summary without exposing owner contact, private members, finance, evidence, or verification proof.",
   { frontend: true }
