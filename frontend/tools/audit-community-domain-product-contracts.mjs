@@ -181,6 +181,13 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
+  /getCommunityDomainRolloutPlan[\s\S]*rolloutPlan[\s\S]*rolloutPlanCounts[\s\S]*visibleRolloutPhases[\s\S]*openRolloutPhases[\s\S]*rolloutUnitsNeedingAttention[\s\S]*activeLane === "structure"[\s\S]*Rollout plan[\s\S]*primary_next_action[\s\S]*Current phase:[\s\S]*First units[\s\S]*rolloutPlanCounts\.first_level_units[\s\S]*Ready units[\s\S]*rolloutPlanCounts\.ready_units[\s\S]*Units needing attention[\s\S]*does not create nodes, invite members,\s+add members, assign admins, place members, create policy,\s+open reviews, verify authority, activate billing, activate\s+the Community Domain, publish a public page, create\s+marketplace activity, create a social Community, move\s+money, or expose private evidence/,
+  "Community Domain dashboard Structure lane must show the backend rollout plan as read-only institutional onboarding guidance without implying structure writes, invitations, placements, policy creation, billing, publishing, marketplace activity, social Community creation, money movement, or private evidence access.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
   /reviewStatusCounts[\s\S]*governanceReviewCounts[\s\S]*governancePendingCount[\s\S]*governanceApprovedCount[\s\S]*activeLane === "governance"[\s\S]*Governance review pulse[\s\S]*Ready to apply[\s\S]*Access requests[\s\S]*does not decide reviews, apply membership,\s+assign roles, expose private evidence, or bypass reviewer policy/,
   "Community Domain dashboard Governance lane must show a compact review pulse without deciding reviews, applying membership, or exposing private review evidence.",
   { frontend: true }

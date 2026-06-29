@@ -15,6 +15,7 @@ import {
   getCommunityDomainModuleScopeReadiness,
   getCommunityDomainReadiness,
   getCommunityDomainReviewerQueue,
+  getCommunityDomainRolloutPlan,
   getCommunityDomainSetupPlan,
   listCommunityDomainActionReviews,
   listCommunityDomainNodeTree,
@@ -142,6 +143,28 @@ type GovernanceCoverageNode = {
   effective_policy_count?: number | string | null;
   local_admin_count?: number | string | null;
   open_review_count?: number | string | null;
+  next_step?: string | null;
+};
+
+type RolloutPlanPhase = {
+  phase_key?: string | null;
+  label?: string | null;
+  completed?: boolean;
+  status?: string | null;
+  next_step?: string | null;
+  detail?: Record<string, unknown> | null;
+  requires_admin?: boolean;
+};
+
+type RolloutPlanUnit = {
+  node?: {
+    id?: number | string | null;
+    name?: string | null;
+  } | null;
+  status?: string | null;
+  ready_for_pilot?: boolean;
+  member_count?: number | string | null;
+  admin_count?: number | string | null;
   next_step?: string | null;
 };
 
@@ -537,6 +560,7 @@ export default function CommunityDomainDashboardPage() {
   const [setupPlan, setSetupPlan] = useState<any | null>(null);
   const [capacityPlan, setCapacityPlan] = useState<any | null>(null);
   const [governanceCoverage, setGovernanceCoverage] = useState<any | null>(null);
+  const [rolloutPlan, setRolloutPlan] = useState<any | null>(null);
   const [quote, setQuote] = useState<any | null>(null);
   const [activeLane, setActiveLane] = useState("structure");
   const [loading, setLoading] = useState(true);
@@ -574,6 +598,7 @@ export default function CommunityDomainDashboardPage() {
       setSetupPlan(null);
       setCapacityPlan(null);
       setGovernanceCoverage(null);
+      setRolloutPlan(null);
       try {
         const payload = await listMyCommunityDomains();
         setDomainItems(Array.isArray(payload?.items) ? payload.items : []);
@@ -601,6 +626,7 @@ export default function CommunityDomainDashboardPage() {
     setSetupPlan(null);
     setCapacityPlan(null);
     setGovernanceCoverage(null);
+    setRolloutPlan(null);
     try {
       const payload = await getCommunityDomainDashboard(communityDomainId);
       const nextDashboard = (payload?.dashboard || null) as DashboardPayload | null;
@@ -638,6 +664,12 @@ export default function CommunityDomainDashboardPage() {
         setGovernanceCoverage(governanceCoveragePayload?.governance_coverage || null);
       } catch {
         setGovernanceCoverage(null);
+      }
+      try {
+        const rolloutPlanPayload = await getCommunityDomainRolloutPlan(communityDomainId);
+        setRolloutPlan(rolloutPlanPayload?.rollout_plan || null);
+      } catch {
+        setRolloutPlan(null);
       }
       try {
         const readinessPayload = await getCommunityDomainModuleScopeReadiness(communityDomainId);
@@ -683,6 +715,7 @@ export default function CommunityDomainDashboardPage() {
       setSetupPlan(null);
       setCapacityPlan(null);
       setGovernanceCoverage(null);
+      setRolloutPlan(null);
       await loadOwnMembershipRequests();
       setMessage(
         err?.message ||
@@ -761,6 +794,17 @@ export default function CommunityDomainDashboardPage() {
     const statusText = cleanText(item.governance_status).toLowerCase();
     return statusText.includes("needs") || statusText.includes("inactive");
   });
+  const rolloutPlanCounts = rolloutPlan?.counts || {};
+  const visibleRolloutPhases: RolloutPlanPhase[] = Array.isArray(rolloutPlan?.phases)
+    ? rolloutPlan.phases
+    : [];
+  const openRolloutPhases = visibleRolloutPhases.filter((phase) => !phase.completed);
+  const visibleRolloutUnits: RolloutPlanUnit[] = Array.isArray(rolloutPlan?.rollout_units)
+    ? rolloutPlan.rollout_units
+    : [];
+  const rolloutUnitsNeedingAttention = visibleRolloutUnits.filter(
+    (unit) => !unit.ready_for_pilot
+  );
   const setupPrimaryAction = setupReadiness?.primary_next_action || dashboard?.primary_next_action;
   const setupPrimaryActionLaneKey = laneForAction(setupPrimaryAction?.action_key);
   const dashboardPrimaryActionLaneKey = laneForAction(dashboard?.primary_next_action?.action_key);
@@ -2013,6 +2057,113 @@ export default function CommunityDomainDashboardPage() {
                     <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
                       This preview does not create nodes, change parentage, place
                       members, grant roles, activate billing, or verify a branch.
+                    </div>
+                  </div>
+                ) : null}
+
+                {activeLane === "structure" ? (
+                  <div style={softCard()}>
+                    <div style={sectionLabel()}>Rollout plan</div>
+                    <div style={{ ...helperText(), marginTop: 7 }}>
+                      {rolloutPlan
+                        ? `${cleanText(
+                            rolloutPlan.primary_next_action?.label,
+                            "Review Community Domain rollout plan"
+                          )}. Current phase: ${compactStatus(rolloutPlan.rollout_phase)}.`
+                        : "GSN could not load the read-only rollout plan for this view."}
+                    </div>
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "repeat(auto-fit, minmax(118px, 1fr))",
+                        gap: 8,
+                        marginTop: 10,
+                      }}
+                    >
+                      {[
+                        ["First units", rolloutPlanCounts.first_level_units],
+                        ["Ready units", rolloutPlanCounts.ready_units],
+                        ["Members", rolloutPlanCounts.active_members],
+                        ["Policies", rolloutPlanCounts.active_policies],
+                      ].map(([label, value]) => (
+                        <div
+                          key={String(label)}
+                          style={statusBadge(Number(value) > 0 ? "recorded" : "not recorded")}
+                        >
+                          {String(label)}: {countValue(value)}
+                        </div>
+                      ))}
+                    </div>
+                    {openRolloutPhases.length ? (
+                      <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
+                        {openRolloutPhases.slice(0, 3).map((phase) => (
+                          <div
+                            key={cleanText(phase.phase_key, cleanText(phase.label, "phase"))}
+                            style={{
+                              display: "grid",
+                              gridTemplateColumns: "minmax(0, 1fr) auto",
+                              gap: 10,
+                              alignItems: "center",
+                              borderRadius: 14,
+                              border: "1px solid rgba(9,27,46,0.10)",
+                              background: "rgba(255,255,255,0.72)",
+                              padding: "10px 10px 10px 12px",
+                            }}
+                          >
+                            <span style={{ minWidth: 0 }}>
+                              <span style={{ display: "block", fontWeight: 950 }}>
+                                {cleanText(phase.label, "Rollout phase")}
+                              </span>
+                              <span
+                                style={{
+                                  display: "block",
+                                  color: "#4F647A",
+                                  fontSize: 12.5,
+                                  lineHeight: 1.45,
+                                  marginTop: 3,
+                                }}
+                              >
+                                {cleanText(
+                                  phase.next_step,
+                                  "Review this rollout phase before wider launch."
+                                )}
+                              </span>
+                            </span>
+                            <span style={statusBadge(phase.status || "open")}>
+                              {compactStatus(phase.status || "open")}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : rolloutPlan ? (
+                      <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
+                        No open rollout phase is visible in the read-only rollout plan.
+                      </div>
+                    ) : null}
+                    {rolloutUnitsNeedingAttention.length ? (
+                      <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
+                        Units needing attention:{" "}
+                        <strong>
+                          {rolloutUnitsNeedingAttention
+                            .slice(0, 3)
+                            .map((unit) => cleanText(unit.node?.name, "Operating unit"))
+                            .join(", ")}
+                        </strong>
+                        .
+                      </div>
+                    ) : rolloutPlan ? (
+                      <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
+                        No first rollout unit is marked as needing local admin or
+                        pilot member attention.
+                      </div>
+                    ) : null}
+                    <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
+                      This rollout view does not create nodes, invite members,
+                      add members, assign admins, place members, create policy,
+                      open reviews, verify authority, activate billing, activate
+                      the Community Domain, publish a public page, create
+                      marketplace activity, create a social Community, move
+                      money, or expose private evidence.
                     </div>
                   </div>
                 ) : null}
