@@ -181,6 +181,13 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
+  /activeLane === "members" && !placementSummary[\s\S]*Member and role summary[\s\S]*safe domain-level counts[\s\S]*Active members[\s\S]*counts\.active_members[\s\S]*Role placements[\s\S]*counts\.active_node_memberships[\s\S]*Open reviews[\s\S]*counts\.open_reviews[\s\S]*refresh the dashboard[\s\S]*does not expose private member lists, assign\s+roles, place members, decide reviews, or grant permissions/,
+  "Community Domain dashboard Members lane must show a safe count-only fallback when the viewer placement projection is not available.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
   /requestCommunityDomainMembership[\s\S]*requestDomainAccess[\s\S]*Requesting access from the Community Domain dashboard[\s\S]*must still be approved and applied before membership changes[\s\S]*community-domain-dashboard\.error\.request-membership/,
   "Community Domain dashboard denied-access state must expose the real membership request path without implying instant membership.",
   { frontend: true }

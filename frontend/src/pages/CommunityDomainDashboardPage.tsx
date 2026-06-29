@@ -1886,6 +1886,43 @@ export default function CommunityDomainDashboardPage() {
                   </div>
                 ) : null}
 
+                {activeLane === "members" && !placementSummary ? (
+                  <div style={softCard()}>
+                    <div style={sectionLabel()}>Member and role summary</div>
+                    <div style={{ ...helperText(), marginTop: 7 }}>
+                      GSN could not load this viewer's placement projection, so
+                      this lane is showing only safe domain-level counts from the
+                      dashboard summary.
+                    </div>
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "repeat(auto-fit, minmax(118px, 1fr))",
+                        gap: 8,
+                        marginTop: 10,
+                      }}
+                    >
+                      {[
+                        ["Active members", counts.active_members],
+                        ["Role placements", counts.active_node_memberships],
+                        ["Open reviews", counts.open_reviews],
+                      ].map(([label, value]) => (
+                        <div key={String(label)} style={statusBadge(Number(value) > 0 ? "recorded" : "not recorded")}>
+                          {String(label)}: {countValue(value)}
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{ ...helperText(), marginTop: 10 }}>
+                      If placement details are needed, refresh the dashboard or
+                      ask a Community Domain admin to review member placement.
+                    </div>
+                    <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
+                      This fallback does not expose private member lists, assign
+                      roles, place members, decide reviews, or grant permissions.
+                    </div>
+                  </div>
+                ) : null}
+
                 {activeLane !== "billing" && activeLane !== "modules" ? (
                   <div style={softCard()}>
                     <div style={sectionLabel()}>Safe next step</div>
