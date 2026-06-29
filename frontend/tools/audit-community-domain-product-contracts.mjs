@@ -96,6 +96,13 @@ assertContains(
 );
 
 assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /Only a Community Domain owner or domain admin can review the package quote[\s\S]*Review package quote[\s\S]*Why quote review is owner-only/,
+  "Community Domain dashboard billing action must not imply a non-admin can send an owner quote-review request.",
+  { frontend: true }
+);
+
+assertContains(
   "src/lib/api.ts",
   /listMyCommunityDomains[\s\S]*\/community-domains\/my[\s\S]*getCommunityDomain\(/,
   "Frontend API layer must expose the signed-in Community Domain selector before single-domain reads.",

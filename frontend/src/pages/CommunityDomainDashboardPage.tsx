@@ -693,7 +693,7 @@ export default function CommunityDomainDashboardPage() {
                       onClick={refreshQuote}
                       style={{ marginTop: 12 }}
                     >
-                      {isAdmin ? "Review package quote" : "Ask owner to review quote"}
+                      {isAdmin ? "Review package quote" : "Why quote review is owner-only"}
                     </StableButton>
                   </div>
                 ) : null}
