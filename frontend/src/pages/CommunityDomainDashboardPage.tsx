@@ -275,7 +275,11 @@ export default function CommunityDomainDashboardPage() {
   async function refreshQuote() {
     if (!communityDomainId) return;
     if (!isAdmin) {
-      setMessage("Only a Community Domain owner or domain admin can review the package quote.");
+      setMessage(
+        billingIsActive
+          ? "Only a Community Domain owner or domain admin can review the package details."
+          : "Only a Community Domain owner or domain admin can review the package quote."
+      );
       return;
     }
 
