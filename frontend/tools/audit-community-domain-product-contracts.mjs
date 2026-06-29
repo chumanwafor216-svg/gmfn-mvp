@@ -68,6 +68,27 @@ assertContains(
 );
 
 assertContains(
+  "src/App.tsx",
+  /CommunityDomainDashboardPage[\s\S]*path="community-domain\/:communityDomainId"[\s\S]*path="community-domains\/:communityDomainId"/,
+  "Authenticated app routes must expose the Community Domain dashboard without replacing Community Home.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /getCommunityDomainDashboard[\s\S]*Community Domain dashboard[\s\S]*Continue setup[\s\S]*does not create payment instructions[\s\S]*verify ownership/,
+  "Community Domain dashboard page must use the scoped backend summary and keep payment, activation, and verification boundaries honest.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainPurchasePage.tsx",
+  /\/app\/community-domain\/[\s\S]*Open domain dashboard[\s\S]*Draft request created/,
+  "Community Domain purchase page must hand signed-in owners to the authenticated domain dashboard after draft creation.",
+  { frontend: true }
+);
+
+assertContains(
   "docs/SCREEN_SPECS.md",
   /## SignUpChoicePage[\s\S]*Purchase Community Domain card[\s\S]*Purchase Community Domain goes to CommunityDomainPurchasePage[\s\S]*must not be\s+merged into ordinary Create Community/,
   "Sign-up choice must expose Purchase Community Domain as a separate institutional path."

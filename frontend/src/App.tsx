@@ -28,6 +28,9 @@ const CreateEntryPage = React.lazy(() => import("./pages/CreateEntryPage"));
 const CommunityDomainPurchasePage = React.lazy(
   () => import("./pages/CommunityDomainPurchasePage")
 );
+const CommunityDomainDashboardPage = React.lazy(
+  () => import("./pages/CommunityDomainDashboardPage")
+);
 const WelcomePage = React.lazy(() => import("./pages/WelcomePage"));
 const LoginPage = React.lazy(() => import("./pages/LoginPage"));
 const JoinEntryPage = React.lazy(() => import("./pages/JoinEntryPage"));
@@ -871,6 +874,18 @@ export default function App() {
           element={<CommunityJoinRequestsPage />}
         />
         <Route path="join-requests" element={<PreserveRedirect to={APP_ROUTES.COMMUNITY} />} />
+        <Route
+          path="community-domain/:communityDomainId"
+          element={<CommunityDomainDashboardPage />}
+        />
+        <Route
+          path="community-domains/:communityDomainId"
+          element={<CommunityDomainDashboardPage />}
+        />
+        <Route
+          path="community-domain/:communityDomainId/dashboard"
+          element={<CommunityDomainDashboardPage />}
+        />
 
         <Route path="loans" element={<LoansPage />} />
         <Route path="loan-summary/:loanId" element={<LoanSummaryPage />} />
