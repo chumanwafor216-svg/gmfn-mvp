@@ -153,6 +153,13 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
+  /activeLane === "identity"[\s\S]*Domain identity[\s\S]*public-safe identity anchor[\s\S]*Code[\s\S]*domain\.domain_name[\s\S]*Owner[\s\S]*domain\.owner_user_id[\s\S]*Template[\s\S]*template\.label[\s\S]*Location[\s\S]*domain\.state[\s\S]*domain\.country[\s\S]*Public profile:[\s\S]*No public profile text is recorded yet[\s\S]*does not expose owner contact details,\s+private member lists, finance records, evidence files, or\s+verification proof/,
+  "Community Domain dashboard Identity lane must show a public-safe identity summary without exposing owner contact, private members, finance, evidence, or verification proof.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
   /listCommunityDomainNodeTree[\s\S]*structurePreviewRows[\s\S]*nodeTree[\s\S]*visibleStructureRows[\s\S]*activeLane === "structure"[\s\S]*Structure preview[\s\S]*read-only Community Domain tree[\s\S]*No operating-unit structure has been mapped yet[\s\S]*does not create nodes, change parentage, place\s+members, grant roles, activate billing, or verify a branch/,
   "Community Domain dashboard Structure lane must show a compact read-only node-tree preview without implying structure writes or authority changes.",
   { frontend: true }

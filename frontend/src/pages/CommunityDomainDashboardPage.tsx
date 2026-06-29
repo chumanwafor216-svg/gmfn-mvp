@@ -1543,6 +1543,68 @@ export default function CommunityDomainDashboardPage() {
                   . Count: <strong>{countValue(selectedLane?.count)}</strong>.
                 </div>
 
+                {activeLane === "identity" ? (
+                  <div style={softCard()}>
+                    <div style={sectionLabel()}>Domain identity</div>
+                    <div style={{ ...helperText(), marginTop: 7 }}>
+                      This lane shows the public-safe identity anchor for this
+                      Community Domain. It helps members confirm they are working
+                      inside the right institution before structure, billing,
+                      services, or trust evidence are used.
+                    </div>
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "repeat(auto-fit, minmax(128px, 1fr))",
+                        gap: 8,
+                        marginTop: 10,
+                      }}
+                    >
+                      {[
+                        ["Code", cleanText(domain.domain_name, "not recorded")],
+                        ["Owner", cleanText(domain.owner_user_id, "not recorded")],
+                        ["Template", cleanText(template.label, "Institution")],
+                        [
+                          "Location",
+                          cleanText(
+                            [domain.state, domain.country].filter(Boolean).join(", "),
+                            "not recorded"
+                          ),
+                        ],
+                      ].map(([label, value]) => (
+                        <div key={String(label)} style={statusBadge(value)}>
+                          {String(label)}: {String(value)}
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 10 }}>
+                      <span style={statusBadge(status.domain_status)}>
+                        Domain: {compactStatus(status.domain_status)}
+                      </span>
+                      <span style={statusBadge(status.verification_status)}>
+                        Verification: {compactStatus(status.verification_status)}
+                      </span>
+                      <span style={statusBadge(renewalState)}>
+                        Renewal: {compactStatus(renewalState)}
+                      </span>
+                    </div>
+                    {domain.public_profile ? (
+                      <div style={{ ...helperText(), marginTop: 10 }}>
+                        Public profile: {cleanText(domain.public_profile)}
+                      </div>
+                    ) : (
+                      <div style={{ ...helperText(), marginTop: 10 }}>
+                        No public profile text is recorded yet for this domain.
+                      </div>
+                    )}
+                    <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
+                      This identity view does not expose owner contact details,
+                      private member lists, finance records, evidence files, or
+                      verification proof.
+                    </div>
+                  </div>
+                ) : null}
+
                 {activeLane === "billing" ? (
                   <div style={softCard()}>
                     <div style={sectionLabel()}>Package and renewal</div>
