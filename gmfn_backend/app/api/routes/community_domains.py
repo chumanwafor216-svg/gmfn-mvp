@@ -11153,6 +11153,361 @@ def _community_domain_social_bridge_payload(
     }
 
 
+def _community_domain_affiliation_readiness_payload(
+    db: Session,
+    *,
+    domain: CommunityDomain,
+    current_user: User,
+    can_admin: bool,
+) -> dict[str, Any]:
+    domain_id = int(domain.id)
+    linked_clan: Optional[Clan] = None
+    if domain.clan_id is not None:
+        linked_clan = db.get(Clan, int(domain.clan_id))
+
+    linked_clan_id = int(linked_clan.id) if linked_clan is not None else None
+    outbound_rows: list[CommunityDomainAffiliation] = []
+    inbound_rows: list[CommunityDomainAffiliation] = []
+    if linked_clan_id is not None:
+        outbound_rows = (
+            db.query(CommunityDomainAffiliation)
+            .filter(CommunityDomainAffiliation.parent_clan_id == linked_clan_id)
+            .order_by(CommunityDomainAffiliation.id.asc())
+            .all()
+        )
+        inbound_rows = (
+            db.query(CommunityDomainAffiliation)
+            .filter(CommunityDomainAffiliation.affiliate_clan_id == linked_clan_id)
+            .order_by(CommunityDomainAffiliation.id.asc())
+            .all()
+        )
+
+    all_rows = [*outbound_rows, *inbound_rows]
+    status_counts: dict[str, int] = {}
+    direction_counts = {"outbound_child_links": 0, "inbound_parent_links": 0}
+    for row in outbound_rows:
+        status = _clean_role(row.status, "pending")
+        status_counts[status] = status_counts.get(status, 0) + 1
+        if status == "approved":
+            direction_counts["outbound_child_links"] += 1
+    for row in inbound_rows:
+        status = _clean_role(row.status, "pending")
+        status_counts[status] = status_counts.get(status, 0) + 1
+        if status == "approved":
+            direction_counts["inbound_parent_links"] += 1
+
+    pending_count = int(status_counts.get("pending", 0))
+    approved_count = int(status_counts.get("approved", 0))
+    rejected_count = int(status_counts.get("rejected", 0))
+
+    def route_hint(suffix: str, *, requires_admin: bool) -> Optional[str]:
+        if requires_admin and not can_admin:
+            return None
+        return f"/community-domains/{domain_id}{suffix}"
+
+    def admin_count(value: int) -> Optional[int]:
+        return int(value) if can_admin else None
+
+    def lane(
+        lane_key: str,
+        label: str,
+        status: str,
+        ready: bool,
+        count: Optional[int],
+        next_step: str,
+        *,
+        route_suffix: str,
+        requires_admin: bool,
+        boundary: str,
+    ) -> dict[str, Any]:
+        return {
+            "lane_key": lane_key,
+            "label": label,
+            "status": status,
+            "ready": bool(ready),
+            "count": count,
+            "route_hint": route_hint(route_suffix, requires_admin=requires_admin),
+            "requires_admin": bool(requires_admin),
+            "next_step": next_step,
+            "boundary": boundary,
+        }
+
+    lanes = [
+        lane(
+            "social_community_anchor",
+            "Social Community anchor",
+            "linked" if linked_clan_id is not None else "not_linked",
+            linked_clan_id is not None,
+            1 if linked_clan_id is not None else 0,
+            (
+                "Use the linked social Community only as the current affiliation anchor."
+                if linked_clan_id is not None
+                else "Linking to a social Community must remain a separate reviewed bridge."
+            ),
+            route_suffix="/social-bridge",
+            requires_admin=True,
+            boundary=(
+                "Anchor signal only. This does not set clan_id, create a social "
+                "Community, upgrade a Community, copy members, or merge records."
+            ),
+        ),
+        lane(
+            "outbound_child_affiliates",
+            "Outbound child affiliates",
+            (
+                "active_child_affiliates"
+                if direction_counts["outbound_child_links"]
+                else "none"
+            ),
+            bool(direction_counts["outbound_child_links"]),
+            admin_count(direction_counts["outbound_child_links"]),
+            "Treat approved outbound clan affiliations as child-affiliate signals only.",
+            route_suffix="/social-bridge",
+            requires_admin=True,
+            boundary=(
+                "Child-affiliate signal only. This does not create child "
+                "Community Domains, affiliate links, public URLs, billing, "
+                "member transfer, or governance authority."
+            ),
+        ),
+        lane(
+            "inbound_parent_affiliates",
+            "Inbound parent affiliates",
+            (
+                "active_parent_affiliates"
+                if direction_counts["inbound_parent_links"]
+                else "none"
+            ),
+            bool(direction_counts["inbound_parent_links"]),
+            admin_count(direction_counts["inbound_parent_links"]),
+            "Treat approved inbound clan affiliations as parent-domain signals only.",
+            route_suffix="/social-bridge",
+            requires_admin=True,
+            boundary=(
+                "Parent-affiliate signal only. This does not assign a parent "
+                "Community Domain, inherit policy, activate billing, verify "
+                "authority, or change member visibility."
+            ),
+        ),
+        lane(
+            "pending_affiliation_reviews",
+            "Pending affiliation reviews",
+            "pending_review_needed" if pending_count else "clear",
+            pending_count == 0,
+            admin_count(pending_count),
+            "Review pending clan affiliation requests before treating affiliation as settled.",
+            route_suffix="/social-bridge",
+            requires_admin=True,
+            boundary=(
+                "Pending-review signal only. This does not approve, reject, "
+                "decide, revise, or notify affiliation requests."
+            ),
+        ),
+        lane(
+            "rejected_affiliation_history",
+            "Rejected affiliation history",
+            "history_present" if rejected_count else "clear",
+            rejected_count == 0,
+            admin_count(rejected_count),
+            "Keep rejected affiliation history separate from live parent or child authority.",
+            route_suffix="/social-bridge",
+            requires_admin=True,
+            boundary=(
+                "History signal only. This does not reopen, erase, override, "
+                "or publish rejected affiliation decisions."
+            ),
+        ),
+        lane(
+            "domain_affiliation_engine",
+            "Domain affiliation engine",
+            "not_connected_in_this_slice",
+            False,
+            0,
+            "Do not represent clan-to-clan affiliation rows as a real domain-domain engine yet.",
+            route_suffix="/network-presence",
+            requires_admin=False,
+            boundary=(
+                "Engine boundary only. This does not create domain-domain "
+                "affiliation records, domain hierarchy, child domains, parent "
+                "domains, inherited policy, analytics rollups, or public proof."
+            ),
+        ),
+        lane(
+            "privacy_boundary",
+            "Affiliation privacy boundary",
+            "member_safe_projection",
+            True,
+            1,
+            "Keep affiliate details admin-scoped until public-safe release rules exist.",
+            route_suffix="/record-privacy-map",
+            requires_admin=False,
+            boundary=(
+                "Privacy boundary only. This does not expose member lists, node "
+                "rosters, private evidence, finance records, marketplace records, "
+                "or affiliate private records."
+            ),
+        ),
+    ]
+
+    if not can_admin:
+        primary_next_action = {
+            "action_key": "ask_domain_admin_to_review_affiliations",
+            "label": "Ask a Community Domain admin to review affiliation readiness",
+            "route_hint": None,
+            "requires_admin": True,
+        }
+    elif linked_clan_id is None:
+        primary_next_action = {
+            "action_key": "review_social_bridge_before_affiliations",
+            "label": "Review social Community bridge before affiliation readiness",
+            "route_hint": f"/community-domains/{domain_id}/social-bridge",
+            "requires_admin": True,
+        }
+    elif pending_count:
+        primary_next_action = {
+            "action_key": "review_pending_affiliation_requests",
+            "label": "Review pending affiliation requests",
+            "route_hint": f"/community-domains/{domain_id}/social-bridge",
+            "requires_admin": True,
+        }
+    elif approved_count:
+        primary_next_action = {
+            "action_key": "review_affiliation_boundaries",
+            "label": "Review parent and child affiliation boundaries",
+            "route_hint": f"/community-domains/{domain_id}/record-privacy-map",
+            "requires_admin": True,
+        }
+    else:
+        primary_next_action = {
+            "action_key": "prepare_affiliation_design",
+            "label": "Prepare affiliation design before parent or child rollout",
+            "route_hint": f"/community-domains/{domain_id}/network-presence",
+            "requires_admin": True,
+        }
+
+    clan_ids = {
+        int(row.parent_clan_id) for row in all_rows
+    } | {int(row.affiliate_clan_id) for row in all_rows}
+    clans_by_id: dict[int, Clan] = {}
+    if clan_ids and can_admin:
+        clans_by_id = {
+            int(clan.id): clan
+            for clan in db.query(Clan).filter(Clan.id.in_(clan_ids)).all()
+        }
+
+    def affiliation_payload(
+        row: CommunityDomainAffiliation,
+        *,
+        direction: str,
+    ) -> dict[str, Any]:
+        parent = clans_by_id.get(int(row.parent_clan_id))
+        affiliate = clans_by_id.get(int(row.affiliate_clan_id))
+        return {
+            "id": int(row.id),
+            "direction": direction,
+            "status": _clean_role(row.status, "pending"),
+            "parent_clan_id": int(row.parent_clan_id),
+            "affiliate_clan_id": int(row.affiliate_clan_id),
+            "parent_name": parent.name if parent is not None else None,
+            "affiliate_name": affiliate.name if affiliate is not None else None,
+            "parent_community_code": (
+                parent.community_code if parent is not None else None
+            ),
+            "affiliate_community_code": (
+                affiliate.community_code if affiliate is not None else None
+            ),
+            "record_status": "read_only_existing_clan_affiliation",
+            "domain_affiliation_status": "not_created_in_this_slice",
+            "public_url_status": "not_published_in_this_slice",
+            "member_transfer_status": "not_transferred_in_this_slice",
+            "billing_status": "not_activated_in_this_slice",
+            "boundary": (
+                "Existing clan-affiliation row only. This does not create a "
+                "Community Domain affiliation, parent domain, child domain, "
+                "public URL, billing relationship, inherited policy, or member "
+                "transfer."
+            ),
+        }
+
+    flat_affiliations: list[dict[str, Any]] = []
+    if can_admin:
+        flat_affiliations = [
+            *[
+                affiliation_payload(row, direction="outbound_child")
+                for row in outbound_rows
+            ],
+            *[
+                affiliation_payload(row, direction="inbound_parent")
+                for row in inbound_rows
+            ],
+        ]
+
+    return {
+        "community_domain": _domain_payload(
+            domain,
+            root_node=_find_root_node(db, community_domain_id=domain_id),
+        ),
+        "viewer": {
+            "user_id": int(current_user.id),
+            "can_admin": bool(can_admin),
+        },
+        "linked_community": {
+            "linked": bool(linked_clan_id is not None),
+            "id": linked_clan_id if can_admin else None,
+            "name": linked_clan.name if linked_clan is not None and can_admin else None,
+            "community_code": (
+                linked_clan.community_code
+                if linked_clan is not None and can_admin
+                else None
+            ),
+            "status": (
+                linked_clan.status
+                if linked_clan is not None and can_admin
+                else ("hidden_for_member" if linked_clan is not None else "not_linked")
+            ),
+        },
+        "summary": {
+            "bridge_status": "linked" if linked_clan_id is not None else "not_linked",
+            "domain_affiliation_engine_status": "clan_affiliation_projection_only",
+            "domain_affiliation_records_created": 0,
+            "parent_domain_records_created": 0,
+            "child_domain_records_created": 0,
+            "public_urls_published": 0,
+            "members_transferred": 0,
+            "billing_relationships_activated": 0,
+            "outbound_affiliations": admin_count(len(outbound_rows)),
+            "inbound_affiliations": admin_count(len(inbound_rows)),
+            "approved_affiliations": admin_count(approved_count),
+            "pending_affiliations": admin_count(pending_count),
+            "rejected_affiliations": admin_count(rejected_count),
+            "effective_child_links": admin_count(
+                direction_counts["outbound_child_links"]
+            ),
+            "effective_parent_links": admin_count(
+                direction_counts["inbound_parent_links"]
+            ),
+            "status_counts": status_counts if can_admin else None,
+        },
+        "lanes": lanes,
+        "flat_affiliations": flat_affiliations,
+        "ready_total": sum(1 for item in lanes if item["ready"]),
+        "blocked_lanes": [item["lane_key"] for item in lanes if not item["ready"]],
+        "primary_next_action": primary_next_action,
+        "editable": False,
+        "boundary": (
+            "Community Domain affiliation readiness is read-only parent/child "
+            "affiliation planning. This endpoint projects existing clan-to-clan "
+            "CommunityDomainAffiliation rows only. It does not create domain-domain "
+            "affiliations, create parent Community Domains, create child Community "
+            "Domains, approve or reject affiliation requests, set clan_id, copy or "
+            "transfer members, inherit policy, activate billing, verify authority, "
+            "publish public URLs, create marketplace activity, move money, issue "
+            "TrustSlips, write Trust Passport entries, or expose private member, "
+            "node, evidence, review, marketplace, finance, or affiliate records."
+        ),
+    }
+
+
 def _community_domain_network_exchange_map_payload(
     db: Session,
     *,
@@ -16181,6 +16536,27 @@ def get_community_domain_social_bridge(
         "ok": True,
         "community_domain_id": int(domain.id),
         "social_bridge": _community_domain_social_bridge_payload(
+            db,
+            domain=domain,
+            current_user=current_user,
+            can_admin=can_admin,
+        ),
+    }
+
+
+@router.get("/{community_domain_id}/affiliation-readiness", response_model=dict[str, Any])
+def get_community_domain_affiliation_readiness(
+    community_domain_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_member_scope(db, domain=domain, current_user=current_user)
+    can_admin = _has_domain_admin_scope(db, domain=domain, current_user=current_user)
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "affiliation_readiness": _community_domain_affiliation_readiness_payload(
             db,
             domain=domain,
             current_user=current_user,

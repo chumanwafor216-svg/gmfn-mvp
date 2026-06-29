@@ -7885,6 +7885,358 @@ def test_member_can_read_social_bridge_but_linked_community_details_are_hidden(
     assert "private member records" in social_bridge["boundary"]
 
 
+def test_affiliation_readiness_projects_parent_child_clan_links_without_writes(
+    client: TestClient,
+):
+    owner = _seed_owner()
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created_domain = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Affiliation Readiness Union",
+                "display_name": "Affiliation Readiness Union",
+                "domain_type": "professional_union",
+                "template_key": "union_professional_body",
+            },
+        )
+        assert created_domain.status_code == 201, created_domain.text
+        domain_id = created_domain.json()["community_domain"]["id"]
+
+        with SessionLocal() as db:
+            linked_clan = Clan(
+                name="Affiliation Readiness Union Circle",
+                description="Linked lightweight community anchor.",
+                community_code="AFF-READY-UNION",
+                invite_code="aff-ready-union",
+                created_by_user_id=owner.id,
+            )
+            child_clan = Clan(
+                name="Affiliation Readiness Branch Circle",
+                description="Approved child affiliate.",
+                community_code="AFF-READY-CHILD",
+                invite_code="aff-ready-child",
+                created_by_user_id=owner.id,
+            )
+            parent_clan = Clan(
+                name="Affiliation Readiness National Circle",
+                description="Approved parent affiliate.",
+                community_code="AFF-READY-PARENT",
+                invite_code="aff-ready-parent",
+                created_by_user_id=owner.id,
+            )
+            pending_clan = Clan(
+                name="Affiliation Readiness Pending Circle",
+                description="Pending child affiliate.",
+                community_code="AFF-READY-PENDING",
+                invite_code="aff-ready-pending",
+                created_by_user_id=owner.id,
+            )
+            rejected_parent = Clan(
+                name="Affiliation Readiness Rejected Parent",
+                description="Rejected parent affiliate.",
+                community_code="AFF-READY-REJECTED",
+                invite_code="aff-ready-rejected",
+                created_by_user_id=owner.id,
+            )
+            db.add_all(
+                [linked_clan, child_clan, parent_clan, pending_clan, rejected_parent]
+            )
+            db.flush()
+            linked_clan_id = int(linked_clan.id)
+            child_clan_id = int(child_clan.id)
+            parent_clan_id = int(parent_clan.id)
+            pending_clan_id = int(pending_clan.id)
+            rejected_parent_id = int(rejected_parent.id)
+
+            domain = db.get(CommunityDomain, domain_id)
+            assert domain is not None
+            domain.clan_id = linked_clan_id
+            db.add_all(
+                [
+                    CommunityDomainAffiliation(
+                        parent_clan_id=linked_clan_id,
+                        affiliate_clan_id=child_clan_id,
+                        requested_by_user_id=owner.id,
+                        decided_by_user_id=owner.id,
+                        status="approved",
+                        request_note="Branch relationship request.",
+                        decision_note="Approved child affiliation.",
+                    ),
+                    CommunityDomainAffiliation(
+                        parent_clan_id=parent_clan_id,
+                        affiliate_clan_id=linked_clan_id,
+                        requested_by_user_id=owner.id,
+                        decided_by_user_id=owner.id,
+                        status="approved",
+                        request_note="Parent relationship request.",
+                        decision_note="Approved parent affiliation.",
+                    ),
+                    CommunityDomainAffiliation(
+                        parent_clan_id=linked_clan_id,
+                        affiliate_clan_id=pending_clan_id,
+                        requested_by_user_id=owner.id,
+                        status="pending",
+                        request_note="Pending child relationship request.",
+                    ),
+                    CommunityDomainAffiliation(
+                        parent_clan_id=rejected_parent_id,
+                        affiliate_clan_id=linked_clan_id,
+                        requested_by_user_id=owner.id,
+                        decided_by_user_id=owner.id,
+                        status="rejected",
+                        request_note="Rejected parent relationship request.",
+                        decision_note="Not accepted.",
+                    ),
+                ]
+            )
+            db.commit()
+
+        with SessionLocal() as db:
+            before_counts = {
+                "domains": db.query(CommunityDomain).count(),
+                "clans": db.query(Clan).count(),
+                "affiliations": db.query(CommunityDomainAffiliation).count(),
+                "domain_members": db.query(CommunityDomainMembership).count(),
+                "node_members": db.query(CommunityNodeMembership).count(),
+                "policies": db.query(CommunityDomainPolicy).count(),
+                "reviews": db.query(CommunityDomainActionReview).count(),
+                "evidence": db.query(CommunityDomainActionReviewEvidence).count(),
+                "trust_slips": db.query(TrustSlip).count(),
+            }
+
+        response = client.get(f"/community-domains/{domain_id}/affiliation-readiness")
+        assert response.status_code == 200, response.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    payload = response.json()
+    assert payload["ok"] is True
+    readiness = payload["affiliation_readiness"]
+    assert readiness["editable"] is False
+    assert readiness["viewer"] == {"user_id": owner.id, "can_admin": True}
+    assert readiness["linked_community"] == {
+        "linked": True,
+        "id": linked_clan_id,
+        "name": "Affiliation Readiness Union Circle",
+        "community_code": "AFF-READY-UNION",
+        "status": "active",
+    }
+    assert readiness["summary"] == {
+        "bridge_status": "linked",
+        "domain_affiliation_engine_status": "clan_affiliation_projection_only",
+        "domain_affiliation_records_created": 0,
+        "parent_domain_records_created": 0,
+        "child_domain_records_created": 0,
+        "public_urls_published": 0,
+        "members_transferred": 0,
+        "billing_relationships_activated": 0,
+        "outbound_affiliations": 2,
+        "inbound_affiliations": 2,
+        "approved_affiliations": 2,
+        "pending_affiliations": 1,
+        "rejected_affiliations": 1,
+        "effective_child_links": 1,
+        "effective_parent_links": 1,
+        "status_counts": {"approved": 2, "pending": 1, "rejected": 1},
+    }
+    assert readiness["primary_next_action"] == {
+        "action_key": "review_pending_affiliation_requests",
+        "label": "Review pending affiliation requests",
+        "route_hint": f"/community-domains/{domain_id}/social-bridge",
+        "requires_admin": True,
+    }
+
+    lanes = {item["lane_key"]: item for item in readiness["lanes"]}
+    assert lanes["social_community_anchor"]["status"] == "linked"
+    assert lanes["outbound_child_affiliates"]["status"] == "active_child_affiliates"
+    assert lanes["outbound_child_affiliates"]["count"] == 1
+    assert lanes["inbound_parent_affiliates"]["status"] == "active_parent_affiliates"
+    assert lanes["inbound_parent_affiliates"]["count"] == 1
+    assert lanes["pending_affiliation_reviews"]["status"] == "pending_review_needed"
+    assert lanes["pending_affiliation_reviews"]["ready"] is False
+    assert lanes["pending_affiliation_reviews"]["count"] == 1
+    assert lanes["rejected_affiliation_history"]["status"] == "history_present"
+    assert lanes["rejected_affiliation_history"]["count"] == 1
+    assert lanes["domain_affiliation_engine"]["status"] == "not_connected_in_this_slice"
+    assert lanes["privacy_boundary"]["status"] == "member_safe_projection"
+
+    assert len(readiness["flat_affiliations"]) == 4
+    flat = {
+        (item["direction"], item["status"], item["affiliate_name"]): item
+        for item in readiness["flat_affiliations"]
+    }
+    assert (
+        "outbound_child",
+        "approved",
+        "Affiliation Readiness Branch Circle",
+    ) in flat
+    assert (
+        "outbound_child",
+        "pending",
+        "Affiliation Readiness Pending Circle",
+    ) in flat
+    inbound = {
+        (item["direction"], item["status"], item["parent_name"]): item
+        for item in readiness["flat_affiliations"]
+    }
+    assert (
+        "inbound_parent",
+        "approved",
+        "Affiliation Readiness National Circle",
+    ) in inbound
+    assert (
+        "inbound_parent",
+        "rejected",
+        "Affiliation Readiness Rejected Parent",
+    ) in inbound
+    for item in readiness["flat_affiliations"]:
+        assert item["record_status"] == "read_only_existing_clan_affiliation"
+        assert item["domain_affiliation_status"] == "not_created_in_this_slice"
+        assert item["member_transfer_status"] == "not_transferred_in_this_slice"
+        assert item["billing_status"] == "not_activated_in_this_slice"
+
+    assert "read-only parent/child affiliation planning" in readiness["boundary"]
+    assert "clan-to-clan CommunityDomainAffiliation rows only" in readiness["boundary"]
+    assert "does not create domain-domain affiliations" in readiness["boundary"]
+    assert "create parent Community Domains" in readiness["boundary"]
+    assert "create child Community Domains" in readiness["boundary"]
+    assert "copy or transfer members" in readiness["boundary"]
+    assert "publish public URLs" in readiness["boundary"]
+    assert "Trust Passport entries" in readiness["boundary"]
+
+    with SessionLocal() as db:
+        after_counts = {
+            "domains": db.query(CommunityDomain).count(),
+            "clans": db.query(Clan).count(),
+            "affiliations": db.query(CommunityDomainAffiliation).count(),
+            "domain_members": db.query(CommunityDomainMembership).count(),
+            "node_members": db.query(CommunityNodeMembership).count(),
+            "policies": db.query(CommunityDomainPolicy).count(),
+            "reviews": db.query(CommunityDomainActionReview).count(),
+            "evidence": db.query(CommunityDomainActionReviewEvidence).count(),
+            "trust_slips": db.query(TrustSlip).count(),
+        }
+    assert after_counts == before_counts
+
+
+def test_member_can_read_affiliation_readiness_but_admin_details_are_hidden(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    member = _seed_user(2, "affiliation-readiness-member@example.com")
+    outsider = _seed_user(3, "affiliation-readiness-outsider@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created_domain = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Affiliation Readiness Member Union",
+                "display_name": "Affiliation Readiness Member Union",
+                "domain_type": "professional_union",
+                "template_key": "union_professional_body",
+            },
+        )
+        assert created_domain.status_code == 201, created_domain.text
+        domain_id = created_domain.json()["community_domain"]["id"]
+
+        added = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": member.id, "role": "member"},
+        )
+        assert added.status_code == 201, added.text
+
+        with SessionLocal() as db:
+            linked_clan = Clan(
+                name="Affiliation Readiness Member Circle",
+                description="Linked lightweight community anchor.",
+                community_code="AFF-READY-MEMBER",
+                invite_code="aff-ready-member",
+                created_by_user_id=owner.id,
+            )
+            child_clan = Clan(
+                name="Affiliation Readiness Hidden Child Circle",
+                description="Approved child affiliate.",
+                community_code="AFF-READY-HIDDEN-CHILD",
+                invite_code="aff-ready-hidden-child",
+                created_by_user_id=owner.id,
+            )
+            db.add_all([linked_clan, child_clan])
+            db.flush()
+
+            domain = db.get(CommunityDomain, domain_id)
+            assert domain is not None
+            domain.clan_id = linked_clan.id
+            db.add(
+                CommunityDomainAffiliation(
+                    parent_clan_id=linked_clan.id,
+                    affiliate_clan_id=child_clan.id,
+                    requested_by_user_id=owner.id,
+                    decided_by_user_id=owner.id,
+                    status="approved",
+                    request_note="Hidden child relationship request.",
+                    decision_note="Approved before domain affiliation projection.",
+                )
+            )
+            db.commit()
+
+        app.dependency_overrides[get_current_user] = lambda: member
+        member_readiness = client.get(
+            f"/community-domains/{domain_id}/affiliation-readiness"
+        )
+        assert member_readiness.status_code == 200, member_readiness.text
+
+        app.dependency_overrides[get_current_user] = lambda: outsider
+        outsider_readiness = client.get(
+            f"/community-domains/{domain_id}/affiliation-readiness"
+        )
+        assert outsider_readiness.status_code == 403, outsider_readiness.text
+        assert "active Community Domain members" in outsider_readiness.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    readiness = member_readiness.json()["affiliation_readiness"]
+    assert readiness["viewer"] == {"user_id": member.id, "can_admin": False}
+    assert readiness["linked_community"] == {
+        "linked": True,
+        "id": None,
+        "name": None,
+        "community_code": None,
+        "status": "hidden_for_member",
+    }
+    assert readiness["summary"]["bridge_status"] == "linked"
+    assert readiness["summary"]["domain_affiliation_engine_status"] == (
+        "clan_affiliation_projection_only"
+    )
+    assert readiness["summary"]["outbound_affiliations"] is None
+    assert readiness["summary"]["inbound_affiliations"] is None
+    assert readiness["summary"]["approved_affiliations"] is None
+    assert readiness["summary"]["status_counts"] is None
+    assert readiness["flat_affiliations"] == []
+    assert readiness["primary_next_action"] == {
+        "action_key": "ask_domain_admin_to_review_affiliations",
+        "label": "Ask a Community Domain admin to review affiliation readiness",
+        "route_hint": None,
+        "requires_admin": True,
+    }
+
+    lanes = {item["lane_key"]: item for item in readiness["lanes"]}
+    assert lanes["social_community_anchor"]["route_hint"] is None
+    assert lanes["outbound_child_affiliates"]["count"] is None
+    assert lanes["outbound_child_affiliates"]["route_hint"] is None
+    assert lanes["inbound_parent_affiliates"]["count"] is None
+    assert lanes["pending_affiliation_reviews"]["count"] is None
+    assert lanes["rejected_affiliation_history"]["count"] is None
+    assert lanes["domain_affiliation_engine"]["route_hint"].endswith(
+        "/network-presence"
+    )
+    assert lanes["privacy_boundary"]["route_hint"].endswith("/record-privacy-map")
+    assert "private member" in readiness["boundary"]
+    assert "affiliate records" in readiness["boundary"]
+
+
 def test_institutional_profile_projects_real_world_package_without_writes(
     client: TestClient,
 ):
