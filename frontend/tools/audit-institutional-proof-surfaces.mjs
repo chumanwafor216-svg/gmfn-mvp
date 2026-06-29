@@ -75,7 +75,6 @@ const files = {
   trustSlip: "frontend/src/pages/TrustSlipPage.tsx",
   trustPassport: "frontend/src/pages/TrustScorePage.tsx",
   trustSlipReader: "frontend/src/components/TrustSlipReaderBlock.tsx",
-  communityMemberVerify: "frontend/src/pages/CommunityMemberVerifyPage.tsx",
   communityConfirmationPolicy:
     "frontend/src/pages/CommunityConfirmationPolicyPage.tsx",
   communityConfirmationInbox:
@@ -360,7 +359,7 @@ assertContains(
 );
 assertNotContains(
   "portableEvidencePack",
-  /"actor_user_id": getattr\(e, "actor_user_id"|\"subject_user_id\": getattr\(e, "subject_user_id"|\"meta\": meta_val|\"payment_reference\"|"full_summary": summary|"user": \{|"email": getattr\(current_user, "email", None\)|"phone_e164": getattr\(current_user, "phone_e164", None\)|GSN-PACK-U/,
+  /"actor_user_id": getattr\(e, "actor_user_id"|"subject_user_id": getattr\(e, "subject_user_id"|"meta": meta_val|"payment_reference"|"full_summary": summary|"user": \{|"email": getattr\(current_user, "email", None\)|"phone_e164": getattr\(current_user, "phone_e164", None\)|GSN-PACK-U/,
   "GSN Evidence Pack ZIP snapshots must not rebuild raw TrustEvent IDs, metadata, payment references, full TrustSlip summaries, private contact details, or raw-user-id pack references."
 );
 assertContains(

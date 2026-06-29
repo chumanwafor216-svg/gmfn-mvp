@@ -1,4 +1,4 @@
-/* global AbortSignal, Buffer, fetch, process, URL */
+/* global AbortSignal, Buffer, fetch, process, URL, URLSearchParams */
 
 import { createServer } from "node:http";
 import { createReadStream, existsSync, promises as fs } from "node:fs";

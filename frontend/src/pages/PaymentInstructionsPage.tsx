@@ -1384,7 +1384,7 @@ export default function PaymentInstructionsPage() {
         tone: "success",
         text: "Proof uploaded for finance review. It does not confirm payment yet.",
       });
-    } catch (err) {
+    } catch {
       setProofFileName(file.name || "payment screenshot");
       setProofRecordedAt(recordedAt);
       setProofUploaded(false);

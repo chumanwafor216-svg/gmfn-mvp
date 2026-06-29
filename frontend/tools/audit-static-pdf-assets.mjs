@@ -1,4 +1,4 @@
-/* global console, process */
+/* global Buffer, console, process */
 
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
