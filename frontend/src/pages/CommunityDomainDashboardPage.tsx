@@ -9,6 +9,7 @@ import {
   decideCommunityDomainActionReview,
   getAccessToken,
   getCommunityDomainDashboard,
+  getCommunityDomainMemberPlacementSummary,
   getCommunityDomainReviewerQueue,
   listCommunityDomainActionReviews,
   listMyCommunityDomainMembershipRequests,
@@ -289,6 +290,7 @@ export default function CommunityDomainDashboardPage() {
   const [domainItems, setDomainItems] = useState<any[]>([]);
   const [reviewerQueue, setReviewerQueue] = useState<ActionReviewItem[]>([]);
   const [ownMembershipRequests, setOwnMembershipRequests] = useState<ActionReviewItem[]>([]);
+  const [placementSummary, setPlacementSummary] = useState<any | null>(null);
   const [quote, setQuote] = useState<any | null>(null);
   const [activeLane, setActiveLane] = useState("structure");
   const [loading, setLoading] = useState(true);
@@ -319,6 +321,7 @@ export default function CommunityDomainDashboardPage() {
       setLoading(true);
       setMessage("");
       setOwnMembershipRequests([]);
+      setPlacementSummary(null);
       try {
         const payload = await listMyCommunityDomains();
         setDomainItems(Array.isArray(payload?.items) ? payload.items : []);
@@ -339,12 +342,25 @@ export default function CommunityDomainDashboardPage() {
     setDomainItems([]);
     setReviewerQueue([]);
     setOwnMembershipRequests([]);
+    setPlacementSummary(null);
     try {
       const payload = await getCommunityDomainDashboard(communityDomainId);
       const nextDashboard = (payload?.dashboard || null) as DashboardPayload | null;
       setDashboard(nextDashboard);
       setQuote(nextDashboard?.package_quote || null);
       setActiveLane(laneForAction(nextDashboard?.primary_next_action?.action_key));
+      const viewerUserId = nextDashboard?.viewer?.user_id;
+      if (viewerUserId) {
+        try {
+          const placementPayload = await getCommunityDomainMemberPlacementSummary(
+            communityDomainId,
+            viewerUserId
+          );
+          setPlacementSummary(placementPayload?.placement_summary || null);
+        } catch {
+          setPlacementSummary(null);
+        }
+      }
       if (nextDashboard?.viewer?.can_admin) {
         try {
           const [pendingPayload, approvedPayload] = await Promise.all([
@@ -364,6 +380,7 @@ export default function CommunityDomainDashboardPage() {
       }
     } catch (err: any) {
       setDashboard(null);
+      setPlacementSummary(null);
       await loadOwnMembershipRequests();
       setMessage(
         err?.message ||
@@ -400,6 +417,13 @@ export default function CommunityDomainDashboardPage() {
   const membershipAccessRequests = reviewerQueue.filter(
     (review) => cleanText(review.action_key) === "domain_member.upsert"
   );
+  const placementCounts = placementSummary?.counts || {};
+  const placementLanes = Array.isArray(placementSummary?.lanes)
+    ? placementSummary.lanes
+    : [];
+  const visibleNodePlacements = Array.isArray(placementSummary?.node_placements)
+    ? placementSummary.node_placements.slice(0, 3)
+    : [];
   const selectedLane = lanes.find((lane) => lane.lane_key === activeLane) || lanes[0];
   const primaryActionLaneKey = laneForAction(dashboard?.primary_next_action?.action_key);
   const primaryActionLane =
@@ -1148,6 +1172,86 @@ export default function CommunityDomainDashboardPage() {
                           </div>
                         )
                       )}
+                    </div>
+                  </div>
+                ) : null}
+
+                {activeLane === "members" && placementSummary ? (
+                  <div style={softCard()}>
+                    <div style={sectionLabel()}>Your placement</div>
+                    <div style={{ ...helperText(), marginTop: 7 }}>
+                      Domain role:{" "}
+                      <strong style={{ textTransform: "capitalize" }}>
+                        {compactStatus(placementSummary.domain_role)}
+                      </strong>
+                      . Active operating-unit placements:{" "}
+                      <strong>{countValue(placementCounts.active_node_placements)}</strong>.
+                    </div>
+                    {visibleNodePlacements.length ? (
+                      <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
+                        {visibleNodePlacements.map((placement: any) => (
+                          <div
+                            key={`${cleanText(placement.community_node_id)}:${cleanText(
+                              placement.id
+                            )}`}
+                            style={{
+                              display: "grid",
+                              gridTemplateColumns: "minmax(0, 1fr) auto",
+                              gap: 10,
+                              alignItems: "center",
+                              borderRadius: 14,
+                              border: "1px solid rgba(9,27,46,0.10)",
+                              background: "rgba(255,255,255,0.72)",
+                              padding: 10,
+                            }}
+                          >
+                            <span style={{ minWidth: 0 }}>
+                              <span style={{ display: "block", fontWeight: 950 }}>
+                                {cleanText(placement.community_node_name, "Operating unit")}
+                              </span>
+                              <span
+                                style={{
+                                  display: "block",
+                                  color: "#4F647A",
+                                  fontSize: 12.5,
+                                  marginTop: 3,
+                                  textTransform: "capitalize",
+                                }}
+                              >
+                                {compactStatus(placement.role)}
+                              </span>
+                            </span>
+                            <span style={statusBadge(placement.status)}>
+                              {compactStatus(placement.status)}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div style={{ ...helperText(), marginTop: 10 }}>
+                        You are recorded at the domain level, but no branch, line,
+                        department, class, or committee placement is active yet.
+                      </div>
+                    )}
+                    {placementLanes.length ? (
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "repeat(auto-fit, minmax(118px, 1fr))",
+                          gap: 8,
+                          marginTop: 10,
+                        }}
+                      >
+                        {placementLanes.slice(0, 4).map((lane: any) => (
+                          <div key={cleanText(lane.lane_key, lane.label)} style={statusBadge(lane.state)}>
+                            {laneDisplayLabel(lane, "Placement")}
+                          </div>
+                        ))}
+                      </div>
+                    ) : null}
+                    <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
+                      This is read-only. Admins still control placement, role changes,
+                      and review decisions through scoped Community Domain tools.
                     </div>
                   </div>
                 ) : null}

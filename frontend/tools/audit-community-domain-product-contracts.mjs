@@ -132,6 +132,13 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
+  /getCommunityDomainMemberPlacementSummary[\s\S]*placementSummary[\s\S]*placementCounts[\s\S]*visibleNodePlacements[\s\S]*activeLane === "members"[\s\S]*Your placement[\s\S]*Active operating-unit placements[\s\S]*This is read-only[\s\S]*Admins still control placement, role changes,\s+and review decisions/,
+  "Community Domain dashboard Members lane must show the current viewer's read-only placement summary without implying self-service placement or role changes.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
   /requestCommunityDomainMembership[\s\S]*requestDomainAccess[\s\S]*Requesting access from the Community Domain dashboard[\s\S]*must still be approved and applied before membership changes[\s\S]*community-domain-dashboard\.error\.request-membership/,
   "Community Domain dashboard denied-access state must expose the real membership request path without implying instant membership.",
   { frontend: true }
