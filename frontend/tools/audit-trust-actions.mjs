@@ -1511,7 +1511,7 @@ assertContains(
 
 assertContains(
   "src/lib/merchantChannel.ts",
-  /export function merchantReleaseDeskPath[\s\S]*?\/merchant-release\/\$\{encodeURIComponent\(token\)\}[\s\S]*?export async function recordMerchantRelease[\s\S]*?fetch\("\/api\/merchant\/releases"[\s\S]*?goods_value[\s\S]*?merchant_note[\s\S]*?invoice_reference[\s\S]*?courier_name[\s\S]*?payment_schedule_note/,
+  /export function merchantReleaseDeskPath[\s\S]*?\/merchant-release\/\$\{encodeURIComponent\(token\)\}[\s\S]*?export async function recordMerchantRelease[\s\S]*?fetchWithMerchantTimeout\("\/api\/merchant\/releases"[\s\S]*?goods_value[\s\S]*?merchant_note[\s\S]*?invoice_reference[\s\S]*?courier_name[\s\S]*?payment_schedule_note/,
   "Frontend merchant channel must expose the Merchant Release record endpoint through one helper."
 );
 

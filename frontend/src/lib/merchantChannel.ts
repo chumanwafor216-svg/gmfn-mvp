@@ -84,6 +84,35 @@ function getToken(): string | null {
   return localStorage.getItem("access_token");
 }
 
+const MERCHANT_JSON_TIMEOUT_MS = 30000;
+
+async function fetchWithMerchantTimeout(
+  input: RequestInfo | URL,
+  init: RequestInit
+): Promise<Response> {
+  const controller = new AbortController();
+  const timer = globalThis.setTimeout(
+    () => controller.abort(),
+    MERCHANT_JSON_TIMEOUT_MS
+  );
+
+  try {
+    return await fetch(input, {
+      ...init,
+      signal: controller.signal,
+    });
+  } catch (err: any) {
+    if (err?.name === "AbortError") {
+      throw new Error(
+        "The server did not finish this request. Please check your connection and try again."
+      );
+    }
+    throw err;
+  } finally {
+    globalThis.clearTimeout(timer);
+  }
+}
+
 async function parseError(res: Response): Promise<string> {
   const text = await res.text();
   try {
@@ -98,7 +127,7 @@ async function authedGet<T>(path: string): Promise<T> {
   const token = getToken();
   if (!token) throw new Error("You are logged out. Please log in again.");
 
-  const res = await fetch(path, {
+  const res = await fetchWithMerchantTimeout(path, {
     method: "GET",
     headers: {
       Accept: "application/json",
@@ -136,14 +165,14 @@ export function merchantReleaseDeskPath(tokenOrUrl: string): string {
 
 export async function verifyMerchantPublic(tokenOrUrl: string): Promise<MerchantVerifyPublicResponse> {
   const token = extractMerchantToken(tokenOrUrl);
-  const res = await fetch(`/trust-slips/merchant/verify/${token}`, { method: "GET" });
+  const res = await fetchWithMerchantTimeout(`/trust-slips/merchant/verify/${token}`, { method: "GET" });
   if (!res.ok) throw new Error(await parseError(res));
   return (await res.json()) as MerchantVerifyPublicResponse;
 }
 
 export async function recordMerchantRelease(input: MerchantReleaseInput): Promise<MerchantReleaseResponse> {
   const token = extractMerchantToken(input.token);
-  const res = await fetch("/api/merchant/releases", {
+  const res = await fetchWithMerchantTimeout("/api/merchant/releases", {
     method: "POST",
     headers: {
       Accept: "application/json",
