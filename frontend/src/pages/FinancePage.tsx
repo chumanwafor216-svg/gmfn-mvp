@@ -401,8 +401,37 @@ function buildHeaders(clanId?: number): Record<string, string> {
   return headers;
 }
 
+const FINANCE_JSON_TIMEOUT_MS = 30000;
+
+async function fetchFinanceJson(
+  input: RequestInfo | URL,
+  init: RequestInit
+): Promise<Response> {
+  const controller = new AbortController();
+  const timer = globalThis.setTimeout(
+    () => controller.abort(),
+    FINANCE_JSON_TIMEOUT_MS
+  );
+
+  try {
+    return await fetch(input, {
+      ...init,
+      signal: controller.signal,
+    });
+  } catch (err: any) {
+    if (err?.name === "AbortError") {
+      throw new Error(
+        "The server did not finish this request. Please check your connection and try again."
+      );
+    }
+    throw err;
+  } finally {
+    globalThis.clearTimeout(timer);
+  }
+}
+
 async function fetchJson(path: string, clanId?: number): Promise<any | null> {
-  const res = await fetch(`${apiBase()}${path}`, {
+  const res = await fetchFinanceJson(`${apiBase()}${path}`, {
     method: "GET",
     headers: buildHeaders(clanId),
     credentials: "include",
