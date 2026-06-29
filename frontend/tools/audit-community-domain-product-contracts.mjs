@@ -130,6 +130,13 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainPurchasePage.tsx",
+  /function availabilityReasonText[\s\S]*reserved by GSN[\s\S]*Use letters, numbers, spaces, or hyphens[\s\S]*already in use[\s\S]*availabilityReasonText\(result\?\.reason\)[\s\S]*Reason: <strong>\{availabilityReasonText\(availability\.reason\)\}<\/strong>/,
+  "Community Domain purchase availability errors must translate backend reason codes into plain user guidance.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainPurchasePage.tsx",
   /\/app\/community-domain[\s\S]*community-domain-purchase\.open-my-domains[\s\S]*Open my Community Domains[\s\S]*Sign in to open domains/,
   "Community Domain purchase page must let returning signed-in owners or members recover the authenticated domain selector.",
   { frontend: true }

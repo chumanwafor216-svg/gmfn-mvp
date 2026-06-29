@@ -184,6 +184,23 @@ function compactValue(value: unknown, fallback = "Not set"): string {
   return text || fallback;
 }
 
+function availabilityReasonText(reason: unknown): string {
+  const key = compactValue(reason, "").toLowerCase();
+  if (key === "domain_name_required") {
+    return "Enter the name or code you want GSN to check.";
+  }
+  if (key === "reserved_domain_name") {
+    return "That name is reserved by GSN. Choose a more specific institution name.";
+  }
+  if (key === "invalid_domain_name") {
+    return "Use letters, numbers, spaces, or hyphens. GSN will turn spaces into hyphens.";
+  }
+  if (key === "domain_name_taken") {
+    return "That name is already in use. Add a branch, city, or institution detail.";
+  }
+  return "Choose a different domain name before continuing.";
+}
+
 function normalizeTemplateItems(payload: any): TemplateOption[] {
   const items = Array.isArray(payload?.items) ? payload.items : [];
   const clean = items
@@ -317,7 +334,7 @@ export default function CommunityDomainPurchasePage() {
       setMessage(
         result?.available
           ? "This domain name can be used for a draft Community Domain request."
-          : "That domain name is not available. Choose a different domain name before continuing."
+          : availabilityReasonText(result?.reason)
       );
     } catch (err: any) {
       setAvailability(null);
@@ -608,7 +625,7 @@ export default function CommunityDomainPurchasePage() {
                         {availability.reason ? (
                           <>
                             <br />
-                            Reason: <strong>{availability.reason}</strong>
+                            Reason: <strong>{availabilityReasonText(availability.reason)}</strong>
                           </>
                         ) : null}
                       </>
