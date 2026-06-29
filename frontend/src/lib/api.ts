@@ -6085,6 +6085,8 @@ async function vaultReadError(res: Response): Promise<string> {
   }
 }
 
+const VAULT_JSON_TIMEOUT_MS = DEFAULT_JSON_TIMEOUT_MS;
+
 async function vaultTryJson<T = any>(
   attempts: Array<{
     method: "GET" | "POST" | "PATCH" | "PUT" | "DELETE";
@@ -6123,14 +6125,18 @@ async function vaultTryJson<T = any>(
           headers["Authorization"] = `Bearer ${token}`;
         }
 
-        const res = await fetch(vaultJoinUrl(root, attempt.path), {
-          method: attempt.method,
-          headers,
-          credentials: "include",
-          cache: "no-store",
-          body:
-            attempt.body === undefined ? undefined : JSON.stringify(attempt.body),
-        });
+        const res = await fetchWithTimeout(
+          vaultJoinUrl(root, attempt.path),
+          {
+            method: attempt.method,
+            headers,
+            credentials: "include",
+            cache: "no-store",
+            body:
+              attempt.body === undefined ? undefined : JSON.stringify(attempt.body),
+          },
+          VAULT_JSON_TIMEOUT_MS
+        );
 
         if (res.status === 404 || res.status === 405) {
           continue;
