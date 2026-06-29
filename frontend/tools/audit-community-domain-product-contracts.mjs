@@ -83,8 +83,8 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /Loading your Community Domains[\s\S]*Cannot load domains[\s\S]*This Community Domain is not available here[\s\S]*Your Community Domains could not be loaded/,
-  "Community Domain dashboard selector errors must describe the current-user domain list instead of pretending a specific domain failed.",
+  /Loading your Community Domains[\s\S]*Cannot load domains[\s\S]*Your Community Domains could not be loaded[\s\S]*community-domain-dashboard\.error\.retry-selector[\s\S]*Try again[\s\S]*community-domain-dashboard\.error\.community-home[\s\S]*community-domain-dashboard\.error\.purchase/,
+  "Community Domain dashboard selector errors must describe the current-user domain list and offer retry, Community Home, and purchase recovery.",
   { frontend: true }
 );
 

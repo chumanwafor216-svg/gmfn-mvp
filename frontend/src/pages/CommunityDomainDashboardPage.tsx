@@ -317,6 +317,18 @@ export default function CommunityDomainDashboardPage() {
           </h2>
           <div style={helperText()}>{message}</div>
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 14 }}>
+            <StableButton
+              type="button"
+              kind="primary"
+              debugId={
+                communityDomainId
+                  ? "community-domain-dashboard.error.retry-dashboard"
+                  : "community-domain-dashboard.error.retry-selector"
+              }
+              onClick={loadDashboard}
+            >
+              Try again
+            </StableButton>
             <StableCtaLink
               to={APP_ROUTES.COMMUNITY}
               kind="secondary"
