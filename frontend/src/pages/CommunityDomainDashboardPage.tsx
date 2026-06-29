@@ -250,6 +250,10 @@ export default function CommunityDomainDashboardPage() {
   const lanes = Array.isArray(dashboard?.lanes) ? dashboard?.lanes || [] : [];
   const isAdmin = Boolean(dashboard?.viewer?.can_admin);
   const selectedLane = lanes.find((lane) => lane.lane_key === activeLane) || lanes[0];
+  const primaryActionLaneKey = laneForAction(dashboard?.primary_next_action?.action_key);
+  const primaryActionLane =
+    lanes.find((lane) => lane.lane_key === primaryActionLaneKey) || selectedLane;
+  const primaryActionLaneLabel = cleanText(primaryActionLane?.label, "work");
   const billingIsActive =
     cleanText(status.billing_status || selectedLane?.status).toLowerCase() === "active";
 
@@ -531,24 +535,24 @@ export default function CommunityDomainDashboardPage() {
               <div style={{ display: "grid", gap: 10 }}>
                 <div style={sectionLabel()}>Next action</div>
                 <h2 style={{ margin: 0, fontSize: 23, lineHeight: 1.12 }}>
-                  Continue setup
+                  Open the {primaryActionLaneLabel} lane
                 </h2>
                 <div style={helperText()}>
                   {cleanText(
                     dashboard.primary_next_action?.label,
                     "Review the current Community Domain setup state."
-                  )}
+                  )}{" "}
+                  GSN opens the matching lane here first; deeper changes still use
+                  backend-scoped tools.
                 </div>
                 <StableButton
                   type="button"
                   kind="primary"
                   fullWidth
                   debugId="community-domain-dashboard.continue-setup"
-                  onClick={() =>
-                    setActiveLane(laneForAction(dashboard.primary_next_action?.action_key))
-                  }
+                  onClick={() => setActiveLane(primaryActionLaneKey)}
                 >
-                  Continue setup
+                  Open {primaryActionLaneLabel}
                 </StableButton>
               </div>
             </div>

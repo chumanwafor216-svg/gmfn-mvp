@@ -90,8 +90,8 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /getCommunityDomainDashboard[\s\S]*Continue setup[\s\S]*does not create payment instructions[\s\S]*verify ownership/,
-  "Community Domain dashboard page must use the scoped backend summary and keep payment, activation, and verification boundaries honest.",
+  /getCommunityDomainDashboard[\s\S]*primaryActionLaneKey[\s\S]*Open the \{primaryActionLaneLabel\} lane[\s\S]*deeper changes still use[\s\S]*backend-scoped tools[\s\S]*does not create payment instructions[\s\S]*verify ownership/,
+  "Community Domain dashboard page must use the scoped backend summary, open matching lanes honestly, and keep payment, activation, and verification boundaries honest.",
   { frontend: true }
 );
 
