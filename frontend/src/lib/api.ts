@@ -621,13 +621,17 @@ export async function getMeWithToken(
   const path = options?.fresh
     ? `/auth/me?session_check=${encodeURIComponent(String(Date.now()))}`
     : "/auth/me";
-  const res = await fetch(buildUrl(path), {
-    method: "GET",
-    headers: {
-      Accept: "application/json",
-      Authorization: `Bearer ${cleaned}`,
+  const res = await fetchWithTimeout(
+    buildUrl(path),
+    {
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+        Authorization: `Bearer ${cleaned}`,
+      },
     },
-  });
+    DEFAULT_JSON_TIMEOUT_MS
+  );
 
   if (!res.ok) throw new HttpStatusError(res.status, await parseError(res));
   const out = await readJsonOrTextSafe(res);

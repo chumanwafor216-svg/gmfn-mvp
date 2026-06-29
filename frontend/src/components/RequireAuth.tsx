@@ -33,6 +33,7 @@ type ContinuityBlock = {
 // being audited. Re-enable after the UI is stable.
 const IDENTITY_CONTINUITY_ROUTE_BLOCK_ENABLED = false;
 const IDENTITY_CONTINUITY_OBSERVATION_ENABLED = false;
+const SLOW_SESSION_CHECK_MS = 8000;
 
 const CONTINUITY_PROTECTED_PREFIXES = [
   "/app/finance",
@@ -260,6 +261,7 @@ export default function RequireAuth({ children, requireRole }: Props) {
   const [continuityBlock, setContinuityBlock] = useState<ContinuityBlock | null>(
     null
   );
+  const [slowSessionCheck, setSlowSessionCheck] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -373,10 +375,88 @@ export default function RequireAuth({ children, requireRole }: Props) {
     };
   }, [location.pathname, requireRole]);
 
+  useEffect(() => {
+    if (!loading) {
+      setSlowSessionCheck(false);
+      return;
+    }
+
+    setSlowSessionCheck(false);
+    const timer = window.setTimeout(
+      () => setSlowSessionCheck(true),
+      SLOW_SESSION_CHECK_MS
+    );
+
+    return () => window.clearTimeout(timer);
+  }, [loading, location.pathname, location.search]);
+
   if (loading) {
     return (
       <div style={pageShell()}>
-        <div style={{ fontWeight: 700, color: "#0B1F33" }}>Loading workspace...</div>
+        <div
+          style={{
+            ...denyCard(),
+            maxWidth: 520,
+            padding: 24,
+            textAlign: "center",
+          }}
+        >
+          <div
+            style={{
+              fontSize: 12,
+              color: "#5D7389",
+              fontWeight: 900,
+              letterSpacing: 0.35,
+              textTransform: "uppercase",
+            }}
+          >
+            Secure workspace check
+          </div>
+          <div
+            style={{
+              marginTop: 10,
+              fontWeight: 900,
+              color: "#0B1F33",
+              fontSize: 22,
+              lineHeight: 1.2,
+            }}
+          >
+            {slowSessionCheck
+              ? "This is taking longer than expected."
+              : "Loading workspace..."}
+          </div>
+          <div
+            style={{
+              margin: "12px auto 0",
+              maxWidth: 420,
+              color: "#5F7287",
+              fontSize: 14,
+              lineHeight: 1.65,
+            }}
+          >
+            {slowSessionCheck
+              ? "Your phone may be holding an old sign-in session, or the local connection may have changed. Open sign-in again to refresh the session check."
+              : "GSN is checking that this device can safely open your member workspace."}
+          </div>
+          {slowSessionCheck ? (
+            <CardActionRow style={{ marginTop: 18, justifyContent: "center" }}>
+              <StableCtaLink
+                to="/login?session=expired&force=1"
+                kind="primary"
+                debugId="require-auth.loading.open-sign-in"
+              >
+                Open Sign In
+              </StableCtaLink>
+              <StableCtaLink
+                to="/cover"
+                kind="secondary"
+                debugId="require-auth.loading.cover"
+              >
+                Start Again
+              </StableCtaLink>
+            </CardActionRow>
+          ) : null}
+        </div>
       </div>
     );
   }
