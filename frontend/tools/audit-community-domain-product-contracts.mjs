@@ -122,6 +122,13 @@ assertContains(
 );
 
 assertContains(
+  "src/pages/LoginPage.tsx",
+  /function safeAppReturnTarget\(value: unknown\): string \{[\s\S]*target === "\/app" \|\| target\.startsWith\("\/app\/"\)[\s\S]*const nextTarget = safeAppReturnTarget\(searchParams\.get\("next"\)\);[\s\S]*if \(nextTarget\) return nextTarget;[\s\S]*nav\(publishRecoveryTarget\(\) \|\| redirectTarget/,
+  "Login must preserve authenticated /app continuations such as the Community Domain selector after sign-in.",
+  { frontend: true }
+);
+
+assertContains(
   "docs/SCREEN_SPECS.md",
   /## SignUpChoicePage[\s\S]*Purchase Community Domain card[\s\S]*Purchase Community Domain goes to CommunityDomainPurchasePage[\s\S]*must not be\s+merged into ordinary Create Community/,
   "Sign-up choice must expose Purchase Community Domain as a separate institutional path."
