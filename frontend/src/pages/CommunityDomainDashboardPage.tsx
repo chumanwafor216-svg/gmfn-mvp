@@ -458,6 +458,31 @@ export default function CommunityDomainDashboardPage() {
     }
   }
 
+  async function declineAccessRequest(review: ActionReviewItem) {
+    if (!communityDomainId || !review.id) return;
+    const reviewId = String(review.id);
+    setBusyReviewId(`${reviewId}:decline`);
+    setMessage("");
+    try {
+      await decideCommunityDomainActionReview(communityDomainId, reviewId, {
+        decision: "reject",
+        decision_note:
+          "Declined from the Community Domain access queue. No membership change was applied.",
+      });
+      setMessage(
+        `Access request ${reviewId} declined. No membership was added, and the request will no longer appear as pending.`
+      );
+      await refreshReviewerQueue();
+    } catch (err: any) {
+      setMessage(
+        err?.message ||
+          "GSN could not decline this Community Domain access request."
+      );
+    } finally {
+      setBusyReviewId(null);
+    }
+  }
+
   async function applyApprovedAccessRequest(review: ActionReviewItem) {
     if (!communityDomainId || !review.id) return;
     const reviewId = String(review.id);
@@ -1079,6 +1104,7 @@ export default function CommunityDomainDashboardPage() {
                       const isApprovedReview = reviewStatus === "approved";
                       const approveBusy = busyReviewId === `${reviewId}:approve`;
                       const applyBusy = busyReviewId === `${reviewId}:apply`;
+                      const declineBusy = busyReviewId === `${reviewId}:decline`;
                       return (
                         <div key={reviewId} style={softCard()}>
                           <div style={{ display: "grid", gap: 8 }}>
@@ -1122,6 +1148,18 @@ export default function CommunityDomainDashboardPage() {
                                   onClick={() => approveAccessRequest(review, false)}
                                 >
                                   {approveBusy ? "Approving..." : "Approve only"}
+                                </StableButton>
+                              ) : null}
+                              {!isApprovedReview ? (
+                                <StableButton
+                                  type="button"
+                                  kind="secondary"
+                                  fullWidth
+                                  disabled={Boolean(busyReviewId)}
+                                  debugId={`community-domain-dashboard.access-request.decline-${reviewId}`}
+                                  onClick={() => declineAccessRequest(review)}
+                                >
+                                  {declineBusy ? "Declining..." : "Decline"}
                                 </StableButton>
                               ) : null}
                               <StableButton
