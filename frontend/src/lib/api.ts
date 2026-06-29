@@ -533,14 +533,18 @@ async function httpForm(path: string, form: Record<string, any>): Promise<any> {
     fd.set(k, String(v));
   }
 
-  const res = await fetch(buildUrl(path), {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-      Accept: "application/json",
+  const res = await fetchWithTimeout(
+    buildUrl(path),
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        Accept: "application/json",
+      },
+      body: fd.toString(),
     },
-    body: fd.toString(),
-  });
+    DEFAULT_JSON_TIMEOUT_MS
+  );
 
   if (!res.ok) throw new HttpStatusError(res.status, await parseError(res));
   return readJsonOrTextSafe(res);
