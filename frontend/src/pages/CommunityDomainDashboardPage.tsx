@@ -304,6 +304,14 @@ function structurePreviewRows(nodes: StructureNode[]): Array<{
   return rows.slice(0, 5);
 }
 
+function reviewStatusCounts(items: ActionReviewItem[]): Record<string, number> {
+  return items.reduce<Record<string, number>>((counts, item) => {
+    const status = cleanText(item.status, "unknown").toLowerCase();
+    counts[status] = (counts[status] || 0) + 1;
+    return counts;
+  }, {});
+}
+
 function mergeActionReviews(...groups: ActionReviewItem[][]): ActionReviewItem[] {
   const byId = new Map<string, ActionReviewItem>();
   groups.flat().forEach((item) => {
@@ -465,6 +473,14 @@ export default function CommunityDomainDashboardPage() {
     ? placementSummary.node_placements.slice(0, 3)
     : [];
   const visibleStructureRows = structurePreviewRows(nodeTree);
+  const governanceReviewCounts = reviewStatusCounts(reviewerQueue);
+  const governancePendingCount =
+    (governanceReviewCounts.pending || 0) +
+    (governanceReviewCounts.pending_review || 0);
+  const governanceApprovedCount = governanceReviewCounts.approved || 0;
+  const governanceAttentionCount = isAdmin
+    ? governancePendingCount
+    : Number(counts.open_reviews || 0);
   const selectedLane = lanes.find((lane) => lane.lane_key === activeLane) || lanes[0];
   const primaryActionLaneKey = laneForAction(dashboard?.primary_next_action?.action_key);
   const primaryActionLane =
@@ -1254,7 +1270,7 @@ export default function CommunityDomainDashboardPage() {
                                   textTransform: "capitalize",
                                 }}
                               >
-                                {level ? "Operating unit" : "Root"} ·{" "}
+                                {level ? "Operating unit" : "Root"} -{" "}
                                 {compactStatus(node.node_type || node.node_kind)}
                               </span>
                             </span>
@@ -1274,6 +1290,55 @@ export default function CommunityDomainDashboardPage() {
                     <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
                       This preview does not create nodes, change parentage, place
                       members, grant roles, activate billing, or verify a branch.
+                    </div>
+                  </div>
+                ) : null}
+
+                {activeLane === "governance" ? (
+                  <div style={softCard()}>
+                    <div style={sectionLabel()}>Governance review pulse</div>
+                    <div style={{ ...helperText(), marginTop: 7 }}>
+                      {isAdmin
+                        ? "Open decisions and approved-but-unapplied reviews are shown from the scoped reviewer queue."
+                        : "Open decisions are handled by owner/admin reviewers. This lane shows whether the domain has visible review attention."}
+                    </div>
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "repeat(auto-fit, minmax(118px, 1fr))",
+                        gap: 8,
+                        marginTop: 10,
+                      }}
+                    >
+                      {[
+                        ["Needs review", governanceAttentionCount],
+                        ["Ready to apply", isAdmin ? governanceApprovedCount : 0],
+                        ["Access requests", isAdmin ? membershipAccessRequests.length : 0],
+                      ].map(([label, value]) => (
+                        <div
+                          key={String(label)}
+                          style={statusBadge(Number(value) > 0 ? "attention" : "quiet")}
+                        >
+                          {String(label)}: {countValue(value)}
+                        </div>
+                      ))}
+                    </div>
+                    {isAdmin && membershipAccessRequests.length ? (
+                      <div style={{ ...helperText(), marginTop: 10 }}>
+                        The access-request panel below keeps approve, decline, and apply
+                        as separate actions so membership changes only after an approved
+                        review is applied.
+                      </div>
+                    ) : (
+                      <div style={{ ...helperText(), marginTop: 10 }}>
+                        {isAdmin
+                          ? "No membership access request currently needs action from this account."
+                          : "You can see review pressure here, but decision queues and private review details stay with authorized reviewers."}
+                      </div>
+                    )}
+                    <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
+                      This summary does not decide reviews, apply membership,
+                      assign roles, expose private evidence, or bypass reviewer policy.
                     </div>
                   </div>
                 ) : null}

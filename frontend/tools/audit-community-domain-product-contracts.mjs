@@ -139,6 +139,13 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
+  /reviewStatusCounts[\s\S]*governanceReviewCounts[\s\S]*governancePendingCount[\s\S]*governanceApprovedCount[\s\S]*activeLane === "governance"[\s\S]*Governance review pulse[\s\S]*Ready to apply[\s\S]*Access requests[\s\S]*does not decide reviews, apply membership,\s+assign roles, expose private evidence, or bypass reviewer policy/,
+  "Community Domain dashboard Governance lane must show a compact review pulse without deciding reviews, applying membership, or exposing private review evidence.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
   /getCommunityDomainMemberPlacementSummary[\s\S]*placementSummary[\s\S]*placementCounts[\s\S]*visibleNodePlacements[\s\S]*activeLane === "members"[\s\S]*Your placement[\s\S]*Active operating-unit placements[\s\S]*This is read-only[\s\S]*Admins still control placement, role changes,\s+and review decisions/,
   "Community Domain dashboard Members lane must show the current viewer's read-only placement summary without implying self-service placement or role changes.",
   { frontend: true }
