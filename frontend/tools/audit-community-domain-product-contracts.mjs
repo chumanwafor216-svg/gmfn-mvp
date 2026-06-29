@@ -139,8 +139,8 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /getCommunityDomainReviewerQueue[\s\S]*subject_user_email[\s\S]*reviewUserLabel[\s\S]*reviewRequesterLabel[\s\S]*membershipAccessRequests[\s\S]*domain_member\.upsert[\s\S]*decideCommunityDomainActionReview[\s\S]*applyCommunityDomainActionReview[\s\S]*Access requests[\s\S]*Review people asking to enter this domain[\s\S]*Approve only[\s\S]*Approve \+ add member/,
-  "Community Domain dashboard owner/admin view must expose pending access requests through the existing review queue and keep approve separate from apply.",
+  /getCommunityDomainReviewerQueue[\s\S]*listCommunityDomainActionReviews[\s\S]*subject_user_email[\s\S]*reviewUserLabel[\s\S]*reviewRequesterLabel[\s\S]*membershipAccessRequests[\s\S]*domain_member\.upsert[\s\S]*status: "approved"[\s\S]*decideCommunityDomainActionReview[\s\S]*applyCommunityDomainActionReview[\s\S]*applyApprovedAccessRequest[\s\S]*Access requests[\s\S]*Review people asking to enter this domain[\s\S]*Approve only[\s\S]*Add approved member[\s\S]*Approve \+ add member/,
+  "Community Domain dashboard owner/admin view must expose pending and approved access requests, keep approve separate from apply, and preserve a visible apply path after approve-only.",
   { frontend: true }
 );
 

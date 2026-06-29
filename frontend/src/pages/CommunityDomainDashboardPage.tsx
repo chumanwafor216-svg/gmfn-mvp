@@ -10,6 +10,7 @@ import {
   getAccessToken,
   getCommunityDomainDashboard,
   getCommunityDomainReviewerQueue,
+  listCommunityDomainActionReviews,
   listMyCommunityDomains,
   requestCommunityDomainMembership,
 } from "../lib/api";
@@ -239,6 +240,15 @@ function reviewRequesterLabel(review: ActionReviewItem): string {
   );
 }
 
+function mergeActionReviews(...groups: ActionReviewItem[][]): ActionReviewItem[] {
+  const byId = new Map<string, ActionReviewItem>();
+  groups.flat().forEach((item) => {
+    const id = cleanText(item.id);
+    if (id) byId.set(id, item);
+  });
+  return Array.from(byId.values());
+}
+
 export default function CommunityDomainDashboardPage() {
   const params = useParams();
   const communityDomainId = cleanText(params.communityDomainId || params.id);
@@ -285,8 +295,17 @@ export default function CommunityDomainDashboardPage() {
       setActiveLane(laneForAction(nextDashboard?.primary_next_action?.action_key));
       if (nextDashboard?.viewer?.can_admin) {
         try {
-          const queuePayload = await getCommunityDomainReviewerQueue(communityDomainId);
-          setReviewerQueue(Array.isArray(queuePayload?.items) ? queuePayload.items : []);
+          const [pendingPayload, approvedPayload] = await Promise.all([
+            getCommunityDomainReviewerQueue(communityDomainId),
+            listCommunityDomainActionReviews(communityDomainId, { status: "approved" }),
+          ]);
+          const pendingItems = Array.isArray(pendingPayload?.items)
+            ? pendingPayload.items
+            : [];
+          const approvedItems = Array.isArray(approvedPayload?.items)
+            ? approvedPayload.items
+            : [];
+          setReviewerQueue(mergeActionReviews(pendingItems, approvedItems));
         } catch {
           setReviewerQueue([]);
         }
@@ -344,6 +363,28 @@ export default function CommunityDomainDashboardPage() {
     return Array.from(new Set([...included, ...templateModules])).slice(0, 8);
   }, [quote, template]);
 
+  async function loadAccessReviewItems(showLoading = false) {
+    if (!communityDomainId) return;
+    if (showLoading) setLoadingQueue(true);
+    try {
+      const [pendingPayload, approvedPayload] = await Promise.all([
+        getCommunityDomainReviewerQueue(communityDomainId),
+        listCommunityDomainActionReviews(communityDomainId, { status: "approved" }),
+      ]);
+      const pendingItems = Array.isArray(pendingPayload?.items)
+        ? pendingPayload.items
+        : [];
+      const approvedItems = Array.isArray(approvedPayload?.items)
+        ? approvedPayload.items
+        : [];
+      setReviewerQueue(mergeActionReviews(pendingItems, approvedItems));
+    } catch (err: any) {
+      setMessage(err?.message || "GSN could not load the Community Domain review queue.");
+    } finally {
+      if (showLoading) setLoadingQueue(false);
+    }
+  }
+
   async function refreshQuote() {
     if (!communityDomainId) return;
     if (!isAdmin) {
@@ -374,16 +415,7 @@ export default function CommunityDomainDashboardPage() {
   }
 
   async function refreshReviewerQueue() {
-    if (!communityDomainId) return;
-    setLoadingQueue(true);
-    try {
-      const payload = await getCommunityDomainReviewerQueue(communityDomainId);
-      setReviewerQueue(Array.isArray(payload?.items) ? payload.items : []);
-    } catch (err: any) {
-      setMessage(err?.message || "GSN could not load the Community Domain review queue.");
-    } finally {
-      setLoadingQueue(false);
-    }
+    await loadAccessReviewItems(true);
   }
 
   async function approveAccessRequest(review: ActionReviewItem, applyAfterApproval: boolean) {
@@ -412,14 +444,35 @@ export default function CommunityDomainDashboardPage() {
       }
       setMessage(
         decisionPayload?.action_review?.status === "approved"
-          ? `Access request ${reviewId} approved. It still must be applied before membership changes.`
-          : `Access request ${reviewId} recorded. Check the review status before applying membership.`
+          ? `Access request ${reviewId} approved. Use Add approved member when you are ready to apply the membership change.`
+          : `Access request ${reviewId} recorded. It may need another approval before membership can be applied.`
       );
       await refreshReviewerQueue();
     } catch (err: any) {
       setMessage(
         err?.message ||
           "GSN could not process this Community Domain access request."
+      );
+    } finally {
+      setBusyReviewId(null);
+    }
+  }
+
+  async function applyApprovedAccessRequest(review: ActionReviewItem) {
+    if (!communityDomainId || !review.id) return;
+    const reviewId = String(review.id);
+    setBusyReviewId(`${reviewId}:apply`);
+    setMessage("");
+    try {
+      await applyCommunityDomainActionReview(communityDomainId, reviewId);
+      setMessage(
+        `Approved access request ${reviewId} applied. The member was added only after the approved review was applied.`
+      );
+      await loadDashboard();
+    } catch (err: any) {
+      setMessage(
+        err?.message ||
+          "GSN could not add this approved Community Domain member."
       );
     } finally {
       setBusyReviewId(null);
@@ -1022,6 +1075,8 @@ export default function CommunityDomainDashboardPage() {
                   <div style={{ display: "grid", gap: 10 }}>
                     {membershipAccessRequests.slice(0, 3).map((review) => {
                       const reviewId = cleanText(review.id, "review");
+                      const reviewStatus = cleanText(review.status).toLowerCase();
+                      const isApprovedReview = reviewStatus === "approved";
                       const approveBusy = busyReviewId === `${reviewId}:approve`;
                       const applyBusy = busyReviewId === `${reviewId}:apply`;
                       return (
@@ -1057,25 +1112,35 @@ export default function CommunityDomainDashboardPage() {
                                 gap: 8,
                               }}
                             >
-                              <StableButton
-                                type="button"
-                                kind="secondary"
-                                fullWidth
-                                disabled={Boolean(busyReviewId)}
-                                debugId={`community-domain-dashboard.access-request.approve-${reviewId}`}
-                                onClick={() => approveAccessRequest(review, false)}
-                              >
-                                {approveBusy ? "Approving..." : "Approve only"}
-                              </StableButton>
+                              {!isApprovedReview ? (
+                                <StableButton
+                                  type="button"
+                                  kind="secondary"
+                                  fullWidth
+                                  disabled={Boolean(busyReviewId)}
+                                  debugId={`community-domain-dashboard.access-request.approve-${reviewId}`}
+                                  onClick={() => approveAccessRequest(review, false)}
+                                >
+                                  {approveBusy ? "Approving..." : "Approve only"}
+                                </StableButton>
+                              ) : null}
                               <StableButton
                                 type="button"
                                 kind="primary"
                                 fullWidth
                                 disabled={Boolean(busyReviewId)}
                                 debugId={`community-domain-dashboard.access-request.approve-apply-${reviewId}`}
-                                onClick={() => approveAccessRequest(review, true)}
+                                onClick={() =>
+                                  isApprovedReview
+                                    ? applyApprovedAccessRequest(review)
+                                    : approveAccessRequest(review, true)
+                                }
                               >
-                                {applyBusy ? "Adding..." : "Approve + add member"}
+                                {applyBusy
+                                  ? "Adding..."
+                                  : isApprovedReview
+                                  ? "Add approved member"
+                                  : "Approve + add member"}
                               </StableButton>
                             </div>
                           </div>
