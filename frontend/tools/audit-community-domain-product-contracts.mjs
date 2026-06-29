@@ -146,6 +146,13 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
+  /getCommunityDomainSetupPlan[\s\S]*setupPlan[\s\S]*visibleSetupPlanSteps[\s\S]*openSetupPlanSteps[\s\S]*Setup plan[\s\S]*steps complete[\s\S]*Current phase:[\s\S]*primary_next_action[\s\S]*missing item[\s\S]*admin guided[\s\S]*does not create nodes, add members, assign\s+roles, create policy, decide reviews, activate billing, verify\s+authority, publish a public page, move money, or expose private\s+evidence/,
+  "Community Domain dashboard must show the backend setup plan as read-only phase and step guidance without implying setup writes, authority verification, publishing, money movement, or private evidence access.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
   /getCommunityDomainModuleScopeReadiness[\s\S]*SERVICE_READINESS_KEYS[\s\S]*"shops"[\s\S]*"spotlight"[\s\S]*"vault"[\s\S]*"verification"[\s\S]*"trust_centre"[\s\S]*"analytics"[\s\S]*moduleScopeReadiness[\s\S]*serviceReadinessRows[\s\S]*Service readiness[\s\S]*Billing[\s\S]*Settings[\s\S]*does not enable services, activate billing, grant\s+permissions, publish Spotlight, create shops, open vault links, write Trust\s+Passport records, or expose private member activity/,
   "Community Domain dashboard Services lane must use read-only module-scope readiness rows for core services, billing, and settings without implying activation or private-record writes.",
   { frontend: true }

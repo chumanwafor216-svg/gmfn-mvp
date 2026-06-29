@@ -13,6 +13,7 @@ import {
   getCommunityDomainModuleScopeReadiness,
   getCommunityDomainReadiness,
   getCommunityDomainReviewerQueue,
+  getCommunityDomainSetupPlan,
   listCommunityDomainActionReviews,
   listCommunityDomainNodeTree,
   listMyCommunityDomainMembershipRequests,
@@ -101,6 +102,16 @@ type SetupReadinessItem = {
   count?: number | string | null;
   next_step?: string | null;
   route_hint?: string | null;
+  requires_admin?: boolean;
+};
+
+type SetupPlanStep = {
+  step_key?: string | null;
+  label?: string | null;
+  completed?: boolean;
+  missing_items?: unknown[];
+  route_hint?: string | null;
+  admin_action_route_hint?: string | null;
   requires_admin?: boolean;
 };
 
@@ -493,6 +504,7 @@ export default function CommunityDomainDashboardPage() {
   const [nodeTree, setNodeTree] = useState<StructureNode[]>([]);
   const [moduleScopeReadiness, setModuleScopeReadiness] = useState<any | null>(null);
   const [setupReadiness, setSetupReadiness] = useState<any | null>(null);
+  const [setupPlan, setSetupPlan] = useState<any | null>(null);
   const [quote, setQuote] = useState<any | null>(null);
   const [activeLane, setActiveLane] = useState("structure");
   const [loading, setLoading] = useState(true);
@@ -527,6 +539,7 @@ export default function CommunityDomainDashboardPage() {
       setNodeTree([]);
       setModuleScopeReadiness(null);
       setSetupReadiness(null);
+      setSetupPlan(null);
       try {
         const payload = await listMyCommunityDomains();
         setDomainItems(Array.isArray(payload?.items) ? payload.items : []);
@@ -551,6 +564,7 @@ export default function CommunityDomainDashboardPage() {
     setNodeTree([]);
     setModuleScopeReadiness(null);
     setSetupReadiness(null);
+    setSetupPlan(null);
     try {
       const payload = await getCommunityDomainDashboard(communityDomainId);
       const nextDashboard = (payload?.dashboard || null) as DashboardPayload | null;
@@ -568,6 +582,12 @@ export default function CommunityDomainDashboardPage() {
         setSetupReadiness(readinessPayload?.readiness || null);
       } catch {
         setSetupReadiness(null);
+      }
+      try {
+        const setupPlanPayload = await getCommunityDomainSetupPlan(communityDomainId);
+        setSetupPlan(setupPlanPayload?.setup_plan || null);
+      } catch {
+        setSetupPlan(null);
       }
       try {
         const readinessPayload = await getCommunityDomainModuleScopeReadiness(communityDomainId);
@@ -610,6 +630,7 @@ export default function CommunityDomainDashboardPage() {
       setNodeTree([]);
       setModuleScopeReadiness(null);
       setSetupReadiness(null);
+      setSetupPlan(null);
       await loadOwnMembershipRequests();
       setMessage(
         err?.message ||
@@ -667,6 +688,10 @@ export default function CommunityDomainDashboardPage() {
     ? setupReadiness.items
     : [];
   const blockedSetupReadinessItems = visibleSetupReadinessItems.filter((item) => !item.ready);
+  const visibleSetupPlanSteps: SetupPlanStep[] = Array.isArray(setupPlan?.steps)
+    ? setupPlan.steps
+    : [];
+  const openSetupPlanSteps = visibleSetupPlanSteps.filter((step) => !step.completed);
   const setupPrimaryAction = setupReadiness?.primary_next_action || dashboard?.primary_next_action;
   const setupPrimaryActionLaneKey = laneForAction(setupPrimaryAction?.action_key);
   const dashboardPrimaryActionLaneKey = laneForAction(dashboard?.primary_next_action?.action_key);
@@ -1434,6 +1459,85 @@ export default function CommunityDomainDashboardPage() {
                   This checklist does not create nodes, add members, assign roles,
                   decide reviews, create payment instructions, activate billing,
                   activate the domain, verify authority, or expose private evidence.
+                </div>
+              </div>
+            </div>
+
+            <div style={whiteCard()}>
+              <div style={{ display: "grid", gap: 10 }}>
+                <div style={sectionLabel()}>Setup plan</div>
+                <h2 style={{ margin: 0, fontSize: 23, lineHeight: 1.12 }}>
+                  {setupPlan
+                    ? `${countValue(setupPlan.completed_steps)} of ${countValue(
+                        visibleSetupPlanSteps.length
+                      )} steps complete`
+                    : "Setup plan is not loaded"}
+                </h2>
+                <div style={helperText()}>
+                  {setupPlan
+                    ? `Current phase: ${compactStatus(setupPlan.setup_phase)}. ${cleanText(
+                        setupPlan.primary_next_action?.label,
+                        "Review the next setup step with a Community Domain admin."
+                      )}.`
+                    : "GSN could not load the read-only setup plan for this view."}
+                </div>
+                {openSetupPlanSteps.length ? (
+                  <div style={{ display: "grid", gap: 8 }}>
+                    {openSetupPlanSteps.slice(0, 3).map((step) => {
+                      const missingCount = Array.isArray(step.missing_items)
+                        ? step.missing_items.length
+                        : 0;
+                      return (
+                        <div
+                          key={cleanText(step.step_key, cleanText(step.label, "setup-step"))}
+                          style={{
+                            display: "grid",
+                            gridTemplateColumns: "minmax(0, 1fr) auto",
+                            gap: 10,
+                            alignItems: "center",
+                            borderRadius: 14,
+                            border: "1px solid rgba(9,27,46,0.10)",
+                            background: "rgba(255,255,255,0.72)",
+                            padding: "10px 10px 10px 12px",
+                          }}
+                        >
+                          <span style={{ minWidth: 0 }}>
+                            <span style={{ display: "block", fontWeight: 950 }}>
+                              {cleanText(step.label, compactStatus(step.step_key || "Setup step"))}
+                            </span>
+                            <span
+                              style={{
+                                display: "block",
+                                color: "#4F647A",
+                                fontSize: 12.5,
+                                lineHeight: 1.45,
+                                marginTop: 3,
+                              }}
+                            >
+                              {missingCount
+                                ? `${countValue(missingCount)} missing item${
+                                    missingCount === 1 ? "" : "s"
+                                  } before this step is complete.`
+                                : "This step still needs owner/admin review before completion is relied on."}
+                            </span>
+                          </span>
+                          <span style={statusBadge(step.requires_admin ? "admin guided" : "read only")}>
+                            {step.requires_admin ? "Admin" : "Read only"}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : setupPlan ? (
+                  <div style={{ ...helperText(), fontSize: 13 }}>
+                    No open setup step is visible in the read-only setup plan.
+                  </div>
+                ) : null}
+                <div style={{ ...helperText(), fontSize: 13 }}>
+                  This setup plan does not create nodes, add members, assign
+                  roles, create policy, decide reviews, activate billing, verify
+                  authority, publish a public page, move money, or expose private
+                  evidence.
                 </div>
               </div>
             </div>
