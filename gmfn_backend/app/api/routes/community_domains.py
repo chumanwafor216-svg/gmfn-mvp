@@ -17871,6 +17871,67 @@ def create_community_domain_package_quote(
     }
 
 
+@router.get("/my", response_model=dict[str, Any])
+def list_my_community_domains(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    memberships = (
+        db.query(CommunityDomainMembership)
+        .filter(CommunityDomainMembership.user_id == int(current_user.id))
+        .filter(CommunityDomainMembership.status == "active")
+        .order_by(CommunityDomainMembership.id.desc())
+        .all()
+    )
+
+    items: list[dict[str, Any]] = []
+    seen_domain_ids: set[int] = set()
+    for membership in memberships:
+        domain_id = int(membership.community_domain_id)
+        if domain_id in seen_domain_ids:
+            continue
+        seen_domain_ids.add(domain_id)
+
+        domain = (
+            db.query(CommunityDomain)
+            .filter(CommunityDomain.id == domain_id)
+            .first()
+        )
+        if domain is None:
+            continue
+
+        root_node = _find_root_node(db, community_domain_id=domain_id)
+        can_admin = _has_domain_admin_scope(
+            db,
+            domain=domain,
+            current_user=current_user,
+        )
+        items.append(
+            {
+                "community_domain": _domain_payload(domain, root_node=root_node),
+                "membership": _domain_member_payload(membership),
+                "viewer": {
+                    "user_id": int(current_user.id),
+                    "can_admin": bool(can_admin),
+                },
+                "dashboard_path": f"/app/community-domain/{domain_id}",
+                "backend_dashboard_route": f"/community-domains/{domain_id}/dashboard",
+            }
+        )
+
+    return {
+        "ok": True,
+        "items": items,
+        "total": len(items),
+        "boundary": (
+            "Current user's active Community Domain memberships only. This does not "
+            "expose private member lists, finance records, evidence attachments, "
+            "payment instructions, activation authority, verification authority, "
+            "or domains the current user does not actively belong to."
+        ),
+    }
+
+
 @router.get("/{community_domain_id}", response_model=dict[str, Any])
 def get_community_domain(
     community_domain_id: int,

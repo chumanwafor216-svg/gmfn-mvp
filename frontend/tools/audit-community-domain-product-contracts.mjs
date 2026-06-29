@@ -69,16 +69,42 @@ assertContains(
 
 assertContains(
   "src/App.tsx",
-  /CommunityDomainDashboardPage[\s\S]*path="community-domain\/:communityDomainId"[\s\S]*path="community-domains\/:communityDomainId"/,
+  /CommunityDomainDashboardPage[\s\S]*path="community-domain"[\s\S]*path="community-domains"[\s\S]*path="community-domain\/:communityDomainId"[\s\S]*path="community-domains\/:communityDomainId"/,
   "Authenticated app routes must expose the Community Domain dashboard without replacing Community Home.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /getCommunityDomainDashboard[\s\S]*Community Domain dashboard[\s\S]*Continue setup[\s\S]*does not create payment instructions[\s\S]*verify ownership/,
+  /listMyCommunityDomains[\s\S]*Your Community Domains[\s\S]*Open dashboard/,
+  "Community Domain dashboard page must expose a signed-in selector for the current user's active domains.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /getCommunityDomainDashboard[\s\S]*Continue setup[\s\S]*does not create payment instructions[\s\S]*verify ownership/,
   "Community Domain dashboard page must use the scoped backend summary and keep payment, activation, and verification boundaries honest.",
   { frontend: true }
+);
+
+assertContains(
+  "src/lib/api.ts",
+  /listMyCommunityDomains[\s\S]*\/community-domains\/my[\s\S]*getCommunityDomain\(/,
+  "Frontend API layer must expose the signed-in Community Domain selector before single-domain reads.",
+  { frontend: true }
+);
+
+assertContains(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  /@router\.get\("\/my"[\s\S]*def list_my_community_domains[\s\S]*CommunityDomainMembership\.user_id == int\(current_user\.id\)[\s\S]*CommunityDomainMembership\.status == "active"[\s\S]*private member lists[\s\S]*payment instructions[\s\S]*verification authority[\s\S]*@router\.get\("\/\{community_domain_id\}"/,
+  "Backend route must list only the current user's active Community Domain memberships before the single-domain route."
+);
+
+assertContains(
+  "gmfn_backend/tests/test_community_domains.py",
+  /test_user_can_list_own_active_community_domains_without_private_records[\s\S]*\/community-domains\/my[\s\S]*dashboard_path[\s\S]*test_my_community_domains_hides_inactive_and_unrelated_domains[\s\S]*Hidden Inactive Domain" not in outsider_list\.text/,
+  "Backend tests must prove the current-user Community Domain selector hides unrelated and inactive domains."
 );
 
 assertContains(

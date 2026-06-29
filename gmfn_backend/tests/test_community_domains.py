@@ -494,6 +494,140 @@ def test_outsider_cannot_preview_community_domain_package_quote(
         assert db.query(Clan).count() == 0
 
 
+def test_user_can_list_own_active_community_domains_without_private_records(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    member = _seed_user(2, "my-domains-member@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        school = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "My Domains School",
+                "display_name": "My Domains School",
+                "domain_type": "school",
+                "template_key": "school_multi_branch",
+            },
+        )
+        assert school.status_code == 201, school.text
+        school_id = school.json()["community_domain"]["id"]
+
+        market = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "My Domains Market",
+                "display_name": "My Domains Market",
+                "domain_type": "market_cooperative",
+                "template_key": "market_cooperative",
+            },
+        )
+        assert market.status_code == 201, market.text
+        market_id = market.json()["community_domain"]["id"]
+
+        added_member = client.post(
+            f"/community-domains/{market_id}/members",
+            json={"user_id": member.id, "role": "member", "title": "Market member"},
+        )
+        assert added_member.status_code == 201, added_member.text
+
+        app.dependency_overrides[get_current_user] = lambda: owner
+        owner_list = client.get("/community-domains/my")
+        assert owner_list.status_code == 200, owner_list.text
+
+        app.dependency_overrides[get_current_user] = lambda: member
+        member_list = client.get("/community-domains/my")
+        assert member_list.status_code == 200, member_list.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    owner_payload = owner_list.json()
+    assert owner_payload["ok"] is True
+    assert owner_payload["total"] == 2
+    owner_domain_ids = {
+        item["community_domain"]["id"] for item in owner_payload["items"]
+    }
+    assert owner_domain_ids == {school_id, market_id}
+    assert all(item["viewer"]["can_admin"] is True for item in owner_payload["items"])
+    assert all(
+        item["dashboard_path"] == f"/app/community-domain/{item['community_domain']['id']}"
+        for item in owner_payload["items"]
+    )
+    assert "private member lists" in owner_payload["boundary"]
+    assert "payment instructions" in owner_payload["boundary"]
+    assert "verification authority" in owner_payload["boundary"]
+
+    member_payload = member_list.json()
+    assert member_payload["total"] == 1
+    assert member_payload["items"][0]["community_domain"]["id"] == market_id
+    assert member_payload["items"][0]["membership"]["role"] == "member"
+    assert member_payload["items"][0]["viewer"] == {
+        "user_id": member.id,
+        "can_admin": False,
+    }
+    assert "member" in member_list.text
+    assert "Market member" in member_list.text
+
+
+def test_my_community_domains_hides_inactive_and_unrelated_domains(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    inactive_member = _seed_user(2, "inactive-domain-member@example.com")
+    outsider = _seed_user(3, "domain-list-outsider@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Hidden Inactive Domain",
+                "display_name": "Hidden Inactive Domain",
+                "domain_type": "professional_union",
+                "template_key": "union_professional_body",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain_id = created.json()["community_domain"]["id"]
+
+        added = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": inactive_member.id, "role": "member"},
+        )
+        assert added.status_code == 201, added.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    with SessionLocal() as db:
+        membership = (
+            db.query(CommunityDomainMembership)
+            .filter(CommunityDomainMembership.user_id == inactive_member.id)
+            .filter(CommunityDomainMembership.community_domain_id == domain_id)
+            .one()
+        )
+        membership.status = "inactive"
+        db.commit()
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: inactive_member
+        inactive_list = client.get("/community-domains/my")
+        assert inactive_list.status_code == 200, inactive_list.text
+
+        app.dependency_overrides[get_current_user] = lambda: outsider
+        outsider_list = client.get("/community-domains/my")
+        assert outsider_list.status_code == 200, outsider_list.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    assert inactive_list.json()["items"] == []
+    assert inactive_list.json()["total"] == 0
+    assert outsider_list.json()["items"] == []
+    assert outsider_list.json()["total"] == 0
+    assert "Hidden Inactive Domain" not in inactive_list.text
+    assert "Hidden Inactive Domain" not in outsider_list.text
+
+
 def test_domain_admin_dashboard_summary_guides_next_action_without_activation(
     client: TestClient,
 ):

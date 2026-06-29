@@ -6,6 +6,7 @@ import { StableButton, StableCtaLink } from "../components/StableButton";
 import {
   createCommunityDomainPackageQuote,
   getCommunityDomainDashboard,
+  listMyCommunityDomains,
 } from "../lib/api";
 import { APP_ROUTES } from "../lib/appRoutes";
 
@@ -186,6 +187,7 @@ export default function CommunityDomainDashboardPage() {
   const params = useParams();
   const communityDomainId = cleanText(params.communityDomainId || params.id);
   const [dashboard, setDashboard] = useState<DashboardPayload | null>(null);
+  const [domainItems, setDomainItems] = useState<any[]>([]);
   const [quote, setQuote] = useState<any | null>(null);
   const [activeLane, setActiveLane] = useState("structure");
   const [loading, setLoading] = useState(true);
@@ -194,13 +196,26 @@ export default function CommunityDomainDashboardPage() {
 
   async function loadDashboard() {
     if (!communityDomainId) {
-      setLoading(false);
-      setMessage("Community Domain ID is missing from this route.");
+      setLoading(true);
+      setMessage("");
+      try {
+        const payload = await listMyCommunityDomains();
+        setDomainItems(Array.isArray(payload?.items) ? payload.items : []);
+      } catch (err: any) {
+        setDomainItems([]);
+        setMessage(
+          err?.message ||
+            "GSN could not load your Community Domains. Check that you are signed in."
+        );
+      } finally {
+        setLoading(false);
+      }
       return;
     }
 
     setLoading(true);
     setMessage("");
+    setDomainItems([]);
     try {
       const payload = await getCommunityDomainDashboard(communityDomainId);
       const nextDashboard = (payload?.dashboard || null) as DashboardPayload | null;
@@ -314,7 +329,98 @@ export default function CommunityDomainDashboardPage() {
         </section>
       ) : null}
 
-      {!loading && dashboard ? (
+      {!loading && !communityDomainId && !message ? (
+        <section style={whiteCard()}>
+          {domainItems.length > 0 ? (
+            <div style={{ display: "grid", gap: 12 }}>
+              <div style={sectionLabel()}>Your Community Domains</div>
+              <h2 style={{ margin: 0, fontSize: 26, lineHeight: 1.1 }}>
+                Choose a domain to operate.
+              </h2>
+              <div style={helperText()}>
+                These are active Community Domain memberships attached to your signed-in
+                account. Opening one keeps payment, activation, and verification
+                boundaries separate.
+              </div>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 240px), 1fr))",
+                  gap: 12,
+                }}
+              >
+                {domainItems.map((item) => {
+                  const itemDomain = item?.community_domain || {};
+                  const itemMembership = item?.membership || {};
+                  const path =
+                    cleanText(item?.dashboard_path) ||
+                    `/app/community-domain/${encodeURIComponent(String(itemDomain.id))}`;
+                  return (
+                    <div key={cleanText(itemDomain.id, path)} style={softCard()}>
+                      <div style={{ display: "grid", gap: 8 }}>
+                        <div style={sectionLabel()}>
+                          {item?.viewer?.can_admin ? "Owner/admin" : "Member"}
+                        </div>
+                        <h3 style={{ margin: 0, fontSize: 19, lineHeight: 1.14 }}>
+                          {cleanText(itemDomain.display_name, "Community Domain")}
+                        </h3>
+                        <div style={helperText()}>
+                          Code: <strong>{cleanText(itemDomain.domain_name, "not recorded")}</strong>
+                          <br />
+                          Role:{" "}
+                          <strong style={{ textTransform: "capitalize" }}>
+                            {compactStatus(itemMembership.role)}
+                          </strong>
+                        </div>
+                        <StableCtaLink
+                          to={path}
+                          kind="primary"
+                          fullWidth
+                          debugId={`community-domain-dashboard.selector.open-${cleanText(
+                            itemDomain.id,
+                            "domain"
+                          )}`}
+                        >
+                          Open dashboard
+                        </StableCtaLink>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ) : (
+            <div style={{ display: "grid", gap: 10 }}>
+              <div style={sectionLabel()}>No Community Domains yet</div>
+              <h2 style={{ margin: 0, fontSize: 26, lineHeight: 1.1 }}>
+                Start from the purchase path.
+              </h2>
+              <div style={helperText()}>
+                This account does not have an active Community Domain membership to
+                open here. You can check a domain name or return to Community Home.
+              </div>
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                <StableCtaLink
+                  to="/community-domain/purchase"
+                  kind="primary"
+                  debugId="community-domain-dashboard.empty.purchase"
+                >
+                  Check domain name
+                </StableCtaLink>
+                <StableCtaLink
+                  to={APP_ROUTES.COMMUNITY}
+                  kind="secondary"
+                  debugId="community-domain-dashboard.empty.community-home"
+                >
+                  Community Home
+                </StableCtaLink>
+              </div>
+            </div>
+          )}
+        </section>
+      ) : null}
+
+      {!loading && communityDomainId && dashboard ? (
         <>
           <section style={heroCard()}>
             <div

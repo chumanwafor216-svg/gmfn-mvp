@@ -2321,6 +2321,10 @@ export async function createCommunityDomainPackageQuote(
   return httpJson(communityDomainPath(communityDomainId, "/package-quote"), "POST");
 }
 
+export async function listMyCommunityDomains(): Promise<any> {
+  return httpJson("/community-domains/my", "GET");
+}
+
 export async function getCommunityDomain(
   communityDomainId: number | string
 ): Promise<any> {

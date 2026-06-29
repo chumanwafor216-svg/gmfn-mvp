@@ -875,6 +875,14 @@ export default function App() {
         />
         <Route path="join-requests" element={<PreserveRedirect to={APP_ROUTES.COMMUNITY} />} />
         <Route
+          path="community-domain"
+          element={<CommunityDomainDashboardPage />}
+        />
+        <Route
+          path="community-domains"
+          element={<CommunityDomainDashboardPage />}
+        />
+        <Route
           path="community-domain/:communityDomainId"
           element={<CommunityDomainDashboardPage />}
         />
