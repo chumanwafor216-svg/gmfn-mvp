@@ -87,6 +87,34 @@ async function parseError(res: Response): Promise<string> {
   }
 }
 
+const TRUST_TIMELINE_JSON_TIMEOUT_MS = 30000;
+const TRUST_TIMELINE_BLOB_TIMEOUT_MS = 60000;
+
+async function fetchTrustTimelineWithTimeout(
+  input: RequestInfo | URL,
+  init: RequestInit,
+  timeoutMs: number
+): Promise<Response> {
+  const controller = new AbortController();
+  const timer = globalThis.setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    return await fetch(input, {
+      ...init,
+      signal: controller.signal,
+    });
+  } catch (err: any) {
+    if (err?.name === "AbortError") {
+      throw new Error(
+        "The server did not finish this request. Please check your connection and try again."
+      );
+    }
+    throw err;
+  } finally {
+    globalThis.clearTimeout(timer);
+  }
+}
+
 async function authedJson<T>(
   path: string,
   method: "GET" | "POST" = "GET",
@@ -107,7 +135,11 @@ async function authedJson<T>(
     init.body = JSON.stringify(body);
   }
 
-  const res = await fetch(apiUrl(path), init);
+  const res = await fetchTrustTimelineWithTimeout(
+    apiUrl(path),
+    init,
+    TRUST_TIMELINE_JSON_TIMEOUT_MS
+  );
   if (!res.ok) throw new Error(await parseError(res));
   return (await res.json()) as T;
 }
@@ -116,13 +148,17 @@ async function authedBlob(path: string): Promise<Blob> {
   const tok = getToken();
   if (!tok) throw new Error("You are logged out. Please log in again.");
 
-  const res = await fetch(apiUrl(path), {
-    method: "GET",
-    headers: {
-      Authorization: `Bearer ${tok}`,
-      Accept: "*/*",
+  const res = await fetchTrustTimelineWithTimeout(
+    apiUrl(path),
+    {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${tok}`,
+        Accept: "*/*",
+      },
     },
-  });
+    TRUST_TIMELINE_BLOB_TIMEOUT_MS
+  );
 
   if (!res.ok) throw new Error(await parseError(res));
   return await res.blob();
