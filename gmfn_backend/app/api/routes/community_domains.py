@@ -13801,6 +13801,317 @@ def _community_domain_activity_map_payload(
     }
 
 
+def _community_domain_activity_group_readiness_payload(
+    db: Session,
+    *,
+    domain: CommunityDomain,
+    current_user: User,
+    can_admin: bool,
+) -> dict[str, Any]:
+    domain_id = int(domain.id)
+    root_node = _find_root_node(db, community_domain_id=domain_id)
+    nodes = (
+        db.query(CommunityNode)
+        .filter(CommunityNode.community_domain_id == domain_id)
+        .order_by(
+            CommunityNode.depth.asc(),
+            CommunityNode.sort_order.asc(),
+            CommunityNode.name.asc(),
+            CommunityNode.id.asc(),
+        )
+        .all()
+    )
+    active_node_memberships = (
+        db.query(CommunityNodeMembership)
+        .filter(CommunityNodeMembership.community_domain_id == domain_id)
+        .filter(CommunityNodeMembership.status == "active")
+        .all()
+    )
+    active_policies = (
+        db.query(CommunityDomainPolicy)
+        .filter(CommunityDomainPolicy.community_domain_id == domain_id)
+        .filter(CommunityDomainPolicy.status == "active")
+        .all()
+    )
+    reviews = (
+        db.query(CommunityDomainActionReview)
+        .filter(CommunityDomainActionReview.community_domain_id == domain_id)
+        .all()
+    )
+
+    memberships_by_node: dict[int, list[CommunityNodeMembership]] = {}
+    for membership in active_node_memberships:
+        memberships_by_node.setdefault(int(membership.community_node_id), []).append(
+            membership
+        )
+
+    policies_by_node: dict[Optional[int], list[CommunityDomainPolicy]] = {}
+    for policy in active_policies:
+        node_id = (
+            int(policy.community_node_id)
+            if policy.community_node_id is not None
+            else None
+        )
+        policies_by_node.setdefault(node_id, []).append(policy)
+
+    reviews_by_node: dict[Optional[int], int] = {}
+    for review in reviews:
+        node_id = (
+            int(review.community_node_id)
+            if review.community_node_id is not None
+            else None
+        )
+        reviews_by_node[node_id] = reviews_by_node.get(node_id, 0) + 1
+
+    def route_hint(suffix: str, *, requires_admin: bool = False) -> Optional[str]:
+        if requires_admin and not can_admin:
+            return None
+        return f"/community-domains/{domain_id}{suffix}"
+
+    def admin_count(value: int) -> Optional[int]:
+        return int(value) if can_admin else None
+
+    def is_activity_group_candidate(node: CommunityNode) -> bool:
+        if node.parent_node_id is None:
+            return False
+        text = " ".join(
+            [
+                _clean_role(node.node_type, ""),
+                _clean_role(node.node_kind, ""),
+                _clean_role(node.name, ""),
+            ]
+        )
+        markers = {
+            "activity_group",
+            "group",
+            "circle",
+            "rosca",
+            "contribution",
+            "meeting",
+            "project",
+            "welfare",
+            "team",
+            "cluster",
+        }
+        return any(marker in text for marker in markers)
+
+    def readiness_for(
+        node: CommunityNode,
+        *,
+        local_member_count: int,
+        local_facilitator_count: int,
+        local_policy_count: int,
+        review_count: int,
+    ) -> tuple[str, str, bool]:
+        if _clean_role(node.status, "active") != "active":
+            return (
+                "inactive",
+                "Reactivate this operating unit before using it as an activity-group candidate.",
+                False,
+            )
+        visibility = _clean_role(node.visibility_policy, "members")
+        if visibility in {"public", "network", "external"}:
+            return (
+                "public_activity_group_review_needed",
+                "Review public exposure before this group-like unit carries member activity.",
+                False,
+            )
+        if local_facilitator_count <= 0:
+            return (
+                "needs_group_facilitator",
+                "Assign a local facilitator or admin before this unit carries a small activity group.",
+                False,
+            )
+        if local_member_count <= local_facilitator_count:
+            return (
+                "needs_group_members",
+                "Place group members here before treating this as a real activity group.",
+                False,
+            )
+        if local_policy_count <= 0:
+            return (
+                "needs_group_policy",
+                "Add a local activity policy before this group carries ROSCA, meeting, welfare, or project work.",
+                False,
+            )
+        if review_count <= 0:
+            return (
+                "needs_group_review_signal",
+                "Record a reviewed activity signal before treating this group-like unit as ready.",
+                False,
+            )
+        return (
+            "node_like_group_ready_for_future_activity_group",
+            "This node-like group has facilitator, members, policy, and reviewed activity signals for a future activity-group engine.",
+            True,
+        )
+
+    candidate_nodes = [node for node in nodes if is_activity_group_candidate(node)]
+    flat_groups: list[dict[str, Any]] = []
+    status_counts: dict[str, int] = {}
+    for node in candidate_nodes:
+        node_id = int(node.id)
+        local_memberships = memberships_by_node.get(node_id, [])
+        local_facilitator_count = sum(
+            1
+            for row in local_memberships
+            if _clean_role(row.role, "member") in NODE_ADMIN_ROLES
+        )
+        local_policy_count = len(policies_by_node.get(node_id, []))
+        review_count = reviews_by_node.get(node_id, 0)
+        readiness_status, next_step, planning_ready = readiness_for(
+            node,
+            local_member_count=len(local_memberships),
+            local_facilitator_count=local_facilitator_count,
+            local_policy_count=local_policy_count,
+            review_count=review_count,
+        )
+        status_counts[readiness_status] = status_counts.get(readiness_status, 0) + 1
+        if readiness_status == "public_activity_group_review_needed":
+            admin_route = "/record-privacy-map"
+        elif readiness_status == "needs_group_facilitator":
+            admin_route = "/roles"
+        elif readiness_status == "needs_group_members":
+            admin_route = "/node-participation-map"
+        elif readiness_status == "needs_group_policy":
+            admin_route = "/policies"
+        elif readiness_status == "needs_group_review_signal":
+            admin_route = "/action-reviews/reviewer-queue"
+        else:
+            admin_route = f"/nodes/{node_id}/operating-summary"
+
+        flat_groups.append(
+            {
+                "node": _node_payload(node),
+                "activity_group_status": readiness_status,
+                "ready_for_activity_group_planning": planning_ready,
+                "activity_group_engine_status": "not_connected_in_this_slice",
+                "visibility_policy": _clean_role(node.visibility_policy, "members"),
+                "local_member_count": admin_count(len(local_memberships)),
+                "local_facilitator_count": admin_count(local_facilitator_count),
+                "local_policy_count": admin_count(local_policy_count),
+                "review_record_count": admin_count(review_count),
+                "activity_group_record_status": "not_created_in_this_slice",
+                "rosca_cycle_status": "not_created_in_this_slice",
+                "meeting_group_status": "not_created_in_this_slice",
+                "project_group_status": "not_created_in_this_slice",
+                "welfare_group_status": "not_created_in_this_slice",
+                "attendance_status": "not_recorded_in_this_slice",
+                "payment_status": "not_connected_in_this_slice",
+                "route_hint": route_hint(f"/nodes/{node_id}/operating-summary"),
+                "admin_action_route_hint": route_hint(
+                    admin_route,
+                    requires_admin=True,
+                ),
+                "next_step": next_step,
+                "boundary": (
+                    "Read-only activity-group readiness item. This does not "
+                    "create CommunityActivityGroup records, ROSCA cycles, meeting "
+                    "groups, project groups, welfare groups, attendance records, "
+                    "payment instructions, ledger entries, notifications, "
+                    "marketplace records, TrustSlips, Trust Passport entries, or "
+                    "private member activity."
+                ),
+            }
+        )
+
+    if not can_admin:
+        primary_next_action = {
+            "action_key": "ask_domain_admin_to_review_activity_groups",
+            "label": "Ask a Community Domain admin to review activity groups",
+            "route_hint": None,
+            "requires_admin": True,
+        }
+    elif not candidate_nodes:
+        primary_next_action = {
+            "action_key": "map_group_like_units_before_activity_groups",
+            "label": "Map group-like units before activity-group planning",
+            "route_hint": route_hint("/rollout-tree", requires_admin=True),
+            "requires_admin": True,
+        }
+    elif status_counts.get("public_activity_group_review_needed", 0):
+        primary_next_action = {
+            "action_key": "review_public_activity_group_exposure",
+            "label": "Review public activity-group exposure",
+            "route_hint": route_hint("/record-privacy-map", requires_admin=True),
+            "requires_admin": True,
+        }
+    elif status_counts.get("needs_group_facilitator", 0):
+        primary_next_action = {
+            "action_key": "assign_activity_group_facilitators",
+            "label": "Assign activity-group facilitators",
+            "route_hint": route_hint("/roles", requires_admin=True),
+            "requires_admin": True,
+        }
+    elif status_counts.get("needs_group_members", 0):
+        primary_next_action = {
+            "action_key": "place_activity_group_members",
+            "label": "Place members in group-like units",
+            "route_hint": route_hint("/node-participation-map", requires_admin=True),
+            "requires_admin": True,
+        }
+    elif status_counts.get("needs_group_policy", 0):
+        primary_next_action = {
+            "action_key": "add_activity_group_policy",
+            "label": "Add activity-group policy",
+            "route_hint": route_hint("/policies", requires_admin=True),
+            "requires_admin": True,
+        }
+    elif status_counts.get("needs_group_review_signal", 0):
+        primary_next_action = {
+            "action_key": "record_activity_group_review_signal",
+            "label": "Record reviewed activity-group signal",
+            "route_hint": route_hint(
+                "/action-reviews/reviewer-queue",
+                requires_admin=True,
+            ),
+            "requires_admin": True,
+        }
+    else:
+        primary_next_action = {
+            "action_key": "keep_activity_group_planning_read_only",
+            "label": "Keep activity-group planning read-only",
+            "route_hint": route_hint("/activity-map"),
+            "requires_admin": False,
+        }
+
+    return {
+        "community_domain": _domain_payload(domain, root_node=root_node),
+        "viewer": {
+            "user_id": int(current_user.id),
+            "can_admin": bool(can_admin),
+        },
+        "summary": {
+            "node_count": len(nodes),
+            "activity_group_candidate_count": len(candidate_nodes),
+            "activity_group_engine_status": "not_connected_in_this_slice",
+            "activity_group_records_created": 0,
+            "rosca_cycles_created": 0,
+            "meeting_groups_created": 0,
+            "project_groups_created": 0,
+            "welfare_groups_created": 0,
+            "active_node_memberships": admin_count(len(active_node_memberships)),
+            "active_policies": admin_count(len(active_policies)),
+            "review_records": admin_count(len(reviews)),
+        },
+        "flat_groups": flat_groups,
+        "status_counts": status_counts,
+        "primary_next_action": primary_next_action,
+        "editable": False,
+        "boundary": (
+            "Community Domain activity-group readiness is read-only group planning. "
+            "It identifies group-like CommunityNode records that may later become "
+            "real CommunityActivityGroup records for ROSCA circles, meetings, "
+            "project groups, welfare groups, or other small operating groups. It "
+            "does not create activity groups, create ROSCA cycles, create meetings, "
+            "record attendance, create payment instructions, write ledger entries, "
+            "send notifications, create marketplace records, move money, issue "
+            "TrustSlips, write Trust Passport entries, or expose private member "
+            "activity."
+        ),
+    }
+
+
 def _community_domain_member_verification_map_payload(
     db: Session,
     *,
@@ -15967,6 +16278,27 @@ def get_community_domain_activity_map(
         "ok": True,
         "community_domain_id": int(domain.id),
         "activity_map": _community_domain_activity_map_payload(
+            db,
+            domain=domain,
+            current_user=current_user,
+            can_admin=can_admin,
+        ),
+    }
+
+
+@router.get("/{community_domain_id}/activity-group-readiness", response_model=dict[str, Any])
+def get_community_domain_activity_group_readiness(
+    community_domain_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_member_scope(db, domain=domain, current_user=current_user)
+    can_admin = _has_domain_admin_scope(db, domain=domain, current_user=current_user)
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "activity_group_readiness": _community_domain_activity_group_readiness_payload(
             db,
             domain=domain,
             current_user=current_user,

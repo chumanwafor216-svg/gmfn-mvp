@@ -8749,6 +8749,326 @@ def test_member_can_read_activity_map_but_admin_activity_counts_are_hidden(
     assert "private member/review/evidence/finance exposure" in activity_map["boundary"]
 
 
+def test_activity_group_readiness_projects_group_like_units_without_writes(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    ready_admin = _seed_user(2, "activity-group-ready-admin@example.com")
+    ready_member = _seed_user(3, "activity-group-ready-member@example.com")
+    public_admin = _seed_user(4, "activity-group-public-admin@example.com")
+    public_member = _seed_user(5, "activity-group-public-member@example.com")
+    no_admin_member = _seed_user(6, "activity-group-no-admin-member@example.com")
+    members_admin = _seed_user(7, "activity-group-members-admin@example.com")
+    policy_admin = _seed_user(8, "activity-group-policy-admin@example.com")
+    policy_member = _seed_user(9, "activity-group-policy-member@example.com")
+    signal_admin = _seed_user(10, "activity-group-signal-admin@example.com")
+    signal_member = _seed_user(11, "activity-group-signal-member@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Activity Group Market",
+                "display_name": "Activity Group Market",
+                "domain_type": "market_cooperative",
+                "template_key": "market_cooperative",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain = created.json()["community_domain"]
+        domain_id = domain["id"]
+        root_node_id = domain["root_node"]["id"]
+
+        node_specs = [
+            ("Electronics Line", "line", "market_line", "members"),
+            ("ROSCA Circle A", "group", "market_activity_group", "members"),
+            ("Public Meeting Group", "group", "meeting_group", "public"),
+            ("Welfare Group", "group", "welfare_group", "members"),
+            ("Project Team", "group", "project_team", "members"),
+            ("Savings Circle", "group", "savings_circle", "members"),
+            ("Travel Group", "group", "travel_group", "members"),
+        ]
+        node_ids: dict[str, int] = {}
+        for name, node_type, node_kind, visibility in node_specs:
+            node = client.post(
+                f"/community-domains/{domain_id}/nodes",
+                json={
+                    "name": name,
+                    "parent_node_id": root_node_id,
+                    "node_type": node_type,
+                    "node_kind": node_kind,
+                    "visibility_policy": visibility,
+                },
+            )
+            assert node.status_code == 201, node.text
+            node_ids[name] = node.json()["node"]["id"]
+
+        users = [
+            ready_admin,
+            ready_member,
+            public_admin,
+            public_member,
+            no_admin_member,
+            members_admin,
+            policy_admin,
+            policy_member,
+            signal_admin,
+            signal_member,
+        ]
+        for user in users:
+            added = client.post(
+                f"/community-domains/{domain_id}/members",
+                json={"user_id": user.id, "role": "member"},
+            )
+            assert added.status_code == 201, added.text
+
+        placements = [
+            (node_ids["ROSCA Circle A"], ready_admin.id, "line_admin"),
+            (node_ids["ROSCA Circle A"], ready_member.id, "member"),
+            (node_ids["Public Meeting Group"], public_admin.id, "line_admin"),
+            (node_ids["Public Meeting Group"], public_member.id, "member"),
+            (node_ids["Welfare Group"], no_admin_member.id, "member"),
+            (node_ids["Project Team"], members_admin.id, "line_admin"),
+            (node_ids["Savings Circle"], policy_admin.id, "line_admin"),
+            (node_ids["Savings Circle"], policy_member.id, "member"),
+            (node_ids["Travel Group"], signal_admin.id, "line_admin"),
+            (node_ids["Travel Group"], signal_member.id, "member"),
+        ]
+        for node_id, user_id, role in placements:
+            placed = client.post(
+                f"/community-domains/{domain_id}/nodes/{node_id}/members",
+                json={"user_id": user_id, "role": role},
+            )
+            assert placed.status_code == 201, placed.text
+
+        for name, suffix in (
+            ("ROSCA Circle A", "ready"),
+            ("Public Meeting Group", "public"),
+            ("Travel Group", "signal"),
+        ):
+            policy = client.post(
+                f"/community-domains/{domain_id}/policies",
+                json={
+                    "policy_key": f"activity-group-{suffix}-policy",
+                    "action_key": "activity_group.run",
+                    "community_node_id": node_ids[name],
+                    "scope_type": "node",
+                    "review_mode": "node_admin_review",
+                    "required_role": "line_admin",
+                },
+            )
+            assert policy.status_code == 201, policy.text
+
+        for name, suffix in (
+            ("ROSCA Circle A", "ready"),
+            ("Public Meeting Group", "public"),
+        ):
+            review = client.post(
+                f"/community-domains/{domain_id}/action-reviews",
+                json={
+                    "action_key": "activity_group.run",
+                    "community_node_id": node_ids[name],
+                    "request_note": f"Review activity group readiness for {suffix}.",
+                    "payload": {"claim": f"{suffix} group-like activity posture"},
+                },
+            )
+            assert review.status_code == 201, review.text
+
+        with SessionLocal() as db:
+            before_counts = {
+                "domains": db.query(CommunityDomain).count(),
+                "nodes": db.query(CommunityNode).count(),
+                "domain_members": db.query(CommunityDomainMembership).count(),
+                "node_members": db.query(CommunityNodeMembership).count(),
+                "policies": db.query(CommunityDomainPolicy).count(),
+                "reviews": db.query(CommunityDomainActionReview).count(),
+                "evidence": db.query(CommunityDomainActionReviewEvidence).count(),
+                "clans": db.query(Clan).count(),
+                "trust_slips": db.query(TrustSlip).count(),
+            }
+
+        response = client.get(
+            f"/community-domains/{domain_id}/activity-group-readiness"
+        )
+        assert response.status_code == 200, response.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    payload = response.json()
+    assert payload["ok"] is True
+    readiness = payload["activity_group_readiness"]
+    assert readiness["editable"] is False
+    assert readiness["viewer"] == {"user_id": owner.id, "can_admin": True}
+    assert readiness["summary"] == {
+        "node_count": 8,
+        "activity_group_candidate_count": 6,
+        "activity_group_engine_status": "not_connected_in_this_slice",
+        "activity_group_records_created": 0,
+        "rosca_cycles_created": 0,
+        "meeting_groups_created": 0,
+        "project_groups_created": 0,
+        "welfare_groups_created": 0,
+        "active_node_memberships": 10,
+        "active_policies": 3,
+        "review_records": 2,
+    }
+    assert readiness["status_counts"] == {
+        "node_like_group_ready_for_future_activity_group": 1,
+        "public_activity_group_review_needed": 1,
+        "needs_group_facilitator": 1,
+        "needs_group_members": 1,
+        "needs_group_policy": 1,
+        "needs_group_review_signal": 1,
+    }
+    assert readiness["primary_next_action"] == {
+        "action_key": "review_public_activity_group_exposure",
+        "label": "Review public activity-group exposure",
+        "route_hint": f"/community-domains/{domain_id}/record-privacy-map",
+        "requires_admin": True,
+    }
+
+    groups = {item["node"]["name"]: item for item in readiness["flat_groups"]}
+    assert "Electronics Line" not in groups
+    assert groups["ROSCA Circle A"]["activity_group_status"] == (
+        "node_like_group_ready_for_future_activity_group"
+    )
+    assert groups["ROSCA Circle A"]["ready_for_activity_group_planning"] is True
+    assert groups["ROSCA Circle A"]["local_member_count"] == 2
+    assert groups["ROSCA Circle A"]["local_facilitator_count"] == 1
+    assert groups["ROSCA Circle A"]["local_policy_count"] == 1
+    assert groups["ROSCA Circle A"]["review_record_count"] == 1
+    assert groups["ROSCA Circle A"]["activity_group_record_status"] == (
+        "not_created_in_this_slice"
+    )
+    assert groups["ROSCA Circle A"]["rosca_cycle_status"] == (
+        "not_created_in_this_slice"
+    )
+    assert groups["Public Meeting Group"]["activity_group_status"] == (
+        "public_activity_group_review_needed"
+    )
+    assert groups["Public Meeting Group"]["admin_action_route_hint"].endswith(
+        "/record-privacy-map"
+    )
+    assert groups["Welfare Group"]["activity_group_status"] == (
+        "needs_group_facilitator"
+    )
+    assert groups["Project Team"]["activity_group_status"] == "needs_group_members"
+    assert groups["Savings Circle"]["activity_group_status"] == "needs_group_policy"
+    assert groups["Travel Group"]["activity_group_status"] == (
+        "needs_group_review_signal"
+    )
+    assert groups["Travel Group"]["payment_status"] == "not_connected_in_this_slice"
+    assert "does not create activity groups" in readiness["boundary"]
+    assert "create ROSCA cycles" in readiness["boundary"]
+    assert "create meetings" in readiness["boundary"]
+    assert "create payment instructions" in readiness["boundary"]
+    assert "Trust Passport entries" in readiness["boundary"]
+
+    with SessionLocal() as db:
+        after_counts = {
+            "domains": db.query(CommunityDomain).count(),
+            "nodes": db.query(CommunityNode).count(),
+            "domain_members": db.query(CommunityDomainMembership).count(),
+            "node_members": db.query(CommunityNodeMembership).count(),
+            "policies": db.query(CommunityDomainPolicy).count(),
+            "reviews": db.query(CommunityDomainActionReview).count(),
+            "evidence": db.query(CommunityDomainActionReviewEvidence).count(),
+            "clans": db.query(Clan).count(),
+            "trust_slips": db.query(TrustSlip).count(),
+        }
+    assert after_counts == before_counts
+
+
+def test_member_can_read_activity_group_readiness_but_admin_counts_are_hidden(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    member = _seed_user(2, "activity-group-visible-member@example.com")
+    outsider = _seed_user(3, "activity-group-outsider@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Activity Group School",
+                "display_name": "Activity Group School",
+                "domain_type": "school",
+                "template_key": "school_multi_branch",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain = created.json()["community_domain"]
+        domain_id = domain["id"]
+        root_node_id = domain["root_node"]["id"]
+
+        added_member = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": member.id, "role": "member"},
+        )
+        assert added_member.status_code == 201, added_member.text
+
+        group = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Teachers ROSCA Group",
+                "parent_node_id": root_node_id,
+                "node_type": "group",
+                "node_kind": "school_activity_group",
+                "visibility_policy": "members",
+            },
+        )
+        assert group.status_code == 201, group.text
+
+        app.dependency_overrides[get_current_user] = lambda: member
+        member_map = client.get(
+            f"/community-domains/{domain_id}/activity-group-readiness"
+        )
+        assert member_map.status_code == 200, member_map.text
+
+        app.dependency_overrides[get_current_user] = lambda: outsider
+        outsider_map = client.get(
+            f"/community-domains/{domain_id}/activity-group-readiness"
+        )
+        assert outsider_map.status_code == 403, outsider_map.text
+        assert "active Community Domain members" in outsider_map.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    readiness = member_map.json()["activity_group_readiness"]
+    assert readiness["viewer"] == {"user_id": member.id, "can_admin": False}
+    assert readiness["summary"]["node_count"] == 2
+    assert readiness["summary"]["activity_group_candidate_count"] == 1
+    assert readiness["summary"]["activity_group_engine_status"] == (
+        "not_connected_in_this_slice"
+    )
+    assert readiness["summary"]["active_node_memberships"] is None
+    assert readiness["summary"]["active_policies"] is None
+    assert readiness["summary"]["review_records"] is None
+    assert readiness["primary_next_action"] == {
+        "action_key": "ask_domain_admin_to_review_activity_groups",
+        "label": "Ask a Community Domain admin to review activity groups",
+        "route_hint": None,
+        "requires_admin": True,
+    }
+
+    groups = {item["node"]["name"]: item for item in readiness["flat_groups"]}
+    assert groups["Teachers ROSCA Group"]["activity_group_status"] == (
+        "needs_group_facilitator"
+    )
+    assert groups["Teachers ROSCA Group"]["local_member_count"] is None
+    assert groups["Teachers ROSCA Group"]["local_facilitator_count"] is None
+    assert groups["Teachers ROSCA Group"]["local_policy_count"] is None
+    assert groups["Teachers ROSCA Group"]["review_record_count"] is None
+    assert groups["Teachers ROSCA Group"]["admin_action_route_hint"] is None
+    assert groups["Teachers ROSCA Group"]["payment_status"] == (
+        "not_connected_in_this_slice"
+    )
+    assert "does not create activity groups" in readiness["boundary"]
+    assert "private member activity" in readiness["boundary"]
+
+
 def test_member_verification_map_projects_institutional_readiness_without_credentials(
     client: TestClient,
 ):
