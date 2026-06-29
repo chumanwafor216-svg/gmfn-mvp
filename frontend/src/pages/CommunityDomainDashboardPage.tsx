@@ -4,9 +4,12 @@ import PageTopNav from "../components/PageTopNav";
 import { GsnRealisticIcon } from "../components/GsnRealisticIcon";
 import { StableButton, StableCtaLink } from "../components/StableButton";
 import {
+  applyCommunityDomainActionReview,
   createCommunityDomainPackageQuote,
+  decideCommunityDomainActionReview,
   getAccessToken,
   getCommunityDomainDashboard,
+  getCommunityDomainReviewerQueue,
   listMyCommunityDomains,
   requestCommunityDomainMembership,
 } from "../lib/api";
@@ -37,6 +40,24 @@ type DashboardPayload = {
   lanes?: DomainLane[];
   package_quote?: any;
   boundary?: string;
+};
+
+type ActionReviewItem = {
+  id?: number | string;
+  action_key?: string;
+  requested_by_user_id?: number | string | null;
+  subject_user_id?: number | string | null;
+  target_type?: string | null;
+  target_id?: string | number | null;
+  status?: string | null;
+  request_note?: string | null;
+  payload?: {
+    user_id?: number | string | null;
+    role?: string | null;
+    [key: string]: unknown;
+  } | null;
+  required_approvals?: number | string | null;
+  approval_count?: number | string | null;
 };
 
 const MODULE_LABELS: Record<string, string> = {
@@ -192,16 +213,26 @@ function laneDisplayLabel(lane: any, fallback = "Lane"): string {
   return label;
 }
 
+function reviewUserLabel(review: ActionReviewItem): string {
+  return cleanText(
+    review.payload?.user_id || review.subject_user_id || review.target_id,
+    "member"
+  );
+}
+
 export default function CommunityDomainDashboardPage() {
   const params = useParams();
   const communityDomainId = cleanText(params.communityDomainId || params.id);
   const [dashboard, setDashboard] = useState<DashboardPayload | null>(null);
   const [domainItems, setDomainItems] = useState<any[]>([]);
+  const [reviewerQueue, setReviewerQueue] = useState<ActionReviewItem[]>([]);
   const [quote, setQuote] = useState<any | null>(null);
   const [activeLane, setActiveLane] = useState("structure");
   const [loading, setLoading] = useState(true);
+  const [loadingQueue, setLoadingQueue] = useState(false);
   const [busyQuote, setBusyQuote] = useState(false);
   const [busyMembershipRequest, setBusyMembershipRequest] = useState(false);
+  const [busyReviewId, setBusyReviewId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
 
   const loadDashboard = useCallback(async () => {
@@ -226,12 +257,21 @@ export default function CommunityDomainDashboardPage() {
     setLoading(true);
     setMessage("");
     setDomainItems([]);
+    setReviewerQueue([]);
     try {
       const payload = await getCommunityDomainDashboard(communityDomainId);
       const nextDashboard = (payload?.dashboard || null) as DashboardPayload | null;
       setDashboard(nextDashboard);
       setQuote(nextDashboard?.package_quote || null);
       setActiveLane(laneForAction(nextDashboard?.primary_next_action?.action_key));
+      if (nextDashboard?.viewer?.can_admin) {
+        try {
+          const queuePayload = await getCommunityDomainReviewerQueue(communityDomainId);
+          setReviewerQueue(Array.isArray(queuePayload?.items) ? queuePayload.items : []);
+        } catch {
+          setReviewerQueue([]);
+        }
+      }
     } catch (err: any) {
       setDashboard(null);
       setMessage(
@@ -259,6 +299,9 @@ export default function CommunityDomainDashboardPage() {
   const counts = dashboard?.counts || {};
   const lanes = Array.isArray(dashboard?.lanes) ? dashboard?.lanes || [] : [];
   const isAdmin = Boolean(dashboard?.viewer?.can_admin);
+  const membershipAccessRequests = reviewerQueue.filter(
+    (review) => cleanText(review.action_key) === "domain_member.upsert"
+  );
   const selectedLane = lanes.find((lane) => lane.lane_key === activeLane) || lanes[0];
   const primaryActionLaneKey = laneForAction(dashboard?.primary_next_action?.action_key);
   const primaryActionLane =
@@ -308,6 +351,59 @@ export default function CommunityDomainDashboardPage() {
       setMessage(err?.message || "GSN could not refresh the package quote.");
     } finally {
       setBusyQuote(false);
+    }
+  }
+
+  async function refreshReviewerQueue() {
+    if (!communityDomainId) return;
+    setLoadingQueue(true);
+    try {
+      const payload = await getCommunityDomainReviewerQueue(communityDomainId);
+      setReviewerQueue(Array.isArray(payload?.items) ? payload.items : []);
+    } catch (err: any) {
+      setMessage(err?.message || "GSN could not load the Community Domain review queue.");
+    } finally {
+      setLoadingQueue(false);
+    }
+  }
+
+  async function approveAccessRequest(review: ActionReviewItem, applyAfterApproval: boolean) {
+    if (!communityDomainId || !review.id) return;
+    const reviewId = String(review.id);
+    setBusyReviewId(`${reviewId}:${applyAfterApproval ? "apply" : "approve"}`);
+    setMessage("");
+    try {
+      const decisionPayload = await decideCommunityDomainActionReview(
+        communityDomainId,
+        reviewId,
+        {
+          decision: "approve",
+          decision_note: applyAfterApproval
+            ? "Approved from the Community Domain access queue before applying membership."
+            : "Approved from the Community Domain access queue. Membership still needs apply.",
+        }
+      );
+      if (applyAfterApproval) {
+        await applyCommunityDomainActionReview(communityDomainId, reviewId);
+        setMessage(
+          `Access request ${reviewId} approved and applied. The member is now added only because the approved review was applied.`
+        );
+        await loadDashboard();
+        return;
+      }
+      setMessage(
+        decisionPayload?.action_review?.status === "approved"
+          ? `Access request ${reviewId} approved. It still must be applied before membership changes.`
+          : `Access request ${reviewId} recorded. Check the review status before applying membership.`
+      );
+      await refreshReviewerQueue();
+    } catch (err: any) {
+      setMessage(
+        err?.message ||
+          "GSN could not process this Community Domain access request."
+      );
+    } finally {
+      setBusyReviewId(null);
     }
   }
 
@@ -887,6 +983,110 @@ export default function CommunityDomainDashboardPage() {
               </div>
             </div>
           </section>
+
+          {isAdmin ? (
+            <section style={whiteCard()}>
+              <div style={{ display: "grid", gap: 12 }}>
+                <div>
+                  <div style={sectionLabel()}>Access requests</div>
+                  <h2 style={{ margin: "6px 0 0", fontSize: 24, lineHeight: 1.12 }}>
+                    Review people asking to enter this domain.
+                  </h2>
+                  <div style={{ ...helperText(), marginTop: 8 }}>
+                    These are pending membership-change reviews from the existing
+                    governance queue. Approving records the decision; approving and
+                    adding applies the approved review so membership changes.
+                  </div>
+                </div>
+
+                {membershipAccessRequests.length > 0 ? (
+                  <div style={{ display: "grid", gap: 10 }}>
+                    {membershipAccessRequests.slice(0, 3).map((review) => {
+                      const reviewId = cleanText(review.id, "review");
+                      const approveBusy = busyReviewId === `${reviewId}:approve`;
+                      const applyBusy = busyReviewId === `${reviewId}:apply`;
+                      return (
+                        <div key={reviewId} style={softCard()}>
+                          <div style={{ display: "grid", gap: 8 }}>
+                            <div style={sectionLabel()}>Membership request</div>
+                            <h3 style={{ margin: 0, fontSize: 19, lineHeight: 1.14 }}>
+                              User {reviewUserLabel(review)} wants access.
+                            </h3>
+                            <div style={{ ...helperText(), fontSize: 13 }}>
+                              Requested by user{" "}
+                              <strong>{cleanText(review.requested_by_user_id, "unknown")}</strong>
+                              . Target role:{" "}
+                              <strong style={{ textTransform: "capitalize" }}>
+                                {compactStatus(review.payload?.role || "member")}
+                              </strong>
+                              . Status:{" "}
+                              <strong style={{ textTransform: "capitalize" }}>
+                                {compactStatus(review.status)}
+                              </strong>
+                              .
+                            </div>
+                            {review.request_note ? (
+                              <div style={{ ...helperText(), fontSize: 13 }}>
+                                Note: {cleanText(review.request_note)}
+                              </div>
+                            ) : null}
+                            <div
+                              style={{
+                                display: "grid",
+                                gridTemplateColumns:
+                                  "repeat(auto-fit, minmax(min(100%, 150px), 1fr))",
+                                gap: 8,
+                              }}
+                            >
+                              <StableButton
+                                type="button"
+                                kind="secondary"
+                                fullWidth
+                                disabled={Boolean(busyReviewId)}
+                                debugId={`community-domain-dashboard.access-request.approve-${reviewId}`}
+                                onClick={() => approveAccessRequest(review, false)}
+                              >
+                                {approveBusy ? "Approving..." : "Approve only"}
+                              </StableButton>
+                              <StableButton
+                                type="button"
+                                kind="primary"
+                                fullWidth
+                                disabled={Boolean(busyReviewId)}
+                                debugId={`community-domain-dashboard.access-request.approve-apply-${reviewId}`}
+                                onClick={() => approveAccessRequest(review, true)}
+                              >
+                                {applyBusy ? "Adding..." : "Approve + add member"}
+                              </StableButton>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div style={softCard()}>
+                    <div style={sectionLabel()}>No pending access requests</div>
+                    <div style={{ ...helperText(), marginTop: 7 }}>
+                      The current reviewer queue has no pending membership requests
+                      this account can decide.
+                    </div>
+                  </div>
+                )}
+
+                <StableButton
+                  type="button"
+                  kind="secondary"
+                  fullWidth
+                  disabled={loadingQueue}
+                  debugId="community-domain-dashboard.access-request.refresh"
+                  onClick={refreshReviewerQueue}
+                >
+                  {loadingQueue ? "Refreshing requests..." : "Refresh requests"}
+                </StableButton>
+              </div>
+            </section>
+          ) : null}
 
           {message ? (
             <section style={whiteCard()}>

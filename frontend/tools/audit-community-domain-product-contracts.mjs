@@ -138,6 +138,13 @@ assertContains(
 );
 
 assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /getCommunityDomainReviewerQueue[\s\S]*membershipAccessRequests[\s\S]*domain_member\.upsert[\s\S]*decideCommunityDomainActionReview[\s\S]*applyCommunityDomainActionReview[\s\S]*Access requests[\s\S]*Review people asking to enter this domain[\s\S]*Approve only[\s\S]*Approve \+ add member/,
+  "Community Domain dashboard owner/admin view must expose pending access requests through the existing review queue and keep approve separate from apply.",
+  { frontend: true }
+);
+
+assertContains(
   "src/lib/api.ts",
   /listMyCommunityDomains[\s\S]*\/community-domains\/my[\s\S]*getCommunityDomain\(/,
   "Frontend API layer must expose the signed-in Community Domain selector before single-domain reads.",
