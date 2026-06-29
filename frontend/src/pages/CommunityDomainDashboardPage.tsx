@@ -18,6 +18,7 @@ import {
   getCommunityDomainAffiliationReadiness,
   getCommunityDomainGovernanceCoverage,
   getCommunityDomainInstitutionalProfile,
+  getCommunityDomainMemberVerificationMap,
   getCommunityDomainMemberPlacementSummary,
   getCommunityDomainModuleScopeReadiness,
   getCommunityDomainNotificationScopeReadiness,
@@ -203,6 +204,15 @@ type ActivityGroupReadinessItem = {
   local_facilitator_count?: number | string | null;
   local_policy_count?: number | string | null;
   review_record_count?: number | string | null;
+  next_step?: string | null;
+};
+
+type MemberVerificationLane = {
+  lane_key?: string | null;
+  label?: string | null;
+  status?: string | null;
+  ready?: boolean;
+  count?: number | string | null;
   next_step?: string | null;
 };
 
@@ -718,6 +728,7 @@ export default function CommunityDomainDashboardPage() {
   const [rolloutPlan, setRolloutPlan] = useState<any | null>(null);
   const [activityMap, setActivityMap] = useState<any | null>(null);
   const [activityGroupReadiness, setActivityGroupReadiness] = useState<any | null>(null);
+  const [memberVerificationMap, setMemberVerificationMap] = useState<any | null>(null);
   const [evidenceRecordReadiness, setEvidenceRecordReadiness] = useState<any | null>(null);
   const [evidenceReleaseReadiness, setEvidenceReleaseReadiness] = useState<any | null>(null);
   const [trustRelayReadiness, setTrustRelayReadiness] = useState<any | null>(null);
@@ -768,6 +779,7 @@ export default function CommunityDomainDashboardPage() {
       setRolloutPlan(null);
       setActivityMap(null);
       setActivityGroupReadiness(null);
+      setMemberVerificationMap(null);
       setEvidenceRecordReadiness(null);
       setEvidenceReleaseReadiness(null);
       setTrustRelayReadiness(null);
@@ -808,6 +820,7 @@ export default function CommunityDomainDashboardPage() {
     setRolloutPlan(null);
     setActivityMap(null);
     setActivityGroupReadiness(null);
+    setMemberVerificationMap(null);
     setEvidenceRecordReadiness(null);
     setEvidenceReleaseReadiness(null);
     setTrustRelayReadiness(null);
@@ -890,6 +903,16 @@ export default function CommunityDomainDashboardPage() {
         setActivityGroupReadiness(activityGroupPayload?.activity_group_readiness || null);
       } catch {
         setActivityGroupReadiness(null);
+      }
+      try {
+        const memberVerificationPayload = await getCommunityDomainMemberVerificationMap(
+          communityDomainId
+        );
+        setMemberVerificationMap(
+          memberVerificationPayload?.member_verification_map || null
+        );
+      } catch {
+        setMemberVerificationMap(null);
       }
       try {
         const readinessPayload = await getCommunityDomainModuleScopeReadiness(communityDomainId);
@@ -1009,6 +1032,7 @@ export default function CommunityDomainDashboardPage() {
       setRolloutPlan(null);
       setActivityMap(null);
       setActivityGroupReadiness(null);
+      setMemberVerificationMap(null);
       setEvidenceRecordReadiness(null);
       setEvidenceReleaseReadiness(null);
       setTrustRelayReadiness(null);
@@ -1138,6 +1162,19 @@ export default function CommunityDomainDashboardPage() {
   const activityGroupReadyTotal = visibleActivityGroups.filter(
     (group) => group.ready_for_activity_group_planning
   ).length;
+  const memberVerificationSummary = memberVerificationMap?.summary || {};
+  const visibleMemberVerificationLanes: MemberVerificationLane[] = Array.isArray(
+    memberVerificationMap?.lanes
+  )
+    ? memberVerificationMap.lanes
+    : [];
+  const blockedMemberVerificationLanes = visibleMemberVerificationLanes.filter(
+    (lane) => !lane.ready
+  );
+  const memberVerificationReadyTotal =
+    typeof memberVerificationMap?.ready_total === "number"
+      ? memberVerificationMap.ready_total
+      : visibleMemberVerificationLanes.filter((lane) => lane.ready).length;
   const subscriptionSummary = subscriptionLifecycle?.summary || {};
   const subscriptionPackage = subscriptionLifecycle?.package || {};
   const visibleSubscriptionLanes: SubscriptionLifecycleLane[] = Array.isArray(
@@ -4493,6 +4530,163 @@ export default function CommunityDomainDashboardPage() {
                     <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
                       This fallback does not expose private member lists, assign
                       roles, place members, decide reviews, or grant permissions.
+                    </div>
+                  </div>
+                ) : null}
+
+                {activeLane === "members" ? (
+                  <div style={softCard()}>
+                    <div style={sectionLabel()}>Member verification readiness</div>
+                    <div style={{ ...helperText(), marginTop: 7 }}>
+                      {memberVerificationMap
+                        ? `${cleanText(
+                            memberVerificationMap.primary_next_action?.label,
+                            "Review member verification readiness"
+                          )}. ${memberVerificationReadyTotal} of ${visibleMemberVerificationLanes.length} member-readiness checks are ready.`
+                        : "GSN could not load the read-only member verification map for this Community Domain."}
+                    </div>
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "repeat(auto-fit, minmax(118px, 1fr))",
+                        gap: 8,
+                        marginTop: 10,
+                      }}
+                    >
+                      {[
+                        ["Active members", memberVerificationSummary.active_member_count],
+                        [
+                          "GSN IDs",
+                          memberVerificationSummary.members_with_gsn_id == null
+                            ? "admin only"
+                            : countValue(memberVerificationSummary.members_with_gsn_id),
+                        ],
+                        [
+                          "Unit gaps",
+                          memberVerificationSummary.members_without_unit_placement == null
+                            ? "admin only"
+                            : countValue(
+                                memberVerificationSummary.members_without_unit_placement
+                              ),
+                        ],
+                        [
+                          "Open reviews",
+                          memberVerificationSummary.open_member_review_count == null
+                            ? "admin only"
+                            : countValue(memberVerificationSummary.open_member_review_count),
+                        ],
+                      ].map(([label, value]) => (
+                        <div
+                          key={String(label)}
+                          style={{
+                            borderRadius: 14,
+                            background: "#F7FAFF",
+                            border: "1px solid rgba(9,27,46,0.08)",
+                            padding: 10,
+                            minWidth: 0,
+                          }}
+                        >
+                          <div style={{ color: "#617085", fontSize: 12, fontWeight: 850 }}>
+                            {label}
+                          </div>
+                          <div style={{ color: "#07172C", fontWeight: 950, marginTop: 4 }}>
+                            {typeof value === "number" ? countValue(value) : value}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 10 }}>
+                      <span style={statusBadge(memberVerificationSummary.verification_status)}>
+                        Domain: {compactStatus(memberVerificationSummary.verification_status)}
+                      </span>
+                      <span
+                        style={statusBadge(
+                          memberVerificationSummary.credential_issuance_status
+                        )}
+                      >
+                        Credentials:{" "}
+                        {compactStatus(
+                          memberVerificationSummary.credential_issuance_status
+                        )}
+                      </span>
+                      <span style={statusBadge("recorded")}>
+                        Placements:{" "}
+                        {countValue(memberVerificationSummary.active_node_membership_count)}
+                      </span>
+                    </div>
+                    {blockedMemberVerificationLanes.length ? (
+                      <div style={{ ...helperText(), marginTop: 9 }}>
+                        Member-readiness checks needing attention:{" "}
+                        <strong>
+                          {blockedMemberVerificationLanes
+                            .slice(0, 3)
+                            .map((lane) =>
+                              cleanText(lane.label, lane.lane_key || "member check")
+                            )
+                            .join(", ")}
+                        </strong>
+                        .
+                      </div>
+                    ) : memberVerificationMap ? (
+                      <div style={{ ...helperText(), marginTop: 9 }}>
+                        No blocked member-readiness lane is visible, but KYC,
+                        credential issuing, TrustSlips, and Trust Passport writes are
+                        still not connected here.
+                      </div>
+                    ) : null}
+                    {visibleMemberVerificationLanes.length ? (
+                      <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
+                        {visibleMemberVerificationLanes.slice(0, 4).map((lane) => (
+                          <div
+                            key={cleanText(
+                              lane.lane_key,
+                              cleanText(lane.label, "member verification")
+                            )}
+                            style={{
+                              display: "grid",
+                              gridTemplateColumns: "minmax(0, 1fr) auto",
+                              gap: 10,
+                              alignItems: "center",
+                              borderRadius: 14,
+                              border: "1px solid rgba(9,27,46,0.10)",
+                              background: "rgba(255,255,255,0.72)",
+                              padding: "10px 10px 10px 12px",
+                            }}
+                          >
+                            <span style={{ minWidth: 0 }}>
+                              <span style={{ display: "block", fontWeight: 950 }}>
+                                {cleanText(lane.label, "Member-readiness check")}
+                              </span>
+                              <span
+                                style={{
+                                  display: "block",
+                                  color: "#4F647A",
+                                  fontSize: 12.5,
+                                  lineHeight: 1.45,
+                                  marginTop: 3,
+                                }}
+                              >
+                                {cleanText(
+                                  lane.next_step,
+                                  "Keep this as readiness planning until a formal credential flow exists."
+                                )}
+                              </span>
+                            </span>
+                            <span style={statusBadge(lane.status)}>
+                              {compactStatus(lane.status)}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : null}
+                    <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
+                      This member verification map is read-only readiness planning. It
+                      does not perform KYC, issue credentials, verify government
+                      identity, create or change members, place members in units,
+                      assign roles, grant permissions, create policy, decide reviews,
+                      upload evidence, expose storage keys, publish proof, issue
+                      TrustSlips, write Trust Passport entries, move money, or expose
+                      private member, review, or evidence records.
                     </div>
                   </div>
                 ) : null}

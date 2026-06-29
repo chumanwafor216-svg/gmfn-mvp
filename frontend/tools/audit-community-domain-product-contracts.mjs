@@ -265,6 +265,13 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
+  /getCommunityDomainMemberVerificationMap[\s\S]*memberVerificationMap[\s\S]*memberVerificationSummary[\s\S]*visibleMemberVerificationLanes[\s\S]*blockedMemberVerificationLanes[\s\S]*activeLane === "members"[\s\S]*Member verification readiness[\s\S]*primary_next_action[\s\S]*active_member_count[\s\S]*members_with_gsn_id[\s\S]*members_without_unit_placement[\s\S]*open_member_review_count[\s\S]*credential_issuance_status[\s\S]*does\s+not perform KYC, issue credentials, verify government\s+identity, create or change members, place members in units,\s+assign roles, grant permissions, create policy, decide reviews,\s+upload evidence, expose storage keys, publish proof, issue\s+TrustSlips, write Trust Passport entries, move money, or expose\s+private member, review, or evidence records/,
+  "Community Domain dashboard Members lane must show read-only member verification readiness without implying KYC/credential/member/role/review/evidence/TrustSlip/Trust Passport writes or private record exposure.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
   /reviewStatusCounts[\s\S]*governanceReviewCounts[\s\S]*governancePendingCount[\s\S]*governanceApprovedCount[\s\S]*activeLane === "governance"[\s\S]*Governance review pulse[\s\S]*Ready to apply[\s\S]*Access requests[\s\S]*does not decide reviews, apply membership,\s+assign roles, expose private evidence, or bypass reviewer policy/,
   "Community Domain dashboard Governance lane must show a compact review pulse without deciding reviews, applying membership, or exposing private review evidence.",
   { frontend: true }
