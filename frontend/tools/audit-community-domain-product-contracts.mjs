@@ -83,6 +83,13 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
+  /Loading your Community Domains[\s\S]*Cannot load domains[\s\S]*This Community Domain is not available here[\s\S]*Your Community Domains could not be loaded/,
+  "Community Domain dashboard selector errors must describe the current-user domain list instead of pretending a specific domain failed.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
   /getCommunityDomainDashboard[\s\S]*Continue setup[\s\S]*does not create payment instructions[\s\S]*verify ownership/,
   "Community Domain dashboard page must use the scoped backend summary and keep payment, activation, and verification boundaries honest.",
   { frontend: true }

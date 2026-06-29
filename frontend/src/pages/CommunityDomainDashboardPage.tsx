@@ -298,16 +298,22 @@ export default function CommunityDomainDashboardPage() {
         <section style={whiteCard()}>
           <div style={sectionLabel()}>Loading</div>
           <div style={{ ...helperText(), marginTop: 8 }}>
-            Opening the Community Domain dashboard...
+            {communityDomainId
+              ? "Opening the Community Domain dashboard..."
+              : "Loading your Community Domains..."}
           </div>
         </section>
       ) : null}
 
       {!loading && message && !dashboard ? (
         <section style={whiteCard()}>
-          <div style={sectionLabel()}>Cannot open dashboard</div>
+          <div style={sectionLabel()}>
+            {communityDomainId ? "Cannot open dashboard" : "Cannot load domains"}
+          </div>
           <h2 style={{ margin: "8px 0 6px", fontSize: 24, lineHeight: 1.1 }}>
-            This Community Domain is not available here.
+            {communityDomainId
+              ? "This Community Domain is not available here."
+              : "Your Community Domains could not be loaded."}
           </h2>
           <div style={helperText()}>{message}</div>
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 14 }}>
