@@ -1132,8 +1132,8 @@ assertNotContains(
 
 assertContains(
   "src/components/EvidencePackPanel.tsx",
-  /import \{ SecondaryButton \} from "\.\/StableButton";[\s\S]*?debugId="evidence-pack\.download-full"[\s\S]*?debugId="evidence-pack\.download-redacted"/,
-  "Evidence Pack panel must use shared stable button primitives for download actions."
+  /import \{ PrimaryButton, SecondaryButton \} from "\.\/StableButton";[\s\S]*?debugId="evidence-pack\.download-redacted"[\s\S]*?debugId="evidence-pack\.download-full"/,
+  "Evidence Pack panel must use shared stable button primitives for privacy-first download actions."
 );
 
 assertNotContains(
