@@ -135,6 +135,13 @@ type ServiceReadinessRow = {
   detail: string;
 };
 
+type OperatingStateCopy = {
+  heading: string;
+  detail: string;
+  nextStep: string;
+  risk: string;
+};
+
 function cleanText(value: unknown, fallback = ""): string {
   const text = String(value ?? "").trim();
   return text || fallback;
@@ -295,6 +302,88 @@ function serviceFallbackDetail(serviceKey: string, fallbackEnabled: boolean): st
     return "Listed by this Community Domain template. Readiness details are not loaded yet.";
   }
   return "Not included by the current template unless an owner later chooses to configure it.";
+}
+
+function communityDomainOperatingStateCopy(status: {
+  domain_status?: unknown;
+  billing_status?: unknown;
+  activation_status?: unknown;
+  verification_status?: unknown;
+}): OperatingStateCopy {
+  const domainStatus = cleanText(status.domain_status, "draft").toLowerCase();
+  const activationStatus = cleanText(status.activation_status).toLowerCase();
+  const verificationStatus = cleanText(status.verification_status).toLowerCase();
+  const waitingForActivation =
+    domainStatus.includes("pending") ||
+    activationStatus.includes("pending") ||
+    activationStatus.includes("waiting");
+
+  if (domainStatus.includes("closed")) {
+    return {
+      heading: "Domain closed",
+      detail:
+        "This Community Domain should be treated as closed. Authorized users may still need readable history, but normal operating actions should stay stopped.",
+      nextStep: "Review owner/admin recovery before reopening any institutional work.",
+      risk: "Do not present this domain as active, verified, renewable, or open for members.",
+    };
+  }
+
+  if (domainStatus.includes("suspended")) {
+    return {
+      heading: "Domain suspended",
+      detail:
+        "This Community Domain is paused. History may remain visible to authorized users, but paid operating actions should not continue while suspension is unresolved.",
+      nextStep: "Resolve the suspension or reactivation path before inviting more activity.",
+      risk: "Do not treat suspended status as normal activation or verification.",
+    };
+  }
+
+  if (domainStatus.includes("expired")) {
+    return {
+      heading: "Domain expired",
+      detail:
+        "The paid operating period appears expired. The domain may keep readable history, but active work should wait for renewal or reactivation.",
+      nextStep: "Review renewal and billing before relying on this domain for live operations.",
+      risk: "Do not accept expired status as proof that billing, renewal, or service access is current.",
+    };
+  }
+
+  if (waitingForActivation) {
+    return {
+      heading: "Waiting for activation",
+      detail:
+        "The setup may be underway, but activation is not finished. A quote or payment instruction is still not the same as a live Community Domain.",
+      nextStep: "Finish package, payment, activation, and authority checks in their separate owner/admin steps.",
+      risk: "Do not call the institution active or verified until the backend status proves it.",
+    };
+  }
+
+  if (domainStatus.includes("active")) {
+    if (verificationStatus === "verified") {
+      return {
+        heading: "Active operating domain",
+        detail:
+          "The domain is active and authority verification is recorded. Keep structure, members, governance, services, renewal, and evidence current.",
+        nextStep: "Use the readiness and work lanes to keep the operating system healthy.",
+        risk: "Active still does not mean every service, payment, Trust Event, or evidence release is enabled.",
+      };
+    }
+    return {
+      heading: "Active, not verified",
+      detail:
+        "The domain can be operated by authorized members, but it must not be presented as a verified institution yet.",
+      nextStep: "Continue setup while keeping authority verification separate from billing and activation.",
+      risk: "Do not let active billing or active setup language become a verification claim.",
+    };
+  }
+
+  return {
+    heading: "Draft setup",
+    detail:
+      "This Community Domain exists as a setup record. It is not launched, billed, activated, or verified yet.",
+    nextStep: "Review package quote, structure, members, governance, services, and authority before launch.",
+    risk: "Do not treat a draft as a live institution or a completed Community Domain.",
+  };
 }
 
 function laneDisplayLabel(lane: any, fallback = "Lane"): string {
@@ -596,6 +685,8 @@ export default function CommunityDomainDashboardPage() {
     : billingIsActive
     ? "Why package details are owner-only"
     : "Why quote review is owner-only";
+  const operatingStateCopy = communityDomainOperatingStateCopy(status);
+  const renewalState = cleanText(quote?.renewal_policy?.status, "not set");
 
   const moduleKeys = useMemo(() => {
     const included = Array.isArray(quote?.included_modules) ? quote.included_modules : [];
@@ -1098,6 +1189,56 @@ export default function CommunityDomainDashboardPage() {
                   </div>
                 </div>
               ))}
+            </div>
+          </section>
+
+          <section style={whiteCard()}>
+            <div style={{ display: "grid", gap: 12 }}>
+              <div>
+                <div style={sectionLabel()}>Operating state</div>
+                <h2 style={{ margin: "6px 0 0", fontSize: 24, lineHeight: 1.12 }}>
+                  {operatingStateCopy.heading}
+                </h2>
+                <div style={{ ...helperText(), marginTop: 8 }}>
+                  {operatingStateCopy.detail}
+                </div>
+              </div>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(136px, 1fr))",
+                  gap: 8,
+                }}
+              >
+                {[
+                  ["Domain", status.domain_status],
+                  ["Activation", status.activation_status],
+                  ["Billing", status.billing_status],
+                  ["Renewal", renewalState],
+                ].map(([label, value]) => (
+                  <div key={String(label)} style={statusBadge(value)}>
+                    {String(label)}: {compactStatus(value)}
+                  </div>
+                ))}
+              </div>
+              <div
+                style={{
+                  borderRadius: 16,
+                  border: "1px solid rgba(146,94,8,0.18)",
+                  background: "rgba(255,247,226,0.64)",
+                  padding: 12,
+                }}
+              >
+                <div style={{ fontWeight: 950 }}>{operatingStateCopy.nextStep}</div>
+                <div style={{ ...helperText(), marginTop: 5, fontSize: 13 }}>
+                  {operatingStateCopy.risk}
+                </div>
+              </div>
+              <div style={{ ...helperText(), fontSize: 13 }}>
+                Draft, waiting, active, expired, suspended, and closed domains get
+                different guidance here. Payment, renewal, activation, and authority
+                verification remain separate.
+              </div>
             </div>
           </section>
 

@@ -132,6 +132,13 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
+  /communityDomainOperatingStateCopy[\s\S]*Domain closed[\s\S]*Domain suspended[\s\S]*Domain expired[\s\S]*Waiting for activation[\s\S]*Active operating domain[\s\S]*Active, not verified[\s\S]*Draft setup[\s\S]*Operating state[\s\S]*Draft, waiting, active, expired, suspended, and closed domains get\s+different guidance[\s\S]*Payment, renewal, activation, and authority\s+verification remain separate/,
+  "Community Domain dashboard must give state-specific guidance for draft, waiting, active, expired, suspended, and closed domains without merging payment, renewal, activation, or verification.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
   /getCommunityDomainReadiness[\s\S]*setupReadiness[\s\S]*blockedSetupReadinessItems[\s\S]*Setup readiness[\s\S]*checks ready[\s\S]*setup checks still need attention[\s\S]*does not create nodes, add members, assign roles,\s+decide reviews, create payment instructions, activate billing,\s+activate the domain, verify authority, or expose private evidence/,
   "Community Domain dashboard must show read-only setup readiness blockers without implying setup, payment, activation, verification, or private-evidence writes.",
   { frontend: true }
