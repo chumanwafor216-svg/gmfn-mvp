@@ -250,6 +250,8 @@ export default function CommunityDomainDashboardPage() {
   const lanes = Array.isArray(dashboard?.lanes) ? dashboard?.lanes || [] : [];
   const isAdmin = Boolean(dashboard?.viewer?.can_admin);
   const selectedLane = lanes.find((lane) => lane.lane_key === activeLane) || lanes[0];
+  const billingIsActive =
+    cleanText(status.billing_status || selectedLane?.status).toLowerCase() === "active";
 
   const moduleKeys = useMemo(() => {
     const included = Array.isArray(quote?.included_modules) ? quote.included_modules : [];
@@ -273,7 +275,9 @@ export default function CommunityDomainDashboardPage() {
       setQuote(payload?.quote || null);
       setActiveLane("billing");
       setMessage(
-        "Package quote refreshed. It is still not a payment instruction, payment confirmation, activation, or verification."
+        billingIsActive
+          ? "Package details refreshed. Billing is already shown as active here, but this refresh is still not payment confirmation, activation, or verification."
+          : "Package quote refreshed. It is still not a payment instruction, payment confirmation, activation, or verification."
       );
     } catch (err: any) {
       setMessage(err?.message || "GSN could not refresh the package quote.");
@@ -678,11 +682,22 @@ export default function CommunityDomainDashboardPage() {
                   <div style={softCard()}>
                     <div style={sectionLabel()}>Package and renewal</div>
                     <div style={{ ...helperText(), marginTop: 7 }}>
-                      Quote status:{" "}
+                      Billing status:{" "}
+                      <strong style={{ textTransform: "capitalize" }}>
+                        {compactStatus(status.billing_status || selectedLane?.status)}
+                      </strong>
+                      .{" "}
+                      {billingIsActive
+                        ? "Quote details remain available for reference, but this lane is no longer asking for a quote before setup continues."
+                        : "Quote details are still required before a payment instruction exists."}{" "}
+                      Renewal period and payment instruction are not configured here.
+                    </div>
+                    <div style={{ ...helperText(), marginTop: 7 }}>
+                      Package quote:{" "}
                       <strong style={{ textTransform: "capitalize" }}>
                         {compactStatus(quote?.pricing_status || quote?.quote_status)}
                       </strong>
-                      . Renewal period and payment instruction are not configured here.
+                      .
                     </div>
                     <StableButton
                       type="button"
@@ -693,7 +708,11 @@ export default function CommunityDomainDashboardPage() {
                       onClick={refreshQuote}
                       style={{ marginTop: 12 }}
                     >
-                      {isAdmin ? "Review package quote" : "Why quote review is owner-only"}
+                      {isAdmin
+                        ? billingIsActive
+                          ? "Review package details"
+                          : "Review package quote"
+                        : "Why quote review is owner-only"}
                     </StableButton>
                   </div>
                 ) : null}

@@ -103,6 +103,13 @@ assertContains(
 );
 
 assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /billingIsActive[\s\S]*Billing status:[\s\S]*status\.billing_status \|\| selectedLane\?\.status[\s\S]*Quote details remain available for reference[\s\S]*Package quote:[\s\S]*Review package details/,
+  "Community Domain dashboard billing lane must lead with dashboard billing state and keep package quote details as reference when billing is active.",
+  { frontend: true }
+);
+
+assertContains(
   "src/lib/api.ts",
   /listMyCommunityDomains[\s\S]*\/community-domains\/my[\s\S]*getCommunityDomain\(/,
   "Frontend API layer must expose the signed-in Community Domain selector before single-domain reads.",
