@@ -195,6 +195,13 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
+  /getCommunityDomainTrustMobility[\s\S]*trustMobility[\s\S]*trustMobilitySummary[\s\S]*visibleTrustMobilityLanes[\s\S]*blockedTrustMobilityLanes[\s\S]*activeLane === "modules"[\s\S]*Trust mobility readiness[\s\S]*primary_next_action[\s\S]*verification_status[\s\S]*review_evidence_records[\s\S]*relay_paths[\s\S]*does not\s+create TrustSlips, write Trust Passport entries, create credentials, create\s+trust relay paths, release evidence, expose files, expose storage keys,\s+verify legal or institutional authority, publish proof, create outward\s+links, move money, activate billing, activate the Community Domain, create\s+marketplace activity, create a social Community, or expose private member,\s+finance, evidence, or review records/,
+  "Community Domain dashboard Services lane must show read-only trust mobility readiness without implying TrustSlips, Trust Passport writes, credentials, relay paths, evidence release, file or storage-key exposure, legal verification, proof publishing, outward links, money movement, billing, activation, marketplace activity, social Community creation, or private record exposure.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
   /activeLane === "identity"[\s\S]*Domain identity[\s\S]*public-safe identity anchor[\s\S]*Code[\s\S]*domain\.domain_name[\s\S]*Owner[\s\S]*domain\.owner_user_id[\s\S]*Template[\s\S]*template\.label[\s\S]*Location[\s\S]*domain\.state[\s\S]*domain\.country[\s\S]*Public profile:[\s\S]*No public profile text is recorded yet[\s\S]*does not expose owner contact details,\s+private member lists, finance records, evidence files, or\s+verification proof/,
   "Community Domain dashboard Identity lane must show a public-safe identity summary without exposing owner contact, private members, finance, evidence, or verification proof.",
   { frontend: true }

@@ -21,6 +21,7 @@ import {
   getCommunityDomainRolloutPlan,
   getCommunityDomainSetupPlan,
   getCommunityDomainTrustRelayReadiness,
+  getCommunityDomainTrustMobility,
   listCommunityDomainActionReviews,
   listCommunityDomainNodeTree,
   listMyCommunityDomainMembershipRequests,
@@ -230,6 +231,16 @@ type NotificationScopeReadinessLane = {
   public_announcement_status?: string | null;
   cross_domain_broadcast_status?: string | null;
   member_list_status?: string | null;
+  next_step?: string | null;
+};
+
+type TrustMobilityLane = {
+  lane_key?: string | null;
+  label?: string | null;
+  summary?: string | null;
+  status?: string | null;
+  ready?: boolean;
+  count?: number | string | null;
   next_step?: string | null;
 };
 
@@ -630,6 +641,7 @@ export default function CommunityDomainDashboardPage() {
   const [evidenceReleaseReadiness, setEvidenceReleaseReadiness] = useState<any | null>(null);
   const [trustRelayReadiness, setTrustRelayReadiness] = useState<any | null>(null);
   const [notificationScopeReadiness, setNotificationScopeReadiness] = useState<any | null>(null);
+  const [trustMobility, setTrustMobility] = useState<any | null>(null);
   const [quote, setQuote] = useState<any | null>(null);
   const [activeLane, setActiveLane] = useState("structure");
   const [loading, setLoading] = useState(true);
@@ -672,6 +684,7 @@ export default function CommunityDomainDashboardPage() {
       setEvidenceReleaseReadiness(null);
       setTrustRelayReadiness(null);
       setNotificationScopeReadiness(null);
+      setTrustMobility(null);
       try {
         const payload = await listMyCommunityDomains();
         setDomainItems(Array.isArray(payload?.items) ? payload.items : []);
@@ -704,6 +717,7 @@ export default function CommunityDomainDashboardPage() {
     setEvidenceReleaseReadiness(null);
     setTrustRelayReadiness(null);
     setNotificationScopeReadiness(null);
+    setTrustMobility(null);
     try {
       const payload = await getCommunityDomainDashboard(communityDomainId);
       const nextDashboard = (payload?.dashboard || null) as DashboardPayload | null;
@@ -792,6 +806,12 @@ export default function CommunityDomainDashboardPage() {
       } catch {
         setNotificationScopeReadiness(null);
       }
+      try {
+        const trustMobilityPayload = await getCommunityDomainTrustMobility(communityDomainId);
+        setTrustMobility(trustMobilityPayload?.trust_mobility || null);
+      } catch {
+        setTrustMobility(null);
+      }
       const viewerUserId = nextDashboard?.viewer?.user_id;
       if (viewerUserId) {
         try {
@@ -835,6 +855,7 @@ export default function CommunityDomainDashboardPage() {
       setEvidenceReleaseReadiness(null);
       setTrustRelayReadiness(null);
       setNotificationScopeReadiness(null);
+      setTrustMobility(null);
       await loadOwnMembershipRequests();
       setMessage(
         err?.message ||
@@ -975,6 +996,17 @@ export default function CommunityDomainDashboardPage() {
     typeof notificationScopeReadiness?.ready_total === "number"
       ? notificationScopeReadiness.ready_total
       : visibleNotificationScopeLanes.filter((lane) => lane.ready).length;
+  const trustMobilitySummary = trustMobility?.summary || {};
+  const visibleTrustMobilityLanes: TrustMobilityLane[] = Array.isArray(trustMobility?.lanes)
+    ? trustMobility.lanes
+    : [];
+  const blockedTrustMobilityLanes = visibleTrustMobilityLanes.filter(
+    (lane) => !lane.ready
+  );
+  const trustMobilityReadyTotal =
+    typeof trustMobility?.ready_total === "number"
+      ? trustMobility.ready_total
+      : visibleTrustMobilityLanes.filter((lane) => lane.ready).length;
   const setupPrimaryAction = setupReadiness?.primary_next_action || dashboard?.primary_next_action;
   const setupPrimaryActionLaneKey = laneForAction(setupPrimaryAction?.action_key);
   const dashboardPrimaryActionLaneKey = laneForAction(dashboard?.primary_next_action?.action_key);
@@ -2670,6 +2702,128 @@ export default function CommunityDomainDashboardPage() {
                         create marketplace records, move money, issue TrustSlips, write Trust
                         Passport entries, or expose private member, review, evidence, marketplace,
                         or finance records.
+                      </div>
+                    </div>
+
+                    <div style={softCard()}>
+                      <div style={sectionLabel()}>Trust mobility readiness</div>
+                      <div style={{ ...helperText(), marginTop: 7 }}>
+                        {trustMobility
+                          ? `${cleanText(
+                              trustMobility.primary_next_action?.label,
+                              "Review trust mobility readiness"
+                            )}. ${trustMobilityReadyTotal} of ${visibleTrustMobilityLanes.length} portability checks are ready.`
+                          : "GSN could not load the read-only trust mobility view for this Community Domain."}
+                      </div>
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "repeat(auto-fit, minmax(118px, 1fr))",
+                          gap: 8,
+                          marginTop: 10,
+                        }}
+                      >
+                        {[
+                          [
+                            "Authority",
+                            compactStatus(trustMobilitySummary.verification_status),
+                          ],
+                          ["Members", countValue(trustMobilitySummary.active_members)],
+                          ["Evidence", countValue(trustMobilitySummary.review_evidence_records)],
+                          ["Relay paths", countValue(trustMobilitySummary.relay_paths)],
+                        ].map(([label, value]) => (
+                          <div
+                            key={String(label)}
+                            style={{
+                              borderRadius: 14,
+                              background: "#F7FAFF",
+                              border: "1px solid rgba(9,27,46,0.08)",
+                              padding: 10,
+                              minWidth: 0,
+                            }}
+                          >
+                            <div style={{ color: "#617085", fontSize: 12, fontWeight: 850 }}>
+                              {label}
+                            </div>
+                            <div style={{ color: "#07172C", fontWeight: 950, marginTop: 4 }}>
+                              {value}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      {blockedTrustMobilityLanes.length ? (
+                        <div style={{ ...helperText(), marginTop: 9 }}>
+                          Trust mobility checks needing attention:{" "}
+                          <strong>
+                            {blockedTrustMobilityLanes
+                              .slice(0, 3)
+                              .map((lane) => cleanText(lane.label, lane.lane_key || "mobility check"))
+                              .join(", ")}
+                          </strong>
+                          .
+                        </div>
+                      ) : trustMobility ? (
+                        <div style={{ ...helperText(), marginTop: 9 }}>
+                          No blocked trust mobility lane is visible, but portability bridges are
+                          still not connected here.
+                        </div>
+                      ) : null}
+                      {visibleTrustMobilityLanes.length ? (
+                        <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
+                          {visibleTrustMobilityLanes.slice(0, 4).map((lane) => (
+                            <div
+                              key={cleanText(
+                                lane.lane_key,
+                                cleanText(lane.label, "trust mobility")
+                              )}
+                              style={{
+                                display: "grid",
+                                gridTemplateColumns: "minmax(0, 1fr) auto",
+                                gap: 10,
+                                alignItems: "center",
+                                borderRadius: 14,
+                                border: "1px solid rgba(9,27,46,0.10)",
+                                background: "rgba(255,255,255,0.72)",
+                                padding: "10px 10px 10px 12px",
+                              }}
+                            >
+                              <span style={{ minWidth: 0 }}>
+                                <span style={{ display: "block", fontWeight: 950 }}>
+                                  {cleanText(lane.label, "Trust mobility check")}
+                                </span>
+                                <span
+                                  style={{
+                                    display: "block",
+                                    color: "#4F647A",
+                                    fontSize: 12.5,
+                                    lineHeight: 1.45,
+                                    marginTop: 3,
+                                  }}
+                                >
+                                  {cleanText(
+                                    lane.next_step,
+                                    cleanText(
+                                      lane.summary,
+                                      "Keep portability as planning until a real bridge exists."
+                                    )
+                                  )}
+                                </span>
+                              </span>
+                              <span style={statusBadge(lane.status)}>
+                                {compactStatus(lane.status)}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : null}
+                      <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
+                        This trust mobility view is read-only portability planning. It does not
+                        create TrustSlips, write Trust Passport entries, create credentials, create
+                        trust relay paths, release evidence, expose files, expose storage keys,
+                        verify legal or institutional authority, publish proof, create outward
+                        links, move money, activate billing, activate the Community Domain, create
+                        marketplace activity, create a social Community, or expose private member,
+                        finance, evidence, or review records.
                       </div>
                     </div>
                   </>
