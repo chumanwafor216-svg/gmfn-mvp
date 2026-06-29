@@ -188,7 +188,9 @@ function isNetworkSessionError(error: unknown): boolean {
   return (
     message.includes("failed to fetch") ||
     message.includes("networkerror") ||
-    message.includes("network error")
+    message.includes("network error") ||
+    message.includes("server did not finish") ||
+    message.includes("check your connection")
   );
 }
 

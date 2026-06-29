@@ -303,7 +303,9 @@ function isNetworkSessionError(error: unknown): boolean {
   return (
     message.includes("failed to fetch") ||
     message.includes("networkerror") ||
-    message.includes("network error")
+    message.includes("network error") ||
+    message.includes("server did not finish") ||
+    message.includes("check your connection")
   );
 }
 
@@ -343,7 +345,9 @@ function signInSessionError(error: unknown, tokenStored: boolean): string {
   if (
     lowerMessage.includes("failed to fetch") ||
     lowerMessage.includes("networkerror") ||
-    lowerMessage.includes("network error")
+    lowerMessage.includes("network error") ||
+    lowerMessage.includes("server did not finish") ||
+    lowerMessage.includes("check your connection")
   ) {
     return (
       "Sign-in accepted, but the browser could not reach the member record check. " +
