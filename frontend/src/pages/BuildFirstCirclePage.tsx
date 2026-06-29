@@ -73,6 +73,7 @@ type FocusedAction = "invite" | null;
 
 const UI_STORAGE_KEY = "gmfn.buildFirstCircle.sections.v2";
 const DRAFT_FALLBACK_KEY = "gmfn.firstCircle.fallback.v1";
+const SLOW_FIRST_CIRCLE_LOAD_MS = 8000;
 
 const ROLE_OPTIONS = firstCircle.FIRST_CIRCLE_ROLE_OPTIONS.map(
   (option) => option.value
@@ -719,6 +720,7 @@ export default function BuildFirstCirclePage() {
   );
 
   const [loading, setLoading] = useState(true);
+  const [slowLoad, setSlowLoad] = useState(false);
   const [notice, setNotice] = useState<{
     tone: NoticeTone;
     text: string;
@@ -763,6 +765,19 @@ export default function BuildFirstCirclePage() {
 
     return () => window.clearTimeout(timer);
   }, [notice]);
+
+  useEffect(() => {
+    if (!loading) {
+      setSlowLoad(false);
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      setSlowLoad(true);
+    }, SLOW_FIRST_CIRCLE_LOAD_MS);
+
+    return () => window.clearTimeout(timer);
+  }, [loading]);
 
   useEffect(() => {
     let alive = true;
@@ -1406,15 +1421,33 @@ export default function BuildFirstCirclePage() {
             style={{
               color: "#DCEBFB",
               lineHeight: 1.8,
-              display: "inline-flex",
+              display: "flex",
               alignItems: "center",
               gap: 10,
               fontWeight: 900,
             }}
           >
             <GsnLegacyIcon name="refresh" size={30} />
-            <span>Loading first-circle workspace...</span>
+            <span>
+              {slowLoad
+                ? "This is taking longer than expected."
+                : "Loading first-circle workspace..."}
+            </span>
           </div>
+          {slowLoad ? (
+            <p
+              style={{
+                margin: "10px 0 0",
+                color: "#C8D8EA",
+                fontSize: 14,
+                lineHeight: 1.65,
+                maxWidth: 680,
+              }}
+            >
+              Your saved first-circle draft stays on this phone. You can wait,
+              open Community Home, or return to Dashboard and come back.
+            </p>
+          ) : null}
         </section>
       </div>
     );
