@@ -653,14 +653,18 @@ export async function uploadMyProfileImageFile(file: File): Promise<any> {
   const fd = new FormData();
   fd.append("file", file);
 
-  const res = await fetch(buildUrl("/auth/me/profile-image/upload"), {
-    method: "POST",
-    headers: {
-      Accept: "application/json",
-      Authorization: `Bearer ${tok}`,
+  const res = await fetchWithTimeout(
+    buildUrl("/auth/me/profile-image/upload"),
+    {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        Authorization: `Bearer ${tok}`,
+      },
+      body: fd,
     },
-    body: fd,
-  });
+    DEFAULT_MULTIPART_TIMEOUT_MS
+  );
 
   if (!res.ok) throw new HttpStatusError(res.status, await parseError(res));
   return readJsonOrTextSafe(res);
@@ -5404,11 +5408,15 @@ async function postCommunityImageFileToPath(
     headers["X-Clan-Id"] = String(effectiveClanId);
   }
 
-  const res = await fetch(buildUrl(path), {
-    method: "POST",
-    headers,
-    body: fd,
-  });
+  const res = await fetchWithTimeout(
+    buildUrl(path),
+    {
+      method: "POST",
+      headers,
+      body: fd,
+    },
+    DEFAULT_MULTIPART_TIMEOUT_MS
+  );
 
   if (!res.ok) {
     throw new HttpStatusError(res.status, await parseError(res));
