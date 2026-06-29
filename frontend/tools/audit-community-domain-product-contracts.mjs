@@ -132,6 +132,13 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
+  /listCommunityDomainNodeTree[\s\S]*structurePreviewRows[\s\S]*nodeTree[\s\S]*visibleStructureRows[\s\S]*activeLane === "structure"[\s\S]*Structure preview[\s\S]*read-only Community Domain tree[\s\S]*No operating-unit structure has been mapped yet[\s\S]*does not create nodes, change parentage, place\s+members, grant roles, activate billing, or verify a branch/,
+  "Community Domain dashboard Structure lane must show a compact read-only node-tree preview without implying structure writes or authority changes.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
   /getCommunityDomainMemberPlacementSummary[\s\S]*placementSummary[\s\S]*placementCounts[\s\S]*visibleNodePlacements[\s\S]*activeLane === "members"[\s\S]*Your placement[\s\S]*Active operating-unit placements[\s\S]*This is read-only[\s\S]*Admins still control placement, role changes,\s+and review decisions/,
   "Community Domain dashboard Members lane must show the current viewer's read-only placement summary without implying self-service placement or role changes.",
   { frontend: true }
