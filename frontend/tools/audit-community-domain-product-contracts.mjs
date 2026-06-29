@@ -115,6 +115,13 @@ assertContains(
 );
 
 assertContains(
+  "src/pages/CommunityDomainPurchasePage.tsx",
+  /\/app\/community-domain[\s\S]*community-domain-purchase\.open-my-domains[\s\S]*Open my Community Domains[\s\S]*Sign in to open domains/,
+  "Community Domain purchase page must let returning signed-in owners or members recover the authenticated domain selector.",
+  { frontend: true }
+);
+
+assertContains(
   "docs/SCREEN_SPECS.md",
   /## SignUpChoicePage[\s\S]*Purchase Community Domain card[\s\S]*Purchase Community Domain goes to CommunityDomainPurchasePage[\s\S]*must not be\s+merged into ordinary Create Community/,
   "Sign-up choice must expose Purchase Community Domain as a separate institutional path."

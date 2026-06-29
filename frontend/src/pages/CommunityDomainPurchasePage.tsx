@@ -755,9 +755,27 @@ export default function CommunityDomainPurchasePage() {
                   Recover a signed-in path
                 </div>
                 <div style={helperText()}>
-                  Sign in before creating the draft request so ownership is attached to
-                  the correct account.
+                  Already started or joined a Community Domain? Open your saved
+                  domains after sign-in. Sign in before creating a new draft so
+                  ownership is attached to the correct account.
                 </div>
+                <EntryActionButton
+                  type="button"
+                  variant="secondary"
+                  onClick={() =>
+                    isSignedIn
+                      ? navigate("/app/community-domain")
+                      : navigate(
+                          `/login?force=1&next=${encodeURIComponent(
+                            "/app/community-domain"
+                          )}`
+                        )
+                  }
+                  debugId="community-domain-purchase.open-my-domains"
+                  style={{ width: "100%" }}
+                >
+                  {isSignedIn ? "Open my Community Domains" : "Sign in to open domains"}
+                </EntryActionButton>
                 <EntryActionButton
                   type="button"
                   variant="secondary"

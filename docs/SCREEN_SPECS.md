@@ -245,6 +245,8 @@ Must show:
   social community
 - clear sign-in or existing-member recovery when purchase requires an
   authenticated owner
+- clear path for a signed-in returning owner/member to open their Community
+  Domain dashboard selector
 
 Rules:
 - This screen is an entry/provisioning screen, not the operating dashboard.
