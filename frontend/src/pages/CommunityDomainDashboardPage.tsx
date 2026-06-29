@@ -256,6 +256,13 @@ export default function CommunityDomainDashboardPage() {
   const primaryActionLaneLabel = cleanText(primaryActionLane?.label, "work");
   const billingIsActive =
     cleanText(status.billing_status || selectedLane?.status).toLowerCase() === "active";
+  const packageReviewActionLabel = isAdmin
+    ? billingIsActive
+      ? "Review package details"
+      : "Review package quote"
+    : billingIsActive
+    ? "Why package details are owner-only"
+    : "Why quote review is owner-only";
 
   const moduleKeys = useMemo(() => {
     const included = Array.isArray(quote?.included_modules) ? quote.included_modules : [];
@@ -712,11 +719,7 @@ export default function CommunityDomainDashboardPage() {
                       onClick={refreshQuote}
                       style={{ marginTop: 12 }}
                     >
-                      {isAdmin
-                        ? billingIsActive
-                          ? "Review package details"
-                          : "Review package quote"
-                        : "Why quote review is owner-only"}
+                      {packageReviewActionLabel}
                     </StableButton>
                   </div>
                 ) : null}

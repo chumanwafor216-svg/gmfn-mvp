@@ -97,14 +97,14 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /Only a Community Domain owner or domain admin can review the package quote[\s\S]*Review package quote[\s\S]*Why quote review is owner-only/,
-  "Community Domain dashboard billing action must not imply a non-admin can send an owner quote-review request.",
+  /packageReviewActionLabel[\s\S]*Review package details[\s\S]*Review package quote[\s\S]*Why package details are owner-only[\s\S]*Why quote review is owner-only[\s\S]*Only a Community Domain owner or domain admin can review the package quote/,
+  "Community Domain dashboard billing action must not imply a non-admin can send an owner package or quote review request.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /billingIsActive[\s\S]*Billing status:[\s\S]*status\.billing_status \|\| selectedLane\?\.status[\s\S]*Quote details remain available for reference[\s\S]*Package quote:[\s\S]*Review package details/,
+  /billingIsActive[\s\S]*packageReviewActionLabel[\s\S]*Review package details[\s\S]*Billing status:[\s\S]*status\.billing_status \|\| selectedLane\?\.status[\s\S]*Quote details remain available for reference[\s\S]*Package quote:[\s\S]*\{packageReviewActionLabel\}/,
   "Community Domain dashboard billing lane must lead with dashboard billing state and keep package quote details as reference when billing is active.",
   { frontend: true }
 );
