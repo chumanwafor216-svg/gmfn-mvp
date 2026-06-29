@@ -11,6 +11,7 @@ import {
   createCommunityDomainPackageQuote,
   getAccessToken,
   listCommunityDomainTemplates,
+  lookupCommunityDomainByName,
 } from "../lib/api";
 
 type TemplateOption = {
@@ -26,6 +27,17 @@ type AvailabilityResult = {
   normalized_domain_name?: string;
   available?: boolean;
   reason?: string | null;
+};
+
+type DomainLookupResult = {
+  id?: number | string;
+  domain_name?: string;
+  display_name?: string;
+  status?: string;
+  verification_status?: string;
+  template_label?: string;
+  dashboard_path?: string;
+  public_profile?: string | null;
 };
 
 type PurchaseDraftSnapshot = {
@@ -311,7 +323,11 @@ export default function CommunityDomainPurchasePage() {
   const [availability, setAvailability] = useState<AvailabilityResult | null>(null);
   const [draftResult, setDraftResult] = useState<any>(null);
   const [quoteResult, setQuoteResult] = useState<any>(null);
-  const [busy, setBusy] = useState<"templates" | "availability" | "draft" | null>(null);
+  const [existingDomainName, setExistingDomainName] = useState("");
+  const [domainLookup, setDomainLookup] = useState<DomainLookupResult | null>(null);
+  const [busy, setBusy] = useState<
+    "templates" | "availability" | "draft" | "lookup" | null
+  >(null);
   const [message, setMessage] = useState("");
 
   const isSignedIn = Boolean(getAccessToken());
@@ -493,6 +509,53 @@ export default function CommunityDomainPurchasePage() {
     } finally {
       setBusy(null);
     }
+  }
+
+  async function handleFindExistingDomain() {
+    const requestedName = existingDomainName.trim();
+    setDomainLookup(null);
+    if (requestedName.length < 2) {
+      setMessage("Enter the Community Domain code or name your organization gave you.");
+      return;
+    }
+
+    setBusy("lookup");
+    setMessage("");
+    try {
+      const payload = await lookupCommunityDomainByName(requestedName);
+      const entry = payload?.community_domain || null;
+      setDomainLookup(entry);
+      setMessage(
+        entry?.display_name
+          ? `Found ${entry.display_name}. Open it next; if you are not already a member, GSN will let you request access.`
+          : "Community Domain found. Open it next; if you are not already a member, GSN will let you request access."
+      );
+    } catch (err: any) {
+      setDomainLookup(null);
+      setMessage(
+        err?.message ||
+          "GSN could not find that Community Domain code. Check the spelling or ask the organization for its GSN domain code."
+      );
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  function openFoundDomain() {
+    const path =
+      compactOptional(domainLookup?.dashboard_path) ||
+      (domainLookup?.id
+        ? `/app/community-domain/${encodeURIComponent(String(domainLookup.id))}`
+        : "");
+    if (!path) {
+      setMessage("Find a Community Domain before opening the access path.");
+      return;
+    }
+    if (isSignedIn) {
+      navigate(path);
+      return;
+    }
+    navigate(`/login?force=1&next=${encodeURIComponent(path)}`);
   }
 
   return (
@@ -924,13 +987,81 @@ export default function CommunityDomainPurchasePage() {
               <div style={{ display: "grid", gap: 8 }}>
                 <div style={labelText()}>Existing owner</div>
                 <div style={{ fontSize: 21, fontWeight: 950, lineHeight: 1.12 }}>
-                  Recover a signed-in path
+                  Find or reopen a domain
                 </div>
                 <div style={helperText()}>
                   Already started or joined a Community Domain? Open your saved
-                  domains after sign-in. Sign in before creating a new draft so
-                  ownership is attached to the correct account.
+                  domains, or enter the domain code your organization gave you.
                 </div>
+                <label>
+                  <div
+                    style={{
+                      color: "rgba(255,255,255,0.88)",
+                      fontSize: 13,
+                      fontWeight: 900,
+                      marginBottom: 6,
+                    }}
+                  >
+                    Existing domain code
+                  </div>
+                  <input
+                    value={existingDomainName}
+                    onChange={(event) => {
+                      setExistingDomainName(event.target.value);
+                      setDomainLookup(null);
+                    }}
+                    placeholder="dominion-schools"
+                    style={inputStyle()}
+                  />
+                </label>
+                {domainLookup ? (
+                  <div
+                    style={{
+                      borderRadius: 16,
+                      border: "1px solid rgba(220,231,243,0.18)",
+                      background: "rgba(255,255,255,0.08)",
+                      padding: 12,
+                      display: "grid",
+                      gap: 6,
+                    }}
+                  >
+                    <div style={{ color: "#F8FBFF", fontWeight: 950 }}>
+                      {compactValue(domainLookup.display_name, "Community Domain")}
+                    </div>
+                    <div style={{ ...helperText(), fontSize: 13 }}>
+                      Code: <strong>{compactValue(domainLookup.domain_name)}</strong>
+                      <br />
+                      Status:{" "}
+                      <strong>{compactValue(domainLookup.status, "not recorded")}</strong>
+                      {" / "}
+                      Verification:{" "}
+                      <strong>
+                        {compactValue(domainLookup.verification_status, "not recorded")}
+                      </strong>
+                    </div>
+                  </div>
+                ) : null}
+                <EntryActionButton
+                  type="button"
+                  variant="secondary"
+                  onClick={handleFindExistingDomain}
+                  disabled={busy === "lookup"}
+                  debugId="community-domain-purchase.lookup-existing-domain"
+                  style={{ width: "100%" }}
+                >
+                  {busy === "lookup" ? "Finding domain..." : "Find domain"}
+                </EntryActionButton>
+                {domainLookup ? (
+                  <EntryActionButton
+                    type="button"
+                    variant="secondary"
+                    onClick={openFoundDomain}
+                    debugId="community-domain-purchase.open-found-domain"
+                    style={{ width: "100%" }}
+                  >
+                    {isSignedIn ? "Open or request access" : "Sign in to request access"}
+                  </EntryActionButton>
+                ) : null}
                 <EntryActionButton
                   type="button"
                   variant="secondary"

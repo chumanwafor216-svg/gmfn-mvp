@@ -1620,6 +1620,35 @@ def _domain_payload(
     }
 
 
+def _public_domain_entry_payload(domain: CommunityDomain) -> dict[str, Any]:
+    template = _community_domain_template_for_key(
+        domain.template_key or domain.domain_type
+    )
+    return {
+        "id": int(domain.id),
+        "domain_name": domain.domain_name,
+        "display_name": domain.display_name,
+        "domain_type": domain.domain_type,
+        "template_key": template["template_key"],
+        "template_label": template["label"],
+        "status": domain.status,
+        "verification_status": domain.verification_status,
+        "country": domain.country,
+        "state": domain.state,
+        "public_profile": domain.public_profile,
+        "dashboard_path": f"/app/community-domain/{int(domain.id)}",
+        "membership_request_route": f"/community-domains/{int(domain.id)}/membership-requests",
+        "boundary": (
+            "Public-safe Community Domain lookup only. This does not expose "
+            "member lists, private evidence, finance records, payment "
+            "instructions, owner contact details, governance queue details, "
+            "or verification proof. Opening the dashboard still requires active "
+            "membership, or a membership request that an owner/admin later "
+            "approves and applies."
+        ),
+    }
+
+
 def _community_domain_template_for_key(template_key: Optional[str]) -> dict[str, Any]:
     key = _clean_str(template_key, "generic_association")
     for preset in COMMUNITY_DOMAIN_TEMPLATE_PRESETS:
@@ -17931,6 +17960,52 @@ def list_my_community_domains(
             "expose private member lists, finance records, evidence attachments, "
             "payment instructions, activation authority, verification authority, "
             "or domains the current user does not actively belong to."
+        ),
+    }
+
+
+@router.get("/lookup", response_model=dict[str, Any])
+def lookup_community_domain_by_name(
+    domain_name: str = Query(..., min_length=1, max_length=120),
+    db: Session = Depends(get_db),
+):
+    normalized = normalize_domain_name(domain_name)
+    reason = _domain_name_unavailable_reason(normalized)
+    if reason:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "code": reason,
+                "message": "Enter a valid Community Domain name or code.",
+                "normalized_domain_name": normalized,
+            },
+        )
+
+    domain = (
+        db.query(CommunityDomain)
+        .filter(CommunityDomain.domain_name == normalized)
+        .first()
+    )
+    if domain is None:
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "code": "community_domain_not_found",
+                "message": "GSN could not find that Community Domain code.",
+                "normalized_domain_name": normalized,
+            },
+        )
+
+    return {
+        "ok": True,
+        "domain_name": domain_name,
+        "normalized_domain_name": normalized,
+        "community_domain": _public_domain_entry_payload(domain),
+        "boundary": (
+            "Lookup returns public-safe Community Domain identity and the next "
+            "safe route only. It does not prove verification, expose private "
+            "records, add membership, send notifications, or publish a final "
+            "public proof page."
         ),
     }
 

@@ -104,6 +104,74 @@ def test_community_domain_availability_reports_available_and_taken(
     assert taken.json()["reason"] == "domain_name_taken"
 
 
+def test_public_domain_lookup_returns_safe_entry_without_membership(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    outsider = _seed_user(2, "lookup-outsider@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Lookup Union Domain",
+                "display_name": "Lookup Union Domain",
+                "domain_type": "union",
+                "public_profile": "A public-safe union profile.",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain_id = created.json()["community_domain"]["id"]
+
+        app.dependency_overrides[get_current_user] = lambda: outsider
+        lookup = client.get(
+            "/community-domains/lookup",
+            params={"domain_name": "Lookup Union Domain"},
+        )
+        assert lookup.status_code == 200, lookup.text
+        data = lookup.json()
+        entry = data["community_domain"]
+        assert data["normalized_domain_name"] == "lookup-union-domain"
+        assert entry["id"] == domain_id
+        assert entry["domain_name"] == "lookup-union-domain"
+        assert entry["display_name"] == "Lookup Union Domain"
+        assert entry["dashboard_path"] == f"/app/community-domain/{domain_id}"
+        assert (
+            entry["membership_request_route"]
+            == f"/community-domains/{domain_id}/membership-requests"
+        )
+        assert entry["public_profile"] == "A public-safe union profile."
+        assert "owner_user_id" not in entry
+        assert "root_node" not in entry
+        assert "member lists" in entry["boundary"]
+        assert "does not prove verification" in data["boundary"]
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    with SessionLocal() as db:
+        assert db.query(CommunityDomainMembership).count() == 1
+        assert db.query(CommunityDomainActionReview).count() == 0
+
+
+def test_public_domain_lookup_rejects_unknown_or_invalid_code(
+    client: TestClient,
+):
+    missing = client.get(
+        "/community-domains/lookup",
+        params={"domain_name": "missing-community-domain"},
+    )
+    assert missing.status_code == 404, missing.text
+    assert missing.json()["detail"]["code"] == "community_domain_not_found"
+
+    invalid = client.get(
+        "/community-domains/lookup",
+        params={"domain_name": "ab"},
+    )
+    assert invalid.status_code == 422, invalid.text
+    assert invalid.json()["detail"]["code"] == "invalid_domain_name"
+
+
 def test_community_domain_templates_are_public_presets_not_activation(
     client: TestClient,
 ):

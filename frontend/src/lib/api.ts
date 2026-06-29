@@ -2346,6 +2346,13 @@ export async function listMyCommunityDomains(): Promise<any> {
   return httpJson("/community-domains/my", "GET");
 }
 
+export async function lookupCommunityDomainByName(domainName: string): Promise<any> {
+  return httpJson(
+    `/community-domains/lookup${buildQuery({ domain_name: domainName })}`,
+    "GET"
+  );
+}
+
 export async function getCommunityDomain(
   communityDomainId: number | string
 ): Promise<any> {

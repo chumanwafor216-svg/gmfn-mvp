@@ -205,6 +205,13 @@ assertContains(
   { frontend: true }
 );
 
+assertContains(
+  "src/pages/CommunityDomainPurchasePage.tsx",
+  /lookupCommunityDomainByName[\s\S]*handleFindExistingDomain[\s\S]*Existing domain code[\s\S]*community-domain-purchase\.lookup-existing-domain[\s\S]*Find domain[\s\S]*community-domain-purchase\.open-found-domain[\s\S]*Open or request access[\s\S]*Sign in to request access/,
+  "Community Domain purchase screen must let users find an existing domain by code without implying instant membership.",
+  { frontend: true }
+);
+
 assertNotContains(
   "src/pages/CommunityDomainPurchasePage.tsx",
   /community-domain-purchase\.sign-in|Sign in as existing member/,
@@ -395,6 +402,25 @@ assertContains(
   "src/lib/api.ts",
   /CommunityDomainMembershipRequestPayload[\s\S]*requestCommunityDomainMembership[\s\S]*\/membership-requests[\s\S]*request_note[\s\S]*title/,
   "Frontend API layer must expose the real Community Domain membership request route.",
+  { frontend: true }
+);
+
+assertContains(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  /def _public_domain_entry_payload[\s\S]*dashboard_path[\s\S]*membership_request_route[\s\S]*Public-safe Community Domain lookup only[\s\S]*@router\.get\("\/lookup"[\s\S]*def lookup_community_domain_by_name[\s\S]*normalize_domain_name[\s\S]*community_domain_not_found[\s\S]*does not prove verification/,
+  "Backend route must expose a public-safe Community Domain lookup by code without private records or membership side effects."
+);
+
+assertContains(
+  "gmfn_backend/tests/test_community_domains.py",
+  /test_public_domain_lookup_returns_safe_entry_without_membership[\s\S]*\/community-domains\/lookup[\s\S]*dashboard_path[\s\S]*membership_request_route[\s\S]*"owner_user_id" not in entry[\s\S]*db\.query\(CommunityDomainMembership\)\.count\(\) == 1[\s\S]*db\.query\(CommunityDomainActionReview\)\.count\(\) == 0[\s\S]*test_public_domain_lookup_rejects_unknown_or_invalid_code/,
+  "Backend tests must prove domain-code lookup is public-safe, has no membership side effects, and rejects unknown or invalid codes."
+);
+
+assertContains(
+  "src/lib/api.ts",
+  /lookupCommunityDomainByName[\s\S]*\/community-domains\/lookup[\s\S]*domain_name/,
+  "Frontend API layer must expose public-safe Community Domain lookup by code.",
   { frontend: true }
 );
 
