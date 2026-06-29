@@ -121,6 +121,13 @@ assertContains(
   { frontend: true }
 );
 
+assertNotContains(
+  "src/pages/CommunityDomainPurchasePage.tsx",
+  /community-domain-purchase\.sign-in|Sign in as existing member/,
+  "Community Domain purchase page must not show a second competing sign-in action inside the returning-owner panel.",
+  { frontend: true }
+);
+
 assertContains(
   "src/pages/LoginPage.tsx",
   /function safeAppReturnTarget\(value: unknown\): string \{[\s\S]*target === "\/app" \|\| target\.startsWith\("\/app\/"\)[\s\S]*const nextTarget = safeAppReturnTarget\(searchParams\.get\("next"\)\);[\s\S]*if \(nextTarget\) return nextTarget;[\s\S]*nav\(publishRecoveryTarget\(\) \|\| redirectTarget/,

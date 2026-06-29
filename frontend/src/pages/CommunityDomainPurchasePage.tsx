@@ -776,21 +776,6 @@ export default function CommunityDomainPurchasePage() {
                 >
                   {isSignedIn ? "Open my Community Domains" : "Sign in to open domains"}
                 </EntryActionButton>
-                <EntryActionButton
-                  type="button"
-                  variant="secondary"
-                  onClick={() =>
-                    navigate(
-                      `/login?force=1&next=${encodeURIComponent(
-                        location.pathname + location.search
-                      )}`
-                    )
-                  }
-                  debugId="community-domain-purchase.sign-in"
-                  style={{ width: "100%" }}
-                >
-                  Sign in as existing member
-                </EntryActionButton>
               </div>
             </div>
           </div>
