@@ -686,6 +686,33 @@ function firstTruthy(...values: any[]): string {
   return "";
 }
 
+function parsedMarketplaceErrorDetail(err: any): Record<string, any> | null {
+  const detail = err?.detail ?? err?.response?.data?.detail;
+  if (detail && typeof detail === "object") return detail;
+
+  const message = safeStr(err?.message);
+  if (!message || !message.startsWith("{")) return null;
+
+  try {
+    const parsed = JSON.parse(message);
+    const parsedDetail = parsed?.detail ?? parsed;
+    return parsedDetail && typeof parsedDetail === "object" ? parsedDetail : null;
+  } catch {
+    return null;
+  }
+}
+
+function marketplaceErrorMessage(err: any, fallback: string): string {
+  const detail = parsedMarketplaceErrorDetail(err);
+  return firstTruthy(
+    detail?.message,
+    detail?.error,
+    detail?.reason,
+    err?.message,
+    fallback
+  );
+}
+
 function normalizeIntentText(value: any): string {
   return safeStr(value)
     .toLowerCase()
@@ -4286,9 +4313,10 @@ export default function MarketplacePage() {
         );
       }
     } catch (err: any) {
-      const message =
-        safeStr(err?.message) ||
-        "GSN could not read target community suggestions right now.";
+      const message = marketplaceErrorMessage(
+        err,
+        "GSN could not read target community suggestions right now."
+      );
       if (
         requestId !== repostTargetSuggestionRequestRef.current ||
         selectedRepostProductIdRef.current !== productId
@@ -4948,9 +4976,10 @@ export default function MarketplacePage() {
     } catch (err: any) {
       setNotice({
         tone: "error",
-        text:
-          safeStr(err?.message) ||
-          "Public shop link could not be prepared right now.",
+        text: marketplaceErrorMessage(
+          err,
+          "Public shop link could not be prepared right now."
+        ),
       });
       return "";
     } finally {
@@ -5095,8 +5124,10 @@ export default function MarketplacePage() {
     } catch (err: any) {
       showNotice(
         "error",
-        safeStr(err?.message) ||
+        marketplaceErrorMessage(
+          err,
           "Network Spotlight payment code could not be generated."
+        )
       );
     } finally {
       setCreatingRepostPaymentInstruction(false);
@@ -5198,8 +5229,10 @@ export default function MarketplacePage() {
     } catch (err: any) {
       showNotice(
         "error",
-        safeStr(err?.message) ||
+        marketplaceErrorMessage(
+          err,
           "Paid Repost could not complete. Check the target community ID and Spotlight credit."
+        )
       );
     } finally {
       setPlacingMarketplaceRepost(false);
@@ -5937,7 +5970,10 @@ export default function MarketplacePage() {
     } catch (err: any) {
       showNotice(
         "error",
-        safeStr(err?.message) || "Protected trade records could not load."
+        marketplaceErrorMessage(
+          err,
+          "Protected trade records could not load."
+        )
       );
     } finally {
       setLoadingProtectedTrades(false);
@@ -6032,7 +6068,10 @@ export default function MarketplacePage() {
     } catch (err: any) {
       showNotice(
         "error",
-        safeStr(err?.message) || "Protected trade record could not be created."
+        marketplaceErrorMessage(
+          err,
+          "Protected trade record could not be created."
+        )
       );
     } finally {
       setCreatingProtectedTrade(false);
@@ -6091,7 +6130,10 @@ export default function MarketplacePage() {
     } catch (err: any) {
       showNotice(
         "error",
-        safeStr(err?.message) || "Protected trade update could not be recorded."
+        marketplaceErrorMessage(
+          err,
+          "Protected trade update could not be recorded."
+        )
       );
     } finally {
       setRecordingProtectedTradeEvent(false);
@@ -6324,7 +6366,10 @@ export default function MarketplacePage() {
     } catch (err: any) {
       showNotice(
         "error",
-        safeStr(err?.message) || "ROSCA yearly payment request could not be created."
+        marketplaceErrorMessage(
+          err,
+          "ROSCA yearly payment request could not be created."
+        )
       );
     } finally {
       setCreatingRoscaPackage(false);
@@ -6372,7 +6417,10 @@ export default function MarketplacePage() {
         )
       );
     } catch (err: any) {
-      showNotice("error", safeStr(err?.message) || "ROSCA cycle could not be started.");
+      showNotice(
+        "error",
+        marketplaceErrorMessage(err, "ROSCA cycle could not be started.")
+      );
     } finally {
       setStartingRoscaCycle(false);
     }
@@ -6406,7 +6454,10 @@ export default function MarketplacePage() {
         )
       );
     } catch (err: any) {
-      showNotice("error", safeStr(err?.message) || "ROSCA payout could not be recorded.");
+      showNotice(
+        "error",
+        marketplaceErrorMessage(err, "ROSCA payout could not be recorded.")
+      );
     } finally {
       setRecordingRoscaPayoutKey(null);
     }
@@ -6497,8 +6548,10 @@ export default function MarketplacePage() {
     } catch (err: any) {
       showNotice(
         "error",
-        safeStr(err?.message) ||
+        marketplaceErrorMessage(
+          err,
           "GSN could not prepare the join link yet. Please try again."
+        )
       );
       return false;
     } finally {
@@ -6835,7 +6888,7 @@ export default function MarketplacePage() {
     } catch (err: any) {
       showNotice(
         "error",
-        safeStr(err?.message) || "Support request could not be started."
+        marketplaceErrorMessage(err, "Support request could not be started.")
       );
     } finally {
       setStartingLoanDraft(false);
@@ -6866,7 +6919,7 @@ export default function MarketplacePage() {
     } catch (err: any) {
       showNotice(
         "error",
-        safeStr(err?.message) || "Suggestions could not be refreshed."
+        marketplaceErrorMessage(err, "Suggestions could not be refreshed.")
       );
     } finally {
       setLoadingSuggestions(false);
@@ -6957,7 +7010,7 @@ export default function MarketplacePage() {
     } catch (err: any) {
       showNotice(
         "error",
-        safeStr(err?.message) || "Support requests could not be sent."
+        marketplaceErrorMessage(err, "Support requests could not be sent.")
       );
     } finally {
       setSendingGuarantorRequests(false);
@@ -6990,7 +7043,7 @@ export default function MarketplacePage() {
     } catch (err: any) {
       showNotice(
         "error",
-        safeStr(err?.message) || "Support draft could not be cancelled."
+        marketplaceErrorMessage(err, "Support draft could not be cancelled.")
       );
     } finally {
       setCancellingLoanDraft(false);

@@ -1,8 +1,9 @@
-import React from "react";
+import React, { useState } from "react";
 import { StableButton } from "../../components/StableButton";
 
 type ActionReviewItem = {
   id?: number | string;
+  parent_review_id?: number | string | null;
   action_key?: string;
   requested_by_user_id?: number | string | null;
   requested_by_user_email?: string | null;
@@ -28,6 +29,7 @@ type AccessRequestsPanelProps = {
   loadingQueue?: boolean;
   busyReviewId?: string | null;
   onApproveOnly: (review: ActionReviewItem) => void;
+  onRequestChanges: (review: ActionReviewItem) => void;
   onDecline: (review: ActionReviewItem) => void;
   onApproveAndApply: (review: ActionReviewItem) => void;
   onApplyApproved: (review: ActionReviewItem) => void;
@@ -41,6 +43,14 @@ function cleanText(value: unknown, fallback = ""): string {
 
 function compactStatus(value: unknown): string {
   return cleanText(value, "not recorded").replace(/_/g, " ");
+}
+
+function numericCount(value: unknown): number | null {
+  const count = Number(value);
+  if (!Number.isFinite(count) || count < 0) {
+    return null;
+  }
+  return Math.floor(count);
 }
 
 function whiteCard(): React.CSSProperties {
@@ -86,6 +96,20 @@ function helperText(): React.CSSProperties {
   };
 }
 
+function selectStyle(): React.CSSProperties {
+  return {
+    width: "100%",
+    minHeight: 44,
+    borderRadius: 12,
+    border: "1px solid rgba(9,27,46,0.18)",
+    background: "rgba(255,255,255,0.92)",
+    color: "#091B2E",
+    fontSize: 16,
+    fontWeight: 750,
+    padding: "9px 11px",
+  };
+}
+
 function reviewUserLabel(review: ActionReviewItem): string {
   return cleanText(
     review.subject_user_display_name,
@@ -109,16 +133,61 @@ function reviewRequesterLabel(review: ActionReviewItem): string {
   );
 }
 
+function approvalProgressText(review: ActionReviewItem): string {
+  const requiredApprovals = numericCount(review.required_approvals);
+  const approvalCount = numericCount(review.approval_count) ?? 0;
+  if (!requiredApprovals || (requiredApprovals <= 1 && approvalCount <= 0)) {
+    return "";
+  }
+  const remainingApprovals = Math.max(requiredApprovals - approvalCount, 0);
+  if (remainingApprovals === 0) {
+    return `Approvals complete: ${approvalCount} of ${requiredApprovals} recorded.`;
+  }
+  return `${approvalCount} of ${requiredApprovals} approvals recorded. ${remainingApprovals} more needed before this can be added.`;
+}
+
+function followUpText(review: ActionReviewItem): string {
+  const parentReviewId = cleanText(review.parent_review_id);
+  if (!parentReviewId) {
+    return "";
+  }
+  const reviewStatus = cleanText(review.status).toLowerCase();
+  const nextStep =
+    reviewStatus === "approved"
+      ? "Apply membership from this row"
+      : "Decide from this row";
+  return `Follow-up to review ${parentReviewId}. This is the applicant's updated request. ${nextStep} and keep the earlier request as history.`;
+}
+
+function requestLabel(review: ActionReviewItem): string {
+  return cleanText(review.parent_review_id)
+    ? "Follow-up request"
+    : "Membership request";
+}
+
 export default function CommunityDomainAccessRequestsPanel({
   membershipAccessRequests = [],
   loadingQueue = false,
   busyReviewId = null,
   onApproveOnly,
+  onRequestChanges,
   onDecline,
   onApproveAndApply,
   onApplyApproved,
   onRefresh,
 }: AccessRequestsPanelProps): React.ReactElement {
+  const [showAllRequests, setShowAllRequests] = useState(false);
+  const [decisionByReviewId, setDecisionByReviewId] = useState<
+    Record<string, "approve" | "needs_changes" | "reject">
+  >({});
+  const visibleAccessRequests = showAllRequests
+    ? membershipAccessRequests
+    : membershipAccessRequests.slice(0, 3);
+  const hiddenRequestCount = Math.max(
+    membershipAccessRequests.length - visibleAccessRequests.length,
+    0
+  );
+
   return (
     <section style={whiteCard()}>
       <div style={{ display: "grid", gap: 12 }}>
@@ -128,25 +197,45 @@ export default function CommunityDomainAccessRequestsPanel({
             Review people asking to enter this domain.
           </h2>
           <div style={{ ...helperText(), marginTop: 8 }}>
-            These are pending membership-change reviews from the existing
-            governance queue. Approving records the decision; approving and adding
-            applies the approved review so membership changes.
+            These are membership access requests that still need a decision or
+            an approved membership change. Approving records the decision;
+            approving and adding applies the approved review so membership
+            changes.
           </div>
         </div>
 
         {membershipAccessRequests.length > 0 ? (
           <div style={{ display: "grid", gap: 10 }}>
-            {membershipAccessRequests.slice(0, 3).map((review) => {
+            {visibleAccessRequests.map((review) => {
               const reviewId = cleanText(review.id, "review");
               const reviewStatus = cleanText(review.status).toLowerCase();
               const isApprovedReview = reviewStatus === "approved";
               const approveBusy = busyReviewId === `${reviewId}:approve`;
+              const needsChangesBusy =
+                busyReviewId === `${reviewId}:needs_changes`;
               const applyBusy = busyReviewId === `${reviewId}:apply`;
               const declineBusy = busyReviewId === `${reviewId}:decline`;
+              const decisionBusy =
+                approveBusy || needsChangesBusy || declineBusy;
+              const selectedDecision =
+                decisionByReviewId[reviewId] || "approve";
+              const approvalProgress = approvalProgressText(review);
+              const followUp = followUpText(review);
+              const recordDecision = () => {
+                if (selectedDecision === "needs_changes") {
+                  onRequestChanges(review);
+                  return;
+                }
+                if (selectedDecision === "reject") {
+                  onDecline(review);
+                  return;
+                }
+                onApproveOnly(review);
+              };
               return (
                 <div key={reviewId} style={softCard()}>
                   <div style={{ display: "grid", gap: 8 }}>
-                    <div style={sectionLabel()}>Membership request</div>
+                    <div style={sectionLabel()}>{requestLabel(review)}</div>
                     <h3 style={{ margin: 0, fontSize: 19, lineHeight: 1.14 }}>
                       User {reviewUserLabel(review)} wants access.
                     </h3>
@@ -167,6 +256,25 @@ export default function CommunityDomainAccessRequestsPanel({
                         Note: {cleanText(review.request_note)}
                       </div>
                     ) : null}
+                    {followUp ? (
+                      <div style={{ ...helperText(), fontSize: 13 }}>
+                        {followUp}
+                      </div>
+                    ) : null}
+                    {approvalProgress ? (
+                      <div style={{ ...helperText(), fontSize: 13 }}>
+                        {approvalProgress}
+                      </div>
+                    ) : null}
+                    {!isApprovedReview &&
+                    selectedDecision === "needs_changes" ? (
+                      <div style={{ ...helperText(), fontSize: 13 }}>
+                        This sends the request back for a safe update. The
+                        applicant sees the needs-changes status and general
+                        update guidance. Private reviewer notes stay inside the
+                        owner/admin review record, and membership is not added.
+                      </div>
+                    ) : null}
                     <div
                       style={{
                         display: "grid",
@@ -176,16 +284,25 @@ export default function CommunityDomainAccessRequestsPanel({
                       }}
                     >
                       {!isApprovedReview ? (
-                        <StableButton
-                          type="button"
-                          kind="secondary"
-                          fullWidth
+                        <select
+                          style={selectStyle()}
+                          value={selectedDecision}
                           disabled={Boolean(busyReviewId)}
-                          debugId={`community-domain-dashboard.access-request.approve-${reviewId}`}
-                          onClick={() => onApproveOnly(review)}
+                          aria-label={`Decision for access request ${reviewId}`}
+                          onChange={(event) =>
+                            setDecisionByReviewId((current) => ({
+                              ...current,
+                              [reviewId]: event.target.value as
+                                | "approve"
+                                | "needs_changes"
+                                | "reject",
+                            }))
+                          }
                         >
-                          {approveBusy ? "Approving..." : "Approve only"}
-                        </StableButton>
+                          <option value="approve">Approve only</option>
+                          <option value="needs_changes">Ask for changes</option>
+                          <option value="reject">Decline</option>
+                        </select>
                       ) : null}
                       {!isApprovedReview ? (
                         <StableButton
@@ -193,10 +310,16 @@ export default function CommunityDomainAccessRequestsPanel({
                           kind="secondary"
                           fullWidth
                           disabled={Boolean(busyReviewId)}
-                          debugId={`community-domain-dashboard.access-request.decline-${reviewId}`}
-                          onClick={() => onDecline(review)}
+                          debugId={`community-domain-dashboard.access-request.record-decision-${reviewId}`}
+                          onClick={recordDecision}
                         >
-                          {declineBusy ? "Declining..." : "Decline"}
+                          {decisionBusy
+                            ? "Recording..."
+                            : selectedDecision === "needs_changes"
+                            ? "Ask for changes"
+                            : selectedDecision === "reject"
+                            ? "Decline"
+                            : "Record decision"}
                         </StableButton>
                       ) : null}
                       <StableButton
@@ -212,23 +335,39 @@ export default function CommunityDomainAccessRequestsPanel({
                         }
                       >
                         {applyBusy
-                          ? "Adding..."
+                          ? "Working..."
                           : isApprovedReview
                           ? "Add approved member"
-                          : "Approve + add member"}
+                          : "Approve, add if ready"}
                       </StableButton>
                     </div>
                   </div>
                 </div>
               );
             })}
+            {membershipAccessRequests.length > 3 ? (
+              <StableButton
+                type="button"
+                kind="secondary"
+                fullWidth
+                disabled={Boolean(busyReviewId)}
+                debugId="community-domain-dashboard.access-request.toggle-all"
+                onClick={() => setShowAllRequests((current) => !current)}
+              >
+                {showAllRequests
+                  ? "Show first 3 requests"
+                  : `Show ${hiddenRequestCount} more request${
+                      hiddenRequestCount === 1 ? "" : "s"
+                    }`}
+              </StableButton>
+            ) : null}
           </div>
         ) : (
           <div style={softCard()}>
-            <div style={sectionLabel()}>No pending access requests</div>
+            <div style={sectionLabel()}>No open access requests</div>
             <div style={{ ...helperText(), marginTop: 7 }}>
-              The current reviewer queue has no pending membership requests this
-              account can decide.
+              There are no self-service access requests waiting for this account
+              to decide or add.
             </div>
           </div>
         )}

@@ -13,6 +13,7 @@ import { GsnRealisticIcon } from "../components/GsnRealisticIcon";
 import { StableButton } from "../components/StableButton";
 import {
   applyCommunityDomainActionReview,
+  cancelCommunityDomainActionReview,
   createCommunityDomainPackageQuote,
   decideCommunityDomainActionReview,
   getAccessToken,
@@ -22,6 +23,7 @@ import {
   getCommunityDomainCapacityPlan,
   getCommunityDomainComplianceMap,
   getCommunityDomainConfigurationMap,
+  getCommunityDomainActionReviewLineage,
   getCommunityDomainDashboard,
   getCommunityDomainDelegationMap,
   getCommunityDomainEconomicParticipation,
@@ -65,6 +67,7 @@ import {
   listMyCommunityDomainMembershipRequests,
   listMyCommunityDomains,
   requestCommunityDomainMembership,
+  reviseCommunityDomainActionReview,
 } from "../lib/api";
 import { APP_ROUTES } from "../lib/appRoutes";
 
@@ -143,6 +146,7 @@ type DashboardPayload = {
 
 type ActionReviewItem = {
   id?: number | string;
+  parent_review_id?: number | string | null;
   action_key?: string;
   requested_by_user_id?: number | string | null;
   requested_by_user_email?: string | null;
@@ -161,6 +165,8 @@ type ActionReviewItem = {
   } | null;
   required_approvals?: number | string | null;
   approval_count?: number | string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
 };
 
 type StructureNode = {
@@ -186,8 +192,78 @@ function cleanText(value: unknown, fallback = ""): string {
   return text || fallback;
 }
 
+function numericCount(value: unknown): number | null {
+  const count = Number(value);
+  if (!Number.isFinite(count) || count < 0) {
+    return null;
+  }
+  return Math.floor(count);
+}
+
+function parsedErrorDetail(err: any): any {
+  if (err?.detail && typeof err.detail === "object") return err.detail;
+  const message = cleanText(err?.message);
+  if (!message) return null;
+  try {
+    const parsed = JSON.parse(message);
+    return parsed && typeof parsed === "object" ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function errorDetailCode(err: any): string {
+  const detail = parsedErrorDetail(err);
+  const directCode = cleanText(detail?.code).toLowerCase();
+  if (directCode) return directCode;
+  const message = cleanText(err?.message);
+  return message.includes("community_domain_member_review_stale")
+    ? "community_domain_member_review_stale"
+    : "";
+}
+
+function errorDetailMessage(err: any, fallback: string): string {
+  const detail = parsedErrorDetail(err);
+  return cleanText(detail?.message || err?.message, fallback);
+}
+
+function errorDetailActionReview(err: any): ActionReviewItem | null {
+  const detail = parsedErrorDetail(err);
+  const review = detail?.action_review || detail?.existing_action_review;
+  return review && typeof review === "object" ? review : null;
+}
+
+function accessRequestApplyErrorMessage(err: any, fallback: string): string {
+  if (errorDetailCode(err) === "community_domain_member_review_stale") {
+    return (
+      "This access request is already out of date because the person is now an "
+      + "active member. Refresh access requests before taking another action."
+    );
+  }
+  return errorDetailMessage(err, fallback);
+}
+
+function activeMembershipRecoveryMessage(): string {
+  return (
+    "You are already recorded as an active member of this Community Domain. "
+    + "Try opening the dashboard again."
+  );
+}
+
 function compactStatus(value: unknown): string {
   return cleanText(value, "not recorded").replace(/_/g, " ");
+}
+
+function remainingAccessApprovalMessage(review: ActionReviewItem | null | undefined): string {
+  const requiredApprovals = numericCount(review?.required_approvals);
+  const approvalCount = numericCount(review?.approval_count) ?? 0;
+  if (requiredApprovals && requiredApprovals > approvalCount) {
+    const remainingApprovals = requiredApprovals - approvalCount;
+    return remainingApprovals === 1
+      ? "It still needs 1 more approval before membership can be applied."
+      : `It still needs ${remainingApprovals} more approvals before membership can be applied.`;
+  }
+  return "It still needs another approval before membership can be applied.";
 }
 
 function countValue(value: unknown): string {
@@ -423,6 +499,30 @@ function reviewStatusCounts(items: ActionReviewItem[]): Record<string, number> {
   }, {});
 }
 
+function isSelfServiceMembershipAccessRequest(review: ActionReviewItem): boolean {
+  const requestedBy = cleanText(review.requested_by_user_id);
+  const subjectUser = cleanText(review.subject_user_id);
+  const targetUser = cleanText(review.target_id);
+  const payloadUser = cleanText(review.payload?.user_id);
+  const payloadHasRole = Object.prototype.hasOwnProperty.call(review.payload || {}, "role");
+  const payloadHasStatus = Object.prototype.hasOwnProperty.call(review.payload || {}, "status");
+  const payloadRole = cleanText(review.payload?.role).toLowerCase();
+  const payloadStatus = cleanText(review.payload?.status).toLowerCase();
+  return (
+    cleanText(review.action_key) === "domain_member.upsert" &&
+    cleanText(review.target_type) === "domain_member" &&
+    Object.prototype.hasOwnProperty.call(review.payload || {}, "previous_status") &&
+    payloadHasRole &&
+    payloadRole === "member" &&
+    payloadHasStatus &&
+    payloadStatus === "active" &&
+    Boolean(requestedBy) &&
+    requestedBy === subjectUser &&
+    requestedBy === targetUser &&
+    requestedBy === payloadUser
+  );
+}
+
 function mergeActionReviews(...groups: ActionReviewItem[][]): ActionReviewItem[] {
   const byId = new Map<string, ActionReviewItem>();
   groups.flat().forEach((item) => {
@@ -430,6 +530,64 @@ function mergeActionReviews(...groups: ActionReviewItem[][]): ActionReviewItem[]
     if (id) byId.set(id, item);
   });
   return Array.from(byId.values());
+}
+
+function actionReviewSortValue(item: ActionReviewItem): number {
+  const updatedAt = Date.parse(cleanText(item.updated_at));
+  if (Number.isFinite(updatedAt)) return updatedAt;
+  const createdAt = Date.parse(cleanText(item.created_at));
+  if (Number.isFinite(createdAt)) return createdAt;
+  return 0;
+}
+
+function actionReviewIdValue(item: ActionReviewItem): number {
+  const reviewId = Number(item.id);
+  return Number.isFinite(reviewId) ? reviewId : 0;
+}
+
+function compareActionReviewsNewest(left: ActionReviewItem, right: ActionReviewItem): number {
+  const timeDelta = actionReviewSortValue(right) - actionReviewSortValue(left);
+  if (timeDelta !== 0) return timeDelta;
+  return actionReviewIdValue(right) - actionReviewIdValue(left);
+}
+
+function latestRelevantMembershipRequest(items: ActionReviewItem[]): ActionReviewItem | null {
+  const openStatuses = new Set(["pending", "pending_review", "needs_changes", "approved"]);
+  const supersededParentIds = new Set(
+    items.map((item) => cleanText(item.parent_review_id)).filter(Boolean)
+  );
+  const currentItems = items
+    .filter((item) => !supersededParentIds.has(cleanText(item.id)))
+    .sort(compareActionReviewsNewest);
+  const allItems = [...items].sort(compareActionReviewsNewest);
+  return (
+    currentItems.find((item) =>
+      openStatuses.has(cleanText(item.status).toLowerCase())
+    ) ||
+    currentItems[0] ||
+    allItems.find((item) =>
+      openStatuses.has(cleanText(item.status).toLowerCase())
+    ) ||
+    allItems[0] ||
+    null
+  );
+}
+
+function accessRequestSortPriority(item: ActionReviewItem): number {
+  const status = cleanText(item.status).toLowerCase();
+  if (status === "approved") return 0;
+  if (status === "pending_review") return 1;
+  if (status === "pending") return 2;
+  return 3;
+}
+
+function sortMembershipAccessRequests(items: ActionReviewItem[]): ActionReviewItem[] {
+  return [...items].sort((left, right) => {
+    const priorityDelta =
+      accessRequestSortPriority(left) - accessRequestSortPriority(right);
+    if (priorityDelta !== 0) return priorityDelta;
+    return compareActionReviewsNewest(left, right);
+  });
 }
 
 export default function CommunityDomainDashboardPage() {
@@ -440,6 +598,9 @@ export default function CommunityDomainDashboardPage() {
   const [domainItems, setDomainItems] = useState<any[]>([]);
   const [reviewerQueue, setReviewerQueue] = useState<ActionReviewItem[]>([]);
   const [ownMembershipRequests, setOwnMembershipRequests] = useState<ActionReviewItem[]>([]);
+  const [membershipRequestLineage, setMembershipRequestLineage] = useState<ActionReviewItem[]>([]);
+  const [loadingMembershipRequestLineage, setLoadingMembershipRequestLineage] =
+    useState(false);
   const [placementSummary, setPlacementSummary] = useState<any | null>(null);
   const [nodeTree, setNodeTree] = useState<StructureNode[]>([]);
   const [moduleScopeReadiness, setModuleScopeReadiness] = useState<any | null>(null);
@@ -501,6 +662,7 @@ export default function CommunityDomainDashboardPage() {
   const dashboardLoadSequence = useRef(0);
   const reviewerQueueLoadSequence = useRef(0);
   const membershipRequestLoadSequence = useRef(0);
+  const membershipRequestLineageLoadSequence = useRef(0);
 
   useEffect(() => {
     activeCommunityDomainIdRef.current = communityDomainId;
@@ -512,6 +674,7 @@ export default function CommunityDomainDashboardPage() {
       dashboardLoadSequence.current += 1;
       reviewerQueueLoadSequence.current += 1;
       membershipRequestLoadSequence.current += 1;
+      membershipRequestLineageLoadSequence.current += 1;
     };
   }, []);
 
@@ -619,12 +782,18 @@ export default function CommunityDomainDashboardPage() {
       setDashboardRouteId("");
       setQuote(null);
       setLoadingQueue(false);
+      reviewerQueueLoadSequence.current += 1;
+      membershipRequestLoadSequence.current += 1;
+      membershipRequestLineageLoadSequence.current += 1;
       setBusyQuote(false);
       setBusyMembershipRequest(false);
       setBusyReviewId(null);
       resetReadinessLoadTracking();
       setMessage("");
+      setReviewerQueue([]);
       setOwnMembershipRequests([]);
+      setMembershipRequestLineage([]);
+      setLoadingMembershipRequestLineage(false);
       resetOptionalReadinessState();
       try {
         const payload = await listMyCommunityDomains();
@@ -635,8 +804,10 @@ export default function CommunityDomainDashboardPage() {
         if (canApply()) {
           setDomainItems([]);
           setMessage(
-            err?.message ||
+            errorDetailMessage(
+              err,
               "GSN could not load your Community Domains. Check that you are signed in."
+            )
           );
         }
       } finally {
@@ -651,6 +822,9 @@ export default function CommunityDomainDashboardPage() {
     setDashboardRouteId("");
     setQuote(null);
     setLoadingQueue(false);
+    reviewerQueueLoadSequence.current += 1;
+    membershipRequestLoadSequence.current += 1;
+    membershipRequestLineageLoadSequence.current += 1;
     setBusyQuote(false);
     setBusyMembershipRequest(false);
     setBusyReviewId(null);
@@ -659,6 +833,8 @@ export default function CommunityDomainDashboardPage() {
     setDomainItems([]);
     setReviewerQueue([]);
     setOwnMembershipRequests([]);
+    setMembershipRequestLineage([]);
+    setLoadingMembershipRequestLineage(false);
     resetOptionalReadinessState();
     try {
       const payload = await getCommunityDomainDashboard(requestDomainId);
@@ -670,12 +846,16 @@ export default function CommunityDomainDashboardPage() {
       setActiveLane(laneForAction(nextDashboard?.primary_next_action?.action_key));
       setLoading(false);
       if (nextDashboard?.viewer?.can_admin) {
+        const queueRequestId = reviewerQueueLoadSequence.current + 1;
+        reviewerQueueLoadSequence.current = queueRequestId;
+        const canApplyQueue = () =>
+          canApply() && reviewerQueueLoadSequence.current === queueRequestId;
         try {
           const [pendingPayload, approvedPayload] = await Promise.all([
             getCommunityDomainReviewerQueue(requestDomainId),
             listCommunityDomainActionReviews(requestDomainId, { status: "approved" }),
           ]);
-          if (!canApply()) return;
+          if (!canApplyQueue()) return;
           const pendingItems = Array.isArray(pendingPayload?.items)
             ? pendingPayload.items
             : [];
@@ -684,7 +864,7 @@ export default function CommunityDomainDashboardPage() {
             : [];
           setReviewerQueue(mergeActionReviews(pendingItems, approvedItems));
         } catch {
-          if (canApply()) {
+          if (canApplyQueue()) {
             setReviewerQueue([]);
           }
         }
@@ -698,8 +878,10 @@ export default function CommunityDomainDashboardPage() {
       await loadOwnMembershipRequests(requestDomainId);
       if (!canApply()) return;
       setMessage(
-        err?.message ||
+        errorDetailMessage(
+          err,
           "GSN could not open this Community Domain dashboard. Check that you are signed in as an active domain member."
+        )
       );
     } finally {
       if (canApply()) {
@@ -1049,18 +1231,20 @@ export default function CommunityDomainDashboardPage() {
   const counts = dashboard?.counts || {};
   const lanes = Array.isArray(dashboard?.lanes) ? dashboard?.lanes || [] : [];
   const isAdmin = Boolean(dashboard?.viewer?.can_admin);
-  const latestMembershipRequest = ownMembershipRequests[0] || null;
-  const membershipAccessRequests = reviewerQueue.filter(
-    (review) => cleanText(review.action_key) === "domain_member.upsert"
+  const latestMembershipRequest = latestRelevantMembershipRequest(ownMembershipRequests);
+  const latestMembershipRequestId = cleanText(latestMembershipRequest?.id);
+  const membershipAccessRequests = sortMembershipAccessRequests(
+    reviewerQueue.filter(isSelfServiceMembershipAccessRequest)
   );
   const governanceReviewCounts = reviewStatusCounts(reviewerQueue);
   const governancePendingCount =
     (governanceReviewCounts.pending || 0) +
     (governanceReviewCounts.pending_review || 0);
   const governanceApprovedCount = governanceReviewCounts.approved || 0;
+  const institutionalOpenReviewCount = Number(counts.open_reviews || 0);
   const governanceAttentionCount = isAdmin
     ? governancePendingCount
-    : Number(counts.open_reviews || 0);
+    : institutionalOpenReviewCount;
   const selectedLane = lanes.find((lane) => lane.lane_key === activeLane) || lanes[0];
   const isBaseReadinessLoading = Boolean(loadingReadinessLanes.__base);
   const isActiveLaneReadinessLoading = Boolean(
@@ -1085,6 +1269,46 @@ export default function CommunityDomainDashboardPage() {
       : "";
   const billingIsActive =
     cleanText(status.billing_status || selectedLane?.status).toLowerCase() === "active";
+
+  useEffect(() => {
+    const requestDomainId = cleanText(communityDomainId);
+    const reviewId = latestMembershipRequestId;
+    const requestId = membershipRequestLineageLoadSequence.current + 1;
+    membershipRequestLineageLoadSequence.current = requestId;
+    const canApply = () =>
+      isCurrentDomainRequest(requestDomainId) &&
+      membershipRequestLineageLoadSequence.current === requestId;
+
+    if (!requestDomainId || !reviewId || dashboard) {
+      setMembershipRequestLineage([]);
+      setLoadingMembershipRequestLineage(false);
+      return;
+    }
+
+    setLoadingMembershipRequestLineage(true);
+    getCommunityDomainActionReviewLineage(requestDomainId, reviewId)
+      .then((payload) => {
+        if (!canApply()) return;
+        setMembershipRequestLineage(
+          Array.isArray(payload?.items) ? payload.items : []
+        );
+      })
+      .catch(() => {
+        if (canApply()) {
+          setMembershipRequestLineage([]);
+        }
+      })
+      .finally(() => {
+        if (canApply()) {
+          setLoadingMembershipRequestLineage(false);
+        }
+      });
+  }, [
+    communityDomainId,
+    dashboard,
+    isCurrentDomainRequest,
+    latestMembershipRequestId,
+  ]);
   const packageReviewActionLabel = isAdmin
     ? billingIsActive
       ? "Review package details"
@@ -1106,6 +1330,12 @@ export default function CommunityDomainDashboardPage() {
   async function loadAccessReviewItems(showLoading = false) {
     const requestDomainId = cleanText(communityDomainId);
     if (!requestDomainId) return;
+    if (!isAdmin) {
+      reviewerQueueLoadSequence.current += 1;
+      setReviewerQueue([]);
+      if (showLoading) setLoadingQueue(false);
+      return;
+    }
     const requestId = reviewerQueueLoadSequence.current + 1;
     reviewerQueueLoadSequence.current = requestId;
     const canApply = () =>
@@ -1128,7 +1358,12 @@ export default function CommunityDomainDashboardPage() {
       setReviewerQueue(mergeActionReviews(pendingItems, approvedItems));
     } catch (err: any) {
       if (canApply()) {
-        setMessage(err?.message || "GSN could not load the Community Domain review queue.");
+        setMessage(
+          errorDetailMessage(
+            err,
+            "GSN could not load the Community Domain access requests."
+          )
+        );
       }
     } finally {
       if (showLoading && canApply()) setLoadingQueue(false);
@@ -1161,7 +1396,9 @@ export default function CommunityDomainDashboardPage() {
       );
     } catch (err: any) {
       if (isCurrentDomainRequest(requestDomainId)) {
-        setMessage(err?.message || "GSN could not refresh the package quote.");
+        setMessage(
+          errorDetailMessage(err, "GSN could not refresh the package quote.")
+        );
       }
     } finally {
       if (isCurrentDomainRequest(requestDomainId)) {
@@ -1172,6 +1409,33 @@ export default function CommunityDomainDashboardPage() {
 
   async function refreshReviewerQueue() {
     await loadAccessReviewItems(true);
+  }
+
+  async function handleAccessRequestReviewError(
+    requestDomainId: string,
+    err: any,
+    fallback: string,
+    staleAware = false
+  ) {
+    if (!isCurrentDomainRequest(requestDomainId)) return;
+    const code = errorDetailCode(err);
+    if (code === "community_domain_review_has_revision") {
+      const existingReview = errorDetailActionReview(err);
+      await refreshReviewerQueue();
+      if (!isCurrentDomainRequest(requestDomainId)) return;
+      const existingReviewId = cleanText(existingReview?.id);
+      setMessage(
+        existingReviewId
+          ? `This access request already has a follow-up revision. Continue from review ${existingReviewId} instead of acting on the earlier request.`
+          : "This access request already has a follow-up revision. Continue from the latest follow-up request instead of acting on the earlier request."
+      );
+      return;
+    }
+    setMessage(
+      staleAware
+        ? accessRequestApplyErrorMessage(err, fallback)
+        : errorDetailMessage(err, fallback)
+    );
   }
 
   async function approveAccessRequest(review: ActionReviewItem, applyAfterApproval: boolean) {
@@ -1187,12 +1451,21 @@ export default function CommunityDomainDashboardPage() {
         {
           decision: "approve",
           decision_note: applyAfterApproval
-            ? "Approved from the Community Domain access queue before applying membership."
-            : "Approved from the Community Domain access queue. Membership still needs apply.",
+            ? "Approved from the Community Domain access requests before applying membership."
+            : "Approved from the Community Domain access requests. Membership still needs apply.",
         }
       );
       if (!isCurrentDomainRequest(requestDomainId)) return;
       if (applyAfterApproval) {
+        if (decisionPayload?.action_review?.status !== "approved") {
+          setMessage(
+            `Access request ${reviewId} recorded. ${remainingAccessApprovalMessage(
+              decisionPayload?.action_review
+            )}`
+          );
+          await refreshReviewerQueue();
+          return;
+        }
         await applyCommunityDomainActionReview(requestDomainId, reviewId);
         if (!isCurrentDomainRequest(requestDomainId)) return;
         setMessage(
@@ -1204,14 +1477,18 @@ export default function CommunityDomainDashboardPage() {
       setMessage(
         decisionPayload?.action_review?.status === "approved"
           ? `Access request ${reviewId} approved. Use Add approved member when you are ready to apply the membership change.`
-          : `Access request ${reviewId} recorded. It may need another approval before membership can be applied.`
+          : `Access request ${reviewId} recorded. ${remainingAccessApprovalMessage(
+              decisionPayload?.action_review
+            )}`
       );
       await refreshReviewerQueue();
     } catch (err: any) {
       if (isCurrentDomainRequest(requestDomainId)) {
-        setMessage(
-          err?.message ||
-            "GSN could not process this Community Domain access request."
+        await handleAccessRequestReviewError(
+          requestDomainId,
+          err,
+          "GSN could not process this Community Domain access request.",
+          true
         );
       }
     } finally {
@@ -1231,7 +1508,7 @@ export default function CommunityDomainDashboardPage() {
       await decideCommunityDomainActionReview(requestDomainId, reviewId, {
         decision: "reject",
         decision_note:
-          "Declined from the Community Domain access queue. No membership change was applied.",
+          "Declined from the Community Domain access requests. No membership change was applied.",
       });
       if (!isCurrentDomainRequest(requestDomainId)) return;
       setMessage(
@@ -1240,9 +1517,42 @@ export default function CommunityDomainDashboardPage() {
       await refreshReviewerQueue();
     } catch (err: any) {
       if (isCurrentDomainRequest(requestDomainId)) {
-        setMessage(
-          err?.message ||
-            "GSN could not decline this Community Domain access request."
+        await handleAccessRequestReviewError(
+          requestDomainId,
+          err,
+          "GSN could not decline this Community Domain access request."
+        );
+      }
+    } finally {
+      if (isCurrentDomainRequest(requestDomainId)) {
+        setBusyReviewId(null);
+      }
+    }
+  }
+
+  async function requestChangesForAccessRequest(review: ActionReviewItem) {
+    const requestDomainId = cleanText(communityDomainId);
+    if (!requestDomainId || !review.id) return;
+    const reviewId = String(review.id);
+    setBusyReviewId(`${reviewId}:needs_changes`);
+    setMessage("");
+    try {
+      await decideCommunityDomainActionReview(requestDomainId, reviewId, {
+        decision: "needs_changes",
+        decision_note:
+          "Asked for changes from the Community Domain access requests. The applicant must update the request before membership can be approved or applied.",
+      });
+      if (!isCurrentDomainRequest(requestDomainId)) return;
+      setMessage(
+        `Access request ${reviewId} was sent back for updates. The applicant can revise it, and membership was not added.`
+      );
+      await refreshReviewerQueue();
+    } catch (err: any) {
+      if (isCurrentDomainRequest(requestDomainId)) {
+        await handleAccessRequestReviewError(
+          requestDomainId,
+          err,
+          "GSN could not send this Community Domain access request back for updates."
         );
       }
     } finally {
@@ -1267,9 +1577,11 @@ export default function CommunityDomainDashboardPage() {
       await loadDashboard();
     } catch (err: any) {
       if (isCurrentDomainRequest(requestDomainId)) {
-        setMessage(
-          err?.message ||
-            "GSN could not add this approved Community Domain member."
+        await handleAccessRequestReviewError(
+          requestDomainId,
+          err,
+          "GSN could not add this approved Community Domain member.",
+          true
         );
       }
     } finally {
@@ -1302,27 +1614,151 @@ export default function CommunityDomainDashboardPage() {
           : "Access request sent for owner/admin review. It must still be approved and applied before membership changes."
       );
     } catch (err: any) {
-      const detail = err?.detail;
-      const code = detail?.code || "";
-      const text =
-        detail?.message ||
-        err?.message ||
-        "GSN could not send the Community Domain access request.";
+      const code = errorDetailCode(err);
+      const text = errorDetailMessage(
+        err,
+        "GSN could not send the Community Domain access request."
+      );
       if (code === "community_domain_membership_request_pending") {
+        const existingReview = errorDetailActionReview(err);
         await loadOwnMembershipRequests(requestDomainId);
         if (!isCurrentDomainRequest(requestDomainId)) return;
+        const existingReviewId = cleanText(existingReview?.id);
         setMessage(
-          "You already have a pending access request for this Community Domain. An owner/admin still needs to approve and apply it."
+          existingReviewId
+            ? `You already have an open access request for this Community Domain. Review ${existingReviewId} still needs owner/admin resolution and apply before membership changes.`
+            : "You already have an open access request for this Community Domain. An owner/admin still needs to resolve and apply it before membership changes."
         );
       } else if (code === "community_domain_member_already_active") {
+        await loadDashboard();
         if (isCurrentDomainRequest(requestDomainId)) {
-          setMessage(
-            "You are already recorded as an active member. Try opening the dashboard again."
-          );
+          setMessage(activeMembershipRecoveryMessage());
         }
       } else {
         if (isCurrentDomainRequest(requestDomainId)) {
           setMessage(text);
+        }
+      }
+    } finally {
+      if (isCurrentDomainRequest(requestDomainId)) {
+        setBusyMembershipRequest(false);
+      }
+    }
+  }
+
+  async function withdrawOwnMembershipRequest(review: ActionReviewItem | null) {
+    const requestDomainId = cleanText(communityDomainId);
+    const reviewId = cleanText(review?.id);
+    if (!requestDomainId || !reviewId) return;
+    if (!getAccessToken()) {
+      setMessage("Sign in first so GSN can withdraw the access request from your account.");
+      return;
+    }
+
+    setBusyMembershipRequest(true);
+    try {
+      await cancelCommunityDomainActionReview(requestDomainId, reviewId, {
+        cancel_note: "Applicant withdrew their own Community Domain access request.",
+      });
+      if (!isCurrentDomainRequest(requestDomainId)) return;
+      await loadOwnMembershipRequests(requestDomainId);
+      if (!isCurrentDomainRequest(requestDomainId)) return;
+      setMessage(
+        "Access request withdrawn. No membership was added, and you can send a fresh request when you are ready."
+      );
+    } catch (err: any) {
+      if (isCurrentDomainRequest(requestDomainId)) {
+        const code = errorDetailCode(err);
+        if (code === "community_domain_review_has_revision") {
+          const existingReview = errorDetailActionReview(err);
+          await loadOwnMembershipRequests(requestDomainId);
+          if (!isCurrentDomainRequest(requestDomainId)) return;
+          const existingReviewId = cleanText(existingReview?.id);
+          setMessage(
+            existingReviewId
+              ? `This earlier access request already has a follow-up revision. Continue from review ${existingReviewId} instead of withdrawing the earlier request.`
+              : "This earlier access request already has a follow-up revision. Continue from the latest revision instead of withdrawing the earlier request."
+          );
+        } else if (code === "community_domain_member_already_active") {
+          await loadOwnMembershipRequests(requestDomainId);
+          if (!isCurrentDomainRequest(requestDomainId)) return;
+          setMessage(activeMembershipRecoveryMessage());
+        } else {
+          setMessage(
+            errorDetailMessage(
+              err,
+              "GSN could not withdraw this Community Domain access request."
+            )
+          );
+        }
+      }
+    } finally {
+      if (isCurrentDomainRequest(requestDomainId)) {
+        setBusyMembershipRequest(false);
+      }
+    }
+  }
+
+  async function reviseOwnMembershipRequest(
+    review: ActionReviewItem | null,
+    fields: { title?: string | null; request_note?: string | null }
+  ) {
+    const requestDomainId = cleanText(communityDomainId);
+    const reviewId = cleanText(review?.id);
+    if (!requestDomainId || !reviewId) return;
+    if (!getAccessToken()) {
+      setMessage("Sign in first so GSN can update the access request from your account.");
+      return;
+    }
+
+    const title = cleanText(fields.title);
+    const requestNote =
+      cleanText(fields.request_note) ||
+      "Applicant updated their Community Domain access request.";
+
+    setBusyMembershipRequest(true);
+    try {
+      const payload = await reviseCommunityDomainActionReview(
+        requestDomainId,
+        reviewId,
+        {
+          request_note: requestNote,
+          payload: title ? { title } : undefined,
+        }
+      );
+      if (!isCurrentDomainRequest(requestDomainId)) return;
+      const revisionId = payload?.action_review?.id;
+      await loadOwnMembershipRequests(requestDomainId);
+      if (!isCurrentDomainRequest(requestDomainId)) return;
+      setMessage(
+        revisionId
+          ? `Updated access request sent for owner/admin review. Review ${revisionId} must still be approved and applied before membership changes.`
+          : "Updated access request sent for owner/admin review. It must still be approved and applied before membership changes."
+      );
+    } catch (err: any) {
+      if (isCurrentDomainRequest(requestDomainId)) {
+        const code = errorDetailCode(err);
+        if (code === "community_domain_review_revision_exists") {
+          const existingReview = errorDetailActionReview(err);
+          await loadOwnMembershipRequests(requestDomainId);
+          if (!isCurrentDomainRequest(requestDomainId)) return;
+          const existingReviewId = cleanText(existingReview?.id);
+          setMessage(
+            existingReviewId
+              ? `This access request already has a follow-up revision. Continue from review ${existingReviewId} instead of creating another update.`
+              : "This access request already has a follow-up revision. Continue from the latest revision instead of creating another update."
+          );
+        } else if (code === "community_domain_member_already_active") {
+          await loadOwnMembershipRequests(requestDomainId);
+          if (!isCurrentDomainRequest(requestDomainId)) return;
+          setMessage(activeMembershipRecoveryMessage());
+        } else {
+          setMessage(
+            errorDetailMessage(
+              err,
+              "GSN could not update this Community Domain access request."
+            )
+          );
         }
       }
     } finally {
@@ -1370,9 +1806,13 @@ export default function CommunityDomainDashboardPage() {
             communityDomainId={communityDomainId}
             message={message}
             latestMembershipRequest={latestMembershipRequest}
+            membershipRequestLineage={membershipRequestLineage}
+            loadingMembershipRequestLineage={loadingMembershipRequestLineage}
             busyMembershipRequest={busyMembershipRequest}
             onRetry={loadDashboard}
             onRequestDomainAccess={requestDomainAccess}
+            onReviseMembershipRequest={reviseOwnMembershipRequest}
+            onWithdrawMembershipRequest={withdrawOwnMembershipRequest}
           />
         </Suspense>
       ) : null}
@@ -1999,6 +2439,7 @@ export default function CommunityDomainDashboardPage() {
                       isAdmin={isAdmin}
                       membershipAccessRequests={membershipAccessRequests}
                       governanceAttentionCount={governanceAttentionCount}
+                      institutionalOpenReviewCount={institutionalOpenReviewCount}
                       governanceApprovedCount={governanceApprovedCount}
                       delegationMap={delegationMap}
                       governanceCoverage={governanceCoverage}
@@ -2067,6 +2508,7 @@ export default function CommunityDomainDashboardPage() {
                 loadingQueue={loadingQueue}
                 busyReviewId={busyReviewId}
                 onApproveOnly={(review) => approveAccessRequest(review, false)}
+                onRequestChanges={requestChangesForAccessRequest}
                 onDecline={declineAccessRequest}
                 onApproveAndApply={(review) => approveAccessRequest(review, true)}
                 onApplyApproved={applyApprovedAccessRequest}

@@ -82,6 +82,13 @@ assertContains(
 );
 
 assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /listMyCommunityDomains[\s\S]*errorDetailMessage[\s\S]*could not load your Community Domains[\s\S]*getCommunityDomainDashboard[\s\S]*errorDetailMessage[\s\S]*could not open this Community Domain dashboard[\s\S]*refreshQuote[\s\S]*errorDetailMessage[\s\S]*could not refresh the package quote/,
+  "Community Domain dashboard selector, dashboard-load, and package quote failures must parse structured backend detail before falling back to plain recovery copy.",
+  { frontend: true }
+);
+
+assertContains(
   "src/pages/communityDomainDashboard/DomainSelectorPanel.tsx",
   /No Community Domains yet[\s\S]*community-domain-dashboard\.empty\.purchase[\s\S]*community-domain-dashboard\.empty\.community-home[\s\S]*Your Community Domains[\s\S]*Domain: \{compactStatus\(itemDomain\.status\)\}[\s\S]*Verification: \{compactStatus\(itemDomain\.verification_status\)\}[\s\S]*Open dashboard/,
   "Lazy Community Domain selector panel must expose safe domain and verification status, opening links, and empty-state recovery.",
@@ -232,6 +239,13 @@ assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
   /dashboardRouteId[\s\S]*loadedReadinessLanes[\s\S]*loadingReadinessLanes[\s\S]*readinessLoadSequence[\s\S]*readinessLoadIds[\s\S]*readinessLoadPromises[\s\S]*resetReadinessLoadTracking[\s\S]*resetOptionalReadinessState[\s\S]*setDashboard\(null\)[\s\S]*setDashboardRouteId\(""\)[\s\S]*resetReadinessLoadTracking\(\)[\s\S]*resetOptionalReadinessState\(\)[\s\S]*setDashboardRouteId\(communityDomainId\)[\s\S]*loadReadinessPayloadsForLane[\s\S]*applyReadinessPayloadsForLane[\s\S]*cleanText\(dashboardRouteId\) !== cleanText\(communityDomainId\)[\s\S]*dashboardDomainId[\s\S]*cleanText\(dashboardDomainId\) !== cleanText\(communityDomainId\)[\s\S]*needsBaseReadiness[\s\S]*needsLaneReadiness[\s\S]*readinessDomainKey[\s\S]*viewerReadinessKey[\s\S]*baseReadinessCacheKey[\s\S]*laneReadinessCacheKey[\s\S]*loadOrReuseReadiness[\s\S]*readinessLoadPromises\.current\[cacheKey\][\s\S]*loadingKeys[\s\S]*requestId[\s\S]*setLoadingReadinessLanes[\s\S]*readinessLoadIds\.current\[key\] === requestId[\s\S]*isBaseReadinessLoading[\s\S]*isActiveLaneReadinessLoading[\s\S]*Loading setup intelligence/,
   "Community Domain dashboard must fetch base setup intelligence and active-lane readiness on demand, only after the dashboard route id and dashboard domain match the current route, with domain/viewer/lane-scoped in-flight reuse plus keyed and request-guarded loading state instead of eagerly loading every optional lane before the dashboard is usable.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /if \(!requestDomainId\)[\s\S]*setDashboard\(null\)[\s\S]*setDashboardRouteId\(""\)[\s\S]*setLoadingQueue\(false\)[\s\S]*reviewerQueueLoadSequence\.current \+= 1[\s\S]*membershipRequestLoadSequence\.current \+= 1[\s\S]*setReviewerQueue\(\[\]\)[\s\S]*setOwnMembershipRequests\(\[\]\)[\s\S]*setLoading\(true\)[\s\S]*setDashboardRouteId\(""\)[\s\S]*setLoadingQueue\(false\)[\s\S]*reviewerQueueLoadSequence\.current \+= 1[\s\S]*membershipRequestLoadSequence\.current \+= 1[\s\S]*setReviewerQueue\(\[\]\)[\s\S]*setOwnMembershipRequests\(\[\]\)/,
+  "Community Domain dashboard resets must invalidate both access-review and applicant-status in-flight loads, and clear reviewer queue plus own membership-request state before rendering selector or refreshed dashboard states.",
   { frontend: true }
 );
 
@@ -720,8 +734,8 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /lazy\([\s\S]*import\("\.\/communityDomainDashboard\/GovernanceReadinessPanels"\)[\s\S]*reviewStatusCounts[\s\S]*governanceReviewCounts[\s\S]*governancePendingCount[\s\S]*governanceApprovedCount[\s\S]*CommunityDomainGovernanceReadinessPanels[\s\S]*governanceAttentionCount=\{governanceAttentionCount\}[\s\S]*delegationMap=\{delegationMap\}[\s\S]*governanceCoverage=\{governanceCoverage\}/,
-  "Community Domain dashboard Governance lane must lazy-load display-only governance readiness panels and pass only raw delegation/coverage maps from the parent route.",
+  /lazy\([\s\S]*import\("\.\/communityDomainDashboard\/GovernanceReadinessPanels"\)[\s\S]*reviewStatusCounts[\s\S]*governanceReviewCounts[\s\S]*governancePendingCount[\s\S]*governanceApprovedCount[\s\S]*institutionalOpenReviewCount[\s\S]*CommunityDomainGovernanceReadinessPanels[\s\S]*governanceAttentionCount=\{governanceAttentionCount\}[\s\S]*institutionalOpenReviewCount=\{institutionalOpenReviewCount\}[\s\S]*delegationMap=\{delegationMap\}[\s\S]*governanceCoverage=\{governanceCoverage\}/,
+  "Community Domain dashboard Governance lane must lazy-load display-only governance readiness panels, keep personal reviewer-queue pressure distinct from institutional open-review pressure, and pass only raw delegation/coverage maps from the parent route.",
   { frontend: true }
 );
 
@@ -741,7 +755,7 @@ assertContains(
 
 assertContains(
   "src/pages/communityDomainDashboard/GovernanceReadinessPanels.tsx",
-  /Governance review pulse[\s\S]*Ready to apply[\s\S]*Access requests[\s\S]*does not decide reviews, apply membership, assign roles,\s+expose private evidence, or bypass reviewer policy/,
+  /reviewPulseRows[\s\S]*Needs review[\s\S]*Ready to apply[\s\S]*Access requests[\s\S]*Governance review pulse[\s\S]*does not decide reviews, apply membership, assign roles,\s+expose private evidence, or bypass reviewer policy/,
   "Community Domain dashboard Governance lane must show a compact review pulse without deciding reviews, applying membership, or exposing private review evidence.",
   { frontend: true }
 );
@@ -776,15 +790,15 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /lazy\([\s\S]*import\("\.\/communityDomainDashboard\/DashboardRecoveryPanel"\)[\s\S]*requestDomainAccess[\s\S]*Requesting access from the Community Domain dashboard[\s\S]*must still be approved and applied before membership changes[\s\S]*CommunityDomainDashboardRecoveryPanel[\s\S]*latestMembershipRequest=\{latestMembershipRequest\}[\s\S]*busyMembershipRequest=\{busyMembershipRequest\}[\s\S]*onRetry=\{loadDashboard\}[\s\S]*onRequestDomainAccess=\{requestDomainAccess\}/,
-  "Community Domain dashboard denied-access state must keep the real membership request path in the parent while lazy-loading recovery UI without implying instant membership.",
+  /cancelCommunityDomainActionReview[\s\S]*reviseCommunityDomainActionReview[\s\S]*lazy\([\s\S]*import\("\.\/communityDomainDashboard\/DashboardRecoveryPanel"\)[\s\S]*requestDomainAccess[\s\S]*Requesting access from the Community Domain dashboard[\s\S]*must still be approved and applied before membership changes[\s\S]*community_domain_membership_request_pending[\s\S]*errorDetailActionReview[\s\S]*loadOwnMembershipRequests\(requestDomainId\)[\s\S]*Review \$\{existingReviewId\} still needs owner\/admin resolution and apply[\s\S]*community_domain_member_already_active[\s\S]*activeMembershipRecoveryMessage\(\)[\s\S]*withdrawOwnMembershipRequest[\s\S]*cancelCommunityDomainActionReview[\s\S]*Applicant withdrew their own Community Domain access request[\s\S]*Access request withdrawn[\s\S]*community_domain_review_has_revision[\s\S]*errorDetailActionReview[\s\S]*loadOwnMembershipRequests\(requestDomainId\)[\s\S]*Continue from review[\s\S]*instead of withdrawing the earlier request[\s\S]*reviseOwnMembershipRequest[\s\S]*Applicant updated their Community Domain access request[\s\S]*reviseCommunityDomainActionReview[\s\S]*Updated access request sent[\s\S]*must still be approved and applied before membership changes[\s\S]*community_domain_review_revision_exists[\s\S]*errorDetailActionReview[\s\S]*loadOwnMembershipRequests\(requestDomainId\)[\s\S]*Continue from review[\s\S]*instead of creating another update[\s\S]*community_domain_member_already_active[\s\S]*loadOwnMembershipRequests\(requestDomainId\)[\s\S]*activeMembershipRecoveryMessage\(\)[\s\S]*CommunityDomainDashboardRecoveryPanel[\s\S]*latestMembershipRequest=\{latestMembershipRequest\}[\s\S]*busyMembershipRequest=\{busyMembershipRequest\}[\s\S]*onRetry=\{loadDashboard\}[\s\S]*onRequestDomainAccess=\{requestDomainAccess\}[\s\S]*onReviseMembershipRequest=\{reviseOwnMembershipRequest\}[\s\S]*onWithdrawMembershipRequest=\{withdrawOwnMembershipRequest\}/,
+  "Community Domain dashboard denied-access state must keep the real membership request, revision, and withdrawal paths in the parent while lazy-loading recovery UI without implying instant membership.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /listMyCommunityDomainMembershipRequests[\s\S]*loadOwnMembershipRequests[\s\S]*ownMembershipRequests\[0\][\s\S]*CommunityDomainDashboardRecoveryPanel[\s\S]*latestMembershipRequest=\{latestMembershipRequest\}/,
-  "Community Domain dashboard denied-access state must hand only the current user's own latest membership-request status to the recovery panel.",
+  /listMyCommunityDomainMembershipRequests[\s\S]*actionReviewSortValue[\s\S]*updated_at[\s\S]*created_at[\s\S]*actionReviewIdValue[\s\S]*Number\(item\.id\)[\s\S]*compareActionReviewsNewest[\s\S]*actionReviewSortValue\(right\) - actionReviewSortValue\(left\)[\s\S]*actionReviewIdValue\(right\) - actionReviewIdValue\(left\)[\s\S]*latestRelevantMembershipRequest[\s\S]*pending_review[\s\S]*needs_changes[\s\S]*approved[\s\S]*supersededParentIds[\s\S]*parent_review_id[\s\S]*currentItems[\s\S]*!supersededParentIds\.has\(cleanText\(item\.id\)\)[\s\S]*sort\(compareActionReviewsNewest\)[\s\S]*allItems[\s\S]*sort\(compareActionReviewsNewest\)[\s\S]*loadOwnMembershipRequests[\s\S]*listMyCommunityDomainMembershipRequests[\s\S]*latestMembershipRequest = latestRelevantMembershipRequest\(ownMembershipRequests\)[\s\S]*CommunityDomainDashboardRecoveryPanel[\s\S]*latestMembershipRequest=\{latestMembershipRequest\}/,
+  "Community Domain dashboard denied-access state must hand only the current user's own membership-request status to the recovery panel, prefer open request rows, sort deterministically by review freshness with review-id tie-breaking, and ignore superseded parent reviews once a child revision exists.",
   { frontend: true }
 );
 
@@ -797,15 +811,71 @@ assertNotContains(
 
 assertContains(
   "src/pages/communityDomainDashboard/DashboardRecoveryPanel.tsx",
-  /membershipRequestStatusText[\s\S]*An owner\/admin still needs to approve and apply[\s\S]*membershipRequestButtonLabel[\s\S]*Request pending[\s\S]*Approved, waiting to add[\s\S]*Try dashboard again[\s\S]*Cannot open dashboard[\s\S]*Cannot load domains[\s\S]*Your access request[\s\S]*Try again[\s\S]*Community Home[\s\S]*Purchase path[\s\S]*community-domain-dashboard\.error\.request-membership/,
-  "Lazy Community Domain dashboard recovery panel must show denied-access recovery, own request status, safe routes, and a real request-access action without implying instant membership.",
+  /parent_review_id[\s\S]*required_approvals[\s\S]*approval_count[\s\S]*onReviseMembershipRequest[\s\S]*numericCount[\s\S]*isRevisionContinuation[\s\S]*fieldStyle[\s\S]*fontSize: 16[\s\S]*membershipRequestStatusText[\s\S]*membershipApprovalProgressText[\s\S]*An owner\/admin still needs to approve and apply[\s\S]*withdraw it before it is applied[\s\S]*needs changes before an owner\/admin can continue[\s\S]*Reviewer-private notes are not shown here[\s\S]*member title, invite reference, department, class, or relationship proof[\s\S]*owner\/admin review[\s\S]*cancelled[\s\S]*rejected[\s\S]*earlier request already has a follow-up record[\s\S]*continue from this revision instead of starting over[\s\S]*was withdrawn before membership was added[\s\S]*request access again[\s\S]*was applied before[\s\S]*current membership is no longer active[\s\S]*membershipApprovalProgressText[\s\S]*approvals are recorded[\s\S]*more needed before apply[\s\S]*membershipRequestButtonLabel[\s\S]*Working[\s\S]*Withdraw request[\s\S]*Send update above[\s\S]*Request access[\s\S]*latestMembershipRequestId[\s\S]*isMembershipRequestContinuation[\s\S]*canReviseMembershipRequest[\s\S]*needs_changes[\s\S]*cancelled[\s\S]*rejected[\s\S]*canWithdrawMembershipRequest[\s\S]*latestMembershipRequestStatus === "approved"[\s\S]*continuationNeedsRevision[\s\S]*requestAccessLocked[\s\S]*busyMembershipRequest[\s\S]*continuationNeedsRevision[\s\S]*useEffect\(\(\) => \{[\s\S]*setRevisionTitle\(""\)[\s\S]*setRevisionNote\(""\)[\s\S]*\}, \[latestMembershipRequestId\]\)[\s\S]*Cannot open dashboard[\s\S]*Cannot load domains[\s\S]*Your access request[\s\S]*Review \$\{reviewId\} - [\s\S]*Member title or proof label[\s\S]*Add the safe detail the owner\/admin should check[\s\S]*Add only details you can safely share with the Community Domain[\s\S]*community-domain-dashboard\.error\.revise-membership[\s\S]*onReviseMembershipRequest\(latestMembershipRequest[\s\S]*Send update[\s\S]*Try again[\s\S]*Community Home[\s\S]*Purchase path[\s\S]*community-domain-dashboard\.error\.request-membership[\s\S]*onWithdrawMembershipRequest\(latestMembershipRequest\)/,
+  "Lazy Community Domain dashboard recovery panel must show denied-access recovery, own request status with approval progress, safe routes, 16px native revision fields, plain request-history separators, and real request-access, revision, or withdrawal actions without implying instant membership, trapping applied historical reviews in a retry loop, or locking approved-but-unapplied applicant withdrawal.",
+  { frontend: true }
+);
+
+assertNotContains(
+  "src/pages/communityDomainDashboard/DashboardRecoveryPanel.tsx",
+  /latestMembershipRequestStatus === "applied"[\s\S]*\? onRetry/,
+  "Applied historical membership reviews in the denied-access recovery panel must not force the request-access button to retry the dashboard instead of allowing reactivation intake.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/communityDomainDashboard/GovernanceReadinessPanels.tsx",
+  /institutionalOpenReviewCount[\s\S]*reviewPulseRows[\s\S]*Needs review[\s\S]*Ready to apply[\s\S]*isAdmin[\s\S]*Institution open[\s\S]*institutionalOpenReviewCount[\s\S]*Access requests[\s\S]*Governance review pulse[\s\S]*Open decisions come from the scoped reviewer queue; approved-but-unapplied reviews come from the approved action-review list[\s\S]*reviewPulseRows\.map[\s\S]*This account has no pending decision in its scoped queue[\s\S]*institutional review pressure[\s\S]*Another\s+eligible reviewer may need to decide[\s\S]*approved review may\s+still need apply/,
+  "Lazy Community Domain Governance panel must distinguish the current admin's scoped reviewer queue from broader institutional open-review pressure, and must not show the institution-open badge to non-admin members as a false zero.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /applyCommunityDomainActionReview[\s\S]*decideCommunityDomainActionReview[\s\S]*getCommunityDomainReviewerQueue[\s\S]*listCommunityDomainActionReviews[\s\S]*lazy\([\s\S]*import\("\.\/communityDomainDashboard\/AccessRequestsPanel"\)[\s\S]*membershipAccessRequests[\s\S]*domain_member\.upsert[\s\S]*status: "approved"[\s\S]*declineAccessRequest[\s\S]*decision: "reject"[\s\S]*applyApprovedAccessRequest[\s\S]*CommunityDomainAccessRequestsPanel[\s\S]*membershipAccessRequests=\{membershipAccessRequests\}[\s\S]*onApproveOnly=\{\(review\) => approveAccessRequest\(review, false\)\}[\s\S]*onDecline=\{declineAccessRequest\}[\s\S]*onApproveAndApply=\{\(review\) => approveAccessRequest\(review, true\)\}[\s\S]*onApplyApproved=\{applyApprovedAccessRequest\}/,
-  "Community Domain dashboard owner/admin view must keep access-review API decisions in the parent route while lazy-loading the admin access request panel.",
+  /applyCommunityDomainActionReview[\s\S]*decideCommunityDomainActionReview[\s\S]*getCommunityDomainReviewerQueue[\s\S]*listCommunityDomainActionReviews[\s\S]*lazy\([\s\S]*import\("\.\/communityDomainDashboard\/AccessRequestsPanel"\)[\s\S]*remainingAccessApprovalMessage[\s\S]*required_approvals[\s\S]*approval_count[\s\S]*more approvals before membership can be applied[\s\S]*isSelfServiceMembershipAccessRequest[\s\S]*requestedBy[\s\S]*subjectUser[\s\S]*targetUser[\s\S]*payloadUser[\s\S]*payloadHasRole[\s\S]*payloadHasStatus[\s\S]*payloadRole[\s\S]*payloadStatus[\s\S]*domain_member\.upsert[\s\S]*target_type[\s\S]*domain_member[\s\S]*previous_status[\s\S]*payloadHasRole[\s\S]*payloadRole === "member"[\s\S]*payloadHasStatus[\s\S]*payloadStatus === "active"[\s\S]*requestedBy === subjectUser[\s\S]*requestedBy === targetUser[\s\S]*requestedBy === payloadUser[\s\S]*accessRequestSortPriority[\s\S]*status === "approved"[\s\S]*status === "pending_review"[\s\S]*status === "pending"[\s\S]*sortMembershipAccessRequests[\s\S]*compareActionReviewsNewest\(left, right\)[\s\S]*membershipAccessRequests[\s\S]*sortMembershipAccessRequests\([\s\S]*filter\(isSelfServiceMembershipAccessRequest\)[\s\S]*loadAccessReviewItems[\s\S]*if \(!isAdmin\)[\s\S]*reviewerQueueLoadSequence\.current \+= 1[\s\S]*setReviewerQueue\(\[\]\)[\s\S]*getCommunityDomainReviewerQueue[\s\S]*status: "approved"[\s\S]*handleAccessRequestReviewError[\s\S]*community_domain_review_has_revision[\s\S]*Continue from review \$\{existingReviewId\} instead of acting on the earlier request[\s\S]*accessRequestApplyErrorMessage\(err, fallback\)[\s\S]*applyAfterApproval[\s\S]*decisionPayload\?\.action_review\?\.status !== "approved"[\s\S]*remainingAccessApprovalMessage\([\s\S]*decisionPayload\?\.action_review[\s\S]*refreshReviewerQueue[\s\S]*applyCommunityDomainActionReview[\s\S]*handleAccessRequestReviewError\([\s\S]*GSN could not process this Community Domain access request[\s\S]*declineAccessRequest[\s\S]*decision: "reject"[\s\S]*handleAccessRequestReviewError\([\s\S]*GSN could not decline this Community Domain access request[\s\S]*requestChangesForAccessRequest[\s\S]*decision: "needs_changes"[\s\S]*The applicant must update the request before membership can be approved or applied[\s\S]*sent back for updates[\s\S]*membership was not added[\s\S]*handleAccessRequestReviewError\([\s\S]*GSN could not send this Community Domain access request back for updates[\s\S]*applyApprovedAccessRequest[\s\S]*handleAccessRequestReviewError\([\s\S]*GSN could not add this approved Community Domain member[\s\S]*CommunityDomainAccessRequestsPanel[\s\S]*membershipAccessRequests=\{membershipAccessRequests\}[\s\S]*onApproveOnly=\{\(review\) => approveAccessRequest\(review, false\)\}[\s\S]*onRequestChanges=\{requestChangesForAccessRequest\}[\s\S]*onDecline=\{declineAccessRequest\}[\s\S]*onApproveAndApply=\{\(review\) => approveAccessRequest\(review, true\)\}[\s\S]*onApplyApproved=\{applyApprovedAccessRequest\}/,
+  "Community Domain dashboard owner/admin view must keep access-review API decisions in the parent route, guard and invalidate access-review reads for non-admins, show only self-service membership access/reactivation requests in the access panel, expose approve/needs-changes/reject decision paths, translate superseded parent decision/apply errors into latest-revision guidance, and lazy-load the admin access request panel.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /nextDashboard\?\.viewer\?\.can_admin[\s\S]*queueRequestId = reviewerQueueLoadSequence\.current \+ 1[\s\S]*reviewerQueueLoadSequence\.current = queueRequestId[\s\S]*canApplyQueue[\s\S]*reviewerQueueLoadSequence\.current === queueRequestId[\s\S]*getCommunityDomainReviewerQueue\(requestDomainId\)[\s\S]*listCommunityDomainActionReviews\(requestDomainId, \{ status: "approved" \}\)[\s\S]*if \(!canApplyQueue\(\)\) return[\s\S]*setReviewerQueue\(mergeActionReviews\(pendingItems, approvedItems\)\)[\s\S]*catch[\s\S]*if \(canApplyQueue\(\)\)[\s\S]*setReviewerQueue\(\[\]\)/,
+  "Community Domain dashboard initial admin access-review load must use the same reviewer-queue sequence guard as manual refreshes, so an older dashboard-load response cannot overwrite a newer access-request refresh.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /parsedErrorDetail[\s\S]*JSON\.parse\(message\)[\s\S]*errorDetailCode[\s\S]*community_domain_member_review_stale[\s\S]*errorDetailMessage[\s\S]*errorDetailActionReview[\s\S]*action_review[\s\S]*existing_action_review[\s\S]*accessRequestApplyErrorMessage[\s\S]*already out of date[\s\S]*active member[\s\S]*Refresh access requests[\s\S]*activeMembershipRecoveryMessage[\s\S]*already recorded as an active member[\s\S]*Try opening the dashboard again[\s\S]*handleAccessRequestReviewError[\s\S]*community_domain_review_has_revision[\s\S]*errorDetailActionReview\(err\)[\s\S]*refreshReviewerQueue\(\)[\s\S]*Continue from review[\s\S]*accessRequestApplyErrorMessage\(err, fallback\)[\s\S]*requestDomainAccess[\s\S]*errorDetailCode\(err\)[\s\S]*errorDetailMessage\(/,
+  "Community Domain dashboard must parse structured backend errors from direct detail or serialized message text, extract scoped action-review pointers, translate stale membership apply failures into owner-facing recovery guidance, translate superseded parent access-request actions into latest-revision guidance, translate active-member applicant recovery into dashboard retry guidance, and keep duplicate access-request recovery copy reachable.",
+  { frontend: true }
+);
+
+assertNotContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /setMessage\(\s*err\?\.message\s*\|\|/,
+  "Community Domain dashboard user-facing errors must use structured backend detail helpers instead of raw backend message fallbacks.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /activeMembershipRecoveryMessage[\s\S]*already recorded as an active member[\s\S]*Try opening the dashboard again[\s\S]*requestDomainAccess[\s\S]*community_domain_member_already_active[\s\S]*loadDashboard\(\)[\s\S]*activeMembershipRecoveryMessage\(\)[\s\S]*withdrawOwnMembershipRequest[\s\S]*community_domain_member_already_active[\s\S]*loadOwnMembershipRequests\(requestDomainId\)[\s\S]*activeMembershipRecoveryMessage\(\)[\s\S]*reviseOwnMembershipRequest[\s\S]*community_domain_member_already_active[\s\S]*loadOwnMembershipRequests\(requestDomainId\)[\s\S]*activeMembershipRecoveryMessage\(\)/,
+  "Community Domain dashboard denied-access request, withdrawal, and revision paths must all recover active-member conflicts by reopening the dashboard or refreshing requester status where needed, then guiding the applicant back to the dashboard.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /loadAccessReviewItems[\s\S]*errorDetailMessage[\s\S]*could not load the Community Domain access requests[\s\S]*Approved from the Community Domain access requests before applying membership[\s\S]*Approved from the Community Domain access requests\. Membership still needs apply[\s\S]*Declined from the Community Domain access requests\. No membership change was applied[\s\S]*Asked for changes from the Community Domain access requests/,
+  "Community Domain dashboard access-request feedback must describe the merged access-request list, not a standalone access queue.",
+  { frontend: true }
+);
+
+assertNotContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /Community Domain access queue/,
+  "Community Domain dashboard must not describe access requests as a separate access queue.",
   { frontend: true }
 );
 
@@ -818,8 +888,8 @@ assertNotContains(
 
 assertContains(
   "src/pages/communityDomainDashboard/AccessRequestsPanel.tsx",
-  /subject_user_email[\s\S]*reviewUserLabel[\s\S]*reviewRequesterLabel[\s\S]*Access requests[\s\S]*Review people asking to enter this domain[\s\S]*Approving records the decision; approving and adding[\s\S]*Approve only[\s\S]*Decline[\s\S]*Add approved member[\s\S]*Approve \+ add member[\s\S]*community-domain-dashboard\.access-request\.refresh/,
-  "Lazy Community Domain access request panel must expose pending and approved access requests, keep approve/decline separate from apply, and preserve a visible apply path after approve-only.",
+  /parent_review_id[\s\S]*subject_user_email[\s\S]*required_approvals[\s\S]*approval_count[\s\S]*onRequestChanges[\s\S]*numericCount[\s\S]*selectStyle[\s\S]*fontSize: 16[\s\S]*reviewUserLabel[\s\S]*reviewRequesterLabel[\s\S]*approvalProgressText[\s\S]*requiredApprovals[\s\S]*approvalCount[\s\S]*Approvals complete[\s\S]*more needed before this can be added[\s\S]*followUpText[\s\S]*reviewStatus === "approved"[\s\S]*Apply membership from this row[\s\S]*Decide from this row[\s\S]*Follow-up to review[\s\S]*applicant's updated request[\s\S]*earlier request as history[\s\S]*requestLabel[\s\S]*Follow-up request[\s\S]*Membership request[\s\S]*showAllRequests[\s\S]*decisionByReviewId[\s\S]*"approve" \| "needs_changes" \| "reject"[\s\S]*visibleAccessRequests[\s\S]*membershipAccessRequests\.slice\(0, 3\)[\s\S]*hiddenRequestCount[\s\S]*Access requests[\s\S]*Review people asking to enter this domain[\s\S]*still need a decision[\s\S]*approved membership change[\s\S]*Approving records the decision;[\s\S]*visibleAccessRequests\.map[\s\S]*needsChangesBusy[\s\S]*selectedDecision[\s\S]*followUp[\s\S]*recordDecision[\s\S]*onRequestChanges\(review\)[\s\S]*onDecline\(review\)[\s\S]*onApproveOnly\(review\)[\s\S]*approvalProgress[\s\S]*safe update[\s\S]*needs-changes status[\s\S]*general\s+update guidance[\s\S]*Private reviewer notes stay inside the[\s\S]*owner\/admin review record[\s\S]*membership is not added[\s\S]*Ask for changes[\s\S]*Record decision[\s\S]*Add approved member[\s\S]*Approve, add if ready[\s\S]*community-domain-dashboard\.access-request\.toggle-all[\s\S]*Show first 3 requests[\s\S]*Show \$\{hiddenRequestCount\} more request[\s\S]*No open access requests[\s\S]*waiting for this account[\s\S]*community-domain-dashboard\.access-request\.refresh/,
+  "Lazy Community Domain access request panel must expose pending and approved-but-unapplied self-service access requests, label follow-up revisions separately from fresh membership requests, show status-aware follow-up revision context from parent_review_id, keep approve/needs-changes/reject decisions separate from apply, explain that ask-for-changes sends applicant-safe update guidance while private reviewer notes stay inside the owner/admin record, show approval progress for multi-approval policies, preserve a visible apply path after approve-only, avoid silently hiding more than three requests, and use truthful empty-state copy.",
   { frontend: true }
 );
 
@@ -964,8 +1034,8 @@ assertContains(
 
 assertContains(
   "src/lib/api.ts",
-  /getCommunityDomainReviewerQueue[\s\S]*getCommunityDomainActionReviewSummary[\s\S]*reviseCommunityDomainActionReview[\s\S]*applyCommunityDomainActionReview[\s\S]*addCommunityDomainActionReviewEvidence/,
-  "Frontend API layer must expose action-review governance helpers.",
+  /listCommunityDomainActionReviews[\s\S]*user_id\?: number \| string \| null[\s\S]*user_id: params\.user_id \|\| undefined[\s\S]*getCommunityDomainReviewerQueue[\s\S]*community_node_id\?: number \| string \| null[\s\S]*include_descendants\?: boolean \| null[\s\S]*include_decided\?: boolean \| null[\s\S]*community_node_id: params\.community_node_id \|\| undefined[\s\S]*include_descendants: params\.include_descendants \? true : undefined[\s\S]*getCommunityDomainActionReviewSummary[\s\S]*reviseCommunityDomainActionReview[\s\S]*applyCommunityDomainActionReview[\s\S]*addCommunityDomainActionReviewEvidence/,
+  "Frontend API layer must expose action-review governance helpers, including member-filtered action-review listing and node-filtered reviewer queues.",
   { frontend: true }
 );
 
@@ -1062,8 +1132,8 @@ assertContains(
 
 assertContains(
   "gmfn_backend/app/api/routes/community_domains.py",
-  /REVIEWER_QUEUE_PENDING_STATUSES = \("pending", "pending_review"\)[\s\S]*def _community_domain_dashboard_payload[\s\S]*CommunityDomainActionReview\.status\.in_\(REVIEWER_QUEUE_PENDING_STATUSES\)[\s\S]*def _community_domain_operating_map_payload[\s\S]*CommunityDomainActionReview\.status\.in_\(REVIEWER_QUEUE_PENDING_STATUSES\)/,
-  "Backend dashboard and operating-map next-action queues must not count needs_changes as pending reviewer work."
+  /REVIEWER_QUEUE_PENDING_STATUSES = \("pending", "pending_review"\)[\s\S]*def _community_domain_dashboard_payload[\s\S]*CommunityDomainActionReview\.status\.in_\(REVIEWER_QUEUE_PENDING_STATUSES\)[\s\S]*def _community_domain_operating_map_payload[\s\S]*CommunityDomainActionReview\.status\.in_\(REVIEWER_QUEUE_PENDING_STATUSES\)[\s\S]*def list_community_domain_reviewer_queue[\s\S]*CommunityDomainActionReview\.status\.in_\(REVIEWER_QUEUE_PENDING_STATUSES\)/,
+  "Backend dashboard, operating-map, and reviewer-queue next-action lists must not count needs_changes as pending reviewer work."
 );
 
 assertContains(
@@ -1092,26 +1162,152 @@ assertContains(
 
 assertContains(
   "gmfn_backend/app/api/routes/community_domains.py",
-  /class CommunityDomainMembershipRequestIn[\s\S]*request_note[\s\S]*@router\.post\(\s*"\/\{community_domain_id\}\/membership-requests"[\s\S]*def request_community_domain_membership[\s\S]*action_key="domain_member\.upsert"[\s\S]*requested_by_user_id=int\(current_user\.id\)[\s\S]*subject_user_id=int\(current_user\.id\)[\s\S]*target_type="domain_member"[\s\S]*does not add the member[\s\S]*approve and apply/,
-  "Backend route must let an authenticated outsider request Community Domain membership as a pending governance review without auto-membership or side effects."
+  /MEMBERSHIP_REQUEST_OPEN_STATUSES[\s\S]*"needs_changes"[\s\S]*"approved"[\s\S]*class CommunityDomainMembershipRequestIn[\s\S]*request_note[\s\S]*def _self_service_membership_review_ids_with_applied_descendant[\s\S]*_clean_role\(row\.status\) != "applied"[\s\S]*ancestor_ids\.add\(parent_id\)[\s\S]*@router\.post\(\s*"\/\{community_domain_id\}\/membership-requests"[\s\S]*def request_community_domain_membership[\s\S]*existing_request_candidates[\s\S]*self_service_request_candidates[\s\S]*_is_self_service_domain_membership_review_for_user[\s\S]*applied_descendant_ancestor_ids[\s\S]*_self_service_membership_review_ids_with_applied_descendant[\s\S]*_clean_role\(row\.status\) in MEMBERSHIP_REQUEST_OPEN_STATUSES[\s\S]*int\(row\.id\) not in applied_descendant_ancestor_ids[\s\S]*already has an open Community Domain[\s\S]*_membership_request_status_payload\(existing_request\)[\s\S]*action_key="domain_member\.upsert"[\s\S]*previous_status[\s\S]*"none"[\s\S]*requested_by_user_id=int\(current_user\.id\)[\s\S]*subject_user_id=int\(current_user\.id\)[\s\S]*target_type="domain_member"[\s\S]*"action_review": _membership_request_status_payload\(row\)[\s\S]*does not add the member[\s\S]*approve and apply/,
+  "Backend route must let an authenticated outsider request Community Domain membership as a governance review, snapshot that no previous membership existed, block duplicate self-service open reviews through approved-but-unapplied status, avoid exposing generic or reviewer-private governance rows as create/duplicate response details, release superseded parents after an applied descendant, and avoid auto-membership or side effects."
 );
 
 assertContains(
   "gmfn_backend/tests/test_community_domains.py",
-  /test_outsider_can_request_domain_membership_without_auto_membership[\s\S]*\/membership-requests[\s\S]*domain_member\.upsert[\s\S]*community_domain_membership_request_pending[\s\S]*db\.query\(CommunityDomainMembership\)\.count\(\) == 1[\s\S]*\/decision[\s\S]*\/apply[\s\S]*community_domain_member_already_active/,
-  "Backend tests must prove Community Domain membership requests do not create membership until an admin approves and applies the review."
+  /test_outsider_can_request_domain_membership_without_auto_membership[\s\S]*\/membership-requests[\s\S]*_assert_applicant_membership_status_payload_is_scoped\(review\)[\s\S]*domain_member\.upsert[\s\S]*community_domain_membership_request_pending[\s\S]*_assert_applicant_membership_status_payload_is_scoped\([\s\S]*duplicate\.json\(\)\["detail"\]\["action_review"\][\s\S]*db\.query\(CommunityDomainMembership\)\.count\(\) == 1[\s\S]*\/decision[\s\S]*duplicate_after_approval[\s\S]*community_domain_membership_request_pending[\s\S]*\/apply[\s\S]*community_domain_member_already_active/,
+  "Backend tests must prove Community Domain membership requests do not create membership until an admin approves and applies the review, create/duplicate applicant responses hide reviewer-private fields, and approved-but-unapplied reviews still block duplicate requests."
+);
+
+assertContains(
+  "gmfn_backend/tests/test_community_domains.py",
+  /test_generic_self_targeted_review_does_not_block_membership_request[\s\S]*requested_by_user_id=owner\.id[\s\S]*subject_user_id=requester\.id[\s\S]*target_type="domain_member"[\s\S]*payload_json=json\.dumps[\s\S]*"status": "active"[\s\S]*\/membership-requests[\s\S]*self_service_review\["id"\] != generic_review_id[\s\S]*previous_status"\] == "none"[\s\S]*community_domain_membership_request_pending[\s\S]*duplicate_detail\["action_review"\]\["id"\] == self_service_review\["id"\][\s\S]*duplicate_detail\["action_review"\]\["id"\] != generic_review_id[\s\S]*\[row\.status for row in rows\] == \["pending", "pending"\]/,
+  "Backend tests must prove generic self-targeted domain-member governance reviews do not block self-service membership requests or leak back as duplicate-request action-review details."
+);
+
+assertContains(
+  "gmfn_backend/tests/test_community_domains.py",
+  /test_self_targeted_non_access_review_with_previous_status_is_not_membership_request[\s\S]*requested_by_user_id=requester\.id[\s\S]*subject_user_id=requester\.id[\s\S]*target_type="domain_member"[\s\S]*"role": "admin"[\s\S]*"status": "active"[\s\S]*"previous_status": "none"[\s\S]*incomplete_review[\s\S]*"user_id": requester\.id[\s\S]*"previous_status": "none"[\s\S]*\/membership-requests\/my[\s\S]*own_requests\.json\(\)\["total"\] == 0[\s\S]*\/membership-requests[\s\S]*self_service_review\["id"\] != role_review_id[\s\S]*self_service_review\["id"\] != incomplete_review_id[\s\S]*self_service_review\["payload"\]\["role"\] == "member"[\s\S]*self_service_review\["payload"\]\["status"\] == "active"/,
+  "Backend tests must prove self-targeted domain-member role or incomplete governance reviews are not misclassified as self-service membership access requests merely because they carry previous_status."
 );
 
 assertContains(
   "gmfn_backend/app/api/routes/community_domains.py",
-  /@router\.get\(\s*"\/\{community_domain_id\}\/membership-requests\/my"[\s\S]*def list_my_community_domain_membership_requests[\s\S]*requested_by_user_id == int\(current_user\.id\)[\s\S]*subject_user_id == int\(current_user\.id\)[\s\S]*target_type == "domain_member"[\s\S]*target_id == str\(int\(current_user\.id\)\)[\s\S]*own Community Domain membership requests only[\s\S]*does not expose the reviewer queue[\s\S]*or grant membership/,
-  "Backend must expose a requester-only Community Domain membership-request status route without exposing reviewer queues or granting membership."
+  /def apply_community_domain_action_review[\s\S]*action_key == "domain_member\.upsert"[\s\S]*expected_previous_status[\s\S]*previous_status[\s\S]*if "previous_status" in payload[\s\S]*current_previous_status[\s\S]*membership is not None[\s\S]*else "none"[\s\S]*expected_previous_status != current_previous_status[\s\S]*community_domain_member_review_stale[\s\S]*no longer matches/,
+  "Backend apply must reject stale self-service membership reviews only when the review explicitly snapshots a previous status and the member's current status no longer matches it."
 );
 
 assertContains(
   "gmfn_backend/tests/test_community_domains.py",
-  /test_outsider_can_track_only_own_domain_membership_request[\s\S]*\/membership-requests\/my[\s\S]*own Community Domain membership requests only[\s\S]*other_requests\.json\(\)\["total"\] == 0[\s\S]*db\.query\(CommunityDomainMembership\)[\s\S]*== 0[\s\S]*review_row\.status == "rejected"[\s\S]*review_row\.applied_at is None/,
-  "Backend tests must prove non-members can track only their own Community Domain membership-request status without becoming members."
+  /test_stale_domain_membership_request_cannot_apply_after_direct_add[\s\S]*previous_status[\s\S]*none[\s\S]*\/members[\s\S]*Directly added member[\s\S]*\/apply[\s\S]*community_domain_member_review_stale[\s\S]*review_row\.status == "approved"[\s\S]*review_row\.applied_at is None/,
+  "Backend tests must prove approved self-service membership requests cannot overwrite direct active membership created before apply."
+);
+
+assertContains(
+  "gmfn_backend/tests/test_community_domains.py",
+  /test_inactive_domain_member_can_request_reactivation_with_status_snapshot[\s\S]*status": "inactive"[\s\S]*previous_status[\s\S]*inactive[\s\S]*\/apply[\s\S]*created"\] is False[\s\S]*membership"\]\["status"\] == "active"[\s\S]*review_row\.status == "applied"/,
+  "Backend tests must prove inactive members can request reactivation with an inactive previous-status snapshot instead of being treated as never having existed."
+);
+
+assertContains(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  /def _is_self_service_domain_membership_review_for_user[\s\S]*domain_member\.upsert[\s\S]*payload_user_id[\s\S]*"role" in payload[\s\S]*_clean_role\(payload\.get\("role"\)\) == "member"[\s\S]*"status" in payload[\s\S]*_clean_role\(payload\.get\("status"\)\) == "active"[\s\S]*previous_status[\s\S]*def _normalize_self_service_membership_revision_payload[\s\S]*_domain_membership_for_user[\s\S]*current_previous_status[\s\S]*community_domain_member_already_active[\s\S]*community_domain_member_review_stale[\s\S]*community_domain_membership_revision_scope_mismatch[\s\S]*Self-service membership request revisions cannot change the reviewed previous membership status[\s\S]*def revise_community_domain_action_review[\s\S]*_get_action_review_or_404[\s\S]*is_self_service_membership_revision[\s\S]*if not is_self_service_membership_revision[\s\S]*_require_domain_member_scope[\s\S]*existing_revision_payload = \([\s\S]*_membership_request_status_payload\(existing_revision\)[\s\S]*if is_self_service_membership_revision[\s\S]*else _action_review_payload\(existing_revision\)[\s\S]*subject_user_id = \([\s\S]*int\(current_user\.id\)[\s\S]*target_type = \([\s\S]*"domain_member"[\s\S]*target_id = \([\s\S]*str\(int\(current_user\.id\)\)[\s\S]*previous_action_review_payload = \([\s\S]*_membership_request_status_payload\(row\)[\s\S]*if is_self_service_membership_revision[\s\S]*else _action_review_payload\(row\)[\s\S]*action_review_payload = \([\s\S]*_membership_request_status_payload\(revision\)[\s\S]*if is_self_service_membership_revision[\s\S]*else _action_review_payload\(revision\)/,
+  "Backend revision route must let non-member applicants revise only their own self-service membership request after needs-changes, block stale/already-active membership snapshots, keep generic review revisions member/admin-scoped, fix the target to the requester, and scope self-service applicant revision and duplicate-revision responses away from reviewer-private fields."
+);
+
+assertContains(
+  "gmfn_backend/tests/test_community_domains.py",
+  /test_requester_can_revise_needs_changes_action_review[\s\S]*decision": "needs_changes"[\s\S]*community_domain_review_append_closed[\s\S]*\/revision[\s\S]*Added the title[\s\S]*duplicate_revision[\s\S]*community_domain_review_revision_exists[\s\S]*stale_parent_comment_after_revision[\s\S]*community_domain_review_append_closed[\s\S]*stale_parent_evidence_after_revision[\s\S]*community_domain_review_append_closed[\s\S]*revision_comment[\s\S]*action_review_id"\] == revision\["id"\][\s\S]*revision_evidence[\s\S]*Child revision context note[\s\S]*action_review_id"\] == revision\["id"\][\s\S]*parent_activity_types == \{"review_created", "decision"\}[\s\S]*revision_activity_data\["total"\] == 3[\s\S]*"comment"[\s\S]*"evidence"[\s\S]*item\["action_review_id"\] == revision\["id"\][\s\S]*lineage_data\["latest_review_id"\] == revision\["id"\][\s\S]*comments\[0\]\.action_review_id == rows\[1\]\.id[\s\S]*evidence\[0\]\.action_review_id == rows\[1\]\.id/,
+  "Backend tests must prove generic needs-changes action reviews stay closed on the parent after revision, comments/evidence continue on the child row, row activity remains scoped to the row where the event happened, and lineage still points from parent to child."
+);
+
+assertContains(
+  "gmfn_backend/tests/test_community_domains.py",
+  /test_outsider_can_revise_own_needs_changes_membership_request_only[\s\S]*\/membership-requests[\s\S]*decision": "needs_changes"[\s\S]*needs_changes_status = client\.get[\s\S]*status": "needs_changes"[\s\S]*needs_changes_data\["total"\] == 1[\s\S]*needs_changes_item\["id"\] == review\["id"\][\s\S]*_assert_applicant_membership_status_payload_is_scoped\(needs_changes_item\)[\s\S]*"Please add your member title" not in needs_changes_status\.text[\s\S]*"decision_note" not in needs_changes_status\.text[\s\S]*community_domain_membership_request_pending[\s\S]*wrong_target[\s\S]*community_domain_membership_revision_scope_mismatch[\s\S]*\/revision[\s\S]*Returning union member[\s\S]*_assert_applicant_membership_status_payload_is_scoped\([\s\S]*revision_data\["previous_action_review"\][\s\S]*_assert_applicant_membership_status_payload_is_scoped\(revision\)[\s\S]*revision\["status"\] == "pending"[\s\S]*revision\["subject_user_id"\] == requester\.id[\s\S]*revision\["target_id"\] == str\(requester\.id\)[\s\S]*"previous_status": "none"[\s\S]*queue_after_revision = client\.get[\s\S]*reviewer-queue[\s\S]*queue_items = queue_after_revision\.json\(\)\["items"\][\s\S]*\[item\["id"\] for item in queue_items\] == \[revision\["id"\]\][\s\S]*queue_items\[0\]\["parent_review_id"\] == review\["id"\]/,
+  "Backend tests must prove a non-member applicant can see their own needs-changes membership request without reviewer-private notes, cannot create a duplicate instead, cannot revise the request into another user's membership, receives scoped self-service revision responses, and sends the child revision back to the reviewer queue instead of the parent."
+);
+
+assertContains(
+  "gmfn_backend/tests/test_community_domains.py",
+  /test_outsider_cannot_revise_membership_request_after_direct_activation[\s\S]*decision": "needs_changes"[\s\S]*\/members[\s\S]*Directly activated member[\s\S]*\/revision[\s\S]*community_domain_member_already_active[\s\S]*len\(review_rows\) == 1[\s\S]*review_rows\[0\]\.status == "needs_changes"/,
+  "Backend tests must prove self-service membership revisions are blocked after the applicant has already been directly activated, without creating a stale child review."
+);
+
+assertContains(
+  "gmfn_backend/tests/test_community_domains.py",
+  /test_outsider_continues_cancelled_membership_revision_without_forking_parent[\s\S]*decision": "needs_changes"[\s\S]*\/revision[\s\S]*First revision title[\s\S]*decide_parent[\s\S]*Wrong row\.[\s\S]*community_domain_review_has_revision[\s\S]*decide_parent_detail\["existing_action_review"\]\["id"\] == \([\s\S]*first_revision\["id"\][\s\S]*apply_parent[\s\S]*community_domain_review_has_revision[\s\S]*apply_parent_detail\["existing_action_review"\]\["id"\] == \([\s\S]*first_revision\["id"\][\s\S]*cancel_parent[\s\S]*Trying to cancel the superseded parent[\s\S]*community_domain_review_has_revision[\s\S]*cancel_parent_detail\["existing_action_review"\]\["id"\] == \([\s\S]*first_revision\["id"\][\s\S]*_assert_applicant_membership_status_payload_is_scoped\([\s\S]*cancel_parent_detail\["existing_action_review"\][\s\S]*\/cancel[\s\S]*Need to correct the title again[\s\S]*\/membership-requests[\s\S]*community_domain_membership_request_pending[\s\S]*action-reviews\/\{first_revision\['id'\]\}\/revision[\s\S]*Corrected revision title[\s\S]*duplicate_revision[\s\S]*community_domain_review_revision_exists[\s\S]*duplicate_revision_detail\["existing_action_review"\]\["id"\] == \([\s\S]*continued_revision\["id"\][\s\S]*_assert_applicant_membership_status_payload_is_scoped\([\s\S]*duplicate_revision_detail\["existing_action_review"\][\s\S]*root_lineage[\s\S]*child_lineage[\s\S]*latest_lineage[\s\S]*latest_review_id"\] == continued_revision\["id"\][\s\S]*lineage_data\["total"\] == 3[\s\S]*review\["id"\][\s\S]*first_revision\["id"\][\s\S]*continued_revision\["id"\][\s\S]*"decision_note" not in root_lineage\.text[\s\S]*"policy_key" not in root_lineage\.text[\s\S]*\[row\.status for row in rows\] == \[[\s\S]*"needs_changes"[\s\S]*"cancelled"[\s\S]*"pending"[\s\S]*rows\[2\]\.parent_review_id == rows\[1\]\.id[\s\S]*CommunityDomainActionReviewDecision\)\.count\(\) == 1/,
+  "Backend tests must prove cancelled child membership revisions continue from the child instead of forking, deciding, applying, or cancelling the needs-changes parent or allowing a duplicate membership request, both parent-cancel and duplicate self-service revision errors hide reviewer-private fields while pointing to the child record, and applicant lineage remains readable/private-field-safe across the three-row parent-child-grandchild chain."
+);
+
+assertContains(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  /def get_community_domain_action_review_lineage[\s\S]*_get_action_review_or_404[\s\S]*can_view_as_self_service_requester = all\([\s\S]*_is_self_service_domain_membership_review_for_user[\s\S]*user_id=int\(current_user\.id\)[\s\S]*if not can_view_as_self_service_requester:[\s\S]*_require_domain_member_scope[\s\S]*community_domain_review_lineage_not_visible[\s\S]*items = \([\s\S]*_membership_request_status_payload\(item\) for item in lineage[\s\S]*if can_view_as_self_service_requester[\s\S]*else \[_action_review_payload\(item\) for item in lineage\]/,
+  "Backend lineage route must let a non-member applicant read only their own self-service membership request chain while keeping generic lineage member/admin-scoped and applicant payloads reviewer-private-field free."
+);
+
+assertContains(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  /def _latest_action_review_revision[\s\S]*parent_review_id == int\(review_id\)[\s\S]*created_at\.desc\(\)[\s\S]*id\.desc\(\)[\s\S]*def _raise_if_action_review_has_revision[\s\S]*community_domain_review_has_revision[\s\S]*Continue from the revision instead of acting on the[\s\S]*"existing_action_review": _action_review_payload\(existing_revision\)[\s\S]*def decide_community_domain_action_review[\s\S]*_raise_if_action_review_has_revision\([\s\S]*def apply_community_domain_action_review[\s\S]*_raise_if_action_review_has_revision\(/,
+  "Backend decision and apply routes must block superseded parent action reviews once a follow-up revision exists and point admins to the latest child review before mutating decision or applied state."
+);
+
+assertContains(
+  "gmfn_backend/tests/test_community_domains.py",
+  /test_outsider_can_read_own_membership_request_lineage_without_private_review_fields[\s\S]*\/membership-requests[\s\S]*decision": "needs_changes"[\s\S]*Reviewer-private: add your title first[\s\S]*\/revision[\s\S]*Added title for lineage review[\s\S]*\/lineage[\s\S]*parent_lineage\.status_code == 200[\s\S]*parent_lineage_data\["root_review_id"\] == review\["id"\][\s\S]*parent_lineage_data\["latest_review_id"\] == revision\["id"\][\s\S]*_assert_applicant_membership_status_payload_is_scoped\(item\)[\s\S]*"Reviewer-private" not in parent_lineage\.text[\s\S]*"decision_note" not in parent_lineage\.text[\s\S]*"decisions" not in parent_lineage\.text[\s\S]*"policy_key" not in parent_lineage\.text[\s\S]*child_lineage\.status_code == 200[\s\S]*hidden_lineage\.status_code == 403/,
+  "Backend tests must prove non-member applicants can read their own self-service membership request lineage from either parent or child without reviewer-private fields, while unrelated outsiders remain blocked."
+);
+
+assertContains(
+  "gmfn_backend/tests/test_community_domains.py",
+  /test_rejected_action_review_cannot_receive_late_decision_or_apply_but_can_be_revised[\s\S]*other_member = _seed_user[\s\S]*\(other_member, "member"\)[\s\S]*decision": "reject"[\s\S]*\/revision[\s\S]*Added the missing context[\s\S]*duplicate_revision[\s\S]*community_domain_review_revision_exists[\s\S]*parent_lineage[\s\S]*child_lineage[\s\S]*parent_lineage\.status_code == 200[\s\S]*child_lineage\.status_code == 200[\s\S]*root_review_id"\] == review\["id"\][\s\S]*latest_review_id"\] == revision\["id"\][\s\S]*requested_review_id"\] == requested_review_id[\s\S]*lineage_data\["total"\] == 2[\s\S]*review\["id"\][\s\S]*revision\["id"\][\s\S]*admin_lineage[\s\S]*admin_lineage\.status_code == 200[\s\S]*hidden_lineage[\s\S]*hidden_lineage\.status_code == 403[\s\S]*community_domain_review_lineage_not_visible/,
+  "Backend tests must prove generic member-submitted action-review lineage remains readable to the requester from parent or child, readable to scoped admins, and hidden from unrelated members."
+);
+
+assertContains(
+  "gmfn_backend/tests/test_community_domains.py",
+  /test_reviewer_queue_tracks_pending_membership_revision_not_needs_changes_parent[\s\S]*decision": "needs_changes"[\s\S]*reviewer-queue[\s\S]*queue_after_needs_changes\.json\(\)\["total"\] == 0[\s\S]*\/revision[\s\S]*Queue revision applicant[\s\S]*queue_after_revision[\s\S]*queue_data\["total"\] == 1[\s\S]*queue_data\["items"\]\[0\]\["id"\] == revision\["id"\][\s\S]*parent_review_id[\s\S]*pending reviews this user is currently allowed to decide[\s\S]*decision": "approve"[\s\S]*queue_after_approval[\s\S]*action-reviews\?status=approved[\s\S]*queue_after_approval\.json\(\)\["total"\] == 0[\s\S]*approved_data\["total"\] == 1[\s\S]*approved_data\["items"\]\[0\]\["id"\] == revision\["id"\][\s\S]*approved_data\["items"\]\[0\]\["parent_review_id"\] == review\["id"\][\s\S]*\[row\.status for row in rows\] == \["needs_changes", "approved"\]/,
+  "Backend tests must prove the reviewer queue hides needs-changes parent membership requests, shows the pending child revision that owner/admins can actually decide, and then moves approved-but-unapplied child revisions to the approved action-review list instead of leaving them in the pending queue."
+);
+
+assertContains(
+  "gmfn_backend/tests/test_community_domains.py",
+  /test_applied_membership_revision_parent_does_not_block_later_reactivation[\s\S]*decision": "needs_changes"[\s\S]*\/revision[\s\S]*Applied revision member[\s\S]*\/apply[\s\S]*"status": "inactive"[\s\S]*created"\] is False[\s\S]*\/membership-requests[\s\S]*reactivation\.status_code == 201[\s\S]*previous_status"\] == "inactive"[\s\S]*\/membership-requests\/my[\s\S]*my_request_items\[0\]\["id"\] == reactivation_review\["id"\][\s\S]*my_request_items\[0\]\["status"\] == "pending"[\s\S]*revision\["id"\] in \{item\["id"\] for item in my_request_items\}[\s\S]*\[row\.status for row in rows\] == \[[\s\S]*"needs_changes"[\s\S]*"applied"[\s\S]*"pending"/,
+  "Backend tests must prove an applied child membership revision releases its superseded needs-changes parent so a later inactive member can request reactivation, and requester status lists the new pending reactivation ahead of applied history."
+);
+
+assertContains(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  /def cancel_community_domain_action_review[\s\S]*_get_action_review_or_404[\s\S]*is_self_service_membership_cancel[\s\S]*_is_self_service_domain_membership_review_for_user[\s\S]*if not is_self_service_membership_cancel[\s\S]*_require_domain_member_scope[\s\S]*is_requester[\s\S]*community_domain_review_cancel_forbidden[\s\S]*existing_revision[\s\S]*parent_review_id == int\(row\.id\)[\s\S]*community_domain_review_has_revision[\s\S]*Continue from the revision instead[\s\S]*"existing_action_review": _membership_request_status_payload\([\s\S]*existing_revision[\s\S]*cancellable_statuses[\s\S]*"needs_changes"[\s\S]*"approved"[\s\S]*is_self_service_membership_cancel and is_requester[\s\S]*else \{"pending", "pending_review"\}[\s\S]*community_domain_review_not_cancellable[\s\S]*cannot be cancelled in its current status[\s\S]*row\.status = "cancelled"[\s\S]*row\.decision = "cancel"[\s\S]*action_review_payload = \([\s\S]*_membership_request_status_payload\(row\)[\s\S]*if is_self_service_membership_cancel and is_requester[\s\S]*else _action_review_payload\(row\)[\s\S]*Action review cancelled before application/,
+  "Backend cancel route must let applicants withdraw only their own pending, needs-changes, or approved-but-unapplied self-service membership request, block direct cancellation of a superseded parent request once a follow-up revision exists, point applicants to the existing child through a scoped payload, scope applicant cancel responses away from reviewer-private fields, and keep generic action-review cancellation member/admin-scoped."
+);
+
+assertContains(
+  "gmfn_backend/tests/test_community_domains.py",
+  /test_admin_cancelled_action_review_cannot_apply_but_requester_can_revise[\s\S]*\/cancel[\s\S]*Duplicate pending request[\s\S]*community_domain_review_not_approved[\s\S]*community_domain_review_revision_forbidden[\s\S]*\/revision[\s\S]*Resubmitted with clearer role context[\s\S]*previous_action_review"\]\["status"\] == "cancelled"[\s\S]*duplicate_revision[\s\S]*community_domain_review_revision_exists[\s\S]*cancelled_parent_comment[\s\S]*community_domain_review_append_closed[\s\S]*cancelled_parent_evidence[\s\S]*community_domain_review_append_closed[\s\S]*revision_comment[\s\S]*action_review_id"\] == revision\["id"\][\s\S]*revision_evidence[\s\S]*Cancelled review child context[\s\S]*action_review_id"\] == revision\["id"\][\s\S]*"review_status_changed"[\s\S]*revision_activity_data\["total"\] == 3[\s\S]*"comment"[\s\S]*"evidence"[\s\S]*item\["action_review_id"\] == revision\["id"\][\s\S]*comments\[0\]\.action_review_id == rows\[1\]\.id[\s\S]*evidence\[0\]\.action_review_id == rows\[1\]\.id/,
+  "Backend tests must prove generic cancelled action-review parents stay closed after child revision, comments/evidence continue on the child row, parent activity keeps the cancellation status event, and child activity carries only child-row context."
+);
+
+assertContains(
+  "gmfn_backend/tests/test_community_domains.py",
+  /test_outsider_can_cancel_own_pending_membership_request[\s\S]*\/membership-requests[\s\S]*\/cancel[\s\S]*_assert_applicant_membership_status_payload_is_scoped\(cancelled_review\)[\s\S]*"status"\] == "cancelled"[\s\S]*requested_again[\s\S]*status_code == 201[\s\S]*\[row\.status for row in rows\] == \["cancelled", "pending"\][\s\S]*rows\[0\]\.decision == "cancel"[\s\S]*rows\[0\]\.decided_by_user_id == requester\.id[\s\S]*CommunityDomainMembership\)\.count\(\) == 1/,
+  "Backend tests must prove non-member applicants can withdraw their own pending membership request, cancel responses hide reviewer-private fields, cancelled requests release the duplicate guard, and cancellation does not create membership."
+);
+
+assertContains(
+  "gmfn_backend/tests/test_community_domains.py",
+  /test_outsider_can_cancel_own_needs_changes_membership_request[\s\S]*decision": "needs_changes"[\s\S]*"status"\] == "needs_changes"[\s\S]*\/cancel[\s\S]*_assert_applicant_membership_status_payload_is_scoped\(cancelled_review\)[\s\S]*"status"\] == "cancelled"[\s\S]*requested_again[\s\S]*status_code == 201[\s\S]*\[row\.status for row in rows\] == \["cancelled", "pending"\][\s\S]*rows\[0\]\.decision == "cancel"[\s\S]*CommunityDomainMembership\)\.count\(\) == 1/,
+  "Backend tests must prove non-member applicants can withdraw their own needs-changes membership request, cancel responses hide reviewer-private fields, cancelled requests release the duplicate guard, and cancellation does not create membership."
+);
+
+assertContains(
+  "gmfn_backend/tests/test_community_domains.py",
+  /test_outsider_can_cancel_own_approved_unapplied_membership_request[\s\S]*decision": "approve"[\s\S]*"status"\] == "approved"[\s\S]*\/cancel[\s\S]*_assert_applicant_membership_status_payload_is_scoped\(cancelled_review\)[\s\S]*"status"\] == "cancelled"[\s\S]*before application[\s\S]*\/apply[\s\S]*apply_cancelled\.status_code == 409[\s\S]*community_domain_review_not_approved[\s\S]*requested_again\.status_code == 201[\s\S]*\[row\.status for row in rows\] == \["cancelled", "pending"\][\s\S]*rows\[0\]\.decision == "cancel"[\s\S]*approval_decisions[\s\S]*\{decision\.decision for decision in approval_decisions\} == \{"approve"\}[\s\S]*CommunityDomainMembership\)\.count\(\) == 1/,
+  "Backend tests must prove non-member applicants can withdraw their own approved-but-unapplied membership request, cancel responses hide reviewer-private fields while stored decision history remains, block later apply of that cancelled review, release the duplicate guard, and avoid membership creation."
+);
+
+assertContains(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  /def _membership_request_status_payload[\s\S]*_action_review_payload\(row\)[\s\S]*"decision"[\s\S]*"decision_note"[\s\S]*"decided_by_user_id"[\s\S]*"applied_by_user_id"[\s\S]*"policy_id"[\s\S]*"policy_key"[\s\S]*"recusal_count"[\s\S]*"decisions"[\s\S]*payload\.pop[\s\S]*"action_review": _membership_request_status_payload\(existing_request\)[\s\S]*@router\.get\(\s*"\/\{community_domain_id\}\/membership-requests\/my"[\s\S]*def list_my_community_domain_membership_requests[\s\S]*requested_by_user_id == int\(current_user\.id\)[\s\S]*subject_user_id == int\(current_user\.id\)[\s\S]*target_type == "domain_member"[\s\S]*target_id == str\(int\(current_user\.id\)\)[\s\S]*candidate_rows[\s\S]*_is_self_service_domain_membership_review_for_user[\s\S]*_membership_request_status_payload\(row\) for row in rows[\s\S]*own Community Domain membership requests only[\s\S]*does not expose the reviewer queue[\s\S]*reviewer identities[\s\S]*decision notes[\s\S]*or grant membership/,
+  "Backend must expose a requester-only and self-service-only Community Domain membership-request status route without exposing reviewer queues, reviewer identities, decision notes, decision records, governance policy identifiers, generic governance reviews, or granting membership."
+);
+
+assertContains(
+  "gmfn_backend/tests/test_community_domains.py",
+  /APPLICANT_MEMBERSHIP_STATUS_PRIVATE_KEYS[\s\S]*"decision"[\s\S]*"decision_note"[\s\S]*"decided_by_user_id"[\s\S]*"applied_by_user_id"[\s\S]*"policy_id"[\s\S]*"policy_key"[\s\S]*"recusal_count"[\s\S]*"decisions"[\s\S]*_assert_applicant_membership_status_payload_is_scoped[\s\S]*test_outsider_can_track_only_own_domain_membership_request[\s\S]*"config": \{"min_reviewers": 2\}[\s\S]*generic_self_review[\s\S]*payload_json=json\.dumps[\s\S]*\/membership-requests\/my[\s\S]*own Community Domain membership requests only[\s\S]*reviewer identities[\s\S]*decision notes[\s\S]*_assert_applicant_membership_status_payload_is_scoped\(my_review\)[\s\S]*required_approvals"\] == 2[\s\S]*approval_count"\] == 0[\s\S]*generic_self_review_id[\s\S]*First approval, still needs one more reviewer[\s\S]*_assert_applicant_membership_status_payload_is_scoped\(pending_review_item\)[\s\S]*pending_review_item\["status"\] == "pending_review"[\s\S]*pending_review_item\["approval_count"\] == 1[\s\S]*pending_review_item\["required_approvals"\] == 2[\s\S]*other_requests\.json\(\)\["total"\] == 0[\s\S]*db\.query\(CommunityDomainMembership\)[\s\S]*== 0[\s\S]*_assert_applicant_membership_status_payload_is_scoped\(rejected_item\)[\s\S]*review_row\.status == "rejected"[\s\S]*generic_row\.status == "pending"/,
+  "Backend tests must prove non-members can track only their own self-service Community Domain membership-request status, applicant status payloads carry approval progress for multi-approval policies, reviewer-private fields and governance policy identifiers stay hidden, generic self-targeted governance reviews stay hidden, and status tracking does not create membership."
 );
 
 assertContains(
@@ -1125,6 +1321,20 @@ assertContains(
   "src/lib/api.ts",
   /listMyCommunityDomainMembershipRequests[\s\S]*\/membership-requests\/my[\s\S]*status: params\.status/,
   "Frontend API layer must expose the requester-only Community Domain membership request status route.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /getCommunityDomainActionReviewLineage[\s\S]*membershipRequestLineage[\s\S]*loadingMembershipRequestLineage[\s\S]*membershipRequestLineageLoadSequence[\s\S]*setMembershipRequestLineage\(\[\]\)[\s\S]*getCommunityDomainActionReviewLineage\(requestDomainId, reviewId\)[\s\S]*Array\.isArray\(payload\?\.items\)[\s\S]*membershipRequestLineage=\{membershipRequestLineage\}[\s\S]*loadingMembershipRequestLineage=\{loadingMembershipRequestLineage\}/,
+  "Community Domain denied-access recovery must load applicant-safe membership request lineage and pass it to the recovery panel without stale cross-domain results.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/communityDomainDashboard/DashboardRecoveryPanel.tsx",
+  /membershipRequestLineage\?: ActionReviewItem\[\][\s\S]*loadingMembershipRequestLineage\?: boolean[\s\S]*membershipHistoryStepLabel[\s\S]*visibleMembershipRequestHistory = membershipRequestLineage\.slice\(-4\)[\s\S]*Request history[\s\S]*Checking request history[\s\S]*Review \$\{reviewId\} - [\s\S]*compactStatus\(item\.status\)/,
+  "Community Domain recovery panel must show compact applicant request history without adding another major action or exposing reviewer-private notes.",
   { frontend: true }
 );
 
@@ -1826,6 +2036,12 @@ assertContains(
 );
 
 assertContains(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  /def _community_domain_delegation_map_payload[\s\S]*\["pending", "pending_review", "needs_changes", "approved"\][\s\S]*"review_queue"[\s\S]*route_suffix="\/action-reviews"[\s\S]*review_open_delegated_reviews[\s\S]*def _community_domain_activity_map_payload[\s\S]*\["pending", "pending_review", "needs_changes", "approved"\][\s\S]*review_open_activity_related_reviews[\s\S]*\/action-reviews[\s\S]*def _community_domain_member_verification_map_payload[\s\S]*\["pending", "pending_review", "needs_changes", "approved"\][\s\S]*resolve_open_member_reviews[\s\S]*\/action-reviews/,
+  "Backend broad open-review readiness surfaces must route admins to the action-review list, not the pending-only reviewer queue, when their counts include needs_changes or approved reviews."
+);
+
+assertContains(
   "gmfn_backend/tests/test_community_domains.py",
   /test_activity_map_projects_template_activity_without_paid_activity_writes[\s\S]*\/activity-map[\s\S]*paid_activity_status[\s\S]*not_connected_in_this_slice[\s\S]*after_counts == before_counts/,
   "Backend tests must prove activity map projects template activity lanes and paid-activity boundaries without event, payment, marketplace, trust, or private-record writes."
@@ -2073,8 +2289,8 @@ assertContains(
 
 assertContains(
   "gmfn_backend/app/api/routes/community_domains.py",
-  /def _community_domain_readiness_payload[\s\S]*create a payment instruction[\s\S]*private evidence[\s\S]*@router\.get\("\/\{community_domain_id\}\/readiness"[\s\S]*def get_community_domain_readiness[\s\S]*_require_domain_member_scope/,
-  "Backend route must expose scoped read-only Community Domain readiness without setup, payment, activation, verification, permission, or privacy side effects."
+  /COMMUNITY_DOMAIN_ACTIVATION_REQUIREMENT_PRESETS[\s\S]*"authority_verification"[\s\S]*"route_suffix": "\/verification-requirements"[\s\S]*def _community_domain_readiness_payload[\s\S]*verify_authority[\s\S]*\/verification-requirements[\s\S]*create a payment instruction[\s\S]*private evidence[\s\S]*@router\.get\("\/\{community_domain_id\}\/readiness"[\s\S]*def get_community_domain_readiness[\s\S]*_require_domain_member_scope/,
+  "Backend route must expose scoped read-only Community Domain readiness without setup, payment, activation, verification, permission, or privacy side effects, and authority-verification guidance must point at the real verification-requirements route."
 );
 
 assertContains(
@@ -2091,14 +2307,14 @@ assertContains(
 
 assertContains(
   "gmfn_backend/app/api/routes/community_domains.py",
-  /def _community_domain_verification_requirements_payload[\s\S]*does not upload evidence[\s\S]*private evidence[\s\S]*@router\.get\("\/\{community_domain_id\}\/verification-requirements"[\s\S]*def get_community_domain_verification_requirements[\s\S]*_require_domain_member_scope/,
-  "Backend route must expose scoped read-only Community Domain verification requirements without evidence, verification, activation, billing, or privacy side effects."
+  /def _community_domain_verification_requirements_payload[\s\S]*\/verification-requirements[\s\S]*does not upload evidence[\s\S]*private evidence[\s\S]*@router\.get\("\/\{community_domain_id\}\/verification-requirements"[\s\S]*def get_community_domain_verification_requirements[\s\S]*_require_domain_member_scope/,
+  "Backend route must expose scoped read-only Community Domain verification requirements without evidence, verification, activation, billing, or privacy side effects, and its next-action guidance must point at the real verification-requirements route."
 );
 
 assertContains(
   "gmfn_backend/tests/test_community_domains.py",
-  /test_verification_requirements_project_type_specific_authority_without_verifying[\s\S]*\/verification-requirements[\s\S]*market_authority_letter[\s\S]*verification_status == "unverified"[\s\S]*CommunityDomainActionReview[\s\S]*count\(\) == 0/,
-  "Backend tests must prove verification requirements are type-specific guidance without verification or review side effects."
+  /test_verification_requirements_project_type_specific_authority_without_verifying[\s\S]*\/verification-requirements[\s\S]*primary_next_action[\s\S]*\/verification-requirements[\s\S]*market_authority_letter[\s\S]*endswith\(\s*"\/verification-requirements"[\s\S]*verification_status == "unverified"[\s\S]*CommunityDomainActionReview[\s\S]*count\(\) == 0/,
+  "Backend tests must prove verification requirements are type-specific guidance without verification or review side effects, and route hints must stay on the real verification-requirements route."
 );
 
 assertContains(
@@ -2144,9 +2360,45 @@ assertContains(
 );
 
 assertContains(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  /def _community_domain_node_operating_summary_payload[\s\S]*CommunityDomainActionReview\.status\.in_\(\s*\[\s*"pending",\s*"pending_review",\s*"approved"\s*\][\s\S]*Review local decisions or approved changes that still need apply[\s\S]*\/action-reviews\?community_node_id=\{int\(node\.id\)\}&include_descendants=true[\s\S]*review_local_action_reviews[\s\S]*def _community_domain_member_placement_summary_payload[\s\S]*CommunityDomainActionReview\.status\.in_\(\s*\[\s*"pending",\s*"pending_review",\s*"approved"\s*\][\s\S]*Review decisions or approved changes involving this member[\s\S]*\/action-reviews\?user_id=\{user_id\}[\s\S]*review_member_action_reviews[\s\S]*def _node_lifecycle_impact_summary[\s\S]*open_review_statuses = \{"pending", "pending_review", "approved"\}/,
+  "Backend node operating, member placement, and node lifecycle impact summaries must not treat needs_changes requester follow-up as open reviewer-queue work, and approved-but-unapplied work must route to action-review list views instead of the pending-only reviewer queue."
+);
+
+assertContains(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  /def list_community_domain_action_reviews[\s\S]*user_id: Optional\[int\] = Query\(default=None, ge=1\)[\s\S]*if user_id is not None[\s\S]*_get_user_or_404\(db, int\(user_id\)\)[\s\S]*CommunityDomainActionReview\.subject_user_id == int\(user_id\)[\s\S]*CommunityDomainActionReview\.target_id == str\(int\(user_id\)\)[\s\S]*"user_id": int\(user_id\) if user_id is not None else None[\s\S]*Optional[\s\S]*node and user filters narrow the admin-visible record list/,
+  "Backend action-review list route must support an admin-only member/user filter so member placement summaries can link to records involving the member without falling back to the pending-only reviewer queue."
+);
+
+assertContains(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  /def list_community_domain_reviewer_queue[\s\S]*community_node_id: Optional\[int\] = Query\(default=None, ge=1\)[\s\S]*include_descendants: bool = Query\(default=False\)[\s\S]*_get_node_or_404[\s\S]*node_scope_ids = _descendant_node_ids[\s\S]*if node is not None[\s\S]*CommunityDomainActionReview\.community_node_id\.in_\(node_scope_ids\)[\s\S]*"community_node_id": int\(node\.id\) if node is not None else None[\s\S]*"community_node_ids": node_scope_ids[\s\S]*Optional node filters narrow the queue before[\s\S]*reviewer authorization is checked/,
+  "Backend reviewer queue must honor community_node_id/include_descendants filters before reviewer authorization, so node-scoped queue route hints are not decorative."
+);
+
+assertContains(
   "gmfn_backend/tests/test_community_domains.py",
   /test_node_operating_summary_rolls_up_branch_without_writes[\s\S]*\/operating-summary[\s\S]*node_member\.role_change[\s\S]*private review payloads[\s\S]*CommunityDomainActionReviewDecision[\s\S]*count\(\) == 0/,
   "Backend tests must prove node operating summary rolls up branch members, policy, and reviews without deciding reviews or exposing private payloads."
+);
+
+assertContains(
+  "gmfn_backend/tests/test_community_domains.py",
+  /test_node_and_member_summaries_exclude_needs_changes_from_review_queue_guidance[\s\S]*review_row\.status = "needs_changes"[\s\S]*\/operating-summary[\s\S]*\/status-impact[\s\S]*\/placement-summary[\s\S]*open_action_reviews"\] == 0[\s\S]*open_action_review_count"\] == 0[\s\S]*open_reviews"\] == 0[\s\S]*review_row\.status == "needs_changes"/,
+  "Backend tests must prove node operating summaries, node status-impact snapshots, and member placement summaries keep needs_changes rows recorded without driving local reviewer-queue guidance."
+);
+
+assertContains(
+  "gmfn_backend/tests/test_community_domains.py",
+  /test_node_and_member_summaries_route_approved_work_to_action_review_list[\s\S]*review_row\.status = "approved"[\s\S]*\/operating-summary[\s\S]*\/placement-summary[\s\S]*\/action-reviews\?user_id=\{trader\.id\}[\s\S]*\/action-reviews\/reviewer-queue[\s\S]*open_by_status"\] == \{"approved": 1\}[\s\S]*review_local_action_reviews[\s\S]*\/action-reviews\?community_node_id=\{line_id\}&include_descendants=true[\s\S]*review_member_action_reviews[\s\S]*\/action-reviews\?user_id=\{trader\.id\}[\s\S]*filtered_payload\["total"\] == 1[\s\S]*status"\] == "approved"[\s\S]*scoped_queue\.json\(\)\["total"\] == 0/,
+  "Backend tests must prove approved-but-unapplied node/member work remains visible through action-review list route hints while the pending-only reviewer queue stays empty."
+);
+
+assertContains(
+  "gmfn_backend/tests/test_community_domains.py",
+  /test_reviewer_queue_filters_by_community_node_id[\s\S]*North Line[\s\S]*South Line[\s\S]*\/action-reviews\/reviewer-queue[\s\S]*\?community_node_id=\{north_id\}[\s\S]*params=\{"community_node_id": south_id\}[\s\S]*\{item\["id"\] for item in full_items\} == \{north_review_id, south_review_id\}[\s\S]*north_payload\["community_node_id"\] == north_id[\s\S]*north_payload\["community_node_ids"\] == \[north_id\][\s\S]*south_payload\["community_node_id"\] == south_id[\s\S]*south_payload\["items"\]\[0\]\["id"\] == south_review_id/,
+  "Backend tests must prove reviewer queue community_node_id filtering returns only the requested node's pending review while the unfiltered queue still shows all decidable reviews."
 );
 
 assertContains(
@@ -2163,8 +2415,8 @@ assertContains(
 
 assertContains(
   "gmfn_backend/tests/test_community_domains.py",
-  /test_member_placement_summary_projects_roles_without_writes[\s\S]*\/placement-summary[\s\S]*domain_member\.upsert[\s\S]*private review payloads[\s\S]*CommunityDomainActionReviewDecision[\s\S]*count\(\) == 0/,
-  "Backend tests must prove member placement summary projects roles and reviews without deciding reviews or exposing private payloads."
+  /test_member_placement_summary_projects_roles_without_writes[\s\S]*domain_member\.upsert[\s\S]*\/placement-summary[\s\S]*\/action-reviews\?user_id=\{teacher\.id\}[\s\S]*filtered_payload\["user_id"\] == teacher\.id[\s\S]*filtered_payload\["total"\] == 1[\s\S]*filtered_payload\["items"\]\[0\]\["id"\] == review_id[\s\S]*review_member_action_reviews[\s\S]*private review payloads[\s\S]*CommunityDomainActionReviewDecision[\s\S]*count\(\) == 0/,
+  "Backend tests must prove member placement summary projects roles and reviews without deciding reviews or exposing private payloads, and that its member-specific action-review route hint has a real filtered backend list."
 );
 
 assertContains(

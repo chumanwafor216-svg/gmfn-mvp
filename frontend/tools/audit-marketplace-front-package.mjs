@@ -31,6 +31,13 @@ function assertContains(file, source, pattern, message) {
   addFinding(file, source, -1, message);
 }
 
+function assertNotContains(file, source, pattern, message) {
+  let match;
+  while ((match = pattern.exec(source))) {
+    addFinding(file, source, match.index, message, match[0]);
+  }
+}
+
 const emojiPattern = /[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu;
 let emojiMatch;
 while ((emojiMatch = emojiPattern.exec(marketplaceSource))) {
@@ -73,6 +80,20 @@ assertContains(
   marketplaceSource,
   /const MARKETPLACE_GLYPH_ICON_MAP = \{[\s\S]*?bank: "financeInstitution"[\s\S]*?chart: "financeInstitution"[\s\S]*?ledger: "evidence"[\s\S]*?payment: "repaymentSchedule"[\s\S]*?pool: "financeInstitution"[\s\S]*?rosca: "repaymentSchedule"[\s\S]*?shop: "marketplace"[\s\S]*?support: "repaymentSchedule"[\s\S]*?trade: "marketplace"[\s\S]*?verify: "evidence"/,
   "Marketplace semantic icons must use the market stall, finance institution, repayment schedule, and certificate/evidence meanings for front-page lanes."
+);
+
+assertContains(
+  marketplaceFile,
+  marketplaceSource,
+  /parsedMarketplaceErrorDetail[\s\S]*err\?\.detail[\s\S]*err\?\.response\?\.data\?\.detail[\s\S]*JSON\.parse\(message\)[\s\S]*marketplaceErrorMessage[\s\S]*detail\?\.message[\s\S]*detail\?\.error[\s\S]*detail\?\.reason[\s\S]*err\?\.message[\s\S]*loadMarketplaceRepostTargetSuggestions[\s\S]*marketplaceErrorMessage[\s\S]*preparePublicShopLink[\s\S]*marketplaceErrorMessage[\s\S]*createMarketplaceRepostPaymentInstruction[\s\S]*marketplaceErrorMessage[\s\S]*submitMarketplaceRepost[\s\S]*marketplaceErrorMessage/,
+  "Marketplace high-touch action failures must parse structured backend error detail before falling back to plain route copy."
+);
+
+assertNotContains(
+  marketplaceFile,
+  marketplaceSource,
+  /safeStr\(err\?\.message\)\s*\|\|/g,
+  "Marketplace action failures must not use raw err.message fallbacks directly; use marketplaceErrorMessage instead."
 );
 
 assertContains(

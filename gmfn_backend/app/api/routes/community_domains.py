@@ -67,6 +67,12 @@ NODE_LOCAL_ASSIGNABLE_ROLES = {
     "line_member",
 }
 REVIEWER_QUEUE_PENDING_STATUSES = ("pending", "pending_review")
+MEMBERSHIP_REQUEST_OPEN_STATUSES = (
+    "pending",
+    "pending_review",
+    "needs_changes",
+    "approved",
+)
 COMMUNITY_DOMAIN_ROLE_PRESETS: list[dict[str, Any]] = [
     {
         "role_key": "owner",
@@ -344,7 +350,7 @@ COMMUNITY_DOMAIN_ACTIVATION_REQUIREMENT_PRESETS: list[dict[str, Any]] = [
         "label": "Authority verification",
         "summary": "The institution must be verified before it can be presented as a verified Community Domain.",
         "requires_admin": True,
-        "route_suffix": "/verification",
+        "route_suffix": "/verification-requirements",
     },
     {
         "requirement_key": "structure_ready",
@@ -1414,6 +1420,22 @@ def _action_review_payload(row: CommunityDomainActionReview) -> dict[str, Any]:
         "decided_at": _iso(row.decided_at),
         "applied_at": _iso(row.applied_at),
     }
+
+
+def _membership_request_status_payload(row: CommunityDomainActionReview) -> dict[str, Any]:
+    payload = _action_review_payload(row)
+    for key in (
+        "decision",
+        "decision_note",
+        "decided_by_user_id",
+        "applied_by_user_id",
+        "policy_id",
+        "policy_key",
+        "recusal_count",
+        "decisions",
+    ):
+        payload.pop(key, None)
+    return payload
 
 
 def _action_review_decision_payload(row: CommunityDomainActionReviewDecision) -> dict[str, Any]:
@@ -2899,7 +2921,7 @@ def _community_domain_readiness_payload(
                 else "Keep authority evidence current."
             ),
             ready=verification_status == "verified",
-            route_hint=f"/community-domains/{int(domain.id)}/verification",
+            route_hint=f"/community-domains/{int(domain.id)}/verification-requirements",
             requires_admin=True,
         ),
     ]
@@ -2925,7 +2947,7 @@ def _community_domain_readiness_payload(
         primary_next_action = {
             "action_key": "verify_authority",
             "label": "Verify Community Domain authority",
-            "route_hint": f"/community-domains/{int(domain.id)}/verification",
+            "route_hint": f"/community-domains/{int(domain.id)}/verification-requirements",
             "requires_admin": True,
         }
     elif open_review_count > 0:
@@ -3003,7 +3025,7 @@ def _community_domain_verification_requirements_payload(
                 "status": status,
                 "evidence_status": "not_tracked_in_this_slice",
                 "route_hint": (
-                    f"/community-domains/{int(domain.id)}/verification"
+                    f"/community-domains/{int(domain.id)}/verification-requirements"
                     if can_admin
                     else None
                 ),
@@ -3019,7 +3041,7 @@ def _community_domain_verification_requirements_payload(
         primary_next_action = {
             "action_key": "collect_authority_evidence",
             "label": "Prepare Community Domain authority evidence",
-            "route_hint": f"/community-domains/{int(domain.id)}/verification",
+            "route_hint": f"/community-domains/{int(domain.id)}/verification-requirements",
             "requires_admin": True,
         }
     elif not can_admin and not is_verified:
@@ -3034,7 +3056,7 @@ def _community_domain_verification_requirements_payload(
             "action_key": "keep_authority_current",
             "label": "Keep Community Domain authority evidence current",
             "route_hint": (
-                f"/community-domains/{int(domain.id)}/verification"
+                f"/community-domains/{int(domain.id)}/verification-requirements"
                 if can_admin
                 else None
             ),
@@ -3178,7 +3200,7 @@ def _community_domain_activation_requirements_payload(
         primary_next_action = {
             "action_key": "verify_authority",
             "label": "Verify Community Domain authority",
-            "route_hint": f"/community-domains/{int(domain.id)}/verification",
+            "route_hint": f"/community-domains/{int(domain.id)}/verification-requirements",
             "requires_admin": True,
         }
     else:
@@ -3316,7 +3338,7 @@ def _community_domain_node_operating_summary_payload(
         .filter(CommunityDomainActionReview.community_node_id.in_(node_scope_ids))
         .filter(
             CommunityDomainActionReview.status.in_(
-                ["pending", "pending_review", "needs_changes", "approved"]
+                ["pending", "pending_review", "approved"]
             )
         )
         .all()
@@ -3421,13 +3443,13 @@ def _community_domain_node_operating_summary_payload(
             "open" if impact_summary["open_action_review_count"] > 0 else "clear",
             int(impact_summary["open_action_review_count"]),
             (
-                "Review pending local decisions."
+                "Review local decisions or approved changes that still need apply."
                 if impact_summary["open_action_review_count"] > 0
                 else "No open local governance reviews."
             ),
             ready=impact_summary["open_action_review_count"] == 0,
             route_suffix=(
-                f"/action-reviews/reviewer-queue?community_node_id={int(node.id)}"
+                f"/action-reviews?community_node_id={int(node.id)}&include_descendants=true"
             ),
             requires_admin=True,
         ),
@@ -3442,11 +3464,11 @@ def _community_domain_node_operating_summary_payload(
         }
     elif impact_summary["open_action_review_count"] > 0:
         primary_next_action = {
-            "action_key": "review_local_queue",
-            "label": "Review local governance queue",
+            "action_key": "review_local_action_reviews",
+            "label": "Review local action reviews",
             "route_hint": (
-                f"/community-domains/{int(domain.id)}/action-reviews/reviewer-queue"
-                f"?community_node_id={int(node.id)}"
+                f"/community-domains/{int(domain.id)}/action-reviews"
+                f"?community_node_id={int(node.id)}&include_descendants=true"
             ),
             "requires_admin": True,
         }
@@ -3559,7 +3581,7 @@ def _community_domain_member_placement_summary_payload(
         )
         .filter(
             CommunityDomainActionReview.status.in_(
-                ["pending", "pending_review", "needs_changes", "approved"]
+                ["pending", "pending_review", "approved"]
             )
         )
         .all()
@@ -3656,12 +3678,12 @@ def _community_domain_member_placement_summary_payload(
             "open" if open_reviews else "clear",
             len(open_reviews),
             (
-                "Review pending decisions involving this member."
+                "Review decisions or approved changes involving this member."
                 if open_reviews
                 else "No open placement or membership reviews for this member."
             ),
             ready=not open_reviews,
-            route_suffix="/action-reviews/reviewer-queue",
+            route_suffix=f"/action-reviews?user_id={user_id}",
             requires_admin=True,
         ),
     ]
@@ -3675,9 +3697,11 @@ def _community_domain_member_placement_summary_payload(
         }
     elif open_reviews:
         primary_next_action = {
-            "action_key": "review_member_queue",
-            "label": "Review pending decisions involving this member",
-            "route_hint": f"/community-domains/{int(domain.id)}/action-reviews/reviewer-queue",
+            "action_key": "review_member_action_reviews",
+            "label": "Review action reviews involving this member",
+            "route_hint": (
+                f"/community-domains/{int(domain.id)}/action-reviews?user_id={user_id}"
+            ),
             "requires_admin": True,
         }
     elif not active_node_memberships:
@@ -10115,9 +10139,9 @@ def _community_domain_governance_coverage_payload(
         action_route = "/policies"
         action_admin = True
     elif len(open_reviews) > 0:
-        action_key = "review_governance_queue"
-        action_label = "Review open Community Domain governance decisions"
-        action_route = "/action-reviews/reviewer-queue"
+        action_key = "review_governance_action_reviews"
+        action_label = "Review open Community Domain action reviews"
+        action_route = "/action-reviews"
         action_admin = True
     else:
         action_key = "review_governance_model"
@@ -10381,7 +10405,7 @@ def _community_domain_analytics_payload(
             "label": "Action reviews",
             "count": len(open_reviews),
             "state": "open" if open_reviews else "clear",
-            "route_hint": route_hint("/action-reviews/reviewer-queue", requires_admin=True),
+            "route_hint": route_hint("/action-reviews", requires_admin=True),
             "requires_admin": True,
             "boundary": (
                 "Aggregate review analytics only. This does not expose private "
@@ -10444,11 +10468,9 @@ def _community_domain_analytics_payload(
         }
     elif open_reviews:
         primary_next_action = {
-            "action_key": "review_open_governance_decisions",
-            "label": "Review open governance decisions",
-            "route_hint": route_hint(
-                "/action-reviews/reviewer-queue", requires_admin=True
-            ),
+            "action_key": "review_open_action_reviews",
+            "label": "Review open action reviews",
+            "route_hint": route_hint("/action-reviews", requires_admin=True),
             "requires_admin": True,
         }
     else:
@@ -11605,7 +11627,7 @@ def _community_domain_evidence_release_readiness_payload(
         primary_next_action = {
             "action_key": "resolve_open_release_reviews",
             "label": "Resolve open reviews before evidence release",
-            "route_hint": route_hint("/action-reviews/reviewer-queue", requires_admin=True),
+            "route_hint": route_hint("/action-reviews", requires_admin=True),
             "requires_admin": True,
         }
     else:
@@ -11967,7 +11989,7 @@ def _community_domain_trust_relay_readiness_payload(
         primary_next_action = {
             "action_key": "resolve_open_trust_relay_reviews",
             "label": "Resolve open trust relay reviews",
-            "route_hint": route_hint("/action-reviews/reviewer-queue", requires_admin=True),
+            "route_hint": route_hint("/action-reviews", requires_admin=True),
             "requires_admin": True,
         }
     elif relay_evidence_count == 0:
@@ -12066,8 +12088,8 @@ COMMUNITY_DOMAIN_NOTIFICATION_SCOPE_LANES: list[dict[str, Any]] = [
     },
     {
         "lane_key": "reviewer_queue_notice",
-        "label": "Reviewer queue notice",
-        "route_suffix": "/action-reviews/reviewer-queue",
+        "label": "Notification review signal",
+        "route_suffix": "/action-reviews",
         "requires_admin": True,
     },
     {
@@ -12370,9 +12392,7 @@ def _community_domain_notification_scope_readiness_payload(
         primary_next_action = {
             "action_key": "resolve_open_notification_reviews",
             "label": "Resolve open notification reviews",
-            "route_hint": route_hint(
-                "/action-reviews/reviewer-queue", requires_admin=True
-            ),
+            "route_hint": route_hint("/action-reviews", requires_admin=True),
             "requires_admin": True,
         }
     else:
@@ -13994,9 +14014,9 @@ def _community_domain_record_privacy_map_payload(
         }
     elif open_review_count:
         primary_next_action = {
-            "action_key": "review_open_private_record_decisions",
-            "label": "Review open private-record decisions",
-            "route_hint": f"/community-domains/{domain_id}/action-reviews/reviewer-queue",
+            "action_key": "review_open_private_record_reviews",
+            "label": "Review open private-record reviews",
+            "route_hint": f"/community-domains/{domain_id}/action-reviews",
             "requires_admin": True,
         }
     else:
@@ -14592,7 +14612,7 @@ def _community_domain_compliance_map_payload(
         primary_next_action = {
             "action_key": "resolve_open_governance_reviews",
             "label": "Resolve open governance reviews",
-            "route_hint": f"/community-domains/{domain_id}/action-reviews/reviewer-queue",
+            "route_hint": f"/community-domains/{domain_id}/action-reviews",
             "requires_admin": True,
         }
     else:
@@ -14855,7 +14875,7 @@ def _community_domain_appeal_readiness_payload(
         primary_next_action = {
             "action_key": "resolve_open_reviews_before_appeals",
             "label": "Resolve open reviews before appeals",
-            "route_hint": f"/community-domains/{domain_id}/action-reviews/reviewer-queue",
+            "route_hint": f"/community-domains/{domain_id}/action-reviews",
             "requires_admin": True,
         }
     else:
@@ -15392,15 +15412,15 @@ def _community_domain_delegation_map_payload(
         ),
         lane(
             "review_queue",
-            "Delegated review queue",
+            "Delegated action reviews",
             "open" if open_reviews else "clear",
             not bool(open_reviews),
             safe_admin_count(len(open_reviews)),
             "Review open governance requests before treating delegation as stable.",
-            route_suffix="/action-reviews/reviewer-queue",
+            route_suffix="/action-reviews",
             requires_admin=True,
             boundary=(
-                "Review queue projection only. This does not expose private "
+                "Review record projection only. This does not expose private "
                 "review payloads, create decisions, apply decisions, or cancel "
                 "reviews."
             ),
@@ -15455,9 +15475,9 @@ def _community_domain_delegation_map_payload(
         }
     elif open_reviews:
         primary_next_action = {
-            "action_key": "review_open_delegated_decisions",
-            "label": "Review open delegated decisions",
-            "route_hint": f"/community-domains/{domain_id}/action-reviews/reviewer-queue",
+            "action_key": "review_open_delegated_reviews",
+            "label": "Review open delegated action reviews",
+            "route_hint": f"/community-domains/{domain_id}/action-reviews",
             "requires_admin": True,
         }
     else:
@@ -16026,9 +16046,9 @@ def _community_domain_activity_map_payload(
         }
     elif open_review_count:
         primary_next_action = {
-            "action_key": "review_open_activity_related_decisions",
-            "label": "Review open activity-related governance decisions",
-            "route_hint": f"/community-domains/{domain_id}/action-reviews/reviewer-queue",
+            "action_key": "review_open_activity_related_reviews",
+            "label": "Review open activity-related governance reviews",
+            "route_hint": f"/community-domains/{domain_id}/action-reviews",
             "requires_admin": True,
         }
     else:
@@ -16653,7 +16673,7 @@ def _community_domain_member_verification_map_payload(
         primary_next_action = {
             "action_key": "resolve_open_member_reviews",
             "label": "Resolve open member verification-related reviews",
-            "route_hint": f"/community-domains/{domain_id}/action-reviews/reviewer-queue",
+            "route_hint": f"/community-domains/{domain_id}/action-reviews",
             "requires_admin": True,
         }
     else:
@@ -17178,6 +17198,155 @@ def _ensure_member_action_review_target_matches(
         )
 
 
+def _is_self_service_domain_membership_review_for_user(
+    row: CommunityDomainActionReview,
+    *,
+    user_id: int,
+) -> bool:
+    if _clean_role(row.action_key) != "domain_member.upsert":
+        return False
+    if _clean_role(row.target_type or "") != "domain_member":
+        return False
+    if int(row.requested_by_user_id) != int(user_id):
+        return False
+    if row.subject_user_id is None or int(row.subject_user_id) != int(user_id):
+        return False
+    try:
+        target_user_id = int(_clean_str(row.target_id) or "0")
+    except (TypeError, ValueError):
+        return False
+    payload = _json_load(row.payload_json)
+    try:
+        payload_user_id = int(payload.get("user_id") or 0)
+    except (TypeError, ValueError):
+        return False
+    return (
+        target_user_id == int(user_id)
+        and payload_user_id == int(user_id)
+        and "role" in payload
+        and _clean_role(payload.get("role")) == "member"
+        and "status" in payload
+        and _clean_role(payload.get("status")) == "active"
+        and "previous_status" in payload
+    )
+
+
+def _self_service_membership_review_ids_with_applied_descendant(
+    rows: list[CommunityDomainActionReview],
+) -> set[int]:
+    rows_by_id = {int(row.id): row for row in rows if row.id is not None}
+    ancestor_ids: set[int] = set()
+    for row in rows:
+        if _clean_role(row.status) != "applied":
+            continue
+        seen_ids: set[int] = set()
+        parent_id = int(row.parent_review_id) if row.parent_review_id is not None else None
+        while parent_id is not None and parent_id in rows_by_id and parent_id not in seen_ids:
+            ancestor_ids.add(parent_id)
+            seen_ids.add(parent_id)
+            parent = rows_by_id[parent_id]
+            parent_id = (
+                int(parent.parent_review_id)
+                if parent.parent_review_id is not None
+                else None
+            )
+    return ancestor_ids
+
+
+def _normalize_self_service_membership_revision_payload(
+    row: CommunityDomainActionReview,
+    *,
+    db: Session,
+    community_domain_id: int,
+    submitted_payload: Optional[dict[str, Any]],
+    user_id: int,
+) -> dict[str, Any]:
+    previous_payload = _json_load(row.payload_json)
+    previous_status = _clean_role(
+        str(previous_payload.get("previous_status") or "none"),
+        "none",
+    )
+    membership = _domain_membership_for_user(
+        db,
+        community_domain_id=int(community_domain_id),
+        user_id=int(user_id),
+    )
+    current_previous_status = (
+        _clean_role(membership.status, "inactive")
+        if membership is not None
+        else "none"
+    )
+    if current_previous_status == "active":
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "community_domain_member_already_active",
+                "message": "This account is already an active member of this Community Domain.",
+            },
+        )
+    if previous_status != current_previous_status:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "community_domain_member_review_stale",
+                "message": (
+                    "This Community Domain member review no longer matches "
+                    "the member's current status."
+                ),
+            },
+        )
+    proposed_payload = dict(submitted_payload or {})
+
+    if "user_id" in proposed_payload and _payload_int(proposed_payload, "user_id") != int(user_id):
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "community_domain_membership_revision_scope_mismatch",
+                "message": "Membership request revisions can only update the requester's own access request.",
+            },
+        )
+    if "role" in proposed_payload and _clean_role(proposed_payload.get("role")) != "member":
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "community_domain_membership_revision_scope_mismatch",
+                "message": "Self-service membership request revisions cannot change the requested member role.",
+            },
+        )
+    if "status" in proposed_payload and _clean_role(proposed_payload.get("status")) != "active":
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "community_domain_membership_revision_scope_mismatch",
+                "message": "Self-service membership request revisions cannot change the requested member status.",
+            },
+        )
+    if (
+        "previous_status" in proposed_payload
+        and _clean_role(str(proposed_payload.get("previous_status") or ""), "")
+        != previous_status
+    ):
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "community_domain_membership_revision_scope_mismatch",
+                "message": "Self-service membership request revisions cannot change the reviewed previous membership status.",
+            },
+        )
+
+    normalized = {
+        "user_id": int(user_id),
+        "role": "member",
+        "status": "active",
+        "previous_status": previous_status,
+    }
+    title_source = proposed_payload if submitted_payload is not None else previous_payload
+    title = _clean_str(title_source.get("title"))
+    if title:
+        normalized["title"] = title
+    return normalized
+
+
 def _domain_membership_for_user(
     db: Session,
     *,
@@ -17353,7 +17522,7 @@ def _node_lifecycle_impact_summary(
         node=node,
         include_descendants=True,
     )
-    open_review_statuses = {"pending", "pending_review", "needs_changes", "approved"}
+    open_review_statuses = {"pending", "pending_review", "approved"}
     open_reviews = (
         db.query(CommunityDomainActionReview)
         .filter(CommunityDomainActionReview.community_domain_id == int(domain.id))
@@ -19585,27 +19754,52 @@ def request_community_domain_membership(
             },
         )
 
-    existing_request = (
+    existing_request_candidates = (
         db.query(CommunityDomainActionReview)
         .filter(CommunityDomainActionReview.community_domain_id == int(domain.id))
         .filter(CommunityDomainActionReview.action_key == "domain_member.upsert")
         .filter(CommunityDomainActionReview.subject_user_id == int(current_user.id))
         .filter(CommunityDomainActionReview.target_type == "domain_member")
         .filter(CommunityDomainActionReview.target_id == str(int(current_user.id)))
-        .filter(CommunityDomainActionReview.status.in_(REVIEWER_QUEUE_PENDING_STATUSES))
         .order_by(
             CommunityDomainActionReview.created_at.desc(),
             CommunityDomainActionReview.id.desc(),
         )
-        .first()
+        .all()
+    )
+    self_service_request_candidates = [
+        row
+        for row in existing_request_candidates
+        if _is_self_service_domain_membership_review_for_user(
+            row,
+            user_id=int(current_user.id),
+        )
+    ]
+    applied_descendant_ancestor_ids = (
+        _self_service_membership_review_ids_with_applied_descendant(
+            self_service_request_candidates
+        )
+    )
+    existing_request = next(
+        (
+            row
+            for row in self_service_request_candidates
+            if _clean_role(row.status) in MEMBERSHIP_REQUEST_OPEN_STATUSES
+            and int(row.id) not in applied_descendant_ancestor_ids
+        ),
+        None,
     )
     if existing_request is not None:
         raise HTTPException(
             status_code=409,
             detail={
                 "code": "community_domain_membership_request_pending",
-                "message": "This account already has a pending Community Domain membership request.",
-                "action_review": _action_review_payload(existing_request),
+                "message": (
+                    "This account already has an open Community Domain "
+                    "membership request that must be resolved before a new "
+                    "request can be created."
+                ),
+                "action_review": _membership_request_status_payload(existing_request),
             },
         )
 
@@ -19619,6 +19813,11 @@ def request_community_domain_membership(
         "user_id": int(current_user.id),
         "role": "member",
         "status": "active",
+        "previous_status": (
+            _clean_role(existing_membership.status, "inactive")
+            if existing_membership is not None
+            else "none"
+        ),
     }
     title = _clean_str(payload.title)
     if title:
@@ -19643,7 +19842,7 @@ def request_community_domain_membership(
     return {
         "ok": True,
         "community_domain_id": int(domain.id),
-        "action_review": _action_review_payload(row),
+        "action_review": _membership_request_status_payload(row),
         "boundary": (
             "Membership request recorded as a Community Domain governance review. "
             "This does not add the member, place the member in a node, assign "
@@ -19678,20 +19877,28 @@ def list_my_community_domain_membership_requests(
     if status:
         query = query.filter(CommunityDomainActionReview.status == _clean_role(status))
 
-    rows = query.order_by(
+    candidate_rows = query.order_by(
         CommunityDomainActionReview.created_at.desc(),
         CommunityDomainActionReview.id.desc(),
     ).all()
+    rows = [
+        row
+        for row in candidate_rows
+        if _is_self_service_domain_membership_review_for_user(
+            row,
+            user_id=int(current_user.id),
+        )
+    ]
     return {
         "ok": True,
         "community_domain_id": int(domain.id),
-        "items": [_action_review_payload(row) for row in rows],
+        "items": [_membership_request_status_payload(row) for row in rows],
         "total": len(rows),
         "boundary": (
             "Current user's own Community Domain membership requests only. "
-            "This does not expose the reviewer queue, member lists, owner notes "
-            "outside the review payload, private evidence, governance records, "
-            "or grant membership."
+            "This does not expose the reviewer queue, reviewer identities, "
+            "decision notes, decision records, member lists, private evidence, "
+            "governance records, or grant membership."
         ),
     }
 
@@ -20009,6 +20216,7 @@ def list_community_domain_action_reviews(
     community_domain_id: int,
     community_node_id: Optional[int] = Query(default=None, ge=1),
     include_descendants: bool = Query(default=False),
+    user_id: Optional[int] = Query(default=None, ge=1),
     status: Optional[str] = Query(default=None, max_length=24),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
@@ -20042,6 +20250,21 @@ def list_community_domain_action_reviews(
     )
     if node is not None:
         query = query.filter(CommunityDomainActionReview.community_node_id.in_(node_scope_ids))
+    if user_id is not None:
+        _get_user_or_404(db, int(user_id))
+        query = query.filter(
+            (
+                CommunityDomainActionReview.subject_user_id == int(user_id)
+            )
+            | (
+                (
+                    CommunityDomainActionReview.target_type.in_(
+                        ["domain_member", "member", "node_member"]
+                    )
+                )
+                & (CommunityDomainActionReview.target_id == str(int(user_id)))
+            )
+        )
     if status:
         query = query.filter(CommunityDomainActionReview.status == _clean_role(status))
 
@@ -20055,11 +20278,14 @@ def list_community_domain_action_reviews(
         "community_node_id": int(node.id) if node is not None else None,
         "community_node_ids": node_scope_ids,
         "include_descendants": bool(include_descendants),
+        "user_id": int(user_id) if user_id is not None else None,
         "items": [_action_review_payload(row) for row in rows],
         "total": len(rows),
         "boundary": (
             "Action reviews are decision records. They do not execute the requested "
-            "business action until a later endpoint applies that decision."
+            "business action until a later endpoint applies that decision. Optional "
+            "node and user filters narrow the admin-visible record list; they do not "
+            "grant reviewer authority or expose records outside the viewer's domain scope."
         ),
     }
 
@@ -20230,23 +20456,41 @@ def list_my_community_domain_action_reviews(
 @router.get("/{community_domain_id}/action-reviews/reviewer-queue", response_model=dict[str, Any])
 def list_community_domain_reviewer_queue(
     community_domain_id: int,
+    community_node_id: Optional[int] = Query(default=None, ge=1),
+    include_descendants: bool = Query(default=False),
     include_decided: bool = Query(default=False),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     domain = _get_domain_or_404(db, community_domain_id)
     _require_domain_member_scope(db, domain=domain, current_user=current_user)
+    node: Optional[CommunityNode] = None
+    node_scope_ids: list[int] = []
+    if community_node_id is not None:
+        node = _get_node_or_404(
+            db,
+            community_domain_id=int(domain.id),
+            community_node_id=int(community_node_id),
+        )
+        node_scope_ids = _descendant_node_ids(
+            db,
+            domain=domain,
+            node=node,
+            include_descendants=bool(include_descendants),
+        )
 
-    candidate_rows = (
+    query = (
         db.query(CommunityDomainActionReview)
         .filter(CommunityDomainActionReview.community_domain_id == int(domain.id))
-        .filter(CommunityDomainActionReview.status.in_(["pending", "pending_review"]))
-        .order_by(
-            CommunityDomainActionReview.created_at.asc(),
-            CommunityDomainActionReview.id.asc(),
-        )
-        .all()
+        .filter(CommunityDomainActionReview.status.in_(REVIEWER_QUEUE_PENDING_STATUSES))
     )
+    if node is not None:
+        query = query.filter(CommunityDomainActionReview.community_node_id.in_(node_scope_ids))
+
+    candidate_rows = query.order_by(
+        CommunityDomainActionReview.created_at.asc(),
+        CommunityDomainActionReview.id.asc(),
+    ).all()
 
     rows = []
     for row in candidate_rows:
@@ -20263,12 +20507,17 @@ def list_community_domain_reviewer_queue(
     return {
         "ok": True,
         "community_domain_id": int(domain.id),
+        "community_node_id": int(node.id) if node is not None else None,
+        "community_node_ids": node_scope_ids,
+        "include_descendants": bool(include_descendants),
         "items": [_action_review_payload(row) for row in rows],
         "total": len(rows),
         "include_decided": bool(include_decided),
         "boundary": (
             "Reviewer queue only lists pending reviews this user is currently "
-            "allowed to decide. It does not assign reviewers or send notifications."
+            "allowed to decide. Optional node filters narrow the queue before "
+            "reviewer authorization is checked. It does not assign reviewers or "
+            "send notifications."
         ),
     }
 
@@ -20805,7 +21054,6 @@ def get_community_domain_action_review_lineage(
     current_user: User = Depends(get_current_user),
 ):
     domain = _get_domain_or_404(db, community_domain_id)
-    _require_domain_member_scope(db, domain=domain, current_user=current_user)
     row = _get_action_review_or_404(
         db,
         community_domain_id=int(domain.id),
@@ -20846,22 +21094,37 @@ def get_community_domain_action_review_lineage(
         seen_ids.add(int(child.id))
         current = child
 
-    if not any(
-        _can_view_action_review(
-            db,
-            domain=domain,
-            row=item,
-            current_user=current_user,
+    can_view_as_self_service_requester = all(
+        _is_self_service_domain_membership_review_for_user(
+            item,
+            user_id=int(current_user.id),
         )
         for item in lineage
-    ):
-        raise HTTPException(
-            status_code=403,
-            detail={
-                "code": "community_domain_review_lineage_not_visible",
-                "message": "Only users who can view a review in this chain can view its lineage.",
-            },
-        )
+    )
+    if not can_view_as_self_service_requester:
+        _require_domain_member_scope(db, domain=domain, current_user=current_user)
+        if not any(
+            _can_view_action_review(
+                db,
+                domain=domain,
+                row=item,
+                current_user=current_user,
+            )
+            for item in lineage
+        ):
+            raise HTTPException(
+                status_code=403,
+                detail={
+                    "code": "community_domain_review_lineage_not_visible",
+                    "message": "Only users who can view a review in this chain can view its lineage.",
+                },
+            )
+
+    items = (
+        [_membership_request_status_payload(item) for item in lineage]
+        if can_view_as_self_service_requester
+        else [_action_review_payload(item) for item in lineage]
+    )
 
     root_review = lineage[0]
     latest_review = lineage[-1]
@@ -20871,7 +21134,7 @@ def get_community_domain_action_review_lineage(
         "root_review_id": int(root_review.id),
         "latest_review_id": int(latest_review.id),
         "requested_review_id": int(row.id),
-        "items": [_action_review_payload(item) for item in lineage],
+        "items": items,
         "total": len(lineage),
         "boundary": (
             "Lineage shows linked revisions for one Community Domain action "
@@ -20879,6 +21142,51 @@ def get_community_domain_action_review_lineage(
             "or apply any review."
         ),
     }
+
+
+def _latest_action_review_revision(
+    db: Session,
+    *,
+    community_domain_id: int,
+    review_id: int,
+) -> Optional[CommunityDomainActionReview]:
+    return (
+        db.query(CommunityDomainActionReview)
+        .filter(CommunityDomainActionReview.community_domain_id == int(community_domain_id))
+        .filter(CommunityDomainActionReview.parent_review_id == int(review_id))
+        .order_by(
+            CommunityDomainActionReview.created_at.desc(),
+            CommunityDomainActionReview.id.desc(),
+        )
+        .first()
+    )
+
+
+def _raise_if_action_review_has_revision(
+    db: Session,
+    *,
+    community_domain_id: int,
+    row: CommunityDomainActionReview,
+) -> None:
+    existing_revision = _latest_action_review_revision(
+        db,
+        community_domain_id=int(community_domain_id),
+        review_id=int(row.id),
+    )
+    if existing_revision is None:
+        return
+    raise HTTPException(
+        status_code=409,
+        detail={
+            "code": "community_domain_review_has_revision",
+            "message": (
+                "This Community Domain action review already has a follow-up "
+                "revision. Continue from the revision instead of acting on the "
+                "earlier review."
+            ),
+            "existing_action_review": _action_review_payload(existing_revision),
+        },
+    )
 
 
 @router.post(
@@ -20894,12 +21202,19 @@ def revise_community_domain_action_review(
     current_user: User = Depends(get_current_user),
 ):
     domain = _get_domain_or_404(db, community_domain_id)
-    _require_domain_member_scope(db, domain=domain, current_user=current_user)
     row = _get_action_review_or_404(
         db,
         community_domain_id=int(domain.id),
         review_id=int(review_id),
     )
+    is_self_service_membership_revision = (
+        _is_self_service_domain_membership_review_for_user(
+            row,
+            user_id=int(current_user.id),
+        )
+    )
+    if not is_self_service_membership_revision:
+        _require_domain_member_scope(db, domain=domain, current_user=current_user)
 
     if int(row.requested_by_user_id) != int(current_user.id):
         raise HTTPException(
@@ -20931,6 +21246,11 @@ def revise_community_domain_action_review(
         .first()
     )
     if existing_revision is not None:
+        existing_revision_payload = (
+            _membership_request_status_payload(existing_revision)
+            if is_self_service_membership_revision
+            else _action_review_payload(existing_revision)
+        )
         raise HTTPException(
             status_code=409,
             detail={
@@ -20939,7 +21259,7 @@ def revise_community_domain_action_review(
                     "This Community Domain action review already has a revision. "
                     "Continue from the existing revision instead of creating a fork."
                 ),
-                "existing_action_review": _action_review_payload(existing_revision),
+                "existing_action_review": existing_revision_payload,
             },
         )
 
@@ -20950,6 +21270,48 @@ def revise_community_domain_action_review(
         if "payload" in fields_set
         else _json_load(row.payload_json)
     )
+    if is_self_service_membership_revision:
+        if (
+            "subject_user_id" in fields_set
+            and int(payload.subject_user_id or 0) != int(current_user.id)
+        ):
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "code": "community_domain_membership_revision_scope_mismatch",
+                    "message": "Membership request revisions can only update the requester's own access request.",
+                },
+            )
+        if (
+            "target_type" in fields_set
+            and payload.target_type
+            and _clean_role(payload.target_type) != "domain_member"
+        ):
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "code": "community_domain_membership_revision_scope_mismatch",
+                    "message": "Membership request revisions must remain scoped to Community Domain membership.",
+                },
+            )
+        if (
+            "target_id" in fields_set
+            and _clean_str(payload.target_id) != str(int(current_user.id))
+        ):
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "code": "community_domain_membership_revision_scope_mismatch",
+                    "message": "Membership request revisions can only target the requester.",
+                },
+            )
+        revision_payload = _normalize_self_service_membership_revision_payload(
+            row,
+            db=db,
+            community_domain_id=int(domain.id),
+            submitted_payload=payload.payload if "payload" in fields_set else None,
+            user_id=int(current_user.id),
+        )
 
     node_id: Optional[int] = (
         int(row.community_node_id) if row.community_node_id is not None else None
@@ -21002,22 +21364,34 @@ def revise_community_domain_action_review(
             )
 
     subject_user_id = (
-        payload.subject_user_id
-        if "subject_user_id" in fields_set
-        else row.subject_user_id
+        int(current_user.id)
+        if is_self_service_membership_revision
+        else (
+            payload.subject_user_id
+            if "subject_user_id" in fields_set
+            else row.subject_user_id
+        )
     )
     if subject_user_id is not None:
         _get_user_or_404(db, int(subject_user_id))
 
     target_type = (
-        _clean_role(payload.target_type)
-        if "target_type" in fields_set and payload.target_type
-        else row.target_type
+        "domain_member"
+        if is_self_service_membership_revision
+        else (
+            _clean_role(payload.target_type)
+            if "target_type" in fields_set and payload.target_type
+            else row.target_type
+        )
     )
     target_id = (
-        _clean_str(payload.target_id) or None
-        if "target_id" in fields_set
-        else row.target_id
+        str(int(current_user.id))
+        if is_self_service_membership_revision
+        else (
+            _clean_str(payload.target_id) or None
+            if "target_id" in fields_set
+            else row.target_id
+        )
     )
     request_note = (
         _clean_str(payload.request_note) or None
@@ -21076,11 +21450,21 @@ def revise_community_domain_action_review(
     db.add(revision)
     db.commit()
     db.refresh(revision)
+    previous_action_review_payload = (
+        _membership_request_status_payload(row)
+        if is_self_service_membership_revision
+        else _action_review_payload(row)
+    )
+    action_review_payload = (
+        _membership_request_status_payload(revision)
+        if is_self_service_membership_revision
+        else _action_review_payload(revision)
+    )
     return {
         "ok": True,
         "community_domain_id": int(domain.id),
-        "previous_action_review": _action_review_payload(row),
-        "action_review": _action_review_payload(revision),
+        "previous_action_review": previous_action_review_payload,
+        "action_review": action_review_payload,
         "boundary": (
             "Revision created as a new pending review. The previous review remains "
             "unchanged for audit history; this does not apply the requested action."
@@ -21097,12 +21481,19 @@ def cancel_community_domain_action_review(
     current_user: User = Depends(get_current_user),
 ):
     domain = _get_domain_or_404(db, community_domain_id)
-    _require_domain_member_scope(db, domain=domain, current_user=current_user)
     row = _get_action_review_or_404(
         db,
         community_domain_id=int(domain.id),
         review_id=int(review_id),
     )
+    is_self_service_membership_cancel = (
+        _is_self_service_domain_membership_review_for_user(
+            row,
+            user_id=int(current_user.id),
+        )
+    )
+    if not is_self_service_membership_cancel:
+        _require_domain_member_scope(db, domain=domain, current_user=current_user)
 
     is_requester = int(row.requested_by_user_id) == int(current_user.id)
     is_scoped_admin = False
@@ -21127,12 +21518,46 @@ def cancel_community_domain_action_review(
             },
         )
 
-    if _clean_role(row.status) not in {"pending", "pending_review"}:
+    if is_self_service_membership_cancel and is_requester:
+        existing_revision = (
+            db.query(CommunityDomainActionReview)
+            .filter(CommunityDomainActionReview.community_domain_id == int(domain.id))
+            .filter(CommunityDomainActionReview.parent_review_id == int(row.id))
+            .order_by(
+                CommunityDomainActionReview.created_at.desc(),
+                CommunityDomainActionReview.id.desc(),
+            )
+            .first()
+        )
+        if existing_revision is not None:
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "code": "community_domain_review_has_revision",
+                    "message": (
+                        "This Community Domain membership request already has a "
+                        "follow-up revision. Continue from the revision instead "
+                        "of cancelling the earlier request."
+                    ),
+                    "existing_action_review": _membership_request_status_payload(
+                        existing_revision
+                    ),
+                },
+            )
+
+    cancellable_statuses = (
+        {"pending", "pending_review", "needs_changes", "approved"}
+        if is_self_service_membership_cancel and is_requester
+        else {"pending", "pending_review"}
+    )
+    if _clean_role(row.status) not in cancellable_statuses:
         raise HTTPException(
             status_code=409,
             detail={
                 "code": "community_domain_review_not_cancellable",
-                "message": "Only pending Community Domain action reviews can be cancelled.",
+                "message": (
+                    "This Community Domain action review cannot be cancelled in its current status."
+                ),
             },
         )
 
@@ -21145,12 +21570,17 @@ def cancel_community_domain_action_review(
     db.add(row)
     db.commit()
     db.refresh(row)
+    action_review_payload = (
+        _membership_request_status_payload(row)
+        if is_self_service_membership_cancel and is_requester
+        else _action_review_payload(row)
+    )
     return {
         "ok": True,
         "community_domain_id": int(domain.id),
-        "action_review": _action_review_payload(row),
+        "action_review": action_review_payload,
         "boundary": (
-            "Action review cancelled before approval/application. This does not "
+            "Action review cancelled before application. This does not "
             "delete the audit record or reverse any already-applied business action."
         ),
     }
@@ -21193,6 +21623,12 @@ def decide_community_domain_action_review(
                 "message": "The requester cannot decide their own Community Domain action review.",
             },
         )
+
+    _raise_if_action_review_has_revision(
+        db,
+        community_domain_id=int(domain.id),
+        row=row,
+    )
 
     current_status = _clean_role(row.status)
     if current_status == "applied":
@@ -21350,6 +21786,12 @@ def apply_community_domain_action_review(
             },
         )
 
+    _raise_if_action_review_has_revision(
+        db,
+        community_domain_id=int(domain.id),
+        row=row,
+    )
+
     if _clean_role(row.status) == "applied":
         raise HTTPException(
             status_code=409,
@@ -21401,6 +21843,31 @@ def apply_community_domain_action_review(
             user_id=int(user_id),
         )
         created = membership is None
+        requested_status = _clean_str(str(payload.get("status") or "active"), "active")
+        expected_previous_status = (
+            _clean_role(str(payload.get("previous_status") or ""), "")
+            if "previous_status" in payload
+            else ""
+        )
+        current_previous_status = (
+            _clean_role(membership.status, "inactive")
+            if membership is not None
+            else "none"
+        )
+        if (
+            expected_previous_status
+            and expected_previous_status != current_previous_status
+        ):
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "code": "community_domain_member_review_stale",
+                    "message": (
+                        "This Community Domain member review no longer matches "
+                        "the member's current status."
+                    ),
+                },
+            )
         if membership is None:
             membership = CommunityDomainMembership(
                 community_domain_id=int(domain.id),
@@ -21409,7 +21876,7 @@ def apply_community_domain_action_review(
             db.add(membership)
 
         membership.role = requested_role
-        membership.status = _clean_str(str(payload.get("status") or "active"), "active")
+        membership.status = requested_status
         membership.title = _clean_str(str(payload.get("title") or "")) or None
         row.status = "applied"
         row.applied_by_user_id = int(current_user.id)

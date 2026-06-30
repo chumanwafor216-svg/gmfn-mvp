@@ -2964,6 +2964,7 @@ export async function listCommunityDomainActionReviews(
   params: {
     community_node_id?: number | string | null;
     include_descendants?: boolean | null;
+    user_id?: number | string | null;
     status?: string | null;
   } = {}
 ): Promise<any> {
@@ -2971,6 +2972,7 @@ export async function listCommunityDomainActionReviews(
     `${communityDomainPath(communityDomainId, "/action-reviews")}${buildQuery({
       community_node_id: params.community_node_id || undefined,
       include_descendants: params.include_descendants ? true : undefined,
+      user_id: params.user_id || undefined,
       status: params.status || undefined,
     })}`,
     "GET"
@@ -3007,10 +3009,16 @@ export async function listMyCommunityDomainActionReviews(
 
 export async function getCommunityDomainReviewerQueue(
   communityDomainId: number | string,
-  params: { include_decided?: boolean | null } = {}
+  params: {
+    community_node_id?: number | string | null;
+    include_descendants?: boolean | null;
+    include_decided?: boolean | null;
+  } = {}
 ): Promise<any> {
   return httpJson(
     `${communityDomainPath(communityDomainId, "/action-reviews/reviewer-queue")}${buildQuery({
+      community_node_id: params.community_node_id || undefined,
+      include_descendants: params.include_descendants ? true : undefined,
       include_decided: params.include_decided ? true : undefined,
     })}`,
     "GET"

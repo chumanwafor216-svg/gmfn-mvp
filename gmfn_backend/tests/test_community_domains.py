@@ -63,6 +63,22 @@ def _seed_user(user_id: int, email: str, role: str = "user") -> User:
         )
 
 
+APPLICANT_MEMBERSHIP_STATUS_PRIVATE_KEYS = {
+    "decision",
+    "decision_note",
+    "decided_by_user_id",
+    "applied_by_user_id",
+    "policy_id",
+    "policy_key",
+    "recusal_count",
+    "decisions",
+}
+
+
+def _assert_applicant_membership_status_payload_is_scoped(payload: dict) -> None:
+    assert APPLICANT_MEMBERSHIP_STATUS_PRIVATE_KEYS.isdisjoint(payload.keys())
+
+
 def test_community_domain_availability_reports_available_and_taken(
     client: TestClient,
 ):
@@ -8163,7 +8179,7 @@ def test_evidence_release_readiness_projects_public_safe_release_without_writes(
     assert readiness["primary_next_action"] == {
         "action_key": "resolve_open_release_reviews",
         "label": "Resolve open reviews before evidence release",
-        "route_hint": f"/community-domains/{domain_id}/action-reviews/reviewer-queue",
+        "route_hint": f"/community-domains/{domain_id}/action-reviews",
         "requires_admin": True,
     }
     assert "read-only public-safe proof planning" in readiness["boundary"]
@@ -8456,7 +8472,7 @@ def test_trust_relay_readiness_projects_relay_path_without_writes(
     assert readiness["primary_next_action"] == {
         "action_key": "resolve_open_trust_relay_reviews",
         "label": "Resolve open trust relay reviews",
-        "route_hint": f"/community-domains/{domain_id}/action-reviews/reviewer-queue",
+        "route_hint": f"/community-domains/{domain_id}/action-reviews",
         "requires_admin": True,
     }
     assert "read-only relay path planning" in readiness["boundary"]
@@ -8724,7 +8740,7 @@ def test_notification_scope_readiness_projects_audiences_without_sending(
     assert readiness["primary_next_action"] == {
         "action_key": "resolve_open_notification_reviews",
         "label": "Resolve open notification reviews",
-        "route_hint": f"/community-domains/{domain_id}/action-reviews/reviewer-queue",
+        "route_hint": f"/community-domains/{domain_id}/action-reviews",
         "requires_admin": True,
     }
     assert "read-only notification scope planning" in readiness["boundary"]
@@ -11156,7 +11172,7 @@ def test_member_verification_map_projects_institutional_readiness_without_creden
     assert verification_map["primary_next_action"] == {
         "action_key": "resolve_open_member_reviews",
         "label": "Resolve open member verification-related reviews",
-        "route_hint": f"/community-domains/{domain_id}/action-reviews/reviewer-queue",
+        "route_hint": f"/community-domains/{domain_id}/action-reviews",
         "requires_admin": True,
     }
     assert "does not perform KYC" in verification_map["boundary"]
@@ -11687,9 +11703,9 @@ def test_record_privacy_map_projects_record_boundaries_without_permission_writes
         "not_connected_in_this_slice"
     )
     assert privacy_map["primary_next_action"] == {
-        "action_key": "review_open_private_record_decisions",
-        "label": "Review open private-record decisions",
-        "route_hint": f"/community-domains/{domain_id}/action-reviews/reviewer-queue",
+        "action_key": "review_open_private_record_reviews",
+        "label": "Review open private-record reviews",
+        "route_hint": f"/community-domains/{domain_id}/action-reviews",
         "requires_admin": True,
     }
     assert "does not change permissions" in privacy_map["boundary"]
@@ -12186,7 +12202,7 @@ def test_compliance_map_projects_operational_risk_without_compliance_writes(
     assert compliance["primary_next_action"] == {
         "action_key": "resolve_open_governance_reviews",
         "label": "Resolve open governance reviews",
-        "route_hint": f"/community-domains/{domain_id}/action-reviews/reviewer-queue",
+        "route_hint": f"/community-domains/{domain_id}/action-reviews",
         "requires_admin": True,
     }
     assert "not legal advice" in compliance["boundary"]
@@ -13806,7 +13822,7 @@ def test_verification_requirements_project_type_specific_authority_without_verif
     assert requirements["primary_next_action"] == {
         "action_key": "collect_authority_evidence",
         "label": "Prepare Community Domain authority evidence",
-        "route_hint": f"/community-domains/{domain_id}/verification",
+        "route_hint": f"/community-domains/{domain_id}/verification-requirements",
         "requires_admin": True,
     }
     assert "does not upload evidence" in requirements["boundary"]
@@ -13821,7 +13837,9 @@ def test_verification_requirements_project_type_specific_authority_without_verif
     assert by_key["administrative_contact"]["evidence_status"] == "not_tracked_in_this_slice"
     assert by_key["structure_authority"]["admin_visible"] is True
     assert by_key["market_authority_letter"]["applies_to"] == "market_cooperative"
-    assert by_key["market_authority_letter"]["route_hint"].endswith("/verification")
+    assert by_key["market_authority_letter"]["route_hint"].endswith(
+        "/verification-requirements"
+    )
     assert "does not upload" in by_key["market_authority_letter"]["boundary"]
 
     with SessionLocal() as db:
@@ -14471,9 +14489,9 @@ def test_node_operating_summary_rolls_up_branch_without_writes(
     assert summary["review_counts"]["open_by_action"] == {
         "node_member.role_change": 1
     }
-    assert summary["primary_next_action"]["action_key"] == "review_local_queue"
+    assert summary["primary_next_action"]["action_key"] == "review_local_action_reviews"
     assert summary["primary_next_action"]["route_hint"].endswith(
-        f"/action-reviews/reviewer-queue?community_node_id={line_id}"
+        f"/action-reviews?community_node_id={line_id}&include_descendants=true"
     )
     assert "does not create child nodes" in summary["boundary"]
     assert "add members" in summary["boundary"]
@@ -14504,6 +14522,375 @@ def test_node_operating_summary_rolls_up_branch_without_writes(
         assert db.query(CommunityDomainActionReview).count() == 1
         assert db.query(CommunityDomainActionReviewDecision).count() == 0
         assert db.query(Clan).count() == 0
+
+
+def test_node_and_member_summaries_exclude_needs_changes_from_review_queue_guidance(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    trader = _seed_user(2, "needs-changes-local-summary@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created_domain = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Needs Changes Local Summary Domain",
+                "display_name": "Needs Changes Local Summary Domain",
+                "domain_type": "market_cooperative",
+                "template_key": "market_cooperative",
+            },
+        )
+        assert created_domain.status_code == 201, created_domain.text
+        domain = created_domain.json()["community_domain"]
+        domain_id = domain["id"]
+        root_node_id = domain["root_node"]["id"]
+
+        line = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Repair Line",
+                "parent_node_id": root_node_id,
+                "node_type": "line",
+                "node_kind": "market_line",
+            },
+        )
+        assert line.status_code == 201, line.text
+        line_id = line.json()["node"]["id"]
+
+        added = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": trader.id, "role": "member"},
+        )
+        assert added.status_code == 201, added.text
+        placed = client.post(
+            f"/community-domains/{domain_id}/nodes/{line_id}/members",
+            json={"user_id": trader.id, "role": "trader"},
+        )
+        assert placed.status_code == 201, placed.text
+
+        review = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "node_member.role_change",
+                "community_node_id": line_id,
+                "target_type": "node_member",
+                "target_id": str(trader.id),
+                "request_note": "Add proof before changing the local role.",
+                "payload": {
+                    "user_id": trader.id,
+                    "role": "line_admin",
+                    "title": "Line admin candidate",
+                },
+            },
+        )
+        assert review.status_code == 201, review.text
+        review_id = review.json()["action_review"]["id"]
+
+        with SessionLocal() as db:
+            review_row = db.get(CommunityDomainActionReview, review_id)
+            assert review_row is not None
+            review_row.status = "needs_changes"
+            db.commit()
+
+        operating_summary = client.get(
+            f"/community-domains/{domain_id}/nodes/{line_id}/operating-summary"
+        )
+        status_impact = client.get(
+            f"/community-domains/{domain_id}/nodes/{line_id}/status-impact"
+        )
+        placement_summary = client.get(
+            f"/community-domains/{domain_id}/members/{trader.id}/placement-summary"
+        )
+        assert operating_summary.status_code == 200, operating_summary.text
+        assert status_impact.status_code == 200, status_impact.text
+        assert placement_summary.status_code == 200, placement_summary.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    node_summary = operating_summary.json()["operating_summary"]
+    node_lanes = {item["lane_key"]: item for item in node_summary["lanes"]}
+    assert node_summary["counts"]["open_action_reviews"] == 0
+    assert node_summary["review_counts"]["open_by_status"] == {}
+    assert node_summary["review_counts"]["open_by_action"] == {}
+    assert node_lanes["open_reviews"]["state"] == "clear"
+    assert node_lanes["open_reviews"]["ready"] is True
+    assert node_summary["primary_next_action"]["action_key"] != "review_local_queue"
+
+    impact_summary = status_impact.json()["impact_summary"]
+    assert impact_summary["open_action_review_count"] == 0
+    assert impact_summary["open_action_reviews_by_status"] == {}
+
+    member_summary = placement_summary.json()["placement_summary"]
+    member_lanes = {item["lane_key"]: item for item in member_summary["lanes"]}
+    assert member_summary["counts"]["open_reviews"] == 0
+    assert member_summary["review_counts"]["open_by_status"] == {}
+    assert member_summary["review_counts"]["open_by_action"] == {}
+    assert member_lanes["open_reviews"]["state"] == "clear"
+    assert member_lanes["open_reviews"]["ready"] is True
+    assert member_summary["primary_next_action"]["action_key"] != "review_member_queue"
+
+    with SessionLocal() as db:
+        review_row = db.get(CommunityDomainActionReview, review_id)
+        assert review_row is not None
+        assert review_row.status == "needs_changes"
+        assert db.query(CommunityDomainActionReviewDecision).count() == 0
+
+
+def test_node_and_member_summaries_route_approved_work_to_action_review_list(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    trader = _seed_user(2, "approved-local-summary@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created_domain = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Approved Local Summary Domain",
+                "display_name": "Approved Local Summary Domain",
+                "domain_type": "market_cooperative",
+                "template_key": "market_cooperative",
+            },
+        )
+        assert created_domain.status_code == 201, created_domain.text
+        domain = created_domain.json()["community_domain"]
+        domain_id = domain["id"]
+        root_node_id = domain["root_node"]["id"]
+
+        line = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Approved Work Line",
+                "parent_node_id": root_node_id,
+                "node_type": "line",
+                "node_kind": "market_line",
+            },
+        )
+        assert line.status_code == 201, line.text
+        line_id = line.json()["node"]["id"]
+
+        added = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": trader.id, "role": "member"},
+        )
+        assert added.status_code == 201, added.text
+        placed = client.post(
+            f"/community-domains/{domain_id}/nodes/{line_id}/members",
+            json={"user_id": trader.id, "role": "trader"},
+        )
+        assert placed.status_code == 201, placed.text
+
+        review = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "node_member.role_change",
+                "community_node_id": line_id,
+                "target_type": "node_member",
+                "target_id": str(trader.id),
+                "request_note": "Approved local change waiting for apply.",
+                "payload": {
+                    "user_id": trader.id,
+                    "role": "line_admin",
+                    "title": "Line admin candidate",
+                },
+            },
+        )
+        assert review.status_code == 201, review.text
+        review_id = review.json()["action_review"]["id"]
+
+        with SessionLocal() as db:
+            review_row = db.get(CommunityDomainActionReview, review_id)
+            assert review_row is not None
+            review_row.status = "approved"
+            db.commit()
+
+        operating_summary = client.get(
+            f"/community-domains/{domain_id}/nodes/{line_id}/operating-summary"
+        )
+        placement_summary = client.get(
+            f"/community-domains/{domain_id}/members/{trader.id}/placement-summary"
+        )
+        filtered_reviews = client.get(
+            f"/community-domains/{domain_id}/action-reviews?user_id={trader.id}"
+        )
+        scoped_queue = client.get(
+            f"/community-domains/{domain_id}/action-reviews/reviewer-queue"
+            f"?community_node_id={line_id}"
+        )
+        assert operating_summary.status_code == 200, operating_summary.text
+        assert placement_summary.status_code == 200, placement_summary.text
+        assert filtered_reviews.status_code == 200, filtered_reviews.text
+        assert scoped_queue.status_code == 200, scoped_queue.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    node_summary = operating_summary.json()["operating_summary"]
+    node_lanes = {item["lane_key"]: item for item in node_summary["lanes"]}
+    assert node_summary["counts"]["open_action_reviews"] == 1
+    assert node_summary["review_counts"]["open_by_status"] == {"approved": 1}
+    assert node_summary["primary_next_action"]["action_key"] == (
+        "review_local_action_reviews"
+    )
+    assert node_summary["primary_next_action"]["route_hint"].endswith(
+        f"/action-reviews?community_node_id={line_id}&include_descendants=true"
+    )
+    assert node_lanes["open_reviews"]["route_hint"].endswith(
+        f"/action-reviews?community_node_id={line_id}&include_descendants=true"
+    )
+
+    member_summary = placement_summary.json()["placement_summary"]
+    member_lanes = {item["lane_key"]: item for item in member_summary["lanes"]}
+    assert member_summary["counts"]["open_reviews"] == 1
+    assert member_summary["review_counts"]["open_by_status"] == {"approved": 1}
+    assert member_summary["primary_next_action"]["action_key"] == (
+        "review_member_action_reviews"
+    )
+    assert member_summary["primary_next_action"]["route_hint"].endswith(
+        f"/action-reviews?user_id={trader.id}"
+    )
+    assert member_lanes["open_reviews"]["route_hint"].endswith(
+        f"/action-reviews?user_id={trader.id}"
+    )
+
+    filtered_payload = filtered_reviews.json()
+    assert filtered_payload["user_id"] == trader.id
+    assert filtered_payload["total"] == 1
+    assert filtered_payload["items"][0]["id"] == review_id
+    assert filtered_payload["items"][0]["status"] == "approved"
+    assert scoped_queue.json()["total"] == 0
+
+    with SessionLocal() as db:
+        review_row = db.get(CommunityDomainActionReview, review_id)
+        assert review_row is not None
+        assert review_row.status == "approved"
+        assert review_row.applied_at is None
+
+
+def test_reviewer_queue_filters_by_community_node_id(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    requester = _seed_user(2, "node-queue-requester@example.com")
+    north_member = _seed_user(3, "node-queue-north@example.com")
+    south_member = _seed_user(4, "node-queue-south@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created_domain = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Node Queue Filter Domain",
+                "display_name": "Node Queue Filter Domain",
+                "domain_type": "market_cooperative",
+                "template_key": "market_cooperative",
+            },
+        )
+        assert created_domain.status_code == 201, created_domain.text
+        domain = created_domain.json()["community_domain"]
+        domain_id = domain["id"]
+        root_node_id = domain["root_node"]["id"]
+
+        north = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "North Line",
+                "parent_node_id": root_node_id,
+                "node_type": "line",
+                "node_kind": "market_line",
+            },
+        )
+        south = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "South Line",
+                "parent_node_id": root_node_id,
+                "node_type": "line",
+                "node_kind": "market_line",
+            },
+        )
+        assert north.status_code == 201, north.text
+        assert south.status_code == 201, south.text
+        north_id = north.json()["node"]["id"]
+        south_id = south.json()["node"]["id"]
+
+        for user in (requester, north_member, south_member):
+            added = client.post(
+                f"/community-domains/{domain_id}/members",
+                json={"user_id": user.id, "role": "member"},
+            )
+            assert added.status_code == 201, added.text
+
+        app.dependency_overrides[get_current_user] = lambda: requester
+        north_review = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "node_member.role_change",
+                "community_node_id": north_id,
+                "target_type": "node_member",
+                "target_id": str(north_member.id),
+                "request_note": "Review north line role.",
+                "payload": {
+                    "user_id": north_member.id,
+                    "role": "line_member",
+                    "title": "North line member",
+                },
+            },
+        )
+        south_review = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "node_member.role_change",
+                "community_node_id": south_id,
+                "target_type": "node_member",
+                "target_id": str(south_member.id),
+                "request_note": "Review south line role.",
+                "payload": {
+                    "user_id": south_member.id,
+                    "role": "line_member",
+                    "title": "South line member",
+                },
+            },
+        )
+        assert north_review.status_code == 201, north_review.text
+        assert south_review.status_code == 201, south_review.text
+        north_review_id = north_review.json()["action_review"]["id"]
+        south_review_id = south_review.json()["action_review"]["id"]
+
+        app.dependency_overrides[get_current_user] = lambda: owner
+        full_queue = client.get(
+            f"/community-domains/{domain_id}/action-reviews/reviewer-queue"
+        )
+        north_queue = client.get(
+            f"/community-domains/{domain_id}/action-reviews/reviewer-queue"
+            f"?community_node_id={north_id}"
+        )
+        south_queue = client.get(
+            f"/community-domains/{domain_id}/action-reviews/reviewer-queue",
+            params={"community_node_id": south_id},
+        )
+        assert full_queue.status_code == 200, full_queue.text
+        assert north_queue.status_code == 200, north_queue.text
+        assert south_queue.status_code == 200, south_queue.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    full_items = full_queue.json()["items"]
+    north_payload = north_queue.json()
+    south_payload = south_queue.json()
+
+    assert {item["id"] for item in full_items} == {north_review_id, south_review_id}
+    assert north_payload["community_node_id"] == north_id
+    assert north_payload["community_node_ids"] == [north_id]
+    assert north_payload["total"] == 1
+    assert north_payload["items"][0]["id"] == north_review_id
+    assert north_payload["items"][0]["community_node_id"] == north_id
+    assert south_payload["community_node_id"] == south_id
+    assert south_payload["community_node_ids"] == [south_id]
+    assert south_payload["total"] == 1
+    assert south_payload["items"][0]["id"] == south_review_id
+    assert south_payload["items"][0]["community_node_id"] == south_id
 
 
 def test_member_can_read_node_operating_summary_but_admin_routes_are_hidden(
@@ -14768,6 +15155,7 @@ def test_member_placement_summary_projects_roles_without_writes(
 ):
     owner = _seed_owner()
     teacher = _seed_user(2, "placement-teacher@example.com")
+    other_teacher = _seed_user(3, "placement-other-teacher@example.com")
 
     try:
         app.dependency_overrides[get_current_user] = lambda: owner
@@ -14806,15 +15194,19 @@ def test_member_placement_summary_projects_roles_without_writes(
         assert department.status_code == 201, department.text
         department_id = department.json()["node"]["id"]
 
-        added = client.post(
-            f"/community-domains/{domain_id}/members",
-            json={
-                "user_id": teacher.id,
-                "role": "staff",
-                "title": "Mathematics teacher",
-            },
-        )
-        assert added.status_code == 201, added.text
+        for user, title in (
+            (teacher, "Mathematics teacher"),
+            (other_teacher, "Biology teacher"),
+        ):
+            added = client.post(
+                f"/community-domains/{domain_id}/members",
+                json={
+                    "user_id": user.id,
+                    "role": "staff",
+                    "title": title,
+                },
+            )
+            assert added.status_code == 201, added.text
 
         for node_id, role in ((branch_id, "teacher"), (department_id, "committee_member")):
             placed = client.post(
@@ -14839,11 +15231,34 @@ def test_member_placement_summary_projects_roles_without_writes(
             },
         )
         assert review.status_code == 201, review.text
+        review_id = review.json()["action_review"]["id"]
+
+        other_review = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "domain_member.upsert",
+                "subject_user_id": other_teacher.id,
+                "target_type": "domain_member",
+                "target_id": str(other_teacher.id),
+                "request_note": "Review another teacher separately.",
+                "payload": {
+                    "user_id": other_teacher.id,
+                    "role": "staff",
+                    "title": "Senior biology teacher",
+                },
+            },
+        )
+        assert other_review.status_code == 201, other_review.text
 
         response = client.get(
             f"/community-domains/{domain_id}/members/{teacher.id}/placement-summary"
         )
         assert response.status_code == 200, response.text
+
+        filtered_reviews = client.get(
+            f"/community-domains/{domain_id}/action-reviews?user_id={teacher.id}"
+        )
+        assert filtered_reviews.status_code == 200, filtered_reviews.text
     finally:
         app.dependency_overrides.pop(get_current_user, None)
 
@@ -14851,6 +15266,11 @@ def test_member_placement_summary_projects_roles_without_writes(
     assert payload["ok"] is True
     assert payload["community_domain_id"] == domain_id
     assert payload["user_id"] == teacher.id
+    filtered_payload = filtered_reviews.json()
+    assert filtered_payload["user_id"] == teacher.id
+    assert filtered_payload["total"] == 1
+    assert filtered_payload["items"][0]["id"] == review_id
+    assert filtered_payload["items"][0]["subject_user_id"] == teacher.id
     summary = payload["placement_summary"]
     assert summary["editable"] is False
     assert summary["viewer"] == {"can_admin": True, "self": False}
@@ -14871,7 +15291,10 @@ def test_member_placement_summary_projects_roles_without_writes(
         branch_id,
         department_id,
     }
-    assert summary["primary_next_action"]["action_key"] == "review_member_queue"
+    assert summary["primary_next_action"]["action_key"] == "review_member_action_reviews"
+    assert summary["primary_next_action"]["route_hint"].endswith(
+        f"/action-reviews?user_id={teacher.id}"
+    )
     assert "does not add the member" in summary["boundary"]
     assert "place the member in a node" in summary["boundary"]
     assert "assign roles" in summary["boundary"]
@@ -14885,15 +15308,18 @@ def test_member_placement_summary_projects_roles_without_writes(
     assert lanes["admin_assignments"]["state"] == "member_only"
     assert lanes["open_reviews"]["state"] == "open"
     assert lanes["open_reviews"]["ready"] is False
+    assert lanes["open_reviews"]["route_hint"].endswith(
+        f"/action-reviews?user_id={teacher.id}"
+    )
     assert "private review payloads" in lanes["open_reviews"]["boundary"]
 
     with SessionLocal() as db:
         domain = db.query(CommunityDomain).one()
         assert domain.status == "draft"
         assert domain.verification_status == "unverified"
-        assert db.query(CommunityDomainMembership).count() == 2
+        assert db.query(CommunityDomainMembership).count() == 3
         assert db.query(CommunityNodeMembership).count() == 2
-        assert db.query(CommunityDomainActionReview).count() == 1
+        assert db.query(CommunityDomainActionReview).count() == 2
         assert db.query(CommunityDomainActionReviewDecision).count() == 0
         assert db.query(Clan).count() == 0
 
@@ -18550,6 +18976,7 @@ def test_outsider_can_request_domain_membership_without_auto_membership(
         assert requested.status_code == 201, requested.text
         request_data = requested.json()
         review = request_data["action_review"]
+        _assert_applicant_membership_status_payload_is_scoped(review)
         assert review["status"] == "pending"
         assert review["action_key"] == "domain_member.upsert"
         assert review["requested_by_user_id"] == requester.id
@@ -18573,6 +19000,9 @@ def test_outsider_can_request_domain_membership_without_auto_membership(
         assert (
             duplicate.json()["detail"]["code"]
             == "community_domain_membership_request_pending"
+        )
+        _assert_applicant_membership_status_payload_is_scoped(
+            duplicate.json()["detail"]["action_review"]
         )
 
         with SessionLocal() as db:
@@ -18606,6 +19036,26 @@ def test_outsider_can_request_domain_membership_without_auto_membership(
             },
         )
         assert decision.status_code == 200, decision.text
+
+        app.dependency_overrides[get_current_user] = lambda: requester
+        duplicate_after_approval = client.post(
+            f"/community-domains/{domain_id}/membership-requests",
+            json={"request_note": "Trying again before the approved review is applied."},
+        )
+        assert duplicate_after_approval.status_code == 409, (
+            duplicate_after_approval.text
+        )
+        assert duplicate_after_approval.json()["detail"]["code"] == (
+            "community_domain_membership_request_pending"
+        )
+        assert duplicate_after_approval.json()["detail"]["action_review"]["id"] == (
+            review["id"]
+        )
+        _assert_applicant_membership_status_payload_is_scoped(
+            duplicate_after_approval.json()["detail"]["action_review"]
+        )
+
+        app.dependency_overrides[get_current_user] = lambda: owner
         applied = client.post(
             f"/community-domains/{domain_id}/action-reviews/{review['id']}/apply"
         )
@@ -18644,12 +19094,1401 @@ def test_outsider_can_request_domain_membership_without_auto_membership(
         assert review_row.applied_at is not None
 
 
+def test_generic_self_targeted_review_does_not_block_membership_request(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    requester = _seed_user(2, "generic-self-review-applicant@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created_domain = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Generic Self Review Union",
+                "display_name": "Generic Self Review Union",
+                "domain_type": "union",
+            },
+        )
+        assert created_domain.status_code == 201, created_domain.text
+        domain_id = created_domain.json()["community_domain"]["id"]
+
+        with SessionLocal() as db:
+            generic_review = CommunityDomainActionReview(
+                community_domain_id=domain_id,
+                action_key="domain_member.upsert",
+                requested_by_user_id=owner.id,
+                subject_user_id=requester.id,
+                target_type="domain_member",
+                target_id=str(requester.id),
+                status="pending",
+                request_note="Owner-side generic member review.",
+                payload_json=json.dumps(
+                    {
+                        "user_id": requester.id,
+                        "role": "member",
+                        "status": "active",
+                    }
+                ),
+            )
+            db.add(generic_review)
+            db.commit()
+            generic_review_id = int(generic_review.id)
+
+        app.dependency_overrides[get_current_user] = lambda: requester
+        requested = client.post(
+            f"/community-domains/{domain_id}/membership-requests",
+            json={"request_note": "Please add my own access request."},
+        )
+        assert requested.status_code == 201, requested.text
+        self_service_review = requested.json()["action_review"]
+        assert self_service_review["id"] != generic_review_id
+        assert self_service_review["payload"]["previous_status"] == "none"
+
+        duplicate = client.post(
+            f"/community-domains/{domain_id}/membership-requests",
+            json={"request_note": "Trying the self-service request twice."},
+        )
+        assert duplicate.status_code == 409, duplicate.text
+        duplicate_detail = duplicate.json()["detail"]
+        assert duplicate_detail["code"] == "community_domain_membership_request_pending"
+        assert duplicate_detail["action_review"]["id"] == self_service_review["id"]
+        assert duplicate_detail["action_review"]["id"] != generic_review_id
+        _assert_applicant_membership_status_payload_is_scoped(
+            duplicate_detail["action_review"]
+        )
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    with SessionLocal() as db:
+        rows = (
+            db.query(CommunityDomainActionReview)
+            .order_by(CommunityDomainActionReview.id.asc())
+            .all()
+        )
+        assert [row.id for row in rows] == [generic_review_id, self_service_review["id"]]
+        assert [row.status for row in rows] == ["pending", "pending"]
+        assert db.query(CommunityDomainMembership).count() == 1
+
+
+def test_self_targeted_non_access_review_with_previous_status_is_not_membership_request(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    requester = _seed_user(2, "self-targeted-role-review@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created_domain = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Self Targeted Role Review Union",
+                "display_name": "Self Targeted Role Review Union",
+                "domain_type": "union",
+            },
+        )
+        assert created_domain.status_code == 201, created_domain.text
+        domain_id = created_domain.json()["community_domain"]["id"]
+
+        with SessionLocal() as db:
+            role_review = CommunityDomainActionReview(
+                community_domain_id=domain_id,
+                action_key="domain_member.upsert",
+                requested_by_user_id=requester.id,
+                subject_user_id=requester.id,
+                target_type="domain_member",
+                target_id=str(requester.id),
+                status="pending",
+                request_note="Self-targeted role governance review.",
+                payload_json=json.dumps(
+                    {
+                        "user_id": requester.id,
+                        "role": "admin",
+                        "status": "active",
+                        "previous_status": "none",
+                    }
+                ),
+            )
+            db.add(role_review)
+            incomplete_review = CommunityDomainActionReview(
+                community_domain_id=domain_id,
+                action_key="domain_member.upsert",
+                requested_by_user_id=requester.id,
+                subject_user_id=requester.id,
+                target_type="domain_member",
+                target_id=str(requester.id),
+                status="pending",
+                request_note="Self-targeted incomplete governance review.",
+                payload_json=json.dumps(
+                    {
+                        "user_id": requester.id,
+                        "previous_status": "none",
+                    }
+                ),
+            )
+            db.add(incomplete_review)
+            db.commit()
+            role_review_id = int(role_review.id)
+            incomplete_review_id = int(incomplete_review.id)
+
+        app.dependency_overrides[get_current_user] = lambda: requester
+        own_requests = client.get(
+            f"/community-domains/{domain_id}/membership-requests/my"
+        )
+        assert own_requests.status_code == 200, own_requests.text
+        assert own_requests.json()["total"] == 0
+
+        requested = client.post(
+            f"/community-domains/{domain_id}/membership-requests",
+            json={"request_note": "Please add my actual member access request."},
+        )
+        assert requested.status_code == 201, requested.text
+        self_service_review = requested.json()["action_review"]
+        assert self_service_review["id"] != role_review_id
+        assert self_service_review["id"] != incomplete_review_id
+        assert self_service_review["payload"]["role"] == "member"
+        assert self_service_review["payload"]["status"] == "active"
+        _assert_applicant_membership_status_payload_is_scoped(self_service_review)
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    with SessionLocal() as db:
+        rows = (
+            db.query(CommunityDomainActionReview)
+            .order_by(CommunityDomainActionReview.id.asc())
+            .all()
+        )
+        assert [row.id for row in rows] == [
+            role_review_id,
+            incomplete_review_id,
+            self_service_review["id"],
+        ]
+        assert [row.status for row in rows] == ["pending", "pending", "pending"]
+        assert db.query(CommunityDomainMembership).count() == 1
+
+
+def test_stale_domain_membership_request_cannot_apply_after_direct_add(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    requester = _seed_user(2, "stale-domain-membership-request@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created_domain = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Stale Membership Request Union",
+                "display_name": "Stale Membership Request Union",
+                "domain_type": "union",
+            },
+        )
+        assert created_domain.status_code == 201, created_domain.text
+        domain_id = created_domain.json()["community_domain"]["id"]
+
+        policy = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "stale-membership-request-review",
+                "action_key": "domain_member.upsert",
+                "review_mode": "domain_admin_review",
+            },
+        )
+        assert policy.status_code == 201, policy.text
+
+        app.dependency_overrides[get_current_user] = lambda: requester
+        requested = client.post(
+            f"/community-domains/{domain_id}/membership-requests",
+            json={
+                "request_note": "Please add me through the reviewed queue.",
+                "title": "Reviewed applicant title",
+            },
+        )
+        assert requested.status_code == 201, requested.text
+        review = requested.json()["action_review"]
+        assert review["payload"]["previous_status"] == "none"
+
+        app.dependency_overrides[get_current_user] = lambda: owner
+        decision = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/decision",
+            json={"decision": "approve"},
+        )
+        assert decision.status_code == 200, decision.text
+        assert decision.json()["action_review"]["status"] == "approved"
+
+        direct_add = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={
+                "user_id": requester.id,
+                "role": "member",
+                "status": "active",
+                "title": "Directly added member",
+            },
+        )
+        assert direct_add.status_code == 201, direct_add.text
+
+        stale_apply = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/apply"
+        )
+        assert stale_apply.status_code == 409, stale_apply.text
+        assert (
+            stale_apply.json()["detail"]["code"]
+            == "community_domain_member_review_stale"
+        )
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    with SessionLocal() as db:
+        membership = (
+            db.query(CommunityDomainMembership)
+            .filter(CommunityDomainMembership.user_id == requester.id)
+            .one()
+        )
+        assert membership.role == "member"
+        assert membership.status == "active"
+        assert membership.title == "Directly added member"
+        review_row = (
+            db.query(CommunityDomainActionReview)
+            .filter(CommunityDomainActionReview.id == review["id"])
+            .one()
+        )
+        assert review_row.status == "approved"
+        assert review_row.applied_by_user_id is None
+        assert review_row.applied_at is None
+
+
+def test_outsider_can_cancel_own_pending_membership_request(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    requester = _seed_user(2, "cancel-domain-membership-request@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created_domain = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Cancel Membership Request Union",
+                "display_name": "Cancel Membership Request Union",
+                "domain_type": "union",
+            },
+        )
+        assert created_domain.status_code == 201, created_domain.text
+        domain_id = created_domain.json()["community_domain"]["id"]
+
+        policy = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "cancel-membership-request-review",
+                "action_key": "domain_member.upsert",
+                "review_mode": "domain_admin_review",
+            },
+        )
+        assert policy.status_code == 201, policy.text
+
+        app.dependency_overrides[get_current_user] = lambda: requester
+        requested = client.post(
+            f"/community-domains/{domain_id}/membership-requests",
+            json={"request_note": "Please add me, but I may withdraw."},
+        )
+        assert requested.status_code == 201, requested.text
+        review = requested.json()["action_review"]
+        assert review["payload"]["previous_status"] == "none"
+
+        cancelled = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/cancel",
+            json={"cancel_note": "I sent this request too early."},
+        )
+        assert cancelled.status_code == 200, cancelled.text
+        cancelled_review = cancelled.json()["action_review"]
+        _assert_applicant_membership_status_payload_is_scoped(cancelled_review)
+        assert cancelled_review["status"] == "cancelled"
+
+        requested_again = client.post(
+            f"/community-domains/{domain_id}/membership-requests",
+            json={"request_note": "Please consider my updated request."},
+        )
+        assert requested_again.status_code == 201, requested_again.text
+        new_review = requested_again.json()["action_review"]
+        assert new_review["id"] != review["id"]
+        assert new_review["status"] == "pending"
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    with SessionLocal() as db:
+        rows = (
+            db.query(CommunityDomainActionReview)
+            .order_by(CommunityDomainActionReview.id.asc())
+            .all()
+        )
+        assert [row.status for row in rows] == ["cancelled", "pending"]
+        assert rows[0].decision == "cancel"
+        assert rows[0].decided_by_user_id == requester.id
+        assert rows[0].decision_note == "I sent this request too early."
+        assert db.query(CommunityDomainMembership).count() == 1
+
+
+def test_outsider_can_cancel_own_needs_changes_membership_request(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    requester = _seed_user(2, "cancel-needs-changes-membership@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created_domain = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Cancel Needs Changes Membership Union",
+                "display_name": "Cancel Needs Changes Membership Union",
+                "domain_type": "union",
+            },
+        )
+        assert created_domain.status_code == 201, created_domain.text
+        domain_id = created_domain.json()["community_domain"]["id"]
+
+        policy = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "cancel-needs-changes-membership-request-review",
+                "action_key": "domain_member.upsert",
+                "review_mode": "domain_admin_review",
+            },
+        )
+        assert policy.status_code == 201, policy.text
+
+        app.dependency_overrides[get_current_user] = lambda: requester
+        requested = client.post(
+            f"/community-domains/{domain_id}/membership-requests",
+            json={"request_note": "Please add me, but I may withdraw."},
+        )
+        assert requested.status_code == 201, requested.text
+        review = requested.json()["action_review"]
+
+        app.dependency_overrides[get_current_user] = lambda: owner
+        needs_changes = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/decision",
+            json={
+                "decision": "needs_changes",
+                "decision_note": "Please add a clearer title.",
+            },
+        )
+        assert needs_changes.status_code == 200, needs_changes.text
+        assert needs_changes.json()["action_review"]["status"] == "needs_changes"
+
+        app.dependency_overrides[get_current_user] = lambda: requester
+        cancelled = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/cancel",
+            json={"cancel_note": "I will restart this request later."},
+        )
+        assert cancelled.status_code == 200, cancelled.text
+        cancelled_review = cancelled.json()["action_review"]
+        _assert_applicant_membership_status_payload_is_scoped(cancelled_review)
+        assert cancelled_review["status"] == "cancelled"
+
+        requested_again = client.post(
+            f"/community-domains/{domain_id}/membership-requests",
+            json={"request_note": "Please consider my restarted request."},
+        )
+        assert requested_again.status_code == 201, requested_again.text
+        assert requested_again.json()["action_review"]["id"] != review["id"]
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    with SessionLocal() as db:
+        rows = (
+            db.query(CommunityDomainActionReview)
+            .order_by(CommunityDomainActionReview.id.asc())
+            .all()
+        )
+        assert [row.status for row in rows] == ["cancelled", "pending"]
+        assert rows[0].decision == "cancel"
+        assert rows[0].decision_note == "I will restart this request later."
+        assert db.query(CommunityDomainMembership).count() == 1
+
+
+def test_outsider_can_cancel_own_approved_unapplied_membership_request(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    requester = _seed_user(2, "cancel-approved-membership@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created_domain = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Cancel Approved Membership Union",
+                "display_name": "Cancel Approved Membership Union",
+                "domain_type": "union",
+            },
+        )
+        assert created_domain.status_code == 201, created_domain.text
+        domain_id = created_domain.json()["community_domain"]["id"]
+
+        policy = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "cancel-approved-membership-request-review",
+                "action_key": "domain_member.upsert",
+                "review_mode": "domain_admin_review",
+            },
+        )
+        assert policy.status_code == 201, policy.text
+
+        app.dependency_overrides[get_current_user] = lambda: requester
+        requested = client.post(
+            f"/community-domains/{domain_id}/membership-requests",
+            json={"request_note": "Please add me if the owner agrees."},
+        )
+        assert requested.status_code == 201, requested.text
+        review = requested.json()["action_review"]
+
+        app.dependency_overrides[get_current_user] = lambda: owner
+        approved = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/decision",
+            json={"decision": "approve"},
+        )
+        assert approved.status_code == 200, approved.text
+        assert approved.json()["action_review"]["status"] == "approved"
+
+        app.dependency_overrides[get_current_user] = lambda: requester
+        cancelled = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/cancel",
+            json={"cancel_note": "I do not want this access added yet."},
+        )
+        assert cancelled.status_code == 200, cancelled.text
+        cancelled_review = cancelled.json()["action_review"]
+        _assert_applicant_membership_status_payload_is_scoped(cancelled_review)
+        assert cancelled_review["status"] == "cancelled"
+        assert "before application" in cancelled.json()["boundary"]
+
+        app.dependency_overrides[get_current_user] = lambda: owner
+        apply_cancelled = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/apply"
+        )
+        assert apply_cancelled.status_code == 409, apply_cancelled.text
+        assert (
+            apply_cancelled.json()["detail"]["code"]
+            == "community_domain_review_not_approved"
+        )
+
+        app.dependency_overrides[get_current_user] = lambda: requester
+        requested_again = client.post(
+            f"/community-domains/{domain_id}/membership-requests",
+            json={"request_note": "Please consider my later request."},
+        )
+        assert requested_again.status_code == 201, requested_again.text
+        assert requested_again.json()["action_review"]["id"] != review["id"]
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    with SessionLocal() as db:
+        rows = (
+            db.query(CommunityDomainActionReview)
+            .order_by(CommunityDomainActionReview.id.asc())
+            .all()
+        )
+        assert [row.status for row in rows] == ["cancelled", "pending"]
+        assert rows[0].decision == "cancel"
+        assert rows[0].decided_by_user_id == requester.id
+        assert rows[0].decision_note == "I do not want this access added yet."
+        approval_decisions = (
+            db.query(CommunityDomainActionReviewDecision)
+            .filter(CommunityDomainActionReviewDecision.action_review_id == rows[0].id)
+            .all()
+        )
+        assert {decision.decision for decision in approval_decisions} == {"approve"}
+        assert db.query(CommunityDomainMembership).count() == 1
+
+
+def test_inactive_domain_member_can_request_reactivation_with_status_snapshot(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    requester = _seed_user(2, "inactive-domain-reactivation@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created_domain = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Inactive Reactivation Union",
+                "display_name": "Inactive Reactivation Union",
+                "domain_type": "union",
+            },
+        )
+        assert created_domain.status_code == 201, created_domain.text
+        domain_id = created_domain.json()["community_domain"]["id"]
+
+        inactive_member = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={
+                "user_id": requester.id,
+                "role": "member",
+                "status": "inactive",
+                "title": "Paused member",
+            },
+        )
+        assert inactive_member.status_code == 201, inactive_member.text
+
+        policy = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "inactive-membership-reactivation-review",
+                "action_key": "domain_member.upsert",
+                "review_mode": "domain_admin_review",
+            },
+        )
+        assert policy.status_code == 201, policy.text
+
+        app.dependency_overrides[get_current_user] = lambda: requester
+        requested = client.post(
+            f"/community-domains/{domain_id}/membership-requests",
+            json={
+                "request_note": "Please restore my Community Domain access.",
+                "title": "Returning member",
+            },
+        )
+        assert requested.status_code == 201, requested.text
+        review = requested.json()["action_review"]
+        assert review["payload"]["previous_status"] == "inactive"
+
+        app.dependency_overrides[get_current_user] = lambda: owner
+        decision = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/decision",
+            json={"decision": "approve"},
+        )
+        assert decision.status_code == 200, decision.text
+        assert decision.json()["action_review"]["status"] == "approved"
+
+        applied = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/apply"
+        )
+        assert applied.status_code == 200, applied.text
+        assert applied.json()["applied"]["created"] is False
+        assert applied.json()["applied"]["membership"]["status"] == "active"
+        assert applied.json()["applied"]["membership"]["title"] == "Returning member"
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    with SessionLocal() as db:
+        membership = (
+            db.query(CommunityDomainMembership)
+            .filter(CommunityDomainMembership.user_id == requester.id)
+            .one()
+        )
+        assert membership.status == "active"
+        assert membership.title == "Returning member"
+        review_row = (
+            db.query(CommunityDomainActionReview)
+            .filter(CommunityDomainActionReview.id == review["id"])
+            .one()
+        )
+        assert review_row.status == "applied"
+        assert review_row.applied_at is not None
+
+
+def test_outsider_can_revise_own_needs_changes_membership_request_only(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    requester = _seed_user(2, "membership-revision-requester@example.com")
+    other_user = _seed_user(3, "membership-revision-other@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created_domain = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Membership Revision Union",
+                "display_name": "Membership Revision Union",
+                "domain_type": "union",
+            },
+        )
+        assert created_domain.status_code == 201, created_domain.text
+        domain_id = created_domain.json()["community_domain"]["id"]
+
+        policy = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "membership-request-needs-changes-review",
+                "action_key": "domain_member.upsert",
+                "review_mode": "domain_admin_review",
+            },
+        )
+        assert policy.status_code == 201, policy.text
+
+        app.dependency_overrides[get_current_user] = lambda: requester
+        requested = client.post(
+            f"/community-domains/{domain_id}/membership-requests",
+            json={"request_note": "Please add me to this Community Domain."},
+        )
+        assert requested.status_code == 201, requested.text
+        review = requested.json()["action_review"]
+        assert review["payload"]["previous_status"] == "none"
+
+        app.dependency_overrides[get_current_user] = lambda: owner
+        needs_changes = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/decision",
+            json={
+                "decision": "needs_changes",
+                "decision_note": "Please add your member title.",
+            },
+        )
+        assert needs_changes.status_code == 200, needs_changes.text
+        assert needs_changes.json()["action_review"]["status"] == "needs_changes"
+
+        app.dependency_overrides[get_current_user] = lambda: requester
+        needs_changes_status = client.get(
+            f"/community-domains/{domain_id}/membership-requests/my",
+            params={"status": "needs_changes"},
+        )
+        assert needs_changes_status.status_code == 200, needs_changes_status.text
+        needs_changes_data = needs_changes_status.json()
+        assert needs_changes_data["total"] == 1
+        needs_changes_item = needs_changes_data["items"][0]
+        assert needs_changes_item["id"] == review["id"]
+        assert needs_changes_item["status"] == "needs_changes"
+        _assert_applicant_membership_status_payload_is_scoped(needs_changes_item)
+        assert "Please add your member title" not in needs_changes_status.text
+        assert "decision_note" not in needs_changes_status.text
+
+        duplicate = client.post(
+            f"/community-domains/{domain_id}/membership-requests",
+            json={"request_note": "Trying a second request instead of revision."},
+        )
+        assert duplicate.status_code == 409, duplicate.text
+        assert (
+            duplicate.json()["detail"]["code"]
+            == "community_domain_membership_request_pending"
+        )
+        _assert_applicant_membership_status_payload_is_scoped(
+            duplicate.json()["detail"]["action_review"]
+        )
+
+        wrong_target = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/revision",
+            json={
+                "target_id": str(other_user.id),
+                "payload": {
+                    "user_id": other_user.id,
+                    "role": "member",
+                    "status": "active",
+                    "title": "Wrong target",
+                },
+            },
+        )
+        assert wrong_target.status_code == 409, wrong_target.text
+        assert (
+            wrong_target.json()["detail"]["code"]
+            == "community_domain_membership_revision_scope_mismatch"
+        )
+
+        revised = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/revision",
+            json={
+                "request_note": "Added my membership title.",
+                "payload": {"title": "Returning union member"},
+            },
+        )
+        assert revised.status_code == 201, revised.text
+        revision_data = revised.json()
+        _assert_applicant_membership_status_payload_is_scoped(
+            revision_data["previous_action_review"]
+        )
+        assert revision_data["previous_action_review"]["status"] == "needs_changes"
+        revision = revision_data["action_review"]
+        _assert_applicant_membership_status_payload_is_scoped(revision)
+        assert revision["status"] == "pending"
+        assert revision["parent_review_id"] == review["id"]
+        assert revision["requested_by_user_id"] == requester.id
+        assert revision["subject_user_id"] == requester.id
+        assert revision["target_type"] == "domain_member"
+        assert revision["target_id"] == str(requester.id)
+        assert revision["payload"] == {
+            "user_id": requester.id,
+            "role": "member",
+            "status": "active",
+            "previous_status": "none",
+            "title": "Returning union member",
+        }
+
+        app.dependency_overrides[get_current_user] = lambda: owner
+        queue_after_revision = client.get(
+            f"/community-domains/{domain_id}/action-reviews/reviewer-queue"
+        )
+        assert queue_after_revision.status_code == 200, queue_after_revision.text
+        queue_items = queue_after_revision.json()["items"]
+        assert [item["id"] for item in queue_items] == [revision["id"]]
+        assert queue_items[0]["parent_review_id"] == review["id"]
+        assert queue_items[0]["status"] == "pending"
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    with SessionLocal() as db:
+        rows = (
+            db.query(CommunityDomainActionReview)
+            .order_by(CommunityDomainActionReview.id.asc())
+            .all()
+        )
+        assert [row.status for row in rows] == ["needs_changes", "pending"]
+        assert rows[1].parent_review_id == rows[0].id
+        assert db.query(CommunityDomainMembership).count() == 1
+
+
+def test_outsider_cannot_revise_membership_request_after_direct_activation(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    requester = _seed_user(2, "membership-revision-active@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created_domain = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Activated Membership Revision Union",
+                "display_name": "Activated Membership Revision Union",
+                "domain_type": "union",
+            },
+        )
+        assert created_domain.status_code == 201, created_domain.text
+        domain_id = created_domain.json()["community_domain"]["id"]
+
+        policy = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "membership-revision-direct-activation-review",
+                "action_key": "domain_member.upsert",
+                "review_mode": "domain_admin_review",
+            },
+        )
+        assert policy.status_code == 201, policy.text
+
+        app.dependency_overrides[get_current_user] = lambda: requester
+        requested = client.post(
+            f"/community-domains/{domain_id}/membership-requests",
+            json={"request_note": "Please add me."},
+        )
+        assert requested.status_code == 201, requested.text
+        review = requested.json()["action_review"]
+        assert review["payload"]["previous_status"] == "none"
+
+        app.dependency_overrides[get_current_user] = lambda: owner
+        needs_changes = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/decision",
+            json={"decision": "needs_changes", "decision_note": "Add title."},
+        )
+        assert needs_changes.status_code == 200, needs_changes.text
+        assert needs_changes.json()["action_review"]["status"] == "needs_changes"
+
+        direct_add = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={
+                "user_id": requester.id,
+                "role": "member",
+                "status": "active",
+                "title": "Directly activated member",
+            },
+        )
+        assert direct_add.status_code == 201, direct_add.text
+
+        app.dependency_overrides[get_current_user] = lambda: requester
+        stale_revision = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/revision",
+            json={
+                "request_note": "Trying to revise after direct activation.",
+                "payload": {"title": "Late applicant title"},
+            },
+        )
+        assert stale_revision.status_code == 409, stale_revision.text
+        assert (
+            stale_revision.json()["detail"]["code"]
+            == "community_domain_member_already_active"
+        )
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    with SessionLocal() as db:
+        review_rows = db.query(CommunityDomainActionReview).all()
+        assert len(review_rows) == 1
+        assert review_rows[0].status == "needs_changes"
+        membership = (
+            db.query(CommunityDomainMembership)
+            .filter(CommunityDomainMembership.user_id == requester.id)
+            .one()
+        )
+        assert membership.status == "active"
+        assert membership.title == "Directly activated member"
+
+
+def test_outsider_continues_cancelled_membership_revision_without_forking_parent(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    requester = _seed_user(2, "membership-cancelled-revision@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created_domain = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Cancelled Membership Revision Union",
+                "display_name": "Cancelled Membership Revision Union",
+                "domain_type": "union",
+            },
+        )
+        assert created_domain.status_code == 201, created_domain.text
+        domain_id = created_domain.json()["community_domain"]["id"]
+
+        policy = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "cancelled-membership-revision-review",
+                "action_key": "domain_member.upsert",
+                "review_mode": "domain_admin_review",
+            },
+        )
+        assert policy.status_code == 201, policy.text
+
+        app.dependency_overrides[get_current_user] = lambda: requester
+        requested = client.post(
+            f"/community-domains/{domain_id}/membership-requests",
+            json={"request_note": "Please add me."},
+        )
+        assert requested.status_code == 201, requested.text
+        review = requested.json()["action_review"]
+
+        app.dependency_overrides[get_current_user] = lambda: owner
+        needs_changes = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/decision",
+            json={"decision": "needs_changes", "decision_note": "Add title."},
+        )
+        assert needs_changes.status_code == 200, needs_changes.text
+        assert needs_changes.json()["action_review"]["status"] == "needs_changes"
+
+        app.dependency_overrides[get_current_user] = lambda: requester
+        revised = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/revision",
+            json={
+                "request_note": "Added first title.",
+                "payload": {"title": "First revision title"},
+            },
+        )
+        assert revised.status_code == 201, revised.text
+        first_revision = revised.json()["action_review"]
+        assert first_revision["parent_review_id"] == review["id"]
+        assert first_revision["status"] == "pending"
+
+        app.dependency_overrides[get_current_user] = lambda: owner
+        decide_parent = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/decision",
+            json={"decision": "approve", "decision_note": "Wrong row."},
+        )
+        assert decide_parent.status_code == 409, decide_parent.text
+        decide_parent_detail = decide_parent.json()["detail"]
+        assert decide_parent_detail["code"] == "community_domain_review_has_revision"
+        assert decide_parent_detail["existing_action_review"]["id"] == (
+            first_revision["id"]
+        )
+
+        apply_parent = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/apply"
+        )
+        assert apply_parent.status_code == 409, apply_parent.text
+        apply_parent_detail = apply_parent.json()["detail"]
+        assert apply_parent_detail["code"] == "community_domain_review_has_revision"
+        assert apply_parent_detail["existing_action_review"]["id"] == (
+            first_revision["id"]
+        )
+
+        app.dependency_overrides[get_current_user] = lambda: requester
+        cancel_parent = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/cancel",
+            json={"cancel_note": "Trying to cancel the superseded parent."},
+        )
+        assert cancel_parent.status_code == 409, cancel_parent.text
+        assert (
+            cancel_parent.json()["detail"]["code"]
+            == "community_domain_review_has_revision"
+        )
+        cancel_parent_detail = cancel_parent.json()["detail"]
+        assert cancel_parent_detail["existing_action_review"]["id"] == (
+            first_revision["id"]
+        )
+        _assert_applicant_membership_status_payload_is_scoped(
+            cancel_parent_detail["existing_action_review"]
+        )
+
+        cancelled = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{first_revision['id']}/cancel",
+            json={"cancel_note": "Need to correct the title again."},
+        )
+        assert cancelled.status_code == 200, cancelled.text
+        cancelled_revision = cancelled.json()["action_review"]
+        assert cancelled_revision["status"] == "cancelled"
+        assert cancelled_revision["parent_review_id"] == review["id"]
+
+        duplicate = client.post(
+            f"/community-domains/{domain_id}/membership-requests",
+            json={"request_note": "Trying to restart while parent has a child."},
+        )
+        assert duplicate.status_code == 409, duplicate.text
+        assert (
+            duplicate.json()["detail"]["code"]
+            == "community_domain_membership_request_pending"
+        )
+
+        continued = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{first_revision['id']}/revision",
+            json={
+                "request_note": "Corrected cancelled revision.",
+                "payload": {"title": "Corrected revision title"},
+            },
+        )
+        assert continued.status_code == 201, continued.text
+        continued_revision = continued.json()["action_review"]
+        assert continued_revision["status"] == "pending"
+        assert continued_revision["parent_review_id"] == first_revision["id"]
+        assert continued_revision["payload"]["previous_status"] == "none"
+        assert continued_revision["payload"]["title"] == "Corrected revision title"
+
+        duplicate_revision = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{first_revision['id']}/revision",
+            json={"request_note": "Do not fork the cancelled child revision."},
+        )
+        assert duplicate_revision.status_code == 409, duplicate_revision.text
+        duplicate_revision_detail = duplicate_revision.json()["detail"]
+        assert duplicate_revision_detail["code"] == "community_domain_review_revision_exists"
+        assert duplicate_revision_detail["existing_action_review"]["id"] == (
+            continued_revision["id"]
+        )
+        _assert_applicant_membership_status_payload_is_scoped(
+            duplicate_revision_detail["existing_action_review"]
+        )
+
+        root_lineage = client.get(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/lineage"
+        )
+        child_lineage = client.get(
+            f"/community-domains/{domain_id}/action-reviews/{first_revision['id']}/lineage"
+        )
+        latest_lineage = client.get(
+            f"/community-domains/{domain_id}/action-reviews/{continued_revision['id']}/lineage"
+        )
+        assert root_lineage.status_code == 200, root_lineage.text
+        assert child_lineage.status_code == 200, child_lineage.text
+        assert latest_lineage.status_code == 200, latest_lineage.text
+
+        for lineage_response, requested_review_id in [
+            (root_lineage, review["id"]),
+            (child_lineage, first_revision["id"]),
+            (latest_lineage, continued_revision["id"]),
+        ]:
+            lineage_data = lineage_response.json()
+            assert lineage_data["root_review_id"] == review["id"]
+            assert lineage_data["latest_review_id"] == continued_revision["id"]
+            assert lineage_data["requested_review_id"] == requested_review_id
+            assert lineage_data["total"] == 3
+            assert [item["id"] for item in lineage_data["items"]] == [
+                review["id"],
+                first_revision["id"],
+                continued_revision["id"],
+            ]
+            for item in lineage_data["items"]:
+                _assert_applicant_membership_status_payload_is_scoped(item)
+        assert "Add title." not in root_lineage.text
+        assert "decision_note" not in root_lineage.text
+        assert "decisions" not in root_lineage.text
+        assert "policy_key" not in root_lineage.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    with SessionLocal() as db:
+        rows = (
+            db.query(CommunityDomainActionReview)
+            .order_by(CommunityDomainActionReview.id.asc())
+            .all()
+        )
+        assert [row.status for row in rows] == [
+            "needs_changes",
+            "cancelled",
+            "pending",
+        ]
+        assert rows[1].parent_review_id == rows[0].id
+        assert rows[2].parent_review_id == rows[1].id
+        assert db.query(CommunityDomainActionReviewDecision).count() == 1
+        assert db.query(CommunityDomainMembership).count() == 1
+
+
+def test_outsider_can_read_own_membership_request_lineage_without_private_review_fields(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    requester = _seed_user(2, "membership-lineage-requester@example.com")
+    other_outsider = _seed_user(3, "membership-lineage-other@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created_domain = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Applicant Lineage Union",
+                "display_name": "Applicant Lineage Union",
+                "domain_type": "union",
+            },
+        )
+        assert created_domain.status_code == 201, created_domain.text
+        domain_id = created_domain.json()["community_domain"]["id"]
+
+        policy = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "applicant-lineage-review",
+                "action_key": "domain_member.upsert",
+                "review_mode": "domain_admin_review",
+            },
+        )
+        assert policy.status_code == 201, policy.text
+
+        app.dependency_overrides[get_current_user] = lambda: requester
+        requested = client.post(
+            f"/community-domains/{domain_id}/membership-requests",
+            json={"request_note": "Please review my lineage access."},
+        )
+        assert requested.status_code == 201, requested.text
+        review = requested.json()["action_review"]
+
+        app.dependency_overrides[get_current_user] = lambda: owner
+        needs_changes = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/decision",
+            json={
+                "decision": "needs_changes",
+                "decision_note": "Reviewer-private: add your title first.",
+            },
+        )
+        assert needs_changes.status_code == 200, needs_changes.text
+        assert needs_changes.json()["action_review"]["status"] == "needs_changes"
+
+        app.dependency_overrides[get_current_user] = lambda: requester
+        revised = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/revision",
+            json={
+                "request_note": "Added title for lineage review.",
+                "payload": {"title": "Lineage applicant"},
+            },
+        )
+        assert revised.status_code == 201, revised.text
+        revision = revised.json()["action_review"]
+
+        parent_lineage = client.get(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/lineage"
+        )
+        assert parent_lineage.status_code == 200, parent_lineage.text
+        parent_lineage_data = parent_lineage.json()
+        assert parent_lineage_data["root_review_id"] == review["id"]
+        assert parent_lineage_data["latest_review_id"] == revision["id"]
+        assert parent_lineage_data["requested_review_id"] == review["id"]
+        assert parent_lineage_data["total"] == 2
+        assert [item["id"] for item in parent_lineage_data["items"]] == [
+            review["id"],
+            revision["id"],
+        ]
+        for item in parent_lineage_data["items"]:
+            _assert_applicant_membership_status_payload_is_scoped(item)
+            assert item["requested_by_user_id"] == requester.id
+            assert item["subject_user_id"] == requester.id
+            assert item["target_id"] == str(requester.id)
+        assert "Reviewer-private" not in parent_lineage.text
+        assert "decision_note" not in parent_lineage.text
+        assert "decisions" not in parent_lineage.text
+        assert "policy_key" not in parent_lineage.text
+
+        child_lineage = client.get(
+            f"/community-domains/{domain_id}/action-reviews/{revision['id']}/lineage"
+        )
+        assert child_lineage.status_code == 200, child_lineage.text
+        child_lineage_data = child_lineage.json()
+        assert child_lineage_data["requested_review_id"] == revision["id"]
+        assert child_lineage_data["root_review_id"] == review["id"]
+        assert child_lineage_data["latest_review_id"] == revision["id"]
+        for item in child_lineage_data["items"]:
+            _assert_applicant_membership_status_payload_is_scoped(item)
+
+        app.dependency_overrides[get_current_user] = lambda: other_outsider
+        hidden_lineage = client.get(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/lineage"
+        )
+        assert hidden_lineage.status_code == 403, hidden_lineage.text
+        assert "Reviewer-private" not in hidden_lineage.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    with SessionLocal() as db:
+        rows = (
+            db.query(CommunityDomainActionReview)
+            .order_by(CommunityDomainActionReview.id.asc())
+            .all()
+        )
+        assert [row.status for row in rows] == ["needs_changes", "pending"]
+        assert rows[1].parent_review_id == rows[0].id
+        assert db.query(CommunityDomainMembership).count() == 1
+
+
+def test_reviewer_queue_tracks_pending_membership_revision_not_needs_changes_parent(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    requester = _seed_user(2, "queue-membership-revision@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created_domain = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Queue Membership Revision Union",
+                "display_name": "Queue Membership Revision Union",
+                "domain_type": "union",
+            },
+        )
+        assert created_domain.status_code == 201, created_domain.text
+        domain_id = created_domain.json()["community_domain"]["id"]
+
+        policy = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "queue-membership-revision-review",
+                "action_key": "domain_member.upsert",
+                "review_mode": "domain_admin_review",
+            },
+        )
+        assert policy.status_code == 201, policy.text
+
+        app.dependency_overrides[get_current_user] = lambda: requester
+        requested = client.post(
+            f"/community-domains/{domain_id}/membership-requests",
+            json={"request_note": "Please review my domain access."},
+        )
+        assert requested.status_code == 201, requested.text
+        review = requested.json()["action_review"]
+
+        app.dependency_overrides[get_current_user] = lambda: owner
+        needs_changes = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/decision",
+            json={"decision": "needs_changes", "decision_note": "Add your title."},
+        )
+        assert needs_changes.status_code == 200, needs_changes.text
+        assert needs_changes.json()["action_review"]["status"] == "needs_changes"
+
+        queue_after_needs_changes = client.get(
+            f"/community-domains/{domain_id}/action-reviews/reviewer-queue"
+        )
+        assert queue_after_needs_changes.status_code == 200, (
+            queue_after_needs_changes.text
+        )
+        assert queue_after_needs_changes.json()["total"] == 0
+
+        app.dependency_overrides[get_current_user] = lambda: requester
+        revised = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/revision",
+            json={
+                "request_note": "Added title for owner/admin review.",
+                "payload": {"title": "Queue revision applicant"},
+            },
+        )
+        assert revised.status_code == 201, revised.text
+        revision = revised.json()["action_review"]
+        assert revision["status"] == "pending"
+        assert revision["parent_review_id"] == review["id"]
+
+        app.dependency_overrides[get_current_user] = lambda: owner
+        queue_after_revision = client.get(
+            f"/community-domains/{domain_id}/action-reviews/reviewer-queue"
+        )
+        assert queue_after_revision.status_code == 200, queue_after_revision.text
+        queue_data = queue_after_revision.json()
+        assert queue_data["total"] == 1
+        assert queue_data["items"][0]["id"] == revision["id"]
+        assert queue_data["items"][0]["parent_review_id"] == review["id"]
+        assert queue_data["items"][0]["status"] == "pending"
+        assert "pending reviews this user is currently allowed to decide" in (
+            queue_data["boundary"]
+        )
+
+        approved = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{revision['id']}/decision",
+            json={"decision": "approve"},
+        )
+        assert approved.status_code == 200, approved.text
+        assert approved.json()["action_review"]["status"] == "approved"
+
+        queue_after_approval = client.get(
+            f"/community-domains/{domain_id}/action-reviews/reviewer-queue"
+        )
+        approved_reviews = client.get(
+            f"/community-domains/{domain_id}/action-reviews?status=approved"
+        )
+        assert queue_after_approval.status_code == 200, queue_after_approval.text
+        assert approved_reviews.status_code == 200, approved_reviews.text
+
+        assert queue_after_approval.json()["total"] == 0
+        approved_data = approved_reviews.json()
+        assert approved_data["total"] == 1
+        assert approved_data["items"][0]["id"] == revision["id"]
+        assert approved_data["items"][0]["parent_review_id"] == review["id"]
+        assert approved_data["items"][0]["status"] == "approved"
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    with SessionLocal() as db:
+        rows = (
+            db.query(CommunityDomainActionReview)
+            .order_by(CommunityDomainActionReview.id.asc())
+            .all()
+        )
+        assert [row.status for row in rows] == ["needs_changes", "approved"]
+        assert rows[1].parent_review_id == rows[0].id
+
+
+def test_applied_membership_revision_parent_does_not_block_later_reactivation(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    requester = _seed_user(2, "applied-revision-reactivation@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created_domain = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Applied Revision Reactivation Union",
+                "display_name": "Applied Revision Reactivation Union",
+                "domain_type": "union",
+            },
+        )
+        assert created_domain.status_code == 201, created_domain.text
+        domain_id = created_domain.json()["community_domain"]["id"]
+
+        policy = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "applied-revision-reactivation-review",
+                "action_key": "domain_member.upsert",
+                "review_mode": "domain_admin_review",
+            },
+        )
+        assert policy.status_code == 201, policy.text
+
+        app.dependency_overrides[get_current_user] = lambda: requester
+        requested = client.post(
+            f"/community-domains/{domain_id}/membership-requests",
+            json={"request_note": "Please review my domain access."},
+        )
+        assert requested.status_code == 201, requested.text
+        review = requested.json()["action_review"]
+
+        app.dependency_overrides[get_current_user] = lambda: owner
+        needs_changes = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/decision",
+            json={"decision": "needs_changes", "decision_note": "Add your title."},
+        )
+        assert needs_changes.status_code == 200, needs_changes.text
+        assert needs_changes.json()["action_review"]["status"] == "needs_changes"
+
+        app.dependency_overrides[get_current_user] = lambda: requester
+        revised = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/revision",
+            json={
+                "request_note": "Added title for owner/admin review.",
+                "payload": {"title": "Applied revision member"},
+            },
+        )
+        assert revised.status_code == 201, revised.text
+        revision = revised.json()["action_review"]
+        assert revision["status"] == "pending"
+        assert revision["parent_review_id"] == review["id"]
+
+        app.dependency_overrides[get_current_user] = lambda: owner
+        decision = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{revision['id']}/decision",
+            json={"decision": "approve"},
+        )
+        assert decision.status_code == 200, decision.text
+        assert decision.json()["action_review"]["status"] == "approved"
+
+        applied = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{revision['id']}/apply"
+        )
+        assert applied.status_code == 200, applied.text
+        assert applied.json()["applied"]["membership"]["status"] == "active"
+
+        inactive_member = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={
+                "user_id": requester.id,
+                "role": "member",
+                "status": "inactive",
+                "title": "Paused after first approval",
+            },
+        )
+        assert inactive_member.status_code == 201, inactive_member.text
+        assert inactive_member.json()["created"] is False
+        assert inactive_member.json()["membership"]["status"] == "inactive"
+
+        app.dependency_overrides[get_current_user] = lambda: requester
+        reactivation = client.post(
+            f"/community-domains/{domain_id}/membership-requests",
+            json={
+                "request_note": "Please restore my Community Domain access.",
+                "title": "Returning after pause",
+            },
+        )
+        assert reactivation.status_code == 201, reactivation.text
+        reactivation_review = reactivation.json()["action_review"]
+        assert reactivation_review["id"] not in {review["id"], revision["id"]}
+        assert reactivation_review["payload"]["previous_status"] == "inactive"
+
+        my_requests = client.get(
+            f"/community-domains/{domain_id}/membership-requests/my"
+        )
+        assert my_requests.status_code == 200, my_requests.text
+        my_request_items = my_requests.json()["items"]
+        assert my_request_items[0]["id"] == reactivation_review["id"]
+        assert my_request_items[0]["status"] == "pending"
+        assert my_request_items[0]["payload"]["previous_status"] == "inactive"
+        assert revision["id"] in {item["id"] for item in my_request_items}
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    with SessionLocal() as db:
+        rows = (
+            db.query(CommunityDomainActionReview)
+            .order_by(CommunityDomainActionReview.id.asc())
+            .all()
+        )
+        assert [row.status for row in rows] == [
+            "needs_changes",
+            "applied",
+            "pending",
+        ]
+        assert rows[1].parent_review_id == rows[0].id
+        assert rows[2].parent_review_id is None
+        membership = (
+            db.query(CommunityDomainMembership)
+            .filter(CommunityDomainMembership.user_id == requester.id)
+            .one()
+        )
+        assert membership.status == "inactive"
+
+
 def test_outsider_can_track_only_own_domain_membership_request(
     client: TestClient,
 ):
     owner = _seed_owner()
     requester = _seed_user(2, "track-domain-request@example.com")
-    other_outsider = _seed_user(3, "track-domain-other@example.com")
+    second_admin = _seed_user(3, "track-domain-second-admin@example.com")
+    other_outsider = _seed_user(4, "track-domain-other@example.com")
 
     try:
         app.dependency_overrides[get_current_user] = lambda: owner
@@ -18664,12 +20503,19 @@ def test_outsider_can_track_only_own_domain_membership_request(
         assert created_domain.status_code == 201, created_domain.text
         domain_id = created_domain.json()["community_domain"]["id"]
 
+        added_second_admin = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": second_admin.id, "role": "domain_admin"},
+        )
+        assert added_second_admin.status_code == 201, added_second_admin.text
+
         policy = client.post(
             f"/community-domains/{domain_id}/policies",
             json={
                 "policy_key": "tracked-membership-request-review",
                 "action_key": "domain_member.upsert",
                 "review_mode": "domain_admin_review",
+                "config": {"min_reviewers": 2},
             },
         )
         assert policy.status_code == 201, policy.text
@@ -18682,6 +20528,29 @@ def test_outsider_can_track_only_own_domain_membership_request(
         assert requested.status_code == 201, requested.text
         review = requested.json()["action_review"]
 
+        with SessionLocal() as db:
+            generic_self_review = CommunityDomainActionReview(
+                community_domain_id=domain_id,
+                policy_id=policy.json()["policy"]["id"],
+                action_key="domain_member.upsert",
+                requested_by_user_id=requester.id,
+                subject_user_id=requester.id,
+                target_type="domain_member",
+                target_id=str(requester.id),
+                status="pending",
+                request_note="Generic self-targeted governance review.",
+                payload_json=json.dumps(
+                    {
+                        "user_id": requester.id,
+                        "role": "member",
+                        "status": "active",
+                    }
+                ),
+            )
+            db.add(generic_self_review)
+            db.commit()
+            generic_self_review_id = int(generic_self_review.id)
+
         my_requests = client.get(
             f"/community-domains/{domain_id}/membership-requests/my"
         )
@@ -18690,8 +20559,11 @@ def test_outsider_can_track_only_own_domain_membership_request(
         assert my_data["total"] == 1
         assert "own Community Domain membership requests only" in my_data["boundary"]
         assert "does not expose the reviewer queue" in my_data["boundary"]
+        assert "reviewer identities" in my_data["boundary"]
+        assert "decision notes" in my_data["boundary"]
         assert "or grant membership" in my_data["boundary"]
         my_review = my_data["items"][0]
+        _assert_applicant_membership_status_payload_is_scoped(my_review)
         assert my_review["id"] == review["id"]
         assert my_review["status"] == "pending"
         assert my_review["action_key"] == "domain_member.upsert"
@@ -18699,6 +20571,36 @@ def test_outsider_can_track_only_own_domain_membership_request(
         assert my_review["subject_user_id"] == requester.id
         assert my_review["target_type"] == "domain_member"
         assert my_review["target_id"] == str(requester.id)
+        assert my_review["required_approvals"] == 2
+        assert my_review["approval_count"] == 0
+        assert all(
+            item["id"] != generic_self_review_id for item in my_data["items"]
+        )
+
+        app.dependency_overrides[get_current_user] = lambda: owner
+        first_approval = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/decision",
+            json={
+                "decision": "approve",
+                "decision_note": "First approval, still needs one more reviewer.",
+            },
+        )
+        assert first_approval.status_code == 200, first_approval.text
+        assert first_approval.json()["action_review"]["status"] == "pending_review"
+        assert first_approval.json()["approval_count"] == 1
+        assert first_approval.json()["required_approvals"] == 2
+
+        app.dependency_overrides[get_current_user] = lambda: requester
+        pending_review_status = client.get(
+            f"/community-domains/{domain_id}/membership-requests/my"
+        )
+        assert pending_review_status.status_code == 200, pending_review_status.text
+        pending_review_item = pending_review_status.json()["items"][0]
+        _assert_applicant_membership_status_payload_is_scoped(pending_review_item)
+        assert pending_review_item["id"] == review["id"]
+        assert pending_review_item["status"] == "pending_review"
+        assert pending_review_item["approval_count"] == 1
+        assert pending_review_item["required_approvals"] == 2
 
         filtered = client.get(
             f"/community-domains/{domain_id}/membership-requests/my",
@@ -18715,9 +20617,14 @@ def test_outsider_can_track_only_own_domain_membership_request(
         assert other_requests.json()["total"] == 0
 
         with SessionLocal() as db:
-            assert db.query(CommunityDomainMembership).count() == 1
+            assert (
+                db.query(CommunityDomainMembership)
+                .filter(CommunityDomainMembership.user_id == requester.id)
+                .count()
+                == 0
+            )
 
-        app.dependency_overrides[get_current_user] = lambda: owner
+        app.dependency_overrides[get_current_user] = lambda: second_admin
         rejected = client.post(
             f"/community-domains/{domain_id}/action-reviews/{review['id']}/decision",
             json={
@@ -18734,8 +20641,10 @@ def test_outsider_can_track_only_own_domain_membership_request(
         )
         assert rejected_status.status_code == 200, rejected_status.text
         assert rejected_status.json()["total"] == 1
-        assert rejected_status.json()["items"][0]["id"] == review["id"]
-        assert rejected_status.json()["items"][0]["status"] == "rejected"
+        rejected_item = rejected_status.json()["items"][0]
+        _assert_applicant_membership_status_payload_is_scoped(rejected_item)
+        assert rejected_item["id"] == review["id"]
+        assert rejected_item["status"] == "rejected"
     finally:
         app.dependency_overrides.pop(get_current_user, None)
 
@@ -18753,6 +20662,12 @@ def test_outsider_can_track_only_own_domain_membership_request(
         )
         assert review_row.status == "rejected"
         assert review_row.applied_at is None
+        generic_row = (
+            db.query(CommunityDomainActionReview)
+            .filter(CommunityDomainActionReview.id == generic_self_review_id)
+            .one()
+        )
+        assert generic_row.status == "pending"
 
 
 def test_domain_member_review_rejects_numeric_target_mismatch(
@@ -21125,6 +23040,7 @@ def test_requester_can_cancel_pending_action_review(
         )
         assert second_cancel.status_code == 409, second_cancel.text
         assert second_cancel.json()["detail"]["code"] == "community_domain_review_not_cancellable"
+        assert "current status" in second_cancel.json()["detail"]["message"]
     finally:
         app.dependency_overrides.pop(get_current_user, None)
 
@@ -21212,6 +23128,7 @@ def test_scoped_admin_can_cancel_pending_review_but_not_approved_review(
         )
         assert late_cancel.status_code == 409, late_cancel.text
         assert late_cancel.json()["detail"]["code"] == "community_domain_review_not_cancellable"
+        assert "current status" in late_cancel.json()["detail"]["message"]
     finally:
         app.dependency_overrides.pop(get_current_user, None)
 
@@ -21391,6 +23308,69 @@ def test_admin_cancelled_action_review_cannot_apply_but_requester_can_revise(
         duplicate_data = duplicate_revision.json()["detail"]
         assert duplicate_data["code"] == "community_domain_review_revision_exists"
         assert duplicate_data["existing_action_review"]["id"] == revision["id"]
+
+        cancelled_parent_comment = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/comments",
+            json={"body": "Trying to continue on the cancelled parent."},
+        )
+        assert cancelled_parent_comment.status_code == 409, cancelled_parent_comment.text
+        assert (
+            cancelled_parent_comment.json()["detail"]["code"]
+            == "community_domain_review_append_closed"
+        )
+
+        cancelled_parent_evidence = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/evidence",
+            json={"title": "Cancelled parent evidence after revision"},
+        )
+        assert cancelled_parent_evidence.status_code == 409, cancelled_parent_evidence.text
+        assert (
+            cancelled_parent_evidence.json()["detail"]["code"]
+            == "community_domain_review_append_closed"
+        )
+
+        revision_comment = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{revision['id']}/comments",
+            json={"body": "Continuing after cancellation on the child row."},
+        )
+        assert revision_comment.status_code == 201, revision_comment.text
+        assert revision_comment.json()["comment"]["action_review_id"] == revision["id"]
+
+        revision_evidence = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{revision['id']}/evidence",
+            json={
+                "evidence_type": "reference",
+                "title": "Cancelled review child context",
+                "external_reference": "manual-note:CANCEL-REV-001",
+            },
+        )
+        assert revision_evidence.status_code == 201, revision_evidence.text
+        assert revision_evidence.json()["evidence"]["action_review_id"] == revision["id"]
+
+        parent_activity = client.get(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/activity"
+        )
+        assert parent_activity.status_code == 200, parent_activity.text
+        assert {item["type"] for item in parent_activity.json()["items"]} == {
+            "review_created",
+            "review_status_changed",
+        }
+
+        revision_activity = client.get(
+            f"/community-domains/{domain_id}/action-reviews/{revision['id']}/activity"
+        )
+        assert revision_activity.status_code == 200, revision_activity.text
+        revision_activity_data = revision_activity.json()
+        assert revision_activity_data["total"] == 3
+        assert {item["type"] for item in revision_activity_data["items"]} == {
+            "review_created",
+            "comment",
+            "evidence",
+        }
+        assert all(
+            item["action_review_id"] == revision["id"]
+            for item in revision_activity_data["items"]
+        )
     finally:
         app.dependency_overrides.pop(get_current_user, None)
 
@@ -21404,6 +23384,12 @@ def test_admin_cancelled_action_review_cannot_apply_but_requester_can_revise(
         assert rows[0].decision == "cancel"
         assert rows[0].decision_note == "Duplicate pending request."
         assert rows[1].parent_review_id == rows[0].id
+        comments = db.query(CommunityDomainActionReviewComment).all()
+        assert len(comments) == 1
+        assert comments[0].action_review_id == rows[1].id
+        evidence = db.query(CommunityDomainActionReviewEvidence).all()
+        assert len(evidence) == 1
+        assert evidence[0].action_review_id == rows[1].id
         assert db.query(CommunityDomainActionReviewDecision).count() == 0
         assert (
             db.query(CommunityDomainMembership)
@@ -21507,6 +23493,7 @@ def test_rejected_action_review_cannot_receive_late_decision_or_apply_but_can_be
     second_admin = _seed_user(2, "rejected-decision-second-admin@example.com")
     requester = _seed_user(3, "rejected-decision-requester@example.com")
     new_member = _seed_user(4, "rejected-decision-new-member@example.com")
+    other_member = _seed_user(5, "rejected-decision-other-member@example.com")
 
     try:
         app.dependency_overrides[get_current_user] = lambda: owner
@@ -21524,6 +23511,7 @@ def test_rejected_action_review_cannot_receive_late_decision_or_apply_but_can_be
         for user, role in (
             (second_admin, "domain_admin"),
             (requester, "member"),
+            (other_member, "member"),
         ):
             added = client.post(
                 f"/community-domains/{domain_id}/members",
@@ -21605,6 +23593,47 @@ def test_rejected_action_review_cannot_receive_late_decision_or_apply_but_can_be
         duplicate_data = duplicate_revision.json()["detail"]
         assert duplicate_data["code"] == "community_domain_review_revision_exists"
         assert duplicate_data["existing_action_review"]["id"] == revision["id"]
+
+        parent_lineage = client.get(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/lineage"
+        )
+        child_lineage = client.get(
+            f"/community-domains/{domain_id}/action-reviews/{revision['id']}/lineage"
+        )
+        assert parent_lineage.status_code == 200, parent_lineage.text
+        assert child_lineage.status_code == 200, child_lineage.text
+        for lineage_response, requested_review_id in [
+            (parent_lineage, review["id"]),
+            (child_lineage, revision["id"]),
+        ]:
+            lineage_data = lineage_response.json()
+            assert lineage_data["root_review_id"] == review["id"]
+            assert lineage_data["latest_review_id"] == revision["id"]
+            assert lineage_data["requested_review_id"] == requested_review_id
+            assert lineage_data["total"] == 2
+            assert [item["id"] for item in lineage_data["items"]] == [
+                review["id"],
+                revision["id"],
+            ]
+            assert lineage_data["items"][0]["status"] == "rejected"
+            assert lineage_data["items"][1]["status"] == "pending"
+
+        app.dependency_overrides[get_current_user] = lambda: second_admin
+        admin_lineage = client.get(
+            f"/community-domains/{domain_id}/action-reviews/{revision['id']}/lineage"
+        )
+        assert admin_lineage.status_code == 200, admin_lineage.text
+        assert admin_lineage.json()["latest_review_id"] == revision["id"]
+
+        app.dependency_overrides[get_current_user] = lambda: other_member
+        hidden_lineage = client.get(
+            f"/community-domains/{domain_id}/action-reviews/{revision['id']}/lineage"
+        )
+        assert hidden_lineage.status_code == 403, hidden_lineage.text
+        assert (
+            hidden_lineage.json()["detail"]["code"]
+            == "community_domain_review_lineage_not_visible"
+        )
     finally:
         app.dependency_overrides.pop(get_current_user, None)
 
@@ -21820,6 +23849,73 @@ def test_requester_can_revise_needs_changes_action_review(
             == review["id"]
         )
 
+        stale_parent_comment_after_revision = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/comments",
+            json={"body": "Trying to continue on the superseded parent."},
+        )
+        assert (
+            stale_parent_comment_after_revision.status_code == 409
+        ), stale_parent_comment_after_revision.text
+        assert (
+            stale_parent_comment_after_revision.json()["detail"]["code"]
+            == "community_domain_review_append_closed"
+        )
+
+        stale_parent_evidence_after_revision = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/evidence",
+            json={"title": "Parent evidence after revision"},
+        )
+        assert (
+            stale_parent_evidence_after_revision.status_code == 409
+        ), stale_parent_evidence_after_revision.text
+        assert (
+            stale_parent_evidence_after_revision.json()["detail"]["code"]
+            == "community_domain_review_append_closed"
+        )
+
+        revision_comment = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{revision['id']}/comments",
+            json={"body": "Continuing with context on the child revision."},
+        )
+        assert revision_comment.status_code == 201, revision_comment.text
+        assert revision_comment.json()["comment"]["action_review_id"] == revision["id"]
+
+        revision_evidence = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{revision['id']}/evidence",
+            json={
+                "evidence_type": "reference",
+                "title": "Child revision context note",
+                "external_reference": "manual-note:REV-001",
+            },
+        )
+        assert revision_evidence.status_code == 201, revision_evidence.text
+        assert revision_evidence.json()["evidence"]["action_review_id"] == revision["id"]
+
+        parent_activity = client.get(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/activity"
+        )
+        assert parent_activity.status_code == 200, parent_activity.text
+        parent_activity_types = {
+            item["type"] for item in parent_activity.json()["items"]
+        }
+        assert parent_activity_types == {"review_created", "decision"}
+
+        revision_activity = client.get(
+            f"/community-domains/{domain_id}/action-reviews/{revision['id']}/activity"
+        )
+        assert revision_activity.status_code == 200, revision_activity.text
+        revision_activity_data = revision_activity.json()
+        assert revision_activity_data["total"] == 3
+        assert {item["type"] for item in revision_activity_data["items"]} == {
+            "review_created",
+            "comment",
+            "evidence",
+        }
+        assert all(
+            item["action_review_id"] == revision["id"]
+            for item in revision_activity_data["items"]
+        )
+
         lineage = client.get(
             f"/community-domains/{domain_id}/action-reviews/{review['id']}/lineage"
         )
@@ -21864,6 +23960,12 @@ def test_requester_can_revise_needs_changes_action_review(
         assert rows[0].status == "needs_changes"
         assert rows[1].status == "pending"
         assert rows[1].parent_review_id == rows[0].id
+        comments = db.query(CommunityDomainActionReviewComment).all()
+        assert len(comments) == 1
+        assert comments[0].action_review_id == rows[1].id
+        evidence = db.query(CommunityDomainActionReviewEvidence).all()
+        assert len(evidence) == 1
+        assert evidence[0].action_review_id == rows[1].id
 
 
 def test_inactive_parent_node_blocks_needs_changes_review_revision(

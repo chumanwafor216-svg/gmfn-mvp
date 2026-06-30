@@ -4,6 +4,7 @@ type GovernanceReadinessPanelsProps = {
   isAdmin?: boolean;
   membershipAccessRequests?: any[];
   governanceAttentionCount?: number;
+  institutionalOpenReviewCount?: number;
   governanceApprovedCount?: number;
   delegationMap?: any;
   governanceCoverage?: any;
@@ -177,6 +178,7 @@ export default function CommunityDomainGovernanceReadinessPanels({
   isAdmin = false,
   membershipAccessRequests = [],
   governanceAttentionCount = 0,
+  institutionalOpenReviewCount = 0,
   governanceApprovedCount = 0,
   delegationMap,
   governanceCoverage,
@@ -187,6 +189,19 @@ export default function CommunityDomainGovernanceReadinessPanels({
   const delegationReadyTotal = readyTotal(delegationMap, visibleDelegationLanes);
   const governanceCoverageCounts = governanceCoverage?.counts || {};
   const coverageGaps = governanceCoverageGaps(governanceCoverage);
+  const reviewPulseRows = [
+    ["Needs review", governanceAttentionCount],
+    ["Ready to apply", isAdmin ? governanceApprovedCount : 0],
+    ...(isAdmin
+      ? [
+          [
+            "Institution open",
+            Math.max(Number(institutionalOpenReviewCount || 0), 0),
+          ],
+        ]
+      : []),
+    ["Access requests", isAdmin ? membershipAccessRequests.length : 0],
+  ];
 
   return (
     <>
@@ -194,7 +209,7 @@ export default function CommunityDomainGovernanceReadinessPanels({
         <div style={sectionLabel()}>Governance review pulse</div>
         <div style={{ ...helperText(), marginTop: 7 }}>
           {isAdmin
-            ? "Open decisions and approved-but-unapplied reviews are shown from the scoped reviewer queue."
+            ? "Open decisions come from the scoped reviewer queue; approved-but-unapplied reviews come from the approved action-review list."
             : "Open decisions are handled by owner/admin reviewers. This lane shows whether the domain has visible review attention."}
         </div>
         <div
@@ -205,11 +220,7 @@ export default function CommunityDomainGovernanceReadinessPanels({
             marginTop: 10,
           }}
         >
-          {[
-            ["Needs review", governanceAttentionCount],
-            ["Ready to apply", isAdmin ? governanceApprovedCount : 0],
-            ["Access requests", isAdmin ? membershipAccessRequests.length : 0],
-          ].map(([label, value]) => (
+          {reviewPulseRows.map(([label, value]) => (
             <div
               key={String(label)}
               style={statusBadge(Number(value) > 0 ? "attention" : "quiet")}
@@ -222,6 +233,14 @@ export default function CommunityDomainGovernanceReadinessPanels({
           <div style={{ ...helperText(), marginTop: 10 }}>
             The access-request panel below keeps approve, decline, and apply as
             separate actions so membership changes only after an approved review is applied.
+          </div>
+        ) : isAdmin &&
+          Number(institutionalOpenReviewCount || 0) > governanceAttentionCount ? (
+          <div style={{ ...helperText(), marginTop: 10 }}>
+            This account has no pending decision in its scoped queue, but the
+            Community Domain still has institutional review pressure. Another
+            eligible reviewer may need to decide, or an approved review may
+            still need apply by an authorized admin.
           </div>
         ) : (
           <div style={{ ...helperText(), marginTop: 10 }}>
