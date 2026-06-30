@@ -2,32 +2,10 @@ import React from "react";
 
 type ServiceBoundaryPanelsProps = {
   networkExchangeMap?: any;
-  networkExchangeReadyTotal?: number;
-  visibleNetworkExchangeLanes?: any[];
-  blockedNetworkExchangeLanes?: any[];
-  networkExchangeSummary?: Record<string, unknown>;
-  linkedNetworkSocialCommunity?: Record<string, unknown>;
   recordPrivacyMap?: any;
-  recordPrivacyReadyTotal?: number;
-  visibleRecordPrivacyLanes?: any[];
-  blockedRecordPrivacyLanes?: any[];
-  recordPrivacySummary?: Record<string, unknown>;
   configurationMap?: any;
-  configurationMapReadyTotal?: number;
-  visibleConfigurationMapLanes?: any[];
-  blockedConfigurationMapLanes?: any[];
-  configurationMapSummary?: Record<string, any>;
-  configurationMapBlueprint?: Record<string, any>;
   complianceMap?: any;
-  complianceMapReadyTotal?: number;
-  visibleComplianceMapLanes?: any[];
-  blockedComplianceMapLanes?: any[];
-  complianceMapSummary?: Record<string, unknown>;
   appealReadiness?: any;
-  appealReadinessSignalTotal?: number;
-  visibleAppealReadinessLanes?: any[];
-  blockedAppealReadinessLanes?: any[];
-  appealReadinessSummary?: Record<string, unknown>;
 };
 
 function cleanText(value: unknown, fallback = ""): string {
@@ -39,7 +17,26 @@ function compactStatus(value: unknown): string {
 }
 
 function countValue(value: unknown): string {
-  return typeof value === "number" && Number.isFinite(value) ? String(value) : "0";
+  const numberValue = Number(value ?? 0);
+  return Number.isFinite(numberValue) ? String(numberValue) : "0";
+}
+
+function readinessLanes(map: any): any[] {
+  return Array.isArray(map?.lanes) ? map.lanes : [];
+}
+
+function blockedLanes(lanes: any[]): any[] {
+  return lanes.filter((lane) => !lane.ready);
+}
+
+function readyTotal(map: any, lanes: any[]): number {
+  return typeof map?.ready_total === "number"
+    ? map.ready_total
+    : lanes.filter((lane) => lane.ready).length;
+}
+
+function signalTotal(lanes: any[]): number {
+  return lanes.reduce((total, lane) => total + Number(lane.signal_count || 0), 0);
 }
 
 function softCard(): React.CSSProperties {
@@ -187,33 +184,40 @@ function statusRow(
 
 export default function CommunityDomainServiceBoundaryPanels({
   networkExchangeMap,
-  networkExchangeReadyTotal = 0,
-  visibleNetworkExchangeLanes = [],
-  blockedNetworkExchangeLanes = [],
-  networkExchangeSummary = {},
-  linkedNetworkSocialCommunity = {},
   recordPrivacyMap,
-  recordPrivacyReadyTotal = 0,
-  visibleRecordPrivacyLanes = [],
-  blockedRecordPrivacyLanes = [],
-  recordPrivacySummary = {},
   configurationMap,
-  configurationMapReadyTotal = 0,
-  visibleConfigurationMapLanes = [],
-  blockedConfigurationMapLanes = [],
-  configurationMapSummary = {},
-  configurationMapBlueprint = {},
   complianceMap,
-  complianceMapReadyTotal = 0,
-  visibleComplianceMapLanes = [],
-  blockedComplianceMapLanes = [],
-  complianceMapSummary = {},
   appealReadiness,
-  appealReadinessSignalTotal = 0,
-  visibleAppealReadinessLanes = [],
-  blockedAppealReadinessLanes = [],
-  appealReadinessSummary = {},
 }: ServiceBoundaryPanelsProps): React.ReactElement {
+  const networkExchangeSummary = networkExchangeMap?.summary || {};
+  const linkedNetworkSocialCommunity = networkExchangeMap?.linked_social_community || {};
+  const visibleNetworkExchangeLanes = readinessLanes(networkExchangeMap);
+  const blockedNetworkExchangeLanes = blockedLanes(visibleNetworkExchangeLanes);
+  const networkExchangeReadyTotal = readyTotal(
+    networkExchangeMap,
+    visibleNetworkExchangeLanes
+  );
+  const recordPrivacySummary = recordPrivacyMap?.summary || {};
+  const visibleRecordPrivacyLanes = readinessLanes(recordPrivacyMap);
+  const blockedRecordPrivacyLanes = blockedLanes(visibleRecordPrivacyLanes);
+  const recordPrivacyReadyTotal = readyTotal(recordPrivacyMap, visibleRecordPrivacyLanes);
+  const configurationMapSummary = configurationMap?.summary || {};
+  const configurationMapBlueprint = configurationMap?.blueprint || {};
+  const visibleConfigurationMapLanes = readinessLanes(configurationMap);
+  const blockedConfigurationMapLanes = blockedLanes(visibleConfigurationMapLanes);
+  const configurationMapReadyTotal = readyTotal(
+    configurationMap,
+    visibleConfigurationMapLanes
+  );
+  const complianceMapSummary = complianceMap?.summary || {};
+  const visibleComplianceMapLanes = readinessLanes(complianceMap);
+  const blockedComplianceMapLanes = blockedLanes(visibleComplianceMapLanes);
+  const complianceMapReadyTotal = readyTotal(complianceMap, visibleComplianceMapLanes);
+  const appealReadinessSummary = appealReadiness?.summary || {};
+  const visibleAppealReadinessLanes = readinessLanes(appealReadiness);
+  const blockedAppealReadinessLanes = blockedLanes(visibleAppealReadinessLanes);
+  const appealReadinessSignalTotal = signalTotal(visibleAppealReadinessLanes);
+
   return (
     <>
       <div style={softCard()}>

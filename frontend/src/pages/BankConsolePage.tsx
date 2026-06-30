@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ExplainToggle from "../components/ExplainToggle";
 import PageTopNav from "../components/PageTopNav";
 import { PrimaryButton, SecondaryButton, StableCtaLink } from "../components/StableButton";
@@ -41,6 +41,16 @@ type BankConsoleRow = {
   description?: string | null;
   direction?: string | null;
   created_at?: string | null;
+};
+
+type BankConsoleLoadResult = {
+  cfg: any;
+  community: CommunityLite | null;
+  recent: BankConsoleRow[];
+  unmatched: BankConsoleRow[];
+  credits: BankConsoleRow[];
+  expected: BankConsoleRow[];
+  expectedDetail: string;
 };
 
 type NextStepState = {
@@ -424,6 +434,8 @@ export default function BankConsolePage() {
   const [direction, setDirection] = useState<"credit" | "debit">("credit");
   const [reference, setReference] = useState("");
   const [description, setDescription] = useState("");
+  const bankConsoleContextRef = useRef("");
+  const bankConsoleLoadSeqRef = useRef(0);
 
   const selectedClanId = Number(getSelectedClanId() || 0);
   const routes = useMemo(
@@ -464,81 +476,119 @@ export default function BankConsolePage() {
     return () => window.clearTimeout(timer);
   }, [err, msg]);
 
-  const loadAll = useCallback(async () => {
-    setLoading(true);
-    setErr("");
+  const normalizeRows = useCallback((input: any): BankConsoleRow[] => {
+    return extractRows(input)
+      .map((row: any) => normalizeRow(row))
+      .filter(Boolean) as BankConsoleRow[];
+  }, []);
 
-    try {
-      const clanId = getSelectedClanId();
+  const clearBankConsoleState = useCallback(() => {
+    setCfg(null);
+    setCommunity(null);
+    setRecent([]);
+    setUnmatched([]);
+    setCredits([]);
+    setExpected([]);
+    setExpectedDetail("");
+  }, []);
 
-      const [cfgRes, clanRes] = await Promise.all([
-        getPublicConfig().catch(() => null),
-        getCurrentClan().catch(() => null),
+  const fetchBankConsole = useCallback(async (): Promise<BankConsoleLoadResult> => {
+    const clanId = selectedClanId;
+
+    const [cfgRes, clanRes] = await Promise.all([
+      getPublicConfig().catch(() => null),
+      getCurrentClan().catch(() => null),
+    ]);
+
+    if (!clanId) {
+      return {
+        cfg: cfgRes || null,
+        community: clanRes || null,
+        recent: [],
+        unmatched: [],
+        credits: [],
+        expected: [],
+        expectedDetail: "",
+      };
+    }
+
+    const [recentRes, unmatchedRes, creditsRes, expectedRes] =
+      await Promise.all([
+        listRecentBankEvents(clanId).catch(() => []),
+        listUnmatchedBankEvents(clanId).catch(() => []),
+        listBankCredits({ clan_id: clanId, currency }).catch(() => []),
+        listExpectedPayments({ clan_id: clanId }).catch(() => ({ items: [] })),
       ]);
 
-      setCfg(cfgRes || null);
-      setCommunity(clanRes || null);
+    return {
+      cfg: cfgRes || null,
+      community: clanRes || null,
+      recent: normalizeRows(recentRes),
+      unmatched: normalizeRows(unmatchedRes),
+      credits: normalizeRows(creditsRes),
+      expected: normalizeRows(expectedRes),
+      expectedDetail: safeStr(expectedRes?.detail || ""),
+    };
+  }, [currency, normalizeRows, selectedClanId]);
 
-      if (!clanId) {
-        setRecent([]);
-        setUnmatched([]);
-        setCredits([]);
-        setExpected([]);
-        setExpectedDetail("");
+  const loadAll = useCallback(async () => {
+    const contextKey = `${selectedClanId || 0}:${safeStr(currency || "NGN")}`;
+    const loadSeq = bankConsoleLoadSeqRef.current + 1;
+    bankConsoleLoadSeqRef.current = loadSeq;
+    bankConsoleContextRef.current = contextKey;
+    setLoading(true);
+    setErr("");
+    clearBankConsoleState();
+
+    try {
+      const result = await fetchBankConsole();
+
+      if (
+        bankConsoleContextRef.current !== contextKey ||
+        bankConsoleLoadSeqRef.current !== loadSeq
+      ) {
         return;
       }
 
-      const [recentRes, unmatchedRes, creditsRes, expectedRes] =
-        await Promise.all([
-          listRecentBankEvents(clanId).catch(() => []),
-          listUnmatchedBankEvents(clanId).catch(() => []),
-          listBankCredits({ clan_id: clanId, currency }).catch(() => []),
-          listExpectedPayments({ clan_id: clanId }).catch(() => ({ items: [] })),
-        ]);
-
-      setRecent(
-        extractRows(recentRes)
-          .map((row: any) => normalizeRow(row))
-          .filter(Boolean) as BankConsoleRow[]
-      );
-
-      setUnmatched(
-        extractRows(unmatchedRes)
-          .map((row: any) => normalizeRow(row))
-          .filter(Boolean) as BankConsoleRow[]
-      );
-
-      setCredits(
-        extractRows(creditsRes)
-          .map((row: any) => normalizeRow(row))
-          .filter(Boolean) as BankConsoleRow[]
-      );
-
-      setExpected(
-        extractRows(expectedRes)
-          .map((row: any) => normalizeRow(row))
-          .filter(Boolean) as BankConsoleRow[]
-      );
-
-      setExpectedDetail(safeStr(expectedRes?.detail || ""));
+      setCfg(result.cfg);
+      setCommunity(result.community);
+      setRecent(result.recent);
+      setUnmatched(result.unmatched);
+      setCredits(result.credits);
+      setExpected(result.expected);
+      setExpectedDetail(result.expectedDetail);
     } catch (e: any) {
+      if (
+        bankConsoleContextRef.current !== contextKey ||
+        bankConsoleLoadSeqRef.current !== loadSeq
+      ) {
+        return;
+      }
+
       setErr(String(e?.message || e || "Unable to load bank console."));
     } finally {
-      setLoading(false);
+      if (
+        bankConsoleContextRef.current === contextKey &&
+        bankConsoleLoadSeqRef.current === loadSeq
+      ) {
+        setLoading(false);
+      }
     }
-  }, [currency]);
+  }, [clearBankConsoleState, currency, fetchBankConsole, selectedClanId]);
 
   useEffect(() => {
     void loadAll();
   }, [currency, loadAll, selectedClanId]);
 
   async function ingestNow() {
+    const operationContextKey =
+      bankConsoleContextRef.current || `${selectedClanId || 0}:${safeStr(currency || "NGN")}`;
     setErr("");
     setMsg("");
     setBusyIngest(true);
 
     try {
-      const clanId = getSelectedClanId();
+      const clanId = selectedClanId;
       if (!clanId) throw new Error("Select a community first.");
 
       if (!amount || Number(amount) <= 0) {
@@ -558,6 +608,8 @@ export default function BankConsolePage() {
       const visibleStatus = firstTruthy(res?.status, "detected");
       const visibleReason = firstTruthy(res?.status_reason);
 
+      if (bankConsoleContextRef.current !== operationContextKey) return;
+
       setMsg(
         `Bank event ingested${
           res?.bank_event_id ? ` (#${res.bank_event_id})` : ""
@@ -567,6 +619,8 @@ export default function BankConsolePage() {
       );
       await loadAll();
     } catch (e: any) {
+      if (bankConsoleContextRef.current !== operationContextKey) return;
+
       setErr(String(e?.message || e || "Unable to ingest bank event."));
     } finally {
       setBusyIngest(false);
@@ -574,18 +628,24 @@ export default function BankConsolePage() {
   }
 
   async function reconcileNow() {
+    const operationContextKey =
+      bankConsoleContextRef.current || `${selectedClanId || 0}:${safeStr(currency || "NGN")}`;
     setErr("");
     setMsg("");
     setBusyReconcile(true);
 
     try {
-      const clanId = getSelectedClanId();
+      const clanId = selectedClanId;
       if (!clanId) throw new Error("Select a community first.");
 
       const res = await runBankReconciliation({ clan_id: clanId, limit: 200 });
+      if (bankConsoleContextRef.current !== operationContextKey) return;
+
       setMsg(reconciliationMessage(res));
       await loadAll();
     } catch (e: any) {
+      if (bankConsoleContextRef.current !== operationContextKey) return;
+
       setErr(String(e?.message || e || "Unable to run reconciliation."));
     } finally {
       setBusyReconcile(false);

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import ExplainToggle from "../components/ExplainToggle";
 import PageTopNav from "../components/PageTopNav";
@@ -550,6 +550,19 @@ export default function RevenueAllocationPage() {
   const [me, setMe] = useState<any>(null);
   const [currentClan, setCurrentClan] = useState<any>(null);
   const [allocation, setAllocation] = useState<RevenueAllocationView | null>(null);
+  const revenueMountedRef = useRef(false);
+  const revenueContextLoadSeqRef = useRef(0);
+  const revenueAllocationLoadSeqRef = useRef(0);
+  const revenueAllocationContextRef = useRef("");
+
+  useEffect(() => {
+    revenueMountedRef.current = true;
+    return () => {
+      revenueMountedRef.current = false;
+      revenueContextLoadSeqRef.current += 1;
+      revenueAllocationLoadSeqRef.current += 1;
+    };
+  }, []);
 
   useEffect(() => {
     writeLocalJSON(REVENUE_ALLOCATION_UI_STORAGE_KEY, collapsed);
@@ -566,11 +579,21 @@ export default function RevenueAllocationPage() {
   }, [notice]);
 
   useEffect(() => {
+    const loadSeq = revenueContextLoadSeqRef.current + 1;
+    revenueContextLoadSeqRef.current = loadSeq;
+
     (async () => {
       const [meRes, clanRes] = await Promise.all([
         getMe().catch(() => null),
         getCurrentClan().catch(() => null),
       ]);
+
+      if (
+        !revenueMountedRef.current ||
+        revenueContextLoadSeqRef.current !== loadSeq
+      ) {
+        return;
+      }
 
       setMe(meRes || null);
       setCurrentClan(clanRes || null);
@@ -672,16 +695,37 @@ export default function RevenueAllocationPage() {
   const details = useMemo(() => detailPairs(allocation), [allocation]);
 
   async function load() {
+    const requestedLoanId = currentLoanId;
+    const contextKey = [
+      `community:${selectedClanId || "none"}`,
+      `loan:${requestedLoanId || "none"}`,
+    ].join("|");
+    const loadSeq = revenueAllocationLoadSeqRef.current + 1;
+    revenueAllocationLoadSeqRef.current = loadSeq;
+    revenueAllocationContextRef.current = contextKey;
+
+    function isCurrentRevenueAllocationLoad() {
+      return (
+        revenueMountedRef.current &&
+        revenueAllocationLoadSeqRef.current === loadSeq &&
+        revenueAllocationContextRef.current === contextKey
+      );
+    }
+
     setNotice(null);
     setBusy(true);
+    setAllocation(null);
 
     try {
-      if (!currentLoanId) {
+      if (!requestedLoanId) {
         throw new Error("Enter a valid support ID.");
       }
 
-      const res = await getRevenueAllocation(currentLoanId);
-      const normalized = normalizeRevenueAllocation(res, currentLoanId);
+      const res = await getRevenueAllocation(requestedLoanId);
+
+      if (!isCurrentRevenueAllocationLoad()) return;
+
+      const normalized = normalizeRevenueAllocation(res, requestedLoanId);
 
       if (!normalized) {
         throw new Error("Revenue allocation was returned empty.");
@@ -693,14 +737,22 @@ export default function RevenueAllocationPage() {
         text: "Revenue allocation loaded.",
       });
     } catch (e: any) {
+      if (!isCurrentRevenueAllocationLoad()) return;
+
       setAllocation(null);
       setNotice({
         tone: "error",
         text: safeStr(e?.message) || "Unable to load revenue allocation.",
       });
     } finally {
-      setBusy(false);
+      if (isCurrentRevenueAllocationLoad()) setBusy(false);
     }
+  }
+
+  function handleLoanIdChange(value: string) {
+    setLoanId(value);
+    setAllocation(null);
+    setNotice(null);
   }
 
   function toggleSection(key: keyof CollapseState) {
@@ -956,7 +1008,7 @@ export default function RevenueAllocationPage() {
                 </div>
                 <input
                   value={loanId}
-                  onChange={(e) => setLoanId(e.target.value)}
+                  onChange={(e) => handleLoanIdChange(e.target.value)}
                   placeholder="Enter support ID"
                   style={inputStyle()}
                 />

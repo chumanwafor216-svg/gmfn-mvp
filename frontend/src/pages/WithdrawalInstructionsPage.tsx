@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import GsnSupportContact from "../components/GsnSupportContact";
 import PageTopNav from "../components/PageTopNav";
@@ -731,6 +731,18 @@ export default function WithdrawalInstructionsPage() {
   const [latestWithdrawalResult, setLatestWithdrawalResult] = useState<any | null>(
     null
   );
+  const withdrawalMountedRef = useRef(false);
+  const withdrawalLoadSeqRef = useRef(0);
+  const withdrawalLoadContextRef = useRef("");
+  const withdrawalActionContextRef = useRef("");
+
+  useEffect(() => {
+    withdrawalMountedRef.current = true;
+    return () => {
+      withdrawalMountedRef.current = false;
+      withdrawalLoadSeqRef.current += 1;
+    };
+  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -759,8 +771,42 @@ export default function WithdrawalInstructionsPage() {
     return () => window.clearTimeout(timer);
   }, [notice]);
 
+  const currentGmfnId = useMemo(() => {
+    return firstTruthy(me?.gmfn_id);
+  }, [me]);
+
+  useEffect(() => {
+    withdrawalActionContextRef.current = [
+      `community:${selectedClanId || "none"}`,
+      `gmfn:${currentGmfnId || "none"}`,
+    ].join("|");
+  }, [selectedClanId, currentGmfnId]);
+
   const loadPage = useCallback(async (showLoading = true) => {
+    const contextKey = `community:${selectedClanId || "none"}`;
+    const loadSeq = withdrawalLoadSeqRef.current + 1;
+    withdrawalLoadSeqRef.current = loadSeq;
+    withdrawalLoadContextRef.current = contextKey;
+
+    function isCurrentWithdrawalLoad() {
+      return (
+        withdrawalMountedRef.current &&
+        withdrawalLoadSeqRef.current === loadSeq &&
+        withdrawalLoadContextRef.current === contextKey
+      );
+    }
+
     if (showLoading) setLoading(true);
+    if (showLoading) {
+      setLoadingRoute(false);
+      setSavingDestination(false);
+      setSubmittingWithdrawal(false);
+      setCurrentClan(null);
+      setMoneySurface(null);
+      setWithdrawalRoute(null);
+      setDestination(defaultDestination());
+      setDestinationNotice(null);
+    }
 
     try {
       const meRes =
@@ -773,6 +819,8 @@ export default function WithdrawalInstructionsPage() {
           ? await (api as any).getCurrentClan().catch(() => null)
           : null;
 
+      if (!isCurrentWithdrawalLoad()) return;
+
       setMe(meRes || null);
       setCurrentClan(clanRes || null);
 
@@ -784,6 +832,8 @@ export default function WithdrawalInstructionsPage() {
           resolvedGmfnId,
           "NGN"
         ).catch(() => null);
+
+        if (!isCurrentWithdrawalLoad()) return;
 
         setMoneySurface(surface);
         setWithdrawalRoute(surface?.withdrawalRoute || null);
@@ -807,7 +857,7 @@ export default function WithdrawalInstructionsPage() {
         setDestination(defaultDestination());
       }
     } finally {
-      if (showLoading) setLoading(false);
+      if (showLoading && isCurrentWithdrawalLoad()) setLoading(false);
     }
   }, [selectedClanId]);
 
@@ -825,10 +875,6 @@ export default function WithdrawalInstructionsPage() {
         me?.email
       ) || "Member"
     );
-  }, [me]);
-
-  const currentGmfnId = useMemo(() => {
-    return firstTruthy(me?.gmfn_id);
   }, [me]);
 
   useEffect(() => {
@@ -1028,6 +1074,7 @@ export default function WithdrawalInstructionsPage() {
       return;
     }
 
+    const actionContext = withdrawalActionContextRef.current;
     setLoadingRoute(true);
 
     try {
@@ -1036,6 +1083,13 @@ export default function WithdrawalInstructionsPage() {
         currentGmfnId,
         { currency: poolCurrency }
       ).catch(() => null);
+
+      if (
+        !withdrawalMountedRef.current ||
+        withdrawalActionContextRef.current !== actionContext
+      ) {
+        return;
+      }
 
       if (route) {
         setWithdrawalRoute(route);
@@ -1053,7 +1107,12 @@ export default function WithdrawalInstructionsPage() {
         showNotice("error", "Community withdrawal rail has not returned yet.");
       }
     } finally {
-      setLoadingRoute(false);
+      if (
+        withdrawalMountedRef.current &&
+        withdrawalActionContextRef.current === actionContext
+      ) {
+        setLoadingRoute(false);
+      }
     }
   }
 
@@ -1067,6 +1126,7 @@ export default function WithdrawalInstructionsPage() {
       return;
     }
 
+    const actionContext = withdrawalActionContextRef.current;
     setSavingDestination(true);
     setDestinationNotice(null);
 
@@ -1080,6 +1140,13 @@ export default function WithdrawalInstructionsPage() {
           currency: firstTruthy(destination.currency, poolCurrency),
         }
       );
+
+      if (
+        !withdrawalMountedRef.current ||
+        withdrawalActionContextRef.current !== actionContext
+      ) {
+        return;
+      }
 
       setDestination(saved);
       setMoneySurface((prev) =>
@@ -1098,6 +1165,13 @@ export default function WithdrawalInstructionsPage() {
         text: "Payout account saved here. GSN will use these details only after approval.",
       });
     } catch (err: any) {
+      if (
+        !withdrawalMountedRef.current ||
+        withdrawalActionContextRef.current !== actionContext
+      ) {
+        return;
+      }
+
       const errorText =
         safeStr(err?.message) ||
         "Personal payout account could not be saved right now.";
@@ -1110,8 +1184,24 @@ export default function WithdrawalInstructionsPage() {
         text: errorText,
       });
     } finally {
-      setSavingDestination(false);
+      if (
+        withdrawalMountedRef.current &&
+        withdrawalActionContextRef.current === actionContext
+      ) {
+        setSavingDestination(false);
+      }
     }
+  }
+
+  function handleDestinationDraftChange(
+    field: keyof CommunitySettlementDestination,
+    value: string
+  ) {
+    setDestination((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+    setDestinationNotice(null);
   }
 
   async function handleDirectWithdrawal() {
@@ -1147,6 +1237,7 @@ export default function WithdrawalInstructionsPage() {
       return;
     }
 
+    const actionContext = withdrawalActionContextRef.current;
     setSubmittingWithdrawal(true);
 
     try {
@@ -1156,6 +1247,13 @@ export default function WithdrawalInstructionsPage() {
         currency: poolCurrency,
         note: safeStr(noteInput || "Normal withdrawal request reference"),
       });
+
+      if (
+        !withdrawalMountedRef.current ||
+        withdrawalActionContextRef.current !== actionContext
+      ) {
+        return;
+      }
 
       if (!res) {
         showNotice("error", "Withdrawal request reference could not be created.");
@@ -1171,6 +1269,13 @@ export default function WithdrawalInstructionsPage() {
       );
     } catch (err: any) {
       const message = safeStr(err?.message || err?.detail || err);
+      if (
+        !withdrawalMountedRef.current ||
+        withdrawalActionContextRef.current !== actionContext
+      ) {
+        return;
+      }
+
       if (/insufficient (withdrawable|effective) pool balance/i.test(message)) {
         persistSupportHandoff();
         showNotice(
@@ -1186,7 +1291,12 @@ export default function WithdrawalInstructionsPage() {
         message || "Withdrawal request reference could not be created."
       );
     } finally {
-      setSubmittingWithdrawal(false);
+      if (
+        withdrawalMountedRef.current &&
+        withdrawalActionContextRef.current === actionContext
+      ) {
+        setSubmittingWithdrawal(false);
+      }
     }
   }
 
@@ -2280,10 +2390,7 @@ export default function WithdrawalInstructionsPage() {
                   <input
                     value={destination.destinationName}
                     onChange={(e) =>
-                      setDestination((prev) => ({
-                        ...prev,
-                        destinationName: e.target.value,
-                      }))
+                      handleDestinationDraftChange("destinationName", e.target.value)
                     }
                     placeholder="Account name"
                     style={{ ...inputStyle(), marginTop: 8 }}
@@ -2295,10 +2402,7 @@ export default function WithdrawalInstructionsPage() {
                   <input
                     value={destination.bankName}
                     onChange={(e) =>
-                      setDestination((prev) => ({
-                        ...prev,
-                        bankName: e.target.value,
-                      }))
+                      handleDestinationDraftChange("bankName", e.target.value)
                     }
                     placeholder="Bank name"
                     style={{ ...inputStyle(), marginTop: 8 }}
@@ -2310,10 +2414,7 @@ export default function WithdrawalInstructionsPage() {
                   <input
                     value={destination.accountNumber}
                     onChange={(e) =>
-                      setDestination((prev) => ({
-                        ...prev,
-                        accountNumber: e.target.value,
-                      }))
+                      handleDestinationDraftChange("accountNumber", e.target.value)
                     }
                     placeholder="Account number"
                     style={{ ...inputStyle(), marginTop: 8 }}
@@ -2327,10 +2428,7 @@ export default function WithdrawalInstructionsPage() {
                   <input
                     value={destination.sortCode}
                     onChange={(e) =>
-                      setDestination((prev) => ({
-                        ...prev,
-                        sortCode: e.target.value,
-                      }))
+                      handleDestinationDraftChange("sortCode", e.target.value)
                     }
                     inputMode="numeric"
                     placeholder="12-34-56"
@@ -2343,10 +2441,7 @@ export default function WithdrawalInstructionsPage() {
                   <input
                     value={destination.country || destinationCountry}
                     onChange={(e) =>
-                      setDestination((prev) => ({
-                        ...prev,
-                        country: e.target.value,
-                      }))
+                      handleDestinationDraftChange("country", e.target.value)
                     }
                     placeholder="United Kingdom"
                     style={{ ...inputStyle(), marginTop: 8 }}
@@ -2358,10 +2453,7 @@ export default function WithdrawalInstructionsPage() {
                   <input
                     value={destination.phoneNumber}
                     onChange={(e) =>
-                      setDestination((prev) => ({
-                        ...prev,
-                        phoneNumber: e.target.value,
-                      }))
+                      handleDestinationDraftChange("phoneNumber", e.target.value)
                     }
                     placeholder="Phone number"
                     style={{ ...inputStyle(), marginTop: 8 }}
@@ -2373,10 +2465,7 @@ export default function WithdrawalInstructionsPage() {
                   <textarea
                     value={destination.note}
                     onChange={(e) =>
-                      setDestination((prev) => ({
-                        ...prev,
-                        note: e.target.value,
-                      }))
+                      handleDestinationDraftChange("note", e.target.value)
                     }
                     placeholder="Optional payout note"
                     style={{ ...textAreaStyle(), marginTop: 8 }}

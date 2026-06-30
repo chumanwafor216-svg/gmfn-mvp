@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import ExplainToggle from "../components/ExplainToggle";
 import PageTopNav from "../components/PageTopNav";
 import { SecondaryButton, StableCtaLink } from "../components/StableButton";
@@ -52,6 +52,25 @@ type ExecutiveReading = {
   incompleteError: string;
   bankError: string;
 };
+
+function defaultExecutiveReading(): ExecutiveReading {
+  return {
+    systemHealth: null,
+    protocolStatus: null,
+    pilotReadiness: null,
+    liquidity: null,
+    exposure: null,
+    trustEvents: [],
+    identityRisk: [],
+    incompleteLoans: [],
+    bankRecent: [],
+    bankUnmatched: [],
+    expectedPayments: [],
+    exposureError: "",
+    incompleteError: "",
+    bankError: "",
+  };
+}
 
 const COMMAND_CENTER_UI_STORAGE_KEY = "gmfn.commandCenter.sections.v1";
 const COMMAND_CENTER_PILOT_WORKSHEET_STORAGE_KEY =
@@ -688,22 +707,10 @@ export default function TrustCommandCentrePage() {
   const [me, setMe] = useState<any>(null);
   const [currentClan, setCurrentClan] = useState<any>(null);
   const [executiveLoading, setExecutiveLoading] = useState(true);
-  const [executiveReading, setExecutiveReading] = useState<ExecutiveReading>({
-    systemHealth: null,
-    protocolStatus: null,
-    pilotReadiness: null,
-    liquidity: null,
-    exposure: null,
-    trustEvents: [],
-    identityRisk: [],
-    incompleteLoans: [],
-    bankRecent: [],
-    bankUnmatched: [],
-    expectedPayments: [],
-    exposureError: "",
-    incompleteError: "",
-    bankError: "",
-  });
+  const [executiveReading, setExecutiveReading] = useState<ExecutiveReading>(() =>
+    defaultExecutiveReading()
+  );
+  const executiveLoadSeqRef = useRef(0);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -731,6 +738,7 @@ export default function TrustCommandCentrePage() {
 
     (async () => {
       setLoading(true);
+      setCurrentClan(null);
 
       try {
         const [meRes, clanRes] = await Promise.all([
@@ -750,13 +758,16 @@ export default function TrustCommandCentrePage() {
     return () => {
       alive = false;
     };
-  }, []);
+  }, [selectedClanId]);
 
   useEffect(() => {
     let alive = true;
+    const loadSeq = executiveLoadSeqRef.current + 1;
+    executiveLoadSeqRef.current = loadSeq;
 
     async function run() {
       setExecutiveLoading(true);
+      setExecutiveReading(defaultExecutiveReading());
 
       const systemHealthPromise = getSystemHealth().catch(() => null);
       const protocolStatusPromise = getProtocolStatus().catch(() => null);
@@ -820,7 +831,7 @@ export default function TrustCommandCentrePage() {
         bankSummaryPromise,
       ]);
 
-      if (!alive) return;
+      if (!alive || executiveLoadSeqRef.current !== loadSeq) return;
 
       const exposureError =
         exposureRes && typeof exposureRes === "object" && safeStr(exposureRes.__error)

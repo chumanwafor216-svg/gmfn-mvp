@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { PrimaryButton, SecondaryButton } from "../components/StableButton";
 import { GsnLegacyIcon } from "../components/GsnLegacyIcon";
@@ -225,9 +225,49 @@ export default function MerchantReleasePage() {
   const [expectedDeliveryDate, setExpectedDeliveryDate] = useState("");
   const [paymentScheduleNote, setPaymentScheduleNote] = useState("");
   const [receiptStatus, setReceiptStatus] = useState("awaiting_delivery");
+  const verifyLoadSeqRef = useRef(0);
+  const verifyLoadContextRef = useRef("");
+  const releaseActionSeqRef = useRef(0);
+  const releaseActionContextRef = useRef("");
+  const merchantReleaseContextRef = useRef("");
+  merchantReleaseContextRef.current = token;
 
   useEffect(() => {
     let cancelled = false;
+    const contextKey = token;
+    const loadSeq = verifyLoadSeqRef.current + 1;
+    verifyLoadSeqRef.current = loadSeq;
+    verifyLoadContextRef.current = contextKey;
+
+    function isCurrentVerifyLoad() {
+      return (
+        !cancelled &&
+        verifyLoadSeqRef.current === loadSeq &&
+        verifyLoadContextRef.current === contextKey
+      );
+    }
+
+    setVerifyResult(null);
+    setReleaseResult(null);
+    setSubmitting(false);
+    setGoodsValue("");
+    setCurrency("NGN");
+    setMerchantNote("");
+    setTradeContext("gsn_external");
+    setItemTitle("");
+    setCounterpartyLabel("");
+    setCounterpartyWhatsappLabel("");
+    setProductEvidenceNote("");
+    setInvoiceReference("");
+    setInvoiceEvidenceNote("");
+    setAgreementEvidenceNote("");
+    setCourierName("");
+    setCourierContactLabel("");
+    setTrackingNumber("");
+    setReleasedToCourierAt("");
+    setExpectedDeliveryDate("");
+    setPaymentScheduleNote("");
+    setReceiptStatus("awaiting_delivery");
 
     async function run() {
       if (!token) {
@@ -237,22 +277,25 @@ export default function MerchantReleasePage() {
       }
 
       setChecking(true);
+      setNotice(null);
       try {
         const result = await verifyMerchantPublic(token);
-        if (cancelled) return;
+        if (!isCurrentVerifyLoad()) return;
         setVerifyResult(result);
         setNotice({
           tone: "success",
           text: "The signed GSN merchant rail was checked. Review the identifiers before recording release evidence.",
         });
       } catch (error) {
-        if (cancelled) return;
+        if (!isCurrentVerifyLoad()) return;
+        setVerifyResult(null);
+        setReleaseResult(null);
         setNotice({
           tone: "error",
           text: error instanceof Error ? error.message : "This merchant release link could not be checked.",
         });
       } finally {
-        if (!cancelled) setChecking(false);
+        if (isCurrentVerifyLoad()) setChecking(false);
       }
     }
 
@@ -275,6 +318,18 @@ export default function MerchantReleasePage() {
         text: "Enter the goods value first. Record only what you actually released.",
       });
       return;
+    }
+
+    const contextKey = merchantReleaseContextRef.current;
+    const actionSeq = releaseActionSeqRef.current + 1;
+    releaseActionSeqRef.current = actionSeq;
+    releaseActionContextRef.current = contextKey;
+    function isCurrentReleaseAction() {
+      return (
+        releaseActionSeqRef.current === actionSeq &&
+        releaseActionContextRef.current === contextKey &&
+        merchantReleaseContextRef.current === contextKey
+      );
     }
 
     setSubmitting(true);
@@ -300,18 +355,20 @@ export default function MerchantReleasePage() {
         payment_schedule_note: paymentScheduleNote,
         receipt_status: receiptStatus,
       });
+      if (!isCurrentReleaseAction()) return;
       setReleaseResult(result);
       setNotice({
         tone: "success",
         text: "Release evidence recorded. Keep the Link ID and Pack ID with your own sales record.",
       });
     } catch (error) {
+      if (!isCurrentReleaseAction()) return;
       setNotice({
         tone: "error",
         text: error instanceof Error ? error.message : "Release evidence could not be recorded.",
       });
     } finally {
-      setSubmitting(false);
+      if (isCurrentReleaseAction()) setSubmitting(false);
     }
   }
 

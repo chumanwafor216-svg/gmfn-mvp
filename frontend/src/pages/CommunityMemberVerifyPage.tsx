@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { useParams } from "react-router-dom";
 import { GsnRealisticIcon, type Gsn3DIconKey } from "../components/GsnRealisticIcon";
@@ -297,6 +297,8 @@ export default function CommunityMemberVerifyPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState("");
+  const credentialLoadSeqRef = useRef(0);
+  const credentialLoadContextRef = useRef("");
   const cleanCommunityKey = safeStr(communityKey);
   const cleanMemberKey = safeStr(memberKey);
   const publicLink = useMemo(
@@ -310,24 +312,49 @@ export default function CommunityMemberVerifyPage() {
   );
 
   const loadCredential = useCallback(async () => {
+    const contextKey = `${cleanCommunityKey}:${cleanMemberKey}`;
+    const loadSeq = credentialLoadSeqRef.current + 1;
+    credentialLoadSeqRef.current = loadSeq;
+    credentialLoadContextRef.current = contextKey;
     if (!cleanCommunityKey || !cleanMemberKey) {
+      setCredential(null);
+      setCopied("");
       setError("Community ID and member GSN ID are required.");
       setLoading(false);
       return;
     }
     setLoading(true);
     setError("");
+    setCredential(null);
+    setCopied("");
     try {
       const result = await getPublicCommunityMemberVerification(
         cleanCommunityKey,
         cleanMemberKey
       );
+      if (
+        credentialLoadSeqRef.current !== loadSeq ||
+        credentialLoadContextRef.current !== contextKey
+      ) {
+        return;
+      }
       setCredential(normalizeCredential(result));
     } catch (err: any) {
+      if (
+        credentialLoadSeqRef.current !== loadSeq ||
+        credentialLoadContextRef.current !== contextKey
+      ) {
+        return;
+      }
       setCredential(null);
       setError(publicVerificationErrorMessage(err));
     } finally {
-      setLoading(false);
+      if (
+        credentialLoadSeqRef.current === loadSeq &&
+        credentialLoadContextRef.current === contextKey
+      ) {
+        setLoading(false);
+      }
     }
   }, [cleanCommunityKey, cleanMemberKey]);
 

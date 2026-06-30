@@ -516,6 +516,9 @@ export default function DemandBoxPage() {
   const [createCommunityConfirmed, setCreateCommunityConfirmed] =
     useState(false);
   const demandCreateRevealRef = useRef<number | null>(null);
+  const demandMountedRef = useRef(true);
+  const demandLoadSeqRef = useRef(0);
+  const demandLoadContextRef = useRef("");
 
   useEffect(() => {
     if (routeSelectedClanId <= 0) return;
@@ -547,7 +550,24 @@ export default function DemandBoxPage() {
   }, [notice]);
 
   const loadPage = useCallback(async (clanId = selectedClanId) => {
+    const effectiveClanId = Number(clanId || 0);
+    const contextKey = `community:${effectiveClanId || "none"}`;
+    const loadSeq = demandLoadSeqRef.current + 1;
+    demandLoadSeqRef.current = loadSeq;
+    demandLoadContextRef.current = contextKey;
+
+    function isCurrentDemandLoad() {
+      return (
+        demandMountedRef.current &&
+        demandLoadSeqRef.current === loadSeq &&
+        demandLoadContextRef.current === contextKey
+      );
+    }
+
     setLoading(true);
+    setCurrentClan(null);
+    setMyOpenRows([]);
+    setVisibleRows([]);
 
     try {
       const [meRes, currentClanRes, clansRes, myRes, visibleRes] = await Promise.all([
@@ -555,13 +575,13 @@ export default function DemandBoxPage() {
         getCurrentClan().catch(() => null),
         listMyClans().catch(() => []),
         listMarketplaceRequests({
-          clan_id: clanId || undefined,
+          clan_id: effectiveClanId || undefined,
           mine_only: true,
           status: "open",
           limit: 50,
         }).catch(() => []),
         listMarketplaceRequests({
-          clan_id: clanId || undefined,
+          clan_id: effectiveClanId || undefined,
           mine_only: false,
           status: "open",
           limit: 50,
@@ -571,7 +591,7 @@ export default function DemandBoxPage() {
       const communityRows = rowsOf<any>(clansRes);
       const selectedCommunity =
         communityRows.find(
-          (row) => Number(row?.id || row?.clan_id || 0) === Number(clanId)
+          (row) => Number(row?.id || row?.clan_id || 0) === effectiveClanId
         ) || currentClanRes || null;
       const myRows = rowsOf<DemandRow>(myRes);
       const visibleAll = rowsOf<DemandRow>(visibleRes);
@@ -580,13 +600,15 @@ export default function DemandBoxPage() {
         (row) => !isMineRow(row, meRes || null)
       );
 
+      if (!isCurrentDemandLoad()) return;
+
       setMe(meRes || null);
       setCurrentClan(selectedCommunity);
       setCommunities(communityRows);
       setMyOpenRows(myRows);
       setVisibleRows(filteredVisible);
     } finally {
-      setLoading(false);
+      if (isCurrentDemandLoad()) setLoading(false);
     }
   }, [selectedClanId]);
 
@@ -889,7 +911,12 @@ export default function DemandBoxPage() {
   ]);
 
   useEffect(() => {
+    demandMountedRef.current = true;
+
     return () => {
+      demandMountedRef.current = false;
+      demandLoadSeqRef.current += 1;
+
       if (
         typeof window !== "undefined" &&
         demandCreateRevealRef.current !== null

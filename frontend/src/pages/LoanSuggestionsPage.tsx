@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import ExplainToggle from "../components/ExplainToggle";
 import PageTopNav from "../components/PageTopNav";
@@ -57,6 +57,12 @@ type SuggestedSupporter = {
   recommendedPledge?: string | null;
   trustScore?: string | null;
   trustBand?: string | null;
+};
+
+type SuggestionLoadResult = {
+  summary: LoanDraftSummary | null;
+  raw: any;
+  supporters: SuggestedSupporter[];
 };
 
 type CollapseState = {
@@ -726,6 +732,7 @@ export default function LoanSuggestionsPage() {
   const [suggestedSupporters, setSuggestedSupporters] = useState<SuggestedSupporter[]>(
     []
   );
+  const suggestionContextRef = useRef("");
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -830,6 +837,8 @@ export default function LoanSuggestionsPage() {
 
     return rows[0] || null;
   }, [loans]);
+  const activeBorrowerLoanId = positiveNumber(activeBorrowerLoan?.id);
+  const suggestionContextKey = `${selectedClanId || 0}:${activeBorrowerLoanId}`;
 
   const withdrawalTask = useMemo(
     () => readWithdrawalTask(selectedClanId, safeStr(me?.gmfn_id)),
@@ -847,12 +856,19 @@ export default function LoanSuggestionsPage() {
   const supportGap = safeStr(withdrawalTask?.supportGap);
   const withdrawalNote = safeStr(withdrawalTask?.noteInput);
 
-  const loadSuggestionsForLoan = useCallback(async (loanId: number) => {
+  const clearSuggestionState = useCallback(() => {
+    setLoanSummary(null);
+    setSuggestionRaw(null);
+    setSuggestedSupporters([]);
+  }, []);
+
+  const fetchSuggestionsForLoan = useCallback(async (loanId: number): Promise<SuggestionLoadResult> => {
     if (!loanId || !selectedClanId) {
-      setLoanSummary(null);
-      setSuggestionRaw(null);
-      setSuggestedSupporters([]);
-      return;
+      return {
+        summary: null,
+        raw: null,
+        supporters: [],
+      };
     }
 
     const [summaryRes, suggestionsRes] = await Promise.all([
@@ -869,41 +885,56 @@ export default function LoanSuggestionsPage() {
         : Promise.resolve(null),
     ]);
 
-    setLoanSummary(normalizeLoanSummary(summaryRes));
-    setSuggestionRaw(suggestionsRes);
-    setSuggestedSupporters(extractSuggestedSupporters(suggestionsRes));
+    return {
+      summary: normalizeLoanSummary(summaryRes),
+      raw: suggestionsRes,
+      supporters: extractSuggestedSupporters(suggestionsRes),
+    };
   }, [selectedClanId]);
 
   useEffect(() => {
     let alive = true;
 
     (async () => {
-      const loanId = positiveNumber(activeBorrowerLoan?.id);
+      const loanId = activeBorrowerLoanId;
+      suggestionContextRef.current = suggestionContextKey;
+      clearSuggestionState();
 
       if (!loanId || !selectedClanId) {
-        if (!alive) return;
-        setLoanSummary(null);
-        setSuggestionRaw(null);
-        setSuggestedSupporters([]);
         return;
       }
 
-      await loadSuggestionsForLoan(loanId);
+      const result = await fetchSuggestionsForLoan(loanId);
 
-      if (!alive) return;
+      if (!alive || suggestionContextRef.current !== suggestionContextKey) return;
+
+      setLoanSummary(result.summary);
+      setSuggestionRaw(result.raw);
+      setSuggestedSupporters(result.supporters);
     })();
 
     return () => {
       alive = false;
     };
-  }, [activeBorrowerLoan?.id, loadSuggestionsForLoan, selectedClanId]);
+  }, [
+    activeBorrowerLoanId,
+    clearSuggestionState,
+    fetchSuggestionsForLoan,
+    selectedClanId,
+    suggestionContextKey,
+  ]);
 
   async function handleRefresh() {
     setRefreshing(true);
     try {
-      const loanId = positiveNumber(activeBorrowerLoan?.id);
+      const loanId = activeBorrowerLoanId;
+      const contextKey = suggestionContextKey;
       if (!loanId) return;
-      await loadSuggestionsForLoan(loanId);
+      const result = await fetchSuggestionsForLoan(loanId);
+      if (suggestionContextRef.current !== contextKey) return;
+      setLoanSummary(result.summary);
+      setSuggestionRaw(result.raw);
+      setSuggestedSupporters(result.supporters);
     } finally {
       setRefreshing(false);
     }

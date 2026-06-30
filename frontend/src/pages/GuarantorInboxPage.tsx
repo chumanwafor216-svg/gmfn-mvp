@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import ExplainToggle from "../components/ExplainToggle";
 import GsnSnapshotPaperCard from "../components/GsnSnapshotPaperCard";
@@ -78,6 +78,14 @@ type CollapseState = {
 type Notice = {
   tone: "success" | "error";
   text: string;
+};
+
+type InboxLoadResult = {
+  pending: InboxRow[];
+  approved: InboxRow[];
+  declined: InboxRow[];
+  community: CommunityLite | null;
+  me: MeLite | null;
 };
 
 const GUARANTOR_INBOX_UI_STORAGE_KEY = "gmfn.guarantorInbox.sections.v1";
@@ -549,6 +557,8 @@ export default function GuarantorInboxPage() {
   const [approvedRows, setApprovedRows] = useState<InboxRow[]>([]);
   const [declinedRows, setDeclinedRows] = useState<InboxRow[]>([]);
   const [notice, setNotice] = useState<Notice | null>(null);
+  const inboxContextRef = useRef("");
+  const inboxLoadSeqRef = useRef(0);
 
   useEffect(() => {
     if (routeClanId > 0) {
@@ -557,52 +567,87 @@ export default function GuarantorInboxPage() {
   }, [routeClanId]);
   const [busyDecisionKey, setBusyDecisionKey] = useState("");
 
-  const loadInbox = useCallback(async () => {
+  const clearInboxState = useCallback(() => {
+    setPendingRows([]);
+    setApprovedRows([]);
+    setDeclinedRows([]);
+    setCommunity(null);
+    setMe(null);
+  }, []);
+
+  const fetchInbox = useCallback(async (): Promise<InboxLoadResult> => {
+    const [pendingRes, approvedRes, declinedRes, clanRes, meRes] = await Promise.all([
+      getLoanGuarantorInbox({
+        clan_id: selectedClanId || undefined,
+        status: "pending",
+        limit: 50,
+      }).catch(() => ({ items: [] })),
+      getLoanGuarantorInbox({
+        clan_id: selectedClanId || undefined,
+        status: "approved",
+        limit: 50,
+      }).catch(() => ({ items: [] })),
+      getLoanGuarantorInbox({
+        clan_id: selectedClanId || undefined,
+        status: "declined",
+        limit: 50,
+      }).catch(() => ({ items: [] })),
+      getCurrentClan().catch(() => null),
+      getMe().catch(() => null),
+    ]);
+
+    return {
+      pending: rowsOf<any>(pendingRes)
+        .map((row) => normalizeInboxRow(row))
+        .filter(Boolean) as InboxRow[],
+      approved: rowsOf<any>(approvedRes)
+        .map((row) => normalizeInboxRow(row))
+        .filter(Boolean) as InboxRow[],
+      declined: rowsOf<any>(declinedRes)
+        .map((row) => normalizeInboxRow(row))
+        .filter(Boolean) as InboxRow[],
+      community: clanRes || null,
+      me: meRes || null,
+    };
+  }, [selectedClanId]);
+
+  const loadInbox = useCallback(async (options?: { clearNotice?: boolean }) => {
+    const contextKey = `${selectedClanId || 0}`;
+    const loadSeq = inboxLoadSeqRef.current + 1;
+    inboxLoadSeqRef.current = loadSeq;
+    inboxContextRef.current = contextKey;
     setLoading(true);
+    clearInboxState();
+
+    if (options?.clearNotice) {
+      setNotice(null);
+      setBusyDecisionKey("");
+    }
 
     try {
-      const [pendingRes, approvedRes, declinedRes, clanRes, meRes] = await Promise.all([
-        getLoanGuarantorInbox({
-          clan_id: selectedClanId || undefined,
-          status: "pending",
-          limit: 50,
-        }).catch(() => ({ items: [] })),
-        getLoanGuarantorInbox({
-          clan_id: selectedClanId || undefined,
-          status: "approved",
-          limit: 50,
-        }).catch(() => ({ items: [] })),
-        getLoanGuarantorInbox({
-          clan_id: selectedClanId || undefined,
-          status: "declined",
-          limit: 50,
-        }).catch(() => ({ items: [] })),
-        getCurrentClan().catch(() => null),
-        getMe().catch(() => null),
-      ]);
+      const result = await fetchInbox();
 
-      setPendingRows(
-        rowsOf<any>(pendingRes)
-          .map((row) => normalizeInboxRow(row))
-          .filter(Boolean) as InboxRow[]
-      );
-      setApprovedRows(
-        rowsOf<any>(approvedRes)
-          .map((row) => normalizeInboxRow(row))
-          .filter(Boolean) as InboxRow[]
-      );
-      setDeclinedRows(
-        rowsOf<any>(declinedRes)
-          .map((row) => normalizeInboxRow(row))
-          .filter(Boolean) as InboxRow[]
-      );
+      if (
+        inboxContextRef.current !== contextKey ||
+        inboxLoadSeqRef.current !== loadSeq
+      ) {
+        return;
+      }
 
-      setCommunity(clanRes || null);
-      setMe(meRes || null);
+      setPendingRows(result.pending);
+      setApprovedRows(result.approved);
+      setDeclinedRows(result.declined);
+      setCommunity(result.community);
+      setMe(result.me);
     } finally {
-      setLoading(false);
+      if (
+        inboxContextRef.current === contextKey &&
+        inboxLoadSeqRef.current === loadSeq
+      ) {
+        setLoading(false);
+      }
     }
-  }, [selectedClanId]);
+  }, [clearInboxState, fetchInbox, selectedClanId]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -622,8 +667,8 @@ export default function GuarantorInboxPage() {
   }, [collapsed]);
 
   useEffect(() => {
-    void loadInbox();
-  }, [loadInbox, selectedClanId]);
+    void loadInbox({ clearNotice: true });
+  }, [loadInbox]);
 
   const allRows = useMemo(() => {
     const rows = [...pendingRows, ...approvedRows, ...declinedRows];
@@ -779,6 +824,7 @@ export default function GuarantorInboxPage() {
     }
 
     const key = `${loanId}-${guarantorId}-${status}`;
+    const decisionContextKey = inboxContextRef.current || `${selectedClanId || 0}`;
     setBusyDecisionKey(key);
     setNotice(null);
 
@@ -787,6 +833,9 @@ export default function GuarantorInboxPage() {
         status,
         clan_id: selectedClanId || undefined,
       });
+
+      if (inboxContextRef.current !== decisionContextKey) return;
+
       setNotice({
         tone: "success",
         text:
@@ -796,12 +845,16 @@ export default function GuarantorInboxPage() {
       });
       await loadInbox();
     } catch (error: any) {
+      if (inboxContextRef.current !== decisionContextKey) return;
+
       setNotice({
         tone: "error",
         text: String(error?.message || error || "Unable to record this support response."),
       });
     } finally {
-      setBusyDecisionKey("");
+      if (inboxContextRef.current === decisionContextKey) {
+        setBusyDecisionKey("");
+      }
     }
   }
 

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import ExplainToggle from "../components/ExplainToggle";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
@@ -246,6 +246,8 @@ export default function ShopAccessPage() {
   const [loading, setLoading] = useState(true);
   const [errorText, setErrorText] = useState("");
   const [view, setView] = useState<VaultShopAccessView | null>(null);
+  const accessLoadSeqRef = useRef(0);
+  const accessLoadContextRef = useRef("");
 
   useEffect(() => {
     if (typeof document !== "undefined") {
@@ -255,9 +257,22 @@ export default function ShopAccessPage() {
 
   useEffect(() => {
     let alive = true;
+    const contextKey = token;
+    const loadSeq = accessLoadSeqRef.current + 1;
+    accessLoadSeqRef.current = loadSeq;
+    accessLoadContextRef.current = contextKey;
+
+    function isCurrentAccessLoad() {
+      return (
+        alive &&
+        accessLoadSeqRef.current === loadSeq &&
+        accessLoadContextRef.current === contextKey
+      );
+    }
 
     async function load() {
       if (!token) {
+        setView(null);
         setErrorText("This Vault link is missing its access token.");
         setLoading(false);
         return;
@@ -265,10 +280,11 @@ export default function ShopAccessPage() {
 
       setLoading(true);
       setErrorText("");
+      setView(null);
 
       try {
         const res = await getVaultShopAccessView(token);
-        if (!alive) return;
+        if (!isCurrentAccessLoad()) return;
         setView(res || null);
 
         const nextStatus = safeStr(res?.status).toLowerCase();
@@ -289,12 +305,13 @@ export default function ShopAccessPage() {
           );
         }
       } catch (err: any) {
-        if (!alive) return;
+        if (!isCurrentAccessLoad()) return;
+        setView(null);
         setErrorText(
           safeStr(err?.message) || "This Vault access link could not be opened."
         );
       } finally {
-        if (alive) setLoading(false);
+        if (isCurrentAccessLoad()) setLoading(false);
       }
     }
 

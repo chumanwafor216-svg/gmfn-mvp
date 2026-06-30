@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { useParams } from "react-router-dom";
 import { GsnRealisticIcon, type Gsn3DIconKey } from "../components/GsnRealisticIcon";
@@ -367,7 +367,14 @@ export default function CommunityVerifyPage() {
       isFollowing: false,
       followerCount: null,
     });
+  const recordLoadSeqRef = useRef(0);
+  const recordLoadContextRef = useRef("");
+  const followLoadSeqRef = useRef(0);
+  const followLoadContextRef = useRef("");
+  const verifyContextRef = useRef("");
   const keyText = safeStr(communityKey);
+  const verifyContextKey = `${keyText}:${firstTruthy(record?.community_id)}`;
+  verifyContextRef.current = verifyContextKey;
   const publicLink = useMemo(
     () => publicFrontendUrl(`/verify/community/${encodeURIComponent(keyText)}`),
     [keyText]
@@ -378,21 +385,53 @@ export default function CommunityVerifyPage() {
   );
 
   const loadRecord = useCallback(async () => {
+    const contextKey = keyText;
+    const loadSeq = recordLoadSeqRef.current + 1;
+    recordLoadSeqRef.current = loadSeq;
+    recordLoadContextRef.current = contextKey;
     if (!keyText) {
+      setRecord(null);
       setError("Community code is missing.");
       setLoading(false);
       return;
     }
     setLoading(true);
     setError("");
+    setRecord(null);
+    setNotice(null);
+    setRequestingConfirmation(false);
+    setCommunityFollowState({
+      loading: false,
+      busy: false,
+      statusKnown: false,
+      isFollowing: false,
+      followerCount: null,
+    });
     try {
       const result = await getPublicCommunityVerification(keyText);
+      if (
+        recordLoadSeqRef.current !== loadSeq ||
+        recordLoadContextRef.current !== contextKey
+      ) {
+        return;
+      }
       setRecord(normalizeRecord(result));
     } catch (err: any) {
+      if (
+        recordLoadSeqRef.current !== loadSeq ||
+        recordLoadContextRef.current !== contextKey
+      ) {
+        return;
+      }
       setRecord(null);
       setError(publicVerificationErrorMessage(err));
     } finally {
-      setLoading(false);
+      if (
+        recordLoadSeqRef.current === loadSeq &&
+        recordLoadContextRef.current === contextKey
+      ) {
+        setLoading(false);
+      }
     }
   }, [keyText]);
 
@@ -407,6 +446,10 @@ export default function CommunityVerifyPage() {
   }, [notice]);
 
   const loadCommunityFollowState = useCallback(async () => {
+    const contextKey = `${keyText}:${communityFollowId || 0}`;
+    const loadSeq = followLoadSeqRef.current + 1;
+    followLoadSeqRef.current = loadSeq;
+    followLoadContextRef.current = contextKey;
     if (!communityFollowId) {
       setCommunityFollowState({
         loading: false,
@@ -421,12 +464,24 @@ export default function CommunityVerifyPage() {
     setCommunityFollowState((prev) => ({ ...prev, loading: true }));
     try {
       const countResult = await getCommunityFollowerCount(communityFollowId);
+      if (
+        followLoadSeqRef.current !== loadSeq ||
+        followLoadContextRef.current !== contextKey
+      ) {
+        return;
+      }
       const followerCount = responseFollowerCount(countResult);
       let statusKnown = false;
       let isFollowing = false;
 
       try {
         const statusResult = await getCommunityFollowStatus(communityFollowId);
+        if (
+          followLoadSeqRef.current !== loadSeq ||
+          followLoadContextRef.current !== contextKey
+        ) {
+          return;
+        }
         statusKnown = true;
         isFollowing = Boolean(statusResult?.is_following);
         const statusCount = responseFollowerCount(statusResult);
@@ -443,6 +498,12 @@ export default function CommunityVerifyPage() {
         isFollowing = false;
       }
 
+      if (
+        followLoadSeqRef.current !== loadSeq ||
+        followLoadContextRef.current !== contextKey
+      ) {
+        return;
+      }
       setCommunityFollowState((prev) => ({
         ...prev,
         loading: false,
@@ -451,6 +512,12 @@ export default function CommunityVerifyPage() {
         followerCount: followerCount ?? 0,
       }));
     } catch {
+      if (
+        followLoadSeqRef.current !== loadSeq ||
+        followLoadContextRef.current !== contextKey
+      ) {
+        return;
+      }
       setCommunityFollowState((prev) => ({
         ...prev,
         loading: false,
@@ -459,7 +526,7 @@ export default function CommunityVerifyPage() {
         followerCount: null,
       }));
     }
-  }, [communityFollowId]);
+  }, [communityFollowId, keyText]);
 
   useEffect(() => {
     void loadCommunityFollowState();
@@ -638,6 +705,9 @@ export default function CommunityVerifyPage() {
   const confirmationActionBody = requestConfirmationAvailable
     ? "Use Request confirmation when you need a current answer from the community without exposing private member contacts."
     : "This community cannot receive controlled confirmation from this public page yet. Ask for a scoped member credential, TrustSlip, acknowledged affiliate record, or fresh community evidence before acting.";
+  const isCurrentVerifyContext = useCallback((contextKey: string) => {
+    return verifyContextRef.current === contextKey;
+  }, []);
 
   const communityVerifyLinkPackage = useMemo(
     () =>
@@ -678,11 +748,13 @@ export default function CommunityVerifyPage() {
       return;
     }
 
+    const contextKey = verifyContextRef.current;
     setCommunityFollowState((prev) => ({ ...prev, busy: true }));
     try {
       const result = communityFollowState.isFollowing
         ? await unfollowCommunity(communityFollowId)
         : await followCommunity(communityFollowId);
+      if (!isCurrentVerifyContext(contextKey)) return;
       const followerCount = responseFollowerCount(result);
       const isFollowing = Boolean(result?.is_following);
       setCommunityFollowState((prev) => ({
@@ -699,6 +771,7 @@ export default function CommunityVerifyPage() {
           : "You have unfollowed this community. GSN records this as a light community-interest update, not a trust downgrade.",
       });
     } catch (err: any) {
+      if (!isCurrentVerifyContext(contextKey)) return;
       const message = safeStr(err?.message || err);
       const needsSignIn =
         message.toLowerCase().includes("not authenticated") ||
@@ -732,11 +805,13 @@ export default function CommunityVerifyPage() {
       return;
     }
 
+    const contextKey = verifyContextRef.current;
     setRequestingConfirmation(true);
     try {
       const result = await requestPublicCommunityVerificationConfirmation(requestKey, {
         requester_external_label: "Public verification viewer",
       });
+      if (!isCurrentVerifyContext(contextKey)) return;
       setNotice({
         tone: "success",
         text:
@@ -744,6 +819,7 @@ export default function CommunityVerifyPage() {
           "Request sent through GSN controlled relay. Private member contacts were not exposed.",
       });
     } catch (err: any) {
+      if (!isCurrentVerifyContext(contextKey)) return;
       setNotice({
         tone: "error",
         text:
@@ -751,7 +827,7 @@ export default function CommunityVerifyPage() {
           "Request could not be sent through the controlled relay. Try again from this page.",
       });
     } finally {
-      setRequestingConfirmation(false);
+      if (isCurrentVerifyContext(contextKey)) setRequestingConfirmation(false);
     }
   }
 

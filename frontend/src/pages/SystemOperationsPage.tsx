@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import ExplainToggle from "../components/ExplainToggle";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import PageTopNav from "../components/PageTopNav";
@@ -509,6 +509,8 @@ export default function SystemOperationsPage() {
   const [pilotIntake, setPilotIntake] = useState<any>(null);
   const [reviewingCheckId, setReviewingCheckId] = useState<number | null>(null);
   const [reviewMessage, setReviewMessage] = useState<string>("");
+  const operationsLoadSeqRef = useRef(0);
+  const operationsLoadContextRef = useRef("");
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -529,9 +531,30 @@ export default function SystemOperationsPage() {
 
   useEffect(() => {
     let alive = true;
+    const contextKey = `community:${selectedClanId || "none"}`;
+    const loadSeq = operationsLoadSeqRef.current + 1;
+    operationsLoadSeqRef.current = loadSeq;
+    operationsLoadContextRef.current = contextKey;
+
+    function isCurrentOperationsLoad() {
+      return (
+        alive &&
+        operationsLoadSeqRef.current === loadSeq &&
+        operationsLoadContextRef.current === contextKey
+      );
+    }
 
     (async () => {
       setLoading(true);
+      setCurrentClan(null);
+      setDiagnostics(null);
+      setIdentityRisk([]);
+      setPilotIntake(null);
+      setIncompleteLoans([]);
+      setPendingPool([]);
+      setBankRecent([]);
+      setBankUnmatched([]);
+      setExpectedPayments([]);
 
       try {
         const [
@@ -561,10 +584,10 @@ export default function SystemOperationsPage() {
                 { items: [] },
                 { items: [] },
                 { items: [] },
-              ]),
+            ]),
         ]);
 
-        if (!alive) return;
+        if (!isCurrentOperationsLoad()) return;
 
         const [
           incompleteLoansRes,
@@ -585,7 +608,7 @@ export default function SystemOperationsPage() {
         setBankUnmatched(rowsOf<any>(bankUnmatchedRes));
         setExpectedPayments(rowsOf<any>(expectedPaymentsRes));
       } finally {
-        if (alive) setLoading(false);
+        if (isCurrentOperationsLoad()) setLoading(false);
       }
     })();
 

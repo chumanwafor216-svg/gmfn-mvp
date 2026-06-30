@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { useLocation, useNavigate } from "react-router-dom";
 import ExplainToggle from "../components/ExplainToggle";
@@ -618,6 +618,18 @@ function CommunityConfirmationPolicyPage() {
   const [memberWitnessRequest, setMemberWitnessRequest] = useState<MemberWitnessRequest | null>(null);
   const [memberWitnessApprovalCode, setMemberWitnessApprovalCode] = useState("");
   const [memberWitnessResponseNote, setMemberWitnessResponseNote] = useState("");
+  const policyLoadSeqRef = useRef(0);
+  const policyLoadContextRef = useRef("");
+  const affiliationsLoadSeqRef = useRef(0);
+  const affiliationsLoadContextRef = useRef("");
+  const externalRegistrationLoadSeqRef = useRef(0);
+  const externalRegistrationLoadContextRef = useRef("");
+  const membersLoadSeqRef = useRef(0);
+  const membersLoadContextRef = useRef("");
+  const memberWitnessSummaryLoadSeqRef = useRef(0);
+  const memberWitnessSummaryContextRef = useRef("");
+  const memberWitnessRequestLoadSeqRef = useRef(0);
+  const memberWitnessRequestContextRef = useRef("");
 
   const memberWitnessRequestToken = useMemo(() => {
     return firstTruthy(new URLSearchParams(location.search).get("member_witness_request"));
@@ -691,7 +703,14 @@ function CommunityConfirmationPolicyPage() {
   }, [notice]);
 
   const loadPolicy = useCallback(async () => {
+    const contextKey = `${communityId || 0}:${memberWitnessFocus ? "witness" : "policy"}`;
+    const loadSeq = policyLoadSeqRef.current + 1;
+    policyLoadSeqRef.current = loadSeq;
+    policyLoadContextRef.current = contextKey;
     if (!communityId) {
+      setCommunity(null);
+      setPolicy({});
+      setContacts([]);
       setLoading(false);
       return;
     }
@@ -702,6 +721,12 @@ function CommunityConfirmationPolicyPage() {
     setLoading(true);
     try {
       const result = await getCommunityConfirmationPolicy(communityId);
+      if (
+        policyLoadSeqRef.current !== loadSeq ||
+        policyLoadContextRef.current !== contextKey
+      ) {
+        return;
+      }
       setCommunity(result?.community || null);
       setPolicy(result?.policy || {});
       setContacts(
@@ -710,20 +735,48 @@ function CommunityConfirmationPolicyPage() {
           .filter(Boolean) as RelayContact[]
       );
     } catch {
+      if (
+        policyLoadSeqRef.current !== loadSeq ||
+        policyLoadContextRef.current !== contextKey
+      ) {
+        return;
+      }
       setNotice({
         tone: "error",
         text: "GSN could not load this relay policy. You may need community admin access.",
       });
     } finally {
-      setLoading(false);
+      if (
+        policyLoadSeqRef.current === loadSeq &&
+        policyLoadContextRef.current === contextKey
+      ) {
+        setLoading(false);
+      }
     }
   }, [communityId, memberWitnessFocus]);
 
   const loadAffiliations = useCallback(async () => {
-    if (!communityId || memberWitnessFocus) return;
+    const contextKey = `${communityId || 0}:${memberWitnessFocus ? "witness" : "policy"}`;
+    const loadSeq = affiliationsLoadSeqRef.current + 1;
+    affiliationsLoadSeqRef.current = loadSeq;
+    affiliationsLoadContextRef.current = contextKey;
+    if (!communityId || memberWitnessFocus) {
+      setIncomingAffiliations([]);
+      setOutgoingAffiliations([]);
+      setAffiliationLoading(false);
+      return;
+    }
     setAffiliationLoading(true);
+    setIncomingAffiliations([]);
+    setOutgoingAffiliations([]);
     try {
       const result = await getCommunityDomainAffiliations(communityId);
+      if (
+        affiliationsLoadSeqRef.current !== loadSeq ||
+        affiliationsLoadContextRef.current !== contextKey
+      ) {
+        return;
+      }
       setIncomingAffiliations(
         rowsOf<any>(result?.incoming)
           .map((row) => normalizeDomainAffiliation(row))
@@ -735,6 +788,12 @@ function CommunityConfirmationPolicyPage() {
           .filter(Boolean) as DomainAffiliation[]
       );
     } catch {
+      if (
+        affiliationsLoadSeqRef.current !== loadSeq ||
+        affiliationsLoadContextRef.current !== contextKey
+      ) {
+        return;
+      }
       setIncomingAffiliations([]);
       setOutgoingAffiliations([]);
       setNotice({
@@ -742,41 +801,91 @@ function CommunityConfirmationPolicyPage() {
         text: "GSN could not load domain affiliation records for this community.",
       });
     } finally {
-      setAffiliationLoading(false);
+      if (
+        affiliationsLoadSeqRef.current === loadSeq &&
+        affiliationsLoadContextRef.current === contextKey
+      ) {
+        setAffiliationLoading(false);
+      }
     }
   }, [communityId, memberWitnessFocus]);
 
   const loadExternalRegistrationRecords = useCallback(async () => {
-    if (!communityId || memberWitnessFocus) return;
+    const contextKey = `${communityId || 0}:${memberWitnessFocus ? "witness" : "policy"}`;
+    const loadSeq = externalRegistrationLoadSeqRef.current + 1;
+    externalRegistrationLoadSeqRef.current = loadSeq;
+    externalRegistrationLoadContextRef.current = contextKey;
+    if (!communityId || memberWitnessFocus) {
+      setExternalRegistrationRecords([]);
+      setExternalRegistrationLoading(false);
+      return;
+    }
     setExternalRegistrationLoading(true);
+    setExternalRegistrationRecords([]);
     try {
       const result = await listCommunityExternalRegistrationEvidence(communityId, 10);
+      if (
+        externalRegistrationLoadSeqRef.current !== loadSeq ||
+        externalRegistrationLoadContextRef.current !== contextKey
+      ) {
+        return;
+      }
       setExternalRegistrationRecords(
         rowsOf<any>(result)
           .map((row) => normalizeExternalRegistrationEvidence(row))
           .filter(Boolean) as ExternalRegistrationEvidenceRecord[]
       );
     } catch {
+      if (
+        externalRegistrationLoadSeqRef.current !== loadSeq ||
+        externalRegistrationLoadContextRef.current !== contextKey
+      ) {
+        return;
+      }
       setExternalRegistrationRecords([]);
       setNotice({
         tone: "error",
         text: "GSN could not load external registration evidence for this community.",
       });
     } finally {
-      setExternalRegistrationLoading(false);
+      if (
+        externalRegistrationLoadSeqRef.current === loadSeq &&
+        externalRegistrationLoadContextRef.current === contextKey
+      ) {
+        setExternalRegistrationLoading(false);
+      }
     }
   }, [communityId, memberWitnessFocus]);
 
   const loadMembers = useCallback(async () => {
-    if (!communityId) return;
+    const contextKey = String(communityId || 0);
+    const loadSeq = membersLoadSeqRef.current + 1;
+    membersLoadSeqRef.current = loadSeq;
+    membersLoadContextRef.current = contextKey;
+    if (!communityId) {
+      setMembers([]);
+      return;
+    }
     try {
       const result = await listClanMembers(communityId);
+      if (
+        membersLoadSeqRef.current !== loadSeq ||
+        membersLoadContextRef.current !== contextKey
+      ) {
+        return;
+      }
       setMembers(
         rowsOf<any>(result)
           .map((row) => normalizeMember(row))
           .filter(Boolean) as CommunityMember[]
       );
     } catch {
+      if (
+        membersLoadSeqRef.current !== loadSeq ||
+        membersLoadContextRef.current !== contextKey
+      ) {
+        return;
+      }
       setMembers([]);
       setNotice({
         tone: "error",
@@ -789,15 +898,32 @@ function CommunityConfirmationPolicyPage() {
     async (subjectUserId: string | number = selectedSubjectUserId) => {
       if (!communityId) return;
       const subjectId = Number(subjectUserId || 0);
+      const contextKey = `${communityId || 0}:${subjectId || 0}`;
+      const loadSeq = memberWitnessSummaryLoadSeqRef.current + 1;
+      memberWitnessSummaryLoadSeqRef.current = loadSeq;
+      memberWitnessSummaryContextRef.current = contextKey;
       if (!Number.isFinite(subjectId) || subjectId <= 0) {
         setMemberWitnessSummary(null);
+        setMemberVerificationLoading(false);
         return;
       }
       setMemberVerificationLoading(true);
       try {
         const result = await getCommunityMemberVerificationSummary(communityId, subjectId);
+        if (
+          memberWitnessSummaryLoadSeqRef.current !== loadSeq ||
+          memberWitnessSummaryContextRef.current !== contextKey
+        ) {
+          return;
+        }
         setMemberWitnessSummary(normalizeWitnessSummary(result));
       } catch (err: any) {
+        if (
+          memberWitnessSummaryLoadSeqRef.current !== loadSeq ||
+          memberWitnessSummaryContextRef.current !== contextKey
+        ) {
+          return;
+        }
         setMemberWitnessSummary(null);
         setNotice({
           tone: "error",
@@ -807,7 +933,12 @@ function CommunityConfirmationPolicyPage() {
           ),
         });
       } finally {
-        setMemberVerificationLoading(false);
+        if (
+          memberWitnessSummaryLoadSeqRef.current === loadSeq &&
+          memberWitnessSummaryContextRef.current === contextKey
+        ) {
+          setMemberVerificationLoading(false);
+        }
       }
     },
     [communityId, selectedSubjectUserId]
@@ -815,10 +946,26 @@ function CommunityConfirmationPolicyPage() {
 
   const loadMemberWitnessRequest = useCallback(
     async (token: string = memberWitnessRequestToken) => {
-      if (!communityId || !token) return;
+      const requestToken = safeStr(token);
+      const contextKey = `${communityId || 0}:${requestToken}`;
+      const loadSeq = memberWitnessRequestLoadSeqRef.current + 1;
+      memberWitnessRequestLoadSeqRef.current = loadSeq;
+      memberWitnessRequestContextRef.current = contextKey;
+      if (!communityId || !requestToken) {
+        setMemberWitnessRequest(null);
+        setMemberWitnessRequestLoading(false);
+        return;
+      }
       setMemberWitnessRequestLoading(true);
+      setMemberWitnessRequest(null);
       try {
-        const result = await getCommunityMemberVerificationRequest(communityId, token);
+        const result = await getCommunityMemberVerificationRequest(communityId, requestToken);
+        if (
+          memberWitnessRequestLoadSeqRef.current !== loadSeq ||
+          memberWitnessRequestContextRef.current !== contextKey
+        ) {
+          return;
+        }
         const normalized = normalizeWitnessRequest(result);
         setMemberWitnessRequest(normalized);
         if (normalized?.subjectUserId) {
@@ -826,13 +973,24 @@ function CommunityConfirmationPolicyPage() {
           await loadMemberWitnessSummary(normalized.subjectUserId);
         }
       } catch (err: any) {
+        if (
+          memberWitnessRequestLoadSeqRef.current !== loadSeq ||
+          memberWitnessRequestContextRef.current !== contextKey
+        ) {
+          return;
+        }
         setMemberWitnessRequest(null);
         setNotice({
           tone: "error",
           text: firstTruthy(err?.message, "GSN could not load this witness request."),
         });
       } finally {
-        setMemberWitnessRequestLoading(false);
+        if (
+          memberWitnessRequestLoadSeqRef.current === loadSeq &&
+          memberWitnessRequestContextRef.current === contextKey
+        ) {
+          setMemberWitnessRequestLoading(false);
+        }
       }
     },
     [communityId, loadMemberWitnessSummary, memberWitnessRequestToken]

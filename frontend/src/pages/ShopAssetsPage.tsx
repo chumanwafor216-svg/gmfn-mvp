@@ -792,6 +792,8 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
   const [notice, setNotice] = useState<{ tone: NoticeTone; text: string } | null>(
     null
   );
+  const mountedRef = useRef(false);
+  const loadSeqRef = useRef(0);
   const productImagePrepJobRef = useRef(0);
   const productVideoPrepJobRef = useRef(0);
   const [isCompact, setIsCompact] = useState<boolean>(() => {
@@ -857,6 +859,16 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
     }),
     [selectedClanId]
   );
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      loadSeqRef.current += 1;
+      productImagePrepJobRef.current += 1;
+      productVideoPrepJobRef.current += 1;
+    };
+  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -944,14 +956,23 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
     }));
   }
 
+  function canApplyLoad(seq: number): boolean {
+    return mountedRef.current && loadSeqRef.current === seq;
+  }
+
   const loadPage = useCallback(async (): Promise<ProductRecord[]> => {
-    setLoading(true);
+    const loadSeq = loadSeqRef.current + 1;
+    loadSeqRef.current = loadSeq;
     const seedProducts = normalizeProductRecords(props.seedProducts || []);
     const seedShop = (props.seedShop || null) as ShopRecord | null;
+    setLoading(true);
+    setShop(seedShop);
+    setProducts(seedProducts);
 
     try {
       let loadedProducts: ProductRecord[] = [];
       const meRes = await getMe().catch(() => null);
+      if (!canApplyLoad(loadSeq)) return seedProducts;
       setMe(meRes || null);
 
       const gmfnId = firstTruthy(
@@ -966,24 +987,29 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
         header_clan_id: selectedClanId || undefined,
         product_limit: 300,
       }).catch(() => null);
+      if (!canApplyLoad(loadSeq)) return seedProducts;
       if (!shopRes?.item && selectedClanId > 0) {
         shopRes = await getMyMarketplaceShop({
           product_limit: 300,
         }).catch(() => shopRes);
+        if (!canApplyLoad(loadSeq)) return seedProducts;
       }
 
       if (!shopRes?.item && gmfnId) {
         shopRes = await apiJson<any>(
           `/api/marketplace/shops/by-gmfn/${encodeURIComponent(gmfnId)}?clan_id=${selectedClanId || 0}`
         ).catch(() => shopRes);
+        if (!canApplyLoad(loadSeq)) return seedProducts;
         if (!shopRes?.item && selectedClanId > 0) {
           shopRes = await apiJson<any>(
             `/api/marketplace/shops/by-gmfn/${encodeURIComponent(gmfnId)}`
           ).catch(() => shopRes);
+          if (!canApplyLoad(loadSeq)) return seedProducts;
         }
       }
 
       if (!shopRes?.item && !gmfnId) {
+        if (!canApplyLoad(loadSeq)) return seedProducts;
         setShop(seedShop);
         setProducts(seedProducts);
         return seedProducts;
@@ -1010,12 +1036,14 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
             broadcast_limit: 1,
           }).catch(() => null)
         : null;
+      if (!canApplyLoad(loadSeq)) return seedProducts;
       if (!publicShopRes && effectiveGmfnId && selectedClanId > 0) {
         publicShopRes = await getPublicMarketplaceShopByGmfnId(effectiveGmfnId, {
           product_limit: 200,
           broadcast_limit: 1,
         }).catch(() => null);
       }
+      if (!canApplyLoad(loadSeq)) return seedProducts;
       const publicShopItem = (publicShopRes?.item || null) as ShopRecord | null;
       const publicShopProducts: ProductRecord[] = Array.isArray(publicShopRes?.products)
         ? normalizeProductRecords(publicShopRes.products)
@@ -1029,6 +1057,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
           `/api/marketplace/products?clan_id=${selectedClanId || 0}&shop_id=${shopItem.id}&include_private_manage=true&only_active=false&limit=200`
         ).catch(() => ({ items: nextProducts }));
 
+        if (!canApplyLoad(loadSeq)) return seedProducts;
         const managedProducts = Array.isArray(productsRes?.items)
           ? normalizeProductRecords(productsRes.items)
           : [];
@@ -1058,6 +1087,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
       loadedProducts = nextProducts;
       return loadedProducts;
     } catch (err: any) {
+      if (!canApplyLoad(loadSeq)) return seedProducts;
       const message = shopAssetsRequestErrorMessage(err);
       setShop(seedShop);
       setProducts(seedProducts);
@@ -1068,7 +1098,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
       );
       return seedProducts;
     } finally {
-      setLoading(false);
+      if (canApplyLoad(loadSeq)) setLoading(false);
     }
   }, [
     props.preferredGmfnId,
@@ -1349,6 +1379,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
       if (shopSelectedFile) {
         setUploadingShopImage(true);
         nextImageUrl = await uploadMarketplaceImageFile(shopSelectedFile);
+        if (!mountedRef.current) return;
       }
 
       const body: any = {
@@ -1370,6 +1401,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
         body: JSON.stringify(body),
       });
 
+      if (!mountedRef.current) return;
       const updated = (res?.item || shop) as ShopRecord;
       setShop(updated);
       setShopName(firstTruthy(updated?.name));
@@ -1386,10 +1418,13 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
       }));
       showNotice("success", "Shop information saved. Shop info control closed.");
     } catch (err: any) {
+      if (!mountedRef.current) return;
       showNotice("error", safeStr(err?.message) || "Shop signboard could not be saved.");
     } finally {
-      setSavingShop(false);
-      setUploadingShopImage(false);
+      if (mountedRef.current) {
+        setSavingShop(false);
+        setUploadingShopImage(false);
+      }
     }
   }
 
@@ -1410,6 +1445,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
       body: JSON.stringify(body),
     });
 
+    if (!mountedRef.current) return null;
     const nextShop = (res?.item || null) as ShopRecord | null;
     if (!nextShop?.id) return null;
 
@@ -1542,6 +1578,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
 
     try {
       const activeShop = await ensureShopRecordForProduct();
+      if (!mountedRef.current) return;
       if (!activeShop?.id) {
         showProductFormNotice(
           "error",
@@ -1557,6 +1594,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
 
       if (productSelectedFile) {
         nextImageUrl = await uploadMarketplaceImageFile(productSelectedFile);
+        if (!mountedRef.current) return;
       }
 
       if (productSelectedVideoFile) {
@@ -1564,12 +1602,15 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
           productSelectedVideoFile,
           productVideoDurationSeconds
         );
+        if (!mountedRef.current) return;
       }
 
       if (!nextImageUrl) {
         if (productSelectedVideoFile) {
           const cover = await createShopGalleryCoverFromVideo(productSelectedVideoFile);
+          if (!mountedRef.current) return;
           nextImageUrl = await uploadMarketplaceImageFile(cover.file);
+          if (!mountedRef.current) return;
           showProductFormNotice("info", cover.message);
         } else if (nextVideoUrl) {
           nextImageUrl = nextVideoUrl;
@@ -1610,6 +1651,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
         body: JSON.stringify(body),
       });
 
+      if (!mountedRef.current) return;
       const savedId = Number(
         saveRes?.item?.id ||
           saveRes?.product?.id ||
@@ -1619,6 +1661,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
           0
       );
       const refreshedProducts = await loadPage();
+      if (!mountedRef.current) return;
       let hydratedProducts = refreshedProducts;
       if (savedId > 0 && (nextImageUrl || nextVideoUrl)) {
         rememberShopProductMedia(savedId, {
@@ -1661,13 +1704,14 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
         posted: false,
       }));
     } catch (err: any) {
+      if (!mountedRef.current) return;
       const message =
         safeStr(err?.message) ||
         "Product could not be saved. Check the picture, video format, and file size.";
       showProductFormNotice("error", message);
       showGalleryActionNotice("error", message, selectedPublicSlot);
     } finally {
-      setSavingProduct(false);
+      if (mountedRef.current) setSavingProduct(false);
     }
   }
 
@@ -1678,15 +1722,18 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
       await apiJson<any>(`/api/marketplace/products/${productId}`, {
         method: "DELETE",
       });
+      if (!mountedRef.current) return;
       await loadPage();
+      if (!mountedRef.current) return;
       if (editingProductId === productId) {
         closeProductEditor();
       }
       showNotice("success", "Product removed.");
     } catch (err: any) {
+      if (!mountedRef.current) return;
       showNotice("error", safeStr(err?.message) || "Product could not be removed.");
     } finally {
-      setDeletingProductId(null);
+      if (mountedRef.current) setDeletingProductId(null);
     }
   }
 
@@ -1698,12 +1745,15 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
         method: "PATCH",
         body: JSON.stringify({ is_active: true, status: "active" }),
       });
+      if (!mountedRef.current) return;
       await loadPage();
+      if (!mountedRef.current) return;
       showNotice("success", "Product restored.");
     } catch (err: any) {
+      if (!mountedRef.current) return;
       showNotice("error", safeStr(err?.message) || "Product could not be restored.");
     } finally {
-      setRestoringProductId(null);
+      if (mountedRef.current) setRestoringProductId(null);
     }
   }
 

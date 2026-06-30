@@ -6,13 +6,7 @@ type GovernanceReadinessPanelsProps = {
   governanceAttentionCount?: number;
   governanceApprovedCount?: number;
   delegationMap?: any;
-  delegationReadyTotal?: number;
-  visibleDelegationLanes?: any[];
-  blockedDelegationLanes?: any[];
-  delegationMapSummary?: Record<string, unknown>;
   governanceCoverage?: any;
-  governanceCoverageCounts?: Record<string, unknown>;
-  governanceCoverageGaps?: any[];
 };
 
 function cleanText(value: unknown, fallback = ""): string {
@@ -24,7 +18,28 @@ function compactStatus(value: unknown): string {
 }
 
 function countValue(value: unknown): string {
-  return typeof value === "number" && Number.isFinite(value) ? String(value) : "0";
+  const numberValue = Number(value ?? 0);
+  return Number.isFinite(numberValue) ? String(numberValue) : "0";
+}
+
+function readinessLanes(map: any): any[] {
+  return Array.isArray(map?.lanes) ? map.lanes : [];
+}
+
+function readyTotal(map: any, lanes: any[]): number {
+  return typeof map?.ready_total === "number"
+    ? map.ready_total
+    : lanes.filter((lane) => lane.ready).length;
+}
+
+function governanceCoverageGaps(governanceCoverage: any): any[] {
+  const nodes = Array.isArray(governanceCoverage?.flat_nodes)
+    ? governanceCoverage.flat_nodes
+    : [];
+  return nodes.filter((item: any) => {
+    const statusText = cleanText(item.governance_status).toLowerCase();
+    return statusText.includes("needs") || statusText.includes("inactive");
+  });
 }
 
 function softCard(): React.CSSProperties {
@@ -164,14 +179,15 @@ export default function CommunityDomainGovernanceReadinessPanels({
   governanceAttentionCount = 0,
   governanceApprovedCount = 0,
   delegationMap,
-  delegationReadyTotal = 0,
-  visibleDelegationLanes = [],
-  blockedDelegationLanes = [],
-  delegationMapSummary = {},
   governanceCoverage,
-  governanceCoverageCounts = {},
-  governanceCoverageGaps = [],
 }: GovernanceReadinessPanelsProps): React.ReactElement {
+  const delegationMapSummary = delegationMap?.summary || {};
+  const visibleDelegationLanes = readinessLanes(delegationMap);
+  const blockedDelegationLanes = visibleDelegationLanes.filter((lane) => !lane.ready);
+  const delegationReadyTotal = readyTotal(delegationMap, visibleDelegationLanes);
+  const governanceCoverageCounts = governanceCoverage?.counts || {};
+  const coverageGaps = governanceCoverageGaps(governanceCoverage);
+
   return (
     <>
       <div style={softCard()}>
@@ -342,9 +358,9 @@ export default function CommunityDomainGovernanceReadinessPanels({
             </div>
           ))}
         </div>
-        {governanceCoverageGaps.length ? (
+        {coverageGaps.length ? (
           <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
-            {governanceCoverageGaps.slice(0, 3).map((item) =>
+            {coverageGaps.slice(0, 3).map((item) =>
               statusRow(
                 `${cleanText(item.node?.id)}:${cleanText(
                   item.node?.name,

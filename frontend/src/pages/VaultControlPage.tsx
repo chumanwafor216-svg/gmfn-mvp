@@ -970,8 +970,20 @@ export default function VaultControlPage() {
   const [preparingVideo, setPreparingVideo] = useState(false);
   const [savingProduct, setSavingProduct] = useState(false);
   const [formNotice, setFormNotice] = useState<{ tone: NoticeTone; text: string } | null>(null);
+  const mountedRef = useRef(false);
+  const loadSeqRef = useRef(0);
   const imagePrepJobRef = useRef(0);
   const videoPrepJobRef = useRef(0);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      loadSeqRef.current += 1;
+      imagePrepJobRef.current += 1;
+      videoPrepJobRef.current += 1;
+    };
+  }, []);
 
   useEffect(() => {
     function onResize() {
@@ -992,14 +1004,26 @@ export default function VaultControlPage() {
     setNotice({ tone, text });
   }
 
+  function canApplyLoad(seq: number): boolean {
+    return mountedRef.current && loadSeqRef.current === seq;
+  }
+
   const loadPage = useCallback(async () => {
+    const loadSeq = loadSeqRef.current + 1;
+    loadSeqRef.current = loadSeq;
     setLoading(true);
+    setShop(null);
+    setProducts([]);
+    setVaultLinks([]);
+    setExpectedPayments([]);
+    setVaultStatus(null);
     try {
       const [meRes, riskRes, instructionConfigRes] = await Promise.all([
         getMe().catch(() => null),
         getMyIdentityRisk().catch(() => null),
         apiJson<any>("/api/payment-instructions/my").catch(() => null),
       ]);
+      if (!canApplyLoad(loadSeq)) return;
       setMe(meRes || null);
       setVaultSettlement((instructionConfigRes?.settlement || null) as SettlementRecord | null);
       setVaultConfig((instructionConfigRes?.vault_config || null) as VaultConfigRecord | null);
@@ -1009,11 +1033,6 @@ export default function VaultControlPage() {
 
       const gmfnId = firstTruthy(meRes?.gmfn_id);
       if (!gmfnId) {
-        setShop(null);
-        setProducts([]);
-        setVaultLinks([]);
-        setExpectedPayments([]);
-        setVaultStatus(null);
         return;
       }
 
@@ -1021,14 +1040,11 @@ export default function VaultControlPage() {
         clan_id: selectedClanId || undefined,
         header_clan_id: selectedClanId || undefined,
       }).catch(() => null);
+      if (!canApplyLoad(loadSeq)) return;
       const shopItem = (shopRes?.item || null) as ShopRecord | null;
       setShop(shopItem);
 
       if (!shopItem?.id) {
-        setProducts([]);
-        setVaultLinks([]);
-        setExpectedPayments([]);
-        setVaultStatus(null);
         return;
       }
 
@@ -1046,12 +1062,13 @@ export default function VaultControlPage() {
         getVaultShopStatus(shopItem.id).catch(() => null),
       ]);
 
+      if (!canApplyLoad(loadSeq)) return;
       setVaultStatus(vaultStatusRes || null);
       setProducts(mergeVaultStatusProducts(rowsOf<ProductRecord>(productsRes), vaultStatusRes || null));
       setVaultLinks(Array.isArray(linksRes) ? linksRes : []);
       setExpectedPayments(rowsOf<ExpectedPaymentRecord>(expectedRes));
     } finally {
-      setLoading(false);
+      if (canApplyLoad(loadSeq)) setLoading(false);
     }
   }, [selectedClanId]);
 
@@ -1520,12 +1537,15 @@ export default function VaultControlPage() {
           currency: "GBP",
         }),
       });
+      if (!mountedRef.current) return;
       setVaultInstruction(result as ExpectedPaymentRecord);
       setVaultSettlement((result?.settlement || vaultSettlement || null) as SettlementRecord | null);
       setOpenVaultPanels((prev) => ({ ...prev, payment: true }));
       await loadPage();
+      if (!mountedRef.current) return;
       const reference = firstTruthy(result?.reference_display, result?.reference);
       const copiedReference = reference ? await safeCopy(reference) : false;
+      if (!mountedRef.current) return;
       showNotice(
         "success",
         reference
@@ -1533,9 +1553,10 @@ export default function VaultControlPage() {
           : `Vault payment request created for ${safeQuantity} slot${safeQuantity === 1 ? "" : "s"} at ${formatMoney(vaultSlotPaymentAmount(safeQuantity), "GBP")}.`
       );
     } catch (err: any) {
+      if (!mountedRef.current) return;
       showNotice("error", safeStr(err?.message) || "Vault payment request could not be created.");
     } finally {
-      setCreatingPayment(false);
+      if (mountedRef.current) setCreatingPayment(false);
     }
   }
 
@@ -1575,17 +1596,21 @@ export default function VaultControlPage() {
 
       if (selectedImageFile) {
         nextImageUrl = await uploadMarketplaceImageFile(selectedImageFile);
+        if (!mountedRef.current) return;
       }
       if (selectedVideoFile) {
         nextVideoUrl = await uploadMarketplaceVideoFile(
           selectedVideoFile,
           videoDurationSeconds
         );
+        if (!mountedRef.current) return;
       }
       if (!nextImageUrl) {
         if (selectedVideoFile) {
           const cover = await createShopGalleryCoverFromVideo(selectedVideoFile);
+          if (!mountedRef.current) return;
           nextImageUrl = await uploadMarketplaceImageFile(cover.file);
+          if (!mountedRef.current) return;
         } else if (nextVideoUrl) {
           nextImageUrl = nextVideoUrl;
         } else {
@@ -1615,6 +1640,7 @@ export default function VaultControlPage() {
         method,
         body: JSON.stringify(body),
       });
+      if (!mountedRef.current) return;
       const savedId = Number(
         saved?.item?.id || saved?.product?.id || saved?.id || editingProductId || 0
       );
@@ -1628,15 +1654,17 @@ export default function VaultControlPage() {
         );
       }
       await loadPage();
+      if (!mountedRef.current) return;
       resetProductForm();
       setEditorOpen(false);
       showNotice("success", nextVideoUrl ? "Vault block saved with video." : "Vault block saved.");
     } catch (err: any) {
+      if (!mountedRef.current) return;
       const text = safeStr(err?.message) || "Vault block could not be saved.";
       setFormNotice({ tone: "error", text });
       showNotice("error", text);
     } finally {
-      setSavingProduct(false);
+      if (mountedRef.current) setSavingProduct(false);
     }
   }
 
@@ -1647,15 +1675,18 @@ export default function VaultControlPage() {
         method: "PATCH",
         body: JSON.stringify({ is_active: false, status: "inactive" }),
       });
+      if (!mountedRef.current) return;
       if (shop?.id) {
         setVaultSlotMap(forgetVaultProductSlot(shop.id, item.id));
       }
       await loadPage();
+      if (!mountedRef.current) return;
       showNotice("success", "Vault block hidden.");
     } catch (err: any) {
+      if (!mountedRef.current) return;
       showNotice("error", safeStr(err?.message) || "Vault block could not be hidden.");
     } finally {
-      setSavingProduct(false);
+      if (mountedRef.current) setSavingProduct(false);
     }
   }
 
@@ -1677,9 +1708,11 @@ export default function VaultControlPage() {
         max_views: 20,
         watermark_enabled: true,
       });
+      if (!mountedRef.current) return;
       setVaultLinks((prev) => [link, ...prev]);
       const url = vaultLinkUrl(link);
       const copied = url ? await safeCopy(buildVaultInvitePackage(url, link)) : false;
+      if (!mountedRef.current) return;
       showNotice(
         "success",
         url
@@ -1687,9 +1720,10 @@ export default function VaultControlPage() {
           : `Vault link for block #${selectedSlot} created. The link panel will show it when it is ready.`
       );
     } catch (err: any) {
+      if (!mountedRef.current) return;
       showNotice("error", safeStr(err?.message) || "Vault access link could not be created.");
     } finally {
-      setCreatingLink(false);
+      if (mountedRef.current) setCreatingLink(false);
     }
   }
 
@@ -1729,12 +1763,14 @@ export default function VaultControlPage() {
     setBusyLinkId(id);
     try {
       const updated = await extendVaultShopAccessLink(id, vaultDefaultExpiry(vaultLinkDefaultHours));
+      if (!mountedRef.current) return;
       setVaultLinks((prev) => prev.map((item) => firstTruthy(item.id) === id ? updated : item));
       showNotice("success", `Vault link extended for ${vaultLinkDefaultHours} more hours.`);
     } catch (err: any) {
+      if (!mountedRef.current) return;
       showNotice("error", safeStr(err?.message) || "Vault link could not be extended.");
     } finally {
-      setBusyLinkId("");
+      if (mountedRef.current) setBusyLinkId("");
     }
   }
 
@@ -1744,12 +1780,14 @@ export default function VaultControlPage() {
     setBusyLinkId(id);
     try {
       const updated = await revokeVaultShopAccessLink(id);
+      if (!mountedRef.current) return;
       setVaultLinks((prev) => prev.map((item) => firstTruthy(item.id) === id ? updated : item));
       showNotice("success", "Vault link revoked.");
     } catch (err: any) {
+      if (!mountedRef.current) return;
       showNotice("error", safeStr(err?.message) || "Vault link could not be revoked.");
     } finally {
-      setBusyLinkId("");
+      if (mountedRef.current) setBusyLinkId("");
     }
   }
 

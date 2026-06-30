@@ -6,22 +6,8 @@ type IdentityReadinessPanelsProps = {
   status?: Record<string, unknown>;
   renewalState?: unknown;
   institutionalProfile?: any;
-  institutionalProfileReadyTotal?: number;
-  visibleInstitutionalProfileLanes?: any[];
-  blockedInstitutionalProfileLanes?: any[];
-  institutionalProfileSummary?: Record<string, unknown>;
-  institutionalProfileDetails?: Record<string, unknown>;
   socialBridge?: any;
-  socialBridgeReadyTotal?: number;
-  visibleSocialBridgeLanes?: any[];
-  blockedSocialBridgeLanes?: any[];
-  socialBridgeSummary?: Record<string, unknown>;
-  linkedSocialCommunity?: Record<string, unknown>;
   affiliationReadiness?: any;
-  affiliationReadyTotal?: number;
-  visibleAffiliationLanes?: any[];
-  blockedAffiliationLanes?: any[];
-  affiliationSummary?: Record<string, unknown>;
 };
 
 function cleanText(value: unknown, fallback = ""): string {
@@ -33,7 +19,22 @@ function compactStatus(value: unknown): string {
 }
 
 function countValue(value: unknown): string {
-  return typeof value === "number" && Number.isFinite(value) ? String(value) : "0";
+  const numberValue = Number(value ?? 0);
+  return Number.isFinite(numberValue) ? String(numberValue) : "0";
+}
+
+function readinessLanes(map: any): any[] {
+  return Array.isArray(map?.lanes) ? map.lanes : [];
+}
+
+function blockedLanes(lanes: any[]): any[] {
+  return lanes.filter((lane) => !lane.ready);
+}
+
+function readyTotal(map: any, lanes: any[]): number {
+  return typeof map?.ready_total === "number"
+    ? map.ready_total
+    : lanes.filter((lane) => lane.ready).length;
 }
 
 function softCard(): React.CSSProperties {
@@ -173,23 +174,32 @@ export default function CommunityDomainIdentityReadinessPanels({
   status = {},
   renewalState,
   institutionalProfile,
-  institutionalProfileReadyTotal = 0,
-  visibleInstitutionalProfileLanes = [],
-  blockedInstitutionalProfileLanes = [],
-  institutionalProfileSummary = {},
-  institutionalProfileDetails = {},
   socialBridge,
-  socialBridgeReadyTotal = 0,
-  visibleSocialBridgeLanes = [],
-  blockedSocialBridgeLanes = [],
-  socialBridgeSummary = {},
-  linkedSocialCommunity = {},
   affiliationReadiness,
-  affiliationReadyTotal = 0,
-  visibleAffiliationLanes = [],
-  blockedAffiliationLanes = [],
-  affiliationSummary = {},
 }: IdentityReadinessPanelsProps): React.ReactElement {
+  const institutionalProfileSummary = institutionalProfile?.summary || {};
+  const institutionalProfileDetails = institutionalProfile?.institutional_profile || {};
+  const visibleInstitutionalProfileLanes = readinessLanes(institutionalProfile);
+  const blockedInstitutionalProfileLanes = blockedLanes(
+    visibleInstitutionalProfileLanes
+  );
+  const institutionalProfileReadyTotal = readyTotal(
+    institutionalProfile,
+    visibleInstitutionalProfileLanes
+  );
+  const socialBridgeSummary = socialBridge?.summary || {};
+  const linkedSocialCommunity = socialBridge?.linked_community || {};
+  const visibleSocialBridgeLanes = readinessLanes(socialBridge);
+  const blockedSocialBridgeLanes = blockedLanes(visibleSocialBridgeLanes);
+  const socialBridgeReadyTotal = readyTotal(socialBridge, visibleSocialBridgeLanes);
+  const affiliationSummary = affiliationReadiness?.summary || {};
+  const visibleAffiliationLanes = readinessLanes(affiliationReadiness);
+  const blockedAffiliationLanes = blockedLanes(visibleAffiliationLanes);
+  const affiliationReadyTotal = readyTotal(
+    affiliationReadiness,
+    visibleAffiliationLanes
+  );
+
   return (
     <>
       <div style={softCard()}>

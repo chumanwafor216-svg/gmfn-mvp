@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import ExplainToggle from "../components/ExplainToggle";
 import GsnSupportContact from "../components/GsnSupportContact";
@@ -769,6 +769,18 @@ export default function PaymentInstructionsPage() {
   const [proofRecordedAt, setProofRecordedAt] = useState<string | null>(null);
   const [proofUploaded, setProofUploaded] = useState<boolean>(false);
   const [uploadingProof, setUploadingProof] = useState<boolean>(false);
+  const moneyInMountedRef = useRef(false);
+  const moneyInLoadSeqRef = useRef(0);
+  const moneyInLoadContextRef = useRef("");
+  const moneyInActionContextRef = useRef("");
+
+  useEffect(() => {
+    moneyInMountedRef.current = true;
+    return () => {
+      moneyInMountedRef.current = false;
+      moneyInLoadSeqRef.current += 1;
+    };
+  }, []);
 
   useEffect(() => {
     if (routeClanId > 0) {
@@ -808,10 +820,46 @@ export default function PaymentInstructionsPage() {
   }, [me]);
 
   useEffect(() => {
+    moneyInActionContextRef.current = [
+      `community:${selectedClanId || "none"}`,
+      `gmfn:${currentGmfnId || "none"}`,
+      `currency:${selectedCurrency || "none"}`,
+    ].join("|");
+  }, [selectedClanId, currentGmfnId, selectedCurrency]);
+
+  useEffect(() => {
     let alive = true;
+    const contextKey = [
+      `community:${selectedClanId || "none"}`,
+      `currency:${selectedCurrency || "none"}`,
+    ].join("|");
+    const loadSeq = moneyInLoadSeqRef.current + 1;
+    moneyInLoadSeqRef.current = loadSeq;
+    moneyInLoadContextRef.current = contextKey;
+
+    function isCurrentMoneyInLoad() {
+      return (
+        alive &&
+        moneyInMountedRef.current &&
+        moneyInLoadSeqRef.current === loadSeq &&
+        moneyInLoadContextRef.current === contextKey
+      );
+    }
 
     async function loadPage() {
       setLoading(true);
+      setRefreshingRoute(false);
+      setGeneratingInstruction(false);
+      setUploadingProof(false);
+      setCurrentClan(null);
+      setMoneySurface(null);
+      setDepositRoute(null);
+      setInstruction(null);
+      setPaymentConfirmed(false);
+      setPaymentConfirmedAt(null);
+      setProofFileName("");
+      setProofRecordedAt(null);
+      setProofUploaded(false);
 
       try {
         const [meRes, clanRes] = await Promise.all([
@@ -823,7 +871,7 @@ export default function PaymentInstructionsPage() {
             : Promise.resolve(null),
         ]);
 
-        if (!alive) return;
+        if (!isCurrentMoneyInLoad()) return;
 
         setMe(meRes || null);
         setCurrentClan(clanRes || null);
@@ -849,7 +897,7 @@ export default function PaymentInstructionsPage() {
           loadCommunityDepositRoute(selectedClanId, gmfnId, selectedCurrency).catch(() => null),
         ]);
 
-        if (!alive) return;
+        if (!isCurrentMoneyInLoad()) return;
 
         setMoneySurface(surface);
         setDepositRoute(route || surface?.depositRoute || null);
@@ -869,7 +917,7 @@ export default function PaymentInstructionsPage() {
         setProofRecordedAt(stored?.proofRecordedAt || null);
         setProofUploaded(Boolean(stored?.proofUploaded));
       } finally {
-        if (alive) setLoading(false);
+        if (isCurrentMoneyInLoad()) setLoading(false);
       }
     }
 
@@ -882,6 +930,7 @@ export default function PaymentInstructionsPage() {
 
   useEffect(() => {
     if (!selectedClanId || !currentGmfnId) return;
+    if (loading) return;
 
     writeLocalJSON(taskStorageKey(selectedClanId, currentGmfnId, selectedCurrency), {
       amountInput,
@@ -907,6 +956,7 @@ export default function PaymentInstructionsPage() {
     proofFileName,
     proofRecordedAt,
     proofUploaded,
+    loading,
   ]);
 
   const memberName = useMemo(() => {
@@ -1088,6 +1138,7 @@ export default function PaymentInstructionsPage() {
       return;
     }
 
+    const actionContext = moneyInActionContextRef.current;
     setRefreshingRoute(true);
 
     try {
@@ -1095,6 +1146,13 @@ export default function PaymentInstructionsPage() {
         getCommunityMoneySurface(selectedClanId, currentGmfnId, selectedCurrency).catch(() => null),
         loadCommunityDepositRoute(selectedClanId, currentGmfnId, selectedCurrency).catch(() => null),
       ]);
+
+      if (
+        !moneyInMountedRef.current ||
+        moneyInActionContextRef.current !== actionContext
+      ) {
+        return;
+      }
 
       setMoneySurface(surface);
       setDepositRoute(route || surface?.depositRoute || null);
@@ -1104,7 +1162,12 @@ export default function PaymentInstructionsPage() {
         text: "Money In route refreshed.",
       });
     } finally {
-      setRefreshingRoute(false);
+      if (
+        moneyInMountedRef.current &&
+        moneyInActionContextRef.current === actionContext
+      ) {
+        setRefreshingRoute(false);
+      }
     }
   }
 
@@ -1125,6 +1188,7 @@ export default function PaymentInstructionsPage() {
       return;
     }
 
+    const actionContext = moneyInActionContextRef.current;
     setGeneratingInstruction(true);
 
     try {
@@ -1134,6 +1198,13 @@ export default function PaymentInstructionsPage() {
         currency: selectedCurrency,
         contributionReason,
       });
+
+      if (
+        !moneyInMountedRef.current ||
+        moneyInActionContextRef.current !== actionContext
+      ) {
+        return;
+      }
 
       if (!generated) {
         setNotice({
@@ -1159,7 +1230,12 @@ export default function PaymentInstructionsPage() {
           "Payment code could not be created.",
       });
     } finally {
-      setGeneratingInstruction(false);
+      if (
+        moneyInMountedRef.current &&
+        moneyInActionContextRef.current === actionContext
+      ) {
+        setGeneratingInstruction(false);
+      }
     }
   }
 
@@ -1191,7 +1267,6 @@ export default function PaymentInstructionsPage() {
     setProofFileName("");
     setProofRecordedAt(null);
     setProofUploaded(false);
-    setProofUploaded(false);
 
     if (selectedClanId && currentGmfnId) {
       writeLocalJSON(taskStorageKey(selectedClanId, currentGmfnId, selectedCurrency), null);
@@ -1213,6 +1288,7 @@ export default function PaymentInstructionsPage() {
     setPaymentConfirmedAt(null);
     setProofFileName("");
     setProofRecordedAt(null);
+    setProofUploaded(false);
     setNotice({
       tone: "success",
       text: `Currency set to ${nextCurrency}. Generate again.`,
@@ -1369,6 +1445,7 @@ export default function PaymentInstructionsPage() {
       return;
     }
 
+    const actionContext = moneyInActionContextRef.current;
     setUploadingProof(true);
     try {
       await (api as any).uploadPaymentInstructionProofFile(
@@ -1377,6 +1454,12 @@ export default function PaymentInstructionsPage() {
         selectedClanId,
         reference
       );
+      if (
+        !moneyInMountedRef.current ||
+        moneyInActionContextRef.current !== actionContext
+      ) {
+        return;
+      }
       setProofFileName(file.name || "payment screenshot");
       setProofRecordedAt(recordedAt);
       setProofUploaded(true);
@@ -1385,6 +1468,12 @@ export default function PaymentInstructionsPage() {
         text: "Proof uploaded for finance review. It does not confirm payment yet.",
       });
     } catch {
+      if (
+        !moneyInMountedRef.current ||
+        moneyInActionContextRef.current !== actionContext
+      ) {
+        return;
+      }
       setProofFileName(file.name || "payment screenshot");
       setProofRecordedAt(recordedAt);
       setProofUploaded(false);
@@ -1393,8 +1482,13 @@ export default function PaymentInstructionsPage() {
         text: "Upload failed. Screenshot noted on this phone only.",
       });
     } finally {
-      setUploadingProof(false);
-      event.target.value = "";
+      if (
+        moneyInMountedRef.current &&
+        moneyInActionContextRef.current === actionContext
+      ) {
+        setUploadingProof(false);
+        event.target.value = "";
+      }
     }
   }
 

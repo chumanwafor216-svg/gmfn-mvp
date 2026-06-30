@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import ExplainToggle from "../components/ExplainToggle";
 import PageTopNav from "../components/PageTopNav";
@@ -657,6 +657,14 @@ function CommunityConfirmationInboxPage() {
   const navigate = useNavigate();
   const focusedRequestId = positiveQueryNumber(location.search, "request_id");
   const focusedReviewCaseId = positiveQueryNumber(location.search, "case_id");
+  const hasReviewQuery = useMemo(
+    () =>
+      location.search.includes("case_id=") ||
+      location.search.includes("status=") ||
+      location.search.includes("scope=") ||
+      location.search.includes("sort="),
+    [location.search]
+  );
   const initialReviewStatusFilter = queryOptionValue(
     location.search,
     "status",
@@ -703,6 +711,8 @@ function CommunityConfirmationInboxPage() {
   const [reviewPreviousOffset, setReviewPreviousOffset] = useState<number | null>(null);
   const [currentUserRole, setCurrentUserRole] = useState("");
   const [reviewSlaScanSummary, setReviewSlaScanSummary] = useState<any | null>(null);
+  const reviewCasesLoadSeqRef = useRef(0);
+  const reviewCasesContextRef = useRef("");
 
   const pendingCount = rows.length;
   const instantCount = rows.filter((row) => row.mode === "instant_pulse").length;
@@ -828,6 +838,21 @@ function CommunityConfirmationInboxPage() {
         ? options.offset
         : reviewOffset
     );
+    const contextKey = [
+      status,
+      scope,
+      sort,
+      Number.isFinite(communityId) && communityId > 0 ? communityId : "all",
+      Number.isFinite(limit) && limit > 0 ? limit : 20,
+      Number.isFinite(offset) && offset > 0 ? offset : 0,
+    ].join(":");
+    const loadSeq = reviewCasesLoadSeqRef.current + 1;
+    reviewCasesLoadSeqRef.current = loadSeq;
+    reviewCasesContextRef.current = contextKey;
+    setReviewCases([]);
+    setReviewCaseAvailableCount(0);
+    setReviewNextOffset(null);
+    setReviewPreviousOffset(null);
     try {
       const result = await getCommunityConfirmationReviewCaseInbox({
         status,
@@ -838,6 +863,12 @@ function CommunityConfirmationInboxPage() {
         limit,
         offset: Number.isFinite(offset) && offset > 0 ? offset : undefined,
       });
+      if (
+        reviewCasesLoadSeqRef.current !== loadSeq ||
+        reviewCasesContextRef.current !== contextKey
+      ) {
+        return;
+      }
       setReviewCases(
         rowsOf<any>(result)
           .map((row) => normalizeReviewCase(row))
@@ -856,12 +887,23 @@ function CommunityConfirmationInboxPage() {
           : Number(result.previous_offset)
       );
     } catch {
+      if (
+        reviewCasesLoadSeqRef.current !== loadSeq ||
+        reviewCasesContextRef.current !== contextKey
+      ) {
+        return;
+      }
       setNotice({
         tone: "error",
         text: "Community confirmation review cases could not be loaded yet.",
       });
     } finally {
-      setReviewCasesLoading(false);
+      if (
+        reviewCasesLoadSeqRef.current === loadSeq &&
+        reviewCasesContextRef.current === contextKey
+      ) {
+        setReviewCasesLoading(false);
+      }
     }
   }
 
@@ -1095,16 +1137,13 @@ function CommunityConfirmationInboxPage() {
     void loadInbox();
     void loadSettings();
     void loadCurrentUser();
-    void loadReviewCases();
+    if (!hasReviewQuery) {
+      void loadReviewCases();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
-    const hasReviewQuery =
-      location.search.includes("case_id=") ||
-      location.search.includes("status=") ||
-      location.search.includes("scope=") ||
-      location.search.includes("sort=");
     if (!hasReviewQuery) return;
     const status = queryOptionValue(
       location.search,

@@ -76,15 +76,29 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /listMyCommunityDomains[\s\S]*Your Community Domains[\s\S]*Domain: \{compactStatus\(itemDomain\.status\)\}[\s\S]*Verification: \{compactStatus\(itemDomain\.verification_status\)\}[\s\S]*Open dashboard/,
-  "Community Domain dashboard page must expose a signed-in selector with safe domain and verification status before opening a domain.",
+  /listMyCommunityDomains[\s\S]*lazy\([\s\S]*import\("\.\/communityDomainDashboard\/DomainSelectorPanel"\)[\s\S]*domainItems[\s\S]*setDomainItems[\s\S]*CommunityDomainSelectorPanel[\s\S]*domainItems=\{domainItems\}/,
+  "Community Domain dashboard page must lazy-load a signed-in selector and pass the current user's domain memberships into it.",
   { frontend: true }
 );
 
 assertContains(
+  "src/pages/communityDomainDashboard/DomainSelectorPanel.tsx",
+  /No Community Domains yet[\s\S]*community-domain-dashboard\.empty\.purchase[\s\S]*community-domain-dashboard\.empty\.community-home[\s\S]*Your Community Domains[\s\S]*Domain: \{compactStatus\(itemDomain\.status\)\}[\s\S]*Verification: \{compactStatus\(itemDomain\.verification_status\)\}[\s\S]*Open dashboard/,
+  "Lazy Community Domain selector panel must expose safe domain and verification status, opening links, and empty-state recovery.",
+  { frontend: true }
+);
+
+assertNotContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /Loading your Community Domains[\s\S]*Cannot load domains[\s\S]*Your Community Domains could not be loaded[\s\S]*community-domain-dashboard\.error\.retry-selector[\s\S]*Try again[\s\S]*community-domain-dashboard\.error\.community-home[\s\S]*community-domain-dashboard\.error\.purchase/,
-  "Community Domain dashboard selector errors must describe the current-user domain list and offer retry, Community Home, and purchase recovery.",
+  /community-domain-dashboard\.selector\.open-|community-domain-dashboard\.empty\.purchase|community-domain-dashboard\.empty\.community-home/,
+  "Community Domain dashboard parent must not own selector card or empty-state action rendering after handing domain memberships to the lazy selector panel.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/communityDomainDashboard/DashboardRecoveryPanel.tsx",
+  /Cannot load domains[\s\S]*Your Community Domains could not be loaded[\s\S]*community-domain-dashboard\.error\.retry-selector[\s\S]*Try again[\s\S]*community-domain-dashboard\.error\.community-home[\s\S]*community-domain-dashboard\.error\.purchase/,
+  "Lazy Community Domain dashboard recovery panel must describe selector load failures and offer retry, Community Home, and purchase recovery.",
   { frontend: true }
 );
 
@@ -104,8 +118,8 @@ assertNotContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /function laneDisplayLabel[\s\S]*key === "modules"[\s\S]*return "Services"[\s\S]*const primaryActionLaneLabel = laneDisplayLabel\(primaryActionLane, "work"\)[\s\S]*\{laneDisplayLabel\(lane, "Lane"\)\}[\s\S]*\{laneDisplayLabel\(selectedLane, "Community Domain setup"\)\}/,
-  "Community Domain dashboard must show service language for the modules lane without changing internal lane keys.",
+  /function laneDisplayLabel[\s\S]*key === "modules"[\s\S]*return "Services"[\s\S]*const primaryActionLaneLabel = laneDisplayLabel\(primaryActionLane, "work"\)[\s\S]*\{laneDisplayLabel\(selectedLane, "Community Domain setup"\)\}/,
+  "Community Domain dashboard parent must show service language for primary and opened modules-lane labels without changing internal lane keys.",
   { frontend: true }
 );
 
@@ -125,8 +139,22 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /lazy\([\s\S]*import\("\.\/communityDomainDashboard\/BillingReadinessPanels"\)[\s\S]*getCommunityDomainCapacityPlan[\s\S]*capacityPlan[\s\S]*visibleCapacityLanes[\s\S]*attentionCapacityLanes[\s\S]*CommunityDomainBillingReadinessPanels[\s\S]*capacityPlan=\{capacityPlan\}[\s\S]*visibleCapacityLanes=\{visibleCapacityLanes\}[\s\S]*attentionCapacityLanes=\{attentionCapacityLanes\}/,
-  "Community Domain dashboard Billing lane must lazy-load read-only billing readiness panels from the parent route.",
+  /lazy\([\s\S]*import\("\.\/communityDomainDashboard\/BillingReadinessPanels"\)[\s\S]*getCommunityDomainCapacityPlan[\s\S]*capacityPlan[\s\S]*CommunityDomainBillingReadinessPanels[\s\S]*subscriptionLifecycle=\{subscriptionLifecycle\}[\s\S]*capacityPlan=\{capacityPlan\}/,
+  "Community Domain dashboard Billing lane must lazy-load read-only billing readiness panels and pass only raw billing/capacity maps from the parent route.",
+  { frontend: true }
+);
+
+assertNotContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /subscriptionReadyTotal|visibleSubscriptionLanes|blockedSubscriptionLanes|subscriptionPackage|subscriptionSummary|visibleCapacityLanes|attentionCapacityLanes/,
+  "Community Domain dashboard parent must not precompute Billing lane subscription or capacity summaries, ready totals, lane lists, or attention lists before handing raw maps to the lazy Billing component.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/communityDomainDashboard/BillingReadinessPanels.tsx",
+  /function readinessLanes[\s\S]*function blockedLanes[\s\S]*function readyTotal[\s\S]*function attentionCapacityLanes[\s\S]*subscriptionLifecycle\?\.summary[\s\S]*subscriptionLifecycle\?\.package[\s\S]*readinessLanes\(subscriptionLifecycle\)[\s\S]*readinessLanes\(capacityPlan\)[\s\S]*attentionCapacityLanes\(visibleCapacityLanes\)/,
+  "Lazy Community Domain Billing readiness component must derive subscription summary, package, lanes, blocked rows, ready total, and capacity attention lanes from raw maps.",
   { frontend: true }
 );
 
@@ -153,15 +181,50 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /getCommunityDomainReadiness[\s\S]*setupReadiness[\s\S]*blockedSetupReadinessItems[\s\S]*Setup readiness[\s\S]*checks ready[\s\S]*setup checks still need attention[\s\S]*does not create nodes, add members, assign roles,\s+decide reviews, create payment instructions, activate billing,\s+activate the domain, verify authority, or expose private evidence/,
-  "Community Domain dashboard must show read-only setup readiness blockers without implying setup, payment, activation, verification, or private-evidence writes.",
+  /lazy\([\s\S]*import\("\.\/communityDomainDashboard\/LaneSelectorPanel"\)[\s\S]*activeLane[\s\S]*setActiveLane[\s\S]*selectedLane[\s\S]*CommunityDomainLaneSelectorPanel[\s\S]*lanes=\{lanes\}[\s\S]*activeLane=\{activeLane\}[\s\S]*onSelectLane=\{setActiveLane\}/,
+  "Community Domain dashboard must keep lane state in the parent route while lazy-loading the Work lanes selector.",
+  { frontend: true }
+);
+
+assertNotContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /community-domain-dashboard\.lane\.\$\{|onClick=\{\(\) => setActiveLane\(cleanText\(lane\.lane_key\)\)\}/,
+  "Community Domain dashboard parent must not own lane button rendering after handing lanes, active lane, and selection handler to the lazy lane selector.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/communityDomainDashboard/LaneSelectorPanel.tsx",
+  /function laneDisplayLabel[\s\S]*key === "modules"[\s\S]*return "Services"[\s\S]*Work lanes[\s\S]*lanes\.map[\s\S]*onSelectLane\(laneKey\)[\s\S]*debugId=\{`community-domain-dashboard\.lane\.\$\{laneKey\}`\}[\s\S]*stableHeight=\{58\}[\s\S]*compactStatus\(lane\.status\)[\s\S]*countValue\(lane\.count\)/,
+  "Lazy Community Domain lane selector must preserve service-lane wording, stable lane debug ids, selected-lane switching, status text, and count badges.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /getCommunityDomainSetupPlan[\s\S]*setupPlan[\s\S]*visibleSetupPlanSteps[\s\S]*openSetupPlanSteps[\s\S]*Setup plan[\s\S]*steps complete[\s\S]*Current phase:[\s\S]*primary_next_action[\s\S]*missing item[\s\S]*admin guided[\s\S]*does not create nodes, add members, assign\s+roles, create policy, decide reviews, activate billing, verify\s+authority, publish a public page, move money, or expose private\s+evidence/,
-  "Community Domain dashboard must show the backend setup plan as read-only phase and step guidance without implying setup writes, authority verification, publishing, money movement, or private evidence access.",
+  /lazy\([\s\S]*import\("\.\/communityDomainDashboard\/SetupIntelligenceCards"\)[\s\S]*getCommunityDomainReadiness[\s\S]*getCommunityDomainSetupPlan[\s\S]*CommunityDomainSetupIntelligenceCards[\s\S]*setupReadiness=\{setupReadiness\}[\s\S]*setupPlan=\{setupPlan\}/,
+  "Community Domain dashboard must lazy-load setup intelligence cards and pass raw setup readiness and setup plan maps from the parent route.",
+  { frontend: true }
+);
+
+assertNotContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /visibleSetupReadinessItems|blockedSetupReadinessItems|visibleSetupPlanSteps|openSetupPlanSteps|SetupReadinessItem|SetupPlanStep/,
+  "Community Domain dashboard parent must not precompute setup readiness blockers or setup plan steps before handing raw setup maps to the lazy setup intelligence component.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/communityDomainDashboard/SetupIntelligenceCards.tsx",
+  /function setupReadinessItems[\s\S]*function setupPlanSteps[\s\S]*blockedSetupReadinessItems[\s\S]*visibleSetupPlanSteps[\s\S]*openSetupPlanSteps[\s\S]*Setup readiness[\s\S]*checks ready[\s\S]*setup checks still need attention[\s\S]*does not create nodes, add members, assign roles,\s+decide reviews, create payment instructions, activate billing,\s+activate the domain, verify authority, or expose private evidence/,
+  "Lazy Community Domain setup intelligence component must derive setup readiness blockers from raw setup readiness and keep read-only boundary language.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/communityDomainDashboard/SetupIntelligenceCards.tsx",
+  /Setup plan[\s\S]*steps complete[\s\S]*Current phase:[\s\S]*primary_next_action[\s\S]*missing item[\s\S]*admin guided[\s\S]*does not create nodes, add members, assign roles,\s+create policy, decide reviews, activate billing, verify authority,\s+publish a public page, move money, or expose private evidence/,
+  "Lazy Community Domain setup intelligence component must derive setup plan steps from raw setup plan and avoid implying setup writes, authority verification, publishing, money movement, or private evidence access.",
   { frontend: true }
 );
 
@@ -174,8 +237,22 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /lazy\([\s\S]*import\("\.\/communityDomainDashboard\/ServiceReadinessPanels"\)[\s\S]*SERVICE_READINESS_KEYS[\s\S]*"shops"[\s\S]*"spotlight"[\s\S]*"vault"[\s\S]*"verification"[\s\S]*"trust_centre"[\s\S]*"analytics"[\s\S]*listCommunityDomainServiceSettings[\s\S]*getCommunityDomainEconomicParticipation[\s\S]*getCommunityDomainNetworkPresence[\s\S]*serviceReadinessRows[\s\S]*CommunityDomainServiceReadinessPanels[\s\S]*moduleScopeReadiness=\{moduleScopeReadiness\}[\s\S]*serviceReadinessRows=\{serviceReadinessRows\}[\s\S]*serviceSettingsProjection=\{serviceSettingsProjection\}[\s\S]*economicParticipation=\{economicParticipation\}[\s\S]*networkPresence=\{networkPresence\}/,
-  "Community Domain dashboard Services lane must lazy-load the read-only service readiness panels from the parent route.",
+  /lazy\([\s\S]*import\("\.\/communityDomainDashboard\/ServiceReadinessPanels"\)[\s\S]*listCommunityDomainServiceSettings[\s\S]*getCommunityDomainEconomicParticipation[\s\S]*getCommunityDomainNetworkPresence[\s\S]*CommunityDomainServiceReadinessPanels[\s\S]*moduleScopeReadiness=\{moduleScopeReadiness\}[\s\S]*moduleKeys=\{moduleKeys\}[\s\S]*billingStatus=\{status\.billing_status\}[\s\S]*quote=\{quote\}[\s\S]*serviceSettingsProjection=\{serviceSettingsProjection\}[\s\S]*economicParticipation=\{economicParticipation\}[\s\S]*networkPresence=\{networkPresence\}/,
+  "Community Domain dashboard Services lane must lazy-load the read-only service readiness panels and pass raw service maps plus billing/module context from the parent route.",
+  { frontend: true }
+);
+
+assertNotContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /serviceReadinessRows|ServiceReadinessItem|ServiceReadinessRow|SERVICE_READINESS_KEYS|serviceReadinessStatus|serviceFallbackDetail|moduleLabel|visibleServiceSettingsItems|enabledServiceSettingsItems|optionalServiceSettingsItems|visibleEconomicParticipationLanes|blockedEconomicParticipationLanes|economicParticipationReadyTotal|economicParticipationTemplate|economicParticipationCounts|visibleNetworkPresenceLanes|blockedNetworkPresenceLanes|networkPresenceReadyTotal|networkPresenceIdentity|networkPresenceStatus/,
+  "Community Domain dashboard parent must not precompute service readiness rows, service settings projection splits, economic participation readiness, or network presence readiness before handing raw maps to the lazy service readiness component.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/communityDomainDashboard/ServiceReadinessPanels.tsx",
+  /SERVICE_READINESS_KEYS[\s\S]*"shops"[\s\S]*"spotlight"[\s\S]*"vault"[\s\S]*"verification"[\s\S]*"trust_centre"[\s\S]*"analytics"[\s\S]*function projectionItems[\s\S]*function readinessLanes[\s\S]*function blockedLanes[\s\S]*function readyTotal[\s\S]*function serviceReadinessRows[\s\S]*moduleScopeReadiness\?\.modules[\s\S]*moduleKeys[\s\S]*billingStatus[\s\S]*quote[\s\S]*visibleServiceReadinessRows[\s\S]*projectionItems\(serviceSettingsProjection\)[\s\S]*economicParticipation\?\.counts[\s\S]*economicParticipation\?\.template[\s\S]*readinessLanes\(economicParticipation\)[\s\S]*networkPresence\?\.identity[\s\S]*networkPresence\?\.status[\s\S]*readinessLanes\(networkPresence\)/,
+  "Lazy Community Domain service readiness component must derive service readiness rows, service-setting splits, economic participation readiness, and network presence readiness from raw maps.",
   { frontend: true }
 );
 
@@ -188,8 +265,22 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /lazy\([\s\S]*import\("\.\/communityDomainDashboard\/ServiceBoundaryPanels"\)[\s\S]*getCommunityDomainNetworkExchangeMap[\s\S]*getCommunityDomainRecordPrivacyMap[\s\S]*getCommunityDomainConfigurationMap[\s\S]*getCommunityDomainComplianceMap[\s\S]*getCommunityDomainAppealReadiness[\s\S]*CommunityDomainServiceBoundaryPanels[\s\S]*networkExchangeMap=\{networkExchangeMap\}[\s\S]*networkExchangeSummary=\{networkExchangeSummary\}[\s\S]*recordPrivacyMap=\{recordPrivacyMap\}[\s\S]*recordPrivacySummary=\{recordPrivacySummary\}[\s\S]*configurationMap=\{configurationMap\}[\s\S]*configurationMapSummary=\{configurationMapSummary\}[\s\S]*complianceMap=\{complianceMap\}[\s\S]*complianceMapSummary=\{complianceMapSummary\}[\s\S]*appealReadiness=\{appealReadiness\}[\s\S]*appealReadinessSummary=\{appealReadinessSummary\}/,
-  "Community Domain dashboard Services lane must lazy-load service boundary readiness panels from the parent route.",
+  /lazy\([\s\S]*import\("\.\/communityDomainDashboard\/ServiceBoundaryPanels"\)[\s\S]*getCommunityDomainNetworkExchangeMap[\s\S]*getCommunityDomainRecordPrivacyMap[\s\S]*getCommunityDomainConfigurationMap[\s\S]*getCommunityDomainComplianceMap[\s\S]*getCommunityDomainAppealReadiness[\s\S]*CommunityDomainServiceBoundaryPanels[\s\S]*networkExchangeMap=\{networkExchangeMap\}[\s\S]*recordPrivacyMap=\{recordPrivacyMap\}[\s\S]*configurationMap=\{configurationMap\}[\s\S]*complianceMap=\{complianceMap\}[\s\S]*appealReadiness=\{appealReadiness\}/,
+  "Community Domain dashboard Services lane must lazy-load service boundary readiness panels and pass only raw boundary maps from the parent route.",
+  { frontend: true }
+);
+
+assertNotContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /visible(?:NetworkExchange|RecordPrivacy|ConfigurationMap|ComplianceMap|AppealReadiness)Lanes|blocked(?:NetworkExchange|RecordPrivacy|ConfigurationMap|ComplianceMap|AppealReadiness)Lanes|(?:networkExchange|recordPrivacy|configurationMap|complianceMap)ReadyTotal|appealReadinessSignalTotal|(?:networkExchange|recordPrivacy|configurationMap|complianceMap|appealReadiness)Summary|linkedNetworkSocialCommunity/,
+  "Community Domain dashboard parent must not precompute service boundary summaries, ready totals, lane lists, or blocked lists before handing raw maps to the lazy service boundary component.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/communityDomainDashboard/ServiceBoundaryPanels.tsx",
+  /function readinessLanes[\s\S]*function blockedLanes[\s\S]*function readyTotal[\s\S]*function signalTotal[\s\S]*networkExchangeMap\?\.summary[\s\S]*recordPrivacyMap\?\.summary[\s\S]*configurationMap\?\.summary[\s\S]*complianceMap\?\.summary[\s\S]*appealReadiness\?\.summary/,
+  "Community Domain service boundary lazy component must derive summaries, lane lists, ready totals, blocked lanes, and appeal signal totals from raw maps.",
   { frontend: true }
 );
 
@@ -293,7 +384,7 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /CommunityDomainNodeProjectionGroups[\s\S]*variant="trustEvidence"[\s\S]*nodeEvidenceAuthorityMap=\{nodeEvidenceAuthorityMap\}[\s\S]*nodeTrustMap=\{nodeTrustMap\}[\s\S]*nodeTrustCounts=\{nodeTrustCounts\}[\s\S]*visibleNodeTrustRows=\{visibleNodeTrustRows\}/,
+  /CommunityDomainNodeProjectionGroups[\s\S]*variant="trustEvidence"[\s\S]*nodeEvidenceAuthorityMap=\{nodeEvidenceAuthorityMap\}[\s\S]*nodeTrustMap=\{nodeTrustMap\}/,
   "Community Domain dashboard must lazy-load trust/evidence node projection cards through the route-local node projection component.",
   { frontend: true }
 );
@@ -307,7 +398,7 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /CommunityDomainNodeProjectionGroups[\s\S]*variant="memberParticipation"[\s\S]*nodeParticipationMap=\{nodeParticipationMap\}[\s\S]*nodeParticipationCounts=\{nodeParticipationCounts\}[\s\S]*visibleNodeParticipationRows=\{visibleNodeParticipationRows\}/,
+  /CommunityDomainNodeProjectionGroups[\s\S]*variant="memberParticipation"[\s\S]*nodeParticipationMap=\{nodeParticipationMap\}/,
   "Community Domain dashboard Members lane must lazy-load node participation planning through the route-local node projection component.",
   { frontend: true }
 );
@@ -315,7 +406,21 @@ assertContains(
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
   /lazy\([\s\S]*import\("\.\/communityDomainDashboard\/MemberReadinessPanels"\)[\s\S]*activeLane === "members"[\s\S]*CommunityDomainMemberReadinessPanels[\s\S]*placementSummary=\{placementSummary\}[\s\S]*memberVerificationMap=\{memberVerificationMap\}[\s\S]*CommunityDomainNodeProjectionGroups[\s\S]*variant="memberParticipation"/,
-  "Community Domain dashboard Members lane must lazy-load placement and member-verification readiness panels while preserving the member participation projection order.",
+  "Community Domain dashboard Members lane must lazy-load placement and member-verification readiness panels, pass only raw placement/member verification maps from the parent route, and preserve the member participation projection order.",
+  { frontend: true }
+);
+
+assertNotContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /placementCounts|placementLanes|visibleNodePlacements|memberVerificationSummary|visibleMemberVerificationLanes|blockedMemberVerificationLanes|memberVerificationReadyTotal/,
+  "Community Domain dashboard parent must not precompute Members lane placement or member verification summaries, ready totals, lane lists, or visible placement rows before handing raw maps to the lazy Members component.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/communityDomainDashboard/MemberReadinessPanels.tsx",
+  /function readinessLanes[\s\S]*function readyTotal[\s\S]*function visibleNodePlacements[\s\S]*placementSummary\?\.counts[\s\S]*readinessLanes\(placementSummary\)[\s\S]*visibleNodePlacements\(placementSummary\)[\s\S]*memberVerificationMap\?\.summary[\s\S]*readinessLanes\(memberVerificationMap\)[\s\S]*readyTotal\(\s*memberVerificationMap,\s*visibleMemberVerificationLanes\s*\)/,
+  "Lazy Community Domain Members readiness component must derive placement counts, placement lanes, visible placements, member verification summary, lane lists, blocked lanes, and ready total from raw maps.",
   { frontend: true }
 );
 
@@ -349,7 +454,7 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /CommunityDomainNodeProjectionGroups[\s\S]*variant="structureBoundary"[\s\S]*nodeDomainBoundaryMap=\{nodeDomainBoundaryMap\}[\s\S]*nodeDomainBoundaryCounts=\{nodeDomainBoundaryCounts\}[\s\S]*visibleNodeDomainBoundaryRows=\{visibleNodeDomainBoundaryRows\}/,
+  /CommunityDomainNodeProjectionGroups[\s\S]*variant="structureBoundary"[\s\S]*nodeDomainBoundaryMap=\{nodeDomainBoundaryMap\}/,
   "Community Domain dashboard Structure lane must lazy-load node domain-boundary planning through the route-local node projection component.",
   { frontend: true }
 );
@@ -398,8 +503,22 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /CommunityDomainNodeProjectionGroups[\s\S]*variant="structureActivity"[\s\S]*nodeScheduledActivityMap=\{nodeScheduledActivityMap\}[\s\S]*nodeScheduledActivityCounts=\{nodeScheduledActivityCounts\}[\s\S]*nodePaidActivityMap=\{nodePaidActivityMap\}[\s\S]*nodePaidActivityCounts=\{nodePaidActivityCounts\}/,
+  /CommunityDomainNodeProjectionGroups[\s\S]*variant="structureActivity"[\s\S]*nodeScheduledActivityMap=\{nodeScheduledActivityMap\}[\s\S]*nodePaidActivityMap=\{nodePaidActivityMap\}/,
   "Community Domain dashboard Structure lane must lazy-load scheduled and paid activity detail projections.",
+  { frontend: true }
+);
+
+assertNotContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /visibleNode(?:Autonomy|Economic|Activity|Trust|Participation|Service|Privacy|Analytics|DomainBoundary|EvidenceAuthority|Communication|Vault|ScheduledActivity|PaidActivity)Rows|node(?:Autonomy|Economic|Activity|Trust|Participation|Service|Privacy|Analytics|DomainBoundary|EvidenceAuthority|Communication|Vault|ScheduledActivity|PaidActivity)(?:Counts|Gaps)/,
+  "Community Domain dashboard parent must not precompute node projection counts, rows, or gaps before handing raw maps to the lazy projection component.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/communityDomainDashboard/NodeProjectionGroups.tsx",
+  /function nodeProjectionCounts[\s\S]*function nodeProjectionRows[\s\S]*function nodeProjectionGaps[\s\S]*nodeProjectionRows\(map\)\.filter[\s\S]*nodeProjectionGaps\(props\.nodeTrustMap,\s*"trust_status"[\s\S]*nodeProjectionGaps\([\s\S]*props\.nodePaidActivityMap,[\s\S]*"paid_activity_status"[\s\S]*nodeProjectionCounts\(props\.nodeServiceMap\)/,
+  "Lazy Community Domain node projection component must derive counts, rows, and gap rows from raw node maps instead of receiving parent-precomputed projection data.",
   { frontend: true }
 );
 
@@ -413,7 +532,21 @@ assertContains(
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
   /lazy\([\s\S]*import\("\.\/communityDomainDashboard\/TrustEvidenceReadinessPanels"\)[\s\S]*getCommunityDomainEvidenceRecordReadiness[\s\S]*getCommunityDomainEvidenceReleaseReadiness[\s\S]*getCommunityDomainTrustRelayReadiness[\s\S]*getCommunityDomainNotificationScopeReadiness[\s\S]*getCommunityDomainTrustMobility[\s\S]*CommunityDomainTrustEvidenceReadinessPanels[\s\S]*evidenceRecordReadiness=\{evidenceRecordReadiness\}[\s\S]*evidenceReleaseReadiness=\{evidenceReleaseReadiness\}[\s\S]*trustRelayReadiness=\{trustRelayReadiness\}[\s\S]*notificationScopeReadiness=\{notificationScopeReadiness\}[\s\S]*trustMobility=\{trustMobility\}/,
-  "Community Domain dashboard Services lane must lazy-load trust/evidence readiness panels from the parent route.",
+  "Community Domain dashboard Services lane must lazy-load trust/evidence readiness panels and pass only raw readiness maps from the parent route.",
+  { frontend: true }
+);
+
+assertNotContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /evidenceRecordReadyTotal|visibleEvidenceRecordTypes|blockedEvidenceRecordTypes|evidenceRecordSummary|evidenceReleaseReadyTotal|visibleEvidenceReleaseLanes|blockedEvidenceReleaseLanes|evidenceReleaseSummary|trustRelayReadyTotal|visibleTrustRelayLanes|blockedTrustRelayLanes|trustRelaySummary|notificationScopeReadyTotal|visibleNotificationScopeLanes|blockedNotificationScopeLanes|notificationScopeSummary|trustMobilityReadyTotal|visibleTrustMobilityLanes|blockedTrustMobilityLanes|trustMobilitySummary/,
+  "Community Domain dashboard parent must not precompute Trust/evidence summaries, ready totals, record types, lane lists, or blocked lists before handing raw maps to the lazy Trust/evidence component.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/communityDomainDashboard/TrustEvidenceReadinessPanels.tsx",
+  /function readinessLanes[\s\S]*function blockedLanes[\s\S]*function readyTotal[\s\S]*function evidenceRecordTypes[\s\S]*function blockedEvidenceRecords[\s\S]*function computeEvidenceRecordReadyTotal[\s\S]*evidenceRecordReadiness\?\.summary[\s\S]*evidenceRecordTypes\(evidenceRecordReadiness\)[\s\S]*evidenceReleaseReadiness\?\.summary[\s\S]*readinessLanes\(evidenceReleaseReadiness\)[\s\S]*trustRelayReadiness\?\.summary[\s\S]*readinessLanes\(trustRelayReadiness\)[\s\S]*notificationScopeReadiness\?\.summary[\s\S]*readinessLanes\(notificationScopeReadiness\)[\s\S]*trustMobility\?\.summary[\s\S]*readinessLanes\(trustMobility\)/,
+  "Lazy Community Domain Trust/evidence readiness component must derive summaries, record types, lanes, blocked rows, and ready totals from raw readiness maps.",
   { frontend: true }
 );
 
@@ -455,7 +588,21 @@ assertContains(
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
   /lazy\([\s\S]*import\("\.\/communityDomainDashboard\/IdentityReadinessPanels"\)[\s\S]*CommunityDomainIdentityReadinessPanels[\s\S]*domain=\{domain\}[\s\S]*institutionalProfile=\{institutionalProfile\}[\s\S]*socialBridge=\{socialBridge\}[\s\S]*affiliationReadiness=\{affiliationReadiness\}/,
-  "Community Domain dashboard Identity lane must lazy-load read-only identity readiness panels from the parent route.",
+  "Community Domain dashboard Identity lane must lazy-load read-only identity readiness panels and pass only raw identity readiness maps from the parent route.",
+  { frontend: true }
+);
+
+assertNotContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /institutionalProfileReadyTotal|visibleInstitutionalProfileLanes|blockedInstitutionalProfileLanes|institutionalProfileSummary|institutionalProfileDetails|socialBridgeReadyTotal|visibleSocialBridgeLanes|blockedSocialBridgeLanes|socialBridgeSummary|linkedSocialCommunity|affiliationReadyTotal|visibleAffiliationLanes|blockedAffiliationLanes|affiliationSummary/,
+  "Community Domain dashboard parent must not precompute Identity lane institutional profile, social bridge, or affiliation summaries, ready totals, lane lists, or blocked lists before handing raw maps to the lazy Identity component.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/communityDomainDashboard/IdentityReadinessPanels.tsx",
+  /function readinessLanes[\s\S]*function blockedLanes[\s\S]*function readyTotal[\s\S]*institutionalProfile\?\.summary[\s\S]*institutionalProfile\?\.institutional_profile[\s\S]*readinessLanes\(institutionalProfile\)[\s\S]*socialBridge\?\.summary[\s\S]*socialBridge\?\.linked_community[\s\S]*readinessLanes\(socialBridge\)[\s\S]*affiliationReadiness\?\.summary[\s\S]*readinessLanes\(affiliationReadiness\)/,
+  "Lazy Community Domain Identity readiness component must derive institutional profile, social bridge, and affiliation summaries, lanes, blocked rows, and ready totals from raw readiness maps.",
   { frontend: true }
 );
 
@@ -496,8 +643,22 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /lazy\([\s\S]*import\("\.\/communityDomainDashboard\/StructurePreviewPanel"\)[\s\S]*listCommunityDomainNodeTree[\s\S]*const visibleStructureRows =\s*structurePreviewRows\(nodeTree\);[\s\S]*CommunityDomainStructurePreviewPanel[\s\S]*visibleStructureRows=\{visibleStructureRows\}/,
-  "Community Domain dashboard Structure lane must lazy-load the compact read-only node-tree preview without keeping the preview card in the parent route chunk.",
+  /lazy\([\s\S]*import\("\.\/communityDomainDashboard\/StructurePreviewPanel"\)[\s\S]*listCommunityDomainNodeTree[\s\S]*CommunityDomainStructurePreviewPanel[\s\S]*nodeTree=\{nodeTree\}/,
+  "Community Domain dashboard Structure lane must lazy-load the compact read-only node-tree preview and pass the raw node tree from the parent route.",
+  { frontend: true }
+);
+
+assertNotContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /structurePreviewRows|visibleStructureRows/,
+  "Community Domain dashboard parent must not precompute Structure preview rows before handing the raw node tree to the lazy Structure Preview component.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/communityDomainDashboard/StructurePreviewPanel.tsx",
+  /function structurePreviewRows[\s\S]*const roots = Array\.isArray\(nodes\) \? nodes : \[\][\s\S]*firstChildren\.slice\(0, 4\)[\s\S]*return rows\.slice\(0, 5\)[\s\S]*const visibleStructureRows = structurePreviewRows\(nodeTree\)/,
+  "Lazy Community Domain Structure Preview component must derive compact preview rows from the raw node tree.",
   { frontend: true }
 );
 
@@ -511,7 +672,21 @@ assertContains(
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
   /lazy\([\s\S]*import\("\.\/communityDomainDashboard\/StructurePlanningPanels"\)[\s\S]*CommunityDomainStructurePlanningPanels[\s\S]*rolloutPlan=\{rolloutPlan\}[\s\S]*activityMap=\{activityMap\}[\s\S]*activityGroupReadiness=\{activityGroupReadiness\}/,
-  "Community Domain dashboard Structure lane must lazy-load rollout, activity map, and activity-group readiness panels.",
+  "Community Domain dashboard Structure lane must lazy-load rollout, activity map, and activity-group readiness panels with raw maps from the parent route.",
+  { frontend: true }
+);
+
+assertNotContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /rolloutPlanCounts|visibleRolloutPhases|openRolloutPhases|visibleRolloutUnits|rolloutUnitsNeedingAttention|activityMapSummary|activityMapTemplate|visibleActivityMapLanes|blockedActivityMapLanes|activityMapReadyTotal|activityGroupSummary|visibleActivityGroups|blockedActivityGroups|activityGroupReadyTotal/,
+  "Community Domain dashboard parent must not precompute Structure lane rollout, activity map, or activity-group summaries, ready totals, lane lists, or attention lists before handing raw maps to the lazy Structure Planning component.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/communityDomainDashboard/StructurePlanningPanels.tsx",
+  /function readinessLanes[\s\S]*function readyTotal[\s\S]*function openRolloutPhases[\s\S]*function rolloutUnitsNeedingAttention[\s\S]*function activityGroupRows[\s\S]*rolloutPlan\?\.counts[\s\S]*openRolloutPhases\(rolloutPlan\)[\s\S]*rolloutUnitsNeedingAttention\(rolloutPlan\)[\s\S]*activityMap\?\.summary[\s\S]*activityMap\?\.template[\s\S]*readinessLanes\(activityMap\)[\s\S]*activityGroupReadiness\?\.summary[\s\S]*activityGroupRows\(activityGroupReadiness\)/,
+  "Lazy Community Domain Structure Planning component must derive rollout counts, rollout attention, activity map lanes, activity map ready totals, and activity-group rows from raw maps.",
   { frontend: true }
 );
 
@@ -546,7 +721,21 @@ assertContains(
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
   /lazy\([\s\S]*import\("\.\/communityDomainDashboard\/GovernanceReadinessPanels"\)[\s\S]*reviewStatusCounts[\s\S]*governanceReviewCounts[\s\S]*governancePendingCount[\s\S]*governanceApprovedCount[\s\S]*CommunityDomainGovernanceReadinessPanels[\s\S]*governanceAttentionCount=\{governanceAttentionCount\}[\s\S]*delegationMap=\{delegationMap\}[\s\S]*governanceCoverage=\{governanceCoverage\}/,
-  "Community Domain dashboard Governance lane must lazy-load display-only governance readiness panels from the parent route.",
+  "Community Domain dashboard Governance lane must lazy-load display-only governance readiness panels and pass only raw delegation/coverage maps from the parent route.",
+  { frontend: true }
+);
+
+assertNotContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /governanceCoverageCounts|visibleGovernanceCoverageNodes|governanceCoverageGaps|delegationMapSummary|visibleDelegationLanes|blockedDelegationLanes|delegationReadyTotal/,
+  "Community Domain dashboard parent must not precompute Governance lane delegation or coverage summaries, ready totals, lane lists, or gap lists before handing raw maps to the lazy Governance component.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/communityDomainDashboard/GovernanceReadinessPanels.tsx",
+  /function readinessLanes[\s\S]*function readyTotal[\s\S]*function governanceCoverageGaps[\s\S]*delegationMap\?\.summary[\s\S]*readinessLanes\(delegationMap\)[\s\S]*readyTotal\(delegationMap, visibleDelegationLanes\)[\s\S]*governanceCoverage\?\.counts[\s\S]*governanceCoverageGaps\(governanceCoverage\)/,
+  "Lazy Community Domain Governance readiness component must derive delegation summary, lane lists, ready totals, blocked lanes, coverage counts, and coverage gaps from raw maps.",
   { frontend: true }
 );
 
@@ -587,22 +776,50 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /requestCommunityDomainMembership[\s\S]*requestDomainAccess[\s\S]*Requesting access from the Community Domain dashboard[\s\S]*must still be approved and applied before membership changes[\s\S]*community-domain-dashboard\.error\.request-membership/,
-  "Community Domain dashboard denied-access state must expose the real membership request path without implying instant membership.",
+  /lazy\([\s\S]*import\("\.\/communityDomainDashboard\/DashboardRecoveryPanel"\)[\s\S]*requestDomainAccess[\s\S]*Requesting access from the Community Domain dashboard[\s\S]*must still be approved and applied before membership changes[\s\S]*CommunityDomainDashboardRecoveryPanel[\s\S]*latestMembershipRequest=\{latestMembershipRequest\}[\s\S]*busyMembershipRequest=\{busyMembershipRequest\}[\s\S]*onRetry=\{loadDashboard\}[\s\S]*onRequestDomainAccess=\{requestDomainAccess\}/,
+  "Community Domain dashboard denied-access state must keep the real membership request path in the parent while lazy-loading recovery UI without implying instant membership.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /listMyCommunityDomainMembershipRequests[\s\S]*membershipRequestStatusText[\s\S]*An owner\/admin still needs to approve and apply[\s\S]*loadOwnMembershipRequests[\s\S]*Your access request[\s\S]*community-domain-dashboard\.error\.request-membership/,
-  "Community Domain dashboard denied-access state must show the current user's own membership-request status without exposing the owner queue.",
+  /listMyCommunityDomainMembershipRequests[\s\S]*loadOwnMembershipRequests[\s\S]*ownMembershipRequests\[0\][\s\S]*CommunityDomainDashboardRecoveryPanel[\s\S]*latestMembershipRequest=\{latestMembershipRequest\}/,
+  "Community Domain dashboard denied-access state must hand only the current user's own latest membership-request status to the recovery panel.",
+  { frontend: true }
+);
+
+assertNotContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /membershipRequestStatusText|membershipRequestButtonLabel|Cannot open dashboard|Cannot load domains|community-domain-dashboard\.error\.request-membership/,
+  "Community Domain dashboard parent must not own denied-access recovery copy or request button rendering after handing data and handlers to the lazy recovery panel.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/communityDomainDashboard/DashboardRecoveryPanel.tsx",
+  /membershipRequestStatusText[\s\S]*An owner\/admin still needs to approve and apply[\s\S]*membershipRequestButtonLabel[\s\S]*Request pending[\s\S]*Approved, waiting to add[\s\S]*Try dashboard again[\s\S]*Cannot open dashboard[\s\S]*Cannot load domains[\s\S]*Your access request[\s\S]*Try again[\s\S]*Community Home[\s\S]*Purchase path[\s\S]*community-domain-dashboard\.error\.request-membership/,
+  "Lazy Community Domain dashboard recovery panel must show denied-access recovery, own request status, safe routes, and a real request-access action without implying instant membership.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /applyCommunityDomainActionReview[\s\S]*decideCommunityDomainActionReview[\s\S]*getCommunityDomainReviewerQueue[\s\S]*listCommunityDomainActionReviews[\s\S]*subject_user_email[\s\S]*reviewUserLabel[\s\S]*reviewRequesterLabel[\s\S]*membershipAccessRequests[\s\S]*domain_member\.upsert[\s\S]*status: "approved"[\s\S]*declineAccessRequest[\s\S]*decision: "reject"[\s\S]*applyApprovedAccessRequest[\s\S]*Access requests[\s\S]*Review people asking to enter this domain[\s\S]*Approve only[\s\S]*Decline[\s\S]*Add approved member[\s\S]*Approve \+ add member/,
-  "Community Domain dashboard owner/admin view must expose pending and approved access requests, keep approve/decline separate from apply, and preserve a visible apply path after approve-only.",
+  /applyCommunityDomainActionReview[\s\S]*decideCommunityDomainActionReview[\s\S]*getCommunityDomainReviewerQueue[\s\S]*listCommunityDomainActionReviews[\s\S]*lazy\([\s\S]*import\("\.\/communityDomainDashboard\/AccessRequestsPanel"\)[\s\S]*membershipAccessRequests[\s\S]*domain_member\.upsert[\s\S]*status: "approved"[\s\S]*declineAccessRequest[\s\S]*decision: "reject"[\s\S]*applyApprovedAccessRequest[\s\S]*CommunityDomainAccessRequestsPanel[\s\S]*membershipAccessRequests=\{membershipAccessRequests\}[\s\S]*onApproveOnly=\{\(review\) => approveAccessRequest\(review, false\)\}[\s\S]*onDecline=\{declineAccessRequest\}[\s\S]*onApproveAndApply=\{\(review\) => approveAccessRequest\(review, true\)\}[\s\S]*onApplyApproved=\{applyApprovedAccessRequest\}/,
+  "Community Domain dashboard owner/admin view must keep access-review API decisions in the parent route while lazy-loading the admin access request panel.",
+  { frontend: true }
+);
+
+assertNotContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /reviewUserLabel|reviewRequesterLabel|Approve only|Approve \+ add member/,
+  "Community Domain dashboard parent must not own access-request card labels or action-button rendering after handing reviews and handlers to the lazy access request panel.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/communityDomainDashboard/AccessRequestsPanel.tsx",
+  /subject_user_email[\s\S]*reviewUserLabel[\s\S]*reviewRequesterLabel[\s\S]*Access requests[\s\S]*Review people asking to enter this domain[\s\S]*Approving records the decision; approving and adding[\s\S]*Approve only[\s\S]*Decline[\s\S]*Add approved member[\s\S]*Approve \+ add member[\s\S]*community-domain-dashboard\.access-request\.refresh/,
+  "Lazy Community Domain access request panel must expose pending and approved access requests, keep approve/decline separate from apply, and preserve a visible apply path after approve-only.",
   { frontend: true }
 );
 
@@ -640,8 +857,8 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainPurchasePage.tsx",
-  /hasCreatedDraft[\s\S]*disabled=\{hasCreatedDraft\}[\s\S]*disabled=\{hasCreatedDraft\}[\s\S]*disabled=\{hasCreatedDraft\}[\s\S]*disabled=\{busy === "availability" \|\| hasCreatedDraft\}[\s\S]*Draft created/,
-  "Community Domain purchase page must lock form inputs after draft creation so the visible form cannot drift away from the created draft.",
+  /hasCreatedDraft[\s\S]*draftFormLocked[\s\S]*hasCreatedDraft \|\| busy === "draft"[\s\S]*disabled=\{hasCreatedDraft \|\| busy === "draft"\}[\s\S]*disabled=\{hasCreatedDraft \|\| busy === "draft"\}[\s\S]*disabled=\{hasCreatedDraft \|\| busy === "draft"\}[\s\S]*disabled=\{busy === "availability" \|\| draftFormLocked\}[\s\S]*Draft created/,
+  "Community Domain purchase page must lock form inputs after draft creation or while the draft request is being created so the visible form cannot drift away from the created draft.",
   { frontend: true }
 );
 
@@ -779,6 +996,18 @@ assertContains(
 
 assertContains(
   "gmfn_backend/app/api/routes/community_domains.py",
+  /COMMUNITY_DOMAIN_TEMPLATE_ALIASES[\s\S]*"union": "professional_union"[\s\S]*"market_association": "market_cooperative"[\s\S]*def _clean_template_key[\s\S]*lower\(\)[\s\S]*re\.sub\(r"\[\\s-\]\+"[\s\S]*def _domain_payload[\s\S]*resolved_template = _community_domain_template_for_key[\s\S]*"resolved_template"[\s\S]*"template_key": resolved_template\["template_key"\][\s\S]*def _community_domain_template_for_key[\s\S]*_clean_template_key\(template_key, "generic_association"\)[\s\S]*COMMUNITY_DOMAIN_TEMPLATE_ALIASES\.get\(key, key\)[\s\S]*def _community_domain_template_for_key_or_none[\s\S]*_clean_template_key\(template_key\)[\s\S]*COMMUNITY_DOMAIN_TEMPLATE_ALIASES\.get\(key, key\)[\s\S]*def create_community_domain_draft[\s\S]*domain_type = _clean_template_key\(payload\.domain_type, "generic_association"\)[\s\S]*template_key = _clean_template_key\(payload\.template_key, domain_type\)[\s\S]*_community_domain_template_for_key_or_none\(template_key\)[\s\S]*community_domain_template_not_supported[\s\S]*Choose a supported Community Domain template before[\s\S]*domain_type_template = _community_domain_template_for_key_or_none\(domain_type\)[\s\S]*community_domain_type_not_supported[\s\S]*community_domain_template_mismatch[\s\S]*CommunityDomain\(/,
+  "Backend draft creation must normalize Community Domain template/type identifiers, preserve known aliases, expose resolved template metadata, and reject unsupported templates, unsupported domain types, and mismatched approved type/template pairs before creating institutional records."
+);
+
+assertContains(
+  "gmfn_backend/tests/test_community_domains.py",
+  /test_community_domain_draft_normalizes_template_type_aliases[\s\S]*Market Association[\s\S]*market-association[\s\S]*data\["domain_type"\] == "market_association"[\s\S]*data\["template_key"\] == "market_association"[\s\S]*data\["resolved_template"\]\["template_key"\] == "market_cooperative"[\s\S]*test_community_domain_draft_rejects_unsupported_template[\s\S]*\/community-domains\/drafts[\s\S]*invented_society_schema[\s\S]*response\.status_code == 422[\s\S]*community_domain_template_not_supported[\s\S]*db\.query\(CommunityDomain\)\.count\(\) == 0[\s\S]*test_community_domain_draft_rejects_unsupported_domain_type[\s\S]*invented_school_body[\s\S]*community_domain_type_not_supported[\s\S]*db\.query\(CommunityNode\)\.count\(\) == 0[\s\S]*test_community_domain_draft_rejects_mismatched_type_and_template[\s\S]*school[\s\S]*market_cooperative[\s\S]*community_domain_template_mismatch[\s\S]*expected_template_key"\] == "school_multi_branch"[\s\S]*db\.query\(CommunityDomainMembership\)\.count\(\) == 0/,
+  "Backend tests must prove template/type identifier normalization works for approved aliases, resolved template metadata is explicit, and unsupported templates, unsupported domain types, and mismatched approved type/template pairs cannot create draft domains, root nodes, or owner memberships."
+);
+
+assertContains(
+  "gmfn_backend/app/api/routes/community_domains.py",
   /COMMUNITY_DOMAIN_TEMPLATE_OPERATING_BLUEPRINTS[\s\S]*school_multi_branch[\s\S]*market_cooperative[\s\S]*family_town_union_diaspora[\s\S]*hospital_health_body[\s\S]*ngo_project_network[\s\S]*uses_generic_fallback[\s\S]*does not create a Community Domain[\s\S]*separate schemas[\s\S]*@router\.get\("\/templates\/\{template_key\}\/operating-blueprint"/,
   "Backend route must expose public Community Domain template operating blueprints without creation, activation, verification, payment, marketplace, social Community, or schema-fork side effects."
 );
@@ -791,8 +1020,8 @@ assertContains(
 
 assertContains(
   "gmfn_backend/tests/test_community_domains.py",
-  /test_template_operating_blueprint_distinguishes_school_and_rejects_unknown[\s\S]*school_multi_branch\/operating-blueprint[\s\S]*school\/operating-blueprint[\s\S]*does-not-exist\/operating-blueprint[\s\S]*school_association/,
-  "Backend tests must prove template operating blueprints distinguish society types, support domain-type lookup, and reject unknown templates."
+  /test_template_operating_blueprint_distinguishes_school_and_rejects_unknown[\s\S]*school_multi_branch\/operating-blueprint[\s\S]*school\/operating-blueprint[\s\S]*School Multi Branch\/operating-blueprint[\s\S]*union\/operating-blueprint[\s\S]*market_association\/operating-blueprint[\s\S]*does-not-exist\/operating-blueprint[\s\S]*union_professional_body[\s\S]*market_cooperative[\s\S]*school_association/,
+  "Backend tests must prove template operating blueprints distinguish society types, normalize label-shaped keys, support domain-type and legacy alias lookup, and reject unknown templates."
 );
 
 assertContains(

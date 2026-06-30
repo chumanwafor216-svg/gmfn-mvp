@@ -989,6 +989,8 @@ export default function FinancePage() {
     [selectedClanId]
   );
   const financeRevealRef = useRef<number | null>(null);
+  const financeLoadSeqRef = useRef(0);
+  const financeLoadContextRef = useRef("");
 
   const [isCompact, setIsCompact] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
@@ -1059,6 +1061,18 @@ export default function FinancePage() {
 
   useEffect(() => {
     let alive = true;
+    const contextKey = `community:${selectedClanId || "none"}`;
+    const loadSeq = financeLoadSeqRef.current + 1;
+    financeLoadSeqRef.current = loadSeq;
+    financeLoadContextRef.current = contextKey;
+
+    function isCurrentFinanceLoad() {
+      return (
+        alive &&
+        financeLoadSeqRef.current === loadSeq &&
+        financeLoadContextRef.current === contextKey
+      );
+    }
 
     async function loadLoanSummary(
       loanId: number,
@@ -1080,6 +1094,17 @@ export default function FinancePage() {
 
     (async () => {
       setLoading(true);
+      setCurrentClan(null);
+      setMoneySurface(null);
+      setPoolState(null);
+      setLoans([]);
+      setLoanSummaries({});
+      setPoolEvents([]);
+      setClanLiquidity(null);
+      setExpectedPayments([]);
+      setCrossCommunityPool(null);
+      setTrustWhy(null);
+      setGuarantorEarnings(null);
 
       try {
         const mePromise =
@@ -1135,7 +1160,7 @@ export default function FinancePage() {
           guarantorEarningsPromise,
         ]);
 
-        if (!alive) return;
+        if (!isCurrentFinanceLoad()) return;
 
         const normalizedLoans = rowsOf<any>(loansRes)
           .map((row) => normalizeLoanRow(row))
@@ -1172,7 +1197,7 @@ export default function FinancePage() {
             ).catch(() => ({ items: [] })),
           ]);
 
-          if (!alive) return;
+          if (!isCurrentFinanceLoad()) return;
 
           setMoneySurface(surface);
           setClanLiquidity(normalizeClanLiquidity(liquidityRes));
@@ -1183,8 +1208,11 @@ export default function FinancePage() {
           setExpectedPayments([]);
         }
 
+        const summaryTargets = filteredLoans
+          .filter((row) => isActiveLoan(row) && isBorrowerLoan(row))
+          .slice(0, 12);
         const summaryPairs = await Promise.all(
-          filteredLoans.slice(0, 12).map(async (row) => {
+          summaryTargets.map(async (row) => {
             const loanId = positiveNumber(row.id);
             if (!loanId || !selectedClanId) return null;
             const summary = await loadLoanSummary(loanId, selectedClanId).catch(
@@ -1194,7 +1222,7 @@ export default function FinancePage() {
           })
         );
 
-        if (!alive) return;
+        if (!isCurrentFinanceLoad()) return;
 
         const nextSummaryMap: Record<number, LoanSummary> = {};
         for (const pair of summaryPairs) {
@@ -1209,7 +1237,7 @@ export default function FinancePage() {
 
         setPoolEvents(poolEventRows);
       } finally {
-        if (alive) setLoading(false);
+        if (isCurrentFinanceLoad()) setLoading(false);
       }
     })();
 

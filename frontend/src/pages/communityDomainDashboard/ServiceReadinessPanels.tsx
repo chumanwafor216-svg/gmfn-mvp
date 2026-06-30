@@ -2,28 +2,61 @@ import React from "react";
 
 type ServiceReadinessPanelsProps = {
   moduleScopeReadiness?: any;
-  serviceReadinessRows?: any[];
+  moduleKeys?: unknown[];
+  billingStatus?: unknown;
+  quote?: any;
   serviceSettingsProjection?: any;
-  visibleServiceSettingsItems?: any[];
-  enabledServiceSettingsItems?: any[];
-  optionalServiceSettingsItems?: any[];
   economicParticipation?: any;
-  economicParticipationReadyTotal?: number;
-  visibleEconomicParticipationLanes?: any[];
-  blockedEconomicParticipationLanes?: any[];
-  economicParticipationTemplate?: Record<string, unknown>;
-  economicParticipationCounts?: Record<string, unknown>;
   networkPresence?: any;
-  networkPresenceReadyTotal?: number;
-  visibleNetworkPresenceLanes?: any[];
-  blockedNetworkPresenceLanes?: any[];
-  networkPresenceIdentity?: Record<string, unknown>;
-  networkPresenceStatus?: Record<string, unknown>;
   children?: React.ReactNode;
 };
 
+type ServiceReadinessItem = {
+  module_key?: string | null;
+  label?: string | null;
+  summary?: string | null;
+  enabled_by_template?: boolean;
+  module_scope_status?: string | null;
+  ready_for_future_module_scope?: boolean;
+  next_step?: string | null;
+  route_hint?: string | null;
+  requires_admin?: boolean;
+};
+
+type ServiceReadinessRow = {
+  key: string;
+  label: string;
+  status: string;
+  detail: string;
+};
+
+const MODULE_LABELS: Record<string, string> = {
+  governance: "Governance",
+  members: "Members",
+  departments: "Structure",
+  shops: "Shops",
+  marketplace: "Marketplace",
+  spotlight: "Spotlight",
+  vault: "Vault",
+  verification: "Verification",
+  trust_centre: "Trust Centre",
+  analytics: "Analytics",
+  billing: "Billing",
+  settings: "Settings",
+};
+
+const SERVICE_READINESS_KEYS = [
+  "shops",
+  "spotlight",
+  "vault",
+  "verification",
+  "trust_centre",
+  "analytics",
+] as const;
+
 function cleanText(value: unknown, fallback = ""): string {
-  return typeof value === "string" && value.trim() ? value.trim() : fallback;
+  const text = String(value ?? "").trim();
+  return text || fallback;
 }
 
 function compactStatus(value: unknown): string {
@@ -31,7 +64,101 @@ function compactStatus(value: unknown): string {
 }
 
 function countValue(value: unknown): string {
-  return typeof value === "number" && Number.isFinite(value) ? String(value) : "0";
+  const numberValue = Number(value ?? 0);
+  return Number.isFinite(numberValue) ? String(numberValue) : "0";
+}
+
+function projectionItems(projection: any): any[] {
+  return Array.isArray(projection?.items) ? projection.items : [];
+}
+
+function readinessLanes(map: any): any[] {
+  return Array.isArray(map?.lanes) ? map.lanes : [];
+}
+
+function blockedLanes(lanes: any[]): any[] {
+  return lanes.filter((lane) => !lane.ready);
+}
+
+function readyTotal(map: any, lanes: any[]): number {
+  return typeof map?.ready_total === "number"
+    ? map.ready_total
+    : lanes.filter((lane) => lane.ready).length;
+}
+
+function moduleLabel(moduleKey: unknown): string {
+  const key = cleanText(moduleKey);
+  return MODULE_LABELS[key] || key.replace(/_/g, " ").replace(/\b\w/g, (x) => x.toUpperCase());
+}
+
+function serviceReadinessStatus(item: ServiceReadinessItem | undefined, fallbackEnabled: boolean): string {
+  const status = cleanText(item?.module_scope_status).toLowerCase();
+  if (!item) return fallbackEnabled ? "template listed" : "not listed";
+  if (status === "ready_for_future_module_scope") return "planning ready";
+  if (status === "needs_operating_units") return "needs structure";
+  if (status === "needs_node_participants") return "needs placements";
+  if (status === "needs_domain_policy") return "needs domain policy";
+  if (status === "needs_scope_policy") return "needs service policy";
+  if (status === "needs_review_signal") return "needs review signal";
+  if (status === "optional_module_not_enabled") return "optional, not included";
+  return compactStatus(status || (item.ready_for_future_module_scope ? "planning ready" : "not ready"));
+}
+
+function serviceFallbackDetail(fallbackEnabled: boolean): string {
+  if (fallbackEnabled) {
+    return "Listed by this Community Domain template. Readiness details are not loaded yet.";
+  }
+  return "Not included by the current template unless an owner later chooses to configure it.";
+}
+
+function serviceReadinessRows(
+  moduleScopeReadiness: any,
+  moduleKeys: unknown[],
+  billingStatus: unknown,
+  quote: any
+): ServiceReadinessRow[] {
+  const readinessItems: ServiceReadinessItem[] = Array.isArray(moduleScopeReadiness?.modules)
+    ? moduleScopeReadiness.modules
+    : [];
+  const byKey = new Map(
+    readinessItems
+      .map((item) => [cleanText(item.module_key), item] as const)
+      .filter(([key]) => Boolean(key))
+  );
+  const listedKeys = new Set(moduleKeys.map((key) => cleanText(key)));
+  const rows: ServiceReadinessRow[] = SERVICE_READINESS_KEYS.map((serviceKey) => {
+    const item = byKey.get(serviceKey);
+    const fallbackEnabled = listedKeys.has(serviceKey);
+    return {
+      key: serviceKey,
+      label: cleanText(item?.label, moduleLabel(serviceKey)),
+      status: serviceReadinessStatus(item, fallbackEnabled),
+      detail: cleanText(
+        item?.next_step || item?.summary,
+        serviceFallbackDetail(fallbackEnabled)
+      ),
+    };
+  });
+  const billingIsActive = cleanText(billingStatus).toLowerCase() === "active";
+
+  rows.push({
+    key: "billing",
+    label: "Billing",
+    status: compactStatus(billingStatus || quote?.pricing_status || quote?.quote_status),
+    detail: billingIsActive
+      ? "Billing is shown as active here, but payment instructions and renewals remain separate owner/admin work."
+      : "Package, payment instruction, activation, and renewal are still separate from service readiness.",
+  });
+  rows.push({
+    key: "settings",
+    label: "Settings",
+    status: moduleScopeReadiness ? "read only" : "not loaded",
+    detail: moduleScopeReadiness
+      ? "Settings are shown as planning status here. This page does not enable services or grant permissions."
+      : "Service settings could not be loaded for this view. No setting has been changed.",
+  });
+
+  return rows;
 }
 
 function softCard(): React.CSSProperties {
@@ -167,25 +294,46 @@ function statusRow(
 
 export default function CommunityDomainServiceReadinessPanels({
   moduleScopeReadiness,
-  serviceReadinessRows = [],
+  moduleKeys = [],
+  billingStatus,
+  quote,
   serviceSettingsProjection,
-  visibleServiceSettingsItems = [],
-  enabledServiceSettingsItems = [],
-  optionalServiceSettingsItems = [],
   economicParticipation,
-  economicParticipationReadyTotal = 0,
-  visibleEconomicParticipationLanes = [],
-  blockedEconomicParticipationLanes = [],
-  economicParticipationTemplate = {},
-  economicParticipationCounts = {},
   networkPresence,
-  networkPresenceReadyTotal = 0,
-  visibleNetworkPresenceLanes = [],
-  blockedNetworkPresenceLanes = [],
-  networkPresenceIdentity = {},
-  networkPresenceStatus = {},
   children,
 }: ServiceReadinessPanelsProps): React.ReactElement {
+  const visibleServiceReadinessRows = serviceReadinessRows(
+    moduleScopeReadiness,
+    moduleKeys,
+    billingStatus,
+    quote
+  );
+  const visibleServiceSettingsItems = projectionItems(serviceSettingsProjection);
+  const enabledServiceSettingsItems = visibleServiceSettingsItems.filter(
+    (item) => item.enabled
+  );
+  const optionalServiceSettingsItems = visibleServiceSettingsItems.filter(
+    (item) => !item.enabled
+  );
+  const economicParticipationCounts = economicParticipation?.counts || {};
+  const economicParticipationTemplate = economicParticipation?.template || {};
+  const visibleEconomicParticipationLanes = readinessLanes(economicParticipation);
+  const blockedEconomicParticipationLanes = blockedLanes(
+    visibleEconomicParticipationLanes
+  );
+  const economicParticipationReadyTotal = readyTotal(
+    economicParticipation,
+    visibleEconomicParticipationLanes
+  );
+  const networkPresenceIdentity = networkPresence?.identity || {};
+  const networkPresenceStatus = networkPresence?.status || {};
+  const visibleNetworkPresenceLanes = readinessLanes(networkPresence);
+  const blockedNetworkPresenceLanes = blockedLanes(visibleNetworkPresenceLanes);
+  const networkPresenceReadyTotal = readyTotal(
+    networkPresence,
+    visibleNetworkPresenceLanes
+  );
+
   return (
     <>
       <div style={softCard()}>
@@ -201,7 +349,7 @@ export default function CommunityDomainServiceReadinessPanels({
           </div>
         ) : null}
         <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
-          {serviceReadinessRows.map((row) =>
+          {visibleServiceReadinessRows.map((row) =>
             statusRow(row.key, row.label, row.detail, row.status)
           )}
         </div>

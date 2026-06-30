@@ -2,14 +2,7 @@ import React from "react";
 
 type BillingReadinessPanelsProps = {
   subscriptionLifecycle?: any;
-  subscriptionReadyTotal?: number;
-  visibleSubscriptionLanes?: any[];
-  blockedSubscriptionLanes?: any[];
-  subscriptionPackage?: Record<string, unknown>;
-  subscriptionSummary?: Record<string, unknown>;
   capacityPlan?: any;
-  visibleCapacityLanes?: any[];
-  attentionCapacityLanes?: any[];
 };
 
 function cleanText(value: unknown, fallback = ""): string {
@@ -21,7 +14,29 @@ function compactStatus(value: unknown): string {
 }
 
 function countValue(value: unknown): string {
-  return typeof value === "number" && Number.isFinite(value) ? String(value) : "0";
+  const numberValue = Number(value ?? 0);
+  return Number.isFinite(numberValue) ? String(numberValue) : "0";
+}
+
+function readinessLanes(map: any): any[] {
+  return Array.isArray(map?.lanes) ? map.lanes : [];
+}
+
+function blockedLanes(lanes: any[]): any[] {
+  return lanes.filter((lane) => !lane.ready);
+}
+
+function readyTotal(map: any, lanes: any[]): number {
+  return typeof map?.ready_total === "number"
+    ? map.ready_total
+    : lanes.filter((lane) => lane.ready).length;
+}
+
+function attentionCapacityLanes(lanes: any[]): any[] {
+  return lanes.filter((lane) => {
+    const statusText = cleanText(lane.status).toLowerCase();
+    return statusText.includes("near") || statusText.includes("over");
+  });
 }
 
 function softCard(): React.CSSProperties {
@@ -157,15 +172,19 @@ function statusRow(
 
 export default function CommunityDomainBillingReadinessPanels({
   subscriptionLifecycle,
-  subscriptionReadyTotal = 0,
-  visibleSubscriptionLanes = [],
-  blockedSubscriptionLanes = [],
-  subscriptionPackage = {},
-  subscriptionSummary = {},
   capacityPlan,
-  visibleCapacityLanes = [],
-  attentionCapacityLanes = [],
 }: BillingReadinessPanelsProps): React.ReactElement {
+  const subscriptionSummary = subscriptionLifecycle?.summary || {};
+  const subscriptionPackage = subscriptionLifecycle?.package || {};
+  const visibleSubscriptionLanes = readinessLanes(subscriptionLifecycle);
+  const blockedSubscriptionLanes = blockedLanes(visibleSubscriptionLanes);
+  const subscriptionReadyTotal = readyTotal(
+    subscriptionLifecycle,
+    visibleSubscriptionLanes
+  );
+  const visibleCapacityLanes = readinessLanes(capacityPlan);
+  const capacityAttentionLanes = attentionCapacityLanes(visibleCapacityLanes);
+
   return (
     <>
       <div style={softCard()}>
@@ -242,11 +261,11 @@ export default function CommunityDomainBillingReadinessPanels({
               )}.`
             : "GSN could not load the read-only capacity plan for this view."}
         </div>
-        {attentionCapacityLanes.length ? (
+        {capacityAttentionLanes.length ? (
           <div style={{ ...helperText(), marginTop: 7, fontSize: 13 }}>
             Capacity attention:{" "}
             <strong>
-              {attentionCapacityLanes
+              {capacityAttentionLanes
                 .map((lane) => cleanText(lane.label, lane.lane_key || "capacity"))
                 .join(", ")}
             </strong>

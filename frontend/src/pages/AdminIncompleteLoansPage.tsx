@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ExplainToggle from "../components/ExplainToggle";
 import PageTopNav from "../components/PageTopNav";
 import { SecondaryButton, StableCtaLink } from "../components/StableButton";
@@ -226,11 +226,19 @@ function routeTarget(
   return resolveCtaTarget(intent, { communityId, debugId, ...extra }).to as string;
 }
 
+type IncompleteSupportLoadResult = {
+  community: any;
+  rows: any[];
+};
+
 export default function AdminIncompleteLoansPage() {
   const [rows, setRows] = useState<any[]>([]);
   const [err, setErr] = useState<string | null>(null);
   const [community, setCommunity] = useState<any>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const loadContextRef = useRef("");
+  const loadSeqRef = useRef(0);
   const pattern = useMemo(() => topPattern(), []);
   const selectedClanId = Number(getSelectedClanId() || 0);
   const routes = useMemo(
@@ -247,35 +255,59 @@ export default function AdminIncompleteLoansPage() {
     [selectedClanId]
   );
 
+  const clearQueueState = useCallback(() => {
+    setRows([]);
+    setCommunity(null);
+    setNotice(null);
+  }, []);
+
+  const fetchIncompleteQueue = useCallback(async (): Promise<IncompleteSupportLoadResult> => {
+    const clanRes = await getCurrentClan().catch(() => null);
+
+    if (!selectedClanId) {
+      return { community: clanRes || null, rows: [] };
+    }
+
+    const res = await getAdminIncompleteLoans(selectedClanId, 100);
+
+    return {
+      community: clanRes || null,
+      rows: Array.isArray(res?.items) ? res.items : [],
+    };
+  }, [selectedClanId]);
+
   useEffect(() => {
-    let alive = true;
+    const contextKey = String(selectedClanId || 0);
+    const loadSeq = loadSeqRef.current + 1;
+    loadSeqRef.current = loadSeq;
+    loadContextRef.current = contextKey;
+    setLoading(true);
+    setErr(null);
+    clearQueueState();
 
     (async () => {
       try {
-        setErr(null);
+        const result = await fetchIncompleteQueue();
 
-        const clanRes = await getCurrentClan().catch(() => null);
-        if (!alive) return;
-        setCommunity(clanRes || null);
-
-        if (!selectedClanId) {
-          setRows([]);
+        if (loadContextRef.current !== contextKey || loadSeqRef.current !== loadSeq) {
           return;
         }
 
-        const res = await getAdminIncompleteLoans(selectedClanId, 100);
-        if (!alive) return;
-        setRows(Array.isArray(res?.items) ? res.items : []);
+        setCommunity(result.community);
+        setRows(result.rows);
       } catch (e: any) {
-        if (!alive) return;
+        if (loadContextRef.current !== contextKey || loadSeqRef.current !== loadSeq) {
+          return;
+        }
+
         setErr(String(e?.message || e || "Unable to load incomplete support items."));
+      } finally {
+        if (loadContextRef.current === contextKey && loadSeqRef.current === loadSeq) {
+          setLoading(false);
+        }
       }
     })();
-
-    return () => {
-      alive = false;
-    };
-  }, [selectedClanId]);
+  }, [clearQueueState, fetchIncompleteQueue, selectedClanId]);
 
   const communityLabel = useMemo(() => {
     return (
@@ -316,6 +348,11 @@ export default function AdminIncompleteLoansPage() {
   }
 
   function copyQueueSnapshot() {
+    if (loading) {
+      setNotice("Wait for the incomplete support queue to finish loading before copying.");
+      return;
+    }
+
     const snapshot = buildGsnSnapshotPaper({
       title: "GSN Incomplete Support Queue Snapshot",
       purpose:
@@ -408,6 +445,7 @@ export default function AdminIncompleteLoansPage() {
           >
             <SecondaryButton
               onClick={copyQueueSnapshot}
+              disabled={loading}
               fullWidth
               stableHeight={52}
               debugId="admin-incomplete-loans.copy-queue"
@@ -445,8 +483,9 @@ export default function AdminIncompleteLoansPage() {
           </div>
 
           <div style={{ marginTop: 18, display: "grid", gap: 12 }}>
+            {loading ? <div style={{ ...card(), color: "#7A8D9F" }}>Loading the current community incomplete support queue...</div> : null}
             {!selectedClanId ? <div style={{ ...card(), color: "#7A8D9F" }}>Choose the community first. This review queue belongs to one active community at a time.</div> : null}
-            {selectedClanId && rows.length === 0 && !err ? <div style={{ ...card(), color: "#7A8D9F" }}>No incomplete support items are currently shown.</div> : null}
+            {selectedClanId && rows.length === 0 && !err && !loading ? <div style={{ ...card(), color: "#7A8D9F" }}>No incomplete support items are currently shown.</div> : null}
             {rows.map((loan, i) => {
               const loanId = safeStr(loan?.loan_id || loan?.id || i);
               const borrowerId = safeStr(loan?.borrower_user_id || "-");
@@ -490,8 +529,13 @@ export default function AdminIncompleteLoansPage() {
                   >
                     <SecondaryButton
                       onClick={() => {
+                        if (loading) {
+                          setNotice("Wait for the incomplete support queue to finish loading before copying.");
+                          return;
+                        }
                         void copyText(buildLoanSnapshot(loan), `Support #${loanId} snapshot copied.`, "Clipboard is not available here.");
                       }}
+                      disabled={loading}
                       fullWidth
                       stableHeight={52}
                       debugId={`admin-incomplete-loans.loan.${loanId}.copy`}

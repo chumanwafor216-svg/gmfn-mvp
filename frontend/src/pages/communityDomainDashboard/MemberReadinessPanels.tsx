@@ -2,15 +2,8 @@ import React from "react";
 
 type MemberReadinessPanelsProps = {
   placementSummary?: any;
-  placementCounts?: Record<string, unknown>;
-  visibleNodePlacements?: any[];
-  placementLanes?: any[];
   counts?: Record<string, unknown>;
   memberVerificationMap?: any;
-  memberVerificationReadyTotal?: number;
-  visibleMemberVerificationLanes?: any[];
-  blockedMemberVerificationLanes?: any[];
-  memberVerificationSummary?: Record<string, unknown>;
   children?: React.ReactNode;
 };
 
@@ -23,7 +16,24 @@ function compactStatus(value: unknown): string {
 }
 
 function countValue(value: unknown): string {
-  return typeof value === "number" && Number.isFinite(value) ? String(value) : "0";
+  const numberValue = Number(value ?? 0);
+  return Number.isFinite(numberValue) ? String(numberValue) : "0";
+}
+
+function readinessLanes(map: any): any[] {
+  return Array.isArray(map?.lanes) ? map.lanes : [];
+}
+
+function readyTotal(map: any, lanes: any[]): number {
+  return typeof map?.ready_total === "number"
+    ? map.ready_total
+    : lanes.filter((lane) => lane.ready).length;
+}
+
+function visibleNodePlacements(placementSummary: any): any[] {
+  return Array.isArray(placementSummary?.node_placements)
+    ? placementSummary.node_placements.slice(0, 3)
+    : [];
 }
 
 function softCard(): React.CSSProperties {
@@ -163,17 +173,23 @@ function statusRow(
 
 export default function CommunityDomainMemberReadinessPanels({
   placementSummary,
-  placementCounts = {},
-  visibleNodePlacements = [],
-  placementLanes = [],
   counts = {},
   memberVerificationMap,
-  memberVerificationReadyTotal = 0,
-  visibleMemberVerificationLanes = [],
-  blockedMemberVerificationLanes = [],
-  memberVerificationSummary = {},
   children,
 }: MemberReadinessPanelsProps): React.ReactElement {
+  const placementCounts = placementSummary?.counts || {};
+  const placementLanes = readinessLanes(placementSummary);
+  const nodePlacements = visibleNodePlacements(placementSummary);
+  const memberVerificationSummary = memberVerificationMap?.summary || {};
+  const visibleMemberVerificationLanes = readinessLanes(memberVerificationMap);
+  const blockedMemberVerificationLanes = visibleMemberVerificationLanes.filter(
+    (lane) => !lane.ready
+  );
+  const memberVerificationReadyTotal = readyTotal(
+    memberVerificationMap,
+    visibleMemberVerificationLanes
+  );
+
   return (
     <>
       {placementSummary ? (
@@ -187,9 +203,9 @@ export default function CommunityDomainMemberReadinessPanels({
             . Active operating-unit placements:{" "}
             <strong>{countValue(placementCounts.active_node_placements)}</strong>.
           </div>
-          {visibleNodePlacements.length ? (
+          {nodePlacements.length ? (
             <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
-              {visibleNodePlacements.map((placement: any) =>
+              {nodePlacements.map((placement: any) =>
                 statusRow(
                   `${cleanText(placement.community_node_id)}:${cleanText(placement.id)}`,
                   cleanText(placement.community_node_name, "Operating unit"),

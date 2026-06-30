@@ -2,20 +2,8 @@ import React from "react";
 
 type StructurePlanningPanelsProps = {
   rolloutPlan?: any;
-  rolloutPlanCounts?: Record<string, unknown>;
-  openRolloutPhases?: any[];
-  rolloutUnitsNeedingAttention?: any[];
   activityMap?: any;
-  activityMapReadyTotal?: number;
-  visibleActivityMapLanes?: any[];
-  blockedActivityMapLanes?: any[];
-  activityMapSummary?: Record<string, unknown>;
-  activityMapTemplate?: Record<string, unknown>;
   activityGroupReadiness?: any;
-  activityGroupReadyTotal?: number;
-  visibleActivityGroups?: any[];
-  blockedActivityGroups?: any[];
-  activityGroupSummary?: Record<string, unknown>;
 };
 
 function cleanText(value: unknown, fallback = ""): string {
@@ -30,6 +18,32 @@ function compactStatus(value: unknown): string {
 function countValue(value: unknown): string {
   const numberValue = Number(value ?? 0);
   return Number.isFinite(numberValue) ? String(numberValue) : "0";
+}
+
+function readinessLanes(map: any): any[] {
+  return Array.isArray(map?.lanes) ? map.lanes : [];
+}
+
+function readyTotal(map: any, lanes: any[]): number {
+  return typeof map?.ready_total === "number"
+    ? map.ready_total
+    : lanes.filter((lane) => lane.ready).length;
+}
+
+function openRolloutPhases(rolloutPlan: any): any[] {
+  const phases = Array.isArray(rolloutPlan?.phases) ? rolloutPlan.phases : [];
+  return phases.filter((phase: any) => !phase.completed);
+}
+
+function rolloutUnitsNeedingAttention(rolloutPlan: any): any[] {
+  const units = Array.isArray(rolloutPlan?.rollout_units) ? rolloutPlan.rollout_units : [];
+  return units.filter((unit: any) => !unit.ready_for_pilot);
+}
+
+function activityGroupRows(activityGroupReadiness: any): any[] {
+  return Array.isArray(activityGroupReadiness?.flat_groups)
+    ? activityGroupReadiness.flat_groups
+    : [];
 }
 
 function softCard(): React.CSSProperties {
@@ -171,21 +185,26 @@ function statusRow({
 
 export default function CommunityDomainStructurePlanningPanels({
   rolloutPlan,
-  rolloutPlanCounts = {},
-  openRolloutPhases = [],
-  rolloutUnitsNeedingAttention = [],
   activityMap,
-  activityMapReadyTotal = 0,
-  visibleActivityMapLanes = [],
-  blockedActivityMapLanes = [],
-  activityMapSummary = {},
-  activityMapTemplate = {},
   activityGroupReadiness,
-  activityGroupReadyTotal = 0,
-  visibleActivityGroups = [],
-  blockedActivityGroups = [],
-  activityGroupSummary = {},
 }: StructurePlanningPanelsProps) {
+  const rolloutPlanCounts = rolloutPlan?.counts || {};
+  const visibleRolloutPhases = openRolloutPhases(rolloutPlan);
+  const rolloutUnitsWithAttention = rolloutUnitsNeedingAttention(rolloutPlan);
+  const activityMapSummary = activityMap?.summary || {};
+  const activityMapTemplate = activityMap?.template || {};
+  const visibleActivityMapLanes = readinessLanes(activityMap);
+  const blockedActivityMapLanes = visibleActivityMapLanes.filter((lane) => !lane.ready);
+  const activityMapReadyTotal = readyTotal(activityMap, visibleActivityMapLanes);
+  const activityGroupSummary = activityGroupReadiness?.summary || {};
+  const visibleActivityGroups = activityGroupRows(activityGroupReadiness);
+  const blockedActivityGroups = visibleActivityGroups.filter(
+    (group) => !group.ready_for_activity_group_planning
+  );
+  const activityGroupReadyTotal = visibleActivityGroups.filter(
+    (group) => group.ready_for_activity_group_planning
+  ).length;
+
   return (
     <>
       <div style={softCard()}>
@@ -210,9 +229,9 @@ export default function CommunityDomainStructurePlanningPanels({
             </div>
           ))}
         </div>
-        {openRolloutPhases.length ? (
+        {visibleRolloutPhases.length ? (
           <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
-            {openRolloutPhases.slice(0, 3).map((phase) =>
+            {visibleRolloutPhases.slice(0, 3).map((phase) =>
               statusRow({
                 rowKey: cleanText(phase.phase_key, cleanText(phase.label, "phase")),
                 title: cleanText(phase.label, "Rollout phase"),
@@ -229,11 +248,11 @@ export default function CommunityDomainStructurePlanningPanels({
             No open rollout phase is visible in the read-only rollout plan.
           </div>
         ) : null}
-        {rolloutUnitsNeedingAttention.length ? (
+        {rolloutUnitsWithAttention.length ? (
           <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
             Units needing attention:{" "}
             <strong>
-              {rolloutUnitsNeedingAttention
+              {rolloutUnitsWithAttention
                 .slice(0, 3)
                 .map((unit) => cleanText(unit.node?.name, "Operating unit"))
                 .join(", ")}

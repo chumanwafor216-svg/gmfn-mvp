@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import GsnSnapshotPaperCard from "../components/GsnSnapshotPaperCard";
 import PageTopNav from "../components/PageTopNav";
@@ -440,6 +440,10 @@ export default function PayoutDetailsPage() {
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
   const [evidenceFeedback, setEvidenceFeedback] = useState<TrustEventFeedback>(null);
+  const payoutMountedRef = useRef(false);
+  const payoutLoadSeqRef = useRef(0);
+  const payoutLoadContextRef = useRef("");
+  const payoutActionContextRef = useRef("");
 
   const [form, setForm] = useState<PayoutForm>({
     account_name: "",
@@ -449,6 +453,14 @@ export default function PayoutDetailsPage() {
     country: "",
     currency: "NGN",
   });
+
+  useEffect(() => {
+    payoutMountedRef.current = true;
+    return () => {
+      payoutMountedRef.current = false;
+      payoutLoadSeqRef.current += 1;
+    };
+  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -464,17 +476,49 @@ export default function PayoutDetailsPage() {
   }, []);
 
   useEffect(() => {
+    const contextKey = `community:${selectedClanId || "none"}`;
+    const loadSeq = payoutLoadSeqRef.current + 1;
+    payoutLoadSeqRef.current = loadSeq;
+    payoutLoadContextRef.current = contextKey;
+
+    function isCurrentPayoutLoad() {
+      return (
+        payoutMountedRef.current &&
+        payoutLoadSeqRef.current === loadSeq &&
+        payoutLoadContextRef.current === contextKey
+      );
+    }
+
+    setCommunity(null);
+    setLoadedFromLocal(false);
+    setLoadedFromServer(false);
+    setEvidenceFeedback(null);
+    setMsg("");
+    setErr("");
+    setForm({
+      account_name: "",
+      account_number: "",
+      bank_name: "",
+      sort_code: "",
+      country: "",
+      currency: "NGN",
+    });
+
     (async () => {
       const [meRes, clanRes] = await Promise.all([
         getMe().catch(() => null),
         getCurrentClan().catch(() => null),
       ]);
 
+      if (!isCurrentPayoutLoad()) return;
+
       const server = await getMyWithdrawalDestination({
         clan_id: selectedClanId || undefined,
         gmfn_id: safeStr(meRes?.gmfn_id || "") || undefined,
       }).catch(() => null);
       const local = readLocalPayout();
+
+      if (!isCurrentPayoutLoad()) return;
 
       setMe(meRes || null);
       setCommunity(clanRes || null);
@@ -516,6 +560,13 @@ export default function PayoutDetailsPage() {
       });
     })();
   }, [selectedClanId]);
+
+  useEffect(() => {
+    payoutActionContextRef.current = [
+      `community:${selectedClanId || "none"}`,
+      `gmfn:${safeStr(me?.gmfn_id || "") || "none"}`,
+    ].join("|");
+  }, [selectedClanId, me]);
 
   useEffect(() => {
     if (!msg && !err) return;
@@ -613,6 +664,7 @@ export default function PayoutDetailsPage() {
   }
 
   async function savePayout() {
+    const actionContext = payoutActionContextRef.current;
     try {
       const payload = {
         clan_id: selectedClanId || undefined,
@@ -630,6 +682,13 @@ export default function PayoutDetailsPage() {
 
       const saved = await updateWithdrawalDestination(payload);
 
+      if (
+        !payoutMountedRef.current ||
+        payoutActionContextRef.current !== actionContext
+      ) {
+        return;
+      }
+
       setEvidenceFeedback({
         confirmation_message: safeStr(saved?.confirmation_message),
         verification_status: safeStr(saved?.verification_status),
@@ -646,7 +705,15 @@ export default function PayoutDetailsPage() {
           "Payout details saved on the system and kept locally for continuity."
       );
     } catch {
+      if (
+        !payoutMountedRef.current ||
+        payoutActionContextRef.current !== actionContext
+      ) {
+        return;
+      }
+
       setEvidenceFeedback(null);
+      setMsg("");
       setErr("Payout details could not be saved on the system.");
     }
   }
@@ -669,6 +736,7 @@ export default function PayoutDetailsPage() {
       setEvidenceFeedback(null);
       setMsg("Local payout details cleared.");
     } catch {
+      setMsg("");
       setErr("Local payout details could not be cleared.");
     }
   }

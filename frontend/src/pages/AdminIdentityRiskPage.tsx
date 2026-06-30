@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import ExplainToggle from "../components/ExplainToggle";
 import PageTopNav from "../components/PageTopNav";
 import { PrimaryButton, StableDisclosureSummary } from "../components/StableButton";
@@ -235,16 +235,28 @@ export default function AdminIdentityRiskPage() {
   const [reconcileBusy, setReconcileBusy] = useState<"preview" | "execute" | "">("");
   const [reconcileResult, setReconcileResult] = useState<any>(null);
   const [reconcileErr, setReconcileErr] = useState("");
+  const phoneLineageSeqRef = useRef(0);
+  const phoneLineageContextRef = useRef("");
+  const reconcileSeqRef = useRef(0);
+  const reconcileContextRef = useRef("");
 
   useEffect(() => {
+    let alive = true;
+
     (async () => {
       try {
         const res = await getAdminIdentityRisk(100);
+        if (!alive) return;
         setData(res || null);
       } catch (e: any) {
+        if (!alive) return;
         setErr(String(e?.message || e || "Unable to load identity risk."));
       }
     })();
+
+    return () => {
+      alive = false;
+    };
   }, []);
 
   const grouped = useMemo(() => {
@@ -273,17 +285,43 @@ export default function AdminIdentityRiskPage() {
     const phone = safeStr(phoneLookup).trim();
     if (!phone || phoneLineageBusy) return;
 
+    const requestSeq = phoneLineageSeqRef.current + 1;
+    phoneLineageSeqRef.current = requestSeq;
+    phoneLineageContextRef.current = phone;
     setPhoneLineageBusy(true);
     setPhoneLineageErr("");
+    setPhoneLineage(null);
+
     try {
       const res = await getAdminPhoneIdentityLineage(phone);
+      if (
+        phoneLineageSeqRef.current !== requestSeq ||
+        phoneLineageContextRef.current !== phone
+      ) {
+        return;
+      }
       setPhoneLineage(res || null);
     } catch (e: any) {
+      if (
+        phoneLineageSeqRef.current !== requestSeq ||
+        phoneLineageContextRef.current !== phone
+      ) {
+        return;
+      }
       setPhoneLineage(null);
       setPhoneLineageErr(String(e?.message || e || "Unable to load phone lineage."));
     } finally {
-      setPhoneLineageBusy(false);
+      if (phoneLineageSeqRef.current === requestSeq) {
+        setPhoneLineageBusy(false);
+      }
     }
+  }
+
+  function handlePhoneLookupChange(value: string) {
+    phoneLineageContextRef.current = "";
+    setPhoneLookup(value);
+    setPhoneLineage(null);
+    setPhoneLineageErr("");
   }
 
   function identityLookupPayload(value: string, prefix: "canonical" | "duplicate") {
@@ -299,23 +337,56 @@ export default function AdminIdentityRiskPage() {
     const canonical = safeStr(canonicalIdentity).trim();
     const duplicate = safeStr(duplicateIdentity).trim();
     if (!canonical || !duplicate) return;
+    const note = safeStr(reconcileNote).trim();
+    const contextKey = [
+      canonical,
+      duplicate,
+      reconcileOwnerConfirmed ? "owner-confirmed" : "owner-unconfirmed",
+      execute ? "execute" : "preview",
+      note,
+    ].join("\n");
+    const requestSeq = reconcileSeqRef.current + 1;
+    reconcileSeqRef.current = requestSeq;
+    reconcileContextRef.current = contextKey;
 
     setReconcileBusy(execute ? "execute" : "preview");
     setReconcileErr("");
+    setReconcileResult(null);
+
     try {
       const res = await postAdminIdentityReconciliation({
         ...identityLookupPayload(canonical, "canonical"),
         ...identityLookupPayload(duplicate, "duplicate"),
         owner_confirmed: reconcileOwnerConfirmed,
         execute,
-        reviewer_note: safeStr(reconcileNote).trim() || undefined,
+        reviewer_note: note || undefined,
       });
+      if (
+        reconcileSeqRef.current !== requestSeq ||
+        reconcileContextRef.current !== contextKey
+      ) {
+        return;
+      }
       setReconcileResult(res || null);
     } catch (e: any) {
+      if (
+        reconcileSeqRef.current !== requestSeq ||
+        reconcileContextRef.current !== contextKey
+      ) {
+        return;
+      }
       setReconcileErr(String(e?.message || e || "Unable to reconcile identities."));
     } finally {
-      setReconcileBusy("");
+      if (reconcileSeqRef.current === requestSeq) {
+        setReconcileBusy("");
+      }
     }
+  }
+
+  function clearReconciliationResult() {
+    reconcileContextRef.current = "";
+    setReconcileResult(null);
+    setReconcileErr("");
   }
 
   return (
@@ -402,7 +473,7 @@ export default function AdminIdentityRiskPage() {
         >
           <input
             value={phoneLookup}
-            onChange={(event) => setPhoneLookup(event.target.value)}
+            onChange={(event) => handlePhoneLookupChange(event.target.value)}
             placeholder="+447903165266"
             style={{
               width: "100%",
@@ -521,7 +592,10 @@ export default function AdminIdentityRiskPage() {
         >
           <input
             value={canonicalIdentity}
-            onChange={(event) => setCanonicalIdentity(event.target.value)}
+            onChange={(event) => {
+              setCanonicalIdentity(event.target.value);
+              clearReconciliationResult();
+            }}
             placeholder="Canonical GSN ID or user ID"
             style={{
               width: "100%",
@@ -538,7 +612,10 @@ export default function AdminIdentityRiskPage() {
           />
           <input
             value={duplicateIdentity}
-            onChange={(event) => setDuplicateIdentity(event.target.value)}
+            onChange={(event) => {
+              setDuplicateIdentity(event.target.value);
+              clearReconciliationResult();
+            }}
             placeholder="Duplicate GSN ID or user ID"
             style={{
               width: "100%",
@@ -556,7 +633,10 @@ export default function AdminIdentityRiskPage() {
         </div>
         <textarea
           value={reconcileNote}
-          onChange={(event) => setReconcileNote(event.target.value)}
+          onChange={(event) => {
+            setReconcileNote(event.target.value);
+            clearReconciliationResult();
+          }}
           placeholder="Reviewer note"
           style={{
             marginTop: 10,
@@ -586,7 +666,10 @@ export default function AdminIdentityRiskPage() {
           <input
             type="checkbox"
             checked={reconcileOwnerConfirmed}
-            onChange={(event) => setReconcileOwnerConfirmed(event.target.checked)}
+            onChange={(event) => {
+              setReconcileOwnerConfirmed(event.target.checked);
+              clearReconciliationResult();
+            }}
             style={{ width: 18, height: 18 }}
           />
           <span>Owner confirmed both records are the same person</span>

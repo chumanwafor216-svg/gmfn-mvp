@@ -735,6 +735,23 @@ COMMUNITY_DOMAIN_TEMPLATE_PRESETS: list[dict[str, Any]] = [
     },
 ]
 
+COMMUNITY_DOMAIN_TEMPLATE_ALIASES: dict[str, str] = {
+    "church": "religious_body",
+    "religious": "religious_body",
+    "union": "professional_union",
+    "professional_body": "professional_union",
+    "market": "market_cooperative",
+    "market_association": "market_cooperative",
+    "cooperative": "market_cooperative",
+    "family": "town_union",
+    "diaspora": "town_union",
+    "hospital": "health_body",
+    "healthcare": "health_body",
+    "ngo": "ngo_project_network",
+    "nonprofit": "ngo_project_network",
+    "association": "generic_association",
+}
+
 COMMUNITY_DOMAIN_TEMPLATE_OPERATING_BLUEPRINTS: dict[str, dict[str, Any]] = {
     "school_multi_branch": {
         "node_presets": [
@@ -1198,6 +1215,12 @@ def _clean_role(value: Optional[str], default: str = "member") -> str:
     return _clean_str(value, default).lower().replace(" ", "_")
 
 
+def _clean_template_key(value: Optional[str], default: str = "") -> str:
+    text = _clean_str(value, default).lower()
+    text = re.sub(r"[\s-]+", "_", text)
+    return re.sub(r"_+", "_", text).strip("_")
+
+
 def normalize_domain_name(value: str) -> str:
     text = _clean_str(value).lower()
     text = re.sub(r"[\s_]+", "-", text)
@@ -1603,12 +1626,22 @@ def _domain_payload(
     *,
     root_node: Optional[CommunityNode] = None,
 ) -> dict[str, Any]:
+    resolved_template = _community_domain_template_for_key(
+        domain.template_key or domain.domain_type
+    )
     return {
         "id": int(domain.id),
         "domain_name": domain.domain_name,
         "display_name": domain.display_name,
         "domain_type": domain.domain_type,
         "template_key": domain.template_key,
+        "resolved_template": {
+            "template_key": resolved_template["template_key"],
+            "domain_type": resolved_template["domain_type"],
+            "label": resolved_template["label"],
+            "marketplace_role": resolved_template["marketplace_role"],
+            "default_modules": list(resolved_template["default_modules"]),
+        },
         "owner_user_id": int(domain.owner_user_id),
         "clan_id": int(domain.clan_id) if domain.clan_id is not None else None,
         "status": domain.status,
@@ -1656,7 +1689,8 @@ def _public_domain_entry_payload(domain: CommunityDomain) -> dict[str, Any]:
 
 
 def _community_domain_template_for_key(template_key: Optional[str]) -> dict[str, Any]:
-    key = _clean_str(template_key, "generic_association")
+    key = _clean_template_key(template_key, "generic_association")
+    key = COMMUNITY_DOMAIN_TEMPLATE_ALIASES.get(key, key)
     for preset in COMMUNITY_DOMAIN_TEMPLATE_PRESETS:
         if preset["template_key"] == key or preset["domain_type"] == key:
             return preset
@@ -1671,7 +1705,8 @@ def _community_domain_template_for_key(template_key: Optional[str]) -> dict[str,
 def _community_domain_template_for_key_or_none(
     template_key: str,
 ) -> Optional[dict[str, Any]]:
-    key = _clean_str(template_key)
+    key = _clean_template_key(template_key)
+    key = COMMUNITY_DOMAIN_TEMPLATE_ALIASES.get(key, key)
     for preset in COMMUNITY_DOMAIN_TEMPLATE_PRESETS:
         if preset["template_key"] == key or preset["domain_type"] == key:
             return preset
@@ -17829,8 +17864,53 @@ def create_community_domain_draft(
             },
         )
 
-    domain_type = _clean_str(payload.domain_type, "generic_association")
-    template_key = _clean_str(payload.template_key, domain_type)
+    domain_type = _clean_template_key(payload.domain_type, "generic_association")
+    template_key = _clean_template_key(payload.template_key, domain_type)
+    template = _community_domain_template_for_key_or_none(template_key)
+    if template is None:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "code": "community_domain_template_not_supported",
+                "message": (
+                    "Choose a supported Community Domain template before "
+                    "creating a draft."
+                ),
+                "template_key": template_key,
+                "domain_type": domain_type,
+            },
+        )
+    domain_type_template = _community_domain_template_for_key_or_none(domain_type)
+    if domain_type_template is None:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "code": "community_domain_type_not_supported",
+                "message": (
+                    "Choose a supported Community Domain type before "
+                    "creating a draft."
+                ),
+                "template_key": template_key,
+                "domain_type": domain_type,
+            },
+        )
+    if (
+        domain_type_template is not None
+        and domain_type_template["template_key"] != template["template_key"]
+    ):
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "code": "community_domain_template_mismatch",
+                "message": (
+                    "The Community Domain type and template must describe "
+                    "the same approved institutional preset."
+                ),
+                "template_key": template_key,
+                "domain_type": domain_type,
+                "expected_template_key": domain_type_template["template_key"],
+            },
+        )
 
     domain = CommunityDomain(
         domain_name=availability["normalized_domain_name"],

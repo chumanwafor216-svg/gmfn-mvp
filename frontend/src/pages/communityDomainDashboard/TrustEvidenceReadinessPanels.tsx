@@ -2,30 +2,10 @@ import React from "react";
 
 type TrustEvidenceReadinessPanelsProps = {
   evidenceRecordReadiness?: any;
-  evidenceRecordReadyTotal?: number;
-  visibleEvidenceRecordTypes?: any[];
-  blockedEvidenceRecordTypes?: any[];
-  evidenceRecordSummary?: Record<string, unknown>;
   evidenceReleaseReadiness?: any;
-  evidenceReleaseReadyTotal?: number;
-  visibleEvidenceReleaseLanes?: any[];
-  blockedEvidenceReleaseLanes?: any[];
-  evidenceReleaseSummary?: Record<string, unknown>;
   trustRelayReadiness?: any;
-  trustRelayReadyTotal?: number;
-  visibleTrustRelayLanes?: any[];
-  blockedTrustRelayLanes?: any[];
-  trustRelaySummary?: Record<string, unknown>;
   notificationScopeReadiness?: any;
-  notificationScopeReadyTotal?: number;
-  visibleNotificationScopeLanes?: any[];
-  blockedNotificationScopeLanes?: any[];
-  notificationScopeSummary?: Record<string, unknown>;
   trustMobility?: any;
-  trustMobilityReadyTotal?: number;
-  visibleTrustMobilityLanes?: any[];
-  blockedTrustMobilityLanes?: any[];
-  trustMobilitySummary?: Record<string, unknown>;
 };
 
 function cleanText(value: unknown, fallback = ""): string {
@@ -37,7 +17,36 @@ function compactStatus(value: unknown): string {
 }
 
 function countValue(value: unknown): string {
-  return typeof value === "number" && Number.isFinite(value) ? String(value) : "0";
+  const numberValue = Number(value ?? 0);
+  return Number.isFinite(numberValue) ? String(numberValue) : "0";
+}
+
+function readinessLanes(map: any): any[] {
+  return Array.isArray(map?.lanes) ? map.lanes : [];
+}
+
+function blockedLanes(lanes: any[]): any[] {
+  return lanes.filter((lane) => !lane.ready);
+}
+
+function readyTotal(map: any, lanes: any[]): number {
+  return typeof map?.ready_total === "number"
+    ? map.ready_total
+    : lanes.filter((lane) => lane.ready).length;
+}
+
+function evidenceRecordTypes(map: any): any[] {
+  return Array.isArray(map?.record_types) ? map.record_types : [];
+}
+
+function blockedEvidenceRecords(records: any[]): any[] {
+  return records.filter((record) => !record.ready_for_future_evidence_record);
+}
+
+function computeEvidenceRecordReadyTotal(map: any, records: any[]): number {
+  return typeof map?.ready_total === "number"
+    ? map.ready_total
+    : records.filter((record) => record.ready_for_future_evidence_record).length;
 }
 
 function softCard(): React.CSSProperties {
@@ -173,31 +182,41 @@ function statusRow(
 
 export default function CommunityDomainTrustEvidenceReadinessPanels({
   evidenceRecordReadiness,
-  evidenceRecordReadyTotal = 0,
-  visibleEvidenceRecordTypes = [],
-  blockedEvidenceRecordTypes = [],
-  evidenceRecordSummary = {},
   evidenceReleaseReadiness,
-  evidenceReleaseReadyTotal = 0,
-  visibleEvidenceReleaseLanes = [],
-  blockedEvidenceReleaseLanes = [],
-  evidenceReleaseSummary = {},
   trustRelayReadiness,
-  trustRelayReadyTotal = 0,
-  visibleTrustRelayLanes = [],
-  blockedTrustRelayLanes = [],
-  trustRelaySummary = {},
   notificationScopeReadiness,
-  notificationScopeReadyTotal = 0,
-  visibleNotificationScopeLanes = [],
-  blockedNotificationScopeLanes = [],
-  notificationScopeSummary = {},
   trustMobility,
-  trustMobilityReadyTotal = 0,
-  visibleTrustMobilityLanes = [],
-  blockedTrustMobilityLanes = [],
-  trustMobilitySummary = {},
 }: TrustEvidenceReadinessPanelsProps): React.ReactElement {
+  const evidenceRecordSummary = evidenceRecordReadiness?.summary || {};
+  const visibleEvidenceRecordTypes = evidenceRecordTypes(evidenceRecordReadiness);
+  const blockedEvidenceRecordTypes = blockedEvidenceRecords(visibleEvidenceRecordTypes);
+  const evidenceRecordReadyTotal = computeEvidenceRecordReadyTotal(
+    evidenceRecordReadiness,
+    visibleEvidenceRecordTypes
+  );
+  const evidenceReleaseSummary = evidenceReleaseReadiness?.summary || {};
+  const visibleEvidenceReleaseLanes = readinessLanes(evidenceReleaseReadiness);
+  const blockedEvidenceReleaseLanes = blockedLanes(visibleEvidenceReleaseLanes);
+  const evidenceReleaseReadyTotal = readyTotal(
+    evidenceReleaseReadiness,
+    visibleEvidenceReleaseLanes
+  );
+  const trustRelaySummary = trustRelayReadiness?.summary || {};
+  const visibleTrustRelayLanes = readinessLanes(trustRelayReadiness);
+  const blockedTrustRelayLanes = blockedLanes(visibleTrustRelayLanes);
+  const trustRelayReadyTotal = readyTotal(trustRelayReadiness, visibleTrustRelayLanes);
+  const notificationScopeSummary = notificationScopeReadiness?.summary || {};
+  const visibleNotificationScopeLanes = readinessLanes(notificationScopeReadiness);
+  const blockedNotificationScopeLanes = blockedLanes(visibleNotificationScopeLanes);
+  const notificationScopeReadyTotal = readyTotal(
+    notificationScopeReadiness,
+    visibleNotificationScopeLanes
+  );
+  const trustMobilitySummary = trustMobility?.summary || {};
+  const visibleTrustMobilityLanes = readinessLanes(trustMobility);
+  const blockedTrustMobilityLanes = blockedLanes(visibleTrustMobilityLanes);
+  const trustMobilityReadyTotal = readyTotal(trustMobility, visibleTrustMobilityLanes);
+
   return (
     <>
       <div style={softCard()}>

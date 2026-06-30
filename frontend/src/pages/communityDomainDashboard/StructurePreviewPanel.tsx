@@ -1,16 +1,16 @@
 import React from "react";
 
 type StructurePreviewPanelProps = {
-  visibleStructureRows?: Array<{
-    node?: {
-      id?: number | string | null;
-      name?: string | null;
-      node_type?: string | null;
-      node_kind?: string | null;
-      status?: string | null;
-    } | null;
-    level?: number;
-  }>;
+  nodeTree?: StructureNode[];
+};
+
+type StructureNode = {
+  id?: number | string | null;
+  name?: string | null;
+  node_type?: string | null;
+  node_kind?: string | null;
+  status?: string | null;
+  children?: StructureNode[];
 };
 
 function cleanText(value: unknown, fallback = ""): string {
@@ -84,9 +84,29 @@ function statusBadge(status: unknown): React.CSSProperties {
   };
 }
 
+function structurePreviewRows(nodes: StructureNode[] | undefined): Array<{
+  node: StructureNode;
+  level: number;
+}> {
+  const roots = Array.isArray(nodes) ? nodes : [];
+  const firstRoot = roots[0];
+  if (!firstRoot) return [];
+  const rows = [{ node: firstRoot, level: 0 }];
+  const firstChildren = Array.isArray(firstRoot.children) ? firstRoot.children : [];
+  firstChildren.slice(0, 4).forEach((node) => rows.push({ node, level: 1 }));
+  if (rows.length < 5) {
+    roots.slice(1, 5 - rows.length + 1).forEach((node) => {
+      rows.push({ node, level: 0 });
+    });
+  }
+  return rows.slice(0, 5);
+}
+
 export default function CommunityDomainStructurePreviewPanel({
-  visibleStructureRows = [],
+  nodeTree = [],
 }: StructurePreviewPanelProps): React.ReactElement {
+  const visibleStructureRows = structurePreviewRows(nodeTree);
+
   return (
     <div style={softCard()}>
       <div style={sectionLabel()}>Structure preview</div>

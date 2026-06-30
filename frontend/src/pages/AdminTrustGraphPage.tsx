@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import ExplainToggle from "../components/ExplainToggle";
 import PageTopNav from "../components/PageTopNav";
 import { StableCtaLink, SubtleButton } from "../components/StableButton";
@@ -609,6 +609,8 @@ export default function AdminTrustGraphPage() {
   const [currentClan, setCurrentClan] = useState<any>(null);
   const [graphSnapshot, setGraphSnapshot] = useState<GraphSnapshot | null>(null);
   const [fallbackEvents, setFallbackEvents] = useState<TrustEventRow[]>([]);
+  const graphLoadSeqRef = useRef(0);
+  const graphLoadContextRef = useRef("");
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -629,9 +631,24 @@ export default function AdminTrustGraphPage() {
 
   useEffect(() => {
     let alive = true;
+    const contextKey = `community:${selectedClanId || "none"}`;
+    const loadSeq = graphLoadSeqRef.current + 1;
+    graphLoadSeqRef.current = loadSeq;
+    graphLoadContextRef.current = contextKey;
+
+    function isCurrentGraphLoad() {
+      return (
+        alive &&
+        graphLoadSeqRef.current === loadSeq &&
+        graphLoadContextRef.current === contextKey
+      );
+    }
 
     (async () => {
       setLoading(true);
+      setCurrentClan(null);
+      setGraphSnapshot(null);
+      setFallbackEvents([]);
 
       try {
         const [meRes, clanRes, graphRes, eventsRes] = await Promise.all([
@@ -659,14 +676,14 @@ export default function AdminTrustGraphPage() {
             .catch(() => ({ items: [] })),
         ]);
 
-        if (!alive) return;
+        if (!isCurrentGraphLoad()) return;
 
         setMe(meRes || null);
         setCurrentClan(clanRes || null);
         setGraphSnapshot(normalizeGraphSnapshot(graphRes));
         setFallbackEvents(rowsOf<TrustEventRow>(eventsRes));
       } finally {
-        if (alive) setLoading(false);
+        if (isCurrentGraphLoad()) setLoading(false);
       }
     })();
 

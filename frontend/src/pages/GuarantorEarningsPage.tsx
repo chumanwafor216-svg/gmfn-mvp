@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import ExplainToggle from "../components/ExplainToggle";
 import GsnSnapshotPaperCard from "../components/GsnSnapshotPaperCard";
@@ -75,6 +75,13 @@ type CollapseState = {
   meaning: boolean;
   recent: boolean;
   routes: boolean;
+};
+
+type EarningsLoadResult = {
+  data: any;
+  community: CommunityLite | null;
+  me: MeLite | null;
+  items: GuarantorEarningItem[];
 };
 
 const GUARANTOR_EARNINGS_UI_STORAGE_KEY = "gmfn.guarantorEarnings.sections.v1";
@@ -516,6 +523,8 @@ export default function GuarantorEarningsPage() {
   const [items, setItems] = useState<GuarantorEarningItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
+  const earningsContextRef = useRef("");
+  const earningsLoadSeqRef = useRef(0);
 
   useEffect(() => {
     if (routeClanId > 0) {
@@ -540,39 +549,81 @@ export default function GuarantorEarningsPage() {
     writeLocalJSON(GUARANTOR_EARNINGS_UI_STORAGE_KEY, collapsed);
   }, [collapsed]);
 
+  const clearEarningsState = useCallback(() => {
+    setData(null);
+    setCommunity(null);
+    setMe(null);
+    setItems([]);
+  }, []);
+
+  const fetchEarnings = useCallback(async (): Promise<EarningsLoadResult> => {
+    const [res, clanRes, meRes] = await Promise.all([
+      getMyGuarantorEarnings(100),
+      getCurrentClan().catch(() => null),
+      getMe().catch(() => null),
+    ]);
+
+    const rows = (Array.isArray(res?.items) ? res.items : Array.isArray(res) ? res : [])
+      .map((row: any) => normalizeEarning(row))
+      .filter(Boolean) as GuarantorEarningItem[];
+
+    const sorted = [...rows].sort((a, b) => {
+      const da = safeDate(a?.created_at || a?.updated_at || "")?.getTime() || 0;
+      const db = safeDate(b?.created_at || b?.updated_at || "")?.getTime() || 0;
+      return db - da;
+    });
+
+    return {
+      data: res || null,
+      community: clanRes || null,
+      me: meRes || null,
+      items: sorted,
+    };
+  }, []);
+
   useEffect(() => {
+    const contextKey = `${selectedClanId || 0}`;
+    const loadSeq = earningsLoadSeqRef.current + 1;
+    earningsLoadSeqRef.current = loadSeq;
+    earningsContextRef.current = contextKey;
+    setLoading(true);
+    setErr("");
+    clearEarningsState();
+
     (async () => {
-      setLoading(true);
-      setErr("");
-
       try {
-        const [res, clanRes, meRes] = await Promise.all([
-          getMyGuarantorEarnings(100),
-          getCurrentClan().catch(() => null),
-          getMe().catch(() => null),
-        ]);
+        const result = await fetchEarnings();
 
-        const rows = (Array.isArray(res?.items) ? res.items : Array.isArray(res) ? res : [])
-          .map((row: any) => normalizeEarning(row))
-          .filter(Boolean) as GuarantorEarningItem[];
+        if (
+          earningsContextRef.current !== contextKey ||
+          earningsLoadSeqRef.current !== loadSeq
+        ) {
+          return;
+        }
 
-        const sorted = [...rows].sort((a, b) => {
-          const da = safeDate(a?.created_at || a?.updated_at || "")?.getTime() || 0;
-          const db = safeDate(b?.created_at || b?.updated_at || "")?.getTime() || 0;
-          return db - da;
-        });
-
-        setData(res || null);
-        setCommunity(clanRes || null);
-        setMe(meRes || null);
-        setItems(sorted);
+        setData(result.data);
+        setCommunity(result.community);
+        setMe(result.me);
+        setItems(result.items);
       } catch (e: any) {
+        if (
+          earningsContextRef.current !== contextKey ||
+          earningsLoadSeqRef.current !== loadSeq
+        ) {
+          return;
+        }
+
         setErr(String(e?.message || e || "Unable to load supporter value."));
       } finally {
-        setLoading(false);
+        if (
+          earningsContextRef.current === contextKey &&
+          earningsLoadSeqRef.current === loadSeq
+        ) {
+          setLoading(false);
+        }
       }
     })();
-  }, []);
+  }, [clearEarningsState, fetchEarnings, selectedClanId]);
 
   const hasExplicitCommunityTags = useMemo(() => {
     return items.some((row) => Number(row?.clan_id || 0) > 0);

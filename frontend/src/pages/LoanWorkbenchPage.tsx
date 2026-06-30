@@ -949,9 +949,7 @@ export default function LoanWorkbenchPage() {
 
   const loadLoanWorkbench = useCallback(async (loanId: number) => {
     if (!loanId) {
-      setLoanDetail(null);
-      setSuggestedGuarantors([]);
-      setGuarantorRequests([]);
+      clearWorkbenchDetail();
       return;
     }
 
@@ -1036,9 +1034,7 @@ export default function LoanWorkbenchPage() {
         if (nextLoanId) {
           await loadLoanWorkbench(nextLoanId);
         } else {
-          setLoanDetail(null);
-          setSuggestedGuarantors([]);
-          setGuarantorRequests([]);
+          clearWorkbenchDetail();
         }
       } finally {
         if (alive) setLoading(false);
@@ -1050,13 +1046,45 @@ export default function LoanWorkbenchPage() {
     };
   }, [loadLoanList, loadLoanWorkbench, selectedClanId]);
 
+  function clearWorkbenchDetail() {
+    setLoanDetail(null);
+    setSuggestedGuarantors([]);
+    setGuarantorRequests([]);
+  }
+
   async function handleSelectLoan(loanId: number) {
-    setSelectedLoanId(loanId);
-    await loadLoanWorkbench(loanId);
-    setNotice({
-      tone: "success",
-      text: "Support workbench moved to the selected item.",
-    });
+    const nextLoanId = positiveNumber(loanId);
+
+    if (!nextLoanId) {
+      clearWorkbenchDetail();
+      setSelectedLoanId(0);
+      setNotice({
+        tone: "error",
+        text: "Support item could not be selected.",
+      });
+      return;
+    }
+
+    const changedSelection = nextLoanId !== positiveNumber(selectedLoanId);
+    setSelectedLoanId(nextLoanId);
+
+    if (changedSelection) {
+      clearWorkbenchDetail();
+    }
+
+    try {
+      await loadLoanWorkbench(nextLoanId);
+      setNotice({
+        tone: "success",
+        text: "Support workbench moved to the selected item.",
+      });
+    } catch {
+      clearWorkbenchDetail();
+      setNotice({
+        tone: "error",
+        text: "Support workbench could not load the selected item right now.",
+      });
+    }
   }
 
   async function handleRefresh() {

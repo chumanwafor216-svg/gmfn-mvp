@@ -1,5 +1,5 @@
 // src/pages/TrustGraphAdminPage.tsx
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   getMe,
   getMyTrustGraph,
@@ -39,45 +39,78 @@ export default function TrustGraphAdminPage() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const graphLoadSeqRef = useRef(0);
+  const graphLoadContextRef = useRef("");
 
   const isAdmin = useMemo(() => safeStr(me?.role || "").toLowerCase() === "admin", [me]);
 
   async function loadAll() {
+    const contextKey = "me";
+    const loadSeq = graphLoadSeqRef.current + 1;
+    graphLoadSeqRef.current = loadSeq;
+    graphLoadContextRef.current = contextKey;
+    function isCurrentGraphLoad() {
+      return (
+        graphLoadSeqRef.current === loadSeq &&
+        graphLoadContextRef.current === contextKey
+      );
+    }
+
     setLoading(true);
+    setBusy(false);
     setErr(null);
+    setGraph(null);
     try {
       const m = await getMe();
+      if (!isCurrentGraphLoad()) return;
       setMe(m);
 
       const g = await getMyTrustGraph();
+      if (!isCurrentGraphLoad()) return;
       setGraph(g);
       setQueryUserId(safeStr(g?.user_id || ""));
       setQueryGmfnId(safeStr(g?.gmfn_id || ""));
     } catch (e: any) {
+      if (!isCurrentGraphLoad()) return;
       setErr(String(e?.message || e));
       setGraph(null);
     } finally {
-      setLoading(false);
+      if (isCurrentGraphLoad()) setLoading(false);
     }
   }
 
   async function searchByUserId() {
-    setErr(null);
     const n = Number(queryUserId);
     if (!Number.isFinite(n) || n <= 0) {
       setErr("Enter a valid user ID.");
       return;
     }
 
+    const contextKey = `user:${n}`;
+    const loadSeq = graphLoadSeqRef.current + 1;
+    graphLoadSeqRef.current = loadSeq;
+    graphLoadContextRef.current = contextKey;
+    function isCurrentGraphSearch() {
+      return (
+        graphLoadSeqRef.current === loadSeq &&
+        graphLoadContextRef.current === contextKey
+      );
+    }
+
+    setErr(null);
+    setGraph(null);
     setBusy(true);
     try {
       const g = await getTrustGraphByUserId(n);
+      if (!isCurrentGraphSearch()) return;
       setGraph(g);
       setQueryGmfnId(safeStr(g?.gmfn_id || ""));
     } catch (e: any) {
+      if (!isCurrentGraphSearch()) return;
       setErr(String(e?.message || e));
+      setGraph(null);
     } finally {
-      setBusy(false);
+      if (isCurrentGraphSearch()) setBusy(false);
     }
   }
 

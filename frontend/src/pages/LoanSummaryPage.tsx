@@ -927,6 +927,18 @@ export default function LoanSummaryPage() {
     return () => window.clearTimeout(timer);
   }, [feedback]);
 
+  useEffect(() => {
+    setSummary(null);
+    setGuarantors([]);
+    setRepayments([]);
+    setExpectedPayments([]);
+    setEvents([]);
+    setSuggestions([]);
+    setRevenuePreview(null);
+    setBusyDecisionKey("");
+    setFeedback(null);
+  }, [numericLoanId]);
+
   const currency = summary?.currency ?? "NGN";
   const supportPurpose = firstTruthy(summary?.purpose, summary?.note);
   const isAdmin =

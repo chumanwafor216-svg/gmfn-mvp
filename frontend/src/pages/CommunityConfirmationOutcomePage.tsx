@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { useParams } from "react-router-dom";
 import { PrimaryButton, SecondaryButton, StableCtaLink, StableDisclosureSummary } from "../components/StableButton";
@@ -482,8 +482,21 @@ export default function CommunityConfirmationOutcomePage() {
   const [evidenceBody, setEvidenceBody] = useState("");
   const [evidenceRef, setEvidenceRef] = useState("");
   const [isCompactPaper, setIsCompactPaper] = useState(false);
+  const outcomeLoadSeqRef = useRef(0);
+  const outcomeLoadContextRef = useRef("");
+  const decisionLoadSeqRef = useRef(0);
+  const decisionLoadContextRef = useRef("");
+  const reviewEvidenceLoadSeqRef = useRef(0);
+  const reviewEvidenceLoadContextRef = useRef("");
+  const outcomeContextRef = useRef("");
 
   const tokenText = safeStr(token);
+  const outcomeContextKey = [
+    tokenText,
+    firstTruthy(outcome?.request_id),
+    firstTruthy(outcome?.review_case?.reviewCaseId),
+  ].join(":");
+  outcomeContextRef.current = outcomeContextKey;
   const outcomeLink = useMemo(
     () => publicFrontendUrl(`/community-confirmations/public/${encodeURIComponent(tokenText)}`),
     [tokenText]
@@ -491,7 +504,18 @@ export default function CommunityConfirmationOutcomePage() {
   const [remainingSeconds, setRemainingSeconds] = useState(0);
 
   const loadOutcome = useCallback(async (options?: { silent?: boolean }) => {
+    const contextKey = tokenText;
+    const loadSeq = outcomeLoadSeqRef.current + 1;
+    outcomeLoadSeqRef.current = loadSeq;
+    outcomeLoadContextRef.current = contextKey;
     if (!tokenText) {
+      setOutcome(null);
+      setDecisionSnapshot(null);
+      setReviewEvidence([]);
+      setDecisionBusy("");
+      setRequestStatusBusy("");
+      setReviewBusy("");
+      setReviewEvidenceBusy("");
       setError("Community confirmation token is missing.");
       setLoading(false);
       return;
@@ -499,17 +523,48 @@ export default function CommunityConfirmationOutcomePage() {
     if (!options?.silent) {
       setLoading(true);
       setError("");
+      setOutcome(null);
+      setDecisionSnapshot(null);
+      setReviewEvidence([]);
+      setDecisionBusy("");
+      setRequestStatusBusy("");
+      setReviewBusy("");
+      setReviewEvidenceBusy("");
     }
     try {
       const result = await getPublicCommunityConfirmation(tokenText);
+      if (
+        outcomeLoadSeqRef.current !== loadSeq ||
+        outcomeLoadContextRef.current !== contextKey
+      ) {
+        return;
+      }
       setOutcome(normalizeOutcome(result));
     } catch (err: any) {
+      if (
+        outcomeLoadSeqRef.current !== loadSeq ||
+        outcomeLoadContextRef.current !== contextKey
+      ) {
+        return;
+      }
       if (!options?.silent) {
         setOutcome(null);
+        setDecisionSnapshot(null);
+        setReviewEvidence([]);
+        setDecisionBusy("");
+        setRequestStatusBusy("");
+        setReviewBusy("");
+        setReviewEvidenceBusy("");
         setError(err?.message || "Community confirmation could not be loaded.");
       }
     } finally {
-      if (!options?.silent) setLoading(false);
+      if (
+        !options?.silent &&
+        outcomeLoadSeqRef.current === loadSeq &&
+        outcomeLoadContextRef.current === contextKey
+      ) {
+        setLoading(false);
+      }
     }
   }, [tokenText]);
 
@@ -540,20 +595,25 @@ export default function CommunityConfirmationOutcomePage() {
   useEffect(() => {
     const requestId = outcome?.request_id;
     if (!requestId || decisionSnapshot || !getAccessToken()) return;
-    let alive = true;
+    const contextKey = `${tokenText}:${firstTruthy(requestId)}`;
+    const loadSeq = decisionLoadSeqRef.current + 1;
+    decisionLoadSeqRef.current = loadSeq;
+    decisionLoadContextRef.current = contextKey;
     getCommunityConfirmationDecision(requestId)
       .then((result) => {
-        if (!alive) return;
+        if (
+          decisionLoadSeqRef.current !== loadSeq ||
+          decisionLoadContextRef.current !== contextKey
+        ) {
+          return;
+        }
         const next = decisionFromResult(result);
         if (next) setDecisionSnapshot(next);
       })
       .catch(() => {
         // Public readers may not be signed in. The paper remains usable without provider controls.
       });
-    return () => {
-      alive = false;
-    };
-  }, [outcome?.request_id, decisionSnapshot]);
+  }, [outcome?.request_id, decisionSnapshot, tokenText]);
 
   useEffect(() => {
     if (!notice) return;
@@ -565,26 +625,43 @@ export default function CommunityConfirmationOutcomePage() {
     const reviewCaseId = outcome?.review_case?.reviewCaseId;
     if (!reviewCaseId || !getAccessToken()) {
       setReviewEvidence([]);
+      setReviewEvidenceBusy("");
       return;
     }
-    let alive = true;
+    const contextKey = `${tokenText}:${firstTruthy(reviewCaseId)}`;
+    const loadSeq = reviewEvidenceLoadSeqRef.current + 1;
+    reviewEvidenceLoadSeqRef.current = loadSeq;
+    reviewEvidenceLoadContextRef.current = contextKey;
     setReviewEvidenceBusy("load");
+    setReviewEvidence([]);
     getCommunityConfirmationReviewEvidence(reviewCaseId)
       .then((result) => {
-        if (!alive) return;
+        if (
+          reviewEvidenceLoadSeqRef.current !== loadSeq ||
+          reviewEvidenceLoadContextRef.current !== contextKey
+        ) {
+          return;
+        }
         const items = Array.isArray(result?.items) ? result.items : [];
         setReviewEvidence(items.map(normalizeReviewEvidence));
       })
       .catch(() => {
-        if (alive) setReviewEvidence([]);
+        if (
+          reviewEvidenceLoadSeqRef.current === loadSeq &&
+          reviewEvidenceLoadContextRef.current === contextKey
+        ) {
+          setReviewEvidence([]);
+        }
       })
       .finally(() => {
-        if (alive) setReviewEvidenceBusy("");
+        if (
+          reviewEvidenceLoadSeqRef.current === loadSeq &&
+          reviewEvidenceLoadContextRef.current === contextKey
+        ) {
+          setReviewEvidenceBusy("");
+        }
       });
-    return () => {
-      alive = false;
-    };
-  }, [outcome?.review_case?.reviewCaseId]);
+  }, [outcome?.review_case?.reviewCaseId, tokenText]);
 
   const response = outcome?.community_response || {};
   const status = safeStr(outcome?.status).toLowerCase() || "pending";
@@ -624,6 +701,9 @@ export default function CommunityConfirmationOutcomePage() {
       : confirmedKnown > 0 || confidence === "strong" || confidence === "moderate"
         ? "good"
         : "info";
+  const isCurrentOutcomeContext = useCallback((contextKey: string) => {
+    return outcomeContextRef.current === contextKey;
+  }, []);
 
   useEffect(() => {
     if (!outcome || terminalStatus(status) || remainingSeconds <= 0) return undefined;
@@ -651,6 +731,7 @@ export default function CommunityConfirmationOutcomePage() {
       setNotice({ tone: "error", text: "The confirmation request ID is missing." });
       return;
     }
+    const contextKey = outcomeContextRef.current;
     setDecisionBusy(decision);
     try {
       const result = await recordCommunityConfirmationDecision(requestId, {
@@ -666,8 +747,9 @@ export default function CommunityConfirmationOutcomePage() {
               ? "Provider reduced the exposure after reviewing the community confirmation."
               : decision === "did_not_release"
                 ? "Provider did not proceed after reviewing the community confirmation."
-                : "Provider deferred the decision after reviewing the community confirmation.",
+              : "Provider deferred the decision after reviewing the community confirmation.",
       });
+      if (!isCurrentOutcomeContext(contextKey)) return;
       setDecisionSnapshot(
         decisionFromResult({
           ...result,
@@ -684,6 +766,7 @@ export default function CommunityConfirmationOutcomePage() {
       );
       setNotice({ tone: "success", text: "Decision recorded into the Trust Event trail." });
     } catch (err: any) {
+      if (!isCurrentOutcomeContext(contextKey)) return;
       setNotice({
         tone: "error",
         text:
@@ -691,7 +774,7 @@ export default function CommunityConfirmationOutcomePage() {
           "Decision could not be recorded. Sign in as the provider or try again.",
       });
     } finally {
-      setDecisionBusy("");
+      if (isCurrentOutcomeContext(contextKey)) setDecisionBusy("");
     }
   }
 
@@ -700,6 +783,7 @@ export default function CommunityConfirmationOutcomePage() {
       setNotice({ tone: "error", text: "Record a provider decision before updating its status." });
       return;
     }
+    const contextKey = outcomeContextRef.current;
     setDecisionBusy(`status:${statusValue}`);
     try {
       const issueReported = statusValue === "issue_reported" ? true : undefined;
@@ -713,8 +797,9 @@ export default function CommunityConfirmationOutcomePage() {
             ? "Provider marked this confirmation decision as resolved after review."
             : statusValue === "issue_reported"
               ? "Provider reported an issue after the confirmation decision."
-              : "Provider sent this confirmation decision for further review.",
+            : "Provider sent this confirmation decision for further review.",
       });
+      if (!isCurrentOutcomeContext(contextKey)) return;
       setDecisionSnapshot((current) =>
         current
           ? {
@@ -746,6 +831,7 @@ export default function CommunityConfirmationOutcomePage() {
       }
       setNotice({ tone: "success", text: "Decision status recorded into the Trust Event trail." });
     } catch (err: any) {
+      if (!isCurrentOutcomeContext(contextKey)) return;
       setNotice({
         tone: "error",
         text:
@@ -753,7 +839,7 @@ export default function CommunityConfirmationOutcomePage() {
           "Decision status could not be updated. Sign in as the provider or admin.",
       });
     } finally {
-      setDecisionBusy("");
+      if (isCurrentOutcomeContext(contextKey)) setDecisionBusy("");
     }
   }
 
@@ -763,6 +849,7 @@ export default function CommunityConfirmationOutcomePage() {
       setNotice({ tone: "error", text: "The confirmation request ID is missing." });
       return;
     }
+    const contextKey = outcomeContextRef.current;
     setRequestStatusBusy(statusValue);
     try {
       const result = await updateCommunityConfirmationRequestStatus(requestId, {
@@ -782,10 +869,12 @@ export default function CommunityConfirmationOutcomePage() {
               : "Confirmation request was sent for review."),
       });
       const nextOutcome = normalizeOutcome(result?.request || result);
+      if (!isCurrentOutcomeContext(contextKey)) return;
       setOutcome(nextOutcome);
       setRequestStatusNote("");
       setNotice({ tone: "success", text: "Request status recorded into the Trust Event trail." });
     } catch (err: any) {
+      if (!isCurrentOutcomeContext(contextKey)) return;
       setNotice({
         tone: "error",
         text:
@@ -793,7 +882,7 @@ export default function CommunityConfirmationOutcomePage() {
           "Request status could not be updated. Sign in as the requester, provider, or admin.",
       });
     } finally {
-      setRequestStatusBusy("");
+      if (isCurrentOutcomeContext(contextKey)) setRequestStatusBusy("");
     }
   }
 
@@ -803,6 +892,7 @@ export default function CommunityConfirmationOutcomePage() {
       setNotice({ tone: "error", text: "There is no review case on this confirmation yet." });
       return;
     }
+    const contextKey = outcomeContextRef.current;
     setReviewBusy(resolution);
     try {
       const result = await updateCommunityConfirmationReviewCase(reviewCase.reviewCaseId, {
@@ -818,6 +908,7 @@ export default function CommunityConfirmationOutcomePage() {
               : "Review closed after checking the confirmation record."),
       });
       const nextReview = result?.review_case;
+      if (!isCurrentOutcomeContext(contextKey)) return;
       setOutcome((current) =>
         current
           ? {
@@ -839,6 +930,7 @@ export default function CommunityConfirmationOutcomePage() {
       setReviewNote("");
       setNotice({ tone: "success", text: "Review outcome recorded into the Trust Event trail." });
     } catch (err: any) {
+      if (!isCurrentOutcomeContext(contextKey)) return;
       setNotice({
         tone: "error",
         text:
@@ -846,7 +938,7 @@ export default function CommunityConfirmationOutcomePage() {
           "Review case could not be updated. Sign in as the requester, provider, or admin.",
       });
     } finally {
-      setReviewBusy("");
+      if (isCurrentOutcomeContext(contextKey)) setReviewBusy("");
     }
   }
 
@@ -861,6 +953,7 @@ export default function CommunityConfirmationOutcomePage() {
       setNotice({ tone: "error", text: "Add a short evidence title first." });
       return;
     }
+    const contextKey = outcomeContextRef.current;
     setReviewEvidenceBusy("add");
     try {
       const result = await addCommunityConfirmationReviewEvidence(reviewCase.reviewCaseId, {
@@ -870,6 +963,7 @@ export default function CommunityConfirmationOutcomePage() {
         external_ref: safeStr(evidenceRef).slice(0, 240) || null,
       });
       const next = result?.evidence ? normalizeReviewEvidence(result.evidence) : null;
+      if (!isCurrentOutcomeContext(contextKey)) return;
       if (next) {
         setReviewEvidence((current) => [next, ...current]);
       }
@@ -878,6 +972,7 @@ export default function CommunityConfirmationOutcomePage() {
       setEvidenceRef("");
       setNotice({ tone: "success", text: "Review evidence added to the Trust Event trail." });
     } catch (err: any) {
+      if (!isCurrentOutcomeContext(contextKey)) return;
       setNotice({
         tone: "error",
         text:
@@ -885,7 +980,7 @@ export default function CommunityConfirmationOutcomePage() {
           "Review evidence could not be added. Sign in as the opener, reviewer, or admin.",
       });
     } finally {
-      setReviewEvidenceBusy("");
+      if (isCurrentOutcomeContext(contextKey)) setReviewEvidenceBusy("");
     }
   }
 

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import GsnSupportContact from "../components/GsnSupportContact";
 import PageTopNav from "../components/PageTopNav";
@@ -545,6 +545,8 @@ export default function LoansPage() {
   const [loans, setLoans] = useState<LoanRow[]>([]);
   const [guarantorInbox, setGuarantorInbox] = useState<GuarantorInboxRow[]>([]);
   const [guidance, setGuidance] = useState<GuidanceSnapshot | null>(null);
+  const loansLoadSeqRef = useRef(0);
+  const loansLoadContextRef = useRef("");
 
   useEffect(() => {
     if (routeClanId > 0) {
@@ -571,9 +573,26 @@ export default function LoansPage() {
 
   useEffect(() => {
     let alive = true;
+    const contextKey = `community:${selectedClanId || "none"}`;
+    const loadSeq = loansLoadSeqRef.current + 1;
+    loansLoadSeqRef.current = loadSeq;
+    loansLoadContextRef.current = contextKey;
+
+    function isCurrentLoansLoad() {
+      return (
+        alive &&
+        loansLoadSeqRef.current === loadSeq &&
+        loansLoadContextRef.current === contextKey
+      );
+    }
 
     (async () => {
       setLoading(true);
+      setCurrentClan(null);
+      setPoolInfo(null);
+      setLoans([]);
+      setGuarantorInbox([]);
+      setGuidance(null);
 
       try {
         const scopedClanOptions =
@@ -622,7 +641,7 @@ export default function LoansPage() {
             buildGuidanceSnapshot().catch(() => null),
           ]);
 
-        if (!alive) return;
+        if (!isCurrentLoansLoad()) return;
 
         const normalizedLoans = rowsOf<any>(loansRes)
           .map((row) => normalizeLoanRow(row))
@@ -644,7 +663,7 @@ export default function LoansPage() {
         setGuarantorInbox(normalizedGuarantorRows);
         setGuidance(guidanceRes || null);
       } finally {
-        if (alive) setLoading(false);
+        if (isCurrentLoansLoad()) setLoading(false);
       }
     })();
 

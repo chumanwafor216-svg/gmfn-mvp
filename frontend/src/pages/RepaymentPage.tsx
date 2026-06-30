@@ -419,6 +419,14 @@ export default function RepaymentPage() {
   }, [notice]);
 
   useEffect(() => {
+    setInstruction(null);
+    setPaymentConfirmedAt(null);
+    setRepaymentMode("full");
+    setPartAmount("");
+    setNotice(null);
+  }, [numericLoanId]);
+
+  useEffect(() => {
     let alive = true;
 
     async function loadPage() {
@@ -646,6 +654,27 @@ export default function RepaymentPage() {
 
   function toggleSection(key: keyof CollapseState) {
     setCollapsed((prev) => ({ ...prev, [key]: !prev[key] }));
+  }
+
+  function clearGeneratedInstruction() {
+    setInstruction(null);
+    setPaymentConfirmedAt(null);
+    setNotice(null);
+  }
+
+  function handleRepaymentModeChange(nextMode: RepaymentMode) {
+    setRepaymentMode(nextMode);
+    setPaymentConfirmedAt(null);
+    setNotice(null);
+
+    if (nextMode !== repaymentMode) {
+      setInstruction(null);
+    }
+  }
+
+  function handlePartAmountChange(value: string) {
+    setPartAmount(value);
+    clearGeneratedInstruction();
   }
 
   async function handleGenerateInstruction() {
@@ -1158,10 +1187,7 @@ export default function RepaymentPage() {
                 >
                   <SecondaryButton
                     type="button"
-                    onClick={() => {
-                      setRepaymentMode("full");
-                      setPaymentConfirmedAt(null);
-                    }}
+                    onClick={() => handleRepaymentModeChange("full")}
                     stableHeight={52}
                     fullWidth
                     debugId="repayment.mode.full"
@@ -1173,10 +1199,7 @@ export default function RepaymentPage() {
                   </SecondaryButton>
                   <SecondaryButton
                     type="button"
-                    onClick={() => {
-                      setRepaymentMode("part");
-                      setPaymentConfirmedAt(null);
-                    }}
+                    onClick={() => handleRepaymentModeChange("part")}
                     stableHeight={52}
                     fullWidth
                     debugId="repayment.mode.part"
@@ -1195,10 +1218,7 @@ export default function RepaymentPage() {
                       min="0"
                       step="0.01"
                       value={partAmount}
-                      onChange={(event) => {
-                        setPartAmount(event.target.value);
-                        setPaymentConfirmedAt(null);
-                      }}
+                      onChange={(event) => handlePartAmountChange(event.target.value)}
                       placeholder={`Up to ${fmtMoney(outstandingAmount, currency)}`}
                       style={amountInput()}
                     />

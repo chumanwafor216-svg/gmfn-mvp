@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import ExplainToggle from "../components/ExplainToggle";
 import PageTopNav from "../components/PageTopNav";
@@ -658,6 +658,8 @@ export default function LoanReadinessPage() {
   const [poolInfo, setPoolInfo] = useState<any>(null);
   const [loans, setLoans] = useState<LoanRow[]>([]);
   const [guarantorInbox, setGuarantorInbox] = useState<GuarantorInboxRow[]>([]);
+  const readinessLoadSeqRef = useRef(0);
+  const readinessLoadContextRef = useRef("");
 
   useEffect(() => {
     if (routeClanId > 0) {
@@ -684,9 +686,25 @@ export default function LoanReadinessPage() {
 
   useEffect(() => {
     let alive = true;
+    const contextKey = `community:${selectedClanId || "none"}`;
+    const loadSeq = readinessLoadSeqRef.current + 1;
+    readinessLoadSeqRef.current = loadSeq;
+    readinessLoadContextRef.current = contextKey;
+
+    function isCurrentReadinessLoad() {
+      return (
+        alive &&
+        readinessLoadSeqRef.current === loadSeq &&
+        readinessLoadContextRef.current === contextKey
+      );
+    }
 
     (async () => {
       setLoading(true);
+      setCurrentClan(null);
+      setPoolInfo(null);
+      setLoans([]);
+      setGuarantorInbox([]);
 
       try {
         const mePromise =
@@ -729,7 +747,7 @@ export default function LoanReadinessPage() {
             guarantorPromise,
           ]);
 
-        if (!alive) return;
+        if (!isCurrentReadinessLoad()) return;
 
         const normalizedLoans = rowsOf<any>(loansRes)
           .map((row) => normalizeLoanRow(row))
@@ -750,7 +768,7 @@ export default function LoanReadinessPage() {
         setLoans(filteredLoans);
         setGuarantorInbox(normalizedGuarantorRows);
       } finally {
-        if (alive) setLoading(false);
+        if (isCurrentReadinessLoad()) setLoading(false);
       }
     })();
 

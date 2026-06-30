@@ -10,7 +10,7 @@ import React, {
 import { useParams } from "react-router-dom";
 import PageTopNav from "../components/PageTopNav";
 import { GsnRealisticIcon } from "../components/GsnRealisticIcon";
-import { StableButton, StableCtaLink } from "../components/StableButton";
+import { StableButton } from "../components/StableButton";
 import {
   applyCommunityDomainActionReview,
   createCommunityDomainPackageQuote,
@@ -77,6 +77,9 @@ const CommunityDomainStructurePlanningPanels = lazy(
 const CommunityDomainStructurePreviewPanel = lazy(
   () => import("./communityDomainDashboard/StructurePreviewPanel")
 );
+const CommunityDomainSetupIntelligenceCards = lazy(
+  () => import("./communityDomainDashboard/SetupIntelligenceCards")
+);
 const CommunityDomainMemberReadinessPanels = lazy(
   () => import("./communityDomainDashboard/MemberReadinessPanels")
 );
@@ -97,6 +100,18 @@ const CommunityDomainServiceBoundaryPanels = lazy(
 );
 const CommunityDomainTrustEvidenceReadinessPanels = lazy(
   () => import("./communityDomainDashboard/TrustEvidenceReadinessPanels")
+);
+const CommunityDomainAccessRequestsPanel = lazy(
+  () => import("./communityDomainDashboard/AccessRequestsPanel")
+);
+const CommunityDomainSelectorPanel = lazy(
+  () => import("./communityDomainDashboard/DomainSelectorPanel")
+);
+const CommunityDomainDashboardRecoveryPanel = lazy(
+  () => import("./communityDomainDashboard/DashboardRecoveryPanel")
+);
+const CommunityDomainLaneSelectorPanel = lazy(
+  () => import("./communityDomainDashboard/LaneSelectorPanel")
 );
 
 type DomainLane = {
@@ -157,387 +172,6 @@ type StructureNode = {
   depth?: number | string | null;
   child_count?: number | string | null;
   children?: StructureNode[];
-};
-
-type ServiceReadinessItem = {
-  module_key?: string | null;
-  label?: string | null;
-  summary?: string | null;
-  enabled_by_template?: boolean;
-  module_scope_status?: string | null;
-  ready_for_future_module_scope?: boolean;
-  next_step?: string | null;
-  route_hint?: string | null;
-  requires_admin?: boolean;
-};
-
-type SetupReadinessItem = {
-  lane_key?: string | null;
-  label?: string | null;
-  state?: string | null;
-  ready?: boolean;
-  count?: number | string | null;
-  next_step?: string | null;
-  route_hint?: string | null;
-  requires_admin?: boolean;
-};
-
-type SetupPlanStep = {
-  step_key?: string | null;
-  label?: string | null;
-  completed?: boolean;
-  missing_items?: unknown[];
-  route_hint?: string | null;
-  admin_action_route_hint?: string | null;
-  requires_admin?: boolean;
-};
-
-type CapacityPlanLane = {
-  lane_key?: string | null;
-  label?: string | null;
-  metered?: boolean;
-  used?: number | string | null;
-  limit?: number | string | null;
-  remaining?: number | string | null;
-  usage_percent?: number | string | null;
-  status?: string | null;
-  summary?: string | null;
-};
-
-type GovernanceCoverageNode = {
-  node?: {
-    id?: number | string | null;
-    name?: string | null;
-    parent_node_id?: number | string | null;
-  } | null;
-  governance_status?: string | null;
-  ready_for_delegation?: boolean;
-  local_policy_count?: number | string | null;
-  inherited_policy_count?: number | string | null;
-  effective_policy_count?: number | string | null;
-  local_admin_count?: number | string | null;
-  open_review_count?: number | string | null;
-  next_step?: string | null;
-};
-
-type RolloutPlanPhase = {
-  phase_key?: string | null;
-  label?: string | null;
-  completed?: boolean;
-  status?: string | null;
-  next_step?: string | null;
-  detail?: Record<string, unknown> | null;
-  requires_admin?: boolean;
-};
-
-type RolloutPlanUnit = {
-  node?: {
-    id?: number | string | null;
-    name?: string | null;
-  } | null;
-  status?: string | null;
-  ready_for_pilot?: boolean;
-  member_count?: number | string | null;
-  admin_count?: number | string | null;
-  next_step?: string | null;
-};
-
-type ActivityMapLane = {
-  lane_key?: string | null;
-  label?: string | null;
-  status?: string | null;
-  ready?: boolean;
-  count?: number | string | null;
-  next_step?: string | null;
-};
-
-type ActivityGroupReadinessItem = {
-  node?: {
-    id?: number | string | null;
-    name?: string | null;
-    node_type?: string | null;
-    node_kind?: string | null;
-  } | null;
-  activity_group_status?: string | null;
-  ready_for_activity_group_planning?: boolean;
-  visibility_policy?: string | null;
-  local_member_count?: number | string | null;
-  local_facilitator_count?: number | string | null;
-  local_policy_count?: number | string | null;
-  review_record_count?: number | string | null;
-  next_step?: string | null;
-};
-
-type MemberVerificationLane = {
-  lane_key?: string | null;
-  label?: string | null;
-  status?: string | null;
-  ready?: boolean;
-  count?: number | string | null;
-  next_step?: string | null;
-};
-
-type EvidenceRecordReadinessType = {
-  record_type?: string | null;
-  label?: string | null;
-  readiness_status?: string | null;
-  ready_for_future_evidence_record?: boolean;
-  active_policy_count?: number | string | null;
-  review_record_count?: number | string | null;
-  review_evidence_metadata_count?: number | string | null;
-  evidence_record_status?: string | null;
-  file_upload_status?: string | null;
-  credential_status?: string | null;
-  trustslip_status?: string | null;
-  trust_passport_status?: string | null;
-  next_step?: string | null;
-};
-
-type EvidenceReleaseReadinessLane = {
-  lane_key?: string | null;
-  label?: string | null;
-  audience?: string | null;
-  status?: string | null;
-  ready?: boolean;
-  count?: number | string | null;
-  release_status?: string | null;
-  currentness_status?: string | null;
-  public_url_status?: string | null;
-  credential_status?: string | null;
-  trustslip_status?: string | null;
-  trust_passport_status?: string | null;
-  next_step?: string | null;
-};
-
-type TrustRelayReadinessLane = {
-  lane_key?: string | null;
-  label?: string | null;
-  status?: string | null;
-  ready?: boolean;
-  count?: number | string | null;
-  source_domain_status?: string | null;
-  bridge_member_status?: string | null;
-  destination_domain_status?: string | null;
-  relay_path_status?: string | null;
-  next_step?: string | null;
-};
-
-type NotificationScopeReadinessLane = {
-  lane_key?: string | null;
-  label?: string | null;
-  status?: string | null;
-  ready?: boolean;
-  count?: number | string | null;
-  notification_scope_record_status?: string | null;
-  notification_job_status?: string | null;
-  notification_delivery_status?: string | null;
-  audience_list_status?: string | null;
-  public_announcement_status?: string | null;
-  cross_domain_broadcast_status?: string | null;
-  member_list_status?: string | null;
-  next_step?: string | null;
-};
-
-type TrustMobilityLane = {
-  lane_key?: string | null;
-  label?: string | null;
-  summary?: string | null;
-  status?: string | null;
-  ready?: boolean;
-  count?: number | string | null;
-  next_step?: string | null;
-};
-
-type AffiliationReadinessLane = {
-  lane_key?: string | null;
-  label?: string | null;
-  status?: string | null;
-  ready?: boolean;
-  count?: number | string | null;
-  next_step?: string | null;
-};
-
-type SocialBridgeLane = {
-  lane_key?: string | null;
-  label?: string | null;
-  status?: string | null;
-  ready?: boolean;
-  count?: number | string | null;
-  next_step?: string | null;
-};
-
-type InstitutionalProfileLane = {
-  lane_key?: string | null;
-  label?: string | null;
-  status?: string | null;
-  ready?: boolean;
-  count?: number | string | null;
-  next_step?: string | null;
-};
-
-type DelegationMapLane = {
-  lane_key?: string | null;
-  label?: string | null;
-  status?: string | null;
-  ready?: boolean;
-  count?: number | string | null;
-  next_step?: string | null;
-};
-
-type SubscriptionLifecycleLane = {
-  lane_key?: string | null;
-  label?: string | null;
-  summary?: string | null;
-  status?: string | null;
-  ready?: boolean;
-  next_step?: string | null;
-};
-
-type NetworkExchangeLane = {
-  lane_key?: string | null;
-  label?: string | null;
-  status?: string | null;
-  ready?: boolean;
-  count?: number | string | null;
-  next_step?: string | null;
-};
-
-type RecordPrivacyLane = {
-  lane_key?: string | null;
-  label?: string | null;
-  status?: string | null;
-  ready?: boolean;
-  count?: number | string | null;
-  next_step?: string | null;
-};
-
-type ConfigurationMapLane = {
-  lane_key?: string | null;
-  label?: string | null;
-  status?: string | null;
-  ready?: boolean;
-  count?: number | string | null;
-  next_step?: string | null;
-};
-
-type ComplianceMapLane = {
-  lane_key?: string | null;
-  label?: string | null;
-  status?: string | null;
-  ready?: boolean;
-  count?: number | string | null;
-  next_step?: string | null;
-};
-
-type AppealReadinessLane = {
-  lane_key?: string | null;
-  label?: string | null;
-  status?: string | null;
-  ready?: boolean;
-  signal_count?: number | string | null;
-  appeal_engine_status?: string | null;
-  next_step?: string | null;
-};
-
-type ServiceSettingsProjectionItem = {
-  module_key?: string | null;
-  label?: string | null;
-  summary?: string | null;
-  enabled?: boolean;
-  status?: string | null;
-  source?: string | null;
-  admin_visible?: boolean;
-};
-
-type EconomicParticipationLane = {
-  lane_key?: string | null;
-  label?: string | null;
-  summary?: string | null;
-  module_key?: string | null;
-  status?: string | null;
-  ready?: boolean;
-  next_step?: string | null;
-};
-
-type NetworkPresenceLane = {
-  lane_key?: string | null;
-  label?: string | null;
-  summary?: string | null;
-  status?: string | null;
-  ready?: boolean;
-};
-
-type NodeProjectionItem = {
-  node?: {
-    id?: number | string | null;
-    name?: string | null;
-    node_type?: string | null;
-    node_kind?: string | null;
-    parent_node_id?: number | string | null;
-    status?: string | null;
-  } | null;
-  autonomy_status?: string | null;
-  economy_status?: string | null;
-  activity_status?: string | null;
-  trust_status?: string | null;
-  participation_status?: string | null;
-  service_status?: string | null;
-  privacy_status?: string | null;
-  analytics_status?: string | null;
-  domain_boundary_status?: string | null;
-  evidence_authority_status?: string | null;
-  communication_status?: string | null;
-  vault_status?: string | null;
-  schedule_status?: string | null;
-  paid_activity_status?: string | null;
-  locally_operable?: boolean;
-  ready_for_local_economy?: boolean;
-  ready_for_local_activity?: boolean;
-  ready_for_local_trust?: boolean;
-  ready_for_local_participation?: boolean;
-  ready_for_local_services?: boolean;
-  ready_for_local_analytics?: boolean;
-  ready_for_child_domain_review?: boolean;
-  ready_for_local_evidence_authority?: boolean;
-  ready_for_local_communication?: boolean;
-  ready_for_local_vault?: boolean;
-  ready_for_local_schedule?: boolean;
-  ready_for_local_paid_activity?: boolean;
-  safe_default_visibility?: boolean;
-  recommended_boundary?: string | null;
-  visibility_policy?: string | null;
-  next_step?: string | null;
-};
-
-const MODULE_LABELS: Record<string, string> = {
-  governance: "Governance",
-  members: "Members",
-  departments: "Structure",
-  shops: "Shops",
-  marketplace: "Marketplace",
-  spotlight: "Spotlight",
-  vault: "Vault",
-  verification: "Verification",
-  trust_centre: "Trust Centre",
-  analytics: "Analytics",
-  billing: "Billing",
-  settings: "Settings",
-};
-
-const SERVICE_READINESS_KEYS = [
-  "shops",
-  "spotlight",
-  "vault",
-  "verification",
-  "trust_centre",
-  "analytics",
-] as const;
-
-type ServiceReadinessRow = {
-  key: string;
-  label: string;
-  status: string;
-  detail: string;
 };
 
 type OperatingStateCopy = {
@@ -692,31 +326,6 @@ function laneForAction(actionKey: unknown): string {
   return "structure";
 }
 
-function moduleLabel(moduleKey: unknown): string {
-  const key = cleanText(moduleKey);
-  return MODULE_LABELS[key] || key.replace(/_/g, " ").replace(/\b\w/g, (x) => x.toUpperCase());
-}
-
-function serviceReadinessStatus(item: ServiceReadinessItem | undefined, fallbackEnabled: boolean): string {
-  const status = cleanText(item?.module_scope_status).toLowerCase();
-  if (!item) return fallbackEnabled ? "template listed" : "not listed";
-  if (status === "ready_for_future_module_scope") return "planning ready";
-  if (status === "needs_operating_units") return "needs structure";
-  if (status === "needs_node_participants") return "needs placements";
-  if (status === "needs_domain_policy") return "needs domain policy";
-  if (status === "needs_scope_policy") return "needs service policy";
-  if (status === "needs_review_signal") return "needs review signal";
-  if (status === "optional_module_not_enabled") return "optional, not included";
-  return compactStatus(status || (item.ready_for_future_module_scope ? "planning ready" : "not ready"));
-}
-
-function serviceFallbackDetail(serviceKey: string, fallbackEnabled: boolean): string {
-  if (fallbackEnabled) {
-    return "Listed by this Community Domain template. Readiness details are not loaded yet.";
-  }
-  return "Not included by the current template unless an owner later chooses to configure it.";
-}
-
 function communityDomainOperatingStateCopy(status: {
   domain_status?: unknown;
   billing_status?: unknown;
@@ -806,78 +415,6 @@ function laneDisplayLabel(lane: any, fallback = "Lane"): string {
   return label;
 }
 
-function reviewUserLabel(review: ActionReviewItem): string {
-  return cleanText(
-    review.subject_user_display_name ||
-      review.subject_user_email ||
-      review.requested_by_user_display_name ||
-      review.requested_by_user_email ||
-      review.payload?.user_id ||
-      review.subject_user_id ||
-      review.target_id,
-    "member"
-  );
-}
-
-function reviewRequesterLabel(review: ActionReviewItem): string {
-  return cleanText(
-    review.requested_by_user_display_name ||
-      review.requested_by_user_email ||
-      review.requested_by_user_id,
-    "unknown"
-  );
-}
-
-function membershipRequestStatusText(review: ActionReviewItem | null): string {
-  const status = cleanText(review?.status, "pending").toLowerCase();
-  const reviewId = cleanText(review?.id);
-  const reviewLabel = reviewId ? ` Review ${reviewId}` : "";
-  if (status === "pending" || status === "pending_review") {
-    return `${reviewLabel} is pending. An owner/admin still needs to approve and apply it before membership changes.`;
-  }
-  if (status === "approved") {
-    return `${reviewLabel} is approved, but membership still has to be applied by an owner/admin before this dashboard opens.`;
-  }
-  if (status === "applied") {
-    return `${reviewLabel} has been applied. Try opening the dashboard again so GSN can refresh your membership view.`;
-  }
-  if (status === "rejected") {
-    return `${reviewLabel} was declined. You can request again when you have clearer community proof or owner guidance.`;
-  }
-  return `${reviewLabel} is marked ${compactStatus(status)}. This status does not grant dashboard access by itself.`;
-}
-
-function membershipRequestButtonLabel(
-  review: ActionReviewItem | null,
-  busy: boolean
-): string {
-  if (busy) return "Sending request...";
-  const status = cleanText(review?.status).toLowerCase();
-  if (status === "pending" || status === "pending_review") return "Request pending";
-  if (status === "approved") return "Approved, waiting to add";
-  if (status === "applied") return "Try dashboard again";
-  if (status === "rejected") return "Request again";
-  return "Request access";
-}
-
-function structurePreviewRows(nodes: StructureNode[]): Array<{
-  node: StructureNode;
-  level: number;
-}> {
-  const roots = Array.isArray(nodes) ? nodes : [];
-  const firstRoot = roots[0];
-  if (!firstRoot) return [];
-  const rows = [{ node: firstRoot, level: 0 }];
-  const firstChildren = Array.isArray(firstRoot.children) ? firstRoot.children : [];
-  firstChildren.slice(0, 4).forEach((node) => rows.push({ node, level: 1 }));
-  if (rows.length < 5) {
-    roots.slice(1, 5 - rows.length + 1).forEach((node) => {
-      rows.push({ node, level: 0 });
-    });
-  }
-  return rows.slice(0, 5);
-}
-
 function reviewStatusCounts(items: ActionReviewItem[]): Record<string, number> {
   return items.reduce<Record<string, number>>((counts, item) => {
     const status = cleanText(item.status, "unknown").toLowerCase();
@@ -959,22 +496,60 @@ export default function CommunityDomainDashboardPage() {
   const [busyMembershipRequest, setBusyMembershipRequest] = useState(false);
   const [busyReviewId, setBusyReviewId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
+  const mountedRef = useRef(true);
+  const activeCommunityDomainIdRef = useRef(communityDomainId);
+  const dashboardLoadSequence = useRef(0);
+  const reviewerQueueLoadSequence = useRef(0);
+  const membershipRequestLoadSequence = useRef(0);
 
-  const loadOwnMembershipRequests = useCallback(async () => {
-    if (!communityDomainId || !getAccessToken()) {
-      setOwnMembershipRequests([]);
+  useEffect(() => {
+    activeCommunityDomainIdRef.current = communityDomainId;
+  }, [communityDomainId]);
+
+  useEffect(() => {
+    return () => {
+      mountedRef.current = false;
+      dashboardLoadSequence.current += 1;
+      reviewerQueueLoadSequence.current += 1;
+      membershipRequestLoadSequence.current += 1;
+    };
+  }, []);
+
+  const isCurrentDomainRequest = useCallback((domainId: string) => {
+    return (
+      mountedRef.current &&
+      cleanText(activeCommunityDomainIdRef.current) === cleanText(domainId)
+    );
+  }, []);
+
+  const loadOwnMembershipRequests = useCallback(async (domainId = communityDomainId) => {
+    const requestDomainId = cleanText(domainId);
+    const requestId = membershipRequestLoadSequence.current + 1;
+    membershipRequestLoadSequence.current = requestId;
+    const canApply = () =>
+      isCurrentDomainRequest(requestDomainId) &&
+      membershipRequestLoadSequence.current === requestId;
+
+    if (!requestDomainId || !getAccessToken()) {
+      if (canApply()) {
+        setOwnMembershipRequests([]);
+      }
       return [];
     }
     try {
-      const payload = await listMyCommunityDomainMembershipRequests(communityDomainId);
+      const payload = await listMyCommunityDomainMembershipRequests(requestDomainId);
       const items = Array.isArray(payload?.items) ? payload.items : [];
-      setOwnMembershipRequests(items);
+      if (canApply()) {
+        setOwnMembershipRequests(items);
+      }
       return items;
     } catch {
-      setOwnMembershipRequests([]);
+      if (canApply()) {
+        setOwnMembershipRequests([]);
+      }
       return [];
     }
-  }, [communityDomainId]);
+  }, [communityDomainId, isCurrentDomainRequest]);
 
   const resetReadinessLoadTracking = useCallback(() => {
     setLoadedReadinessLanes({});
@@ -1031,31 +606,54 @@ export default function CommunityDomainDashboardPage() {
   }, []);
 
   const loadDashboard = useCallback(async () => {
-    if (!communityDomainId) {
+    const requestDomainId = cleanText(communityDomainId);
+    const requestId = dashboardLoadSequence.current + 1;
+    dashboardLoadSequence.current = requestId;
+    const canApply = () =>
+      isCurrentDomainRequest(requestDomainId) &&
+      dashboardLoadSequence.current === requestId;
+
+    if (!requestDomainId) {
       setLoading(true);
       setDashboard(null);
       setDashboardRouteId("");
+      setQuote(null);
+      setLoadingQueue(false);
+      setBusyQuote(false);
+      setBusyMembershipRequest(false);
+      setBusyReviewId(null);
       resetReadinessLoadTracking();
       setMessage("");
       setOwnMembershipRequests([]);
       resetOptionalReadinessState();
       try {
         const payload = await listMyCommunityDomains();
-        setDomainItems(Array.isArray(payload?.items) ? payload.items : []);
+        if (canApply()) {
+          setDomainItems(Array.isArray(payload?.items) ? payload.items : []);
+        }
       } catch (err: any) {
-        setDomainItems([]);
-        setMessage(
-          err?.message ||
-            "GSN could not load your Community Domains. Check that you are signed in."
-        );
+        if (canApply()) {
+          setDomainItems([]);
+          setMessage(
+            err?.message ||
+              "GSN could not load your Community Domains. Check that you are signed in."
+          );
+        }
       } finally {
-        setLoading(false);
+        if (canApply()) {
+          setLoading(false);
+        }
       }
       return;
     }
 
     setLoading(true);
     setDashboardRouteId("");
+    setQuote(null);
+    setLoadingQueue(false);
+    setBusyQuote(false);
+    setBusyMembershipRequest(false);
+    setBusyReviewId(null);
     resetReadinessLoadTracking();
     setMessage("");
     setDomainItems([]);
@@ -1063,7 +661,8 @@ export default function CommunityDomainDashboardPage() {
     setOwnMembershipRequests([]);
     resetOptionalReadinessState();
     try {
-      const payload = await getCommunityDomainDashboard(communityDomainId);
+      const payload = await getCommunityDomainDashboard(requestDomainId);
+      if (!canApply()) return;
       const nextDashboard = (payload?.dashboard || null) as DashboardPayload | null;
       setDashboard(nextDashboard);
       setDashboardRouteId(communityDomainId);
@@ -1073,9 +672,10 @@ export default function CommunityDomainDashboardPage() {
       if (nextDashboard?.viewer?.can_admin) {
         try {
           const [pendingPayload, approvedPayload] = await Promise.all([
-            getCommunityDomainReviewerQueue(communityDomainId),
-            listCommunityDomainActionReviews(communityDomainId, { status: "approved" }),
+            getCommunityDomainReviewerQueue(requestDomainId),
+            listCommunityDomainActionReviews(requestDomainId, { status: "approved" }),
           ]);
+          if (!canApply()) return;
           const pendingItems = Array.isArray(pendingPayload?.items)
             ? pendingPayload.items
             : [];
@@ -1084,24 +684,31 @@ export default function CommunityDomainDashboardPage() {
             : [];
           setReviewerQueue(mergeActionReviews(pendingItems, approvedItems));
         } catch {
-          setReviewerQueue([]);
+          if (canApply()) {
+            setReviewerQueue([]);
+          }
         }
       }
     } catch (err: any) {
+      if (!canApply()) return;
       setDashboard(null);
       setDashboardRouteId("");
       resetReadinessLoadTracking();
       resetOptionalReadinessState();
-      await loadOwnMembershipRequests();
+      await loadOwnMembershipRequests(requestDomainId);
+      if (!canApply()) return;
       setMessage(
         err?.message ||
           "GSN could not open this Community Domain dashboard. Check that you are signed in as an active domain member."
       );
     } finally {
-      setLoading(false);
+      if (canApply()) {
+        setLoading(false);
+      }
     }
   }, [
     communityDomainId,
+    isCurrentDomainRequest,
     loadOwnMembershipRequests,
     resetOptionalReadinessState,
     resetReadinessLoadTracking,
@@ -1443,202 +1050,9 @@ export default function CommunityDomainDashboardPage() {
   const lanes = Array.isArray(dashboard?.lanes) ? dashboard?.lanes || [] : [];
   const isAdmin = Boolean(dashboard?.viewer?.can_admin);
   const latestMembershipRequest = ownMembershipRequests[0] || null;
-  const latestMembershipRequestStatus = cleanText(latestMembershipRequest?.status).toLowerCase();
-  const requestAccessLocked =
-    busyMembershipRequest ||
-    latestMembershipRequestStatus === "pending" ||
-    latestMembershipRequestStatus === "pending_review" ||
-    latestMembershipRequestStatus === "approved";
   const membershipAccessRequests = reviewerQueue.filter(
     (review) => cleanText(review.action_key) === "domain_member.upsert"
   );
-  const placementCounts = placementSummary?.counts || {};
-  const placementLanes = Array.isArray(placementSummary?.lanes)
-    ? placementSummary.lanes
-    : [];
-  const visibleNodePlacements = Array.isArray(placementSummary?.node_placements)
-    ? placementSummary.node_placements.slice(0, 3)
-    : [];
-  const visibleStructureRows = structurePreviewRows(nodeTree);
-  const nodeAutonomyCounts = nodeAutonomyMap?.counts || {};
-  const visibleNodeAutonomyRows: NodeProjectionItem[] = Array.isArray(
-    nodeAutonomyMap?.flat_nodes
-  )
-    ? nodeAutonomyMap.flat_nodes
-    : [];
-  const nodeAutonomyGaps = visibleNodeAutonomyRows.filter((item) => {
-    const statusText = cleanText(item.autonomy_status).toLowerCase();
-    return statusText.includes("needs") || statusText.includes("parent_controlled");
-  });
-  const nodeEconomicCounts = nodeEconomicMap?.counts || {};
-  const visibleNodeEconomicRows: NodeProjectionItem[] = Array.isArray(
-    nodeEconomicMap?.flat_nodes
-  )
-    ? nodeEconomicMap.flat_nodes
-    : [];
-  const nodeEconomicGaps = visibleNodeEconomicRows.filter((item) => {
-    const statusText = cleanText(item.economy_status).toLowerCase();
-    return statusText.includes("needs") || statusText.includes("governance");
-  });
-  const nodeActivityCounts = nodeActivityMap?.counts || {};
-  const visibleNodeActivityRows: NodeProjectionItem[] = Array.isArray(
-    nodeActivityMap?.flat_nodes
-  )
-    ? nodeActivityMap.flat_nodes
-    : [];
-  const nodeActivityGaps = visibleNodeActivityRows.filter((item) => {
-    const statusText = cleanText(item.activity_status).toLowerCase();
-    return statusText.includes("needs") || statusText.includes("governance");
-  });
-  const nodeTrustCounts = nodeTrustMap?.counts || {};
-  const visibleNodeTrustRows: NodeProjectionItem[] = Array.isArray(nodeTrustMap?.flat_nodes)
-    ? nodeTrustMap.flat_nodes
-    : [];
-  const nodeTrustGaps = visibleNodeTrustRows.filter((item) => {
-    const statusText = cleanText(item.trust_status).toLowerCase();
-    return (
-      statusText.includes("needs") ||
-      statusText.includes("governance") ||
-      statusText.includes("review") ||
-      statusText.includes("evidence")
-    );
-  });
-  const nodeParticipationCounts = nodeParticipationMap?.counts || {};
-  const visibleNodeParticipationRows: NodeProjectionItem[] = Array.isArray(
-    nodeParticipationMap?.flat_nodes
-  )
-    ? nodeParticipationMap.flat_nodes
-    : [];
-  const nodeParticipationGaps = visibleNodeParticipationRows.filter((item) => {
-    const statusText = cleanText(item.participation_status).toLowerCase();
-    return (
-      statusText.includes("needs") ||
-      statusText.includes("empty") ||
-      statusText.includes("admin_only")
-    );
-  });
-  const nodeServiceCounts = nodeServiceMap?.counts || {};
-  const visibleNodeServiceRows: NodeProjectionItem[] = Array.isArray(
-    nodeServiceMap?.flat_nodes
-  )
-    ? nodeServiceMap.flat_nodes
-    : [];
-  const nodeServiceGaps = visibleNodeServiceRows.filter((item) => {
-    const statusText = cleanText(item.service_status).toLowerCase();
-    return (
-      statusText.includes("needs") ||
-      statusText.includes("governance") ||
-      statusText.includes("no_template")
-    );
-  });
-  const nodePrivacyCounts = nodePrivacyMap?.counts || {};
-  const visibleNodePrivacyRows: NodeProjectionItem[] = Array.isArray(
-    nodePrivacyMap?.flat_nodes
-  )
-    ? nodePrivacyMap.flat_nodes
-    : [];
-  const nodePrivacyGaps = visibleNodePrivacyRows.filter((item) => {
-    const statusText = cleanText(item.privacy_status).toLowerCase();
-    return statusText.includes("review") || statusText.includes("unknown");
-  });
-  const nodeAnalyticsCounts = nodeAnalyticsMap?.counts || {};
-  const visibleNodeAnalyticsRows: NodeProjectionItem[] = Array.isArray(
-    nodeAnalyticsMap?.flat_nodes
-  )
-    ? nodeAnalyticsMap.flat_nodes
-    : [];
-  const nodeAnalyticsGaps = visibleNodeAnalyticsRows.filter((item) => {
-    const statusText = cleanText(item.analytics_status).toLowerCase();
-    return (
-      statusText.includes("needs") ||
-      statusText.includes("inactive") ||
-      statusText.includes("review")
-    );
-  });
-  const nodeDomainBoundaryCounts = nodeDomainBoundaryMap?.counts || {};
-  const visibleNodeDomainBoundaryRows: NodeProjectionItem[] = Array.isArray(
-    nodeDomainBoundaryMap?.flat_nodes
-  )
-    ? nodeDomainBoundaryMap.flat_nodes
-    : [];
-  const nodeDomainBoundaryGaps = visibleNodeDomainBoundaryRows.filter((item) => {
-    const statusText = cleanText(item.domain_boundary_status).toLowerCase();
-    return (
-      statusText.includes("candidate") ||
-      statusText.includes("review") ||
-      statusText.includes("inactive")
-    );
-  });
-  const nodeEvidenceAuthorityCounts = nodeEvidenceAuthorityMap?.counts || {};
-  const visibleNodeEvidenceAuthorityRows: NodeProjectionItem[] = Array.isArray(
-    nodeEvidenceAuthorityMap?.flat_nodes
-  )
-    ? nodeEvidenceAuthorityMap.flat_nodes
-    : [];
-  const nodeEvidenceAuthorityGaps = visibleNodeEvidenceAuthorityRows.filter((item) => {
-    const statusText = cleanText(item.evidence_authority_status).toLowerCase();
-    return (
-      statusText.includes("needs") ||
-      statusText.includes("review") ||
-      statusText.includes("inactive")
-    );
-  });
-  const nodeCommunicationCounts = nodeCommunicationMap?.counts || {};
-  const visibleNodeCommunicationRows: NodeProjectionItem[] = Array.isArray(
-    nodeCommunicationMap?.flat_nodes
-  )
-    ? nodeCommunicationMap.flat_nodes
-    : [];
-  const nodeCommunicationGaps = visibleNodeCommunicationRows.filter((item) => {
-    const statusText = cleanText(item.communication_status).toLowerCase();
-    return (
-      statusText.includes("needs") ||
-      statusText.includes("review") ||
-      statusText.includes("inactive")
-    );
-  });
-  const nodeVaultCounts = nodeVaultMap?.counts || {};
-  const visibleNodeVaultRows: NodeProjectionItem[] = Array.isArray(
-    nodeVaultMap?.flat_nodes
-  )
-    ? nodeVaultMap.flat_nodes
-    : [];
-  const nodeVaultGaps = visibleNodeVaultRows.filter((item) => {
-    const statusText = cleanText(item.vault_status).toLowerCase();
-    return (
-      statusText.includes("needs") ||
-      statusText.includes("review") ||
-      statusText.includes("inactive")
-    );
-  });
-  const nodeScheduledActivityCounts = nodeScheduledActivityMap?.counts || {};
-  const visibleNodeScheduledActivityRows: NodeProjectionItem[] = Array.isArray(
-    nodeScheduledActivityMap?.flat_nodes
-  )
-    ? nodeScheduledActivityMap.flat_nodes
-    : [];
-  const nodeScheduledActivityGaps = visibleNodeScheduledActivityRows.filter((item) => {
-    const statusText = cleanText(item.schedule_status).toLowerCase();
-    return (
-      statusText.includes("needs") ||
-      statusText.includes("review") ||
-      statusText.includes("inactive")
-    );
-  });
-  const nodePaidActivityCounts = nodePaidActivityMap?.counts || {};
-  const visibleNodePaidActivityRows: NodeProjectionItem[] = Array.isArray(
-    nodePaidActivityMap?.flat_nodes
-  )
-    ? nodePaidActivityMap.flat_nodes
-    : [];
-  const nodePaidActivityGaps = visibleNodePaidActivityRows.filter((item) => {
-    const statusText = cleanText(item.paid_activity_status).toLowerCase();
-    return (
-      statusText.includes("needs") ||
-      statusText.includes("review") ||
-      statusText.includes("inactive")
-    );
-  });
   const governanceReviewCounts = reviewStatusCounts(reviewerQueue);
   const governancePendingCount =
     (governanceReviewCounts.pending || 0) +
@@ -1652,307 +1066,6 @@ export default function CommunityDomainDashboardPage() {
   const isActiveLaneReadinessLoading = Boolean(
     loadingReadinessLanes[cleanText(activeLane, "structure")]
   );
-  const visibleSetupReadinessItems: SetupReadinessItem[] = Array.isArray(setupReadiness?.items)
-    ? setupReadiness.items
-    : [];
-  const blockedSetupReadinessItems = visibleSetupReadinessItems.filter((item) => !item.ready);
-  const visibleSetupPlanSteps: SetupPlanStep[] = Array.isArray(setupPlan?.steps)
-    ? setupPlan.steps
-    : [];
-  const openSetupPlanSteps = visibleSetupPlanSteps.filter((step) => !step.completed);
-  const visibleCapacityLanes: CapacityPlanLane[] = Array.isArray(capacityPlan?.lanes)
-    ? capacityPlan.lanes
-    : [];
-  const attentionCapacityLanes = visibleCapacityLanes.filter((lane) => {
-    const statusText = cleanText(lane.status).toLowerCase();
-    return statusText.includes("near") || statusText.includes("over");
-  });
-  const governanceCoverageCounts = governanceCoverage?.counts || {};
-  const visibleGovernanceCoverageNodes: GovernanceCoverageNode[] = Array.isArray(
-    governanceCoverage?.flat_nodes
-  )
-    ? governanceCoverage.flat_nodes
-    : [];
-  const governanceCoverageGaps = visibleGovernanceCoverageNodes.filter((item) => {
-    const statusText = cleanText(item.governance_status).toLowerCase();
-    return statusText.includes("needs") || statusText.includes("inactive");
-  });
-  const delegationMapSummary = delegationMap?.summary || {};
-  const visibleDelegationLanes: DelegationMapLane[] = Array.isArray(delegationMap?.lanes)
-    ? delegationMap.lanes
-    : [];
-  const blockedDelegationLanes = visibleDelegationLanes.filter((lane) => !lane.ready);
-  const delegationReadyTotal =
-    typeof delegationMap?.ready_total === "number"
-      ? delegationMap.ready_total
-      : visibleDelegationLanes.filter((lane) => lane.ready).length;
-  const rolloutPlanCounts = rolloutPlan?.counts || {};
-  const visibleRolloutPhases: RolloutPlanPhase[] = Array.isArray(rolloutPlan?.phases)
-    ? rolloutPlan.phases
-    : [];
-  const openRolloutPhases = visibleRolloutPhases.filter((phase) => !phase.completed);
-  const visibleRolloutUnits: RolloutPlanUnit[] = Array.isArray(rolloutPlan?.rollout_units)
-    ? rolloutPlan.rollout_units
-    : [];
-  const rolloutUnitsNeedingAttention = visibleRolloutUnits.filter(
-    (unit) => !unit.ready_for_pilot
-  );
-  const activityMapSummary = activityMap?.summary || {};
-  const activityMapTemplate = activityMap?.template || {};
-  const visibleActivityMapLanes: ActivityMapLane[] = Array.isArray(activityMap?.lanes)
-    ? activityMap.lanes
-    : [];
-  const blockedActivityMapLanes = visibleActivityMapLanes.filter((lane) => !lane.ready);
-  const activityMapReadyTotal =
-    typeof activityMap?.ready_total === "number"
-      ? activityMap.ready_total
-      : visibleActivityMapLanes.filter((lane) => lane.ready).length;
-  const activityGroupSummary = activityGroupReadiness?.summary || {};
-  const visibleActivityGroups: ActivityGroupReadinessItem[] = Array.isArray(
-    activityGroupReadiness?.flat_groups
-  )
-    ? activityGroupReadiness.flat_groups
-    : [];
-  const blockedActivityGroups = visibleActivityGroups.filter(
-    (group) => !group.ready_for_activity_group_planning
-  );
-  const activityGroupReadyTotal = visibleActivityGroups.filter(
-    (group) => group.ready_for_activity_group_planning
-  ).length;
-  const memberVerificationSummary = memberVerificationMap?.summary || {};
-  const visibleMemberVerificationLanes: MemberVerificationLane[] = Array.isArray(
-    memberVerificationMap?.lanes
-  )
-    ? memberVerificationMap.lanes
-    : [];
-  const blockedMemberVerificationLanes = visibleMemberVerificationLanes.filter(
-    (lane) => !lane.ready
-  );
-  const memberVerificationReadyTotal =
-    typeof memberVerificationMap?.ready_total === "number"
-      ? memberVerificationMap.ready_total
-      : visibleMemberVerificationLanes.filter((lane) => lane.ready).length;
-  const subscriptionSummary = subscriptionLifecycle?.summary || {};
-  const subscriptionPackage = subscriptionLifecycle?.package || {};
-  const visibleSubscriptionLanes: SubscriptionLifecycleLane[] = Array.isArray(
-    subscriptionLifecycle?.lanes
-  )
-    ? subscriptionLifecycle.lanes
-    : [];
-  const blockedSubscriptionLanes = visibleSubscriptionLanes.filter(
-    (lane) => !lane.ready
-  );
-  const subscriptionReadyTotal =
-    typeof subscriptionLifecycle?.ready_total === "number"
-      ? subscriptionLifecycle.ready_total
-      : visibleSubscriptionLanes.filter((lane) => lane.ready).length;
-  const networkExchangeSummary = networkExchangeMap?.summary || {};
-  const linkedNetworkSocialCommunity = networkExchangeMap?.linked_social_community || {};
-  const visibleNetworkExchangeLanes: NetworkExchangeLane[] = Array.isArray(
-    networkExchangeMap?.lanes
-  )
-    ? networkExchangeMap.lanes
-    : [];
-  const blockedNetworkExchangeLanes = visibleNetworkExchangeLanes.filter(
-    (lane) => !lane.ready
-  );
-  const networkExchangeReadyTotal =
-    typeof networkExchangeMap?.ready_total === "number"
-      ? networkExchangeMap.ready_total
-      : visibleNetworkExchangeLanes.filter((lane) => lane.ready).length;
-  const recordPrivacySummary = recordPrivacyMap?.summary || {};
-  const visibleRecordPrivacyLanes: RecordPrivacyLane[] = Array.isArray(
-    recordPrivacyMap?.lanes
-  )
-    ? recordPrivacyMap.lanes
-    : [];
-  const blockedRecordPrivacyLanes = visibleRecordPrivacyLanes.filter(
-    (lane) => !lane.ready
-  );
-  const recordPrivacyReadyTotal =
-    typeof recordPrivacyMap?.ready_total === "number"
-      ? recordPrivacyMap.ready_total
-      : visibleRecordPrivacyLanes.filter((lane) => lane.ready).length;
-  const configurationMapSummary = configurationMap?.summary || {};
-  const configurationMapBlueprint = configurationMap?.blueprint || {};
-  const visibleConfigurationMapLanes: ConfigurationMapLane[] = Array.isArray(
-    configurationMap?.lanes
-  )
-    ? configurationMap.lanes
-    : [];
-  const blockedConfigurationMapLanes = visibleConfigurationMapLanes.filter(
-    (lane) => !lane.ready
-  );
-  const configurationMapReadyTotal =
-    typeof configurationMap?.ready_total === "number"
-      ? configurationMap.ready_total
-      : visibleConfigurationMapLanes.filter((lane) => lane.ready).length;
-  const complianceMapSummary = complianceMap?.summary || {};
-  const visibleComplianceMapLanes: ComplianceMapLane[] = Array.isArray(
-    complianceMap?.lanes
-  )
-    ? complianceMap.lanes
-    : [];
-  const blockedComplianceMapLanes = visibleComplianceMapLanes.filter(
-    (lane) => !lane.ready
-  );
-  const complianceMapReadyTotal =
-    typeof complianceMap?.ready_total === "number"
-      ? complianceMap.ready_total
-      : visibleComplianceMapLanes.filter((lane) => lane.ready).length;
-  const appealReadinessSummary = appealReadiness?.summary || {};
-  const visibleAppealReadinessLanes: AppealReadinessLane[] = Array.isArray(
-    appealReadiness?.lanes
-  )
-    ? appealReadiness.lanes
-    : [];
-  const blockedAppealReadinessLanes = visibleAppealReadinessLanes.filter(
-    (lane) => !lane.ready
-  );
-  const appealReadinessSignalTotal = visibleAppealReadinessLanes.reduce(
-    (total, lane) => total + Number(lane.signal_count || 0),
-    0
-  );
-  const visibleServiceSettingsItems: ServiceSettingsProjectionItem[] = Array.isArray(
-    serviceSettingsProjection?.items
-  )
-    ? serviceSettingsProjection.items
-    : [];
-  const enabledServiceSettingsItems = visibleServiceSettingsItems.filter(
-    (item) => item.enabled
-  );
-  const optionalServiceSettingsItems = visibleServiceSettingsItems.filter(
-    (item) => !item.enabled
-  );
-  const economicParticipationCounts = economicParticipation?.counts || {};
-  const economicParticipationTemplate = economicParticipation?.template || {};
-  const visibleEconomicParticipationLanes: EconomicParticipationLane[] = Array.isArray(
-    economicParticipation?.lanes
-  )
-    ? economicParticipation.lanes
-    : [];
-  const blockedEconomicParticipationLanes = visibleEconomicParticipationLanes.filter(
-    (lane) => !lane.ready
-  );
-  const economicParticipationReadyTotal =
-    typeof economicParticipation?.ready_total === "number"
-      ? economicParticipation.ready_total
-      : visibleEconomicParticipationLanes.filter((lane) => lane.ready).length;
-  const networkPresenceIdentity = networkPresence?.identity || {};
-  const networkPresenceStatus = networkPresence?.status || {};
-  const visibleNetworkPresenceLanes: NetworkPresenceLane[] = Array.isArray(
-    networkPresence?.lanes
-  )
-    ? networkPresence.lanes
-    : [];
-  const blockedNetworkPresenceLanes = visibleNetworkPresenceLanes.filter(
-    (lane) => !lane.ready
-  );
-  const networkPresenceReadyTotal =
-    typeof networkPresence?.ready_total === "number"
-      ? networkPresence.ready_total
-      : visibleNetworkPresenceLanes.filter((lane) => lane.ready).length;
-  const evidenceRecordSummary = evidenceRecordReadiness?.summary || {};
-  const visibleEvidenceRecordTypes: EvidenceRecordReadinessType[] = Array.isArray(
-    evidenceRecordReadiness?.record_types
-  )
-    ? evidenceRecordReadiness.record_types
-    : [];
-  const blockedEvidenceRecordTypes = visibleEvidenceRecordTypes.filter(
-    (record) => !record.ready_for_future_evidence_record
-  );
-  const evidenceRecordReadyTotal =
-    typeof evidenceRecordReadiness?.ready_total === "number"
-      ? evidenceRecordReadiness.ready_total
-      : visibleEvidenceRecordTypes.filter((record) => record.ready_for_future_evidence_record)
-          .length;
-  const evidenceReleaseSummary = evidenceReleaseReadiness?.summary || {};
-  const visibleEvidenceReleaseLanes: EvidenceReleaseReadinessLane[] = Array.isArray(
-    evidenceReleaseReadiness?.lanes
-  )
-    ? evidenceReleaseReadiness.lanes
-    : [];
-  const blockedEvidenceReleaseLanes = visibleEvidenceReleaseLanes.filter(
-    (lane) => !lane.ready
-  );
-  const evidenceReleaseReadyTotal =
-    typeof evidenceReleaseReadiness?.ready_total === "number"
-      ? evidenceReleaseReadiness.ready_total
-      : visibleEvidenceReleaseLanes.filter((lane) => lane.ready).length;
-  const trustRelaySummary = trustRelayReadiness?.summary || {};
-  const visibleTrustRelayLanes: TrustRelayReadinessLane[] = Array.isArray(
-    trustRelayReadiness?.lanes
-  )
-    ? trustRelayReadiness.lanes
-    : [];
-  const blockedTrustRelayLanes = visibleTrustRelayLanes.filter((lane) => !lane.ready);
-  const trustRelayReadyTotal =
-    typeof trustRelayReadiness?.ready_total === "number"
-      ? trustRelayReadiness.ready_total
-      : visibleTrustRelayLanes.filter((lane) => lane.ready).length;
-  const notificationScopeSummary = notificationScopeReadiness?.summary || {};
-  const visibleNotificationScopeLanes: NotificationScopeReadinessLane[] = Array.isArray(
-    notificationScopeReadiness?.lanes
-  )
-    ? notificationScopeReadiness.lanes
-    : [];
-  const blockedNotificationScopeLanes = visibleNotificationScopeLanes.filter(
-    (lane) => !lane.ready
-  );
-  const notificationScopeReadyTotal =
-    typeof notificationScopeReadiness?.ready_total === "number"
-      ? notificationScopeReadiness.ready_total
-      : visibleNotificationScopeLanes.filter((lane) => lane.ready).length;
-  const trustMobilitySummary = trustMobility?.summary || {};
-  const visibleTrustMobilityLanes: TrustMobilityLane[] = Array.isArray(trustMobility?.lanes)
-    ? trustMobility.lanes
-    : [];
-  const blockedTrustMobilityLanes = visibleTrustMobilityLanes.filter(
-    (lane) => !lane.ready
-  );
-  const trustMobilityReadyTotal =
-    typeof trustMobility?.ready_total === "number"
-      ? trustMobility.ready_total
-      : visibleTrustMobilityLanes.filter((lane) => lane.ready).length;
-  const institutionalProfileSummary = institutionalProfile?.summary || {};
-  const institutionalProfileDetails = institutionalProfile?.institutional_profile || {};
-  const visibleInstitutionalProfileLanes: InstitutionalProfileLane[] = Array.isArray(
-    institutionalProfile?.lanes
-  )
-    ? institutionalProfile.lanes
-    : [];
-  const blockedInstitutionalProfileLanes = visibleInstitutionalProfileLanes.filter(
-    (lane) => !lane.ready
-  );
-  const institutionalProfileReadyTotal =
-    typeof institutionalProfile?.ready_total === "number"
-      ? institutionalProfile.ready_total
-      : visibleInstitutionalProfileLanes.filter((lane) => lane.ready).length;
-  const socialBridgeSummary = socialBridge?.summary || {};
-  const linkedSocialCommunity = socialBridge?.linked_community || {};
-  const visibleSocialBridgeLanes: SocialBridgeLane[] = Array.isArray(socialBridge?.lanes)
-    ? socialBridge.lanes
-    : [];
-  const blockedSocialBridgeLanes = visibleSocialBridgeLanes.filter(
-    (lane) => !lane.ready
-  );
-  const socialBridgeReadyTotal =
-    typeof socialBridge?.ready_total === "number"
-      ? socialBridge.ready_total
-      : visibleSocialBridgeLanes.filter((lane) => lane.ready).length;
-  const affiliationSummary = affiliationReadiness?.summary || {};
-  const visibleAffiliationLanes: AffiliationReadinessLane[] = Array.isArray(
-    affiliationReadiness?.lanes
-  )
-    ? affiliationReadiness.lanes
-    : [];
-  const blockedAffiliationLanes = visibleAffiliationLanes.filter(
-    (lane) => !lane.ready
-  );
-  const affiliationReadyTotal =
-    typeof affiliationReadiness?.ready_total === "number"
-      ? affiliationReadiness.ready_total
-      : visibleAffiliationLanes.filter((lane) => lane.ready).length;
   const setupPrimaryAction = setupReadiness?.primary_next_action || dashboard?.primary_next_action;
   const setupPrimaryActionLaneKey = laneForAction(setupPrimaryAction?.action_key);
   const dashboardPrimaryActionLaneKey = laneForAction(dashboard?.primary_next_action?.action_key);
@@ -1990,58 +1103,22 @@ export default function CommunityDomainDashboardPage() {
     return Array.from(new Set([...included, ...templateModules])).slice(0, 8);
   }, [quote, template]);
 
-  const serviceReadinessRows = useMemo(() => {
-    const readinessItems: ServiceReadinessItem[] = Array.isArray(moduleScopeReadiness?.modules)
-      ? moduleScopeReadiness.modules
-      : [];
-    const byKey = new Map(
-      readinessItems
-        .map((item) => [cleanText(item.module_key), item] as const)
-        .filter(([key]) => Boolean(key))
-    );
-    const listedKeys = new Set(moduleKeys.map((key) => cleanText(key)));
-    const serviceRows: ServiceReadinessRow[] = SERVICE_READINESS_KEYS.map((serviceKey) => {
-      const item = byKey.get(serviceKey);
-      const fallbackEnabled = listedKeys.has(serviceKey);
-      return {
-        key: serviceKey,
-        label: cleanText(item?.label, moduleLabel(serviceKey)),
-        status: serviceReadinessStatus(item, fallbackEnabled),
-        detail: cleanText(
-          item?.next_step || item?.summary,
-          serviceFallbackDetail(serviceKey, fallbackEnabled)
-        ),
-      };
-    });
-
-    serviceRows.push({
-      key: "billing",
-      label: "Billing",
-      status: compactStatus(status.billing_status || quote?.pricing_status || quote?.quote_status),
-      detail: billingIsActive
-        ? "Billing is shown as active here, but payment instructions and renewals remain separate owner/admin work."
-        : "Package, payment instruction, activation, and renewal are still separate from service readiness.",
-    });
-    serviceRows.push({
-      key: "settings",
-      label: "Settings",
-      status: moduleScopeReadiness ? "read only" : "not loaded",
-      detail: moduleScopeReadiness
-        ? "Settings are shown as planning status here. This page does not enable services or grant permissions."
-        : "Service settings could not be loaded for this view. No setting has been changed.",
-    });
-
-    return serviceRows;
-  }, [billingIsActive, moduleKeys, moduleScopeReadiness, quote, status.billing_status]);
-
   async function loadAccessReviewItems(showLoading = false) {
-    if (!communityDomainId) return;
+    const requestDomainId = cleanText(communityDomainId);
+    if (!requestDomainId) return;
+    const requestId = reviewerQueueLoadSequence.current + 1;
+    reviewerQueueLoadSequence.current = requestId;
+    const canApply = () =>
+      isCurrentDomainRequest(requestDomainId) &&
+      reviewerQueueLoadSequence.current === requestId;
+
     if (showLoading) setLoadingQueue(true);
     try {
       const [pendingPayload, approvedPayload] = await Promise.all([
-        getCommunityDomainReviewerQueue(communityDomainId),
-        listCommunityDomainActionReviews(communityDomainId, { status: "approved" }),
+        getCommunityDomainReviewerQueue(requestDomainId),
+        listCommunityDomainActionReviews(requestDomainId, { status: "approved" }),
       ]);
+      if (!canApply()) return;
       const pendingItems = Array.isArray(pendingPayload?.items)
         ? pendingPayload.items
         : [];
@@ -2050,14 +1127,17 @@ export default function CommunityDomainDashboardPage() {
         : [];
       setReviewerQueue(mergeActionReviews(pendingItems, approvedItems));
     } catch (err: any) {
-      setMessage(err?.message || "GSN could not load the Community Domain review queue.");
+      if (canApply()) {
+        setMessage(err?.message || "GSN could not load the Community Domain review queue.");
+      }
     } finally {
-      if (showLoading) setLoadingQueue(false);
+      if (showLoading && canApply()) setLoadingQueue(false);
     }
   }
 
   async function refreshQuote() {
-    if (!communityDomainId) return;
+    const requestDomainId = cleanText(communityDomainId);
+    if (!requestDomainId) return;
     if (!isAdmin) {
       setMessage(
         billingIsActive
@@ -2070,7 +1150,8 @@ export default function CommunityDomainDashboardPage() {
     setBusyQuote(true);
     setMessage("");
     try {
-      const payload = await createCommunityDomainPackageQuote(communityDomainId);
+      const payload = await createCommunityDomainPackageQuote(requestDomainId);
+      if (!isCurrentDomainRequest(requestDomainId)) return;
       setQuote(payload?.quote || null);
       setActiveLane("billing");
       setMessage(
@@ -2079,9 +1160,13 @@ export default function CommunityDomainDashboardPage() {
           : "Package quote refreshed. It is still not a payment instruction, payment confirmation, activation, or verification."
       );
     } catch (err: any) {
-      setMessage(err?.message || "GSN could not refresh the package quote.");
+      if (isCurrentDomainRequest(requestDomainId)) {
+        setMessage(err?.message || "GSN could not refresh the package quote.");
+      }
     } finally {
-      setBusyQuote(false);
+      if (isCurrentDomainRequest(requestDomainId)) {
+        setBusyQuote(false);
+      }
     }
   }
 
@@ -2090,13 +1175,14 @@ export default function CommunityDomainDashboardPage() {
   }
 
   async function approveAccessRequest(review: ActionReviewItem, applyAfterApproval: boolean) {
-    if (!communityDomainId || !review.id) return;
+    const requestDomainId = cleanText(communityDomainId);
+    if (!requestDomainId || !review.id) return;
     const reviewId = String(review.id);
     setBusyReviewId(`${reviewId}:${applyAfterApproval ? "apply" : "approve"}`);
     setMessage("");
     try {
       const decisionPayload = await decideCommunityDomainActionReview(
-        communityDomainId,
+        requestDomainId,
         reviewId,
         {
           decision: "approve",
@@ -2105,8 +1191,10 @@ export default function CommunityDomainDashboardPage() {
             : "Approved from the Community Domain access queue. Membership still needs apply.",
         }
       );
+      if (!isCurrentDomainRequest(requestDomainId)) return;
       if (applyAfterApproval) {
-        await applyCommunityDomainActionReview(communityDomainId, reviewId);
+        await applyCommunityDomainActionReview(requestDomainId, reviewId);
+        if (!isCurrentDomainRequest(requestDomainId)) return;
         setMessage(
           `Access request ${reviewId} approved and applied. The member is now added only because the approved review was applied.`
         );
@@ -2120,63 +1208,80 @@ export default function CommunityDomainDashboardPage() {
       );
       await refreshReviewerQueue();
     } catch (err: any) {
-      setMessage(
-        err?.message ||
-          "GSN could not process this Community Domain access request."
-      );
+      if (isCurrentDomainRequest(requestDomainId)) {
+        setMessage(
+          err?.message ||
+            "GSN could not process this Community Domain access request."
+        );
+      }
     } finally {
-      setBusyReviewId(null);
+      if (isCurrentDomainRequest(requestDomainId)) {
+        setBusyReviewId(null);
+      }
     }
   }
 
   async function declineAccessRequest(review: ActionReviewItem) {
-    if (!communityDomainId || !review.id) return;
+    const requestDomainId = cleanText(communityDomainId);
+    if (!requestDomainId || !review.id) return;
     const reviewId = String(review.id);
     setBusyReviewId(`${reviewId}:decline`);
     setMessage("");
     try {
-      await decideCommunityDomainActionReview(communityDomainId, reviewId, {
+      await decideCommunityDomainActionReview(requestDomainId, reviewId, {
         decision: "reject",
         decision_note:
           "Declined from the Community Domain access queue. No membership change was applied.",
       });
+      if (!isCurrentDomainRequest(requestDomainId)) return;
       setMessage(
         `Access request ${reviewId} declined. No membership was added, and the request will no longer appear as pending.`
       );
       await refreshReviewerQueue();
     } catch (err: any) {
-      setMessage(
-        err?.message ||
-          "GSN could not decline this Community Domain access request."
-      );
+      if (isCurrentDomainRequest(requestDomainId)) {
+        setMessage(
+          err?.message ||
+            "GSN could not decline this Community Domain access request."
+        );
+      }
     } finally {
-      setBusyReviewId(null);
+      if (isCurrentDomainRequest(requestDomainId)) {
+        setBusyReviewId(null);
+      }
     }
   }
 
   async function applyApprovedAccessRequest(review: ActionReviewItem) {
-    if (!communityDomainId || !review.id) return;
+    const requestDomainId = cleanText(communityDomainId);
+    if (!requestDomainId || !review.id) return;
     const reviewId = String(review.id);
     setBusyReviewId(`${reviewId}:apply`);
     setMessage("");
     try {
-      await applyCommunityDomainActionReview(communityDomainId, reviewId);
+      await applyCommunityDomainActionReview(requestDomainId, reviewId);
+      if (!isCurrentDomainRequest(requestDomainId)) return;
       setMessage(
         `Approved access request ${reviewId} applied. The member was added only after the approved review was applied.`
       );
       await loadDashboard();
     } catch (err: any) {
-      setMessage(
-        err?.message ||
-          "GSN could not add this approved Community Domain member."
-      );
+      if (isCurrentDomainRequest(requestDomainId)) {
+        setMessage(
+          err?.message ||
+            "GSN could not add this approved Community Domain member."
+        );
+      }
     } finally {
-      setBusyReviewId(null);
+      if (isCurrentDomainRequest(requestDomainId)) {
+        setBusyReviewId(null);
+      }
     }
   }
 
   async function requestDomainAccess() {
-    if (!communityDomainId) return;
+    const requestDomainId = cleanText(communityDomainId);
+    if (!requestDomainId) return;
     if (!getAccessToken()) {
       setMessage("Sign in first so GSN can attach the Community Domain request to your account.");
       return;
@@ -2184,11 +1289,13 @@ export default function CommunityDomainDashboardPage() {
 
     setBusyMembershipRequest(true);
     try {
-      const payload = await requestCommunityDomainMembership(communityDomainId, {
+      const payload = await requestCommunityDomainMembership(requestDomainId, {
         request_note: "Requesting access from the Community Domain dashboard.",
       });
+      if (!isCurrentDomainRequest(requestDomainId)) return;
       const reviewId = payload?.action_review?.id;
-      await loadOwnMembershipRequests();
+      await loadOwnMembershipRequests(requestDomainId);
+      if (!isCurrentDomainRequest(requestDomainId)) return;
       setMessage(
         reviewId
           ? `Access request sent for owner/admin review. Review ${reviewId} must still be approved and applied before membership changes.`
@@ -2202,19 +1309,26 @@ export default function CommunityDomainDashboardPage() {
         err?.message ||
         "GSN could not send the Community Domain access request.";
       if (code === "community_domain_membership_request_pending") {
-        await loadOwnMembershipRequests();
+        await loadOwnMembershipRequests(requestDomainId);
+        if (!isCurrentDomainRequest(requestDomainId)) return;
         setMessage(
           "You already have a pending access request for this Community Domain. An owner/admin still needs to approve and apply it."
         );
       } else if (code === "community_domain_member_already_active") {
-        setMessage(
-          "You are already recorded as an active member. Try opening the dashboard again."
-        );
+        if (isCurrentDomainRequest(requestDomainId)) {
+          setMessage(
+            "You are already recorded as an active member. Try opening the dashboard again."
+          );
+        }
       } else {
-        setMessage(text);
+        if (isCurrentDomainRequest(requestDomainId)) {
+          setMessage(text);
+        }
       }
     } finally {
-      setBusyMembershipRequest(false);
+      if (isCurrentDomainRequest(requestDomainId)) {
+        setBusyMembershipRequest(false);
+      }
     }
   }
 
@@ -2242,177 +1356,44 @@ export default function CommunityDomainDashboardPage() {
       ) : null}
 
       {!loading && message && !dashboard ? (
-        <section style={whiteCard()}>
-          <div style={sectionLabel()}>
-            {communityDomainId ? "Cannot open dashboard" : "Cannot load domains"}
-          </div>
-          <h2 style={{ margin: "8px 0 6px", fontSize: 24, lineHeight: 1.1 }}>
-            {communityDomainId
-              ? "This Community Domain is not available here."
-              : "Your Community Domains could not be loaded."}
-          </h2>
-          <div style={helperText()}>{message}</div>
-          {latestMembershipRequest ? (
-            <div
-              style={{
-                marginTop: 12,
-                borderRadius: 16,
-                border: "1px solid rgba(146,94,8,0.22)",
-                background: "rgba(255,247,226,0.72)",
-                padding: 12,
-              }}
-            >
-              <div style={sectionLabel()}>Your access request</div>
-              <div style={{ ...helperText(), marginTop: 6 }}>
-                {membershipRequestStatusText(latestMembershipRequest)}
+        <Suspense
+          fallback={
+            <section style={whiteCard()}>
+              <div style={sectionLabel()}>Recovery</div>
+              <div style={{ ...helperText(), marginTop: 8 }}>
+                Loading recovery actions...
               </div>
-            </div>
-          ) : null}
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 14 }}>
-            <StableButton
-              type="button"
-              kind="primary"
-              debugId={
-                communityDomainId
-                  ? "community-domain-dashboard.error.retry-dashboard"
-                  : "community-domain-dashboard.error.retry-selector"
-              }
-              onClick={loadDashboard}
-            >
-              Try again
-            </StableButton>
-            <StableCtaLink
-              to={APP_ROUTES.COMMUNITY}
-              kind="secondary"
-              debugId="community-domain-dashboard.error.community-home"
-            >
-              Community Home
-            </StableCtaLink>
-            <StableCtaLink
-              to="/community-domain/purchase"
-              kind="soft"
-              debugId="community-domain-dashboard.error.purchase"
-            >
-              Purchase path
-            </StableCtaLink>
-            {communityDomainId ? (
-              <StableButton
-                type="button"
-                kind="secondary"
-                debugId="community-domain-dashboard.error.request-membership"
-                disabled={requestAccessLocked}
-                onClick={
-                  latestMembershipRequestStatus === "applied"
-                    ? loadDashboard
-                    : requestDomainAccess
-                }
-              >
-                {membershipRequestButtonLabel(
-                  latestMembershipRequest,
-                  busyMembershipRequest
-                )}
-              </StableButton>
-            ) : null}
-          </div>
-        </section>
+            </section>
+          }
+        >
+          <CommunityDomainDashboardRecoveryPanel
+            communityDomainId={communityDomainId}
+            message={message}
+            latestMembershipRequest={latestMembershipRequest}
+            busyMembershipRequest={busyMembershipRequest}
+            onRetry={loadDashboard}
+            onRequestDomainAccess={requestDomainAccess}
+          />
+        </Suspense>
       ) : null}
 
       {!loading && !communityDomainId && !message ? (
         <section style={whiteCard()}>
-          {domainItems.length > 0 ? (
-            <div style={{ display: "grid", gap: 12 }}>
-              <div style={sectionLabel()}>Your Community Domains</div>
-              <h2 style={{ margin: 0, fontSize: 26, lineHeight: 1.1 }}>
-                Choose a domain to operate.
-              </h2>
-              <div style={helperText()}>
-                These are active Community Domain memberships attached to your signed-in
-                account. Opening one keeps payment, activation, and verification
-                boundaries separate.
+          <Suspense
+            fallback={
+              <div style={{ display: "grid", gap: 10 }}>
+                <div style={sectionLabel()}>Your Community Domains</div>
+                <h2 style={{ margin: 0, fontSize: 26, lineHeight: 1.1 }}>
+                  Loading domain selector
+                </h2>
+                <div style={helperText()}>
+                  GSN is loading the signed-in Community Domain selector.
+                </div>
               </div>
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 240px), 1fr))",
-                  gap: 12,
-                }}
-              >
-                {domainItems.map((item) => {
-                  const itemDomain = item?.community_domain || {};
-                  const itemMembership = item?.membership || {};
-                  const path =
-                    cleanText(item?.dashboard_path) ||
-                    `/app/community-domain/${encodeURIComponent(String(itemDomain.id))}`;
-                  return (
-                    <div key={cleanText(itemDomain.id, path)} style={softCard()}>
-                      <div style={{ display: "grid", gap: 8 }}>
-                        <div style={sectionLabel()}>
-                          {item?.viewer?.can_admin ? "Owner/admin" : "Member"}
-                        </div>
-                        <h3 style={{ margin: 0, fontSize: 19, lineHeight: 1.14 }}>
-                          {cleanText(itemDomain.display_name, "Community Domain")}
-                        </h3>
-                        <div style={helperText()}>
-                          Code: <strong>{cleanText(itemDomain.domain_name, "not recorded")}</strong>
-                          <br />
-                          Role:{" "}
-                          <strong style={{ textTransform: "capitalize" }}>
-                            {compactStatus(itemMembership.role)}
-                          </strong>
-                        </div>
-                        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                          <span style={statusBadge(itemDomain.status)}>
-                            Domain: {compactStatus(itemDomain.status)}
-                          </span>
-                          <span style={statusBadge(itemDomain.verification_status)}>
-                            Verification: {compactStatus(itemDomain.verification_status)}
-                          </span>
-                        </div>
-                        <StableCtaLink
-                          to={path}
-                          kind="primary"
-                          fullWidth
-                          debugId={`community-domain-dashboard.selector.open-${cleanText(
-                            itemDomain.id,
-                            "domain"
-                          )}`}
-                        >
-                          Open dashboard
-                        </StableCtaLink>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          ) : (
-            <div style={{ display: "grid", gap: 10 }}>
-              <div style={sectionLabel()}>No Community Domains yet</div>
-              <h2 style={{ margin: 0, fontSize: 26, lineHeight: 1.1 }}>
-                Start from the purchase path.
-              </h2>
-              <div style={helperText()}>
-                This account does not have an active Community Domain membership to
-                open here. You can check a domain name or return to Community Home.
-              </div>
-              <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                <StableCtaLink
-                  to="/community-domain/purchase"
-                  kind="primary"
-                  debugId="community-domain-dashboard.empty.purchase"
-                >
-                  Check domain name
-                </StableCtaLink>
-                <StableCtaLink
-                  to={APP_ROUTES.COMMUNITY}
-                  kind="secondary"
-                  debugId="community-domain-dashboard.empty.community-home"
-                >
-                  Community Home
-                </StableCtaLink>
-              </div>
-            </div>
-          )}
+            }
+          >
+            <CommunityDomainSelectorPanel domainItems={domainItems} />
+          </Suspense>
         </section>
       ) : null}
 
@@ -2658,158 +1639,42 @@ export default function CommunityDomainDashboardPage() {
               </div>
             </div>
 
-            <div style={whiteCard()}>
-              <div style={{ display: "grid", gap: 10 }}>
-                <div style={sectionLabel()}>Setup readiness</div>
-                <h2 style={{ margin: 0, fontSize: 23, lineHeight: 1.12 }}>
-                  {isBaseReadinessLoading && !setupReadiness
-                    ? "Loading readiness checks"
-                    : setupReadiness
-                    ? `${countValue(setupReadiness.ready_total)} of ${countValue(
-                        setupReadiness.total
-                      )} checks ready`
-                    : "Readiness is not loaded"}
-                </h2>
-                <div style={helperText()}>
-                  {isBaseReadinessLoading && !setupReadiness
-                    ? "GSN is loading the read-only setup checklist while the main Community Domain dashboard remains usable."
-                    : setupReadiness
-                    ? `${countValue(
-                        setupReadiness.blocked_total
-                      )} setup checks still need attention before this domain should be treated as fully ready.`
-                    : "GSN could not load the read-only setup checklist for this view."}
-                </div>
-                {blockedSetupReadinessItems.length ? (
-                  <div style={{ display: "grid", gap: 8 }}>
-                    {blockedSetupReadinessItems.slice(0, 3).map((item) => (
-                      <div
-                        key={cleanText(item.lane_key, cleanText(item.label, "setup-check"))}
-                        style={{
-                          display: "grid",
-                          gridTemplateColumns: "minmax(0, 1fr) auto",
-                          gap: 10,
-                          alignItems: "center",
-                          borderRadius: 14,
-                          border: "1px solid rgba(146,94,8,0.16)",
-                          background: "rgba(255,247,226,0.62)",
-                          padding: "10px 10px 10px 12px",
-                        }}
-                      >
-                        <span style={{ minWidth: 0 }}>
-                          <span style={{ display: "block", fontWeight: 950 }}>
-                            {cleanText(item.label, "Setup check")}
-                          </span>
-                          <span
-                            style={{
-                              display: "block",
-                              color: "#4F647A",
-                              fontSize: 12.5,
-                              lineHeight: 1.45,
-                              marginTop: 3,
-                            }}
-                          >
-                            {cleanText(item.next_step, "Review this setup area before launch.")}
-                          </span>
-                        </span>
-                        <span style={statusBadge(item.state)}>{compactStatus(item.state)}</span>
+            <Suspense
+              fallback={
+                <>
+                  <div style={whiteCard()}>
+                    <div style={{ display: "grid", gap: 10 }}>
+                      <div style={sectionLabel()}>Setup readiness</div>
+                      <h2 style={{ margin: 0, fontSize: 23, lineHeight: 1.12 }}>
+                        Loading readiness checks
+                      </h2>
+                      <div style={helperText()}>
+                        GSN is loading the read-only setup checklist while the main
+                        Community Domain dashboard remains usable.
                       </div>
-                    ))}
+                    </div>
                   </div>
-                ) : setupReadiness ? (
-                  <div style={{ ...helperText(), fontSize: 13 }}>
-                    No setup blocker is visible in the read-only readiness checklist.
+                  <div style={whiteCard()}>
+                    <div style={{ display: "grid", gap: 10 }}>
+                      <div style={sectionLabel()}>Setup plan</div>
+                      <h2 style={{ margin: 0, fontSize: 23, lineHeight: 1.12 }}>
+                        Loading setup plan
+                      </h2>
+                      <div style={helperText()}>
+                        GSN is loading the read-only setup plan while the main
+                        Community Domain dashboard remains usable.
+                      </div>
+                    </div>
                   </div>
-                ) : null}
-                <div style={{ ...helperText(), fontSize: 13 }}>
-                  This checklist does not create nodes, add members, assign roles,
-                  decide reviews, create payment instructions, activate billing,
-                  activate the domain, verify authority, or expose private evidence.
-                </div>
-              </div>
-            </div>
-
-            <div style={whiteCard()}>
-              <div style={{ display: "grid", gap: 10 }}>
-                <div style={sectionLabel()}>Setup plan</div>
-                <h2 style={{ margin: 0, fontSize: 23, lineHeight: 1.12 }}>
-                  {isBaseReadinessLoading && !setupPlan
-                    ? "Loading setup plan"
-                    : setupPlan
-                    ? `${countValue(setupPlan.completed_steps)} of ${countValue(
-                        visibleSetupPlanSteps.length
-                      )} steps complete`
-                    : "Setup plan is not loaded"}
-                </h2>
-                <div style={helperText()}>
-                  {isBaseReadinessLoading && !setupPlan
-                    ? "GSN is loading the read-only setup plan while the main Community Domain dashboard remains usable."
-                    : setupPlan
-                    ? `Current phase: ${compactStatus(setupPlan.setup_phase)}. ${cleanText(
-                        setupPlan.primary_next_action?.label,
-                        "Review the next setup step with a Community Domain admin."
-                      )}.`
-                    : "GSN could not load the read-only setup plan for this view."}
-                </div>
-                {openSetupPlanSteps.length ? (
-                  <div style={{ display: "grid", gap: 8 }}>
-                    {openSetupPlanSteps.slice(0, 3).map((step) => {
-                      const missingCount = Array.isArray(step.missing_items)
-                        ? step.missing_items.length
-                        : 0;
-                      return (
-                        <div
-                          key={cleanText(step.step_key, cleanText(step.label, "setup-step"))}
-                          style={{
-                            display: "grid",
-                            gridTemplateColumns: "minmax(0, 1fr) auto",
-                            gap: 10,
-                            alignItems: "center",
-                            borderRadius: 14,
-                            border: "1px solid rgba(9,27,46,0.10)",
-                            background: "rgba(255,255,255,0.72)",
-                            padding: "10px 10px 10px 12px",
-                          }}
-                        >
-                          <span style={{ minWidth: 0 }}>
-                            <span style={{ display: "block", fontWeight: 950 }}>
-                              {cleanText(step.label, compactStatus(step.step_key || "Setup step"))}
-                            </span>
-                            <span
-                              style={{
-                                display: "block",
-                                color: "#4F647A",
-                                fontSize: 12.5,
-                                lineHeight: 1.45,
-                                marginTop: 3,
-                              }}
-                            >
-                              {missingCount
-                                ? `${countValue(missingCount)} missing item${
-                                    missingCount === 1 ? "" : "s"
-                                  } before this step is complete.`
-                                : "This step still needs owner/admin review before completion is relied on."}
-                            </span>
-                          </span>
-                          <span style={statusBadge(step.requires_admin ? "admin guided" : "read only")}>
-                            {step.requires_admin ? "Admin" : "Read only"}
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : setupPlan ? (
-                  <div style={{ ...helperText(), fontSize: 13 }}>
-                    No open setup step is visible in the read-only setup plan.
-                  </div>
-                ) : null}
-                <div style={{ ...helperText(), fontSize: 13 }}>
-                  This setup plan does not create nodes, add members, assign
-                  roles, create policy, decide reviews, activate billing, verify
-                  authority, publish a public page, move money, or expose private
-                  evidence.
-                </div>
-              </div>
-            </div>
+                </>
+              }
+            >
+              <CommunityDomainSetupIntelligenceCards
+                isBaseReadinessLoading={isBaseReadinessLoading}
+                setupReadiness={setupReadiness}
+                setupPlan={setupPlan}
+              />
+            </Suspense>
           </section>
 
           <section style={whiteCard()}>
@@ -2845,62 +1710,24 @@ export default function CommunityDomainDashboardPage() {
               alignItems: "start",
             }}
           >
-            <div style={whiteCard()}>
-              <div style={{ display: "grid", gap: 10 }}>
-                <div style={sectionLabel()}>Work lanes</div>
-                {lanes.map((lane) => {
-                  const selected = lane.lane_key === activeLane;
-                  return (
-                    <StableButton
-                      key={cleanText(lane.lane_key, lane.label)}
-                      type="button"
-                      kind="secondary"
-                      onClick={() => setActiveLane(cleanText(lane.lane_key))}
-                      debugId={`community-domain-dashboard.lane.${cleanText(lane.lane_key)}`}
-                      fullWidth
-                      stableHeight={58}
-                      style={{
-                        display: "grid",
-                        gridTemplateColumns: "minmax(0, 1fr) auto",
-                        justifyContent: "stretch",
-                        gap: 10,
-                        alignItems: "center",
-                        borderRadius: 16,
-                        border: selected
-                          ? "1px solid rgba(12,79,168,0.34)"
-                          : "1px solid rgba(9,27,46,0.10)",
-                        background: selected
-                          ? "linear-gradient(180deg, rgba(12,79,168,0.11) 0%, rgba(12,79,168,0.05) 100%)"
-                          : "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(242,247,252,0.98) 100%)",
-                        color: "#091B2E",
-                        padding: "10px 12px",
-                        textAlign: "left",
-                        cursor: "pointer",
-                        boxSizing: "border-box",
-                      }}
-                    >
-                      <span style={{ minWidth: 0 }}>
-                        <span style={{ display: "block", fontWeight: 950, fontSize: 14 }}>
-                          {laneDisplayLabel(lane, "Lane")}
-                        </span>
-                        <span
-                          style={{
-                            display: "block",
-                            color: "#4F647A",
-                            fontSize: 12.5,
-                            marginTop: 3,
-                            textTransform: "capitalize",
-                          }}
-                        >
-                          {compactStatus(lane.status)}
-                        </span>
-                      </span>
-                      <span style={statusBadge(lane.status)}>{countValue(lane.count)}</span>
-                    </StableButton>
-                  );
-                })}
-              </div>
-            </div>
+            <Suspense
+              fallback={
+                <div style={whiteCard()}>
+                  <div style={{ display: "grid", gap: 10 }}>
+                    <div style={sectionLabel()}>Work lanes</div>
+                    <div style={helperText()}>
+                      Loading Community Domain work lanes...
+                    </div>
+                  </div>
+                </div>
+              }
+            >
+              <CommunityDomainLaneSelectorPanel
+                lanes={lanes}
+                activeLane={activeLane}
+                onSelectLane={setActiveLane}
+              />
+            </Suspense>
 
             <div style={whiteCard()}>
               <div style={{ display: "grid", gap: 12 }}>
@@ -2942,22 +1769,8 @@ export default function CommunityDomainDashboardPage() {
                       status={status}
                       renewalState={renewalState}
                       institutionalProfile={institutionalProfile}
-                      institutionalProfileReadyTotal={institutionalProfileReadyTotal}
-                      visibleInstitutionalProfileLanes={visibleInstitutionalProfileLanes}
-                      blockedInstitutionalProfileLanes={blockedInstitutionalProfileLanes}
-                      institutionalProfileSummary={institutionalProfileSummary}
-                      institutionalProfileDetails={institutionalProfileDetails}
                       socialBridge={socialBridge}
-                      socialBridgeReadyTotal={socialBridgeReadyTotal}
-                      visibleSocialBridgeLanes={visibleSocialBridgeLanes}
-                      blockedSocialBridgeLanes={blockedSocialBridgeLanes}
-                      socialBridgeSummary={socialBridgeSummary}
-                      linkedSocialCommunity={linkedSocialCommunity}
                       affiliationReadiness={affiliationReadiness}
-                      affiliationReadyTotal={affiliationReadyTotal}
-                      visibleAffiliationLanes={visibleAffiliationLanes}
-                      blockedAffiliationLanes={blockedAffiliationLanes}
-                      affiliationSummary={affiliationSummary}
                     />
                   </Suspense>
                 ) : null}
@@ -3007,14 +1820,7 @@ export default function CommunityDomainDashboardPage() {
                   >
                     <CommunityDomainBillingReadinessPanels
                       subscriptionLifecycle={subscriptionLifecycle}
-                      subscriptionReadyTotal={subscriptionReadyTotal}
-                      visibleSubscriptionLanes={visibleSubscriptionLanes}
-                      blockedSubscriptionLanes={blockedSubscriptionLanes}
-                      subscriptionPackage={subscriptionPackage}
-                      subscriptionSummary={subscriptionSummary}
                       capacityPlan={capacityPlan}
-                      visibleCapacityLanes={visibleCapacityLanes}
-                      attentionCapacityLanes={attentionCapacityLanes}
                     />
                   </Suspense>
                 ) : null}
@@ -3030,23 +1836,12 @@ export default function CommunityDomainDashboardPage() {
                     >
                       <CommunityDomainServiceReadinessPanels
                         moduleScopeReadiness={moduleScopeReadiness}
-                        serviceReadinessRows={serviceReadinessRows}
+                        moduleKeys={moduleKeys}
+                        billingStatus={status.billing_status}
+                        quote={quote}
                         serviceSettingsProjection={serviceSettingsProjection}
-                        visibleServiceSettingsItems={visibleServiceSettingsItems}
-                        enabledServiceSettingsItems={enabledServiceSettingsItems}
-                        optionalServiceSettingsItems={optionalServiceSettingsItems}
                         economicParticipation={economicParticipation}
-                        economicParticipationReadyTotal={economicParticipationReadyTotal}
-                        visibleEconomicParticipationLanes={visibleEconomicParticipationLanes}
-                        blockedEconomicParticipationLanes={blockedEconomicParticipationLanes}
-                        economicParticipationTemplate={economicParticipationTemplate}
-                        economicParticipationCounts={economicParticipationCounts}
                         networkPresence={networkPresence}
-                        networkPresenceReadyTotal={networkPresenceReadyTotal}
-                        visibleNetworkPresenceLanes={visibleNetworkPresenceLanes}
-                        blockedNetworkPresenceLanes={blockedNetworkPresenceLanes}
-                        networkPresenceIdentity={networkPresenceIdentity}
-                        networkPresenceStatus={networkPresenceStatus}
                       >
                         <Suspense
                           fallback={
@@ -3058,25 +1853,10 @@ export default function CommunityDomainDashboardPage() {
                           <CommunityDomainNodeProjectionGroups
                             variant="services"
                             nodeServiceMap={nodeServiceMap}
-                            nodeServiceCounts={nodeServiceCounts}
-                            visibleNodeServiceRows={visibleNodeServiceRows}
-                            nodeServiceGaps={nodeServiceGaps}
                             nodePrivacyMap={nodePrivacyMap}
-                            nodePrivacyCounts={nodePrivacyCounts}
-                            visibleNodePrivacyRows={visibleNodePrivacyRows}
-                            nodePrivacyGaps={nodePrivacyGaps}
                             nodeAnalyticsMap={nodeAnalyticsMap}
-                            nodeAnalyticsCounts={nodeAnalyticsCounts}
-                            visibleNodeAnalyticsRows={visibleNodeAnalyticsRows}
-                            nodeAnalyticsGaps={nodeAnalyticsGaps}
                             nodeCommunicationMap={nodeCommunicationMap}
-                            nodeCommunicationCounts={nodeCommunicationCounts}
-                            visibleNodeCommunicationRows={visibleNodeCommunicationRows}
-                            nodeCommunicationGaps={nodeCommunicationGaps}
                             nodeVaultMap={nodeVaultMap}
-                            nodeVaultCounts={nodeVaultCounts}
-                            visibleNodeVaultRows={visibleNodeVaultRows}
-                            nodeVaultGaps={nodeVaultGaps}
                           />
                         </Suspense>
                       </CommunityDomainServiceReadinessPanels>
@@ -3091,32 +1871,10 @@ export default function CommunityDomainDashboardPage() {
                     >
                       <CommunityDomainServiceBoundaryPanels
                         networkExchangeMap={networkExchangeMap}
-                        networkExchangeReadyTotal={networkExchangeReadyTotal}
-                        visibleNetworkExchangeLanes={visibleNetworkExchangeLanes}
-                        blockedNetworkExchangeLanes={blockedNetworkExchangeLanes}
-                        networkExchangeSummary={networkExchangeSummary}
-                        linkedNetworkSocialCommunity={linkedNetworkSocialCommunity}
                         recordPrivacyMap={recordPrivacyMap}
-                        recordPrivacyReadyTotal={recordPrivacyReadyTotal}
-                        visibleRecordPrivacyLanes={visibleRecordPrivacyLanes}
-                        blockedRecordPrivacyLanes={blockedRecordPrivacyLanes}
-                        recordPrivacySummary={recordPrivacySummary}
                         configurationMap={configurationMap}
-                        configurationMapReadyTotal={configurationMapReadyTotal}
-                        visibleConfigurationMapLanes={visibleConfigurationMapLanes}
-                        blockedConfigurationMapLanes={blockedConfigurationMapLanes}
-                        configurationMapSummary={configurationMapSummary}
-                        configurationMapBlueprint={configurationMapBlueprint}
                         complianceMap={complianceMap}
-                        complianceMapReadyTotal={complianceMapReadyTotal}
-                        visibleComplianceMapLanes={visibleComplianceMapLanes}
-                        blockedComplianceMapLanes={blockedComplianceMapLanes}
-                        complianceMapSummary={complianceMapSummary}
                         appealReadiness={appealReadiness}
-                        appealReadinessSignalTotal={appealReadinessSignalTotal}
-                        visibleAppealReadinessLanes={visibleAppealReadinessLanes}
-                        blockedAppealReadinessLanes={blockedAppealReadinessLanes}
-                        appealReadinessSummary={appealReadinessSummary}
                       />
                     </Suspense>
                     <Suspense
@@ -3129,13 +1887,7 @@ export default function CommunityDomainDashboardPage() {
                       <CommunityDomainNodeProjectionGroups
                         variant="trustEvidence"
                         nodeEvidenceAuthorityMap={nodeEvidenceAuthorityMap}
-                        nodeEvidenceAuthorityCounts={nodeEvidenceAuthorityCounts}
-                        visibleNodeEvidenceAuthorityRows={visibleNodeEvidenceAuthorityRows}
-                        nodeEvidenceAuthorityGaps={nodeEvidenceAuthorityGaps}
                         nodeTrustMap={nodeTrustMap}
-                        nodeTrustCounts={nodeTrustCounts}
-                        visibleNodeTrustRows={visibleNodeTrustRows}
-                        nodeTrustGaps={nodeTrustGaps}
                       />
                     </Suspense>
 
@@ -3148,30 +1900,10 @@ export default function CommunityDomainDashboardPage() {
                     >
                       <CommunityDomainTrustEvidenceReadinessPanels
                         evidenceRecordReadiness={evidenceRecordReadiness}
-                        evidenceRecordReadyTotal={evidenceRecordReadyTotal}
-                        visibleEvidenceRecordTypes={visibleEvidenceRecordTypes}
-                        blockedEvidenceRecordTypes={blockedEvidenceRecordTypes}
-                        evidenceRecordSummary={evidenceRecordSummary}
                         evidenceReleaseReadiness={evidenceReleaseReadiness}
-                        evidenceReleaseReadyTotal={evidenceReleaseReadyTotal}
-                        visibleEvidenceReleaseLanes={visibleEvidenceReleaseLanes}
-                        blockedEvidenceReleaseLanes={blockedEvidenceReleaseLanes}
-                        evidenceReleaseSummary={evidenceReleaseSummary}
                         trustRelayReadiness={trustRelayReadiness}
-                        trustRelayReadyTotal={trustRelayReadyTotal}
-                        visibleTrustRelayLanes={visibleTrustRelayLanes}
-                        blockedTrustRelayLanes={blockedTrustRelayLanes}
-                        trustRelaySummary={trustRelaySummary}
                         notificationScopeReadiness={notificationScopeReadiness}
-                        notificationScopeReadyTotal={notificationScopeReadyTotal}
-                        visibleNotificationScopeLanes={visibleNotificationScopeLanes}
-                        blockedNotificationScopeLanes={blockedNotificationScopeLanes}
-                        notificationScopeSummary={notificationScopeSummary}
                         trustMobility={trustMobility}
-                        trustMobilityReadyTotal={trustMobilityReadyTotal}
-                        visibleTrustMobilityLanes={visibleTrustMobilityLanes}
-                        blockedTrustMobilityLanes={blockedTrustMobilityLanes}
-                        trustMobilitySummary={trustMobilitySummary}
                       />
                     </Suspense>
                   </>
@@ -3186,7 +1918,7 @@ export default function CommunityDomainDashboardPage() {
                     }
                   >
                     <CommunityDomainStructurePreviewPanel
-                      visibleStructureRows={visibleStructureRows}
+                      nodeTree={nodeTree}
                     />
                   </Suspense>
                 ) : null}
@@ -3202,17 +1934,8 @@ export default function CommunityDomainDashboardPage() {
                     <CommunityDomainNodeProjectionGroups
                       variant="structureFoundation"
                       nodeAutonomyMap={nodeAutonomyMap}
-                      nodeAutonomyCounts={nodeAutonomyCounts}
-                      visibleNodeAutonomyRows={visibleNodeAutonomyRows}
-                      nodeAutonomyGaps={nodeAutonomyGaps}
                       nodeEconomicMap={nodeEconomicMap}
-                      nodeEconomicCounts={nodeEconomicCounts}
-                      visibleNodeEconomicRows={visibleNodeEconomicRows}
-                      nodeEconomicGaps={nodeEconomicGaps}
                       nodeActivityMap={nodeActivityMap}
-                      nodeActivityCounts={nodeActivityCounts}
-                      visibleNodeActivityRows={visibleNodeActivityRows}
-                      nodeActivityGaps={nodeActivityGaps}
                     />
                   </Suspense>
                 ) : null}
@@ -3228,9 +1951,6 @@ export default function CommunityDomainDashboardPage() {
                     <CommunityDomainNodeProjectionGroups
                       variant="structureBoundary"
                       nodeDomainBoundaryMap={nodeDomainBoundaryMap}
-                      nodeDomainBoundaryCounts={nodeDomainBoundaryCounts}
-                      visibleNodeDomainBoundaryRows={visibleNodeDomainBoundaryRows}
-                      nodeDomainBoundaryGaps={nodeDomainBoundaryGaps}
                     />
                   </Suspense>
                 ) : null}
@@ -3246,13 +1966,7 @@ export default function CommunityDomainDashboardPage() {
                     <CommunityDomainNodeProjectionGroups
                       variant="structureActivity"
                       nodeScheduledActivityMap={nodeScheduledActivityMap}
-                      nodeScheduledActivityCounts={nodeScheduledActivityCounts}
-                      visibleNodeScheduledActivityRows={visibleNodeScheduledActivityRows}
-                      nodeScheduledActivityGaps={nodeScheduledActivityGaps}
                       nodePaidActivityMap={nodePaidActivityMap}
-                      nodePaidActivityCounts={nodePaidActivityCounts}
-                      visibleNodePaidActivityRows={visibleNodePaidActivityRows}
-                      nodePaidActivityGaps={nodePaidActivityGaps}
                     />
                   </Suspense>
                 ) : null}
@@ -3267,20 +1981,8 @@ export default function CommunityDomainDashboardPage() {
                   >
                     <CommunityDomainStructurePlanningPanels
                       rolloutPlan={rolloutPlan}
-                      rolloutPlanCounts={rolloutPlanCounts}
-                      openRolloutPhases={openRolloutPhases}
-                      rolloutUnitsNeedingAttention={rolloutUnitsNeedingAttention}
                       activityMap={activityMap}
-                      activityMapReadyTotal={activityMapReadyTotal}
-                      visibleActivityMapLanes={visibleActivityMapLanes}
-                      blockedActivityMapLanes={blockedActivityMapLanes}
-                      activityMapSummary={activityMapSummary}
-                      activityMapTemplate={activityMapTemplate}
                       activityGroupReadiness={activityGroupReadiness}
-                      activityGroupReadyTotal={activityGroupReadyTotal}
-                      visibleActivityGroups={visibleActivityGroups}
-                      blockedActivityGroups={blockedActivityGroups}
-                      activityGroupSummary={activityGroupSummary}
                     />
                   </Suspense>
                 ) : null}
@@ -3299,13 +2001,7 @@ export default function CommunityDomainDashboardPage() {
                       governanceAttentionCount={governanceAttentionCount}
                       governanceApprovedCount={governanceApprovedCount}
                       delegationMap={delegationMap}
-                      delegationReadyTotal={delegationReadyTotal}
-                      visibleDelegationLanes={visibleDelegationLanes}
-                      blockedDelegationLanes={blockedDelegationLanes}
-                      delegationMapSummary={delegationMapSummary}
                       governanceCoverage={governanceCoverage}
-                      governanceCoverageCounts={governanceCoverageCounts}
-                      governanceCoverageGaps={governanceCoverageGaps}
                     />
                   </Suspense>
                 ) : null}
@@ -3320,15 +2016,8 @@ export default function CommunityDomainDashboardPage() {
                   >
                     <CommunityDomainMemberReadinessPanels
                       placementSummary={placementSummary}
-                      placementCounts={placementCounts}
-                      visibleNodePlacements={visibleNodePlacements}
-                      placementLanes={placementLanes}
                       counts={counts}
                       memberVerificationMap={memberVerificationMap}
-                      memberVerificationReadyTotal={memberVerificationReadyTotal}
-                      visibleMemberVerificationLanes={visibleMemberVerificationLanes}
-                      blockedMemberVerificationLanes={blockedMemberVerificationLanes}
-                      memberVerificationSummary={memberVerificationSummary}
                     >
                       <Suspense
                         fallback={
@@ -3340,9 +2029,6 @@ export default function CommunityDomainDashboardPage() {
                         <CommunityDomainNodeProjectionGroups
                           variant="memberParticipation"
                           nodeParticipationMap={nodeParticipationMap}
-                          nodeParticipationCounts={nodeParticipationCounts}
-                          visibleNodeParticipationRows={visibleNodeParticipationRows}
-                          nodeParticipationGaps={nodeParticipationGaps}
                         />
                       </Suspense>
                     </CommunityDomainMemberReadinessPanels>
@@ -3366,132 +2052,27 @@ export default function CommunityDomainDashboardPage() {
           </section>
 
           {isAdmin ? (
-            <section style={whiteCard()}>
-              <div style={{ display: "grid", gap: 12 }}>
-                <div>
+            <Suspense
+              fallback={
+                <section style={whiteCard()}>
                   <div style={sectionLabel()}>Access requests</div>
-                  <h2 style={{ margin: "6px 0 0", fontSize: 24, lineHeight: 1.12 }}>
-                    Review people asking to enter this domain.
-                  </h2>
                   <div style={{ ...helperText(), marginTop: 8 }}>
-                    These are pending membership-change reviews from the existing
-                    governance queue. Approving records the decision; approving and
-                    adding applies the approved review so membership changes.
+                    Loading access request controls...
                   </div>
-                </div>
-
-                {membershipAccessRequests.length > 0 ? (
-                  <div style={{ display: "grid", gap: 10 }}>
-                    {membershipAccessRequests.slice(0, 3).map((review) => {
-                      const reviewId = cleanText(review.id, "review");
-                      const reviewStatus = cleanText(review.status).toLowerCase();
-                      const isApprovedReview = reviewStatus === "approved";
-                      const approveBusy = busyReviewId === `${reviewId}:approve`;
-                      const applyBusy = busyReviewId === `${reviewId}:apply`;
-                      const declineBusy = busyReviewId === `${reviewId}:decline`;
-                      return (
-                        <div key={reviewId} style={softCard()}>
-                          <div style={{ display: "grid", gap: 8 }}>
-                            <div style={sectionLabel()}>Membership request</div>
-                            <h3 style={{ margin: 0, fontSize: 19, lineHeight: 1.14 }}>
-                              User {reviewUserLabel(review)} wants access.
-                            </h3>
-                            <div style={{ ...helperText(), fontSize: 13 }}>
-                              Requested by{" "}
-                              <strong>{reviewRequesterLabel(review)}</strong>
-                              . Target role:{" "}
-                              <strong style={{ textTransform: "capitalize" }}>
-                                {compactStatus(review.payload?.role || "member")}
-                              </strong>
-                              . Status:{" "}
-                              <strong style={{ textTransform: "capitalize" }}>
-                                {compactStatus(review.status)}
-                              </strong>
-                              .
-                            </div>
-                            {review.request_note ? (
-                              <div style={{ ...helperText(), fontSize: 13 }}>
-                                Note: {cleanText(review.request_note)}
-                              </div>
-                            ) : null}
-                            <div
-                              style={{
-                                display: "grid",
-                                gridTemplateColumns:
-                                  "repeat(auto-fit, minmax(min(100%, 150px), 1fr))",
-                                gap: 8,
-                              }}
-                            >
-                              {!isApprovedReview ? (
-                                <StableButton
-                                  type="button"
-                                  kind="secondary"
-                                  fullWidth
-                                  disabled={Boolean(busyReviewId)}
-                                  debugId={`community-domain-dashboard.access-request.approve-${reviewId}`}
-                                  onClick={() => approveAccessRequest(review, false)}
-                                >
-                                  {approveBusy ? "Approving..." : "Approve only"}
-                                </StableButton>
-                              ) : null}
-                              {!isApprovedReview ? (
-                                <StableButton
-                                  type="button"
-                                  kind="secondary"
-                                  fullWidth
-                                  disabled={Boolean(busyReviewId)}
-                                  debugId={`community-domain-dashboard.access-request.decline-${reviewId}`}
-                                  onClick={() => declineAccessRequest(review)}
-                                >
-                                  {declineBusy ? "Declining..." : "Decline"}
-                                </StableButton>
-                              ) : null}
-                              <StableButton
-                                type="button"
-                                kind="primary"
-                                fullWidth
-                                disabled={Boolean(busyReviewId)}
-                                debugId={`community-domain-dashboard.access-request.approve-apply-${reviewId}`}
-                                onClick={() =>
-                                  isApprovedReview
-                                    ? applyApprovedAccessRequest(review)
-                                    : approveAccessRequest(review, true)
-                                }
-                              >
-                                {applyBusy
-                                  ? "Adding..."
-                                  : isApprovedReview
-                                  ? "Add approved member"
-                                  : "Approve + add member"}
-                              </StableButton>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div style={softCard()}>
-                    <div style={sectionLabel()}>No pending access requests</div>
-                    <div style={{ ...helperText(), marginTop: 7 }}>
-                      The current reviewer queue has no pending membership requests
-                      this account can decide.
-                    </div>
-                  </div>
-                )}
-
-                <StableButton
-                  type="button"
-                  kind="secondary"
-                  fullWidth
-                  disabled={loadingQueue}
-                  debugId="community-domain-dashboard.access-request.refresh"
-                  onClick={refreshReviewerQueue}
-                >
-                  {loadingQueue ? "Refreshing requests..." : "Refresh requests"}
-                </StableButton>
-              </div>
-            </section>
+                </section>
+              }
+            >
+              <CommunityDomainAccessRequestsPanel
+                membershipAccessRequests={membershipAccessRequests}
+                loadingQueue={loadingQueue}
+                busyReviewId={busyReviewId}
+                onApproveOnly={(review) => approveAccessRequest(review, false)}
+                onDecline={declineAccessRequest}
+                onApproveAndApply={(review) => approveAccessRequest(review, true)}
+                onApplyApproved={applyApprovedAccessRequest}
+                onRefresh={refreshReviewerQueue}
+              />
+            </Suspense>
           ) : null}
 
           {message ? (

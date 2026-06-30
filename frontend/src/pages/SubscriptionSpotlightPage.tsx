@@ -457,10 +457,22 @@ export default function SubscriptionSpotlightPage() {
   const [preparingImage, setPreparingImage] = useState(false);
   const [preparingVideo, setPreparingVideo] = useState(false);
   const [publishing, setPublishing] = useState(false);
+  const mountedRef = useRef(false);
+  const loadSeqRef = useRef(0);
   const imagePrepRef = useRef(0);
   const videoPrepRef = useRef(0);
 
   const selectedClanId = Number(getSelectedClanId() || 0);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      loadSeqRef.current += 1;
+      imagePrepRef.current += 1;
+      videoPrepRef.current += 1;
+    };
+  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -502,14 +514,27 @@ export default function SubscriptionSpotlightPage() {
     setNotice({ tone, text });
   }
 
+  function canApplyLoad(seq: number): boolean {
+    return mountedRef.current && loadSeqRef.current === seq;
+  }
+
   const loadPage = useCallback(async (background = false) => {
+    const loadSeq = loadSeqRef.current + 1;
+    loadSeqRef.current = loadSeq;
     if (!background) setLoading(true);
+    if (!background) {
+      setShop(null);
+      setExpectedPayments([]);
+      setSpotlights([]);
+      setSpotlightStatus(null);
+    }
     try {
       const [meRes, riskRes, instructionConfigRes] = await Promise.all([
         getMe().catch(() => null),
         getMyIdentityRisk().catch(() => null),
         apiJson<any>("/api/payment-instructions/my").catch(() => null),
       ]);
+      if (!canApplyLoad(loadSeq)) return;
       setMe(meRes || null);
       setSettlement((instructionConfigRes?.settlement || null) as SettlementRecord | null);
       setSpotlightConfig((instructionConfigRes?.spotlight_config || null) as SpotlightConfigRecord | null);
@@ -531,6 +556,7 @@ export default function SubscriptionSpotlightPage() {
         clan_id: selectedClanId || undefined,
         header_clan_id: selectedClanId || undefined,
       }).catch(() => null);
+      if (!canApplyLoad(loadSeq)) return;
       const shopItem = (shopRes?.item || null) as ShopRecord | null;
       setShop(shopItem);
 
@@ -552,6 +578,7 @@ export default function SubscriptionSpotlightPage() {
         apiJson<any>(`/api/marketplace/shops/${shopItem.id}/spotlight-status`).catch(() => null),
       ]);
 
+      if (!canApplyLoad(loadSeq)) return;
       setExpectedPayments(rowsOf<ExpectedPaymentRecord>(expectedRes));
       setSpotlightStatus((spotlightStatusRes || null) as SpotlightStatusRecord | null);
       setSpotlights(
@@ -560,7 +587,7 @@ export default function SubscriptionSpotlightPage() {
         )
       );
     } finally {
-      if (!background) setLoading(false);
+      if (!background && canApplyLoad(loadSeq)) setLoading(false);
     }
   }, [selectedClanId]);
 
@@ -707,15 +734,18 @@ export default function SubscriptionSpotlightPage() {
           visibility_scope: "direct_communities",
         }),
       });
+      if (!mountedRef.current) return;
       setCreatedInstruction(result as ExpectedPaymentRecord);
       const reference = firstTruthy(result?.reference_display, result?.reference);
       if (reference) safeCopy(reference);
       await loadPage(true);
+      if (!mountedRef.current) return;
       showNotice("success", `Payment code generated for ${agreementText}. Use that exact code in the bank transfer.`);
     } catch (err: any) {
+      if (!mountedRef.current) return;
       showNotice("error", safeStr(err?.message) || "Subscription Spotlight payment code could not be generated.");
     } finally {
-      setCreatingInstruction(false);
+      if (mountedRef.current) setCreatingInstruction(false);
     }
   }
 
@@ -751,9 +781,10 @@ export default function SubscriptionSpotlightPage() {
     setCheckingPayment(true);
     try {
       await loadPage(true);
+      if (!mountedRef.current) return;
       showNotice("info", "Payment status refreshed.");
     } finally {
-      setCheckingPayment(false);
+      if (mountedRef.current) setCheckingPayment(false);
     }
   }
 
@@ -769,15 +800,15 @@ export default function SubscriptionSpotlightPage() {
       const prepared = await prepareSpotlightImageFile(file, {
         maxBytes: SPOTLIGHT_MAX_IMAGE_BYTES,
       });
-      if (imagePrepRef.current !== job) return;
+      if (!mountedRef.current || imagePrepRef.current !== job) return;
       setImageFile(prepared.file);
       showNotice("info", prepared.message || "Picture ready for Subscription Spotlight.");
     } catch (err: any) {
-      if (imagePrepRef.current !== job) return;
+      if (!mountedRef.current || imagePrepRef.current !== job) return;
       setImageFile(null);
       showNotice("error", safeStr(err?.message) || "This picture could not be prepared.");
     } finally {
-      if (imagePrepRef.current === job) setPreparingImage(false);
+      if (mountedRef.current && imagePrepRef.current === job) setPreparingImage(false);
     }
   }
 
@@ -795,12 +826,12 @@ export default function SubscriptionSpotlightPage() {
         maxBytes: SPOTLIGHT_MAX_VIDEO_BYTES,
         maxDurationSeconds: SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS,
       });
-      if (videoPrepRef.current !== job) return;
+      if (!mountedRef.current || videoPrepRef.current !== job) return;
       setVideoFile(prepared.file);
       setVideoDurationSeconds(prepared.durationSeconds ?? null);
       showNotice("info", prepared.message || "Video ready for Subscription Spotlight.");
     } catch (err: any) {
-      if (videoPrepRef.current !== job) return;
+      if (!mountedRef.current || videoPrepRef.current !== job) return;
       const canUseOriginal =
         Number(file.size || 0) <= SPOTLIGHT_MAX_VIDEO_BYTES;
       if (canUseOriginal) {
@@ -813,7 +844,7 @@ export default function SubscriptionSpotlightPage() {
       setVideoDurationSeconds(null);
       showNotice("error", safeStr(err?.message) || "This video could not be prepared.");
     } finally {
-      if (videoPrepRef.current === job) setPreparingVideo(false);
+      if (mountedRef.current && videoPrepRef.current === job) setPreparingVideo(false);
     }
   }
 
@@ -854,11 +885,13 @@ export default function SubscriptionSpotlightPage() {
       let videoUrl = "";
       if (imageFile) {
         const res = await uploadMarketplaceImageFile(imageFile, shopClanId || null);
+        if (!mountedRef.current) return;
         imageUrl = firstTruthy(res?.image_url, res?.url, res?.file_url, res?.path, res?.item?.image_url, res?.data?.image_url);
         if (!imageUrl) throw new Error("Image upload completed but did not return a usable image link.");
       }
       if (videoFile) {
         const res = await uploadMarketplaceVideoFile(videoFile, videoDurationSeconds, shopClanId || null);
+        if (!mountedRef.current) return;
         videoUrl = firstTruthy(res?.video_url, res?.url, res?.file_url, res?.path, res?.item?.video_url, res?.data?.video_url);
         if (!videoUrl) throw new Error("Video upload completed but did not return a usable video link.");
       }
@@ -871,16 +904,19 @@ export default function SubscriptionSpotlightPage() {
         priority_mode: "paid",
         visibility_scope: "direct_communities",
       });
+      if (!mountedRef.current) return;
       setMessage("");
       setImageFile(null);
       setVideoFile(null);
       setVideoDurationSeconds(null);
       await loadPage(true);
+      if (!mountedRef.current) return;
       showNotice("success", videoUrl ? "Subscription Spotlight published with video." : "Subscription Spotlight published.");
     } catch (err: any) {
+      if (!mountedRef.current) return;
       showNotice("error", safeStr(err?.message) || "Subscription Spotlight could not be published.");
     } finally {
-      setPublishing(false);
+      if (mountedRef.current) setPublishing(false);
     }
   }
 

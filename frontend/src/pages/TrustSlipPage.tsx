@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { useLocation, useNavigate } from "react-router-dom";
 import ExplainToggle from "../components/ExplainToggle";
@@ -301,6 +301,12 @@ type TrustSlipSummary = {
   community_activity_categories?: string[] | null;
   community_activity_label?: string | null;
   total_member_count?: string | number | null;
+};
+
+type TrustSlipPageData = {
+  me: any | null;
+  clan: any | null;
+  summary: TrustSlipSummary | null;
 };
 
 type CommunityConfirmationOutcome = {
@@ -1418,7 +1424,7 @@ function cacheBust(path: string): string {
 async function fetchTrustSlipPageData(
   selectedClanId: number,
   options: { networkFirst?: boolean } = {}
-) {
+): Promise<TrustSlipPageData> {
   const clanHeaders: Record<string, string> = {};
   if (selectedClanId) {
     clanHeaders["X-Clan-Id"] = String(selectedClanId);
@@ -1526,6 +1532,12 @@ export default function TrustSlipPage() {
   const navigate = useNavigate();
   const pageTopRef = useRef<HTMLDivElement | null>(null);
   const selectedClanId = Number((api as any).getSelectedClanId?.() || 0);
+  const trustSlipContextKey = String(selectedClanId || 0);
+  const trustSlipContextRef = useRef(trustSlipContextKey);
+  const trustSlipLoadSeqRef = useRef(0);
+  const communityPulseSeqRef = useRef(0);
+  const merchantRailSeqRef = useRef(0);
+  trustSlipContextRef.current = trustSlipContextKey;
   const routes = useMemo(
     () => ({
       dashboard: routeTarget("dashboard", selectedClanId, "trust-slip.route.dashboard"),
@@ -1570,6 +1582,21 @@ export default function TrustSlipPage() {
     useState<CommunityConfirmationOutcome | null>(null);
   const [merchantRailBusy, setMerchantRailBusy] = useState(false);
   const [merchantRailLink, setMerchantRailLink] = useState<MerchantLinkResponse | null>(null);
+
+  const clearTrustSlipState = useCallback(() => {
+    setMe(null);
+    setCurrentClan(null);
+    setSummary(null);
+    setConfirmationOutcome(null);
+    setMerchantRailLink(null);
+  }, []);
+
+  const applyTrustSlipPageData = useCallback((data: TrustSlipPageData) => {
+    setMe(data.me);
+    setCurrentClan(data.clan);
+    setSummary(data.summary);
+  }, []);
+
   const guideItems = useMemo(() => buildTrustSlipGuideItems(), []);
   const actionGuide = useMemo(() => buildTrustSlipActionGuide(), []);
   const trustDocumentFamilyItems = useMemo(() => buildTrustDocumentFamilyItems(true), []);
@@ -1632,47 +1659,83 @@ export default function TrustSlipPage() {
 
   useEffect(() => {
     let alive = true;
+    const loadSeq = trustSlipLoadSeqRef.current + 1;
+    trustSlipLoadSeqRef.current = loadSeq;
+    communityPulseSeqRef.current += 1;
+    merchantRailSeqRef.current += 1;
+    const contextKey = trustSlipContextKey;
 
     (async () => {
       setLoading(true);
+      setRefreshing(false);
+      setConfirmationBusy(false);
+      setMerchantRailBusy(false);
+      clearTrustSlipState();
 
       try {
         const data = await fetchTrustSlipPageData(selectedClanId, {
           networkFirst: true,
         });
 
-        if (!alive) return;
+        if (
+          !alive ||
+          loadSeq !== trustSlipLoadSeqRef.current ||
+          contextKey !== trustSlipContextRef.current
+        ) {
+          return;
+        }
 
-        setMe(data.me);
-        setCurrentClan(data.clan);
-        setSummary(data.summary);
+        applyTrustSlipPageData(data);
         setConfirmationOutcome(null);
       } finally {
-        if (alive) setLoading(false);
+        if (
+          alive &&
+          loadSeq === trustSlipLoadSeqRef.current &&
+          contextKey === trustSlipContextRef.current
+        ) {
+          setLoading(false);
+        }
       }
     })();
 
     return () => {
       alive = false;
     };
-  }, [selectedClanId]);
+  }, [applyTrustSlipPageData, clearTrustSlipState, selectedClanId, trustSlipContextKey]);
 
   useEffect(() => {
     let alive = true;
 
     async function refreshVisibleTrustSlip() {
+      if (loading) return;
+      const loadSeq = trustSlipLoadSeqRef.current + 1;
+      trustSlipLoadSeqRef.current = loadSeq;
+      const contextKey = trustSlipContextRef.current;
+
       try {
         const data = await fetchTrustSlipPageData(selectedClanId, {
           networkFirst: true,
         });
 
-        if (!alive) return;
+        if (
+          !alive ||
+          loadSeq !== trustSlipLoadSeqRef.current ||
+          contextKey !== trustSlipContextRef.current
+        ) {
+          return;
+        }
 
-        setMe(data.me);
-        setCurrentClan(data.clan);
-        setSummary(data.summary);
+        applyTrustSlipPageData(data);
       } catch {
         // Keep the last usable TrustSlip visible if a background refresh fails.
+      } finally {
+        if (
+          alive &&
+          loadSeq === trustSlipLoadSeqRef.current &&
+          contextKey === trustSlipContextRef.current
+        ) {
+          setRefreshing(false);
+        }
       }
     }
 
@@ -1695,7 +1758,7 @@ export default function TrustSlipPage() {
       window.removeEventListener("pageshow", handleFocus);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [selectedClanId]);
+  }, [applyTrustSlipPageData, loading, selectedClanId]);
 
   async function refreshTrustSlip() {
     if (
@@ -1712,7 +1775,15 @@ export default function TrustSlipPage() {
       return;
     }
 
+    const loadSeq = trustSlipLoadSeqRef.current + 1;
+    trustSlipLoadSeqRef.current = loadSeq;
+    communityPulseSeqRef.current += 1;
+    merchantRailSeqRef.current += 1;
+    const contextKey = trustSlipContextRef.current;
+
     setRefreshing(true);
+    setConfirmationBusy(false);
+    setMerchantRailBusy(false);
 
     try {
       const reissueResult = await api.reissueMyTrustSlip({
@@ -1722,21 +1793,36 @@ export default function TrustSlipPage() {
       const data = await fetchTrustSlipPageData(selectedClanId, {
         networkFirst: true,
       });
-      setMe(data.me);
-      setCurrentClan(data.clan);
-      setSummary(mergeFreshTrustSlipSummary(data.summary, reissueResult));
+      if (
+        loadSeq !== trustSlipLoadSeqRef.current ||
+        contextKey !== trustSlipContextRef.current
+      ) {
+        return;
+      }
+      applyTrustSlipPageData({
+        ...data,
+        summary: mergeFreshTrustSlipSummary(data.summary, reissueResult),
+      });
       setConfirmationOutcome(null);
+      setMerchantRailLink(null);
       showNotice("success", "Fresh TrustSlip issued.");
     } catch (error: any) {
-      showNotice(
-        "error",
-        firstTruthy(
-          error?.message,
-          "TrustSlip could not refresh. Try again in a moment."
-        )
-      );
+      if (
+        loadSeq === trustSlipLoadSeqRef.current &&
+        contextKey === trustSlipContextRef.current
+      ) {
+        showNotice(
+          "error",
+          firstTruthy(
+            error?.message,
+            "TrustSlip could not refresh. Try again in a moment."
+          )
+        );
+      }
     } finally {
-      setRefreshing(false);
+      if (loadSeq === trustSlipLoadSeqRef.current) {
+        setRefreshing(false);
+      }
     }
   }
 
@@ -1805,6 +1891,8 @@ export default function TrustSlipPage() {
       summary?.token
     );
   }, [summary]);
+  const trustSlipCodeRef = useRef("");
+  trustSlipCodeRef.current = trustSlipCode;
   const trustSlipIssueReason = safeStr(summary?.reason).toLowerCase();
   const trustSlipBlockedByPhone =
     !trustSlipCode &&
@@ -2536,16 +2624,29 @@ export default function TrustSlipPage() {
       return;
     }
 
+    const requestSeq = communityPulseSeqRef.current + 1;
+    communityPulseSeqRef.current = requestSeq;
+    const contextKey = trustSlipContextRef.current;
+    const requestCode = trustSlipCode;
+
     setConfirmationBusy(true);
+    setConfirmationOutcome(null);
 
     try {
       const result = await (api as any).requestCommunityConfirmation({
-        trust_slip_code: trustSlipCode,
+        trust_slip_code: requestCode,
         requester_external_label: "TrustSlip viewer",
         reason_type: "merchant_trust_check",
         risk_level: "low",
         mode: communityConfirmation?.instant_pulse_available ? "instant_pulse" : "relay",
       });
+      if (
+        requestSeq !== communityPulseSeqRef.current ||
+        contextKey !== trustSlipContextRef.current ||
+        requestCode !== trustSlipCodeRef.current
+      ) {
+        return;
+      }
       setConfirmationOutcome(result);
       showNotice("success", "Community confirmation request opened.");
       if (result?.public_token) {
@@ -2556,27 +2657,60 @@ export default function TrustSlipPage() {
         );
       }
     } catch {
-      showNotice("error", "Community confirmation could not be opened yet.");
+      if (
+        requestSeq === communityPulseSeqRef.current &&
+        contextKey === trustSlipContextRef.current
+      ) {
+        showNotice("error", "Community confirmation could not be opened yet.");
+      }
     } finally {
-      setConfirmationBusy(false);
+      if (
+        requestSeq === communityPulseSeqRef.current &&
+        contextKey === trustSlipContextRef.current
+      ) {
+        setConfirmationBusy(false);
+      }
     }
   }
 
   async function createMerchantRailLink() {
+    const requestSeq = merchantRailSeqRef.current + 1;
+    merchantRailSeqRef.current = requestSeq;
+    const contextKey = trustSlipContextRef.current;
+    const requestCode = trustSlipCode;
+
     setMerchantRailBusy(true);
+    setMerchantRailLink(null);
     try {
       const result = await getMerchantLink(72, "standard");
+      if (
+        requestSeq !== merchantRailSeqRef.current ||
+        contextKey !== trustSlipContextRef.current ||
+        requestCode !== trustSlipCodeRef.current
+      ) {
+        return;
+      }
       setMerchantRailLink(result);
       showNotice("success", "Signed merchant release desk created. Copy it for the merchant.");
     } catch (error) {
-      showNotice(
-        "error",
-        error instanceof Error
-          ? error.message
-          : "GSN could not create the merchant release desk yet."
-      );
+      if (
+        requestSeq === merchantRailSeqRef.current &&
+        contextKey === trustSlipContextRef.current
+      ) {
+        showNotice(
+          "error",
+          error instanceof Error
+            ? error.message
+            : "GSN could not create the merchant release desk yet."
+        );
+      }
     } finally {
-      setMerchantRailBusy(false);
+      if (
+        requestSeq === merchantRailSeqRef.current &&
+        contextKey === trustSlipContextRef.current
+      ) {
+        setMerchantRailBusy(false);
+      }
     }
   }
 

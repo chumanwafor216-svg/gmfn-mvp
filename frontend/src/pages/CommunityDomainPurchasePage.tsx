@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   EntryActionButton,
@@ -329,6 +329,17 @@ export default function CommunityDomainPurchasePage() {
     "templates" | "availability" | "draft" | "lookup" | null
   >(null);
   const [message, setMessage] = useState("");
+  const mountedRef = useRef(true);
+  const busyRef = useRef<typeof busy>(null);
+  const templateLoadSequence = useRef(0);
+  const availabilityCheckSequence = useRef(0);
+  const draftCreateSequence = useRef(0);
+  const domainLookupSequence = useRef(0);
+
+  const setBusyState = useCallback((nextBusy: typeof busy) => {
+    busyRef.current = nextBusy;
+    setBusy(nextBusy);
+  }, []);
 
   const isSignedIn = Boolean(getAccessToken());
 
@@ -336,6 +347,14 @@ export default function CommunityDomainPurchasePage() {
     if (typeof document !== "undefined") {
       document.title = "GSN | Purchase Community Domain";
     }
+
+    return () => {
+      mountedRef.current = false;
+      templateLoadSequence.current += 1;
+      availabilityCheckSequence.current += 1;
+      draftCreateSequence.current += 1;
+      domainLookupSequence.current += 1;
+    };
   }, []);
 
   useEffect(() => {
@@ -356,16 +375,19 @@ export default function CommunityDomainPurchasePage() {
     handleResize();
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
-  }, []);
+  }, [setBusyState]);
 
   useEffect(() => {
-    let alive = true;
+    const requestId = templateLoadSequence.current + 1;
+    templateLoadSequence.current = requestId;
+    const canApply = () =>
+      mountedRef.current && templateLoadSequence.current === requestId;
 
     async function loadTemplates() {
-      setBusy("templates");
+      setBusyState("templates");
       try {
         const payload = await listCommunityDomainTemplates();
-        if (!alive) return;
+        if (!canApply()) return;
         const nextTemplates = normalizeTemplateItems(payload);
         setTemplates(nextTemplates);
         setTemplateKey((currentTemplateKey) =>
@@ -374,19 +396,16 @@ export default function CommunityDomainPurchasePage() {
             : nextTemplates[0]?.template_key || FALLBACK_TEMPLATES[0].template_key
         );
       } catch {
-        if (alive) {
+        if (canApply()) {
           setTemplates(FALLBACK_TEMPLATES);
         }
       } finally {
-        if (alive) setBusy(null);
+        if (canApply() && busyRef.current === "templates") setBusyState(null);
       }
     }
 
     loadTemplates();
-    return () => {
-      alive = false;
-    };
-  }, []);
+  }, [setBusyState]);
 
   const selectedTemplate = useMemo(
     () =>
@@ -402,6 +421,7 @@ export default function CommunityDomainPurchasePage() {
       : "blocked"
     : "waiting";
   const hasCreatedDraft = Boolean(draftResult?.community_domain?.id);
+  const draftFormLocked = hasCreatedDraft || busy === "draft";
   const draftActionLabel = draftResult
     ? "Draft request created"
     : busy === "draft"
@@ -414,22 +434,46 @@ export default function CommunityDomainPurchasePage() {
     ? "Create draft request"
     : "Sign in to create draft";
 
+  function handleDomainNameChange(nextDomainName: string) {
+    availabilityCheckSequence.current += 1;
+    setDomainName(nextDomainName);
+    setAvailability(null);
+    setDraftResult(null);
+    setQuoteResult(null);
+    if (busyRef.current === "availability") setBusyState(null);
+  }
+
+  function handleExistingDomainNameChange(nextDomainName: string) {
+    domainLookupSequence.current += 1;
+    setExistingDomainName(nextDomainName);
+    setDomainLookup(null);
+    if (busyRef.current === "lookup") setBusyState(null);
+  }
+
   async function handleCheckAvailability(event: React.FormEvent) {
     event.preventDefault();
+    const requestId = availabilityCheckSequence.current + 1;
+    availabilityCheckSequence.current = requestId;
     setMessage("");
     setDraftResult(null);
     setQuoteResult(null);
 
     const requestedName = domainName.trim();
+    const canApply = () =>
+      mountedRef.current &&
+      availabilityCheckSequence.current === requestId &&
+      domainName.trim() === requestedName;
+
     if (requestedName.length < 2) {
       setAvailability(null);
       setMessage("Enter the domain name or code you want GSN to reserve for this institution.");
       return;
     }
 
-    setBusy("availability");
+    setBusyState("availability");
     try {
       const result = await checkCommunityDomainAvailability(requestedName);
+      if (!canApply()) return;
       setAvailability(result);
       setMessage(
         result?.available
@@ -437,14 +481,18 @@ export default function CommunityDomainPurchasePage() {
           : availabilityReasonText(result?.reason)
       );
     } catch (err: any) {
-      setAvailability(null);
-      setMessage(err?.message || "GSN could not check that domain name right now.");
+      if (canApply()) {
+        setAvailability(null);
+        setMessage(err?.message || "GSN could not check that domain name right now.");
+      }
     } finally {
-      setBusy(null);
+      if (canApply() && busyRef.current === "availability") setBusyState(null);
     }
   }
 
   async function handleCreateDraft() {
+    const requestId = draftCreateSequence.current + 1;
+    draftCreateSequence.current = requestId;
     setMessage("");
 
     if (!availability) {
@@ -462,6 +510,14 @@ export default function CommunityDomainPurchasePage() {
       return;
     }
 
+    const requestedOrganizationName = organizationName.trim();
+    const requestedDomainName = availability.normalized_domain_name || domainName.trim();
+    const requestedTemplate = selectedTemplate;
+    const requestedCountry = country.trim();
+    const requestedStateName = stateName.trim();
+    const canApply = () =>
+      mountedRef.current && draftCreateSequence.current === requestId;
+
     if (!isSignedIn) {
       savePurchaseDraftSnapshot({
         organizationName,
@@ -474,18 +530,19 @@ export default function CommunityDomainPurchasePage() {
       return;
     }
 
-    setBusy("draft");
+    setBusyState("draft");
     try {
       const draft = await createCommunityDomainDraft({
-        domain_name: availability.normalized_domain_name || domainName.trim(),
-        display_name: organizationName.trim(),
-        domain_type: selectedTemplate.domain_type,
-        template_key: selectedTemplate.template_key,
-        country: country.trim() || null,
-        state: stateName.trim() || null,
-        public_profile: `Draft institutional Community Domain request for ${organizationName.trim()}.`,
+        domain_name: requestedDomainName,
+        display_name: requestedOrganizationName,
+        domain_type: requestedTemplate.domain_type,
+        template_key: requestedTemplate.template_key,
+        country: requestedCountry || null,
+        state: requestedStateName || null,
+        public_profile: `Draft institutional Community Domain request for ${requestedOrganizationName}.`,
       });
 
+      if (!canApply()) return;
       setDraftResult(draft);
       clearPurchaseDraftSnapshot();
 
@@ -493,36 +550,50 @@ export default function CommunityDomainPurchasePage() {
       if (domainId) {
         try {
           const quote = await createCommunityDomainPackageQuote(domainId);
-          setQuoteResult(quote);
+          if (canApply()) setQuoteResult(quote);
         } catch (quoteErr: any) {
-          setQuoteResult({
-            error: quoteErr?.message || "Package quote could not be generated from this screen.",
-          });
+          if (canApply()) {
+            setQuoteResult({
+              error:
+                quoteErr?.message || "Package quote could not be generated from this screen.",
+            });
+          }
         }
       }
 
+      if (!canApply()) return;
       setMessage(
         "Draft request created. It is not active, paid, or verified until payment instruction, confirmation, and admin activation happen."
       );
     } catch (err: any) {
-      setMessage(err?.message || "GSN could not create the draft request.");
+      if (canApply()) {
+        setMessage(err?.message || "GSN could not create the draft request.");
+      }
     } finally {
-      setBusy(null);
+      if (canApply() && busyRef.current === "draft") setBusyState(null);
     }
   }
 
   async function handleFindExistingDomain() {
+    const requestId = domainLookupSequence.current + 1;
+    domainLookupSequence.current = requestId;
     const requestedName = existingDomainName.trim();
+    const canApply = () =>
+      mountedRef.current &&
+      domainLookupSequence.current === requestId &&
+      existingDomainName.trim() === requestedName;
+
     setDomainLookup(null);
     if (requestedName.length < 2) {
       setMessage("Enter the Community Domain code or name your organization gave you.");
       return;
     }
 
-    setBusy("lookup");
+    setBusyState("lookup");
     setMessage("");
     try {
       const payload = await lookupCommunityDomainByName(requestedName);
+      if (!canApply()) return;
       const entry = payload?.community_domain || null;
       setDomainLookup(entry);
       setMessage(
@@ -531,13 +602,15 @@ export default function CommunityDomainPurchasePage() {
           : "Community Domain found. Open it next; if you are not already a member, GSN will let you request access."
       );
     } catch (err: any) {
-      setDomainLookup(null);
-      setMessage(
-        err?.message ||
-          "GSN could not find that Community Domain code. Check the spelling or ask the organization for its GSN domain code."
-      );
+      if (canApply()) {
+        setDomainLookup(null);
+        setMessage(
+          err?.message ||
+            "GSN could not find that Community Domain code. Check the spelling or ask the organization for its GSN domain code."
+        );
+      }
     } finally {
-      setBusy(null);
+      if (canApply() && busyRef.current === "lookup") setBusyState(null);
     }
   }
 
@@ -708,7 +781,7 @@ export default function CommunityDomainPurchasePage() {
                     <input
                       value={organizationName}
                       onChange={(event) => setOrganizationName(event.target.value)}
-                      disabled={hasCreatedDraft}
+                      disabled={hasCreatedDraft || busy === "draft"}
                       placeholder="Dominion Schools Network"
                       style={inputStyle()}
                     />
@@ -718,13 +791,8 @@ export default function CommunityDomainPurchasePage() {
                     <div style={fieldLabel()}>Requested domain name</div>
                     <input
                       value={domainName}
-                      onChange={(event) => {
-                        setDomainName(event.target.value);
-                        setAvailability(null);
-                        setDraftResult(null);
-                        setQuoteResult(null);
-                      }}
-                      disabled={hasCreatedDraft}
+                      onChange={(event) => handleDomainNameChange(event.target.value)}
+                      disabled={hasCreatedDraft || busy === "draft"}
                       placeholder="dominion-schools"
                       style={inputStyle()}
                     />
@@ -743,7 +811,7 @@ export default function CommunityDomainPurchasePage() {
                     <select
                       value={templateKey}
                       onChange={(event) => setTemplateKey(event.target.value)}
-                      disabled={hasCreatedDraft}
+                      disabled={hasCreatedDraft || busy === "draft"}
                       style={inputStyle()}
                     >
                       {templates.map((template) => (
@@ -759,7 +827,7 @@ export default function CommunityDomainPurchasePage() {
                     <input
                       value={country}
                       onChange={(event) => setCountry(event.target.value)}
-                      disabled={hasCreatedDraft}
+                      disabled={hasCreatedDraft || busy === "draft"}
                       placeholder="Nigeria"
                       style={inputStyle()}
                     />
@@ -770,7 +838,7 @@ export default function CommunityDomainPurchasePage() {
                     <input
                       value={stateName}
                       onChange={(event) => setStateName(event.target.value)}
-                      disabled={hasCreatedDraft}
+                      disabled={hasCreatedDraft || busy === "draft"}
                       placeholder="Lagos"
                       style={inputStyle()}
                     />
@@ -791,7 +859,7 @@ export default function CommunityDomainPurchasePage() {
                   </div>
                   <EntryActionButton
                     type="submit"
-                    disabled={busy === "availability" || hasCreatedDraft}
+                    disabled={busy === "availability" || draftFormLocked}
                     debugId="community-domain-purchase.check-domain"
                     style={{ minWidth: isCompact ? "100%" : 190 }}
                   >
@@ -1006,10 +1074,7 @@ export default function CommunityDomainPurchasePage() {
                   </div>
                   <input
                     value={existingDomainName}
-                    onChange={(event) => {
-                      setExistingDomainName(event.target.value);
-                      setDomainLookup(null);
-                    }}
+                    onChange={(event) => handleExistingDomainNameChange(event.target.value)}
                     placeholder="dominion-schools"
                     style={inputStyle()}
                   />

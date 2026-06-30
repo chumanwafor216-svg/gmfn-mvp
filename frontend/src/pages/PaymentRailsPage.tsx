@@ -626,19 +626,27 @@ export default function PaymentRailsPage() {
   }, []);
 
   useEffect(() => {
+    let alive = true;
+
     (async () => {
       setLoading(true);
       setErr("");
 
       try {
         const res = await getPaymentRails();
+        if (!alive) return;
         setData(res || null);
       } catch (e: any) {
+        if (!alive) return;
         setErr(String(e?.message || e || "Unable to load payment rails."));
       } finally {
-        setLoading(false);
+        if (alive) setLoading(false);
       }
     })();
+
+    return () => {
+      alive = false;
+    };
   }, []);
 
   const rails = useMemo(() => extractRails(data), [data]);

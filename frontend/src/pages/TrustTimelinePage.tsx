@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import PageTopNav from "../components/PageTopNav";
 import {
   CardActionRow,
@@ -300,12 +300,33 @@ export default function TrustTimelinePage() {
   );
   const [items, setItems] = useState<TimelineItem[]>([]);
   const [packMeta, setPackMeta] = useState<PackMetaResp | null>(null);
+  const timelineLoadSeqRef = useRef(0);
+  const timelineLoadContextRef = useRef("");
 
   const packId = packMeta?.pack_id || null;
 
   const loadAll = useCallback(async () => {
+    const contextKey = `${selectedClanId}:${getToken() || ""}`;
+    const previousContextKey = timelineLoadContextRef.current;
+    const loadSeq = timelineLoadSeqRef.current + 1;
+    timelineLoadSeqRef.current = loadSeq;
+    timelineLoadContextRef.current = contextKey;
+    const contextChanged = previousContextKey !== "" && previousContextKey !== contextKey;
+
+    function isCurrentTimelineLoad() {
+      return (
+        timelineLoadSeqRef.current === loadSeq &&
+        timelineLoadContextRef.current === contextKey
+      );
+    }
+
     setLoading(true);
     setErr(null);
+    if (contextChanged) {
+      setScoreExplained(null);
+      setItems([]);
+      setPackMeta(null);
+    }
 
     try {
       const [explained, timeline] = await Promise.all([
@@ -313,14 +334,16 @@ export default function TrustTimelinePage() {
         authedJson<TimelineResponse>("/trust/me/timeline?limit=200", "GET"),
       ]);
 
+      if (!isCurrentTimelineLoad()) return;
       setScoreExplained(explained || null);
       setItems(Array.isArray(timeline?.items) ? timeline.items : []);
     } catch (e: any) {
+      if (!isCurrentTimelineLoad()) return;
       setErr(String(e?.message || e));
       setScoreExplained(null);
       setItems([]);
     } finally {
-      setLoading(false);
+      if (isCurrentTimelineLoad()) setLoading(false);
     }
 
     try {
@@ -328,12 +351,14 @@ export default function TrustTimelinePage() {
         "/trust/me/evidence-pack/meta",
         "GET"
       );
+      if (!isCurrentTimelineLoad()) return;
       if (pm?.pack_id) setPackMeta(pm);
       else setPackMeta(null);
     } catch {
+      if (!isCurrentTimelineLoad()) return;
       setPackMeta(null);
     }
-  }, []);
+  }, [selectedClanId]);
 
   useEffect(() => {
     loadAll();

@@ -136,6 +136,9 @@ def test_public_domain_lookup_returns_safe_entry_without_membership(
         assert entry["id"] == domain_id
         assert entry["domain_name"] == "lookup-union-domain"
         assert entry["display_name"] == "Lookup Union Domain"
+        assert entry["domain_type"] == "union"
+        assert entry["template_key"] == "union_professional_body"
+        assert entry["template_label"] == "Union / professional body"
         assert entry["dashboard_path"] == f"/app/community-domain/{domain_id}"
         assert (
             entry["membership_request_route"]
@@ -289,6 +292,16 @@ def test_template_operating_blueprint_distinguishes_school_and_rejects_unknown(
         "/community-domains/templates/school/operating-blueprint"
     )
     assert by_domain_type.status_code == 200, by_domain_type.text
+    by_label_shape = client.get(
+        "/community-domains/templates/School Multi Branch/operating-blueprint"
+    )
+    assert by_label_shape.status_code == 200, by_label_shape.text
+    union_alias = client.get("/community-domains/templates/union/operating-blueprint")
+    assert union_alias.status_code == 200, union_alias.text
+    market_alias = client.get(
+        "/community-domains/templates/market_association/operating-blueprint"
+    )
+    assert market_alias.status_code == 200, market_alias.text
 
     unknown = client.get(
         "/community-domains/templates/does-not-exist/operating-blueprint"
@@ -305,6 +318,21 @@ def test_template_operating_blueprint_distinguishes_school_and_rejects_unknown(
     assert blueprint["uses_generic_fallback"] is False
     assert by_domain_type.json()["operating_blueprint"]["template"]["template_key"] == (
         "school_multi_branch"
+    )
+    assert by_label_shape.json()["operating_blueprint"]["template"]["template_key"] == (
+        "school_multi_branch"
+    )
+    assert union_alias.json()["operating_blueprint"]["template"]["template_key"] == (
+        "union_professional_body"
+    )
+    assert union_alias.json()["operating_blueprint"]["blueprint_source"] == (
+        "union_professional_body"
+    )
+    assert market_alias.json()["operating_blueprint"]["template"]["template_key"] == (
+        "market_cooperative"
+    )
+    assert market_alias.json()["operating_blueprint"]["blueprint_source"] == (
+        "market_cooperative"
     )
     assert "school_branch" in node_presets
     assert "school_class" in node_presets
@@ -454,6 +482,9 @@ def test_community_domain_draft_defaults_template_to_domain_type(
     data = response.json()["community_domain"]
     assert data["domain_type"] == "professional_union"
     assert data["template_key"] == "professional_union"
+    assert data["resolved_template"]["template_key"] == "union_professional_body"
+    assert data["resolved_template"]["domain_type"] == "professional_union"
+    assert data["resolved_template"]["label"] == "Union / professional body"
     assert data["status"] == "draft"
     assert data["verification_status"] == "unverified"
     assert data["root_node"]["node_kind"] == "institution"
@@ -464,6 +495,145 @@ def test_community_domain_draft_defaults_template_to_domain_type(
         assert domain.clan_id is None
         assert db.query(CommunityDomainMembership).one().role == "owner"
         assert db.query(CommunityNode).one().path == f"/{int(domain.id)}"
+        assert db.query(Clan).count() == 0
+
+
+def test_community_domain_draft_normalizes_template_type_aliases(
+    client: TestClient,
+):
+    owner = _seed_owner()
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        response = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Normalized Market Alias",
+                "display_name": "Normalized Market Alias",
+                "domain_type": "Market Association",
+                "template_key": "market-association",
+            },
+        )
+        assert response.status_code == 201, response.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    data = response.json()["community_domain"]
+    assert data["domain_type"] == "market_association"
+    assert data["template_key"] == "market_association"
+    assert data["resolved_template"]["template_key"] == "market_cooperative"
+    assert data["resolved_template"]["domain_type"] == "market_cooperative"
+    assert data["resolved_template"]["label"] == "Market / cooperative"
+    assert data["resolved_template"]["marketplace_role"] == "core"
+    assert data["status"] == "draft"
+    assert data["root_node"]["node_kind"] == "institution"
+
+    with SessionLocal() as db:
+        domain = db.query(CommunityDomain).one()
+        assert domain.domain_type == "market_association"
+        assert domain.template_key == "market_association"
+        assert db.query(CommunityDomainMembership).one().role == "owner"
+        assert db.query(CommunityNode).one().path == f"/{int(domain.id)}"
+        assert db.query(Clan).count() == 0
+
+
+def test_community_domain_draft_rejects_unsupported_template(
+    client: TestClient,
+):
+    owner = _seed_owner()
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        response = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Unknown Society Type",
+                "display_name": "Unknown Society Type",
+                "domain_type": "invented_society",
+                "template_key": "invented_society_schema",
+            },
+        )
+        assert response.status_code == 422, response.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    detail = response.json()["detail"]
+    assert detail["code"] == "community_domain_template_not_supported"
+    assert detail["template_key"] == "invented_society_schema"
+    assert detail["domain_type"] == "invented_society"
+
+    with SessionLocal() as db:
+        assert db.query(CommunityDomain).count() == 0
+        assert db.query(CommunityNode).count() == 0
+        assert db.query(CommunityDomainMembership).count() == 0
+        assert db.query(CommunityDomainActionReview).count() == 0
+        assert db.query(Clan).count() == 0
+
+
+def test_community_domain_draft_rejects_unsupported_domain_type(
+    client: TestClient,
+):
+    owner = _seed_owner()
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        response = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Invented Domain Type School",
+                "display_name": "Invented Domain Type School",
+                "domain_type": "invented_school_body",
+                "template_key": "school_multi_branch",
+            },
+        )
+        assert response.status_code == 422, response.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    detail = response.json()["detail"]
+    assert detail["code"] == "community_domain_type_not_supported"
+    assert detail["template_key"] == "school_multi_branch"
+    assert detail["domain_type"] == "invented_school_body"
+
+    with SessionLocal() as db:
+        assert db.query(CommunityDomain).count() == 0
+        assert db.query(CommunityNode).count() == 0
+        assert db.query(CommunityDomainMembership).count() == 0
+        assert db.query(CommunityDomainActionReview).count() == 0
+        assert db.query(Clan).count() == 0
+
+
+def test_community_domain_draft_rejects_mismatched_type_and_template(
+    client: TestClient,
+):
+    owner = _seed_owner()
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        response = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "School With Market Template",
+                "display_name": "School With Market Template",
+                "domain_type": "school",
+                "template_key": "market_cooperative",
+            },
+        )
+        assert response.status_code == 422, response.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    detail = response.json()["detail"]
+    assert detail["code"] == "community_domain_template_mismatch"
+    assert detail["template_key"] == "market_cooperative"
+    assert detail["domain_type"] == "school"
+    assert detail["expected_template_key"] == "school_multi_branch"
+
+    with SessionLocal() as db:
+        assert db.query(CommunityDomain).count() == 0
+        assert db.query(CommunityNode).count() == 0
+        assert db.query(CommunityDomainMembership).count() == 0
+        assert db.query(CommunityDomainActionReview).count() == 0
         assert db.query(Clan).count() == 0
 
 
@@ -762,6 +932,9 @@ def test_domain_admin_dashboard_summary_guides_next_action_without_activation(
     dashboard = payload["dashboard"]
     assert dashboard["community_domain"]["status"] == "draft"
     assert dashboard["community_domain"]["verification_status"] == "unverified"
+    assert dashboard["community_domain"]["resolved_template"]["template_key"] == (
+        "school_multi_branch"
+    )
     assert dashboard["viewer"] == {"user_id": owner.id, "can_admin": True}
     assert dashboard["template"]["template_key"] == "school_multi_branch"
     assert dashboard["status"] == {

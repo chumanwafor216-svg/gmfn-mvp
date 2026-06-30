@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import ExplainToggle from "../components/ExplainToggle";
 import PageTopNav from "../components/PageTopNav";
 import { SecondaryButton, StableCtaLink } from "../components/StableButton";
@@ -460,6 +460,8 @@ export default function TrustAnalyticsPage() {
   const [me, setMe] = useState<any>(null);
   const [currentClan, setCurrentClan] = useState<any>(null);
   const [events, setEvents] = useState<TrustEventRow[]>([]);
+  const analyticsLoadSeqRef = useRef(0);
+  const analyticsLoadContextRef = useRef("");
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -480,9 +482,23 @@ export default function TrustAnalyticsPage() {
 
   useEffect(() => {
     let alive = true;
+    const contextKey = `community:${selectedClanId || "none"}`;
+    const loadSeq = analyticsLoadSeqRef.current + 1;
+    analyticsLoadSeqRef.current = loadSeq;
+    analyticsLoadContextRef.current = contextKey;
+
+    function isCurrentAnalyticsLoad() {
+      return (
+        alive &&
+        analyticsLoadSeqRef.current === loadSeq &&
+        analyticsLoadContextRef.current === contextKey
+      );
+    }
 
     (async () => {
       setLoading(true);
+      setCurrentClan(null);
+      setEvents([]);
 
       try {
         const [meRes, clanRes, eventsRes] = await Promise.all([
@@ -494,13 +510,13 @@ export default function TrustAnalyticsPage() {
           }).catch(() => ({ items: [] })),
         ]);
 
-        if (!alive) return;
+        if (!isCurrentAnalyticsLoad()) return;
 
         setMe(meRes || null);
         setCurrentClan(clanRes || null);
         setEvents(rowsOf<TrustEventRow>(eventsRes));
       } finally {
-        if (alive) setLoading(false);
+        if (isCurrentAnalyticsLoad()) setLoading(false);
       }
     })();
 

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import ExplainToggle from "../components/ExplainToggle";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import PageTopNav from "../components/PageTopNav";
@@ -445,6 +445,8 @@ export default function ExposureAdminPage() {
   const [pendingPool, setPendingPool] = useState<any[]>([]);
   const [bankUnmatched, setBankUnmatched] = useState<any[]>([]);
   const [demands, setDemands] = useState<DemandRow[]>([]);
+  const exposureLoadSeqRef = useRef(0);
+  const exposureLoadContextRef = useRef("");
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -465,9 +467,29 @@ export default function ExposureAdminPage() {
 
   useEffect(() => {
     let alive = true;
+    const contextKey = `community:${selectedClanId || "none"}`;
+    const loadSeq = exposureLoadSeqRef.current + 1;
+    exposureLoadSeqRef.current = loadSeq;
+    exposureLoadContextRef.current = contextKey;
+
+    function isCurrentExposureLoad() {
+      return (
+        alive &&
+        exposureLoadSeqRef.current === loadSeq &&
+        exposureLoadContextRef.current === contextKey
+      );
+    }
 
     (async () => {
       setLoading(true);
+      setCurrentClan(null);
+      setExposureRows([]);
+      setExposureTotals(null);
+      setExposureError("");
+      setIncompleteLoans([]);
+      setPendingPool([]);
+      setBankUnmatched([]);
+      setDemands([]);
 
       try {
         const [meRes, clanRes, exposureRes, incompleteLoansRes, pendingPoolRes, bankUnmatchedRes, demandsRes] =
@@ -497,7 +519,7 @@ export default function ExposureAdminPage() {
             }).catch(() => []),
           ]);
 
-        if (!alive) return;
+        if (!isCurrentExposureLoad()) return;
 
         setMe(meRes || null);
         setCurrentClan(clanRes || null);
@@ -525,7 +547,7 @@ export default function ExposureAdminPage() {
             .filter(Boolean) as DemandRow[]
         );
       } finally {
-        if (alive) setLoading(false);
+        if (isCurrentExposureLoad()) setLoading(false);
       }
     })();
 

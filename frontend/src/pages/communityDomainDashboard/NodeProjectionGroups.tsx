@@ -48,61 +48,19 @@ type ProjectionGroupProps = {
     | "structureActivity"
     | "memberParticipation";
   nodeAutonomyMap?: any;
-  nodeAutonomyCounts?: Record<string, unknown>;
-  visibleNodeAutonomyRows?: NodeProjectionItem[];
-  nodeAutonomyGaps?: NodeProjectionItem[];
   nodeEconomicMap?: any;
-  nodeEconomicCounts?: Record<string, unknown>;
-  visibleNodeEconomicRows?: NodeProjectionItem[];
-  nodeEconomicGaps?: NodeProjectionItem[];
   nodeActivityMap?: any;
-  nodeActivityCounts?: Record<string, unknown>;
-  visibleNodeActivityRows?: NodeProjectionItem[];
-  nodeActivityGaps?: NodeProjectionItem[];
   nodeEvidenceAuthorityMap?: any;
-  nodeEvidenceAuthorityCounts?: Record<string, unknown>;
-  visibleNodeEvidenceAuthorityRows?: NodeProjectionItem[];
-  nodeEvidenceAuthorityGaps?: NodeProjectionItem[];
   nodeTrustMap?: any;
-  nodeTrustCounts?: Record<string, unknown>;
-  visibleNodeTrustRows?: NodeProjectionItem[];
-  nodeTrustGaps?: NodeProjectionItem[];
   nodeDomainBoundaryMap?: any;
-  nodeDomainBoundaryCounts?: Record<string, unknown>;
-  visibleNodeDomainBoundaryRows?: NodeProjectionItem[];
-  nodeDomainBoundaryGaps?: NodeProjectionItem[];
   nodeParticipationMap?: any;
-  nodeParticipationCounts?: Record<string, unknown>;
-  visibleNodeParticipationRows?: NodeProjectionItem[];
-  nodeParticipationGaps?: NodeProjectionItem[];
   nodeServiceMap?: any;
-  nodeServiceCounts?: Record<string, unknown>;
-  visibleNodeServiceRows?: NodeProjectionItem[];
-  nodeServiceGaps?: NodeProjectionItem[];
   nodePrivacyMap?: any;
-  nodePrivacyCounts?: Record<string, unknown>;
-  visibleNodePrivacyRows?: NodeProjectionItem[];
-  nodePrivacyGaps?: NodeProjectionItem[];
   nodeAnalyticsMap?: any;
-  nodeAnalyticsCounts?: Record<string, unknown>;
-  visibleNodeAnalyticsRows?: NodeProjectionItem[];
-  nodeAnalyticsGaps?: NodeProjectionItem[];
   nodeCommunicationMap?: any;
-  nodeCommunicationCounts?: Record<string, unknown>;
-  visibleNodeCommunicationRows?: NodeProjectionItem[];
-  nodeCommunicationGaps?: NodeProjectionItem[];
   nodeVaultMap?: any;
-  nodeVaultCounts?: Record<string, unknown>;
-  visibleNodeVaultRows?: NodeProjectionItem[];
-  nodeVaultGaps?: NodeProjectionItem[];
   nodeScheduledActivityMap?: any;
-  nodeScheduledActivityCounts?: Record<string, unknown>;
-  visibleNodeScheduledActivityRows?: NodeProjectionItem[];
-  nodeScheduledActivityGaps?: NodeProjectionItem[];
   nodePaidActivityMap?: any;
-  nodePaidActivityCounts?: Record<string, unknown>;
-  visibleNodePaidActivityRows?: NodeProjectionItem[];
-  nodePaidActivityGaps?: NodeProjectionItem[];
 };
 
 function cleanText(value: unknown, fallback = ""): string {
@@ -117,6 +75,25 @@ function compactStatus(value: unknown): string {
 function countValue(value: unknown): string {
   const numberValue = Number(value ?? 0);
   return Number.isFinite(numberValue) ? String(numberValue) : "0";
+}
+
+function nodeProjectionCounts(map: any): Record<string, unknown> {
+  return map?.counts || {};
+}
+
+function nodeProjectionRows(map: any): NodeProjectionItem[] {
+  return Array.isArray(map?.flat_nodes) ? map.flat_nodes : [];
+}
+
+function nodeProjectionGaps(
+  map: any,
+  statusKey: StatusKey,
+  blockedTokens: string[]
+): NodeProjectionItem[] {
+  return nodeProjectionRows(map).filter((item) => {
+    const statusText = cleanText(item[statusKey]).toLowerCase();
+    return blockedTokens.some((token) => statusText.includes(token));
+  });
 }
 
 function softCard(): React.CSSProperties {
@@ -357,12 +334,25 @@ function ProjectionGroup({
 
 export default function CommunityDomainNodeProjectionGroups(props: ProjectionGroupProps) {
   if (props.variant === "trustEvidence") {
-    const nodeEvidenceAuthorityCounts = props.nodeEvidenceAuthorityCounts || {};
-    const visibleNodeEvidenceAuthorityRows = props.visibleNodeEvidenceAuthorityRows || [];
-    const nodeEvidenceAuthorityGaps = props.nodeEvidenceAuthorityGaps || [];
-    const nodeTrustCounts = props.nodeTrustCounts || {};
-    const visibleNodeTrustRows = props.visibleNodeTrustRows || [];
-    const nodeTrustGaps = props.nodeTrustGaps || [];
+    const nodeEvidenceAuthorityCounts = nodeProjectionCounts(
+      props.nodeEvidenceAuthorityMap
+    );
+    const visibleNodeEvidenceAuthorityRows = nodeProjectionRows(
+      props.nodeEvidenceAuthorityMap
+    );
+    const nodeEvidenceAuthorityGaps = nodeProjectionGaps(
+      props.nodeEvidenceAuthorityMap,
+      "evidence_authority_status",
+      ["needs", "review", "inactive"]
+    );
+    const nodeTrustCounts = nodeProjectionCounts(props.nodeTrustMap);
+    const visibleNodeTrustRows = nodeProjectionRows(props.nodeTrustMap);
+    const nodeTrustGaps = nodeProjectionGaps(props.nodeTrustMap, "trust_status", [
+      "needs",
+      "governance",
+      "review",
+      "evidence",
+    ]);
 
     return (
       <>
@@ -465,15 +455,24 @@ export default function CommunityDomainNodeProjectionGroups(props: ProjectionGro
   }
 
   if (props.variant === "structureFoundation") {
-    const nodeAutonomyCounts = props.nodeAutonomyCounts || {};
-    const visibleNodeAutonomyRows = props.visibleNodeAutonomyRows || [];
-    const nodeAutonomyGaps = props.nodeAutonomyGaps || [];
-    const nodeEconomicCounts = props.nodeEconomicCounts || {};
-    const visibleNodeEconomicRows = props.visibleNodeEconomicRows || [];
-    const nodeEconomicGaps = props.nodeEconomicGaps || [];
-    const nodeActivityCounts = props.nodeActivityCounts || {};
-    const visibleNodeActivityRows = props.visibleNodeActivityRows || [];
-    const nodeActivityGaps = props.nodeActivityGaps || [];
+    const nodeAutonomyCounts = nodeProjectionCounts(props.nodeAutonomyMap);
+    const visibleNodeAutonomyRows = nodeProjectionRows(props.nodeAutonomyMap);
+    const nodeAutonomyGaps = nodeProjectionGaps(props.nodeAutonomyMap, "autonomy_status", [
+      "needs",
+      "parent_controlled",
+    ]);
+    const nodeEconomicCounts = nodeProjectionCounts(props.nodeEconomicMap);
+    const visibleNodeEconomicRows = nodeProjectionRows(props.nodeEconomicMap);
+    const nodeEconomicGaps = nodeProjectionGaps(props.nodeEconomicMap, "economy_status", [
+      "needs",
+      "governance",
+    ]);
+    const nodeActivityCounts = nodeProjectionCounts(props.nodeActivityMap);
+    const visibleNodeActivityRows = nodeProjectionRows(props.nodeActivityMap);
+    const nodeActivityGaps = nodeProjectionGaps(props.nodeActivityMap, "activity_status", [
+      "needs",
+      "governance",
+    ]);
 
     return (
       <>
@@ -590,9 +589,17 @@ export default function CommunityDomainNodeProjectionGroups(props: ProjectionGro
   }
 
   if (props.variant === "structureBoundary") {
-    const nodeDomainBoundaryCounts = props.nodeDomainBoundaryCounts || {};
-    const visibleNodeDomainBoundaryRows = props.visibleNodeDomainBoundaryRows || [];
-    const nodeDomainBoundaryGaps = props.nodeDomainBoundaryGaps || [];
+    const nodeDomainBoundaryCounts = nodeProjectionCounts(
+      props.nodeDomainBoundaryMap
+    );
+    const visibleNodeDomainBoundaryRows = nodeProjectionRows(
+      props.nodeDomainBoundaryMap
+    );
+    const nodeDomainBoundaryGaps = nodeProjectionGaps(
+      props.nodeDomainBoundaryMap,
+      "domain_boundary_status",
+      ["candidate", "review", "inactive"]
+    );
 
     return renderNodeProjectionCard({
       title: "Node domain-boundary map",
@@ -637,9 +644,13 @@ export default function CommunityDomainNodeProjectionGroups(props: ProjectionGro
   }
 
   if (props.variant === "memberParticipation") {
-    const nodeParticipationCounts = props.nodeParticipationCounts || {};
-    const visibleNodeParticipationRows = props.visibleNodeParticipationRows || [];
-    const nodeParticipationGaps = props.nodeParticipationGaps || [];
+    const nodeParticipationCounts = nodeProjectionCounts(props.nodeParticipationMap);
+    const visibleNodeParticipationRows = nodeProjectionRows(props.nodeParticipationMap);
+    const nodeParticipationGaps = nodeProjectionGaps(
+      props.nodeParticipationMap,
+      "participation_status",
+      ["needs", "empty", "admin_only"]
+    );
 
     return renderNodeProjectionCard({
       title: "Node participation map",
@@ -688,12 +699,24 @@ export default function CommunityDomainNodeProjectionGroups(props: ProjectionGro
   }
 
   if (props.variant === "structureActivity") {
-    const nodeScheduledActivityCounts = props.nodeScheduledActivityCounts || {};
-    const visibleNodeScheduledActivityRows = props.visibleNodeScheduledActivityRows || [];
-    const nodeScheduledActivityGaps = props.nodeScheduledActivityGaps || [];
-    const nodePaidActivityCounts = props.nodePaidActivityCounts || {};
-    const visibleNodePaidActivityRows = props.visibleNodePaidActivityRows || [];
-    const nodePaidActivityGaps = props.nodePaidActivityGaps || [];
+    const nodeScheduledActivityCounts = nodeProjectionCounts(
+      props.nodeScheduledActivityMap
+    );
+    const visibleNodeScheduledActivityRows = nodeProjectionRows(
+      props.nodeScheduledActivityMap
+    );
+    const nodeScheduledActivityGaps = nodeProjectionGaps(
+      props.nodeScheduledActivityMap,
+      "schedule_status",
+      ["needs", "review", "inactive"]
+    );
+    const nodePaidActivityCounts = nodeProjectionCounts(props.nodePaidActivityMap);
+    const visibleNodePaidActivityRows = nodeProjectionRows(props.nodePaidActivityMap);
+    const nodePaidActivityGaps = nodeProjectionGaps(
+      props.nodePaidActivityMap,
+      "paid_activity_status",
+      ["needs", "review", "inactive"]
+    );
 
     return (
       <ProjectionGroup
@@ -793,21 +816,40 @@ export default function CommunityDomainNodeProjectionGroups(props: ProjectionGro
     );
   }
 
-  const nodeServiceCounts = props.nodeServiceCounts || {};
-  const visibleNodeServiceRows = props.visibleNodeServiceRows || [];
-  const nodeServiceGaps = props.nodeServiceGaps || [];
-  const nodePrivacyCounts = props.nodePrivacyCounts || {};
-  const visibleNodePrivacyRows = props.visibleNodePrivacyRows || [];
-  const nodePrivacyGaps = props.nodePrivacyGaps || [];
-  const nodeAnalyticsCounts = props.nodeAnalyticsCounts || {};
-  const visibleNodeAnalyticsRows = props.visibleNodeAnalyticsRows || [];
-  const nodeAnalyticsGaps = props.nodeAnalyticsGaps || [];
-  const nodeCommunicationCounts = props.nodeCommunicationCounts || {};
-  const visibleNodeCommunicationRows = props.visibleNodeCommunicationRows || [];
-  const nodeCommunicationGaps = props.nodeCommunicationGaps || [];
-  const nodeVaultCounts = props.nodeVaultCounts || {};
-  const visibleNodeVaultRows = props.visibleNodeVaultRows || [];
-  const nodeVaultGaps = props.nodeVaultGaps || [];
+  const nodeServiceCounts = nodeProjectionCounts(props.nodeServiceMap);
+  const visibleNodeServiceRows = nodeProjectionRows(props.nodeServiceMap);
+  const nodeServiceGaps = nodeProjectionGaps(props.nodeServiceMap, "service_status", [
+    "needs",
+    "governance",
+    "no_template",
+  ]);
+  const nodePrivacyCounts = nodeProjectionCounts(props.nodePrivacyMap);
+  const visibleNodePrivacyRows = nodeProjectionRows(props.nodePrivacyMap);
+  const nodePrivacyGaps = nodeProjectionGaps(props.nodePrivacyMap, "privacy_status", [
+    "review",
+    "unknown",
+  ]);
+  const nodeAnalyticsCounts = nodeProjectionCounts(props.nodeAnalyticsMap);
+  const visibleNodeAnalyticsRows = nodeProjectionRows(props.nodeAnalyticsMap);
+  const nodeAnalyticsGaps = nodeProjectionGaps(
+    props.nodeAnalyticsMap,
+    "analytics_status",
+    ["needs", "inactive", "review"]
+  );
+  const nodeCommunicationCounts = nodeProjectionCounts(props.nodeCommunicationMap);
+  const visibleNodeCommunicationRows = nodeProjectionRows(props.nodeCommunicationMap);
+  const nodeCommunicationGaps = nodeProjectionGaps(
+    props.nodeCommunicationMap,
+    "communication_status",
+    ["needs", "review", "inactive"]
+  );
+  const nodeVaultCounts = nodeProjectionCounts(props.nodeVaultMap);
+  const visibleNodeVaultRows = nodeProjectionRows(props.nodeVaultMap);
+  const nodeVaultGaps = nodeProjectionGaps(props.nodeVaultMap, "vault_status", [
+    "needs",
+    "review",
+    "inactive",
+  ]);
 
   return (
     <ProjectionGroup

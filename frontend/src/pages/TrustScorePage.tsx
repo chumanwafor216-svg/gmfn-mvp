@@ -257,6 +257,16 @@ type ClanListItem = {
   role?: string | null;
 };
 
+type TrustScoreLoadResult = {
+  me: any | null;
+  clan: any | null;
+  clans: ClanListItem[];
+  guidance: GuidanceSnapshot | null;
+  explainability: TrustExplainability | null;
+  recompute: TrustRecompute | null;
+  trustSlipSummary: TrustSlipSummary | null;
+};
+
 function safeStr(x: any): string {
   return String(x ?? "").trim();
 }
@@ -1364,6 +1374,10 @@ export default function TrustScorePage() {
   const location = useLocation();
   const pressureSectionRef = useRef<HTMLElement | null>(null);
   const selectedClanId = Number((api as any).getSelectedClanId?.() || 0);
+  const trustScoreContextKey = String(selectedClanId || 0);
+  const trustScoreContextRef = useRef(trustScoreContextKey);
+  const trustScoreLoadSeqRef = useRef(0);
+  trustScoreContextRef.current = trustScoreContextKey;
   const routes = useMemo(
     () => ({
       dashboard: routeTarget("dashboard", selectedClanId, "trust-score.route.dashboard"),
@@ -1420,6 +1434,26 @@ export default function TrustScorePage() {
     null
   );
 
+  const clearTrustScoreState = useCallback(() => {
+    setMe(null);
+    setCurrentClan(null);
+    setClansList([]);
+    setGuidance(null);
+    setExplainability(null);
+    setRecompute(null);
+    setTrustSlipSummary(null);
+  }, []);
+
+  const applyTrustScoreLoadResult = useCallback((data: TrustScoreLoadResult) => {
+    setMe(data.me);
+    setCurrentClan(data.clan);
+    setClansList(data.clans);
+    setGuidance(data.guidance);
+    setExplainability(data.explainability);
+    setRecompute(data.recompute);
+    setTrustSlipSummary(data.trustSlipSummary);
+  }, []);
+
   useEffect(() => {
     if (typeof window === "undefined") return;
 
@@ -1443,7 +1477,7 @@ export default function TrustScorePage() {
     return () => window.clearTimeout(timer);
   }, [notice]);
 
-  const loadAll = useCallback(async () => {
+  const fetchTrustScoreLoadResult = useCallback(async (): Promise<TrustScoreLoadResult> => {
     const clanHeaders: Record<string, string> = {};
     if (selectedClanId) {
       clanHeaders["X-Clan-Id"] = String(selectedClanId);
@@ -1550,32 +1584,58 @@ export default function TrustScorePage() {
       })(),
     ]);
 
-    setMe(meRes || null);
-    setCurrentClan(clanRes || null);
-    setClansList(rowsOf<ClanListItem>(clansRes));
-    setGuidance(guidanceRes || null);
-    setExplainability(normalizeExplainability(explainRes));
-    setRecompute(normalizeRecompute(recomputeRes));
-    setTrustSlipSummary(normalizeTrustSlipSummary(trustSlipRes));
+    return {
+      me: meRes || null,
+      clan: clanRes || null,
+      clans: rowsOf<ClanListItem>(clansRes),
+      guidance: guidanceRes || null,
+      explainability: normalizeExplainability(explainRes),
+      recompute: normalizeRecompute(recomputeRes),
+      trustSlipSummary: normalizeTrustSlipSummary(trustSlipRes),
+    };
   }, [selectedClanId]);
 
   useEffect(() => {
     let alive = true;
+    const loadSeq = trustScoreLoadSeqRef.current + 1;
+    trustScoreLoadSeqRef.current = loadSeq;
+    const contextKey = trustScoreContextKey;
 
     (async () => {
       setLoading(true);
+      setRefreshing(false);
+      clearTrustScoreState();
 
       try {
-        await loadAll();
+        const data = await fetchTrustScoreLoadResult();
+        if (
+          !alive ||
+          loadSeq !== trustScoreLoadSeqRef.current ||
+          contextKey !== trustScoreContextRef.current
+        ) {
+          return;
+        }
+        applyTrustScoreLoadResult(data);
       } finally {
-        if (alive) setLoading(false);
+        if (
+          alive &&
+          loadSeq === trustScoreLoadSeqRef.current &&
+          contextKey === trustScoreContextRef.current
+        ) {
+          setLoading(false);
+        }
       }
     })();
 
     return () => {
       alive = false;
     };
-  }, [loadAll]);
+  }, [
+    applyTrustScoreLoadResult,
+    clearTrustScoreState,
+    fetchTrustScoreLoadResult,
+    trustScoreContextKey,
+  ]);
 
   useEffect(() => {
     if (typeof window === "undefined" || typeof document === "undefined") return;
@@ -1584,8 +1644,32 @@ export default function TrustScorePage() {
     const scheduleFreshIdentityRead = () => {
       if (document.visibilityState === "hidden") return;
       if (refreshTimer !== null) window.clearTimeout(refreshTimer);
+      const loadSeq = trustScoreLoadSeqRef.current + 1;
+      trustScoreLoadSeqRef.current = loadSeq;
+      const contextKey = trustScoreContextRef.current;
       refreshTimer = window.setTimeout(() => {
-        void loadAll();
+        void (async () => {
+          try {
+            const data = await fetchTrustScoreLoadResult();
+            if (
+              loadSeq !== trustScoreLoadSeqRef.current ||
+              contextKey !== trustScoreContextRef.current
+            ) {
+              return;
+            }
+            applyTrustScoreLoadResult(data);
+          } catch {
+            // Keep the last usable reading visible if a background refresh fails.
+          } finally {
+            if (
+              loadSeq === trustScoreLoadSeqRef.current &&
+              contextKey === trustScoreContextRef.current
+            ) {
+              setLoading(false);
+              setRefreshing(false);
+            }
+          }
+        })();
       }, 80);
     };
 
@@ -1599,24 +1683,42 @@ export default function TrustScorePage() {
       window.removeEventListener("focus", scheduleFreshIdentityRead);
       document.removeEventListener("visibilitychange", scheduleFreshIdentityRead);
     };
-  }, [loadAll]);
+  }, [applyTrustScoreLoadResult, fetchTrustScoreLoadResult]);
 
   async function handleRefreshTrust() {
+    const loadSeq = trustScoreLoadSeqRef.current + 1;
+    trustScoreLoadSeqRef.current = loadSeq;
+    const contextKey = trustScoreContextRef.current;
+
     setRefreshing(true);
 
     try {
-      await loadAll();
+      const data = await fetchTrustScoreLoadResult();
+      if (
+        loadSeq !== trustScoreLoadSeqRef.current ||
+        contextKey !== trustScoreContextRef.current
+      ) {
+        return;
+      }
+      applyTrustScoreLoadResult(data);
       setNotice({
         tone: "success",
         text: "Trust reading refreshed.",
       });
     } catch {
-      setNotice({
-        tone: "error",
-        text: "Trust reading could not be refreshed right now.",
-      });
+      if (
+        loadSeq === trustScoreLoadSeqRef.current &&
+        contextKey === trustScoreContextRef.current
+      ) {
+        setNotice({
+          tone: "error",
+          text: "Trust reading could not be refreshed right now.",
+        });
+      }
     } finally {
-      setRefreshing(false);
+      if (loadSeq === trustScoreLoadSeqRef.current) {
+        setRefreshing(false);
+      }
     }
   }
 

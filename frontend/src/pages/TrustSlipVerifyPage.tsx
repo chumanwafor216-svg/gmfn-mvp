@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import PageTopNav from "../components/PageTopNav";
 import SocialTagShareButton from "../components/SocialTagShareButton";
@@ -19,7 +19,6 @@ import { navigateWithOrigin } from "../lib/nav";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 import { buildTrustSlipVerifySnapshot } from "../lib/trustDocumentSnapshots";
 import TrustSlipVerifyBoundary from "./trustSlipVerify/TrustSlipVerifyBoundary";
-import TrustSlipVerifyPrivateEvidence from "./trustSlipVerify/TrustSlipVerifyPrivateEvidence";
 import TrustSlipVerifyPublicPaper from "./trustSlipVerify/TrustSlipVerifyPublicPaper";
 import type { CommunityConfirmationCallbackDraft } from "./trustSlipVerify/TrustSlipVerifyPublicPaper";
 import {
@@ -31,6 +30,11 @@ import {
   type VerifyBannerTone,
 } from "./trustSlipVerify/trustSlipVerifyData";
 import { buildTrustSlipVerifyViewModel } from "./trustSlipVerify/trustSlipVerifyViewModel";
+
+const TrustSlipVerifyPrivateEvidence = React.lazy(
+  () => import("./trustSlipVerify/TrustSlipVerifyPrivateEvidence")
+);
+
 type NoticeTone = "success" | "error";
 
 function safeStr(x: any): string {
@@ -198,9 +202,14 @@ export default function TrustSlipVerifyPage() {
   const [confirmationBusy, setConfirmationBusy] = useState(false);
   const [confirmationOutcome, setConfirmationOutcome] =
     useState<CommunityConfirmationOutcome | null>(null);
+  const [privateEvidenceOpen, setPrivateEvidenceOpen] = useState(false);
 
   const isAppRoute = location.pathname.startsWith("/app/");
   const selectedClanId = Number((api as any).getSelectedClanId?.() || 0);
+  const verifyLoadSeqRef = useRef(0);
+  const confirmationSeqRef = useRef(0);
+  const verifyContextRef = useRef("");
+  const resolvedCodeRef = useRef("");
   const routes = useMemo(
     () => ({
       dashboard: routeTarget("dashboard", selectedClanId, "trust-slip-verify.route.dashboard"),
@@ -217,6 +226,10 @@ export default function TrustSlipVerifyPage() {
   const requestedCode = useMemo(() => {
     return firstTruthy(params.code, queryCode);
   }, [params.code, queryCode]);
+  const verifyContextKey = `${isAppRoute ? "app" : "public"}:${selectedClanId || 0}:${
+    requestedCode || "auto"
+  }`;
+  verifyContextRef.current = verifyContextKey;
   const isLiteRoute = useMemo(() => {
     const params = new URLSearchParams(location.search);
     return (
@@ -252,10 +265,22 @@ export default function TrustSlipVerifyPage() {
 
   useEffect(() => {
     let alive = true;
+    const loadSeq = verifyLoadSeqRef.current + 1;
+    verifyLoadSeqRef.current = loadSeq;
+    confirmationSeqRef.current += 1;
+    const contextKey = verifyContextKey;
 
     (async () => {
       setLoading(true);
       setLoadError("");
+      setMe(null);
+      setCurrentClan(null);
+      setRecord(null);
+      setResolvedCode("");
+      resolvedCodeRef.current = "";
+      setConfirmationOutcome(null);
+      setConfirmationBusy(false);
+      setPrivateEvidenceOpen(false);
 
       try {
         const [meRes, clanRes] = isAppRoute
@@ -265,7 +290,13 @@ export default function TrustSlipVerifyPage() {
             ])
           : [null, null];
 
-        if (!alive) return;
+        if (
+          !alive ||
+          loadSeq !== verifyLoadSeqRef.current ||
+          contextKey !== verifyContextRef.current
+        ) {
+          return;
+        }
         setMe(meRes || null);
         setCurrentClan(clanRes || null);
 
@@ -274,10 +305,17 @@ export default function TrustSlipVerifyPage() {
         if (!codeToUse && isAppRoute && typeof (api as any).getMyTrustSlip === "function") {
           const mySlip = await (api as any).getMyTrustSlip().catch(() => null);
           codeToUse = firstTruthy(mySlip?.code, mySlip?.trust_slip_code);
-          if (!alive) return;
+          if (
+            !alive ||
+            loadSeq !== verifyLoadSeqRef.current ||
+            contextKey !== verifyContextRef.current
+          ) {
+            return;
+          }
         }
 
         setResolvedCode(codeToUse);
+        resolvedCodeRef.current = codeToUse;
 
         if (!codeToUse) {
           setRecord(null);
@@ -298,7 +336,14 @@ export default function TrustSlipVerifyPage() {
           [[codeToUse], [{ code: codeToUse }], [codeToUse, { code: codeToUse }]]
         );
 
-        if (!alive) return;
+        if (
+          !alive ||
+          loadSeq !== verifyLoadSeqRef.current ||
+          contextKey !== verifyContextRef.current ||
+          codeToUse !== resolvedCodeRef.current
+        ) {
+          return;
+        }
 
         const normalized = normalizeTrustSlipVerification(verifyResult, codeToUse);
         setRecord(normalized);
@@ -310,14 +355,20 @@ export default function TrustSlipVerifyPage() {
           );
         }
       } finally {
-        if (alive) setLoading(false);
+        if (
+          alive &&
+          loadSeq === verifyLoadSeqRef.current &&
+          contextKey === verifyContextRef.current
+        ) {
+          setLoading(false);
+        }
       }
     })();
 
     return () => {
       alive = false;
     };
-  }, [requestedCode, isAppRoute]);
+  }, [requestedCode, isAppRoute, selectedClanId, verifyContextKey]);
 
   const communityLabel = useMemo(() => {
     return (
@@ -516,11 +567,17 @@ export default function TrustSlipVerifyPage() {
       return;
     }
 
+    const requestSeq = confirmationSeqRef.current + 1;
+    confirmationSeqRef.current = requestSeq;
+    const contextKey = verifyContextRef.current;
+    const requestCode = code;
+
     setConfirmationBusy(true);
+    setConfirmationOutcome(null);
 
     try {
       const result = await (api as any).requestCommunityConfirmation({
-        trust_slip_code: code,
+        trust_slip_code: requestCode,
         requester_external_label:
           firstTruthy(draft.requesterExternalLabel, "TrustSlip public viewer"),
         requester_callback_channel: draft.callbackChannel || "none",
@@ -530,6 +587,13 @@ export default function TrustSlipVerifyPage() {
         risk_level: "low",
         mode: communityConfirmation?.instant_pulse_available ? "instant_pulse" : "relay",
       });
+      if (
+        requestSeq !== confirmationSeqRef.current ||
+        contextKey !== verifyContextRef.current ||
+        requestCode !== firstTruthy(record?.code, resolvedCodeRef.current)
+      ) {
+        return;
+      }
       setConfirmationOutcome(result);
       showNotice("success", "Community confirmation request opened.");
       if (result?.public_token) {
@@ -540,9 +604,19 @@ export default function TrustSlipVerifyPage() {
         );
       }
     } catch {
-      showNotice("error", "Community confirmation could not be opened yet.");
+      if (
+        requestSeq === confirmationSeqRef.current &&
+        contextKey === verifyContextRef.current
+      ) {
+        showNotice("error", "Community confirmation could not be opened yet.");
+      }
     } finally {
-      setConfirmationBusy(false);
+      if (
+        requestSeq === confirmationSeqRef.current &&
+        contextKey === verifyContextRef.current
+      ) {
+        setConfirmationBusy(false);
+      }
     }
   }
 
@@ -1066,6 +1140,10 @@ export default function TrustSlipVerifyPage() {
       {isAppRoute ? (
         <details
           className="print-trust-support"
+          open={privateEvidenceOpen}
+          onToggle={(event) => {
+            setPrivateEvidenceOpen(event.currentTarget.open);
+          }}
           style={{
             ...pageCard("#FFF7E6"),
             padding: isCompact ? 14 : 18,
@@ -1121,172 +1199,190 @@ export default function TrustSlipVerifyPage() {
             </span>
           </StableDisclosureSummary>
 
-      <TrustSlipVerifyPrivateEvidence
-        compact={isCompact}
-        bannerTitle={banner.title}
-        bannerDetail={banner.detail}
-        bannerStyle={bannerStyle}
-        loadError={loadError}
-        resolvedCode={resolvedCode}
-        statusLabel={loadError ? "Unavailable" : statusLabel}
-        holderName={holderName}
-        gsnId={gmfnId}
-        profileImageUrl={profileImageUrl}
-        communityLabel={communityLabel}
-        communityGlobalId={communityGlobalId}
-        holderRole={holderRole}
-        activeMemberCount={activeMemberCount}
-        activeCommunityCount={activeCommunityCount}
-        memberWitnessCount={memberWitnessCount}
-        membershipStrengthLabel={membershipStrengthLabel}
-        membershipRenewalStatusLabel={membershipRenewalStatusLabel}
-        membershipValidUntil={membershipValidUntil}
-        nextWitnessRenewalAt={nextWitnessRenewalAt}
-        nextWitnessRenewalStatusLabel={nextWitnessRenewalStatusLabel}
-        memberCredentialPath={memberCredentialPath}
-        communityActivityCount={communityActivityCount}
-        communityActivityLatestAt={communityActivityLatestAt}
-        communityActivityCategories={communityActivityCategories}
-        communityActivityLabel={communityActivityLabel}
-        sponsorCount={sponsorCount}
-        phoneVerifiedRaw={record?.phone_verified}
-        identityStatusLabel={identityStatusLabel}
-        cciReading={cciReading}
-        cciBand={cciBand}
-        cciMeaning={cciMeaning}
-        trustLimit={trustLimit}
-        currency={currency}
-        readerVerdict={readerVerdict}
-        questions={fourDecisionQuestions}
-        visibleBand={visibleBand}
-        visibleScore={visibleScore}
-        issuedAt={record?.issued_at}
-        expiresAt={record?.expires_at}
-        merchantVerifyActive={merchantVerifyActive}
-        phoneVerified={phoneVerified}
-        contributionDiscipline={contributionDiscipline}
-        repaymentDiscipline={repaymentDiscipline}
-        personalCommitmentDiscipline={personalCommitmentDiscipline}
-        commitmentPlainLanguage={commitmentPlainLanguage}
-        personalCommitmentPlainLanguage={personalCommitmentPlainLanguage}
-        commitmentSourceNote={commitmentSourceNote}
-        systemNote={systemNote}
-        verificationState={verificationState}
-        verifyPath={verifyPath}
-        lastReleaseText={lastReleaseText}
-        lastFullRepaymentText={lastFullRepaymentText}
-        snapshotLabel={snapshotLabel}
-        riskFlags={riskFlags}
-        verificationNote={verificationNote}
-      />
-      <section className="print-trust-support" style={pageCard("#FFFFFF")}>
-        <div style={sectionLabel()}>Internal actions</div>
-
-        <div
-          style={{
-            marginTop: 12,
-            display: "flex",
-            gap: 10,
-            flexWrap: "wrap",
-          }}
-        >
-          <PrimaryButton
-            type="button"
-            onClick={() => {
-              void copyCode();
-            }}
-            stableHeight={isCompact ? 52 : 44}
-            fullWidth={isCompact}
-            minWidth={isCompact ? undefined : 166}
-            debugId="trust-slip-verify.copy-code"
-          >
-            Copy TrustSlip Code
-          </PrimaryButton>
-
-          <SecondaryButton
-            type="button"
-            onClick={() => {
-              void copyVerifyLink();
-            }}
-            stableHeight={isCompact ? 52 : 44}
-            fullWidth={isCompact}
-            minWidth={isCompact ? undefined : 148}
-            debugId="trust-slip-verify.copy-link"
-          >
-            Copy Verify Link
-          </SecondaryButton>
-
-          <SecondaryButton
-            type="button"
-            onClick={() => {
-              void copyGmfnId();
-            }}
-            stableHeight={isCompact ? 52 : 44}
-            fullWidth={isCompact}
-            minWidth={isCompact ? undefined : 124}
-            debugId="trust-slip-verify.copy-gmfn-id"
-          >
-            Copy GSN ID
-          </SecondaryButton>
-
-          <SubtleButton
-            type="button"
-            onClick={() => {
-              if (typeof window !== "undefined" && typeof window.print === "function") {
-                window.print();
-                return;
+          {privateEvidenceOpen ? (
+            <React.Suspense
+              fallback={
+                <div
+                  style={{
+                    ...softCard("#FFFFFF"),
+                    marginTop: 14,
+                    color: "#64748B",
+                    fontWeight: 850,
+                    lineHeight: 1.6,
+                  }}
+                >
+                  Loading private review details...
+                </div>
               }
-              showNotice(
-                "error",
-                "Print is not available in this browser. Use Copy snapshot or Copy verify link."
-              );
-            }}
-            stableHeight={isCompact ? 52 : 44}
-            fullWidth={isCompact}
-            minWidth={isCompact ? undefined : 92}
-            debugId="trust-slip-verify.print"
-          >
-            Print
-          </SubtleButton>
-
-          <SubtleButton
-            type="button"
-            onClick={() => {
-              void copyVerificationSnapshot();
-            }}
-            stableHeight={isCompact ? 52 : 44}
-            fullWidth={isCompact}
-            minWidth={isCompact ? undefined : 132}
-            debugId="trust-slip-verify.copy-snapshot"
-          >
-            Copy snapshot
-          </SubtleButton>
-
-          {isAppRoute ? (
-            <StableCtaLink
-              to={routes.trust}
-              kind="soft"
-              stableHeight={isCompact ? 52 : 44}
-              fullWidth={isCompact}
-              minWidth={isCompact ? undefined : 140}
-              debugId="trust-slip-verify.route.trust"
             >
-              Trust Passport
-            </StableCtaLink>
-          ) : (
-            <StableCtaLink
-              to="/guide"
-              kind="soft"
-              stableHeight={isCompact ? 52 : 44}
-              fullWidth={isCompact}
-              minWidth={isCompact ? undefined : 132}
-              debugId="trust-slip-verify.route.trust"
-            >
-              My GSN and I
-            </StableCtaLink>
-          )}
-        </div>
-      </section>
+              <TrustSlipVerifyPrivateEvidence
+                compact={isCompact}
+                bannerTitle={banner.title}
+                bannerDetail={banner.detail}
+                bannerStyle={bannerStyle}
+                loadError={loadError}
+                resolvedCode={resolvedCode}
+                statusLabel={loadError ? "Unavailable" : statusLabel}
+                holderName={holderName}
+                gsnId={gmfnId}
+                profileImageUrl={profileImageUrl}
+                communityLabel={communityLabel}
+                communityGlobalId={communityGlobalId}
+                holderRole={holderRole}
+                activeMemberCount={activeMemberCount}
+                activeCommunityCount={activeCommunityCount}
+                memberWitnessCount={memberWitnessCount}
+                membershipStrengthLabel={membershipStrengthLabel}
+                membershipRenewalStatusLabel={membershipRenewalStatusLabel}
+                membershipValidUntil={membershipValidUntil}
+                nextWitnessRenewalAt={nextWitnessRenewalAt}
+                nextWitnessRenewalStatusLabel={nextWitnessRenewalStatusLabel}
+                memberCredentialPath={memberCredentialPath}
+                communityActivityCount={communityActivityCount}
+                communityActivityLatestAt={communityActivityLatestAt}
+                communityActivityCategories={communityActivityCategories}
+                communityActivityLabel={communityActivityLabel}
+                sponsorCount={sponsorCount}
+                phoneVerifiedRaw={record?.phone_verified}
+                identityStatusLabel={identityStatusLabel}
+                cciReading={cciReading}
+                cciBand={cciBand}
+                cciMeaning={cciMeaning}
+                trustLimit={trustLimit}
+                currency={currency}
+                readerVerdict={readerVerdict}
+                questions={fourDecisionQuestions}
+                visibleBand={visibleBand}
+                visibleScore={visibleScore}
+                issuedAt={record?.issued_at}
+                expiresAt={record?.expires_at}
+                merchantVerifyActive={merchantVerifyActive}
+                phoneVerified={phoneVerified}
+                contributionDiscipline={contributionDiscipline}
+                repaymentDiscipline={repaymentDiscipline}
+                personalCommitmentDiscipline={personalCommitmentDiscipline}
+                commitmentPlainLanguage={commitmentPlainLanguage}
+                personalCommitmentPlainLanguage={personalCommitmentPlainLanguage}
+                commitmentSourceNote={commitmentSourceNote}
+                systemNote={systemNote}
+                verificationState={verificationState}
+                verifyPath={verifyPath}
+                lastReleaseText={lastReleaseText}
+                lastFullRepaymentText={lastFullRepaymentText}
+                snapshotLabel={snapshotLabel}
+                riskFlags={riskFlags}
+                verificationNote={verificationNote}
+              />
+              <section className="print-trust-support" style={pageCard("#FFFFFF")}>
+                <div style={sectionLabel()}>Internal actions</div>
+
+                <div
+                  style={{
+                    marginTop: 12,
+                    display: "flex",
+                    gap: 10,
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <PrimaryButton
+                    type="button"
+                    onClick={() => {
+                      void copyCode();
+                    }}
+                    stableHeight={isCompact ? 52 : 44}
+                    fullWidth={isCompact}
+                    minWidth={isCompact ? undefined : 166}
+                    debugId="trust-slip-verify.copy-code"
+                  >
+                    Copy TrustSlip Code
+                  </PrimaryButton>
+
+                  <SecondaryButton
+                    type="button"
+                    onClick={() => {
+                      void copyVerifyLink();
+                    }}
+                    stableHeight={isCompact ? 52 : 44}
+                    fullWidth={isCompact}
+                    minWidth={isCompact ? undefined : 148}
+                    debugId="trust-slip-verify.copy-link"
+                  >
+                    Copy Verify Link
+                  </SecondaryButton>
+
+                  <SecondaryButton
+                    type="button"
+                    onClick={() => {
+                      void copyGmfnId();
+                    }}
+                    stableHeight={isCompact ? 52 : 44}
+                    fullWidth={isCompact}
+                    minWidth={isCompact ? undefined : 124}
+                    debugId="trust-slip-verify.copy-gmfn-id"
+                  >
+                    Copy GSN ID
+                  </SecondaryButton>
+
+                  <SubtleButton
+                    type="button"
+                    onClick={() => {
+                      if (typeof window !== "undefined" && typeof window.print === "function") {
+                        window.print();
+                        return;
+                      }
+                      showNotice(
+                        "error",
+                        "Print is not available in this browser. Use Copy snapshot or Copy verify link."
+                      );
+                    }}
+                    stableHeight={isCompact ? 52 : 44}
+                    fullWidth={isCompact}
+                    minWidth={isCompact ? undefined : 92}
+                    debugId="trust-slip-verify.print"
+                  >
+                    Print
+                  </SubtleButton>
+
+                  <SubtleButton
+                    type="button"
+                    onClick={() => {
+                      void copyVerificationSnapshot();
+                    }}
+                    stableHeight={isCompact ? 52 : 44}
+                    fullWidth={isCompact}
+                    minWidth={isCompact ? undefined : 132}
+                    debugId="trust-slip-verify.copy-snapshot"
+                  >
+                    Copy snapshot
+                  </SubtleButton>
+
+                  {isAppRoute ? (
+                    <StableCtaLink
+                      to={routes.trust}
+                      kind="soft"
+                      stableHeight={isCompact ? 52 : 44}
+                      fullWidth={isCompact}
+                      minWidth={isCompact ? undefined : 140}
+                      debugId="trust-slip-verify.route.trust"
+                    >
+                      Trust Passport
+                    </StableCtaLink>
+                  ) : (
+                    <StableCtaLink
+                      to="/guide"
+                      kind="soft"
+                      stableHeight={isCompact ? 52 : 44}
+                      fullWidth={isCompact}
+                      minWidth={isCompact ? undefined : 132}
+                      debugId="trust-slip-verify.route.trust"
+                    >
+                      My GSN and I
+                    </StableCtaLink>
+                  )}
+                </div>
+              </section>
+            </React.Suspense>
+          ) : null}
 
         </details>
       ) : null}
