@@ -28,9 +28,77 @@ For innovation-case, investor, policy, TrustSlip, merchant-verification, or
 development-finance explanation work, also read
 `docs/INNOVATION_POLICY_LOGIC_2026-04-20.md`.
 
-For Trust Event, Trust Passport, TrustSlip, Community Domain settings, or future
+For Trust Event, Trust Passport, TrustSlip, Community Domain settings,
+governance, delegated authority, onboarding, identity, membership,
+verification, Trust Graph, relationship intelligence, behaviour evidence,
+Marketplace, trusted commerce, Community Finance, financial evidence, or future
 Committee evidence-capture work, also read
+`docs/GSN_MISSION_PROTOCOL_2026-06-30.md` first,
+then
+`docs/GSN_FIRST_PRINCIPLES_PROTOCOL_2026-06-30.md`,
+then
+`docs/GSN_DECISION_FRAMEWORK_DESIGN_PHILOSOPHY_PROTOCOL_2026-06-30.md`,
+then
+`docs/GSN_ARCHITECTURAL_INVARIANTS_PROTOCOL_2026-06-30.md`,
+then
+`docs/GSN_USER_JOURNEY_INTERACTION_PROTOCOL_2026-06-30.md`,
+then
+`docs/GSN_SCREEN_BLUEPRINT_IMPLEMENTATION_ORDER_PROTOCOL_2026-06-30.md`,
+then
+`docs/GSN_COMMUNITY_DOMAIN_ENGINE_PHILOSOPHY_PROTOCOL_2026-06-30.md`,
+then
+`docs/GSN_COMMUNITY_SETTINGS_ENGINE_PROTOCOL_2026-06-30.md`,
+then
+`docs/GSN_COMMUNITY_GOVERNANCE_DELEGATED_AUTHORITY_PROTOCOL_2026-06-30.md`,
+then
+`docs/GSN_COMMUNITY_ONBOARDING_PROTOCOL_2026-06-30.md`,
+then
+`docs/GSN_COMMUNITY_IDENTITY_MEMBERSHIP_TRUST_VERIFICATION_PROTOCOL_2026-06-30.md`,
+then
+`docs/GSN_TRUST_EVENT_BEHAVIOUR_EVIDENCE_PROTOCOL_2026-06-30.md`,
+then
+`docs/GSN_COMMUNITY_VERIFICATION_TRUST_GRAPH_RELATIONSHIP_INTELLIGENCE_PROTOCOL_2026-06-30.md`,
+then
+`docs/GSN_MARKETPLACE_ENGINE_PROTOCOL_2026-06-30.md`,
+then
+`docs/GSN_COMMUNITY_FINANCE_ENGINE_PROTOCOL_2026-06-30.md`,
+then
+`docs/GSN_ADMINISTRATION_COMMAND_CENTRE_COMMUNITY_INTELLIGENCE_PROTOCOL_2026-06-30.md`,
+then
+`docs/GSN_API_DATABASE_SYSTEM_ARCHITECTURE_PROTOCOL_2026-06-30.md`,
+then
+`docs/GSN_SECURITY_INTEGRITY_TRUST_PROTECTION_PROTOCOL_2026-06-30.md`,
+then
+`docs/GSN_EVOLUTION_RESEARCH_FUTURE_EXTENSION_PROTOCOL_2026-06-30.md`,
+then
+`docs/GSN_ENGINEERING_CONSTITUTION_CHANGE_CONTROL_IMPLEMENTATION_ORDER_PROTOCOL_2026-06-30.md`,
+then
+`docs/GSN_FOUNDATIONAL_DATA_MODEL_ENTITY_RELATIONSHIP_CONSTITUTION_PROTOCOL_2026-06-30.md`,
+then
+`docs/GSN_ARCHITECTURAL_DECISION_REGISTER_CONFLICT_RESOLUTION_PROTOCOL_2026-06-30.md`,
+then
+`docs/GSN_INTEGRATED_COMMUNITY_LIFECYCLE_PROTOCOL_2026-06-30.md`,
+then
 `docs/GSN_TRUST_EVENT_STANDARDIZATION_PROTOCOL_2026-06-29.md`.
+
+Together, these Community Domain protocols define the **GSN Community Domain
+Operating System (CDOS)**: the operating model for how institutions run on GSN.
+Protocol 23 is numbered later but should be read first as the permanent mission
+protocol explaining why GSN exists.
+Protocol 20 should be read next as the first-principles engineering
+constitution.
+Protocol 21 should be read immediately after it as the decision compass for
+product, engineering, and architecture tradeoffs.
+Protocol 22 should be read next as the permanent invariant list of what future
+GSN work must never break.
+Protocol 24 and Protocol 25 should be read next for user journeys, screen
+ownership, core navigation, and UI implementation order.
+Owner implementation directive: keep the current navigation pages and route
+contracts as they are. Do not use Protocol 25 to replace the existing navigation
+model or force strict screen ownership unless there is an absolute documented
+need.
+Do not renumber supplied protocols to force a continuous sequence; missing
+protocol numbers remain reserved until the product owner provides them.
 
 ## Backend
 

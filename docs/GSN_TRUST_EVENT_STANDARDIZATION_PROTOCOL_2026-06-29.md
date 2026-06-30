@@ -7,6 +7,37 @@ Protocol-level architecture decision adopted on 2026-06-29.
 This document is a product and engineering standard for future Trust Event,
 Trust Passport, TrustSlip, Community Domain, and later Committee work.
 
+For Community Domain Engine philosophy, Community Settings, delegated
+institutional authority, and the rule that Community Domains configure shared
+GSN engines rather than creating separate platform versions, read
+`docs/GSN_MISSION_PROTOCOL_2026-06-30.md` first, then
+`docs/GSN_FIRST_PRINCIPLES_PROTOCOL_2026-06-30.md`, then
+`docs/GSN_DECISION_FRAMEWORK_DESIGN_PHILOSOPHY_PROTOCOL_2026-06-30.md`, then
+`docs/GSN_ARCHITECTURAL_INVARIANTS_PROTOCOL_2026-06-30.md`, then
+`docs/GSN_USER_JOURNEY_INTERACTION_PROTOCOL_2026-06-30.md`, then
+`docs/GSN_SCREEN_BLUEPRINT_IMPLEMENTATION_ORDER_PROTOCOL_2026-06-30.md`, then
+`docs/GSN_COMMUNITY_DOMAIN_ENGINE_PHILOSOPHY_PROTOCOL_2026-06-30.md`,
+then
+`docs/GSN_COMMUNITY_SETTINGS_ENGINE_PROTOCOL_2026-06-30.md`, then
+`docs/GSN_COMMUNITY_GOVERNANCE_DELEGATED_AUTHORITY_PROTOCOL_2026-06-30.md`,
+then `docs/GSN_COMMUNITY_ONBOARDING_PROTOCOL_2026-06-30.md`, then
+`docs/GSN_COMMUNITY_IDENTITY_MEMBERSHIP_TRUST_VERIFICATION_PROTOCOL_2026-06-30.md`,
+then `docs/GSN_TRUST_EVENT_BEHAVIOUR_EVIDENCE_PROTOCOL_2026-06-30.md`, then
+`docs/GSN_COMMUNITY_VERIFICATION_TRUST_GRAPH_RELATIONSHIP_INTELLIGENCE_PROTOCOL_2026-06-30.md`,
+then `docs/GSN_MARKETPLACE_ENGINE_PROTOCOL_2026-06-30.md`, then
+`docs/GSN_COMMUNITY_FINANCE_ENGINE_PROTOCOL_2026-06-30.md`, then
+`docs/GSN_ADMINISTRATION_COMMAND_CENTRE_COMMUNITY_INTELLIGENCE_PROTOCOL_2026-06-30.md`,
+then `docs/GSN_API_DATABASE_SYSTEM_ARCHITECTURE_PROTOCOL_2026-06-30.md`, then
+`docs/GSN_SECURITY_INTEGRITY_TRUST_PROTECTION_PROTOCOL_2026-06-30.md`, then
+`docs/GSN_EVOLUTION_RESEARCH_FUTURE_EXTENSION_PROTOCOL_2026-06-30.md`, then
+`docs/GSN_ENGINEERING_CONSTITUTION_CHANGE_CONTROL_IMPLEMENTATION_ORDER_PROTOCOL_2026-06-30.md`,
+then
+`docs/GSN_FOUNDATIONAL_DATA_MODEL_ENTITY_RELATIONSHIP_CONSTITUTION_PROTOCOL_2026-06-30.md`,
+then
+`docs/GSN_ARCHITECTURAL_DECISION_REGISTER_CONFLICT_RESOLUTION_PROTOCOL_2026-06-30.md`.
+Then read `docs/GSN_INTEGRATED_COMMUNITY_LIFECYCLE_PROTOCOL_2026-06-30.md` for
+the cross-engine Community Domain lifecycle blueprint.
+
 Unabated truth: this protocol is research-aligned, not yet peer-reviewed as the
 specific GSN framework. It is grounded in established work on social capital,
 institutional governance, organizational citizenship behavior, reputation
@@ -376,4 +407,3 @@ allowing every Community Domain to define its own local activity catalogue.
 Trust becomes portable because the underlying evidence is structured,
 approved, provenance-backed, and mapped into a shared language without erasing
 local community identity.
-

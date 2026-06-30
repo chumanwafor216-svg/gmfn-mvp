@@ -1,4 +1,12 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useParams } from "react-router-dom";
 import PageTopNav from "../components/PageTopNav";
 import { GsnRealisticIcon } from "../components/GsnRealisticIcon";
@@ -10,9 +18,13 @@ import {
   getAccessToken,
   getCommunityDomainActivityGroupReadiness,
   getCommunityDomainActivityMap,
+  getCommunityDomainAppealReadiness,
   getCommunityDomainCapacityPlan,
+  getCommunityDomainComplianceMap,
+  getCommunityDomainConfigurationMap,
   getCommunityDomainDashboard,
   getCommunityDomainDelegationMap,
+  getCommunityDomainEconomicParticipation,
   getCommunityDomainEvidenceRecordReadiness,
   getCommunityDomainEvidenceReleaseReadiness,
   getCommunityDomainAffiliationReadiness,
@@ -21,8 +33,25 @@ import {
   getCommunityDomainMemberVerificationMap,
   getCommunityDomainMemberPlacementSummary,
   getCommunityDomainModuleScopeReadiness,
+  getCommunityDomainNodeActivityMap,
+  getCommunityDomainNodeAnalyticsMap,
+  getCommunityDomainNodeAutonomyMap,
+  getCommunityDomainNodeCommunicationMap,
+  getCommunityDomainNodeDomainBoundaryMap,
+  getCommunityDomainNodeEconomicMap,
+  getCommunityDomainNodeEvidenceAuthorityMap,
+  getCommunityDomainNodeParticipationMap,
+  getCommunityDomainNodePaidActivityMap,
+  getCommunityDomainNodePrivacyMap,
+  getCommunityDomainNodeScheduledActivityMap,
+  getCommunityDomainNodeServiceMap,
+  getCommunityDomainNodeTrustMap,
+  getCommunityDomainNodeVaultMap,
+  getCommunityDomainNetworkExchangeMap,
+  getCommunityDomainNetworkPresence,
   getCommunityDomainNotificationScopeReadiness,
   getCommunityDomainReadiness,
+  getCommunityDomainRecordPrivacyMap,
   getCommunityDomainReviewerQueue,
   getCommunityDomainRolloutPlan,
   getCommunityDomainSetupPlan,
@@ -30,6 +59,7 @@ import {
   getCommunityDomainTrustRelayReadiness,
   getCommunityDomainTrustMobility,
   getCommunityDomainSubscriptionLifecycle,
+  listCommunityDomainServiceSettings,
   listCommunityDomainActionReviews,
   listCommunityDomainNodeTree,
   listMyCommunityDomainMembershipRequests,
@@ -37,6 +67,37 @@ import {
   requestCommunityDomainMembership,
 } from "../lib/api";
 import { APP_ROUTES } from "../lib/appRoutes";
+
+const CommunityDomainNodeProjectionGroups = lazy(
+  () => import("./communityDomainDashboard/NodeProjectionGroups")
+);
+const CommunityDomainStructurePlanningPanels = lazy(
+  () => import("./communityDomainDashboard/StructurePlanningPanels")
+);
+const CommunityDomainStructurePreviewPanel = lazy(
+  () => import("./communityDomainDashboard/StructurePreviewPanel")
+);
+const CommunityDomainMemberReadinessPanels = lazy(
+  () => import("./communityDomainDashboard/MemberReadinessPanels")
+);
+const CommunityDomainGovernanceReadinessPanels = lazy(
+  () => import("./communityDomainDashboard/GovernanceReadinessPanels")
+);
+const CommunityDomainBillingReadinessPanels = lazy(
+  () => import("./communityDomainDashboard/BillingReadinessPanels")
+);
+const CommunityDomainIdentityReadinessPanels = lazy(
+  () => import("./communityDomainDashboard/IdentityReadinessPanels")
+);
+const CommunityDomainServiceReadinessPanels = lazy(
+  () => import("./communityDomainDashboard/ServiceReadinessPanels")
+);
+const CommunityDomainServiceBoundaryPanels = lazy(
+  () => import("./communityDomainDashboard/ServiceBoundaryPanels")
+);
+const CommunityDomainTrustEvidenceReadinessPanels = lazy(
+  () => import("./communityDomainDashboard/TrustEvidenceReadinessPanels")
+);
 
 type DomainLane = {
   lane_key?: string;
@@ -332,6 +393,122 @@ type SubscriptionLifecycleLane = {
   next_step?: string | null;
 };
 
+type NetworkExchangeLane = {
+  lane_key?: string | null;
+  label?: string | null;
+  status?: string | null;
+  ready?: boolean;
+  count?: number | string | null;
+  next_step?: string | null;
+};
+
+type RecordPrivacyLane = {
+  lane_key?: string | null;
+  label?: string | null;
+  status?: string | null;
+  ready?: boolean;
+  count?: number | string | null;
+  next_step?: string | null;
+};
+
+type ConfigurationMapLane = {
+  lane_key?: string | null;
+  label?: string | null;
+  status?: string | null;
+  ready?: boolean;
+  count?: number | string | null;
+  next_step?: string | null;
+};
+
+type ComplianceMapLane = {
+  lane_key?: string | null;
+  label?: string | null;
+  status?: string | null;
+  ready?: boolean;
+  count?: number | string | null;
+  next_step?: string | null;
+};
+
+type AppealReadinessLane = {
+  lane_key?: string | null;
+  label?: string | null;
+  status?: string | null;
+  ready?: boolean;
+  signal_count?: number | string | null;
+  appeal_engine_status?: string | null;
+  next_step?: string | null;
+};
+
+type ServiceSettingsProjectionItem = {
+  module_key?: string | null;
+  label?: string | null;
+  summary?: string | null;
+  enabled?: boolean;
+  status?: string | null;
+  source?: string | null;
+  admin_visible?: boolean;
+};
+
+type EconomicParticipationLane = {
+  lane_key?: string | null;
+  label?: string | null;
+  summary?: string | null;
+  module_key?: string | null;
+  status?: string | null;
+  ready?: boolean;
+  next_step?: string | null;
+};
+
+type NetworkPresenceLane = {
+  lane_key?: string | null;
+  label?: string | null;
+  summary?: string | null;
+  status?: string | null;
+  ready?: boolean;
+};
+
+type NodeProjectionItem = {
+  node?: {
+    id?: number | string | null;
+    name?: string | null;
+    node_type?: string | null;
+    node_kind?: string | null;
+    parent_node_id?: number | string | null;
+    status?: string | null;
+  } | null;
+  autonomy_status?: string | null;
+  economy_status?: string | null;
+  activity_status?: string | null;
+  trust_status?: string | null;
+  participation_status?: string | null;
+  service_status?: string | null;
+  privacy_status?: string | null;
+  analytics_status?: string | null;
+  domain_boundary_status?: string | null;
+  evidence_authority_status?: string | null;
+  communication_status?: string | null;
+  vault_status?: string | null;
+  schedule_status?: string | null;
+  paid_activity_status?: string | null;
+  locally_operable?: boolean;
+  ready_for_local_economy?: boolean;
+  ready_for_local_activity?: boolean;
+  ready_for_local_trust?: boolean;
+  ready_for_local_participation?: boolean;
+  ready_for_local_services?: boolean;
+  ready_for_local_analytics?: boolean;
+  ready_for_child_domain_review?: boolean;
+  ready_for_local_evidence_authority?: boolean;
+  ready_for_local_communication?: boolean;
+  ready_for_local_vault?: boolean;
+  ready_for_local_schedule?: boolean;
+  ready_for_local_paid_activity?: boolean;
+  safe_default_visibility?: boolean;
+  recommended_boundary?: string | null;
+  visibility_policy?: string | null;
+  next_step?: string | null;
+};
+
 const MODULE_LABELS: Record<string, string> = {
   governance: "Governance",
   members: "Members",
@@ -382,6 +559,14 @@ function compactStatus(value: unknown): string {
 function countValue(value: unknown): string {
   const numberValue = Number(value ?? 0);
   return Number.isFinite(numberValue) ? String(numberValue) : "0";
+}
+
+async function readOptional<T>(loader: () => Promise<T>): Promise<T | null> {
+  try {
+    return await loader();
+  } catch {
+    return null;
+  }
 }
 
 function pageShell(): React.CSSProperties {
@@ -714,6 +899,7 @@ export default function CommunityDomainDashboardPage() {
   const params = useParams();
   const communityDomainId = cleanText(params.communityDomainId || params.id);
   const [dashboard, setDashboard] = useState<DashboardPayload | null>(null);
+  const [dashboardRouteId, setDashboardRouteId] = useState("");
   const [domainItems, setDomainItems] = useState<any[]>([]);
   const [reviewerQueue, setReviewerQueue] = useState<ActionReviewItem[]>([]);
   const [ownMembershipRequests, setOwnMembershipRequests] = useState<ActionReviewItem[]>([]);
@@ -729,6 +915,28 @@ export default function CommunityDomainDashboardPage() {
   const [activityMap, setActivityMap] = useState<any | null>(null);
   const [activityGroupReadiness, setActivityGroupReadiness] = useState<any | null>(null);
   const [memberVerificationMap, setMemberVerificationMap] = useState<any | null>(null);
+  const [networkExchangeMap, setNetworkExchangeMap] = useState<any | null>(null);
+  const [recordPrivacyMap, setRecordPrivacyMap] = useState<any | null>(null);
+  const [configurationMap, setConfigurationMap] = useState<any | null>(null);
+  const [complianceMap, setComplianceMap] = useState<any | null>(null);
+  const [appealReadiness, setAppealReadiness] = useState<any | null>(null);
+  const [serviceSettingsProjection, setServiceSettingsProjection] = useState<any | null>(null);
+  const [economicParticipation, setEconomicParticipation] = useState<any | null>(null);
+  const [networkPresence, setNetworkPresence] = useState<any | null>(null);
+  const [nodeAutonomyMap, setNodeAutonomyMap] = useState<any | null>(null);
+  const [nodeEconomicMap, setNodeEconomicMap] = useState<any | null>(null);
+  const [nodeActivityMap, setNodeActivityMap] = useState<any | null>(null);
+  const [nodeTrustMap, setNodeTrustMap] = useState<any | null>(null);
+  const [nodeParticipationMap, setNodeParticipationMap] = useState<any | null>(null);
+  const [nodeServiceMap, setNodeServiceMap] = useState<any | null>(null);
+  const [nodePrivacyMap, setNodePrivacyMap] = useState<any | null>(null);
+  const [nodeAnalyticsMap, setNodeAnalyticsMap] = useState<any | null>(null);
+  const [nodeDomainBoundaryMap, setNodeDomainBoundaryMap] = useState<any | null>(null);
+  const [nodeEvidenceAuthorityMap, setNodeEvidenceAuthorityMap] = useState<any | null>(null);
+  const [nodeCommunicationMap, setNodeCommunicationMap] = useState<any | null>(null);
+  const [nodeVaultMap, setNodeVaultMap] = useState<any | null>(null);
+  const [nodeScheduledActivityMap, setNodeScheduledActivityMap] = useState<any | null>(null);
+  const [nodePaidActivityMap, setNodePaidActivityMap] = useState<any | null>(null);
   const [evidenceRecordReadiness, setEvidenceRecordReadiness] = useState<any | null>(null);
   const [evidenceReleaseReadiness, setEvidenceReleaseReadiness] = useState<any | null>(null);
   const [trustRelayReadiness, setTrustRelayReadiness] = useState<any | null>(null);
@@ -740,6 +948,11 @@ export default function CommunityDomainDashboardPage() {
   const [subscriptionLifecycle, setSubscriptionLifecycle] = useState<any | null>(null);
   const [quote, setQuote] = useState<any | null>(null);
   const [activeLane, setActiveLane] = useState("structure");
+  const [loadedReadinessLanes, setLoadedReadinessLanes] = useState<Record<string, boolean>>({});
+  const [loadingReadinessLanes, setLoadingReadinessLanes] = useState<Record<string, boolean>>({});
+  const readinessLoadSequence = useRef(0);
+  const readinessLoadIds = useRef<Record<string, number>>({});
+  const readinessLoadPromises = useRef<Record<string, Promise<any>>>({});
   const [loading, setLoading] = useState(true);
   const [loadingQueue, setLoadingQueue] = useState(false);
   const [busyQuote, setBusyQuote] = useState(false);
@@ -763,32 +976,69 @@ export default function CommunityDomainDashboardPage() {
     }
   }, [communityDomainId]);
 
+  const resetReadinessLoadTracking = useCallback(() => {
+    setLoadedReadinessLanes({});
+    setLoadingReadinessLanes({});
+    readinessLoadSequence.current += 1;
+    readinessLoadIds.current = {};
+    readinessLoadPromises.current = {};
+  }, []);
+
+  const resetOptionalReadinessState = useCallback(() => {
+    setPlacementSummary(null);
+    setNodeTree([]);
+    setModuleScopeReadiness(null);
+    setSetupReadiness(null);
+    setSetupPlan(null);
+    setCapacityPlan(null);
+    setGovernanceCoverage(null);
+    setDelegationMap(null);
+    setRolloutPlan(null);
+    setActivityMap(null);
+    setActivityGroupReadiness(null);
+    setMemberVerificationMap(null);
+    setNetworkExchangeMap(null);
+    setRecordPrivacyMap(null);
+    setConfigurationMap(null);
+    setComplianceMap(null);
+    setAppealReadiness(null);
+    setServiceSettingsProjection(null);
+    setEconomicParticipation(null);
+    setNetworkPresence(null);
+    setNodeAutonomyMap(null);
+    setNodeEconomicMap(null);
+    setNodeActivityMap(null);
+    setNodeTrustMap(null);
+    setNodeParticipationMap(null);
+    setNodeServiceMap(null);
+    setNodePrivacyMap(null);
+    setNodeAnalyticsMap(null);
+    setNodeDomainBoundaryMap(null);
+    setNodeEvidenceAuthorityMap(null);
+    setNodeCommunicationMap(null);
+    setNodeVaultMap(null);
+    setNodeScheduledActivityMap(null);
+    setNodePaidActivityMap(null);
+    setEvidenceRecordReadiness(null);
+    setEvidenceReleaseReadiness(null);
+    setTrustRelayReadiness(null);
+    setNotificationScopeReadiness(null);
+    setTrustMobility(null);
+    setInstitutionalProfile(null);
+    setSocialBridge(null);
+    setAffiliationReadiness(null);
+    setSubscriptionLifecycle(null);
+  }, []);
+
   const loadDashboard = useCallback(async () => {
     if (!communityDomainId) {
       setLoading(true);
+      setDashboard(null);
+      setDashboardRouteId("");
+      resetReadinessLoadTracking();
       setMessage("");
       setOwnMembershipRequests([]);
-      setPlacementSummary(null);
-      setNodeTree([]);
-      setModuleScopeReadiness(null);
-      setSetupReadiness(null);
-      setSetupPlan(null);
-      setCapacityPlan(null);
-      setGovernanceCoverage(null);
-      setDelegationMap(null);
-      setRolloutPlan(null);
-      setActivityMap(null);
-      setActivityGroupReadiness(null);
-      setMemberVerificationMap(null);
-      setEvidenceRecordReadiness(null);
-      setEvidenceReleaseReadiness(null);
-      setTrustRelayReadiness(null);
-      setNotificationScopeReadiness(null);
-      setTrustMobility(null);
-      setInstitutionalProfile(null);
-      setSocialBridge(null);
-      setAffiliationReadiness(null);
-      setSubscriptionLifecycle(null);
+      resetOptionalReadinessState();
       try {
         const payload = await listMyCommunityDomains();
         setDomainItems(Array.isArray(payload?.items) ? payload.items : []);
@@ -805,203 +1055,21 @@ export default function CommunityDomainDashboardPage() {
     }
 
     setLoading(true);
+    setDashboardRouteId("");
+    resetReadinessLoadTracking();
     setMessage("");
     setDomainItems([]);
     setReviewerQueue([]);
     setOwnMembershipRequests([]);
-    setPlacementSummary(null);
-    setNodeTree([]);
-    setModuleScopeReadiness(null);
-    setSetupReadiness(null);
-    setSetupPlan(null);
-    setCapacityPlan(null);
-    setGovernanceCoverage(null);
-    setDelegationMap(null);
-    setRolloutPlan(null);
-    setActivityMap(null);
-    setActivityGroupReadiness(null);
-    setMemberVerificationMap(null);
-    setEvidenceRecordReadiness(null);
-    setEvidenceReleaseReadiness(null);
-    setTrustRelayReadiness(null);
-    setNotificationScopeReadiness(null);
-    setTrustMobility(null);
-    setInstitutionalProfile(null);
-    setSocialBridge(null);
-    setAffiliationReadiness(null);
-    setSubscriptionLifecycle(null);
+    resetOptionalReadinessState();
     try {
       const payload = await getCommunityDomainDashboard(communityDomainId);
       const nextDashboard = (payload?.dashboard || null) as DashboardPayload | null;
       setDashboard(nextDashboard);
+      setDashboardRouteId(communityDomainId);
       setQuote(nextDashboard?.package_quote || null);
       setActiveLane(laneForAction(nextDashboard?.primary_next_action?.action_key));
-      try {
-        const treePayload = await listCommunityDomainNodeTree(communityDomainId);
-        setNodeTree(Array.isArray(treePayload?.items) ? treePayload.items : []);
-      } catch {
-        setNodeTree([]);
-      }
-      try {
-        const readinessPayload = await getCommunityDomainReadiness(communityDomainId);
-        setSetupReadiness(readinessPayload?.readiness || null);
-      } catch {
-        setSetupReadiness(null);
-      }
-      try {
-        const setupPlanPayload = await getCommunityDomainSetupPlan(communityDomainId);
-        setSetupPlan(setupPlanPayload?.setup_plan || null);
-      } catch {
-        setSetupPlan(null);
-      }
-      try {
-        const capacityPlanPayload = await getCommunityDomainCapacityPlan(communityDomainId);
-        setCapacityPlan(capacityPlanPayload?.capacity_plan || null);
-      } catch {
-        setCapacityPlan(null);
-      }
-      try {
-        const subscriptionPayload = await getCommunityDomainSubscriptionLifecycle(
-          communityDomainId
-        );
-        setSubscriptionLifecycle(subscriptionPayload?.subscription_lifecycle || null);
-      } catch {
-        setSubscriptionLifecycle(null);
-      }
-      try {
-        const governanceCoveragePayload = await getCommunityDomainGovernanceCoverage(
-          communityDomainId
-        );
-        setGovernanceCoverage(governanceCoveragePayload?.governance_coverage || null);
-      } catch {
-        setGovernanceCoverage(null);
-      }
-      try {
-        const delegationMapPayload = await getCommunityDomainDelegationMap(
-          communityDomainId
-        );
-        setDelegationMap(delegationMapPayload?.delegation_map || null);
-      } catch {
-        setDelegationMap(null);
-      }
-      try {
-        const rolloutPlanPayload = await getCommunityDomainRolloutPlan(communityDomainId);
-        setRolloutPlan(rolloutPlanPayload?.rollout_plan || null);
-      } catch {
-        setRolloutPlan(null);
-      }
-      try {
-        const activityMapPayload = await getCommunityDomainActivityMap(communityDomainId);
-        setActivityMap(activityMapPayload?.activity_map || null);
-      } catch {
-        setActivityMap(null);
-      }
-      try {
-        const activityGroupPayload = await getCommunityDomainActivityGroupReadiness(
-          communityDomainId
-        );
-        setActivityGroupReadiness(activityGroupPayload?.activity_group_readiness || null);
-      } catch {
-        setActivityGroupReadiness(null);
-      }
-      try {
-        const memberVerificationPayload = await getCommunityDomainMemberVerificationMap(
-          communityDomainId
-        );
-        setMemberVerificationMap(
-          memberVerificationPayload?.member_verification_map || null
-        );
-      } catch {
-        setMemberVerificationMap(null);
-      }
-      try {
-        const readinessPayload = await getCommunityDomainModuleScopeReadiness(communityDomainId);
-        setModuleScopeReadiness(readinessPayload?.module_scope_readiness || null);
-      } catch {
-        setModuleScopeReadiness(null);
-      }
-      try {
-        const evidenceReadinessPayload = await getCommunityDomainEvidenceRecordReadiness(
-          communityDomainId
-        );
-        setEvidenceRecordReadiness(
-          evidenceReadinessPayload?.evidence_record_readiness || null
-        );
-      } catch {
-        setEvidenceRecordReadiness(null);
-      }
-      try {
-        const releaseReadinessPayload = await getCommunityDomainEvidenceReleaseReadiness(
-          communityDomainId
-        );
-        setEvidenceReleaseReadiness(
-          releaseReadinessPayload?.evidence_release_readiness || null
-        );
-      } catch {
-        setEvidenceReleaseReadiness(null);
-      }
-      try {
-        const relayReadinessPayload = await getCommunityDomainTrustRelayReadiness(
-          communityDomainId
-        );
-        setTrustRelayReadiness(relayReadinessPayload?.trust_relay_readiness || null);
-      } catch {
-        setTrustRelayReadiness(null);
-      }
-      try {
-        const notificationScopePayload = await getCommunityDomainNotificationScopeReadiness(
-          communityDomainId
-        );
-        setNotificationScopeReadiness(
-          notificationScopePayload?.notification_scope_readiness || null
-        );
-      } catch {
-        setNotificationScopeReadiness(null);
-      }
-      try {
-        const trustMobilityPayload = await getCommunityDomainTrustMobility(communityDomainId);
-        setTrustMobility(trustMobilityPayload?.trust_mobility || null);
-      } catch {
-        setTrustMobility(null);
-      }
-      try {
-        const institutionalProfilePayload = await getCommunityDomainInstitutionalProfile(
-          communityDomainId
-        );
-        setInstitutionalProfile(
-          institutionalProfilePayload?.institutional_profile || null
-        );
-      } catch {
-        setInstitutionalProfile(null);
-      }
-      try {
-        const socialBridgePayload = await getCommunityDomainSocialBridge(communityDomainId);
-        setSocialBridge(socialBridgePayload?.social_bridge || null);
-      } catch {
-        setSocialBridge(null);
-      }
-      try {
-        const affiliationReadinessPayload = await getCommunityDomainAffiliationReadiness(
-          communityDomainId
-        );
-        setAffiliationReadiness(
-          affiliationReadinessPayload?.affiliation_readiness || null
-        );
-      } catch {
-        setAffiliationReadiness(null);
-      }
-      const viewerUserId = nextDashboard?.viewer?.user_id;
-      if (viewerUserId) {
-        try {
-          const placementPayload = await getCommunityDomainMemberPlacementSummary(
-            communityDomainId,
-            viewerUserId
-          );
-          setPlacementSummary(placementPayload?.placement_summary || null);
-        } catch {
-          setPlacementSummary(null);
-        }
-      }
+      setLoading(false);
       if (nextDashboard?.viewer?.can_admin) {
         try {
           const [pendingPayload, approvedPayload] = await Promise.all([
@@ -1021,27 +1089,9 @@ export default function CommunityDomainDashboardPage() {
       }
     } catch (err: any) {
       setDashboard(null);
-      setPlacementSummary(null);
-      setNodeTree([]);
-      setModuleScopeReadiness(null);
-      setSetupReadiness(null);
-      setSetupPlan(null);
-      setCapacityPlan(null);
-      setGovernanceCoverage(null);
-      setDelegationMap(null);
-      setRolloutPlan(null);
-      setActivityMap(null);
-      setActivityGroupReadiness(null);
-      setMemberVerificationMap(null);
-      setEvidenceRecordReadiness(null);
-      setEvidenceReleaseReadiness(null);
-      setTrustRelayReadiness(null);
-      setNotificationScopeReadiness(null);
-      setTrustMobility(null);
-      setInstitutionalProfile(null);
-      setSocialBridge(null);
-      setAffiliationReadiness(null);
-      setSubscriptionLifecycle(null);
+      setDashboardRouteId("");
+      resetReadinessLoadTracking();
+      resetOptionalReadinessState();
       await loadOwnMembershipRequests();
       setMessage(
         err?.message ||
@@ -1050,7 +1100,206 @@ export default function CommunityDomainDashboardPage() {
     } finally {
       setLoading(false);
     }
-  }, [communityDomainId, loadOwnMembershipRequests]);
+  }, [
+    communityDomainId,
+    loadOwnMembershipRequests,
+    resetOptionalReadinessState,
+    resetReadinessLoadTracking,
+  ]);
+
+  const loadReadinessPayloadsForLane = useCallback(
+    async (laneKey: string, domainId: string, viewerUserId?: number | string | null) => {
+      if (laneKey === "identity") {
+        return Promise.all([
+          readOptional(() => getCommunityDomainInstitutionalProfile(domainId)),
+          readOptional(() => getCommunityDomainSocialBridge(domainId)),
+          readOptional(() => getCommunityDomainAffiliationReadiness(domainId)),
+        ]);
+      }
+
+      if (laneKey === "billing") {
+        return Promise.all([
+          readOptional(() => getCommunityDomainCapacityPlan(domainId)),
+          readOptional(() => getCommunityDomainSubscriptionLifecycle(domainId)),
+        ]);
+      }
+
+      if (laneKey === "structure") {
+        return Promise.all([
+          readOptional(() => listCommunityDomainNodeTree(domainId)),
+          readOptional(() => getCommunityDomainRolloutPlan(domainId)),
+          readOptional(() => getCommunityDomainActivityMap(domainId)),
+          readOptional(() => getCommunityDomainActivityGroupReadiness(domainId)),
+          readOptional(() => getCommunityDomainNodeAutonomyMap(domainId)),
+          readOptional(() => getCommunityDomainNodeEconomicMap(domainId)),
+          readOptional(() => getCommunityDomainNodeActivityMap(domainId)),
+          readOptional(() => getCommunityDomainNodeDomainBoundaryMap(domainId)),
+          readOptional(() => getCommunityDomainNodeScheduledActivityMap(domainId)),
+          readOptional(() => getCommunityDomainNodePaidActivityMap(domainId)),
+        ]);
+      }
+
+      if (laneKey === "modules") {
+        return Promise.all([
+          readOptional(() => getCommunityDomainModuleScopeReadiness(domainId)),
+          readOptional(() => listCommunityDomainServiceSettings(domainId)),
+          readOptional(() => getCommunityDomainEconomicParticipation(domainId)),
+          readOptional(() => getCommunityDomainNetworkPresence(domainId)),
+          readOptional(() => getCommunityDomainNodeServiceMap(domainId)),
+          readOptional(() => getCommunityDomainNodePrivacyMap(domainId)),
+          readOptional(() => getCommunityDomainNodeAnalyticsMap(domainId)),
+          readOptional(() => getCommunityDomainNodeCommunicationMap(domainId)),
+          readOptional(() => getCommunityDomainNodeVaultMap(domainId)),
+          readOptional(() => getCommunityDomainNetworkExchangeMap(domainId)),
+          readOptional(() => getCommunityDomainRecordPrivacyMap(domainId)),
+          readOptional(() => getCommunityDomainConfigurationMap(domainId)),
+          readOptional(() => getCommunityDomainComplianceMap(domainId)),
+          readOptional(() => getCommunityDomainAppealReadiness(domainId)),
+          readOptional(() => getCommunityDomainNodeEvidenceAuthorityMap(domainId)),
+          readOptional(() => getCommunityDomainNodeTrustMap(domainId)),
+          readOptional(() => getCommunityDomainEvidenceRecordReadiness(domainId)),
+          readOptional(() => getCommunityDomainEvidenceReleaseReadiness(domainId)),
+          readOptional(() => getCommunityDomainTrustRelayReadiness(domainId)),
+          readOptional(() => getCommunityDomainNotificationScopeReadiness(domainId)),
+          readOptional(() => getCommunityDomainTrustMobility(domainId)),
+        ]);
+      }
+
+      if (laneKey === "governance") {
+        return Promise.all([
+          readOptional(() => getCommunityDomainGovernanceCoverage(domainId)),
+          readOptional(() => getCommunityDomainDelegationMap(domainId)),
+        ]);
+      }
+
+      if (laneKey === "members") {
+        return Promise.all([
+          readOptional(() => getCommunityDomainMemberVerificationMap(domainId)),
+          readOptional(() => getCommunityDomainNodeParticipationMap(domainId)),
+          viewerUserId
+            ? readOptional(() =>
+                getCommunityDomainMemberPlacementSummary(domainId, viewerUserId)
+              )
+            : Promise.resolve(null),
+        ]);
+      }
+
+      return Promise.resolve([]);
+    },
+    []
+  );
+
+  const applyReadinessPayloadsForLane = useCallback((laneKey: string, payloads: any[]) => {
+    if (laneKey === "identity") {
+      const [institutionalProfilePayload, socialBridgePayload, affiliationReadinessPayload] =
+        payloads;
+      setInstitutionalProfile(institutionalProfilePayload?.institutional_profile || null);
+      setSocialBridge(socialBridgePayload?.social_bridge || null);
+      setAffiliationReadiness(affiliationReadinessPayload?.affiliation_readiness || null);
+      return;
+    }
+
+    if (laneKey === "billing") {
+      const [capacityPlanPayload, subscriptionPayload] = payloads;
+      setCapacityPlan(capacityPlanPayload?.capacity_plan || null);
+      setSubscriptionLifecycle(subscriptionPayload?.subscription_lifecycle || null);
+      return;
+    }
+
+    if (laneKey === "structure") {
+      const [
+        treePayload,
+        rolloutPlanPayload,
+        activityMapPayload,
+        activityGroupPayload,
+        nodeAutonomyPayload,
+        nodeEconomicPayload,
+        nodeActivityPayload,
+        nodeBoundaryPayload,
+        nodeSchedulePayload,
+        nodePaidPayload,
+      ] = payloads;
+      setNodeTree(Array.isArray(treePayload?.items) ? treePayload.items : []);
+      setRolloutPlan(rolloutPlanPayload?.rollout_plan || null);
+      setActivityMap(activityMapPayload?.activity_map || null);
+      setActivityGroupReadiness(activityGroupPayload?.activity_group_readiness || null);
+      setNodeAutonomyMap(nodeAutonomyPayload?.node_autonomy_map || null);
+      setNodeEconomicMap(nodeEconomicPayload?.node_economic_map || null);
+      setNodeActivityMap(nodeActivityPayload?.node_activity_map || null);
+      setNodeDomainBoundaryMap(nodeBoundaryPayload?.node_domain_boundary_map || null);
+      setNodeScheduledActivityMap(nodeSchedulePayload?.node_scheduled_activity_map || null);
+      setNodePaidActivityMap(nodePaidPayload?.node_paid_activity_map || null);
+      return;
+    }
+
+    if (laneKey === "modules") {
+      const [
+        moduleScopePayload,
+        serviceSettingsPayload,
+        economicPayload,
+        networkPresencePayload,
+        nodeServicePayload,
+        nodePrivacyPayload,
+        nodeAnalyticsPayload,
+        nodeCommunicationPayload,
+        nodeVaultPayload,
+        networkExchangePayload,
+        recordPrivacyPayload,
+        configurationPayload,
+        compliancePayload,
+        appealPayload,
+        nodeEvidenceAuthorityPayload,
+        nodeTrustPayload,
+        evidenceReadinessPayload,
+        releaseReadinessPayload,
+        relayReadinessPayload,
+        notificationScopePayload,
+        trustMobilityPayload,
+      ] = payloads;
+      setModuleScopeReadiness(moduleScopePayload?.module_scope_readiness || null);
+      setServiceSettingsProjection(serviceSettingsPayload?.service_settings || null);
+      setEconomicParticipation(economicPayload?.economic_participation || null);
+      setNetworkPresence(networkPresencePayload?.network_presence || null);
+      setNodeServiceMap(nodeServicePayload?.node_service_map || null);
+      setNodePrivacyMap(nodePrivacyPayload?.node_privacy_map || null);
+      setNodeAnalyticsMap(nodeAnalyticsPayload?.node_analytics_map || null);
+      setNodeCommunicationMap(nodeCommunicationPayload?.node_communication_map || null);
+      setNodeVaultMap(nodeVaultPayload?.node_vault_map || null);
+      setNetworkExchangeMap(networkExchangePayload?.network_exchange_map || null);
+      setRecordPrivacyMap(recordPrivacyPayload?.record_privacy_map || null);
+      setConfigurationMap(configurationPayload?.configuration_map || null);
+      setComplianceMap(compliancePayload?.compliance_map || null);
+      setAppealReadiness(appealPayload?.appeal_readiness || null);
+      setNodeEvidenceAuthorityMap(
+        nodeEvidenceAuthorityPayload?.node_evidence_authority_map || null
+      );
+      setNodeTrustMap(nodeTrustPayload?.node_trust_map || null);
+      setEvidenceRecordReadiness(evidenceReadinessPayload?.evidence_record_readiness || null);
+      setEvidenceReleaseReadiness(
+        releaseReadinessPayload?.evidence_release_readiness || null
+      );
+      setTrustRelayReadiness(relayReadinessPayload?.trust_relay_readiness || null);
+      setNotificationScopeReadiness(
+        notificationScopePayload?.notification_scope_readiness || null
+      );
+      setTrustMobility(trustMobilityPayload?.trust_mobility || null);
+      return;
+    }
+
+    if (laneKey === "governance") {
+      const [governanceCoveragePayload, delegationMapPayload] = payloads;
+      setGovernanceCoverage(governanceCoveragePayload?.governance_coverage || null);
+      setDelegationMap(delegationMapPayload?.delegation_map || null);
+      return;
+    }
+
+    if (laneKey === "members") {
+      const [memberVerificationPayload, nodeParticipationPayload, placementPayload] = payloads;
+      setMemberVerificationMap(memberVerificationPayload?.member_verification_map || null);
+      setNodeParticipationMap(nodeParticipationPayload?.node_participation_map || null);
+      setPlacementSummary(placementPayload?.placement_summary || null);
+    }
+  }, []);
 
   useEffect(() => {
     if (typeof document !== "undefined") {
@@ -1061,6 +1310,131 @@ export default function CommunityDomainDashboardPage() {
   useEffect(() => {
     loadDashboard();
   }, [loadDashboard]);
+
+  useEffect(() => {
+    if (!communityDomainId || !dashboard || loading) return undefined;
+    if (cleanText(dashboardRouteId) !== cleanText(communityDomainId)) return undefined;
+
+    const dashboardDomainId =
+      dashboard?.community_domain?.id ?? dashboard?.community_domain?.community_domain_id;
+    if (
+      dashboardDomainId !== undefined &&
+      dashboardDomainId !== null &&
+      cleanText(dashboardDomainId) !== cleanText(communityDomainId)
+    ) {
+      return undefined;
+    }
+
+    const laneKey = cleanText(activeLane, "structure");
+    const needsBaseReadiness = !loadedReadinessLanes.__base;
+    const needsLaneReadiness = !loadedReadinessLanes[laneKey];
+    if (!needsBaseReadiness && !needsLaneReadiness) return undefined;
+    const readinessDomainKey = cleanText(dashboardRouteId, communityDomainId);
+    const viewerReadinessKey = cleanText(dashboard?.viewer?.user_id, "viewer");
+    const baseReadinessCacheKey = `${readinessDomainKey}:__base`;
+    const laneReadinessCacheKey = `${readinessDomainKey}:${viewerReadinessKey}:${laneKey}`;
+
+    let cancelled = false;
+
+    async function loadSelectedReadiness() {
+      function loadOrReuseReadiness(cacheKey: string, loader: () => Promise<any>) {
+        const existing = readinessLoadPromises.current[cacheKey];
+        if (existing) return existing;
+        const next = loader().finally(() => {
+          if (readinessLoadPromises.current[cacheKey] === next) {
+            delete readinessLoadPromises.current[cacheKey];
+          }
+        });
+        readinessLoadPromises.current[cacheKey] = next;
+        return next;
+      }
+
+      const loadingKeys = [
+        ...(needsBaseReadiness ? ["__base"] : []),
+        ...(needsLaneReadiness ? [laneKey] : []),
+      ];
+      const requestId = readinessLoadSequence.current + 1;
+      readinessLoadSequence.current = requestId;
+      loadingKeys.forEach((key) => {
+        readinessLoadIds.current[key] = requestId;
+      });
+      setLoadingReadinessLanes((current) => ({
+        ...current,
+        ...(needsBaseReadiness ? { __base: true } : {}),
+        ...(needsLaneReadiness ? { [laneKey]: true } : {}),
+      }));
+      const viewerUserId = dashboard?.viewer?.user_id;
+      try {
+        const [basePayloads, lanePayloads] = await Promise.all([
+          needsBaseReadiness
+            ? loadOrReuseReadiness(baseReadinessCacheKey, () =>
+                Promise.all([
+                  readOptional(() => getCommunityDomainReadiness(communityDomainId)),
+                  readOptional(() => getCommunityDomainSetupPlan(communityDomainId)),
+                ])
+              )
+            : Promise.resolve(null),
+          needsLaneReadiness
+            ? loadOrReuseReadiness(laneReadinessCacheKey, () =>
+                loadReadinessPayloadsForLane(laneKey, communityDomainId, viewerUserId)
+              )
+            : Promise.resolve(null),
+        ]);
+
+        if (!cancelled) {
+          if (basePayloads) {
+            const [readinessPayload, setupPlanPayload] = basePayloads;
+            setSetupReadiness(readinessPayload?.readiness || null);
+            setSetupPlan(setupPlanPayload?.setup_plan || null);
+          }
+
+          if (lanePayloads) {
+            applyReadinessPayloadsForLane(laneKey, lanePayloads);
+          }
+
+          setLoadedReadinessLanes((current) => ({
+            ...current,
+            ...(needsBaseReadiness ? { __base: true } : {}),
+            ...(needsLaneReadiness ? { [laneKey]: true } : {}),
+          }));
+        }
+      } finally {
+        setLoadingReadinessLanes((current) => {
+          const next = { ...current };
+          loadingKeys.forEach((key) => {
+            if (readinessLoadIds.current[key] === requestId) {
+              next[key] = false;
+              delete readinessLoadIds.current[key];
+            }
+          });
+          return next;
+        });
+      }
+    }
+
+    loadSelectedReadiness().catch(() => {
+      if (!cancelled) {
+        setLoadedReadinessLanes((current) => ({
+          ...current,
+          ...(needsBaseReadiness ? { __base: true } : {}),
+          ...(needsLaneReadiness ? { [laneKey]: true } : {}),
+        }));
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    activeLane,
+    applyReadinessPayloadsForLane,
+    communityDomainId,
+    dashboard,
+    dashboardRouteId,
+    loadedReadinessLanes,
+    loadReadinessPayloadsForLane,
+    loading,
+  ]);
 
   const domain = dashboard?.community_domain || {};
   const template = useMemo(() => dashboard?.template || {}, [dashboard?.template]);
@@ -1086,6 +1460,185 @@ export default function CommunityDomainDashboardPage() {
     ? placementSummary.node_placements.slice(0, 3)
     : [];
   const visibleStructureRows = structurePreviewRows(nodeTree);
+  const nodeAutonomyCounts = nodeAutonomyMap?.counts || {};
+  const visibleNodeAutonomyRows: NodeProjectionItem[] = Array.isArray(
+    nodeAutonomyMap?.flat_nodes
+  )
+    ? nodeAutonomyMap.flat_nodes
+    : [];
+  const nodeAutonomyGaps = visibleNodeAutonomyRows.filter((item) => {
+    const statusText = cleanText(item.autonomy_status).toLowerCase();
+    return statusText.includes("needs") || statusText.includes("parent_controlled");
+  });
+  const nodeEconomicCounts = nodeEconomicMap?.counts || {};
+  const visibleNodeEconomicRows: NodeProjectionItem[] = Array.isArray(
+    nodeEconomicMap?.flat_nodes
+  )
+    ? nodeEconomicMap.flat_nodes
+    : [];
+  const nodeEconomicGaps = visibleNodeEconomicRows.filter((item) => {
+    const statusText = cleanText(item.economy_status).toLowerCase();
+    return statusText.includes("needs") || statusText.includes("governance");
+  });
+  const nodeActivityCounts = nodeActivityMap?.counts || {};
+  const visibleNodeActivityRows: NodeProjectionItem[] = Array.isArray(
+    nodeActivityMap?.flat_nodes
+  )
+    ? nodeActivityMap.flat_nodes
+    : [];
+  const nodeActivityGaps = visibleNodeActivityRows.filter((item) => {
+    const statusText = cleanText(item.activity_status).toLowerCase();
+    return statusText.includes("needs") || statusText.includes("governance");
+  });
+  const nodeTrustCounts = nodeTrustMap?.counts || {};
+  const visibleNodeTrustRows: NodeProjectionItem[] = Array.isArray(nodeTrustMap?.flat_nodes)
+    ? nodeTrustMap.flat_nodes
+    : [];
+  const nodeTrustGaps = visibleNodeTrustRows.filter((item) => {
+    const statusText = cleanText(item.trust_status).toLowerCase();
+    return (
+      statusText.includes("needs") ||
+      statusText.includes("governance") ||
+      statusText.includes("review") ||
+      statusText.includes("evidence")
+    );
+  });
+  const nodeParticipationCounts = nodeParticipationMap?.counts || {};
+  const visibleNodeParticipationRows: NodeProjectionItem[] = Array.isArray(
+    nodeParticipationMap?.flat_nodes
+  )
+    ? nodeParticipationMap.flat_nodes
+    : [];
+  const nodeParticipationGaps = visibleNodeParticipationRows.filter((item) => {
+    const statusText = cleanText(item.participation_status).toLowerCase();
+    return (
+      statusText.includes("needs") ||
+      statusText.includes("empty") ||
+      statusText.includes("admin_only")
+    );
+  });
+  const nodeServiceCounts = nodeServiceMap?.counts || {};
+  const visibleNodeServiceRows: NodeProjectionItem[] = Array.isArray(
+    nodeServiceMap?.flat_nodes
+  )
+    ? nodeServiceMap.flat_nodes
+    : [];
+  const nodeServiceGaps = visibleNodeServiceRows.filter((item) => {
+    const statusText = cleanText(item.service_status).toLowerCase();
+    return (
+      statusText.includes("needs") ||
+      statusText.includes("governance") ||
+      statusText.includes("no_template")
+    );
+  });
+  const nodePrivacyCounts = nodePrivacyMap?.counts || {};
+  const visibleNodePrivacyRows: NodeProjectionItem[] = Array.isArray(
+    nodePrivacyMap?.flat_nodes
+  )
+    ? nodePrivacyMap.flat_nodes
+    : [];
+  const nodePrivacyGaps = visibleNodePrivacyRows.filter((item) => {
+    const statusText = cleanText(item.privacy_status).toLowerCase();
+    return statusText.includes("review") || statusText.includes("unknown");
+  });
+  const nodeAnalyticsCounts = nodeAnalyticsMap?.counts || {};
+  const visibleNodeAnalyticsRows: NodeProjectionItem[] = Array.isArray(
+    nodeAnalyticsMap?.flat_nodes
+  )
+    ? nodeAnalyticsMap.flat_nodes
+    : [];
+  const nodeAnalyticsGaps = visibleNodeAnalyticsRows.filter((item) => {
+    const statusText = cleanText(item.analytics_status).toLowerCase();
+    return (
+      statusText.includes("needs") ||
+      statusText.includes("inactive") ||
+      statusText.includes("review")
+    );
+  });
+  const nodeDomainBoundaryCounts = nodeDomainBoundaryMap?.counts || {};
+  const visibleNodeDomainBoundaryRows: NodeProjectionItem[] = Array.isArray(
+    nodeDomainBoundaryMap?.flat_nodes
+  )
+    ? nodeDomainBoundaryMap.flat_nodes
+    : [];
+  const nodeDomainBoundaryGaps = visibleNodeDomainBoundaryRows.filter((item) => {
+    const statusText = cleanText(item.domain_boundary_status).toLowerCase();
+    return (
+      statusText.includes("candidate") ||
+      statusText.includes("review") ||
+      statusText.includes("inactive")
+    );
+  });
+  const nodeEvidenceAuthorityCounts = nodeEvidenceAuthorityMap?.counts || {};
+  const visibleNodeEvidenceAuthorityRows: NodeProjectionItem[] = Array.isArray(
+    nodeEvidenceAuthorityMap?.flat_nodes
+  )
+    ? nodeEvidenceAuthorityMap.flat_nodes
+    : [];
+  const nodeEvidenceAuthorityGaps = visibleNodeEvidenceAuthorityRows.filter((item) => {
+    const statusText = cleanText(item.evidence_authority_status).toLowerCase();
+    return (
+      statusText.includes("needs") ||
+      statusText.includes("review") ||
+      statusText.includes("inactive")
+    );
+  });
+  const nodeCommunicationCounts = nodeCommunicationMap?.counts || {};
+  const visibleNodeCommunicationRows: NodeProjectionItem[] = Array.isArray(
+    nodeCommunicationMap?.flat_nodes
+  )
+    ? nodeCommunicationMap.flat_nodes
+    : [];
+  const nodeCommunicationGaps = visibleNodeCommunicationRows.filter((item) => {
+    const statusText = cleanText(item.communication_status).toLowerCase();
+    return (
+      statusText.includes("needs") ||
+      statusText.includes("review") ||
+      statusText.includes("inactive")
+    );
+  });
+  const nodeVaultCounts = nodeVaultMap?.counts || {};
+  const visibleNodeVaultRows: NodeProjectionItem[] = Array.isArray(
+    nodeVaultMap?.flat_nodes
+  )
+    ? nodeVaultMap.flat_nodes
+    : [];
+  const nodeVaultGaps = visibleNodeVaultRows.filter((item) => {
+    const statusText = cleanText(item.vault_status).toLowerCase();
+    return (
+      statusText.includes("needs") ||
+      statusText.includes("review") ||
+      statusText.includes("inactive")
+    );
+  });
+  const nodeScheduledActivityCounts = nodeScheduledActivityMap?.counts || {};
+  const visibleNodeScheduledActivityRows: NodeProjectionItem[] = Array.isArray(
+    nodeScheduledActivityMap?.flat_nodes
+  )
+    ? nodeScheduledActivityMap.flat_nodes
+    : [];
+  const nodeScheduledActivityGaps = visibleNodeScheduledActivityRows.filter((item) => {
+    const statusText = cleanText(item.schedule_status).toLowerCase();
+    return (
+      statusText.includes("needs") ||
+      statusText.includes("review") ||
+      statusText.includes("inactive")
+    );
+  });
+  const nodePaidActivityCounts = nodePaidActivityMap?.counts || {};
+  const visibleNodePaidActivityRows: NodeProjectionItem[] = Array.isArray(
+    nodePaidActivityMap?.flat_nodes
+  )
+    ? nodePaidActivityMap.flat_nodes
+    : [];
+  const nodePaidActivityGaps = visibleNodePaidActivityRows.filter((item) => {
+    const statusText = cleanText(item.paid_activity_status).toLowerCase();
+    return (
+      statusText.includes("needs") ||
+      statusText.includes("review") ||
+      statusText.includes("inactive")
+    );
+  });
   const governanceReviewCounts = reviewStatusCounts(reviewerQueue);
   const governancePendingCount =
     (governanceReviewCounts.pending || 0) +
@@ -1095,6 +1648,10 @@ export default function CommunityDomainDashboardPage() {
     ? governancePendingCount
     : Number(counts.open_reviews || 0);
   const selectedLane = lanes.find((lane) => lane.lane_key === activeLane) || lanes[0];
+  const isBaseReadinessLoading = Boolean(loadingReadinessLanes.__base);
+  const isActiveLaneReadinessLoading = Boolean(
+    loadingReadinessLanes[cleanText(activeLane, "structure")]
+  );
   const visibleSetupReadinessItems: SetupReadinessItem[] = Array.isArray(setupReadiness?.items)
     ? setupReadiness.items
     : [];
@@ -1189,6 +1746,112 @@ export default function CommunityDomainDashboardPage() {
     typeof subscriptionLifecycle?.ready_total === "number"
       ? subscriptionLifecycle.ready_total
       : visibleSubscriptionLanes.filter((lane) => lane.ready).length;
+  const networkExchangeSummary = networkExchangeMap?.summary || {};
+  const linkedNetworkSocialCommunity = networkExchangeMap?.linked_social_community || {};
+  const visibleNetworkExchangeLanes: NetworkExchangeLane[] = Array.isArray(
+    networkExchangeMap?.lanes
+  )
+    ? networkExchangeMap.lanes
+    : [];
+  const blockedNetworkExchangeLanes = visibleNetworkExchangeLanes.filter(
+    (lane) => !lane.ready
+  );
+  const networkExchangeReadyTotal =
+    typeof networkExchangeMap?.ready_total === "number"
+      ? networkExchangeMap.ready_total
+      : visibleNetworkExchangeLanes.filter((lane) => lane.ready).length;
+  const recordPrivacySummary = recordPrivacyMap?.summary || {};
+  const visibleRecordPrivacyLanes: RecordPrivacyLane[] = Array.isArray(
+    recordPrivacyMap?.lanes
+  )
+    ? recordPrivacyMap.lanes
+    : [];
+  const blockedRecordPrivacyLanes = visibleRecordPrivacyLanes.filter(
+    (lane) => !lane.ready
+  );
+  const recordPrivacyReadyTotal =
+    typeof recordPrivacyMap?.ready_total === "number"
+      ? recordPrivacyMap.ready_total
+      : visibleRecordPrivacyLanes.filter((lane) => lane.ready).length;
+  const configurationMapSummary = configurationMap?.summary || {};
+  const configurationMapBlueprint = configurationMap?.blueprint || {};
+  const visibleConfigurationMapLanes: ConfigurationMapLane[] = Array.isArray(
+    configurationMap?.lanes
+  )
+    ? configurationMap.lanes
+    : [];
+  const blockedConfigurationMapLanes = visibleConfigurationMapLanes.filter(
+    (lane) => !lane.ready
+  );
+  const configurationMapReadyTotal =
+    typeof configurationMap?.ready_total === "number"
+      ? configurationMap.ready_total
+      : visibleConfigurationMapLanes.filter((lane) => lane.ready).length;
+  const complianceMapSummary = complianceMap?.summary || {};
+  const visibleComplianceMapLanes: ComplianceMapLane[] = Array.isArray(
+    complianceMap?.lanes
+  )
+    ? complianceMap.lanes
+    : [];
+  const blockedComplianceMapLanes = visibleComplianceMapLanes.filter(
+    (lane) => !lane.ready
+  );
+  const complianceMapReadyTotal =
+    typeof complianceMap?.ready_total === "number"
+      ? complianceMap.ready_total
+      : visibleComplianceMapLanes.filter((lane) => lane.ready).length;
+  const appealReadinessSummary = appealReadiness?.summary || {};
+  const visibleAppealReadinessLanes: AppealReadinessLane[] = Array.isArray(
+    appealReadiness?.lanes
+  )
+    ? appealReadiness.lanes
+    : [];
+  const blockedAppealReadinessLanes = visibleAppealReadinessLanes.filter(
+    (lane) => !lane.ready
+  );
+  const appealReadinessSignalTotal = visibleAppealReadinessLanes.reduce(
+    (total, lane) => total + Number(lane.signal_count || 0),
+    0
+  );
+  const visibleServiceSettingsItems: ServiceSettingsProjectionItem[] = Array.isArray(
+    serviceSettingsProjection?.items
+  )
+    ? serviceSettingsProjection.items
+    : [];
+  const enabledServiceSettingsItems = visibleServiceSettingsItems.filter(
+    (item) => item.enabled
+  );
+  const optionalServiceSettingsItems = visibleServiceSettingsItems.filter(
+    (item) => !item.enabled
+  );
+  const economicParticipationCounts = economicParticipation?.counts || {};
+  const economicParticipationTemplate = economicParticipation?.template || {};
+  const visibleEconomicParticipationLanes: EconomicParticipationLane[] = Array.isArray(
+    economicParticipation?.lanes
+  )
+    ? economicParticipation.lanes
+    : [];
+  const blockedEconomicParticipationLanes = visibleEconomicParticipationLanes.filter(
+    (lane) => !lane.ready
+  );
+  const economicParticipationReadyTotal =
+    typeof economicParticipation?.ready_total === "number"
+      ? economicParticipation.ready_total
+      : visibleEconomicParticipationLanes.filter((lane) => lane.ready).length;
+  const networkPresenceIdentity = networkPresence?.identity || {};
+  const networkPresenceStatus = networkPresence?.status || {};
+  const visibleNetworkPresenceLanes: NetworkPresenceLane[] = Array.isArray(
+    networkPresence?.lanes
+  )
+    ? networkPresence.lanes
+    : [];
+  const blockedNetworkPresenceLanes = visibleNetworkPresenceLanes.filter(
+    (lane) => !lane.ready
+  );
+  const networkPresenceReadyTotal =
+    typeof networkPresence?.ready_total === "number"
+      ? networkPresence.ready_total
+      : visibleNetworkPresenceLanes.filter((lane) => lane.ready).length;
   const evidenceRecordSummary = evidenceRecordReadiness?.summary || {};
   const visibleEvidenceRecordTypes: EvidenceRecordReadinessType[] = Array.isArray(
     evidenceRecordReadiness?.record_types
@@ -1999,14 +2662,18 @@ export default function CommunityDomainDashboardPage() {
               <div style={{ display: "grid", gap: 10 }}>
                 <div style={sectionLabel()}>Setup readiness</div>
                 <h2 style={{ margin: 0, fontSize: 23, lineHeight: 1.12 }}>
-                  {setupReadiness
+                  {isBaseReadinessLoading && !setupReadiness
+                    ? "Loading readiness checks"
+                    : setupReadiness
                     ? `${countValue(setupReadiness.ready_total)} of ${countValue(
                         setupReadiness.total
                       )} checks ready`
                     : "Readiness is not loaded"}
                 </h2>
                 <div style={helperText()}>
-                  {setupReadiness
+                  {isBaseReadinessLoading && !setupReadiness
+                    ? "GSN is loading the read-only setup checklist while the main Community Domain dashboard remains usable."
+                    : setupReadiness
                     ? `${countValue(
                         setupReadiness.blocked_total
                       )} setup checks still need attention before this domain should be treated as fully ready.`
@@ -2065,14 +2732,18 @@ export default function CommunityDomainDashboardPage() {
               <div style={{ display: "grid", gap: 10 }}>
                 <div style={sectionLabel()}>Setup plan</div>
                 <h2 style={{ margin: 0, fontSize: 23, lineHeight: 1.12 }}>
-                  {setupPlan
+                  {isBaseReadinessLoading && !setupPlan
+                    ? "Loading setup plan"
+                    : setupPlan
                     ? `${countValue(setupPlan.completed_steps)} of ${countValue(
                         visibleSetupPlanSteps.length
                       )} steps complete`
                     : "Setup plan is not loaded"}
                 </h2>
                 <div style={helperText()}>
-                  {setupPlan
+                  {isBaseReadinessLoading && !setupPlan
+                    ? "GSN is loading the read-only setup plan while the main Community Domain dashboard remains usable."
+                    : setupPlan
                     ? `Current phase: ${compactStatus(setupPlan.setup_phase)}. ${cleanText(
                         setupPlan.primary_next_action?.label,
                         "Review the next setup step with a Community Domain admin."
@@ -2245,489 +2916,53 @@ export default function CommunityDomainDashboardPage() {
                   . Count: <strong>{countValue(selectedLane?.count)}</strong>.
                 </div>
 
-                {activeLane === "identity" ? (
+                {isActiveLaneReadinessLoading ? (
                   <div style={softCard()}>
-                    <div style={sectionLabel()}>Domain identity</div>
+                    <div style={sectionLabel()}>Loading setup intelligence</div>
                     <div style={{ ...helperText(), marginTop: 7 }}>
-                      This lane shows the public-safe identity anchor for this
-                      Community Domain. It helps members confirm they are working
-                      inside the right institution before structure, billing,
-                      services, or trust evidence are used.
-                    </div>
-                    <div
-                      style={{
-                        display: "grid",
-                        gridTemplateColumns: "repeat(auto-fit, minmax(128px, 1fr))",
-                        gap: 8,
-                        marginTop: 10,
-                      }}
-                    >
-                      {[
-                        ["Code", cleanText(domain.domain_name, "not recorded")],
-                        ["Owner", cleanText(domain.owner_user_id, "not recorded")],
-                        ["Template", cleanText(template.label, "Institution")],
-                        [
-                          "Location",
-                          cleanText(
-                            [domain.state, domain.country].filter(Boolean).join(", "),
-                            "not recorded"
-                          ),
-                        ],
-                      ].map(([label, value]) => (
-                        <div key={String(label)} style={statusBadge(value)}>
-                          {String(label)}: {String(value)}
-                        </div>
-                      ))}
-                    </div>
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 10 }}>
-                      <span style={statusBadge(status.domain_status)}>
-                        Domain: {compactStatus(status.domain_status)}
-                      </span>
-                      <span style={statusBadge(status.verification_status)}>
-                        Verification: {compactStatus(status.verification_status)}
-                      </span>
-                      <span style={statusBadge(renewalState)}>
-                        Renewal: {compactStatus(renewalState)}
-                      </span>
-                    </div>
-                    {domain.public_profile ? (
-                      <div style={{ ...helperText(), marginTop: 10 }}>
-                        Public profile: {cleanText(domain.public_profile)}
-                      </div>
-                    ) : (
-                      <div style={{ ...helperText(), marginTop: 10 }}>
-                        No public profile text is recorded yet for this domain.
-                      </div>
-                    )}
-                    <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-                      This identity view does not expose owner contact details,
-                      private member lists, finance records, evidence files, or
-                      verification proof.
+                      GSN is loading the read-only maps, readiness checks, and lane
+                      details for this Community Domain. The primary dashboard is
+                      already available; write actions remain separate and permission
+                      checked.
                     </div>
                   </div>
                 ) : null}
 
-                {activeLane === "identity" ? (
-                  <div style={softCard()}>
-                    <div style={sectionLabel()}>Institutional profile</div>
-                    <div style={{ ...helperText(), marginTop: 7 }}>
-                      {institutionalProfile
-                        ? `${cleanText(
-                            institutionalProfile.primary_next_action?.label,
-                            "Review the institutional profile"
-                          )}. ${institutionalProfileReadyTotal} of ${visibleInstitutionalProfileLanes.length} institutional checks are ready.`
-                        : "GSN could not load the read-only institutional profile for this Community Domain."}
-                    </div>
-                    <div
-                      style={{
-                        display: "grid",
-                        gridTemplateColumns: "repeat(auto-fit, minmax(118px, 1fr))",
-                        gap: 8,
-                        marginTop: 10,
-                      }}
-                    >
-                      {[
-                        [
-                          "Template",
-                          cleanText(
-                            institutionalProfileDetails.template_label,
-                            cleanText(template.label, "Institution")
-                          ),
-                        ],
-                        [
-                          "Market posture",
-                          compactStatus(institutionalProfileDetails.marketplace_role),
-                        ],
-                        [
-                          "Members",
-                          countValue(institutionalProfileSummary.active_member_count),
-                        ],
-                        [
-                          "Policies",
-                          institutionalProfileSummary.active_policy_count == null
-                            ? "admin only"
-                            : countValue(institutionalProfileSummary.active_policy_count),
-                        ],
-                      ].map(([label, value]) => (
-                        <div
-                          key={String(label)}
-                          style={{
-                            borderRadius: 14,
-                            background: "#F7FAFF",
-                            border: "1px solid rgba(9,27,46,0.08)",
-                            padding: 10,
-                            minWidth: 0,
-                          }}
-                        >
-                          <div style={{ color: "#617085", fontSize: 12, fontWeight: 850 }}>
-                            {label}
-                          </div>
-                          <div style={{ color: "#07172C", fontWeight: 950, marginTop: 4 }}>
-                            {value}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 10 }}>
-                      <span style={statusBadge(institutionalProfileSummary.domain_status)}>
-                        Domain: {compactStatus(institutionalProfileSummary.domain_status)}
-                      </span>
-                      <span style={statusBadge(institutionalProfileSummary.verification_status)}>
-                        Verification: {compactStatus(institutionalProfileSummary.verification_status)}
-                      </span>
-                      <span style={statusBadge(institutionalProfileSummary.structure_ready ? "ready" : "needs structure")}>
-                        Structure:{" "}
-                        {institutionalProfileSummary.structure_ready ? "ready" : "needs structure"}
-                      </span>
-                      <span style={statusBadge(institutionalProfileSummary.authority_verified ? "verified" : "unverified")}>
-                        Authority:{" "}
-                        {institutionalProfileSummary.authority_verified ? "verified" : "unverified"}
-                      </span>
-                    </div>
-                    {blockedInstitutionalProfileLanes.length ? (
-                      <div style={{ ...helperText(), marginTop: 9 }}>
-                        Institutional checks needing attention:{" "}
-                        <strong>
-                          {blockedInstitutionalProfileLanes
-                            .slice(0, 3)
-                            .map((lane) =>
-                              cleanText(
-                                lane.label,
-                                lane.lane_key || "institutional check"
-                              )
-                            )
-                            .join(", ")}
-                        </strong>
-                        .
+                {!isActiveLaneReadinessLoading && activeLane === "identity" ? (
+                  <Suspense
+                    fallback={
+                      <div style={{ ...helperText(), marginTop: 4 }}>
+                        Loading identity readiness panels...
                       </div>
-                    ) : institutionalProfile ? (
-                      <div style={{ ...helperText(), marginTop: 9 }}>
-                        No blocked institutional lane is visible, but verification,
-                        publication, billing, and custom schema are still separate.
-                      </div>
-                    ) : null}
-                    {visibleInstitutionalProfileLanes.length ? (
-                      <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
-                        {visibleInstitutionalProfileLanes.slice(0, 4).map((lane) => (
-                          <div
-                            key={cleanText(
-                              lane.lane_key,
-                              cleanText(lane.label, "institutional profile")
-                            )}
-                            style={{
-                              display: "grid",
-                              gridTemplateColumns: "minmax(0, 1fr) auto",
-                              gap: 10,
-                              alignItems: "center",
-                              borderRadius: 14,
-                              border: "1px solid rgba(9,27,46,0.10)",
-                              background: "rgba(255,255,255,0.72)",
-                              padding: "10px 10px 10px 12px",
-                            }}
-                          >
-                            <span style={{ minWidth: 0 }}>
-                              <span style={{ display: "block", fontWeight: 950 }}>
-                                {cleanText(lane.label, "Institutional check")}
-                              </span>
-                              <span
-                                style={{
-                                  display: "block",
-                                  color: "#4F647A",
-                                  fontSize: 12.5,
-                                  lineHeight: 1.45,
-                                  marginTop: 3,
-                                }}
-                              >
-                                {cleanText(
-                                  lane.next_step,
-                                  "Keep this as institution planning until the matching operating path exists."
-                                )}
-                              </span>
-                            </span>
-                            <span style={statusBadge(lane.status)}>
-                              {compactStatus(lane.status)}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    ) : null}
-                    <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-                      This institutional profile view is read-only package classification. It
-                      does not create a custom schema, custom tenant, custom billing package,
-                      nodes, members, policies, reviews, evidence, marketplace activity,
-                      shops, payments, finance records, social Community links, verification,
-                      activation, public publication, or private member, review, or evidence
-                      exposure.
-                    </div>
-                  </div>
+                    }
+                  >
+                    <CommunityDomainIdentityReadinessPanels
+                      domain={domain}
+                      template={template}
+                      status={status}
+                      renewalState={renewalState}
+                      institutionalProfile={institutionalProfile}
+                      institutionalProfileReadyTotal={institutionalProfileReadyTotal}
+                      visibleInstitutionalProfileLanes={visibleInstitutionalProfileLanes}
+                      blockedInstitutionalProfileLanes={blockedInstitutionalProfileLanes}
+                      institutionalProfileSummary={institutionalProfileSummary}
+                      institutionalProfileDetails={institutionalProfileDetails}
+                      socialBridge={socialBridge}
+                      socialBridgeReadyTotal={socialBridgeReadyTotal}
+                      visibleSocialBridgeLanes={visibleSocialBridgeLanes}
+                      blockedSocialBridgeLanes={blockedSocialBridgeLanes}
+                      socialBridgeSummary={socialBridgeSummary}
+                      linkedSocialCommunity={linkedSocialCommunity}
+                      affiliationReadiness={affiliationReadiness}
+                      affiliationReadyTotal={affiliationReadyTotal}
+                      visibleAffiliationLanes={visibleAffiliationLanes}
+                      blockedAffiliationLanes={blockedAffiliationLanes}
+                      affiliationSummary={affiliationSummary}
+                    />
+                  </Suspense>
                 ) : null}
 
-                {activeLane === "identity" ? (
-                  <div style={softCard()}>
-                    <div style={sectionLabel()}>Social bridge readiness</div>
-                    <div style={{ ...helperText(), marginTop: 7 }}>
-                      {socialBridge
-                        ? `${cleanText(
-                            socialBridge.primary_next_action?.label,
-                            "Review social bridge boundaries"
-                          )}. ${socialBridgeReadyTotal} of ${visibleSocialBridgeLanes.length} bridge checks are ready.`
-                        : "GSN could not load the read-only social bridge view for this Community Domain."}
-                    </div>
-                    <div
-                      style={{
-                        display: "grid",
-                        gridTemplateColumns: "repeat(auto-fit, minmax(118px, 1fr))",
-                        gap: 8,
-                        marginTop: 10,
-                      }}
-                    >
-                      {[
-                        ["Bridge", compactStatus(socialBridgeSummary.bridge_status)],
-                        [
-                          "Linked Community",
-                          compactStatus(linkedSocialCommunity.status),
-                        ],
-                        [
-                          "Upgrade path",
-                          compactStatus(socialBridgeSummary.upgrade_path_status),
-                        ],
-                        [
-                          "Members",
-                          socialBridgeSummary.linked_member_count == null
-                            ? "admin only"
-                            : countValue(socialBridgeSummary.linked_member_count),
-                        ],
-                      ].map(([label, value]) => (
-                        <div
-                          key={String(label)}
-                          style={{
-                            borderRadius: 14,
-                            background: "#F7FAFF",
-                            border: "1px solid rgba(9,27,46,0.08)",
-                            padding: 10,
-                            minWidth: 0,
-                          }}
-                        >
-                          <div style={{ color: "#617085", fontSize: 12, fontWeight: 850 }}>
-                            {label}
-                          </div>
-                          <div style={{ color: "#07172C", fontWeight: 950, marginTop: 4 }}>
-                            {value}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                    {blockedSocialBridgeLanes.length ? (
-                      <div style={{ ...helperText(), marginTop: 9 }}>
-                        Bridge checks needing attention:{" "}
-                        <strong>
-                          {blockedSocialBridgeLanes
-                            .slice(0, 3)
-                            .map((lane) =>
-                              cleanText(lane.label, lane.lane_key || "bridge check")
-                            )
-                            .join(", ")}
-                        </strong>
-                        .
-                      </div>
-                    ) : socialBridge ? (
-                      <div style={{ ...helperText(), marginTop: 9 }}>
-                        No blocked social bridge lane is visible, but Community upgrade and
-                        member movement are still not connected here.
-                      </div>
-                    ) : null}
-                    {visibleSocialBridgeLanes.length ? (
-                      <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
-                        {visibleSocialBridgeLanes.slice(0, 4).map((lane) => (
-                          <div
-                            key={cleanText(
-                              lane.lane_key,
-                              cleanText(lane.label, "social bridge")
-                            )}
-                            style={{
-                              display: "grid",
-                              gridTemplateColumns: "minmax(0, 1fr) auto",
-                              gap: 10,
-                              alignItems: "center",
-                              borderRadius: 14,
-                              border: "1px solid rgba(9,27,46,0.10)",
-                              background: "rgba(255,255,255,0.72)",
-                              padding: "10px 10px 10px 12px",
-                            }}
-                          >
-                            <span style={{ minWidth: 0 }}>
-                              <span style={{ display: "block", fontWeight: 950 }}>
-                                {cleanText(lane.label, "Bridge check")}
-                              </span>
-                              <span
-                                style={{
-                                  display: "block",
-                                  color: "#4F647A",
-                                  fontSize: 12.5,
-                                  lineHeight: 1.45,
-                                  marginTop: 3,
-                                }}
-                              >
-                                {cleanText(
-                                  lane.next_step,
-                                  "Keep this as relationship planning until a real bridge path exists."
-                                )}
-                              </span>
-                            </span>
-                            <span style={statusBadge(lane.status)}>
-                              {compactStatus(lane.status)}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    ) : null}
-                    <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-                      This social bridge view is read-only relationship planning. It does not
-                      create a social Community, upgrade an existing Community, set clan_id,
-                      create affiliations, decide affiliations, copy members, invite members,
-                      move marketplace activity, activate billing, verify authority, merge
-                      Community and Community Domain records, or expose private member records.
-                    </div>
-                  </div>
-                ) : null}
-
-                {activeLane === "identity" ? (
-                  <div style={softCard()}>
-                    <div style={sectionLabel()}>Affiliation readiness</div>
-                    <div style={{ ...helperText(), marginTop: 7 }}>
-                      {affiliationReadiness
-                        ? `${cleanText(
-                            affiliationReadiness.primary_next_action?.label,
-                            "Review affiliation readiness"
-                          )}. ${affiliationReadyTotal} of ${visibleAffiliationLanes.length} affiliation checks are ready.`
-                        : "GSN could not load the read-only affiliation readiness view for this Community Domain."}
-                    </div>
-                    <div
-                      style={{
-                        display: "grid",
-                        gridTemplateColumns: "repeat(auto-fit, minmax(118px, 1fr))",
-                        gap: 8,
-                        marginTop: 10,
-                      }}
-                    >
-                      {[
-                        ["Bridge", compactStatus(affiliationSummary.bridge_status)],
-                        [
-                          "Affiliation engine",
-                          compactStatus(
-                            affiliationSummary.domain_affiliation_engine_status
-                          ),
-                        ],
-                        [
-                          "Approved",
-                          affiliationSummary.approved_affiliations == null
-                            ? "admin only"
-                            : countValue(affiliationSummary.approved_affiliations),
-                        ],
-                        [
-                          "Pending",
-                          affiliationSummary.pending_affiliations == null
-                            ? "admin only"
-                            : countValue(affiliationSummary.pending_affiliations),
-                        ],
-                      ].map(([label, value]) => (
-                        <div
-                          key={String(label)}
-                          style={{
-                            borderRadius: 14,
-                            background: "#F7FAFF",
-                            border: "1px solid rgba(9,27,46,0.08)",
-                            padding: 10,
-                            minWidth: 0,
-                          }}
-                        >
-                          <div style={{ color: "#617085", fontSize: 12, fontWeight: 850 }}>
-                            {label}
-                          </div>
-                          <div style={{ color: "#07172C", fontWeight: 950, marginTop: 4 }}>
-                            {value}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                    {blockedAffiliationLanes.length ? (
-                      <div style={{ ...helperText(), marginTop: 9 }}>
-                        Affiliation checks needing attention:{" "}
-                        <strong>
-                          {blockedAffiliationLanes
-                            .slice(0, 3)
-                            .map((lane) =>
-                              cleanText(lane.label, lane.lane_key || "affiliation check")
-                            )
-                            .join(", ")}
-                        </strong>
-                        .
-                      </div>
-                    ) : affiliationReadiness ? (
-                      <div style={{ ...helperText(), marginTop: 9 }}>
-                        No blocked affiliation lane is visible, but domain-to-domain affiliation
-                        is still not connected here.
-                      </div>
-                    ) : null}
-                    {visibleAffiliationLanes.length ? (
-                      <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
-                        {visibleAffiliationLanes.slice(0, 4).map((lane) => (
-                          <div
-                            key={cleanText(
-                              lane.lane_key,
-                              cleanText(lane.label, "affiliation")
-                            )}
-                            style={{
-                              display: "grid",
-                              gridTemplateColumns: "minmax(0, 1fr) auto",
-                              gap: 10,
-                              alignItems: "center",
-                              borderRadius: 14,
-                              border: "1px solid rgba(9,27,46,0.10)",
-                              background: "rgba(255,255,255,0.72)",
-                              padding: "10px 10px 10px 12px",
-                            }}
-                          >
-                            <span style={{ minWidth: 0 }}>
-                              <span style={{ display: "block", fontWeight: 950 }}>
-                                {cleanText(lane.label, "Affiliation check")}
-                              </span>
-                              <span
-                                style={{
-                                  display: "block",
-                                  color: "#4F647A",
-                                  fontSize: 12.5,
-                                  lineHeight: 1.45,
-                                  marginTop: 3,
-                                }}
-                              >
-                                {cleanText(
-                                  lane.next_step,
-                                  "Keep this as affiliation planning until a real domain relationship path exists."
-                                )}
-                              </span>
-                            </span>
-                            <span style={statusBadge(lane.status)}>
-                              {compactStatus(lane.status)}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    ) : null}
-                    <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-                      This affiliation view is read-only parent and child affiliation planning.
-                      It does not create domain-domain affiliations, create parent Community
-                      Domains, create child Community Domains, approve or reject affiliation
-                      requests, set social Community links, copy or transfer members, inherit
-                      policy, activate billing, verify authority, publish public URLs, create
-                      marketplace activity, move money, issue TrustSlips, write Trust Passport
-                      entries, or expose private member, node, evidence, review, marketplace,
-                      finance, or affiliate records.
-                    </div>
-                  </div>
-                ) : null}
-
-                {activeLane === "billing" ? (
+                {!isActiveLaneReadinessLoading && activeLane === "billing" ? (
                   <div style={softCard()}>
                     <div style={sectionLabel()}>Package and renewal</div>
                     <div style={{ ...helperText(), marginTop: 7 }}>
@@ -2762,1936 +2997,361 @@ export default function CommunityDomainDashboardPage() {
                   </div>
                 ) : null}
 
-                {activeLane === "billing" ? (
-                  <div style={softCard()}>
-                    <div style={sectionLabel()}>Subscription lifecycle</div>
-                    <div style={{ ...helperText(), marginTop: 7 }}>
-                      {subscriptionLifecycle
-                        ? `${cleanText(
-                            subscriptionLifecycle.primary_next_action?.label,
-                            "Review subscription setup"
-                          )}. ${subscriptionReadyTotal} of ${visibleSubscriptionLanes.length} billing checks are ready.`
-                        : "GSN could not load the read-only subscription lifecycle view for this Community Domain."}
-                    </div>
-                    <div
-                      style={{
-                        display: "grid",
-                        gridTemplateColumns: "repeat(auto-fit, minmax(118px, 1fr))",
-                        gap: 8,
-                        marginTop: 10,
-                      }}
-                    >
-                      {[
-                        [
-                          "Package",
-                          cleanText(subscriptionPackage.package_name, "not selected"),
-                        ],
-                        [
-                          "Pricing",
-                          compactStatus(subscriptionPackage.pricing_status),
-                        ],
-                        [
-                          "Billing",
-                          compactStatus(subscriptionSummary.billing_status),
-                        ],
-                        [
-                          "Renewal",
-                          compactStatus(subscriptionSummary.renewal_status),
-                        ],
-                      ].map(([label, value]) => (
-                        <div
-                          key={String(label)}
-                          style={{
-                            borderRadius: 14,
-                            background: "#F7FAFF",
-                            border: "1px solid rgba(9,27,46,0.08)",
-                            padding: 10,
-                            minWidth: 0,
-                          }}
-                        >
-                          <div style={{ color: "#617085", fontSize: 12, fontWeight: 850 }}>
-                            {label}
-                          </div>
-                          <div style={{ color: "#07172C", fontWeight: 950, marginTop: 4 }}>
-                            {value}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                    {blockedSubscriptionLanes.length ? (
-                      <div style={{ ...helperText(), marginTop: 9 }}>
-                        Billing checks needing attention:{" "}
-                        <strong>
-                          {blockedSubscriptionLanes
-                            .slice(0, 3)
-                            .map((lane) =>
-                              cleanText(lane.label, lane.lane_key || "billing check")
-                            )
-                            .join(", ")}
-                        </strong>
-                        .
+                {!isActiveLaneReadinessLoading && activeLane === "billing" ? (
+                  <Suspense
+                    fallback={
+                      <div style={{ ...helperText(), marginTop: 4 }}>
+                        Loading billing readiness panels...
                       </div>
-                    ) : subscriptionLifecycle ? (
-                      <div style={{ ...helperText(), marginTop: 9 }}>
-                        No blocked billing lane is visible, but payment and renewal automation are
-                        still not connected here.
-                      </div>
-                    ) : null}
-                    {visibleSubscriptionLanes.length ? (
-                      <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
-                        {visibleSubscriptionLanes.slice(0, 4).map((lane) => (
-                          <div
-                            key={cleanText(
-                              lane.lane_key,
-                              cleanText(lane.label, "subscription")
-                            )}
-                            style={{
-                              display: "grid",
-                              gridTemplateColumns: "minmax(0, 1fr) auto",
-                              gap: 10,
-                              alignItems: "center",
-                              borderRadius: 14,
-                              border: "1px solid rgba(9,27,46,0.10)",
-                              background: "rgba(255,255,255,0.72)",
-                              padding: "10px 10px 10px 12px",
-                            }}
-                          >
-                            <span style={{ minWidth: 0 }}>
-                              <span style={{ display: "block", fontWeight: 950 }}>
-                                {cleanText(lane.label, "Subscription check")}
-                              </span>
-                              <span
-                                style={{
-                                  display: "block",
-                                  color: "#4F647A",
-                                  fontSize: 12.5,
-                                  lineHeight: 1.45,
-                                  marginTop: 3,
-                                }}
-                              >
-                                {cleanText(
-                                  lane.next_step,
-                                  cleanText(
-                                    lane.summary,
-                                    "Keep billing as planning until a real payment path exists."
-                                  )
-                                )}
-                              </span>
-                            </span>
-                            <span style={statusBadge(lane.status)}>
-                              {compactStatus(lane.status)}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    ) : null}
-                    <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-                      This subscription lifecycle view is read-only billing planning. It does not
-                      create quote acceptance, create payment instruction, create expected payment,
-                      record payment, confirm payment, create invoices, create receipts, activate
-                      billing, activate the Community Domain, create entitlements, renew a domain,
-                      suspend a domain, reactivate a domain, verify authority, move money, or
-                      expose private finance, member, evidence, or review records.
-                    </div>
-                  </div>
+                    }
+                  >
+                    <CommunityDomainBillingReadinessPanels
+                      subscriptionLifecycle={subscriptionLifecycle}
+                      subscriptionReadyTotal={subscriptionReadyTotal}
+                      visibleSubscriptionLanes={visibleSubscriptionLanes}
+                      blockedSubscriptionLanes={blockedSubscriptionLanes}
+                      subscriptionPackage={subscriptionPackage}
+                      subscriptionSummary={subscriptionSummary}
+                      capacityPlan={capacityPlan}
+                      visibleCapacityLanes={visibleCapacityLanes}
+                      attentionCapacityLanes={attentionCapacityLanes}
+                    />
+                  </Suspense>
                 ) : null}
 
-                {activeLane === "billing" ? (
-                  <div style={softCard()}>
-                    <div style={sectionLabel()}>Capacity plan</div>
-                    <div style={{ ...helperText(), marginTop: 7 }}>
-                      {capacityPlan
-                        ? `${cleanText(
-                            capacityPlan.package_name,
-                            "Community Domain package"
-                          )} uses ${cleanText(
-                            capacityPlan.limits_source,
-                            "recorded package allowance"
-                          )}. ${cleanText(
-                            capacityPlan.primary_next_action?.label,
-                            "Review setup before relying on capacity."
-                          )}.`
-                        : "GSN could not load the read-only capacity plan for this view."}
-                    </div>
-                    {attentionCapacityLanes.length ? (
-                      <div style={{ ...helperText(), marginTop: 7, fontSize: 13 }}>
-                        Capacity attention:{" "}
-                        <strong>
-                          {attentionCapacityLanes
-                            .map((lane) => cleanText(lane.label, lane.lane_key || "capacity"))
-                            .join(", ")}
-                        </strong>
-                        .
-                      </div>
-                    ) : capacityPlan ? (
-                      <div style={{ ...helperText(), marginTop: 7, fontSize: 13 }}>
-                        No near-limit or over-limit package lane is visible.
-                      </div>
-                    ) : null}
-                    {visibleCapacityLanes.length ? (
-                      <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
-                        {visibleCapacityLanes.slice(0, 5).map((lane) => {
-                          const used = lane.metered ? countValue(lane.used) : "not metered";
-                          const limit = lane.limit == null ? "not set" : countValue(lane.limit);
-                          const remaining =
-                            lane.remaining == null ? "not metered" : countValue(lane.remaining);
-                          return (
-                            <div
-                              key={cleanText(lane.lane_key, cleanText(lane.label, "capacity"))}
-                              style={{
-                                display: "grid",
-                                gridTemplateColumns: "minmax(0, 1fr) auto",
-                                gap: 10,
-                                alignItems: "center",
-                                borderRadius: 14,
-                                border: "1px solid rgba(9,27,46,0.10)",
-                                background: "rgba(255,255,255,0.72)",
-                                padding: "10px 10px 10px 12px",
-                              }}
-                            >
-                              <span style={{ minWidth: 0 }}>
-                                <span style={{ display: "block", fontWeight: 950 }}>
-                                  {cleanText(lane.label, "Capacity lane")}
-                                </span>
-                                <span
-                                  style={{
-                                    display: "block",
-                                    color: "#4F647A",
-                                    fontSize: 12.5,
-                                    lineHeight: 1.45,
-                                    marginTop: 3,
-                                  }}
-                                >
-                                  Used: {used}. Limit: {limit}. Remaining: {remaining}.
-                                </span>
-                              </span>
-                              <span style={statusBadge(lane.status)}>
-                                {compactStatus(lane.status)}
-                              </span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    ) : null}
-                    <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-                      This capacity view does not increase limits, create nodes,
-                      add members, assign roles, create shops, meter live shop
-                      usage, meter storage usage, change pricing, activate
-                      billing, verify authority, move money, publish a public
-                      page, or expose private evidence.
-                    </div>
-                  </div>
-                ) : null}
-
-                {activeLane === "modules" ? (
+                {!isActiveLaneReadinessLoading && activeLane === "modules" ? (
                   <>
-                    <div style={softCard()}>
-                      <div style={sectionLabel()}>Service readiness</div>
-                      <div style={{ ...helperText(), marginTop: 7 }}>
-                        Shops, Spotlight, Vault, Verification, Trust Centre, Analytics, Billing,
-                        and Settings are shown as scoped planning rows for this Community Domain.
-                      </div>
-                      {moduleScopeReadiness?.primary_next_action?.label ? (
-                        <div style={{ ...helperText(), marginTop: 7 }}>
-                          Next owner/admin step:{" "}
-                          <strong>{moduleScopeReadiness.primary_next_action.label}</strong>.
+                    <Suspense
+                      fallback={
+                        <div style={{ ...helperText(), marginTop: 4 }}>
+                          Loading service readiness panels...
                         </div>
-                      ) : null}
-                      <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
-                        {serviceReadinessRows.map((row) => (
-                          <div
-                            key={row.key}
-                            style={{
-                              display: "grid",
-                              gridTemplateColumns: "minmax(0, 1fr) auto",
-                              gap: 10,
-                              alignItems: "center",
-                              borderRadius: 14,
-                              border: "1px solid rgba(9,27,46,0.10)",
-                              background: "rgba(255,255,255,0.72)",
-                              padding: "10px 10px 10px 12px",
-                            }}
-                          >
-                            <span style={{ minWidth: 0 }}>
-                              <span style={{ display: "block", fontWeight: 950 }}>
-                                {row.label}
-                              </span>
-                              <span
-                                style={{
-                                  display: "block",
-                                  color: "#4F647A",
-                                  fontSize: 12.5,
-                                  lineHeight: 1.45,
-                                  marginTop: 3,
-                                }}
-                              >
-                                {row.detail}
-                              </span>
-                            </span>
-                            <span style={statusBadge(row.status)}>{row.status}</span>
-                          </div>
-                        ))}
-                      </div>
-                      <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-                        This readiness view does not enable services, activate billing, grant
-                        permissions, publish Spotlight, create shops, open vault links, write Trust
-                        Passport records, or expose private member activity.
-                      </div>
-                    </div>
-
-                    <div style={softCard()}>
-                      <div style={sectionLabel()}>Evidence record readiness</div>
-                      <div style={{ ...helperText(), marginTop: 7 }}>
-                        {evidenceRecordReadiness
-                          ? `${cleanText(
-                              evidenceRecordReadiness.primary_next_action?.label,
-                              "Review evidence record readiness"
-                            )}. ${evidenceRecordReadyTotal} of ${visibleEvidenceRecordTypes.length} record types are ready for future evidence records.`
-                          : "GSN could not load the read-only evidence record readiness view for this Community Domain."}
-                      </div>
-                      <div
-                        style={{
-                          display: "grid",
-                          gridTemplateColumns: "repeat(auto-fit, minmax(118px, 1fr))",
-                          gap: 8,
-                          marginTop: 10,
-                        }}
+                      }
+                    >
+                      <CommunityDomainServiceReadinessPanels
+                        moduleScopeReadiness={moduleScopeReadiness}
+                        serviceReadinessRows={serviceReadinessRows}
+                        serviceSettingsProjection={serviceSettingsProjection}
+                        visibleServiceSettingsItems={visibleServiceSettingsItems}
+                        enabledServiceSettingsItems={enabledServiceSettingsItems}
+                        optionalServiceSettingsItems={optionalServiceSettingsItems}
+                        economicParticipation={economicParticipation}
+                        economicParticipationReadyTotal={economicParticipationReadyTotal}
+                        visibleEconomicParticipationLanes={visibleEconomicParticipationLanes}
+                        blockedEconomicParticipationLanes={blockedEconomicParticipationLanes}
+                        economicParticipationTemplate={economicParticipationTemplate}
+                        economicParticipationCounts={economicParticipationCounts}
+                        networkPresence={networkPresence}
+                        networkPresenceReadyTotal={networkPresenceReadyTotal}
+                        visibleNetworkPresenceLanes={visibleNetworkPresenceLanes}
+                        blockedNetworkPresenceLanes={blockedNetworkPresenceLanes}
+                        networkPresenceIdentity={networkPresenceIdentity}
+                        networkPresenceStatus={networkPresenceStatus}
                       >
-                        {[
-                          [
-                            "Record engine",
-                            compactStatus(evidenceRecordSummary.evidence_record_engine_status),
-                          ],
-                          ["Record types", countValue(evidenceRecordSummary.record_type_count)],
-                          [
-                            "Records created",
-                            countValue(evidenceRecordSummary.evidence_records_created),
-                          ],
-                          [
-                            "Evidence notes",
-                            evidenceRecordSummary.review_evidence_metadata_count == null
-                              ? "admin only"
-                              : countValue(evidenceRecordSummary.review_evidence_metadata_count),
-                          ],
-                        ].map(([label, value]) => (
-                          <div
-                            key={String(label)}
-                            style={{
-                              borderRadius: 14,
-                              background: "#F7FAFF",
-                              border: "1px solid rgba(9,27,46,0.08)",
-                              padding: 10,
-                              minWidth: 0,
-                            }}
-                          >
-                            <div style={{ color: "#617085", fontSize: 12, fontWeight: 850 }}>
-                              {label}
+                        <Suspense
+                          fallback={
+                            <div style={{ ...helperText(), marginTop: 4 }}>
+                              Loading local service projections...
                             </div>
-                            <div style={{ color: "#07172C", fontWeight: 950, marginTop: 4 }}>
-                              {value}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                      {blockedEvidenceRecordTypes.length ? (
-                        <div style={{ ...helperText(), marginTop: 9 }}>
-                          Evidence record types needing attention:{" "}
-                          <strong>
-                            {blockedEvidenceRecordTypes
-                              .slice(0, 3)
-                              .map((record) =>
-                                cleanText(record.label, record.record_type || "record type")
-                              )
-                              .join(", ")}
-                          </strong>
-                          .
-                        </div>
-                      ) : evidenceRecordReadiness ? (
-                        <div style={{ ...helperText(), marginTop: 9 }}>
-                          No blocked evidence record type is visible, but durable evidence records
-                          are still not being created here.
-                        </div>
-                      ) : null}
-                      {visibleEvidenceRecordTypes.length ? (
-                        <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
-                          {visibleEvidenceRecordTypes.slice(0, 4).map((record) => (
-                            <div
-                              key={cleanText(
-                                record.record_type,
-                                cleanText(record.label, "evidence record")
-                              )}
-                              style={{
-                                display: "grid",
-                                gridTemplateColumns: "minmax(0, 1fr) auto",
-                                gap: 10,
-                                alignItems: "center",
-                                borderRadius: 14,
-                                border: "1px solid rgba(9,27,46,0.10)",
-                                background: "rgba(255,255,255,0.72)",
-                                padding: "10px 10px 10px 12px",
-                              }}
-                            >
-                              <span style={{ minWidth: 0 }}>
-                                <span style={{ display: "block", fontWeight: 950 }}>
-                                  {cleanText(record.label, "Evidence record type")}
-                                </span>
-                                <span
-                                  style={{
-                                    display: "block",
-                                    color: "#4F647A",
-                                    fontSize: 12.5,
-                                    lineHeight: 1.45,
-                                    marginTop: 3,
-                                  }}
-                                >
-                                  {cleanText(
-                                    record.next_step,
-                                    "Keep this as planning readiness until durable evidence records exist."
-                                  )}
-                                </span>
-                              </span>
-                              <span style={statusBadge(record.readiness_status)}>
-                                {compactStatus(record.readiness_status)}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      ) : null}
-                      <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-                        This evidence record view is read-only planning. It does not create
-                        CommunityDomainEvidenceRecord rows, upload files, expose storage keys,
-                        calculate validity windows, persist visibility policy, issue credentials,
-                        issue TrustSlips, write Trust Passport entries, publish public proof,
-                        verify legal authority, move money, activate billing, create marketplace
-                        activity, create a social Community, expose private member evidence, or
-                        score trust.
-                      </div>
-                    </div>
+                          }
+                        >
+                          <CommunityDomainNodeProjectionGroups
+                            variant="services"
+                            nodeServiceMap={nodeServiceMap}
+                            nodeServiceCounts={nodeServiceCounts}
+                            visibleNodeServiceRows={visibleNodeServiceRows}
+                            nodeServiceGaps={nodeServiceGaps}
+                            nodePrivacyMap={nodePrivacyMap}
+                            nodePrivacyCounts={nodePrivacyCounts}
+                            visibleNodePrivacyRows={visibleNodePrivacyRows}
+                            nodePrivacyGaps={nodePrivacyGaps}
+                            nodeAnalyticsMap={nodeAnalyticsMap}
+                            nodeAnalyticsCounts={nodeAnalyticsCounts}
+                            visibleNodeAnalyticsRows={visibleNodeAnalyticsRows}
+                            nodeAnalyticsGaps={nodeAnalyticsGaps}
+                            nodeCommunicationMap={nodeCommunicationMap}
+                            nodeCommunicationCounts={nodeCommunicationCounts}
+                            visibleNodeCommunicationRows={visibleNodeCommunicationRows}
+                            nodeCommunicationGaps={nodeCommunicationGaps}
+                            nodeVaultMap={nodeVaultMap}
+                            nodeVaultCounts={nodeVaultCounts}
+                            visibleNodeVaultRows={visibleNodeVaultRows}
+                            nodeVaultGaps={nodeVaultGaps}
+                          />
+                        </Suspense>
+                      </CommunityDomainServiceReadinessPanels>
+                    </Suspense>
 
-                    <div style={softCard()}>
-                      <div style={sectionLabel()}>Evidence release readiness</div>
-                      <div style={{ ...helperText(), marginTop: 7 }}>
-                        {evidenceReleaseReadiness
-                          ? `${cleanText(
-                              evidenceReleaseReadiness.primary_next_action?.label,
-                              "Review evidence release readiness"
-                            )}. ${evidenceReleaseReadyTotal} of ${visibleEvidenceReleaseLanes.length} release checks are ready.`
-                          : "GSN could not load the read-only evidence release readiness view for this Community Domain."}
-                      </div>
-                      <div
-                        style={{
-                          display: "grid",
-                          gridTemplateColumns: "repeat(auto-fit, minmax(118px, 1fr))",
-                          gap: 8,
-                          marginTop: 10,
-                        }}
-                      >
-                        {[
-                          [
-                            "Release engine",
-                            compactStatus(evidenceReleaseSummary.evidence_release_engine_status),
-                          ],
-                          [
-                            "Releases made",
-                            countValue(evidenceReleaseSummary.evidence_releases_created),
-                          ],
-                          [
-                            "Public proofs",
-                            countValue(evidenceReleaseSummary.public_proofs_published),
-                          ],
-                          [
-                            "Release evidence",
-                            evidenceReleaseSummary.release_evidence_count == null
-                              ? "admin only"
-                              : countValue(evidenceReleaseSummary.release_evidence_count),
-                          ],
-                        ].map(([label, value]) => (
-                          <div
-                            key={String(label)}
-                            style={{
-                              borderRadius: 14,
-                              background: "#F7FAFF",
-                              border: "1px solid rgba(9,27,46,0.08)",
-                              padding: 10,
-                              minWidth: 0,
-                            }}
-                          >
-                            <div style={{ color: "#617085", fontSize: 12, fontWeight: 850 }}>
-                              {label}
-                            </div>
-                            <div style={{ color: "#07172C", fontWeight: 950, marginTop: 4 }}>
-                              {value}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                      {blockedEvidenceReleaseLanes.length ? (
-                        <div style={{ ...helperText(), marginTop: 9 }}>
-                          Evidence release checks needing attention:{" "}
-                          <strong>
-                            {blockedEvidenceReleaseLanes
-                              .slice(0, 3)
-                              .map((lane) => cleanText(lane.label, lane.lane_key || "release check"))
-                              .join(", ")}
-                          </strong>
-                          .
+                    <Suspense
+                      fallback={
+                        <div style={{ ...helperText(), marginTop: 4 }}>
+                          Loading service boundary panels...
                         </div>
-                      ) : evidenceReleaseReadiness ? (
-                        <div style={{ ...helperText(), marginTop: 9 }}>
-                          No blocked evidence release lane is visible, but public proof is still
-                          not being released here.
+                      }
+                    >
+                      <CommunityDomainServiceBoundaryPanels
+                        networkExchangeMap={networkExchangeMap}
+                        networkExchangeReadyTotal={networkExchangeReadyTotal}
+                        visibleNetworkExchangeLanes={visibleNetworkExchangeLanes}
+                        blockedNetworkExchangeLanes={blockedNetworkExchangeLanes}
+                        networkExchangeSummary={networkExchangeSummary}
+                        linkedNetworkSocialCommunity={linkedNetworkSocialCommunity}
+                        recordPrivacyMap={recordPrivacyMap}
+                        recordPrivacyReadyTotal={recordPrivacyReadyTotal}
+                        visibleRecordPrivacyLanes={visibleRecordPrivacyLanes}
+                        blockedRecordPrivacyLanes={blockedRecordPrivacyLanes}
+                        recordPrivacySummary={recordPrivacySummary}
+                        configurationMap={configurationMap}
+                        configurationMapReadyTotal={configurationMapReadyTotal}
+                        visibleConfigurationMapLanes={visibleConfigurationMapLanes}
+                        blockedConfigurationMapLanes={blockedConfigurationMapLanes}
+                        configurationMapSummary={configurationMapSummary}
+                        configurationMapBlueprint={configurationMapBlueprint}
+                        complianceMap={complianceMap}
+                        complianceMapReadyTotal={complianceMapReadyTotal}
+                        visibleComplianceMapLanes={visibleComplianceMapLanes}
+                        blockedComplianceMapLanes={blockedComplianceMapLanes}
+                        complianceMapSummary={complianceMapSummary}
+                        appealReadiness={appealReadiness}
+                        appealReadinessSignalTotal={appealReadinessSignalTotal}
+                        visibleAppealReadinessLanes={visibleAppealReadinessLanes}
+                        blockedAppealReadinessLanes={blockedAppealReadinessLanes}
+                        appealReadinessSummary={appealReadinessSummary}
+                      />
+                    </Suspense>
+                    <Suspense
+                      fallback={
+                        <div style={{ ...helperText(), marginTop: 4 }}>
+                          Loading trust evidence projections...
                         </div>
-                      ) : null}
-                      {visibleEvidenceReleaseLanes.length ? (
-                        <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
-                          {visibleEvidenceReleaseLanes.slice(0, 4).map((lane) => (
-                            <div
-                              key={cleanText(
-                                lane.lane_key,
-                                cleanText(lane.label, "evidence release")
-                              )}
-                              style={{
-                                display: "grid",
-                                gridTemplateColumns: "minmax(0, 1fr) auto",
-                                gap: 10,
-                                alignItems: "center",
-                                borderRadius: 14,
-                                border: "1px solid rgba(9,27,46,0.10)",
-                                background: "rgba(255,255,255,0.72)",
-                                padding: "10px 10px 10px 12px",
-                              }}
-                            >
-                              <span style={{ minWidth: 0 }}>
-                                <span style={{ display: "block", fontWeight: 950 }}>
-                                  {cleanText(lane.label, "Evidence release check")}
-                                </span>
-                                <span
-                                  style={{
-                                    display: "block",
-                                    color: "#4F647A",
-                                    fontSize: 12.5,
-                                    lineHeight: 1.45,
-                                    marginTop: 3,
-                                  }}
-                                >
-                                  {cleanText(
-                                    lane.next_step,
-                                    "Keep this as public-safe planning until a real release path exists."
-                                  )}
-                                </span>
-                              </span>
-                              <span style={statusBadge(lane.status)}>
-                                {compactStatus(lane.status)}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      ) : null}
-                      <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-                        This evidence release view is read-only public-safe proof planning. It
-                        does not release evidence, expose files, expose storage keys, publish
-                        public proof, create public URLs, create QR codes, issue credentials,
-                        issue TrustSlips, write Trust Passport entries, share records across
-                        domains, create trust relay paths, verify legal authority, move money,
-                        activate billing, create marketplace activity, create a social Community,
-                        change permissions, expose private member evidence, or score trust.
-                      </div>
-                    </div>
+                      }
+                    >
+                      <CommunityDomainNodeProjectionGroups
+                        variant="trustEvidence"
+                        nodeEvidenceAuthorityMap={nodeEvidenceAuthorityMap}
+                        nodeEvidenceAuthorityCounts={nodeEvidenceAuthorityCounts}
+                        visibleNodeEvidenceAuthorityRows={visibleNodeEvidenceAuthorityRows}
+                        nodeEvidenceAuthorityGaps={nodeEvidenceAuthorityGaps}
+                        nodeTrustMap={nodeTrustMap}
+                        nodeTrustCounts={nodeTrustCounts}
+                        visibleNodeTrustRows={visibleNodeTrustRows}
+                        nodeTrustGaps={nodeTrustGaps}
+                      />
+                    </Suspense>
 
-                    <div style={softCard()}>
-                      <div style={sectionLabel()}>Trust relay readiness</div>
-                      <div style={{ ...helperText(), marginTop: 7 }}>
-                        {trustRelayReadiness
-                          ? `${cleanText(
-                              trustRelayReadiness.primary_next_action?.label,
-                              "Review trust relay readiness"
-                            )}. ${trustRelayReadyTotal} of ${visibleTrustRelayLanes.length} relay checks are ready.`
-                          : "GSN could not load the read-only trust relay readiness view for this Community Domain."}
-                      </div>
-                      <div
-                        style={{
-                          display: "grid",
-                          gridTemplateColumns: "repeat(auto-fit, minmax(118px, 1fr))",
-                          gap: 8,
-                          marginTop: 10,
-                        }}
-                      >
-                        {[
-                          ["Relay engine", compactStatus(trustRelaySummary.trust_relay_engine_status)],
-                          ["Relay paths", countValue(trustRelaySummary.relay_paths_created)],
-                          ["Bridge members", countValue(trustRelaySummary.bridge_member_candidates)],
-                          ["Open reviews", countValue(trustRelaySummary.open_relay_review_count)],
-                        ].map(([label, value]) => (
-                          <div
-                            key={String(label)}
-                            style={{
-                              borderRadius: 14,
-                              background: "#F7FAFF",
-                              border: "1px solid rgba(9,27,46,0.08)",
-                              padding: 10,
-                              minWidth: 0,
-                            }}
-                          >
-                            <div style={{ color: "#617085", fontSize: 12, fontWeight: 850 }}>
-                              {label}
-                            </div>
-                            <div style={{ color: "#07172C", fontWeight: 950, marginTop: 4 }}>
-                              {value}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                      {blockedTrustRelayLanes.length ? (
-                        <div style={{ ...helperText(), marginTop: 9 }}>
-                          Relay checks needing attention:{" "}
-                          <strong>
-                            {blockedTrustRelayLanes
-                              .slice(0, 3)
-                              .map((lane) => cleanText(lane.label, lane.lane_key || "relay check"))
-                              .join(", ")}
-                          </strong>
-                          .
+                    <Suspense
+                      fallback={
+                        <div style={{ ...helperText(), marginTop: 4 }}>
+                          Loading trust evidence readiness panels...
                         </div>
-                      ) : trustRelayReadiness ? (
-                        <div style={{ ...helperText(), marginTop: 9 }}>
-                          No blocked relay readiness lane is visible, but relay publishing is still
-                          not connected here.
-                        </div>
-                      ) : null}
-                      {visibleTrustRelayLanes.length ? (
-                        <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
-                          {visibleTrustRelayLanes.slice(0, 4).map((lane) => (
-                            <div
-                              key={cleanText(lane.lane_key, cleanText(lane.label, "trust relay"))}
-                              style={{
-                                display: "grid",
-                                gridTemplateColumns: "minmax(0, 1fr) auto",
-                                gap: 10,
-                                alignItems: "center",
-                                borderRadius: 14,
-                                border: "1px solid rgba(9,27,46,0.10)",
-                                background: "rgba(255,255,255,0.72)",
-                                padding: "10px 10px 10px 12px",
-                              }}
-                            >
-                              <span style={{ minWidth: 0 }}>
-                                <span style={{ display: "block", fontWeight: 950 }}>
-                                  {cleanText(lane.label, "Trust relay check")}
-                                </span>
-                                <span
-                                  style={{
-                                    display: "block",
-                                    color: "#4F647A",
-                                    fontSize: 12.5,
-                                    lineHeight: 1.45,
-                                    marginTop: 3,
-                                  }}
-                                >
-                                  {cleanText(
-                                    lane.next_step,
-                                    "Keep this relay check as planning context until a real relay path exists."
-                                  )}
-                                </span>
-                              </span>
-                              <span style={statusBadge(lane.status)}>
-                                {compactStatus(lane.status)}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      ) : null}
-                      <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-                        This trust relay view is read-only planning. It does not create relay paths,
-                        record source-domain, bridge-member, or destination-domain rows, publish
-                        proof, repost Spotlight, create cross-domain discovery, share private
-                        records, expose evidence files, expose storage keys, issue TrustSlips,
-                        write Trust Passport entries, create credentials, create marketplace
-                        activity, create affiliations, activate billing, or move money.
-                      </div>
-                    </div>
-
-                    <div style={softCard()}>
-                      <div style={sectionLabel()}>Notification scope readiness</div>
-                      <div style={{ ...helperText(), marginTop: 7 }}>
-                        {notificationScopeReadiness
-                          ? `${cleanText(
-                              notificationScopeReadiness.primary_next_action?.label,
-                              "Review notification scope readiness"
-                            )}. ${notificationScopeReadyTotal} of ${visibleNotificationScopeLanes.length} audience checks are ready.`
-                          : "GSN could not load the read-only notification scope readiness view for this Community Domain."}
-                      </div>
-                      <div
-                        style={{
-                          display: "grid",
-                          gridTemplateColumns: "repeat(auto-fit, minmax(118px, 1fr))",
-                          gap: 8,
-                          marginTop: 10,
-                        }}
-                      >
-                        {[
-                          [
-                            "Scope engine",
-                            compactStatus(notificationScopeSummary.notification_scope_engine_status),
-                          ],
-                          [
-                            "Members",
-                            countValue(notificationScopeSummary.active_member_count),
-                          ],
-                          [
-                            "Scope policies",
-                            notificationScopeSummary.notification_policy_count == null
-                              ? "admin only"
-                              : countValue(notificationScopeSummary.notification_policy_count),
-                          ],
-                          [
-                            "Notifications sent",
-                            countValue(notificationScopeSummary.notifications_sent),
-                          ],
-                        ].map(([label, value]) => (
-                          <div
-                            key={String(label)}
-                            style={{
-                              borderRadius: 14,
-                              background: "#F7FAFF",
-                              border: "1px solid rgba(9,27,46,0.08)",
-                              padding: 10,
-                              minWidth: 0,
-                            }}
-                          >
-                            <div style={{ color: "#617085", fontSize: 12, fontWeight: 850 }}>
-                              {label}
-                            </div>
-                            <div style={{ color: "#07172C", fontWeight: 950, marginTop: 4 }}>
-                              {value}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                      {blockedNotificationScopeLanes.length ? (
-                        <div style={{ ...helperText(), marginTop: 9 }}>
-                          Notification scope checks needing attention:{" "}
-                          <strong>
-                            {blockedNotificationScopeLanes
-                              .slice(0, 3)
-                              .map((lane) =>
-                                cleanText(lane.label, lane.lane_key || "notification check")
-                              )
-                              .join(", ")}
-                          </strong>
-                          .
-                        </div>
-                      ) : notificationScopeReadiness ? (
-                        <div style={{ ...helperText(), marginTop: 9 }}>
-                          No blocked notification scope lane is visible, but notification delivery
-                          is still not connected here.
-                        </div>
-                      ) : null}
-                      {visibleNotificationScopeLanes.length ? (
-                        <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
-                          {visibleNotificationScopeLanes.slice(0, 4).map((lane) => (
-                            <div
-                              key={cleanText(
-                                lane.lane_key,
-                                cleanText(lane.label, "notification scope")
-                              )}
-                              style={{
-                                display: "grid",
-                                gridTemplateColumns: "minmax(0, 1fr) auto",
-                                gap: 10,
-                                alignItems: "center",
-                                borderRadius: 14,
-                                border: "1px solid rgba(9,27,46,0.10)",
-                                background: "rgba(255,255,255,0.72)",
-                                padding: "10px 10px 10px 12px",
-                              }}
-                            >
-                              <span style={{ minWidth: 0 }}>
-                                <span style={{ display: "block", fontWeight: 950 }}>
-                                  {cleanText(lane.label, "Notification scope check")}
-                                </span>
-                                <span
-                                  style={{
-                                    display: "block",
-                                    color: "#4F647A",
-                                    fontSize: 12.5,
-                                    lineHeight: 1.45,
-                                    marginTop: 3,
-                                  }}
-                                >
-                                  {cleanText(
-                                    lane.next_step,
-                                    "Keep this as audience planning until a real notification path exists."
-                                  )}
-                                </span>
-                              </span>
-                              <span style={statusBadge(lane.status)}>
-                                {compactStatus(lane.status)}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      ) : null}
-                      <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-                        This notification scope view is read-only audience planning. It does not
-                        send notifications, create notification jobs, send emails, send SMS, send
-                        WhatsApp messages, send push notifications, create audience lists, publish
-                        public announcements, create cross-domain broadcasts, expose member lists,
-                        create marketplace records, move money, issue TrustSlips, write Trust
-                        Passport entries, or expose private member, review, evidence, marketplace,
-                        or finance records.
-                      </div>
-                    </div>
-
-                    <div style={softCard()}>
-                      <div style={sectionLabel()}>Trust mobility readiness</div>
-                      <div style={{ ...helperText(), marginTop: 7 }}>
-                        {trustMobility
-                          ? `${cleanText(
-                              trustMobility.primary_next_action?.label,
-                              "Review trust mobility readiness"
-                            )}. ${trustMobilityReadyTotal} of ${visibleTrustMobilityLanes.length} portability checks are ready.`
-                          : "GSN could not load the read-only trust mobility view for this Community Domain."}
-                      </div>
-                      <div
-                        style={{
-                          display: "grid",
-                          gridTemplateColumns: "repeat(auto-fit, minmax(118px, 1fr))",
-                          gap: 8,
-                          marginTop: 10,
-                        }}
-                      >
-                        {[
-                          [
-                            "Authority",
-                            compactStatus(trustMobilitySummary.verification_status),
-                          ],
-                          ["Members", countValue(trustMobilitySummary.active_members)],
-                          ["Evidence", countValue(trustMobilitySummary.review_evidence_records)],
-                          ["Relay paths", countValue(trustMobilitySummary.relay_paths)],
-                        ].map(([label, value]) => (
-                          <div
-                            key={String(label)}
-                            style={{
-                              borderRadius: 14,
-                              background: "#F7FAFF",
-                              border: "1px solid rgba(9,27,46,0.08)",
-                              padding: 10,
-                              minWidth: 0,
-                            }}
-                          >
-                            <div style={{ color: "#617085", fontSize: 12, fontWeight: 850 }}>
-                              {label}
-                            </div>
-                            <div style={{ color: "#07172C", fontWeight: 950, marginTop: 4 }}>
-                              {value}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                      {blockedTrustMobilityLanes.length ? (
-                        <div style={{ ...helperText(), marginTop: 9 }}>
-                          Trust mobility checks needing attention:{" "}
-                          <strong>
-                            {blockedTrustMobilityLanes
-                              .slice(0, 3)
-                              .map((lane) => cleanText(lane.label, lane.lane_key || "mobility check"))
-                              .join(", ")}
-                          </strong>
-                          .
-                        </div>
-                      ) : trustMobility ? (
-                        <div style={{ ...helperText(), marginTop: 9 }}>
-                          No blocked trust mobility lane is visible, but portability bridges are
-                          still not connected here.
-                        </div>
-                      ) : null}
-                      {visibleTrustMobilityLanes.length ? (
-                        <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
-                          {visibleTrustMobilityLanes.slice(0, 4).map((lane) => (
-                            <div
-                              key={cleanText(
-                                lane.lane_key,
-                                cleanText(lane.label, "trust mobility")
-                              )}
-                              style={{
-                                display: "grid",
-                                gridTemplateColumns: "minmax(0, 1fr) auto",
-                                gap: 10,
-                                alignItems: "center",
-                                borderRadius: 14,
-                                border: "1px solid rgba(9,27,46,0.10)",
-                                background: "rgba(255,255,255,0.72)",
-                                padding: "10px 10px 10px 12px",
-                              }}
-                            >
-                              <span style={{ minWidth: 0 }}>
-                                <span style={{ display: "block", fontWeight: 950 }}>
-                                  {cleanText(lane.label, "Trust mobility check")}
-                                </span>
-                                <span
-                                  style={{
-                                    display: "block",
-                                    color: "#4F647A",
-                                    fontSize: 12.5,
-                                    lineHeight: 1.45,
-                                    marginTop: 3,
-                                  }}
-                                >
-                                  {cleanText(
-                                    lane.next_step,
-                                    cleanText(
-                                      lane.summary,
-                                      "Keep portability as planning until a real bridge exists."
-                                    )
-                                  )}
-                                </span>
-                              </span>
-                              <span style={statusBadge(lane.status)}>
-                                {compactStatus(lane.status)}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      ) : null}
-                      <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-                        This trust mobility view is read-only portability planning. It does not
-                        create TrustSlips, write Trust Passport entries, create credentials, create
-                        trust relay paths, release evidence, expose files, expose storage keys,
-                        verify legal or institutional authority, publish proof, create outward
-                        links, move money, activate billing, activate the Community Domain, create
-                        marketplace activity, create a social Community, or expose private member,
-                        finance, evidence, or review records.
-                      </div>
-                    </div>
+                      }
+                    >
+                      <CommunityDomainTrustEvidenceReadinessPanels
+                        evidenceRecordReadiness={evidenceRecordReadiness}
+                        evidenceRecordReadyTotal={evidenceRecordReadyTotal}
+                        visibleEvidenceRecordTypes={visibleEvidenceRecordTypes}
+                        blockedEvidenceRecordTypes={blockedEvidenceRecordTypes}
+                        evidenceRecordSummary={evidenceRecordSummary}
+                        evidenceReleaseReadiness={evidenceReleaseReadiness}
+                        evidenceReleaseReadyTotal={evidenceReleaseReadyTotal}
+                        visibleEvidenceReleaseLanes={visibleEvidenceReleaseLanes}
+                        blockedEvidenceReleaseLanes={blockedEvidenceReleaseLanes}
+                        evidenceReleaseSummary={evidenceReleaseSummary}
+                        trustRelayReadiness={trustRelayReadiness}
+                        trustRelayReadyTotal={trustRelayReadyTotal}
+                        visibleTrustRelayLanes={visibleTrustRelayLanes}
+                        blockedTrustRelayLanes={blockedTrustRelayLanes}
+                        trustRelaySummary={trustRelaySummary}
+                        notificationScopeReadiness={notificationScopeReadiness}
+                        notificationScopeReadyTotal={notificationScopeReadyTotal}
+                        visibleNotificationScopeLanes={visibleNotificationScopeLanes}
+                        blockedNotificationScopeLanes={blockedNotificationScopeLanes}
+                        notificationScopeSummary={notificationScopeSummary}
+                        trustMobility={trustMobility}
+                        trustMobilityReadyTotal={trustMobilityReadyTotal}
+                        visibleTrustMobilityLanes={visibleTrustMobilityLanes}
+                        blockedTrustMobilityLanes={blockedTrustMobilityLanes}
+                        trustMobilitySummary={trustMobilitySummary}
+                      />
+                    </Suspense>
                   </>
                 ) : null}
 
-                {activeLane === "structure" ? (
-                  <div style={softCard()}>
-                    <div style={sectionLabel()}>Structure preview</div>
-                    <div style={{ ...helperText(), marginTop: 7 }}>
-                      Root institution and first operating units, shown from the
-                      read-only Community Domain tree.
-                    </div>
-                    {visibleStructureRows.length ? (
-                      <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
-                        {visibleStructureRows.map(({ node, level }) => (
-                          <div
-                            key={`${cleanText(node.id)}:${cleanText(node.name)}`}
-                            style={{
-                              display: "grid",
-                              gridTemplateColumns: "minmax(0, 1fr) auto",
-                              gap: 10,
-                              alignItems: "center",
-                              borderRadius: 14,
-                              border: "1px solid rgba(9,27,46,0.10)",
-                              background: "rgba(255,255,255,0.72)",
-                              padding: "10px 10px 10px 12px",
-                              marginLeft: level ? 12 : 0,
-                            }}
-                          >
-                            <span style={{ minWidth: 0 }}>
-                              <span style={{ display: "block", fontWeight: 950 }}>
-                                {cleanText(node.name, level ? "Operating unit" : "Root institution")}
-                              </span>
-                              <span
-                                style={{
-                                  display: "block",
-                                  color: "#4F647A",
-                                  fontSize: 12.5,
-                                  marginTop: 3,
-                                  textTransform: "capitalize",
-                                }}
-                              >
-                                {level ? "Operating unit" : "Root"} -{" "}
-                                {compactStatus(node.node_type || node.node_kind)}
-                              </span>
-                            </span>
-                            <span style={statusBadge(node.status)}>
-                              {compactStatus(node.status)}
-                            </span>
-                          </div>
-                        ))}
+                {!isActiveLaneReadinessLoading && activeLane === "structure" ? (
+                  <Suspense
+                    fallback={
+                      <div style={{ ...helperText(), marginTop: 4 }}>
+                        Loading structure preview...
                       </div>
-                    ) : (
-                      <div style={{ ...helperText(), marginTop: 10 }}>
-                        No operating-unit structure has been mapped yet. Owners and
-                        domain admins still need to add branches, departments,
-                        lines, classes, or committees through scoped structure tools.
-                      </div>
-                    )}
-                    <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-                      This preview does not create nodes, change parentage, place
-                      members, grant roles, activate billing, or verify a branch.
-                    </div>
-                  </div>
+                    }
+                  >
+                    <CommunityDomainStructurePreviewPanel
+                      visibleStructureRows={visibleStructureRows}
+                    />
+                  </Suspense>
                 ) : null}
 
-                {activeLane === "structure" ? (
-                  <div style={softCard()}>
-                    <div style={sectionLabel()}>Rollout plan</div>
-                    <div style={{ ...helperText(), marginTop: 7 }}>
-                      {rolloutPlan
-                        ? `${cleanText(
-                            rolloutPlan.primary_next_action?.label,
-                            "Review Community Domain rollout plan"
-                          )}. Current phase: ${compactStatus(rolloutPlan.rollout_phase)}.`
-                        : "GSN could not load the read-only rollout plan for this view."}
-                    </div>
-                    <div
-                      style={{
-                        display: "grid",
-                        gridTemplateColumns: "repeat(auto-fit, minmax(118px, 1fr))",
-                        gap: 8,
-                        marginTop: 10,
-                      }}
+                {!isActiveLaneReadinessLoading && activeLane === "structure" ? (
+                  <Suspense
+                    fallback={
+                      <div style={{ ...helperText(), marginTop: 4 }}>
+                        Loading local structure projections...
+                      </div>
+                    }
+                  >
+                    <CommunityDomainNodeProjectionGroups
+                      variant="structureFoundation"
+                      nodeAutonomyMap={nodeAutonomyMap}
+                      nodeAutonomyCounts={nodeAutonomyCounts}
+                      visibleNodeAutonomyRows={visibleNodeAutonomyRows}
+                      nodeAutonomyGaps={nodeAutonomyGaps}
+                      nodeEconomicMap={nodeEconomicMap}
+                      nodeEconomicCounts={nodeEconomicCounts}
+                      visibleNodeEconomicRows={visibleNodeEconomicRows}
+                      nodeEconomicGaps={nodeEconomicGaps}
+                      nodeActivityMap={nodeActivityMap}
+                      nodeActivityCounts={nodeActivityCounts}
+                      visibleNodeActivityRows={visibleNodeActivityRows}
+                      nodeActivityGaps={nodeActivityGaps}
+                    />
+                  </Suspense>
+                ) : null}
+
+                {!isActiveLaneReadinessLoading && activeLane === "structure" ? (
+                  <Suspense
+                    fallback={
+                      <div style={{ ...helperText(), marginTop: 4 }}>
+                        Loading domain-boundary projection...
+                      </div>
+                    }
+                  >
+                    <CommunityDomainNodeProjectionGroups
+                      variant="structureBoundary"
+                      nodeDomainBoundaryMap={nodeDomainBoundaryMap}
+                      nodeDomainBoundaryCounts={nodeDomainBoundaryCounts}
+                      visibleNodeDomainBoundaryRows={visibleNodeDomainBoundaryRows}
+                      nodeDomainBoundaryGaps={nodeDomainBoundaryGaps}
+                    />
+                  </Suspense>
+                ) : null}
+
+                {!isActiveLaneReadinessLoading && activeLane === "structure" ? (
+                  <Suspense
+                    fallback={
+                      <div style={{ ...helperText(), marginTop: 4 }}>
+                        Loading activity detail projections...
+                      </div>
+                    }
+                  >
+                    <CommunityDomainNodeProjectionGroups
+                      variant="structureActivity"
+                      nodeScheduledActivityMap={nodeScheduledActivityMap}
+                      nodeScheduledActivityCounts={nodeScheduledActivityCounts}
+                      visibleNodeScheduledActivityRows={visibleNodeScheduledActivityRows}
+                      nodeScheduledActivityGaps={nodeScheduledActivityGaps}
+                      nodePaidActivityMap={nodePaidActivityMap}
+                      nodePaidActivityCounts={nodePaidActivityCounts}
+                      visibleNodePaidActivityRows={visibleNodePaidActivityRows}
+                      nodePaidActivityGaps={nodePaidActivityGaps}
+                    />
+                  </Suspense>
+                ) : null}
+
+                {!isActiveLaneReadinessLoading && activeLane === "structure" ? (
+                  <Suspense
+                    fallback={
+                      <div style={{ ...helperText(), marginTop: 4 }}>
+                        Loading structure planning panels...
+                      </div>
+                    }
+                  >
+                    <CommunityDomainStructurePlanningPanels
+                      rolloutPlan={rolloutPlan}
+                      rolloutPlanCounts={rolloutPlanCounts}
+                      openRolloutPhases={openRolloutPhases}
+                      rolloutUnitsNeedingAttention={rolloutUnitsNeedingAttention}
+                      activityMap={activityMap}
+                      activityMapReadyTotal={activityMapReadyTotal}
+                      visibleActivityMapLanes={visibleActivityMapLanes}
+                      blockedActivityMapLanes={blockedActivityMapLanes}
+                      activityMapSummary={activityMapSummary}
+                      activityMapTemplate={activityMapTemplate}
+                      activityGroupReadiness={activityGroupReadiness}
+                      activityGroupReadyTotal={activityGroupReadyTotal}
+                      visibleActivityGroups={visibleActivityGroups}
+                      blockedActivityGroups={blockedActivityGroups}
+                      activityGroupSummary={activityGroupSummary}
+                    />
+                  </Suspense>
+                ) : null}
+
+                {!isActiveLaneReadinessLoading && activeLane === "governance" ? (
+                  <Suspense
+                    fallback={
+                      <div style={{ ...helperText(), marginTop: 4 }}>
+                        Loading governance readiness panels...
+                      </div>
+                    }
+                  >
+                    <CommunityDomainGovernanceReadinessPanels
+                      isAdmin={isAdmin}
+                      membershipAccessRequests={membershipAccessRequests}
+                      governanceAttentionCount={governanceAttentionCount}
+                      governanceApprovedCount={governanceApprovedCount}
+                      delegationMap={delegationMap}
+                      delegationReadyTotal={delegationReadyTotal}
+                      visibleDelegationLanes={visibleDelegationLanes}
+                      blockedDelegationLanes={blockedDelegationLanes}
+                      delegationMapSummary={delegationMapSummary}
+                      governanceCoverage={governanceCoverage}
+                      governanceCoverageCounts={governanceCoverageCounts}
+                      governanceCoverageGaps={governanceCoverageGaps}
+                    />
+                  </Suspense>
+                ) : null}
+
+                {!isActiveLaneReadinessLoading && activeLane === "members" ? (
+                  <Suspense
+                    fallback={
+                      <div style={{ ...helperText(), marginTop: 4 }}>
+                        Loading member readiness panels...
+                      </div>
+                    }
+                  >
+                    <CommunityDomainMemberReadinessPanels
+                      placementSummary={placementSummary}
+                      placementCounts={placementCounts}
+                      visibleNodePlacements={visibleNodePlacements}
+                      placementLanes={placementLanes}
+                      counts={counts}
+                      memberVerificationMap={memberVerificationMap}
+                      memberVerificationReadyTotal={memberVerificationReadyTotal}
+                      visibleMemberVerificationLanes={visibleMemberVerificationLanes}
+                      blockedMemberVerificationLanes={blockedMemberVerificationLanes}
+                      memberVerificationSummary={memberVerificationSummary}
                     >
-                      {[
-                        ["First units", rolloutPlanCounts.first_level_units],
-                        ["Ready units", rolloutPlanCounts.ready_units],
-                        ["Members", rolloutPlanCounts.active_members],
-                        ["Policies", rolloutPlanCounts.active_policies],
-                      ].map(([label, value]) => (
-                        <div
-                          key={String(label)}
-                          style={statusBadge(Number(value) > 0 ? "recorded" : "not recorded")}
-                        >
-                          {String(label)}: {countValue(value)}
-                        </div>
-                      ))}
-                    </div>
-                    {openRolloutPhases.length ? (
-                      <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
-                        {openRolloutPhases.slice(0, 3).map((phase) => (
-                          <div
-                            key={cleanText(phase.phase_key, cleanText(phase.label, "phase"))}
-                            style={{
-                              display: "grid",
-                              gridTemplateColumns: "minmax(0, 1fr) auto",
-                              gap: 10,
-                              alignItems: "center",
-                              borderRadius: 14,
-                              border: "1px solid rgba(9,27,46,0.10)",
-                              background: "rgba(255,255,255,0.72)",
-                              padding: "10px 10px 10px 12px",
-                            }}
-                          >
-                            <span style={{ minWidth: 0 }}>
-                              <span style={{ display: "block", fontWeight: 950 }}>
-                                {cleanText(phase.label, "Rollout phase")}
-                              </span>
-                              <span
-                                style={{
-                                  display: "block",
-                                  color: "#4F647A",
-                                  fontSize: 12.5,
-                                  lineHeight: 1.45,
-                                  marginTop: 3,
-                                }}
-                              >
-                                {cleanText(
-                                  phase.next_step,
-                                  "Review this rollout phase before wider launch."
-                                )}
-                              </span>
-                            </span>
-                            <span style={statusBadge(phase.status || "open")}>
-                              {compactStatus(phase.status || "open")}
-                            </span>
+                      <Suspense
+                        fallback={
+                          <div style={{ ...helperText(), marginTop: 4 }}>
+                            Loading member placement projection...
                           </div>
-                        ))}
-                      </div>
-                    ) : rolloutPlan ? (
-                      <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-                        No open rollout phase is visible in the read-only rollout plan.
-                      </div>
-                    ) : null}
-                    {rolloutUnitsNeedingAttention.length ? (
-                      <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-                        Units needing attention:{" "}
-                        <strong>
-                          {rolloutUnitsNeedingAttention
-                            .slice(0, 3)
-                            .map((unit) => cleanText(unit.node?.name, "Operating unit"))
-                            .join(", ")}
-                        </strong>
-                        .
-                      </div>
-                    ) : rolloutPlan ? (
-                      <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-                        No first rollout unit is marked as needing local admin or
-                        pilot member attention.
-                      </div>
-                    ) : null}
-                    <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-                      This rollout view does not create nodes, invite members,
-                      add members, assign admins, place members, create policy,
-                      open reviews, verify authority, activate billing, activate
-                      the Community Domain, publish a public page, create
-                      marketplace activity, create a social Community, move
-                      money, or expose private evidence.
-                    </div>
-                  </div>
-                ) : null}
-
-                {activeLane === "structure" ? (
-                  <div style={softCard()}>
-                    <div style={sectionLabel()}>Activity map</div>
-                    <div style={{ ...helperText(), marginTop: 7 }}>
-                      {activityMap
-                        ? `${cleanText(
-                            activityMap.primary_next_action?.label,
-                            "Review activity boundaries"
-                          )}. ${activityMapReadyTotal} of ${visibleActivityMapLanes.length} activity checks are ready.`
-                        : "GSN could not load the read-only activity map for this Community Domain."}
-                    </div>
-                    <div
-                      style={{
-                        display: "grid",
-                        gridTemplateColumns: "repeat(auto-fit, minmax(118px, 1fr))",
-                        gap: 8,
-                        marginTop: 10,
-                      }}
-                    >
-                      {[
-                        ["Template lanes", activityMapSummary.activity_lane_count],
-                        ["Operating units", activityMapSummary.active_operating_unit_count],
-                        ["Members", activityMapSummary.active_member_count],
-                        [
-                          "Policies",
-                          activityMapSummary.active_policy_count == null
-                            ? "admin only"
-                            : countValue(activityMapSummary.active_policy_count),
-                        ],
-                      ].map(([label, value]) => (
-                        <div
-                          key={String(label)}
-                          style={{
-                            borderRadius: 14,
-                            background: "#F7FAFF",
-                            border: "1px solid rgba(9,27,46,0.08)",
-                            padding: 10,
-                            minWidth: 0,
-                          }}
-                        >
-                          <div style={{ color: "#617085", fontSize: 12, fontWeight: 850 }}>
-                            {label}
-                          </div>
-                          <div style={{ color: "#07172C", fontWeight: 950, marginTop: 4 }}>
-                            {typeof value === "number" ? countValue(value) : value}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 10 }}>
-                      <span style={statusBadge(activityMapTemplate.marketplace_role)}>
-                        Market: {compactStatus(activityMapTemplate.marketplace_role)}
-                      </span>
-                      <span style={statusBadge(activityMapSummary.paid_activity_status)}>
-                        Paid: {compactStatus(activityMapSummary.paid_activity_status)}
-                      </span>
-                      <span style={statusBadge(activityMapSummary.scheduled_activity_status)}>
-                        Scheduled: {compactStatus(activityMapSummary.scheduled_activity_status)}
-                      </span>
-                    </div>
-                    {blockedActivityMapLanes.length ? (
-                      <div style={{ ...helperText(), marginTop: 9 }}>
-                        Activity checks needing attention:{" "}
-                        <strong>
-                          {blockedActivityMapLanes
-                            .slice(0, 3)
-                            .map((lane) =>
-                              cleanText(lane.label, lane.lane_key || "activity check")
-                            )
-                            .join(", ")}
-                        </strong>
-                        .
-                      </div>
-                    ) : activityMap ? (
-                      <div style={{ ...helperText(), marginTop: 9 }}>
-                        No blocked activity lane is visible, but paid activity, scheduled
-                        activity, and Trust Passport writes are still not connected here.
-                      </div>
-                    ) : null}
-                    {visibleActivityMapLanes.length ? (
-                      <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
-                        {visibleActivityMapLanes.slice(0, 4).map((lane) => (
-                          <div
-                            key={cleanText(
-                              lane.lane_key,
-                              cleanText(lane.label, "activity")
-                            )}
-                            style={{
-                              display: "grid",
-                              gridTemplateColumns: "minmax(0, 1fr) auto",
-                              gap: 10,
-                              alignItems: "center",
-                              borderRadius: 14,
-                              border: "1px solid rgba(9,27,46,0.10)",
-                              background: "rgba(255,255,255,0.72)",
-                              padding: "10px 10px 10px 12px",
-                            }}
-                          >
-                            <span style={{ minWidth: 0 }}>
-                              <span style={{ display: "block", fontWeight: 950 }}>
-                                {cleanText(lane.label, "Activity check")}
-                              </span>
-                              <span
-                                style={{
-                                  display: "block",
-                                  color: "#4F647A",
-                                  fontSize: 12.5,
-                                  lineHeight: 1.45,
-                                  marginTop: 3,
-                                }}
-                              >
-                                {cleanText(
-                                  lane.next_step,
-                                  "Keep this as activity planning until a real activity flow exists."
-                                )}
-                              </span>
-                            </span>
-                            <span style={statusBadge(lane.status)}>
-                              {compactStatus(lane.status)}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    ) : null}
-                    <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-                      This activity map is read-only operating-activity planning. It does
-                      not create activities, events, meetings, classes, services,
-                      programmes, attendance, dues, levies, travel fees, contributions,
-                      tickets, subscriptions, payment instructions, invoices, receipts,
-                      bank matches, ledger entries, payouts, money movement, marketplace
-                      records, shops, listings, demand, Spotlight, notifications,
-                      TrustSlips, Trust Passport entries, public proof, or private member,
-                      review, evidence, or finance exposure.
-                    </div>
-                  </div>
-                ) : null}
-
-                {activeLane === "structure" ? (
-                  <div style={softCard()}>
-                    <div style={sectionLabel()}>Activity-group readiness</div>
-                    <div style={{ ...helperText(), marginTop: 7 }}>
-                      {activityGroupReadiness
-                        ? `${cleanText(
-                            activityGroupReadiness.primary_next_action?.label,
-                            "Review activity-group readiness"
-                          )}. ${activityGroupReadyTotal} of ${visibleActivityGroups.length} group-like units are ready for future activity-group planning.`
-                        : "GSN could not load the read-only activity-group readiness map for this Community Domain."}
-                    </div>
-                    <div
-                      style={{
-                        display: "grid",
-                        gridTemplateColumns: "repeat(auto-fit, minmax(118px, 1fr))",
-                        gap: 8,
-                        marginTop: 10,
-                      }}
-                    >
-                      {[
-                        [
-                          "Candidates",
-                          activityGroupSummary.activity_group_candidate_count,
-                        ],
-                        ["Nodes", activityGroupSummary.node_count],
-                        [
-                          "Node members",
-                          activityGroupSummary.active_node_memberships == null
-                            ? "admin only"
-                            : countValue(activityGroupSummary.active_node_memberships),
-                        ],
-                        [
-                          "Policies",
-                          activityGroupSummary.active_policies == null
-                            ? "admin only"
-                            : countValue(activityGroupSummary.active_policies),
-                        ],
-                        [
-                          "Reviews",
-                          activityGroupSummary.review_records == null
-                            ? "admin only"
-                            : countValue(activityGroupSummary.review_records),
-                        ],
-                      ].map(([label, value]) => (
-                        <div
-                          key={String(label)}
-                          style={{
-                            borderRadius: 14,
-                            background: "#F7FAFF",
-                            border: "1px solid rgba(9,27,46,0.08)",
-                            padding: 10,
-                            minWidth: 0,
-                          }}
-                        >
-                          <div style={{ color: "#617085", fontSize: 12, fontWeight: 850 }}>
-                            {label}
-                          </div>
-                          <div style={{ color: "#07172C", fontWeight: 950, marginTop: 4 }}>
-                            {typeof value === "number" ? countValue(value) : value}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 10 }}>
-                      <span style={statusBadge(activityGroupSummary.activity_group_engine_status)}>
-                        Group engine:{" "}
-                        {compactStatus(activityGroupSummary.activity_group_engine_status)}
-                      </span>
-                      <span style={statusBadge("not_created_in_this_slice")}>
-                        Records created:{" "}
-                        {countValue(activityGroupSummary.activity_group_records_created)}
-                      </span>
-                      <span style={statusBadge("not_created_in_this_slice")}>
-                        ROSCA cycles: {countValue(activityGroupSummary.rosca_cycles_created)}
-                      </span>
-                    </div>
-                    {blockedActivityGroups.length ? (
-                      <div style={{ ...helperText(), marginTop: 9 }}>
-                        Group-like units needing attention:{" "}
-                        <strong>
-                          {blockedActivityGroups
-                            .slice(0, 3)
-                            .map((group) =>
-                              cleanText(group.node?.name, "activity-group candidate")
-                            )
-                            .join(", ")}
-                        </strong>
-                        .
-                      </div>
-                    ) : activityGroupReadiness ? (
-                      <div style={{ ...helperText(), marginTop: 9 }}>
-                        No blocked activity-group candidate is visible, but the
-                        activity-group engine, attendance, payment, and Trust Passport
-                        writes are still not connected here.
-                      </div>
-                    ) : null}
-                    {visibleActivityGroups.length ? (
-                      <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
-                        {visibleActivityGroups.slice(0, 4).map((group) => (
-                          <div
-                            key={cleanText(
-                              group.node?.id,
-                              cleanText(group.node?.name, "activity-group")
-                            )}
-                            style={{
-                              display: "grid",
-                              gridTemplateColumns: "minmax(0, 1fr) auto",
-                              gap: 10,
-                              alignItems: "center",
-                              borderRadius: 14,
-                              border: "1px solid rgba(9,27,46,0.10)",
-                              background: "rgba(255,255,255,0.72)",
-                              padding: "10px 10px 10px 12px",
-                            }}
-                          >
-                            <span style={{ minWidth: 0 }}>
-                              <span style={{ display: "block", fontWeight: 950 }}>
-                                {cleanText(group.node?.name, "Activity-group candidate")}
-                              </span>
-                              <span
-                                style={{
-                                  display: "block",
-                                  color: "#4F647A",
-                                  fontSize: 12.5,
-                                  lineHeight: 1.45,
-                                  marginTop: 3,
-                                }}
-                              >
-                                {cleanText(
-                                  group.next_step,
-                                  "Keep this as group planning until a real activity-group engine exists."
-                                )}
-                              </span>
-                            </span>
-                            <span style={statusBadge(group.activity_group_status)}>
-                              {compactStatus(group.activity_group_status)}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    ) : null}
-                    <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-                      This activity-group readiness map is read-only group planning. It
-                      does not create activity groups, ROSCA cycles, meetings,
-                      attendance records, payment instructions, ledger entries,
-                      notifications, marketplace records, money movement, TrustSlips,
-                      Trust Passport entries, or private member activity.
-                    </div>
-                  </div>
-                ) : null}
-
-                {activeLane === "governance" ? (
-                  <div style={softCard()}>
-                    <div style={sectionLabel()}>Governance review pulse</div>
-                    <div style={{ ...helperText(), marginTop: 7 }}>
-                      {isAdmin
-                        ? "Open decisions and approved-but-unapplied reviews are shown from the scoped reviewer queue."
-                        : "Open decisions are handled by owner/admin reviewers. This lane shows whether the domain has visible review attention."}
-                    </div>
-                    <div
-                      style={{
-                        display: "grid",
-                        gridTemplateColumns: "repeat(auto-fit, minmax(118px, 1fr))",
-                        gap: 8,
-                        marginTop: 10,
-                      }}
-                    >
-                      {[
-                        ["Needs review", governanceAttentionCount],
-                        ["Ready to apply", isAdmin ? governanceApprovedCount : 0],
-                        ["Access requests", isAdmin ? membershipAccessRequests.length : 0],
-                      ].map(([label, value]) => (
-                        <div
-                          key={String(label)}
-                          style={statusBadge(Number(value) > 0 ? "attention" : "quiet")}
-                        >
-                          {String(label)}: {countValue(value)}
-                        </div>
-                      ))}
-                    </div>
-                    {isAdmin && membershipAccessRequests.length ? (
-                      <div style={{ ...helperText(), marginTop: 10 }}>
-                        The access-request panel below keeps approve, decline, and apply
-                        as separate actions so membership changes only after an approved
-                        review is applied.
-                      </div>
-                    ) : (
-                      <div style={{ ...helperText(), marginTop: 10 }}>
-                        {isAdmin
-                          ? "No membership access request currently needs action from this account."
-                          : "You can see review pressure here, but decision queues and private review details stay with authorized reviewers."}
-                      </div>
-                    )}
-                    <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-                      This summary does not decide reviews, apply membership,
-                      assign roles, expose private evidence, or bypass reviewer policy.
-                    </div>
-                  </div>
-                ) : null}
-
-                {activeLane === "governance" ? (
-                  <div style={softCard()}>
-                    <div style={sectionLabel()}>Delegation map</div>
-                    <div style={{ ...helperText(), marginTop: 7 }}>
-                      {delegationMap
-                        ? `${cleanText(
-                            delegationMap.primary_next_action?.label,
-                            "Review delegation"
-                          )}. ${delegationReadyTotal} of ${visibleDelegationLanes.length} authority checks are ready.`
-                        : "GSN could not load the read-only delegation map for this Community Domain."}
-                    </div>
-                    <div
-                      style={{
-                        display: "grid",
-                        gridTemplateColumns: "repeat(auto-fit, minmax(118px, 1fr))",
-                        gap: 8,
-                        marginTop: 10,
-                      }}
-                    >
-                      {[
-                        [
-                          "Central authority",
-                          delegationMapSummary.central_authority_count == null
-                            ? "admin only"
-                            : countValue(delegationMapSummary.central_authority_count),
-                        ],
-                        [
-                          "Local admins",
-                          delegationMapSummary.operating_units_with_local_admin == null
-                            ? "admin only"
-                            : countValue(
-                                delegationMapSummary.operating_units_with_local_admin
-                              ),
-                        ],
-                        [
-                          "Policies",
-                          delegationMapSummary.active_policy_count == null
-                            ? "admin only"
-                            : countValue(delegationMapSummary.active_policy_count),
-                        ],
-                        [
-                          "Open reviews",
-                          delegationMapSummary.open_review_count == null
-                            ? "admin only"
-                            : countValue(delegationMapSummary.open_review_count),
-                        ],
-                      ].map(([label, value]) => (
-                        <div
-                          key={String(label)}
-                          style={{
-                            borderRadius: 14,
-                            background: "#F7FAFF",
-                            border: "1px solid rgba(9,27,46,0.08)",
-                            padding: 10,
-                            minWidth: 0,
-                          }}
-                        >
-                          <div style={{ color: "#617085", fontSize: 12, fontWeight: 850 }}>
-                            {label}
-                          </div>
-                          <div style={{ color: "#07172C", fontWeight: 950, marginTop: 4 }}>
-                            {value}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 10 }}>
-                      <span style={statusBadge(delegationMapSummary.verification_status)}>
-                        Authority: {compactStatus(delegationMapSummary.verification_status)}
-                      </span>
-                      <span style={statusBadge("recorded")}>
-                        Units: {countValue(delegationMapSummary.active_operating_unit_count)}
-                      </span>
-                      <span style={statusBadge("recorded")}>
-                        Inherited policy:{" "}
-                        {countValue(delegationMapSummary.operating_units_using_inherited_policy)}
-                      </span>
-                    </div>
-                    {blockedDelegationLanes.length ? (
-                      <div style={{ ...helperText(), marginTop: 9 }}>
-                        Delegation checks needing attention:{" "}
-                        <strong>
-                          {blockedDelegationLanes
-                            .slice(0, 3)
-                            .map((lane) =>
-                              cleanText(lane.label, lane.lane_key || "delegation check")
-                            )
-                            .join(", ")}
-                        </strong>
-                        .
-                      </div>
-                    ) : delegationMap ? (
-                      <div style={{ ...helperText(), marginTop: 9 }}>
-                        No blocked delegation lane is visible, but legal authority
-                        verification and role assignment remain separate.
-                      </div>
-                    ) : null}
-                    {visibleDelegationLanes.length ? (
-                      <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
-                        {visibleDelegationLanes.slice(0, 4).map((lane) => (
-                          <div
-                            key={cleanText(
-                              lane.lane_key,
-                              cleanText(lane.label, "delegation")
-                            )}
-                            style={{
-                              display: "grid",
-                              gridTemplateColumns: "minmax(0, 1fr) auto",
-                              gap: 10,
-                              alignItems: "center",
-                              borderRadius: 14,
-                              border: "1px solid rgba(9,27,46,0.10)",
-                              background: "rgba(255,255,255,0.72)",
-                              padding: "10px 10px 10px 12px",
-                            }}
-                          >
-                            <span style={{ minWidth: 0 }}>
-                              <span style={{ display: "block", fontWeight: 950 }}>
-                                {cleanText(lane.label, "Delegation check")}
-                              </span>
-                              <span
-                                style={{
-                                  display: "block",
-                                  color: "#4F647A",
-                                  fontSize: 12.5,
-                                  lineHeight: 1.45,
-                                  marginTop: 3,
-                                }}
-                              >
-                                {cleanText(
-                                  lane.next_step,
-                                  "Keep this as authority planning until the matching governance path is used."
-                                )}
-                              </span>
-                            </span>
-                            <span style={statusBadge(lane.status)}>
-                              {compactStatus(lane.status)}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    ) : null}
-                    <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-                      This delegation view is read-only authority projection. It does not
-                      assign roles, create node memberships, create policies, create action
-                      reviews, decide reviews, apply reviews, change inheritance, verify
-                      legal or institutional authority, activate billing, create marketplace
-                      activity, create a social Community, publish proof, or expose private
-                      member, review, or evidence records.
-                    </div>
-                  </div>
-                ) : null}
-
-                {activeLane === "governance" ? (
-                  <div style={softCard()}>
-                    <div style={sectionLabel()}>Governance coverage</div>
-                    <div style={{ ...helperText(), marginTop: 7 }}>
-                      {governanceCoverage
-                        ? `${cleanText(
-                            governanceCoverage.primary_next_action?.label,
-                            "Review Community Domain governance coverage"
-                          )}. This shows whether operating units have local admins and policy coverage.`
-                        : "GSN could not load the read-only governance coverage map for this view."}
-                    </div>
-                    <div
-                      style={{
-                        display: "grid",
-                        gridTemplateColumns: "repeat(auto-fit, minmax(118px, 1fr))",
-                        gap: 8,
-                        marginTop: 10,
-                      }}
-                    >
-                      {[
-                        ["Domain policies", governanceCoverageCounts.domain_policies],
-                        ["Local policies", governanceCoverageCounts.node_scoped_policies],
-                        ["Needs admin", governanceCoverageCounts.needs_local_admin],
-                        ["Needs policy", governanceCoverageCounts.needs_policy],
-                      ].map(([label, value]) => (
-                        <div
-                          key={String(label)}
-                          style={statusBadge(Number(value) > 0 ? "recorded" : "not recorded")}
-                        >
-                          {String(label)}: {countValue(value)}
-                        </div>
-                      ))}
-                    </div>
-                    {governanceCoverageGaps.length ? (
-                      <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
-                        {governanceCoverageGaps.slice(0, 3).map((item) => (
-                          <div
-                            key={`${cleanText(item.node?.id)}:${cleanText(
-                              item.node?.name,
-                              "governance-node"
-                            )}`}
-                            style={{
-                              display: "grid",
-                              gridTemplateColumns: "minmax(0, 1fr) auto",
-                              gap: 10,
-                              alignItems: "center",
-                              borderRadius: 14,
-                              border: "1px solid rgba(9,27,46,0.10)",
-                              background: "rgba(255,255,255,0.72)",
-                              padding: "10px 10px 10px 12px",
-                            }}
-                          >
-                            <span style={{ minWidth: 0 }}>
-                              <span style={{ display: "block", fontWeight: 950 }}>
-                                {cleanText(item.node?.name, "Operating unit")}
-                              </span>
-                              <span
-                                style={{
-                                  display: "block",
-                                  color: "#4F647A",
-                                  fontSize: 12.5,
-                                  lineHeight: 1.45,
-                                  marginTop: 3,
-                                }}
-                              >
-                                {cleanText(
-                                  item.next_step,
-                                  "Review local admin and policy coverage."
-                                )}
-                              </span>
-                            </span>
-                            <span style={statusBadge(item.governance_status)}>
-                              {compactStatus(item.governance_status)}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    ) : governanceCoverage ? (
-                      <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-                        No local-admin or policy coverage gap is visible in the
-                        read-only governance map.
-                      </div>
-                    ) : null}
-                    <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-                      This coverage view does not create policy, assign roles,
-                      create reviews, decide reviews, apply reviews, verify legal
-                      or institutional authority, move money, activate billing,
-                      publish a public page, create marketplace activity, create
-                      a social Community, or expose private review payloads.
-                    </div>
-                  </div>
-                ) : null}
-
-                {activeLane === "members" && placementSummary ? (
-                  <div style={softCard()}>
-                    <div style={sectionLabel()}>Your placement</div>
-                    <div style={{ ...helperText(), marginTop: 7 }}>
-                      Domain role:{" "}
-                      <strong style={{ textTransform: "capitalize" }}>
-                        {compactStatus(placementSummary.domain_role)}
-                      </strong>
-                      . Active operating-unit placements:{" "}
-                      <strong>{countValue(placementCounts.active_node_placements)}</strong>.
-                    </div>
-                    {visibleNodePlacements.length ? (
-                      <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
-                        {visibleNodePlacements.map((placement: any) => (
-                          <div
-                            key={`${cleanText(placement.community_node_id)}:${cleanText(
-                              placement.id
-                            )}`}
-                            style={{
-                              display: "grid",
-                              gridTemplateColumns: "minmax(0, 1fr) auto",
-                              gap: 10,
-                              alignItems: "center",
-                              borderRadius: 14,
-                              border: "1px solid rgba(9,27,46,0.10)",
-                              background: "rgba(255,255,255,0.72)",
-                              padding: 10,
-                            }}
-                          >
-                            <span style={{ minWidth: 0 }}>
-                              <span style={{ display: "block", fontWeight: 950 }}>
-                                {cleanText(placement.community_node_name, "Operating unit")}
-                              </span>
-                              <span
-                                style={{
-                                  display: "block",
-                                  color: "#4F647A",
-                                  fontSize: 12.5,
-                                  marginTop: 3,
-                                  textTransform: "capitalize",
-                                }}
-                              >
-                                {compactStatus(placement.role)}
-                              </span>
-                            </span>
-                            <span style={statusBadge(placement.status)}>
-                              {compactStatus(placement.status)}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div style={{ ...helperText(), marginTop: 10 }}>
-                        You are recorded at the domain level, but no branch, line,
-                        department, class, or committee placement is active yet.
-                      </div>
-                    )}
-                    {placementLanes.length ? (
-                      <div
-                        style={{
-                          display: "grid",
-                          gridTemplateColumns: "repeat(auto-fit, minmax(118px, 1fr))",
-                          gap: 8,
-                          marginTop: 10,
-                        }}
+                        }
                       >
-                        {placementLanes.slice(0, 4).map((lane: any) => (
-                          <div key={cleanText(lane.lane_key, lane.label)} style={statusBadge(lane.state)}>
-                            {laneDisplayLabel(lane, "Placement")}
-                          </div>
-                        ))}
-                      </div>
-                    ) : null}
-                    <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-                      This is read-only. Admins still control placement, role changes,
-                      and review decisions through scoped Community Domain tools.
-                    </div>
-                  </div>
+                        <CommunityDomainNodeProjectionGroups
+                          variant="memberParticipation"
+                          nodeParticipationMap={nodeParticipationMap}
+                          nodeParticipationCounts={nodeParticipationCounts}
+                          visibleNodeParticipationRows={visibleNodeParticipationRows}
+                          nodeParticipationGaps={nodeParticipationGaps}
+                        />
+                      </Suspense>
+                    </CommunityDomainMemberReadinessPanels>
+                  </Suspense>
                 ) : null}
 
-                {activeLane === "members" && !placementSummary ? (
-                  <div style={softCard()}>
-                    <div style={sectionLabel()}>Member and role summary</div>
-                    <div style={{ ...helperText(), marginTop: 7 }}>
-                      GSN could not load this viewer's placement projection, so
-                      this lane is showing only safe domain-level counts from the
-                      dashboard summary.
-                    </div>
-                    <div
-                      style={{
-                        display: "grid",
-                        gridTemplateColumns: "repeat(auto-fit, minmax(118px, 1fr))",
-                        gap: 8,
-                        marginTop: 10,
-                      }}
-                    >
-                      {[
-                        ["Active members", counts.active_members],
-                        ["Role placements", counts.active_node_memberships],
-                        ["Open reviews", counts.open_reviews],
-                      ].map(([label, value]) => (
-                        <div key={String(label)} style={statusBadge(Number(value) > 0 ? "recorded" : "not recorded")}>
-                          {String(label)}: {countValue(value)}
-                        </div>
-                      ))}
-                    </div>
-                    <div style={{ ...helperText(), marginTop: 10 }}>
-                      If placement details are needed, refresh the dashboard or
-                      ask a Community Domain admin to review member placement.
-                    </div>
-                    <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-                      This fallback does not expose private member lists, assign
-                      roles, place members, decide reviews, or grant permissions.
-                    </div>
-                  </div>
-                ) : null}
-
-                {activeLane === "members" ? (
-                  <div style={softCard()}>
-                    <div style={sectionLabel()}>Member verification readiness</div>
-                    <div style={{ ...helperText(), marginTop: 7 }}>
-                      {memberVerificationMap
-                        ? `${cleanText(
-                            memberVerificationMap.primary_next_action?.label,
-                            "Review member verification readiness"
-                          )}. ${memberVerificationReadyTotal} of ${visibleMemberVerificationLanes.length} member-readiness checks are ready.`
-                        : "GSN could not load the read-only member verification map for this Community Domain."}
-                    </div>
-                    <div
-                      style={{
-                        display: "grid",
-                        gridTemplateColumns: "repeat(auto-fit, minmax(118px, 1fr))",
-                        gap: 8,
-                        marginTop: 10,
-                      }}
-                    >
-                      {[
-                        ["Active members", memberVerificationSummary.active_member_count],
-                        [
-                          "GSN IDs",
-                          memberVerificationSummary.members_with_gsn_id == null
-                            ? "admin only"
-                            : countValue(memberVerificationSummary.members_with_gsn_id),
-                        ],
-                        [
-                          "Unit gaps",
-                          memberVerificationSummary.members_without_unit_placement == null
-                            ? "admin only"
-                            : countValue(
-                                memberVerificationSummary.members_without_unit_placement
-                              ),
-                        ],
-                        [
-                          "Open reviews",
-                          memberVerificationSummary.open_member_review_count == null
-                            ? "admin only"
-                            : countValue(memberVerificationSummary.open_member_review_count),
-                        ],
-                      ].map(([label, value]) => (
-                        <div
-                          key={String(label)}
-                          style={{
-                            borderRadius: 14,
-                            background: "#F7FAFF",
-                            border: "1px solid rgba(9,27,46,0.08)",
-                            padding: 10,
-                            minWidth: 0,
-                          }}
-                        >
-                          <div style={{ color: "#617085", fontSize: 12, fontWeight: 850 }}>
-                            {label}
-                          </div>
-                          <div style={{ color: "#07172C", fontWeight: 950, marginTop: 4 }}>
-                            {typeof value === "number" ? countValue(value) : value}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 10 }}>
-                      <span style={statusBadge(memberVerificationSummary.verification_status)}>
-                        Domain: {compactStatus(memberVerificationSummary.verification_status)}
-                      </span>
-                      <span
-                        style={statusBadge(
-                          memberVerificationSummary.credential_issuance_status
-                        )}
-                      >
-                        Credentials:{" "}
-                        {compactStatus(
-                          memberVerificationSummary.credential_issuance_status
-                        )}
-                      </span>
-                      <span style={statusBadge("recorded")}>
-                        Placements:{" "}
-                        {countValue(memberVerificationSummary.active_node_membership_count)}
-                      </span>
-                    </div>
-                    {blockedMemberVerificationLanes.length ? (
-                      <div style={{ ...helperText(), marginTop: 9 }}>
-                        Member-readiness checks needing attention:{" "}
-                        <strong>
-                          {blockedMemberVerificationLanes
-                            .slice(0, 3)
-                            .map((lane) =>
-                              cleanText(lane.label, lane.lane_key || "member check")
-                            )
-                            .join(", ")}
-                        </strong>
-                        .
-                      </div>
-                    ) : memberVerificationMap ? (
-                      <div style={{ ...helperText(), marginTop: 9 }}>
-                        No blocked member-readiness lane is visible, but KYC,
-                        credential issuing, TrustSlips, and Trust Passport writes are
-                        still not connected here.
-                      </div>
-                    ) : null}
-                    {visibleMemberVerificationLanes.length ? (
-                      <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
-                        {visibleMemberVerificationLanes.slice(0, 4).map((lane) => (
-                          <div
-                            key={cleanText(
-                              lane.lane_key,
-                              cleanText(lane.label, "member verification")
-                            )}
-                            style={{
-                              display: "grid",
-                              gridTemplateColumns: "minmax(0, 1fr) auto",
-                              gap: 10,
-                              alignItems: "center",
-                              borderRadius: 14,
-                              border: "1px solid rgba(9,27,46,0.10)",
-                              background: "rgba(255,255,255,0.72)",
-                              padding: "10px 10px 10px 12px",
-                            }}
-                          >
-                            <span style={{ minWidth: 0 }}>
-                              <span style={{ display: "block", fontWeight: 950 }}>
-                                {cleanText(lane.label, "Member-readiness check")}
-                              </span>
-                              <span
-                                style={{
-                                  display: "block",
-                                  color: "#4F647A",
-                                  fontSize: 12.5,
-                                  lineHeight: 1.45,
-                                  marginTop: 3,
-                                }}
-                              >
-                                {cleanText(
-                                  lane.next_step,
-                                  "Keep this as readiness planning until a formal credential flow exists."
-                                )}
-                              </span>
-                            </span>
-                            <span style={statusBadge(lane.status)}>
-                              {compactStatus(lane.status)}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    ) : null}
-                    <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-                      This member verification map is read-only readiness planning. It
-                      does not perform KYC, issue credentials, verify government
-                      identity, create or change members, place members in units,
-                      assign roles, grant permissions, create policy, decide reviews,
-                      upload evidence, expose storage keys, publish proof, issue
-                      TrustSlips, write Trust Passport entries, move money, or expose
-                      private member, review, or evidence records.
-                    </div>
-                  </div>
-                ) : null}
-
-                {activeLane !== "billing" && activeLane !== "modules" ? (
+                {!isActiveLaneReadinessLoading &&
+                activeLane !== "billing" &&
+                activeLane !== "modules" ? (
                   <div style={softCard()}>
                     <div style={sectionLabel()}>Safe next step</div>
                     <div style={{ ...helperText(), marginTop: 7 }}>

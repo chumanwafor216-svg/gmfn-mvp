@@ -34,10 +34,59 @@ development-finance explanation work, also read:
 
 - `docs/INNOVATION_POLICY_LOGIC_2026-04-20.md`
 
-For Trust Event, Trust Passport, TrustSlip, Community Domain settings, or future
+For Trust Event, Trust Passport, TrustSlip, Community Domain settings,
+governance, delegated authority, onboarding, identity, membership,
+verification, Trust Graph, relationship intelligence, behaviour evidence,
+Marketplace, trusted commerce, Community Finance, financial evidence, or future
 Committee evidence-capture work, also read:
 
+- `docs/GSN_MISSION_PROTOCOL_2026-06-30.md`
+- `docs/GSN_FIRST_PRINCIPLES_PROTOCOL_2026-06-30.md`
+- `docs/GSN_DECISION_FRAMEWORK_DESIGN_PHILOSOPHY_PROTOCOL_2026-06-30.md`
+- `docs/GSN_ARCHITECTURAL_INVARIANTS_PROTOCOL_2026-06-30.md`
+- `docs/GSN_USER_JOURNEY_INTERACTION_PROTOCOL_2026-06-30.md`
+- `docs/GSN_SCREEN_BLUEPRINT_IMPLEMENTATION_ORDER_PROTOCOL_2026-06-30.md`
+- `docs/GSN_COMMUNITY_DOMAIN_ENGINE_PHILOSOPHY_PROTOCOL_2026-06-30.md`
+- `docs/GSN_COMMUNITY_SETTINGS_ENGINE_PROTOCOL_2026-06-30.md`
+- `docs/GSN_COMMUNITY_GOVERNANCE_DELEGATED_AUTHORITY_PROTOCOL_2026-06-30.md`
+- `docs/GSN_COMMUNITY_ONBOARDING_PROTOCOL_2026-06-30.md`
+- `docs/GSN_COMMUNITY_IDENTITY_MEMBERSHIP_TRUST_VERIFICATION_PROTOCOL_2026-06-30.md`
+- `docs/GSN_TRUST_EVENT_BEHAVIOUR_EVIDENCE_PROTOCOL_2026-06-30.md`
+- `docs/GSN_COMMUNITY_VERIFICATION_TRUST_GRAPH_RELATIONSHIP_INTELLIGENCE_PROTOCOL_2026-06-30.md`
+- `docs/GSN_MARKETPLACE_ENGINE_PROTOCOL_2026-06-30.md`
+- `docs/GSN_COMMUNITY_FINANCE_ENGINE_PROTOCOL_2026-06-30.md`
+- `docs/GSN_ADMINISTRATION_COMMAND_CENTRE_COMMUNITY_INTELLIGENCE_PROTOCOL_2026-06-30.md`
+- `docs/GSN_API_DATABASE_SYSTEM_ARCHITECTURE_PROTOCOL_2026-06-30.md`
+- `docs/GSN_SECURITY_INTEGRITY_TRUST_PROTECTION_PROTOCOL_2026-06-30.md`
+- `docs/GSN_EVOLUTION_RESEARCH_FUTURE_EXTENSION_PROTOCOL_2026-06-30.md`
+- `docs/GSN_ENGINEERING_CONSTITUTION_CHANGE_CONTROL_IMPLEMENTATION_ORDER_PROTOCOL_2026-06-30.md`
+- `docs/GSN_FOUNDATIONAL_DATA_MODEL_ENTITY_RELATIONSHIP_CONSTITUTION_PROTOCOL_2026-06-30.md`
+- `docs/GSN_ARCHITECTURAL_DECISION_REGISTER_CONFLICT_RESOLUTION_PROTOCOL_2026-06-30.md`
+- `docs/GSN_INTEGRATED_COMMUNITY_LIFECYCLE_PROTOCOL_2026-06-30.md`
 - `docs/GSN_TRUST_EVENT_STANDARDIZATION_PROTOCOL_2026-06-29.md`
+
+Together, these Community Domain protocols define the **GSN Community Domain
+Operating System (CDOS)**. The Handbook explains the philosophy, the protocols
+define the engineering rules, and CDOS defines how institutions operate on GSN.
+Protocol 23 is numbered later but should be read first as the permanent mission
+protocol explaining why GSN exists.
+Protocol 20 should be read next as the first-principles engineering
+constitution before API documentation or implementation planning.
+Protocol 21 should be read immediately after it as the decision compass for
+product, engineering, and architecture tradeoffs.
+Protocol 22 should be read next as the permanent constitutional invariant list
+that defines what future GSN work must never break.
+Protocol 24 and Protocol 25 should be read next as the user-journey and screen
+implementation constitution for UI work.
+Owner implementation directive: maintain the current navigation pages, route
+contracts, and authenticated navigation model. The Protocol 25 navigation model
+and strict screen-ownership rule are blueprint guidance only unless an absolute
+need requires a scoped, documented change.
+Do not renumber supplied protocols to force a continuous sequence. Protocol 8
+and Protocol 11 have not yet been supplied in this thread. Administration,
+Command Centre, and Community Intelligence have been supplied as Protocol 12;
+preserve that numbering unless the product owner explicitly renumbers the
+master structure.
 
 The canonical system skeleton is the current authoritative skeleton for:
 
@@ -72,6 +121,243 @@ return navigation, focused task behavior, action response, and regression cages.
 
 If that document conflicts with older provisional architecture notes, the
 canonical system skeleton wins until those notes are updated.
+
+For the GSN Mission, original problem, community principle, trust principle,
+opportunity principle, prosperity cycle, Community Memory, human relationship
+principle, trusted-value infrastructure, global scale, responsibility, and the
+long-term vision of Community Trust Infrastructure,
+`docs/GSN_MISSION_PROTOCOL_2026-06-30.md` is the permanent foundational mission
+protocol. Read it before judging whether future work still serves the reason
+GSN exists: helping communities preserve, organise, communicate, and mobilise
+the value they already create.
+
+For Community Domain Engine philosophy, Community Settings, Committee vs
+Community Domain meaning, delegated institutional authority, and the rule that
+Community Domains configure shared GSN engines rather than forking the platform,
+`docs/GSN_COMMUNITY_DOMAIN_ENGINE_PHILOSOPHY_PROTOCOL_2026-06-30.md` is the
+foundational protocol. If older Community Domain implementation notes conflict
+with that protocol, the philosophy protocol wins for Community Domain work until
+the older notes are reconciled.
+
+For CDOS first principles, community-created trust, governance ownership,
+evidence-before-trust, permanent history, one platform/many Community Domains,
+nearest-responsible-leader authority, membership/identity/verification/
+endorsement separation from trust, event-first evidence, relationship value,
+opportunity following trust, simplicity, engine ownership, and the permanent
+Trust Infrastructure founder's rule, `docs/GSN_FIRST_PRINCIPLES_PROTOCOL_2026-06-30.md`
+is the foundational engineering constitution. Read it before API documentation,
+implementation planning, feature design, architecture review, or any work that
+could imply GSN creates trust rather than preserving evidence produced by
+communities.
+
+For Decision Framework, design philosophy, decision priority order,
+configuration before customization, human before automation, evidence before
+opinion, governance before convenience, one core platform, local knowledge before
+central knowledge, trust before scale, Community Memory before fresh starts,
+backward compatibility before novelty, opportunity through existing
+relationships, and the Founder Test,
+`docs/GSN_DECISION_FRAMEWORK_DESIGN_PHILOSOPHY_PROTOCOL_2026-06-30.md` is the
+architectural decision protocol. Read it before choosing between implementation
+options, automating judgement, bypassing governance for convenience, introducing
+scale shortcuts, creating new visibility/commerce propagation, or writing code
+when protocol, engine, settings, Trust Event, audit, or Community Memory answers
+are unclear.
+
+For Architectural Invariants, non-custodial identity, separation of Identity,
+Membership, Trust, and Reputation, generated-only Trust Passport, generated and
+temporary TrustSlip, additive history, Community Domain configuration over
+platform rewrite, event evidence, existing-governance authority, real governance
+paths for every member, nearest-responsible-leader authority, generic core
+engines, relationship provenance, community-first platform order, evidence over
+assumptions, and the rule that the Trust Graph is not a popularity graph,
+`docs/GSN_ARCHITECTURAL_INVARIANTS_PROTOCOL_2026-06-30.md` is the permanent
+constitutional invariant protocol. Read it before implementing features that
+touch money custody, identity/membership/trust boundaries, Trust Passport,
+TrustSlip, evidence deletion, platform forks, governance authority, provenance,
+Community Memory, Trust Graph analytics, or anything that could change what GSN
+must never become.
+
+For User Journey and Interaction, five user types, canonical journeys, the
+three-click rule, progressive complexity, community-first navigation, and trust
+visibility, `docs/GSN_USER_JOURNEY_INTERACTION_PROTOCOL_2026-06-30.md` is the
+user experience constitution. Read it before designing or implementing user
+flows, navigation, role-based UI exposure, onboarding paths, buying/selling
+paths, verification journeys, Spotlight journeys, Demand response journeys, or
+TrustSlip sharing flows.
+
+For Screen Blueprint and Implementation Order, stable core navigation,
+Community, Member, Merchant, Verification, Leader, and Administrative journeys,
+screen ownership, UI completion questions, and progressive delivery order,
+`docs/GSN_SCREEN_BLUEPRINT_IMPLEMENTATION_ORDER_PROTOCOL_2026-06-30.md` is the
+UI implementation blueprint. Read it before building or restructuring screens,
+adding page business logic, assigning a page to an engine, changing primary
+navigation, or deciding which UI stage should be implemented next.
+
+Implementation directive from the product owner: do not change the current
+navigation pages or current navigation model merely to match Protocol 25. Do not
+enforce the strict screen-ownership rule merely because the protocol says so.
+Treat both as future blueprint guidance unless there is an absolute need, and
+record the reason before making a scoped implementation change.
+
+For Community Settings data shape, governance hierarchy, role inheritance,
+membership rules, service visibility, dashboard configuration, configuration
+wizard order, and the rule that settings configure workflow without modifying
+core engines, `docs/GSN_COMMUNITY_SETTINGS_ENGINE_PROTOCOL_2026-06-30.md` is
+the core configuration protocol. Read it after the philosophy protocol and
+before implementing Community Domain settings, defaults, templates, permissions,
+or service toggles.
+
+For Community Domain governance, delegated authority, authority inheritance,
+membership approval routing, temporary leadership, verification-request
+escalation, endorsement limits, governance audit trail, and community memory,
+`docs/GSN_COMMUNITY_GOVERNANCE_DELEGATED_AUTHORITY_PROTOCOL_2026-06-30.md` is
+the core governance protocol. Read it before implementing authority trees,
+leader appointment, member approval, verification response routing,
+endorsements, or governance audit records.
+
+For Community Domain onboarding, activation prerequisites, bulk import,
+invitation codes, phone-based claim, membership queues, delegated approval,
+QR-code meaning, transfers, leaving, duplicate prevention, and onboarding
+conflict resolution, `docs/GSN_COMMUNITY_ONBOARDING_PROTOCOL_2026-06-30.md` is
+the core onboarding protocol. Read it before implementing Community Domain
+activation gates, member import, invitation claim, join queues, membership
+approval, department transfer, leaving, or rejoining behavior.
+
+For Identity, Membership, Community Verification, Behaviour Evidence,
+Endorsements, Trust Events, Trust Passport separation, identity portability,
+automatic verification, Trust Graph misuse protection, and the rule that trust
+emerges only from accumulated evidence,
+`docs/GSN_COMMUNITY_IDENTITY_MEMBERSHIP_TRUST_VERIFICATION_PROTOCOL_2026-06-30.md`
+is the core identity protocol. Read it before implementing identity records,
+membership records, verification responses, endorsements, Trust Graph edges,
+Trust Passport writes, or any logic that might accidentally treat identity,
+membership, endorsement, or verification as trust.
+
+For Trust Events, Behaviour Evidence, universal behaviour categories, Community
+Activities, minimum event records, event provenance, automatic Trust Events,
+Trust Passport construction, TrustSlip construction, correction events, and
+behaviour-before-scores sequencing,
+`docs/GSN_TRUST_EVENT_BEHAVIOUR_EVIDENCE_PROTOCOL_2026-06-30.md` is the core
+trust evidence protocol. Read it before implementing Trust Event creation,
+Trust Passport generation, TrustSlip filtering, event correction, derived trust
+attributes, or any trust-score-adjacent feature.
+
+For Community Verification, verification routing, verification response
+metadata, endorsements as relationship evidence, Trust Graph edges, relationship
+types, independent-community evidence, automatic verification, verification
+history, and Trust Graph intelligence,
+`docs/GSN_COMMUNITY_VERIFICATION_TRUST_GRAPH_RELATIONSHIP_INTELLIGENCE_PROTOCOL_2026-06-30.md`
+is the core verification and relationship-intelligence protocol. Read it before
+implementing verification requests, verification response storage, endorsement
+flows, Trust Graph analytics, relationship diversity, or automatic verification.
+
+For Marketplace, Public Shops, Vault, Product Catalogue, categories, merchant
+verification, shop search, shop following, merchant profiles, cross-community
+commerce, Merchant Release Rail, marketplace analytics, and marketplace Trust
+Events, `docs/GSN_MARKETPLACE_ENGINE_PROTOCOL_2026-06-30.md` is the core
+marketplace protocol. Read it before implementing shops, product lifecycle,
+commercial visibility rules, marketplace filters, merchant profiles, merchant
+verification, Marketplace/Vault/Demand/Spotlight integrations, Merchant Release
+Rail evidence, or commerce-derived Trust Events.
+
+For Community Finance, rotational savings, contribution groups, emergency
+support funds, community welfare, people-backed loans, guarantor-backed loans,
+contribution history, repayment history, financial verification, financial Trust
+Events, Community Finance dashboards, revenue independence, and non-custodial
+audit trails, `docs/GSN_COMMUNITY_FINANCE_ENGINE_PROTOCOL_2026-06-30.md` is the
+core Community Finance protocol. Read it before implementing savings groups,
+contribution records, welfare workflows, people-backed lending, guarantor
+records, repayment events, finance dashboards, Merchant Release Rail finance
+integration, or any feature that could imply GSN is a bank, lender, custodian,
+or interest-income business.
+
+For Administration, Community Dashboard, Executive Dashboard, Department
+Dashboard, Line Leader Dashboard, Community Command Centre, Community Health
+Indicators, Community Intelligence, Community Memory, Community Graph, reports,
+audit logs, notifications, opportunity analytics, Trust Event monitoring,
+administrative APIs, and prepared analytics summaries,
+`docs/GSN_ADMINISTRATION_COMMAND_CENTRE_COMMUNITY_INTELLIGENCE_PROTOCOL_2026-06-30.md`
+is the core administration protocol. Read it before implementing administrative
+dashboards, command-centre analytics, reports, notification routing, audit-log
+surfaces, community intelligence, community graphs, admin APIs, or any feature
+that could expose data outside governance authority or turn analytics into
+surveillance/personal scoring.
+
+For API, database, event architecture, entity relationships, service separation,
+Community Settings storage, Trust Graph service boundaries, notification
+service boundaries, search indexing, performance, caching, scalability, API
+security, integrations, and audit events,
+`docs/GSN_API_DATABASE_SYSTEM_ARCHITECTURE_PROTOCOL_2026-06-30.md` is the core
+system architecture protocol. Read it before implementing backend schemas,
+migrations, API routes, service boundaries, event sourcing, derived views,
+caching, authority validation, search indexing, integrations, or any feature
+that could expose raw database structures, overwrite history, duplicate
+business logic, or hard-code community-specific behaviour.
+
+For Security, Integrity, Trust Protection, identity protection, membership
+protection, governance protection, Trust Evidence protection, Community
+Verification protection, endorsement protection, Trust Graph protection, fraud
+detection, duplicate protection, audit trails, data retention, recovery, privacy,
+API security, and Community Integrity,
+`docs/GSN_SECURITY_INTEGRITY_TRUST_PROTECTION_PROTOCOL_2026-06-30.md` is the
+core security protocol. Read it before implementing authentication-adjacent
+flows, authorization, delegated approval safeguards, privilege checks, fraud
+review signals, duplicate review, data retention, recovery, privacy controls,
+audit history, API security, or any feature that could expose member data beyond
+authority, hard-delete Trust Events, bypass governance, merge Identity with
+Trust, or allow Community Settings to rewrite core engines.
+
+For Evolution, Research, Future Extension, AI support, predictive trust,
+research layers, API ecosystems, data portability, backward compatibility,
+innovation governance, community feedback, future global scale, protocol
+versioning, and disciplined extension,
+`docs/GSN_EVOLUTION_RESEARCH_FUTURE_EXTENSION_PROTOCOL_2026-06-30.md` is the
+future architecture protocol. Read it before introducing new technologies,
+derived indicators, AI features, research initiatives, integrations, migration
+plans, new Community Domain templates, new behaviour categories, or any feature
+that could redesign core engines, remove historical evidence, or break existing
+Community Domains.
+
+For Engineering Constitution, change control, implementation order, feature
+ownership, architecture proposals, evidence-first implementation, configuration
+before forking, community ownership boundaries, backward compatibility,
+simplicity, human governance, documentation, and research discipline,
+`docs/GSN_ENGINEERING_CONSTITUTION_CHANGE_CONTROL_IMPLEMENTATION_ORDER_PROTOCOL_2026-06-30.md`
+is the engineering constitution. Read it before starting any substantial
+feature, modifying core engines, creating a new engine, changing governance,
+adding Trust Event-producing behaviour, changing implementation order, or making
+an architectural decision that should be documented before production.
+
+For Foundational Data Model, entity relationships, Identity, Structure,
+Evidence, Intelligence, Membership, Governance Node, Activity, Trust Event,
+Verification, Endorsement, Marketplace, Opportunity, Community Finance, Trust
+Graph, generated objects, data ownership, and future expansion ownership,
+`docs/GSN_FOUNDATIONAL_DATA_MODEL_ENTITY_RELATIONSHIP_CONSTITUTION_PROTOCOL_2026-06-30.md`
+is the core data architecture protocol. Read it before implementing schemas,
+migrations, entity relationships, ownership boundaries, generated objects,
+Trust Graph structures, or any feature whose owning entity, relationships,
+Trust Events, or generated-object impact is unclear.
+
+For Architectural Decision Register, conflict resolution, single source of
+truth, feature review, stability-vs-innovation classification, backward
+compatibility review, deprecation, documentation, testing, performance review,
+security review, research feedback, and release governance,
+`docs/GSN_ARCHITECTURAL_DECISION_REGISTER_CONFLICT_RESOLUTION_PROTOCOL_2026-06-30.md`
+is the architecture governance protocol. Read it before making major
+architecture decisions, resolving protocol conflicts, adding a new engine,
+changing constitutional components, deprecating features, or shipping a feature
+without protocol references, API docs, data model updates, UI specs, and test
+scenarios.
+
+For Integrated Community Lifecycle, Community Establishment, Governance
+Deployment, Membership Deployment, Community Activation, Behaviour Capture,
+Opportunity Creation, Opportunity Propagation, Verification, Community
+Intelligence, Institutional Memory, engine interaction, and the long-term GSN
+Flywheel, `docs/GSN_INTEGRATED_COMMUNITY_LIFECYCLE_PROTOCOL_2026-06-30.md` is
+the operational lifecycle protocol. Read it before implementing cross-engine
+Community Domain flows, lifecycle dashboards, onboarding-to-activation journeys,
+behaviour-to-opportunity loops, verification flywheels, institutional memory
+surfaces, or any feature that spans multiple CDOS engines.
 
 ---
 
