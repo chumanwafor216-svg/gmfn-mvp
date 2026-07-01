@@ -5,7 +5,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Any, Optional, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 LoanStatus = str
@@ -18,6 +18,17 @@ class LoanCreate(BaseModel):
     purpose: Optional[str] = None
     duration_days: Optional[int] = Field(default=None, ge=1, le=365)
     repayment_cadence: Optional[Literal["weekly", "biweekly", "monthly"]] = None
+
+    @field_validator("clan_id", "duration_days", mode="before")
+    @classmethod
+    def _reject_bool_integer_controls(cls, value: Any, info: Any) -> Any:
+        if value is None:
+            return value
+        if isinstance(value, bool):
+            raise ValueError(f"{info.field_name} must be an integer, not a boolean.")
+        if isinstance(value, float):
+            raise ValueError(f"{info.field_name} must be an integer, not a float.")
+        return value
 
 
 class LoanUpdate(BaseModel):
@@ -69,6 +80,15 @@ class LoanGuarantorCreate(BaseModel):
     guarantor_user_id: int
     pledge_amount: Decimal = Field(..., gt=Decimal("0"))
     note: Optional[str] = None
+
+    @field_validator("guarantor_user_id", mode="before")
+    @classmethod
+    def _reject_bool_integer_controls(cls, value: Any) -> Any:
+        if isinstance(value, bool):
+            raise ValueError("guarantor_user_id must be an integer, not a boolean.")
+        if isinstance(value, float):
+            raise ValueError("guarantor_user_id must be an integer, not a float.")
+        return value
 
 
 class LoanGuarantorUpdate(BaseModel):

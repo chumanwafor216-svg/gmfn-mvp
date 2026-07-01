@@ -463,6 +463,32 @@ def test_community_domain_draft_is_not_a_live_social_community(
                 field_name,
                 rejected_bool_draft.text,
             )
+            assert f"{field_name} must be text" in rejected_bool_draft.text
+
+        for field_name in (
+            "domain_name",
+            "display_name",
+            "domain_type",
+            "template_key",
+            "country",
+            "state",
+            "public_profile",
+        ):
+            payload = {
+                "domain_name": "Float Draft Guard",
+                "display_name": "Float Draft Guard",
+                "domain_type": "school",
+            }
+            payload[field_name] = 1.5
+            rejected_float_draft = client.post(
+                "/community-domains/drafts",
+                json=payload,
+            )
+            assert rejected_float_draft.status_code == 422, (
+                field_name,
+                rejected_float_draft.text,
+            )
+            assert f"{field_name} must be text" in rejected_float_draft.text
 
         blank_domain_type = client.post(
             "/community-domains/drafts",
@@ -15471,6 +15497,31 @@ def test_owner_adds_domain_member_and_places_member_inside_node(
                 field_name,
                 boolean_node_text.text,
             )
+            assert f"{field_name} must be text" in boolean_node_text.text
+
+        for field_name in (
+            "name",
+            "node_type",
+            "node_kind",
+            "description",
+            "visibility_policy",
+            "status",
+        ):
+            payload = {
+                "name": "Float Node Branch",
+                "node_type": "branch",
+                "node_kind": "school_branch",
+            }
+            payload[field_name] = 1.5
+            float_node_text = client.post(
+                f"/community-domains/{domain_id}/nodes",
+                json=payload,
+            )
+            assert float_node_text.status_code == 422, (
+                field_name,
+                float_node_text.text,
+            )
+            assert f"{field_name} must be text" in float_node_text.text
 
         for field_name in ("node_type", "node_kind", "visibility_policy"):
             payload = {
@@ -22201,6 +22252,7 @@ def test_domain_member_review_rejects_numeric_target_mismatch(
         assert rejected_bool_action_key.status_code == 422, (
             rejected_bool_action_key.text
         )
+        assert "action_key must be text" in rejected_bool_action_key.text
 
         rejected_bool_subject = client.post(
             f"/community-domains/{domain_id}/action-reviews",
@@ -22248,6 +22300,7 @@ def test_domain_member_review_rejects_numeric_target_mismatch(
         assert rejected_bool_target_type.status_code == 422, (
             rejected_bool_target_type.text
         )
+        assert "target_type must be text" in rejected_bool_target_type.text
 
         rejected_bool_target_id = client.post(
             f"/community-domains/{domain_id}/action-reviews",
@@ -22262,6 +22315,7 @@ def test_domain_member_review_rejects_numeric_target_mismatch(
             },
         )
         assert rejected_bool_target_id.status_code == 422, rejected_bool_target_id.text
+        assert "target_id must be text" in rejected_bool_target_id.text
 
         rejected_bool_request_note = client.post(
             f"/community-domains/{domain_id}/action-reviews",
@@ -22279,6 +22333,31 @@ def test_domain_member_review_rejects_numeric_target_mismatch(
         assert rejected_bool_request_note.status_code == 422, (
             rejected_bool_request_note.text
         )
+        assert "request_note must be text" in rejected_bool_request_note.text
+
+        for field_name in ("action_key", "target_type", "target_id", "request_note"):
+            payload = {
+                "action_key": "domain_member.upsert",
+                "target_type": "domain_member",
+                "target_id": str(owner.id),
+                "request_note": "Float action review text should be malformed.",
+                "payload": {
+                    "user_id": owner.id,
+                    "role": "member",
+                },
+            }
+            payload[field_name] = 1.5
+            rejected_float_action_review_text = client.post(
+                f"/community-domains/{domain_id}/action-reviews",
+                json=payload,
+            )
+            assert rejected_float_action_review_text.status_code == 422, (
+                field_name,
+                rejected_float_action_review_text.text,
+            )
+            assert f"{field_name} must be text" in (
+                rejected_float_action_review_text.text
+            )
 
         rejected_bool_payload = client.post(
             f"/community-domains/{domain_id}/action-reviews",
@@ -25067,6 +25146,14 @@ def test_action_review_comments_follow_review_visibility(
             json={"body": False},
         )
         assert rejected_bool_comment.status_code == 422, rejected_bool_comment.text
+        assert "body must be text" in rejected_bool_comment.text
+
+        rejected_float_comment = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/comments",
+            json={"body": 1.5},
+        )
+        assert rejected_float_comment.status_code == 422, rejected_float_comment.text
+        assert "body must be text" in rejected_float_comment.text
 
         rejected_blank_comment = client.post(
             f"/community-domains/{domain_id}/action-reviews/{review['id']}/comments",
@@ -25268,6 +25355,30 @@ def test_action_review_evidence_records_metadata_without_file_upload(
                 field_name,
                 rejected_bool_evidence.text,
             )
+            assert f"{field_name} must be text" in rejected_bool_evidence.text
+
+        for field_name in (
+            "evidence_type",
+            "title",
+            "description",
+            "file_name",
+            "content_type",
+            "storage_key",
+            "external_reference",
+            "checksum",
+        ):
+            rejected_float_evidence = client.post(
+                f"/community-domains/{domain_id}/action-reviews/{review['id']}/evidence",
+                json={
+                    "title": "Float evidence metadata should not become text",
+                    field_name: 1.5,
+                },
+            )
+            assert rejected_float_evidence.status_code == 422, (
+                field_name,
+                rejected_float_evidence.text,
+            )
+            assert f"{field_name} must be text" in rejected_float_evidence.text
 
         requester_evidence = client.post(
             f"/community-domains/{domain_id}/action-reviews/{review['id']}/evidence",
@@ -26301,6 +26412,7 @@ def test_requester_can_revise_needs_changes_action_review(
         assert rejected_bool_target_type_revision.status_code == 422, (
             rejected_bool_target_type_revision.text
         )
+        assert "target_type must be text" in rejected_bool_target_type_revision.text
 
         rejected_bool_target_id_revision = client.post(
             f"/community-domains/{domain_id}/action-reviews/{review['id']}/revision",
@@ -26317,6 +26429,7 @@ def test_requester_can_revise_needs_changes_action_review(
         assert rejected_bool_target_id_revision.status_code == 422, (
             rejected_bool_target_id_revision.text
         )
+        assert "target_id must be text" in rejected_bool_target_id_revision.text
 
         for field_name in ("target_type", "target_id"):
             payload = {
@@ -26351,6 +26464,27 @@ def test_requester_can_revise_needs_changes_action_review(
         assert rejected_bool_request_note_revision.status_code == 422, (
             rejected_bool_request_note_revision.text
         )
+        assert "request_note must be text" in rejected_bool_request_note_revision.text
+
+        for field_name in ("target_type", "target_id", "request_note"):
+            payload = {
+                "request_note": "Float revision text should be malformed.",
+                "payload": {
+                    "user_id": owner.id,
+                    "role": "member",
+                    "title": "Float revision candidate",
+                },
+            }
+            payload[field_name] = 1.5
+            rejected_float_revision_text = client.post(
+                f"/community-domains/{domain_id}/action-reviews/{review['id']}/revision",
+                json=payload,
+            )
+            assert rejected_float_revision_text.status_code == 422, (
+                field_name,
+                rejected_float_revision_text.text,
+            )
+            assert f"{field_name} must be text" in rejected_float_revision_text.text
 
         app.dependency_overrides[get_current_user] = lambda: requester
         rejected_subject_revision = client.post(

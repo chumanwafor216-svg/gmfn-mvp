@@ -4,7 +4,7 @@ from __future__ import annotations
 from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user
@@ -27,6 +27,34 @@ FOCUS_COMMITMENT_EVENT_TYPES = {
 }
 
 
+def _reject_bool_float_integer(value: Any, field_name: str) -> Any:
+    if value is None:
+        return value
+    if isinstance(value, bool):
+        raise ValueError(f"{field_name} must be an integer, not a boolean.")
+    if isinstance(value, float):
+        raise ValueError(f"{field_name} must be an integer, not a float.")
+    return value
+
+
+def _reject_non_text_value(value: Any, field_name: str) -> Any:
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name} must be text.")
+    return value
+
+
+def _reject_non_numeric_value(value: Any, field_name: str) -> Any:
+    if value is None:
+        return value
+    if isinstance(value, bool):
+        raise ValueError(f"{field_name} must be a number, not a boolean.")
+    if not isinstance(value, (int, float)):
+        raise ValueError(f"{field_name} must be a number.")
+    return value
+
+
 class FocusCommitmentTrustEventIn(BaseModel):
     clan_id: Optional[int] = None
     local_commitment_id: str = Field(..., min_length=1, max_length=80)
@@ -41,6 +69,32 @@ class FocusCommitmentTrustEventIn(BaseModel):
     due_date: Optional[str] = Field(default=None, max_length=40)
     cadence: Optional[str] = Field(default=None, max_length=40)
     note: Optional[str] = Field(default=None, max_length=500)
+
+    @field_validator("clan_id", mode="before")
+    @classmethod
+    def _reject_malformed_integer_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_bool_float_integer(value, info.field_name)
+
+    @field_validator(
+        "local_commitment_id",
+        "local_event_id",
+        "event_kind",
+        "title",
+        "category",
+        "unit",
+        "due_date",
+        "cadence",
+        "note",
+        mode="before",
+    )
+    @classmethod
+    def _reject_non_text_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_value(value, info.field_name)
+
+    @field_validator("target_value", "current_value", "progress_value", mode="before")
+    @classmethod
+    def _reject_malformed_number_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_numeric_value(value, info.field_name)
 
 
 @router.get("/trust-events/me", response_model=TrustEventsListOut)

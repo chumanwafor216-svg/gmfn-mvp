@@ -1688,6 +1688,134 @@ def test_legacy_invites_join_issues_one_missing_global_id_for_same_existing_user
         assert memberships[0].role == "user"
 
 
+def test_legacy_invites_join_rejects_malformed_code(
+    client,
+):
+    _seed_join_context()
+
+    with SessionLocal() as db:
+        existing_user = User(
+            id=2,
+            email="malformed-invites-existing@example.com",
+            hashed_password="hashed",
+            role="user",
+        )
+        db.add(existing_user)
+        db.commit()
+
+    token = create_access_token({"sub": "malformed-invites-existing@example.com"})
+    headers = {"Authorization": f"Bearer {token}"}
+
+    for value in (False, 1.5):
+        join_res = client.post(
+            "/invites/join",
+            json={"code": value},
+            headers=headers,
+        )
+        assert join_res.status_code == 422, join_res.text
+        assert "code must be text" in join_res.text
+
+
+def test_public_join_request_rejects_non_text_payload_before_writes(client):
+    _seed_join_context()
+
+    with SessionLocal() as db:
+        db.add(
+            ClanInvite(
+                id=1,
+                clan_id=1,
+                created_by_user_id=1,
+                code="package-code",
+                is_active=True,
+                max_uses=3,
+                uses=0,
+                created_at=datetime.now(timezone.utc),
+                expires_at=datetime.now(timezone.utc) + timedelta(days=7),
+            )
+        )
+        db.commit()
+
+    res = client.post(
+        "/clans/join-requests",
+        json={
+            "invite_code": 12345,
+            "first_name": True,
+            "surname": "Nnamani",
+            "phone_e164": "+2349071733533",
+            "country": {"name": "Nigeria"},
+        },
+    )
+    assert res.status_code == 422, res.text
+
+    with SessionLocal() as db:
+        invite = db.get(ClanInvite, 1)
+        assert invite is not None
+        assert invite.uses == 0
+        assert db.query(ClanJoinRequest).count() == 0
+
+
+def test_join_request_vote_rejects_non_text_reason_before_vote_event(client):
+    _seed_join_context()
+
+    with SessionLocal() as db:
+        applicant = User(
+            id=2,
+            email="malformed-vote-applicant@example.com",
+            hashed_password="PENDING_APPROVAL",
+            role="user",
+        )
+        db.add(applicant)
+        db.flush()
+        db.add(
+            ClanJoinRequest(
+                id=1,
+                clan_id=1,
+                applicant_user_id=2,
+                invited_by_user_id=1,
+                status="pending",
+                created_at=datetime.now(timezone.utc),
+            )
+        )
+        db.commit()
+
+    from app.core import auth as auth_core
+
+    def fake_current_user():
+        return SimpleNamespace(
+            id=1,
+            email="admin@example.com",
+            role="admin",
+            hashed_password="hashed",
+        )
+
+    app.dependency_overrides[auth_core.get_current_user] = fake_current_user
+    try:
+        res = client.post(
+            "/clans/1/join-requests/1/vote",
+            json={
+                "vote": "neutral",
+                "reason_code": 12345,
+                "reason_text": True,
+            },
+            headers={"X-Clan-Id": "1"},
+        )
+    finally:
+        app.dependency_overrides.pop(auth_core.get_current_user, None)
+
+    assert res.status_code == 422, res.text
+
+    with SessionLocal() as db:
+        req = db.get(ClanJoinRequest, 1)
+        assert req is not None
+        assert req.status == "pending"
+        assert db.query(clans_route.ClanJoinVote).filter_by(join_request_id=1).count() == 0
+        assert (
+            db.query(TrustEvent)
+            .filter(TrustEvent.event_type == "join_request.vote_recorded")
+            .count()
+        ) == 0
+
+
 def test_pending_activation_member_cannot_vote_on_join_request(
     client,
     override_current_user,
@@ -2887,6 +3015,67 @@ def test_create_invite_route_records_relationship_evidence_in_trust_event(
             assert "relationship statement" in meta["trust_record_note"]
     finally:
         app.dependency_overrides.pop(clan_auth.get_current_clan_membership, None)
+
+
+def test_invites_create_route_rejects_malformed_relationship_evidence(
+    client,
+):
+    _seed_join_context()
+
+    token = create_access_token({"sub": "admin@example.com"})
+    headers = {"Authorization": f"Bearer {token}"}
+
+    for value, expected in (
+        (True, "max_uses must be an integer"),
+        (1.5, "max_uses must be an integer"),
+    ):
+        res = client.post(
+            "/invites/clans/1",
+            json={"max_uses": value},
+            headers=headers,
+        )
+        assert res.status_code == 422, res.text
+        assert expected in res.text
+
+    for field_name in (
+        "evidence_source",
+        "invitation_context",
+        "relationship_type",
+        "known_duration",
+        "confidence_level",
+        "relationship_context",
+        "first_circle_role",
+    ):
+        payload = {
+            "relationship_evidence": {
+                "evidence_source": "first_circle",
+                field_name: False,
+            }
+        }
+        res = client.post("/invites/clans/1", json=payload, headers=headers)
+        assert res.status_code == 422, (field_name, res.text)
+        assert f"{field_name} must be text" in res.text
+
+        payload["relationship_evidence"][field_name] = 1.5
+        res = client.post("/invites/clans/1", json=payload, headers=headers)
+        assert res.status_code == 422, (field_name, res.text)
+        assert f"{field_name} must be text" in res.text
+
+    for field_name in ("first_circle_ready_count", "first_circle_selected_count"):
+        payload = {
+            "relationship_evidence": {
+                "evidence_source": "first_circle",
+                field_name: True,
+            }
+        }
+        res = client.post("/invites/clans/1", json=payload, headers=headers)
+        assert res.status_code == 422, (field_name, res.text)
+        assert f"{field_name} must be an integer" in res.text
+
+        payload["relationship_evidence"][field_name] = 1.5
+        res = client.post("/invites/clans/1", json=payload, headers=headers)
+        assert res.status_code == 422, (field_name, res.text)
+        assert f"{field_name} must be an integer" in res.text
 
 
 def test_member_can_read_existing_marketplace_join_link_without_refresh_power(

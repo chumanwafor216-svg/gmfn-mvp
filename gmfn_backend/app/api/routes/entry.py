@@ -4,10 +4,10 @@ import os
 import secrets
 import json
 from datetime import datetime, timedelta, timezone
-from typing import Optional
+from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -37,6 +37,24 @@ from app.services.trust_score_service import apply_trust_score
 router = APIRouter(prefix="/entry", tags=["entry"])
 
 
+def _reject_bool_float_integer(value: Any, field_name: str) -> Any:
+    if value is None:
+        return value
+    if isinstance(value, bool):
+        raise ValueError(f"{field_name} must be an integer, not a boolean.")
+    if isinstance(value, float):
+        raise ValueError(f"{field_name} must be an integer, not a float.")
+    return value
+
+
+def _reject_non_text_value(value: Any, field_name: str) -> Any:
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name} must be text.")
+    return value
+
+
 class EntryPhoneStartIn(BaseModel):
     display_name: str = Field(..., min_length=2, max_length=120)
     phone_e164: str = Field(..., min_length=8, max_length=32)
@@ -51,6 +69,26 @@ class EntryPhoneStartIn(BaseModel):
     browser_timezone: Optional[str] = Field(default=None, max_length=64)
     client_fingerprint: Optional[str] = Field(default=None, max_length=160)
     device_label: Optional[str] = Field(default=None, max_length=160)
+
+    @field_validator(
+        "display_name",
+        "phone_e164",
+        "email",
+        "country",
+        "date_of_birth",
+        "birth_country",
+        "birth_place",
+        "country_of_origin",
+        "residential_area",
+        "browser_locale",
+        "browser_timezone",
+        "client_fingerprint",
+        "device_label",
+        mode="before",
+    )
+    @classmethod
+    def _reject_non_text_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_value(value, info.field_name)
 
 
 class EntryPhoneStartOut(BaseModel):
@@ -71,10 +109,30 @@ class EntryPhoneConfirmIn(BaseModel):
     verification_id: int
     code: str = Field(..., min_length=4, max_length=12)
 
+    @field_validator("verification_id", mode="before")
+    @classmethod
+    def _reject_malformed_integer_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_bool_float_integer(value, info.field_name)
+
+    @field_validator("code", mode="before")
+    @classmethod
+    def _reject_non_text_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_value(value, info.field_name)
+
 
 class EntryPhoneResumeIn(BaseModel):
     verification_id: int = Field(..., gt=0)
     phone_e164: str = Field(..., min_length=8, max_length=32)
+
+    @field_validator("verification_id", mode="before")
+    @classmethod
+    def _reject_malformed_integer_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_bool_float_integer(value, info.field_name)
+
+    @field_validator("phone_e164", mode="before")
+    @classmethod
+    def _reject_non_text_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_value(value, info.field_name)
 
 
 class EntryPhoneResumeOut(BaseModel):
@@ -120,6 +178,28 @@ class EntryBankDetailsIn(BaseModel):
     driver_licence_country: Optional[str] = Field(default=None, max_length=64)
     driver_licence_note: Optional[str] = Field(default=None, max_length=500)
 
+    @field_validator("verification_id", mode="before")
+    @classmethod
+    def _reject_malformed_integer_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_bool_float_integer(value, info.field_name)
+
+    @field_validator(
+        "destination_name",
+        "bank_name",
+        "account_number",
+        "phone_number",
+        "country",
+        "currency",
+        "note",
+        "driver_licence_number",
+        "driver_licence_country",
+        "driver_licence_note",
+        mode="before",
+    )
+    @classmethod
+    def _reject_non_text_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_value(value, info.field_name)
+
 
 class EntryBankDetailsOut(BaseModel):
     ok: bool
@@ -150,6 +230,32 @@ class CreateEntryIn(BaseModel):
     clan_name: str = Field(..., min_length=2, max_length=80)
     clan_description: Optional[str] = Field(default=None, max_length=500)
     create_code: Optional[str] = Field(default=None, max_length=128)
+
+    @field_validator("verification_id", mode="before")
+    @classmethod
+    def _reject_malformed_integer_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_bool_float_integer(value, info.field_name)
+
+    @field_validator(
+        "display_name",
+        "phone_e164",
+        "email",
+        "country",
+        "date_of_birth",
+        "birth_country",
+        "birth_place",
+        "country_of_origin",
+        "residential_area",
+        "password",
+        "confirm_password",
+        "clan_name",
+        "clan_description",
+        "create_code",
+        mode="before",
+    )
+    @classmethod
+    def _reject_non_text_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_value(value, info.field_name)
 
 
 class CreateEntryOut(BaseModel):

@@ -162,6 +162,68 @@ def test_rosca_package_instruction_rejects_old_one_pound_amount(
     assert "amount does not match" in res.json()["detail"]
 
 
+def test_community_package_instruction_rejects_malformed_boundary_fields(
+    client, override_current_user, seed_clan_admin_membership
+):
+    for field_name in ("package_code", "currency"):
+        payload = {
+            "clan_id": 1,
+            "package_code": "rosca_cycle",
+            "quantity_total": 1,
+            "currency": "GBP",
+        }
+        payload[field_name] = False
+        rejected_bool_text = client.post(
+            "/payment-instructions/community-package",
+            json=payload,
+        )
+        assert rejected_bool_text.status_code == 422, (
+            field_name,
+            rejected_bool_text.text,
+        )
+        assert f"{field_name} must be text" in rejected_bool_text.text
+
+        payload[field_name] = 1.5
+        rejected_float_text = client.post(
+            "/payment-instructions/community-package",
+            json=payload,
+        )
+        assert rejected_float_text.status_code == 422, (
+            field_name,
+            rejected_float_text.text,
+        )
+        assert f"{field_name} must be text" in rejected_float_text.text
+
+    for field_name in ("clan_id", "quantity_total", "shop_id"):
+        payload = {
+            "clan_id": 1,
+            "package_code": "rosca_cycle",
+            "quantity_total": 1,
+            "currency": "GBP",
+        }
+        payload[field_name] = True
+        rejected_bool_number = client.post(
+            "/payment-instructions/community-package",
+            json=payload,
+        )
+        assert rejected_bool_number.status_code == 422, (
+            field_name,
+            rejected_bool_number.text,
+        )
+        assert f"{field_name} must be an integer" in rejected_bool_number.text
+
+        payload[field_name] = 1.5
+        rejected_float_number = client.post(
+            "/payment-instructions/community-package",
+            json=payload,
+        )
+        assert rejected_float_number.status_code == 422, (
+            field_name,
+            rejected_float_number.text,
+        )
+        assert f"{field_name} must be an integer" in rejected_float_number.text
+
+
 def test_community_package_use_rejects_rosca_now_that_yearly_service_engine_controls_access(
     client, override_current_user, seed_clan_admin_membership
 ):
@@ -194,6 +256,68 @@ def test_community_package_use_rejects_meeting_pack_now_that_engine_consumes_cre
 
     assert res.status_code == 400
     assert "Community Meeting engine" in res.json()["detail"]
+
+
+def test_community_package_use_rejects_malformed_boundary_fields(
+    client, override_current_user, seed_clan_admin_membership
+):
+    for field_name in ("package_code", "reference_key", "note"):
+        payload = {
+            "clan_id": 1,
+            "package_code": "extra_members",
+            "units": 1,
+            "reference_key": "membership-top-up",
+            "note": "Use one package credit.",
+        }
+        payload[field_name] = False
+        rejected_bool_text = client.post(
+            "/payment-instructions/community-package/use",
+            json=payload,
+        )
+        assert rejected_bool_text.status_code == 422, (
+            field_name,
+            rejected_bool_text.text,
+        )
+        assert f"{field_name} must be text" in rejected_bool_text.text
+
+        payload[field_name] = 1.5
+        rejected_float_text = client.post(
+            "/payment-instructions/community-package/use",
+            json=payload,
+        )
+        assert rejected_float_text.status_code == 422, (
+            field_name,
+            rejected_float_text.text,
+        )
+        assert f"{field_name} must be text" in rejected_float_text.text
+
+    for field_name in ("clan_id", "units", "shop_id"):
+        payload = {
+            "clan_id": 1,
+            "package_code": "extra_members",
+            "units": 1,
+        }
+        payload[field_name] = True
+        rejected_bool_number = client.post(
+            "/payment-instructions/community-package/use",
+            json=payload,
+        )
+        assert rejected_bool_number.status_code == 422, (
+            field_name,
+            rejected_bool_number.text,
+        )
+        assert f"{field_name} must be an integer" in rejected_bool_number.text
+
+        payload[field_name] = 1.5
+        rejected_float_number = client.post(
+            "/payment-instructions/community-package/use",
+            json=payload,
+        )
+        assert rejected_float_number.status_code == 422, (
+            field_name,
+            rejected_float_number.text,
+        )
+        assert f"{field_name} must be an integer" in rejected_float_number.text
 
 
 def test_community_package_use_requires_active_credit(

@@ -6,7 +6,7 @@ from decimal import Decimal
 from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, Body, Depends, Header, HTTPException, Query, Request
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -106,6 +106,15 @@ class ExpectedLoanRepaymentIn(BaseModel):
     amount: Optional[Decimal] = Field(default=None, gt=Decimal("0"))
     currency: Optional[str] = Field(default=None, min_length=3, max_length=8)
     due_at: Optional[datetime] = None
+
+    @field_validator("loan_id", mode="before")
+    @classmethod
+    def _reject_bool_integer_controls(cls, value: Any) -> Any:
+        if isinstance(value, bool):
+            raise ValueError("loan_id must be an integer, not a boolean.")
+        if isinstance(value, float):
+            raise ValueError("loan_id must be an integer, not a float.")
+        return value
 
 
 def _bank_event_out(e: BankEvent) -> Dict[str, Any]:

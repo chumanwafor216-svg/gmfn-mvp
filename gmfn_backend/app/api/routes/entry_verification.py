@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -26,6 +26,24 @@ from app.services.verification_router import (
 router = APIRouter(prefix="/entry", tags=["entry-verification"])
 
 
+def _reject_bool_float_integer(value: Any, field_name: str) -> Any:
+    if value is None:
+        return value
+    if isinstance(value, bool):
+        raise ValueError(f"{field_name} must be an integer, not a boolean.")
+    if isinstance(value, float):
+        raise ValueError(f"{field_name} must be an integer, not a float.")
+    return value
+
+
+def _reject_non_text_value(value: Any, field_name: str) -> Any:
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name} must be text.")
+    return value
+
+
 class BankVerificationIn(BaseModel):
     verification_id: int = Field(..., gt=0)
     destination_name: str = Field(..., min_length=2, max_length=160)
@@ -38,12 +56,43 @@ class BankVerificationIn(BaseModel):
     currency: Optional[str] = Field(default=None, max_length=8)
     note: Optional[str] = Field(default=None, max_length=500)
 
+    @field_validator("verification_id", mode="before")
+    @classmethod
+    def _reject_malformed_integer_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_bool_float_integer(value, info.field_name)
+
+    @field_validator(
+        "destination_name",
+        "bank_name",
+        "account_number",
+        "sort_code",
+        "iban",
+        "phone_number",
+        "country",
+        "currency",
+        "note",
+        mode="before",
+    )
+    @classmethod
+    def _reject_non_text_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_value(value, info.field_name)
+
 
 class DriversLicenceVerificationIn(BaseModel):
     verification_id: int = Field(..., gt=0)
     licence_number: str = Field(..., min_length=4, max_length=120)
     country: str = Field(..., min_length=2, max_length=16)
     note: Optional[str] = Field(default=None, max_length=500)
+
+    @field_validator("verification_id", mode="before")
+    @classmethod
+    def _reject_malformed_integer_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_bool_float_integer(value, info.field_name)
+
+    @field_validator("licence_number", "country", "note", mode="before")
+    @classmethod
+    def _reject_non_text_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_value(value, info.field_name)
 
 
 class OfficialIdRecordIn(BaseModel):
@@ -53,15 +102,40 @@ class OfficialIdRecordIn(BaseModel):
     country: str = Field(..., min_length=2, max_length=64)
     note: Optional[str] = Field(default=None, max_length=500)
 
+    @field_validator("verification_id", mode="before")
+    @classmethod
+    def _reject_malformed_integer_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_bool_float_integer(value, info.field_name)
+
+    @field_validator("document_type", "document_reference", "country", "note", mode="before")
+    @classmethod
+    def _reject_non_text_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_value(value, info.field_name)
+
 
 class SignedInPhoneStartIn(BaseModel):
     phone_e164: str = Field(..., min_length=8, max_length=32)
     country: Optional[str] = Field(default=None, max_length=64)
 
+    @field_validator("phone_e164", "country", mode="before")
+    @classmethod
+    def _reject_non_text_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_value(value, info.field_name)
+
 
 class SignedInPhoneConfirmIn(BaseModel):
     verification_id: int = Field(..., gt=0)
     code: str = Field(..., min_length=3, max_length=12)
+
+    @field_validator("verification_id", mode="before")
+    @classmethod
+    def _reject_malformed_integer_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_bool_float_integer(value, info.field_name)
+
+    @field_validator("code", mode="before")
+    @classmethod
+    def _reject_non_text_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_value(value, info.field_name)
 
 
 class SignedInOfficialIdRecordIn(BaseModel):
@@ -69,6 +143,11 @@ class SignedInOfficialIdRecordIn(BaseModel):
     document_reference: str = Field(..., min_length=2, max_length=160)
     country: str = Field(..., min_length=2, max_length=64)
     note: Optional[str] = Field(default=None, max_length=500)
+
+    @field_validator("document_type", "document_reference", "country", "note", mode="before")
+    @classmethod
+    def _reject_non_text_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_value(value, info.field_name)
 
 
 class VerificationCheckOut(BaseModel):

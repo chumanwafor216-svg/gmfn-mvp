@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user
@@ -33,9 +33,47 @@ class VaultAccessLinkCreateIn(BaseModel):
     allow_reshare: bool = False
     watermark_enabled: bool = True
 
+    @field_validator("product_id", "max_views", mode="before")
+    @classmethod
+    def _reject_malformed_integer_controls(cls, value: Any, info: Any) -> Any:
+        if value is None:
+            return value
+        if isinstance(value, bool):
+            raise ValueError(f"{info.field_name} must be an integer, not a boolean.")
+        if isinstance(value, float):
+            raise ValueError(f"{info.field_name} must be an integer, not a float.")
+        return value
+
+    @field_validator(
+        "allow_download",
+        "allow_print",
+        "allow_reshare",
+        "watermark_enabled",
+        mode="before",
+    )
+    @classmethod
+    def _reject_malformed_boolean_controls(cls, value: Any, info: Any) -> Any:
+        if not isinstance(value, bool):
+            raise ValueError(f"{info.field_name} must be boolean.")
+        return value
+
+    @field_validator("expires_at", mode="before")
+    @classmethod
+    def _reject_malformed_expires_at(cls, value: Any) -> Any:
+        if value is None or isinstance(value, str) or isinstance(value, datetime):
+            return value
+        raise ValueError("expires_at must be an ISO datetime string.")
+
 
 class VaultAccessLinkExtendIn(BaseModel):
     expires_at: datetime
+
+    @field_validator("expires_at", mode="before")
+    @classmethod
+    def _reject_malformed_expires_at(cls, value: Any) -> Any:
+        if isinstance(value, str) or isinstance(value, datetime):
+            return value
+        raise ValueError("expires_at must be an ISO datetime string.")
 
 
 def _is_admin(user: Any) -> bool:

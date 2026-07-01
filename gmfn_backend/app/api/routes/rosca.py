@@ -5,7 +5,7 @@ from decimal import Decimal
 from typing import Any, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user
@@ -22,6 +22,40 @@ from app.services.rosca_service import (
 router = APIRouter(prefix="/rosca", tags=["rosca"])
 
 
+def _reject_bool_integer(value: Any, field_name: str) -> Any:
+    if value is None:
+        return value
+    if isinstance(value, bool):
+        raise ValueError(f"{field_name} must be an integer, not a boolean.")
+    if isinstance(value, float):
+        raise ValueError(f"{field_name} must be an integer, not a float.")
+    return value
+
+
+def _reject_bool_integer_list(value: Any, field_name: str) -> Any:
+    if value is None:
+        return value
+    if not isinstance(value, list):
+        return value
+    for item in value:
+        _reject_bool_integer(item, field_name)
+    return value
+
+
+def _reject_non_text_value(value: Any, field_name: str) -> Any:
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name} must be text.")
+    return value
+
+
+def _reject_bool_amount(value: Any, field_name: str) -> Any:
+    if isinstance(value, bool):
+        raise ValueError(f"{field_name} must be an amount, not a boolean.")
+    return value
+
+
 class RoscaCycleCreateIn(BaseModel):
     clan_id: int = Field(..., ge=1)
     title: Optional[str] = Field(default=None, max_length=120)
@@ -33,9 +67,34 @@ class RoscaCycleCreateIn(BaseModel):
     interval_days: int = Field(default=30, ge=1, le=366)
     note: Optional[str] = Field(default=None, max_length=500)
 
+    @field_validator("clan_id", "interval_days", mode="before")
+    @classmethod
+    def _reject_malformed_integer_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_bool_integer(value, info.field_name)
+
+    @field_validator("member_user_ids", "payout_order_user_ids", mode="before")
+    @classmethod
+    def _reject_malformed_integer_lists(cls, value: Any, info: Any) -> Any:
+        return _reject_bool_integer_list(value, info.field_name)
+
+    @field_validator("title", "currency", "note", mode="before")
+    @classmethod
+    def _reject_non_text_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_value(value, info.field_name)
+
+    @field_validator("contribution_amount", mode="before")
+    @classmethod
+    def _reject_bool_contribution_amount(cls, value: Any) -> Any:
+        return _reject_bool_amount(value, "contribution_amount")
+
 
 class RoscaPayoutRecordIn(BaseModel):
     note: Optional[str] = Field(default=None, max_length=500)
+
+    @field_validator("note", mode="before")
+    @classmethod
+    def _reject_non_text_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_value(value, info.field_name)
 
 
 def _require_clan_member(

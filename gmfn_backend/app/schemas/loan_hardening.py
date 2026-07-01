@@ -1,8 +1,26 @@
 from __future__ import annotations
 
-from typing import Optional
+from typing import Any, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+
+def _reject_bool_float_integer(value: Any, field_name: str) -> Any:
+    if value is None:
+        return value
+    if isinstance(value, bool):
+        raise ValueError(f"{field_name} must be an integer, not a boolean.")
+    if isinstance(value, float):
+        raise ValueError(f"{field_name} must be an integer, not a float.")
+    return value
+
+
+def _reject_non_text_value(value: Any, field_name: str) -> Any:
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name} must be text.")
+    return value
 
 
 class LoanCoverageCheckIn(BaseModel):
@@ -10,6 +28,17 @@ class LoanCoverageCheckIn(BaseModel):
     personal_pool: str = Field(min_length=1)
     approved_locked_total: str = Field(min_length=1, default="0")
     pledge_amount: Optional[str] = None
+
+    @field_validator(
+        "loan_amount",
+        "personal_pool",
+        "approved_locked_total",
+        "pledge_amount",
+        mode="before",
+    )
+    @classmethod
+    def _reject_non_text_amount_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_value(value, info.field_name)
 
 
 class LoanCoverageCheckOut(BaseModel):
@@ -39,6 +68,16 @@ class TrustEventDedupCheckIn(BaseModel):
     loan_id: Optional[int] = None
     guarantor_id: Optional[int] = None
     reason: Optional[str] = None
+
+    @field_validator("user_id", "loan_id", "guarantor_id", mode="before")
+    @classmethod
+    def _reject_malformed_integer_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_bool_float_integer(value, info.field_name)
+
+    @field_validator("event_type", "reason", mode="before")
+    @classmethod
+    def _reject_non_text_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_value(value, info.field_name)
 
 
 class TrustEventDedupCheckOut(BaseModel):

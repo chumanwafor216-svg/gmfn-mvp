@@ -1,8 +1,24 @@
 from __future__ import annotations
 
-from typing import Optional
+from typing import Any, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+
+def _reject_non_text_value(value: Any, field_name: str) -> Any:
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name} must be text.")
+    return value
+
+
+def _reject_bool_identifier(value: Any, field_name: str) -> Any:
+    if isinstance(value, bool):
+        raise ValueError(f"{field_name} must be an integer id, not a boolean.")
+    if isinstance(value, float):
+        raise ValueError(f"{field_name} must be an integer id, not a float.")
+    return value
 
 
 class InviteAuditOut(BaseModel):
@@ -19,6 +35,11 @@ class InviteAuditOut(BaseModel):
 
 class JoinByInviteIn(BaseModel):
     invite_code: str = Field(min_length=3, max_length=255)
+
+    @field_validator("invite_code", mode="before")
+    @classmethod
+    def _reject_non_text_invite_code(cls, value: Any) -> Any:
+        return _reject_non_text_value(value, "invite_code")
 
 
 class JoinByInviteOut(BaseModel):
@@ -42,6 +63,11 @@ class ActiveCommunityOut(BaseModel):
 
 class SetActiveCommunityIn(BaseModel):
     clan_id: int
+
+    @field_validator("clan_id", mode="before")
+    @classmethod
+    def _reject_bool_clan_id(cls, value: Any) -> Any:
+        return _reject_bool_identifier(value, "clan_id")
 
 
 class SetActiveCommunityOut(BaseModel):

@@ -1,8 +1,16 @@
 # app/schemas/merchant_release.py
 from __future__ import annotations
 
-from typing import Optional
-from pydantic import BaseModel, Field
+from typing import Any, Optional
+from pydantic import BaseModel, Field, field_validator
+
+
+def _reject_non_text_value(value: Any, field_name: str) -> Any:
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name} must be text.")
+    return value
 
 
 class MerchantReleaseIn(BaseModel):
@@ -29,3 +37,29 @@ class MerchantReleaseIn(BaseModel):
     expected_delivery_date: Optional[str] = Field(default=None, max_length=80)
     payment_schedule_note: Optional[str] = Field(default=None, max_length=700)
     receipt_status: str = Field("awaiting_delivery", min_length=1, max_length=40)
+
+    @field_validator(
+        "token",
+        "goods_value",
+        "currency",
+        "merchant_note",
+        "trade_context",
+        "item_title",
+        "counterparty_label",
+        "counterparty_whatsapp_label",
+        "product_evidence_note",
+        "invoice_reference",
+        "invoice_evidence_note",
+        "agreement_evidence_note",
+        "courier_name",
+        "courier_contact_label",
+        "tracking_number",
+        "released_to_courier_at",
+        "expected_delivery_date",
+        "payment_schedule_note",
+        "receipt_status",
+        mode="before",
+    )
+    @classmethod
+    def _reject_non_text_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_value(value, info.field_name)

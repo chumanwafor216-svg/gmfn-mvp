@@ -1192,6 +1192,7 @@ export default function CommunityHomePage() {
         "community-home.route.community-packages",
         { hash: OWNER_SHOP_HASHES.communityPackage }
       ),
+      communityDomain: "/app/community-domain",
       freeSpotlight: routeTarget(
         "freeSpotlight",
         selectedClanId,
@@ -3175,15 +3176,14 @@ export default function CommunityHomePage() {
                 ),
             },
             {
-              icon: COMMUNITY_OWNER_HANDLE_ICONS["community-package"],
-              id: ownerShopHandle("community-package").id,
-              title: ownerShopHandle("community-package").label,
-              detail: ownerShopHandle("community-package").detail,
+              icon: "financeInstitution",
+              id: "community-domain",
+              title: "Community Domain",
+              detail: "Open institutional dashboard and access requests",
               onClick: (event: React.SyntheticEvent<HTMLElement>) =>
-                openSelectedCommunityRoute(
+                openCommunityRoute(
                   event,
-                  routes.communityPackages,
-                  "Choose a community first, then open Community Package."
+                  routes.communityDomain
                 ),
             },
             {

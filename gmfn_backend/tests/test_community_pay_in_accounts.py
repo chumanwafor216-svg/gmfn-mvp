@@ -75,6 +75,35 @@ def test_owner_member_can_save_community_pay_in_account(
     assert res.json()["settlement"]["source"] == "community_pay_in_account"
 
 
+def test_community_pay_in_account_rejects_malformed_text_fields(
+    client,
+    seed_clan_admin_membership,
+    override_current_user,
+):
+    for field_name in (
+        "account_name",
+        "bank_name",
+        "account_number",
+        "sort_code",
+        "routing_number",
+        "iban",
+        "swift_bic",
+        "country",
+        "currency",
+        "note",
+    ):
+        payload = _payload()
+        payload[field_name] = False
+        rejected_bool = client.put("/community-pay-in-accounts/1", json=payload)
+        assert rejected_bool.status_code == 422, (field_name, rejected_bool.text)
+        assert f"{field_name} must be text" in rejected_bool.text
+
+        payload[field_name] = 1.5
+        rejected_float = client.put("/community-pay-in-accounts/1", json=payload)
+        assert rejected_float.status_code == 422, (field_name, rejected_float.text)
+        assert f"{field_name} must be text" in rejected_float.text
+
+
 def test_pool_instruction_uses_saved_community_pay_in_account(
     client,
     seed_clan_admin_membership,
@@ -99,6 +128,42 @@ def test_pool_instruction_uses_saved_community_pay_in_account(
     assert body["settlement"]["account_name"] == "Aberdeen Community Pool"
     assert body["settlement"]["account_number"] == "52785706"
     assert body["settlement"]["configured"] is True
+
+
+def test_pool_instruction_rejects_malformed_boundary_controls(
+    client,
+    seed_clan_admin_membership,
+    override_current_user,
+):
+    base_payload = {
+        "clan_id": 1,
+        "amount": "20.00",
+        "currency": "GBP",
+        "contribution_reason": "Yearly contribution",
+    }
+
+    for field_name in ("currency", "contribution_reason"):
+        payload = dict(base_payload)
+        payload[field_name] = False
+        rejected_bool = client.post("/payment-instructions/pool", json=payload)
+        assert rejected_bool.status_code == 422, (field_name, rejected_bool.text)
+        assert f"{field_name} must be text" in rejected_bool.text
+
+        payload[field_name] = 1.5
+        rejected_float = client.post("/payment-instructions/pool", json=payload)
+        assert rejected_float.status_code == 422, (field_name, rejected_float.text)
+        assert f"{field_name} must be text" in rejected_float.text
+
+    payload = dict(base_payload)
+    payload["clan_id"] = False
+    rejected_bool_id = client.post("/payment-instructions/pool", json=payload)
+    assert rejected_bool_id.status_code == 422
+    assert "clan_id must be an integer, not a boolean" in rejected_bool_id.text
+
+    payload["clan_id"] = 1.5
+    rejected_float_id = client.post("/payment-instructions/pool", json=payload)
+    assert rejected_float_id.status_code == 422
+    assert "clan_id must be an integer, not a float" in rejected_float_id.text
 
 
 def test_pool_payment_proof_upload_attaches_to_expected_payment(

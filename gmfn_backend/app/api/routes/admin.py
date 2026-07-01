@@ -11,7 +11,7 @@ from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import FileResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
@@ -47,6 +47,14 @@ def _d(x: Any) -> Decimal:
 
 def _safe_str(x: Any) -> str:
     return str(x or "").strip()
+
+
+def _reject_non_text_value(value: Any, field_name: str) -> Any:
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name} must be text.")
+    return value
 
 
 def _dt_iso(x: Any) -> Optional[str]:
@@ -98,9 +106,19 @@ class IdentityVerificationDecisionIn(BaseModel):
     decision: str = Field(..., min_length=3, max_length=16)
     reviewer_note: Optional[str] = Field(default=None, max_length=500)
 
+    @field_validator("decision", "reviewer_note", mode="before")
+    @classmethod
+    def _reject_non_text_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_value(value, info.field_name)
+
 
 class IdentityVerificationCorrectionIn(BaseModel):
     reason: str = Field(..., min_length=4, max_length=500)
+
+    @field_validator("reason", mode="before")
+    @classmethod
+    def _reject_non_text_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_value(value, info.field_name)
 
 
 def _json_text(data: Any) -> str:

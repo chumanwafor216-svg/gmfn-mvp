@@ -8,7 +8,7 @@ from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, Body, File, Form, HTTPException, UploadFile, Request
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 router = APIRouter(prefix="/marketplace/media", tags=["marketplace-media"])
 
@@ -38,6 +38,14 @@ CONTENT_TYPE_ALIASES = {
 }
 
 GENERIC_CONTENT_TYPES = {"", "application/octet-stream", "binary/octet-stream"}
+
+
+def _reject_non_text_value(value: Any, field_name: str) -> Any:
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name} must be text.")
+    return value
 
 
 def _now_utc() -> datetime:
@@ -158,6 +166,11 @@ class UploadUrlCreateIn(BaseModel):
     filename: str = Field(min_length=1, max_length=255)
     content_type: str = Field(min_length=1, max_length=120)
     media_type: str = Field(min_length=1, max_length=20)
+
+    @field_validator("filename", "content_type", "media_type", mode="before")
+    @classmethod
+    def _reject_non_text_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_value(value, info.field_name)
 
 
 @router.post("/upload-url")

@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user
@@ -65,6 +65,24 @@ def _safe_int(value: Any, default: int = 0) -> int:
         return int(value)
     except Exception:
         return default
+
+
+def _reject_non_text_value(value: Any, field_name: str) -> Any:
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name} must be text.")
+    return value
+
+
+def _reject_bool_integer(value: Any, field_name: str) -> Any:
+    if value is None:
+        return value
+    if isinstance(value, bool):
+        raise ValueError(f"{field_name} must be an integer, not a boolean.")
+    if isinstance(value, float):
+        raise ValueError(f"{field_name} must be an integer, not a float.")
+    return value
 
 
 def _iso(dt: Optional[datetime]) -> Optional[str]:
@@ -273,12 +291,32 @@ class PoolInstructionIn(BaseModel):
     currency: str = "NGN"
     contribution_reason: Optional[str] = Field(default=None, max_length=180)
 
+    @field_validator("clan_id", mode="before")
+    @classmethod
+    def _reject_bool_integer_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_bool_integer(value, info.field_name)
+
+    @field_validator("currency", "contribution_reason", mode="before")
+    @classmethod
+    def _reject_non_text_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_value(value, info.field_name)
+
 
 class LoanInstructionIn(BaseModel):
     clan_id: int
     loan_id: int
     amount: Decimal = Field(..., gt=Decimal("0"))
     currency: str = "NGN"
+
+    @field_validator("clan_id", "loan_id", mode="before")
+    @classmethod
+    def _reject_bool_integer_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_bool_integer(value, info.field_name)
+
+    @field_validator("currency", mode="before")
+    @classmethod
+    def _reject_non_text_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_value(value, info.field_name)
 
 
 class VaultInstructionIn(BaseModel):
@@ -287,12 +325,32 @@ class VaultInstructionIn(BaseModel):
     quantity_total: int = Field(..., ge=1, le=6)
     currency: str = "GBP"
 
+    @field_validator("clan_id", "shop_id", "quantity_total", mode="before")
+    @classmethod
+    def _reject_bool_integer_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_bool_integer(value, info.field_name)
+
+    @field_validator("currency", mode="before")
+    @classmethod
+    def _reject_non_text_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_value(value, info.field_name)
+
 
 class MerchantVerifyInstructionIn(BaseModel):
     clan_id: int
     shop_id: int
     amount: Decimal = Field(..., gt=Decimal("0"))
     currency: str = "GBP"
+
+    @field_validator("clan_id", "shop_id", mode="before")
+    @classmethod
+    def _reject_bool_integer_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_bool_integer(value, info.field_name)
+
+    @field_validator("currency", mode="before")
+    @classmethod
+    def _reject_non_text_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_value(value, info.field_name)
 
 
 class SpotlightInstructionIn(BaseModel):
@@ -303,6 +361,16 @@ class SpotlightInstructionIn(BaseModel):
     currency: str = "GBP"
     visibility_scope: str = "direct_communities"
 
+    @field_validator("clan_id", "shop_id", "quantity_total", mode="before")
+    @classmethod
+    def _reject_bool_integer_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_bool_integer(value, info.field_name)
+
+    @field_validator("currency", "visibility_scope", mode="before")
+    @classmethod
+    def _reject_non_text_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_value(value, info.field_name)
+
 
 class CommunityPackageInstructionIn(BaseModel):
     clan_id: int
@@ -312,6 +380,16 @@ class CommunityPackageInstructionIn(BaseModel):
     amount: Optional[Decimal] = Field(default=None, gt=Decimal("0"))
     currency: str = "GBP"
 
+    @field_validator("clan_id", "quantity_total", "shop_id", mode="before")
+    @classmethod
+    def _reject_bool_integer_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_bool_integer(value, info.field_name)
+
+    @field_validator("package_code", "currency", mode="before")
+    @classmethod
+    def _reject_non_text_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_value(value, info.field_name)
+
 
 class CommunityPackageUseIn(BaseModel):
     clan_id: int
@@ -320,6 +398,16 @@ class CommunityPackageUseIn(BaseModel):
     shop_id: Optional[int] = None
     reference_key: Optional[str] = Field(default=None, max_length=128)
     note: Optional[str] = Field(default=None, max_length=500)
+
+    @field_validator("clan_id", "units", "shop_id", mode="before")
+    @classmethod
+    def _reject_bool_integer_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_bool_integer(value, info.field_name)
+
+    @field_validator("package_code", "reference_key", "note", mode="before")
+    @classmethod
+    def _reject_non_text_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_value(value, info.field_name)
 
 
 @router.post("/pool")

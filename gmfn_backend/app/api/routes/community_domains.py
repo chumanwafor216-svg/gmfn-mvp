@@ -16900,6 +16900,20 @@ class CommunityDomainDraftIn(BaseModel):
     state: Optional[str] = Field(default=None, max_length=120)
     public_profile: Optional[str] = Field(default=None, max_length=1200)
 
+    @field_validator(
+        "domain_name",
+        "display_name",
+        "domain_type",
+        "template_key",
+        "country",
+        "state",
+        "public_profile",
+        mode="before",
+    )
+    @classmethod
+    def _reject_non_text_draft_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_value(value, info.field_name)
+
 
 class CommunityNodeCreateIn(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
@@ -16928,6 +16942,19 @@ class CommunityNodeCreateIn(BaseModel):
     @classmethod
     def _reject_non_bool_inherits_parent_policy(cls, value: Any) -> Any:
         return _reject_non_bool(value, "inherits_parent_policy")
+
+    @field_validator(
+        "name",
+        "node_type",
+        "node_kind",
+        "description",
+        "visibility_policy",
+        "status",
+        mode="before",
+    )
+    @classmethod
+    def _reject_non_text_node_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_value(value, info.field_name)
 
 
 class CommunityNodeStatusUpdateIn(BaseModel):
@@ -17051,6 +17078,17 @@ class CommunityDomainActionReviewCreateIn(BaseModel):
     def _reject_bool_ids(cls, value: Any, info: Any) -> Any:
         return _reject_bool_identifier(value, info.field_name)
 
+    @field_validator(
+        "action_key",
+        "target_type",
+        "target_id",
+        "request_note",
+        mode="before",
+    )
+    @classmethod
+    def _reject_non_text_action_review_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_value(value, info.field_name)
+
 
 class CommunityDomainActionReviewDecisionIn(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
@@ -17089,11 +17127,21 @@ class CommunityDomainActionReviewRevisionIn(BaseModel):
     def _reject_bool_ids(cls, value: Any) -> Any:
         return _reject_bool_identifier(value, "subject_user_id")
 
+    @field_validator("target_type", "target_id", "request_note", mode="before")
+    @classmethod
+    def _reject_non_text_revision_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_value(value, info.field_name)
+
 
 class CommunityDomainActionReviewCommentIn(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
 
     body: str = Field(..., min_length=1, max_length=4000)
+
+    @field_validator("body", mode="before")
+    @classmethod
+    def _reject_non_text_comment_controls(cls, value: Any) -> Any:
+        return _reject_non_text_value(value, "body")
 
 
 class CommunityDomainActionReviewEvidenceIn(BaseModel):
@@ -17109,6 +17157,21 @@ class CommunityDomainActionReviewEvidenceIn(BaseModel):
         default=None, min_length=1, max_length=512
     )
     checksum: Optional[str] = Field(default=None, min_length=1, max_length=128)
+
+    @field_validator(
+        "evidence_type",
+        "title",
+        "description",
+        "file_name",
+        "content_type",
+        "storage_key",
+        "external_reference",
+        "checksum",
+        mode="before",
+    )
+    @classmethod
+    def _reject_non_text_evidence_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_value(value, info.field_name)
 
 
 def _get_domain_or_404(db: Session, community_domain_id: int) -> CommunityDomain:

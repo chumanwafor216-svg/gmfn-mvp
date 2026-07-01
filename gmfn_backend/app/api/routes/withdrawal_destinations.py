@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from typing import Optional
+from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user
@@ -17,6 +17,14 @@ router = APIRouter(prefix="/withdrawal-destinations", tags=["withdrawal-destinat
 
 def _clean(value: object) -> str:
     return str(value or "").strip()
+
+
+def _reject_non_text_value(value: Any, field_name: str) -> Any:
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name} must be text.")
+    return value
 
 
 def _now() -> datetime:
@@ -194,6 +202,22 @@ class WithdrawalDestinationIn(BaseModel):
     country: Optional[str] = Field(default=None, max_length=64)
     currency: Optional[str] = Field(default="NGN", max_length=8)
     note: Optional[str] = Field(default=None, max_length=500)
+
+    @field_validator(
+        "destination_name",
+        "bank_name",
+        "account_number",
+        "sort_code",
+        "bank_sort_code",
+        "phone_number",
+        "country",
+        "currency",
+        "note",
+        mode="before",
+    )
+    @classmethod
+    def _reject_non_text_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_value(value, info.field_name)
 
 
 def _payload(row: UserPayoutDestination) -> dict:

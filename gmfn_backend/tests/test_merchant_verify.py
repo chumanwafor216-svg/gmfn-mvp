@@ -253,6 +253,45 @@ def test_merchant_release_records_evidence_after_public_verify(client, monkeypat
     assert release_meta["not_release_authority"] is True
 
 
+def test_merchant_release_rejects_non_text_evidence_before_recording(client, monkeypatch):
+    monkeypatch.setenv("SECRET_KEY", "pytest-merchant-verify-secret")
+    _seed_merchant_verify_user()
+
+    token = create_access_token({"sub": "merchant-holder@example.com"})
+    issued = client.get(
+        "/trust-slips/me/merchant-link?ttl_hours=12&level=standard",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert issued.status_code == 200, issued.text
+
+    raw_token = issued.json()["path"].rsplit("/", 1)[-1]
+    release = client.post(
+        "/merchant/releases",
+        json={
+            "token": raw_token,
+            "goods_value": 140.00,
+            "currency": "NGN",
+            "merchant_note": True,
+            "trade_context": "gsn_external",
+            "invoice_reference": 12345,
+            "receipt_status": "awaiting_delivery",
+        },
+    )
+    assert release.status_code == 422, release.text
+
+    with SessionLocal() as db:
+        assert (
+            db.query(TrustEvent)
+            .filter(TrustEvent.event_type == "merchant.verify_token_used")
+            .count()
+        ) == 0
+        assert (
+            db.query(TrustEvent)
+            .filter(TrustEvent.event_type == "merchant.release_recorded")
+            .count()
+        ) == 0
+
+
 def test_merchant_release_first_marks_token_used_once(client, monkeypatch):
     monkeypatch.setenv("SECRET_KEY", "pytest-merchant-verify-secret")
     _seed_merchant_verify_user()

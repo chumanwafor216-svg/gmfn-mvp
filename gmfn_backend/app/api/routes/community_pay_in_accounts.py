@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from typing import Optional
+from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user
@@ -31,6 +31,27 @@ class CommunityPayInAccountIn(BaseModel):
     country: Optional[str] = Field(default=None, max_length=64)
     currency: Optional[str] = Field(default="NGN", max_length=8)
     note: Optional[str] = Field(default=None, max_length=500)
+
+    @field_validator(
+        "account_name",
+        "bank_name",
+        "account_number",
+        "sort_code",
+        "routing_number",
+        "iban",
+        "swift_bic",
+        "country",
+        "currency",
+        "note",
+        mode="before",
+    )
+    @classmethod
+    def _reject_non_text_account_controls(cls, value: Any, info: Any) -> Any:
+        if value is None:
+            return value
+        if not isinstance(value, str):
+            raise ValueError(f"{info.field_name} must be text.")
+        return value
 
 
 def _platform_admin(user: User) -> bool:

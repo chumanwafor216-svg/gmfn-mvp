@@ -71,6 +71,42 @@ def test_focus_commitment_route_logs_deduped_trust_event(
         assert "personal commitment event" in meta["reader_note"]
 
 
+def test_focus_commitment_rejects_malformed_payload_before_trust_event(
+    client: TestClient,
+    override_current_user_user,
+    seed_clan_member_membership,
+):
+    response = client.post(
+        "/trust-events/me/focus-commitment",
+        json={
+            "clan_id": True,
+            "local_commitment_id": 12345,
+            "local_event_id": "focus-event-malformed",
+            "event_kind": "complete",
+            "title": {"text": "Malformed commitment"},
+            "category": "savings",
+            "target_value": "100",
+            "current_value": False,
+            "progress_value": 100.0,
+            "unit": "NGN",
+            "due_date": "2026-05-20",
+            "cadence": "weekly",
+            "note": 1.5,
+        },
+    )
+
+    assert response.status_code == 422, response.text
+    assert "clan_id must be an integer" in response.text
+    assert "local_commitment_id must be text" in response.text
+    assert "title must be text" in response.text
+    assert "target_value must be a number" in response.text
+    assert "current_value must be a number" in response.text
+    assert "note must be text" in response.text
+
+    with SessionLocal() as db:
+        assert db.query(TrustEvent).count() == 0
+
+
 def test_trust_passport_identity_context_uses_signed_in_payout_and_membership(
     override_current_user_user,
     seed_clan_member_membership,

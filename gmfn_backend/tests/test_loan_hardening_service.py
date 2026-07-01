@@ -72,6 +72,26 @@ def test_coverage_based_approval_fails_when_locked_total_below_gap():
     assert result["coverage_ok"] is False
 
 
+def test_loan_coverage_check_route_rejects_malformed_amount_controls(
+    client: TestClient,
+    override_current_user_user,
+):
+    response = client.post(
+        "/loans/coverage-check",
+        json={
+            "loan_amount": 1000,
+            "personal_pool": True,
+            "approved_locked_total": "700",
+            "pledge_amount": 1.5,
+        },
+    )
+
+    assert response.status_code == 422, response.text
+    assert "loan_amount must be text" in response.text
+    assert "personal_pool must be text" in response.text
+    assert "pledge_amount must be text" in response.text
+
+
 def test_trust_event_duplicate_check_uses_subject_and_real_context_fields(seed_clan_admin_membership):
     with SessionLocal() as db:
         db.add(
@@ -152,6 +172,44 @@ def test_trust_event_dedup_check_route_reports_duplicate_for_admin(
         "duplicate_found": True,
         "message": "Duplicate found",
     }
+
+
+def test_trust_event_dedup_check_route_rejects_malformed_controls_before_lookup(
+    client: TestClient,
+    override_current_user,
+    seed_clan_admin_membership,
+):
+    with SessionLocal() as db:
+        db.add(
+            TrustEvent(
+                event_type="loan.repaid",
+                clan_id=1,
+                loan_id=12,
+                actor_user_id=1,
+                subject_user_id=1,
+                meta={"reason": "route_duplicate_probe"},
+                created_at=datetime.now(timezone.utc),
+            )
+        )
+        db.commit()
+
+    response = client.post(
+        "/admin/trust-events/dedup-check",
+        json={
+            "user_id": True,
+            "event_type": 12345,
+            "loan_id": 1.5,
+            "guarantor_id": False,
+            "reason": {"code": "route_duplicate_probe"},
+        },
+    )
+
+    assert response.status_code == 422, response.text
+    assert "user_id must be an integer" in response.text
+    assert "event_type must be text" in response.text
+    assert "loan_id must be an integer" in response.text
+    assert "guarantor_id must be an integer" in response.text
+    assert "reason must be text" in response.text
 
 
 def test_trust_event_dedup_check_route_blocks_non_admin(

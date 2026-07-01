@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Any, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user
@@ -19,6 +19,42 @@ from app.services.community_meeting_service import (
 router = APIRouter(prefix="/community-meetings", tags=["community-meetings"])
 
 
+def _reject_bool_identifier(value: Any, field_name: str) -> Any:
+    if isinstance(value, bool):
+        raise ValueError(f"{field_name} must be an integer id, not a boolean.")
+    if isinstance(value, float):
+        raise ValueError(f"{field_name} must be an integer id, not a float.")
+    return value
+
+
+def _reject_bool_integer(value: Any, field_name: str) -> Any:
+    if value is None:
+        return value
+    if isinstance(value, bool):
+        raise ValueError(f"{field_name} must be an integer, not a boolean.")
+    if isinstance(value, float):
+        raise ValueError(f"{field_name} must be an integer, not a float.")
+    return value
+
+
+def _reject_non_text_value(value: Any, field_name: str) -> Any:
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name} must be text.")
+    return value
+
+
+def _reject_bool_identifier_list(value: Any, field_name: str) -> Any:
+    if value is None:
+        return value
+    if not isinstance(value, list):
+        return value
+    for item in value:
+        _reject_bool_identifier(item, field_name)
+    return value
+
+
 class CommunityMeetingReminderIn(BaseModel):
     clan_id: int = Field(..., ge=1)
     title: str = Field(..., min_length=3, max_length=140)
@@ -28,6 +64,21 @@ class CommunityMeetingReminderIn(BaseModel):
     whatsapp_number: Optional[str] = Field(default=None, max_length=40)
     note: Optional[str] = Field(default=None, max_length=500)
 
+    @field_validator("clan_id", mode="before")
+    @classmethod
+    def _reject_bool_ids(cls, value: Any) -> Any:
+        return _reject_bool_identifier(value, "clan_id")
+
+    @field_validator("attendee_user_ids", mode="before")
+    @classmethod
+    def _reject_bool_attendee_ids(cls, value: Any) -> Any:
+        return _reject_bool_identifier_list(value, "attendee_user_ids")
+
+    @field_validator("title", "purpose", "whatsapp_number", "note", mode="before")
+    @classmethod
+    def _reject_non_text_reminder_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_value(value, info.field_name)
+
 
 class CommunityMeetingSummaryIn(BaseModel):
     clan_id: int = Field(..., ge=1)
@@ -36,6 +87,23 @@ class CommunityMeetingSummaryIn(BaseModel):
     attendance_count: Optional[int] = Field(default=None, ge=0, le=100000)
     attendee_user_ids: Optional[List[int]] = None
     note: Optional[str] = Field(default=None, max_length=500)
+
+    @field_validator("clan_id", "attendance_count", mode="before")
+    @classmethod
+    def _reject_bool_summary_numbers(cls, value: Any, info: Any) -> Any:
+        if info.field_name == "clan_id":
+            return _reject_bool_identifier(value, info.field_name)
+        return _reject_bool_integer(value, info.field_name)
+
+    @field_validator("attendee_user_ids", mode="before")
+    @classmethod
+    def _reject_bool_attendee_ids(cls, value: Any) -> Any:
+        return _reject_bool_identifier_list(value, "attendee_user_ids")
+
+    @field_validator("summary", "decisions", "note", mode="before")
+    @classmethod
+    def _reject_non_text_summary_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_value(value, info.field_name)
 
 
 def _require_clan_member(

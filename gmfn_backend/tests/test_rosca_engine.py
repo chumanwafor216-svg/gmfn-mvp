@@ -7,6 +7,12 @@ from app.db.database import SessionLocal, engine
 from app.services.reconciliation_service import create_bank_event, reconcile_batch
 
 
+def _assert_rejected(client, payload: dict, expected_text: str) -> None:
+    response = client.post("/rosca/cycles", json=payload)
+    assert response.status_code == 422, response.text
+    assert expected_text in response.text
+
+
 def _seed_rosca_yearly_service(quantity: int = 1) -> None:
     now = datetime.now(timezone.utc)
     with engine.begin() as conn:
@@ -141,6 +147,95 @@ def test_rosca_cycle_creation_uses_yearly_service_without_consuming_entitlement(
     assert len(obligations) == 2
     assert obligations[0]["source"] == "rosca.cycle"
     assert obligations[0]["writes_commitment_trust_event"] is False
+
+
+def test_rosca_cycle_creation_rejects_malformed_boundary_controls(
+    client,
+    override_current_user,
+):
+    base_payload = {
+        "clan_id": 1,
+        "title": "Boundary checked circle",
+        "contribution_amount": "25.00",
+        "currency": "GBP",
+        "interval_days": 14,
+    }
+
+    for field_name in ("clan_id", "interval_days"):
+        payload = dict(base_payload)
+        payload[field_name] = False
+        _assert_rejected(
+            client,
+            payload,
+            f"{field_name} must be an integer, not a boolean",
+        )
+
+        payload[field_name] = 1.5
+        _assert_rejected(
+            client,
+            payload,
+            f"{field_name} must be an integer, not a float",
+        )
+
+    for field_name in ("member_user_ids", "payout_order_user_ids"):
+        payload = dict(base_payload)
+        payload[field_name] = [1, False]
+        _assert_rejected(
+            client,
+            payload,
+            f"{field_name} must be an integer, not a boolean",
+        )
+
+        payload[field_name] = [1, 2.5]
+        _assert_rejected(
+            client,
+            payload,
+            f"{field_name} must be an integer, not a float",
+        )
+
+    for field_name in ("title", "currency", "note"):
+        payload = dict(base_payload)
+        payload[field_name] = False
+        _assert_rejected(client, payload, f"{field_name} must be text")
+
+        payload[field_name] = 1.5
+        _assert_rejected(client, payload, f"{field_name} must be text")
+
+    payload = dict(base_payload)
+    payload["contribution_amount"] = True
+    _assert_rejected(
+        client,
+        payload,
+        "contribution_amount must be an amount, not a boolean",
+    )
+
+
+def test_rosca_payout_record_rejects_malformed_note_boundary(
+    client,
+    override_current_user,
+    seed_user2_member_membership,
+):
+    _seed_rosca_yearly_service()
+
+    create_res = client.post(
+        "/rosca/cycles",
+        json={
+            "clan_id": 1,
+            "title": "Ready payout circle",
+            "contribution_amount": "10.00",
+            "currency": "GBP",
+        },
+    )
+    assert create_res.status_code == 200
+    cycle_id = create_res.json()["cycle"]["cycle_id"]
+
+    response = client.post(
+        f"/rosca/cycles/{cycle_id}/rounds/1/payout?clan_id=1",
+        json={"note": False},
+    )
+
+    assert response.status_code == 422, response.text
+    assert "note must be text" in response.text
 
 
 def test_rosca_yearly_service_allows_multiple_cycles_without_consuming_entitlement(

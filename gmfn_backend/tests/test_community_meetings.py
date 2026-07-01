@@ -198,3 +198,135 @@ def test_meeting_reminder_requires_active_credit(
 
     assert res.status_code == 409
     assert "No active meeting pack credit" in res.json()["detail"]
+
+
+def test_meeting_reminder_rejects_malformed_boundary_fields(
+    client,
+    override_current_user,
+    seed_clan_admin_membership,
+):
+    for field_name in ("title", "purpose", "whatsapp_number", "note"):
+        payload = {
+            "clan_id": 1,
+            "title": "Boundary meeting",
+            "purpose": "Keep meeting evidence typed.",
+            "whatsapp_number": "+447700900123",
+            "note": "Boundary note",
+        }
+        payload[field_name] = False
+        rejected_bool_text = client.post("/community-meetings/reminders", json=payload)
+        assert rejected_bool_text.status_code == 422, (
+            field_name,
+            rejected_bool_text.text,
+        )
+        assert f"{field_name} must be text" in rejected_bool_text.text
+
+        payload[field_name] = 1.5
+        rejected_float_text = client.post("/community-meetings/reminders", json=payload)
+        assert rejected_float_text.status_code == 422, (
+            field_name,
+            rejected_float_text.text,
+        )
+        assert f"{field_name} must be text" in rejected_float_text.text
+
+    for value, expected in (
+        (True, "clan_id must be an integer id"),
+        (1.5, "clan_id must be an integer id"),
+    ):
+        rejected_clan_id = client.post(
+            "/community-meetings/reminders",
+            json={
+                "clan_id": value,
+                "title": "Boundary meeting",
+            },
+        )
+        assert rejected_clan_id.status_code == 422, rejected_clan_id.text
+        assert expected in rejected_clan_id.text
+
+    for value, expected in (
+        (True, "attendee_user_ids must be an integer id"),
+        (1.5, "attendee_user_ids must be an integer id"),
+    ):
+        rejected_attendee = client.post(
+            "/community-meetings/reminders",
+            json={
+                "clan_id": 1,
+                "title": "Boundary meeting",
+                "attendee_user_ids": [value],
+            },
+        )
+        assert rejected_attendee.status_code == 422, rejected_attendee.text
+        assert expected in rejected_attendee.text
+
+
+def test_meeting_summary_rejects_malformed_boundary_fields(
+    client,
+    override_current_user,
+    seed_clan_admin_membership,
+):
+    meeting_id = "MTG-C1-BOUNDARY"
+
+    for field_name in ("summary", "decisions", "note"):
+        payload = {
+            "clan_id": 1,
+            "summary": "Members agreed to keep typed meeting evidence.",
+            "decisions": "Admin will share typed decisions.",
+            "note": "Boundary note",
+        }
+        payload[field_name] = False
+        rejected_bool_text = client.post(
+            f"/community-meetings/{meeting_id}/summary",
+            json=payload,
+        )
+        assert rejected_bool_text.status_code == 422, (
+            field_name,
+            rejected_bool_text.text,
+        )
+        assert f"{field_name} must be text" in rejected_bool_text.text
+
+        payload[field_name] = 1.5
+        rejected_float_text = client.post(
+            f"/community-meetings/{meeting_id}/summary",
+            json=payload,
+        )
+        assert rejected_float_text.status_code == 422, (
+            field_name,
+            rejected_float_text.text,
+        )
+        assert f"{field_name} must be text" in rejected_float_text.text
+
+    for field_name, value, expected in (
+        ("clan_id", True, "clan_id must be an integer id"),
+        ("clan_id", 1.5, "clan_id must be an integer id"),
+        ("attendance_count", True, "attendance_count must be an integer"),
+        ("attendance_count", 1.5, "attendance_count must be an integer"),
+    ):
+        payload = {
+            "clan_id": 1,
+            "summary": "Members agreed to keep typed meeting evidence.",
+        }
+        payload[field_name] = value
+        rejected_number = client.post(
+            f"/community-meetings/{meeting_id}/summary",
+            json=payload,
+        )
+        assert rejected_number.status_code == 422, (
+            field_name,
+            rejected_number.text,
+        )
+        assert expected in rejected_number.text
+
+    for value, expected in (
+        (True, "attendee_user_ids must be an integer id"),
+        (1.5, "attendee_user_ids must be an integer id"),
+    ):
+        rejected_attendee = client.post(
+            f"/community-meetings/{meeting_id}/summary",
+            json={
+                "clan_id": 1,
+                "summary": "Members agreed to keep typed meeting evidence.",
+                "attendee_user_ids": [value],
+            },
+        )
+        assert rejected_attendee.status_code == 422, rejected_attendee.text
+        assert expected in rejected_attendee.text

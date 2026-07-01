@@ -592,6 +592,18 @@ function getSpecialRouteMeta(
     };
   }
 
+  if (
+    pathname === "/app/community-domain" ||
+    pathname === "/app/community-domains" ||
+    pathname.startsWith("/app/community-domain/") ||
+    pathname.startsWith("/app/community-domains/")
+  ) {
+    return {
+      section: "Community",
+      page: "Community Domain",
+    };
+  }
+
   if (pathname === "/app/demand-box") {
     return {
       section: "Focused task",

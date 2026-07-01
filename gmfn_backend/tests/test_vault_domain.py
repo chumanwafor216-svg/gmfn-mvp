@@ -212,3 +212,90 @@ def test_vault_access_link_requires_and_returns_one_active_block_scope(
     with engine.begin() as conn:
         log_count = conn.execute(text("SELECT COUNT(*) FROM vault_access_logs")).scalar_one()
     assert log_count == 1
+
+
+def test_vault_access_link_rejects_malformed_integer_controls(
+    client,
+    override_current_user_user,
+):
+    _seed_vault_owner(entitlement_quantity=1)
+    _seed_private_vault_product()
+
+    base_payload = {"product_id": 1, "max_views": 2}
+
+    for field_name in ("product_id", "max_views"):
+        payload = dict(base_payload)
+        payload[field_name] = False
+        rejected_bool = client.post("/marketplace/shops/1/vault-access-links", json=payload)
+        assert rejected_bool.status_code == 422, (field_name, rejected_bool.text)
+        assert f"{field_name} must be an integer, not a boolean" in rejected_bool.text
+
+        payload[field_name] = 1.0
+        rejected_float = client.post("/marketplace/shops/1/vault-access-links", json=payload)
+        assert rejected_float.status_code == 422, (field_name, rejected_float.text)
+        assert f"{field_name} must be an integer, not a float" in rejected_float.text
+
+
+def test_vault_access_link_rejects_malformed_boolean_controls_before_link_write(
+    client,
+    override_current_user_user,
+):
+    _seed_vault_owner(entitlement_quantity=1)
+    _seed_private_vault_product()
+
+    base_payload = {
+        "product_id": 1,
+        "max_views": 2,
+        "allow_download": False,
+        "allow_print": False,
+        "allow_reshare": False,
+        "watermark_enabled": True,
+    }
+
+    for field_name in ("allow_download", "allow_print", "allow_reshare", "watermark_enabled"):
+        payload = dict(base_payload)
+        payload[field_name] = "yes"
+        response = client.post("/marketplace/shops/1/vault-access-links", json=payload)
+        assert response.status_code == 422, (field_name, response.text)
+        assert f"{field_name} must be boolean" in response.text
+
+    with engine.begin() as conn:
+        link_count = conn.execute(text("SELECT COUNT(*) FROM vault_access_links")).scalar_one()
+    assert link_count == 0
+
+
+def test_vault_access_link_rejects_malformed_expiry_controls_before_mutation(
+    client,
+    override_current_user_user,
+):
+    _seed_vault_owner(entitlement_quantity=1)
+    _seed_private_vault_product()
+
+    create_response = client.post(
+        "/marketplace/shops/1/vault-access-links",
+        json={"product_id": 1, "expires_at": _future(2).isoformat()},
+    )
+    assert create_response.status_code == 200, create_response.text
+    link = create_response.json()["item"]
+    original_expires_at = link["expires_at"]
+
+    create_bad_expiry = client.post(
+        "/marketplace/shops/1/vault-access-links",
+        json={"product_id": 1, "expires_at": 12345},
+    )
+    assert create_bad_expiry.status_code == 422, create_bad_expiry.text
+    assert "expires_at must be an ISO datetime string" in create_bad_expiry.text
+
+    extend_bad_expiry = client.post(
+        f"/marketplace/vault-access-links/{link['id']}/extend",
+        json={"expires_at": True},
+    )
+    assert extend_bad_expiry.status_code == 422, extend_bad_expiry.text
+    assert "expires_at must be an ISO datetime string" in extend_bad_expiry.text
+
+    listed = client.get("/marketplace/shops/1/vault-access-links")
+    assert listed.status_code == 200, listed.text
+    items = listed.json()["items"]
+    assert len(items) == 1
+    assert items[0]["id"] == link["id"]
+    assert items[0]["expires_at"] == original_expires_at

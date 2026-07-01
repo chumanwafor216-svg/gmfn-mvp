@@ -294,7 +294,7 @@ assertContains(
 );
 
 assertContains(
-  /\{\[\s*\{[\s\S]*?id: "owner-actions"[\s\S]*?id: ownerShopHandle\("shop-control"\)\.id[\s\S]*?id: ownerShopHandle\("merchant-release"\)\.id[\s\S]*?id: ownerShopHandle\("shop-gallery-tools"\)\.id[\s\S]*?id: ownerShopHandle\("vault-control"\)\.id[\s\S]*?id: ownerShopHandle\("free-spotlight"\)\.id[\s\S]*?id: ownerShopHandle\("spotlight-subscription"\)\.id[\s\S]*?id: ownerShopHandle\("paid-repost"\)\.id[\s\S]*?id: "rosca"[\s\S]*?id: ownerShopHandle\("community-package"\)\.id[\s\S]*?id: "trusted-circle"[\s\S]*?id: "spotlight-status"[\s\S]*?\]\.map\(\(item, index\) => \([\s\S]*?debugId=\{`community-home\.tool\.\$\{item\.id\}`\}/,
+  /\{\[\s*\{[\s\S]*?id: "owner-actions"[\s\S]*?id: ownerShopHandle\("shop-control"\)\.id[\s\S]*?id: ownerShopHandle\("merchant-release"\)\.id[\s\S]*?id: ownerShopHandle\("shop-gallery-tools"\)\.id[\s\S]*?id: ownerShopHandle\("vault-control"\)\.id[\s\S]*?id: ownerShopHandle\("free-spotlight"\)\.id[\s\S]*?id: ownerShopHandle\("spotlight-subscription"\)\.id[\s\S]*?id: ownerShopHandle\("paid-repost"\)\.id[\s\S]*?id: "rosca"[\s\S]*?id: "community-domain"[\s\S]*?id: "trusted-circle"[\s\S]*?id: "spotlight-status"[\s\S]*?\]\.map\(\(item, index\) => \([\s\S]*?debugId=\{`community-home\.tool\.\$\{item\.id\}`\}/,
   "Community Home compact tool row manifest must stay traceable and ordered."
 );
 
@@ -306,7 +306,6 @@ assertContains(
   ["spotlight-subscription", "subscriptionSpotlight", true],
   ["paid-repost", "paidRepost", true],
   ["rosca", "rosca", false],
-  ["community-package", "communityPackages", true],
   ["trusted-circle", "buildFirstCircle", false],
 ].forEach(([id, route, isOwnerHandle]) => {
   const idPattern = isOwnerHandle
@@ -319,6 +318,11 @@ assertContains(
     `Community Home compact tool row ${id} must use the selected-community route guard.`
   );
 });
+
+assertContains(
+  /communityDomain:\s*"\/app\/community-domain"[\s\S]*?id: "community-domain"[\s\S]*?title: "Community Domain"[\s\S]*?detail: "Open institutional dashboard and access requests"[\s\S]*?openCommunityRoute\([\s\S]*?routes\.communityDomain/,
+  "Community Home compact tool row Community Domain must open the authenticated institutional dashboard."
+);
 
 assertContains(
   /id: ownerShopHandle\("free-spotlight"\)\.id[\s\S]*?title: ownerShopHandle\("free-spotlight"\)\.label[\s\S]*?openCommunityHomeSection\([\s\S]*?"community-home-spotlight-gears"[\s\S]*?"spotlight"/,

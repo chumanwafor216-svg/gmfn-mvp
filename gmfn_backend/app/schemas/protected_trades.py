@@ -4,7 +4,17 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+
+def _reject_bool_float_integer(value: Any, field_name: str) -> Any:
+    if value is None:
+        return value
+    if isinstance(value, bool):
+        raise ValueError(f"{field_name} must be an integer, not a boolean.")
+    if isinstance(value, float):
+        raise ValueError(f"{field_name} must be an integer, not a float.")
+    return value
 
 
 class ProtectedTradeCreateIn(BaseModel):
@@ -25,6 +35,20 @@ class ProtectedTradeCreateIn(BaseModel):
     currency: str = Field("NGN", min_length=1, max_length=8)
     meta: Optional[Dict[str, Any]] = None
 
+    @field_validator(
+        "clan_id",
+        "seller_user_id",
+        "buyer_user_id",
+        "shop_id",
+        "product_id",
+        "vault_access_link_id",
+        "expected_payment_id",
+        mode="before",
+    )
+    @classmethod
+    def _reject_malformed_integer_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_bool_float_integer(value, info.field_name)
+
 
 class ProtectedTradeEventIn(BaseModel):
     event_type: str = Field(..., min_length=3, max_length=64)
@@ -34,6 +58,11 @@ class ProtectedTradeEventIn(BaseModel):
     evidence_pack_id: Optional[str] = Field(default=None, max_length=96)
     trust_slip_code: Optional[str] = Field(default=None, max_length=64)
     meta: Optional[Dict[str, Any]] = None
+
+    @field_validator("expected_payment_id", mode="before")
+    @classmethod
+    def _reject_malformed_integer_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_bool_float_integer(value, info.field_name)
 
 
 class ProtectedTradeEventOut(BaseModel):

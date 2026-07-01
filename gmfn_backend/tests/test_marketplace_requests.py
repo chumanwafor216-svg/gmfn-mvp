@@ -115,6 +115,17 @@ def _add_second_clan_for_user() -> None:
         )
 
 
+def _marketplace_request_counts() -> tuple[int, int]:
+    with engine.begin() as conn:
+        request_count = conn.execute(
+            text("SELECT COUNT(*) FROM marketplace_requests")
+        ).scalar_one()
+        notification_count = conn.execute(
+            text("SELECT COUNT(*) FROM notifications")
+        ).scalar_one()
+    return int(request_count), int(notification_count)
+
+
 def test_marketplace_request_stores_selected_community():
     _seed_primary_clan()
 
@@ -147,6 +158,88 @@ def test_marketplace_request_stores_selected_community():
     assert data["clan_name"] == "Test Clan"
     assert len(rows) == 1
     assert rows[0].clan_id == 1
+
+
+def test_marketplace_request_create_rejects_malformed_boundary_controls(
+    client,
+    override_current_user,
+):
+    _seed_primary_clan()
+    base_payload = {
+        "clan_id": 1,
+        "title": "Need a plumber",
+        "description": "Kitchen pipe needs help.",
+        "category": "repairs",
+        "urgency": "high",
+        "area": "North side",
+        "whatsapp_number": "+447700900333",
+        "expires_in_hours": 48,
+        "payment_mode": "cash",
+        "allow_trust_credit": False,
+    }
+
+    for field_name in ("clan_id", "expires_in_hours"):
+        payload = dict(base_payload)
+        payload[field_name] = False
+
+        response = client.post("/marketplace/requests", json=payload)
+
+        assert response.status_code == 422, response.text
+        assert f"{field_name} must be an integer, not a boolean" in response.text
+        assert _marketplace_request_counts() == (0, 0)
+
+        payload[field_name] = 1.5
+
+        response = client.post("/marketplace/requests", json=payload)
+
+        assert response.status_code == 422, response.text
+        assert f"{field_name} must be an integer, not a float" in response.text
+        assert _marketplace_request_counts() == (0, 0)
+
+    for field_name in (
+        "title",
+        "description",
+        "category",
+        "urgency",
+        "area",
+        "whatsapp_number",
+        "payment_mode",
+    ):
+        payload = dict(base_payload)
+        payload[field_name] = False
+
+        response = client.post("/marketplace/requests", json=payload)
+
+        assert response.status_code == 422, response.text
+        assert f"{field_name} must be text" in response.text
+        assert _marketplace_request_counts() == (0, 0)
+
+        payload[field_name] = 1.5
+
+        response = client.post("/marketplace/requests", json=payload)
+
+        assert response.status_code == 422, response.text
+        assert f"{field_name} must be text" in response.text
+        assert _marketplace_request_counts() == (0, 0)
+
+    payload = dict(base_payload)
+    payload["allow_trust_credit"] = "false"
+
+    response = client.post("/marketplace/requests", json=payload)
+
+    assert response.status_code == 422, response.text
+    assert "allow_trust_credit must be a boolean" in response.text
+    assert _marketplace_request_counts() == (0, 0)
+
+
+def test_marketplace_request_status_rejects_malformed_boundary_control(
+    client,
+    override_current_user,
+):
+    response = client.post("/marketplace/requests/1/status", json={"status": False})
+
+    assert response.status_code == 422, response.text
+    assert "status must be text" in response.text
 
 
 def test_marketplace_request_requires_community_when_user_has_many():

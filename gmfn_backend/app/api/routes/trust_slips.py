@@ -10,7 +10,7 @@ from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse, Response
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user, is_user_activation_pending
@@ -583,20 +583,75 @@ def _ensure_my_trust_slip_payload(
     }
 
 
+def _reject_non_text_value(value: Any, field_name: str) -> Any:
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name} must be text.")
+    return value
+
+
+def _reject_decimal_string_value(value: Any, field_name: str) -> Any:
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name} must be a decimal string.")
+    return value
+
+
+def _reject_int_boundary_value(value: Any, field_name: str) -> Any:
+    if isinstance(value, bool):
+        raise ValueError(f"{field_name} must be an integer, not a boolean.")
+    if isinstance(value, float):
+        raise ValueError(f"{field_name} must be an integer, not a float.")
+    return value
+
+
+def _reject_non_bool_value(value: Any, field_name: str) -> Any:
+    if not isinstance(value, bool):
+        raise ValueError(f"{field_name} must be boolean.")
+    return value
+
+
 class TrustSlipReleaseIn(BaseModel):
     supplier_name: Optional[str] = None
     supplier_phone: Optional[str] = None
     amount_released: Optional[Decimal] = Field(default=None, gt=Decimal("0"))
     note: Optional[str] = None
 
+    @field_validator("supplier_name", "supplier_phone", "note", mode="before")
+    @classmethod
+    def reject_non_text_values(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_value(value, str(info.field_name))
+
+    @field_validator("amount_released", mode="before")
+    @classmethod
+    def reject_non_decimal_string_amount(cls, value: Any) -> Any:
+        return _reject_decimal_string_value(value, "amount_released")
+
 
 class TrustSlipExtendIn(BaseModel):
     days: int = Field(default=7, ge=1, le=365)
+
+    @field_validator("days", mode="before")
+    @classmethod
+    def reject_malformed_days(cls, value: Any) -> Any:
+        return _reject_int_boundary_value(value, "days")
 
 
 class TrustSlipReissueIn(BaseModel):
     reason: str = Field(default="manual_reissue", min_length=3, max_length=255)
     force: bool = False
+
+    @field_validator("reason", mode="before")
+    @classmethod
+    def reject_non_text_reason(cls, value: Any) -> Any:
+        return _reject_non_text_value(value, "reason")
+
+    @field_validator("force", mode="before")
+    @classmethod
+    def reject_non_bool_force(cls, value: Any) -> Any:
+        return _reject_non_bool_value(value, "force")
 
 
 @router.get("/ping")

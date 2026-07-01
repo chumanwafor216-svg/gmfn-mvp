@@ -5,7 +5,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Any, Dict, List, Optional, Literal
 
-from pydantic import BaseModel, Field, ConfigDict, field_serializer
+from pydantic import BaseModel, Field, ConfigDict, field_serializer, field_validator
 
 
 PoolEventType = Literal[
@@ -14,6 +14,16 @@ PoolEventType = Literal[
     "withdrawal.requested",
     "withdrawal.confirmed",
 ]
+
+
+def _reject_non_text_value(value: Any, field_name: str) -> Any:
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name} must be text.")
+    return value
+
+
 class PoolEventOut(BaseModel):
     id: int
     clan_id: int
@@ -56,6 +66,11 @@ class PoolRequestIn(BaseModel):
     amount: str = Field(..., description="Decimal string")
     currency: str = Field("NGN")
     note: Optional[str] = None
+
+    @field_validator("amount", "currency", "note", mode="before")
+    @classmethod
+    def reject_non_text_values(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_value(value, str(info.field_name))
 
 
 class AdminPoolPendingOut(BaseModel):

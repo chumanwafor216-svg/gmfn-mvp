@@ -11,7 +11,7 @@ from urllib.parse import quote, urlencode, urlparse
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Request, Response
 from fastapi.responses import HTMLResponse
-from pydantic import AliasChoices, BaseModel, ConfigDict, Field
+from pydantic import AliasChoices, BaseModel, ConfigDict, Field, field_validator
 from sqlalchemy import or_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -296,11 +296,44 @@ class JoinApplicationIn(BaseModel):
     business_name: Optional[str] = Field(default=None, max_length=160)
     note: Optional[str] = Field(default=None, max_length=500)
 
+    @field_validator(
+        "invite_code",
+        "existing_gmfn_id",
+        "first_name",
+        "surname",
+        "phone_e164",
+        "country",
+        "date_of_birth",
+        "birth_country",
+        "birth_place",
+        "country_of_origin",
+        "residential_area",
+        "business_name",
+        "note",
+        mode="before",
+    )
+    @classmethod
+    def _reject_non_text_join_controls(cls, value: Any, info: Any) -> Any:
+        if value is None:
+            return value
+        if not isinstance(value, str):
+            raise ValueError(f"{info.field_name} must be text.")
+        return value
+
 
 class VoteJoinRequestIn(BaseModel):
     vote: str = Field(..., pattern="^(approve|reject|neutral)$")
     reason_code: str = Field(..., min_length=2, max_length=80)
     reason_text: Optional[str] = Field(default=None, max_length=240)
+
+    @field_validator("vote", "reason_code", "reason_text", mode="before")
+    @classmethod
+    def _reject_non_text_vote_controls(cls, value: Any, info: Any) -> Any:
+        if value is None:
+            return value
+        if not isinstance(value, str):
+            raise ValueError(f"{info.field_name} must be text.")
+        return value
 
 
 _DEFAULT_VOTE_REASON_TEXT = {

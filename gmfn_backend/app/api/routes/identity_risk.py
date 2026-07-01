@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any, Dict
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user
@@ -42,6 +42,30 @@ def _phone_query_candidates(value: object) -> list[str]:
     if cleaned.startswith("+"):
         candidates.append(cleaned.replace("+", "00", 1))
     return [item for index, item in enumerate(candidates) if item and item not in candidates[:index]]
+
+
+def _reject_bool_float_integer(value: Any, field_name: str) -> Any:
+    if value is None:
+        return value
+    if isinstance(value, bool):
+        raise ValueError(f"{field_name} must be an integer, not a boolean.")
+    if isinstance(value, float):
+        raise ValueError(f"{field_name} must be an integer, not a float.")
+    return value
+
+
+def _reject_non_text_value(value: Any, field_name: str) -> Any:
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name} must be text.")
+    return value
+
+
+def _reject_non_bool_value(value: Any, field_name: str) -> Any:
+    if isinstance(value, bool):
+        return value
+    raise ValueError(f"{field_name} must be a boolean.")
 
 
 def _iso(value: Any) -> str | None:
@@ -144,6 +168,11 @@ class RecoveryQuestionIn(BaseModel):
     prompt: str = Field(..., min_length=4, max_length=180)
     answer: str = Field(..., min_length=2, max_length=180)
 
+    @field_validator("prompt", "answer", mode="before")
+    @classmethod
+    def _reject_non_text_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_value(value, info.field_name)
+
 
 class RecoverySetupIn(BaseModel):
     questions: list[RecoveryQuestionIn] = Field(..., min_length=3, max_length=3)
@@ -151,6 +180,15 @@ class RecoverySetupIn(BaseModel):
 
 class RecoveryVerifyIn(BaseModel):
     answers: list[str] = Field(..., min_length=3, max_length=3)
+
+    @field_validator("answers", mode="before")
+    @classmethod
+    def _reject_non_text_answers(cls, value: Any) -> Any:
+        if not isinstance(value, list):
+            return value
+        for answer in value:
+            _reject_non_text_value(answer, "answers")
+        return value
 
 
 class AdminIdentityReconcileIn(BaseModel):
@@ -161,6 +199,21 @@ class AdminIdentityReconcileIn(BaseModel):
     owner_confirmed: bool = False
     execute: bool = False
     reviewer_note: str | None = Field(default=None, max_length=600)
+
+    @field_validator("canonical_user_id", "duplicate_user_id", mode="before")
+    @classmethod
+    def _reject_malformed_integer_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_bool_float_integer(value, info.field_name)
+
+    @field_validator("canonical_gmfn_id", "duplicate_gmfn_id", "reviewer_note", mode="before")
+    @classmethod
+    def _reject_non_text_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_value(value, info.field_name)
+
+    @field_validator("owner_confirmed", "execute", mode="before")
+    @classmethod
+    def _reject_non_bool_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_bool_value(value, info.field_name)
 
 
 def _resolve_reconcile_user(
