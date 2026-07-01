@@ -200,6 +200,26 @@ def test_community_confirmation_relay_keeps_public_outcome_aggregate_only(
         assert subject_profile["membership_status"] == "active"
         assert "phone_e164" not in json.dumps(subject_profile)
 
+        bad_blank_response = client.post(
+            f"/community-confirmations/{request_id}/respond",
+            json={
+                "response_type": "   ",
+                "response_reason": "known_in_community",
+            },
+        )
+        assert bad_blank_response.status_code == 422, bad_blank_response.text
+        assert "response_type must not be blank" in bad_blank_response.text
+
+        bad_unknown_response = client.post(
+            f"/community-confirmations/{request_id}/respond",
+            json={
+                "response_type": "friend_of_friend",
+                "response_reason": "known_in_community",
+            },
+        )
+        assert bad_unknown_response.status_code == 422, bad_unknown_response.text
+        assert "Unsupported community confirmation response_type" in bad_unknown_response.text
+
         answered = client.post(
             f"/community-confirmations/{request_id}/respond",
             json={
@@ -240,6 +260,49 @@ def test_community_confirmation_relay_keeps_public_outcome_aggregate_only(
         role="merchant",
     )
     try:
+        bad_blank_decision = client.post(
+            f"/community-confirmations/{request_id}/decision",
+            json={
+                "decision": "   ",
+                "issue_reported": False,
+                "settled": True,
+            },
+        )
+        assert bad_blank_decision.status_code == 422, bad_blank_decision.text
+        assert "decision must not be blank" in bad_blank_decision.text
+
+        bad_extra_decision = client.post(
+            f"/community-confirmations/{request_id}/decision",
+            json={
+                "decision": "partial_release",
+                "setled": True,
+            },
+        )
+        assert bad_extra_decision.status_code == 422, bad_extra_decision.text
+        assert "Extra inputs are not permitted" in bad_extra_decision.text
+
+        bad_unknown_decision = client.post(
+            f"/community-confirmations/{request_id}/decision",
+            json={
+                "decision": "automatic_release",
+                "issue_reported": False,
+                "settled": True,
+            },
+        )
+        assert bad_unknown_decision.status_code == 422, bad_unknown_decision.text
+        assert "Unsupported community confirmation decision" in bad_unknown_decision.text
+
+        bad_decision_flag = client.post(
+            f"/community-confirmations/{request_id}/decision",
+            json={
+                "decision": "partial_release",
+                "issue_reported": 1,
+                "settled": True,
+            },
+        )
+        assert bad_decision_flag.status_code == 422, bad_decision_flag.text
+        assert "issue_reported must be boolean" in bad_decision_flag.text
+
         decision = client.post(
             f"/community-confirmations/{request_id}/decision",
             json={
@@ -255,6 +318,95 @@ def test_community_confirmation_relay_keeps_public_outcome_aggregate_only(
         assert decision_data["decision_recorded"] is True
         assert decision_data["decision_id"] > 0
         assert decision_data["decision"] == "partial_release"
+
+        bad_status_flag = client.patch(
+            f"/community-confirmations/decisions/{decision_data['decision_id']}",
+            json={
+                "status": "settled",
+                "issue_reported": False,
+                "settled": "true",
+            },
+        )
+        assert bad_status_flag.status_code == 422, bad_status_flag.text
+        assert "settled must be boolean" in bad_status_flag.text
+
+        bad_blank_status = client.patch(
+            f"/community-confirmations/decisions/{decision_data['decision_id']}",
+            json={
+                "status": "   ",
+                "issue_reported": False,
+                "settled": True,
+            },
+        )
+        assert bad_blank_status.status_code == 422, bad_blank_status.text
+        assert "status must not be blank" in bad_blank_status.text
+
+        bad_unknown_status = client.patch(
+            f"/community-confirmations/decisions/{decision_data['decision_id']}",
+            json={
+                "status": "auto_closed",
+                "issue_reported": False,
+                "settled": True,
+            },
+        )
+        assert bad_unknown_status.status_code == 422, bad_unknown_status.text
+        assert "Unsupported community confirmation decision status" in bad_unknown_status.text
+
+        bad_settled_conflict = client.patch(
+            f"/community-confirmations/decisions/{decision_data['decision_id']}",
+            json={
+                "status": "settled",
+                "issue_reported": False,
+                "settled": False,
+            },
+        )
+        assert bad_settled_conflict.status_code == 422, bad_settled_conflict.text
+        assert "status=settled requires settled=true" in bad_settled_conflict.text
+
+        bad_issue_conflict = client.patch(
+            f"/community-confirmations/decisions/{decision_data['decision_id']}",
+            json={
+                "status": "issue_reported",
+                "issue_reported": False,
+                "settled": False,
+            },
+        )
+        assert bad_issue_conflict.status_code == 422, bad_issue_conflict.text
+        assert (
+            "status=issue_reported requires issue_reported=true"
+            in bad_issue_conflict.text
+        )
+
+        bad_cancelled_conflict = client.patch(
+            f"/community-confirmations/decisions/{decision_data['decision_id']}",
+            json={
+                "status": "cancelled",
+                "issue_reported": False,
+                "settled": True,
+            },
+        )
+        assert bad_cancelled_conflict.status_code == 422, bad_cancelled_conflict.text
+        assert (
+            "status=cancelled cannot be combined with settled=true"
+            in bad_cancelled_conflict.text
+        )
+
+        with SessionLocal() as db:
+            unchanged_decision = db.get(
+                CommunityConfirmationDecision,
+                decision_data["decision_id"],
+            )
+            assert unchanged_decision.status == "recorded"
+            assert unchanged_decision.settled is True
+            assert (
+                db.query(TrustEvent)
+                .filter(
+                    TrustEvent.event_type
+                    == "community_confirmation.decision_status_updated"
+                )
+                .count()
+                == 0
+            )
 
         status_update = client.patch(
             f"/community-confirmations/decisions/{decision_data['decision_id']}",
@@ -430,6 +582,211 @@ def test_activation_pending_responder_cannot_use_stale_confirmation_contact(
         assert "not eligible" in answered.text
     finally:
         app.dependency_overrides.pop(get_current_user, None)
+
+
+def test_community_confirmation_request_rejects_boolean_body_ids(
+    client: TestClient,
+):
+    _seed_relay_fixture()
+
+    for field_name in ("subject_user_id", "community_id"):
+        payload = {
+            "requester_external_label": "Boolean id check",
+            "reason_type": "merchant_trust_check",
+            "risk_level": "low",
+            "mode": "relay",
+        }
+        payload[field_name] = True
+        rejected = client.post("/community-confirmations/request", json=payload)
+        assert rejected.status_code == 422, (field_name, rejected.text)
+        assert "must not be boolean" in rejected.text
+
+    with SessionLocal() as db:
+        assert db.query(CommunityConfirmationRequest).count() == 0
+        assert db.query(TrustEvent).count() == 0
+
+
+def test_community_confirmation_request_rejects_float_body_ids(
+    client: TestClient,
+):
+    _seed_relay_fixture()
+
+    for field_name in ("subject_user_id", "community_id"):
+        payload = {
+            "requester_external_label": "Float id check",
+            "reason_type": "merchant_trust_check",
+            "risk_level": "low",
+            "mode": "relay",
+        }
+        payload[field_name] = 1.0
+        rejected = client.post("/community-confirmations/request", json=payload)
+        assert rejected.status_code == 422, (field_name, rejected.text)
+        assert "must not be float" in rejected.text
+
+    with SessionLocal() as db:
+        assert db.query(CommunityConfirmationRequest).count() == 0
+        assert db.query(TrustEvent).count() == 0
+
+
+def test_community_confirmation_request_requires_explicit_target_shape(
+    client: TestClient,
+):
+    _seed_relay_fixture()
+
+    base_payload = {
+        "requester_external_label": "Target shape check",
+        "reason_type": "merchant_trust_check",
+        "risk_level": "low",
+        "mode": "relay",
+    }
+
+    rejected_blank_slip = client.post(
+        "/community-confirmations/request",
+        json={**base_payload, "trust_slip_code": "   "},
+    )
+    assert rejected_blank_slip.status_code == 422, rejected_blank_slip.text
+    assert "trust_slip_code must not be blank" in rejected_blank_slip.text
+
+    rejected_mixed_target = client.post(
+        "/community-confirmations/request",
+        json={
+            **base_payload,
+            "trust_slip_code": "CCR-TRUSTSLIP-1",
+            "subject_user_id": 1,
+            "community_id": 1,
+        },
+    )
+    assert rejected_mixed_target.status_code == 422, rejected_mixed_target.text
+    assert (
+        "Use trust_slip_code or subject_user_id/community_id, not both"
+        in rejected_mixed_target.text
+    )
+
+    for field_name, payload in (
+        ("subject_user_id", {**base_payload, "subject_user_id": 1}),
+        ("community_id", {**base_payload, "community_id": 1}),
+    ):
+        rejected_half_pair = client.post("/community-confirmations/request", json=payload)
+        assert rejected_half_pair.status_code == 422, (
+            field_name,
+            rejected_half_pair.text,
+        )
+        assert (
+            "subject_user_id and community_id must be supplied together"
+            in rejected_half_pair.text
+        )
+
+    rejected_missing_target = client.post(
+        "/community-confirmations/request",
+        json=base_payload,
+    )
+    assert rejected_missing_target.status_code == 422, rejected_missing_target.text
+    assert (
+        "Provide trust_slip_code or both subject_user_id and community_id"
+        in rejected_missing_target.text
+    )
+
+    with SessionLocal() as db:
+        assert db.query(CommunityConfirmationRequest).count() == 0
+        assert db.query(TrustEvent).count() == 0
+
+    direct_request = client.post(
+        "/community-confirmations/request",
+        json={**base_payload, "subject_user_id": 1, "community_id": 1},
+    )
+    assert direct_request.status_code == 200, direct_request.text
+    direct_data = direct_request.json()
+    assert direct_data["request_id"] > 0
+    assert direct_data["community_response"]["private_contacts_exposed"] is False
+
+    with SessionLocal() as db:
+        request = db.query(CommunityConfirmationRequest).one()
+        assert request.subject_user_id == 1
+        assert request.community_id == 1
+        assert request.trust_slip_id is None
+        event_types = [row.event_type for row in db.query(TrustEvent).all()]
+        assert "community_confirmation.requested" in event_types
+
+
+def test_community_confirmation_request_rejects_non_bool_callback_consent(
+    client: TestClient,
+):
+    _seed_relay_fixture()
+
+    for bad_value in ("true", 1):
+        rejected = client.post(
+            "/community-confirmations/request",
+            json={
+                "requester_external_label": "Non-bool consent check",
+                "requester_callback_consent": bad_value,
+                "reason_type": "merchant_trust_check",
+                "risk_level": "low",
+                "mode": "relay",
+            },
+        )
+        assert rejected.status_code == 422, rejected.text
+        assert "requester_callback_consent must be boolean" in rejected.text
+
+    with SessionLocal() as db:
+        assert db.query(CommunityConfirmationRequest).count() == 0
+        assert db.query(TrustEvent).count() == 0
+
+
+def test_community_confirmation_request_rejects_blank_request_controls(
+    client: TestClient,
+):
+    _seed_relay_fixture()
+
+    for field_name in ("reason_type", "risk_level", "mode"):
+        payload = {
+            "requester_external_label": "Blank control check",
+            "reason_type": "merchant_trust_check",
+            "risk_level": "low",
+            "mode": "relay",
+        }
+        payload[field_name] = "   "
+        rejected = client.post("/community-confirmations/request", json=payload)
+        assert rejected.status_code == 422, (field_name, rejected.text)
+        assert f"{field_name} must not be blank" in rejected.text
+
+    rejected_mode = client.post(
+        "/community-confirmations/request",
+        json={
+            "requester_external_label": "Unknown mode check",
+            "reason_type": "merchant_trust_check",
+            "risk_level": "low",
+            "mode": "instant-puls",
+        },
+    )
+    assert rejected_mode.status_code == 422, rejected_mode.text
+    assert "Unsupported community confirmation request mode" in rejected_mode.text
+
+    with SessionLocal() as db:
+        assert db.query(CommunityConfirmationRequest).count() == 0
+        assert db.query(TrustEvent).count() == 0
+
+
+def test_community_confirmation_request_rejects_unknown_body_fields(
+    client: TestClient,
+):
+    _seed_relay_fixture()
+
+    rejected = client.post(
+        "/community-confirmations/request",
+        json={
+            "requester_external_label": "Unknown field check",
+            "reason_type": "merchant_trust_check",
+            "risk_level": "low",
+            "mode": "relay",
+            "subject_user_idd": 1,
+        },
+    )
+    assert rejected.status_code == 422, rejected.text
+    assert "Extra inputs are not permitted" in rejected.text
+
+    with SessionLocal() as db:
+        assert db.query(CommunityConfirmationRequest).count() == 0
+        assert db.query(TrustEvent).count() == 0
 
 
 def test_pending_contact_does_not_consume_limited_delivery_slot(
@@ -684,6 +1041,78 @@ def test_trustslip_verify_includes_privacy_safe_community_confirmation(
     assert "private contact details stay protected" in summary["plain_language"]
 
 
+def test_community_confirmation_summary_rejects_invalid_subject_query(
+    client: TestClient,
+):
+    _seed_relay_fixture()
+
+    bad_community = client.get("/community-confirmations/community/0/summary")
+    assert bad_community.status_code == 422, bad_community.text
+
+    rejected = client.get(
+        "/community-confirmations/community/1/summary?subject_user_id=0"
+    )
+    assert rejected.status_code == 422, rejected.text
+
+    summary = client.get(
+        "/community-confirmations/community/1/summary?subject_user_id=1"
+    )
+    assert summary.status_code == 200, summary.text
+    summary_data = summary.json()
+    assert summary_data["relay_available"] is True
+    assert "phone_e164" not in json.dumps(summary_data)
+
+
+def test_community_confirmation_path_ids_reject_nonpositive_values(
+    client: TestClient,
+):
+    _seed_relay_fixture()
+
+    app.dependency_overrides[get_current_user] = lambda: Obj(
+        id=1,
+        email="pytest@example.com",
+        role="admin",
+    )
+    try:
+        rejected_contact_setting = client.patch(
+            "/community-confirmations/my-contact-settings/0",
+            json={"opted_out": True},
+        )
+        assert rejected_contact_setting.status_code == 422, rejected_contact_setting.text
+
+        rejected_admin_contact = client.patch(
+            "/community-confirmations/community/1/contacts/0",
+            json={"active": False},
+        )
+        assert rejected_admin_contact.status_code == 422, rejected_admin_contact.text
+
+        rejected_response = client.post(
+            "/community-confirmations/0/respond",
+            json={
+                "response_type": "active_here",
+                "response_reason": "known_in_community",
+            },
+        )
+        assert rejected_response.status_code == 422, rejected_response.text
+
+        rejected_decision_status = client.patch(
+            "/community-confirmations/decisions/0",
+            json={"status": "settled"},
+        )
+        assert rejected_decision_status.status_code == 422, rejected_decision_status.text
+
+        rejected_review_assignment = client.patch(
+            "/community-confirmations/review-cases/0/assignment",
+            json={"assigned_to_user_id": 2},
+        )
+        assert rejected_review_assignment.status_code == 422, rejected_review_assignment.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    with SessionLocal() as db:
+        assert db.query(TrustEvent).count() == 0
+
+
 def test_community_confirmation_callback_preview_records_safe_delivery_state(
     client: TestClient,
     monkeypatch,
@@ -693,6 +1122,113 @@ def test_community_confirmation_callback_preview_records_safe_delivery_state(
     monkeypatch.setenv("GMFN_CONFIRMATION_CALLBACK_DELIVERY_MODE", "preview")
     monkeypatch.setenv("FRONTEND_BASE_URL", "https://pilot.gsn.example")
     requester_token = create_access_token({"sub": "merchant@example.com"})
+
+    bad_channel = client.post(
+        "/community-confirmations/request",
+        headers={"Authorization": f"Bearer {requester_token}"},
+        json={
+            "trust_slip_code": "CCR-TRUSTSLIP-1",
+            "requester_external_label": "Merchant counter check",
+            "requester_callback_channel": "email",
+            "requester_callback_contact": "+447712345678",
+            "requester_callback_consent": True,
+            "reason_type": "merchant_trust_check",
+            "risk_level": "low",
+            "mode": "instant_pulse",
+        },
+    )
+    assert bad_channel.status_code == 422, bad_channel.text
+    assert (
+        "Unsupported community confirmation requester_callback_channel"
+        in bad_channel.text
+    )
+
+    with SessionLocal() as db:
+        assert db.query(CommunityConfirmationRequest).count() == 0
+        assert db.query(TrustEvent).count() == 0
+
+    bad_contact = client.post(
+        "/community-confirmations/request",
+        headers={"Authorization": f"Bearer {requester_token}"},
+        json={
+            "trust_slip_code": "CCR-TRUSTSLIP-1",
+            "requester_external_label": "Merchant counter check",
+            "requester_callback_channel": "whatsapp",
+            "requester_callback_contact": "merchant@example.com",
+            "requester_callback_consent": True,
+            "reason_type": "merchant_trust_check",
+            "risk_level": "low",
+            "mode": "instant_pulse",
+        },
+    )
+    assert bad_contact.status_code == 422, bad_contact.text
+    assert "requester_callback_contact must be a valid phone contact" in bad_contact.text
+
+    with SessionLocal() as db:
+        assert db.query(CommunityConfirmationRequest).count() == 0
+        assert db.query(TrustEvent).count() == 0
+
+    missing_callback_consent = client.post(
+        "/community-confirmations/request",
+        headers={"Authorization": f"Bearer {requester_token}"},
+        json={
+            "trust_slip_code": "CCR-TRUSTSLIP-1",
+            "requester_external_label": "Merchant counter check",
+            "requester_callback_channel": "whatsapp",
+            "requester_callback_contact": "+447712345678",
+            "requester_callback_consent": False,
+            "reason_type": "merchant_trust_check",
+            "risk_level": "low",
+            "mode": "instant_pulse",
+        },
+    )
+    assert missing_callback_consent.status_code == 422, missing_callback_consent.text
+    assert (
+        "requester_callback_consent must be true when callback channel or contact is supplied"
+        in missing_callback_consent.text
+    )
+
+    missing_callback_contact = client.post(
+        "/community-confirmations/request",
+        headers={"Authorization": f"Bearer {requester_token}"},
+        json={
+            "trust_slip_code": "CCR-TRUSTSLIP-1",
+            "requester_external_label": "Merchant counter check",
+            "requester_callback_channel": "whatsapp",
+            "requester_callback_consent": True,
+            "reason_type": "merchant_trust_check",
+            "risk_level": "low",
+            "mode": "instant_pulse",
+        },
+    )
+    assert missing_callback_contact.status_code == 422, missing_callback_contact.text
+    assert (
+        "requester_callback_channel and requester_callback_contact must be supplied together"
+        in missing_callback_contact.text
+    )
+
+    missing_callback_channel = client.post(
+        "/community-confirmations/request",
+        headers={"Authorization": f"Bearer {requester_token}"},
+        json={
+            "trust_slip_code": "CCR-TRUSTSLIP-1",
+            "requester_external_label": "Merchant counter check",
+            "requester_callback_contact": "+447712345678",
+            "requester_callback_consent": True,
+            "reason_type": "merchant_trust_check",
+            "risk_level": "low",
+            "mode": "instant_pulse",
+        },
+    )
+    assert missing_callback_channel.status_code == 422, missing_callback_channel.text
+    assert (
+        "requester_callback_channel and requester_callback_contact must be supplied together"
+        in missing_callback_channel.text
+    )
+
+    with SessionLocal() as db:
+        assert db.query(CommunityConfirmationRequest).count() == 0
+        assert db.query(TrustEvent).count() == 0
 
     created = client.post(
         "/community-confirmations/request",
@@ -1140,6 +1676,29 @@ def test_confirmation_request_status_update_records_trust_event(client: TestClie
         role="admin",
     )
     try:
+        bad_blank_status = client.patch(
+            f"/community-confirmations/{request_id}/status",
+            json={
+                "status": "   ",
+                "status_reason": "manual_review_needed",
+            },
+        )
+        assert bad_blank_status.status_code == 422, bad_blank_status.text
+        assert "status must not be blank" in bad_blank_status.text
+
+        bad_unknown_request_status = client.patch(
+            f"/community-confirmations/{request_id}/status",
+            json={
+                "status": "auto_closed",
+                "status_reason": "manual_review_needed",
+            },
+        )
+        assert bad_unknown_request_status.status_code == 422, bad_unknown_request_status.text
+        assert (
+            "Unsupported community confirmation request status"
+            in bad_unknown_request_status.text
+        )
+
         updated = client.patch(
             f"/community-confirmations/{request_id}/status",
             json={
@@ -1267,6 +1826,16 @@ def test_confirmation_request_status_update_records_trust_event(client: TestClie
                 },
             )
 
+        bad_scan_limit = client.post(
+            "/community-confirmations/review-cases/scan-sla-events?community_id=1&limit=0"
+        )
+        assert bad_scan_limit.status_code == 422, bad_scan_limit.text
+
+        bad_scan_community = client.post(
+            "/community-confirmations/review-cases/scan-sla-events?community_id=0"
+        )
+        assert bad_scan_community.status_code == 422, bad_scan_community.text
+
         scan = client.post("/community-confirmations/review-cases/scan-sla-events?community_id=1")
         assert scan.status_code == 200, scan.text
         scan_data = scan.json()
@@ -1280,6 +1849,57 @@ def test_confirmation_request_status_update_records_trust_event(client: TestClie
         assert scan_data["sample_recorded_items"][0]["review_case_id"] == review_case_id
         assert scan_data["private_contacts_exposed"] is False
         assert "does not change trust scores" in scan_data["policy_note"]
+
+        bad_blank_status = client.get(
+            "/community-confirmations/review-cases/inbox?status=&sort=urgency"
+        )
+        assert bad_blank_status.status_code == 422, bad_blank_status.text
+        assert "status must not be blank" in bad_blank_status.text
+
+        bad_unknown_status = client.get(
+            "/community-confirmations/review-cases/inbox?status=stale&sort=urgency"
+        )
+        assert bad_unknown_status.status_code == 422, bad_unknown_status.text
+        assert "Unsupported community confirmation review case status" in bad_unknown_status.text
+
+        bad_blank_scope = client.get(
+            "/community-confirmations/review-cases/inbox?status=open&scope="
+        )
+        assert bad_blank_scope.status_code == 422, bad_blank_scope.text
+        assert "scope must not be blank" in bad_blank_scope.text
+
+        bad_unknown_scope = client.get(
+            "/community-confirmations/review-cases/inbox?status=open&scope=everyone"
+        )
+        assert bad_unknown_scope.status_code == 422, bad_unknown_scope.text
+        assert "Unsupported community confirmation review case scope" in bad_unknown_scope.text
+
+        bad_blank_sort = client.get(
+            "/community-confirmations/review-cases/inbox?status=open&sort="
+        )
+        assert bad_blank_sort.status_code == 422, bad_blank_sort.text
+        assert "sort must not be blank" in bad_blank_sort.text
+
+        bad_unknown_sort = client.get(
+            "/community-confirmations/review-cases/inbox?status=open&sort=random"
+        )
+        assert bad_unknown_sort.status_code == 422, bad_unknown_sort.text
+        assert "Unsupported community confirmation review case sort" in bad_unknown_sort.text
+
+        bad_limit = client.get(
+            "/community-confirmations/review-cases/inbox?status=open&limit=0"
+        )
+        assert bad_limit.status_code == 422, bad_limit.text
+
+        bad_offset = client.get(
+            "/community-confirmations/review-cases/inbox?status=open&offset=-1"
+        )
+        assert bad_offset.status_code == 422, bad_offset.text
+
+        bad_community = client.get(
+            "/community-confirmations/review-cases/inbox?status=open&community_id=0"
+        )
+        assert bad_community.status_code == 422, bad_community.text
 
         inbox = client.get(
             "/community-confirmations/review-cases/inbox?status=open&sort=urgency&limit=1"
@@ -1378,6 +1998,26 @@ def test_confirmation_request_status_update_records_trust_event(client: TestClie
         assert unassigned_before.status_code == 200, unassigned_before.text
         assert unassigned_before.json()["total"] == 1
 
+        bad_assignment = client.patch(
+            f"/community-confirmations/review-cases/{review_case_id}/assignment",
+            json={
+                "assigned_to_user_id": True,
+                "assignment_note": "Boolean user ids must not become user one.",
+            },
+        )
+        assert bad_assignment.status_code == 422, bad_assignment.text
+        assert "must not be boolean" in bad_assignment.text
+
+        bad_float_assignment = client.patch(
+            f"/community-confirmations/review-cases/{review_case_id}/assignment",
+            json={
+                "assigned_to_user_id": 2.0,
+                "assignment_note": "Float user ids must not be rounded.",
+            },
+        )
+        assert bad_float_assignment.status_code == 422, bad_float_assignment.text
+        assert "must not be float" in bad_float_assignment.text
+
         assigned = client.patch(
             f"/community-confirmations/review-cases/{review_case_id}/assignment",
             json={
@@ -1417,6 +2057,51 @@ def test_confirmation_request_status_update_records_trust_event(client: TestClie
             role="admin",
         )
 
+        bad_blank_evidence_type = client.post(
+            f"/community-confirmations/review-cases/{review_case_id}/evidence",
+            json={
+                "evidence_type": "   ",
+                "title": "Merchant follow-up note",
+            },
+        )
+        assert bad_blank_evidence_type.status_code == 422, bad_blank_evidence_type.text
+        assert "evidence_type must not be blank" in bad_blank_evidence_type.text
+
+        bad_unknown_evidence_type = client.post(
+            f"/community-confirmations/review-cases/{review_case_id}/evidence",
+            json={
+                "evidence_type": "rumor",
+                "title": "Merchant follow-up note",
+            },
+        )
+        assert bad_unknown_evidence_type.status_code == 422, bad_unknown_evidence_type.text
+        assert (
+            "Unsupported community confirmation review evidence type"
+            in bad_unknown_evidence_type.text
+        )
+
+        bad_blank_evidence = client.post(
+            f"/community-confirmations/review-cases/{review_case_id}/evidence",
+            json={
+                "evidence_type": "merchant_note",
+                "title": "   ",
+                "body": "Blank evidence titles should be rejected at the boundary.",
+            },
+        )
+        assert bad_blank_evidence.status_code == 422, bad_blank_evidence.text
+        assert "title must not be blank" in bad_blank_evidence.text
+
+        bad_extra_evidence = client.post(
+            f"/community-confirmations/review-cases/{review_case_id}/evidence",
+            json={
+                "evidence_type": "merchant_note",
+                "title": "Merchant follow-up note",
+                "private_contacts_exposed": True,
+            },
+        )
+        assert bad_extra_evidence.status_code == 422, bad_extra_evidence.text
+        assert "Extra inputs are not permitted" in bad_extra_evidence.text
+
         evidence = client.post(
             f"/community-confirmations/review-cases/{review_case_id}/evidence",
             json={
@@ -1440,6 +2125,184 @@ def test_confirmation_request_status_update_records_trust_event(client: TestClie
         assert evidence_list_data["total"] == 1
         assert evidence_list_data["items"][0]["title"] == "Merchant follow-up note"
         assert evidence_list_data["private_contacts_exposed"] is False
+
+        bad_blank_review_status = client.patch(
+            f"/community-confirmations/review-cases/{review_case_id}",
+            json={
+                "status": "   ",
+                "resolution": "insufficient_evidence",
+                "trust_impact": "caution",
+            },
+        )
+        assert bad_blank_review_status.status_code == 422, bad_blank_review_status.text
+        assert "status must not be blank" in bad_blank_review_status.text
+
+        bad_blank_resolution = client.patch(
+            f"/community-confirmations/review-cases/{review_case_id}",
+            json={
+                "status": "resolved",
+                "resolution": "   ",
+                "trust_impact": "caution",
+            },
+        )
+        assert bad_blank_resolution.status_code == 422, bad_blank_resolution.text
+        assert "resolution must not be blank" in bad_blank_resolution.text
+
+        bad_blank_trust_impact = client.patch(
+            f"/community-confirmations/review-cases/{review_case_id}",
+            json={
+                "status": "resolved",
+                "resolution": "insufficient_evidence",
+                "trust_impact": "   ",
+            },
+        )
+        assert bad_blank_trust_impact.status_code == 422, bad_blank_trust_impact.text
+        assert "trust_impact must not be blank" in bad_blank_trust_impact.text
+
+        bad_unknown_review_status = client.patch(
+            f"/community-confirmations/review-cases/{review_case_id}",
+            json={
+                "status": "auto_resolved",
+                "resolution": "insufficient_evidence",
+                "trust_impact": "caution",
+            },
+        )
+        assert bad_unknown_review_status.status_code == 422, bad_unknown_review_status.text
+        assert (
+            "Unsupported community confirmation review status"
+            in bad_unknown_review_status.text
+        )
+
+        bad_unknown_resolution = client.patch(
+            f"/community-confirmations/review-cases/{review_case_id}",
+            json={
+                "status": "resolved",
+                "resolution": "unclear",
+                "trust_impact": "caution",
+            },
+        )
+        assert bad_unknown_resolution.status_code == 422, bad_unknown_resolution.text
+        assert (
+            "Unsupported community confirmation review resolution"
+            in bad_unknown_resolution.text
+        )
+
+        bad_unknown_trust_impact = client.patch(
+            f"/community-confirmations/review-cases/{review_case_id}",
+            json={
+                "status": "resolved",
+                "resolution": "insufficient_evidence",
+                "trust_impact": "severe",
+            },
+        )
+        assert bad_unknown_trust_impact.status_code == 422, bad_unknown_trust_impact.text
+        assert (
+            "Unsupported community confirmation review trust impact"
+            in bad_unknown_trust_impact.text
+        )
+
+        bad_missing_resolution = client.patch(
+            f"/community-confirmations/review-cases/{review_case_id}",
+            json={
+                "status": "resolved",
+                "trust_impact": "caution",
+            },
+        )
+        assert bad_missing_resolution.status_code == 422, bad_missing_resolution.text
+        assert "status=resolved requires resolution" in bad_missing_resolution.text
+
+        bad_missing_trust_impact = client.patch(
+            f"/community-confirmations/review-cases/{review_case_id}",
+            json={
+                "status": "resolved",
+                "resolution": "insufficient_evidence",
+            },
+        )
+        assert bad_missing_trust_impact.status_code == 422, bad_missing_trust_impact.text
+        assert "status=resolved requires trust_impact" in bad_missing_trust_impact.text
+
+        bad_dismissed_missing_resolution = client.patch(
+            f"/community-confirmations/review-cases/{review_case_id}",
+            json={
+                "status": "dismissed",
+            },
+        )
+        assert (
+            bad_dismissed_missing_resolution.status_code == 422
+        ), bad_dismissed_missing_resolution.text
+        assert (
+            "status=dismissed requires resolution=dismissed"
+            in bad_dismissed_missing_resolution.text
+        )
+
+        bad_dismissed_resolution = client.patch(
+            f"/community-confirmations/review-cases/{review_case_id}",
+            json={
+                "status": "dismissed",
+                "resolution": "insufficient_evidence",
+                "trust_impact": "none",
+            },
+        )
+        assert bad_dismissed_resolution.status_code == 422, bad_dismissed_resolution.text
+        assert (
+            "status=dismissed requires resolution=dismissed"
+            in bad_dismissed_resolution.text
+        )
+
+        bad_dismissed_impact = client.patch(
+            f"/community-confirmations/review-cases/{review_case_id}",
+            json={
+                "status": "dismissed",
+                "resolution": "dismissed",
+                "trust_impact": "caution",
+            },
+        )
+        assert bad_dismissed_impact.status_code == 422, bad_dismissed_impact.text
+        assert "status=dismissed cannot carry trust impact" in bad_dismissed_impact.text
+
+        bad_open_with_resolution = client.patch(
+            f"/community-confirmations/review-cases/{review_case_id}",
+            json={
+                "status": "open",
+                "resolution": "dismissed",
+            },
+        )
+        assert bad_open_with_resolution.status_code == 422, bad_open_with_resolution.text
+        assert (
+            "resolution and trust_impact are only allowed when resolving or dismissing a review"
+            in bad_open_with_resolution.text
+        )
+
+        bad_in_review_with_impact = client.patch(
+            f"/community-confirmations/review-cases/{review_case_id}",
+            json={
+                "status": "in_review",
+                "trust_impact": "caution",
+            },
+        )
+        assert bad_in_review_with_impact.status_code == 422, bad_in_review_with_impact.text
+        assert (
+            "resolution and trust_impact are only allowed when resolving or dismissing a review"
+            in bad_in_review_with_impact.text
+        )
+
+        with SessionLocal() as db:
+            unchanged_review_case = db.get(
+                CommunityConfirmationReviewCase,
+                review_case_id,
+            )
+            assert unchanged_review_case.status == "in_review"
+            assert unchanged_review_case.resolution is None
+            assert unchanged_review_case.trust_impact == "none"
+            assert (
+                db.query(TrustEvent)
+                .filter(
+                    TrustEvent.event_type
+                    == "community_confirmation.review_case_resolved"
+                )
+                .count()
+                == 0
+            )
 
         resolved = client.patch(
             f"/community-confirmations/review-cases/{review_case_id}",
@@ -1579,6 +2442,11 @@ def test_responder_can_opt_out_of_confirmation_relay(client: TestClient):
         role="user",
     )
     try:
+        bad_settings_filter = client.get(
+            "/community-confirmations/my-contact-settings?community_id=0"
+        )
+        assert bad_settings_filter.status_code == 422, bad_settings_filter.text
+
         settings = client.get("/community-confirmations/my-contact-settings")
         assert settings.status_code == 200, settings.text
         settings_data = settings.json()
@@ -1587,6 +2455,46 @@ def test_responder_can_opt_out_of_confirmation_relay(client: TestClient):
         assert settings_data["items"][0]["can_receive_relay_requests"] is True
         assert settings_data["items"][0]["can_receive_instant_pulse"] is True
         assert "phone_e164" not in json.dumps(settings_data)
+
+        bad_preference = client.patch(
+            "/community-confirmations/my-contact-settings/1",
+            json={"opted_out": "true"},
+        )
+        assert bad_preference.status_code == 422, bad_preference.text
+        assert "opted_out must be boolean" in bad_preference.text
+
+        bad_extra_preference = client.patch(
+            "/community-confirmations/my-contact-settings/1",
+            json={"opted_out": True, "admin_override": True},
+        )
+        assert bad_extra_preference.status_code == 422, bad_extra_preference.text
+        assert "Extra inputs are not permitted" in bad_extra_preference.text
+
+        bad_opt_out_conflict = client.patch(
+            "/community-confirmations/my-contact-settings/1",
+            json={
+                "opted_out": True,
+                "can_receive_relay_requests": True,
+            },
+        )
+        assert bad_opt_out_conflict.status_code == 422, bad_opt_out_conflict.text
+        assert (
+            "opted_out cannot be combined with receiving relay or instant pulse requests"
+            in bad_opt_out_conflict.text
+        )
+
+        bad_instant_conflict = client.patch(
+            "/community-confirmations/my-contact-settings/1",
+            json={
+                "can_receive_relay_requests": False,
+                "can_receive_instant_pulse": True,
+            },
+        )
+        assert bad_instant_conflict.status_code == 422, bad_instant_conflict.text
+        assert (
+            "can_receive_instant_pulse requires receiving relay requests"
+            in bad_instant_conflict.text
+        )
 
         updated = client.patch(
             "/community-confirmations/my-contact-settings/1",
@@ -1657,6 +2565,33 @@ def test_community_admin_can_manage_confirmation_policy_and_contacts(client: Tes
         assert "phone_e164" not in json.dumps(policy_data)
         assert "user2@example.com" not in json.dumps(policy_data)
 
+        bad_policy_flag = client.patch(
+            "/community-confirmations/community/1/policy",
+            json={"relay_enabled": "false"},
+        )
+        assert bad_policy_flag.status_code == 422, bad_policy_flag.text
+        assert "relay_enabled must be boolean" in bad_policy_flag.text
+
+        bad_extra_policy = client.patch(
+            "/community-confirmations/community/1/policy",
+            json={"relay_enabled": True, "secret_escalation": True},
+        )
+        assert bad_extra_policy.status_code == 422, bad_extra_policy.text
+        assert "Extra inputs are not permitted" in bad_extra_policy.text
+
+        bad_review_window_order = client.patch(
+            "/community-confirmations/community/1/policy",
+            json={
+                "review_attention_after_hours": 48,
+                "review_overdue_after_hours": 48,
+            },
+        )
+        assert bad_review_window_order.status_code == 422, bad_review_window_order.text
+        assert (
+            "review_overdue_after_hours must be greater than review_attention_after_hours"
+            in bad_review_window_order.text
+        )
+
         updated_policy = client.patch(
             "/community-confirmations/community/1/policy",
             json={
@@ -1671,6 +2606,26 @@ def test_community_admin_can_manage_confirmation_policy_and_contacts(client: Tes
         assert updated_policy.json()["policy"]["instant_pulse_enabled"] is False
         assert updated_policy.json()["policy"]["review_attention_after_hours"] == 48
         assert updated_policy.json()["policy"]["review_overdue_after_hours"] == 120
+
+        bad_contact_flag = client.patch(
+            "/community-confirmations/community/1/contacts/2",
+            json={"active": 1},
+        )
+        assert bad_contact_flag.status_code == 422, bad_contact_flag.text
+        assert "active must be boolean" in bad_contact_flag.text
+
+        bad_instant_contact = client.patch(
+            "/community-confirmations/community/1/contacts/2",
+            json={
+                "can_receive_relay_requests": False,
+                "can_receive_instant_pulse": True,
+            },
+        )
+        assert bad_instant_contact.status_code == 422, bad_instant_contact.text
+        assert (
+            "can_receive_instant_pulse requires an active contact that can receive relay requests"
+            in bad_instant_contact.text
+        )
 
         paused = client.patch(
             "/community-confirmations/community/1/contacts/2",
@@ -1722,6 +2677,118 @@ def test_community_admin_can_manage_confirmation_policy_and_contacts(client: Tes
     assert contact_meta["after"]["can_receive_instant_pulse"] is False
     assert contact_meta["admin_controlled"] is True
     assert contact_meta["private_contacts_exposed"] is False
+
+
+def test_community_admin_contact_update_rejects_unknown_role_or_standing_status(
+    client: TestClient,
+):
+    _seed_relay_fixture()
+
+    app.dependency_overrides[get_current_user] = lambda: Obj(
+        id=1,
+        email="pytest@example.com",
+        role="admin",
+    )
+    try:
+        existing_policy = client.get("/community-confirmations/community/1/policy")
+        assert existing_policy.status_code == 200, existing_policy.text
+
+        bad_blank_role = client.patch(
+            "/community-confirmations/community/1/contacts/2",
+            json={"role_type": "   "},
+        )
+        assert bad_blank_role.status_code == 422, bad_blank_role.text
+        assert "role_type must not be blank" in bad_blank_role.text
+
+        bad_blank_standing = client.patch(
+            "/community-confirmations/community/1/contacts/2",
+            json={"standing_status": "   "},
+        )
+        assert bad_blank_standing.status_code == 422, bad_blank_standing.text
+        assert "standing_status must not be blank" in bad_blank_standing.text
+
+        bad_role = client.patch(
+            "/community-confirmations/community/1/contacts/2",
+            json={"role_type": "regional_chair"},
+        )
+        assert bad_role.status_code == 422
+        assert "Unsupported community confirmation contact role type" in bad_role.text
+
+        bad_standing = client.patch(
+            "/community-confirmations/community/1/contacts/2",
+            json={"standing_status": "trusted_elite"},
+        )
+        assert bad_standing.status_code == 422
+        assert (
+            "Unsupported community confirmation contact standing status"
+            in bad_standing.text
+        )
+
+        unchanged_policy = client.get("/community-confirmations/community/1/policy")
+        assert unchanged_policy.status_code == 200, unchanged_policy.text
+        contact = [
+            row
+            for row in unchanged_policy.json()["contacts"]
+            if int(row["user_id"]) == 2
+        ][0]
+        assert contact["role_type"] == "member"
+        assert contact["standing_status"] == "active"
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    with SessionLocal() as db:
+        events = db.query(TrustEvent).order_by(TrustEvent.id).all()
+
+    assert events == []
+
+
+def test_community_admin_policy_and_contact_numeric_controls_reject_booleans(
+    client: TestClient,
+):
+    _seed_relay_fixture()
+
+    app.dependency_overrides[get_current_user] = lambda: Obj(
+        id=1,
+        email="pytest@example.com",
+        role="admin",
+    )
+    try:
+        bad_policy_number = client.patch(
+            "/community-confirmations/community/1/policy",
+            json={"minimum_positive_responses": True},
+        )
+        assert bad_policy_number.status_code == 422, bad_policy_number.text
+        assert "must not be boolean" in bad_policy_number.text
+
+        bad_policy_float = client.patch(
+            "/community-confirmations/community/1/policy",
+            json={"minimum_positive_responses": 1.0},
+        )
+        assert bad_policy_float.status_code == 422, bad_policy_float.text
+        assert "must not be float" in bad_policy_float.text
+
+        bad_contact_priority = client.patch(
+            "/community-confirmations/community/1/contacts/2",
+            json={"priority_order": True},
+        )
+        assert bad_contact_priority.status_code == 422, bad_contact_priority.text
+        assert "must not be boolean" in bad_contact_priority.text
+
+        bad_contact_priority_float = client.patch(
+            "/community-confirmations/community/1/contacts/2",
+            json={"priority_order": 1.0},
+        )
+        assert (
+            bad_contact_priority_float.status_code == 422
+        ), bad_contact_priority_float.text
+        assert "must not be float" in bad_contact_priority_float.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    with SessionLocal() as db:
+        events = db.query(TrustEvent).order_by(TrustEvent.id).all()
+
+    assert events == []
 
 
 def test_non_admin_cannot_manage_confirmation_policy(client: TestClient):

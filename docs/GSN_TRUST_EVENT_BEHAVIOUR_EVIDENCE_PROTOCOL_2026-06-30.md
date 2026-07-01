@@ -107,6 +107,12 @@ These categories belong to GSN.
 
 Community Domains cannot modify them.
 
+The GSN-owned behaviour vocabulary may expand by protocol when new universal
+behaviour patterns are identified.
+
+Community Domains may not create private behaviour categories that fragment the
+platform.
+
 ### Layer 2 - Community Activities
 
 Every Community Domain creates its own activity catalogue.
@@ -135,6 +141,215 @@ Market examples:
 The activities differ.
 
 The behaviour categories remain universal.
+
+#### Community Activity Type Framework
+
+Community Domains may define configurable Community Activity Types that reflect
+their real-world social, professional, cultural, religious, educational,
+charitable, cooperative, financial, commercial, welfare, governance, and
+public-good life.
+
+The purpose is not to create sector-specific GSN engines.
+
+The purpose is to let every society name the activities through which it creates
+value while keeping evidence portable across GSN.
+
+Examples:
+
+- A charity may define health outreach, volunteer shift, donation distribution,
+  awareness campaign, training session, and beneficiary support.
+- A church may define choir service, welfare visit, youth mentoring, community
+  cleanup, and department leadership.
+- A cooperative may define contribution meeting, member training, harvest
+  support, dispute mediation, and guarantee support.
+- A trade association may define apprenticeship support, professional referral,
+  workshop attendance, standards compliance, and member endorsement.
+- An alumni group may define scholarship support, mentorship session, career
+  talk, fundraiser, and student support.
+
+Different communities may use different names.
+
+Every Community Activity Type must map to one or more GSN-owned universal
+behaviour categories.
+
+This mapping allows local meaning to become portable Trust Event evidence
+without turning GSN into many disconnected vertical products.
+
+Community Activity Type records must define:
+
+- activity type name;
+- Community Domain;
+- applicable roles;
+- mapped universal behaviour category or categories;
+- evidence level required;
+- privacy scope;
+- approval or verification workflow;
+- whether the activity can contribute to Trust Passport;
+- whether the activity can appear in Community Verification responses;
+- whether the activity can appear in reports or aggregate impact statistics.
+
+Evidence levels may include:
+
+- self-reported;
+- coordinator-recorded;
+- attendance-confirmed;
+- peer-confirmed;
+- leader-approved;
+- partner-confirmed;
+- system-recorded;
+- externally-audited.
+
+Privacy scopes may include:
+
+- public;
+- community-visible;
+- role-restricted;
+- private;
+- aggregate-only;
+- sensitive-protected.
+
+GSN must distinguish recorded activity from verified activity and audited
+activity.
+
+GSN must not present activity as verified unless the required evidence level has
+been met.
+
+Sensitive activity types involving health, children, welfare, safeguarding,
+financial hardship, immigration, domestic issues, vulnerable-person support, or
+other protected circumstances must default to aggregate-only or
+sensitive-protected visibility.
+
+Such activity may contribute to reports, Trust Passport, or Community
+Verification only through the visibility rules attached to its evidence level and
+privacy scope.
+
+#### Community Session Evidence
+
+GSN must not create a separate Attendance Engine.
+
+Attendance is not trust.
+
+Attendance is weak behavioural evidence of presence.
+
+The canonical object is a Community Session.
+
+A Community Session is a time-bound container under a Community Activity Type.
+
+Examples include:
+
+- health walk;
+- lecture;
+- worship service;
+- volunteer outreach;
+- market association meeting;
+- town hall;
+- training;
+- seminar;
+- election meeting;
+- welfare distribution;
+- medical outreach;
+- online meeting;
+- hybrid conference.
+
+Community Sessions may be:
+
+- physical;
+- online;
+- hybrid;
+- offline-first.
+
+A Community Session may generate multiple evidence records for the same member.
+
+These evidence records must not be treated as equal.
+
+GSN must distinguish:
+
+- Presence: the member was there;
+- Participation: the member took part;
+- Contribution: the member added value;
+- Responsibility: the member carried duty or leadership.
+
+Presence Evidence is the weakest form of session evidence.
+
+Presence Evidence may support trust only when it is attached to:
+
+- a real Community Session;
+- a Community Domain;
+- an activity type;
+- a session time window;
+- a capture method;
+- a recorder or system source;
+- an evidence strength;
+- a privacy scope.
+
+Presence Evidence capture methods may include:
+
+- QR check-in;
+- rotating QR check-in;
+- short session code;
+- Bluetooth or other local proximity signal;
+- coordinator check-in;
+- member self-claim plus administrator confirmation;
+- member self-claim plus trusted member attestation;
+- offline capture with later sync;
+- online attendance signal;
+- partner or venue confirmation.
+
+The protocol must not depend on one capture method.
+
+QR, Bluetooth, online joins, offline records, and human attestation are all
+Presence Evidence Methods.
+
+Different methods create different evidence strength.
+
+Indicative strength:
+
+- QR only: weak;
+- QR plus active time window: moderate;
+- rotating QR plus time window: moderate;
+- local proximity plus active session window: stronger;
+- administrator confirmation: stronger;
+- two trusted member attestations: stronger;
+- offline capture before sync: provisional;
+- offline capture after sync and coordinator approval: moderate or stronger;
+- partner-confirmed attendance: stronger;
+- externally audited session record: audited.
+
+GSN must preserve the method and strength.
+
+GSN must not present weak presence as equivalent to contribution,
+responsibility, leadership, impact, or audited evidence.
+
+Attendance should become Trust Passport evidence only when the Community
+Activity Type and Community Session settings allow it.
+
+Repeated Presence Evidence must be capped or weighted conservatively so a member
+cannot manufacture high trust by merely checking into many sessions.
+
+Sensitive sessions involving worship, health, welfare, safeguarding, children,
+immigration, political activity, hardship support, vulnerable-person support, or
+other protected circumstances must default to aggregate-only or
+sensitive-protected visibility unless the community has explicit lawful consent
+and protocol-compliant settings.
+
+Session evidence may appear in community reports as aggregate capacity evidence.
+
+Examples:
+
+- active attendance;
+- participation volume;
+- volunteer capacity;
+- leadership capacity;
+- outreach delivery history;
+- partnership activity;
+- beneficiary reach, where lawful and privacy-safe.
+
+GSN does not advise government, employers, funders, or outside institutions about
+a person or community.
+
+GSN preserves canonical evidence generated by communities so that communities
+and members can prove what actually happened, subject to consent, privacy, and
+verification rules.
 
 ### Layer 3 - Trust Events
 
@@ -167,6 +382,9 @@ Every Trust Event must contain:
 - Approver;
 - Verification Status;
 - Evidence Status;
+- Evidence Level;
+- Privacy Scope;
+- Report Eligibility;
 - Source.
 
 Optional fields:

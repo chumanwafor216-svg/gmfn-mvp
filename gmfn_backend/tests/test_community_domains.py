@@ -119,6 +119,18 @@ def test_community_domain_availability_reports_available_and_taken(
     assert taken.json()["available"] is False
     assert taken.json()["reason"] == "domain_name_taken"
 
+    blank = client.get(
+        "/community-domains/availability",
+        params={"domain_name": "   "},
+    )
+    assert blank.status_code == 200, blank.text
+    assert blank.json() == {
+        "domain_name": "   ",
+        "normalized_domain_name": "",
+        "available": False,
+        "reason": "domain_name_required",
+    }
+
 
 def test_public_domain_lookup_returns_safe_entry_without_membership(
     client: TestClient,
@@ -189,6 +201,14 @@ def test_public_domain_lookup_rejects_unknown_or_invalid_code(
     )
     assert invalid.status_code == 422, invalid.text
     assert invalid.json()["detail"]["code"] == "invalid_domain_name"
+
+    blank = client.get(
+        "/community-domains/lookup",
+        params={"domain_name": "   "},
+    )
+    assert blank.status_code == 422, blank.text
+    assert blank.json()["detail"]["code"] == "domain_name_required"
+    assert blank.json()["detail"]["normalized_domain_name"] == ""
 
 
 def test_community_domain_templates_are_public_presets_not_activation(
@@ -443,6 +463,27 @@ def test_community_domain_draft_is_not_a_live_social_community(
                 field_name,
                 rejected_bool_draft.text,
             )
+
+        blank_domain_type = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Blank Type Guard",
+                "display_name": "Blank Type Guard",
+                "domain_type": "   ",
+            },
+        )
+        assert blank_domain_type.status_code == 422, blank_domain_type.text
+
+        blank_template_key = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Blank Template Guard",
+                "display_name": "Blank Template Guard",
+                "domain_type": "school",
+                "template_key": "   ",
+            },
+        )
+        assert blank_template_key.status_code == 422, blank_template_key.text
 
         response = client.post(
             "/community-domains/drafts",
@@ -15431,6 +15472,22 @@ def test_owner_adds_domain_member_and_places_member_inside_node(
                 boolean_node_text.text,
             )
 
+        for field_name in ("node_type", "node_kind", "visibility_policy"):
+            payload = {
+                "name": "Blank Node Vocabulary Branch",
+                "node_type": "branch",
+                "node_kind": "school_branch",
+            }
+            payload[field_name] = "   "
+            blank_node_vocabulary = client.post(
+                f"/community-domains/{domain_id}/nodes",
+                json=payload,
+            )
+            assert blank_node_vocabulary.status_code == 422, (
+                field_name,
+                blank_node_vocabulary.text,
+            )
+
         invalid_node_status = client.post(
             f"/community-domains/{domain_id}/nodes",
             json={
@@ -15445,6 +15502,17 @@ def test_owner_adds_domain_member_and_places_member_inside_node(
             invalid_node_status.json()["detail"]["code"]
             == "community_domain_node_status_invalid"
         )
+
+        blank_node_status = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Blank Status Branch",
+                "node_type": "branch",
+                "node_kind": "school_branch",
+                "status": "   ",
+            },
+        )
+        assert blank_node_status.status_code == 422, blank_node_status.text
 
         boolean_domain_member = client.post(
             f"/community-domains/{domain_id}/members",
@@ -15473,12 +15541,41 @@ def test_owner_adds_domain_member_and_places_member_inside_node(
             json={"user_id": teacher.id, "role": True},
         )
         assert boolean_domain_member_role.status_code == 422, boolean_domain_member_role.text
+        assert "role must be text" in boolean_domain_member_role.text
 
         boolean_domain_member_status = client.post(
             f"/community-domains/{domain_id}/members",
             json={"user_id": teacher.id, "status": False},
         )
         assert boolean_domain_member_status.status_code == 422, boolean_domain_member_status.text
+        assert "status must be text" in boolean_domain_member_status.text
+
+        for field_name in ("role", "status", "title"):
+            rejected_float_domain_member_text = client.post(
+                f"/community-domains/{domain_id}/members",
+                json={"user_id": teacher.id, field_name: 1.5},
+            )
+            assert rejected_float_domain_member_text.status_code == 422, (
+                field_name,
+                rejected_float_domain_member_text.text,
+            )
+            assert f"{field_name} must be text" in rejected_float_domain_member_text.text
+
+        blank_domain_member_role = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": teacher.id, "role": "   "},
+        )
+        assert blank_domain_member_role.status_code == 422, (
+            blank_domain_member_role.text
+        )
+
+        blank_domain_member_status = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": teacher.id, "status": "   "},
+        )
+        assert blank_domain_member_status.status_code == 422, (
+            blank_domain_member_status.text
+        )
 
         invalid_domain_member_status = client.post(
             f"/community-domains/{domain_id}/members",
@@ -15497,6 +15594,7 @@ def test_owner_adds_domain_member_and_places_member_inside_node(
             json={"user_id": teacher.id, "title": True},
         )
         assert boolean_domain_member_title.status_code == 422, boolean_domain_member_title.text
+        assert "title must be text" in boolean_domain_member_title.text
 
         branch = client.post(
             f"/community-domains/{domain_id}/nodes",
@@ -15557,12 +15655,39 @@ def test_owner_adds_domain_member_and_places_member_inside_node(
             json={"user_id": teacher.id, "role": True},
         )
         assert boolean_node_member_role.status_code == 422, boolean_node_member_role.text
+        assert "role must be text" in boolean_node_member_role.text
 
         boolean_node_member_status = client.post(
             f"/community-domains/{domain_id}/nodes/{node_id}/members",
             json={"user_id": teacher.id, "status": False},
         )
         assert boolean_node_member_status.status_code == 422, boolean_node_member_status.text
+        assert "status must be text" in boolean_node_member_status.text
+
+        for field_name in ("role", "status", "title"):
+            rejected_float_node_member_text = client.post(
+                f"/community-domains/{domain_id}/nodes/{node_id}/members",
+                json={"user_id": teacher.id, field_name: 1.5},
+            )
+            assert rejected_float_node_member_text.status_code == 422, (
+                field_name,
+                rejected_float_node_member_text.text,
+            )
+            assert f"{field_name} must be text" in rejected_float_node_member_text.text
+
+        blank_node_member_role = client.post(
+            f"/community-domains/{domain_id}/nodes/{node_id}/members",
+            json={"user_id": teacher.id, "role": "   "},
+        )
+        assert blank_node_member_role.status_code == 422, blank_node_member_role.text
+
+        blank_node_member_status = client.post(
+            f"/community-domains/{domain_id}/nodes/{node_id}/members",
+            json={"user_id": teacher.id, "status": "   "},
+        )
+        assert blank_node_member_status.status_code == 422, (
+            blank_node_member_status.text
+        )
 
         invalid_node_member_status = client.post(
             f"/community-domains/{domain_id}/nodes/{node_id}/members",
@@ -15581,6 +15706,7 @@ def test_owner_adds_domain_member_and_places_member_inside_node(
             json={"user_id": teacher.id, "title": True},
         )
         assert boolean_node_member_title.status_code == 422, boolean_node_member_title.text
+        assert "title must be text" in boolean_node_member_title.text
 
         placed = client.post(
             f"/community-domains/{domain_id}/nodes/{node_id}/members",
@@ -16390,17 +16516,37 @@ def test_domain_admin_can_close_node_without_deleting_descendants(
         assert invalid.status_code == 422, invalid.text
         assert invalid.json()["detail"]["code"] == "community_domain_node_status_invalid"
 
+        blank_status = client.patch(
+            f"/community-domains/{domain_id}/nodes/{branch_id}/status",
+            json={"status": "   ", "status_note": "Blank status is malformed."},
+        )
+        assert blank_status.status_code == 422, blank_status.text
+
         bool_status = client.patch(
             f"/community-domains/{domain_id}/nodes/{branch_id}/status",
             json={"status": True, "status_note": "Boolean status is malformed."},
         )
         assert bool_status.status_code == 422, bool_status.text
 
+        float_status = client.patch(
+            f"/community-domains/{domain_id}/nodes/{branch_id}/status",
+            json={"status": 1.5, "status_note": "Float status is malformed."},
+        )
+        assert float_status.status_code == 422, float_status.text
+        assert "status must be text" in float_status.text
+
         bool_status_note = client.patch(
             f"/community-domains/{domain_id}/nodes/{branch_id}/status",
             json={"status": "inactive", "status_note": True},
         )
         assert bool_status_note.status_code == 422, bool_status_note.text
+
+        float_status_note = client.patch(
+            f"/community-domains/{domain_id}/nodes/{branch_id}/status",
+            json={"status": "inactive", "status_note": 1.5},
+        )
+        assert float_status_note.status_code == 422, float_status_note.text
+        assert "status_note must be text" in float_status_note.text
 
         root_close = client.patch(
             f"/community-domains/{domain_id}/nodes/{root_node_id}/status",
@@ -17268,6 +17414,7 @@ def test_domain_admin_records_policy_and_decides_domain_action_review(
             ("scope_type", True),
             ("review_mode", False),
             ("required_role", True),
+            ("status", False),
             ("policy_summary", False),
         ):
             payload = {
@@ -17283,6 +17430,48 @@ def test_domain_admin_records_policy_and_decides_domain_action_review(
             assert rejected_bool_policy_field.status_code == 422, (
                 field_name,
                 rejected_bool_policy_field.text,
+            )
+            assert f"{field_name} must be text" in rejected_bool_policy_field.text
+
+        for field_name in (
+            "policy_key",
+            "action_key",
+            "scope_type",
+            "review_mode",
+            "required_role",
+            "status",
+            "policy_summary",
+        ):
+            payload = {
+                "policy_key": "float-policy-field",
+                "action_key": "member_verification.approve",
+                "review_mode": "domain_admin_review",
+            }
+            payload[field_name] = 1.5
+            rejected_float_policy_field = client.post(
+                f"/community-domains/{domain_id}/policies",
+                json=payload,
+            )
+            assert rejected_float_policy_field.status_code == 422, (
+                field_name,
+                rejected_float_policy_field.text,
+            )
+            assert f"{field_name} must be text" in rejected_float_policy_field.text
+
+        for field_name in ("status", "scope_type", "review_mode", "required_role"):
+            payload = {
+                "policy_key": f"blank-{field_name.replace('_', '-')}",
+                "action_key": "member_verification.approve",
+                "review_mode": "domain_admin_review",
+            }
+            payload[field_name] = "   "
+            rejected_blank_policy_field = client.post(
+                f"/community-domains/{domain_id}/policies",
+                json=payload,
+            )
+            assert rejected_blank_policy_field.status_code == 422, (
+                field_name,
+                rejected_blank_policy_field.text,
             )
 
         rejected_invalid_policy_status = client.post(
@@ -17359,6 +17548,40 @@ def test_domain_admin_records_policy_and_decides_domain_action_review(
         assert listed_policies.status_code == 200, listed_policies.text
         assert listed_policies.json()["total"] == 1
 
+        rejected_bool_policy_id_review = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "member_verification.approve",
+                "policy_id": True,
+                "subject_user_id": member.id,
+                "target_type": "member_verification",
+                "target_id": "verification-boolean-policy",
+                "request_note": "Boolean policy id must not become policy 1.",
+                "payload": {"verification_id": 456},
+            },
+        )
+        assert (
+            rejected_bool_policy_id_review.status_code == 422
+        ), rejected_bool_policy_id_review.text
+        assert "policy_id must be an integer id" in rejected_bool_policy_id_review.text
+
+        rejected_float_policy_id_review = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "member_verification.approve",
+                "policy_id": 1.5,
+                "subject_user_id": member.id,
+                "target_type": "member_verification",
+                "target_id": "verification-float-policy",
+                "request_note": "Float policy id must not be rounded.",
+                "payload": {"verification_id": 789},
+            },
+        )
+        assert (
+            rejected_float_policy_id_review.status_code == 422
+        ), rejected_float_policy_id_review.text
+        assert "policy_id must be an integer id" in rejected_float_policy_id_review.text
+
         review_response = client.post(
             f"/community-domains/{domain_id}/action-reviews",
             json={
@@ -17382,6 +17605,7 @@ def test_domain_admin_records_policy_and_decides_domain_action_review(
             json={"decision": True},
         )
         assert rejected_bool_decision.status_code == 422, rejected_bool_decision.text
+        assert "decision must be text" in rejected_bool_decision.text
 
         rejected_bool_decision_note = client.post(
             f"/community-domains/{domain_id}/action-reviews/{review['id']}/decision",
@@ -17390,6 +17614,20 @@ def test_domain_admin_records_policy_and_decides_domain_action_review(
         assert rejected_bool_decision_note.status_code == 422, (
             rejected_bool_decision_note.text
         )
+        assert "decision_note must be text" in rejected_bool_decision_note.text
+
+        for field_name in ("decision", "decision_note"):
+            payload = {"decision": "approve"}
+            payload[field_name] = 1.5
+            rejected_float_decision_text = client.post(
+                f"/community-domains/{domain_id}/action-reviews/{review['id']}/decision",
+                json=payload,
+            )
+            assert rejected_float_decision_text.status_code == 422, (
+                field_name,
+                rejected_float_decision_text.text,
+            )
+            assert f"{field_name} must be text" in rejected_float_decision_text.text
 
         decision = client.post(
             f"/community-domains/{domain_id}/action-reviews/{review['id']}/decision",
@@ -17697,6 +17935,18 @@ def test_node_admin_can_decide_node_scoped_review_but_not_domain_review(
             department_id,
         }
 
+        blank_review_status_filter = client.get(
+            f"/community-domains/{domain_id}/action-reviews",
+            params={"community_node_id": node_id, "status": "   "},
+        )
+        assert blank_review_status_filter.status_code == 422, (
+            blank_review_status_filter.text
+        )
+        assert (
+            blank_review_status_filter.json()["detail"]["code"]
+            == "invalid_query_filter"
+        )
+
         node_decision = client.post(
             f"/community-domains/{domain_id}/action-reviews/{node_review['id']}/decision",
             json={"decision": "approve"},
@@ -17802,6 +18052,20 @@ def test_node_admin_can_decide_node_scoped_review_but_not_domain_review(
         assert {
             item["community_node_id"] for item in descendant_activity_data["items"]
         } == {node_id, department_id}
+
+        for blank_field in ("status", "event_type"):
+            blank_activity_filter = client.get(
+                f"/community-domains/{domain_id}/action-reviews/activity",
+                params={
+                    "community_node_id": node_id,
+                    blank_field: "   ",
+                },
+            )
+            assert blank_activity_filter.status_code == 422, blank_activity_filter.text
+            assert (
+                blank_activity_filter.json()["detail"]["code"]
+                == "invalid_query_filter"
+            )
 
         unscoped_summary = client.get(
             f"/community-domains/{domain_id}/action-reviews/summary"
@@ -18930,6 +19194,22 @@ def test_status_review_request_rejects_root_invalid_status_and_target_mismatch(
         )
         assert bool_scope_review.status_code == 422, bool_scope_review.text
 
+        float_scope_review = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "node.status.update",
+                "community_node_id": branch_id + 0.5,
+                "target_type": "community_node",
+                "target_id": str(branch_id),
+                "payload": {
+                    "status": "active",
+                    "status_note": "Float top-level node scope is malformed.",
+                },
+            },
+        )
+        assert float_scope_review.status_code == 422, float_scope_review.text
+        assert "community_node_id must be an integer id" in float_scope_review.text
+
         root_review = client.post(
             f"/community-domains/{domain_id}/action-reviews",
             json={
@@ -18986,6 +19266,30 @@ def test_status_review_request_rejects_root_invalid_status_and_target_mismatch(
             bool_status_review.json()["detail"]["code"]
             == "invalid_action_review_payload"
         )
+
+        for field_name in ("status", "new_status", "previous_status"):
+            blank_status_payload = client.post(
+                f"/community-domains/{domain_id}/action-reviews",
+                json={
+                    "action_key": "node.status.update",
+                    "community_node_id": branch_id,
+                    "target_type": "community_node",
+                    "target_id": str(branch_id),
+                    "payload": {
+                        "status": "active",
+                        "status_note": "Blank status control field is malformed.",
+                        field_name: "   ",
+                    },
+                },
+            )
+            assert blank_status_payload.status_code == 422, (
+                field_name,
+                blank_status_payload.text,
+            )
+            assert (
+                blank_status_payload.json()["detail"]["code"]
+                == "invalid_action_review_payload"
+            )
 
         bool_status_note = client.post(
             f"/community-domains/{domain_id}/action-reviews",
@@ -19417,6 +19721,29 @@ def test_apply_rejects_legacy_node_status_review_target_mismatch(
         )
         assert (
             bool_previous_status_apply.json()["detail"]["code"]
+            == "invalid_action_review_payload"
+        )
+
+        with SessionLocal() as db:
+            review_row = (
+                db.query(CommunityDomainActionReview)
+                .filter(CommunityDomainActionReview.id == review["id"])
+                .one()
+            )
+            payload = json.loads(review_row.payload_json or "{}")
+            payload["status_note"] = "Food line is closing for renovation."
+            payload["previous_status"] = "   "
+            review_row.payload_json = json.dumps(payload)
+            db.commit()
+
+        blank_previous_status_apply = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/apply"
+        )
+        assert blank_previous_status_apply.status_code == 422, (
+            blank_previous_status_apply.text
+        )
+        assert (
+            blank_previous_status_apply.json()["detail"]["code"]
             == "invalid_action_review_payload"
         )
 
@@ -19901,6 +20228,7 @@ def test_outsider_can_request_domain_membership_without_auto_membership(
         assert rejected_bool_request_note.status_code == 422, (
             rejected_bool_request_note.text
         )
+        assert "request_note must be text" in rejected_bool_request_note.text
 
         rejected_bool_title = client.post(
             f"/community-domains/{domain_id}/membership-requests",
@@ -19910,6 +20238,22 @@ def test_outsider_can_request_domain_membership_without_auto_membership(
             },
         )
         assert rejected_bool_title.status_code == 422, rejected_bool_title.text
+        assert "title must be text" in rejected_bool_title.text
+
+        for field_name in ("request_note", "title"):
+            payload = {"request_note": "Float membership request text is malformed."}
+            payload[field_name] = 1.5
+            rejected_float_membership_request_text = client.post(
+                f"/community-domains/{domain_id}/membership-requests",
+                json=payload,
+            )
+            assert rejected_float_membership_request_text.status_code == 422, (
+                field_name,
+                rejected_float_membership_request_text.text,
+            )
+            assert f"{field_name} must be text" in (
+                rejected_float_membership_request_text.text
+            )
 
         requested = client.post(
             f"/community-domains/{domain_id}/membership-requests",
@@ -20893,6 +21237,25 @@ def test_outsider_can_revise_own_needs_changes_membership_request_only(
             == "invalid_action_review_payload"
         )
 
+        for blank_payload_field in ("role", "status", "previous_status"):
+            rejected_blank_revision_payload = client.post(
+                f"/community-domains/{domain_id}/action-reviews/{review['id']}/revision",
+                json={
+                    "request_note": "Blank membership revision payload control is malformed.",
+                    "payload": {
+                        blank_payload_field: "   ",
+                        "title": "Still malformed.",
+                    },
+                },
+            )
+            assert (
+                rejected_blank_revision_payload.status_code == 422
+            ), rejected_blank_revision_payload.text
+            assert (
+                rejected_blank_revision_payload.json()["detail"]["code"]
+                == "invalid_action_review_payload"
+            )
+
         revised = client.post(
             f"/community-domains/{domain_id}/action-reviews/{review['id']}/revision",
             json={
@@ -21717,6 +22080,13 @@ def test_outsider_can_track_only_own_domain_membership_request(
         assert filtered.status_code == 200, filtered.text
         assert filtered.json()["total"] == 0
 
+        blank_status_filter = client.get(
+            f"/community-domains/{domain_id}/membership-requests/my",
+            params={"status": "   "},
+        )
+        assert blank_status_filter.status_code == 422, blank_status_filter.text
+        assert blank_status_filter.json()["detail"]["code"] == "invalid_query_filter"
+
         app.dependency_overrides[get_current_user] = lambda: other_outsider
         other_requests = client.get(
             f"/community-domains/{domain_id}/membership-requests/my"
@@ -21846,6 +22216,22 @@ def test_domain_member_review_rejects_numeric_target_mismatch(
             },
         )
         assert rejected_bool_subject.status_code == 422, rejected_bool_subject.text
+
+        rejected_float_subject = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "domain_member.upsert",
+                "subject_user_id": owner.id + 0.5,
+                "target_type": "domain_member",
+                "target_id": str(owner.id),
+                "payload": {
+                    "user_id": owner.id,
+                    "role": "member",
+                },
+            },
+        )
+        assert rejected_float_subject.status_code == 422, rejected_float_subject.text
+        assert "subject_user_id must be an integer id" in rejected_float_subject.text
 
         rejected_bool_target_type = client.post(
             f"/community-domains/{domain_id}/action-reviews",
@@ -21985,6 +22371,28 @@ def test_domain_member_review_rejects_numeric_target_mismatch(
             "community_domain_member_status_invalid"
         )
 
+        for field_name in ("role", "status", "previous_status"):
+            rejected_blank_payload_field = client.post(
+                f"/community-domains/{domain_id}/action-reviews",
+                json={
+                    "action_key": "domain_member.upsert",
+                    "target_type": "domain_member",
+                    "target_id": str(new_member.id),
+                    "payload": {
+                        "user_id": new_member.id,
+                        "role": "member",
+                        field_name: "   ",
+                    },
+                },
+            )
+            assert rejected_blank_payload_field.status_code == 422, (
+                field_name,
+                rejected_blank_payload_field.text,
+            )
+            assert rejected_blank_payload_field.json()["detail"]["code"] == (
+                "invalid_action_review_payload"
+            )
+
         rejected_bool_title = client.post(
             f"/community-domains/{domain_id}/action-reviews",
             json={
@@ -22092,6 +22500,26 @@ def test_domain_member_review_rejects_numeric_target_mismatch(
             == "community_domain_member_action_target_mismatch"
         )
 
+        rejected_text_target_id = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "domain_member.upsert",
+                "target_type": "domain_member",
+                "target_id": "membership-slot",
+                "payload": {
+                    "user_id": new_member.id,
+                    "role": "member",
+                },
+            },
+        )
+        assert rejected_text_target_id.status_code == 422, (
+            rejected_text_target_id.text
+        )
+        assert (
+            rejected_text_target_id.json()["detail"]["code"]
+            == "invalid_action_review_payload"
+        )
+
         review_response = client.post(
             f"/community-domains/{domain_id}/action-reviews",
             json={
@@ -22134,6 +22562,27 @@ def test_domain_member_review_rejects_numeric_target_mismatch(
                 .filter(CommunityDomainActionReview.id == review["id"])
                 .one()
             )
+            review_row.target_id = "membership-slot"
+            db.commit()
+
+        rejected_text_target_decision = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/decision",
+            json={"decision": "approve", "decision_note": "Text target id."},
+        )
+        assert rejected_text_target_decision.status_code == 422, (
+            rejected_text_target_decision.text
+        )
+        assert (
+            rejected_text_target_decision.json()["detail"]["code"]
+            == "invalid_action_review_payload"
+        )
+
+        with SessionLocal() as db:
+            review_row = (
+                db.query(CommunityDomainActionReview)
+                .filter(CommunityDomainActionReview.id == review["id"])
+                .one()
+            )
             review_row.target_id = str(new_member.id)
             db.commit()
 
@@ -22150,6 +22599,31 @@ def test_domain_member_review_rejects_numeric_target_mismatch(
                 .filter(CommunityDomainActionReview.id == review["id"])
                 .one()
             )
+            payload = json.loads(review_row.payload_json or "{}")
+            payload["role"] = "   "
+            review_row.payload_json = json.dumps(payload)
+            db.commit()
+
+        rejected_blank_payload_apply = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/apply"
+        )
+        assert rejected_blank_payload_apply.status_code == 422, (
+            rejected_blank_payload_apply.text
+        )
+        assert (
+            rejected_blank_payload_apply.json()["detail"]["code"]
+            == "invalid_action_review_payload"
+        )
+
+        with SessionLocal() as db:
+            review_row = (
+                db.query(CommunityDomainActionReview)
+                .filter(CommunityDomainActionReview.id == review["id"])
+                .one()
+            )
+            payload = json.loads(review_row.payload_json or "{}")
+            payload["role"] = "member"
+            review_row.payload_json = json.dumps(payload)
             review_row.target_id = str(other_member.id)
             db.commit()
 
@@ -22160,6 +22634,26 @@ def test_domain_member_review_rejects_numeric_target_mismatch(
         assert (
             rejected_apply.json()["detail"]["code"]
             == "community_domain_member_action_target_mismatch"
+        )
+
+        with SessionLocal() as db:
+            review_row = (
+                db.query(CommunityDomainActionReview)
+                .filter(CommunityDomainActionReview.id == review["id"])
+                .one()
+            )
+            review_row.target_id = "membership-slot"
+            db.commit()
+
+        rejected_text_target_apply = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/apply"
+        )
+        assert rejected_text_target_apply.status_code == 422, (
+            rejected_text_target_apply.text
+        )
+        assert (
+            rejected_text_target_apply.json()["detail"]["code"]
+            == "invalid_action_review_payload"
         )
     finally:
         app.dependency_overrides.pop(get_current_user, None)
@@ -22870,6 +23364,27 @@ def test_node_member_role_change_revision_rejects_bool_payload_fields(
                 == "invalid_action_review_payload"
             )
 
+        for field_name in ("role", "status", "previous_status"):
+            rejected_blank_revision_payload_field = client.post(
+                f"/community-domains/{domain_id}/action-reviews/{review['id']}/revision",
+                json={
+                    "request_note": f"Blank {field_name} should be malformed.",
+                    "payload": {
+                        "user_id": teacher.id,
+                        "role": "committee_member",
+                        field_name: "   ",
+                    },
+                },
+            )
+            assert rejected_blank_revision_payload_field.status_code == 422, (
+                field_name,
+                rejected_blank_revision_payload_field.text,
+            )
+            assert (
+                rejected_blank_revision_payload_field.json()["detail"]["code"]
+                == "invalid_action_review_payload"
+            )
+
         revision_response = client.post(
             f"/community-domains/{domain_id}/action-reviews/{review['id']}/revision",
             json={
@@ -23087,6 +23602,31 @@ def test_node_member_upsert_review_rejects_member_target_mismatch(
             == "community_domain_member_status_invalid"
         )
 
+        for field_name in ("role", "status", "previous_status"):
+            rejected_blank_member_payload = client.post(
+                f"/community-domains/{domain_id}/action-reviews",
+                json={
+                    "action_key": "node_member.upsert",
+                    "community_node_id": node_id,
+                    "subject_user_id": staff.id,
+                    "target_type": "node_member",
+                    "target_id": str(staff.id),
+                    "payload": {
+                        "user_id": staff.id,
+                        "role": "teacher",
+                        field_name: "   ",
+                    },
+                },
+            )
+            assert rejected_blank_member_payload.status_code == 422, (
+                field_name,
+                rejected_blank_member_payload.text,
+            )
+            assert (
+                rejected_blank_member_payload.json()["detail"]["code"]
+                == "invalid_action_review_payload"
+            )
+
         rejected_bool_missing_user_role = client.post(
             f"/community-domains/{domain_id}/action-reviews",
             json={
@@ -23242,6 +23782,31 @@ def test_node_member_upsert_review_rejects_member_target_mismatch(
                 .filter(CommunityDomainActionReview.id == review["id"])
                 .one()
             )
+            payload = json.loads(review_row.payload_json or "{}")
+            payload["status"] = "   "
+            review_row.payload_json = json.dumps(payload)
+            db.commit()
+
+        rejected_blank_payload_apply = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/apply"
+        )
+        assert rejected_blank_payload_apply.status_code == 422, (
+            rejected_blank_payload_apply.text
+        )
+        assert (
+            rejected_blank_payload_apply.json()["detail"]["code"]
+            == "invalid_action_review_payload"
+        )
+
+        with SessionLocal() as db:
+            review_row = (
+                db.query(CommunityDomainActionReview)
+                .filter(CommunityDomainActionReview.id == review["id"])
+                .one()
+            )
+            payload = json.loads(review_row.payload_json or "{}")
+            payload["status"] = "active"
+            review_row.payload_json = json.dumps(payload)
             review_row.subject_user_id = other_staff.id
             db.commit()
 
@@ -23598,6 +24163,25 @@ def test_policy_min_reviewers_requires_multiple_approvals_before_apply(
         assert policy.status_code == 201, policy.text
 
         app.dependency_overrides[get_current_user] = lambda: requester
+        for field_name in ("target_type", "target_id"):
+            payload = {
+                "action_key": "domain_member.upsert",
+                "target_type": "domain_member",
+                "target_id": str(new_member.id),
+                "subject_user_id": new_member.id,
+                "request_note": "Blank target fields should not silently vanish.",
+                "payload": {"user_id": new_member.id, "role": "member"},
+            }
+            payload[field_name] = "   "
+            rejected_blank_target = client.post(
+                f"/community-domains/{domain_id}/action-reviews",
+                json=payload,
+            )
+            assert rejected_blank_target.status_code == 422, (
+                field_name,
+                rejected_blank_target.text,
+            )
+
         review_response = client.post(
             f"/community-domains/{domain_id}/action-reviews",
             json={
@@ -24302,6 +24886,13 @@ def test_member_can_track_only_their_own_action_review_requests(
         assert approved_requests.json()["total"] == 1
         assert approved_requests.json()["items"][0]["status"] == "approved"
 
+        blank_status_filter = client.get(
+            f"/community-domains/{domain_id}/action-reviews/my-requests",
+            params={"status": "   "},
+        )
+        assert blank_status_filter.status_code == 422, blank_status_filter.text
+        assert blank_status_filter.json()["detail"]["code"] == "invalid_query_filter"
+
         app.dependency_overrides[get_current_user] = lambda: other_member
         other_requests = client.get(
             f"/community-domains/{domain_id}/action-reviews/my-requests"
@@ -24477,6 +25068,12 @@ def test_action_review_comments_follow_review_visibility(
         )
         assert rejected_bool_comment.status_code == 422, rejected_bool_comment.text
 
+        rejected_blank_comment = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/comments",
+            json={"body": "   "},
+        )
+        assert rejected_blank_comment.status_code == 422, rejected_blank_comment.text
+
         requester_comment = client.post(
             f"/community-domains/{domain_id}/action-reviews/{review['id']}/comments",
             json={"body": "Please review this with the attached office records."},
@@ -24611,6 +25208,44 @@ def test_action_review_evidence_records_metadata_without_file_upload(
             json={"body": "I added the branch register extract."},
         )
         assert requester_comment.status_code == 201, requester_comment.text
+
+        rejected_blank_evidence_type = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/evidence",
+            json={
+                "evidence_type": "   ",
+                "title": "Blank evidence type should not silently default",
+            },
+        )
+        assert rejected_blank_evidence_type.status_code == 422, (
+            rejected_blank_evidence_type.text
+        )
+
+        rejected_blank_evidence_title = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/evidence",
+            json={"title": "   "},
+        )
+        assert rejected_blank_evidence_title.status_code == 422, (
+            rejected_blank_evidence_title.text
+        )
+
+        for field_name in (
+            "file_name",
+            "content_type",
+            "storage_key",
+            "external_reference",
+            "checksum",
+        ):
+            rejected_blank_evidence_metadata = client.post(
+                f"/community-domains/{domain_id}/action-reviews/{review['id']}/evidence",
+                json={
+                    "title": "Blank evidence metadata should be malformed",
+                    field_name: "   ",
+                },
+            )
+            assert rejected_blank_evidence_metadata.status_code == 422, (
+                field_name,
+                rejected_blank_evidence_metadata.text,
+            )
 
         for field_name, field_value in (
             ("evidence_type", False),
@@ -24843,6 +25478,16 @@ def test_requester_can_cancel_pending_action_review(
         assert rejected_bool_cancel_note.status_code == 422, (
             rejected_bool_cancel_note.text
         )
+        assert "cancel_note must be text" in rejected_bool_cancel_note.text
+
+        rejected_float_cancel_note = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/cancel",
+            json={"cancel_note": 1.5},
+        )
+        assert rejected_float_cancel_note.status_code == 422, (
+            rejected_float_cancel_note.text
+        )
+        assert "cancel_note must be text" in rejected_float_cancel_note.text
 
         app.dependency_overrides[get_current_user] = lambda: other_member
         denied = client.post(
@@ -25620,6 +26265,27 @@ def test_requester_can_revise_needs_changes_action_review(
             rejected_bool_subject_revision.status_code == 422
         ), rejected_bool_subject_revision.text
 
+        rejected_float_subject_revision = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/revision",
+            json={
+                "subject_user_id": owner.id + 0.5,
+                "target_id": str(owner.id),
+                "request_note": "Float subject id must not be rounded.",
+                "payload": {
+                    "user_id": owner.id,
+                    "role": "member",
+                    "title": "Float subject candidate",
+                },
+            },
+        )
+        assert (
+            rejected_float_subject_revision.status_code == 422
+        ), rejected_float_subject_revision.text
+        assert (
+            "subject_user_id must be an integer id"
+            in rejected_float_subject_revision.text
+        )
+
         rejected_bool_target_type_revision = client.post(
             f"/community-domains/{domain_id}/action-reviews/{review['id']}/revision",
             json={
@@ -25651,6 +26317,25 @@ def test_requester_can_revise_needs_changes_action_review(
         assert rejected_bool_target_id_revision.status_code == 422, (
             rejected_bool_target_id_revision.text
         )
+
+        for field_name in ("target_type", "target_id"):
+            payload = {
+                "request_note": "Blank target revision should be malformed.",
+                "payload": {
+                    "user_id": owner.id,
+                    "role": "member",
+                    "title": "Blank target candidate",
+                },
+            }
+            payload[field_name] = "   "
+            rejected_blank_target_revision = client.post(
+                f"/community-domains/{domain_id}/action-reviews/{review['id']}/revision",
+                json=payload,
+            )
+            assert rejected_blank_target_revision.status_code == 422, (
+                field_name,
+                rejected_blank_target_revision.text,
+            )
 
         rejected_bool_request_note_revision = client.post(
             f"/community-domains/{domain_id}/action-reviews/{review['id']}/revision",
@@ -25704,6 +26389,26 @@ def test_requester_can_revise_needs_changes_action_review(
             == "community_domain_member_action_target_mismatch"
         )
 
+        rejected_text_target_revision = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/revision",
+            json={
+                "target_id": "membership-slot",
+                "request_note": "Domain member target id must be the user id.",
+                "payload": {
+                    "user_id": new_member.id,
+                    "role": "member",
+                    "title": "Branch welfare member",
+                },
+            },
+        )
+        assert rejected_text_target_revision.status_code == 422, (
+            rejected_text_target_revision.text
+        )
+        assert (
+            rejected_text_target_revision.json()["detail"]["code"]
+            == "invalid_action_review_payload"
+        )
+
         rejected_type_revision = client.post(
             f"/community-domains/{domain_id}/action-reviews/{review['id']}/revision",
             json={
@@ -25740,6 +26445,27 @@ def test_requester_can_revise_needs_changes_action_review(
             rejected_bool_title_revision.json()["detail"]["code"]
             == "invalid_action_review_payload"
         )
+
+        for field_name in ("role", "status", "previous_status"):
+            rejected_blank_payload_revision = client.post(
+                f"/community-domains/{domain_id}/action-reviews/{review['id']}/revision",
+                json={
+                    "request_note": f"Blank {field_name} should be malformed.",
+                    "payload": {
+                        "user_id": new_member.id,
+                        "role": "member",
+                        field_name: "   ",
+                    },
+                },
+            )
+            assert rejected_blank_payload_revision.status_code == 422, (
+                field_name,
+                rejected_blank_payload_revision.text,
+            )
+            assert (
+                rejected_blank_payload_revision.json()["detail"]["code"]
+                == "invalid_action_review_payload"
+            )
 
         revision_response = client.post(
             f"/community-domains/{domain_id}/action-reviews/{review['id']}/revision",

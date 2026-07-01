@@ -145,6 +145,15 @@ Every Community Domain begins with:
 
 Community Type determines only the default configuration.
 
+Community Type may seed default roles, governance examples, activity catalogue
+templates, evidence requirements, privacy defaults, and report views.
+
+Community Type must not create a separate GSN engine.
+
+Community Domains may adapt, rename, disable, or extend their own Community
+Activity Types through Community Settings, provided every activity remains
+mapped to GSN-owned universal behaviour categories and evidence rules.
+
 Examples include:
 
 - School;
@@ -325,6 +334,89 @@ Community Settings does not create new Trust Categories.
 
 It only creates new Community Activities.
 
+Each configured Community Activity Type must define:
+
+- mapped universal behaviour category or categories;
+- evidence level required;
+- privacy scope;
+- approval or verification workflow;
+- Trust Passport eligibility;
+- Community Verification eligibility;
+- report or aggregate impact eligibility.
+
+Community Activity Types may represent charitable, religious, cultural,
+educational, professional, cooperative, commercial, welfare, governance, or
+public-good work.
+
+Activity names may be local.
+
+Evidence rules remain universal.
+
+Sensitive activity types must default to aggregate-only or restricted
+visibility.
+
+### Community Session Configuration
+
+Community Settings may enable Community Sessions under configured Community
+Activity Types.
+
+Community Sessions are not a separate engine.
+
+Community Sessions configure how a community records time-bound evidence from
+meetings, training, worship, outreach, lectures, seminars, conferences, market
+meetings, elections, welfare activity, medical outreach, online gatherings, and
+hybrid gatherings.
+
+Community Settings may configure:
+
+- whether session evidence is enabled;
+- allowed session modes: physical, online, hybrid, offline-first;
+- allowed Presence Evidence Methods;
+- whether QR check-in is allowed;
+- whether rotating QR or short-code check-in is required;
+- whether local proximity, such as Bluetooth, may strengthen evidence;
+- whether member self-claim is allowed;
+- whether administrator confirmation is required;
+- whether trusted member attestation is allowed;
+- whether offline capture and later sync are allowed;
+- whether online attendance signals are accepted;
+- whether partner or venue confirmation is accepted;
+- evidence strength mapping for each capture method;
+- Trust Passport eligibility;
+- Community Verification eligibility;
+- report or aggregate capacity eligibility;
+- maximum weight or caps for repeated Presence Evidence;
+- privacy defaults for sensitive sessions.
+
+Attendance tracking must be optional.
+
+Presence Evidence must be optional per Community Activity Type and per
+Community Session.
+
+A community may disable attendance-like records entirely while still using
+Community Activities, Trust Events, Marketplace, Spotlight, Demand, Vault, or
+Community Finance.
+
+Community Settings must distinguish:
+
+- Presence: the member was there;
+- Participation: the member took part;
+- Contribution: the member added value;
+- Responsibility: the member carried duty or leadership.
+
+These evidence levels must not be collapsed into one attendance score.
+
+For light phones and low-connectivity environments, Community Settings must
+support low-bandwidth modes such as short code, offline capture, later sync,
+administrator confirmation, and member attestation.
+
+Settings must not require always-on GPS, always-on Bluetooth, biometric capture,
+or background tracking.
+
+Any stronger proximity, biometric, location, or partner-confirmed method must be
+explicitly enabled, lawful in the relevant community context, and attached to a
+privacy scope.
+
 ---
 
 ## 14. Verification Configuration
@@ -407,6 +499,8 @@ Community Identity
 -> Spotlight Rules
 -> Verification Rules
 -> Membership Rules
+-> Activity Catalogue
+-> Evidence and Privacy Rules
 -> Finish
 ```
 

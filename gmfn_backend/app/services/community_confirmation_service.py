@@ -66,6 +66,18 @@ VALID_CONFIRMATION_REQUEST_STATUSES = {
     "closed",
     "under_review",
 }
+VALID_CONFIRMATION_REQUEST_MODES = {
+    "relay",
+    "instant_pulse",
+}
+VALID_CONFIRMATION_CALLBACK_CHANNELS = {
+    "none",
+    "sms",
+    "text",
+    "whatsapp",
+    "whats_app",
+    "wa",
+}
 PUBLIC_ACTIVITY_EXCLUDED_EVENT_TYPES = PUBLIC_MEMBER_ACTIVITY_EXCLUDED_EVENT_TYPES
 VALID_CONFIRMATION_REVIEW_STATUSES = {
     "open",
@@ -93,6 +105,19 @@ VALID_CONFIRMATION_EVIDENCE_TYPES = {
     "community_statement",
     "system_snapshot",
     "external_reference",
+}
+VALID_CONFIRMATION_CONTACT_ROLE_TYPES = {
+    "admin",
+    "member",
+    "sponsor",
+    "voter",
+    "nominated",
+}
+VALID_CONFIRMATION_CONTACT_STANDING_STATUSES = {
+    "active",
+    "caution",
+    "suspended",
+    "inactive",
 }
 DEFAULT_REVIEW_ATTENTION_AFTER_HOURS = 24
 DEFAULT_REVIEW_OVERDUE_AFTER_HOURS = 72
@@ -1564,13 +1589,15 @@ def update_admin_confirmation_contact(
 
     if role_type is not None:
         clean_role = str(role_type or "").strip().lower()
-        if clean_role in {"admin", "member", "sponsor", "voter", "nominated"}:
-            contact.role_type = clean_role
+        if clean_role not in VALID_CONFIRMATION_CONTACT_ROLE_TYPES:
+            raise ValueError("Unsupported confirmation contact role type")
+        contact.role_type = clean_role
 
     if standing_status is not None:
         clean_status = str(standing_status or "").strip().lower()
-        if clean_status in {"active", "caution", "suspended", "inactive"}:
-            contact.standing_status = clean_status
+        if clean_status not in VALID_CONFIRMATION_CONTACT_STANDING_STATUSES:
+            raise ValueError("Unsupported confirmation contact standing status")
+        contact.standing_status = clean_status
 
     if priority_order is not None:
         contact.priority_order = max(0, min(int(priority_order), 100))

@@ -1233,6 +1233,21 @@ def _clean_role(value: Optional[str], default: str = "member") -> str:
     return _clean_str(value, default).lower().replace(" ", "_")
 
 
+def _clean_optional_query_filter(value: Optional[str], field_name: str) -> Optional[str]:
+    if value is None:
+        return None
+    cleaned = _clean_role(value, "")
+    if not cleaned:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "code": "invalid_query_filter",
+                "message": f"{field_name} filter must not be blank.",
+            },
+        )
+    return cleaned
+
+
 def _clean_template_key(value: Optional[str], default: str = "") -> str:
     text = _clean_str(value, default).lower()
     text = re.sub(r"[\s-]+", "_", text)
@@ -16815,6 +16830,14 @@ def _reject_non_bool(value: Any, field_name: str) -> Any:
     return value
 
 
+def _reject_non_text_value(value: Any, field_name: str) -> Any:
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name} must be text.")
+    return value
+
+
 def _reject_invalid_policy_count_config(value: Any) -> Any:
     if value is None:
         return value
@@ -16871,8 +16894,8 @@ class CommunityDomainDraftIn(BaseModel):
 
     domain_name: str = Field(..., min_length=2, max_length=80)
     display_name: str = Field(..., min_length=2, max_length=160)
-    domain_type: str = Field(default="generic_association", max_length=64)
-    template_key: Optional[str] = Field(default=None, max_length=64)
+    domain_type: str = Field(default="generic_association", min_length=1, max_length=64)
+    template_key: Optional[str] = Field(default=None, min_length=1, max_length=64)
     country: Optional[str] = Field(default=None, max_length=80)
     state: Optional[str] = Field(default=None, max_length=120)
     public_profile: Optional[str] = Field(default=None, max_length=1200)
@@ -16883,13 +16906,13 @@ class CommunityNodeCreateIn(BaseModel):
 
     name: str = Field(..., min_length=2, max_length=160)
     parent_node_id: Optional[int] = Field(default=None, ge=1)
-    node_type: str = Field(default="unit", max_length=64)
-    node_kind: str = Field(default="administrative", max_length=64)
+    node_type: str = Field(default="unit", min_length=1, max_length=64)
+    node_kind: str = Field(default="administrative", min_length=1, max_length=64)
     description: Optional[str] = Field(default=None, max_length=1000)
     sort_order: int = Field(default=0, ge=0, le=100000)
-    visibility_policy: str = Field(default="members", max_length=32)
+    visibility_policy: str = Field(default="members", min_length=1, max_length=32)
     inherits_parent_policy: bool = True
-    status: str = Field(default="active", max_length=24)
+    status: str = Field(default="active", min_length=1, max_length=24)
 
     @field_validator("parent_node_id", mode="before")
     @classmethod
@@ -16910,22 +16933,32 @@ class CommunityNodeCreateIn(BaseModel):
 class CommunityNodeStatusUpdateIn(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
 
-    status: str = Field(..., max_length=24)
+    status: str = Field(..., min_length=1, max_length=24)
     status_note: Optional[str] = Field(default=None, max_length=1200)
+
+    @field_validator("status", "status_note", mode="before")
+    @classmethod
+    def _reject_non_text_status_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_value(value, info.field_name)
 
 
 class CommunityDomainMemberUpsertIn(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
 
     user_id: int = Field(..., ge=1)
-    role: str = Field(default="member", max_length=32)
-    status: str = Field(default="active", max_length=24)
+    role: str = Field(default="member", min_length=1, max_length=32)
+    status: str = Field(default="active", min_length=1, max_length=24)
     title: Optional[str] = Field(default=None, max_length=120)
 
     @field_validator("user_id", mode="before")
     @classmethod
     def _reject_bool_ids(cls, value: Any) -> Any:
         return _reject_bool_identifier(value, "user_id")
+
+    @field_validator("role", "status", "title", mode="before")
+    @classmethod
+    def _reject_non_text_member_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_value(value, info.field_name)
 
 
 class CommunityDomainMembershipRequestIn(BaseModel):
@@ -16934,19 +16967,31 @@ class CommunityDomainMembershipRequestIn(BaseModel):
     request_note: Optional[str] = Field(default=None, max_length=1200)
     title: Optional[str] = Field(default=None, max_length=120)
 
+    @field_validator("request_note", "title", mode="before")
+    @classmethod
+    def _reject_non_text_membership_request_controls(
+        cls, value: Any, info: Any
+    ) -> Any:
+        return _reject_non_text_value(value, info.field_name)
+
 
 class CommunityNodeMemberUpsertIn(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
 
     user_id: int = Field(..., ge=1)
-    role: str = Field(default="member", max_length=32)
-    status: str = Field(default="active", max_length=24)
+    role: str = Field(default="member", min_length=1, max_length=32)
+    status: str = Field(default="active", min_length=1, max_length=24)
     title: Optional[str] = Field(default=None, max_length=120)
 
     @field_validator("user_id", mode="before")
     @classmethod
     def _reject_bool_ids(cls, value: Any) -> Any:
         return _reject_bool_identifier(value, "user_id")
+
+    @field_validator("role", "status", "title", mode="before")
+    @classmethod
+    def _reject_non_text_member_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_value(value, info.field_name)
 
 
 class CommunityDomainPolicyUpsertIn(BaseModel):
@@ -16955,10 +17000,12 @@ class CommunityDomainPolicyUpsertIn(BaseModel):
     policy_key: str = Field(..., min_length=2, max_length=96)
     action_key: str = Field(..., min_length=2, max_length=96)
     community_node_id: Optional[int] = Field(default=None, ge=1)
-    scope_type: str = Field(default="domain", max_length=24)
-    review_mode: str = Field(default="domain_admin_review", max_length=48)
-    required_role: Optional[str] = Field(default=None, max_length=48)
-    status: str = Field(default="active", max_length=24)
+    scope_type: str = Field(default="domain", min_length=1, max_length=24)
+    review_mode: str = Field(
+        default="domain_admin_review", min_length=1, max_length=48
+    )
+    required_role: Optional[str] = Field(default=None, min_length=1, max_length=48)
+    status: str = Field(default="active", min_length=1, max_length=24)
     policy_summary: Optional[str] = Field(default=None, max_length=1200)
     config: Optional[dict[str, Any]] = None
 
@@ -16966,6 +17013,20 @@ class CommunityDomainPolicyUpsertIn(BaseModel):
     @classmethod
     def _reject_bool_ids(cls, value: Any) -> Any:
         return _reject_bool_identifier(value, "community_node_id")
+
+    @field_validator(
+        "policy_key",
+        "action_key",
+        "scope_type",
+        "review_mode",
+        "required_role",
+        "status",
+        "policy_summary",
+        mode="before",
+    )
+    @classmethod
+    def _reject_non_text_policy_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_value(value, info.field_name)
 
     @field_validator("config", mode="before")
     @classmethod
@@ -16980,8 +17041,8 @@ class CommunityDomainActionReviewCreateIn(BaseModel):
     community_node_id: Optional[int] = Field(default=None, ge=1)
     policy_id: Optional[int] = Field(default=None, ge=1)
     subject_user_id: Optional[int] = Field(default=None, ge=1)
-    target_type: Optional[str] = Field(default=None, max_length=64)
-    target_id: Optional[str] = Field(default=None, max_length=96)
+    target_type: Optional[str] = Field(default=None, min_length=1, max_length=64)
+    target_id: Optional[str] = Field(default=None, min_length=1, max_length=96)
     request_note: Optional[str] = Field(default=None, max_length=1200)
     payload: Optional[dict[str, Any]] = None
 
@@ -16997,19 +17058,29 @@ class CommunityDomainActionReviewDecisionIn(BaseModel):
     decision: str = Field(..., pattern="^(approve|reject|needs_changes|recuse)$")
     decision_note: Optional[str] = Field(default=None, max_length=1200)
 
+    @field_validator("decision", "decision_note", mode="before")
+    @classmethod
+    def _reject_non_text_decision_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_value(value, info.field_name)
+
 
 class CommunityDomainActionReviewCancelIn(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
 
     cancel_note: Optional[str] = Field(default=None, max_length=1200)
 
+    @field_validator("cancel_note", mode="before")
+    @classmethod
+    def _reject_non_text_cancel_controls(cls, value: Any) -> Any:
+        return _reject_non_text_value(value, "cancel_note")
+
 
 class CommunityDomainActionReviewRevisionIn(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
 
     subject_user_id: Optional[int] = Field(default=None, ge=1)
-    target_type: Optional[str] = Field(default=None, max_length=64)
-    target_id: Optional[str] = Field(default=None, max_length=96)
+    target_type: Optional[str] = Field(default=None, min_length=1, max_length=64)
+    target_id: Optional[str] = Field(default=None, min_length=1, max_length=96)
     request_note: Optional[str] = Field(default=None, max_length=1200)
     payload: Optional[dict[str, Any]] = None
 
@@ -17028,14 +17099,16 @@ class CommunityDomainActionReviewCommentIn(BaseModel):
 class CommunityDomainActionReviewEvidenceIn(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
 
-    evidence_type: str = Field(default="document", max_length=48)
+    evidence_type: str = Field(default="document", min_length=1, max_length=48)
     title: str = Field(..., min_length=2, max_length=160)
     description: Optional[str] = Field(default=None, max_length=1200)
-    file_name: Optional[str] = Field(default=None, max_length=255)
-    content_type: Optional[str] = Field(default=None, max_length=120)
-    storage_key: Optional[str] = Field(default=None, max_length=512)
-    external_reference: Optional[str] = Field(default=None, max_length=512)
-    checksum: Optional[str] = Field(default=None, max_length=128)
+    file_name: Optional[str] = Field(default=None, min_length=1, max_length=255)
+    content_type: Optional[str] = Field(default=None, min_length=1, max_length=120)
+    storage_key: Optional[str] = Field(default=None, min_length=1, max_length=512)
+    external_reference: Optional[str] = Field(
+        default=None, min_length=1, max_length=512
+    )
+    checksum: Optional[str] = Field(default=None, min_length=1, max_length=128)
 
 
 def _get_domain_or_404(db: Session, community_domain_id: int) -> CommunityDomain:
@@ -17172,6 +17245,7 @@ def _reject_non_text_node_status_payload_fields(payload: dict[str, Any]) -> None
     _reject_non_text_payload_fields(
         payload,
         ("new_status", "status", "previous_status", "status_note", "note"),
+        non_blank_keys=("new_status", "status", "previous_status"),
     )
 
 
@@ -17407,8 +17481,12 @@ def _payload_int(payload: dict[str, Any], key: str) -> int:
 
 
 def _reject_non_text_payload_fields(
-    payload: dict[str, Any], keys: tuple[str, ...]
+    payload: dict[str, Any],
+    keys: tuple[str, ...],
+    *,
+    non_blank_keys: tuple[str, ...] = (),
 ) -> None:
+    non_blank_key_set = set(non_blank_keys)
     for key in keys:
         if key not in payload or payload.get(key) is None:
             continue
@@ -17418,6 +17496,14 @@ def _reject_non_text_payload_fields(
                 detail={
                     "code": "invalid_action_review_payload",
                     "message": f"Action review payload {key} must be text.",
+                },
+            )
+        if key in non_blank_key_set and not _clean_str(payload.get(key)):
+            raise HTTPException(
+                status_code=422,
+                detail={
+                    "code": "invalid_action_review_payload",
+                    "message": f"Action review payload {key} must not be blank.",
                 },
             )
 
@@ -17466,6 +17552,7 @@ def _ensure_member_action_review_target_matches(
     _reject_non_text_payload_fields(
         payload,
         ("role", "status", "previous_status", "title"),
+        non_blank_keys=("role", "status", "previous_status"),
     )
     if "status" in payload and payload.get("status") is not None:
         _normalize_member_status_value(payload.get("status"))
@@ -17487,7 +17574,15 @@ def _ensure_member_action_review_target_matches(
         return
     try:
         target_user_id = int(clean_target_id)
-    except (TypeError, ValueError):
+    except (TypeError, ValueError) as exc:
+        if expected_target_type == "domain_member":
+            raise HTTPException(
+                status_code=422,
+                detail={
+                    "code": "invalid_action_review_payload",
+                    "message": "Domain member action review target_id must be the member user id.",
+                },
+            ) from exc
         return
     if target_user_id != payload_user_id:
         raise HTTPException(
@@ -17606,6 +17701,7 @@ def _normalize_self_service_membership_revision_payload(
     _reject_non_text_payload_fields(
         proposed_payload,
         ("role", "status", "previous_status", "title"),
+        non_blank_keys=("role", "status", "previous_status"),
     )
 
     if "user_id" in proposed_payload and _payload_int(proposed_payload, "user_id") != int(user_id):
@@ -20177,8 +20273,9 @@ def list_my_community_domain_membership_requests(
         .filter(CommunityDomainActionReview.target_type == "domain_member")
         .filter(CommunityDomainActionReview.target_id == str(int(current_user.id)))
     )
-    if status:
-        query = query.filter(CommunityDomainActionReview.status == _clean_role(status))
+    clean_status = _clean_optional_query_filter(status, "status")
+    if clean_status:
+        query = query.filter(CommunityDomainActionReview.status == clean_status)
 
     candidate_rows = query.order_by(
         CommunityDomainActionReview.created_at.desc(),
@@ -20564,8 +20661,9 @@ def list_community_domain_action_reviews(
                 & (CommunityDomainActionReview.target_id == str(int(user_id)))
             )
         )
-    if status:
-        query = query.filter(CommunityDomainActionReview.status == _clean_role(status))
+    clean_status = _clean_optional_query_filter(status, "status")
+    if clean_status:
+        query = query.filter(CommunityDomainActionReview.status == clean_status)
 
     rows = query.order_by(
         CommunityDomainActionReview.created_at.desc(),
@@ -20739,8 +20837,9 @@ def list_my_community_domain_action_reviews(
         .filter(CommunityDomainActionReview.community_domain_id == int(domain.id))
         .filter(CommunityDomainActionReview.requested_by_user_id == int(current_user.id))
     )
-    if status:
-        query = query.filter(CommunityDomainActionReview.status == _clean_role(status))
+    clean_status = _clean_optional_query_filter(status, "status")
+    if clean_status:
+        query = query.filter(CommunityDomainActionReview.status == clean_status)
 
     rows = query.order_by(
         CommunityDomainActionReview.created_at.desc(),
@@ -20867,15 +20966,16 @@ def list_community_domain_action_review_activity(
     )
     if node is not None:
         query = query.filter(CommunityDomainActionReview.community_node_id.in_(node_scope_ids))
-    if status:
-        query = query.filter(CommunityDomainActionReview.status == _clean_role(status))
+    clean_status = _clean_optional_query_filter(status, "status")
+    if clean_status:
+        query = query.filter(CommunityDomainActionReview.status == clean_status)
 
     rows = query.order_by(
         CommunityDomainActionReview.updated_at.desc(),
         CommunityDomainActionReview.id.desc(),
     ).all()
 
-    requested_event_type = _clean_role(event_type) if event_type else None
+    requested_event_type = _clean_optional_query_filter(event_type, "event_type")
     activity_items: list[dict[str, Any]] = []
     for row in rows:
         for item in _action_review_activity_items(db, row):
