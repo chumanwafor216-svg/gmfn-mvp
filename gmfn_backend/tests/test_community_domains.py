@@ -22359,6 +22359,21 @@ def test_domain_member_review_rejects_numeric_target_mismatch(
                 rejected_float_action_review_text.text
             )
 
+        for bad_payload in (["not", "object"], "not-object"):
+            rejected_payload_container = client.post(
+                f"/community-domains/{domain_id}/action-reviews",
+                json={
+                    "action_key": "domain_member.upsert",
+                    "target_type": "domain_member",
+                    "target_id": str(owner.id),
+                    "payload": bad_payload,
+                },
+            )
+            assert rejected_payload_container.status_code == 422, (
+                rejected_payload_container.text
+            )
+            assert "payload must be an object" in rejected_payload_container.text
+
         rejected_bool_payload = client.post(
             f"/community-domains/{domain_id}/action-reviews",
             json={
@@ -23416,6 +23431,21 @@ def test_node_member_role_change_revision_rejects_bool_payload_fields(
             rejected_float_revision_payload_user.json()["detail"]["code"]
             == "invalid_action_review_payload"
         )
+
+        for bad_payload in (["not", "object"], "not-object"):
+            rejected_revision_payload_container = client.post(
+                f"/community-domains/{domain_id}/action-reviews/{review['id']}/revision",
+                json={
+                    "request_note": "Payload container should be object.",
+                    "payload": bad_payload,
+                },
+            )
+            assert rejected_revision_payload_container.status_code == 422, (
+                rejected_revision_payload_container.text
+            )
+            assert "payload must be an object" in (
+                rejected_revision_payload_container.text
+            )
 
         for field_name, field_value in (
             ("role", True),

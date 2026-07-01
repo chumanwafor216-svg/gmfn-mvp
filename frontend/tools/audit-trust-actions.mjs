@@ -396,6 +396,24 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityVerifyPage.tsx",
+  /const confidenceRibbonItems:[\s\S]*?Registry status[\s\S]*?Record integrity[\s\S]*?Last registry update[\s\S]*?Evidence chain[\s\S]*?Verification path/,
+  "CommunityVerifyPage confidence ribbon must expose registry status, record integrity, last registry update, evidence chain, and verification path."
+);
+
+assertContains(
+  "src/pages/CommunityVerifyPage.tsx",
+  /TrustDocumentRegistryMasthead[\s\S]*?Official GSN Registry Record[\s\S]*?TrustDocumentConfidenceRibbon items=\{confidenceRibbonItems\}[\s\S]*?data-gsn-trust-document-certificate="community-verification"[\s\S]*?TrustDocumentSecurityPanel[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This page confirms"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This page does not confirm"[\s\S]*?TrustDocumentFingerprint[\s\S]*?label="Record fingerprint"/,
+  "CommunityVerifyPage must render the GSN Trust Document Language sequence with masthead, confidence ribbon, security panel, confirms/does-not-confirm panels, and record fingerprint."
+);
+
+assertContains(
+  "src/pages/CommunityVerifyPage.tsx",
+  /Reference fingerprint[\s\S]*?not a cryptographic hash[\s\S]*?Reference fingerprint for this visible public record\. It is not a cryptographic proof\./,
+  "CommunityVerifyPage must not call the generated reference fingerprint cryptographic proof."
+);
+
+assertContains(
+  "src/pages/CommunityVerifyPage.tsx",
   /title: "Trust anchor"[\s\S]*?Names are display labels; the Community ID is what the reader should check[\s\S]*?title: "Hidden by design"[\s\S]*?Private member lists, phone numbers, verifier names, witness details, disputes, and admin records are not shown on this public page[\s\S]*?Private by design[\s\S]*?Member lists, contacts, disputes, and admin notes stay hidden/,
   "CommunityVerifyPage must implement the Community Public Face anchor rule and public/member/admin privacy boundary using existing data only."
 );

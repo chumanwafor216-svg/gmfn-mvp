@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, Query
+from datetime import datetime
+
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from app.schemas.loan_hardening import (
@@ -21,6 +23,21 @@ from app.db.database import get_db
 from app.core.auth import get_current_user
 
 router = APIRouter(tags=["loan-hardening"])
+
+
+def _parse_optional_iso_datetime_query(
+    value: str | None,
+    field_name: str,
+) -> datetime | None:
+    if not value:
+        return None
+    try:
+        return datetime.fromisoformat(value)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=422,
+            detail=f"{field_name} must be an ISO datetime string.",
+        ) from exc
 
 
 @router.post("/loans/coverage-check", response_model=LoanCoverageCheckOut)
@@ -60,10 +77,8 @@ def get_loan_timeout_status(
 ):
     _ = current_user
 
-    from datetime import datetime
-
-    created_dt = datetime.fromisoformat(created_at) if created_at else None
-    expires_dt = datetime.fromisoformat(expires_at) if expires_at else None
+    created_dt = _parse_optional_iso_datetime_query(created_at, "created_at")
+    expires_dt = _parse_optional_iso_datetime_query(expires_at, "expires_at")
 
     return timeout_status(
         created_at=created_dt,

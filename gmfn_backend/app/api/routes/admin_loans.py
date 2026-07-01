@@ -29,8 +29,8 @@ def _effective_clan_id(clan_id_query: int | None, x_clan_id: int | None) -> int:
 
 @router.get("/incomplete")
 def list_incomplete_loans(
-    clan_id: int | None = Query(default=None),
-    x_clan_id: int | None = Header(default=None, alias="X-Clan-Id"),
+    clan_id: int | None = Query(default=None, ge=1),
+    x_clan_id: int | None = Header(default=None, alias="X-Clan-Id", ge=1),
     limit: int = Query(default=50, ge=1, le=200),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
@@ -111,8 +111,8 @@ def list_incomplete_loans(
 
 @router.get("/locks")
 def list_active_locks(
-    clan_id: int | None = Query(default=None),
-    x_clan_id: int | None = Header(default=None, alias="X-Clan-Id"),
+    clan_id: int | None = Query(default=None, ge=1),
+    x_clan_id: int | None = Header(default=None, alias="X-Clan-Id", ge=1),
     limit: int = Query(default=200, ge=1, le=1000),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),

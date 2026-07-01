@@ -19,11 +19,11 @@ const actionTargetRoutesSource = readFileSync(
   "utf8"
 );
 const findings = [];
-const expectedStableActionCount = 72;
+const expectedStableActionCount = 70;
 const expectedNativeFieldCount = 37;
 const expectedSourceBreakdown = {
-  front: 12,
-  body: 60,
+  front: 9,
+  body: 61,
 };
 const expectedVisibleIntentActionCount = 5;
 const expectedMobileShellBreakdown = {
@@ -350,13 +350,8 @@ if (visibleIntentActionCount !== expectedVisibleIntentActionCount) {
 }
 
 assertContains(
-  /debugId="marketplace\.tile\.money"[\s\S]*?aria-label="Open Money In and this marketplace pool"[\s\S]*?openMarketplaceSection\(event, "money", "marketplace-money-routes"\)[\s\S]*?<MarketplaceGlyph name="pool"[\s\S]*?Money In \/ Pool[\s\S]*?Put money into this marketplace pool\.[\s\S]*?Money In[\s\S]*?Pool[\s\S]*?Pay-In Rail/,
-  "Marketplace Money In / Pool card must open the money section only and must not mix normal withdrawal into its front-door label."
-);
-
-assertContains(
-  /const marketplaceMoneyOutTo = useMemo\([\s\S]*?resolveCtaTarget\("moneyOut"[\s\S]*?debugId: "marketplace\.route\.moneyOut"[\s\S]*?to=\{marketplaceMoneyOutTo\}[\s\S]*?debugId="marketplace\.tile\.withdrawal"[\s\S]*?aria-label="Open normal Money Out withdrawal for this marketplace"[\s\S]*?<MarketplaceGlyph name="card"[\s\S]*?Money Out \/ Withdrawal[\s\S]*?Withdraw your own available money\.[\s\S]*?Own Money[\s\S]*?Payout Account[\s\S]*?Check First/,
-  "Marketplace must expose normal Money Out / Withdrawal as a separate front-door route from Support & Loans."
+  /debugId="marketplace\.tile\.money"[\s\S]*?aria-label="Open Money and trust tools for this marketplace"[\s\S]*?openMarketplaceSection\(event, "money", "marketplace-money-routes"\)[\s\S]*?<MarketplaceGlyph name="pool"[\s\S]*?Money & Trust[\s\S]*?Local money routes and standing\.[\s\S]*?Finance[\s\S]*?Money In[\s\S]*?Money Out[\s\S]*?Trust/,
+  "Marketplace Money & Trust card must group local finance, Money In, Money Out, and compact trust standing behind one front-door lane."
 );
 
 assertContains(
@@ -365,18 +360,8 @@ assertContains(
 );
 
 assertContains(
-  /debugId="marketplace\.tile\.rosca"[\s\S]*?aria-label="Open ROSCA contribution cycles for this marketplace"[\s\S]*?openMarketplaceSection\(event, "rosca", "marketplace-rosca"\)[\s\S]*?<MarketplaceGlyph name="rosca"[\s\S]*?ROSCA[\s\S]*?Member savings circle for this community[\s\S]*?Yearly Service[\s\S]*?Member Cycle[\s\S]*?Payout Record/,
-  "Marketplace ROSCA grouped card must stay a distinct major front lane and open the ROSCA section only."
-);
-
-assertContains(
-  /debugId="marketplace\.extra-tools\.toggle"[\s\S]*?More \/ Community Tools[\s\S]*?Trust, ID, evidence, messages, and route help[\s\S]*?Trust[\s\S]*?Identity[\s\S]*?TrustSlip[\s\S]*?Messages/,
-  "Marketplace More / Community Tools grouped card must keep only secondary helper tools visible on the front card."
-);
-
-assertContains(
-  /debugId="marketplace\.tile\.support"[\s\S]*?aria-label="Open Support Requests, supporters and loans"[\s\S]*?openMarketplaceSection\(\s*event,\s*"support",\s*"marketplace-loans-support"\s*\)[\s\S]*?<MarketplaceGlyph name="support"[\s\S]*?Support & Loans[\s\S]*?Get help and manage loans[\s\S]*?Support Requests[\s\S]*?Loan Process/,
-  "Marketplace Support & Loans grouped card must open the support section only."
+  /debugId="marketplace\.tile\.support"[\s\S]*?aria-label="Open Support Requests, ROSCA, supporters and loans"[\s\S]*?openMarketplaceSection\(\s*event,\s*"support",\s*"marketplace-loans-support"\s*\)[\s\S]*?<MarketplaceGlyph name="support"[\s\S]*?Support & ROSCA[\s\S]*?Get help and run savings circles[\s\S]*?Support Requests[\s\S]*?ROSCA[\s\S]*?Loans/,
+  "Marketplace Support & ROSCA grouped card must open the support lane first and expose ROSCA as a deeper grouped support tool."
 );
 
 assertContains(
@@ -395,8 +380,8 @@ assertContains(
 );
 
 assertContains(
-  /debugId="marketplace\.row\.records-links"[\s\S]*?aria-label="Open access and public links for this marketplace"[\s\S]*?openMarketplaceSection\(event, "tools", "marketplace-owned-links"\)[\s\S]*?<MarketplaceGlyph name="links"[\s\S]*?Public Links[\s\S]*?Verify, invite, create, or share the shop\.[\s\S]*?Verify[\s\S]*?Invite[\s\S]*?Create[\s\S]*?Shop Face/,
-  "Marketplace public links grouped card must open marketplace-owned links and advertise verify, invite, create, and shop sharing."
+  /debugId="marketplace\.row\.records-links"[\s\S]*?aria-label="Open marketplace tools, access and public links"[\s\S]*?openMarketplaceSection\(event, "tools", "marketplace-owned-links"\)[\s\S]*?<MarketplaceGlyph name="links"[\s\S]*?Marketplace Tools[\s\S]*?Invite, verify, share, and open helper tools\.[\s\S]*?Verify[\s\S]*?Invite[\s\S]*?Create[\s\S]*?Shop Face[\s\S]*?Helpers/,
+  "Marketplace Tools grouped card must open marketplace-owned links and advertise verify, invite, create, shop sharing, and helper tools."
 );
 
 assertContains(
@@ -702,12 +687,9 @@ const expectedOrder = [
   exactDebugId("marketplace.empty.dashboard"),
   exactDebugId("marketplace.tile.trust"),
   exactDebugId("marketplace.tile.money"),
-  exactDebugId("marketplace.tile.withdrawal"),
-  exactDebugId("marketplace.tile.rosca"),
   exactDebugId("marketplace.tile.members"),
   exactDebugId("marketplace.tile.support"),
   exactDebugId("marketplace.row.records-links"),
-  exactDebugId("marketplace.extra-tools.toggle"),
   exactDebugId("marketplace.intent.submit"),
   dynamicDebugId(
     "marketplace.intent.${item.id}",
@@ -762,6 +744,7 @@ const expectedOrder = [
     /debugId=\{`marketplace\.member\.\$\{row\.gmfnId[\s\S]{0,140}\}\.shop`\}/
   ),
   exactDebugId("marketplace.support.toggle"),
+  exactDebugId("marketplace.support.open-rosca"),
   exactDebugId("marketplace.support.start-request"),
   exactDebugId("marketplace.support.refresh-fit"),
   exactDebugId("marketplace.support.cancel-draft"),

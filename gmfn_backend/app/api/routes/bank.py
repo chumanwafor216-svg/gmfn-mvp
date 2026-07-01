@@ -61,6 +61,40 @@ def _safe_meta_json(raw: Optional[str]) -> Dict[str, Any]:
         return {}
 
 
+def _reject_non_text_value(value: Any, field_name: str) -> Any:
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name} must be text.")
+    return value
+
+
+def _reject_non_decimal_string(value: Any, field_name: str) -> Any:
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name} must be a decimal string.")
+    return value
+
+
+def _reject_non_datetime_string(value: Any, field_name: str) -> Any:
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name} must be an ISO datetime string.")
+    return value
+
+
+def _reject_bool_integer(value: Any, field_name: str) -> Any:
+    if value is None:
+        return value
+    if isinstance(value, bool):
+        raise ValueError(f"{field_name} must be an integer, not a boolean.")
+    if isinstance(value, float):
+        raise ValueError(f"{field_name} must be an integer, not a float.")
+    return value
+
+
 def _expected_out(row: ExpectedPayment) -> Dict[str, Any]:
     meta = _safe_meta_json(getattr(row, "meta_json", None))
     return {
@@ -93,12 +127,37 @@ class BankIngestIn(BaseModel):
     reference: Optional[str] = None
     description: Optional[str] = None
 
+    @field_validator("amount", mode="before")
+    @classmethod
+    def _reject_amount_boundary_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_decimal_string(value, info.field_name)
+
+    @field_validator("currency", "direction", "reference", "description", mode="before")
+    @classmethod
+    def _reject_text_boundary_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_value(value, info.field_name)
+
 
 class ExpectedPoolDepositIn(BaseModel):
     amount: Decimal = Field(..., gt=Decimal("0"))
     currency: str = Field(default="NGN", min_length=3, max_length=8)
     reference_display: Optional[str] = None
     due_at: Optional[datetime] = None
+
+    @field_validator("amount", mode="before")
+    @classmethod
+    def _reject_amount_boundary_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_decimal_string(value, info.field_name)
+
+    @field_validator("currency", "reference_display", mode="before")
+    @classmethod
+    def _reject_text_boundary_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_value(value, info.field_name)
+
+    @field_validator("due_at", mode="before")
+    @classmethod
+    def _reject_datetime_boundary_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_datetime_string(value, info.field_name)
 
 
 class ExpectedLoanRepaymentIn(BaseModel):
@@ -109,12 +168,23 @@ class ExpectedLoanRepaymentIn(BaseModel):
 
     @field_validator("loan_id", mode="before")
     @classmethod
-    def _reject_bool_integer_controls(cls, value: Any) -> Any:
-        if isinstance(value, bool):
-            raise ValueError("loan_id must be an integer, not a boolean.")
-        if isinstance(value, float):
-            raise ValueError("loan_id must be an integer, not a float.")
-        return value
+    def _reject_bool_integer_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_bool_integer(value, info.field_name)
+
+    @field_validator("amount", mode="before")
+    @classmethod
+    def _reject_amount_boundary_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_decimal_string(value, info.field_name)
+
+    @field_validator("currency", mode="before")
+    @classmethod
+    def _reject_text_boundary_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_value(value, info.field_name)
+
+    @field_validator("due_at", mode="before")
+    @classmethod
+    def _reject_datetime_boundary_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_datetime_string(value, info.field_name)
 
 
 def _bank_event_out(e: BankEvent) -> Dict[str, Any]:

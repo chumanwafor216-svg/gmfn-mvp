@@ -36,6 +36,16 @@ def test_loan_instruction_rejects_malformed_boundary_controls(
             f"{field_name} must be an integer, not a float",
         )
 
+    for bad_value in (False, 20):
+        payload = dict(base_payload)
+        payload["amount"] = bad_value
+        _assert_rejected(
+            client,
+            "/payment-instructions/loan",
+            payload,
+            "amount must be a decimal string",
+        )
+
     for bad_value in (False, 1.5):
         payload = dict(base_payload)
         payload["currency"] = bad_value
@@ -116,6 +126,16 @@ def test_merchant_verify_instruction_rejects_malformed_boundary_controls(
             f"{field_name} must be an integer, not a float",
         )
 
+    for bad_value in (False, 20):
+        payload = dict(base_payload)
+        payload["amount"] = bad_value
+        _assert_rejected(
+            client,
+            "/payment-instructions/merchant-verify",
+            payload,
+            "amount must be a decimal string",
+        )
+
     for bad_value in (False, 1.5):
         payload = dict(base_payload)
         payload["currency"] = bad_value
@@ -155,6 +175,16 @@ def test_spotlight_instruction_rejects_malformed_boundary_controls(
             "/payment-instructions/spotlight",
             payload,
             f"{field_name} must be an integer, not a float",
+        )
+
+    for bad_value in (False, 20):
+        payload = dict(base_payload)
+        payload["amount"] = bad_value
+        _assert_rejected(
+            client,
+            "/payment-instructions/spotlight",
+            payload,
+            "amount must be a decimal string",
         )
 
     for field_name in ("currency", "visibility_scope"):

@@ -85,6 +85,14 @@ def _reject_bool_integer(value: Any, field_name: str) -> Any:
     return value
 
 
+def _reject_non_decimal_string(value: Any, field_name: str) -> Any:
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name} must be a decimal string.")
+    return value
+
+
 def _iso(dt: Optional[datetime]) -> Optional[str]:
     return dt.isoformat() if dt else None
 
@@ -296,6 +304,11 @@ class PoolInstructionIn(BaseModel):
     def _reject_bool_integer_controls(cls, value: Any, info: Any) -> Any:
         return _reject_bool_integer(value, info.field_name)
 
+    @field_validator("amount", mode="before")
+    @classmethod
+    def _reject_amount_boundary_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_decimal_string(value, info.field_name)
+
     @field_validator("currency", "contribution_reason", mode="before")
     @classmethod
     def _reject_non_text_controls(cls, value: Any, info: Any) -> Any:
@@ -312,6 +325,11 @@ class LoanInstructionIn(BaseModel):
     @classmethod
     def _reject_bool_integer_controls(cls, value: Any, info: Any) -> Any:
         return _reject_bool_integer(value, info.field_name)
+
+    @field_validator("amount", mode="before")
+    @classmethod
+    def _reject_amount_boundary_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_decimal_string(value, info.field_name)
 
     @field_validator("currency", mode="before")
     @classmethod
@@ -347,6 +365,11 @@ class MerchantVerifyInstructionIn(BaseModel):
     def _reject_bool_integer_controls(cls, value: Any, info: Any) -> Any:
         return _reject_bool_integer(value, info.field_name)
 
+    @field_validator("amount", mode="before")
+    @classmethod
+    def _reject_amount_boundary_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_decimal_string(value, info.field_name)
+
     @field_validator("currency", mode="before")
     @classmethod
     def _reject_non_text_controls(cls, value: Any, info: Any) -> Any:
@@ -366,6 +389,11 @@ class SpotlightInstructionIn(BaseModel):
     def _reject_bool_integer_controls(cls, value: Any, info: Any) -> Any:
         return _reject_bool_integer(value, info.field_name)
 
+    @field_validator("amount", mode="before")
+    @classmethod
+    def _reject_amount_boundary_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_decimal_string(value, info.field_name)
+
     @field_validator("currency", "visibility_scope", mode="before")
     @classmethod
     def _reject_non_text_controls(cls, value: Any, info: Any) -> Any:
@@ -384,6 +412,11 @@ class CommunityPackageInstructionIn(BaseModel):
     @classmethod
     def _reject_bool_integer_controls(cls, value: Any, info: Any) -> Any:
         return _reject_bool_integer(value, info.field_name)
+
+    @field_validator("amount", mode="before")
+    @classmethod
+    def _reject_amount_boundary_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_decimal_string(value, info.field_name)
 
     @field_validator("package_code", "currency", mode="before")
     @classmethod

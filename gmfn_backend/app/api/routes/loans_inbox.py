@@ -60,7 +60,11 @@ router = APIRouter(prefix="/loans/guarantors", tags=["loans"])
 def guarantor_inbox(
     status: str = Query("pending"),
     limit: int = Query(50, ge=1, le=200),
-    X_Clan_Id: Optional[int] = Header(default=None, convert_underscores=False),
+    X_Clan_Id: Optional[int] = Header(
+        default=None,
+        convert_underscores=False,
+        ge=1,
+    ),
     db: Session = Depends(get_db),
     user: Any = Depends(get_current_user),
 ):

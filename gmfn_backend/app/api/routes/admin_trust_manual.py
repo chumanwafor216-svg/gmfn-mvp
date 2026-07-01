@@ -2,7 +2,7 @@
 
 from typing import Any, Dict, Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user
@@ -17,11 +17,11 @@ router = APIRouter(prefix="/admin/trust-events", tags=["admin"])
 
 @router.post("/manual")
 def admin_manual_trust_event(
-    subject_user_id: int,
-    event_type: str,
-    clan_id: Optional[int] = None,
-    loan_id: Optional[int] = None,
-    guarantor_id: Optional[int] = None,
+    subject_user_id: int = Query(..., ge=1),
+    event_type: str = Query(..., min_length=1),
+    clan_id: Optional[int] = Query(default=None, ge=1),
+    loan_id: Optional[int] = Query(default=None, ge=1),
+    guarantor_id: Optional[int] = Query(default=None, ge=1),
     reason: Optional[str] = None,
     note: Optional[str] = None,
     db: Session = Depends(get_db),

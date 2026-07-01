@@ -39,6 +39,7 @@ const files = {
   trustSlipService: "gmfn_backend/app/services/trust_slips_services.py",
   publicPaper: "frontend/src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx",
   trustPaperMarks: "frontend/src/components/TrustPaperMarks.tsx",
+  trustDocumentLanguage: "frontend/src/components/TrustDocumentLanguage.tsx",
   privateEvidence: "frontend/src/pages/trustSlipVerify/TrustSlipVerifyPrivateEvidence.tsx",
   boundary: "frontend/src/pages/trustSlipVerify/TrustSlipVerifyBoundary.tsx",
   resultCard: "frontend/src/pages/trustSlipVerify/TrustSlipVerifyResultCard.tsx",
@@ -971,6 +972,21 @@ assertContains(
   "communityVerify",
   /TrustPaperAuthorityStrip[\s\S]*?GSN Community Verification Paper[\s\S]*?TrustPaperSecurityNote[\s\S]*?TrustPaperSecurityFooter/,
   "Public Community Verification paper must carry shared GSN authority, screenshot security, and footer marks."
+);
+assertContains(
+  "trustDocumentLanguage",
+  /TrustDocumentRegistryMasthead[\s\S]*?data-gsn-trust-document-masthead="true"[\s\S]*?TrustDocumentConfidenceRibbon[\s\S]*?data-gsn-confidence-ribbon="true"[\s\S]*?TrustDocumentSecurityPanel[\s\S]*?data-gsn-security-panel="true"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?data-gsn-confirmation-boundary=\{tone\}[\s\S]*?TrustDocumentFingerprint[\s\S]*?data-gsn-record-fingerprint="true"/,
+  "Shared Trust Document Language primitives must include masthead, confidence ribbon, security panel, confirmation boundary, and record fingerprint components."
+);
+assertContains(
+  "communityVerify",
+  /TrustDocumentRegistryMasthead[\s\S]*?Public verification[\s\S]*?Community Verification[\s\S]*?Official GSN Registry Record[\s\S]*?TrustDocumentConfidenceRibbon[\s\S]*?confidenceRibbonItems[\s\S]*?data-gsn-trust-document-certificate="community-verification"[\s\S]*?TrustDocumentSecurityPanel[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?This page confirms[\s\S]*?This page does not confirm[\s\S]*?TrustDocumentFingerprint[\s\S]*?Record fingerprint/,
+  "Community Verification must implement the GSN Trust Document Language sequence: registry masthead, confidence ribbon, security panel, confirms/does-not-confirm boundary, and fingerprint."
+);
+assertContains(
+  "communityVerify",
+  /Reference fingerprint[\s\S]*?not a cryptographic hash[\s\S]*?Reference fingerprint for this visible public record\. It is not a cryptographic proof\./,
+  "Community Verification fingerprint copy must stay truthful and must not claim cryptographic proof before backend cryptographic hashing exists."
 );
 assertNotContains(
   "communityVerify",

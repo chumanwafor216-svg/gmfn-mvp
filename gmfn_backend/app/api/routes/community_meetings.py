@@ -45,6 +45,14 @@ def _reject_non_text_value(value: Any, field_name: str) -> Any:
     return value
 
 
+def _reject_non_datetime_string(value: Any, field_name: str) -> Any:
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name} must be an ISO datetime string.")
+    return value
+
+
 def _reject_bool_identifier_list(value: Any, field_name: str) -> Any:
     if value is None:
         return value
@@ -78,6 +86,11 @@ class CommunityMeetingReminderIn(BaseModel):
     @classmethod
     def _reject_non_text_reminder_controls(cls, value: Any, info: Any) -> Any:
         return _reject_non_text_value(value, info.field_name)
+
+    @field_validator("scheduled_at", mode="before")
+    @classmethod
+    def _reject_scheduled_at_boundary_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_datetime_string(value, info.field_name)
 
 
 class CommunityMeetingSummaryIn(BaseModel):

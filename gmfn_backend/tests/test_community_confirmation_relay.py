@@ -2791,6 +2791,115 @@ def test_community_admin_policy_and_contact_numeric_controls_reject_booleans(
     assert events == []
 
 
+def test_community_confirmation_path_ids_reject_zero_before_service_logic(
+    client: TestClient,
+):
+    _seed_relay_fixture()
+
+    app.dependency_overrides[get_current_user] = lambda: Obj(
+        id=1,
+        email="pytest@example.com",
+        role="admin",
+    )
+    try:
+        cases = [
+            (
+                "patch",
+                "/community-confirmations/my-contact-settings/0",
+                {"opted_out": True},
+            ),
+            (
+                "get",
+                "/community-confirmations/community/0/policy",
+                None,
+            ),
+            (
+                "patch",
+                "/community-confirmations/community/0/policy",
+                {"relay_enabled": False},
+            ),
+            (
+                "patch",
+                "/community-confirmations/community/1/contacts/0",
+                {"active": False},
+            ),
+            (
+                "post",
+                "/community-confirmations/0/respond",
+                {
+                    "response_type": "active_here",
+                    "response_reason": "known_in_community",
+                },
+            ),
+            (
+                "post",
+                "/community-confirmations/0/decision",
+                {"decision": "release_goods"},
+            ),
+            (
+                "get",
+                "/community-confirmations/0/decision",
+                None,
+            ),
+            (
+                "patch",
+                "/community-confirmations/decisions/0",
+                {"status": "cancelled"},
+            ),
+            (
+                "patch",
+                "/community-confirmations/0/status",
+                {"status": "cancelled"},
+            ),
+            (
+                "get",
+                "/community-confirmations/0/review-case",
+                None,
+            ),
+            (
+                "patch",
+                "/community-confirmations/review-cases/0/assignment",
+                {"assigned_to_user_id": 1},
+            ),
+            (
+                "get",
+                "/community-confirmations/review-cases/0/evidence",
+                None,
+            ),
+            (
+                "post",
+                "/community-confirmations/review-cases/0/evidence",
+                {
+                    "evidence_type": "note",
+                    "title": "Boundary check",
+                    "body": "This must not reach review evidence service logic.",
+                },
+            ),
+            (
+                "patch",
+                "/community-confirmations/review-cases/0",
+                {"status": "open"},
+            ),
+            (
+                "get",
+                "/community-confirmations/community/0/summary",
+                None,
+            ),
+        ]
+
+        for method, path, payload in cases:
+            request = getattr(client, method)
+            response = request(path, json=payload) if payload is not None else request(path)
+            assert response.status_code == 422, (method, path, response.text)
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    with SessionLocal() as db:
+        assert db.query(TrustEvent).count() == 0
+        assert db.query(CommunityConfirmationDecision).count() == 0
+        assert db.query(CommunityConfirmationReviewEvidence).count() == 0
+
+
 def test_non_admin_cannot_manage_confirmation_policy(client: TestClient):
     _seed_relay_fixture()
 

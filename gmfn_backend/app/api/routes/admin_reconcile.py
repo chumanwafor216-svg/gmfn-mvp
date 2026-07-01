@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user
@@ -17,10 +17,10 @@ router = APIRouter(prefix="/admin/reconcile", tags=["admin"])
 @router.post("/{clan_id}")
 def admin_reconcile_clan(
     clan_id: int,
-    limit: int = 300,
-    dry_run: int = 0,
-    confirm_non_canonical: int = 1,
-    canonical_only_match: int = 0,
+    limit: int = Query(default=300, ge=1),
+    dry_run: int = Query(default=0, ge=0, le=1),
+    confirm_non_canonical: int = Query(default=1, ge=0, le=1),
+    canonical_only_match: int = Query(default=0, ge=0, le=1),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> dict[str, Any]:

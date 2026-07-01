@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import Any, Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user
@@ -22,19 +22,18 @@ def _admin_only(current_user: User) -> None:
 @router.get("/bank-events/recent")
 def admin_bank_events_recent(
     clan_id: int,
-    limit: int = 50,
+    limit: int = Query(default=50, ge=1, le=200),
     status: Optional[str] = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> dict[str, Any]:
     _admin_only(current_user)
-    lim = max(1, min(int(limit or 50), 200))
 
     q = db.query(BankEvent).filter(BankEvent.clan_id == int(clan_id))
     if status:
         q = q.filter(BankEvent.status == status)
 
-    rows = q.order_by(BankEvent.id.desc()).limit(lim).all()
+    rows = q.order_by(BankEvent.id.desc()).limit(int(limit)).all()
     items = [
         {
             "id": r.id,
@@ -58,19 +57,18 @@ def admin_bank_events_recent(
 @router.get("/expected-payments/recent")
 def admin_expected_payments_recent(
     clan_id: int,
-    limit: int = 50,
+    limit: int = Query(default=50, ge=1, le=200),
     status: Optional[str] = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> dict[str, Any]:
     _admin_only(current_user)
-    lim = max(1, min(int(limit or 50), 200))
 
     q = db.query(ExpectedPayment).filter(ExpectedPayment.clan_id == int(clan_id))
     if status:
         q = q.filter(ExpectedPayment.status == status)
 
-    rows = q.order_by(ExpectedPayment.id.desc()).limit(lim).all()
+    rows = q.order_by(ExpectedPayment.id.desc()).limit(int(limit)).all()
     items = [
         {
             "id": r.id,

@@ -10,13 +10,13 @@ const appLayoutFile = "src/layout/AppLayout.tsx";
 const source = readFileSync(join(frontendRoot, communityFile), "utf8");
 const appLayoutSource = readFileSync(join(frontendRoot, appLayoutFile), "utf8");
 const findings = [];
-const expectedStableButtonTemplateCount = 15;
+const expectedStableButtonTemplateCount = 18;
 const expectedNativeFieldCount = 0;
 const expectedNextActionGuideItemCount = 12;
-const expectedFrontQuickActionCount = 5;
+const expectedFrontQuickActionCount = 4;
 const expectedSpotlightGuidedActionCount = 5;
-const expectedCompactToolRowCount = 12;
-const expectedExpandedRouteLocalActionTemplates = 30;
+const expectedGroupedLaneRowCount = 22;
+const expectedExpandedRouteLocalActionTemplates = 39;
 const expectedMobileShellBreakdown = {
   top: 2,
   drawer: 25,
@@ -158,7 +158,7 @@ const frontToInnerOrder = [
   { label: "trust summary", pattern: /^community-home\.trust-summary\./ },
   { label: "front next actions", pattern: /^community-home\.next-action\./ },
   { label: "spotlight guided lane", pattern: /^community-home\.spotlight-guided\./ },
-  { label: "compact tool rows", pattern: /^community-home\.tool\./ },
+  { label: "grouped command lanes", pattern: /^community-home\.lane\./ },
   { label: "spotlight status", pattern: /^community-home\.spotlight-status\./ },
   { label: "community rows", pattern: /^community-home\.communities\./ },
 ];
@@ -194,17 +194,30 @@ const nextActionGuideItemCount = countIdsInBlock(
   "NextActionGuide item manifest"
 );
 const frontQuickActionCount = countIdsInBlock(
-  /\{\[\s*\{[\s\S]*?id: "choose-community"[\s\S]*?\]\.map\(\(item(?:, index)?\) => \(/,
-  "front quick-action grid"
+  /\{\[\s*\{[\s\S]*?id: "communities"[\s\S]*?id: "marketplace-tools"[\s\S]*?id: "subscriptions"[\s\S]*?id: "trust-finance"[\s\S]*?\]\.map\(\(item\) => \(/,
+  "front command-lane grid"
 );
 const spotlightGuidedActionCount = countIdsInBlock(
   /const spotlightHandleItems = useMemo<NextActionGuideItem\[]>\([\s\S]*?\n {2}\);/,
   "spotlight guided action manifest"
 );
-const compactToolRowCount = countIdsInBlock(
-  /id: "owner-actions"[\s\S]*?\]\.map\(\(item, index\) => \(/,
-  "compact tool row manifest"
-);
+const groupedLaneRowCount =
+  countIdsInBlock(
+    /\{!collapsed\.communities \? \([\s\S]*?\]\.map\(\(item, index\) =>/,
+    "communities grouped lane"
+  ) +
+  countIdsInBlock(
+    /\{!collapsed\.marketplaceTools \? \([\s\S]*?\]\.map\(\(item, index\) =>/,
+    "marketplace grouped lane"
+  ) +
+  countIdsInBlock(
+    /\{!collapsed\.subscriptions \? \([\s\S]*?\]\.map\(\(item, index\) =>/,
+    "subscriptions grouped lane"
+  ) +
+  countIdsInBlock(
+    /\{!collapsed\.trustFinance \? \([\s\S]*?\]\.map\(\(item, index\) =>/,
+    "trust and finance grouped lane"
+  );
 
 if (nextActionGuideItemCount !== expectedNextActionGuideItemCount) {
   findings.push({
@@ -233,12 +246,12 @@ if (spotlightGuidedActionCount !== expectedSpotlightGuidedActionCount) {
   });
 }
 
-if (compactToolRowCount !== expectedCompactToolRowCount) {
+if (groupedLaneRowCount !== expectedGroupedLaneRowCount) {
   findings.push({
     file: communityFile,
     line: 1,
-    message: `Community Home compact tool row count changed from ${expectedCompactToolRowCount} to ${compactToolRowCount}.`,
-    text: `Compact tool rows: ${compactToolRowCount}`,
+    message: `Community Home grouped lane row count changed from ${expectedGroupedLaneRowCount} to ${groupedLaneRowCount}.`,
+    text: `Grouped lane rows: ${groupedLaneRowCount}`,
   });
 }
 
@@ -253,8 +266,8 @@ assertContains(
 );
 
 assertContains(
-  /\{\[\s*\{[\s\S]*?id: "choose-community"[\s\S]*?id: "marketplace"[\s\S]*?id: "create-community"[\s\S]*?id: "join-community"[\s\S]*?id: "circle"[\s\S]*?\]\.map\(\(item(?:, index)?\) => \([\s\S]*?debugId=\{`community-home\.next-action\.\$\{item\.id\}`\}/,
-  "Community Home front quick-action grid must keep exactly the five front buttons before deeper tools."
+  /\{\[\s*\{[\s\S]*?id: "communities"[\s\S]*?lane: "communities"[\s\S]*?id: "marketplace-tools"[\s\S]*?lane: "marketplaceTools"[\s\S]*?id: "subscriptions"[\s\S]*?lane: "subscriptions"[\s\S]*?id: "trust-finance"[\s\S]*?lane: "trustFinance"[\s\S]*?\]\.map\(\(item\) => \([\s\S]*?debugId=\{`community-home\.next-action\.\$\{item\.id\}`\}[\s\S]*?openActionLaneFromButton\(event, item\.lane as CollapseKey\)/,
+  "Community Home front quick-action grid must keep exactly the four grouped command lanes before deeper tools."
 );
 
 assertContains(
@@ -294,19 +307,15 @@ assertContains(
 );
 
 assertContains(
-  /\{\[\s*\{[\s\S]*?id: "owner-actions"[\s\S]*?id: ownerShopHandle\("shop-control"\)\.id[\s\S]*?id: ownerShopHandle\("merchant-release"\)\.id[\s\S]*?id: ownerShopHandle\("shop-gallery-tools"\)\.id[\s\S]*?id: ownerShopHandle\("vault-control"\)\.id[\s\S]*?id: ownerShopHandle\("free-spotlight"\)\.id[\s\S]*?id: ownerShopHandle\("spotlight-subscription"\)\.id[\s\S]*?id: ownerShopHandle\("paid-repost"\)\.id[\s\S]*?id: "rosca"[\s\S]*?id: "community-domain"[\s\S]*?id: "trusted-circle"[\s\S]*?id: "spotlight-status"[\s\S]*?\]\.map\(\(item, index\) => \([\s\S]*?debugId=\{`community-home\.tool\.\$\{item\.id\}`\}/,
-  "Community Home compact tool row manifest must stay traceable and ordered."
+  /debugId=\{`community-home\.lane\.communities\.\$\{item\.id\}`\}[\s\S]*?debugId=\{`community-home\.lane\.marketplace-tools\.\$\{item\.id\}`\}[\s\S]*?debugId=\{`community-home\.lane\.subscriptions\.\$\{item\.id\}`\}[\s\S]*?debugId=\{`community-home\.lane\.trust-finance\.\$\{item\.id\}`\}/,
+  "Community Home grouped command lanes must stay traceable and ordered."
 );
 
 [
   ["owner-actions", "joinRequests", false],
   ["merchant-release", "merchantRelease", true],
   ["shop-gallery-tools", "shopGalleryTools", true],
-  ["vault-control", "vaultControl", true],
-  ["spotlight-subscription", "subscriptionSpotlight", true],
-  ["paid-repost", "paidRepost", true],
   ["rosca", "rosca", false],
-  ["trusted-circle", "buildFirstCircle", false],
 ].forEach(([id, route, isOwnerHandle]) => {
   const idPattern = isOwnerHandle
     ? `id: ownerShopHandle\\("${id}"\\)\\.id`
@@ -320,13 +329,31 @@ assertContains(
 });
 
 assertContains(
-  /communityDomain:\s*"\/app\/community-domain"[\s\S]*?id: "community-domain"[\s\S]*?title: "Community Domain"[\s\S]*?detail: "Open institutional dashboard and access requests"[\s\S]*?openCommunityRoute\([\s\S]*?routes\.communityDomain/,
-  "Community Home compact tool row Community Domain must open the authenticated institutional dashboard."
+  /id: "trusted-circle"[\s\S]*?title: "Grow trusted circle"[\s\S]*?openCommunityNextAction\(event, "circle"\)/,
+  "Community Home trusted-circle row must stay under Communities and use the guided First Circle route."
 );
 
 assertContains(
-  /id: ownerShopHandle\("free-spotlight"\)\.id[\s\S]*?title: ownerShopHandle\("free-spotlight"\)\.label[\s\S]*?openCommunityHomeSection\([\s\S]*?"community-home-spotlight-gears"[\s\S]*?"spotlight"/,
-  "Community Home Free Spotlight row must stay as the single local status handle on Community Home."
+  /communityDomain:\s*"\/app\/community-domain"[\s\S]*?!collapsed\.subscriptions[\s\S]*?id: "community-domain"[\s\S]*?title: "Community Domain"[\s\S]*?detail: "Open institutional dashboard and access requests\."[\s\S]*?openCommunityRoute\(event, routes\.communityDomain\)[\s\S]*?debugId=\{`community-home\.lane\.subscriptions\.\$\{item\.id\}`\}/,
+  "Community Home Community Domain row must live under Subscriptions and open the authenticated institutional dashboard."
+);
+
+[
+  ["vault-control", "vaultControl"],
+  ["spotlight-subscription", "subscriptionSpotlight"],
+  ["paid-repost", "paidRepost"],
+].forEach(([id, route]) => {
+  assertContains(
+    new RegExp(
+      `id: ownerShopHandle\\("${id}"\\)\\.id[\\s\\S]*?openSelectedCommunityRoute\\([\\s\\S]*?routes\\.${route}`
+    ),
+    `Community Home subscription row ${id} must stay grouped under Subscriptions and use the selected-community route guard.`
+  );
+});
+
+assertContains(
+  /id: ownerShopHandle\("free-spotlight"\)\.id[\s\S]*?title: ownerShopHandle\("free-spotlight"\)\.label[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.freeSpotlight/,
+  "Community Home Free Spotlight row must stay as the free Marketplace & Tools spotlight handle."
 );
 
 assertContains(
@@ -345,13 +372,13 @@ assertContains(
 );
 
 assertContains(
-  /id: "rosca"[\s\S]*?title: "ROSCA"[\s\S]*?detail:[\s\S]*?"Open contribution cycles for this community marketplace"[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.rosca[\s\S]*?"Choose a community first, then open ROSCA in Marketplace\."/,
+  /id: "rosca"[\s\S]*?title: "ROSCA"[\s\S]*?detail: "Open contribution cycles for this community marketplace\."[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.rosca[\s\S]*?"Choose a community first, then open ROSCA in Marketplace\."/,
   "Community Home ROSCA row must keep its Marketplace wording and selected-community route explanation."
 );
 
 assertContains(
-  /function communityQuickActionButton\([\s\S]*?height: isCompact \? 58 : 100[\s\S]*?minHeight: isCompact \? 58 : 100[\s\S]*?maxHeight: isCompact \? 58 : 100[\s\S]*?overflow: "hidden"[\s\S]*?function communityQuickActionIcon\([\s\S]*?width: 25,[\s\S]*?height: 25,[\s\S]*?gridTemplateColumns: isCompact[\s\S]*?"repeat\(3, minmax\(0, 1fr\)\)"[\s\S]*?debugId=\{`community-home\.next-action\.\$\{item\.id\}`\}/,
-  "Community Home front quick-action buttons must keep fixed phone geometry."
+  /function communityQuickActionButton\([\s\S]*?height: isCompact \? 58 : 100[\s\S]*?minHeight: isCompact \? 58 : 100[\s\S]*?maxHeight: isCompact \? 58 : 100[\s\S]*?overflow: "hidden"[\s\S]*?function communityQuickActionIcon\([\s\S]*?width: 25,[\s\S]*?height: 25,[\s\S]*?gridTemplateColumns: isCompact[\s\S]*?"repeat\(2, minmax\(0, 1fr\)\)"[\s\S]*?"repeat\(4, minmax\(0, 1fr\)\)"[\s\S]*?debugId=\{`community-home\.next-action\.\$\{item\.id\}`\}/,
+  "Community Home front command-lane buttons must keep fixed phone geometry."
 );
 
 assertContains(
@@ -434,7 +461,7 @@ console.log(
   `Community Home button inventory audit passed: ${actions.length} StableButton source templates, ` +
     `${nativeFields.length} native fields, ${nextActionGuideItemCount} NextActionGuide items, ` +
     `${frontQuickActionCount} front quick buttons, ${spotlightGuidedActionCount} spotlight guided buttons, ` +
-    `${compactToolRowCount} compact tool rows, ${expectedExpandedRouteLocalActionTemplates} expanded route-local action templates, ` +
+    `${groupedLaneRowCount} grouped lane rows, ${expectedExpandedRouteLocalActionTemplates} expanded route-local action templates, ` +
     `${expectedMobileShellActionCount} mobile app-shell controls ` +
     `(${expectedMobileShellBreakdown.top} top, ${expectedMobileShellBreakdown.drawer} drawer, ` +
     `${expectedMobileShellBreakdown.pageTools} tools, ${expectedMobileShellBreakdown.bottom} bottom), ` +

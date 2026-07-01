@@ -8,6 +8,11 @@ from app.db.database import SessionLocal
 from app.db.models import ProtectedTradeEvent, ProtectedTradeRecord, TrustEvent
 
 
+def _protected_trade_count() -> int:
+    with SessionLocal() as db:
+        return int(db.query(ProtectedTradeRecord).count())
+
+
 def test_protected_trade_create_and_lifecycle_logs_trust_events(
     client: TestClient,
     override_current_user_user,
@@ -153,6 +158,38 @@ def test_protected_trade_create_rejects_malformed_integer_controls(
         rejected_float = client.post("/protected-trades", json=payload)
         assert rejected_float.status_code == 422, (field_name, rejected_float.text)
         assert f"{field_name} must be an integer, not a float" in rejected_float.text
+        assert _protected_trade_count() == 0
+
+    for field_name in (
+        "participant_role",
+        "trust_slip_code",
+        "shipment_pack_id",
+        "evidence_pack_id",
+        "item_title",
+        "terms_summary",
+        "currency",
+    ):
+        payload = dict(base_payload)
+        payload[field_name] = False
+        rejected_text = client.post("/protected-trades", json=payload)
+        assert rejected_text.status_code == 422, (field_name, rejected_text.text)
+        assert f"{field_name} must be text" in rejected_text.text
+        assert _protected_trade_count() == 0
+
+    for bad_value in (False, 42000):
+        payload = dict(base_payload)
+        payload["amount"] = bad_value
+        rejected_amount = client.post("/protected-trades", json=payload)
+        assert rejected_amount.status_code == 422, rejected_amount.text
+        assert "amount must be a decimal string" in rejected_amount.text
+        assert _protected_trade_count() == 0
+
+    payload = dict(base_payload)
+    payload["meta"] = ["not", "an", "object"]
+    rejected_meta = client.post("/protected-trades", json=payload)
+    assert rejected_meta.status_code == 422, rejected_meta.text
+    assert "meta must be an object" in rejected_meta.text
+    assert _protected_trade_count() == 0
 
 
 def test_protected_trade_event_rejects_malformed_expected_payment_id(
@@ -188,3 +225,28 @@ def test_protected_trade_event_rejects_malformed_expected_payment_id(
     rejected_float = client.post(f"/protected-trades/{trade_id}/events", json=payload)
     assert rejected_float.status_code == 422, rejected_float.text
     assert "expected_payment_id must be an integer, not a float" in rejected_float.text
+
+    for field_name in (
+        "event_type",
+        "note",
+        "shipment_pack_id",
+        "evidence_pack_id",
+        "trust_slip_code",
+    ):
+        payload = {
+            "event_type": "payment.claimed",
+            "note": "Buyer claims transfer was sent.",
+        }
+        payload[field_name] = False
+        rejected_text = client.post(f"/protected-trades/{trade_id}/events", json=payload)
+        assert rejected_text.status_code == 422, (field_name, rejected_text.text)
+        assert f"{field_name} must be text" in rejected_text.text
+
+    payload = {
+        "event_type": "payment.claimed",
+        "note": "Buyer claims transfer was sent.",
+        "meta": ["not", "an", "object"],
+    }
+    rejected_meta = client.post(f"/protected-trades/{trade_id}/events", json=payload)
+    assert rejected_meta.status_code == 422, rejected_meta.text
+    assert "meta must be an object" in rejected_meta.text

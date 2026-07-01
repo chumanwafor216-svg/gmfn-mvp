@@ -165,6 +165,13 @@ def test_pool_instruction_rejects_malformed_boundary_controls(
     assert rejected_float_id.status_code == 422
     assert "clan_id must be an integer, not a float" in rejected_float_id.text
 
+    for bad_value in (False, 20):
+        payload = dict(base_payload)
+        payload["amount"] = bad_value
+        rejected_amount = client.post("/payment-instructions/pool", json=payload)
+        assert rejected_amount.status_code == 422, rejected_amount.text
+        assert "amount must be a decimal string" in rejected_amount.text
+
 
 def test_pool_payment_proof_upload_attaches_to_expected_payment(
     client,

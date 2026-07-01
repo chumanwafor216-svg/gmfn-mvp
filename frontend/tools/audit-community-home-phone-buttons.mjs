@@ -93,7 +93,7 @@ assertContains(
 );
 
 assertContains(
-  /COMMUNITY_OWNER_HANDLE_ICONS:[\s\S]*?"vault-control": "vault"[\s\S]*?icon: COMMUNITY_OWNER_HANDLE_ICONS\["vault-control"\][\s\S]*?id: ownerShopHandle\("vault-control"\)\.id[\s\S]*?icon: "repaymentSchedule"[\s\S]*?id: "rosca"[\s\S]*?\{communityIconGlyph\(item\.icon as CommunityIconMark, 24\)\}/,
+  /COMMUNITY_OWNER_HANDLE_ICONS:[\s\S]*?"vault-control": "vault"[\s\S]*?\{!collapsed\.marketplaceTools[\s\S]*?icon: "repaymentSchedule"[\s\S]*?id: "rosca"[\s\S]*?\{!collapsed\.subscriptions[\s\S]*?icon: COMMUNITY_OWNER_HANDLE_ICONS\["vault-control"\][\s\S]*?id: ownerShopHandle\("vault-control"\)\.id[\s\S]*?\{communityIconGlyph\(item\.icon as CommunityIconMark, 24\)\}/,
   "Community Home Vault and ROSCA rows must use app-native 3D icon marks with larger embossed sizing instead of text placeholders."
 );
 

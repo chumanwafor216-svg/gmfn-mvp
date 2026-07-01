@@ -223,6 +223,21 @@ def test_community_package_instruction_rejects_malformed_boundary_fields(
         )
         assert f"{field_name} must be an integer" in rejected_float_number.text
 
+    for bad_value in (False, 60):
+        payload = {
+            "clan_id": 1,
+            "package_code": "rosca_cycle",
+            "quantity_total": 1,
+            "amount": bad_value,
+            "currency": "GBP",
+        }
+        rejected_amount = client.post(
+            "/payment-instructions/community-package",
+            json=payload,
+        )
+        assert rejected_amount.status_code == 422, rejected_amount.text
+        assert "amount must be a decimal string" in rejected_amount.text
+
 
 def test_community_package_use_rejects_rosca_now_that_yearly_service_engine_controls_access(
     client, override_current_user, seed_clan_admin_membership

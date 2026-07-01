@@ -115,6 +115,63 @@ def test_affiliate_admin_requests_and_parent_admin_approves_domain_affiliation(
         app.dependency_overrides.pop(get_current_user, None)
 
 
+def test_domain_affiliation_rejects_malformed_text_before_recording(
+    client: TestClient,
+):
+    _seed_affiliation_context()
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: Obj(
+            id=2,
+            email="affiliate@example.com",
+            role="user",
+        )
+        malformed_request = client.post(
+            "/clans/2/domain-affiliation-requests",
+            json={
+                "parent_community_key": True,
+                "request_note": 1.5,
+            },
+        )
+        assert malformed_request.status_code == 422, malformed_request.text
+        assert "parent_community_key must be text" in malformed_request.text
+        assert "request_note must be text" in malformed_request.text
+
+        valid_request = client.post(
+            "/clans/2/domain-affiliation-requests",
+            json={
+                "parent_community_key": "GMFN-C-000001",
+                "request_note": "Line F wants parent-domain acknowledgement.",
+            },
+        )
+        assert valid_request.status_code == 200, valid_request.text
+        affiliation_id = valid_request.json()["affiliation"]["id"]
+
+        app.dependency_overrides[get_current_user] = lambda: Obj(
+            id=1,
+            email="parent@example.com",
+            role="user",
+        )
+        malformed_decision = client.post(
+            f"/clans/1/domain-affiliation-requests/{affiliation_id}/decision",
+            json={
+                "decision": False,
+                "decision_note": 1.5,
+            },
+        )
+        assert malformed_decision.status_code == 422, malformed_decision.text
+        assert "decision must be text" in malformed_decision.text
+        assert "decision_note must be text" in malformed_decision.text
+
+        with SessionLocal() as db:
+            rows = db.query(CommunityDomainAffiliation).all()
+            assert len(rows) == 1
+            assert rows[0].status == "pending"
+            assert rows[0].decided_by_user_id is None
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+
 def test_domain_affiliation_requires_active_domains_and_activated_admins(
     client: TestClient,
 ):
@@ -434,6 +491,68 @@ def test_admin_records_external_registration_as_supporting_evidence_not_verifica
         assert "external_registration" not in public_text
         assert "registration_reference" not in public_text
         assert "registered_name" not in public_text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+
+def test_external_registration_rejects_malformed_text_before_recording(
+    client: TestClient,
+):
+    _seed_affiliation_context()
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: Obj(
+            id=1,
+            email="parent@example.com",
+            role="user",
+        )
+
+        for field_name in (
+            "registration_type",
+            "registration_reference",
+            "registered_name",
+            "issuing_body",
+            "note",
+        ):
+            payload = {
+                "registration_type": "CAC",
+                "registration_reference": "RC-123456",
+                "registered_name": "Onitsha Main Market Traders Association",
+                "issuing_body": "Corporate Affairs Commission",
+                "note": "Supplied during parent-domain claim review.",
+            }
+            payload[field_name] = False
+            rejected_bool = client.post(
+                "/clans/1/external-registration-records",
+                json=payload,
+            )
+            assert rejected_bool.status_code == 422, (
+                field_name,
+                rejected_bool.text,
+            )
+            assert f"{field_name} must be text" in rejected_bool.text
+
+            payload[field_name] = 1.5
+            rejected_float = client.post(
+                "/clans/1/external-registration-records",
+                json=payload,
+            )
+            assert rejected_float.status_code == 422, (
+                field_name,
+                rejected_float.text,
+            )
+            assert f"{field_name} must be text" in rejected_float.text
+
+        with SessionLocal() as db:
+            assert (
+                db.query(TrustEvent)
+                .filter(
+                    TrustEvent.event_type
+                    == TrustEventType.COMMUNITY_EXTERNAL_REGISTRATION_RECORDED
+                )
+                .count()
+                == 0
+            )
     finally:
         app.dependency_overrides.pop(get_current_user, None)
 

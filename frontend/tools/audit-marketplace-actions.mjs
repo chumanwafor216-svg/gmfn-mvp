@@ -114,8 +114,8 @@ assertContains(
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
-  /id: "rosca"[\s\S]*?to: "#marketplace-rosca"[\s\S]*?debugId="marketplace\.tile\.rosca"[\s\S]*?openMarketplaceSection\(event, "rosca", "marketplace-rosca"\)[\s\S]*?ROSCA[\s\S]*?Member savings circle for this community[\s\S]*?id="marketplace-rosca"[\s\S]*?debugId="marketplace\.rosca\.activate-yearly"[\s\S]*?debugId="marketplace\.rosca\.start-cycle"[\s\S]*?debugId="marketplace\.rosca\.record-payout"/,
-  "Marketplace ROSCA must stay visible as a distinct major front lane, keep the ROSCA intent anchor, and keep stable yearly/start/payout controls."
+  /id: "rosca"[\s\S]*?to: "#marketplace-rosca"[\s\S]*?debugId="marketplace\.tile\.support"[\s\S]*?Support & ROSCA[\s\S]*?id="marketplace-rosca"[\s\S]*?debugId="marketplace\.rosca\.activate-yearly"[\s\S]*?debugId="marketplace\.rosca\.start-cycle"[\s\S]*?debugId="marketplace\.rosca\.record-payout"[\s\S]*?debugId="marketplace\.support\.open-rosca"[\s\S]*?openMarketplaceSection\(event, "rosca", "marketplace-rosca"\)/,
+  "Marketplace ROSCA must stay reachable through the grouped Support & ROSCA lane, keep the ROSCA intent anchor, and keep stable yearly/start/payout controls."
 );
 
 assertContains(
@@ -386,8 +386,8 @@ assertContains(
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
-  /const marketplaceMoneyOutTo = useMemo\([\s\S]*?resolveCtaTarget\("moneyOut"[\s\S]*?to=\{marketplaceMoneyOutTo\}[\s\S]*?debugId="marketplace\.tile\.withdrawal"[\s\S]*?aria-label="Open normal Money Out withdrawal for this marketplace"[\s\S]*?Money Out \/ Withdrawal/,
-  "Marketplace normal withdrawal must be a direct Money Out route link, not a Support & Loans section opener."
+  /debugId="marketplace\.tile\.money"[\s\S]*?Money & Trust[\s\S]*?Money Out[\s\S]*?id="marketplace-money-routes"[\s\S]*?to=\{marketplaceMoneyOutTo\}[\s\S]*?debugId="marketplace\.money\.money-out-destination"[\s\S]*?Open Withdrawal/,
+  "Marketplace normal withdrawal must remain available inside the Money & Trust lane, not as a separate busy front-door button or a Support & Loans opener."
 );
 
 assertContains(

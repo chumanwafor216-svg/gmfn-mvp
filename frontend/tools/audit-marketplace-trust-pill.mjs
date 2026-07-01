@@ -71,7 +71,7 @@ if (!trustSummary) {
   );
 } else {
   [
-    /This is this selected community's local trust signal\.[\s\S]*?Use More[\s\S]*?Community Tools[\s\S]*?fuller evidence routes\./,
+    /This is this selected community's local trust signal\.[\s\S]*?Use More[\s\S]*?Marketplace Tools[\s\S]*?fuller evidence routes\./,
     /Member-level witness currentness belongs in those fuller[\s\S]*?evidence routes, not this local marketplace summary\./,
     /\["Marketplace ID", communityIdentity\(selectedCommunity\)\]/,
     /\["Local trust", marketplaceTrustDisplay\]/,
@@ -109,8 +109,8 @@ if (!trustSummary) {
 }
 
 assertContains(
-  /debugId="marketplace\.extra-tools\.toggle"[\s\S]*?More \/ Community Tools[\s\S]*?Trust, ID, evidence, messages, and route help/,
-  "Fuller evidence and trust routes must remain under More / Community Tools, not inside the compact Trust pill."
+  /debugId="marketplace\.row\.records-links"[\s\S]*?Marketplace Tools[\s\S]*?Invite, verify, share, and open helper tools\./,
+  "Fuller evidence and trust routes must remain under Marketplace Tools, not inside the compact Trust pill."
 );
 
 if (findings.length > 0) {

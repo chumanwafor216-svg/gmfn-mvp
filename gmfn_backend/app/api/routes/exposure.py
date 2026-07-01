@@ -38,8 +38,8 @@ def _effective_clan_id(clan_id_query: int | None, x_clan_id: int | None) -> int:
 
 @router.get("/admin")
 def get_exposure_admin(
-    clan_id: int | None = Query(default=None),
-    x_clan_id: int | None = Header(default=None, alias="X-Clan-Id"),
+    clan_id: int | None = Query(default=None, ge=1),
+    x_clan_id: int | None = Header(default=None, alias="X-Clan-Id", ge=1),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -126,9 +126,9 @@ def get_exposure_admin(
 
 @router.get("/admin/cci-scores")
 def get_cci_scores_for_user(
-    clan_id: int = Query(...),
-    user_id: int = Query(...),
-    x_clan_id: int | None = Header(default=None, alias="X-Clan-Id"),
+    clan_id: int = Query(..., ge=1),
+    user_id: int = Query(..., ge=1),
+    x_clan_id: int | None = Header(default=None, alias="X-Clan-Id", ge=1),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):

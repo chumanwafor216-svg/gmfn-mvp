@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Path, Query
 from sqlalchemy import and_, or_
 from sqlalchemy.orm import Session
 
@@ -315,7 +315,7 @@ def list_marketplace_requests(
     urgency: str | None = Query(default=None),
     area: str | None = Query(default=None),
     mine_only: bool = Query(default=False),
-    clan_id: int | None = Query(default=None),
+    clan_id: int | None = Query(default=None, ge=1),
     limit: int = Query(default=50, ge=1, le=200),
 ):
     _cleanup_expired_requests(db)
@@ -386,10 +386,10 @@ def list_marketplace_requests(
 
 @router.get("/{request_id}", response_model=MarketplaceRequestOut)
 def get_marketplace_request(
-    request_id: int,
+    request_id: int = Path(..., ge=1),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-    clan_id: int | None = Query(default=None),
+    clan_id: int | None = Query(default=None, ge=1),
 ):
     _cleanup_expired_requests(db)
 
@@ -435,8 +435,8 @@ def get_marketplace_request(
 
 @router.post("/{request_id}/status", response_model=MarketplaceRequestOut)
 def update_marketplace_request_status(
-    request_id: int,
     payload: MarketplaceRequestUpdateStatus,
+    request_id: int = Path(..., ge=1),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):

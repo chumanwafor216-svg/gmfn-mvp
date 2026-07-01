@@ -16838,6 +16838,14 @@ def _reject_non_text_value(value: Any, field_name: str) -> Any:
     return value
 
 
+def _reject_non_object_value(value: Any, field_name: str) -> Any:
+    if value is None:
+        return value
+    if not isinstance(value, dict):
+        raise ValueError(f"{field_name} must be an object.")
+    return value
+
+
 def _reject_invalid_policy_count_config(value: Any) -> Any:
     if value is None:
         return value
@@ -17089,6 +17097,11 @@ class CommunityDomainActionReviewCreateIn(BaseModel):
     def _reject_non_text_action_review_controls(cls, value: Any, info: Any) -> Any:
         return _reject_non_text_value(value, info.field_name)
 
+    @field_validator("payload", mode="before")
+    @classmethod
+    def _reject_non_object_payload(cls, value: Any, info: Any) -> Any:
+        return _reject_non_object_value(value, info.field_name)
+
 
 class CommunityDomainActionReviewDecisionIn(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
@@ -17131,6 +17144,11 @@ class CommunityDomainActionReviewRevisionIn(BaseModel):
     @classmethod
     def _reject_non_text_revision_controls(cls, value: Any, info: Any) -> Any:
         return _reject_non_text_value(value, info.field_name)
+
+    @field_validator("payload", mode="before")
+    @classmethod
+    def _reject_non_object_payload(cls, value: Any, info: Any) -> Any:
+        return _reject_non_object_value(value, info.field_name)
 
 
 class CommunityDomainActionReviewCommentIn(BaseModel):

@@ -78,8 +78,8 @@ if (visibleIds.join("|") !== expectedVisibleIds.join("|")) {
 });
 
 assertContains(
-  /debugId="marketplace\.extra-tools\.toggle"[\s\S]*?More \/ Community Tools[\s\S]*?Trust, ID, evidence, messages, and route help[\s\S]*?Trust[\s\S]*?Identity[\s\S]*?TrustSlip[\s\S]*?Messages/,
-  "More / Community Tools front card must name secondary helpers, not invite, money, ROSCA, support, shop, or vague More."
+  /debugId="marketplace\.row\.records-links"[\s\S]*?Marketplace Tools[\s\S]*?Invite, verify, share, and open helper tools\.[\s\S]*?Helpers/,
+  "Marketplace Tools front card must absorb the old More helper entry so secondary helpers are grouped instead of exposed as a separate front button."
 );
 
 assertContains(

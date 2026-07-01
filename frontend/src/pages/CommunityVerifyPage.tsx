@@ -15,6 +15,14 @@ import {
   TrustPaperWatermark,
 } from "../components/TrustPaperMarks";
 import {
+  TrustDocumentBoundaryPanel,
+  TrustDocumentConfidenceRibbon,
+  TrustDocumentFingerprint,
+  TrustDocumentRegistryMasthead,
+  TrustDocumentSecurityPanel,
+  type TrustDocumentRibbonItem,
+} from "../components/TrustDocumentLanguage";
+import {
   followCommunity,
   getCommunityFollowerCount,
   getCommunityFollowStatus,
@@ -129,6 +137,22 @@ function positiveNumber(value: any): number | null {
   const numberValue = Number(value);
   if (!Number.isFinite(numberValue) || numberValue <= 0) return null;
   return Math.trunc(numberValue);
+}
+
+function referenceFingerprint(...values: any[]): string {
+  const input = values.map((value) => safeStr(value)).join("|") || "gsn-record";
+  let hashA = 0x811c9dc5;
+  let hashB = 0x45d9f3b;
+  for (let index = 0; index < input.length; index += 1) {
+    const code = input.charCodeAt(index);
+    hashA ^= code;
+    hashA = Math.imul(hashA, 0x01000193);
+    hashB ^= code + index;
+    hashB = Math.imul(hashB, 0x27d4eb2d);
+  }
+  const left = (hashA >>> 0).toString(16).padStart(8, "0");
+  const right = (hashB >>> 0).toString(16).padStart(8, "0");
+  return `GSN-REF-${left}-${right}`.toUpperCase();
 }
 
 function responseFollowerCount(value: any): number | null {
@@ -728,6 +752,102 @@ export default function CommunityVerifyPage() {
       publicLink,
     ]
   );
+  const generatedAtLabel = useMemo(() => new Date().toISOString(), [keyText]);
+  const recordFingerprint = useMemo(
+    () =>
+      referenceFingerprint(
+        communityAnchor,
+        communityName,
+        active ? "active" : status,
+        publicRecord,
+        relayAvailability,
+        generatedAtLabel
+      ),
+    [
+      active,
+      communityAnchor,
+      communityName,
+      generatedAtLabel,
+      publicRecord,
+      relayAvailability,
+      status,
+    ]
+  );
+  const confidenceRibbonItems: TrustDocumentRibbonItem[] = [
+    {
+      label: "Registry status",
+      value: active ? "Active" : labelize(record?.status),
+      tone: active ? "good" : "warn",
+    },
+    {
+      label: "Record integrity",
+      value: communityAnchor && record ? "Public record resolved" : "Limited",
+      tone: communityAnchor && record ? "good" : "warn",
+    },
+    {
+      label: "Last registry update",
+      value: loading ? "Checking" : "Live check loaded",
+      tone: loading ? "info" : "good",
+    },
+    {
+      label: "Evidence chain",
+      value: "Community-scoped",
+      tone: "info",
+      detail: "Member and shop proof stays separate.",
+    },
+    {
+      label: "Verification path",
+      value: requestConfirmationAvailable ? "Available" : "Public record only",
+      tone: requestConfirmationAvailable ? "good" : "warn",
+    },
+  ];
+  const securityPanelItems = [
+    {
+      title: "Live registry record",
+      detail: "Loaded from the GSN public community verification route.",
+      tone: active ? ("good" as const) : ("warn" as const),
+    },
+    {
+      title: "Reference fingerprint",
+      detail:
+        "This reference fingerprint is derived from visible public record fields; it is not a cryptographic hash.",
+      tone: "info" as const,
+    },
+    {
+      title: "Timestamp recorded",
+      detail: `Generated for this view at ${generatedAtLabel}.`,
+      tone: "info" as const,
+    },
+    {
+      title: "Watermark protected",
+      detail: "The page carries GSN paper marks and registry security framing.",
+      tone: "good" as const,
+    },
+    {
+      title: "QR linked",
+      detail: "The QR reopens this public Community ID record.",
+      tone: publicLink ? ("good" as const) : ("warn" as const),
+    },
+    {
+      title: "Scope boundary available",
+      detail: "The page states what the record confirms and what it does not confirm.",
+      tone: "good" as const,
+    },
+  ];
+  const confirmsList = [
+    "Community identity anchor",
+    "GSN public registry status",
+    "Community ID",
+    "Record currentness signal",
+    "Controlled relay availability",
+  ];
+  const doesNotConfirmList = [
+    "Individual members",
+    "Shops or merchants",
+    "Departments, lines, or subgroups",
+    "Transactions or money movement",
+    "Trust Passport standing",
+  ];
 
   async function copyLink() {
     const copied = await safeCopy(communityVerifyLinkPackage);
@@ -892,73 +1012,21 @@ export default function CommunityVerifyPage() {
         </nav>
 
         <article style={paperCard()}>
+          <TrustDocumentRegistryMasthead
+            eyebrow="Public verification"
+            title="Community Verification"
+            subtitle="Official GSN Registry Record"
+          />
           <TrustPaperWatermark name="home" color="#0B63D1" size={260} opacity={0.045} />
           <div style={{ position: "relative", zIndex: 1, padding: 16, display: "grid", gap: 12 }}>
-            <header
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                gap: 10,
-                alignItems: "flex-start",
-                flexWrap: "wrap",
-              }}
-            >
-              <div style={{ display: "grid", gap: 4, minWidth: 0 }}>
-                <span
-                  style={{
-                    color: "#0B63D1",
-                    fontSize: 11,
-                    fontWeight: 1000,
-                    letterSpacing: 0.9,
-                    textTransform: "uppercase",
-                  }}
-                >
-                  Public community domain record
-                </span>
-                <h1
-                  style={{
-                    margin: 0,
-                    color: "#061827",
-                    fontSize: "clamp(26px, 6vw, 34px)",
-                    lineHeight: 1.04,
-                    fontWeight: 1000,
-                    letterSpacing: 0,
-                  }}
-                >
-                  {loading ? "Checking community" : "Community Verification"}
-                </h1>
-                <p style={{ ...helperText(), maxWidth: 680, fontSize: 13.5, lineHeight: 1.34 }}>
-                  Public QR check for community identity only.
-                </p>
-              </div>
-              <div
-                aria-label="GSN Global Support Network"
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 8,
-                  color: "#061827",
-                  fontWeight: 1000,
-                }}
-              >
-                <span style={{ fontSize: 28, lineHeight: 1 }}>GSN</span>
-                <span style={{ width: 2, height: 30, background: "#D6AA45", transform: "skew(-14deg)" }} />
-                <span style={{ fontSize: 11, lineHeight: 1.05 }}>
-                  Global
-                  <br />
-                  Support
-                  <br />
-                  Network
-                </span>
-              </div>
-            </header>
-
             <TrustPaperAuthorityStrip
               title="GSN Community Verification Paper"
               reference={communityAnchor}
               classification="Public community record"
               compact
             />
+
+            <TrustDocumentConfidenceRibbon items={confidenceRibbonItems} />
 
             {notice ? (
               <div
@@ -1124,6 +1192,28 @@ export default function CommunityVerifyPage() {
                       >
                         This confirms the community identity in GSN. It does not verify every member, shop, line, or subgroup.
                       </p>
+                    </div>
+                  </div>
+                  <div
+                    data-gsn-trust-document-certificate="community-verification"
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+                      gap: 12,
+                    }}
+                  >
+                    <TrustDocumentSecurityPanel items={securityPanelItems} />
+                    <div style={{ display: "grid", gap: 12 }}>
+                      <TrustDocumentBoundaryPanel
+                        title="This page confirms"
+                        tone="good"
+                        items={confirmsList}
+                      />
+                      <TrustDocumentBoundaryPanel
+                        title="This page does not confirm"
+                        tone="warn"
+                        items={doesNotConfirmList}
+                      />
                     </div>
                   </div>
                   <div
@@ -1580,6 +1670,11 @@ export default function CommunityVerifyPage() {
                       </div>
                     </div>
                   </div>
+                  <TrustDocumentFingerprint
+                    label="Record fingerprint"
+                    value={recordFingerprint}
+                    detail="Reference fingerprint for this visible public record. It is not a cryptographic proof."
+                  />
                   <div
                     style={{
                       ...sectionCard("#FFFFFF"),

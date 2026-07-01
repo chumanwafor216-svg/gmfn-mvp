@@ -232,6 +232,45 @@ def test_marketplace_request_create_rejects_malformed_boundary_controls(
     assert _marketplace_request_counts() == (0, 0)
 
 
+def test_marketplace_request_create_rejects_non_positive_clan_before_write(
+    client,
+    override_current_user,
+):
+    _seed_primary_clan()
+
+    response = client.post(
+        "/marketplace/requests",
+        json={
+            "clan_id": 0,
+            "title": "Need a plumber",
+            "description": "Kitchen pipe needs help.",
+        },
+    )
+
+    assert response.status_code == 422, response.text
+    assert "clan_id" in response.text
+    assert _marketplace_request_counts() == (0, 0)
+
+
+def test_marketplace_request_read_routes_reject_non_positive_ids(
+    client,
+    override_current_user,
+):
+    list_response = client.get("/marketplace/requests", params={"clan_id": 0})
+    detail_id_response = client.get("/marketplace/requests/0")
+    detail_scope_response = client.get(
+        "/marketplace/requests/1",
+        params={"clan_id": 0},
+    )
+
+    assert list_response.status_code == 422, list_response.text
+    assert detail_id_response.status_code == 422, detail_id_response.text
+    assert detail_scope_response.status_code == 422, detail_scope_response.text
+    assert "clan_id" in list_response.text
+    assert "request_id" in detail_id_response.text
+    assert "clan_id" in detail_scope_response.text
+
+
 def test_marketplace_request_status_rejects_malformed_boundary_control(
     client,
     override_current_user,
@@ -240,6 +279,19 @@ def test_marketplace_request_status_rejects_malformed_boundary_control(
 
     assert response.status_code == 422, response.text
     assert "status must be text" in response.text
+
+
+def test_marketplace_request_status_rejects_non_positive_request_id(
+    client,
+    override_current_user,
+):
+    response = client.post(
+        "/marketplace/requests/0/status",
+        json={"status": "fulfilled"},
+    )
+
+    assert response.status_code == 422, response.text
+    assert "request_id" in response.text
 
 
 def test_marketplace_request_requires_community_when_user_has_many():

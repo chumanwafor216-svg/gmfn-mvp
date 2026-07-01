@@ -144,6 +144,104 @@ def test_admin_can_bootstrap_and_verified_member_can_verify_next_member(
         app.dependency_overrides.pop(get_current_user, None)
 
 
+def test_member_verification_rejects_malformed_body_controls_before_records(
+    client: TestClient,
+):
+    _seed_member_verification_context(member_count=4, admin_member_ids={1})
+
+    try:
+        app.dependency_overrides[get_current_user] = _as_user(1)
+        malformed_direct = client.post(
+            "/clans/1/member-verifications",
+            json={
+                "subject_user_id": True,
+                "claim_label": False,
+                "verification_note": 1.5,
+            },
+        )
+        assert malformed_direct.status_code == 422, malformed_direct.text
+        assert "subject_user_id must be an integer id" in malformed_direct.text
+        assert "claim_label must be text" in malformed_direct.text
+        assert "verification_note must be text" in malformed_direct.text
+
+        app.dependency_overrides[get_current_user] = _as_user(2)
+        malformed_request = client.post(
+            "/clans/1/member-verification-requests",
+            json={
+                "verifier_user_id": 1.5,
+                "claim_label": False,
+                "request_note": 1.5,
+            },
+        )
+        assert malformed_request.status_code == 422, malformed_request.text
+        assert "verifier_user_id must be an integer id" in malformed_request.text
+        assert "claim_label must be text" in malformed_request.text
+        assert "request_note must be text" in malformed_request.text
+
+        valid_request = client.post(
+            "/clans/1/member-verification-requests",
+            json={
+                "verifier_user_id": 1,
+                "claim_label": "Line F Electrical",
+                "request_note": "Please stand for me as a member of this line.",
+            },
+        )
+        assert valid_request.status_code == 200, valid_request.text
+        request_payload = valid_request.json()["request"]
+        public_token = request_payload["public_token"]
+
+        app.dependency_overrides[get_current_user] = _as_user(1)
+        malformed_decision = client.post(
+            f"/clans/1/member-verification-requests/{public_token}/decision",
+            json={
+                "decision": False,
+                "one_time_code": 12345,
+                "response_note": 1.5,
+            },
+        )
+        assert malformed_decision.status_code == 422, malformed_decision.text
+        assert "decision must be text" in malformed_decision.text
+        assert "one_time_code must be text" in malformed_decision.text
+        assert "response_note must be text" in malformed_decision.text
+
+        valid_direct = client.post(
+            "/clans/1/member-verifications",
+            json={
+                "subject_user_id": 3,
+                "claim_label": "Line F Electrical",
+                "verification_note": "Known here.",
+            },
+        )
+        assert valid_direct.status_code == 200, valid_direct.text
+        verification_id = valid_direct.json()["verification"]["id"]
+
+        malformed_withdraw = client.post(
+            f"/clans/1/member-verifications/{verification_id}/withdraw",
+            json={"reason": False},
+        )
+        assert malformed_withdraw.status_code == 422, malformed_withdraw.text
+        assert "reason must be text" in malformed_withdraw.text
+
+        with SessionLocal() as db:
+            request_row = db.query(CommunityMemberVerificationRequest).one()
+            assert request_row.status == "pending"
+            verification_row = db.get(CommunityMemberVerification, int(verification_id))
+            assert verification_row is not None
+            assert verification_row.status == "active"
+            assert (
+                db.query(TrustEvent)
+                .filter(
+                    TrustEvent.event_type
+                    == TrustEventType.COMMUNITY_MEMBER_VERIFICATION_WITHDRAWN
+                )
+                .count()
+                == 0
+            )
+            assert db.query(CommunityMemberVerification).count() == 1
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+
 def test_stale_member_witness_standing_cannot_verify_next_member(
     client: TestClient,
 ):

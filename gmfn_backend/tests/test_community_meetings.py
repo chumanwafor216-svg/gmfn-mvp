@@ -243,6 +243,18 @@ def test_meeting_reminder_rejects_malformed_boundary_fields(
         assert rejected_clan_id.status_code == 422, rejected_clan_id.text
         assert expected in rejected_clan_id.text
 
+    for value in (False, 1234567890):
+        rejected_scheduled_at = client.post(
+            "/community-meetings/reminders",
+            json={
+                "clan_id": 1,
+                "title": "Boundary meeting",
+                "scheduled_at": value,
+            },
+        )
+        assert rejected_scheduled_at.status_code == 422, rejected_scheduled_at.text
+        assert "scheduled_at must be an ISO datetime string" in rejected_scheduled_at.text
+
     for value, expected in (
         (True, "attendee_user_ids must be an integer id"),
         (1.5, "attendee_user_ids must be an integer id"),

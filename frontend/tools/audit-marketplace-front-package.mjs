@@ -107,20 +107,8 @@ assertContains(
   {
     id: "marketplace.tile.money",
     glyph: "pool",
-    label: "Money In / Pool",
-    tags: ["Money In", "Pool", "Pay-In Rail"],
-  },
-  {
-    id: "marketplace.tile.withdrawal",
-    glyph: "card",
-    label: "Money Out / Withdrawal",
-    tags: ["Own Money", "Payout Account", "Check First"],
-  },
-  {
-    id: "marketplace.tile.rosca",
-    glyph: "rosca",
-    label: "ROSCA",
-    tags: ["Yearly Service", "Member Cycle", "Payout Record"],
+    label: "Money & Trust",
+    tags: ["Finance", "Money In", "Money Out", "Trust"],
   },
   {
     id: "marketplace.tile.members",
@@ -131,20 +119,14 @@ assertContains(
   {
     id: "marketplace.tile.support",
     glyph: "support",
-    label: "Support & Loans",
-    tags: ["Support Requests", "Loan Process"],
+    label: "Support & ROSCA",
+    tags: ["Support Requests", "ROSCA", "Loans"],
   },
   {
     id: "marketplace.row.records-links",
     glyph: "links",
-    label: "Link Center",
-    tags: ["Join", "Verify", "Create", "Shop Face"],
-  },
-  {
-    id: "marketplace.extra-tools.toggle",
-    glyph: "spark",
-    label: "More / Community Tools",
-    tags: ["Trust", "Identity", "TrustSlip", "Messages"],
+    label: "Marketplace Tools",
+    tags: ["Verify", "Invite", "Create", "Shop Face", "Helpers"],
   },
 ].forEach((card) => {
   const pattern = new RegExp(

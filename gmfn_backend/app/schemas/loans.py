@@ -2,13 +2,28 @@
 from __future__ import annotations
 
 from datetime import datetime
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from typing import Any, Optional, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 LoanStatus = str
+
+
+def _reject_non_decimal_string(value: Any, field_name: str) -> Any:
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name} must be a decimal string.")
+    cleaned = value.strip()
+    if not cleaned:
+        raise ValueError(f"{field_name} must be a decimal string.")
+    try:
+        Decimal(cleaned)
+    except (InvalidOperation, ValueError):
+        raise ValueError(f"{field_name} must be a decimal string.") from None
+    return cleaned
 
 
 class LoanCreate(BaseModel):
@@ -29,6 +44,11 @@ class LoanCreate(BaseModel):
         if isinstance(value, float):
             raise ValueError(f"{info.field_name} must be an integer, not a float.")
         return value
+
+    @field_validator("amount", mode="before")
+    @classmethod
+    def _reject_malformed_amount(cls, value: Any) -> Any:
+        return _reject_non_decimal_string(value, "amount")
 
 
 class LoanUpdate(BaseModel):
@@ -89,6 +109,11 @@ class LoanGuarantorCreate(BaseModel):
         if isinstance(value, float):
             raise ValueError("guarantor_user_id must be an integer, not a float.")
         return value
+
+    @field_validator("pledge_amount", mode="before")
+    @classmethod
+    def _reject_malformed_pledge_amount(cls, value: Any) -> Any:
+        return _reject_non_decimal_string(value, "pledge_amount")
 
 
 class LoanGuarantorUpdate(BaseModel):

@@ -134,6 +134,14 @@ gate. Use it before calling a route screenshot-ready, before widening the 3D
 icon sweep to another page, before treating an evidence/PDF surface as official, and
 before changing protocol-status items from `partial` to `complete`.
 
+For public verification, TrustSlip, Trust Passport, merchant verification,
+evidence-pack, registry-record, or official trust-document visuals,
+`docs/TRUST_DOCUMENT_LANGUAGE_PROTOCOL.md` is the visual and truth source of
+record. These surfaces should read as GSN Trust Infrastructure documents:
+registry masthead, gold seal, registry ID, confidence ribbon, security panel,
+confirms/does-not-confirm boundary, QR verification, fingerprint, and next
+action.
+
 ## Mobile Density Protocol
 
 - Mobile hero blocks should normally stay between `96px` and `140px`, or about

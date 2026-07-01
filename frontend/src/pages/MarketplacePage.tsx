@@ -7478,7 +7478,7 @@ export default function MarketplacePage() {
             <StableButton
               type="button"
               debugId="marketplace.tile.money"
-              aria-label="Open Money In and this marketplace pool"
+              aria-label="Open Money and trust tools for this marketplace"
               onClick={(event) =>
                 openMarketplaceSection(event, "money", "marketplace-money-routes")
               }
@@ -7495,12 +7495,17 @@ export default function MarketplacePage() {
               </span>
               <span style={marketplaceOsRowTextStackStyle()}>
                 <span style={marketplaceOsRowTitleStyle(isCompact)}>
-                  Money In / Pool
+                  Money & Trust
                 </span>
                 <span style={marketplaceOsRowDetailStyle(isCompact)}>
-                  Put money into this marketplace pool.
+                  Local money routes and standing.
                 </span>
                 <span style={marketplaceFrontTagRowStyle(isCompact)}>
+                  <span
+                    style={marketplaceFrontTagStyle("#0B4EA2", "#E7F1FE", isCompact)}
+                  >
+                    Finance
+                  </span>
                   <span
                     style={marketplaceFrontTagStyle("#0B4EA2", "#E7F1FE", isCompact)}
                   >
@@ -7509,105 +7514,12 @@ export default function MarketplacePage() {
                   <span
                     style={marketplaceFrontTagStyle("#0B4EA2", "#E7F1FE", isCompact)}
                   >
-                    Pool
+                    Money Out
                   </span>
                   <span
                     style={marketplaceFrontTagStyle("#0B4EA2", "#E7F1FE", isCompact)}
                   >
-                    Pay-In Rail
-                  </span>
-                </span>
-              </span>
-              <span aria-hidden="true" style={marketplaceOsArrowStyle()}>
-                <MarketplaceGlyph name="chevron" size={18} />
-              </span>
-            </StableButton>
-
-            <StableCtaLink
-              to={marketplaceMoneyOutTo}
-              debugId="marketplace.tile.withdrawal"
-              aria-label="Open normal Money Out withdrawal for this marketplace"
-              style={marketplaceFrontLaneCardStyle(isCompact)}
-            >
-              <span
-                aria-hidden="true"
-                style={marketplaceFrontLaneIconStyle(
-                  "linear-gradient(180deg, #08264B 0%, #061827 100%)",
-                  isCompact
-                )}
-              >
-                <MarketplaceGlyph name="card" size={isCompact ? 26 : 34} />
-              </span>
-              <span style={marketplaceOsRowTextStackStyle()}>
-                <span style={marketplaceOsRowTitleStyle(isCompact)}>
-                  Money Out / Withdrawal
-                </span>
-                <span style={marketplaceOsRowDetailStyle(isCompact)}>
-                  Withdraw your own available money.
-                </span>
-                <span style={marketplaceFrontTagRowStyle(isCompact)}>
-                  <span
-                    style={marketplaceFrontTagStyle("#08264B", "#EAF3FF", isCompact)}
-                  >
-                    Own Money
-                  </span>
-                  <span
-                    style={marketplaceFrontTagStyle("#08264B", "#EAF3FF", isCompact)}
-                  >
-                    Payout Account
-                  </span>
-                  <span
-                    style={marketplaceFrontTagStyle("#08264B", "#EAF3FF", isCompact)}
-                  >
-                    Check First
-                  </span>
-                </span>
-              </span>
-              <span aria-hidden="true" style={marketplaceOsArrowStyle()}>
-                <MarketplaceGlyph name="chevron" size={18} />
-              </span>
-            </StableCtaLink>
-
-            <StableButton
-              type="button"
-              debugId="marketplace.tile.rosca"
-              aria-label="Open ROSCA contribution cycles for this marketplace"
-              onClick={(event) =>
-                openMarketplaceSection(event, "rosca", "marketplace-rosca")
-              }
-              style={marketplaceFrontLaneCardStyle(isCompact)}
-            >
-              <span
-                aria-hidden="true"
-                style={marketplaceFrontLaneIconStyle(
-                  "linear-gradient(180deg, #B8871E 0%, #513A0B 100%)",
-                  isCompact
-                )}
-              >
-                <MarketplaceGlyph name="rosca" size={isCompact ? 26 : 34} />
-              </span>
-              <span style={marketplaceOsRowTextStackStyle()}>
-                <span style={marketplaceOsRowTitleStyle(isCompact)}>
-                  ROSCA
-                </span>
-                <span style={marketplaceOsRowDetailStyle(isCompact)}>
-                  Member savings circle for this community.
-                </span>
-                <span style={marketplaceFrontTagRowStyle(isCompact)}>
-                  <span
-                    style={marketplaceFrontTagStyle("#8A5B0A", "#F8EED6", isCompact)}
-                  >
-                    Yearly Service
-                  </span>
-                  <span
-                    style={marketplaceFrontTagStyle("#8A5B0A", "#F8EED6", isCompact)}
-                  >
-                    Member Cycle
-                  </span>
-                  <span
-                    style={marketplaceFrontTagStyle("#8A5B0A", "#F8EED6", isCompact)}
-                  >
-                    Payout Record
+                    Trust
                   </span>
                 </span>
               </span>
@@ -7671,7 +7583,7 @@ export default function MarketplacePage() {
             <StableButton
               type="button"
               debugId="marketplace.tile.support"
-              aria-label="Open Support Requests, supporters and loans"
+              aria-label="Open Support Requests, ROSCA, supporters and loans"
               onClick={(event) =>
                 openMarketplaceSection(
                   event,
@@ -7692,10 +7604,10 @@ export default function MarketplacePage() {
               </span>
               <span style={marketplaceOsRowTextStackStyle()}>
                 <span style={marketplaceOsRowTitleStyle(isCompact)}>
-                  Support & Loans
+                  Support & ROSCA
                 </span>
                 <span style={marketplaceOsRowDetailStyle(isCompact)}>
-                  Get help and manage loans.
+                  Get help and run savings circles.
                 </span>
                 <span style={marketplaceFrontTagRowStyle(isCompact)}>
                   <span
@@ -7706,7 +7618,12 @@ export default function MarketplacePage() {
                   <span
                     style={marketplaceFrontTagStyle("#0B6B3B", "#DFF3E8", isCompact)}
                   >
-                    Loan Process
+                    ROSCA
+                  </span>
+                  <span
+                    style={marketplaceFrontTagStyle("#0B6B3B", "#DFF3E8", isCompact)}
+                  >
+                    Loans
                   </span>
                 </span>
               </span>
@@ -7718,7 +7635,7 @@ export default function MarketplacePage() {
             <StableButton
               type="button"
               debugId="marketplace.row.records-links"
-              aria-label="Open access and public links for this marketplace"
+              aria-label="Open marketplace tools, access and public links"
               onClick={(event) =>
                 openMarketplaceSection(event, "tools", "marketplace-owned-links")
               }
@@ -7735,10 +7652,10 @@ export default function MarketplacePage() {
               </span>
               <span style={marketplaceOsRowTextStackStyle()}>
                 <span style={marketplaceOsRowTitleStyle(isCompact)}>
-                  Public Links
+                  Marketplace Tools
                 </span>
                 <span style={marketplaceOsRowDetailStyle(isCompact)}>
-                  Verify, invite, create, or share the shop.
+                  Invite, verify, share, and open helper tools.
                 </span>
                 <span style={marketplaceFrontTagRowStyle(isCompact)}>
                   <span
@@ -7761,64 +7678,15 @@ export default function MarketplacePage() {
                   >
                     Shop Face
                   </span>
+                  <span
+                    style={marketplaceFrontTagStyle("#173750", "#EEF3F7", isCompact)}
+                  >
+                    Helpers
+                  </span>
                 </span>
               </span>
               <span aria-hidden="true" style={marketplaceOsArrowStyle()}>
                 <MarketplaceGlyph name="chevron" size={18} />
-              </span>
-            </StableButton>
-
-            <StableButton
-              type="button"
-              debugId="marketplace.extra-tools.toggle"
-              onClick={toggleIntentGuide}
-              aria-expanded={intentGuideOpen}
-              style={marketplaceFrontCompactCardStyle(isCompact)}
-            >
-              <span
-                aria-hidden="true"
-                style={marketplaceFrontLaneIconStyle(
-                  "linear-gradient(180deg, #173750 0%, #061827 100%)",
-                  isCompact
-                )}
-              >
-                <MarketplaceGlyph name="spark" size={isCompact ? 26 : 34} />
-              </span>
-              <span style={marketplaceOsRowTextStackStyle()}>
-                <span style={marketplaceOsRowTitleStyle(isCompact)}>
-                  More / Community Tools
-                </span>
-                <span style={marketplaceOsRowDetailStyle(isCompact)}>
-                  Trust, ID, evidence, messages, and route help.
-                </span>
-                <span style={marketplaceFrontTagRowStyle(isCompact)}>
-                  <span
-                    style={marketplaceFrontTagStyle("#173750", "#EEF3F7", isCompact)}
-                  >
-                    Trust
-                  </span>
-                  <span
-                    style={marketplaceFrontTagStyle("#173750", "#EEF3F7", isCompact)}
-                  >
-                    Identity
-                  </span>
-                  <span
-                    style={marketplaceFrontTagStyle("#173750", "#EEF3F7", isCompact)}
-                  >
-                    TrustSlip
-                  </span>
-                  <span
-                    style={marketplaceFrontTagStyle("#173750", "#EEF3F7", isCompact)}
-                  >
-                    Messages
-                  </span>
-                </span>
-              </span>
-              <span aria-hidden="true" style={marketplaceOsArrowStyle()}>
-                <MarketplaceGlyph
-                  name={intentGuideOpen ? "chevronUp" : "chevron"}
-                  size={18}
-                />
               </span>
             </StableButton>
           </div>
@@ -7883,7 +7751,7 @@ export default function MarketplacePage() {
               <div style={sectionLabel()}>Local Marketplace Trust</div>
               <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
                 This is this selected community's local trust signal. Use More
-                / Community Tools when you need fuller evidence routes.
+                / Marketplace Tools when you need fuller evidence routes.
                 Member-level witness currentness belongs in those fuller
                 evidence routes, not this local marketplace summary.
               </div>
@@ -11986,6 +11854,52 @@ export default function MarketplacePage() {
                 {poolCurrency}.
               </div>
             ) : null}
+          </div>
+        ) : null}
+
+        {sectionsOpen.support ? (
+          <div
+            style={{
+              marginTop: 12,
+              ...innerCard("#FFFDF7"),
+              display: "grid",
+              gridTemplateColumns: isCompact
+                ? "44px minmax(0, 1fr)"
+                : "54px minmax(0, 1fr) auto",
+              gap: 12,
+              alignItems: "center",
+            }}
+          >
+            <span
+              aria-hidden="true"
+              style={marketplaceOsIconStyle(
+                "linear-gradient(180deg, #B8871E 0%, #513A0B 100%)",
+                true
+              )}
+            >
+              <MarketplaceGlyph name="rosca" size={24} />
+            </span>
+            <div style={{ minWidth: 0 }}>
+              <div style={sectionLabel()}>ROSCA savings circles</div>
+              <div style={{ marginTop: 6, ...helperText(), fontSize: 13 }}>
+                Build a selected-member contribution cycle for this marketplace.
+                Open the ROSCA desk only when that is the support task.
+              </div>
+            </div>
+            <StableButton
+              debugId="marketplace.support.open-rosca"
+              type="button"
+              onClick={(event) =>
+                openMarketplaceSection(event, "rosca", "marketplace-rosca")
+              }
+              style={{
+                ...marketplaceActionStyle("secondary"),
+                width: isCompact ? "100%" : 150,
+                gridColumn: isCompact ? "1 / -1" : undefined,
+              }}
+            >
+              Open ROSCA
+            </StableButton>
           </div>
         ) : null}
 

@@ -236,19 +236,65 @@ class InviteSettingsUpdateIn(BaseModel):
     max_uses: Optional[int] = None
     rotate: bool = False
 
+    @field_validator("days", "max_uses", mode="before")
+    @classmethod
+    def _reject_malformed_integer_settings(cls, value: Any, info: Any) -> Any:
+        if value is None:
+            return value
+        if isinstance(value, bool):
+            raise ValueError(f"{info.field_name} must be an integer, not a boolean.")
+        if isinstance(value, float):
+            raise ValueError(f"{info.field_name} must be an integer, not a float.")
+        return value
+
+    @field_validator("rotate", mode="before")
+    @classmethod
+    def _reject_non_boolean_rotate(cls, value: Any) -> Any:
+        if isinstance(value, bool):
+            return value
+        raise ValueError("rotate must be a boolean.")
+
 
 class ClanInviteCreateBody(BaseModel):
     relationship_evidence: Optional[ClanInviteRelationshipEvidence] = None
+
+
+def _reject_non_text_body_value(value: Any, field_name: str) -> Any:
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name} must be text.")
+    return value
+
+
+def _reject_bool_float_body_identifier(value: Any, field_name: str) -> Any:
+    if value is None:
+        return value
+    if isinstance(value, bool):
+        raise ValueError(f"{field_name} must be an integer id, not a boolean.")
+    if isinstance(value, float):
+        raise ValueError(f"{field_name} must be an integer id, not a float.")
+    return value
 
 
 class CommunityAffiliationRequestIn(BaseModel):
     parent_community_key: str = Field(..., min_length=1, max_length=64)
     request_note: Optional[str] = Field(default=None, max_length=500)
 
+    @field_validator("parent_community_key", "request_note", mode="before")
+    @classmethod
+    def _reject_non_text_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_body_value(value, info.field_name)
+
 
 class CommunityAffiliationDecisionIn(BaseModel):
     decision: str = Field(..., min_length=3, max_length=24)
     decision_note: Optional[str] = Field(default=None, max_length=500)
+
+    @field_validator("decision", "decision_note", mode="before")
+    @classmethod
+    def _reject_non_text_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_body_value(value, info.field_name)
 
 
 class CommunityExternalRegistrationRecordIn(BaseModel):
@@ -258,11 +304,33 @@ class CommunityExternalRegistrationRecordIn(BaseModel):
     issuing_body: Optional[str] = Field(default=None, max_length=120)
     note: Optional[str] = Field(default=None, max_length=500)
 
+    @field_validator(
+        "registration_type",
+        "registration_reference",
+        "registered_name",
+        "issuing_body",
+        "note",
+        mode="before",
+    )
+    @classmethod
+    def _reject_non_text_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_body_value(value, info.field_name)
+
 
 class CommunityMemberVerificationIn(BaseModel):
     subject_user_id: int
     claim_label: Optional[str] = Field(default=None, max_length=160)
     verification_note: Optional[str] = Field(default=None, max_length=500)
+
+    @field_validator("subject_user_id", mode="before")
+    @classmethod
+    def _reject_malformed_identifier(cls, value: Any, info: Any) -> Any:
+        return _reject_bool_float_body_identifier(value, info.field_name)
+
+    @field_validator("claim_label", "verification_note", mode="before")
+    @classmethod
+    def _reject_non_text_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_body_value(value, info.field_name)
 
 
 class CommunityMemberVerificationRequestIn(BaseModel):
@@ -270,15 +338,35 @@ class CommunityMemberVerificationRequestIn(BaseModel):
     claim_label: Optional[str] = Field(default=None, max_length=160)
     request_note: Optional[str] = Field(default=None, max_length=500)
 
+    @field_validator("verifier_user_id", mode="before")
+    @classmethod
+    def _reject_malformed_identifier(cls, value: Any, info: Any) -> Any:
+        return _reject_bool_float_body_identifier(value, info.field_name)
+
+    @field_validator("claim_label", "request_note", mode="before")
+    @classmethod
+    def _reject_non_text_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_body_value(value, info.field_name)
+
 
 class CommunityMemberVerificationRequestDecisionIn(BaseModel):
     decision: str = Field(..., max_length=24)
     one_time_code: Optional[str] = Field(default=None, max_length=16)
     response_note: Optional[str] = Field(default=None, max_length=500)
 
+    @field_validator("decision", "one_time_code", "response_note", mode="before")
+    @classmethod
+    def _reject_non_text_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_body_value(value, info.field_name)
+
 
 class CommunityMemberVerificationWithdrawIn(BaseModel):
     reason: Optional[str] = Field(default=None, max_length=500)
+
+    @field_validator("reason", mode="before")
+    @classmethod
+    def _reject_non_text_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_body_value(value, info.field_name)
 
 
 class JoinApplicationIn(BaseModel):

@@ -44,13 +44,8 @@ assertContains(
 );
 
 assertContains(
-  /debugId="marketplace\.tile\.money"[\s\S]*?aria-label="Open Money In and this marketplace pool"[\s\S]*?openMarketplaceSection\(event, "money", "marketplace-money-routes"\)[\s\S]*?<MarketplaceGlyph name="pool"[\s\S]*?Money In \/ Pool[\s\S]*?Put money into this marketplace pool\.[\s\S]*?Money In[\s\S]*?Pool[\s\S]*?Pay-In Rail/,
-  "Money In / Pool grouped card must stay the guided pay-in launcher and open only the money section."
-);
-
-assertContains(
-  /const marketplaceMoneyOutTo = useMemo\([\s\S]*?resolveCtaTarget\("moneyOut"[\s\S]*?to=\{marketplaceMoneyOutTo\}[\s\S]*?debugId="marketplace\.tile\.withdrawal"[\s\S]*?Money Out \/ Withdrawal[\s\S]*?Withdraw your own available money\./,
-  "Normal Money Out / Withdrawal must stay a separate Marketplace front-door action from Money In / Pool."
+  /debugId="marketplace\.tile\.money"[\s\S]*?aria-label="Open Money and trust tools for this marketplace"[\s\S]*?openMarketplaceSection\(event, "money", "marketplace-money-routes"\)[\s\S]*?<MarketplaceGlyph name="pool"[\s\S]*?Money & Trust[\s\S]*?Local money routes and standing\.[\s\S]*?Finance[\s\S]*?Money In[\s\S]*?Money Out[\s\S]*?Trust/,
+  "Money & Trust grouped card must keep finance, Money In, Money Out, and compact trust under one guided front-door lane."
 );
 
 assertContains(

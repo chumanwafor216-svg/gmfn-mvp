@@ -44,8 +44,8 @@ assertContains(
 );
 
 assertContains(
-  /debugId="marketplace\.tile\.rosca"[\s\S]*?aria-label="Open ROSCA contribution cycles for this marketplace"[\s\S]*?openMarketplaceSection\(event, "rosca", "marketplace-rosca"\)[\s\S]*?<MarketplaceGlyph name="rosca"[\s\S]*?ROSCA[\s\S]*?Member savings circle for this community[\s\S]*?Yearly Service[\s\S]*?Member Cycle[\s\S]*?Payout Record/,
-  "ROSCA must stay visible as its own major grouped launcher on the Marketplace front door."
+  /debugId="marketplace\.tile\.support"[\s\S]*?Support & ROSCA[\s\S]*?Support Requests[\s\S]*?ROSCA[\s\S]*?Loans[\s\S]*?debugId="marketplace\.support\.open-rosca"[\s\S]*?openMarketplaceSection\(event, "rosca", "marketplace-rosca"\)[\s\S]*?Open ROSCA/,
+  "ROSCA must stay reachable through the grouped Support & ROSCA lane without returning as a separate busy front-door button."
 );
 
 assertContains(

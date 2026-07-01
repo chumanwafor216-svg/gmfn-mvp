@@ -92,6 +92,25 @@ def test_loan_coverage_check_route_rejects_malformed_amount_controls(
     assert "pledge_amount must be text" in response.text
 
 
+def test_loan_timeout_status_route_rejects_malformed_datetime_queries(
+    client: TestClient,
+    override_current_user_user,
+):
+    created_response = client.get(
+        "/loans/timeout-status",
+        params={"created_at": "not-a-date"},
+    )
+    expires_response = client.get(
+        "/loans/timeout-status",
+        params={"expires_at": "not-a-date"},
+    )
+
+    assert created_response.status_code == 422, created_response.text
+    assert created_response.json()["detail"] == "created_at must be an ISO datetime string."
+    assert expires_response.status_code == 422, expires_response.text
+    assert expires_response.json()["detail"] == "expires_at must be an ISO datetime string."
+
+
 def test_trust_event_duplicate_check_uses_subject_and_real_context_fields(seed_clan_admin_membership):
     with SessionLocal() as db:
         db.add(

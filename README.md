@@ -20,6 +20,10 @@ For production polish, icon meaning, screenshot-quality, evidence-document
 presentation, and route completion gates, also read
 `docs/GSN_PRODUCTION_POLISH_STANDARD.md`.
 
+For public verification, TrustSlip, Trust Passport, merchant verification,
+evidence-pack, registry-record, or official trust-document visual work, also
+read `docs/TRUST_DOCUMENT_LANGUAGE_PROTOCOL.md`.
+
 For app-wide page auditing, including entry-to-dashboard checks, in-page
 navigation, action response, placeholder truth, permission visibility, and
 domain-by-domain cage rules, also read `docs/APP_WIDE_AUDIT_PROTOCOL.md`.

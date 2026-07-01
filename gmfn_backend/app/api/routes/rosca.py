@@ -50,9 +50,19 @@ def _reject_non_text_value(value: Any, field_name: str) -> Any:
     return value
 
 
-def _reject_bool_amount(value: Any, field_name: str) -> Any:
-    if isinstance(value, bool):
-        raise ValueError(f"{field_name} must be an amount, not a boolean.")
+def _reject_non_decimal_string(value: Any, field_name: str) -> Any:
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name} must be a decimal string.")
+    return value
+
+
+def _reject_non_datetime_string(value: Any, field_name: str) -> Any:
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name} must be an ISO datetime string.")
     return value
 
 
@@ -84,8 +94,13 @@ class RoscaCycleCreateIn(BaseModel):
 
     @field_validator("contribution_amount", mode="before")
     @classmethod
-    def _reject_bool_contribution_amount(cls, value: Any) -> Any:
-        return _reject_bool_amount(value, "contribution_amount")
+    def _reject_contribution_amount_boundary_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_decimal_string(value, info.field_name)
+
+    @field_validator("start_at", mode="before")
+    @classmethod
+    def _reject_start_at_boundary_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_datetime_string(value, info.field_name)
 
 
 class RoscaPayoutRecordIn(BaseModel):

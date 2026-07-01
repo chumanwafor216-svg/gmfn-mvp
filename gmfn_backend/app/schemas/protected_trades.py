@@ -17,6 +17,30 @@ def _reject_bool_float_integer(value: Any, field_name: str) -> Any:
     return value
 
 
+def _reject_non_text_value(value: Any, field_name: str) -> Any:
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name} must be text.")
+    return value
+
+
+def _reject_non_decimal_string(value: Any, field_name: str) -> Any:
+    if value is None:
+        return value
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name} must be a decimal string.")
+    return value
+
+
+def _reject_non_object_value(value: Any, field_name: str) -> Any:
+    if value is None:
+        return value
+    if not isinstance(value, dict):
+        raise ValueError(f"{field_name} must be an object.")
+    return value
+
+
 class ProtectedTradeCreateIn(BaseModel):
     clan_id: Optional[int] = None
     participant_role: str = Field("seller", pattern="^(seller|buyer)$")
@@ -49,6 +73,30 @@ class ProtectedTradeCreateIn(BaseModel):
     def _reject_malformed_integer_controls(cls, value: Any, info: Any) -> Any:
         return _reject_bool_float_integer(value, info.field_name)
 
+    @field_validator(
+        "participant_role",
+        "trust_slip_code",
+        "shipment_pack_id",
+        "evidence_pack_id",
+        "item_title",
+        "terms_summary",
+        "currency",
+        mode="before",
+    )
+    @classmethod
+    def _reject_non_text_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_value(value, info.field_name)
+
+    @field_validator("amount", mode="before")
+    @classmethod
+    def _reject_amount_boundary_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_decimal_string(value, info.field_name)
+
+    @field_validator("meta", mode="before")
+    @classmethod
+    def _reject_meta_boundary_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_object_value(value, info.field_name)
+
 
 class ProtectedTradeEventIn(BaseModel):
     event_type: str = Field(..., min_length=3, max_length=64)
@@ -63,6 +111,23 @@ class ProtectedTradeEventIn(BaseModel):
     @classmethod
     def _reject_malformed_integer_controls(cls, value: Any, info: Any) -> Any:
         return _reject_bool_float_integer(value, info.field_name)
+
+    @field_validator(
+        "event_type",
+        "note",
+        "shipment_pack_id",
+        "evidence_pack_id",
+        "trust_slip_code",
+        mode="before",
+    )
+    @classmethod
+    def _reject_non_text_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_value(value, info.field_name)
+
+    @field_validator("meta", mode="before")
+    @classmethod
+    def _reject_meta_boundary_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_object_value(value, info.field_name)
 
 
 class ProtectedTradeEventOut(BaseModel):

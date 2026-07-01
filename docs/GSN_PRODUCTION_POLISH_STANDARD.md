@@ -7,6 +7,12 @@ Last updated: 2026-06-11
 This document defines the quality bar for moving GSN from "clear and usable" to
 "premium, trusted, and phone-ready."
 
+For public verification, TrustSlip, Trust Passport, merchant verification,
+evidence-pack, registry-record, or official trust-document visual work,
+`docs/TRUST_DOCUMENT_LANGUAGE_PROTOCOL.md` is the stricter source of truth. It
+defines GSN's registry/passport/certificate visual grammar and the confidence
+ribbon truth rules.
+
 The product owner benchmark is not only whether a screen works. The benchmark is
 whether the screen can sit beside high-trust mobile products such as WhatsApp,
 Telegram, TikTok, and modern banking apps without feeling unfinished, heavy,

@@ -1449,7 +1449,7 @@ export async function createRepaymentClaim(
 
 export async function createLoanRequest(payload: {
   clan_id?: number | null;
-  amount: string | number;
+  amount: string;
   currency?: string | null;
   duration_days?: number | null;
   repayment_cadence?: string | null;
@@ -1681,7 +1681,7 @@ export async function getLoanWithdrawalInstruction(
 export async function addLoanGuarantorRequest(payload: {
   loan_id: number;
   guarantor_user_id: number;
-  pledge_amount: string | number;
+  pledge_amount: string;
   clan_id?: number | null;
 }): Promise<any> {
   const loanId = Number(payload?.loan_id || 0);
@@ -4583,7 +4583,7 @@ export type ProtectedTradeCreatePayload = {
   evidence_pack_id?: string | null;
   item_title?: string | null;
   terms_summary?: string | null;
-  amount?: string | number | null;
+  amount?: string | null;
   currency?: string | null;
   meta?: Record<string, any> | null;
 };
@@ -4899,7 +4899,7 @@ export async function createSpotlightPaymentInstruction(payload: {
   clan_id: number;
   shop_id: number;
   quantity_total: number;
-  amount?: string | number | null;
+  amount?: string | null;
   currency?: string;
   visibility_scope?: string;
 }): Promise<any> {
@@ -4918,7 +4918,7 @@ export async function createCommunityPackagePaymentInstruction(payload: {
   package_code: string;
   quantity_total?: number;
   shop_id?: number | null;
-  amount?: string | number | null;
+  amount?: string | null;
   currency?: string;
 }): Promise<any> {
   return httpJson("/payment-instructions/community-package", "POST", {
@@ -4996,7 +4996,7 @@ export async function getRoscaCycles(payload: {
 export async function createRoscaCycle(payload: {
   clan_id: number;
   title?: string | null;
-  contribution_amount: string | number;
+  contribution_amount: string;
   currency?: string | null;
   interval_days?: number | null;
   member_user_ids?: number[] | null;

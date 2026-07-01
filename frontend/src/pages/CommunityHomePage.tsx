@@ -85,10 +85,18 @@ type ClanItem = {
 
 type NoticeTone = "success" | "error";
 type CollapseKey =
-  | "spotlight"
-  | "communities";
+  | "communities"
+  | "marketplaceTools"
+  | "subscriptions"
+  | "trustFinance";
 
 type CollapseState = Record<CollapseKey, boolean>;
+const COMMUNITY_HOME_ACTION_LANES: CollapseKey[] = [
+  "communities",
+  "marketplaceTools",
+  "subscriptions",
+  "trustFinance",
+];
 
 type ActiveCommunitySpotlight = {
   id?: number;
@@ -129,7 +137,7 @@ function communityIconGlyph(icon: CommunityIconMark, size = 22): React.ReactNode
   return <GsnLegacyIcon name={icon} size={Math.max(26, Math.round(size * 1.28))} />;
 }
 
-const COMMUNITY_HOME_COLLAPSE_KEY = "gmfn.communityHome.sections.v5";
+const COMMUNITY_HOME_COLLAPSE_KEY = "gmfn.communityHome.sections.v6";
 const COMMUNITY_BRAND = {
   ink: "#F8FBFF",
   navy: "#081E32",
@@ -907,8 +915,10 @@ function writeLocalJSON(key: string, value: any) {
 
 function defaultCollapseState(): CollapseState {
   return {
-    spotlight: false,
-    communities: false,
+    communities: true,
+    marketplaceTools: true,
+    subscriptions: true,
+    trustFinance: true,
   };
 }
 
@@ -916,8 +926,10 @@ function normalizeCollapseState(raw: any): CollapseState {
   const base = defaultCollapseState();
 
   return {
-    spotlight: Boolean(raw?.spotlight ?? base.spotlight),
     communities: Boolean(raw?.communities ?? base.communities),
+    marketplaceTools: Boolean(raw?.marketplaceTools ?? base.marketplaceTools),
+    subscriptions: Boolean(raw?.subscriptions ?? base.subscriptions),
+    trustFinance: Boolean(raw?.trustFinance ?? base.trustFinance),
   };
 }
 
@@ -1020,7 +1032,12 @@ export default function CommunityHomePage() {
     (event?: React.SyntheticEvent<HTMLElement>) => {
       consumeCommunityButtonEvent(event);
       setGuidedActionFamilyFocus("spotlight");
-      setCollapsed((prev) => ({ ...prev, spotlight: false }));
+      setCollapsed((prev) => ({
+        ...prev,
+        marketplaceTools: false,
+        subscriptions: true,
+        trustFinance: true,
+      }));
       revealCommunityTarget(["community-home-spotlight-guided-lane"]);
     },
     [revealCommunityTarget]
@@ -1965,6 +1982,27 @@ export default function CommunityHomePage() {
     setCollapsed((prev) => ({ ...prev, [key]: !prev[key] }));
   }
 
+  function openActionLaneFromButton(
+    event: React.SyntheticEvent<HTMLElement> | undefined,
+    key: CollapseKey
+  ) {
+    consumeCommunityButtonEvent(event);
+    setGuidedActionFamilyFocus(null);
+    setCollapsed((prev) => {
+      const willOpen = prev[key];
+      const next: CollapseState = {
+        ...prev,
+        communities: true,
+        marketplaceTools: true,
+        subscriptions: true,
+        trustFinance: true,
+      };
+      next[key] = !willOpen;
+      return next;
+    });
+    revealCommunityTarget(["community-home-action-lanes", "community-home-community-list"]);
+  }
+
   function toggleSectionFromButton(
     event: React.SyntheticEvent<HTMLElement> | undefined,
     key: CollapseKey
@@ -1999,7 +2037,19 @@ export default function CommunityHomePage() {
     }
 
     if (expandKey) {
-      setCollapsed((prev) => ({ ...prev, [expandKey]: false }));
+      setCollapsed((prev) => {
+        if (!COMMUNITY_HOME_ACTION_LANES.includes(expandKey)) {
+          return { ...prev, [expandKey]: false };
+        }
+
+        return {
+          ...prev,
+          communities: expandKey === "communities" ? false : true,
+          marketplaceTools: expandKey === "marketplaceTools" ? false : true,
+          subscriptions: expandKey === "subscriptions" ? false : true,
+          trustFinance: expandKey === "trustFinance" ? false : true,
+        };
+      });
     }
     revealCommunityTarget([targetId]);
   }
@@ -2190,7 +2240,7 @@ export default function CommunityHomePage() {
         openCommunityHomeSection(
           event,
           "community-home-spotlight-gears",
-          "spotlight",
+          "marketplaceTools",
           true
         );
         break;
@@ -2725,7 +2775,7 @@ export default function CommunityHomePage() {
                         lineHeight: 1.2,
                       }}
                     >
-                      Finance summary: {moneyPositionLabel}
+                      Finance: {moneyPositionLabel}
                     </span>
                     <span
                       style={{
@@ -2737,7 +2787,7 @@ export default function CommunityHomePage() {
                         lineHeight: 1.35,
                       }}
                     >
-                      {moneyPositionDetail}. Open Finance for pool, support commitments, earnings, and trade detail.
+                      {moneyPositionDetail}. Open Finance for pool and support detail.
                     </span>
                   </span>
                   <span aria-hidden="true" style={{ color: "#0B2D4A", fontSize: 24 }}>
@@ -2778,7 +2828,7 @@ export default function CommunityHomePage() {
                       lineHeight: 1.2,
                     }}
                   >
-                    Built on trust. Driven by community.
+                    Trust summary
                   </span>
                   <span
                     style={{
@@ -2790,7 +2840,7 @@ export default function CommunityHomePage() {
                       lineHeight: 1.35,
                     }}
                   >
-                    Records, accountability, and support in one place.
+                    Trust strength across all communities.
                   </span>
                 </span>
                 <span aria-hidden="true" style={{ color: "#0B2D4A", fontSize: 24 }}>
@@ -2830,47 +2880,53 @@ export default function CommunityHomePage() {
               style={{
                 display: "grid",
                 gridTemplateColumns: isCompact
-                  ? "repeat(3, minmax(0, 1fr))"
-                  : "repeat(5, minmax(0, 1fr))",
+                  ? "repeat(2, minmax(0, 1fr))"
+                  : "repeat(4, minmax(0, 1fr))",
                 gap: isCompact ? 6 : 12,
                 alignItems: "stretch",
               }}
             >
               {[
                 {
-                  id: "choose-community",
+                  id: "communities",
+                  lane: "communities",
                   icon: "community",
-                  title: "Choose community",
+                  title: "Communities",
                   primary: true,
                 },
                 {
-                  id: "marketplace",
+                  id: "marketplace-tools",
+                  lane: "marketplaceTools",
                   icon: "shop",
-                  title: "Enter marketplace",
+                  title: "Marketplace & Tools",
                 },
                 {
-                  id: "create-community",
-                  icon: "home",
-                  title: "Create community",
+                  id: "subscriptions",
+                  lane: "subscriptions",
+                  icon: "financeInstitution",
+                  title: "Subscriptions",
                 },
                 {
-                  id: "join-community",
-                  icon: "join-person-plus",
-                  title: "Join community",
-                },
-                {
-                  id: "circle",
-                  icon: "join-person-plus",
-                  title: "Grow circle",
+                  id: "trust-finance",
+                  lane: "trustFinance",
+                  icon: "shield",
+                  title: "Trust & Finance",
                 },
               ].map((item) => (
                 <StableButton
                   key={item.id}
                   type="button"
                   debugId={`community-home.next-action.${item.id}`}
-                  onClick={(event) => openCommunityNextAction(event, item.id)}
+                  aria-expanded={!collapsed[item.lane as CollapseKey]}
+                  aria-controls="community-home-action-lanes"
+                  onClick={(event) =>
+                    openActionLaneFromButton(event, item.lane as CollapseKey)
+                  }
                   style={{
-                    ...communityQuickActionButton(Boolean(item.primary), isCompact),
+                    ...communityQuickActionButton(
+                      Boolean(item.primary) || !collapsed[item.lane as CollapseKey],
+                      isCompact
+                    ),
                   }}
                 >
                   <span
@@ -3052,244 +3108,531 @@ export default function CommunityHomePage() {
 
       {!spotlightGuidanceSuspendedView ? (
       <>
-      <section
-        style={{
-          ...communityBlockCard("raised"),
-          order: 30,
-          marginTop: isCompact ? 16 : undefined,
-        }}
-      >
-        <div
+      {!collapsed.communities ||
+      !collapsed.marketplaceTools ||
+      !collapsed.subscriptions ||
+      !collapsed.trustFinance ? (
+        <section
+          id="community-home-action-lanes"
           style={{
-            display: "grid",
-            gap: 0,
-            borderRadius: 18,
-            overflow: "hidden",
-            border: "1px solid rgba(16,37,59,0.08)",
+            ...communityBlockCard("raised"),
+            order: 30,
+            marginTop: isCompact ? 16 : undefined,
           }}
         >
-          {[
-            {
-              icon: "shield",
-              id: "owner-actions",
-              title: "Owner Actions",
-              detail:
-                "Open owner-side tools and permissions",
-              onClick: (event: React.SyntheticEvent<HTMLElement>) =>
-                openSelectedCommunityRoute(
-                  event,
-                  routes.joinRequests,
-                  "Choose a community first, then review join requests."
-                ),
-            },
-            {
-              icon: COMMUNITY_OWNER_HANDLE_ICONS["shop-control"],
-              id: ownerShopHandle("shop-control").id,
-              title: ownerShopHandle("shop-control").label,
-              detail: ownerShopHandle("shop-control").detail,
-              onClick: (event: React.SyntheticEvent<HTMLElement>) =>
-                openCommunityShopControl(event),
-            },
-            {
-              icon: COMMUNITY_OWNER_HANDLE_ICONS["merchant-release"],
-              id: ownerShopHandle("merchant-release").id,
-              title: ownerShopHandle("merchant-release").label,
-              detail: ownerShopHandle("merchant-release").detail,
-              onClick: (event: React.SyntheticEvent<HTMLElement>) =>
-                openSelectedCommunityRoute(
-                  event,
-                  routes.merchantRelease,
-                  "Choose a community first, then open the Merchant Release rail."
-                ),
-            },
-            {
-              icon: COMMUNITY_OWNER_HANDLE_ICONS["shop-gallery-tools"],
-              id: ownerShopHandle("shop-gallery-tools").id,
-              title: ownerShopHandle("shop-gallery-tools").label,
-              detail: ownerShopHandle("shop-gallery-tools").detail,
-              onClick: (event: React.SyntheticEvent<HTMLElement>) =>
-                openSelectedCommunityRoute(
-                  event,
-                  routes.shopGalleryTools,
-                  "Choose a community first, then open Shop Gallery Tools."
-                ),
-            },
-            {
-              icon: COMMUNITY_OWNER_HANDLE_ICONS["vault-control"],
-              id: ownerShopHandle("vault-control").id,
-              title: ownerShopHandle("vault-control").label,
-              detail: ownerShopHandle("vault-control").detail,
-              onClick: (event: React.SyntheticEvent<HTMLElement>) =>
-                openSelectedCommunityRoute(
-                  event,
-                  routes.vaultControl,
-                  "Choose a community first, then open Vault."
-                ),
-            },
-            {
-              icon: COMMUNITY_OWNER_HANDLE_ICONS["free-spotlight"],
-              id: ownerShopHandle("free-spotlight").id,
-              title: ownerShopHandle("free-spotlight").label,
-              detail: ownerShopHandle("free-spotlight").detail,
-              onClick: (event: React.SyntheticEvent<HTMLElement>) =>
-                openSelectedCommunityRoute(
-                  event,
-                  routes.freeSpotlight,
-                  "Choose a community first, then open Free Spotlight."
-                ),
-            },
-            {
-              icon: COMMUNITY_OWNER_HANDLE_ICONS["spotlight-subscription"],
-              id: ownerShopHandle("spotlight-subscription").id,
-              title: ownerShopHandle("spotlight-subscription").label,
-              detail: ownerShopHandle("spotlight-subscription").detail,
-              onClick: (event: React.SyntheticEvent<HTMLElement>) =>
-                openSelectedCommunityRoute(
-                  event,
-                  routes.subscriptionSpotlight,
-                  "Choose a community first, then open Subscription Spotlight."
-                ),
-            },
-            {
-              icon: COMMUNITY_OWNER_HANDLE_ICONS["paid-repost"],
-              id: ownerShopHandle("paid-repost").id,
-              title: ownerShopHandle("paid-repost").label,
-              detail: ownerShopHandle("paid-repost").detail,
-              onClick: (event: React.SyntheticEvent<HTMLElement>) =>
-                openSelectedCommunityRoute(
-                  event,
-                  routes.paidRepost,
-                  "Choose a community first, then open Paid Repost."
-                ),
-            },
-            {
-              icon: "repaymentSchedule",
-              id: "rosca",
-              title: "ROSCA",
-              detail:
-                "Open contribution cycles for this community marketplace",
-              onClick: (event: React.SyntheticEvent<HTMLElement>) =>
-                openSelectedCommunityRoute(
-                  event,
-                  routes.rosca,
-                  "Choose a community first, then open ROSCA in Marketplace."
-                ),
-            },
-            {
-              icon: "financeInstitution",
-              id: "community-domain",
-              title: "Community Domain",
-              detail: "Open institutional dashboard and access requests",
-              onClick: (event: React.SyntheticEvent<HTMLElement>) =>
-                openCommunityRoute(
-                  event,
-                  routes.communityDomain
-                ),
-            },
-            {
-              icon: "join-person-plus",
-              id: "trusted-circle",
-              title: "Grow Your Trusted Circle",
-              detail:
-                "Invite trusted real-life people",
-              onClick: (event: React.SyntheticEvent<HTMLElement>) =>
-                openSelectedCommunityRoute(
-                  event,
-                  routes.buildFirstCircle,
-                  "Choose a community first, then grow your trusted circle."
-                ),
-            },
-            {
-              icon: "megaphone",
-              id: "spotlight-status",
-              title: "Owner Spotlight Status",
-              detail:
-                activeCommunitySpotlightTotal > 0
-                  ? "Your spotlight is live"
-                  : "No owner spotlight live",
-              onClick: (event: React.SyntheticEvent<HTMLElement>) =>
-                openCommunityHomeSection(
-                  event,
-                  "community-home-spotlight-gears",
-                  "spotlight"
-                ),
-            },
-          ].map((item, index) => (
-            <StableButton
-              key={item.title}
-              type="button"
-              debugId={`community-home.tool.${item.id}`}
-              onClick={item.onClick}
-              style={{
-                ...communityToolRowStyle(),
-                borderRadius: 0,
-                border: "0",
-                borderTop: index === 0 ? "0" : "1px solid rgba(16,37,59,0.08)",
-                background:
-                  item.id === "vault-control"
-                    ? "linear-gradient(180deg, #FFFFFF 0%, #FFF9EA 100%)"
-                    : "linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(247,251,255,0.98) 100%)",
-                boxShadow:
-                  item.id === "vault-control"
-                    ? "inset 4px 0 0 rgba(201,154,39,0.70), 0 12px 24px rgba(120,84,18,0.08)"
-                    : "none",
-              }}
-            >
-              <span
-                style={{
-                  ...communityActionIcon(item.id === "vault-control"),
-                  background:
-                    item.id === "vault-control"
-                      ? "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(255,251,236,0.96) 100%)"
-                      : undefined,
-                  border:
-                    item.id === "vault-control"
-                      ? "1px solid rgba(214,170,69,0.24)"
-                      : undefined,
-                  color: item.id === "vault-control" ? "#0B2D4A" : "#135A94",
-                }}
-              >
-                {communityIconGlyph(item.icon as CommunityIconMark, 24)}
-              </span>
-              <span style={{ minWidth: 0 }}>
-                <span
+          <div
+            style={{
+              display: "grid",
+              gap: 12,
+            }}
+          >
+            {!collapsed.communities ? (
+              <div>
+                <div style={sectionLabel()}>Communities</div>
+                <div
                   style={{
-                    ...brandClampLines(2),
-                    color: "#07172C",
-                    fontSize: isCompact ? 15 : 16,
-                    fontWeight: 940,
-                    lineHeight: 1.18,
+                    marginTop: 10,
+                    display: "grid",
+                    gap: 0,
+                    borderRadius: 18,
+                    overflow: "hidden",
+                    border: "1px solid rgba(16,37,59,0.08)",
                   }}
                 >
-                  {item.title}
-                </span>
-                <span
-                  style={{
-                    ...brandClampLines(2),
-                    marginTop: 4,
-                    color: "#617085",
-                    fontSize: isCompact ? 12.2 : 13,
-                    fontWeight: 720,
-                    lineHeight: 1.35,
-                  }}
-                >
-                  {item.detail}
-                </span>
-              </span>
-              <span
-                aria-hidden="true"
-                style={{
-                  color: item.id === "vault-control" ? "#8A6518" : "#1E5D91",
-                  fontSize: 24,
-                }}
-              >
-                {">"}
-              </span>
-            </StableButton>
-          ))}
-        </div>
-      </section>
+                  {[
+                    {
+                      icon: "community",
+                      id: "choose-community",
+                      title: "Choose community",
+                      detail: "Pick the community you want to work inside now.",
+                      onClick: (event: React.SyntheticEvent<HTMLElement>) =>
+                        openCommunityNextAction(event, "choose-community"),
+                    },
+                    {
+                      icon: "home",
+                      id: "create-community",
+                      title: "Create community",
+                      detail: "Start a new community under your same GSN ID.",
+                      onClick: (event: React.SyntheticEvent<HTMLElement>) =>
+                        openCommunityNextAction(event, "create-community"),
+                    },
+                    {
+                      icon: "join-person-plus",
+                      id: "join-community",
+                      title: "Join community",
+                      detail: "Use an invite or approval path for an existing community.",
+                      onClick: (event: React.SyntheticEvent<HTMLElement>) =>
+                        openCommunityNextAction(event, "join-community"),
+                    },
+                    {
+                      icon: "shield",
+                      id: "owner-actions",
+                      title: "Owner approvals",
+                      detail: "Review join requests and owner-side permissions.",
+                      onClick: (event: React.SyntheticEvent<HTMLElement>) =>
+                        openSelectedCommunityRoute(
+                          event,
+                          routes.joinRequests,
+                          "Choose a community first, then review join requests."
+                        ),
+                    },
+                    {
+                      icon: "join-person-plus",
+                      id: "trusted-circle",
+                      title: "Grow trusted circle",
+                      detail: "Invite trusted real-life people.",
+                      onClick: (event: React.SyntheticEvent<HTMLElement>) =>
+                        openCommunityNextAction(event, "circle"),
+                    },
+                  ].map((item, index) => (
+                    <StableButton
+                      key={item.id}
+                      type="button"
+                      debugId={`community-home.lane.communities.${item.id}`}
+                      onClick={item.onClick}
+                      style={{
+                        ...communityToolRowStyle(),
+                        borderRadius: 0,
+                        border: "0",
+                        borderTop:
+                          index === 0 ? "0" : "1px solid rgba(16,37,59,0.08)",
+                        background:
+                          "linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(247,251,255,0.98) 100%)",
+                        boxShadow: "none",
+                      }}
+                    >
+                      <span style={communityActionIcon(index === 0)}>
+                        {communityIconGlyph(item.icon as CommunityIconMark, 24)}
+                      </span>
+                      <span style={{ minWidth: 0 }}>
+                        <span
+                          style={{
+                            ...brandClampLines(2),
+                            color: "#07172C",
+                            fontSize: isCompact ? 15 : 16,
+                            fontWeight: 940,
+                            lineHeight: 1.18,
+                          }}
+                        >
+                          {item.title}
+                        </span>
+                        <span
+                          style={{
+                            ...brandClampLines(2),
+                            marginTop: 4,
+                            color: "#617085",
+                            fontSize: isCompact ? 12.2 : 13,
+                            fontWeight: 720,
+                            lineHeight: 1.35,
+                          }}
+                        >
+                          {item.detail}
+                        </span>
+                      </span>
+                      <span aria-hidden="true" style={{ color: "#1E5D91", fontSize: 24 }}>
+                        {">"}
+                      </span>
+                    </StableButton>
+                  ))}
+                </div>
+              </div>
+            ) : null}
 
+            {!collapsed.marketplaceTools ? (
+              <div>
+                <div style={sectionLabel()}>Marketplace & Tools</div>
+                <div
+                  style={{
+                    marginTop: 10,
+                    display: "grid",
+                    gap: 0,
+                    borderRadius: 18,
+                    overflow: "hidden",
+                    border: "1px solid rgba(16,37,59,0.08)",
+                  }}
+                >
+                  {[
+                    {
+                      icon: "shop",
+                      id: "marketplace",
+                      title: "Enter marketplace",
+                      detail: "Open the selected community marketplace.",
+                      onClick: (event: React.SyntheticEvent<HTMLElement>) =>
+                        openCommunityNextAction(event, "marketplace"),
+                    },
+                    {
+                      icon: COMMUNITY_OWNER_HANDLE_ICONS["shop-control"],
+                      id: ownerShopHandle("shop-control").id,
+                      title: ownerShopHandle("shop-control").label,
+                      detail: ownerShopHandle("shop-control").detail,
+                      onClick: (event: React.SyntheticEvent<HTMLElement>) =>
+                        openCommunityShopControl(event),
+                    },
+                    {
+                      icon: COMMUNITY_OWNER_HANDLE_ICONS["merchant-release"],
+                      id: ownerShopHandle("merchant-release").id,
+                      title: ownerShopHandle("merchant-release").label,
+                      detail: ownerShopHandle("merchant-release").detail,
+                      onClick: (event: React.SyntheticEvent<HTMLElement>) =>
+                        openSelectedCommunityRoute(
+                          event,
+                          routes.merchantRelease,
+                          "Choose a community first, then open the Merchant Release rail."
+                        ),
+                    },
+                    {
+                      icon: COMMUNITY_OWNER_HANDLE_ICONS["shop-gallery-tools"],
+                      id: ownerShopHandle("shop-gallery-tools").id,
+                      title: ownerShopHandle("shop-gallery-tools").label,
+                      detail: ownerShopHandle("shop-gallery-tools").detail,
+                      onClick: (event: React.SyntheticEvent<HTMLElement>) =>
+                        openSelectedCommunityRoute(
+                          event,
+                          routes.shopGalleryTools,
+                          "Choose a community first, then open Shop Gallery Tools."
+                        ),
+                    },
+                    {
+                      icon: COMMUNITY_OWNER_HANDLE_ICONS["free-spotlight"],
+                      id: ownerShopHandle("free-spotlight").id,
+                      title: ownerShopHandle("free-spotlight").label,
+                      detail: ownerShopHandle("free-spotlight").detail,
+                      onClick: (event: React.SyntheticEvent<HTMLElement>) =>
+                        openSelectedCommunityRoute(
+                          event,
+                          routes.freeSpotlight,
+                          "Choose a community first, then open Free Spotlight."
+                        ),
+                    },
+                    {
+                      icon: "repaymentSchedule",
+                      id: "rosca",
+                      title: "ROSCA",
+                      detail: "Open contribution cycles for this community marketplace.",
+                      onClick: (event: React.SyntheticEvent<HTMLElement>) =>
+                        openSelectedCommunityRoute(
+                          event,
+                          routes.rosca,
+                          "Choose a community first, then open ROSCA in Marketplace."
+                        ),
+                    },
+                    {
+                      icon: "megaphone",
+                      id: "spotlight-status",
+                      title: "Owner spotlight status",
+                      detail:
+                        activeCommunitySpotlightTotal > 0
+                          ? "Your spotlight is live."
+                          : "No owner spotlight live.",
+                      onClick: (event: React.SyntheticEvent<HTMLElement>) =>
+                        openCommunityHomeSection(
+                          event,
+                          "community-home-spotlight-gears",
+                          "marketplaceTools"
+                        ),
+                    },
+                  ].map((item, index) => (
+                    <StableButton
+                      key={item.id}
+                      type="button"
+                      debugId={`community-home.lane.marketplace-tools.${item.id}`}
+                      onClick={item.onClick}
+                      style={{
+                        ...communityToolRowStyle(),
+                        borderRadius: 0,
+                        border: "0",
+                        borderTop:
+                          index === 0 ? "0" : "1px solid rgba(16,37,59,0.08)",
+                        background:
+                          "linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(247,251,255,0.98) 100%)",
+                        boxShadow: "none",
+                      }}
+                    >
+                      <span style={communityActionIcon(index === 0)}>
+                        {communityIconGlyph(item.icon as CommunityIconMark, 24)}
+                      </span>
+                      <span style={{ minWidth: 0 }}>
+                        <span
+                          style={{
+                            ...brandClampLines(2),
+                            color: "#07172C",
+                            fontSize: isCompact ? 15 : 16,
+                            fontWeight: 940,
+                            lineHeight: 1.18,
+                          }}
+                        >
+                          {item.title}
+                        </span>
+                        <span
+                          style={{
+                            ...brandClampLines(2),
+                            marginTop: 4,
+                            color: "#617085",
+                            fontSize: isCompact ? 12.2 : 13,
+                            fontWeight: 720,
+                            lineHeight: 1.35,
+                          }}
+                        >
+                          {item.detail}
+                        </span>
+                      </span>
+                      <span aria-hidden="true" style={{ color: "#1E5D91", fontSize: 24 }}>
+                        {">"}
+                      </span>
+                    </StableButton>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
+            {!collapsed.subscriptions ? (
+              <div>
+                <div style={sectionLabel()}>Subscriptions</div>
+                <div
+                  style={{
+                    marginTop: 10,
+                    display: "grid",
+                    gap: 0,
+                    borderRadius: 18,
+                    overflow: "hidden",
+                    border: "1px solid rgba(16,37,59,0.08)",
+                  }}
+                >
+                  {[
+                    {
+                      icon: COMMUNITY_OWNER_HANDLE_ICONS["vault-control"],
+                      id: ownerShopHandle("vault-control").id,
+                      title: "Vault subscription",
+                      detail: "Private paid blocks, controlled links, and secure offers.",
+                      onClick: (event: React.SyntheticEvent<HTMLElement>) =>
+                        openSelectedCommunityRoute(
+                          event,
+                          routes.vaultControl,
+                          "Choose a community first, then open Vault."
+                        ),
+                    },
+                    {
+                      icon: COMMUNITY_OWNER_HANDLE_ICONS["spotlight-subscription"],
+                      id: ownerShopHandle("spotlight-subscription").id,
+                      title: ownerShopHandle("spotlight-subscription").label,
+                      detail: ownerShopHandle("spotlight-subscription").detail,
+                      onClick: (event: React.SyntheticEvent<HTMLElement>) =>
+                        openSelectedCommunityRoute(
+                          event,
+                          routes.subscriptionSpotlight,
+                          "Choose a community first, then open Subscription Spotlight."
+                        ),
+                    },
+                    {
+                      icon: COMMUNITY_OWNER_HANDLE_ICONS["paid-repost"],
+                      id: ownerShopHandle("paid-repost").id,
+                      title: ownerShopHandle("paid-repost").label,
+                      detail: ownerShopHandle("paid-repost").detail,
+                      onClick: (event: React.SyntheticEvent<HTMLElement>) =>
+                        openSelectedCommunityRoute(
+                          event,
+                          routes.paidRepost,
+                          "Choose a community first, then open Paid Repost."
+                        ),
+                    },
+                    {
+                      icon: "financeInstitution",
+                      id: "community-packages",
+                      title: "Community packages",
+                      detail: "Member capacity, marketplace extension, ROSCA, meeting, and package upgrades.",
+                      onClick: (event: React.SyntheticEvent<HTMLElement>) =>
+                        openCommunityNextAction(event, "community-packages"),
+                    },
+                    {
+                      icon: "financeInstitution",
+                      id: "community-domain",
+                      title: "Community Domain",
+                      detail: "Open institutional dashboard and access requests.",
+                      onClick: (event: React.SyntheticEvent<HTMLElement>) =>
+                        openCommunityRoute(event, routes.communityDomain),
+                    },
+                    {
+                      icon: "finance-wallet-card",
+                      id: "payments-renewals",
+                      title: "Payments and renewals",
+                      detail: "Open Finance for payment records, package payments, and renewal checks.",
+                      onClick: (event: React.SyntheticEvent<HTMLElement>) =>
+                        openCommunityRoute(event, routes.finance),
+                    },
+                  ].map((item, index) => (
+                    <StableButton
+                      key={item.id}
+                      type="button"
+                      debugId={`community-home.lane.subscriptions.${item.id}`}
+                      onClick={item.onClick}
+                      style={{
+                        ...communityToolRowStyle(),
+                        borderRadius: 0,
+                        border: "0",
+                        borderTop:
+                          index === 0 ? "0" : "1px solid rgba(16,37,59,0.08)",
+                        background:
+                          item.id === "vault-control"
+                            ? "linear-gradient(180deg, #FFFFFF 0%, #FFF9EA 100%)"
+                            : "linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(247,251,255,0.98) 100%)",
+                        boxShadow:
+                          item.id === "vault-control"
+                            ? "inset 4px 0 0 rgba(201,154,39,0.70), 0 12px 24px rgba(120,84,18,0.08)"
+                            : "none",
+                      }}
+                    >
+                      <span
+                        style={{
+                          ...communityActionIcon(item.id === "vault-control"),
+                          color: item.id === "vault-control" ? "#0B2D4A" : "#135A94",
+                        }}
+                      >
+                        {communityIconGlyph(item.icon as CommunityIconMark, 24)}
+                      </span>
+                      <span style={{ minWidth: 0 }}>
+                        <span
+                          style={{
+                            ...brandClampLines(2),
+                            color: "#07172C",
+                            fontSize: isCompact ? 15 : 16,
+                            fontWeight: 940,
+                            lineHeight: 1.18,
+                          }}
+                        >
+                          {item.title}
+                        </span>
+                        <span
+                          style={{
+                            ...brandClampLines(2),
+                            marginTop: 4,
+                            color: "#617085",
+                            fontSize: isCompact ? 12.2 : 13,
+                            fontWeight: 720,
+                            lineHeight: 1.35,
+                          }}
+                        >
+                          {item.detail}
+                        </span>
+                      </span>
+                      <span
+                        aria-hidden="true"
+                        style={{
+                          color: item.id === "vault-control" ? "#8A6518" : "#1E5D91",
+                          fontSize: 24,
+                        }}
+                      >
+                        {">"}
+                      </span>
+                    </StableButton>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
+            {!collapsed.trustFinance ? (
+              <div>
+                <div style={sectionLabel()}>Trust & Finance</div>
+                <div
+                  style={{
+                    marginTop: 10,
+                    display: "grid",
+                    gap: 0,
+                    borderRadius: 18,
+                    overflow: "hidden",
+                    border: "1px solid rgba(16,37,59,0.08)",
+                  }}
+                >
+                  {[
+                    {
+                      icon: "financeInstitution",
+                      id: "finance",
+                      title: `Finance summary: ${moneyPositionLabel}`,
+                      detail: `${moneyPositionDetail}. Review the wider money record across your communities.`,
+                      onClick: (event: React.SyntheticEvent<HTMLElement>) =>
+                        openCommunityNextAction(event, "finance"),
+                    },
+                    {
+                      icon: "repaymentSchedule",
+                      id: "support",
+                      title: "Loans and support",
+                      detail: "Open borrowing, support, and guarantor work for the selected community.",
+                      onClick: (event: React.SyntheticEvent<HTMLElement>) =>
+                        openCommunityNextAction(event, "support"),
+                    },
+                    {
+                      icon: "shield",
+                      id: "trust",
+                      title: "Trust Passport",
+                      detail: "Review trust strength across your GSN record.",
+                      onClick: (event: React.SyntheticEvent<HTMLElement>) =>
+                        openCommunityNextAction(event, "trust"),
+                    },
+                    {
+                      icon: "evidence",
+                      id: "notifications",
+                      title: "Notices",
+                      detail: "Open the action queue and see what needs attention.",
+                      onClick: (event: React.SyntheticEvent<HTMLElement>) =>
+                        openCommunityNextAction(event, "notifications"),
+                    },
+                  ].map((item, index) => (
+                    <StableButton
+                      key={item.id}
+                      type="button"
+                      debugId={`community-home.lane.trust-finance.${item.id}`}
+                      onClick={item.onClick}
+                      style={{
+                        ...communityToolRowStyle(),
+                        borderRadius: 0,
+                        border: "0",
+                        borderTop:
+                          index === 0 ? "0" : "1px solid rgba(16,37,59,0.08)",
+                        background:
+                          "linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(247,251,255,0.98) 100%)",
+                        boxShadow: "none",
+                      }}
+                    >
+                      <span style={communityActionIcon(index === 0)}>
+                        {communityIconGlyph(item.icon as CommunityIconMark, 24)}
+                      </span>
+                      <span style={{ minWidth: 0 }}>
+                        <span
+                          style={{
+                            ...brandClampLines(2),
+                            color: "#07172C",
+                            fontSize: isCompact ? 15 : 16,
+                            fontWeight: 940,
+                            lineHeight: 1.18,
+                          }}
+                        >
+                          {item.title}
+                        </span>
+                        <span
+                          style={{
+                            ...brandClampLines(2),
+                            marginTop: 4,
+                            color: "#617085",
+                            fontSize: isCompact ? 12.2 : 13,
+                            fontWeight: 720,
+                            lineHeight: 1.35,
+                          }}
+                        >
+                          {item.detail}
+                        </span>
+                      </span>
+                      <span aria-hidden="true" style={{ color: "#1E5D91", fontSize: 24 }}>
+                        {">"}
+                      </span>
+                    </StableButton>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+          </div>
+        </section>
+      ) : null}
+
+      {!collapsed.marketplaceTools ? (
       <section
         id="community-home-spotlight-gears"
         style={{ ...communityBlockCard("summary"), order: 80 }}
@@ -3314,17 +3657,17 @@ export default function CommunityHomePage() {
             <StableButton
               type="button"
               debugId="community-home.spotlight-status.toggle"
-              onClick={(event) => toggleSectionFromButton(event, "spotlight")}
+              onClick={(event) => toggleSectionFromButton(event, "marketplaceTools")}
               style={collapseHeaderButton(isCompact)}
             >
-              {collapsed.spotlight
-                ? "Open spotlight status"
-                : "Collapse spotlight status"}
+              {collapsed.marketplaceTools
+                ? "Open Marketplace & Tools"
+                : "Collapse Marketplace & Tools"}
             </StableButton>
           </div>
         </div>
 
-        {!collapsed.spotlight ? (
+        {!collapsed.marketplaceTools ? (
           <div
             style={{
               marginTop: 16,
@@ -3541,6 +3884,7 @@ export default function CommunityHomePage() {
           </div>
         ) : null}
       </section>
+      ) : null}
 
       <section
         id="community-home-community-list"

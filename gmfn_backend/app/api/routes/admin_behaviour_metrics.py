@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import Any, Dict, Optional, List
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Path, Query
 from sqlalchemy.orm import Session
 
 from app.deps import get_db
@@ -40,8 +40,8 @@ def _dec(v: Any) -> Decimal:
 
 @router.get("/metrics/{user_id}")
 def behaviour_metrics(
-    user_id: int,
-    clan_id: Optional[int] = Query(default=None),
+    user_id: int = Path(..., ge=1),
+    clan_id: Optional[int] = Query(default=None, ge=1),
     lookback_days: int = Query(default=180, ge=30, le=365),
     db: Session = Depends(get_db),
     actor: Any = Depends(get_current_user),

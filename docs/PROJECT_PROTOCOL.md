@@ -23,6 +23,7 @@ ownership changes, or page-responsibility changes, also read:
 - `docs/GUIDED_WORK_SURFACE_PROTOCOL.md`
 - `docs/GSN_MOBILE_UI_PROTOCOL.md`
 - `docs/GSN_PRODUCTION_POLISH_STANDARD.md`
+- `docs/TRUST_DOCUMENT_LANGUAGE_PROTOCOL.md`
 - `docs/APP_WIDE_AUDIT_PROTOCOL.md`
 
 For Marketplace page-composition work specifically, also read:
@@ -113,6 +114,14 @@ The GSN Production Polish Standard is the current authoritative quality gate for
 phone-ready route polish, 3D icon meaning, button stability, institutional evidence
 surfaces, user-facing language, and the conditions that must pass before a
 screen or protocol-status item can be called complete.
+
+The GSN Trust Document Language Protocol is the current authoritative visual and
+truth standard for public verification records, TrustSlip, Trust Passport,
+Merchant Verification, evidence packs, registry records, and official
+trust-document surfaces. These records should feel like GSN Trust
+Infrastructure documents: registry masthead, gold seal, registry ID,
+confidence ribbon, security panel, confirms/does-not-confirm boundary, QR,
+fingerprint, and next action.
 
 The App-Wide Audit Protocol is the current authoritative audit regime for
 checking each domain from entry through admin: route purpose, user-facing

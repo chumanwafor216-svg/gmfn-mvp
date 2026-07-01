@@ -201,12 +201,21 @@ def test_rosca_cycle_creation_rejects_malformed_boundary_controls(
         payload[field_name] = 1.5
         _assert_rejected(client, payload, f"{field_name} must be text")
 
+    for bad_value in (True, 25):
+        payload = dict(base_payload)
+        payload["contribution_amount"] = bad_value
+        _assert_rejected(
+            client,
+            payload,
+            "contribution_amount must be a decimal string",
+        )
+
     payload = dict(base_payload)
-    payload["contribution_amount"] = True
+    payload["start_at"] = 1_783_083_600
     _assert_rejected(
         client,
         payload,
-        "contribution_amount must be an amount, not a boolean",
+        "start_at must be an ISO datetime string",
     )
 
 

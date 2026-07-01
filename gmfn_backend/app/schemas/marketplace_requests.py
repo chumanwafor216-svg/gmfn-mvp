@@ -31,7 +31,7 @@ def _reject_non_bool_value(value: Any, field_name: str) -> Any:
 
 
 class MarketplaceRequestCreate(BaseModel):
-    clan_id: Optional[int] = None
+    clan_id: Optional[int] = Field(default=None, ge=1)
     title: str = Field(..., min_length=3, max_length=180)
     description: Optional[str] = Field(default=None, max_length=1500)
     category: Optional[str] = Field(default=None, max_length=80)

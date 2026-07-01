@@ -3187,6 +3187,58 @@ def test_member_get_invite_link_without_live_invite_auto_prepares_shareable_link
         app.dependency_overrides.pop(clan_auth.get_current_clan_membership, None)
 
 
+def test_invite_settings_patch_rejects_malformed_controls_before_policy_update(
+    client,
+):
+    _seed_join_context()
+
+    original_expires_at = datetime.now(timezone.utc) + timedelta(days=7)
+    with SessionLocal() as db:
+        clan = db.get(Clan, 1)
+        assert clan is not None
+        clan.invite_code = "stable-invite-policy-code"
+        clan.invite_max_uses = 3
+        clan.invite_uses = 2
+        clan.invite_created_at = datetime.now(timezone.utc)
+        clan.invite_expires_at = original_expires_at
+        db.commit()
+
+    def fake_clan_ctx():
+        clan = SimpleNamespace(
+            id=1,
+            name="Aberdeen City ICA",
+            marketplace_name="Aberdeen city marketplace",
+        )
+        membership = SimpleNamespace(role="admin", clan_id=1, user_id=1)
+        current_user = SimpleNamespace(id=1, email="admin@example.com")
+        return clan, membership, current_user
+
+    app.dependency_overrides[clan_auth.get_current_clan_membership] = fake_clan_ctx
+
+    try:
+        for payload, expected in (
+            ({"days": True}, "days must be an integer"),
+            ({"days": 1.5}, "days must be an integer"),
+            ({"max_uses": False}, "max_uses must be an integer"),
+            ({"max_uses": 1.5}, "max_uses must be an integer"),
+            ({"rotate": "true"}, "rotate must be a boolean"),
+            ({"rotate": 1}, "rotate must be a boolean"),
+        ):
+            res = client.patch("/clans/1/invite/settings", json=payload)
+            assert res.status_code == 422, (payload, res.text)
+            assert expected in res.text
+
+        with SessionLocal() as db:
+            clan = db.get(Clan, 1)
+            assert clan is not None
+            assert clan.invite_code == "stable-invite-policy-code"
+            assert clan.invite_max_uses == 3
+            assert clan.invite_uses == 2
+            assert clan.invite_expires_at == original_expires_at.replace(tzinfo=None)
+    finally:
+        app.dependency_overrides.pop(clan_auth.get_current_clan_membership, None)
+
+
 def test_member_can_refresh_marketplace_join_link_without_usage_quota(
     client,
 ):

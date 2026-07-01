@@ -57,8 +57,8 @@ assertContains(
 );
 
 assertContains(
-  /debugId="marketplace\.tile\.support"[\s\S]*?aria-label="Open Support Requests, supporters and loans"[\s\S]*?openMarketplaceSection\(\s*event,\s*"support",\s*"marketplace-loans-support"\s*\)[\s\S]*?<MarketplaceGlyph name="support"[\s\S]*?Support & Loans[\s\S]*?Get help and manage loans[\s\S]*?Support Requests[\s\S]*?Loan Process/,
-  "Support & Loans grouped card must stay a guided support launcher and open only the support section."
+  /debugId="marketplace\.tile\.support"[\s\S]*?aria-label="Open Support Requests, ROSCA, supporters and loans"[\s\S]*?openMarketplaceSection\(\s*event,\s*"support",\s*"marketplace-loans-support"\s*\)[\s\S]*?<MarketplaceGlyph name="support"[\s\S]*?Support & ROSCA[\s\S]*?Get help and run savings circles[\s\S]*?Support Requests[\s\S]*?ROSCA[\s\S]*?Loans/,
+  "Support & ROSCA grouped card must stay a guided support launcher and open the support section before deeper ROSCA handoff."
 );
 
 assertContains(
@@ -119,6 +119,7 @@ if (!supportSection.text) {
   ].map((match) => match[1]);
   const expectedStaticActionIds = [
     "marketplace.support.toggle",
+    "marketplace.support.open-rosca",
     "marketplace.support.start-request",
     "marketplace.support.refresh-fit",
     "marketplace.support.cancel-draft",
@@ -148,6 +149,7 @@ if (!supportSection.text) {
     /ask the selected marketplace for support/,
     /Selected marketplace[\s\S]*?ID: \{activeCommunityId \|\| "not ready"\}[\s\S]*?GSN ID: \{currentGmfnId \|\| "not ready"\}/,
     /From Money Out/,
+    /ROSCA savings circles[\s\S]*?Build a selected-member contribution cycle for this marketplace[\s\S]*?debugId="marketplace\.support\.open-rosca"[\s\S]*?openMarketplaceSection\(event, "rosca", "marketplace-rosca"\)[\s\S]*?Open ROSCA/,
     /This withdrawal needs support here[\s\S]*?Requested:[\s\S]*?Support needed:/,
     /Step \{step\}/,
     /Start request[\s\S]*?Amount, duration, repayment, purpose/,
@@ -187,11 +189,11 @@ if (!supportSection.text) {
     }
   });
 
-  if (/(Owner Shop|Trade Evidence|Trust Passport|TrustSlip|CCI|ROSCA|Money Pool)/.test(supportSection.text)) {
+  if (/(Owner Shop|Trade Evidence|Trust Passport|TrustSlip|CCI|Money Pool)/.test(supportSection.text)) {
     addFinding(
       supportSection.start,
       "Support Requests detail section must not expose other major lane responsibilities.",
-      "Support may link to Finance and Loans, but must not expose shop, trade, trust, ROSCA, or Money Pool lane content."
+      "Support may link to Finance, Loans, and the grouped ROSCA desk, but must not expose shop, trade, trust, or Money Pool lane content."
     );
   }
 
