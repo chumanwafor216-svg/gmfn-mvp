@@ -21,6 +21,14 @@ import {
   TrustPaperSecurityFooter,
   TrustPaperWatermark,
 } from "../components/TrustPaperMarks";
+import {
+  TrustDocumentBoundaryPanel,
+  TrustDocumentConfidenceRibbon,
+  TrustDocumentFingerprint,
+  TrustDocumentSecurityPanel,
+  type TrustDocumentPanelItem,
+  type TrustDocumentRibbonItem,
+} from "../components/TrustDocumentLanguage";
 import * as api from "../lib/api";
 import {
   buildGuidanceSnapshot,
@@ -322,6 +330,22 @@ function safeDateTime(x: any): string {
   const d = new Date(raw);
   if (!Number.isFinite(d.getTime())) return raw;
   return d.toLocaleString();
+}
+
+function trustPassportReferenceFingerprint(...values: unknown[]): string {
+  const input = values.map((value) => safeStr(value)).join("|") || "gsn-trust-passport";
+  let hashA = 0x811c9dc5;
+  let hashB = 0x45d9f3b;
+  for (let index = 0; index < input.length; index += 1) {
+    const code = input.charCodeAt(index);
+    hashA ^= code;
+    hashA = Math.imul(hashA, 0x01000193);
+    hashB ^= code + index;
+    hashB = Math.imul(hashB, 0x27d4eb2d);
+  }
+  const left = (hashA >>> 0).toString(16).padStart(8, "0");
+  const right = (hashB >>> 0).toString(16).padStart(8, "0");
+  return `GSN-TP-${left}-${right}`.toUpperCase();
 }
 
 function safeCopyText(text: string) {
@@ -2539,6 +2563,104 @@ export default function TrustScorePage() {
     label,
   ]);
   const activeBand = safeStr(currentBand).toUpperCase().slice(0, 1);
+  const trustPassportRecordFingerprint = trustPassportReferenceFingerprint(
+    passportVm.identity.gmfnId,
+    passportVm.identity.communityId,
+    passportVm.identity.displayName,
+    passportVm.verdict.band,
+    passportVm.verdict.score,
+    passportVm.verdict.evidenceLabel,
+    passportVm.technicalDetail.eventCount,
+    passportVm.outputs.trustSlipCode
+  );
+  const trustPassportConfidenceRibbonItems: TrustDocumentRibbonItem[] = [
+    {
+      label: "Passport status",
+      value: "Private member record",
+      tone: "info",
+      detail: "Signed-in view only.",
+    },
+    {
+      label: "Identity standing",
+      value:
+        passportVm.identity.identityVerified === true
+          ? "Verified evidence"
+          : passportVm.identity.identityVerified === false
+            ? "Evidence limited"
+            : "Evidence building",
+      tone:
+        passportVm.identity.identityVerified === true
+          ? "good"
+          : passportVm.identity.identityVerified === false
+            ? "warn"
+            : "info",
+    },
+    {
+      label: "Evidence chain",
+      value: passportVm.verdict.evidenceLabel,
+      tone:
+        passportVm.verdict.evidenceStatus === "strong"
+          ? "good"
+          : passportVm.verdict.evidenceStatus === "mixed"
+            ? "info"
+            : "warn",
+    },
+    {
+      label: "Community history",
+      value: `Active in ${passportVm.technicalDetail.activeClans}`,
+      tone: positiveNumber(passportVm.technicalDetail.activeClans) > 0 ? "good" : "warn",
+    },
+    {
+      label: "Verification path",
+      value: passportVm.outputs.trustSlipCode ? "TrustSlip available" : "TrustSlip pending",
+      tone: passportVm.outputs.trustSlipCode ? "good" : "warn",
+    },
+  ];
+  const trustPassportSecurityItems: TrustDocumentPanelItem[] = [
+    {
+      title: "Private passport surface",
+      detail:
+        "This Trust Passport is shown inside the signed-in app and is not the public TrustSlip.",
+      tone: "info",
+    },
+    {
+      title: "Record-state reading",
+      detail:
+        "The trust band is a reading of available evidence, not a character judgement or permanent label.",
+      tone: "good",
+    },
+    {
+      title: "Evidence chain",
+      detail: `Visible reading uses ${passportVm.technicalDetail.eventCount} trust events where available.`,
+      tone: passportVm.verdict.evidenceStatus === "limited" ? "warn" : "good",
+    },
+    {
+      title: "Reference fingerprint",
+      detail:
+        "This reference fingerprint is derived from visible Trust Passport fields; it is not a cryptographic hash.",
+      tone: "info",
+    },
+    {
+      title: "Public boundary",
+      detail:
+        "Public readers should receive a scoped TrustSlip or community record, not this full private passport.",
+      tone: "warn",
+    },
+  ];
+  const trustPassportConfirmsList = [
+    "Signed-in member view of current visible Trust Passport fields",
+    "GSN ID and community context when recorded",
+    "Phone, bank, ID, and community evidence status as recorded or verified",
+    "Current trust band, score, and evidence depth from available records",
+    "TrustSlip status and verification path when available",
+  ];
+  const trustPassportDoesNotConfirmList = [
+    "Government registration or legal identity beyond recorded evidence",
+    "Bank approval, credit approval, payment movement, or escrow",
+    "Future behaviour, future repayment, delivery, or marketplace outcome",
+    "Private admin notes, private community files, or hidden disputes",
+    "That a public TrustSlip exposes the full private Trust Passport",
+  ];
 
   const identityRows: Array<[GsnIconName, string, string]> = [
     ["id", "GSN ID", passportVm.identity.gmfnId],
@@ -3372,6 +3494,48 @@ export default function TrustScorePage() {
               <OpenRecordGlyph size={isCompact ? 18 : 21} />
               Open public community record
             </SecondaryButton>
+          </div>
+
+          <div
+            data-gsn-trust-document-certificate="trust-passport"
+            style={{
+              display: "grid",
+              gap: isCompact ? 10 : 12,
+              marginTop: isCompact ? 10 : 12,
+              position: "relative",
+              zIndex: 1,
+            }}
+          >
+            <TrustDocumentConfidenceRibbon items={trustPassportConfidenceRibbonItems} />
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) minmax(0, 1fr)",
+                gap: isCompact ? 10 : 12,
+              }}
+            >
+              <TrustDocumentSecurityPanel
+                title="Trust Passport security"
+                items={trustPassportSecurityItems}
+              />
+              <div style={{ display: "grid", gap: isCompact ? 10 : 12 }}>
+                <TrustDocumentBoundaryPanel
+                  title="This passport confirms"
+                  tone="good"
+                  items={trustPassportConfirmsList}
+                />
+                <TrustDocumentBoundaryPanel
+                  title="This passport does not confirm"
+                  tone="warn"
+                  items={trustPassportDoesNotConfirmList}
+                />
+              </div>
+            </div>
+            <TrustDocumentFingerprint
+              label="Trust Passport record fingerprint"
+              value={trustPassportRecordFingerprint}
+              detail="Reference fingerprint for this visible private Trust Passport. It is not a cryptographic proof."
+            />
           </div>
 
           <div

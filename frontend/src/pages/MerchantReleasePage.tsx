@@ -3,6 +3,14 @@ import { useParams } from "react-router-dom";
 import { PrimaryButton, SecondaryButton } from "../components/StableButton";
 import { GsnLegacyIcon } from "../components/GsnLegacyIcon";
 import {
+  TrustDocumentBoundaryPanel,
+  TrustDocumentConfidenceRibbon,
+  TrustDocumentFingerprint,
+  TrustDocumentSecurityPanel,
+  type TrustDocumentPanelItem,
+  type TrustDocumentRibbonItem,
+} from "../components/TrustDocumentLanguage";
+import {
   recordMerchantRelease,
   verifyMerchantPublic,
   type MerchantReleaseResponse,
@@ -14,6 +22,30 @@ type NoticeTone = "success" | "error";
 
 function safeStr(value: unknown): string {
   return String(value ?? "").trim();
+}
+
+function referenceFingerprint(...values: unknown[]): string {
+  const input = values.map((value) => safeStr(value)).join("|") || "gsn-merchant-record";
+  let hashA = 0x811c9dc5;
+  let hashB = 0x45d9f3b;
+  for (let index = 0; index < input.length; index += 1) {
+    const code = input.charCodeAt(index);
+    hashA ^= code;
+    hashA = Math.imul(hashA, 0x01000193);
+    hashB ^= code + index;
+    hashB = Math.imul(hashB, 0x27d4eb2d);
+  }
+  const left = (hashA >>> 0).toString(16).padStart(8, "0");
+  const right = (hashB >>> 0).toString(16).padStart(8, "0");
+  return `GSN-MR-${left}-${right}`.toUpperCase();
+}
+
+function dateTimeLabel(value: unknown): string {
+  const text = safeStr(value);
+  if (!text) return "";
+  const parsed = new Date(text);
+  if (!Number.isFinite(parsed.getTime())) return text;
+  return parsed.toLocaleString();
 }
 
 function pageShell(): React.CSSProperties {
@@ -310,6 +342,93 @@ export default function MerchantReleasePage() {
     () => Boolean(token && verifyResult?.verified && safeStr(goodsValue) && !releaseResult),
     [goodsValue, releaseResult, token, verifyResult?.verified]
   );
+  const merchantRecordFingerprint = referenceFingerprint(
+    verifyResult?.verification_link_id,
+    verifyResult?.pack_id,
+    verifyResult?.level,
+    verifyResult?.expires_at,
+    verifyResult?.verified ? "verified" : "not-verified",
+    releaseResult?.trade_packet_id,
+    releaseResult?.pack_id,
+    releaseResult?.goods_value,
+    releaseResult?.currency
+  );
+  const merchantConfidenceRibbonItems: TrustDocumentRibbonItem[] = [
+    {
+      label: "Merchant rail status",
+      value: checking ? "Checking" : verifyResult?.verified ? "Signed rail checked" : "Not checked",
+      tone: checking ? "info" : verifyResult?.verified ? "good" : "warn",
+    },
+    {
+      label: "Record integrity",
+      value: verifyResult?.verification_link_id ? "Link ID resolved" : "Limited",
+      tone: verifyResult?.verification_link_id ? "good" : "warn",
+    },
+    {
+      label: "Evidence chain",
+      value: releaseResult ? "Trade packet recorded" : "Release evidence pending",
+      tone: releaseResult ? "good" : "info",
+      detail: "WhatsApp or the parties keep the full conversation.",
+    },
+    {
+      label: "Verification path",
+      value: verifyResult?.verified ? "Available" : "Unavailable",
+      tone: verifyResult?.verified ? "good" : "warn",
+    },
+    {
+      label: "Link expiry",
+      value: dateTimeLabel(verifyResult?.expires_at) || "Not shown",
+      tone: verifyResult?.expires_at ? "info" : "warn",
+    },
+  ];
+  const merchantSecurityItems: TrustDocumentPanelItem[] = [
+    {
+      title: "Signed merchant rail",
+      detail: verifyResult?.verified
+        ? "The public merchant rail signature was checked before evidence entry."
+        : "This page has not confirmed a signed merchant rail yet.",
+      tone: verifyResult?.verified ? "good" : "warn",
+    },
+    {
+      title: "Reference fingerprint",
+      detail:
+        "This reference fingerprint is derived from visible merchant record fields; it is not a cryptographic hash.",
+      tone: "info",
+    },
+    {
+      title: "Minimal trade packet",
+      detail: releaseResult
+        ? "GSN recorded the final trade packet identifiers and evidence slots."
+        : "GSN will record only the minimum final evidence after the release form is submitted.",
+      tone: releaseResult ? "good" : "info",
+    },
+    {
+      title: "Privacy boundary",
+      detail:
+        "The full WhatsApp conversation, unnecessary private chat, bank details, and unrelated personal information stay outside this paper.",
+      tone: "good",
+    },
+    {
+      title: "Release authority boundary",
+      detail:
+        "This record is not escrow, payout approval, bank confirmation, courier control, or automatic release authority.",
+      tone: "warn",
+    },
+  ];
+  const merchantConfirmsList = [
+    "Signed merchant rail check result",
+    "Visible Link ID and Pack ID when available",
+    "Minimum trade packet fields after submission",
+    "Evidence slots and release reference after recording",
+    "Reader boundary for marketplace judgement",
+  ];
+  const merchantDoesNotConfirmList = [
+    "Payment received or payout approved",
+    "Escrow, bank movement, or credit approval",
+    "Courier delivery, receipt, or product quality",
+    "Full WhatsApp conversation or private party details",
+    "Permission to release goods, credit, or money",
+  ];
 
   async function submitRelease() {
     if (!canSubmit) {
@@ -422,6 +541,40 @@ export default function MerchantReleasePage() {
             {notice.text}
           </div>
         ) : null}
+
+        <div style={{ position: "relative", zIndex: 1, marginTop: 16, display: "grid", gap: 12 }}>
+          <TrustDocumentConfidenceRibbon items={merchantConfidenceRibbonItems} />
+          <div
+            data-gsn-trust-document-certificate="merchant-release"
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+              gap: 12,
+            }}
+          >
+            <TrustDocumentSecurityPanel
+              title="Merchant record security"
+              items={merchantSecurityItems}
+            />
+            <div style={{ display: "grid", gap: 12 }}>
+              <TrustDocumentBoundaryPanel
+                title="This page confirms"
+                tone="good"
+                items={merchantConfirmsList}
+              />
+              <TrustDocumentBoundaryPanel
+                title="This page does not confirm"
+                tone="warn"
+                items={merchantDoesNotConfirmList}
+              />
+            </div>
+          </div>
+          <TrustDocumentFingerprint
+            label="Merchant release record fingerprint"
+            value={merchantRecordFingerprint}
+            detail="Reference fingerprint for this visible merchant release paper. It is not a cryptographic proof."
+          />
+        </div>
 
         <section
           style={{

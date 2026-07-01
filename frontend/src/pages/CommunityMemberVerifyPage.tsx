@@ -11,6 +11,14 @@ import {
   TrustPaperWatermark,
 } from "../components/TrustPaperMarks";
 import {
+  TrustDocumentBoundaryPanel,
+  TrustDocumentConfidenceRibbon,
+  TrustDocumentFingerprint,
+  TrustDocumentSecurityPanel,
+  type TrustDocumentPanelItem,
+  type TrustDocumentRibbonItem,
+} from "../components/TrustDocumentLanguage";
+import {
   getPublicCommunityMemberVerification,
   safeCopy,
 } from "../lib/api";
@@ -92,6 +100,23 @@ function dateLabel(value: any): string {
     month: "short",
     day: "numeric",
   });
+}
+
+function memberCredentialReferenceFingerprint(...values: unknown[]): string {
+  const input =
+    values.map((value) => safeStr(value)).join("|") || "gsn-member-credential";
+  let hashA = 0x811c9dc5;
+  let hashB = 0x45d9f3b;
+  for (let index = 0; index < input.length; index += 1) {
+    const code = input.charCodeAt(index);
+    hashA ^= code;
+    hashA = Math.imul(hashA, 0x01000193);
+    hashB ^= code + index;
+    hashB = Math.imul(hashB, 0x27d4eb2d);
+  }
+  const left = (hashA >>> 0).toString(16).padStart(8, "0");
+  const right = (hashB >>> 0).toString(16).padStart(8, "0");
+  return `GSN-MC-${left}-${right}`.toUpperCase();
 }
 
 function normalizeCredential(raw: any): CommunityMemberCredential {
@@ -420,6 +445,103 @@ export default function CommunityMemberVerifyPage() {
     cleanCommunityKey,
     "Not shown"
   );
+  const membershipStatusText = firstTruthy(credential?.membership_status, "active");
+  const membershipStatusLower = membershipStatusText.toLowerCase();
+  const witnessCountNumber = Number(witnessCount);
+  const witnessCountText =
+    Number.isFinite(witnessCountNumber) && witnessCountNumber > 0
+      ? `${witnessCount} witness record${witnessCount === "1" ? "" : "s"}`
+      : "No witness records shown";
+  const memberCredentialFingerprint = memberCredentialReferenceFingerprint(
+    memberAnchor,
+    communityAnchor,
+    membershipStatusText,
+    credential?.membership_role,
+    witnessCount,
+    currentnessLabel,
+    communityRecordCurrentnessLabel,
+    credential?.membership_valid_until
+  );
+  const memberCredentialConfidenceRibbonItems: TrustDocumentRibbonItem[] = [
+    {
+      label: "Member status",
+      value: membershipStatusText,
+      tone: membershipStatusLower.includes("active")
+        ? "good"
+        : membershipStatusLower.includes("pending") ||
+            membershipStatusLower.includes("inactive") ||
+            membershipStatusLower.includes("expired")
+          ? "warn"
+          : "info",
+    },
+    {
+      label: "Community record",
+      value: communityRecordCurrentnessLabel,
+      tone: communityRecordTone,
+    },
+    {
+      label: "Witness evidence",
+      value: witnessCountText,
+      tone: Number.isFinite(witnessCountNumber) && witnessCountNumber > 0 ? "good" : "warn",
+    },
+    {
+      label: "Evidence currentness",
+      value: currentnessLabel,
+      tone: currentnessTone,
+    },
+    {
+      label: "Verification path",
+      value:
+        memberAnchor !== "Not shown" && communityAnchor !== "Not shown"
+          ? "Community + member IDs present"
+          : "Public credential link only",
+      tone: memberAnchor !== "Not shown" && communityAnchor !== "Not shown" ? "good" : "info",
+    },
+  ];
+  const memberCredentialSecurityItems: TrustDocumentPanelItem[] = [
+    {
+      title: "Public member credential record",
+      detail: `This page reads member ${memberAnchor} against community ${communityAnchor}.`,
+      tone: "good",
+    },
+    {
+      title: "Community-scoped evidence",
+      detail:
+        "The credential is scoped to this one community. It is not a universal trust score or parent-domain membership claim.",
+      tone: "info",
+    },
+    {
+      title: "Reference fingerprint",
+      detail:
+        "Reference fingerprint generated from visible credential fields; not a cryptographic hash or legal identity proof.",
+      tone: "info",
+    },
+    {
+      title: "Witness currentness",
+      detail: currentnessScope,
+      tone: currentnessTone,
+    },
+    {
+      title: "Privacy boundary",
+      detail:
+        "Private verifier names, contacts, admin notes, payment records, and the full Trust Passport stay hidden.",
+      tone: "good",
+    },
+  ];
+  const memberCredentialConfirmsList = [
+    "Member GSN ID and Community ID shown on this public page",
+    "Membership status and role as returned by the public credential endpoint",
+    "Witness count, renewal status, and currentness labels where available",
+    "Community record currentness and broad activity summary where available",
+    "QR and public link reopen this scoped community-member credential",
+  ];
+  const memberCredentialDoesNotConfirmList = [
+    "Legal identity or government registration",
+    "Full Trust Passport or private member history",
+    "Payments, escrow, loans, credit approval, or delivery",
+    "Future behaviour, future repayment, or marketplace outcome",
+    "Membership in any other community",
+  ];
   const memberReading = credential
     ? [
         {
@@ -529,6 +651,8 @@ export default function CommunityMemberVerifyPage() {
             </div>
           ) : credential ? (
             <>
+              <TrustDocumentConfidenceRibbon items={memberCredentialConfidenceRibbonItems} />
+
               <div
                 style={{
                   borderRadius: 22,
@@ -601,6 +725,40 @@ export default function CommunityMemberVerifyPage() {
                       {communityAnchor}
                     </div>
                   </div>
+                </div>
+              </div>
+
+              <div
+                data-gsn-trust-document-certificate="community-member-credential"
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "minmax(0, 1fr) minmax(240px, 0.74fr)",
+                  gap: 12,
+                  alignItems: "start",
+                }}
+              >
+                <div style={{ display: "grid", gap: 12 }}>
+                  <TrustDocumentBoundaryPanel
+                    title="This credential confirms"
+                    tone="good"
+                    items={memberCredentialConfirmsList}
+                  />
+                  <TrustDocumentBoundaryPanel
+                    title="This credential does not confirm"
+                    tone="warn"
+                    items={memberCredentialDoesNotConfirmList}
+                  />
+                </div>
+                <div style={{ display: "grid", gap: 12 }}>
+                  <TrustDocumentSecurityPanel
+                    title="Member credential security"
+                    items={memberCredentialSecurityItems}
+                  />
+                  <TrustDocumentFingerprint
+                    label="Community member credential fingerprint"
+                    value={memberCredentialFingerprint}
+                    detail="Reference fingerprint for this visible public member credential. It is not a cryptographic proof."
+                  />
                 </div>
               </div>
 
@@ -797,7 +955,9 @@ export default function CommunityMemberVerifyPage() {
         <div style={innerCard(copied.includes("copied") ? "#EAF7EE" : "#FFF7E6")}>{copied}</div>
       ) : null}
 
-      <TrustPaperSecurityFooter text="Community member credential. Public aggregate status only." />
+      <div style={{ overflow: "hidden", borderRadius: 24 }}>
+        <TrustPaperSecurityFooter text="Community member credential. Public aggregate status only." />
+      </div>
     </div>
   );
 }

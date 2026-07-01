@@ -243,6 +243,30 @@ assertContains(
 );
 
 assertContains(
+  "trust",
+  /TrustDocumentConfidenceRibbon[\s\S]*?trustPassportConfidenceRibbonItems[\s\S]*?Passport status[\s\S]*?Identity standing[\s\S]*?Evidence chain[\s\S]*?Community history[\s\S]*?Verification path/,
+  "Trust Passport front package must expose a Trust Document Language confidence ribbon."
+);
+
+assertContains(
+  "trust",
+  /data-gsn-trust-document-certificate="trust-passport"[\s\S]*?TrustDocumentSecurityPanel[\s\S]*?title="Trust Passport security"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This passport confirms"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This passport does not confirm"[\s\S]*?TrustDocumentFingerprint[\s\S]*?label="Trust Passport record fingerprint"/,
+  "Trust Passport front package must render the Trust Document Language security, boundary, and fingerprint sequence."
+);
+
+assertContains(
+  "trust",
+  /Reference fingerprint[\s\S]*?not a cryptographic hash[\s\S]*?Reference fingerprint for this visible private Trust Passport\. It is not a cryptographic proof\./,
+  "Trust Passport fingerprint copy must stay truthful and must not claim cryptographic proof."
+);
+
+assertContains(
+  "trust",
+  /trustPassportDoesNotConfirmList[\s\S]*?Government registration or legal identity beyond recorded evidence[\s\S]*?Bank approval, credit approval, payment movement, or escrow[\s\S]*?Future behaviour, future repayment, delivery, or marketplace outcome[\s\S]*?That a public TrustSlip exposes the full private Trust Passport/,
+  "Trust Passport must keep legal, finance, future-behaviour, and private-record boundaries visible."
+);
+
+assertContains(
   "package",
   /"audit:trust-passport-front-package"/,
   "Trust Passport front package audit must stay registered in package scripts."

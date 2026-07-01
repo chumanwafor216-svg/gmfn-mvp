@@ -25,6 +25,7 @@ const trustDomainFiles = [
   "src/pages/TrustTimelinePage.tsx",
   "src/pages/TrustCommandCentrePage.tsx",
   "src/pages/CommunityVerifyPage.tsx",
+  "src/pages/CommunityMemberVerifyPage.tsx",
   "src/pages/CommunityConfirmationOutcomePage.tsx",
   "src/pages/CommunityConfirmationInboxPage.tsx",
   "src/pages/CommunityConfirmationPolicyPage.tsx",
@@ -172,6 +173,54 @@ assertContains(
 );
 
 assertContains(
+  "src/pages/TrustScorePage.tsx",
+  /TrustDocumentConfidenceRibbon[\s\S]*?trustPassportConfidenceRibbonItems[\s\S]*?Passport status[\s\S]*?Identity standing[\s\S]*?Evidence chain[\s\S]*?Community history[\s\S]*?Verification path/,
+  "Trust Passport must expose the Trust Document Language confidence ribbon."
+);
+
+assertContains(
+  "src/pages/TrustScorePage.tsx",
+  /data-gsn-trust-document-certificate="trust-passport"[\s\S]*?TrustDocumentSecurityPanel[\s\S]*?title="Trust Passport security"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This passport confirms"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This passport does not confirm"[\s\S]*?TrustDocumentFingerprint[\s\S]*?label="Trust Passport record fingerprint"/,
+  "Trust Passport must render the Trust Document Language sequence with security, confirms/does-not-confirm panels, and record fingerprint."
+);
+
+assertContains(
+  "src/pages/TrustScorePage.tsx",
+  /Reference fingerprint[\s\S]*?not a cryptographic hash[\s\S]*?Reference fingerprint for this visible private Trust Passport\. It is not a cryptographic proof\./,
+  "Trust Passport must not call the generated reference fingerprint cryptographic proof."
+);
+
+assertContains(
+  "src/pages/TrustScorePage.tsx",
+  /trustPassportDoesNotConfirmList[\s\S]*?Government registration or legal identity beyond recorded evidence[\s\S]*?Bank approval, credit approval, payment movement, or escrow[\s\S]*?Future behaviour, future repayment, delivery, or marketplace outcome[\s\S]*?That a public TrustSlip exposes the full private Trust Passport/,
+  "Trust Passport must keep legal, finance, future-behaviour, and private-record boundaries visible."
+);
+
+assertContains(
+  "src/pages/CommunityMemberVerifyPage.tsx",
+  /TrustDocumentConfidenceRibbon[\s\S]*?memberCredentialConfidenceRibbonItems[\s\S]*?Member status[\s\S]*?Community record[\s\S]*?Witness evidence[\s\S]*?Evidence currentness[\s\S]*?Verification path/,
+  "Public Community Member Credential must expose the Trust Document Language confidence ribbon."
+);
+
+assertContains(
+  "src/pages/CommunityMemberVerifyPage.tsx",
+  /data-gsn-trust-document-certificate="community-member-credential"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This credential confirms"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This credential does not confirm"[\s\S]*?TrustDocumentSecurityPanel[\s\S]*?title="Member credential security"[\s\S]*?TrustDocumentFingerprint[\s\S]*?label="Community member credential fingerprint"/,
+  "Public Community Member Credential must render the Trust Document Language sequence with security, confirms/does-not-confirm panels, and record fingerprint."
+);
+
+assertContains(
+  "src/pages/CommunityMemberVerifyPage.tsx",
+  /Reference fingerprint[\s\S]*?not a cryptographic hash[\s\S]*?Reference fingerprint for this visible public member credential\. It is not a cryptographic proof\./,
+  "Public Community Member Credential must not call the generated reference fingerprint cryptographic proof."
+);
+
+assertContains(
+  "src/pages/CommunityMemberVerifyPage.tsx",
+  /memberCredentialDoesNotConfirmList[\s\S]*?Legal identity or government registration[\s\S]*?Full Trust Passport or private member history[\s\S]*?Payments, escrow, loans, credit approval, or delivery[\s\S]*?Membership in any other community/,
+  "Public Community Member Credential must keep legal, privacy, finance, future-behaviour, and cross-community boundaries visible."
+);
+
+assertContains(
   "src/pages/TrustSlipVerifyPage.tsx",
   /if \(!codeToUse && isAppRoute && typeof \(api as any\)\.getMyTrustSlip === "function"\) \{[\s\S]*?const mySlip = await \(api as any\)\.getMyTrustSlip\(\)\.catch\(\(\) => null\);[\s\S]*?codeToUse = firstTruthy\(mySlip\?\.code, mySlip\?\.trust_slip_code\);/,
   "Signed-in TrustSlip Verify must try the current member TrustSlip before showing a missing-code state."
@@ -260,6 +309,24 @@ assertContains(
   "src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx",
   /membershipCurrentnessLabel[\s\S]*?memberWitnessCurrentnessScope[\s\S]*?communityEvidenceCurrentnessLabel[\s\S]*?communityRecordCurrentnessScope[\s\S]*?label="Supporting evidence"[\s\S]*?title=\{memberWitnessCurrentness\}[\s\S]*?Witness currentness: \$\{memberWitnessCurrentnessScope\}[\s\S]*?Community record: \$\{communityRecordCurrentness\}/,
   "TrustSlip Verify public paper must show membership evidence currentness inside supporting community evidence."
+);
+
+assertContains(
+  "src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx",
+  /TrustDocumentConfidenceRibbon[\s\S]*?trustSlipConfidenceRibbonItems[\s\S]*?TrustSlip status[\s\S]*?Record integrity[\s\S]*?Evidence chain[\s\S]*?Verification path[\s\S]*?Valid until/,
+  "TrustSlip Verify public paper must expose the Trust Document Language confidence ribbon."
+);
+
+assertContains(
+  "src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx",
+  /data-gsn-trust-document-certificate="trustslip-verify"[\s\S]*?TrustDocumentSecurityPanel[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This paper confirms"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This paper does not confirm"[\s\S]*?TrustDocumentFingerprint[\s\S]*?label="TrustSlip record fingerprint"/,
+  "TrustSlip Verify public paper must render the Trust Document Language sequence with security, confirms/does-not-confirm panels, and record fingerprint."
+);
+
+assertContains(
+  "src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx",
+  /Reference fingerprint[\s\S]*?not a cryptographic hash[\s\S]*?Reference fingerprint for this visible public TrustSlip paper\. It is not a cryptographic proof\./,
+  "TrustSlip Verify public paper must not call the generated reference fingerprint cryptographic proof."
 );
 
 assertContains(
@@ -1543,6 +1610,30 @@ assertContains(
   "src/pages/MerchantReleasePage.tsx",
   /verifyMerchantPublic[\s\S]*?recordMerchantRelease[\s\S]*?not payment confirmation or automatic release authority[\s\S]*?No escrow[\s\S]*?No payout approval[\s\S]*?Trade shape[\s\S]*?GSN \+ outside GSN[\s\S]*?Invoice \/ agreement evidence[\s\S]*?Courier[\s\S]*?Payment schedule[\s\S]*?Record release evidence[\s\S]*?Copy GSN packet paper/,
   "Merchant Release page must verify the signed rail and record bounded minimum trade packet evidence."
+);
+
+assertContains(
+  "src/pages/MerchantReleasePage.tsx",
+  /TrustDocumentConfidenceRibbon[\s\S]*?merchantConfidenceRibbonItems[\s\S]*?Merchant rail status[\s\S]*?Record integrity[\s\S]*?Evidence chain[\s\S]*?Verification path[\s\S]*?Link expiry/,
+  "Merchant Release must expose the Trust Document Language confidence ribbon."
+);
+
+assertContains(
+  "src/pages/MerchantReleasePage.tsx",
+  /data-gsn-trust-document-certificate="merchant-release"[\s\S]*?TrustDocumentSecurityPanel[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This page confirms"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This page does not confirm"[\s\S]*?TrustDocumentFingerprint[\s\S]*?label="Merchant release record fingerprint"/,
+  "Merchant Release must render the Trust Document Language sequence with security, confirms/does-not-confirm panels, and record fingerprint."
+);
+
+assertContains(
+  "src/pages/MerchantReleasePage.tsx",
+  /Reference fingerprint[\s\S]*?not a cryptographic hash[\s\S]*?Reference fingerprint for this visible merchant release paper\. It is not a cryptographic proof\./,
+  "Merchant Release must not call the generated reference fingerprint cryptographic proof."
+);
+
+assertContains(
+  "src/pages/MerchantReleasePage.tsx",
+  /merchantDoesNotConfirmList[\s\S]*?Payment received or payout approved[\s\S]*?Escrow, bank movement, or credit approval[\s\S]*?Courier delivery, receipt, or product quality[\s\S]*?Permission to release goods, credit, or money[\s\S]*?title="This page does not confirm"[\s\S]*?items=\{merchantDoesNotConfirmList\}/,
+  "Merchant Release must keep the merchant evidence boundary against payout, escrow, delivery, and release authority."
 );
 
 assertContains(

@@ -14,6 +14,14 @@ import {
   institutionalPageCard,
   institutionalStatTile,
 } from "../../lib/institutionalSurface";
+import {
+  TrustDocumentBoundaryPanel,
+  TrustDocumentConfidenceRibbon,
+  TrustDocumentFingerprint,
+  TrustDocumentSecurityPanel,
+  type TrustDocumentPanelItem,
+  type TrustDocumentRibbonItem,
+} from "../../components/TrustDocumentLanguage";
 
 export type TrustSlipVerifyQuickAnswer = [Gsn3DIconKey, string, string];
 
@@ -104,6 +112,22 @@ function firstTruthy(...values: unknown[]): string {
     if (text) return text;
   }
   return "";
+}
+
+function referenceFingerprint(...values: unknown[]): string {
+  const input = values.map((value) => safeText(value)).join("|") || "gsn-trustslip";
+  let hashA = 0x811c9dc5;
+  let hashB = 0x45d9f3b;
+  for (let index = 0; index < input.length; index += 1) {
+    const code = input.charCodeAt(index);
+    hashA ^= code;
+    hashA = Math.imul(hashA, 0x01000193);
+    hashB ^= code + index;
+    hashB = Math.imul(hashB, 0x27d4eb2d);
+  }
+  const left = (hashA >>> 0).toString(16).padStart(8, "0");
+  const right = (hashB >>> 0).toString(16).padStart(8, "0");
+  return `GSN-TS-${left}-${right}`.toUpperCase();
 }
 
 function rowValue(rows: Array<[string, string]>, label: string): string {
@@ -792,6 +816,95 @@ export default function TrustSlipVerifyPublicPaper({
     ? visibleBand
     : `Grade ${visibleBand}`;
   const isLite = variant === "lite";
+  const recordFingerprint = referenceFingerprint(
+    resolvedCode,
+    verifyPath,
+    publicValidityLabel,
+    holderName,
+    gsnId,
+    communityLabel,
+    visibleBand,
+    publicVisibleScore,
+    issuedAtLabel,
+    expiresAtLabel
+  );
+  const trustSlipConfidenceRibbonItems: TrustDocumentRibbonItem[] = [
+    {
+      label: "TrustSlip status",
+      value: publicValidityLabel,
+      tone: validNow ? "good" : "warn",
+    },
+    {
+      label: "Record integrity",
+      value: resolvedCode && verifyPath ? "Public code resolved" : "Limited",
+      tone: resolvedCode && verifyPath ? "good" : "warn",
+    },
+    {
+      label: "Evidence chain",
+      value: "Scoped evidence",
+      tone: "info",
+      detail: "Private passport stays protected.",
+    },
+    {
+      label: "Verification path",
+      value: verifyUrl ? "Available" : "Unavailable",
+      tone: verifyUrl ? "good" : "warn",
+    },
+    {
+      label: "Valid until",
+      value: expiresAtLabel || "Not shown",
+      tone: expiresAtLabel ? "info" : "warn",
+    },
+  ];
+  const trustSlipSecurityItems: TrustDocumentPanelItem[] = [
+    {
+      title: "Public code check",
+      detail: resolvedCode
+        ? `This paper is tied to public TrustSlip code ${resolvedCode}.`
+        : "This paper does not have a usable public TrustSlip code yet.",
+      tone: resolvedCode ? "good" : "warn",
+    },
+    {
+      title: "Reference fingerprint",
+      detail:
+        "This reference fingerprint is derived from visible TrustSlip fields; it is not a cryptographic hash.",
+      tone: "info",
+    },
+    {
+      title: "QR verification",
+      detail: verifyUrl
+        ? "The QR opens this public TrustSlip verification path."
+        : "No public QR verification path is available for this paper yet.",
+      tone: verifyUrl ? "good" : "warn",
+    },
+    {
+      title: "Issued and expiry window",
+      detail: `Issued: ${issuedAtLabel || "Not shown"}. Expires: ${
+        expiresAtLabel || "Not shown"
+      }.`,
+      tone: issuedAtLabel || expiresAtLabel ? "info" : "warn",
+    },
+    {
+      title: "Private passport boundary",
+      detail:
+        "The paper shows public TrustSlip evidence only; the holder's private Trust Passport remains protected.",
+      tone: "good",
+    },
+  ];
+  const trustSlipConfirmsList = [
+    "Public TrustSlip code status",
+    "Visible evidence band and public score",
+    "Displayed holder and GSN ID from this paper",
+    "Community label shown on this TrustSlip",
+    "Verification path and QR destination when available",
+  ];
+  const trustSlipDoesNotConfirmList = [
+    "Legal identity or government registration",
+    "The holder's private Trust Passport contents",
+    "Payment, credit, escrow, release, or delivery approval",
+    "Every community member, shop, transaction, or dispute",
+    "Future behaviour or guaranteed performance",
+  ];
   const witnessTone: EvidenceTone =
     memberWitnessLabel.toLowerCase().includes("not") ||
     memberWitnessCurrentness.toLowerCase().includes("not")
@@ -1035,6 +1148,40 @@ export default function TrustSlipVerifyPublicPaper({
           generatedAt={issuedAtLabel || undefined}
           classification={validNow ? "Current public evidence" : "Caution public evidence"}
           compact={compact}
+        />
+
+        <TrustDocumentConfidenceRibbon items={trustSlipConfidenceRibbonItems} />
+
+        <div
+          data-gsn-trust-document-certificate="trustslip-verify"
+          style={{
+            display: "grid",
+            gridTemplateColumns: compact ? "1fr" : "minmax(280px, 0.9fr) minmax(0, 1fr)",
+            gap: 12,
+          }}
+        >
+          <TrustDocumentSecurityPanel
+            title="Digital security"
+            items={trustSlipSecurityItems}
+          />
+          <div style={{ display: "grid", gap: 12 }}>
+            <TrustDocumentBoundaryPanel
+              title="This paper confirms"
+              tone="good"
+              items={trustSlipConfirmsList}
+            />
+            <TrustDocumentBoundaryPanel
+              title="This paper does not confirm"
+              tone="warn"
+              items={trustSlipDoesNotConfirmList}
+            />
+          </div>
+        </div>
+
+        <TrustDocumentFingerprint
+          label="TrustSlip record fingerprint"
+          value={recordFingerprint}
+          detail="Reference fingerprint for this visible public TrustSlip paper. It is not a cryptographic proof."
         />
 
         <div style={publicVerifyShell("#F8FBFF", compact)}>

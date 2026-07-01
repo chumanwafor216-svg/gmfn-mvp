@@ -49,6 +49,7 @@ const files = {
   communityVerify: "frontend/src/pages/CommunityVerifyPage.tsx",
   communityMemberVerify: "frontend/src/pages/CommunityMemberVerifyPage.tsx",
   communityConfirmationOutcome: "frontend/src/pages/CommunityConfirmationOutcomePage.tsx",
+  merchantRelease: "frontend/src/pages/MerchantReleasePage.tsx",
   firstCircle: "frontend/src/pages/BuildFirstCirclePage.tsx",
   clansPage: "frontend/src/pages/ClansPage.tsx",
   joinEntry: "frontend/src/pages/JoinEntryPage.tsx",
@@ -775,6 +776,21 @@ assertNotContains(
   /Trust limit signal|Trust Limit Signal/,
   "Public TrustSlip paper must not regress to the older trust limit label."
 );
+assertContains(
+  "publicPaper",
+  /TrustDocumentConfidenceRibbon[\s\S]*?trustSlipConfidenceRibbonItems[\s\S]*?TrustSlip status[\s\S]*?Record integrity[\s\S]*?Evidence chain[\s\S]*?Verification path[\s\S]*?Valid until/,
+  "Public TrustSlip paper must carry the Trust Document Language confidence ribbon."
+);
+assertContains(
+  "publicPaper",
+  /data-gsn-trust-document-certificate="trustslip-verify"[\s\S]*?TrustDocumentSecurityPanel[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This paper confirms"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This paper does not confirm"[\s\S]*?TrustDocumentFingerprint[\s\S]*?TrustSlip record fingerprint/,
+  "Public TrustSlip paper must implement the Trust Document Language certificate sequence with security, boundary, and fingerprint panels."
+);
+assertContains(
+  "publicPaper",
+  /Reference fingerprint[\s\S]*?not a cryptographic hash[\s\S]*?Reference fingerprint for this visible public TrustSlip paper\. It is not a cryptographic proof\./,
+  "Public TrustSlip paper fingerprint copy must stay truthful and must not claim cryptographic proof."
+);
 
 assertContains(
   "privateEvidence",
@@ -988,6 +1004,46 @@ assertContains(
   /Reference fingerprint[\s\S]*?not a cryptographic hash[\s\S]*?Reference fingerprint for this visible public record\. It is not a cryptographic proof\./,
   "Community Verification fingerprint copy must stay truthful and must not claim cryptographic proof before backend cryptographic hashing exists."
 );
+assertContains(
+  "merchantRelease",
+  /TrustDocumentConfidenceRibbon[\s\S]*?merchantConfidenceRibbonItems[\s\S]*?Merchant rail status[\s\S]*?Record integrity[\s\S]*?Evidence chain[\s\S]*?Verification path[\s\S]*?Link expiry/,
+  "Merchant Release must carry the Trust Document Language confidence ribbon."
+);
+assertContains(
+  "merchantRelease",
+  /data-gsn-trust-document-certificate="merchant-release"[\s\S]*?TrustDocumentSecurityPanel[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This page confirms"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This page does not confirm"[\s\S]*?TrustDocumentFingerprint[\s\S]*?Merchant release record fingerprint/,
+  "Merchant Release must implement the Trust Document Language certificate sequence with security, confirms/does-not-confirm panels, and fingerprint."
+);
+assertContains(
+  "merchantRelease",
+  /Reference fingerprint[\s\S]*?not a cryptographic hash[\s\S]*?Reference fingerprint for this visible merchant release paper\. It is not a cryptographic proof\./,
+  "Merchant Release fingerprint copy must stay truthful and must not claim cryptographic proof."
+);
+assertContains(
+  "merchantRelease",
+  /Release authority boundary[\s\S]*?not escrow, payout approval, bank confirmation, courier control, or automatic release authority/,
+  "Merchant Release security panel must keep the release-authority boundary visible."
+);
+assertContains(
+  "trustPassport",
+  /TrustDocumentConfidenceRibbon[\s\S]*?trustPassportConfidenceRibbonItems[\s\S]*?Passport status[\s\S]*?Identity standing[\s\S]*?Evidence chain[\s\S]*?Community history[\s\S]*?Verification path/,
+  "Trust Passport must carry the Trust Document Language confidence ribbon."
+);
+assertContains(
+  "trustPassport",
+  /data-gsn-trust-document-certificate="trust-passport"[\s\S]*?TrustDocumentSecurityPanel[\s\S]*?title="Trust Passport security"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This passport confirms"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This passport does not confirm"[\s\S]*?TrustDocumentFingerprint[\s\S]*?Trust Passport record fingerprint/,
+  "Trust Passport must implement the Trust Document Language sequence with security, confirms/does-not-confirm panels, and fingerprint."
+);
+assertContains(
+  "trustPassport",
+  /Reference fingerprint[\s\S]*?not a cryptographic hash[\s\S]*?Reference fingerprint for this visible private Trust Passport\. It is not a cryptographic proof\./,
+  "Trust Passport fingerprint copy must stay truthful and must not claim cryptographic proof."
+);
+assertContains(
+  "trustPassport",
+  /Public boundary[\s\S]*?Public readers should receive a scoped TrustSlip or community record, not this full private passport/,
+  "Trust Passport must keep the private-passport/public-TrustSlip boundary visible."
+);
 assertNotContains(
   "communityVerify",
   /Current when viewed|Current when copied/g,
@@ -997,6 +1053,26 @@ assertContains(
   "communityMemberVerify",
   /TrustPaperAuthorityStrip[\s\S]*?GSN Community Member Credential[\s\S]*?TrustPaperSecurityNote[\s\S]*?TrustPaperSecurityFooter/,
   "Public Community Member Credential paper must carry shared GSN authority, screenshot security, and footer marks."
+);
+assertContains(
+  "communityMemberVerify",
+  /TrustDocumentConfidenceRibbon[\s\S]*?memberCredentialConfidenceRibbonItems[\s\S]*?Member status[\s\S]*?Community record[\s\S]*?Witness evidence[\s\S]*?Evidence currentness[\s\S]*?Verification path/,
+  "Public Community Member Credential must carry the Trust Document Language confidence ribbon."
+);
+assertContains(
+  "communityMemberVerify",
+  /data-gsn-trust-document-certificate="community-member-credential"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This credential confirms"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This credential does not confirm"[\s\S]*?TrustDocumentSecurityPanel[\s\S]*?title="Member credential security"[\s\S]*?TrustDocumentFingerprint[\s\S]*?Community member credential fingerprint/,
+  "Public Community Member Credential must implement the Trust Document Language sequence with security, confirms/does-not-confirm panels, and fingerprint."
+);
+assertContains(
+  "communityMemberVerify",
+  /Reference fingerprint[\s\S]*?not a cryptographic hash[\s\S]*?Reference fingerprint for this visible public member credential\. It is not a cryptographic proof\./,
+  "Public Community Member Credential fingerprint copy must stay truthful and must not claim cryptographic proof."
+);
+assertContains(
+  "communityMemberVerify",
+  /memberCredentialDoesNotConfirmList[\s\S]*?Legal identity or government registration[\s\S]*?Full Trust Passport or private member history[\s\S]*?Payments, escrow, loans, credit approval, or delivery[\s\S]*?Membership in any other community/,
+  "Public Community Member Credential must keep identity, privacy, finance, future-behaviour, and cross-community boundaries visible."
 );
 assertNotContains(
   "communityMemberVerify",
