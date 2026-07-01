@@ -420,6 +420,30 @@ def test_community_domain_draft_is_not_a_live_social_community(
 
     try:
         app.dependency_overrides[get_current_user] = lambda: owner
+        for field_name, field_value in (
+            ("domain_name", True),
+            ("display_name", False),
+            ("domain_type", True),
+            ("template_key", False),
+            ("country", True),
+            ("state", False),
+            ("public_profile", True),
+        ):
+            payload = {
+                "domain_name": "Boolean Draft Guard",
+                "display_name": "Boolean Draft Guard",
+                "domain_type": "school",
+            }
+            payload[field_name] = field_value
+            rejected_bool_draft = client.post(
+                "/community-domains/drafts",
+                json=payload,
+            )
+            assert rejected_bool_draft.status_code == 422, (
+                field_name,
+                rejected_bool_draft.text,
+            )
+
         response = client.post(
             "/community-domains/drafts",
             json={
@@ -10289,6 +10313,7 @@ def test_identity_context_projects_one_member_across_domain_and_social_contexts_
     client: TestClient,
 ):
     owner = _seed_owner()
+    other_member = _seed_user(2, "identity-context-other@example.com")
 
     with SessionLocal() as db:
         db_owner = db.get(User, owner.id)
@@ -10337,11 +10362,36 @@ def test_identity_context_projects_one_member_across_domain_and_social_contexts_
             json={"user_id": owner.id, "role": "line_admin"},
         )
         assert placed_owner.status_code == 201, placed_owner.text
+        added_other = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": other_member.id, "role": "member"},
+        )
+        assert added_other.status_code == 201, added_other.text
+        other_review = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "domain_member.upsert",
+                "subject_user_id": other_member.id,
+                "target_type": "domain_member",
+                "target_id": str(other_member.id),
+                "request_note": "Review another member while testing identity context.",
+                "payload": {
+                    "user_id": other_member.id,
+                    "role": "staff",
+                    "title": "Other identity context member",
+                },
+            },
+        )
+        assert other_review.status_code == 201, other_review.text
+        other_review_id = other_review.json()["action_review"]["id"]
 
         with SessionLocal() as db:
             domain = db.get(CommunityDomain, domain_id)
             assert domain is not None
             domain.clan_id = clan_id
+            review_row = db.get(CommunityDomainActionReview, other_review_id)
+            assert review_row is not None
+            review_row.target_id = str(owner.id)
             db.commit()
             before_counts = {
                 "users": db.query(User).count(),
@@ -10398,6 +10448,7 @@ def test_identity_context_projects_one_member_across_domain_and_social_contexts_
     assert lanes["node_context"]["status"] == "placed"
     assert lanes["linked_social_context"]["status"] == "member_of_linked_social_community"
     assert lanes["open_member_reviews"]["status"] == "clear"
+    assert lanes["open_member_reviews"]["count"] == 0
     assert identity_context["primary_next_action"] == {
         "action_key": "review_member_context",
         "label": "Review your Community Domain identity context",
@@ -10420,6 +10471,11 @@ def test_identity_context_projects_one_member_across_domain_and_social_contexts_
             "reviews": db.query(CommunityDomainActionReview).count(),
             "evidence": db.query(CommunityDomainActionReviewEvidence).count(),
         }
+        review_row = db.get(CommunityDomainActionReview, other_review_id)
+        assert review_row is not None
+        assert review_row.subject_user_id == other_member.id
+        assert review_row.target_id == str(owner.id)
+        assert json.loads(review_row.payload_json or "{}")["user_id"] == other_member.id
     assert after_counts == before_counts
 
 
@@ -11107,6 +11163,20 @@ def test_member_verification_map_projects_institutional_readiness_without_creden
         assert review.status_code == 201, review.text
         review_id = review.json()["action_review"]["id"]
 
+        legacy_target_review = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "member.verify",
+                "community_node_id": line_id,
+                "target_type": "domain_member",
+                "target_id": str(member.id),
+                "request_note": "Legacy member target type should still count.",
+                "payload": {"claim": "legacy member target readiness"},
+            },
+        )
+        assert legacy_target_review.status_code == 201, legacy_target_review.text
+        legacy_target_review_id = legacy_target_review.json()["action_review"]["id"]
+
         evidence = client.post(
             f"/community-domains/{domain_id}/action-reviews/{review_id}/evidence",
             json={
@@ -11119,6 +11189,13 @@ def test_member_verification_map_projects_institutional_readiness_without_creden
         assert evidence.status_code == 201, evidence.text
 
         with SessionLocal() as db:
+            legacy_review_row = db.get(
+                CommunityDomainActionReview, legacy_target_review_id
+            )
+            assert legacy_review_row is not None
+            assert legacy_review_row.subject_user_id is None
+            legacy_review_row.target_type = " Domain_Member "
+            db.commit()
             before_counts = {
                 "users": db.query(User).count(),
                 "domains": db.query(CommunityDomain).count(),
@@ -11152,8 +11229,8 @@ def test_member_verification_map_projects_institutional_readiness_without_creden
         "node_admin_assignment_count": 2,
         "active_node_membership_count": 3,
         "active_policy_count": 1,
-        "member_review_count": 1,
-        "open_member_review_count": 1,
+        "member_review_count": 2,
+        "open_member_review_count": 2,
         "review_evidence_record_count": 1,
         "credential_issuance_status": "not_connected_in_this_slice",
     }
@@ -11193,6 +11270,13 @@ def test_member_verification_map_projects_institutional_readiness_without_creden
             "evidence": db.query(CommunityDomainActionReviewEvidence).count(),
             "trust_slips": db.query(TrustSlip).count(),
         }
+        legacy_review_row = db.get(
+            CommunityDomainActionReview, legacy_target_review_id
+        )
+        assert legacy_review_row is not None
+        assert legacy_review_row.subject_user_id is None
+        assert legacy_review_row.target_type == " Domain_Member "
+        assert legacy_review_row.target_id == str(member.id)
     assert after_counts == before_counts
 
 
@@ -14642,6 +14726,7 @@ def test_node_and_member_summaries_route_approved_work_to_action_review_list(
 ):
     owner = _seed_owner()
     trader = _seed_user(2, "approved-local-summary@example.com")
+    other_trader = _seed_user(3, "approved-local-summary-other@example.com")
 
     try:
         app.dependency_overrides[get_current_user] = lambda: owner
@@ -14681,6 +14766,16 @@ def test_node_and_member_summaries_route_approved_work_to_action_review_list(
             json={"user_id": trader.id, "role": "trader"},
         )
         assert placed.status_code == 201, placed.text
+        other_added = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": other_trader.id, "role": "member"},
+        )
+        assert other_added.status_code == 201, other_added.text
+        other_placed = client.post(
+            f"/community-domains/{domain_id}/nodes/{line_id}/members",
+            json={"user_id": other_trader.id, "role": "trader"},
+        )
+        assert other_placed.status_code == 201, other_placed.text
 
         review = client.post(
             f"/community-domains/{domain_id}/action-reviews",
@@ -14699,11 +14794,35 @@ def test_node_and_member_summaries_route_approved_work_to_action_review_list(
         )
         assert review.status_code == 201, review.text
         review_id = review.json()["action_review"]["id"]
+        mismatched_review = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "node_member.role_change",
+                "community_node_id": line_id,
+                "subject_user_id": other_trader.id,
+                "target_type": "node_member",
+                "target_id": str(other_trader.id),
+                "request_note": "Approved local change with legacy target drift.",
+                "payload": {
+                    "user_id": other_trader.id,
+                    "role": "line_admin",
+                    "title": "Other line admin candidate",
+                },
+            },
+        )
+        assert mismatched_review.status_code == 201, mismatched_review.text
+        mismatched_review_id = mismatched_review.json()["action_review"]["id"]
 
         with SessionLocal() as db:
             review_row = db.get(CommunityDomainActionReview, review_id)
             assert review_row is not None
             review_row.status = "approved"
+            mismatched_review_row = db.get(
+                CommunityDomainActionReview, mismatched_review_id
+            )
+            assert mismatched_review_row is not None
+            mismatched_review_row.status = "approved"
+            mismatched_review_row.target_id = str(trader.id)
             db.commit()
 
         operating_summary = client.get(
@@ -14715,6 +14834,9 @@ def test_node_and_member_summaries_route_approved_work_to_action_review_list(
         filtered_reviews = client.get(
             f"/community-domains/{domain_id}/action-reviews?user_id={trader.id}"
         )
+        other_filtered_reviews = client.get(
+            f"/community-domains/{domain_id}/action-reviews?user_id={other_trader.id}"
+        )
         scoped_queue = client.get(
             f"/community-domains/{domain_id}/action-reviews/reviewer-queue"
             f"?community_node_id={line_id}"
@@ -14722,14 +14844,15 @@ def test_node_and_member_summaries_route_approved_work_to_action_review_list(
         assert operating_summary.status_code == 200, operating_summary.text
         assert placement_summary.status_code == 200, placement_summary.text
         assert filtered_reviews.status_code == 200, filtered_reviews.text
+        assert other_filtered_reviews.status_code == 200, other_filtered_reviews.text
         assert scoped_queue.status_code == 200, scoped_queue.text
     finally:
         app.dependency_overrides.pop(get_current_user, None)
 
     node_summary = operating_summary.json()["operating_summary"]
     node_lanes = {item["lane_key"]: item for item in node_summary["lanes"]}
-    assert node_summary["counts"]["open_action_reviews"] == 1
-    assert node_summary["review_counts"]["open_by_status"] == {"approved": 1}
+    assert node_summary["counts"]["open_action_reviews"] == 2
+    assert node_summary["review_counts"]["open_by_status"] == {"approved": 2}
     assert node_summary["primary_next_action"]["action_key"] == (
         "review_local_action_reviews"
     )
@@ -14759,6 +14882,13 @@ def test_node_and_member_summaries_route_approved_work_to_action_review_list(
     assert filtered_payload["total"] == 1
     assert filtered_payload["items"][0]["id"] == review_id
     assert filtered_payload["items"][0]["status"] == "approved"
+    other_filtered_payload = other_filtered_reviews.json()
+    assert other_filtered_payload["user_id"] == other_trader.id
+    assert other_filtered_payload["total"] == 1
+    assert other_filtered_payload["items"][0]["id"] == mismatched_review_id
+    assert other_filtered_payload["items"][0]["subject_user_id"] == other_trader.id
+    assert other_filtered_payload["items"][0]["target_id"] == str(trader.id)
+    assert other_filtered_payload["items"][0]["payload"]["user_id"] == other_trader.id
     assert scoped_queue.json()["total"] == 0
 
     with SessionLocal() as db:
@@ -14766,6 +14896,142 @@ def test_node_and_member_summaries_route_approved_work_to_action_review_list(
         assert review_row is not None
         assert review_row.status == "approved"
         assert review_row.applied_at is None
+        mismatched_review_row = db.get(CommunityDomainActionReview, mismatched_review_id)
+        assert mismatched_review_row is not None
+        assert mismatched_review_row.status == "approved"
+        assert mismatched_review_row.target_id == str(trader.id)
+
+
+def test_member_action_user_filter_matches_legacy_normalized_target_type(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    trader = _seed_user(2, "legacy-target-type-trader@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created_domain = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Legacy Target Type Domain",
+                "display_name": "Legacy Target Type Domain",
+                "domain_type": "market_cooperative",
+                "template_key": "market_cooperative",
+            },
+        )
+        assert created_domain.status_code == 201, created_domain.text
+        domain_id = created_domain.json()["community_domain"]["id"]
+
+        line = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Legacy Target Line",
+                "node_type": "line",
+                "node_kind": "market_line",
+            },
+        )
+        assert line.status_code == 201, line.text
+        line_id = line.json()["node"]["id"]
+
+        added = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": trader.id, "role": "trader"},
+        )
+        assert added.status_code == 201, added.text
+        placed = client.post(
+            f"/community-domains/{domain_id}/nodes/{line_id}/members",
+            json={"user_id": trader.id, "role": "trader"},
+        )
+        assert placed.status_code == 201, placed.text
+
+        review = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "node_member.role_change",
+                "community_node_id": line_id,
+                "target_type": "node_member",
+                "target_id": str(trader.id),
+                "request_note": "Review a legacy target-type row.",
+                "payload": {
+                    "user_id": trader.id,
+                    "role": "line_admin",
+                    "title": "Legacy target type candidate",
+                },
+            },
+        )
+        assert review.status_code == 201, review.text
+        review_id = review.json()["action_review"]["id"]
+        bool_payload_review = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "node_member.role_change",
+                "community_node_id": line_id,
+                "target_type": "node_member",
+                "target_id": str(trader.id),
+                "request_note": "Review a legacy boolean payload-user row.",
+                "payload": {
+                    "user_id": trader.id,
+                    "role": "line_admin",
+                    "title": "Boolean payload user candidate",
+                },
+            },
+        )
+        assert bool_payload_review.status_code == 201, bool_payload_review.text
+        bool_payload_review_id = bool_payload_review.json()["action_review"]["id"]
+
+        with SessionLocal() as db:
+            review_row = db.get(CommunityDomainActionReview, review_id)
+            assert review_row is not None
+            assert review_row.subject_user_id is None
+            review_row.status = "approved"
+            review_row.target_type = " Node_Member "
+            bool_payload_review_row = db.get(
+                CommunityDomainActionReview, bool_payload_review_id
+            )
+            assert bool_payload_review_row is not None
+            assert bool_payload_review_row.subject_user_id is None
+            bool_payload_review_row.status = "approved"
+            bool_payload_review_row.payload_json = json.dumps(
+                {
+                    "user_id": True,
+                    "role": "line_admin",
+                    "title": "Boolean payload user candidate",
+                }
+            )
+            db.commit()
+
+        placement_summary = client.get(
+            f"/community-domains/{domain_id}/members/{trader.id}/placement-summary"
+        )
+        filtered_reviews = client.get(
+            f"/community-domains/{domain_id}/action-reviews?user_id={trader.id}"
+        )
+        assert placement_summary.status_code == 200, placement_summary.text
+        assert filtered_reviews.status_code == 200, filtered_reviews.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    summary = placement_summary.json()["placement_summary"]
+    assert summary["counts"]["open_reviews"] == 2
+    assert summary["review_counts"]["open_by_status"] == {"approved": 2}
+    assert summary["review_counts"]["open_by_action"] == {
+        "node_member.role_change": 2
+    }
+    assert summary["primary_next_action"]["action_key"] == "review_member_action_reviews"
+
+    filtered_payload = filtered_reviews.json()
+    assert filtered_payload["user_id"] == trader.id
+    assert filtered_payload["total"] == 2
+    items_by_id = {item["id"]: item for item in filtered_payload["items"]}
+    assert set(items_by_id) == {review_id, bool_payload_review_id}
+    assert items_by_id[review_id]["subject_user_id"] is None
+    assert items_by_id[review_id]["target_type"] == " Node_Member "
+    assert items_by_id[review_id]["target_id"] == str(trader.id)
+    assert items_by_id[review_id]["payload"]["user_id"] == trader.id
+    assert items_by_id[bool_payload_review_id]["subject_user_id"] is None
+    assert items_by_id[bool_payload_review_id]["target_type"] == "node_member"
+    assert items_by_id[bool_payload_review_id]["target_id"] == str(trader.id)
+    assert items_by_id[bool_payload_review_id]["payload"]["user_id"] is True
 
 
 def test_reviewer_queue_filters_by_community_node_id(
@@ -15076,6 +15342,162 @@ def test_owner_adds_domain_member_and_places_member_inside_node(
         assert created_domain.status_code == 201, created_domain.text
         domain_id = created_domain.json()["community_domain"]["id"]
 
+        boolean_parent = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Boolean Parent Branch",
+                "parent_node_id": True,
+                "node_type": "branch",
+                "node_kind": "school_branch",
+            },
+        )
+        assert boolean_parent.status_code == 422, boolean_parent.text
+        assert "parent_node_id must be an integer id" in boolean_parent.text
+
+        float_parent = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Float Parent Branch",
+                "parent_node_id": 1.0,
+                "node_type": "branch",
+                "node_kind": "school_branch",
+            },
+        )
+        assert float_parent.status_code == 422, float_parent.text
+        assert "parent_node_id must be an integer id" in float_parent.text
+
+        boolean_sort_order = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Boolean Sort Branch",
+                "sort_order": True,
+                "node_type": "branch",
+                "node_kind": "school_branch",
+            },
+        )
+        assert boolean_sort_order.status_code == 422, boolean_sort_order.text
+        assert "sort_order must be an integer" in boolean_sort_order.text
+
+        float_sort_order = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Float Sort Branch",
+                "sort_order": 1.0,
+                "node_type": "branch",
+                "node_kind": "school_branch",
+            },
+        )
+        assert float_sort_order.status_code == 422, float_sort_order.text
+        assert "sort_order must be an integer" in float_sort_order.text
+
+        for field_value in ("false", 0):
+            invalid_inherits_parent_policy = client.post(
+                f"/community-domains/{domain_id}/nodes",
+                json={
+                    "name": "Coerced Inheritance Branch",
+                    "inherits_parent_policy": field_value,
+                    "node_type": "branch",
+                    "node_kind": "school_branch",
+                },
+            )
+            assert invalid_inherits_parent_policy.status_code == 422, (
+                field_value,
+                invalid_inherits_parent_policy.text,
+            )
+            assert "inherits_parent_policy must be a boolean" in (
+                invalid_inherits_parent_policy.text
+            )
+
+        for field_name, field_value in (
+            ("name", True),
+            ("node_type", False),
+            ("node_kind", True),
+            ("description", False),
+            ("visibility_policy", True),
+            ("status", False),
+        ):
+            payload = {
+                "name": "Boolean Node Branch",
+                "node_type": "branch",
+                "node_kind": "school_branch",
+            }
+            payload[field_name] = field_value
+            boolean_node_text = client.post(
+                f"/community-domains/{domain_id}/nodes",
+                json=payload,
+            )
+            assert boolean_node_text.status_code == 422, (
+                field_name,
+                boolean_node_text.text,
+            )
+
+        invalid_node_status = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Pending Status Branch",
+                "node_type": "branch",
+                "node_kind": "school_branch",
+                "status": "pending",
+            },
+        )
+        assert invalid_node_status.status_code == 422, invalid_node_status.text
+        assert (
+            invalid_node_status.json()["detail"]["code"]
+            == "community_domain_node_status_invalid"
+        )
+
+        boolean_domain_member = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={
+                "user_id": True,
+                "role": "staff",
+                "title": "Boolean user should not become owner",
+            },
+        )
+        assert boolean_domain_member.status_code == 422, boolean_domain_member.text
+        assert "user_id must be an integer id" in boolean_domain_member.text
+
+        float_domain_member = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={
+                "user_id": 1.0,
+                "role": "staff",
+                "title": "Float user should not become owner",
+            },
+        )
+        assert float_domain_member.status_code == 422, float_domain_member.text
+        assert "user_id must be an integer id" in float_domain_member.text
+
+        boolean_domain_member_role = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": teacher.id, "role": True},
+        )
+        assert boolean_domain_member_role.status_code == 422, boolean_domain_member_role.text
+
+        boolean_domain_member_status = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": teacher.id, "status": False},
+        )
+        assert boolean_domain_member_status.status_code == 422, boolean_domain_member_status.text
+
+        invalid_domain_member_status = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": teacher.id, "status": "pending"},
+        )
+        assert invalid_domain_member_status.status_code == 422, (
+            invalid_domain_member_status.text
+        )
+        assert (
+            invalid_domain_member_status.json()["detail"]["code"]
+            == "community_domain_member_status_invalid"
+        )
+
+        boolean_domain_member_title = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": teacher.id, "title": True},
+        )
+        assert boolean_domain_member_title.status_code == 422, boolean_domain_member_title.text
+
         branch = client.post(
             f"/community-domains/{domain_id}/nodes",
             json={
@@ -15107,6 +15529,58 @@ def test_owner_adds_domain_member_and_places_member_inside_node(
         assert listed_members.status_code == 200, listed_members.text
         member_items = listed_members.json()["items"]
         assert [item["role"] for item in member_items] == ["owner", "staff"]
+
+        boolean_node_member = client.post(
+            f"/community-domains/{domain_id}/nodes/{node_id}/members",
+            json={
+                "user_id": True,
+                "role": "teacher",
+                "title": "Boolean node user should not become owner",
+            },
+        )
+        assert boolean_node_member.status_code == 422, boolean_node_member.text
+        assert "user_id must be an integer id" in boolean_node_member.text
+
+        float_node_member = client.post(
+            f"/community-domains/{domain_id}/nodes/{node_id}/members",
+            json={
+                "user_id": 1.0,
+                "role": "teacher",
+                "title": "Float node user should not become owner",
+            },
+        )
+        assert float_node_member.status_code == 422, float_node_member.text
+        assert "user_id must be an integer id" in float_node_member.text
+
+        boolean_node_member_role = client.post(
+            f"/community-domains/{domain_id}/nodes/{node_id}/members",
+            json={"user_id": teacher.id, "role": True},
+        )
+        assert boolean_node_member_role.status_code == 422, boolean_node_member_role.text
+
+        boolean_node_member_status = client.post(
+            f"/community-domains/{domain_id}/nodes/{node_id}/members",
+            json={"user_id": teacher.id, "status": False},
+        )
+        assert boolean_node_member_status.status_code == 422, boolean_node_member_status.text
+
+        invalid_node_member_status = client.post(
+            f"/community-domains/{domain_id}/nodes/{node_id}/members",
+            json={"user_id": teacher.id, "status": "pending"},
+        )
+        assert invalid_node_member_status.status_code == 422, (
+            invalid_node_member_status.text
+        )
+        assert (
+            invalid_node_member_status.json()["detail"]["code"]
+            == "community_domain_member_status_invalid"
+        )
+
+        boolean_node_member_title = client.post(
+            f"/community-domains/{domain_id}/nodes/{node_id}/members",
+            json={"user_id": teacher.id, "title": True},
+        )
+        assert boolean_node_member_title.status_code == 422, boolean_node_member_title.text
 
         placed = client.post(
             f"/community-domains/{domain_id}/nodes/{node_id}/members",
@@ -15916,6 +16390,18 @@ def test_domain_admin_can_close_node_without_deleting_descendants(
         assert invalid.status_code == 422, invalid.text
         assert invalid.json()["detail"]["code"] == "community_domain_node_status_invalid"
 
+        bool_status = client.patch(
+            f"/community-domains/{domain_id}/nodes/{branch_id}/status",
+            json={"status": True, "status_note": "Boolean status is malformed."},
+        )
+        assert bool_status.status_code == 422, bool_status.text
+
+        bool_status_note = client.patch(
+            f"/community-domains/{domain_id}/nodes/{branch_id}/status",
+            json={"status": "inactive", "status_note": True},
+        )
+        assert bool_status_note.status_code == 422, bool_status_note.text
+
         root_close = client.patch(
             f"/community-domains/{domain_id}/nodes/{root_node_id}/status",
             json={"status": "inactive"},
@@ -16636,6 +17122,219 @@ def test_domain_admin_records_policy_and_decides_domain_action_review(
             assert added.status_code == 201, added.text
 
         app.dependency_overrides[get_current_user] = lambda: domain_admin
+        rejected_bool_min_reviewers = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "boolean-min-reviewers",
+                "action_key": "member_verification.approve",
+                "review_mode": "domain_admin_review",
+                "config": {"min_reviewers": True},
+            },
+        )
+        assert rejected_bool_min_reviewers.status_code == 422
+        assert "config.min_reviewers must be a positive integer" in (
+            rejected_bool_min_reviewers.text
+        )
+
+        rejected_bool_min_approvals = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "boolean-min-approvals",
+                "action_key": "member_verification.approve",
+                "review_mode": "domain_admin_review",
+                "config": {"min_approvals": False},
+            },
+        )
+        assert rejected_bool_min_approvals.status_code == 422
+        assert "config.min_approvals must be a positive integer" in (
+            rejected_bool_min_approvals.text
+        )
+
+        rejected_float_min_reviewers = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "float-min-reviewers",
+                "action_key": "member_verification.approve",
+                "review_mode": "domain_admin_review",
+                "config": {"min_reviewers": 1.5},
+            },
+        )
+        assert rejected_float_min_reviewers.status_code == 422
+        assert "config.min_reviewers must be a positive integer" in (
+            rejected_float_min_reviewers.text
+        )
+
+        rejected_float_min_approvals = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "float-min-approvals",
+                "action_key": "member_verification.approve",
+                "review_mode": "domain_admin_review",
+                "config": {"min_approvals": 1.5},
+            },
+        )
+        assert rejected_float_min_approvals.status_code == 422
+        assert "config.min_approvals must be a positive integer" in (
+            rejected_float_min_approvals.text
+        )
+
+        rejected_zero_min_reviewers = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "zero-min-reviewers",
+                "action_key": "member_verification.approve",
+                "review_mode": "domain_admin_review",
+                "config": {"min_reviewers": 0},
+            },
+        )
+        assert rejected_zero_min_reviewers.status_code == 422
+        assert "config.min_reviewers must be a positive integer" in (
+            rejected_zero_min_reviewers.text
+        )
+
+        rejected_negative_min_approvals = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "negative-min-approvals",
+                "action_key": "member_verification.approve",
+                "review_mode": "domain_admin_review",
+                "config": {"min_approvals": -1},
+            },
+        )
+        assert rejected_negative_min_approvals.status_code == 422
+        assert "config.min_approvals must be a positive integer" in (
+            rejected_negative_min_approvals.text
+        )
+
+        rejected_null_min_reviewers = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "null-min-reviewers",
+                "action_key": "member_verification.approve",
+                "review_mode": "domain_admin_review",
+                "config": {"min_reviewers": None},
+            },
+        )
+        assert rejected_null_min_reviewers.status_code == 422
+        assert "config.min_reviewers must be a positive integer" in (
+            rejected_null_min_reviewers.text
+        )
+
+        rejected_text_min_approvals = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "text-min-approvals",
+                "action_key": "member_verification.approve",
+                "review_mode": "domain_admin_review",
+                "config": {"min_approvals": "two"},
+            },
+        )
+        assert rejected_text_min_approvals.status_code == 422
+        assert "config.min_approvals must be a positive integer" in (
+            rejected_text_min_approvals.text
+        )
+
+        rejected_high_min_reviewers = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "high-min-reviewers",
+                "action_key": "member_verification.approve",
+                "review_mode": "domain_admin_review",
+                "config": {"min_reviewers": 26},
+            },
+        )
+        assert rejected_high_min_reviewers.status_code == 422
+        assert "config.min_reviewers must be at most 25" in (
+            rejected_high_min_reviewers.text
+        )
+
+        rejected_high_min_approvals = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "high-min-approvals",
+                "action_key": "member_verification.approve",
+                "review_mode": "domain_admin_review",
+                "config": {"min_approvals": "26"},
+            },
+        )
+        assert rejected_high_min_approvals.status_code == 422
+        assert "config.min_approvals must be at most 25" in (
+            rejected_high_min_approvals.text
+        )
+
+        for field_name, field_value in (
+            ("policy_key", True),
+            ("action_key", False),
+            ("scope_type", True),
+            ("review_mode", False),
+            ("required_role", True),
+            ("policy_summary", False),
+        ):
+            payload = {
+                "policy_key": "boolean-policy-field",
+                "action_key": "member_verification.approve",
+                "review_mode": "domain_admin_review",
+            }
+            payload[field_name] = field_value
+            rejected_bool_policy_field = client.post(
+                f"/community-domains/{domain_id}/policies",
+                json=payload,
+            )
+            assert rejected_bool_policy_field.status_code == 422, (
+                field_name,
+                rejected_bool_policy_field.text,
+            )
+
+        rejected_invalid_policy_status = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "pending-policy-status",
+                "action_key": "member_verification.approve",
+                "review_mode": "domain_admin_review",
+                "status": "pending",
+            },
+        )
+        assert rejected_invalid_policy_status.status_code == 422, (
+            rejected_invalid_policy_status.text
+        )
+        assert (
+            rejected_invalid_policy_status.json()["detail"]["code"]
+            == "community_domain_policy_status_invalid"
+        )
+
+        rejected_invalid_policy_scope = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "invented-policy-scope",
+                "action_key": "member_verification.approve",
+                "review_mode": "domain_admin_review",
+                "scope_type": "district",
+            },
+        )
+        assert rejected_invalid_policy_scope.status_code == 422, (
+            rejected_invalid_policy_scope.text
+        )
+        assert (
+            rejected_invalid_policy_scope.json()["detail"]["code"]
+            == "community_domain_policy_scope_type_invalid"
+        )
+
+        rejected_invalid_policy_review_mode = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "invented-policy-review-mode",
+                "action_key": "member_verification.approve",
+                "review_mode": "committee_vote",
+            },
+        )
+        assert rejected_invalid_policy_review_mode.status_code == 422, (
+            rejected_invalid_policy_review_mode.text
+        )
+        assert (
+            rejected_invalid_policy_review_mode.json()["detail"]["code"]
+            == "community_domain_policy_review_mode_invalid"
+        )
+
         policy_response = client.post(
             f"/community-domains/{domain_id}/policies",
             json={
@@ -16644,7 +17343,7 @@ def test_domain_admin_records_policy_and_decides_domain_action_review(
                 "review_mode": "domain_admin_review",
                 "required_role": "domain_admin",
                 "policy_summary": "Member verification approval needs domain admin review.",
-                "config": {"min_reviewers": 1},
+                "config": {"min_reviewers": "1"},
             },
         )
         assert policy_response.status_code == 201, policy_response.text
@@ -16678,6 +17377,20 @@ def test_domain_admin_records_policy_and_decides_domain_action_review(
         assert review["payload"] == {"verification_id": 123}
 
         app.dependency_overrides[get_current_user] = lambda: domain_admin
+        rejected_bool_decision = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/decision",
+            json={"decision": True},
+        )
+        assert rejected_bool_decision.status_code == 422, rejected_bool_decision.text
+
+        rejected_bool_decision_note = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/decision",
+            json={"decision": "approve", "decision_note": False},
+        )
+        assert rejected_bool_decision_note.status_code == 422, (
+            rejected_bool_decision_note.text
+        )
+
         decision = client.post(
             f"/community-domains/{domain_id}/action-reviews/{review['id']}/decision",
             json={"decision": "approve", "decision_note": "Evidence accepted."},
@@ -16727,6 +17440,18 @@ def test_policy_listing_can_be_scoped_to_one_community_node(
         )
         assert medical_node.status_code == 201, medical_node.text
         medical_node_id = medical_node.json()["node"]["id"]
+
+        bool_scoped_policy = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "boolean-node-policy",
+                "action_key": "shop.review",
+                "community_node_id": True,
+                "scope_type": "node",
+                "required_role": "node_admin",
+            },
+        )
+        assert bool_scoped_policy.status_code == 422, bool_scoped_policy.text
 
         domain_policy = client.post(
             f"/community-domains/{domain_id}/policies",
@@ -18190,6 +18915,21 @@ def test_status_review_request_rejects_root_invalid_status_and_target_mismatch(
         assert closed.status_code == 200, closed.text
 
         app.dependency_overrides[get_current_user] = lambda: requester
+        bool_scope_review = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "node.status.update",
+                "community_node_id": True,
+                "target_type": "community_node",
+                "target_id": str(branch_id),
+                "payload": {
+                    "status": "active",
+                    "status_note": "Boolean top-level node scope is malformed.",
+                },
+            },
+        )
+        assert bool_scope_review.status_code == 422, bool_scope_review.text
+
         root_review = client.post(
             f"/community-domains/{domain_id}/action-reviews",
             json={
@@ -18226,6 +18966,103 @@ def test_status_review_request_rejects_root_invalid_status_and_target_mismatch(
         assert (
             invalid_review.json()["detail"]["code"]
             == "community_domain_node_status_invalid"
+        )
+
+        bool_status_review = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "node.status.update",
+                "community_node_id": branch_id,
+                "target_type": "community_node",
+                "target_id": str(branch_id),
+                "payload": {
+                    "status": True,
+                    "status_note": "Boolean node status is malformed.",
+                },
+            },
+        )
+        assert bool_status_review.status_code == 422, bool_status_review.text
+        assert (
+            bool_status_review.json()["detail"]["code"]
+            == "invalid_action_review_payload"
+        )
+
+        bool_status_note = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "node.status.update",
+                "community_node_id": branch_id,
+                "target_type": "community_node",
+                "target_id": str(branch_id),
+                "payload": {
+                    "status": "active",
+                    "status_note": True,
+                },
+            },
+        )
+        assert bool_status_note.status_code == 422, bool_status_note.text
+        assert (
+            bool_status_note.json()["detail"]["code"]
+            == "invalid_action_review_payload"
+        )
+
+        float_status_note = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "node.status.update",
+                "community_node_id": branch_id,
+                "target_type": "community_node",
+                "target_id": str(branch_id),
+                "payload": {
+                    "status": "active",
+                    "status_note": 1.5,
+                },
+            },
+        )
+        assert float_status_note.status_code == 422, float_status_note.text
+        assert (
+            float_status_note.json()["detail"]["code"]
+            == "invalid_action_review_payload"
+        )
+
+        bool_payload_node = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "node.status.update",
+                "community_node_id": branch_id,
+                "target_type": "community_node",
+                "target_id": str(branch_id),
+                "payload": {
+                    "community_node_id": True,
+                    "status": "active",
+                    "status_note": "Boolean payload node id is malformed.",
+                },
+            },
+        )
+        assert bool_payload_node.status_code == 422, bool_payload_node.text
+        assert (
+            bool_payload_node.json()["detail"]["code"]
+            == "invalid_action_review_payload"
+        )
+
+        float_payload_node = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "node.status.update",
+                "community_node_id": branch_id,
+                "target_type": "community_node",
+                "target_id": str(branch_id),
+                "payload": {
+                    "community_node_id": branch_id + 0.5,
+                    "status": "active",
+                    "status_note": "Float payload node id must not truncate.",
+                },
+            },
+        )
+        assert float_payload_node.status_code == 422, float_payload_node.text
+        assert (
+            float_payload_node.json()["detail"]["code"]
+            == "invalid_action_review_payload"
         )
 
         mismatched_review = client.post(
@@ -18526,6 +19363,97 @@ def test_apply_rejects_legacy_node_status_review_target_mismatch(
                 .filter(CommunityDomainActionReview.id == review["id"])
                 .one()
             )
+            payload = json.loads(review_row.payload_json or "{}")
+            payload["status_note"] = True
+            review_row.payload_json = json.dumps(payload)
+            db.commit()
+
+        bool_note_apply = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/apply"
+        )
+        assert bool_note_apply.status_code == 422, bool_note_apply.text
+        assert (
+            bool_note_apply.json()["detail"]["code"]
+            == "invalid_action_review_payload"
+        )
+
+        with SessionLocal() as db:
+            review_row = (
+                db.query(CommunityDomainActionReview)
+                .filter(CommunityDomainActionReview.id == review["id"])
+                .one()
+            )
+            payload = json.loads(review_row.payload_json or "{}")
+            payload["status_note"] = 1.5
+            review_row.payload_json = json.dumps(payload)
+            db.commit()
+
+        float_note_apply = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/apply"
+        )
+        assert float_note_apply.status_code == 422, float_note_apply.text
+        assert (
+            float_note_apply.json()["detail"]["code"]
+            == "invalid_action_review_payload"
+        )
+
+        with SessionLocal() as db:
+            review_row = (
+                db.query(CommunityDomainActionReview)
+                .filter(CommunityDomainActionReview.id == review["id"])
+                .one()
+            )
+            payload = json.loads(review_row.payload_json or "{}")
+            payload["status_note"] = "Food line is closing for renovation."
+            payload["previous_status"] = False
+            review_row.payload_json = json.dumps(payload)
+            db.commit()
+
+        bool_previous_status_apply = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/apply"
+        )
+        assert bool_previous_status_apply.status_code == 422, (
+            bool_previous_status_apply.text
+        )
+        assert (
+            bool_previous_status_apply.json()["detail"]["code"]
+            == "invalid_action_review_payload"
+        )
+
+        with SessionLocal() as db:
+            review_row = (
+                db.query(CommunityDomainActionReview)
+                .filter(CommunityDomainActionReview.id == review["id"])
+                .one()
+            )
+            payload = json.loads(review_row.payload_json or "{}")
+            payload["status_note"] = "Food line is closing for renovation."
+            payload["previous_status"] = "active"
+            payload["community_node_id"] = node_id + 0.5
+            review_row.payload_json = json.dumps(payload)
+            db.commit()
+
+        float_payload_node_apply = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/apply"
+        )
+        assert float_payload_node_apply.status_code == 422, (
+            float_payload_node_apply.text
+        )
+        assert (
+            float_payload_node_apply.json()["detail"]["code"]
+            == "invalid_action_review_payload"
+        )
+
+        with SessionLocal() as db:
+            review_row = (
+                db.query(CommunityDomainActionReview)
+                .filter(CommunityDomainActionReview.id == review["id"])
+                .one()
+            )
+            payload = json.loads(review_row.payload_json or "{}")
+            payload["status_note"] = "Food line is closing for renovation."
+            payload["previous_status"] = "active"
+            review_row.payload_json = json.dumps(payload)
             review_row.target_id = str(other_node_id)
             db.commit()
 
@@ -18966,6 +19894,23 @@ def test_outsider_can_request_domain_membership_without_auto_membership(
         assert policy.status_code == 201, policy.text
 
         app.dependency_overrides[get_current_user] = lambda: requester
+        rejected_bool_request_note = client.post(
+            f"/community-domains/{domain_id}/membership-requests",
+            json={"request_note": True},
+        )
+        assert rejected_bool_request_note.status_code == 422, (
+            rejected_bool_request_note.text
+        )
+
+        rejected_bool_title = client.post(
+            f"/community-domains/{domain_id}/membership-requests",
+            json={
+                "request_note": "Boolean title should not become text.",
+                "title": False,
+            },
+        )
+        assert rejected_bool_title.status_code == 422, rejected_bool_title.text
+
         requested = client.post(
             f"/community-domains/{domain_id}/membership-requests",
             json={
@@ -19227,9 +20172,122 @@ def test_self_targeted_non_access_review_with_previous_status_is_not_membership_
                 ),
             )
             db.add(incomplete_review)
+            corrupt_bool_review = CommunityDomainActionReview(
+                community_domain_id=domain_id,
+                action_key="domain_member.upsert",
+                requested_by_user_id=owner.id,
+                subject_user_id=owner.id,
+                target_type="domain_member",
+                target_id=str(owner.id),
+                status="pending",
+                request_note="Corrupt boolean payload user id should not classify.",
+                payload_json=json.dumps(
+                    {
+                        "user_id": True,
+                        "role": "member",
+                        "status": "active",
+                        "previous_status": "none",
+                    }
+                ),
+            )
+            db.add(corrupt_bool_review)
+            corrupt_float_review = CommunityDomainActionReview(
+                community_domain_id=domain_id,
+                action_key="domain_member.upsert",
+                requested_by_user_id=owner.id,
+                subject_user_id=owner.id,
+                target_type="domain_member",
+                target_id=str(owner.id),
+                status="pending",
+                request_note="Corrupt float payload user id should not classify.",
+                payload_json=json.dumps(
+                    {
+                        "user_id": owner.id + 0.5,
+                        "role": "member",
+                        "status": "active",
+                        "previous_status": "none",
+                    }
+                ),
+            )
+            db.add(corrupt_float_review)
+            corrupt_bool_previous_status_review = CommunityDomainActionReview(
+                community_domain_id=domain_id,
+                action_key="domain_member.upsert",
+                requested_by_user_id=requester.id,
+                subject_user_id=requester.id,
+                target_type="domain_member",
+                target_id=str(requester.id),
+                status="pending",
+                request_note="Corrupt boolean previous status should not classify.",
+                payload_json=json.dumps(
+                    {
+                        "user_id": requester.id,
+                        "role": "member",
+                        "status": "active",
+                        "previous_status": True,
+                    }
+                ),
+            )
+            db.add(corrupt_bool_previous_status_review)
+            corrupt_float_previous_status_review = CommunityDomainActionReview(
+                community_domain_id=domain_id,
+                action_key="domain_member.upsert",
+                requested_by_user_id=requester.id,
+                subject_user_id=requester.id,
+                target_type="domain_member",
+                target_id=str(requester.id),
+                status="pending",
+                request_note="Corrupt float previous status should not classify.",
+                payload_json=json.dumps(
+                    {
+                        "user_id": requester.id,
+                        "role": "member",
+                        "status": "active",
+                        "previous_status": 1.5,
+                    }
+                ),
+            )
+            db.add(corrupt_float_previous_status_review)
+            corrupt_unknown_previous_status_review = CommunityDomainActionReview(
+                community_domain_id=domain_id,
+                action_key="domain_member.upsert",
+                requested_by_user_id=requester.id,
+                subject_user_id=requester.id,
+                target_type="domain_member",
+                target_id=str(requester.id),
+                status="pending",
+                request_note="Unknown previous status should not classify.",
+                payload_json=json.dumps(
+                    {
+                        "user_id": requester.id,
+                        "role": "member",
+                        "status": "active",
+                        "previous_status": "invented",
+                    }
+                ),
+            )
+            db.add(corrupt_unknown_previous_status_review)
             db.commit()
             role_review_id = int(role_review.id)
             incomplete_review_id = int(incomplete_review.id)
+            corrupt_bool_review_id = int(corrupt_bool_review.id)
+            corrupt_float_review_id = int(corrupt_float_review.id)
+            corrupt_bool_previous_status_review_id = int(
+                corrupt_bool_previous_status_review.id
+            )
+            corrupt_float_previous_status_review_id = int(
+                corrupt_float_previous_status_review.id
+            )
+            corrupt_unknown_previous_status_review_id = int(
+                corrupt_unknown_previous_status_review.id
+            )
+
+        app.dependency_overrides[get_current_user] = lambda: owner
+        owner_requests = client.get(
+            f"/community-domains/{domain_id}/membership-requests/my"
+        )
+        assert owner_requests.status_code == 200, owner_requests.text
+        assert owner_requests.json()["total"] == 0
 
         app.dependency_overrides[get_current_user] = lambda: requester
         own_requests = client.get(
@@ -19246,6 +20304,11 @@ def test_self_targeted_non_access_review_with_previous_status_is_not_membership_
         self_service_review = requested.json()["action_review"]
         assert self_service_review["id"] != role_review_id
         assert self_service_review["id"] != incomplete_review_id
+        assert self_service_review["id"] != corrupt_bool_review_id
+        assert self_service_review["id"] != corrupt_float_review_id
+        assert self_service_review["id"] != corrupt_bool_previous_status_review_id
+        assert self_service_review["id"] != corrupt_float_previous_status_review_id
+        assert self_service_review["id"] != corrupt_unknown_previous_status_review_id
         assert self_service_review["payload"]["role"] == "member"
         assert self_service_review["payload"]["status"] == "active"
         _assert_applicant_membership_status_payload_is_scoped(self_service_review)
@@ -19261,9 +20324,23 @@ def test_self_targeted_non_access_review_with_previous_status_is_not_membership_
         assert [row.id for row in rows] == [
             role_review_id,
             incomplete_review_id,
+            corrupt_bool_review_id,
+            corrupt_float_review_id,
+            corrupt_bool_previous_status_review_id,
+            corrupt_float_previous_status_review_id,
+            corrupt_unknown_previous_status_review_id,
             self_service_review["id"],
         ]
-        assert [row.status for row in rows] == ["pending", "pending", "pending"]
+        assert [row.status for row in rows] == [
+            "pending",
+            "pending",
+            "pending",
+            "pending",
+            "pending",
+            "pending",
+            "pending",
+            "pending",
+        ]
         assert db.query(CommunityDomainMembership).count() == 1
 
 
@@ -19783,6 +20860,37 @@ def test_outsider_can_revise_own_needs_changes_membership_request_only(
         assert (
             wrong_target.json()["detail"]["code"]
             == "community_domain_membership_revision_scope_mismatch"
+        )
+
+        rejected_bool_title = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/revision",
+            json={
+                "request_note": "Boolean title should not become text.",
+                "payload": {"title": True},
+            },
+        )
+        assert rejected_bool_title.status_code == 422, rejected_bool_title.text
+        assert (
+            rejected_bool_title.json()["detail"]["code"]
+            == "invalid_action_review_payload"
+        )
+
+        rejected_bool_previous_status = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/revision",
+            json={
+                "request_note": "Boolean previous status should not become text.",
+                "payload": {
+                    "previous_status": False,
+                    "title": "Still malformed.",
+                },
+            },
+        )
+        assert (
+            rejected_bool_previous_status.status_code == 422
+        ), rejected_bool_previous_status.text
+        assert (
+            rejected_bool_previous_status.json()["detail"]["code"]
+            == "invalid_action_review_payload"
         )
 
         revised = client.post(
@@ -20708,6 +21816,264 @@ def test_domain_member_review_rejects_numeric_target_mismatch(
         assert policy.status_code == 201, policy.text
 
         app.dependency_overrides[get_current_user] = lambda: requester
+        rejected_bool_action_key = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": True,
+                "target_type": "domain_member",
+                "target_id": str(owner.id),
+                "payload": {
+                    "user_id": owner.id,
+                    "role": "member",
+                },
+            },
+        )
+        assert rejected_bool_action_key.status_code == 422, (
+            rejected_bool_action_key.text
+        )
+
+        rejected_bool_subject = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "domain_member.upsert",
+                "subject_user_id": True,
+                "target_type": "domain_member",
+                "target_id": str(owner.id),
+                "payload": {
+                    "user_id": owner.id,
+                    "role": "member",
+                },
+            },
+        )
+        assert rejected_bool_subject.status_code == 422, rejected_bool_subject.text
+
+        rejected_bool_target_type = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "domain_member.upsert",
+                "target_type": True,
+                "target_id": str(owner.id),
+                "payload": {
+                    "user_id": owner.id,
+                    "role": "member",
+                },
+            },
+        )
+        assert rejected_bool_target_type.status_code == 422, (
+            rejected_bool_target_type.text
+        )
+
+        rejected_bool_target_id = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "domain_member.upsert",
+                "target_type": "domain_member",
+                "target_id": True,
+                "payload": {
+                    "user_id": owner.id,
+                    "role": "member",
+                },
+            },
+        )
+        assert rejected_bool_target_id.status_code == 422, rejected_bool_target_id.text
+
+        rejected_bool_request_note = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "domain_member.upsert",
+                "target_type": "domain_member",
+                "target_id": str(owner.id),
+                "request_note": False,
+                "payload": {
+                    "user_id": owner.id,
+                    "role": "member",
+                },
+            },
+        )
+        assert rejected_bool_request_note.status_code == 422, (
+            rejected_bool_request_note.text
+        )
+
+        rejected_bool_payload = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "domain_member.upsert",
+                "target_type": "domain_member",
+                "target_id": str(owner.id),
+                "payload": {
+                    "user_id": True,
+                    "role": "member",
+                },
+            },
+        )
+        assert rejected_bool_payload.status_code == 422, rejected_bool_payload.text
+        assert (
+            rejected_bool_payload.json()["detail"]["code"]
+            == "invalid_action_review_payload"
+        )
+
+        rejected_float_payload = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "domain_member.upsert",
+                "target_type": "domain_member",
+                "target_id": str(owner.id),
+                "payload": {
+                    "user_id": 1.5,
+                    "role": "member",
+                },
+            },
+        )
+        assert rejected_float_payload.status_code == 422, rejected_float_payload.text
+        assert (
+            rejected_float_payload.json()["detail"]["code"]
+            == "invalid_action_review_payload"
+        )
+
+        rejected_bool_role = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "domain_member.upsert",
+                "target_type": "domain_member",
+                "target_id": str(new_member.id),
+                "payload": {
+                    "user_id": new_member.id,
+                    "role": True,
+                },
+            },
+        )
+        assert rejected_bool_role.status_code == 422, rejected_bool_role.text
+        assert rejected_bool_role.json()["detail"]["code"] == (
+            "invalid_action_review_payload"
+        )
+
+        rejected_bool_status = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "domain_member.upsert",
+                "target_type": "domain_member",
+                "target_id": str(new_member.id),
+                "payload": {
+                    "user_id": new_member.id,
+                    "role": "member",
+                    "status": False,
+                },
+            },
+        )
+        assert rejected_bool_status.status_code == 422, rejected_bool_status.text
+        assert rejected_bool_status.json()["detail"]["code"] == (
+            "invalid_action_review_payload"
+        )
+
+        rejected_invalid_status = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "domain_member.upsert",
+                "target_type": "domain_member",
+                "target_id": str(new_member.id),
+                "payload": {
+                    "user_id": new_member.id,
+                    "role": "member",
+                    "status": "pending",
+                },
+            },
+        )
+        assert rejected_invalid_status.status_code == 422, (
+            rejected_invalid_status.text
+        )
+        assert rejected_invalid_status.json()["detail"]["code"] == (
+            "community_domain_member_status_invalid"
+        )
+
+        rejected_bool_title = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "domain_member.upsert",
+                "target_type": "domain_member",
+                "target_id": str(new_member.id),
+                "payload": {
+                    "user_id": new_member.id,
+                    "role": "member",
+                    "title": True,
+                },
+            },
+        )
+        assert rejected_bool_title.status_code == 422, rejected_bool_title.text
+        assert rejected_bool_title.json()["detail"]["code"] == (
+            "invalid_action_review_payload"
+        )
+
+        rejected_float_title = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "domain_member.upsert",
+                "target_type": "domain_member",
+                "target_id": str(new_member.id),
+                "payload": {
+                    "user_id": new_member.id,
+                    "role": "member",
+                    "title": 1.5,
+                },
+            },
+        )
+        assert rejected_float_title.status_code == 422, rejected_float_title.text
+        assert rejected_float_title.json()["detail"]["code"] == (
+            "invalid_action_review_payload"
+        )
+
+        rejected_bool_missing_user_role = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "domain_member.upsert",
+                "target_type": "domain_member",
+                "target_id": str(new_member.id),
+                "payload": {
+                    "role": True,
+                    "title": "Missing user id should not bypass bool role.",
+                },
+            },
+        )
+        assert rejected_bool_missing_user_role.status_code == 422, (
+            rejected_bool_missing_user_role.text
+        )
+        assert rejected_bool_missing_user_role.json()["detail"]["code"] == (
+            "invalid_action_review_payload"
+        )
+
+        missing_user_review_response = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "domain_member.upsert",
+                "target_type": "domain_member",
+                "target_id": str(new_member.id),
+                "payload": {
+                    "role": "member",
+                    "title": "Missing payload user id",
+                },
+            },
+        )
+        assert missing_user_review_response.status_code == 201, (
+            missing_user_review_response.text
+        )
+        missing_user_review = missing_user_review_response.json()["action_review"]
+
+        app.dependency_overrides[get_current_user] = lambda: owner
+        rejected_missing_user_decision = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{missing_user_review['id']}/decision",
+            json={
+                "decision": "approve",
+                "decision_note": "Cannot approve an unapplyable member action.",
+            },
+        )
+        assert rejected_missing_user_decision.status_code == 422, (
+            rejected_missing_user_decision.text
+        )
+        assert (
+            rejected_missing_user_decision.json()["detail"]["code"]
+            == "invalid_action_review_payload"
+        )
+
+        app.dependency_overrides[get_current_user] = lambda: requester
         rejected_create = client.post(
             f"/community-domains/{domain_id}/action-reviews",
             json={
@@ -20818,6 +22184,21 @@ def test_domain_member_review_rejects_numeric_target_mismatch(
         assert review_row.applied_at is None
         assert decision_count == 1
         assert membership is None
+        missing_user_row = (
+            db.query(CommunityDomainActionReview)
+            .filter(CommunityDomainActionReview.id == missing_user_review["id"])
+            .one()
+        )
+        missing_user_decision_count = (
+            db.query(CommunityDomainActionReviewDecision)
+            .filter(
+                CommunityDomainActionReviewDecision.action_review_id
+                == missing_user_review["id"]
+            )
+            .count()
+        )
+        assert missing_user_row.status == "pending"
+        assert missing_user_decision_count == 0
 
 
 def test_domain_member_review_rejects_subject_user_mismatch(
@@ -21093,6 +22474,77 @@ def test_node_member_review_rejects_subject_user_mismatch_with_label_target(
             == "community_domain_member_action_target_mismatch"
         )
 
+        rejected_bool_payload_user = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "node_member.role_change",
+                "community_node_id": node_id,
+                "subject_user_id": teacher.id,
+                "target_type": "node_member",
+                "target_id": "maths-chair",
+                "payload": {"user_id": True, "role": "committee_member"},
+            },
+        )
+        assert rejected_bool_payload_user.status_code == 422, (
+            rejected_bool_payload_user.text
+        )
+        assert (
+            rejected_bool_payload_user.json()["detail"]["code"]
+            == "invalid_action_review_payload"
+        )
+
+        rejected_bool_missing_user_role = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "node_member.role_change",
+                "community_node_id": node_id,
+                "subject_user_id": teacher.id,
+                "target_type": "node_member",
+                "target_id": "maths-chair",
+                "payload": {
+                    "role": True,
+                    "title": "Missing user id should not bypass bool role.",
+                },
+            },
+        )
+        assert rejected_bool_missing_user_role.status_code == 422, (
+            rejected_bool_missing_user_role.text
+        )
+        assert (
+            rejected_bool_missing_user_role.json()["detail"]["code"]
+            == "invalid_action_review_payload"
+        )
+
+        for field_name, field_value in (
+            ("role", True),
+            ("status", False),
+            ("previous_status", False),
+            ("title", True),
+        ):
+            rejected_bool_payload_field = client.post(
+                f"/community-domains/{domain_id}/action-reviews",
+                json={
+                    "action_key": "node_member.role_change",
+                    "community_node_id": node_id,
+                    "subject_user_id": teacher.id,
+                    "target_type": "node_member",
+                    "target_id": "maths-chair",
+                    "payload": {
+                        "user_id": teacher.id,
+                        "role": "committee_member",
+                        field_name: field_value,
+                    },
+                },
+            )
+            assert rejected_bool_payload_field.status_code == 422, (
+                field_name,
+                rejected_bool_payload_field.text,
+            )
+            assert (
+                rejected_bool_payload_field.json()["detail"]["code"]
+                == "invalid_action_review_payload"
+            )
+
         review_response = client.post(
             f"/community-domains/{domain_id}/action-reviews",
             json={
@@ -21274,6 +22726,192 @@ def test_node_member_review_rejects_subject_user_mismatch_with_label_target(
         assert node_membership is None
 
 
+def test_node_member_role_change_revision_rejects_bool_payload_fields(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    branch_admin = _seed_user(2, "role-change-revision-admin@example.com")
+    teacher = _seed_user(3, "role-change-revision-teacher@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created_domain = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Role Change Revision School",
+                "display_name": "Role Change Revision School",
+                "domain_type": "school",
+            },
+        )
+        assert created_domain.status_code == 201, created_domain.text
+        domain_id = created_domain.json()["community_domain"]["id"]
+
+        branch = client.post(
+            f"/community-domains/{domain_id}/nodes",
+            json={
+                "name": "Revision Campus",
+                "node_type": "branch",
+                "node_kind": "school_branch",
+            },
+        )
+        assert branch.status_code == 201, branch.text
+        node_id = branch.json()["node"]["id"]
+
+        for user in (branch_admin, teacher):
+            added = client.post(
+                f"/community-domains/{domain_id}/members",
+                json={"user_id": user.id, "role": "staff"},
+            )
+            assert added.status_code == 201, added.text
+
+        admin_assignment = client.post(
+            f"/community-domains/{domain_id}/nodes/{node_id}/members",
+            json={"user_id": branch_admin.id, "role": "branch_admin"},
+        )
+        assert admin_assignment.status_code == 201, admin_assignment.text
+
+        policy = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "role-change-revision-guard",
+                "action_key": "node_member.role_change",
+                "community_node_id": node_id,
+                "scope_type": "node",
+                "review_mode": "node_admin_review",
+            },
+        )
+        assert policy.status_code == 201, policy.text
+
+        app.dependency_overrides[get_current_user] = lambda: teacher
+        review_response = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "node_member.role_change",
+                "community_node_id": node_id,
+                "subject_user_id": teacher.id,
+                "target_type": "node_member",
+                "target_id": "maths-chair",
+                "request_note": "Please review this role slot.",
+                "payload": {
+                    "user_id": teacher.id,
+                    "role": "committee_member",
+                    "title": "Needs exact appointment wording",
+                },
+            },
+        )
+        assert review_response.status_code == 201, review_response.text
+        review = review_response.json()["action_review"]
+
+        app.dependency_overrides[get_current_user] = lambda: branch_admin
+        needs_changes = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/decision",
+            json={
+                "decision": "needs_changes",
+                "decision_note": "Clarify the role label before approval.",
+            },
+        )
+        assert needs_changes.status_code == 200, needs_changes.text
+        assert needs_changes.json()["action_review"]["status"] == "needs_changes"
+
+        app.dependency_overrides[get_current_user] = lambda: teacher
+        rejected_bool_revision_payload_user = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/revision",
+            json={
+                "request_note": "Boolean user id should not become user one.",
+                "payload": {"user_id": True, "role": "committee_member"},
+            },
+        )
+        assert rejected_bool_revision_payload_user.status_code == 422, (
+            rejected_bool_revision_payload_user.text
+        )
+        assert (
+            rejected_bool_revision_payload_user.json()["detail"]["code"]
+            == "invalid_action_review_payload"
+        )
+
+        rejected_float_revision_payload_user = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/revision",
+            json={
+                "request_note": "Float user id should not truncate.",
+                "payload": {"user_id": 1.5, "role": "committee_member"},
+            },
+        )
+        assert rejected_float_revision_payload_user.status_code == 422, (
+            rejected_float_revision_payload_user.text
+        )
+        assert (
+            rejected_float_revision_payload_user.json()["detail"]["code"]
+            == "invalid_action_review_payload"
+        )
+
+        for field_name, field_value in (
+            ("role", True),
+            ("status", False),
+            ("previous_status", False),
+            ("title", True),
+        ):
+            rejected_bool_revision_payload_field = client.post(
+                f"/community-domains/{domain_id}/action-reviews/{review['id']}/revision",
+                json={
+                    "request_note": f"Boolean {field_name} should not become text.",
+                    "payload": {
+                        "user_id": teacher.id,
+                        "role": "committee_member",
+                        field_name: field_value,
+                    },
+                },
+            )
+            assert rejected_bool_revision_payload_field.status_code == 422, (
+                field_name,
+                rejected_bool_revision_payload_field.text,
+            )
+            assert (
+                rejected_bool_revision_payload_field.json()["detail"]["code"]
+                == "invalid_action_review_payload"
+            )
+
+        revision_response = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/revision",
+            json={
+                "request_note": "Clarified the local role slot.",
+                "payload": {
+                    "user_id": teacher.id,
+                    "role": "committee_member",
+                    "title": "Mathematics chair candidate",
+                },
+            },
+        )
+        assert revision_response.status_code == 201, revision_response.text
+        revision_data = revision_response.json()
+        revision = revision_data["action_review"]
+        assert revision_data["previous_action_review"]["status"] == "needs_changes"
+        assert revision["status"] == "pending"
+        assert revision["parent_review_id"] == review["id"]
+        assert revision["target_type"] == "node_member"
+        assert revision["target_id"] == "maths-chair"
+        assert revision["payload"]["title"] == "Mathematics chair candidate"
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    with SessionLocal() as db:
+        rows = (
+            db.query(CommunityDomainActionReview)
+            .order_by(CommunityDomainActionReview.id.asc())
+            .all()
+        )
+        node_membership = (
+            db.query(CommunityNodeMembership)
+            .filter(CommunityNodeMembership.community_node_id == node_id)
+            .filter(CommunityNodeMembership.user_id == teacher.id)
+            .first()
+        )
+        assert len(rows) == 2
+        assert rows[0].status == "needs_changes"
+        assert rows[1].status == "pending"
+        assert rows[1].parent_review_id == rows[0].id
+        assert node_membership is None
+
+
 def test_node_member_upsert_review_rejects_member_target_mismatch(
     client: TestClient,
 ):
@@ -21387,6 +23025,119 @@ def test_node_member_upsert_review_rejects_member_target_mismatch(
             rejected_type_create.json()["detail"]["code"]
             == "community_domain_member_action_target_mismatch"
         )
+
+        rejected_bool_payload_user = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "node_member.upsert",
+                "community_node_id": node_id,
+                "subject_user_id": staff.id,
+                "target_type": "node_member",
+                "target_id": str(staff.id),
+                "payload": {"user_id": True, "role": "teacher"},
+            },
+        )
+        assert rejected_bool_payload_user.status_code == 422, (
+            rejected_bool_payload_user.text
+        )
+        assert (
+            rejected_bool_payload_user.json()["detail"]["code"]
+            == "invalid_action_review_payload"
+        )
+
+        rejected_float_payload_user = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "node_member.upsert",
+                "community_node_id": node_id,
+                "subject_user_id": staff.id,
+                "target_type": "node_member",
+                "target_id": str(staff.id),
+                "payload": {"user_id": 1.5, "role": "teacher"},
+            },
+        )
+        assert rejected_float_payload_user.status_code == 422, (
+            rejected_float_payload_user.text
+        )
+        assert (
+            rejected_float_payload_user.json()["detail"]["code"]
+            == "invalid_action_review_payload"
+        )
+
+        rejected_invalid_payload_status = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "node_member.upsert",
+                "community_node_id": node_id,
+                "subject_user_id": staff.id,
+                "target_type": "node_member",
+                "target_id": str(staff.id),
+                "payload": {
+                    "user_id": staff.id,
+                    "role": "teacher",
+                    "status": "pending",
+                },
+            },
+        )
+        assert rejected_invalid_payload_status.status_code == 422, (
+            rejected_invalid_payload_status.text
+        )
+        assert (
+            rejected_invalid_payload_status.json()["detail"]["code"]
+            == "community_domain_member_status_invalid"
+        )
+
+        rejected_bool_missing_user_role = client.post(
+            f"/community-domains/{domain_id}/action-reviews",
+            json={
+                "action_key": "node_member.upsert",
+                "community_node_id": node_id,
+                "subject_user_id": staff.id,
+                "target_type": "node_member",
+                "target_id": str(staff.id),
+                "payload": {
+                    "role": True,
+                    "title": "Missing user id should not bypass bool role.",
+                },
+            },
+        )
+        assert rejected_bool_missing_user_role.status_code == 422, (
+            rejected_bool_missing_user_role.text
+        )
+        assert (
+            rejected_bool_missing_user_role.json()["detail"]["code"]
+            == "invalid_action_review_payload"
+        )
+
+        for field_name, field_value in (
+            ("role", True),
+            ("status", False),
+            ("previous_status", False),
+            ("title", True),
+        ):
+            rejected_bool_member_payload = client.post(
+                f"/community-domains/{domain_id}/action-reviews",
+                json={
+                    "action_key": "node_member.upsert",
+                    "community_node_id": node_id,
+                    "subject_user_id": staff.id,
+                    "target_type": "node_member",
+                    "target_id": str(staff.id),
+                    "payload": {
+                        "user_id": staff.id,
+                        "role": "teacher",
+                        field_name: field_value,
+                    },
+                },
+            )
+            assert rejected_bool_member_payload.status_code == 422, (
+                field_name,
+                rejected_bool_member_payload.text,
+            )
+            assert (
+                rejected_bool_member_payload.json()["detail"]["code"]
+                == "invalid_action_review_payload"
+            )
 
         review_response = client.post(
             f"/community-domains/{domain_id}/action-reviews",
@@ -21702,6 +23453,62 @@ def test_node_member_upsert_revision_rejects_member_target_mismatch(
             rejected_type_revision.json()["detail"]["code"]
             == "community_domain_member_action_target_mismatch"
         )
+
+        rejected_bool_revision_payload_user = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/revision",
+            json={
+                "request_note": "Boolean user id in revision.",
+                "payload": {"user_id": True, "role": "teacher"},
+            },
+        )
+        assert rejected_bool_revision_payload_user.status_code == 422, (
+            rejected_bool_revision_payload_user.text
+        )
+        assert (
+            rejected_bool_revision_payload_user.json()["detail"]["code"]
+            == "invalid_action_review_payload"
+        )
+
+        rejected_float_revision_payload_user = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/revision",
+            json={
+                "request_note": "Float user id should not truncate.",
+                "payload": {"user_id": 1.5, "role": "committee_member"},
+            },
+        )
+        assert rejected_float_revision_payload_user.status_code == 422, (
+            rejected_float_revision_payload_user.text
+        )
+        assert (
+            rejected_float_revision_payload_user.json()["detail"]["code"]
+            == "invalid_action_review_payload"
+        )
+
+        for field_name, field_value in (
+            ("role", True),
+            ("status", False),
+            ("previous_status", False),
+            ("title", True),
+        ):
+            rejected_bool_revision_payload_field = client.post(
+                f"/community-domains/{domain_id}/action-reviews/{review['id']}/revision",
+                json={
+                    "request_note": f"Boolean {field_name} in revision.",
+                    "payload": {
+                        "user_id": staff.id,
+                        "role": "teacher",
+                        field_name: field_value,
+                    },
+                },
+            )
+            assert rejected_bool_revision_payload_field.status_code == 422, (
+                field_name,
+                rejected_bool_revision_payload_field.text,
+            )
+            assert (
+                rejected_bool_revision_payload_field.json()["detail"]["code"]
+                == "invalid_action_review_payload"
+            )
 
         revision_response = client.post(
             f"/community-domains/{domain_id}/action-reviews/{review['id']}/revision",
@@ -22664,6 +24471,12 @@ def test_action_review_comments_follow_review_visibility(
         assert review_response.status_code == 201, review_response.text
         review = review_response.json()["action_review"]
 
+        rejected_bool_comment = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/comments",
+            json={"body": False},
+        )
+        assert rejected_bool_comment.status_code == 422, rejected_bool_comment.text
+
         requester_comment = client.post(
             f"/community-domains/{domain_id}/action-reviews/{review['id']}/comments",
             json={"body": "Please review this with the attached office records."},
@@ -22798,6 +24611,28 @@ def test_action_review_evidence_records_metadata_without_file_upload(
             json={"body": "I added the branch register extract."},
         )
         assert requester_comment.status_code == 201, requester_comment.text
+
+        for field_name, field_value in (
+            ("evidence_type", False),
+            ("title", True),
+            ("description", False),
+            ("file_name", True),
+            ("content_type", False),
+            ("storage_key", True),
+            ("external_reference", False),
+            ("checksum", True),
+        ):
+            rejected_bool_evidence = client.post(
+                f"/community-domains/{domain_id}/action-reviews/{review['id']}/evidence",
+                json={
+                    "title": "Boolean evidence metadata should not become text",
+                    field_name: field_value,
+                },
+            )
+            assert rejected_bool_evidence.status_code == 422, (
+                field_name,
+                rejected_bool_evidence.text,
+            )
 
         requester_evidence = client.post(
             f"/community-domains/{domain_id}/action-reviews/{review['id']}/evidence",
@@ -23000,6 +24835,14 @@ def test_requester_can_cancel_pending_action_review(
         )
         assert review_response.status_code == 201, review_response.text
         review = review_response.json()["action_review"]
+
+        rejected_bool_cancel_note = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/cancel",
+            json={"cancel_note": True},
+        )
+        assert rejected_bool_cancel_note.status_code == 422, (
+            rejected_bool_cancel_note.text
+        )
 
         app.dependency_overrides[get_current_user] = lambda: other_member
         denied = client.post(
@@ -23760,6 +25603,71 @@ def test_requester_can_revise_needs_changes_action_review(
         )
 
         app.dependency_overrides[get_current_user] = lambda: requester
+        rejected_bool_subject_revision = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/revision",
+            json={
+                "subject_user_id": True,
+                "target_id": str(owner.id),
+                "request_note": "Boolean subject id must not become user 1.",
+                "payload": {
+                    "user_id": owner.id,
+                    "role": "member",
+                    "title": "Boolean subject candidate",
+                },
+            },
+        )
+        assert (
+            rejected_bool_subject_revision.status_code == 422
+        ), rejected_bool_subject_revision.text
+
+        rejected_bool_target_type_revision = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/revision",
+            json={
+                "target_type": True,
+                "request_note": "Boolean target type should not become text.",
+                "payload": {
+                    "user_id": owner.id,
+                    "role": "member",
+                    "title": "Boolean target type candidate",
+                },
+            },
+        )
+        assert rejected_bool_target_type_revision.status_code == 422, (
+            rejected_bool_target_type_revision.text
+        )
+
+        rejected_bool_target_id_revision = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/revision",
+            json={
+                "target_id": True,
+                "request_note": "Boolean target id should not become text.",
+                "payload": {
+                    "user_id": owner.id,
+                    "role": "member",
+                    "title": "Boolean target id candidate",
+                },
+            },
+        )
+        assert rejected_bool_target_id_revision.status_code == 422, (
+            rejected_bool_target_id_revision.text
+        )
+
+        rejected_bool_request_note_revision = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/revision",
+            json={
+                "request_note": False,
+                "payload": {
+                    "user_id": owner.id,
+                    "role": "member",
+                    "title": "Boolean request note candidate",
+                },
+            },
+        )
+        assert rejected_bool_request_note_revision.status_code == 422, (
+            rejected_bool_request_note_revision.text
+        )
+
+        app.dependency_overrides[get_current_user] = lambda: requester
         rejected_subject_revision = client.post(
             f"/community-domains/{domain_id}/action-reviews/{review['id']}/revision",
             json={
@@ -23812,6 +25720,25 @@ def test_requester_can_revise_needs_changes_action_review(
         assert (
             rejected_type_revision.json()["detail"]["code"]
             == "community_domain_member_action_target_mismatch"
+        )
+
+        rejected_bool_title_revision = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review['id']}/revision",
+            json={
+                "request_note": "Boolean title should not become text.",
+                "payload": {
+                    "user_id": new_member.id,
+                    "role": "member",
+                    "title": True,
+                },
+            },
+        )
+        assert (
+            rejected_bool_title_revision.status_code == 422
+        ), rejected_bool_title_revision.text
+        assert (
+            rejected_bool_title_revision.json()["detail"]["code"]
+            == "invalid_action_review_payload"
         )
 
         revision_response = client.post(

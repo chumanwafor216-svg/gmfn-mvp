@@ -6,7 +6,8 @@ from datetime import datetime, timezone
 from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -73,6 +74,9 @@ MEMBERSHIP_REQUEST_OPEN_STATUSES = (
     "needs_changes",
     "approved",
 )
+MEMBERSHIP_STATUS_VALUES = {"active", "inactive", "suspended", "archived"}
+MEMBERSHIP_STATUS_SNAPSHOT_VALUES = {"none", *MEMBERSHIP_STATUS_VALUES}
+POLICY_REVIEW_COUNT_MAX = 25
 COMMUNITY_DOMAIN_ROLE_PRESETS: list[dict[str, Any]] = [
     {
         "role_key": "owner",
@@ -593,6 +597,14 @@ COMMUNITY_DOMAIN_TRUST_MOBILITY_LANE_PRESETS: list[dict[str, Any]] = [
     },
 ]
 NODE_STATUS_VALUES = {"active", "inactive", "archived"}
+POLICY_STATUS_VALUES = {"active", "inactive", "archived"}
+POLICY_SCOPE_TYPE_VALUES = {"domain", "node"}
+POLICY_REVIEW_MODE_VALUES = {
+    "domain_admin_review",
+    "node_admin_review",
+    "required_role_review",
+    "multi_reviewer_review",
+}
 COMMUNITY_DOMAIN_PACKAGE_LIMITS = {
     "included_nodes": 50,
     "included_members": 500,
@@ -1295,6 +1307,71 @@ def _json_load(value: Optional[str]) -> dict[str, Any]:
         return data if isinstance(data, dict) else {}
     except Exception:
         return {}
+
+
+MEMBER_ACTION_REVIEW_KEYS = {
+    "domain_member.upsert",
+    "node_member.upsert",
+    "node_member.role_change",
+}
+MEMBER_ACTION_REVIEW_TARGET_TYPES = {"domain_member", "member", "node_member"}
+
+
+def _member_action_target_type_filter():
+    return func.lower(func.trim(CommunityDomainActionReview.target_type)).in_(
+        sorted(MEMBER_ACTION_REVIEW_TARGET_TYPES)
+    )
+
+
+def _optional_payload_user_id(payload: dict[str, Any]) -> Optional[int]:
+    raw_value = payload.get("user_id")
+    if raw_value is None or isinstance(raw_value, bool) or isinstance(raw_value, float):
+        return None
+    try:
+        value = int(raw_value or 0)
+    except (TypeError, ValueError):
+        return None
+    return value if value > 0 else None
+
+
+def _optional_payload_previous_status(payload: dict[str, Any]) -> Optional[str]:
+    if "previous_status" not in payload:
+        return None
+    raw_value = payload.get("previous_status")
+    if raw_value is None or isinstance(raw_value, bool):
+        return None
+    previous_status = _clean_role(raw_value, "")
+    return (
+        previous_status
+        if previous_status in MEMBERSHIP_STATUS_SNAPSHOT_VALUES
+        else None
+    )
+
+
+def _action_review_matches_user_filter(
+    row: CommunityDomainActionReview,
+    *,
+    user_id: int,
+) -> bool:
+    desired_user_id = int(user_id)
+    subject_matches = (
+        row.subject_user_id is not None
+        and int(row.subject_user_id) == desired_user_id
+    )
+    target_matches = (
+        _clean_role(row.target_type or "") in MEMBER_ACTION_REVIEW_TARGET_TYPES
+        and _clean_str(row.target_id) == str(desired_user_id)
+    )
+    if not subject_matches and not target_matches:
+        return False
+
+    if _clean_role(row.action_key) not in MEMBER_ACTION_REVIEW_KEYS:
+        return True
+
+    payload_user_id = _optional_payload_user_id(_json_load(row.payload_json))
+    if payload_user_id is None:
+        return True
+    return payload_user_id == desired_user_id
 
 
 def _node_payload(node: Optional[CommunityNode]) -> Optional[dict[str, Any]]:
@@ -2670,10 +2747,7 @@ def _community_domain_governance_model_payload(
             node_scoped_policy_count += 1
         if _clean_str(policy.required_role):
             required_role_policy_count += 1
-        try:
-            min_reviewers = int(config.get("min_reviewers") or 1)
-        except (TypeError, ValueError):
-            min_reviewers = 1
+        min_reviewers = _policy_config_positive_int(config, ("min_reviewers",))
         if min_reviewers > 1:
             multi_reviewer_policy_count += 1
 
@@ -3571,11 +3645,7 @@ def _community_domain_member_placement_summary_payload(
                 CommunityDomainActionReview.subject_user_id == user_id
             )
             | (
-                (
-                    CommunityDomainActionReview.target_type.in_(
-                        ["domain_member", "member", "node_member"]
-                    )
-                )
+                _member_action_target_type_filter()
                 & (CommunityDomainActionReview.target_id == str(user_id))
             )
         )
@@ -3586,6 +3656,11 @@ def _community_domain_member_placement_summary_payload(
         )
         .all()
     )
+    open_reviews = [
+        review
+        for review in open_reviews
+        if _action_review_matches_user_filter(review, user_id=user_id)
+    ]
     reviews_by_status: dict[str, int] = {}
     reviews_by_action: dict[str, int] = {}
     for review in open_reviews:
@@ -15602,11 +15677,7 @@ def _community_domain_identity_context_payload(
                 CommunityDomainActionReview.subject_user_id == user_id
             )
             | (
-                (
-                    CommunityDomainActionReview.target_type.in_(
-                        ["domain_member", "member", "node_member"]
-                    )
-                )
+                _member_action_target_type_filter()
                 & (CommunityDomainActionReview.target_id == str(user_id))
             )
         )
@@ -15617,6 +15688,11 @@ def _community_domain_identity_context_payload(
         )
         .all()
     )
+    open_reviews = [
+        review
+        for review in open_reviews
+        if _action_review_matches_user_filter(review, user_id=user_id)
+    ]
 
     admin_assignment_count = 0
     role_counts: dict[str, int] = {}
@@ -16467,11 +16543,7 @@ def _community_domain_member_verification_map_payload(
             (
                 CommunityDomainActionReview.subject_user_id.isnot(None)
             )
-            | (
-                CommunityDomainActionReview.target_type.in_(
-                    ["domain_member", "member", "node_member"]
-                )
-            )
+            | _member_action_target_type_filter()
         )
         .count()
     )
@@ -16482,11 +16554,7 @@ def _community_domain_member_verification_map_payload(
             (
                 CommunityDomainActionReview.subject_user_id.isnot(None)
             )
-            | (
-                CommunityDomainActionReview.target_type.in_(
-                    ["domain_member", "member", "node_member"]
-                )
-            )
+            | _member_action_target_type_filter()
         )
         .filter(
             CommunityDomainActionReview.status.in_(
@@ -16725,6 +16793,79 @@ def _community_domain_member_verification_map_payload(
     }
 
 
+def _reject_bool_identifier(value: Any, field_name: str) -> Any:
+    if isinstance(value, bool):
+        raise ValueError(f"{field_name} must be an integer id, not a boolean.")
+    if isinstance(value, float):
+        raise ValueError(f"{field_name} must be an integer id, not a float.")
+    return value
+
+
+def _reject_bool_integer(value: Any, field_name: str) -> Any:
+    if isinstance(value, bool):
+        raise ValueError(f"{field_name} must be an integer, not a boolean.")
+    if isinstance(value, float):
+        raise ValueError(f"{field_name} must be an integer, not a float.")
+    return value
+
+
+def _reject_non_bool(value: Any, field_name: str) -> Any:
+    if not isinstance(value, bool):
+        raise ValueError(f"{field_name} must be a boolean.")
+    return value
+
+
+def _reject_invalid_policy_count_config(value: Any) -> Any:
+    if value is None:
+        return value
+    if not isinstance(value, dict):
+        return value
+    normalized = dict(value)
+    for key in ("min_reviewers", "min_approvals"):
+        if key not in normalized:
+            continue
+        raw_value = normalized.get(key)
+        if raw_value is None or isinstance(raw_value, bool) or isinstance(raw_value, float):
+            raise ValueError(f"config.{key} must be a positive integer.")
+        try:
+            count_value = int(raw_value)
+        except (TypeError, ValueError) as exc:
+            raise ValueError(f"config.{key} must be a positive integer.") from exc
+        if count_value < 1:
+            raise ValueError(f"config.{key} must be a positive integer.")
+        if count_value > POLICY_REVIEW_COUNT_MAX:
+            raise ValueError(
+                f"config.{key} must be at most {POLICY_REVIEW_COUNT_MAX}."
+            )
+        normalized[key] = count_value
+    return normalized
+
+
+def _policy_config_positive_int(
+    config: dict[str, Any],
+    keys: tuple[str, ...],
+    *,
+    default: int = 1,
+    maximum: Optional[int] = None,
+) -> int:
+    raw_value: Any = default
+    for key in keys:
+        if key in config:
+            raw_value = config.get(key)
+            break
+    if raw_value is None or isinstance(raw_value, bool) or isinstance(raw_value, float):
+        value = default
+    else:
+        try:
+            value = int(raw_value)
+        except (TypeError, ValueError):
+            value = default
+    value = max(1, value)
+    if maximum is not None:
+        value = min(value, maximum)
+    return value
+
+
 class CommunityDomainDraftIn(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
 
@@ -16750,6 +16891,21 @@ class CommunityNodeCreateIn(BaseModel):
     inherits_parent_policy: bool = True
     status: str = Field(default="active", max_length=24)
 
+    @field_validator("parent_node_id", mode="before")
+    @classmethod
+    def _reject_bool_ids(cls, value: Any) -> Any:
+        return _reject_bool_identifier(value, "parent_node_id")
+
+    @field_validator("sort_order", mode="before")
+    @classmethod
+    def _reject_bool_sort_order(cls, value: Any) -> Any:
+        return _reject_bool_integer(value, "sort_order")
+
+    @field_validator("inherits_parent_policy", mode="before")
+    @classmethod
+    def _reject_non_bool_inherits_parent_policy(cls, value: Any) -> Any:
+        return _reject_non_bool(value, "inherits_parent_policy")
+
 
 class CommunityNodeStatusUpdateIn(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
@@ -16765,6 +16921,11 @@ class CommunityDomainMemberUpsertIn(BaseModel):
     role: str = Field(default="member", max_length=32)
     status: str = Field(default="active", max_length=24)
     title: Optional[str] = Field(default=None, max_length=120)
+
+    @field_validator("user_id", mode="before")
+    @classmethod
+    def _reject_bool_ids(cls, value: Any) -> Any:
+        return _reject_bool_identifier(value, "user_id")
 
 
 class CommunityDomainMembershipRequestIn(BaseModel):
@@ -16782,6 +16943,11 @@ class CommunityNodeMemberUpsertIn(BaseModel):
     status: str = Field(default="active", max_length=24)
     title: Optional[str] = Field(default=None, max_length=120)
 
+    @field_validator("user_id", mode="before")
+    @classmethod
+    def _reject_bool_ids(cls, value: Any) -> Any:
+        return _reject_bool_identifier(value, "user_id")
+
 
 class CommunityDomainPolicyUpsertIn(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
@@ -16796,6 +16962,16 @@ class CommunityDomainPolicyUpsertIn(BaseModel):
     policy_summary: Optional[str] = Field(default=None, max_length=1200)
     config: Optional[dict[str, Any]] = None
 
+    @field_validator("community_node_id", mode="before")
+    @classmethod
+    def _reject_bool_ids(cls, value: Any) -> Any:
+        return _reject_bool_identifier(value, "community_node_id")
+
+    @field_validator("config", mode="before")
+    @classmethod
+    def _reject_bool_policy_counts(cls, value: Any) -> Any:
+        return _reject_invalid_policy_count_config(value)
+
 
 class CommunityDomainActionReviewCreateIn(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
@@ -16808,6 +16984,11 @@ class CommunityDomainActionReviewCreateIn(BaseModel):
     target_id: Optional[str] = Field(default=None, max_length=96)
     request_note: Optional[str] = Field(default=None, max_length=1200)
     payload: Optional[dict[str, Any]] = None
+
+    @field_validator("community_node_id", "policy_id", "subject_user_id", mode="before")
+    @classmethod
+    def _reject_bool_ids(cls, value: Any, info: Any) -> Any:
+        return _reject_bool_identifier(value, info.field_name)
 
 
 class CommunityDomainActionReviewDecisionIn(BaseModel):
@@ -16831,6 +17012,11 @@ class CommunityDomainActionReviewRevisionIn(BaseModel):
     target_id: Optional[str] = Field(default=None, max_length=96)
     request_note: Optional[str] = Field(default=None, max_length=1200)
     payload: Optional[dict[str, Any]] = None
+
+    @field_validator("subject_user_id", mode="before")
+    @classmethod
+    def _reject_bool_ids(cls, value: Any) -> Any:
+        return _reject_bool_identifier(value, "subject_user_id")
 
 
 class CommunityDomainActionReviewCommentIn(BaseModel):
@@ -16923,6 +17109,72 @@ def _requested_node_status(payload: dict[str, Any]) -> str:
     return _clean_role(str(payload.get("new_status") or payload.get("status") or ""))
 
 
+def _normalize_node_status_value(value: Any, default: str = "active") -> str:
+    status = _clean_role(value, default)
+    if status not in NODE_STATUS_VALUES:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "code": "community_domain_node_status_invalid",
+                "message": "Node status must be active, inactive, or archived.",
+            },
+        )
+    return status
+
+
+def _normalize_policy_status_value(value: Any, default: str = "active") -> str:
+    status = _clean_role(value, default)
+    if status not in POLICY_STATUS_VALUES:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "code": "community_domain_policy_status_invalid",
+                "message": "Policy status must be active, inactive, or archived.",
+            },
+        )
+    return status
+
+
+def _normalize_policy_scope_type_value(value: Any, default: str = "domain") -> str:
+    scope_type = _clean_role(value, default)
+    if scope_type not in POLICY_SCOPE_TYPE_VALUES:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "code": "community_domain_policy_scope_type_invalid",
+                "message": "Policy scope type must be domain or node.",
+            },
+        )
+    return scope_type
+
+
+def _normalize_policy_review_mode_value(
+    value: Any,
+    default: str = "domain_admin_review",
+) -> str:
+    review_mode = _clean_role(value, default)
+    if review_mode not in POLICY_REVIEW_MODE_VALUES:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "code": "community_domain_policy_review_mode_invalid",
+                "message": (
+                    "Policy review mode must be domain_admin_review, "
+                    "node_admin_review, required_role_review, or "
+                    "multi_reviewer_review."
+                ),
+            },
+        )
+    return review_mode
+
+
+def _reject_non_text_node_status_payload_fields(payload: dict[str, Any]) -> None:
+    _reject_non_text_payload_fields(
+        payload,
+        ("new_status", "status", "previous_status", "status_note", "note"),
+    )
+
+
 def _ensure_node_accepts_action_review_request(
     db: Session,
     *,
@@ -16932,15 +17184,11 @@ def _ensure_node_accepts_action_review_request(
     payload: dict[str, Any],
 ) -> None:
     if action_key == "node.status.update":
-        requested_status = _requested_node_status(payload)
-        if requested_status not in NODE_STATUS_VALUES:
-            raise HTTPException(
-                status_code=422,
-                detail={
-                    "code": "community_domain_node_status_invalid",
-                    "message": "Node status must be active, inactive, or archived.",
-                },
-            )
+        _reject_non_text_node_status_payload_fields(payload)
+        requested_status = _normalize_node_status_value(
+            _requested_node_status(payload),
+            default="",
+        )
         if (
             requested_status == "active"
             and _clean_role(node.status, "inactive") != "active"
@@ -16995,8 +17243,19 @@ def _ensure_node_status_review_target_matches(
             )
 
     if review_payload is not None and review_payload.get("community_node_id") is not None:
+        raw_payload_node_id = review_payload.get("community_node_id")
+        if isinstance(raw_payload_node_id, bool) or isinstance(
+            raw_payload_node_id, float
+        ):
+            raise HTTPException(
+                status_code=422,
+                detail={
+                    "code": "invalid_action_review_payload",
+                    "message": "Node status review payload community_node_id must be the scoped node id.",
+                },
+            )
         try:
-            payload_node_id = int(review_payload.get("community_node_id") or 0)
+            payload_node_id = int(raw_payload_node_id or 0)
         except (TypeError, ValueError) as exc:
             raise HTTPException(
                 status_code=422,
@@ -17029,6 +17288,7 @@ def _normalize_node_status_review_payload(
         target_id=target_id,
         review_payload=review_payload,
     )
+    _reject_non_text_node_status_payload_fields(review_payload)
 
     if node.parent_node_id is None:
         raise HTTPException(
@@ -17038,15 +17298,10 @@ def _normalize_node_status_review_payload(
                 "message": "The root Community Domain node is controlled by the domain lifecycle, not node status reviews.",
             },
         )
-    requested_status = _requested_node_status(review_payload)
-    if requested_status not in NODE_STATUS_VALUES:
-        raise HTTPException(
-            status_code=422,
-            detail={
-                "code": "community_domain_node_status_invalid",
-                "message": "Node status must be active, inactive, or archived.",
-            },
-        )
+    requested_status = _normalize_node_status_value(
+        _requested_node_status(review_payload),
+        default="",
+    )
     previous_status = _clean_role(node.status, "inactive")
     status_note = (
         _clean_str(
@@ -17113,17 +17368,25 @@ def _get_action_review_or_404(
 def _required_review_approvals(row: CommunityDomainActionReview) -> int:
     policy = getattr(row, "policy", None)
     config = _json_load(getattr(policy, "config_json", None))
-    raw_value = config.get("min_approvals", config.get("min_reviewers", 1))
-    try:
-        value = int(raw_value)
-    except (TypeError, ValueError):
-        value = 1
-    return max(1, min(value, 25))
+    return _policy_config_positive_int(
+        config,
+        ("min_approvals", "min_reviewers"),
+        maximum=POLICY_REVIEW_COUNT_MAX,
+    )
 
 
 def _payload_int(payload: dict[str, Any], key: str) -> int:
+    raw_value = payload.get(key)
+    if raw_value is None or isinstance(raw_value, bool) or isinstance(raw_value, float):
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "code": "invalid_action_review_payload",
+                "message": f"Action review payload must include a valid {key}.",
+            },
+        )
     try:
-        value = int(payload.get(key) or 0)
+        value = int(raw_value)
     except (TypeError, ValueError) as exc:
         raise HTTPException(
             status_code=422,
@@ -17143,6 +17406,35 @@ def _payload_int(payload: dict[str, Any], key: str) -> int:
     return value
 
 
+def _reject_non_text_payload_fields(
+    payload: dict[str, Any], keys: tuple[str, ...]
+) -> None:
+    for key in keys:
+        if key not in payload or payload.get(key) is None:
+            continue
+        if not isinstance(payload.get(key), str):
+            raise HTTPException(
+                status_code=422,
+                detail={
+                    "code": "invalid_action_review_payload",
+                    "message": f"Action review payload {key} must be text.",
+                },
+            )
+
+
+def _normalize_member_status_value(value: Any, default: str = "active") -> str:
+    status = _clean_role(value, default)
+    if status not in MEMBERSHIP_STATUS_VALUES:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "code": "community_domain_member_status_invalid",
+                "message": "Member status must be active, inactive, suspended, or archived.",
+            },
+        )
+    return status
+
+
 def _ensure_member_action_review_target_matches(
     *,
     action_key: str,
@@ -17150,6 +17442,7 @@ def _ensure_member_action_review_target_matches(
     target_type: Optional[str],
     target_id: Optional[str],
     subject_user_id: Optional[int] = None,
+    require_payload_user_id: bool = False,
 ) -> None:
     expected_target_type: Optional[str] = None
     if action_key == "domain_member.upsert":
@@ -17170,7 +17463,15 @@ def _ensure_member_action_review_target_matches(
             },
         )
 
+    _reject_non_text_payload_fields(
+        payload,
+        ("role", "status", "previous_status", "title"),
+    )
+    if "status" in payload and payload.get("status") is not None:
+        _normalize_member_status_value(payload.get("status"))
     if payload.get("user_id") is None:
+        if require_payload_user_id:
+            _payload_int(payload, "user_id")
         return
     payload_user_id = _payload_int(payload, "user_id")
     if subject_user_id is not None and int(subject_user_id) != payload_user_id:
@@ -17216,9 +17517,11 @@ def _is_self_service_domain_membership_review_for_user(
     except (TypeError, ValueError):
         return False
     payload = _json_load(row.payload_json)
-    try:
-        payload_user_id = int(payload.get("user_id") or 0)
-    except (TypeError, ValueError):
+    payload_user_id = _optional_payload_user_id(payload)
+    if payload_user_id is None:
+        return False
+    previous_status = _optional_payload_previous_status(payload)
+    if previous_status is None:
         return False
     return (
         target_user_id == int(user_id)
@@ -17227,7 +17530,6 @@ def _is_self_service_domain_membership_review_for_user(
         and _clean_role(payload.get("role")) == "member"
         and "status" in payload
         and _clean_role(payload.get("status")) == "active"
-        and "previous_status" in payload
     )
 
 
@@ -17262,10 +17564,15 @@ def _normalize_self_service_membership_revision_payload(
     user_id: int,
 ) -> dict[str, Any]:
     previous_payload = _json_load(row.payload_json)
-    previous_status = _clean_role(
-        str(previous_payload.get("previous_status") or "none"),
-        "none",
-    )
+    previous_status = _optional_payload_previous_status(previous_payload)
+    if previous_status is None:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "community_domain_membership_revision_scope_mismatch",
+                "message": "Membership request revisions require a valid previous membership status snapshot.",
+            },
+        )
     membership = _domain_membership_for_user(
         db,
         community_domain_id=int(community_domain_id),
@@ -17296,6 +17603,10 @@ def _normalize_self_service_membership_revision_payload(
             },
         )
     proposed_payload = dict(submitted_payload or {})
+    _reject_non_text_payload_fields(
+        proposed_payload,
+        ("role", "status", "previous_status", "title"),
+    )
 
     if "user_id" in proposed_payload and _payload_int(proposed_payload, "user_id") != int(user_id):
         raise HTTPException(
@@ -19469,7 +19780,7 @@ def create_community_domain_node(
         sort_order=int(payload.sort_order or 0),
         visibility_policy=_clean_str(payload.visibility_policy, "members"),
         inherits_parent_policy=bool(payload.inherits_parent_policy),
-        status=_clean_str(payload.status, "active"),
+        status=_normalize_node_status_value(payload.status),
     )
     db.add(node)
 
@@ -19555,15 +19866,7 @@ def update_community_domain_node_status(
             },
         )
 
-    requested_status = _clean_role(payload.status, "active")
-    if requested_status not in NODE_STATUS_VALUES:
-        raise HTTPException(
-            status_code=422,
-            detail={
-                "code": "community_domain_node_status_invalid",
-                "message": "Node status must be active, inactive, or archived.",
-            },
-        )
+    requested_status = _normalize_node_status_value(payload.status)
 
     parent_node = _get_node_or_404(
         db,
@@ -19939,7 +20242,7 @@ def upsert_community_domain_member(
         db.add(membership)
 
     membership.role = requested_role
-    membership.status = _clean_str(payload.status, "active")
+    membership.status = _normalize_member_status_value(payload.status)
     membership.title = _clean_str(payload.title) or None
 
     try:
@@ -20071,7 +20374,7 @@ def upsert_community_node_member(
         db.add(membership)
 
     membership.role = requested_role
-    membership.status = _clean_str(payload.status, "active")
+    membership.status = _normalize_member_status_value(payload.status)
     membership.title = _clean_str(payload.title) or None
 
     try:
@@ -20178,10 +20481,10 @@ def upsert_community_domain_policy(
 
     policy.community_node_id = node_id
     policy.action_key = _clean_role(payload.action_key)
-    policy.scope_type = _clean_role(payload.scope_type, "domain")
-    policy.review_mode = _clean_role(payload.review_mode, "domain_admin_review")
+    policy.scope_type = _normalize_policy_scope_type_value(payload.scope_type)
+    policy.review_mode = _normalize_policy_review_mode_value(payload.review_mode)
     policy.required_role = _clean_role(payload.required_role) if payload.required_role else None
-    policy.status = _clean_role(payload.status, "active")
+    policy.status = _normalize_policy_status_value(payload.status)
     policy.policy_summary = _clean_str(payload.policy_summary) or None
     policy.config_json = _json_dump(payload.config)
     policy.updated_by_user_id = int(current_user.id)
@@ -20257,11 +20560,7 @@ def list_community_domain_action_reviews(
                 CommunityDomainActionReview.subject_user_id == int(user_id)
             )
             | (
-                (
-                    CommunityDomainActionReview.target_type.in_(
-                        ["domain_member", "member", "node_member"]
-                    )
-                )
+                _member_action_target_type_filter()
                 & (CommunityDomainActionReview.target_id == str(int(user_id)))
             )
         )
@@ -20272,6 +20571,12 @@ def list_community_domain_action_reviews(
         CommunityDomainActionReview.created_at.desc(),
         CommunityDomainActionReview.id.desc(),
     ).all()
+    if user_id is not None:
+        rows = [
+            row
+            for row in rows
+            if _action_review_matches_user_filter(row, user_id=int(user_id))
+        ]
     return {
         "ok": True,
         "community_domain_id": int(domain.id),
@@ -21697,6 +22002,7 @@ def decide_community_domain_action_review(
             subject_user_id=(
                 int(row.subject_user_id) if row.subject_user_id is not None else None
             ),
+            require_payload_user_id=(row_action_key == "domain_member.upsert"),
         )
 
     decision_row = CommunityDomainActionReviewDecision(
@@ -21843,7 +22149,7 @@ def apply_community_domain_action_review(
             user_id=int(user_id),
         )
         created = membership is None
-        requested_status = _clean_str(str(payload.get("status") or "active"), "active")
+        requested_status = _normalize_member_status_value(payload.get("status"))
         expected_previous_status = (
             _clean_role(str(payload.get("previous_status") or ""), "")
             if "previous_status" in payload
@@ -21948,7 +22254,7 @@ def apply_community_domain_action_review(
             db.add(membership)
 
         membership.role = requested_role
-        membership.status = _clean_str(str(payload.get("status") or "active"), "active")
+        membership.status = _normalize_member_status_value(payload.get("status"))
         membership.title = _clean_str(str(payload.get("title") or "")) or None
         row.status = "applied"
         row.applied_by_user_id = int(current_user.id)
@@ -21987,6 +22293,7 @@ def apply_community_domain_action_review(
                     "message": "The root Community Domain node is controlled by the domain lifecycle, not node status reviews.",
                 },
             )
+        _reject_non_text_node_status_payload_fields(payload)
         _ensure_node_status_review_target_matches(
             node=node,
             target_type=row.target_type,
@@ -21994,17 +22301,10 @@ def apply_community_domain_action_review(
             review_payload=payload,
         )
 
-        requested_status = _clean_role(
-            str(payload.get("new_status") or payload.get("status") or "")
+        requested_status = _normalize_node_status_value(
+            _requested_node_status(payload),
+            default="",
         )
-        if requested_status not in NODE_STATUS_VALUES:
-            raise HTTPException(
-                status_code=422,
-                detail={
-                    "code": "community_domain_node_status_invalid",
-                    "message": "Node status must be active, inactive, or archived.",
-                },
-            )
 
         parent_node = _get_node_or_404(
             db,
