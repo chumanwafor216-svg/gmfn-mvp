@@ -915,7 +915,7 @@ export default function SystemOperationsPage() {
     if (bankRecent.length > 0) {
       return {
         detail:
-          "The live admin queues look calm right now. Use the route cards below only if you need deeper investigation.",
+          "The live admin queues look calm right now. Open a deeper admin page only if you need more investigation.",
       };
     }
 
@@ -1141,7 +1141,7 @@ export default function SystemOperationsPage() {
         label="How to use this"
         what="This page gathers the live admin pressure in one place."
         why="It helps you act on the strongest signal first."
-        next="Read what matters now, then open the route that matches the work."
+        next="Read what matters now, then open the page that matches the work."
         tone="light"
       />
 
@@ -1218,7 +1218,7 @@ export default function SystemOperationsPage() {
           label="Focus"
           what="The strongest signal is shown first."
           why="Not every queue deserves the same urgency."
-          next="Confirm the numbers below, then move into the matching route."
+          next="Confirm the numbers below, then move into the matching page."
           tone="light"
           style={{ marginTop: 14 }}
         />
@@ -2014,7 +2014,7 @@ export default function SystemOperationsPage() {
           }}
         >
           <div>
-            {sectionLabelWithIcon("navigation", "Next routes", "blue")}
+            {sectionLabelWithIcon("navigation", "Next pages", "blue")}
             <div style={{ marginTop: 8, ...helperText() }}>
               Open the page that matches the active work.
             </div>

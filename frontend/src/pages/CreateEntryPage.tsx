@@ -3036,7 +3036,7 @@ export default function CreateEntryPage() {
       safeStr(
         out?.detail ||
           out?.message ||
-          "GSN could not determine the next route after creating this community. Please retry this step so the app can continue the journey properly."
+          "GSN could not determine the next page after creating this community. Please retry this step so the app can continue the journey properly."
       )
     );
   }

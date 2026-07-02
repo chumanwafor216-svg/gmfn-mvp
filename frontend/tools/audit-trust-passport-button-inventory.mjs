@@ -196,7 +196,7 @@ assertContains(
 );
 
 assertContains(
-  /const \[showIdentityCompletionPaths, setShowIdentityCompletionPaths\][\s\S]*?identityCompletionRows[\s\S]*?trust-score\.completion\.phone[\s\S]*?trust-score\.completion\.community[\s\S]*?trust-score\.completion\.bank[\s\S]*?trust-score\.completion\.passport[\s\S]*?setShowIdentityCompletionPaths\(\(open\) => !open\)[\s\S]*?Only real completion routes open[\s\S]*?debugId=\{item\.debugId\}/,
+  /const \[showIdentityCompletionPaths, setShowIdentityCompletionPaths\][\s\S]*?identityCompletionRows[\s\S]*?trust-score\.completion\.phone[\s\S]*?trust-score\.completion\.community[\s\S]*?trust-score\.completion\.bank[\s\S]*?trust-score\.completion\.passport[\s\S]*?setShowIdentityCompletionPaths\(\(open\) => !open\)[\s\S]*?Only ready completion pages open[\s\S]*?debugId=\{item\.debugId\}/,
   "Trust Passport Complete ID checks must open a compact completion-path chooser instead of routing directly to the explanatory Identity / CCI page."
 );
 

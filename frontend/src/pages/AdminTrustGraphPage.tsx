@@ -1292,7 +1292,7 @@ export default function AdminTrustGraphPage() {
           }}
         >
           <div>
-            <div>{sectionLabelWithIcon("navigation", "Next routes")}</div>
+            <div>{sectionLabelWithIcon("navigation", "Next pages")}</div>
             <div style={{ marginTop: 8, ...helperText() }}>
               Move from structural reading into the next admin page you need.
             </div>

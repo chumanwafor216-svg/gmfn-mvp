@@ -61,13 +61,13 @@ assertContains(
 
 assertContains(
   "paymentRails",
-  /what="This screen gives you a read-only picture[\s\S]*?next="Read the current rail picture here, then return to the guided Money In or Money Out route/,
-  "Payment Rails explanation must continue telling users to return to guided Money In or Money Out routes."
+  /what="This screen gives you a read-only picture[\s\S]*?next="Read the current rail picture here, then return to the guided Money In or Money Out page/,
+  "Payment Rails explanation must continue telling users to return to guided Money In or Money Out pages."
 );
 
 assertContains(
   "paymentRails",
-  /Rail status is not payment approval, settlement confirmation, or evidence that money moved; action should still happen on the guided Money In and Money Out routes\./,
+  /Rail status is not payment approval, settlement confirmation, or evidence that money moved; action should still happen on the guided Money In and Money Out pages\./,
   "Payment Rails must separate visible rail status from payment approval, settlement confirmation, or money movement."
 );
 

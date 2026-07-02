@@ -774,7 +774,7 @@ export default function RevenueAllocationPage() {
     const text = buildGsnSnapshotPaper({
       title: "GSN Revenue Allocation Review Summary",
       purpose:
-        "Internal review summary for how one support item allocates visible service, platform, supporter, and net-disbursed figures.",
+        "Protected review summary for how one support item allocates visible service, platform, supporter, and net-disbursed figures.",
       reference: allocation.loanId ? `support-${allocation.loanId}` : "revenue-allocation",
       context: [
         { label: "Community", value: communityLabel },
@@ -789,7 +789,7 @@ export default function RevenueAllocationPage() {
         "Reader boundary: this is allocation review evidence only. It does not confirm payout, prove disbursement, settle exposure, or authorize release of goods, credit, or money.",
       ],
       privacyNote:
-        "Privacy: private bank details, private supporter contacts, raw ledger metadata, and complete admin records are not included in this copied allocation paper.",
+        "Privacy: private bank details, private supporter contacts, protected ledger details, and complete admin records are not included in this copied allocation paper.",
       limitationNote:
         "Limitation: internal allocation summary only. Not a receipt, bank guarantee, payout approval, payment confirmation, disbursement proof, or release authority.",
     });
@@ -1369,7 +1369,7 @@ export default function RevenueAllocationPage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Next support routes</div>
+            <div style={sectionLabel()}>Next support steps</div>
             <div style={{ marginTop: 8, ...helperText() }}>
               Move from allocation reading into the next support or finance page you need.
             </div>

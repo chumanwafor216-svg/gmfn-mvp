@@ -188,7 +188,7 @@ function buildLoanSnapshot(loan: any): string {
   return buildGsnSnapshotPaper({
     title: "GSN Incomplete Support Review Snapshot",
     purpose:
-      "Internal review snapshot for one incomplete support item needing admin attention.",
+      "Protected review snapshot for one incomplete support item needing admin attention.",
     reference: `support-${safeStr(loan?.loan_id || loan?.id || "pending")}`,
     context: [
       { label: "Support item", value: safeStr(loan?.loan_id || loan?.id || "-") },
@@ -208,12 +208,12 @@ function buildLoanSnapshot(loan: any): string {
       `Locked support coverage: ${fmtMoney(loan?.locked_coverage ?? 0)}`,
       `Coverage gap: ${fmtMoney(loan?.required_gap ?? 0)}`,
       `Time remaining: ${formatRemaining(loan?.auto_cancel_remaining_seconds)}`,
-      "Reader boundary: this is internal support review evidence. It does not approve support, settle exposure, confirm payment, or authorize release of goods or money.",
+      "Reader boundary: this is protected support review evidence. It does not approve support, settle exposure, confirm payment, or authorize release of goods or money.",
     ],
     privacyNote:
-      "Privacy: private borrower contact details, supporter contacts, bank details, raw metadata, and internal notes are not included in this copied review paper.",
+      "Privacy: private borrower contact details, supporter contacts, bank details, protected support details, and protected notes are not included in this copied review paper.",
     limitationNote:
-      "Limitation: internal admin review snapshot only. Not a credit approval, disbursement instruction, payout approval, receipt, or release authority.",
+      "Limitation: protected admin review snapshot only. Not a credit approval, disbursement instruction, payout approval, receipt, or release authority.",
   });
 }
 
@@ -356,7 +356,7 @@ export default function AdminIncompleteLoansPage() {
     const snapshot = buildGsnSnapshotPaper({
       title: "GSN Incomplete Support Queue Snapshot",
       purpose:
-        "Internal queue snapshot for support items that need admin attention.",
+        "Protected queue snapshot for support items that need admin attention.",
       reference: `incomplete-support-${selectedClanId || "community"}`,
       context: [
         { label: "Community", value: communityLabel },
@@ -375,12 +375,12 @@ export default function AdminIncompleteLoansPage() {
           return `Support ${supportId}: ${fmtMoney(loan?.required_gap ?? 0)} gap, ${formatRemaining(loan?.auto_cancel_remaining_seconds)}, ${safeStr(loan?.status || "incomplete")}`;
         }),
         rows.length > 8 ? `Additional hidden rows: ${rows.length - 8}` : "",
-        "Reader boundary: this is internal queue evidence. It does not approve support, settle exposure, confirm payment, or authorize release of goods or money.",
+        "Reader boundary: this is protected queue evidence. It does not approve support, settle exposure, confirm payment, or authorize release of goods or money.",
       ],
       privacyNote:
-        "Privacy: private borrower contact details, supporter contacts, bank details, raw metadata, and internal notes are not included in this copied queue paper.",
+        "Privacy: private borrower contact details, supporter contacts, bank details, protected support details, and protected notes are not included in this copied queue paper.",
       limitationNote:
-        "Limitation: internal admin review queue only. Not a credit approval, disbursement instruction, payout approval, receipt, or release authority.",
+        "Limitation: protected admin review queue only. Not a credit approval, disbursement instruction, payout approval, receipt, or release authority.",
     });
 
     void copyText(snapshot, "Incomplete support queue snapshot copied.", "Clipboard is not available here.");

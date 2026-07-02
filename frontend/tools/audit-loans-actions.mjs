@@ -197,6 +197,33 @@ assertContains(
 );
 
 assertContains(
+  "src/pages/RepaymentPage.tsx",
+  /You are on repayment[\s\S]*?Payment step status[\s\S]*?Current payment actions[\s\S]*?Keep this payment focused[\s\S]*?Payment focus[\s\S]*?Next pages[\s\S]*?Finish this repayment before moving somewhere else\./,
+  "Repayment page must describe the user's payment step in plain language instead of visible route-state wording."
+);
+
+assertNotContains(
+  "src/pages/RepaymentPage.tsx",
+  /Current page:|Current route state|Current route actions|Keep the route focused|keep this route focused|declared on this route|this route does not confirm|Loading the repayment route|Loading repayment route|Route focus|Next routes|moving to another route/,
+  "Repayment page must not expose route-state wording in user-facing payment guidance."
+);
+
+[
+  "src/pages/GuarantorInboxPage.tsx",
+  "src/pages/GuarantorEarningsPage.tsx",
+  "src/pages/LoanReadinessPage.tsx",
+  "src/pages/LoanSuggestionsPage.tsx",
+  "src/pages/LoanWorkbenchPage.tsx",
+  "src/pages/LoanSummaryPage.tsx",
+].forEach((file) => {
+  assertNotContains(
+    file,
+    /Next routes|Next support routes|next routes below|next-routes|next route|Money Out route|money route|halfway between routes|support route should not continue|trust analytics review route/,
+    "Support pages must describe next pages or support steps, not route mechanics."
+  );
+});
+
+assertContains(
   "src/lib/api.ts",
   /export async function createRepaymentClaim[\s\S]*?\/loans\/\$\{encodeURIComponent\(String\(loanId\)\)\}\/repayment-claim[\s\S]*?payment_reference: String\(payload\.payment_reference \|\| ""\)\.trim\(\)/,
   "Frontend API must expose the borrower repayment-claim endpoint used by RepaymentPage."
@@ -232,10 +259,16 @@ assertContains(
   "Community money loan repayment instruction titles must use support wording."
 );
 
+assertContains(
+  "src/lib/communityMoney.ts",
+  /"Approved Support Withdrawal Instruction"/,
+  "Community money withdrawal instruction titles must use support wording."
+);
+
 assertNotContains(
   "src/lib/communityMoney.ts",
-  /Generated Loan Repayment Instruction/,
-  "Community money repayment instruction titles must not restore generic loan wording."
+  /Generated Loan Repayment Instruction|Approved Loan Withdrawal Instruction|Route loaded\./,
+  "Community money repayment and withdrawal instruction titles must not restore generic loan wording."
 );
 
 assertContains(

@@ -42,8 +42,8 @@ const findings = [];
 
 assertNotContains(
   "src/components/RequireAuth.tsx",
-  /<Navigate\s+to="\/cover"\s+replace\s*\/>/,
-  "Protected auth failures must not dump testers to the public cover page."
+  /<Navigate\s+to="\/cover"\s+replace\s*\/>|This route needs|Requested route|This route is protected/,
+  "Protected auth failures must not dump testers to the public cover page or expose route wording in recovery copy."
 );
 
 assertContains(

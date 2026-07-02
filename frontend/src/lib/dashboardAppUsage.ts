@@ -217,7 +217,7 @@ export function getDashboardAppUsageEntryFromLocation(
     return {
       key: "money-out",
       label: "Money Out",
-      detail: "Open the clean money-out route.",
+      detail: "Open the Money Out page.",
       to: "/app/withdrawal-instructions",
     };
   }

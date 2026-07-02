@@ -63,12 +63,12 @@ const memberRoutes: SmokeRoute[] = [
   {
     to: "/app/shop-control",
     label: "Shop Control",
-    note: "Confirm free and paid spotlight tools both load, and the current live spotlight block reflects backend truth.",
+    note: "Confirm free and paid spotlight tools both load, and the current live spotlight block reflects the live service record.",
   },
   {
     to: "/app/shop",
     label: "Shop Alias",
-    note: "Should redirect into the live shop control route without dropping route context.",
+    note: "Should redirect into the live Shop Control page without dropping the starting context.",
   },
   {
     to: "/app/open-shop",

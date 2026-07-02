@@ -50,7 +50,7 @@ export function buildTrustDocumentUseCaseItems(
       question: "What short record can I carry out without carrying the whole story?",
       title: "Carry TrustSlip",
       detail:
-        "Use the portable record when the goal is to share a concise outward-facing reading with code, expiry, and a verify route.",
+        "Use the portable record when the goal is to share a concise outward-facing reading with code, expiry, and a verification link.",
       ...mapFamilyItem(byId.get("trust-slip")),
       active: activeId === "trust-slip",
     },

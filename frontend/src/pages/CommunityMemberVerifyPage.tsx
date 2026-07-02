@@ -9,10 +9,12 @@ import {
   TrustPaperSecurityNote,
   TrustPaperSecurityFooter,
   TrustPaperWatermark,
+  TrustPaperWatermarkField,
 } from "../components/TrustPaperMarks";
 import {
   TrustDocumentBoundaryPanel,
   TrustDocumentConfidenceRibbon,
+  TrustDocumentDisclosureSection,
   TrustDocumentFingerprint,
   TrustDocumentSecurityPanel,
   type TrustDocumentPanelItem,
@@ -83,8 +85,8 @@ function publicVerificationErrorMessage(error: any): string {
     lower.includes("select ")
   ) {
     return (
-      "This public credential check is temporarily unavailable on this server. " +
-      "GSN needs to refresh the server database setup before this check can run."
+      "This public credential check is temporarily unavailable. " +
+      "GSN needs to refresh the public credential setup before this check can run."
     );
   }
   return message || "This membership credential could not be loaded.";
@@ -605,6 +607,10 @@ export default function CommunityMemberVerifyPage() {
           opacity={0.045}
           size={260}
         />
+        <TrustPaperWatermarkField
+          names={["shield", "id", "qr", "document"]}
+          opacity={0.026}
+        />
 
         <div
           style={{
@@ -732,7 +738,7 @@ export default function CommunityMemberVerifyPage() {
                 data-gsn-trust-document-certificate="community-member-credential"
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "minmax(0, 1fr) minmax(240px, 0.74fr)",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))",
                   gap: 12,
                   alignItems: "start",
                 }}
@@ -777,40 +783,43 @@ export default function CommunityMemberVerifyPage() {
                     </p>
                   </div>
                 </div>
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))",
-                    gap: 8,
-                    marginTop: 12,
-                  }}
-                >
-                  {memberReading.map((item) => (
-                    <CredentialReadingCard
-                      key={item.title}
-                      title={item.title}
-                      body={item.body}
-                      tone={item.tone}
-                    />
-                  ))}
+                <div style={{ marginTop: 12 }}>
+                  <TrustDocumentDisclosureSection
+                    title="Full public reading"
+                    summary="Open for currentness, evidence, and decision guidance."
+                  >
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns:
+                          "repeat(auto-fit, minmax(min(100%, 240px), 1fr))",
+                        gap: 8,
+                      }}
+                    >
+                      {memberReading.map((item) => (
+                        <CredentialReadingCard
+                          key={item.title}
+                          title={item.title}
+                          body={item.body}
+                          tone={item.tone}
+                        />
+                      ))}
+                    </div>
+                  </TrustDocumentDisclosureSection>
                 </div>
               </div>
 
               <div
+                data-gsn-member-credential-primary-facts="true"
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 190px), 1fr))",
                   gap: 10,
                 }}
               >
-                {fact("Member", firstTruthy(credential.member_display_name, "GSN member"))}
                 {fact("Member GSN ID", memberAnchor)}
-                {fact("Community", firstTruthy(credential.community_name, "Community not shown"))}
                 {fact("Community ID", communityAnchor)}
-                {fact("Role", firstTruthy(credential.membership_role, "member"))}
                 {fact("Status", firstTruthy(credential.membership_status, "active"))}
-                {fact("Community record", communityRecordCurrentnessLabel)}
-                {fact("Affiliate status", firstTruthy(credential.official_affiliate_label, "No parent-domain claim"))}
                 {fact(
                   "Witness strength",
                   firstTruthy(
@@ -818,74 +827,104 @@ export default function CommunityMemberVerifyPage() {
                     "Joined / witness not started"
                   )
                 )}
-                {fact("Member witnesses", witnessCount)}
-                {fact("Activity events", activityCount)}
-                {fact("Latest activity", dateLabel(credential.community_activity_latest_at))}
-                {fact("Renewal", firstTruthy(credential.membership_renewal_status_label, "Not Started"))}
-                {fact("Valid until", dateLabel(credential.membership_valid_until))}
-                {fact("Next witness renewal", dateLabel(credential.next_witness_renewal_at))}
-                {fact(
-                  "Next witness status",
-                  firstTruthy(credential.next_witness_renewal_status_label, "Not Started")
-                )}
               </div>
 
-              <div style={innerCard("#F8FBFF")}>
-                <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
-                  {evidenceIcon("records-folder", "navy")}
-                  <div>
-                    <div style={{ color: "#07172C", fontSize: 18, fontWeight: 1000 }}>
-                      Community activity evidence
+              <TrustDocumentDisclosureSection
+                title="All credential facts"
+                summary="Open for role, renewal, activity, and currentness facts."
+              >
+                <div
+                  data-gsn-member-credential-secondary-facts="true"
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 190px), 1fr))",
+                    gap: 10,
+                  }}
+                >
+                  {fact("Member", firstTruthy(credential.member_display_name, "GSN member"))}
+                  {fact("Community", firstTruthy(credential.community_name, "Community not shown"))}
+                  {fact("Role", firstTruthy(credential.membership_role, "member"))}
+                  {fact("Community record", communityRecordCurrentnessLabel)}
+                  {fact(
+                    "Affiliate status",
+                    firstTruthy(credential.official_affiliate_label, "No parent-domain claim")
+                  )}
+                  {fact("Member witnesses", witnessCount)}
+                  {fact("Activity events", activityCount)}
+                  {fact("Latest activity", dateLabel(credential.community_activity_latest_at))}
+                  {fact("Renewal", firstTruthy(credential.membership_renewal_status_label, "Not Started"))}
+                  {fact("Valid until", dateLabel(credential.membership_valid_until))}
+                  {fact("Next witness renewal", dateLabel(credential.next_witness_renewal_at))}
+                  {fact(
+                    "Next witness status",
+                    firstTruthy(credential.next_witness_renewal_status_label, "Not Started")
+                  )}
+                </div>
+              </TrustDocumentDisclosureSection>
+
+              <TrustDocumentDisclosureSection
+                title="Evidence notes and privacy"
+                summary="Open for activity summary, evidence scope, and private-data boundary."
+              >
+                <div style={{ display: "grid", gap: 10 }}>
+                  <div style={innerCard("#F8FBFF")}>
+                    <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+                      {evidenceIcon("records-folder", "navy")}
+                      <div>
+                        <div style={{ color: "#07172C", fontSize: 18, fontWeight: 1000 }}>
+                          Community activity evidence
+                        </div>
+                        <p style={{ margin: "7px 0 0", ...helperText() }}>
+                          {firstTruthy(
+                            credential.community_activity_label,
+                            "No community activity recorded yet"
+                          )}
+                          {credential.community_activity_categories?.length
+                            ? `: ${credential.community_activity_categories.join(", ")}.`
+                            : "."}
+                        </p>
+                        <p style={{ margin: "7px 0 0", ...helperText() }}>
+                          This is a broad activity summary for this community only. Private event
+                          details are not shown.
+                        </p>
+                      </div>
                     </div>
-                    <p style={{ margin: "7px 0 0", ...helperText() }}>
+                  </div>
+
+                  <div style={innerCard("#F8FBFF")}>
+                    <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+                      {evidenceIcon("trust-shield", "green")}
+                      <div>
+                        <div style={{ color: "#07172C", fontSize: 18, fontWeight: 1000 }}>
+                          What this shows
+                        </div>
+                        <p style={{ margin: "7px 0 0", ...helperText() }}>
+                          {firstTruthy(
+                            credential.evidence_scope,
+                            credential.proof_scope,
+                            "This shows an active membership record and aggregate witness strength only."
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={innerCard("#FFFFFF")}>
+                    <p style={helperText()}>
                       {firstTruthy(
-                        credential.community_activity_label,
-                        "No community activity recorded yet"
+                        credential.privacy_note,
+                        "Private verifier names and private member contact details are not shown."
                       )}
-                      {credential.community_activity_categories?.length
-                        ? `: ${credential.community_activity_categories.join(", ")}.`
-                        : "."}
                     </p>
-                    <p style={{ margin: "7px 0 0", ...helperText() }}>
-                      This is a broad activity summary for this community only. Private event
-                      details are not shown.
+                    <p style={{ margin: "8px 0 0", ...helperText() }}>
+                      {firstTruthy(
+                        credential.decision_note,
+                        "Use this as membership evidence, not as a guarantee or automatic transaction approval."
+                      )}
                     </p>
                   </div>
                 </div>
-              </div>
-
-              <div style={innerCard("#F8FBFF")}>
-                <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
-                  {evidenceIcon("trust-shield", "green")}
-                  <div>
-                    <div style={{ color: "#07172C", fontSize: 18, fontWeight: 1000 }}>
-                      What this shows
-                    </div>
-                    <p style={{ margin: "7px 0 0", ...helperText() }}>
-                      {firstTruthy(
-                        credential.evidence_scope,
-                        credential.proof_scope,
-                        "This shows an active membership record and aggregate witness strength only."
-                      )}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div style={innerCard("#FFFFFF")}>
-                <p style={helperText()}>
-                  {firstTruthy(
-                    credential.privacy_note,
-                    "Private verifier names and private member contact details are not shown."
-                  )}
-                </p>
-                <p style={{ margin: "8px 0 0", ...helperText() }}>
-                  {firstTruthy(
-                    credential.decision_note,
-                    "Use this as membership evidence, not as a guarantee or automatic transaction approval."
-                  )}
-                </p>
-              </div>
+              </TrustDocumentDisclosureSection>
 
               <div
                 style={{

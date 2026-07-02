@@ -395,8 +395,8 @@ export default function GuarantorLeaderboardPage() {
                 {loading ? "Loading records" : "No supporter records yet"}
               </div>
               <div style={helperText()}>
-                Approved support activity will appear here when the backend returns
-                community supporter rows.
+                Approved support activity will appear here when community supporter
+                records are available.
               </div>
             </div>
           </div>

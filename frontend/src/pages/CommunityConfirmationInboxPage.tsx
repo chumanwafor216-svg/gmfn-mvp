@@ -603,7 +603,7 @@ function buildReviewCasePaper(row: ReviewCaseRow): string {
   return buildGsnSnapshotPaper({
     title: "GSN Community Confirmation Review Case",
     purpose:
-      "Internal review summary for a community-confirmation case. Use it to coordinate review without exposing private contacts.",
+      "Protected review summary for a community-confirmation case. Use it to coordinate review without exposing private contacts.",
     reference: `review-case-${row.reviewCaseId}`,
     context: [
       { label: "Review case", value: row.reviewCaseId },
@@ -617,12 +617,12 @@ function buildReviewCasePaper(row: ReviewCaseRow): string {
     bodyLines: [
       `Visible outcome: ${firstTruthy(row.visibleOutcome, "not shown")}`,
       `Trust-reading effect: ${reviewTrustLabel(row)}`,
-      "Reader boundary: this is internal GSN/community review evidence. It is not a public certificate, parent-domain approval, membership guarantee, or transaction authority.",
+      "Reader boundary: this is protected GSN/community review evidence. It is not a public certificate, parent-domain approval, membership guarantee, or transaction authority.",
     ],
     privacyNote:
-      "Privacy: private contacts, responder notes, phone numbers, and raw witness details are not included in this copied review paper.",
+      "Privacy: private contacts, responder notes, phone numbers, and protected witness details are not included in this copied review paper.",
     limitationNote:
-      "Limitation: internal review coordination only. Not a bank guarantee, credit approval, release authority, payout approval, or proof that every underlying claim is true.",
+      "Limitation: protected review coordination only. Not a bank guarantee, credit approval, release authority, payout approval, or proof that every underlying claim is true.",
   });
 }
 
@@ -749,7 +749,7 @@ function CommunityConfirmationInboxPage() {
     return buildGsnSnapshotPaper({
       title: "GSN Community Confirmation Review Queue",
       purpose:
-        "Internal queue summary for community confirmation and controlled-review work.",
+        "Protected queue summary for community confirmation and controlled-review work.",
       reference: `community-confirmation-queue-${reviewOffset}`,
       context: [
         { label: "Pending requests", value: pendingCount },
@@ -760,12 +760,12 @@ function CommunityConfirmationInboxPage() {
       ],
       bodyLines: [
         "Reader boundary: queue visibility is for allowed GSN/community reviewers.",
-        "Public papers must keep private contacts, responder notes, and raw witness details protected.",
+        "Public papers must keep private contacts, responder notes, and protected witness details private.",
       ],
       privacyNote:
-        "Privacy: this copied queue summary excludes private contacts, phone numbers, responder notes, and raw witness details.",
+        "Privacy: this copied queue summary excludes private contacts, phone numbers, responder notes, and protected witness details.",
       limitationNote:
-        "Limitation: internal review coordination only. Not public verification, parent-domain approval, payment confirmation, or transaction release authority.",
+        "Limitation: protected review coordination only. Not public verification, parent-domain approval, payment confirmation, or transaction release authority.",
     });
   }, [
     currentUserRole,
@@ -1089,7 +1089,7 @@ function CommunityConfirmationInboxPage() {
       }));
       setNotice({
         tone: "success",
-        text: "Review evidence added. It stays internal to GSN review.",
+        text: "Review evidence added. It stays protected inside GSN review.",
       });
       await loadReviewEvidence(row);
     } catch {
@@ -1904,7 +1904,7 @@ function CommunityConfirmationInboxPage() {
                     </StableDisclosureSummary>
                     <div style={{ marginTop: 12, display: "grid", gap: 12 }}>
                       <p style={{ margin: 0, ...helperText() }}>
-                        Assign a reviewer for the next action. GSN records it internally and keeps private contacts protected.
+                        Assign a reviewer for the next action. GSN records it for review and keeps private contacts protected.
                       </p>
                       <div
                         style={{
@@ -1933,7 +1933,7 @@ function CommunityConfirmationInboxPage() {
                                 note: event.target.value,
                               })
                             }
-                            placeholder="Short internal reason for claiming, assigning, or releasing this case."
+                            placeholder="Short review reason for claiming, assigning, or releasing this case."
                             rows={3}
                             maxLength={500}
                             style={{
@@ -2049,7 +2049,7 @@ function CommunityConfirmationInboxPage() {
                       }}
                     >
                       <span>
-                        {sectionLabelWithIcon("document", "Internal evidence")}
+                        {sectionLabelWithIcon("document", "Protected evidence")}
                         <span style={{ marginLeft: 8, ...pillStyle("neutral") }}>
                           {(reviewEvidence[row.reviewCaseId] || []).length}
                         </span>
@@ -2112,7 +2112,7 @@ function CommunityConfirmationInboxPage() {
                         </div>
                       ) : (
                         <div style={innerCard("#F8FBFF")}>
-                          No internal evidence loaded for this case yet.
+                          No protected evidence loaded for this case yet.
                         </div>
                       )}
                       <div
@@ -2194,7 +2194,7 @@ function CommunityConfirmationInboxPage() {
                         />
                       </label>
                       <label style={{ display: "grid", gap: 6, ...helperText(), color: "#07172C" }}>
-                        Optional internal reference
+                        Optional review reference
                         <input
                           value={evidenceDraftForReview(row).externalRef}
                           onChange={(event) =>
@@ -2202,7 +2202,7 @@ function CommunityConfirmationInboxPage() {
                               externalRef: event.target.value,
                             })
                           }
-                          placeholder="Internal note ID, ticket, or source reference"
+                          placeholder="Review note ID, ticket, or source reference"
                           maxLength={160}
                           style={{
                             minHeight: 46,

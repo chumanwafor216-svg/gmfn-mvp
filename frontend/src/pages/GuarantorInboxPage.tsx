@@ -738,7 +738,7 @@ export default function GuarantorInboxPage() {
             ? "One support request is waiting on you."
             : `${counts.pending} support requests are waiting on you.`,
         detail:
-          "This queue is only the intake page. Once you choose to continue, the deeper workbench should take over instead of leaving you halfway between routes.",
+          "This queue is only the intake page. Once you choose to continue, the deeper workbench should take over instead of leaving you halfway between pages.",
         ctaLabel: "Open Support Workbench",
         ctaTo: routes.workbench,
       };
@@ -1063,10 +1063,10 @@ export default function GuarantorInboxPage() {
 
             <div style={{ marginTop: 12 }}>
               <div style={innerCard("#F8FBFF")}>
-                <div style={sectionLabel()}>Use next routes below</div>
+                <div style={sectionLabel()}>Use next pages below</div>
                 <div style={{ marginTop: 8, ...helperText(), color: "#F8FBFF" }}>
                   Keep this top area focused on the current queue reading. Use
-                  the next-routes section below when you are ready to continue
+                  the next-pages section below when you are ready to continue
                   into the deeper support page.
                 </div>
               </div>
@@ -1511,7 +1511,7 @@ export default function GuarantorInboxPage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Next routes</div>
+            <div style={sectionLabel()}>Next pages</div>
             <div style={{ marginTop: 8, ...helperText() }}>
               Move from queue reading into the next page you need.
             </div>

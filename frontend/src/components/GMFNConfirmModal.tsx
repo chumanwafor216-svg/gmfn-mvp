@@ -105,11 +105,11 @@ export default function GMFNConfirmModal({
           style={input}
         />
 
-        <label style={label}>Internal note (optional)</label>
+        <label style={label}>Team note (optional)</label>
         <textarea
           value={note}
           onChange={(e) => setNote(e.target.value)}
-          placeholder="Internal note (audit trail)"
+          placeholder="Team note for the record"
           style={{ ...input, height: 70 }}
         />
 

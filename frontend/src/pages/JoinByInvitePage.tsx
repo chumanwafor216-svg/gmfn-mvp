@@ -559,7 +559,7 @@ export default function JoinByInvitePage() {
 
               <div style={{ marginTop: 12, ...helperText() }}>
                 This invite does not create membership immediately. It moves you
-                into the guided public route so the entry path stays clear and
+                into the guided public entry so the entry path stays clear and
                 controlled.
               </div>
 

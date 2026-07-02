@@ -360,7 +360,7 @@ function expectedPaymentState(item: ExpectedPaymentRecord): string {
 function expectedPaymentNextAction(item: ExpectedPaymentRecord): string {
   const state = expectedPaymentState(item);
   if (state === "Finance confirmed") {
-    return "Finance shows this payment as confirmed; use the related service only where its route says it is available.";
+    return "Finance shows this payment as confirmed; use the related service only where its page says it is available.";
   }
   if (state === "Bank match found") {
     return "Waiting for finance reconciliation.";

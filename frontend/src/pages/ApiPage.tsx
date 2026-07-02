@@ -89,7 +89,7 @@ export default function ApiPage() {
         list.sort((a, b) => a.path.localeCompare(b.path));
         setRows(list);
       } catch (e: any) {
-        setErr(e?.message || "Could not load the service route list.");
+        setErr(e?.message || "Could not load the service list.");
         setRows([]);
       } finally {
         setLoading(false);
@@ -111,9 +111,9 @@ export default function ApiPage() {
 
   return (
     <div style={{ padding: 16 }}>
-      <h2>Service Routes</h2>
+      <h2>Service Directory</h2>
       <p style={{ color: "#6b7280" }}>
-        Available GSN service routes for support and verification checks.
+        Available GSN service paths for support and verification checks.
       </p>
 
       <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 12 }}>
@@ -127,7 +127,7 @@ export default function ApiPage() {
           <b>Session:</b> {tokenPresent ? "present" : "missing"}
         </div>
         <div>
-          <b>Routes:</b> {rows.length}
+          <b>Paths:</b> {rows.length}
         </div>
       </div>
 
@@ -135,7 +135,7 @@ export default function ApiPage() {
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="Search routes, for example loans, trust, invites"
+          placeholder="Search services, for example loans, trust, invites"
           style={{ width: 420, maxWidth: "100%", padding: 8 }}
         />
         <StableCtaLink
@@ -149,7 +149,7 @@ export default function ApiPage() {
           }}
         >
           <GsnLegacyIcon name="document" size={26} />
-          Route guide
+          Service guide
         </StableCtaLink>
         <StableCtaLink
           to="/api/openapi.json"
@@ -162,7 +162,7 @@ export default function ApiPage() {
           }}
         >
           <GsnLegacyIcon name="navigation" size={26} />
-          Route file
+          Service file
         </StableCtaLink>
       </div>
 
@@ -214,7 +214,7 @@ export default function ApiPage() {
             {filtered.length === 0 && (
               <tr>
                 <td colSpan={2} style={{ padding: 8 }}>
-                  No routes match your search.
+                  No service paths match your search.
                 </td>
               </tr>
             )}

@@ -51,13 +51,22 @@ const entryPages = [
   "src/pages/JoinRequestPendingPage.tsx",
   "src/pages/JoinApprovalPage.tsx",
   "src/pages/MemberActivationPage.tsx",
+  "src/pages/ActivateMembershipPage.tsx",
 ];
 
 entryPages.forEach((file) => {
   assertVisibleStringsDoNotContain(
     file,
-    /\b(?:MVP|payload|endpoint|internal|module|configuration|backend)\b/i,
+    /\b(?:MVP|payload|endpoint|internal|module|configuration|backend|access token)\b/i,
     "Normal entry strings must not expose builder or backend language."
+  );
+});
+
+entryPages.forEach((file) => {
+  assertVisibleStringsDoNotContain(
+    file,
+    /\b(?:wrong route|next route|route you need|raw GSN ID|session token)\b/i,
+    "Normal entry strings must describe pages, steps, and GSN IDs without route/raw wording."
   );
 });
 
@@ -91,10 +100,22 @@ assertVisibleStringsDoNotContain(
   "Sign In session recovery copy must not expose builder-facing service language."
 );
 
+assertVisibleStringsDoNotContain(
+  "src/pages/JoinByInvitePage.tsx",
+  /\bguided public route\b/i,
+  "Join-by-invite public copy must call the next step an entry, not a route."
+);
+
+assertVisibleStringsDoNotContain(
+  "src/pages/InviteLandingPage.tsx",
+  /\bfounder create route\b/i,
+  "Invite landing copy must describe founder creation in user terms, not route language."
+);
+
 assertContains(
   "src/pages/CreateEntryPage.tsx",
   /buildActionBlockedMessage[\s\S]*?showError\(feedbackTargetForFinish[\s\S]*?buildActionSuccessMessage[\s\S]*?Opening First Circle now/,
-  "Create Community must explain blockers and show a success handoff before the next route."
+  "Create Community must explain blockers and show a success handoff before the next page."
 );
 
 assertContains(
@@ -125,6 +146,12 @@ assertContains(
   "src/pages/MemberActivationPage.tsx",
   /Membership activated\. Verify this phone next[\s\S]*?Membership activated successfully\. Build your First Circle next[\s\S]*?debugId="member-activation\.notice-action"[\s\S]*?member-activation\.verify-phone[\s\S]*?member-activation\.build-first-circle/,
   "Member Activation must answer success visibly, send unverified members to phone verification, and preserve First Circle as the next community-growth step after verification."
+);
+
+assertContains(
+  "src/pages/ActivateMembershipPage.tsx",
+  /Activation completed, but your signed-in session did not start\. Please sign in again\./,
+  "Activation fallback errors must explain session start failure without exposing token language."
 );
 
 if (findings.length > 0) {

@@ -515,7 +515,7 @@ export default function JoinApprovalPage() {
         <ExplainToggle
           label="What this does"
           what="This approval status block keeps the outcome of your join request visible before you move into the next public step."
-          why="It helps you understand whether entry was approved, rejected, or still unresolved without guessing from the route alone."
+          why="It helps you understand whether entry was approved, rejected, or still unresolved without guessing from the page alone."
           next="Read the status here first, then use the next action the page gives you."
           tone="dark"
           style={{ marginTop: 14 }}

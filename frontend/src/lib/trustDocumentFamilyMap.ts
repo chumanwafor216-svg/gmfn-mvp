@@ -29,7 +29,7 @@ export function buildTrustDocumentFamilyItems(
       label: "Cross-community reading",
       title: "Cross-community consistency",
       detail:
-        "This is the narrower cross-community consistency read. It helps you see how visible trust behaviour looks outside one immediate community. CCI is the internal label.",
+        "This is the narrower cross-community consistency read. It helps you see how visible trust behaviour looks outside one immediate community. CCI is the short label.",
       to: isAppRoute ? "/app/cci-reading" : undefined,
       disabled: !isAppRoute,
       disabledReason: !isAppRoute
@@ -53,7 +53,7 @@ export function buildTrustDocumentFamilyItems(
       label: "Portable record",
       title: "TrustSlip",
       detail:
-        "TrustSlip is the portable trust document. It carries the outward-facing trust summary, code, expiry, and verify route in one shareable surface.",
+        "TrustSlip is the portable trust document. It carries the outward-facing trust summary, code, expiry, and verification link in one shareable surface.",
       to: isAppRoute ? "/app/trust-slip" : undefined,
       disabled: !isAppRoute,
       disabledReason: !isAppRoute
@@ -69,7 +69,7 @@ export function buildTrustDocumentFamilyItems(
       to: isAppRoute ? "/app/trust-slip/verify" : undefined,
       disabled: !isAppRoute,
       disabledReason: !isAppRoute
-        ? "TrustSlip Verify needs a live TrustSlip code or the signed-in app route."
+        ? "TrustSlip Verify needs a live TrustSlip code or the signed-in app page."
         : undefined,
     },
   ];

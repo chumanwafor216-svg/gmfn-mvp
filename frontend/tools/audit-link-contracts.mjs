@@ -803,8 +803,8 @@ assertContains(
 
 assertContains(
   "src/pages/MarketplaceWorkspacePage.tsx",
-  /\{shopViewLink \|\|[\s\S]*?"No backend-confirmed public shop link is available for the selected member yet\."\}/,
-  "Marketplace workspace must visibly show the full public shop domain only after a backend-confirmed shop exists."
+  /\{shopViewLink \|\|[\s\S]*?"No confirmed public shop link is available for the selected member yet\."\}/,
+  "Marketplace workspace must visibly show the full public shop domain only after a confirmed shop exists."
 );
 
 assertContains(
@@ -995,7 +995,7 @@ assertContains(
 
 assertContains(
   "src/pages/ShopGalleryPage.tsx",
-  /const shopVerificationRows = \[[\s\S]*?Shop name[\s\S]*?Shop owner ID[\s\S]*?Marketplace[\s\S]*?Community[\s\S]*?Community ID[\s\S]*?const shopTrustCheckOptions = \[[\s\S]*?Request TrustSlip for current evidence[\s\S]*?Ask community for extra confirmation[\s\S]*?Use IDs to avoid name confusion[\s\S]*?async function requestCommunityConfirmationFromOwner\(\)[\s\S]*?Please connect me with the right community confirmation route[\s\S]*?debugId="shop-gallery\.verify-shop\.toggle"[\s\S]*?debugId="shop-gallery\.verify-shop\.request-trustslip"[\s\S]*?debugId="shop-gallery\.verify-shop\.toggle-scan"[\s\S]*?onClick=\{\(\) => void requestCommunityConfirmationFromOwner\(\)\}[\s\S]*?debugId="shop-gallery\.verify-shop\.open-community-record"[\s\S]*?Ask owner[\s\S]*?Trust check options/,
+  /const shopVerificationRows = \[[\s\S]*?Shop name[\s\S]*?Shop owner ID[\s\S]*?Marketplace[\s\S]*?Community[\s\S]*?Community ID[\s\S]*?const shopTrustCheckOptions = \[[\s\S]*?Request TrustSlip for current evidence[\s\S]*?Ask community for extra confirmation[\s\S]*?Use IDs to avoid name confusion[\s\S]*?async function requestCommunityConfirmationFromOwner\(\)[\s\S]*?Please send the right community confirmation link[\s\S]*?debugId="shop-gallery\.verify-shop\.toggle"[\s\S]*?debugId="shop-gallery\.verify-shop\.request-trustslip"[\s\S]*?debugId="shop-gallery\.verify-shop\.toggle-scan"[\s\S]*?onClick=\{\(\) => void requestCommunityConfirmationFromOwner\(\)\}[\s\S]*?debugId="shop-gallery\.verify-shop\.open-community-record"[\s\S]*?Ask owner[\s\S]*?Trust check options/,
   "Public Shop Verify panel must expose identity/community context while routing community confirmation requests through the owner instead of direct random community contact."
 );
 

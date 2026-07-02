@@ -58,6 +58,12 @@ function assertStableActionsHaveDebugIds(file) {
   }
 }
 
+assertNotContains(
+  "src/pages/MarketplacePage.tsx",
+  /another app route/g,
+  "Marketplace clipboard fallback copy must use page language, not app-route wording."
+);
+
 [
   "src/pages/MarketplacePage.tsx",
   "src/pages/MarketplaceWorkspacePage.tsx",
@@ -98,6 +104,12 @@ assertContains(
   "src/lib/api.ts",
   /export async function getCommunityPackageStatus[\s\S]*?\/payment-instructions\/community-package\/status[\s\S]*?export async function getRoscaCycles[\s\S]*?\/rosca\/cycles[\s\S]*?export async function createRoscaCycle[\s\S]*?\/rosca\/cycles[\s\S]*?export async function recordRoscaCyclePayout[\s\S]*?\/rosca\/cycles\/\$\{encodeURIComponent/,
   "Marketplace ROSCA must use named API helpers for package status, cycle listing, cycle creation, and payout recording."
+);
+
+assertNotContains(
+  "src/lib/api.ts",
+  /profile-image save endpoint|remove endpoint|page state|image state/i,
+  "Community image fallback messages must explain what the user can do without endpoint or page-state language."
 );
 
 assertContains(
@@ -318,6 +330,18 @@ assertNotContains(
   "Marketplace must not keep hidden create-community link-desk UI or source-only create-community actions."
 );
 
+assertNotContains(
+  "src/pages/MarketplacePage.tsx",
+  /Your shop route is not ready yet|That route is not ready yet|withdrawal or payout route/i,
+  "Marketplace unavailable-action messages must describe pages instead of routes."
+);
+
+assertNotContains(
+  "src/pages/MarketplaceWorkspacePage.tsx",
+  /community route|community access route|Route handoff|operating routes|money\/support routes/i,
+  "Public Marketplace Workspace copy must describe community access links and pages, not routes."
+);
+
 assertContains(
   "src/pages/MarketplacePage.tsx",
   /import \{ GsnLegacyIcon, type GsnIconName \} from "\.\.\/components\/GsnLegacyIcon";[\s\S]*?type MarketplaceGlyphName[\s\S]*?MARKETPLACE_GLYPH_ICON_MAP[\s\S]*?satisfies Record<MarketplaceGlyphName, GsnIconName>[\s\S]*?function MarketplaceGlyph[\s\S]*?name: MarketplaceGlyphName[\s\S]*?<GsnLegacyIcon/,
@@ -422,7 +446,7 @@ assertContains(
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
-  /function marketplaceFrontLaneCardStyle[\s\S]*?\.\.\.marketplaceOsRowStyle\(isCompact\)[\s\S]*?minHeight: isCompact \? 76 : 116[\s\S]*?height: isCompact \? 76 : "auto"[\s\S]*?maxHeight: isCompact \? 76 : "none"[\s\S]*?36px minmax\(0, 1fr\) 16px[\s\S]*?function marketplaceFrontCompactCardStyle\(isCompact: boolean\): React\.CSSProperties \{[\s\S]*?const compactHeight = 68;[\s\S]*?\.\.\.marketplaceFrontLaneCardStyle\(isCompact\),[\s\S]*?height: isCompact \? compactHeight : "auto"[\s\S]*?function marketplaceFrontLaneIconStyle[\s\S]*?width: isCompact \? 36 : 64[\s\S]*?height: isCompact \? 36 : 64/,
+  /function marketplaceFrontLaneCardStyle[\s\S]*?\.\.\.marketplaceOsRowStyle\(isCompact\)[\s\S]*?minHeight: isCompact \? 76 : 116[\s\S]*?height: isCompact \? 76 : "auto"[\s\S]*?maxHeight: isCompact \? 76 : "none"[\s\S]*?36px minmax\(0, 1fr\) 16px[\s\S]*?padding: isCompact \? 7 : 16[\s\S]*?function marketplaceFrontLaneIconStyle[\s\S]*?width: isCompact \? 36 : 64[\s\S]*?height: isCompact \? 36 : 64/,
   "Marketplace front grouped-lane cards must keep stable icon and row geometry."
 );
 

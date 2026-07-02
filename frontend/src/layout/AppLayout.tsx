@@ -1735,8 +1735,8 @@ export default function AppLayout() {
         label: "Main movement",
         hint:
           canUseAdminTools
-            ? "The main routes stay simple: Dashboard, Community Home, Marketplace, Public Shop, Shop Control, Finance, Loans, Trust, and Admin."
-            : "The main routes stay simple: Dashboard, Community Home, Marketplace, Public Shop, Shop Control, Finance, Loans, and Trust.",
+            ? "The main pages stay simple: Dashboard, Community Home, Marketplace, Public Shop, Shop Control, Finance, Loans, Trust, and Admin."
+            : "The main pages stay simple: Dashboard, Community Home, Marketplace, Public Shop, Shop Control, Finance, Loans, and Trust.",
         items: primaryItems,
       },
       {

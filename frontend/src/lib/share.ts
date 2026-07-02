@@ -42,6 +42,16 @@ export function buildShareText(target: ShareTarget): string {
   return [title, url, extra].filter(Boolean).join("\n");
 }
 
+export function buildPublicShareText(target: ShareTarget): string {
+  const title = trimAtWord(String(target.title || "GSN").trim(), 82);
+  const url = normalizeUrl(target.socialUrl || target.url);
+  const message = trimAtWord(socialMessageForTarget(target), 220);
+
+  // Keep the URL near the top so WhatsApp and other apps build the link card
+  // from the actual verification page, not from a long copied paper.
+  return [title, url, message].filter(Boolean).join("\n");
+}
+
 function compactText(value: unknown): string {
   return String(value ?? "").replace(/\s+/g, " ").trim();
 }
@@ -83,19 +93,43 @@ function compactPaperMessage(value: string): string {
         !/^Footer:/i.test(line)
     );
 
-  const itemLine = lines.find((line) => /^Item \/ update:/i.test(line));
-  const blockLine = lines.find((line) => /^Public block:/i.test(line));
-  const shopLine = lines.find((line) => /^Shop:/i.test(line));
-  const purposeLine = lines.find((line) => /^Purpose:/i.test(line));
+  const valueFor = (...prefixes: string[]) => {
+    const escaped = prefixes.map((prefix) =>
+      prefix.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+    );
+    const pattern = new RegExp(`^(?:${escaped.join("|")}):`, "i");
+    const match = lines.find((line) => pattern.test(line));
+    return match ? paperLineValue(match) : "";
+  };
 
-  const pieces = [
-    itemLine ? paperLineValue(itemLine) : "",
-    blockLine ? paperLineValue(blockLine) : "",
-    shopLine ? `from ${paperLineValue(shopLine)}` : "",
-  ].filter(Boolean);
+  const title = valueFor("Title");
+  const item = valueFor("Item / update", "Private offer", "Item or service");
+  const shop = valueFor("Shop");
+  const community = valueFor("Community");
+  const member = valueFor("Member", "Holder");
+  const reading = valueFor(
+    "Main reading",
+    "Visible trust reading",
+    "Portable trust reading",
+    "Verification",
+    "Status",
+    "Trade status"
+  );
+  const purpose = valueFor("Purpose");
+  const subject = item || shop || member || community;
+  const context = [subject, subject && shop && subject !== shop ? `from ${shop}` : ""]
+    .filter(Boolean)
+    .join(" ");
 
-  if (pieces.length) return compactText(pieces.join(" "));
-  return compactText(purposeLine ? paperLineValue(purposeLine) : "Open this GSN record.");
+  return [
+    title,
+    context,
+    reading || purpose,
+    "Open the link to check the current GSN record.",
+  ]
+    .filter(Boolean)
+    .slice(0, 4)
+    .join("\n");
 }
 
 function socialMessageForTarget(target: ShareTarget): string {
@@ -153,7 +187,7 @@ export function buildSocialShareText(
 
   const cleanHandle = normalizeSocialHandle(handle);
   const tag = cleanHandle ? `@${cleanHandle}\n` : "";
-  return `${tag}${buildShareText(target)}`.trim();
+  return `${tag}${buildPublicShareText(target)}`.trim();
 }
 
 export function buildXIntentShareUrl(target: ShareTarget, handle = ""): string {
@@ -181,7 +215,7 @@ export function buildLinkedInShareUrl(target: ShareTarget): string {
 
 export function buildMailtoShareUrl(target: ShareTarget): string {
   const title = String(target.title || "GSN").trim();
-  const text = buildShareText(target);
+  const text = buildPublicShareText(target);
   return `mailto:?subject=${encodeURIComponent(title)}&body=${encodeURIComponent(text)}`;
 }
 

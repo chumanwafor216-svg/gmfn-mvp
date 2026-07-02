@@ -519,7 +519,7 @@ export default function AdminIdentityRiskPage() {
             <div style={{ ...helperText(), fontWeight: 900 }}>
               {phoneLineage.match_count
                 ? `${phoneLineage.match_count} protected identity line found.`
-                : "No GSN identity currently owns that phone in this database."}
+                : "No GSN identity currently owns that phone in the protected identity record."}
             </div>
             {Array.isArray(phoneLineage.matches)
               ? phoneLineage.matches.map((row: any) => (

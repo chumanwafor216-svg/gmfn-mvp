@@ -497,7 +497,7 @@ export default function RequireAuth({ children, requireRole }: Props) {
               }}
             >
               {requireRole === "admin"
-                ? "This route needs platform admin access."
+                ? "This page needs platform admin access."
                 : "This workspace is not open to ordinary users."}
             </div>
 
@@ -525,7 +525,7 @@ export default function RequireAuth({ children, requireRole }: Props) {
                 lineHeight: 1.7,
               }}
             >
-              Requested route: <b>{location.pathname}</b>
+              Requested page: <b>{location.pathname}</b>
               <div style={{ marginTop: 6 }}>
                 If you expected admin access here, sign in with an admin account
                 or switch to the correct community-admin identity first.
@@ -587,8 +587,8 @@ export default function RequireAuth({ children, requireRole }: Props) {
             }}
           >
             {isProtectedLock
-              ? "This route is protected until identity continuity is restored."
-              : "This route needs an identity review before it can continue."}
+              ? "This page is protected until identity continuity is restored."
+              : "This page needs an identity review before it can continue."}
           </div>
 
           <div
@@ -619,7 +619,7 @@ export default function RequireAuth({ children, requireRole }: Props) {
             }}
           >
             <div>
-              Requested route: <b>{location.pathname}</b>
+              Requested page: <b>{location.pathname}</b>
             </div>
             <div style={{ marginTop: 6 }}>
               Continuity score: <b>{continuityBlock.score}</b>

@@ -330,14 +330,14 @@ function signInSessionError(error: unknown, tokenStored: boolean): string {
 
   if (!tokenStored) {
     return (
-      "Sign-in accepted, but this browser did not keep the member session token. " +
+      "Sign-in accepted, but this browser did not keep you signed in. " +
       "Refresh once and try again. If the same message returns, open sign-in in a fresh tab."
     );
   }
 
   if (status === 401 || status === 403) {
     return (
-      "Sign-in accepted, but the live system did not recognize the session token when opening your member record. " +
+      "Sign-in accepted, but the live system did not recognize your signed-in session when opening your member record. " +
       "Try once more. If it repeats, the secure sign-in service needs checking."
     );
   }
@@ -861,7 +861,7 @@ export default function LoginPage() {
                     }}
                   >
                     <strong style={{ color: "#10253B" }}>3. Use activation first if needed.</strong>{" "}
-                    If your account is not yet active, use Activate Membership first instead of forcing sign-in through the wrong route.
+                    If your account is not yet active, use Activate Membership first instead of forcing sign-in through the wrong page.
                   </div>
                 </div>
               </div>

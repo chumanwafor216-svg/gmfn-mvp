@@ -662,12 +662,12 @@ export default function DemandBoxPage() {
         { label: "Requester GSN ID", value: requesterGsnId },
         { label: "Community", value: currentCommunityName },
         { label: "Community ID", value: selectedClanId || "" },
-        { label: "Route", value: "Demand Box" },
+        { label: "Page", value: "Demand Box" },
         { label: "Audience", value: scope === "owner" ? "request owner" : "community responder" },
       ],
       bodyLines: details,
       privacyNote:
-        "Privacy: only request facts already visible on this Demand Box route are shown.",
+        "Privacy: only request facts already visible on this Demand Box page are shown.",
       limitationNote:
         "Limitation: request evidence only. Not approval to release goods, credit, money, or service, not a bank guarantee, and not proof that the request was fulfilled.",
     });

@@ -398,7 +398,23 @@ function apiBase(): string {
       (import.meta as any).env.VITE_API_BASE_URL) ||
     "/api";
 
-  return String(raw || "").trim().replace(/\/+$/, "");
+  const base = String(raw || "").trim().replace(/\/+$/, "");
+  if (!base || !/^https?:\/\//i.test(base)) return base;
+
+  try {
+    const url = new URL(base);
+    const path = url.pathname.replace(/\/+$/, "");
+    if (path.toLowerCase() === "/api") {
+      return url.origin;
+    }
+
+    url.search = "";
+    url.hash = "";
+    url.pathname = path;
+    return url.toString().replace(/\/+$/, "");
+  } catch {
+    return base;
+  }
 }
 
 function apiUrl(path: string): string {
@@ -422,8 +438,7 @@ function shopAssetsRequestErrorMessage(error: any): string {
     lower.includes("check your connection")
   ) {
     return (
-      "GSN could not reach the server from this browser. " +
-      "Check your connection and try again. If this keeps happening, reopen GSN and retry the action."
+      "GSN could not save from this browser yet. Check your connection, reopen GSN if needed, then try again."
     );
   }
   return message || "Shop Gallery Tools could not complete that request.";

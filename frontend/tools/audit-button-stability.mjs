@@ -175,7 +175,7 @@ assertContains(
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
-  /function marketplaceActionStyle[\s\S]*?height: 56,[\s\S]*?maxHeight: 56,[\s\S]*?function marketplaceInlineActionsStyle[\s\S]*?gridAutoRows: isCompact \? "56px" : "58px"[\s\S]*?function marketplaceInlineActionStyle[\s\S]*?height: _isCompact \? 56 : 58[\s\S]*?function marketplaceOsRowStyle\(isCompact: boolean\): React\.CSSProperties \{[\s\S]*?height: isCompact \? 116 : 96,[\s\S]*?maxHeight: isCompact \? 116 : 96,[\s\S]*?overflow: "hidden"[\s\S]*?transform: "none"[\s\S]*?flexShrink: 0[\s\S]*?transition: "none"[\s\S]*?function marketplaceFrontLaneCardStyle\(isCompact: boolean\): React\.CSSProperties \{[\s\S]*?\.\.\.marketplaceOsRowStyle\(isCompact\),[\s\S]*?minHeight: isCompact \? 76 : 116,[\s\S]*?height: isCompact \? 76 : "auto",[\s\S]*?maxHeight: isCompact \? 76 : "none",[\s\S]*?"36px minmax\(0, 1fr\) 16px"[\s\S]*?padding: isCompact \? 7 : 16,[\s\S]*?function marketplaceFrontCompactCardStyle\(isCompact: boolean\): React\.CSSProperties \{[\s\S]*?const compactHeight = 68;[\s\S]*?\.\.\.marketplaceFrontLaneCardStyle\(isCompact\),[\s\S]*?height: isCompact \? compactHeight : "auto",[\s\S]*?padding: isCompact \? 6 : 16,[\s\S]*?function marketplaceFrontLaneIconStyle[\s\S]*?width: isCompact \? 36 : 64,[\s\S]*?height: isCompact \? 36 : 64,[\s\S]*?function marketplaceFrontTagRowStyle[\s\S]*?flexWrap: isCompact \? "nowrap" : "wrap"[\s\S]*?overflow: isCompact \? "hidden" : undefined[\s\S]*?function marketplaceFrontTagStyle[\s\S]*?padding: isCompact \? "4px 7px" : "6px 10px"[\s\S]*?whiteSpace: "nowrap",[\s\S]*?overflow: "hidden",[\s\S]*?textOverflow: "ellipsis",[\s\S]*?function marketplaceOsRowDetailStyle[\s\S]*?display: isCompact \? "none" : "-webkit-box"[\s\S]*?WebkitLineClamp: isCompact \? 3 : 2,/,
+  /function marketplaceActionStyle[\s\S]*?height: 56,[\s\S]*?maxHeight: 56,[\s\S]*?function marketplaceInlineActionsStyle[\s\S]*?gridAutoRows: isCompact \? "56px" : "58px"[\s\S]*?function marketplaceInlineActionStyle[\s\S]*?height: _isCompact \? 56 : 58[\s\S]*?function marketplaceOsRowStyle\(isCompact: boolean\): React\.CSSProperties \{[\s\S]*?height: isCompact \? 116 : 96,[\s\S]*?maxHeight: isCompact \? 116 : 96,[\s\S]*?overflow: "hidden"[\s\S]*?transform: "none"[\s\S]*?flexShrink: 0[\s\S]*?transition: "none"[\s\S]*?function marketplaceFrontLaneCardStyle\(isCompact: boolean\): React\.CSSProperties \{[\s\S]*?\.\.\.marketplaceOsRowStyle\(isCompact\),[\s\S]*?minHeight: isCompact \? 76 : 116,[\s\S]*?height: isCompact \? 76 : "auto",[\s\S]*?maxHeight: isCompact \? 76 : "none",[\s\S]*?"36px minmax\(0, 1fr\) 16px"[\s\S]*?padding: isCompact \? 7 : 16,[\s\S]*?function marketplaceFrontLaneIconStyle[\s\S]*?width: isCompact \? 36 : 64,[\s\S]*?height: isCompact \? 36 : 64,[\s\S]*?function marketplaceFrontTagRowStyle[\s\S]*?flexWrap: isCompact \? "nowrap" : "wrap"[\s\S]*?overflow: isCompact \? "hidden" : undefined[\s\S]*?function marketplaceFrontTagStyle[\s\S]*?padding: isCompact \? "4px 7px" : "6px 10px"[\s\S]*?whiteSpace: "nowrap",[\s\S]*?overflow: "hidden",[\s\S]*?textOverflow: "ellipsis",[\s\S]*?function marketplaceOsRowDetailStyle[\s\S]*?display: isCompact \? "none" : "-webkit-box"[\s\S]*?WebkitLineClamp: isCompact \? 3 : 2,/,
   "Marketplace grouped-lane cards must keep phone-safe geometry with clamped text so card content cannot stretch, overlap, or create unstable tap targets."
 );
 
@@ -916,8 +916,8 @@ assertContains(
 
 assertContains(
   "src/pages/PaymentRailsPage.tsx",
-  /minWidth=\{112\}[\s\S]*?stableHeight=\{52\}[\s\S]*?debugId="payment-rails\.toggle-raw"[\s\S]*?Hide raw[\s\S]*?Show raw/,
-  "Payment Rails raw-response toggle must keep compact stable geometry and labels."
+  /minWidth=\{112\}[\s\S]*?stableHeight=\{52\}[\s\S]*?debugId="payment-rails\.toggle-raw"[\s\S]*?Hide details[\s\S]*?Show details/,
+  "Payment Rails detail toggle must keep compact stable geometry and labels."
 );
 
 assertContains(
@@ -1584,6 +1584,12 @@ assertNotContains(
   "src/pages/ApiPage.tsx",
   /(<button|<\/button>|<a\s|OriginLink)/,
   "API page must not keep raw link/button primitives."
+);
+
+assertNotContains(
+  "src/pages/ApiPage.tsx",
+  /Service Routes|service route list|Search routes|No routes match your search|Route guide|Route file/i,
+  "API page visible copy must describe service paths and documents instead of service routes."
 );
 
 assertContains(

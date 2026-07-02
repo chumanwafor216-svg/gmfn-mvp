@@ -467,7 +467,7 @@ export default function TrustTimelinePage() {
     packId
       ? `The visible evidence pack reference is ${packId}.`
       : "The evidence pack reference is not currently visible on this page.",
-    "The timeline PDF and evidence share copy are generated through signed-in GSN routes.",
+    "The timeline PDF and evidence share copy are generated through signed-in GSN pages.",
   ];
 
   const trustTimelineDoesNotConfirmList = [
@@ -475,7 +475,7 @@ export default function TrustTimelinePage() {
     "Payment movement, escrow, payout approval, credit approval, or automatic debit authority.",
     "Future behaviour, future repayment, delivery, marketplace outcome, or support outcome.",
     "Authority to release goods, money, credit, services, or private records.",
-    "Private contacts, complete private Trust Passport history, raw metadata, or admin-only notes.",
+    "Private contacts, complete private Trust Passport history, protected event details, or admin-only notes.",
   ];
 
   const trustTimelineReferenceFingerprint = buildTimelineReferenceFingerprint([

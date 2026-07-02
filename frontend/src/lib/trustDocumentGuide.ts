@@ -38,7 +38,7 @@ export function buildCciGuideItems(): NextActionGuideItem[] {
       id: "identity",
       label: "Open Identity & Integrity",
       detail:
-        "Use the wider identity route when you want the fuller verification, continuity, and identity story around this consistency reading.",
+        "Use the wider identity page when you want the fuller verification, continuity, and identity story around this consistency reading.",
       to: "/app/identity",
       keywords: ["identity", "integrity", "verification", "continuity", "cci"],
       tone: "primary",

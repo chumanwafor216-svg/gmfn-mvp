@@ -452,7 +452,7 @@ function communityDomainOperatingStateCopy(status: {
       detail:
         "The setup may be underway, but activation is not finished. A quote or payment instruction is still not the same as a live Community Domain.",
       nextStep: "Finish package, payment, activation, and authority checks in their separate owner/admin steps.",
-      risk: "Do not call the institution active or verified until the backend status proves it.",
+      risk: "Do not call the institution active or verified until the live service record confirms it.",
     };
   }
 

@@ -817,7 +817,7 @@ export default function ExposureAdminPage() {
         label="How to use this"
         what="This page reads exposure, stale demand, bank pressure, and admin queues together."
         why="Exposure is a practical risk reading; it is not settlement, release authority, or evidence that money moved."
-        next="Start with current pressure, then open the route that matches the cause."
+        next="Start with current pressure, then open the page that matches the cause."
         tone="light"
       />
 
@@ -1209,7 +1209,7 @@ export default function ExposureAdminPage() {
           }}
         >
           <div>
-            {sectionLabelWithIcon("navigation", "Next routes", "blue")}
+            {sectionLabelWithIcon("navigation", "Next pages", "blue")}
             <div style={{ marginTop: 8, ...helperText() }}>
               Open the page that matches the pressure source.
             </div>

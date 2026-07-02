@@ -642,7 +642,7 @@ function CommunityConfirmationPolicyPage() {
     return buildGsnSnapshotPaper({
       title: "GSN Community Confirmation Policy Summary",
       purpose:
-        "Internal policy summary for controlled community confirmation, relay, and review routing.",
+        "Protected policy summary for controlled community confirmation, relay, and review flow.",
       reference: `community-policy-${communityId || "pending"}`,
       context: [
         {
@@ -669,12 +669,12 @@ function CommunityConfirmationPolicyPage() {
         `Outgoing domain affiliation requests: ${outgoingAffiliations.length}`,
         `External registration evidence records: ${externalRegistrationRecords.length}`,
         `Active member candidates: ${members.length}`,
-        "Reader boundary: this summary explains internal confirmation policy and routing. It is not public membership proof, parent-domain approval, or transaction authority.",
+        "Reader boundary: this summary explains the confirmation policy and review flow. It is not public membership proof, parent-domain approval, or transaction authority.",
       ],
       privacyNote:
-        "Privacy: private contacts, raw member lists, responder notes, phone numbers, and private witness details are not included in this copied policy paper.",
+        "Privacy: private contacts, protected member lists, responder notes, phone numbers, and private witness details are not included in this copied policy paper.",
       limitationNote:
-        "Limitation: internal policy summary only. Not public verification, credit approval, payment confirmation, payout approval, or authority to release goods or money.",
+        "Limitation: protected policy summary only. Not public verification, credit approval, payment confirmation, payout approval, or authority to release goods or money.",
     });
   }, [
     community,
@@ -2362,7 +2362,7 @@ function CommunityConfirmationPolicyPage() {
               <input
                 value={externalRegistrationReference}
                 onChange={(event) => setExternalRegistrationReference(event.target.value)}
-                placeholder="Registration reference. GSN stores a fingerprint, not this raw text."
+                placeholder="Registration reference. GSN stores a fingerprint, not the full text."
                 style={{ ...fieldStyle(), marginTop: 8 }}
                 aria-label="External registration reference"
                 data-field-id="community-confirmation-policy.external-registration.reference"
@@ -2370,7 +2370,7 @@ function CommunityConfirmationPolicyPage() {
               <input
                 value={externalRegisteredName}
                 onChange={(event) => setExternalRegisteredName(event.target.value)}
-                placeholder="Registered name. GSN stores a fingerprint, not this raw text."
+                placeholder="Registered name. GSN stores a fingerprint, not the full text."
                 style={{ ...fieldStyle(), marginTop: 8 }}
                 aria-label="External registered name"
                 data-field-id="community-confirmation-policy.external-registration.registered-name"
@@ -2434,7 +2434,7 @@ function CommunityConfirmationPolicyPage() {
                       <p style={{ margin: "6px 0 0", ...helperText(), fontSize: 12 }}>
                         Reference recorded: {row.registrationReferenceRecorded ? "yes" : "no"}.
                         Registered name recorded: {row.registeredNameRecorded ? " yes" : " no"}.
-                        Raw reference stored: {row.rawReferenceStored ? " yes" : " no"}.
+                        Full reference stored: {row.rawReferenceStored ? " yes" : " no"}.
                       </p>
                     </article>
                   ))
@@ -3000,7 +3000,7 @@ function CommunityConfirmationPolicyPage() {
           People allowed to answer confirmation requests
         </h2>
         <p style={{ margin: "8px 0 0", ...helperText() }}>
-          These members may receive GSN relay requests. Public papers never show private contacts or raw votes.
+          These members may receive GSN relay requests. Public papers never show private contacts or private votes.
         </p>
 
         <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
@@ -3125,7 +3125,7 @@ function CommunityConfirmationPolicyPage() {
           {labelWithIcon("lock", "Privacy rule", "gold")}
         </div>
         <p style={{ margin: "8px 0 0", color: "#D7E2EF", fontWeight: 800, lineHeight: 1.5 }}>
-          GSN can ask eligible members, but public readers see only the controlled outcome. Private contacts and raw votes stay protected.
+          GSN can ask eligible members, but public readers see only the controlled outcome. Private contacts and private votes stay protected.
         </p>
         <PrimaryButton
           type="button"

@@ -724,7 +724,7 @@ export default function PaymentRailsPage() {
         tone: "green",
         title: "Inbound and outbound rails are both visible",
         detail:
-          "Both money directions are at least partly visible here. Rail status is not payment approval, settlement confirmation, or evidence that money moved; action should still happen on the guided Money In and Money Out routes.",
+          "Both money directions are at least partly visible here. Rail status is not payment approval, settlement confirmation, or evidence that money moved; action should still happen on the guided Money In and Money Out pages.",
         nowLine: "Understand rail visibility here, not act here.",
         nextLine: "Return to Money In or Money Out when you are ready to act.",
       };
@@ -758,7 +758,7 @@ export default function PaymentRailsPage() {
       detail:
         "Some rail information is coming through, but the current statuses do not read as confidently active. Use this as a caution signal, not as a blocker by itself.",
       nowLine: "Review the visible statuses before choosing a money direction.",
-      nextLine: "Return to the guided page and rely on the route shown there.",
+      nextLine: "Return to the guided page and rely on the guidance shown there.",
     };
   }, [loading, rails.length, activeInboundCount, activeOutboundCount]);
 
@@ -852,7 +852,7 @@ export default function PaymentRailsPage() {
         label="What this screen does"
         what="This screen gives you a read-only picture of which inbound and outbound rails are visible."
         why="It helps you choose Money In or Money Out with less guesswork."
-        next="Read the current rail picture here, then return to the guided Money In or Money Out route."
+        next="Read the current rail picture here, then return to the guided Money In or Money Out page."
         tone="light"
         style={{ marginTop: 18 }}
       />
@@ -928,7 +928,7 @@ export default function PaymentRailsPage() {
                 fontWeight: 800,
               }}
             >
-              Use <span style={{ fontWeight: 1000 }}>Next routes</span> when
+              Use <span style={{ fontWeight: 1000 }}>Next pages</span> when
               you are ready to continue.
             </div>
 
@@ -1180,7 +1180,7 @@ export default function PaymentRailsPage() {
                 debugId="payment-rails.toggle-raw"
                 style={paymentRailsSoftButtonStyle()}
               >
-                {showRaw ? "Hide raw" : "Show raw"}
+                {showRaw ? "Hide details" : "Show details"}
               </SubtleButton>
             </div>
             {copyStatus ? (
@@ -1363,7 +1363,7 @@ export default function PaymentRailsPage() {
 
       <section style={{ ...pageCard(), marginTop: 18 }}>
         <div>
-          <div style={sectionLabel()}>Next routes</div>
+          <div style={sectionLabel()}>Next pages</div>
           <div
             style={{
               marginTop: 8,

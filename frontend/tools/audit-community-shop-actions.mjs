@@ -93,6 +93,18 @@ for (const file of signedInCommunityShopFiles) {
   );
 }
 
+assertNotContains(
+  "src/pages/ShopAccessPage.tsx",
+  /access token|Current route state|Vault route|Use this route|Leave this route|private-access open|Current page:/,
+  "Public Vault access copy must speak to the visitor in plain access-link/page language, not token/route/debug language."
+);
+
+assertContains(
+  "src/pages/ShopAccessPage.tsx",
+  /This Vault link is missing its access code[\s\S]*?Checking this private link and opening the shared shop view[\s\S]*?label="Why this page opened"[\s\S]*?You are inside Vault access[\s\S]*?Private link accepted[\s\S]*?Your access is open[\s\S]*?Use this page only for the private offers/,
+  "Public Vault access page must keep direct visitor-facing access-code/link/page wording."
+);
+
 assertContains(
   "src/pages/CommunityHomePage.tsx",
   /freeSpotlight:\s*routeTarget\(\s*"freeSpotlight"[\s\S]*?case "spotlight-free":[\s\S]*?if \(nextStep === "open-free-publisher"\) \{[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.freeSpotlight[\s\S]*?id: ownerShopHandle\("free-spotlight"\)\.id[\s\S]*?openCommunityHomeSection\([\s\S]*?"community-home-spotlight-gears"[\s\S]*?debugId="community-home\.spotlight-status\.open-free"[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.freeSpotlight/,
@@ -107,7 +119,7 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityHomePage.tsx",
-  /id: "owner-actions"[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.joinRequests[\s\S]*?id: ownerShopHandle\("shop-control"\)\.id[\s\S]*?openCommunityShopControl\(event\)[\s\S]*?id: ownerShopHandle\("merchant-release"\)\.id[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.merchantRelease[\s\S]*?id: ownerShopHandle\("shop-gallery-tools"\)\.id[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.shopGalleryTools[\s\S]*?id: ownerShopHandle\("vault-control"\)\.id[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.vaultControl[\s\S]*?id: ownerShopHandle\("free-spotlight"\)\.id[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.freeSpotlight[\s\S]*?id: ownerShopHandle\("spotlight-subscription"\)\.id[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.subscriptionSpotlight[\s\S]*?id: ownerShopHandle\("paid-repost"\)\.id[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.paidRepost[\s\S]*?id: "rosca"[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.rosca[\s\S]*?id: ownerShopHandle\("community-package"\)\.id[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.communityPackages[\s\S]*?id: "trusted-circle"[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.buildFirstCircle[\s\S]*?id: "spotlight-status"[\s\S]*?openCommunityHomeSection\([\s\S]*?debugId=\{`community-home\.tool\.\$\{item\.id\}`\}/,
+  /id: "owner-actions"[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.joinRequests[\s\S]*?debugId=\{`community-home\.lane\.communities\.\$\{item\.id\}`\}[\s\S]*?id: ownerShopHandle\("shop-control"\)\.id[\s\S]*?openCommunityShopControl\(event\)[\s\S]*?id: ownerShopHandle\("merchant-release"\)\.id[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.merchantRelease[\s\S]*?id: ownerShopHandle\("shop-gallery-tools"\)\.id[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.shopGalleryTools[\s\S]*?id: ownerShopHandle\("free-spotlight"\)\.id[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.freeSpotlight[\s\S]*?id: "rosca"[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.rosca[\s\S]*?id: "spotlight-status"[\s\S]*?openCommunityHomeSection\([\s\S]*?debugId=\{`community-home\.lane\.marketplace-tools\.\$\{item\.id\}`\}[\s\S]*?id: ownerShopHandle\("vault-control"\)\.id[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.vaultControl[\s\S]*?id: ownerShopHandle\("spotlight-subscription"\)\.id[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.subscriptionSpotlight[\s\S]*?id: ownerShopHandle\("paid-repost"\)\.id[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.paidRepost[\s\S]*?id: "community-packages"[\s\S]*?openCommunityNextAction\(event, "community-packages"\)[\s\S]*?debugId=\{`community-home\.lane\.subscriptions\.\$\{item\.id\}`\}/,
   "Community Home compact owner/tool rows must remain traceable and route to the deeper owner surfaces."
 );
 
@@ -119,13 +131,13 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityHomePage.tsx",
-  /ROSCA_MARKETPLACE_HASH[\s\S]*?from "\.\.\/lib\/ownerShopHandles";[\s\S]*?rosca:\s*routeTarget\(\s*"marketplace"[\s\S]*?ROSCA_MARKETPLACE_HASH[\s\S]*?id: "rosca"[\s\S]*?routes\.rosca[\s\S]*?debugId=\{`community-home\.tool\.\$\{item\.id\}`\}/,
+  /ROSCA_MARKETPLACE_HASH[\s\S]*?from "\.\.\/lib\/ownerShopHandles";[\s\S]*?rosca:\s*routeTarget\(\s*"marketplace"[\s\S]*?ROSCA_MARKETPLACE_HASH[\s\S]*?id: "rosca"[\s\S]*?routes\.rosca[\s\S]*?debugId=\{`community-home\.lane\.marketplace-tools\.\$\{item\.id\}`\}/,
   "Community Home ROSCA must stay visible as its own launcher and route to the Marketplace ROSCA desk."
 );
 
 assertContains(
   "src/pages/CommunityHomePage.tsx",
-  /debugId=\{`community-home\.next-action\.\$\{item\.id\}`\}[\s\S]*?debugId=\{`community-home\.spotlight-guided\.\$\{item\.id\}`\}[\s\S]*?debugId=\{`community-home\.tool\.\$\{item\.id\}`\}/,
+  /debugId=\{`community-home\.next-action\.\$\{item\.id\}`\}[\s\S]*?debugId=\{`community-home\.spotlight-guided\.\$\{item\.id\}`\}[\s\S]*?debugId=\{`community-home\.lane\.communities\.\$\{item\.id\}`\}[\s\S]*?debugId=\{`community-home\.lane\.marketplace-tools\.\$\{item\.id\}`\}[\s\S]*?debugId=\{`community-home\.lane\.subscriptions\.\$\{item\.id\}`\}[\s\S]*?debugId=\{`community-home\.lane\.trust-finance\.\$\{item\.id\}`\}/,
   "Community Home dynamic action groups must use item-based debug IDs."
 );
 
@@ -145,6 +157,18 @@ assertContains(
   "src/pages/ShopControlPage.tsx",
   /import \{[\s\S]*?createMarketplaceBroadcast[\s\S]*?\} from "\.\.\/lib\/api";[\s\S]*?async function handleCreateSpotlight\(\)[\s\S]*?const createRes = await createMarketplaceBroadcast\(\{[\s\S]*?priority_mode: spotlightPriorityMode[\s\S]*?visibility_scope: "direct_communities"/,
   "Shop Control Free Spotlight publish must use the shared API client so mobile browsers and Render use the same backend origin as media upload."
+);
+
+assertContains(
+  "src/pages/ShopControlPage.tsx",
+  /function apiBase\(\)[\s\S]*new URL\(base\)[\s\S]*path\.toLowerCase\(\) === "\/api"[\s\S]*return url\.origin[\s\S]*GSN could not publish from this browser yet/,
+  "Shop Control local API reads around Free Spotlight must normalize Render-style /api bases and show a concise publish recovery message."
+);
+
+assertContains(
+  "src/pages/ShopAssetsPage.tsx",
+  /function apiBase\(\)[\s\S]*new URL\(base\)[\s\S]*path\.toLowerCase\(\) === "\/api"[\s\S]*return url\.origin[\s\S]*GSN could not save from this browser yet/,
+  "Shop Gallery Tools local API reads must normalize Render-style /api bases and use concise user-facing recovery copy."
 );
 
 assertNotContains(

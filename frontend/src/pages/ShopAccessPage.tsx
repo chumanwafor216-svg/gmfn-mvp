@@ -273,7 +273,7 @@ export default function ShopAccessPage() {
     async function load() {
       if (!token) {
         setView(null);
-        setErrorText("This Vault link is missing its access token.");
+        setErrorText("This Vault link is missing its access code.");
         setLoading(false);
         return;
       }
@@ -358,7 +358,7 @@ export default function ShopAccessPage() {
               {shopAccessIconText("refresh", "Opening private access", 34)}
             </div>
             <div style={{ marginTop: 12, ...helperText(), color: "#D7E3F1" }}>
-              Verifying this private access link and loading the restricted shop view.
+              Checking this private link and opening the shared shop view.
             </div>
           </section>
         </div>
@@ -457,8 +457,8 @@ export default function ShopAccessPage() {
     <div style={pageShell()}>
       <div style={{ maxWidth: 1040, margin: "0 auto", display: "grid", gap: 18 }}>
         <ExplainToggle
-          label="What this screen does"
-          what="This screen handles private vault access to a shared shop view and explains why you can see this protected part of the shop."
+          label="Why this page opened"
+          what="This page opens private vault access to a shared shop view and explains why you can see this protected part of the shop."
           why="It makes the access rules visible so private shop access does not feel random or permanent."
           next="Check the vault status and access explanation first, then continue only while the shared access remains active."
           tone="light"
@@ -519,10 +519,10 @@ export default function ShopAccessPage() {
               )}
             </span>
             <span style={badge(false)}>
-              {shopAccessIconText("shop", "Current page: Vault access", 20)}
+              {shopAccessIconText("shop", "You are inside Vault access", 20)}
             </span>
             <span style={badge(false)}>
-              {shopAccessIconText("navigation", "Current step: Private access", 20)}
+              {shopAccessIconText("navigation", "Private link accepted", 20)}
             </span>
           </div>
 
@@ -611,12 +611,11 @@ export default function ShopAccessPage() {
               }}
             >
               <div style={sectionLabel()}>
-                {shopAccessIconText("navigation", "Current route state", 22)}
+                {shopAccessIconText("navigation", "Your access is open", 22)}
               </div>
               <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
-                This Vault route is now active and recorded as a private-access open. Stay on this
-                path until you finish reviewing the approved private offers or the owner gives you a
-                different next step.
+                This Vault link is open for you now. Stay here until you finish reviewing the
+                approved private offers or the owner gives you a different next step.
               </div>
             </div>
           </div>
@@ -740,10 +739,10 @@ export default function ShopAccessPage() {
             {shopAccessIconText("navigation", "What to do next", 22)}
           </div>
           <div style={{ marginTop: 10, ...helperText(), maxWidth: 860 }}>
-            Use this route only for the private offers that were intentionally shared with you.
+            Use this page only for the private offers that were intentionally shared with you.
             If you need the wider storefront, return to the public shop face. If this link no
             longer serves the purpose you were given, go back to entry and wait for a fresh access
-            path.
+            link.
           </div>
           <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
             <div style={innerCard("rgba(248,251,255,0.98)")}>
@@ -757,10 +756,10 @@ export default function ShopAccessPage() {
             </div>
             <div style={innerCard("rgba(248,251,255,0.98)")}>
               <div style={sectionLabel()}>
-                {shopAccessIconText("globe", "Leave this route when", 22)}
+                {shopAccessIconText("globe", "Leave this page when", 22)}
               </div>
               <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
-                You want the normal public shop view, you need a different access path, or the
+                You want the normal public shop view, you need a different private link, or the
                 sender told you to continue somewhere else.
               </div>
             </div>

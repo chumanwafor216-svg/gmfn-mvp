@@ -101,7 +101,7 @@ const PILOT_ASSUMPTION_CARDS = [
   {
     title: "Community understanding",
     detail:
-      "Check if people understand community, trust, marketplace, support, and money routes.",
+      "Check if people understand community, trust, marketplace, support, and money pages.",
   },
   {
     title: "Operational friction",
@@ -124,7 +124,7 @@ const PILOT_DATA_CARDS = [
   {
     title: "Events to capture",
     detail:
-      "Route, action, result, time to next step, and exact error state.",
+      "Page, action, result, time to next step, and exact error state.",
   },
   {
     title: "Rollout structure",
@@ -1029,7 +1029,7 @@ export default function TrustCommandCentrePage() {
   }).length;
   const routeWarnings = [
     !isPlatformAdmin
-      ? "Some command routes on this page are platform-admin only. Use Exposure, Bank Console, and Revenue Allocation for community-admin work."
+      ? "Some command pages listed here are platform-admin only. Use Exposure, Bank Console, and Revenue Allocation for community-admin work."
       : "",
     executiveReading.exposureError,
     executiveReading.bankError,
@@ -1300,7 +1300,7 @@ export default function TrustCommandCentrePage() {
 
     if (!isPlatformAdmin) {
       return {
-        title: "Use the community-admin route that matches the current risk",
+        title: "Use the community-admin page that matches the current risk",
         detail:
           "Start from the executive reading below, then move into Exposure, Bank Console, or Revenue Allocation when the summary shows the area that needs attention.",
         to: routes.exposure,
@@ -1309,7 +1309,7 @@ export default function TrustCommandCentrePage() {
     }
 
     return {
-      title: "Use the route that matches the current risk",
+      title: "Use the page that matches the current risk",
       detail:
         "Start from the executive reading below, then move into Trust Analytics, System Operations, Exposure, or Trust Events only when the summary shows the area that needs attention.",
       to: routes.trustAnalytics,
@@ -1364,7 +1364,7 @@ export default function TrustCommandCentrePage() {
         key: "analyticsReady",
         label: "Analytics and error logging ready",
         detail:
-          "Key verification routes and failures can be measured instead of relying only on chat feedback.",
+          "Key verification pages and failures can be measured instead of relying only on chat feedback.",
       },
       {
         key: "supportChannelReady",
@@ -1422,7 +1422,7 @@ export default function TrustCommandCentrePage() {
         label="What this screen does"
         what="This is the guided entry point into trust admin tools."
         why="It helps you choose the right page without scanning too many admin choices."
-        next="Read the executive action first, then open the route that matches the strongest signal."
+        next="Read the executive action first, then open the page that matches the strongest signal."
         tone="light"
       />
 
@@ -1508,7 +1508,7 @@ export default function TrustCommandCentrePage() {
           <div>
             <div>{sectionLabelWithIcon("chart", "Executive reading")}</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Backend truth comes first, before deeper admin routes.
+              Live service records come first, before deeper admin pages.
             </div>
           </div>
 
@@ -1525,7 +1525,7 @@ export default function TrustCommandCentrePage() {
         <ExplainToggle
           label="What this executive reading does"
           what="This gathers health, readiness, liquidity, exposure, risk, support activity, and bank pressure."
-          why="It saves you from opening several routes just to find the current state."
+          why="It saves you from opening several pages just to find the current state."
           next="Follow the next-action lane into the strongest current issue."
           tone="light"
           style={{ marginTop: 14 }}
@@ -1920,7 +1920,7 @@ export default function TrustCommandCentrePage() {
                     lineHeight: 1.28,
                   }}
                 >
-                  Are people in different places understanding the right route and finishing the right action without help?
+                  Are people in different places understanding the right page and finishing the right action without help?
                 </div>
                 <div style={{ marginTop: 10, ...helperText() }}>
                   Treat this as assumption validation, not only bug hunting.
@@ -2055,7 +2055,7 @@ export default function TrustCommandCentrePage() {
                         </div>
 
                         <div style={{ ...helperText(), fontSize: 13 }}>
-                          {firstTruthy(check?.why_it_matters, "This item affects pilot trust and route confidence.")}
+                          {firstTruthy(check?.why_it_matters, "This item affects pilot trust and page confidence.")}
                         </div>
 
                         {completeItems.length > 0 ? (
@@ -2089,7 +2089,7 @@ export default function TrustCommandCentrePage() {
                               stableHeight={44}
                               debugId={`trust-command.readiness.${firstTruthy(check?.key, "gap")}`}
                             >
-                              {labelWithIcon("navigation", "Open route")}
+                              {labelWithIcon("navigation", "Open page")}
                             </StableCtaLink>
                           ) : null}
                         </div>
@@ -2116,7 +2116,7 @@ export default function TrustCommandCentrePage() {
           <div>
             <div>{sectionLabelWithIcon("chart", "Command summary")}</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Live route signals before you choose one operational page.
+              Live page signals before you choose one operational page.
             </div>
           </div>
 
@@ -2132,9 +2132,9 @@ export default function TrustCommandCentrePage() {
 
         <ExplainToggle
           label="What this does"
-          what="This shows live readings for the main admin routes."
+          what="This shows live readings for the main admin pages."
           why="It turns the command centre into a current workload view."
-          next="Open the matching route only when its summary shows the current issue."
+          next="Open the matching page only when its summary shows the current issue."
           tone="light"
           style={{ marginTop: 14 }}
         />
@@ -2350,7 +2350,7 @@ export default function TrustCommandCentrePage() {
           }}
         >
           <div>
-            <div>{sectionLabelWithIcon("navigation", "Command routes")}</div>
+            <div>{sectionLabelWithIcon("navigation", "Command pages")}</div>
             <div style={{ marginTop: 8, ...helperText() }}>
               Enter the admin page you need instead of carrying too much at once.
             </div>

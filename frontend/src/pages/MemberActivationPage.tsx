@@ -836,7 +836,7 @@ export default function MemberActivationPage() {
             tone: "warning",
             title: "Activation saved",
             message:
-              "Your password was saved, but this browser did not keep the member session token. Sign in again with your GSN ID or phone number.",
+              "Your password was saved, but this browser did not keep you signed in. Sign in again with your GSN ID or phone number.",
           },
           {
             routePath: "/login?force=1",

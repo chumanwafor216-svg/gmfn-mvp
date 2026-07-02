@@ -325,7 +325,7 @@ export default function ActivateMembershipPage() {
         throw new Error(
           res?.detail ||
             res?.message ||
-            "Activation completed without an access token."
+            "Activation completed, but your signed-in session did not start. Please sign in again."
         );
       }
 
@@ -420,7 +420,7 @@ export default function ActivateMembershipPage() {
                   )}
 
                   <div style={{ marginBottom: 16, ...helperText() }}>
-                    Enter only the raw GSN ID, for example: <strong>GMFN-U-A66CF7C0</strong>
+                    Enter only the GSN ID, for example: <strong>GMFN-U-A66CF7C0</strong>
                   </div>
 
                   <div style={{ display: "grid", gap: 12 }}>

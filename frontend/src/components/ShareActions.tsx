@@ -2,6 +2,7 @@
 import React, { useMemo } from "react";
 import { CardActionRow, PrimaryButton, SecondaryButton } from "./StableButton";
 import { safeCopy } from "../lib/api";
+import { buildPublicShareText, buildWhatsAppUrl } from "../lib/share";
 import SocialTagShareButton from "./SocialTagShareButton";
 
 /**
@@ -33,11 +34,6 @@ function smallNoteStyle(): React.CSSProperties {
   return { marginTop: 6, color: "#64748b", fontSize: 12 };
 }
 
-function buildWhatsAppUrl(message: string) {
-  const encoded = encodeURIComponent(message);
-  return `https://wa.me/?text=${encoded}`;
-}
-
 export default function ShareActions(props: ShareActionsProps) {
   const {
     title,
@@ -49,6 +45,10 @@ export default function ShareActions(props: ShareActionsProps) {
 
   const cleanUrl = useMemo(() => (url || "").trim(), [url]);
   const cleanText = useMemo(() => (text || "").trim(), [text]);
+  const publicShareText = useMemo(
+    () => buildPublicShareText({ title, message: cleanText, url: cleanUrl }),
+    [cleanText, cleanUrl, title]
+  );
 
   const canShare = !!cleanUrl;
 
@@ -59,8 +59,7 @@ export default function ShareActions(props: ShareActionsProps) {
 
   function doWhatsApp() {
     if (!canShare) return;
-    const msg = `${title}\n\n${cleanText}\n\n${cleanUrl}`;
-    const wa = buildWhatsAppUrl(msg);
+    const wa = buildWhatsAppUrl(publicShareText);
     window.open(wa, "_blank", "noopener,noreferrer");
   }
 

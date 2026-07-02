@@ -972,7 +972,7 @@ export default function LoanSummaryPage() {
       ? "Support is open. Keep each supporter decision explicit until GSN can show what is ready or what is still missing."
       : canRepay
       ? "Support has moved into the money stage. Repayment is now the next deterministic action."
-      : "No support action is currently open. Review the record before choosing the next route.";
+      : "No support action is currently open. Review the record before choosing the next page.";
 
   const latestEvent = useMemo(() => {
     const xs = [...events].filter((e) => !!e.created_at);
@@ -1231,7 +1231,7 @@ export default function LoanSummaryPage() {
           `Supporters needed: ${requiredCount}`,
           `Recorded support: ${approvedCount}`,
           `Pending supporters: ${pendingGuarantors.length}`,
-          "This package points to the current trust analytics review route for the support item.",
+          "This package points to the current trust analytics review page for the support item.",
         ],
       })
     );
@@ -1270,7 +1270,7 @@ export default function LoanSummaryPage() {
       title: "GSN Support Summary Snapshot",
       purpose: supportPurpose
         ? `Review support request: ${supportPurpose}`
-        : "Review current support status, supporter state, and repayment evidence.",
+        : "Review current support status, supporter position, and repayment evidence.",
       reference: `support-${summary.id}`,
       memberName,
       gsnId: gmfnId,
@@ -2310,7 +2310,7 @@ export default function LoanSummaryPage() {
                 }}
               >
                 {canRepay
-                  ? "Use Next routes when you are ready for the money route."
+                  ? "Use Next pages when you are ready for the payment step."
                   : "Repayment opens after approval or disbursement."}
               </div>
             </>
@@ -2517,7 +2517,7 @@ export default function LoanSummaryPage() {
         >
           <div>
             <div style={sectionLabel()}>
-              {supportItemActive ? "Next support routes" : "Next routes"}
+              {supportItemActive ? "Next support steps" : "Next pages"}
             </div>
             <div style={{ marginTop: 8, ...helperText() }}>
               {supportItemActive

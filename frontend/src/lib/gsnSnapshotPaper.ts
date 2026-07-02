@@ -263,7 +263,7 @@ export function buildGsnSupportEvidencePackage(params: {
     title: safeText(params.title) || "GSN Support Evidence Snapshot",
     purpose:
       safeText(params.purpose) ||
-      "Keep the current support state, member context, and next review facts together.",
+      "Keep the current support status, member context, and next review facts together.",
     reference: safeText(params.reference || params.loanId),
     link: params.actionLink,
     context: [

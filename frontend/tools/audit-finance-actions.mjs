@@ -95,8 +95,8 @@ assertContains(
 
 assertNotContains(
   "src/pages/FinancePage.tsx",
-  /[\u{1F300}-\u{1FAFF}]|radial-gradient|overflowWrap: "anywhere"/u,
-  "Finance page must not use emoji marks, radial glow surfaces, or harsh anywhere wrapping on phone-critical surfaces."
+  /[\u{1F300}-\u{1FAFF}]|radial-gradient|overflowWrap: "anywhere"|where its route says/u,
+  "Finance page must not use emoji marks, radial glow surfaces, harsh anywhere wrapping, or route wording on phone-critical surfaces."
 );
 
 assertContains(
@@ -166,6 +166,18 @@ assertContains(
 );
 
 assertContains(
+  "src/pages/PaymentInstructionsPage.tsx",
+  /Current payment actions[\s\S]*?Keep this pay-in focused[\s\S]*?Next pages[\s\S]*?Payment focus[\s\S]*?Related pages reopen after this pay-in has reached a visible conclusion\./,
+  "Money In visible copy must describe payment progress in plain language instead of route-state wording."
+);
+
+assertNotContains(
+  "src/pages/PaymentInstructionsPage.tsx",
+  /Current route actions|Keep the route focused|Next routes|Route focus|Related routes reopen|Money In route refreshed|pay-in route/,
+  "Money In must not expose route-state wording in user-facing payment guidance."
+);
+
+assertContains(
   "src/pages/WithdrawalInstructionsPage.tsx",
   /debugId="money-out\.front-awaiting-pool"[\s\S]*?debugId="money-out\.front-continue-direct"[\s\S]*?debugId="money-out\.front-open-support"[\s\S]*?debugId="money-out\.front-copy-summary"[\s\S]*?debugId="money-out\.front-reset-task"[\s\S]*?debugId="money-out\.continue-direct"[\s\S]*?debugId="money-out\.open-support"[\s\S]*?debugId="money-out\.copy-summary"[\s\S]*?debugId="money-out\.route\.finance"/,
   "Money Out core withdrawal and follow-on route actions must remain traceable."
@@ -179,8 +191,8 @@ assertContains(
 
 assertNotContains(
   "src/pages/WithdrawalInstructionsPage.tsx",
-  /communitySettlement\?\.bankName \|\|\s*communitySettlement\?\.accountName \|\|\s*communitySettlement\?\.accountNumber/,
-  "Money Out community rail readiness must not be based on placeholder bank/account labels alone."
+  /communitySettlement\?\.bankName \|\|\s*communitySettlement\?\.accountName \|\|\s*communitySettlement\?\.accountNumber|Money Out route|route state|Support route|this route decides|Related routes/,
+  "Money Out community rail readiness and copy packages must not use placeholder bank/account labels or route-state wording."
 );
 
 assertContains(
@@ -190,9 +202,33 @@ assertContains(
 );
 
 assertContains(
+  "src/pages/PaymentRailsPage.tsx",
+  /guided Money In and Money Out pages[\s\S]*?guidance shown there[\s\S]*?guided Money In or Money Out page[\s\S]*?Next pages/,
+  "Payment Rails visible copy must send users to guided pages, not route mechanics."
+);
+
+assertNotContains(
+  "src/pages/PaymentRailsPage.tsx",
+  /Money In and Money Out routes|route shown there|Money In or Money Out route|Next routes|Hide raw|Show raw/,
+  "Payment Rails must not expose route-state wording in user-facing rail guidance."
+);
+
+assertContains(
   "src/pages/RevenueAllocationPage.tsx",
   /debugId="revenue-allocation\.route\.loan-summary"[\s\S]*?debugId="revenue-allocation\.route\.workbench"[\s\S]*?debugId="revenue-allocation\.route\.finance"[\s\S]*?debugId="revenue-allocation\.route\.loans"[\s\S]*?debugId="revenue-allocation\.route\.money-out"/,
   "Revenue Allocation route actions must keep finance-route debug IDs."
+);
+
+assertContains(
+  "src/pages/RevenueAllocationPage.tsx",
+  /Next support steps[\s\S]*?Move from allocation reading into the next support or finance page you need\./,
+  "Revenue Allocation visible copy must describe next support steps, not support routes."
+);
+
+assertNotContains(
+  "src/pages/RevenueAllocationPage.tsx",
+  /Next support routes/,
+  "Revenue Allocation must not expose route wording in the support-step heading."
 );
 
 assertContains(

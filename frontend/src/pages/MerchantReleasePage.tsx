@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { PrimaryButton, SecondaryButton } from "../components/StableButton";
 import { GsnLegacyIcon } from "../components/GsnLegacyIcon";
+import { TrustPaperWatermarkField } from "../components/TrustPaperMarks";
 import {
   TrustDocumentBoundaryPanel,
   TrustDocumentConfidenceRibbon,
@@ -510,6 +511,10 @@ export default function MerchantReleasePage() {
     <main style={pageShell()}>
       <section style={paper()} aria-label="GSN Merchant Release evidence desk">
         <div style={watermark()}>GSN</div>
+        <TrustPaperWatermarkField
+          names={["shield", "shop", "document", "qr"]}
+          opacity={0.022}
+        />
 
         <header style={{ position: "relative", zIndex: 1, display: "grid", gap: 14 }}>
           <div style={iconTile()}>
@@ -548,7 +553,7 @@ export default function MerchantReleasePage() {
             data-gsn-trust-document-certificate="merchant-release"
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+              gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 260px), 1fr))",
               gap: 12,
             }}
           >

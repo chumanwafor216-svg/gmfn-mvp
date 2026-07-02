@@ -1915,7 +1915,7 @@ export default function LoanSuggestionsPage() {
                         fontSize: 13,
                       }}
                     >
-                      If this fit looks strong enough, use Next routes below to continue into Support Workbench.
+                      If this fit looks strong enough, use Next pages below to continue into Support Workbench.
                     </div>
                   </div>
                 </div>
@@ -1937,7 +1937,7 @@ export default function LoanSuggestionsPage() {
         >
           <div>
             <div style={sectionLabel()}>
-              {suggestionsSupportActive ? "Next support routes" : "Next routes"}
+              {suggestionsSupportActive ? "Next support steps" : "Next pages"}
             </div>
             <div style={{ marginTop: 8, ...helperText() }}>
               {suggestionsSupportActive

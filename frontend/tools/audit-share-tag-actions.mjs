@@ -47,8 +47,13 @@ function assertNotContains(file, pattern, message) {
   ],
   [
     "src/lib/share.ts",
-    /export function buildShareText[\s\S]*const url = normalizeUrl\(target\.socialUrl \|\| target\.url\);[\s\S]*return \[title, url, extra\]\.filter\(Boolean\)\.join\("\\n"\);/,
-    "WhatsApp/copy-message text must put the backend social-preview URL before long package copy so chat apps scrape the route-specific card.",
+    /export function buildPublicShareText[\s\S]*const message = trimAtWord\(socialMessageForTarget\(target\), 220\);[\s\S]*return \[title, url, message\]\.filter\(Boolean\)\.join\("\\n"\);/,
+    "Public WhatsApp/email/copy-message text must stay compact and let the verification link carry the full record.",
+  ],
+  [
+    "src/lib/share.ts",
+    /function compactPaperMessage[\s\S]*valueFor\("Title"\)[\s\S]*valueFor\([\s\S]*"Main reading"[\s\S]*"Visible trust reading"[\s\S]*"Portable trust reading"[\s\S]*"Verification"[\s\S]*"Status"[\s\S]*"Trade status"[\s\S]*"Open the link to check the current GSN record\."/,
+    "Official paper share captions must keep only the useful title/context/reading and move full detail to the link.",
   ],
   ["src/lib/share.ts", /buildXIntentShareUrl/, "X intent share URL helper is missing."],
   [
@@ -66,8 +71,8 @@ function assertNotContains(file, pattern, message) {
   ["src/lib/share.ts", /buildMailtoShareUrl/, "Email fallback share URL helper is missing."],
   [
     "src/lib/share.ts",
-    /purposeLine \? paperLineValue\(purposeLine\) : "Open this GSN record\."/,
-    "Generic paper/social share fallback must use public-record language, not trusted-link language.",
+    /return `\$\{tag\}\$\{buildPublicShareText\(target\)\}`\.trim\(\);[\s\S]*buildMailtoShareUrl[\s\S]*const text = buildPublicShareText\(target\);/,
+    "Social copy and email fallback must use compact public share text instead of full official-paper packages.",
   ],
   [
     "src/components/SocialTagShareButton.tsx",
@@ -131,12 +136,12 @@ function assertNotContains(file, pattern, message) {
   ],
   [
     "src/components/ShareActions.tsx",
-    /debugId="share-actions\.copy-link"[\s\S]*debugId="share-actions\.whatsapp"[\s\S]*debugId="share-actions\.tag-social"/,
+    /buildPublicShareText[\s\S]*const publicShareText = useMemo[\s\S]*buildWhatsAppUrl\(publicShareText\)[\s\S]*debugId="share-actions\.copy-link"[\s\S]*debugId="share-actions\.whatsapp"[\s\S]*debugId="share-actions\.tag-social"/,
     "ShareActions must keep copy, WhatsApp, and social tag fallbacks together.",
   ],
   [
     "src/components/ShareButtons.tsx",
-    /debugId="share-buttons\.copy-link"[\s\S]*debugId="share-buttons\.whatsapp"[\s\S]*debugId="share-buttons\.copy-text"[\s\S]*debugId="share-buttons\.tag-social"[\s\S]*debugId="share-buttons\.qr"/,
+    /buildPublicShareText[\s\S]*const publicShareText = useMemo[\s\S]*copyToClipboard\(publicShareText\)[\s\S]*buildWhatsAppUrl\(publicShareText\)[\s\S]*debugId="share-buttons\.copy-link"[\s\S]*debugId="share-buttons\.whatsapp"[\s\S]*debugId="share-buttons\.copy-text"[\s\S]*debugId="share-buttons\.tag-social"[\s\S]*debugId="share-buttons\.qr"/,
     "ShareButtons must keep copy, WhatsApp, social tag, and QR fallbacks together.",
   ],
   [

@@ -473,7 +473,7 @@ export default function InviteLandingPage() {
                 >
                   <FeatureCard
                     title="Controlled founder onboarding"
-                    text="The app does not dump everything at once. It carries you into the founder create route one step at a time."
+                    text="The app does not dump everything at once. It carries you into founder creation one step at a time."
                   />
                   <FeatureCard
                     title="Trust-first entry"

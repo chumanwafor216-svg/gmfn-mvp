@@ -9,7 +9,7 @@ import {
 import SocialTagShareButton from "./SocialTagShareButton";
 import {
   buildQrImageUrl,
-  buildShareText,
+  buildPublicShareText,
   buildWhatsAppUrl,
   copyToClipboard,
   normalizeUrl,
@@ -31,7 +31,10 @@ export default function ShareButtons({
   const [qrOpen, setQrOpen] = useState(false);
 
   const url = useMemo(() => normalizeUrl(target.url), [target.url]);
-  const shareText = useMemo(() => buildShareText({ ...target, url }), [target, url]);
+  const publicShareText = useMemo(
+    () => buildPublicShareText({ ...target, url }),
+    [target, url]
+  );
   const qrImg = useMemo(() => buildQrImageUrl(url, 240), [url]);
 
   function actionRowStyle(): React.CSSProperties {
@@ -59,12 +62,12 @@ export default function ShareButtons({
   }
 
   async function onCopyText() {
-    const ok = await copyToClipboard(shareText);
+    const ok = await copyToClipboard(publicShareText);
     showToast(ok ? "Copied WhatsApp text" : "Copy failed");
   }
 
   function onWhatsApp() {
-    window.open(buildWhatsAppUrl(shareText), "_blank", "noopener,noreferrer");
+    window.open(buildWhatsAppUrl(publicShareText), "_blank", "noopener,noreferrer");
   }
 
   return (

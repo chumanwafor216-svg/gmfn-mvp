@@ -1374,7 +1374,7 @@ export default function WithdrawalInstructionsPage() {
 
     const text = buildGsnPaymentInstructionPackage({
       title: "GSN Community Withdrawal Rail",
-      purpose: "Identify the community rail connected to the Money Out route.",
+      purpose: "Identify the community rail connected to the Money Out page.",
       memberName,
       gsnId: currentGmfnId,
       communityName: communityLabel,
@@ -1463,7 +1463,7 @@ export default function WithdrawalInstructionsPage() {
 
     const text = buildGsnPaymentInstructionPackage({
       title: "GSN Withdrawal Summary",
-      purpose: "Keep the requested Money Out amount, payout destination, and route state together.",
+      purpose: "Keep the requested Money Out amount, payout destination, and current step together.",
       memberName,
       gsnId: currentGmfnId,
       communityName: communityLabel,
@@ -2236,7 +2236,7 @@ export default function WithdrawalInstructionsPage() {
 
                 {!isCompact ? (
                 <div style={innerCard("#FFFFFF")}>
-                  <div style={sectionLabel()}>Support route</div>
+                  <div style={sectionLabel()}>Support step</div>
                   <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
                     {requiresSupport
                       ? "This amount is above your available balance. Support continues the support-backed path."
@@ -2907,7 +2907,7 @@ export default function WithdrawalInstructionsPage() {
                   <div style={sectionLabel()}>What happens next</div>
                   <div style={{ marginTop: 8, ...helperText(), color: "#F8FBFF" }}>
                     {!effectiveAvailableKnown
-                      ? "Wait for the pool reading before this route decides."
+                      ? "Wait for the pool reading before this page decides the next step."
                       : !requiresSupport
                       ? "Keep the request reference visible. Finance/admin reconciles it during the pilot."
                       : "Your available balance is not enough. Continue through Support Requests."}
@@ -3031,7 +3031,7 @@ export default function WithdrawalInstructionsPage() {
             </div>
             <div style={{ marginTop: 8, ...helperText() }}>
               {withdrawalCanWidenRoutes
-                ? "Related routes reopen after a visible result."
+                ? "Related pages reopen after a visible result."
                 : requiresSupport
                 ? "Support is required. Open support."
                 : "Keep this task focused on amount, code, payout account, and result."}

@@ -31,7 +31,7 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [note, setNote] = useState<string>("");
 
-  // Local browser fields until backend profile storage is available.
+  // Local browser fields until permanent profile storage is available.
   const [displayName, setDisplayName] = useState<string>(localStorage.getItem("gmfn_profile_name") || "");
   const [phone, setPhone] = useState<string>(localStorage.getItem("gmfn_profile_phone") || "");
   const [country, setCountry] = useState<string>(localStorage.getItem("gmfn_profile_country") || "");
@@ -56,7 +56,7 @@ export default function ProfilePage() {
     localStorage.setItem("gmfn_profile_name", displayName.trim());
     localStorage.setItem("gmfn_profile_phone", phone.trim());
     localStorage.setItem("gmfn_profile_country", country.trim());
-    setNote("Saved on this device. Backend profile storage is a future upgrade.");
+    setNote("Saved on this device. Permanent profile storage is a future upgrade.");
     setTimeout(() => setNote(""), 2200);
   }
 
@@ -161,7 +161,7 @@ export default function ProfilePage() {
         <div style={{ marginTop: 10, fontSize: 12, color: "#64748b" }}>
           {profileIconText(
             "records-folder",
-            "Later upgrade: store profile fields in backend for cross-device portability.",
+            "Later upgrade: save profile fields for cross-device portability.",
             20
           )}
         </div>

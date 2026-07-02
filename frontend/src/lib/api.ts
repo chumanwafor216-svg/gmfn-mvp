@@ -5602,7 +5602,7 @@ export async function setCommunityProfileImage(
     return {
       ok: true,
       detail:
-        "Image uploaded, but no dedicated profile-image save endpoint was available. Use the returned URL in the page state.",
+        "Image uploaded, but GSN could not save it permanently yet. Keep this image here until permanent saving is ready.",
       image_url: imageUrl,
       profile_image_url: imageUrl,
       community_image_url: imageUrl,
@@ -5687,7 +5687,7 @@ export async function removeCommunityProfileImage(arg1?: any): Promise<any> {
     return {
       ok: true,
       detail:
-        "No dedicated remove endpoint was available, but the UI can clear the current image state.",
+        "GSN could not remove the saved image permanently yet, but this page can clear the current image.",
     };
   }
 

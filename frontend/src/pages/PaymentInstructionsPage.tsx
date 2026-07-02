@@ -1159,7 +1159,7 @@ export default function PaymentInstructionsPage() {
 
       setNotice({
         tone: "success",
-        text: "Money In route refreshed.",
+        text: "Money In page refreshed.",
       });
     } finally {
       if (
@@ -1513,7 +1513,7 @@ export default function PaymentInstructionsPage() {
         <PageTopNav
           sectionLabel="Money In"
           title="Payment Instructions"
-          subtitle="Loading the pay-in route..."
+          subtitle="Loading the pay-in page..."
           homeTo={routes.dashboard}
           homeLabel="Dashboard"
           backTo={routes.marketplace}
@@ -2722,13 +2722,13 @@ export default function PaymentInstructionsPage() {
 
             <div style={softCard("#FFFFFF")}>
               <div style={sectionLabel()}>
-                {moneyInTaskStillActive ? "Current route actions" : "Completion actions"}
+                {moneyInTaskStillActive ? "Current payment actions" : "Completion actions"}
               </div>
 
               <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
                 {moneyInTaskStillActive ? (
                   <div style={innerCard("#F8FBFF")}>
-                    <div style={sectionLabel()}>Keep the route focused</div>
+                    <div style={sectionLabel()}>Keep this pay-in focused</div>
                     <div style={{ marginTop: 8, ...helperText(), color: "#F8FBFF" }}>
                       Waiting for payment or bank match.
                     </div>
@@ -2762,11 +2762,11 @@ export default function PaymentInstructionsPage() {
         >
           <div>
             <div style={sectionLabel()}>
-              {moneyInCanWidenRoutes ? "Next routes" : "Route focus"}
+              {moneyInCanWidenRoutes ? "Next pages" : "Payment focus"}
             </div>
             <div style={{ marginTop: 8, ...helperText() }}>
               {moneyInCanWidenRoutes
-                ? "Related routes reopen after this pay-in has reached a visible conclusion."
+                ? "Related pages reopen after this pay-in has reached a visible conclusion."
                 : "Finish this payment first."}
             </div>
           </div>

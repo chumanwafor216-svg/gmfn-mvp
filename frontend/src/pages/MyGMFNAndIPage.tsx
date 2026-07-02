@@ -1019,7 +1019,7 @@ export default function MyGMFNAndIPage() {
   const topNavTitle = isAppRoute ? "My GSN and I" : "GSN Guide";
   const topNavSubtitle = isAppRoute
     ? `Keep the ${capabilityCount} core capabilities visible here while workspace settings stay in a separate tab.`
-    : `Understand what GSN can do before you sign in, enter a community, or move into protected routes.`;
+    : `Understand what GSN can do before you sign in, enter a community, or move into protected pages.`;
   const publicGuideEntryItems = useMemo<NextActionGuideItem[]>(
     () => [
       {
@@ -1035,14 +1035,14 @@ export default function MyGMFNAndIPage() {
         id: "create-or-join",
         label: "Create or join a community",
         detail:
-          "Use the welcome route when the next job is entering, building, or joining a real community path.",
+          "Use the welcome page when the next job is entering, building, or joining a real community path.",
         to: "/welcome",
         keywords: ["welcome", "join", "create", "community"],
         tone: "primary",
       },
       {
         id: "sign-in",
-        label: "Sign in to reopen protected routes",
+        label: "Sign in to reopen protected pages",
         detail:
           "Use sign in when you already have an account and need dashboard, marketplace, loans, trust, or other protected member tools.",
         to: "/login",
@@ -1560,7 +1560,7 @@ export default function MyGMFNAndIPage() {
             >
               {isAppRoute
                 ? "Different pages carry different parts of the system."
-                : "Choose the route that matches where you are now."}
+                : "Choose the page that matches where you are now."}
             </div>
 
             {isAppRoute ? (
@@ -1637,7 +1637,7 @@ export default function MyGMFNAndIPage() {
                   defaultOpen
                   eyebrow="Public next step"
                   title="Which public door should you use next?"
-                  intro="Choose the route that matches where you are: broad orientation, community entry, or reopening your protected member work."
+                  intro="Choose the page that matches where you are: broad orientation, community entry, or reopening your protected member work."
                   items={publicGuideEntryItems}
                   onSelect={(item) => {
                     if (!item.to) return;

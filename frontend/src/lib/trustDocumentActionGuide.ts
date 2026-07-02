@@ -89,7 +89,7 @@ export function buildTrustSlipActionGuide(): TrustDocumentActionGuideContent {
       },
       {
         id: "verify-link",
-        title: "Use the verify link when you need a direct public route",
+        title: "Use the verify link when you need a direct public page",
         detail:
           "Copy the verify link when you want the other person to open the current public reading without retyping the code.",
       },
@@ -122,7 +122,7 @@ export function buildTrustSlipVerifyActionGuide(): TrustDocumentActionGuideConte
         id: "snapshot",
         title: "Use the verification snapshot for a quick checked summary",
         detail:
-          "Copy the verification snapshot when you need a short record of visible band, visible score, validity, dates, and the current verify route.",
+          "Copy the verification snapshot when you need a short record of visible band, visible score, validity, dates, and the current verification link.",
       },
       {
         id: "passport",

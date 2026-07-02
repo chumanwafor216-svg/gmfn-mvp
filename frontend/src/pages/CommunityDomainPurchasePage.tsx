@@ -765,7 +765,7 @@ export default function CommunityDomainPurchasePage() {
                     </div>
                     <div style={helperText(false)}>
                       Ordinary Create Community remains the free social entry path. This
-                      route is for a paid institutional Community Domain.
+                      page is for a paid institutional Community Domain.
                     </div>
                   </div>
                 </div>

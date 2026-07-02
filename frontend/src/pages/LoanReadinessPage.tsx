@@ -859,7 +859,7 @@ export default function LoanReadinessPage() {
         level: "blocked" as const,
         title: "Community or member identity is not ready.",
         detail:
-          "The support route should not continue without your current community and visible member identity.",
+          "The support process should not continue without your current community and visible member identity.",
       };
     }
 
@@ -1924,7 +1924,7 @@ export default function LoanReadinessPage() {
         >
           <div>
             <div style={sectionLabel()}>
-              {readinessSupportActive ? "Next support routes" : "Next routes"}
+              {readinessSupportActive ? "Next support steps" : "Next pages"}
             </div>
             <div style={{ marginTop: 8, ...helperText() }}>
               {readinessSupportActive

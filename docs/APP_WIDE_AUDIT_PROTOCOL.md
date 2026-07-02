@@ -130,6 +130,28 @@ Prefer plain action language:
 
 If the sentence sounds like it was written for the maker, it fails.
 
+Copy must also be concise and non-repetitive:
+
+- Say one idea once, in the place where the user needs it.
+- Remove repeated warnings, repeated explanations, and repeated paragraph
+  summaries unless repetition is needed for legal/evidence clarity.
+- Use institutional, polished wording: direct, calm, short, and complete.
+- Prefer `page`, `step`, `record`, `link`, `access code`, `payment step`, or
+  `support step` over visible engineering words such as `route`, `token`,
+  `debug`, or `state`.
+- Before calling a page polished, read the visible copy top-to-bottom and remove
+  at least one unnecessary sentence if the page repeats itself.
+
+Public and outsider-facing contact copy must protect personal contact details:
+
+- Prefer a GSN public handle, GSN ID, official GSN relay identity, or future
+  GSN email/username alias over exposing a personal phone number.
+- A phone number or WhatsApp contact may appear only when the user, shop owner,
+  community contact, or policy has clearly chosen that contact path.
+- Verification pages should identify people through controlled GSN references
+  first, then offer contact only where consent and purpose are clear.
+- WhatsApp is a contact method, not the identity source of truth.
+
 ### 3. Action Honesty
 
 A button must not promise more than it can do.

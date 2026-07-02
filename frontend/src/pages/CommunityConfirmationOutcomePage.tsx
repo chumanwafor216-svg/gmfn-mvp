@@ -8,6 +8,7 @@ import {
   TrustPaperSecurityNote,
   TrustPaperSecurityFooter,
   TrustPaperWatermark,
+  TrustPaperWatermarkField,
 } from "../components/TrustPaperMarks";
 import {
   TrustDocumentBoundaryPanel,
@@ -1125,6 +1126,10 @@ export default function CommunityConfirmationOutcomePage() {
     >
       <div style={pageShell(isCompactPaper)}>
         <article style={paperCard()}>
+          <TrustPaperWatermarkField
+            names={["shield", "community", "document", "qr"]}
+            opacity={0.024}
+          />
           <header style={paperHero(isCompactPaper)}>
             <TrustPaperWatermark
               name="shield"
@@ -1289,9 +1294,8 @@ export default function CommunityConfirmationOutcomePage() {
                   data-gsn-trust-document-certificate="community-confirmation-outcome"
                   style={{
                     display: "grid",
-                    gridTemplateColumns: isCompactPaper
-                      ? "1fr"
-                      : "minmax(0, 1fr) minmax(250px, 0.78fr)",
+                    gridTemplateColumns:
+                      "repeat(auto-fit, minmax(min(100%, 320px), 1fr))",
                     gap: isCompactPaper ? 12 : 14,
                     alignItems: "start",
                   }}

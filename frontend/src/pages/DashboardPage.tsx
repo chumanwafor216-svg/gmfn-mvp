@@ -2390,7 +2390,7 @@ function buildMostUsedAppFallback(params: {
     "money-out": {
       key: "money-out",
       label: "Money Out",
-      detail: "Open the clean money-out route.",
+      detail: "Open the Money Out page.",
       to: DASHBOARD_TARGETS.MONEY_OUT,
       count: 0,
       lastOpenedAt: "",
@@ -2797,7 +2797,7 @@ function buildPriorityRoutes(params: {
   return {
     title: "Keep the system calm and well ordered",
     detail:
-      "No major pressure is dominating the dashboard. Use the clean route and keep momentum disciplined.",
+      "No major pressure is dominating the dashboard. Use the cleanest next step and keep momentum disciplined.",
     primaryRoute: {
       key: "notifications",
       label: "Open your alerts",

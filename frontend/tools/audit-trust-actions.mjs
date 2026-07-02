@@ -108,6 +108,18 @@ function assertFunctionNotContains(file, functionName, forbiddenPattern, message
   }
 }
 
+assertContains(
+  "src/components/TrustDocumentLanguage.tsx",
+  /data-gsn-trust-document-collapsible="true"[\s\S]*export function TrustDocumentDisclosureSection[\s\S]*data-gsn-trust-document-section-disclosure="true"[\s\S]*More security details[\s\S]*More limits[\s\S]*More confirmed details/,
+  "Shared Trust Document panels must keep long supporting proof details and deeper record sections collapsible instead of exposing every line on public records."
+);
+
+assertContains(
+  "src/components/TrustPaperMarks.tsx",
+  /export function TrustPaperWatermarkField[\s\S]*Array\.from\(\{ length: 12 \}[\s\S]*data-gsn-trust-paper-watermark-field="true"/,
+  "Shared Trust Paper marks must provide a recurring watermark field for long public records, not only a single top or bottom mark."
+);
+
 trustDomainFiles.forEach(assertStableActionsHaveDebugIds);
 
 for (const file of trustDomainFiles) {
@@ -174,8 +186,8 @@ assertContains(
 
 assertNotContains(
   "src/lib/gsnSnapshotPaper.ts",
-  /verifies a public GSN community record/i,
-  "Community verification copied packages must not claim that the package itself verifies the community record."
+  /verifies a public GSN community record|support state/i,
+  "Community verification and support copied packages must not claim that the package itself verifies the community record or expose state wording."
 );
 
 assertContains(
@@ -236,6 +248,78 @@ assertContains(
   "src/pages/CommunityMemberVerifyPage.tsx",
   /data-gsn-trust-document-certificate="community-member-credential"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This credential confirms"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This credential does not confirm"[\s\S]*?TrustDocumentSecurityPanel[\s\S]*?title="Member credential security"[\s\S]*?TrustDocumentFingerprint[\s\S]*?label="Community member credential fingerprint"/,
   "Public Community Member Credential must render the Trust Document Language sequence with security, confirms/does-not-confirm panels, and record fingerprint."
+);
+
+assertContains(
+  "src/pages/CommunityMemberVerifyPage.tsx",
+  /data-gsn-trust-document-certificate="community-member-credential"[\s\S]*?gridTemplateColumns: "repeat\(auto-fit, minmax\(min\(100%, 320px\), 1fr\)\)"[\s\S]*?gridTemplateColumns:[\s\S]*?"repeat\(auto-fit, minmax\(min\(100%, 240px\), 1fr\)\)"/,
+  "Public Community Member Credential certificate panels must collapse before phone text is squeezed into narrow stacked columns."
+);
+
+assertContains(
+  "src/pages/CommunityMemberVerifyPage.tsx",
+  /TrustDocumentDisclosureSection[\s\S]*title="Full public reading"[\s\S]*Open for currentness, evidence, and decision guidance\./,
+  "Public Community Member Credential must keep deeper public-reading guidance collapsed behind a clear institutional disclosure."
+);
+
+assertContains(
+  "src/pages/CommunityMemberVerifyPage.tsx",
+  /data-gsn-member-credential-primary-facts="true"[\s\S]*?Member GSN ID[\s\S]*?Community ID[\s\S]*?Status[\s\S]*?Witness strength[\s\S]*?TrustDocumentDisclosureSection[\s\S]*?title="All credential facts"[\s\S]*?data-gsn-member-credential-secondary-facts="true"[\s\S]*?Next witness status[\s\S]*?TrustDocumentDisclosureSection[\s\S]*?title="Evidence notes and privacy"/,
+  "Public Community Member Credential must expose only the core facts first and collapse secondary facts plus evidence/privacy notes."
+);
+
+assertNotContains(
+  "src/pages/CommunityMemberVerifyPage.tsx",
+  /minmax\(0, 1fr\) minmax\(240px, 0\.74fr\)/,
+  "Public Community Member Credential must not restore the two-column layout that overlaps/squeezes phone screenshots."
+);
+
+assertContains(
+  "src/pages/CommunityMemberVerifyPage.tsx",
+  /TrustPaperWatermarkField[\s\S]*names=\{\["shield", "id", "qr", "document"\]\}/,
+  "Public Community Member Credential must carry a recurring GSN watermark field through the long public paper body."
+);
+
+assertContains(
+  "src/pages/CommunityVerifyPage.tsx",
+  /TrustPaperWatermarkField[\s\S]*names=\{\["shield", "home", "qr", "document"\]\}[\s\S]*data-gsn-trust-document-certificate="community-verification"[\s\S]*gridTemplateColumns: "repeat\(auto-fit, minmax\(min\(100%, 260px\), 1fr\)\)"/,
+  "Public Community Verification must carry a recurring watermark field and phone-safe public-paper proof grid."
+);
+
+assertContains(
+  "src/pages/CommunityConfirmationOutcomePage.tsx",
+  /TrustPaperWatermarkField[\s\S]*names=\{\["shield", "community", "document", "qr"\]\}[\s\S]*data-gsn-trust-document-certificate="community-confirmation-outcome"[\s\S]*gridTemplateColumns:[\s\S]*"repeat\(auto-fit, minmax\(min\(100%, 320px\), 1fr\)\)"/,
+  "Public Community Confirmation Outcome must carry a recurring watermark field and phone-safe public-paper proof grid."
+);
+
+assertContains(
+  "src/pages/MerchantReleasePage.tsx",
+  /TrustPaperWatermarkField[\s\S]*names=\{\["shield", "shop", "document", "qr"\]\}[\s\S]*data-gsn-trust-document-certificate="merchant-release"[\s\S]*gridTemplateColumns: "repeat\(auto-fit, minmax\(min\(100%, 260px\), 1fr\)\)"/,
+  "Merchant Release Evidence must carry a recurring watermark field and phone-safe public-paper proof grid."
+);
+
+assertContains(
+  "src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx",
+  /TrustPaperWatermarkField[\s\S]*names=\{\["shield", "globe", "qr", "document"\]\}/,
+  "TrustSlip Verify public paper must carry a recurring GSN watermark field through the long public paper body."
+);
+
+assertNotContains(
+  "src/pages/CommunityConfirmationOutcomePage.tsx",
+  /minmax\(0, 1fr\) minmax\(250px, 0\.78fr\)/,
+  "Public Community Confirmation Outcome must not restore the forced two-column proof layout on public records."
+);
+
+assertNotContains(
+  "src/pages/CommunityVerifyPage.tsx",
+  /repeat\(auto-fit, minmax\(260px, 1fr\)\)/,
+  "Public Community Verification must not use a proof grid that can squeeze phone text into narrow columns."
+);
+
+assertNotContains(
+  "src/pages/MerchantReleasePage.tsx",
+  /repeat\(auto-fit, minmax\(260px, 1fr\)\)/,
+  "Merchant Release Evidence must not use a proof grid that can squeeze phone text into narrow columns."
 );
 
 assertContains(
@@ -327,6 +411,12 @@ assertContains(
   "src/lib/trustDocumentActionGuide.ts",
   /Printing this page is useful for carrying the current public reading\./,
   "TrustSlip Verify action guidance must carry the public reading, not call the page a broad confirmation."
+);
+
+assertNotContains(
+  "src/lib/trustDocumentActionGuide.ts",
+  /direct public route|verify route/i,
+  "Trust document action guidance must describe verification as a page or link, not a route."
 );
 
 assertContains(
@@ -691,8 +781,20 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityConfirmationPolicyPage.tsx",
-  /External registration evidence[\s\S]*?support for review[\s\S]*?This does not[\s\S]*?verify leadership, membership, consent, or public Community ID ownership[\s\S]*?GSN stores a fingerprint, not this raw text[\s\S]*?no verification effect[\s\S]*?Fingerprint:[\s\S]*?Raw reference stored:/,
+  /External registration evidence[\s\S]*?support for review[\s\S]*?This does not[\s\S]*?verify leadership, membership, consent, or public Community ID ownership[\s\S]*?GSN stores a fingerprint, not the full text[\s\S]*?no verification effect[\s\S]*?Fingerprint:[\s\S]*?Full reference stored:/,
   "CommunityConfirmationPolicyPage external-registration panel must frame CAC/company-registration as supporting evidence only and show fingerprint/presence facts instead of raw public exposure."
+);
+
+assertNotContains(
+  "src/pages/CommunityConfirmationPolicyPage.tsx",
+  /not this raw text|Raw reference stored/i,
+  "CommunityConfirmationPolicyPage external-registration copy must use full-text language, not raw-text wording."
+);
+
+assertNotContains(
+  "src/pages/CommunityConfirmationPolicyPage.tsx",
+  /policy and routing/i,
+  "CommunityConfirmationPolicyPage copied policy paper must describe the review flow instead of routing."
 );
 
 assertContains(
@@ -709,13 +811,13 @@ assertContains(
 
 assertNotContains(
   "src/pages/CommunityVerifyPage.tsx",
-  /Verified in GSN|confirms the GSN community ID domain|This record confirms the community identity|proof anchor|What this proves|active_member_count|instant_pulse_available|public_policy|plain_language|hidden_by_design|Show publicly|Keep protected|Full member list|Raw member phone numbers|Member phone numbers|Sponsor details|Internal disputes|Private relay contacts|Internal trust history|Save PDF|CAC|company-registration|registration_reference|registered_name/,
+  /Verified in GSN|confirms the GSN community ID domain|This record confirms the community identity|proof anchor|What this proves|active_member_count|instant_pulse_available|public_policy|plain_language|hidden_by_design|Show publicly|Keep protected|Full member list|Raw member phone numbers|Member phone numbers|Sponsor details|Internal disputes|Private relay contacts|Internal trust history|Save PDF|CAC|company-registration|registration_reference|registered_name|server database setup/,
   "CommunityVerifyPage must not render private-ish community confirmation internals, protected-category inventories, dossier-style public export actions, or long copy packages."
 );
 
 assertNotContains(
   "src/pages/CommunityMemberVerifyPage.tsx",
-  /GSN member proof|Community member proof|Credential not confirmed|confirms active membership|What this proves/i,
+  /GSN member proof|Community member proof|Credential not confirmed|confirms active membership|What this proves|server database setup/i,
   "Community member public credential must show the active membership record and witness strength, not overstate it as broad confirmation."
 );
 
@@ -889,8 +991,14 @@ assertContains(
 
 assertContains(
   "src/pages/TrustTimelinePage.tsx",
-  /trustTimelineDoesNotConfirmList[\s\S]*?Government registration, legal identity, or bank approval[\s\S]*?Payment movement, escrow, payout approval, credit approval[\s\S]*?Future behaviour, future repayment, delivery, marketplace outcome[\s\S]*?Authority to release goods, money, credit, services, or private records[\s\S]*?Private contacts, complete private Trust Passport history, raw metadata, or admin-only notes/,
+  /trustTimelineDoesNotConfirmList[\s\S]*?Government registration, legal identity, or bank approval[\s\S]*?Payment movement, escrow, payout approval, credit approval[\s\S]*?Future behaviour, future repayment, delivery, marketplace outcome[\s\S]*?Authority to release goods, money, credit, services, or private records[\s\S]*?Private contacts, complete private Trust Passport history, protected event details, or admin-only notes/,
   "Trust Timeline must keep legal, finance, future-outcome, release-authority, and private-record boundaries visible."
+);
+
+assertNotContains(
+  "src/pages/TrustTimelinePage.tsx",
+  /signed-in GSN routes|raw metadata/i,
+  "Trust Timeline visible copy must use page and protected-detail language, not route/raw-metadata wording."
 );
 
 assertContains(
@@ -969,6 +1077,24 @@ assertContains(
   "src/pages/TrustCommandCentrePage.tsx",
   /Check database and service health[\s\S]*?Check community-admin exposure access[\s\S]*?Review support progress and coverage[\s\S]*?exposure reading[\s\S]*?Buffer:/,
   "Trust Command Centre overview must frame admin readings as checks, support progress, exposure readings, and buffer signals."
+);
+
+assertContains(
+  "src/pages/TrustCommandCentrePage.tsx",
+  /Check if people understand community, trust, marketplace, support, and money pages\./,
+  "Trust Command Centre pilot assumptions must describe user-facing pages instead of money routes."
+);
+
+assertNotContains(
+  "src/pages/TrustCommandCentrePage.tsx",
+  /money routes|community-admin route|Use the route|route that matches|Open route|Live route signals|main admin routes|matching route|command routes|admin routes|Backend truth|opening several routes|route confidence|Key verification routes/i,
+  "Trust Command Centre visible copy must not expose route wording."
+);
+
+assertNotContains(
+  "src/pages/TrustSlipPage.tsx",
+  /verification route|verify route|Public verification route/i,
+  "TrustSlip visible copy must describe public verification as a link or page, not a route."
 );
 
 assertContains(
@@ -1071,6 +1197,12 @@ assertNotContains(
   "src/pages/CommunityConfirmationInboxPage.tsx",
   /Confirm \{subjectName\(row\)\}|Can confirm/,
   "Community confirmation inbox responder lane must avoid certification-like confirm labels."
+);
+
+assertNotContains(
+  "src/pages/CommunityConfirmationInboxPage.tsx",
+  /Optional internal reference|Internal note ID/i,
+  "Community confirmation inbox reference fields must use review/reference language, not internal-note wording."
 );
 
 assertNotContains(
@@ -1181,6 +1313,12 @@ assertNotContains(
   "Loan Summary must not label preview figures as plain net disbursed."
 );
 
+assertNotContains(
+  "src/pages/LoanSummaryPage.tsx",
+  /supporter state/i,
+  "Loan Summary support evidence copy must describe supporter position, not state wording."
+);
+
 assertContains(
   "src/pages/RevenueAllocationPage.tsx",
   /Returned allocation reading only; not payment instruction,[\s\S]*?settlement confirmation, or evidence that money moved\./,
@@ -1255,8 +1393,8 @@ assertNotContains(
 
 assertContains(
   "src/pages/RepaymentPage.tsx",
-  /this route does not confirm money received, close support, or release supporter exposure\./,
-  "Repayment route must separate payment declaration from money receipt, support closure, and supporter-exposure release."
+  /this page does not confirm money received, close support, or release supporter exposure\./,
+  "Repayment page must separate payment declaration from money receipt, support closure, and supporter-exposure release."
 );
 
 assertContains(
@@ -1297,7 +1435,7 @@ assertNotContains(
 
 assertContains(
   "src/pages/FinancePage.tsx",
-  /Finance shows this payment as confirmed; use the related service only where its route says it is available\./,
+  /Finance shows this payment as confirmed; use the related service only where its page says it is available\./,
   "Finance payment confirmation must be scoped to finance records, not broad service entitlement."
 );
 
@@ -1357,13 +1495,13 @@ assertNotContains(
 
 assertContains(
   "src/pages/PayoutDetailsPage.tsx",
-  /This destination record is ready for the Money Out route, but it does not approve or execute a withdrawal\./,
+  /This destination record is ready for the Money Out process, but it does not approve or execute a withdrawal\./,
   "Payout Details must separate destination readiness from withdrawal approval or payout execution."
 );
 
 assertContains(
   "src/pages/PayoutDetailsPage.tsx",
-  /Review the payout destination record for the Money Out route\. This record does not approve or execute a withdrawal\./,
+  /Review the payout destination record for the Money Out page\. This record does not approve or execute a withdrawal\./,
   "Payout Details copied summary must carry the same approval/execution boundary."
 );
 
@@ -1399,7 +1537,7 @@ assertNotContains(
 
 assertContains(
   "src/pages/PaymentRailsPage.tsx",
-  /Rail status is not payment approval, settlement confirmation, or evidence that money moved; action should still happen on the guided Money In and Money Out routes\./,
+  /Rail status is not payment approval, settlement confirmation, or evidence that money moved; action should still happen on the guided Money In and Money Out pages\./,
   "Payment Rails must separate rail visibility/status from payment approval, settlement, or money movement."
 );
 
@@ -1592,9 +1730,21 @@ assertNotContains(
 
 assertNotContains(
   "src/lib/trustDocumentGuide.ts",
-  /public-proof|repair", "proof"|proof", "community/i,
+  /public-proof|repair", "proof"|proof", "community|identity route/i,
   "Trust document guide copy must describe public records/evidence, not old certainty-context language."
 );
+
+[
+  "src/lib/trustDocumentFamilyMap.ts",
+  "src/lib/trustDocumentUseCases.ts",
+  "src/pages/TrustScorePage.tsx",
+].forEach((file) => {
+  assertNotContains(
+    file,
+    /verify route|signed-in app route|completion routes|pending routes|internal label/i,
+    "Trust document and Trust Passport copy must use page/link language instead of route language."
+  );
+});
 
 assertNotContains(
   "src/lib/gsnIconAssets.ts",
@@ -1889,6 +2039,12 @@ assertContains(
   "src/pages/TrustCommandCentrePage.tsx",
   /debugId=\{`trust-command\.route\.\$\{card\.label\.toLowerCase\(\)\.replace/,
   "Trust command centre route tiles must keep generated debug IDs for route tracing."
+);
+
+assertNotContains(
+  "src/pages/TrustCommandCentrePage.tsx",
+  /Route, action, result/i,
+  "Trust Command Centre event-capture copy must describe pages and actions, not route mechanics."
 );
 
 if (findings.length > 0) {

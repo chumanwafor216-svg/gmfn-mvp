@@ -350,7 +350,7 @@ if (visibleIntentActionCount !== expectedVisibleIntentActionCount) {
 }
 
 assertContains(
-  /debugId="marketplace\.tile\.money"[\s\S]*?aria-label="Open Money and trust tools for this marketplace"[\s\S]*?openMarketplaceSection\(event, "money", "marketplace-money-routes"\)[\s\S]*?<MarketplaceGlyph name="pool"[\s\S]*?Money & Trust[\s\S]*?Local money routes and standing\.[\s\S]*?Finance[\s\S]*?Money In[\s\S]*?Money Out[\s\S]*?Trust/,
+  /debugId="marketplace\.tile\.money"[\s\S]*?aria-label="Open Money and trust tools for this marketplace"[\s\S]*?openMarketplaceSection\(event, "money", "marketplace-money-routes"\)[\s\S]*?<MarketplaceGlyph name="pool"[\s\S]*?Money & Trust[\s\S]*?Local money pages and standing\.[\s\S]*?Finance[\s\S]*?Money In[\s\S]*?Money Out[\s\S]*?Trust/,
   "Marketplace Money & Trust card must group local finance, Money In, Money Out, and compact trust standing behind one front-door lane."
 );
 

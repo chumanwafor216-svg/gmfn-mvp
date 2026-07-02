@@ -246,7 +246,7 @@ function buildEventSnapshot(row: any): string {
   return buildGsnSnapshotPaper({
     title: "GSN Trust Event Audit Snapshot",
     purpose:
-      "Internal audit snapshot for a trust-event record before deeper admin review.",
+      "Protected audit snapshot for a trust-event record before deeper admin review.",
     reference: `trust-event-${safeStr(row?.id || row?.event_id || row?.created_at || "pending")}`,
     context: [
       { label: "Event", value: supportDisplayText(row?.event_type || "trust.event") },
@@ -258,12 +258,12 @@ function buildEventSnapshot(row: any): string {
     bodyLines: [
       `Reason: ${supportDisplayText(row?.reason || "Not stated")}`,
       `Note: ${supportDisplayText(row?.note || "Not stated")}`,
-      "Reader boundary: this is internal trust-event audit evidence. Use complete records only inside authorized admin review.",
+      "Reader boundary: this is protected trust-event audit evidence. Use complete records only inside authorized admin review.",
     ],
     privacyNote:
-      "Privacy: copied event snapshots exclude raw JSON metadata, private contacts, phone numbers, bank details, and complete private records.",
+      "Privacy: copied event snapshots exclude protected event details, private contacts, phone numbers, bank details, and complete private records.",
     limitationNote:
-      "Limitation: internal audit snapshot only. Not public verification, credit approval, payment confirmation, payout approval, or release authority.",
+      "Limitation: protected audit snapshot only. Not public verification, credit approval, payment confirmation, payout approval, or release authority.",
   });
 }
 
@@ -345,7 +345,7 @@ export default function AdminTrustEventsPage() {
 
   return (
     <div style={{ maxWidth: 1260, margin: "0 auto" }}>
-      <PageTopNav sectionLabel="Trust Events" title="Trust Events" subtitle="Review recent trust evidence before opening deeper admin routes." homeTo={routes.dashboard} homeLabel="Dashboard" backTo={routes.commandCenter} backLabel="Command Center" />
+      <PageTopNav sectionLabel="Trust Events" title="Trust Events" subtitle="Review recent trust evidence before opening deeper admin pages." homeTo={routes.dashboard} homeLabel="Dashboard" backTo={routes.commandCenter} backLabel="Command Center" />
 
       <ExplainToggle
         label="What this screen does"

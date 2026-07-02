@@ -2435,7 +2435,7 @@ export default function TrustSlipPage() {
       title: "Is there checkable history behind what they claim?",
       answer:
         safeStr(summary?.code || summary?.verification_code || summary?.merchant_view?.code)
-          ? "A TrustSlip code and verification route exist. For a higher-risk decision, ask for the Trust Passport, Trust Events, or direct community confirmation."
+          ? "A TrustSlip code and verification link exist. For a higher-risk decision, ask for the Trust Passport, Trust Events, or direct community confirmation."
           : "The TrustSlip code is not ready yet, so you cannot check this public claim from this page alone.",
     },
   ];
@@ -2719,7 +2719,7 @@ export default function TrustSlipPage() {
       tone: trustSlipCode ? "good" : "warn",
     },
     {
-      title: "Public verification route",
+      title: "Public verification link",
       detail: verifyPath
         ? "The verify action opens the current public TrustSlip reading for this code."
         : "The public verify link is not ready yet, so people you share with cannot check this TrustSlip from the QR or link.",
@@ -4258,7 +4258,7 @@ export default function TrustSlipPage() {
               label="What this does"
               what="This portable reading summarizes the trust state that other people can verify from your current TrustSlip."
               why="It keeps the main public trust signals, document codes, and issue window visible in one place before you share or verify anything."
-              next="Read the band, visible TrustSlip limit signal, cross-community consistency, and issue window here first, then use the TrustSlip code or verify route when needed."
+              next="Read the band, visible TrustSlip limit signal, cross-community consistency, and issue window here first, then use the TrustSlip code or verification link when needed."
               tone="light"
               style={{ marginTop: 12 }}
             />
@@ -4539,7 +4539,7 @@ export default function TrustSlipPage() {
             <ExplainToggle
               label="What this screen does"
               what="TrustSlip is the portable public trust summary for your current trust state."
-              why="It keeps the public-facing trust summary, code, expiry window, and verification route together in one shareable place."
+              why="It keeps the public-facing trust summary, code, expiry window, and verification link together in one shareable place."
               next="Start with the main TrustSlip paper, then use TrustSlip Verify when you need to confirm the current public reading."
               tone="blue"
             />

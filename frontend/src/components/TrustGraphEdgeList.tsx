@@ -23,7 +23,7 @@ function memberDisplayReference(gsnId: unknown): string {
 
 function memberReferenceContext(gsnId: unknown): string {
   const text = safeStr(gsnId).trim();
-  return text ? "GSN public member reference" : "Internal account reference hidden";
+  return text ? "GSN public member reference" : "Private member reference hidden";
 }
 
 function fmtDate(iso?: string | null): string {

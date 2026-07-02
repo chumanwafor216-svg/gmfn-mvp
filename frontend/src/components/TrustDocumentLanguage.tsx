@@ -18,6 +18,149 @@ export type TrustDocumentPanelItem = {
   icon?: Gsn3DIconKey;
 };
 
+function disclosureSummaryStyle(): React.CSSProperties {
+  return {
+    minHeight: 36,
+    borderRadius: 999,
+    border: "1px solid rgba(8,35,58,0.12)",
+    background: "rgba(255,255,255,0.78)",
+    color: "#24415C",
+    padding: "8px 10px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+    cursor: "pointer",
+    fontSize: 12,
+    fontWeight: 1000,
+    lineHeight: 1.1,
+    listStyle: "none",
+  };
+}
+
+function TrustDocumentMoreDetails({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <details
+      data-gsn-trust-document-collapsible="true"
+      style={{
+        marginTop: 2,
+        borderRadius: 18,
+      }}
+    >
+      <summary style={disclosureSummaryStyle()}>
+        <span>{label}</span>
+        <span
+          aria-hidden="true"
+          style={{
+            width: 22,
+            height: 22,
+            borderRadius: 999,
+            display: "inline-grid",
+            placeItems: "center",
+            color: "#07172C",
+            background: "#F6D77A",
+            border: "1px solid rgba(214,170,69,0.36)",
+            fontSize: 16,
+            fontWeight: 1000,
+            lineHeight: 1,
+          }}
+        >
+          +
+        </span>
+      </summary>
+      <div style={{ display: "grid", gap: 8, paddingTop: 9 }}>{children}</div>
+    </details>
+  );
+}
+
+export function TrustDocumentDisclosureSection({
+  title,
+  summary,
+  defaultOpen = false,
+  children,
+}: {
+  title: string;
+  summary?: string;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <details
+      data-gsn-trust-document-section-disclosure="true"
+      open={defaultOpen}
+      style={{
+        borderRadius: 18,
+        border: "1px solid rgba(8,35,58,0.12)",
+        background: "linear-gradient(180deg, #FFFFFF 0%, #F7FAFF 100%)",
+        boxShadow: "0 10px 24px rgba(6,24,39,0.05)",
+        overflow: "hidden",
+      }}
+    >
+      <summary
+        style={{
+          ...disclosureSummaryStyle(),
+          border: 0,
+          borderRadius: 0,
+          minHeight: 48,
+          padding: "12px 13px",
+          background: "rgba(255,255,255,0.92)",
+        }}
+      >
+        <span style={{ minWidth: 0, display: "grid", gap: 3 }}>
+          <strong
+            style={{
+              color: "#07172C",
+              fontSize: 14,
+              fontWeight: 1000,
+              lineHeight: 1.16,
+            }}
+          >
+            {title}
+          </strong>
+          {summary ? (
+            <span
+              style={{
+                color: "#526579",
+                fontSize: 12,
+                fontWeight: 780,
+                lineHeight: 1.28,
+              }}
+            >
+              {summary}
+            </span>
+          ) : null}
+        </span>
+        <span
+          aria-hidden="true"
+          style={{
+            width: 24,
+            height: 24,
+            borderRadius: 999,
+            display: "inline-grid",
+            placeItems: "center",
+            color: "#07172C",
+            background: "#F6D77A",
+            border: "1px solid rgba(214,170,69,0.36)",
+            fontSize: 17,
+            fontWeight: 1000,
+            lineHeight: 1,
+            flex: "0 0 auto",
+          }}
+        >
+          +
+        </span>
+      </summary>
+      <div style={{ display: "grid", gap: 8, padding: 12 }}>{children}</div>
+    </details>
+  );
+}
+
 function tonePalette(tone: TrustDocumentTone = "neutral") {
   switch (tone) {
     case "good":
@@ -311,6 +454,46 @@ export function TrustDocumentSecurityPanel({
   title?: string;
   items: TrustDocumentPanelItem[];
 }) {
+  const visibleItems = items.slice(0, 2);
+  const extraItems = items.slice(2);
+  const renderItem = (item: TrustDocumentPanelItem) => (
+      <div
+        key={`${item.title}:${item.detail}`}
+        style={{
+          display: "grid",
+          gridTemplateColumns: "22px minmax(0, 1fr)",
+          gap: 9,
+          alignItems: "start",
+        }}
+      >
+        <span aria-hidden="true" style={confidenceDot(item.tone)}>
+          {item.tone === "warn" ? "!" : "OK"}
+        </span>
+        <span style={{ minWidth: 0, display: "grid", gap: 2 }}>
+          <strong
+            style={{
+              color: "#07172C",
+              fontSize: 14,
+              fontWeight: 1000,
+              lineHeight: 1.16,
+            }}
+          >
+            {item.title}
+          </strong>
+          <span
+            style={{
+              color: "#526579",
+              fontSize: 12.5,
+              fontWeight: 780,
+              lineHeight: 1.32,
+            }}
+          >
+            {item.detail}
+          </span>
+        </span>
+      </div>
+  );
+
   return (
     <section
       data-gsn-security-panel="true"
@@ -349,46 +532,12 @@ export function TrustDocumentSecurityPanel({
         </h2>
       </div>
       <div style={{ display: "grid", gap: 10 }}>
-        {items.map((item) => {
-          const palette = tonePalette(item.tone);
-          return (
-            <div
-              key={`${item.title}:${item.detail}`}
-              style={{
-                display: "grid",
-                gridTemplateColumns: "22px minmax(0, 1fr)",
-                gap: 9,
-                alignItems: "start",
-              }}
-            >
-              <span aria-hidden="true" style={confidenceDot(item.tone)}>
-                {item.tone === "warn" ? "!" : "OK"}
-              </span>
-              <span style={{ minWidth: 0, display: "grid", gap: 2 }}>
-                <strong
-                  style={{
-                    color: "#07172C",
-                    fontSize: 14,
-                    fontWeight: 1000,
-                    lineHeight: 1.16,
-                  }}
-                >
-                  {item.title}
-                </strong>
-                <span
-                  style={{
-                    color: "#526579",
-                    fontSize: 12.5,
-                    fontWeight: 780,
-                    lineHeight: 1.32,
-                  }}
-                >
-                  {item.detail}
-                </span>
-              </span>
-            </div>
-          );
-        })}
+        {visibleItems.map(renderItem)}
+        {extraItems.length ? (
+          <TrustDocumentMoreDetails label="More security details">
+            {extraItems.map(renderItem)}
+          </TrustDocumentMoreDetails>
+        ) : null}
       </div>
     </section>
   );
@@ -404,6 +553,34 @@ export function TrustDocumentBoundaryPanel({
   items: string[];
 }) {
   const palette = tonePalette(tone);
+  const visibleItems = items.slice(0, 3);
+  const extraItems = items.slice(3);
+  const renderItem = (item: string) => (
+    <div
+      key={item}
+      style={{
+        display: "grid",
+        gridTemplateColumns: "18px minmax(0, 1fr)",
+        gap: 8,
+        alignItems: "start",
+      }}
+    >
+      <span aria-hidden="true" style={confidenceDot(tone)}>
+        {tone === "warn" ? "x" : "OK"}
+      </span>
+      <span
+        style={{
+          color: "#1F3145",
+          fontSize: 13,
+          fontWeight: 900,
+          lineHeight: 1.28,
+        }}
+      >
+        {item}
+      </span>
+    </div>
+  );
+
   return (
     <section
       data-gsn-confirmation-boundary={tone}
@@ -430,31 +607,14 @@ export function TrustDocumentBoundaryPanel({
         {title}
       </h2>
       <div style={{ display: "grid", gap: 8 }}>
-        {items.map((item) => (
-          <div
-            key={item}
-            style={{
-              display: "grid",
-              gridTemplateColumns: "18px minmax(0, 1fr)",
-              gap: 8,
-              alignItems: "start",
-            }}
+        {visibleItems.map(renderItem)}
+        {extraItems.length ? (
+          <TrustDocumentMoreDetails
+            label={tone === "warn" ? "More limits" : "More confirmed details"}
           >
-            <span aria-hidden="true" style={confidenceDot(tone)}>
-              {tone === "warn" ? "x" : "OK"}
-            </span>
-            <span
-              style={{
-                color: "#1F3145",
-                fontSize: 13,
-                fontWeight: 900,
-                lineHeight: 1.28,
-              }}
-            >
-              {item}
-            </span>
-          </div>
-        ))}
+            {extraItems.map(renderItem)}
+          </TrustDocumentMoreDetails>
+        ) : null}
       </div>
     </section>
   );

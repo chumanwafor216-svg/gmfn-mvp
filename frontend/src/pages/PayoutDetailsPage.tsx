@@ -389,7 +389,7 @@ function buildPayoutSummary(
 
   return buildGsnPaymentInstructionPackage({
     title: "GSN Payout Details Snapshot",
-    purpose: "Review the payout destination record for the Money Out route. This record does not approve or execute a withdrawal.",
+    purpose: "Review the payout destination record for the Money Out page. This record does not approve or execute a withdrawal.",
     memberName: context.memberName,
     gsnId: context.gsnId,
     communityName: context.communityName,
@@ -646,7 +646,7 @@ export default function PayoutDetailsPage() {
     return {
       title: "Keep the payout destination ready for withdrawal",
       detail:
-        "This destination record is ready for the Money Out route, but it does not approve or execute a withdrawal.",
+        "This destination record is ready for the Money Out process, but it does not approve or execute a withdrawal.",
       today: "Review the details before withdrawal.",
       tomorrow:
         "Use Withdrawal Instructions when a withdrawal request is ready for review.",
@@ -753,7 +753,7 @@ export default function PayoutDetailsPage() {
       <PageTopNav
         sectionLabel="Bank / Wallet Details"
         title="Bank / Wallet Details"
-        subtitle="Save the destination record for the Money Out route."
+        subtitle="Save the destination record for the Money Out page."
         homeTo={routes.dashboard}
         homeLabel="Dashboard"
         backTo={routes.moneyOut}

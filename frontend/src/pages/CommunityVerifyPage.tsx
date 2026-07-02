@@ -13,6 +13,7 @@ import {
   TrustPaperSecurityNote,
   TrustPaperSecurityFooter,
   TrustPaperWatermark,
+  TrustPaperWatermarkField,
 } from "../components/TrustPaperMarks";
 import {
   TrustDocumentBoundaryPanel,
@@ -120,8 +121,8 @@ function publicVerificationErrorMessage(error: any): string {
     lower.includes("select ")
   ) {
     return (
-      "This public community check is temporarily unavailable on this server. " +
-      "GSN needs to refresh the server database setup before this public record can run."
+      "This public community check is temporarily unavailable. " +
+      "GSN needs to refresh the public record setup before this record can run."
     );
   }
   return message || "Community verification could not be loaded.";
@@ -752,7 +753,7 @@ export default function CommunityVerifyPage() {
       publicLink,
     ]
   );
-  const generatedAtLabel = useMemo(() => new Date().toISOString(), [keyText]);
+  const generatedAtLabel = useMemo(() => new Date().toISOString(), []);
   const recordFingerprint = useMemo(
     () =>
       referenceFingerprint(
@@ -1018,6 +1019,10 @@ export default function CommunityVerifyPage() {
             subtitle="Official GSN Registry Record"
           />
           <TrustPaperWatermark name="home" color="#0B63D1" size={260} opacity={0.045} />
+          <TrustPaperWatermarkField
+            names={["shield", "home", "qr", "document"]}
+            opacity={0.025}
+          />
           <div style={{ position: "relative", zIndex: 1, padding: 16, display: "grid", gap: 12 }}>
             <TrustPaperAuthorityStrip
               title="GSN Community Verification Paper"
@@ -1198,7 +1203,7 @@ export default function CommunityVerifyPage() {
                     data-gsn-trust-document-certificate="community-verification"
                     style={{
                       display: "grid",
-                      gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+                      gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 260px), 1fr))",
                       gap: 12,
                     }}
                   >

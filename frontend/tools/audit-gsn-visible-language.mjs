@@ -20,6 +20,7 @@ const files = [
   "frontend/src/components/TrustBadge.tsx",
   "frontend/src/components/TrustGraphEdgeList.tsx",
   "frontend/src/components/TrustGraphSummaryCard.tsx",
+  "frontend/src/components/GMFNConfirmModal.tsx",
   "frontend/src/components/LoanDecisionPanel.tsx",
   "frontend/src/pages/ShopGalleryPage.tsx",
   "frontend/src/ui/format.ts",
@@ -121,6 +122,7 @@ const forbidden = [
   "Loans & Support task",
   "This task is in focus",
   "main routes stay cleaner",
+  "The main routes stay simple",
   "decision on a pledge",
   "Available Capacity",
 ];
@@ -150,6 +152,8 @@ const forbiddenByFile = [
 ];
 
 forbiddenByFile.push(["frontend/src/components/TrustGraphEdgeList.tsx", "User #"]);
+forbiddenByFile.push(["frontend/src/components/GMFNConfirmModal.tsx", "Internal note"]);
+forbiddenByFile.push(["frontend/src/components/TrustGraphEdgeList.tsx", "Internal account reference hidden"]);
 forbiddenByFile.push(["frontend/src/pages/TrustSlipPage.tsx", "internal label"]);
 forbiddenByFile.push(["frontend/src/pages/TrustSlipPage.tsx", "Overexposure ratio"]);
 forbiddenByFile.push(["frontend/src/pages/TrustScorePage.tsx", "Overexposure ratio"]);
@@ -210,7 +214,7 @@ const required = [
   ["frontend/src/components/TrustGraphEdgeList.tsx", "community structure"],
   ["frontend/src/components/TrustGraphEdgeList.tsx", ">Community</div>"],
   ["frontend/src/components/TrustGraphEdgeList.tsx", "Private member reference"],
-  ["frontend/src/components/TrustGraphEdgeList.tsx", "Internal account reference hidden"],
+  ["frontend/src/components/TrustGraphEdgeList.tsx", "Private member reference hidden"],
   ["frontend/src/components/TrustGraphSummaryCard.tsx", "cross-community trust structure"],
   ["frontend/src/components/TrustGraphSummaryCard.tsx", "Active communities"],
   ["frontend/src/pages/JoinEntryPage.tsx", "GSN member"],

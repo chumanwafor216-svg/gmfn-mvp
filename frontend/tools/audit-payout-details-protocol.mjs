@@ -63,17 +63,17 @@ assertContains(
 );
 
 assertContains(
-  /Review the payout destination record for the Money Out route\. This record does not approve or execute a withdrawal\./,
+  /Review the payout destination record for the Money Out page\. This record does not approve or execute a withdrawal\./,
   "Payout copied summary must state that payout destination records do not approve or execute withdrawals."
 );
 
 assertContains(
-  /This destination record is ready for the Money Out route, but it does not approve or execute a withdrawal\./,
+  /This destination record is ready for the Money Out process, but it does not approve or execute a withdrawal\./,
   "Payout ready state must not sound like withdrawal approval or payout execution."
 );
 
 assertNotContains(
-  /import ExplainToggle|<ExplainToggle|Why this matters|GSN does not hold funds/,
+  /import ExplainToggle|<ExplainToggle|Why this matters|GSN does not hold funds|Money Out route/,
   "Payout Details must not restore the wordy top explainer, repeated why-this-matters card, or repeated custody paragraph."
 );
 

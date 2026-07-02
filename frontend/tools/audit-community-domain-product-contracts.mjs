@@ -314,8 +314,15 @@ assertContains(
 
 assertContains(
   "src/pages/communityDomainDashboard/ServiceBoundaryPanels.tsx",
-  /Configuration map[\s\S]*primary_next_action[\s\S]*configuration_mode[\s\S]*custom_schema_status[\s\S]*custom_billing_status[\s\S]*custom_tenant_status[\s\S]*custom_permission_status[\s\S]*does not\s+create a custom schema, custom tenant, custom billing package, custom\s+permission model, custom database table, custom field, per-client code\s+fork, nodes, members, roles, policies, reviews, evidence, module\s+settings, payments, entitlements, marketplace records, social Community\s+links, TrustSlips, Trust Passport records, public proof, or private record\s+exposure/,
-  "Community Domain dashboard Services lane must show read-only configuration planning without implying custom schema, tenant, billing, permissions, fields, code fork, node/member/role/policy/review/evidence/module writes, payments, entitlements, marketplace records, social Community links, TrustSlips, Trust Passport writes, public proof, or private record exposure.",
+  /Setup map[\s\S]*primary_next_action[\s\S]*configuration_mode[\s\S]*custom_schema_status[\s\S]*custom_billing_status[\s\S]*custom_tenant_status[\s\S]*custom_permission_status[\s\S]*does not\s+create a custom schema, custom tenant, custom billing package, custom\s+permission model, custom database table, custom field, per-client code\s+fork, nodes, members, roles, policies, reviews, evidence, service\s+settings, payments, entitlements, marketplace records, social Community\s+links, TrustSlips, Trust Passport records, public proof, or private record\s+exposure/,
+  "Community Domain dashboard Services lane must show read-only setup planning without implying custom schema, tenant, billing, permissions, fields, code fork, node/member/role/policy/review/evidence/service-setting writes, payments, entitlements, marketplace records, social Community links, TrustSlips, Trust Passport writes, public proof, or private record exposure.",
+  { frontend: true }
+);
+
+assertNotContains(
+  "src/pages/communityDomainDashboard/ServiceBoundaryPanels.tsx",
+  /Review configuration boundaries|configuration checks are ready|read-only configuration map|Configuration checks needing attention|No blocked configuration check|template configuration|This configuration map is read-only configuration planning|module settings|appeal route/i,
+  "Community Domain dashboard visible setup-boundary copy must use setup/service language instead of configuration/module language.",
   { frontend: true }
 );
 
@@ -985,6 +992,13 @@ assertNotContains(
   "src/pages/CommunityDomainPurchasePage.tsx",
   /backend status proves it/,
   "Community Domain purchase user copy must not expose builder-facing backend language.",
+  { frontend: true }
+);
+
+assertNotContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /backend status proves it/,
+  "Community Domain dashboard user copy must not expose builder-facing backend language.",
   { frontend: true }
 );
 

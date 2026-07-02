@@ -298,6 +298,59 @@ export function TrustPaperWatermark({
   );
 }
 
+export function TrustPaperWatermarkField({
+  names = ["shield", "qr", "document", "globe"],
+  color = "#0B63D1",
+  opacity = 0.035,
+  style,
+}: {
+  names?: TrustPaperIconName[];
+  color?: string;
+  opacity?: number;
+  style?: React.CSSProperties;
+}) {
+  const marks = Array.from({ length: 12 }, (_, index) => names[index % names.length]);
+
+  return (
+    <div
+      aria-hidden="true"
+      data-gsn-trust-paper-watermark-field="true"
+      style={{
+        position: "absolute",
+        inset: 0,
+        zIndex: 0,
+        pointerEvents: "none",
+        overflow: "hidden",
+        display: "grid",
+        gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+        gap: 34,
+        padding: "120px 24px 90px",
+        color,
+        opacity,
+        ...style,
+      }}
+    >
+      {marks.map((name, index) => (
+        <div
+          key={`${name}-${index}`}
+          style={{
+            minHeight: 104,
+            display: "grid",
+            placeItems: "center",
+            transform: index % 2 === 0 ? "rotate(-7deg)" : "rotate(7deg)",
+          }}
+        >
+          <TrustPaperIcon
+            name={name}
+            size={index % 3 === 0 ? 150 : 126}
+            strokeWidth={1.25}
+          />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function TrustPaperSeal({ compact = false }: { compact?: boolean }) {
   return (
     <span

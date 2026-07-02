@@ -27,6 +27,15 @@ A screen is acceptable only if:
 - It uses consistent rounded cards.
 - It uses enough spacing.
 - It avoids long paragraphs.
+- It removes repeated visible explanations unless repetition is needed for a
+  legal, evidence, or safety boundary.
+- It uses concise, institutional, user-facing language; normal users should not
+  see maker words such as route, token, debug, payload, endpoint, backend, or
+  internal state.
+- Public/outsider contact surfaces prefer GSN handles, GSN IDs, official relay
+  identity, or future GSN email/username aliases before exposing personal phone
+  numbers; WhatsApp remains a consent-based contact method, not the identity
+  source of truth.
 - It has no bottom nav before login.
 - It has clear empty states if data is missing.
 - It uses approved screen names.

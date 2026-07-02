@@ -86,7 +86,7 @@ type EarningsLoadResult = {
 
 const GUARANTOR_EARNINGS_UI_STORAGE_KEY = "gmfn.guarantorEarnings.sections.v1";
 const GUARANTOR_EARNINGS_PAYOUT_TRUTH =
-  "Earned supporter value is recorded here for visibility. It is not an automatic payout, and withdrawal still needs the guided Money Out process when that route is approved.";
+  "Earned supporter value is recorded here for visibility. It is not an automatic payout, and withdrawal still needs the guided Money Out process when that step is approved.";
 
 function safeStr(x: any): string {
   return String(x ?? "").trim();
@@ -1502,7 +1502,7 @@ export default function GuarantorEarningsPage() {
               }}
             >
               <div>
-                <div style={sectionLabel()}>Next routes</div>
+                <div style={sectionLabel()}>Next pages</div>
                 <div style={{ marginTop: 8, ...helperText() }}>
                   Move from earnings reading into the next page you need.
                 </div>

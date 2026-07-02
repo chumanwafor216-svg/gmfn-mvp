@@ -108,6 +108,18 @@ assertContains(
 
 assertContains(
   "src/pages/SystemOperationsPage.tsx",
+  /sectionLabelWithIcon\("navigation", "Next pages", "blue"\)[\s\S]*?Open the page that matches the active work\./,
+  "System Operations must describe follow-on navigation as next pages, not routes."
+);
+
+assertNotContains(
+  "src/pages/SystemOperationsPage.tsx",
+  /Next routes|route cards below|route that matches|matching route/,
+  "System Operations visible copy must not expose route wording."
+);
+
+assertContains(
+  "src/pages/SystemOperationsPage.tsx",
   /settlement-ready[\s\S]*?waiting for finance review[\s\S]*?clear through finance evidence[\s\S]*?Support decisions \$\{toNum\(row\?\.approved_guarantors\)\}\/\$\{toNum[\s\S]*?Pool finance review pending/,
   "System Operations must frame finance queues as review and reconciliation readings, not settlement, confirmation, or broad approval."
 );
@@ -125,9 +137,27 @@ assertContains(
 );
 
 assertContains(
+  "src/pages/AdminTrustGraphPage.tsx",
+  /sectionLabelWithIcon\("navigation", "Next pages"\)[\s\S]*?Move from structural reading into the next admin page you need\./,
+  "Admin Trust Graph must describe follow-on navigation as next pages, not routes."
+);
+
+assertNotContains(
+  "src/pages/AdminTrustGraphPage.tsx",
+  /Next routes/,
+  "Admin Trust Graph visible copy must not expose route wording."
+);
+
+assertContains(
   "src/pages/AdminTrustEventsPage.tsx",
   /debugId="admin-trust-events\.route\.analytics"[\s\S]*?debugId="admin-trust-events\.route\.graph"[\s\S]*?debugId="admin-trust-events\.route\.identity-risk"[\s\S]*?debugId="admin-trust-events\.route\.command-center"/,
   "Admin Trust Events route actions must remain traceable."
+);
+
+assertNotContains(
+  "src/pages/AdminTrustEventsPage.tsx",
+  /opening deeper admin routes/i,
+  "Admin Trust Events visible copy must describe deeper admin pages instead of routes."
 );
 
 assertContains(
@@ -152,6 +182,18 @@ assertContains(
   "src/pages/ExposureAdminPage.tsx",
   /debugId="exposure-admin\.toggle\.overview"[\s\S]*?debugId="exposure-admin\.toggle\.queues"[\s\S]*?debugId="exposure-admin\.route\.system-operations"[\s\S]*?debugId="exposure-admin\.route\.bank-console"/,
   "Exposure Admin toggles and route actions must remain traceable."
+);
+
+assertContains(
+  "src/pages/ExposureAdminPage.tsx",
+  /sectionLabelWithIcon\("navigation", "Next pages", "blue"\)[\s\S]*?Open the page that matches the pressure source\./,
+  "Exposure Admin must describe follow-on navigation as next pages, not routes."
+);
+
+assertNotContains(
+  "src/pages/ExposureAdminPage.tsx",
+  /Next routes|route that matches/,
+  "Exposure Admin visible copy must not expose route wording."
 );
 
 assertContains(

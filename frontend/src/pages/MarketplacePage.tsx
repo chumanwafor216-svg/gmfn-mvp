@@ -538,7 +538,7 @@ const MARKETPLACE_INTENT_ITEMS: MarketplaceIntentItem[] = [
   {
     id: "money-out",
     label: "Take money out",
-    detail: "Start the withdrawal or payout route.",
+    detail: "Start the withdrawal or payout page.",
     technical: "Money Out",
     to: "",
     intent: "moneyOut",
@@ -3087,18 +3087,6 @@ function marketplaceFrontLaneCardStyle(isCompact: boolean): React.CSSProperties 
   };
 }
 
-function marketplaceFrontCompactCardStyle(isCompact: boolean): React.CSSProperties {
-  const compactHeight = 68;
-
-  return {
-    ...marketplaceFrontLaneCardStyle(isCompact),
-    minHeight: isCompact ? compactHeight : 116,
-    height: isCompact ? compactHeight : "auto",
-    maxHeight: isCompact ? compactHeight : "none",
-    padding: isCompact ? 6 : 16,
-  };
-}
-
 function marketplaceFrontLaneIconStyle(
   bg: string,
   isCompact = false
@@ -3958,7 +3946,7 @@ export default function MarketplacePage() {
     useState<SectionState>(DEFAULT_SECTION_STATE);
   const [profileDetailsOpen, setProfileDetailsOpen] = useState(false);
   const [intentQuery, setIntentQuery] = useState("");
-  const [intentGuideOpen, setIntentGuideOpen] = useState(false);
+  const [intentGuideOpen] = useState(false);
 
   const roscaSectionRef = useRef<HTMLElement | null>(null);
   const supportSectionRef = useRef<HTMLElement | null>(null);
@@ -4524,11 +4512,6 @@ export default function MarketplacePage() {
     );
   }
 
-  function toggleIntentGuide(event?: React.SyntheticEvent<HTMLElement>) {
-    consumeMarketplaceButtonEvent(event);
-    setIntentGuideOpen((prev) => !prev);
-  }
-
   const cancelMarketplaceSectionScroll = useCallback(() => {
     if (scrollFrameRef.current !== null) {
       window.cancelAnimationFrame(scrollFrameRef.current);
@@ -4698,7 +4681,7 @@ export default function MarketplacePage() {
     }
 
     if (item.id === "shop" && !item.to) {
-      showNotice("error", "Your shop route is not ready yet.");
+      showNotice("error", "Your shop page is not ready yet.");
       return;
     }
 
@@ -4708,7 +4691,7 @@ export default function MarketplacePage() {
     }
 
     if (!item.to) {
-      showNotice("error", "That route is not ready yet.");
+      showNotice("error", "That page is not ready yet.");
       return;
     }
 
@@ -6769,7 +6752,7 @@ export default function MarketplacePage() {
       copied ? "success" : "error",
       copied
         ? successText
-        : "Clipboard copy was blocked. The old clipboard may still contain another app route."
+        : "Clipboard copy was blocked. The old clipboard may still contain another app page."
     );
   }
 
@@ -7498,7 +7481,7 @@ export default function MarketplacePage() {
                   Money & Trust
                 </span>
                 <span style={marketplaceOsRowDetailStyle(isCompact)}>
-                  Local money routes and standing.
+                  Local money pages and standing.
                 </span>
                 <span style={marketplaceFrontTagRowStyle(isCompact)}>
                   <span

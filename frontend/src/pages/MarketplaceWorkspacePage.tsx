@@ -826,7 +826,7 @@ export default function MarketplaceWorkspacePage() {
       `Hello,`,
       ``,
       `You are invited to begin the request-to-join process for ${title}.`,
-      `This link is a GSN system access link. It confirms the community route; joining may still require community approval.`,
+      `This link is a GSN access link. It confirms the community access path; joining may still require community approval.`,
       ``,
       `Use this community link to begin:`,
       inviteLink || "(invite link unavailable)",
@@ -848,7 +848,7 @@ export default function MarketplaceWorkspacePage() {
     const title = safeStr(communityName || "this community");
     const text = [
       `You are invited to begin the request-to-join process for ${title}.`,
-      `GSN confirms the community access route. Joining may still require community approval.`,
+      `GSN confirms the community access path. Joining may still require community approval.`,
       inviteLink,
       `Guide: ${guideUrl}`,
     ]
@@ -900,7 +900,7 @@ export default function MarketplaceWorkspacePage() {
   function openShopForMember(member: any) {
     const link = shopLinkForRecord(getShopForMember(member, shops));
     if (!link) {
-      setMsg("This member does not have a backend-confirmed visible public shop yet.");
+      setMsg("This member does not have a confirmed visible public shop yet.");
       return;
     }
     window.open(link, "_blank", "noopener,noreferrer");
@@ -943,7 +943,7 @@ export default function MarketplaceWorkspacePage() {
         <PageTopNav
           sectionLabel="GSN system feedback"
           title={publicCommunityConfirmed ? communityName : "Community link check"}
-          subtitle="This public page confirms whether the community route exists. It is not committee verification, merchant verification, or member approval."
+          subtitle="This public page confirms whether the community access link is recognised. It is not committee verification, merchant verification, or member approval."
         />
 
         <section
@@ -970,8 +970,8 @@ export default function MarketplaceWorkspacePage() {
             {busy
               ? "Checking this community"
               : publicCommunityConfirmed
-              ? "Community route confirmed"
-              : "Community route not confirmed"}
+              ? "Community access confirmed"
+              : "Community access not confirmed"}
           </h1>
           <p
             style={{
@@ -983,8 +983,8 @@ export default function MarketplaceWorkspacePage() {
             }}
           >
             {publicCommunityConfirmed
-              ? "GSN found this community in the system. This feedback only confirms the community route and protects private member details."
-              : "GSN could not confirm this community route from the public system check. The link may be wrong, expired, or not publicly available yet."}
+              ? "GSN found this community in the system. This feedback only confirms the community access link and protects private member details."
+              : "GSN could not confirm this community access link from the public check. The link may be wrong, expired, or not publicly available yet."}
           </p>
 
           <div
@@ -1045,7 +1045,7 @@ export default function MarketplaceWorkspacePage() {
                 System feedback
               </div>
               <div style={{ marginTop: 8, ...muted() }}>
-                GSN checks whether the community route exists. This is not a
+                GSN checks whether the community access link exists. This is not a
                 community vote.
               </div>
             </div>
@@ -1125,7 +1125,7 @@ export default function MarketplaceWorkspacePage() {
           </div>
           <div style={{ marginTop: 8, color: "#475569", lineHeight: 1.7 }}>
             The deeper community desk contains alerts, member mapping,
-            marketplace handoff, and money/support routes. Those blocks are for
+            marketplace handoff, and money/support pages. Those blocks are for
             members or operators after sign-in, not for an outside invite
             viewer.
           </div>
@@ -1512,7 +1512,7 @@ export default function MarketplaceWorkspacePage() {
 
             <div style={innerCard("#F8FBFF")}>
               <div style={{ fontSize: 12, color: "#64748B", fontWeight: 900 }}>
-                Route handoff
+                Return links
               </div>
 
               <div
@@ -1522,7 +1522,7 @@ export default function MarketplaceWorkspacePage() {
                   lineHeight: 1.7,
                 }}
               >
-                These buttons return you to the community's operating routes.
+                These buttons return you to the community's operating pages.
                 This desk does not replace Marketplace.
               </div>
 
@@ -1567,7 +1567,7 @@ export default function MarketplaceWorkspacePage() {
                 }}
               >
                 Select a member row below. A public shop link appears only
-                when that member has a backend-confirmed visible shop in this
+                when that member has a confirmed visible shop in this
                 community.
               </div>
 
@@ -1580,7 +1580,7 @@ export default function MarketplaceWorkspacePage() {
                 }}
               >
                 {shopViewLink ||
-                  "No backend-confirmed public shop link is available for the selected member yet."}
+                  "No confirmed public shop link is available for the selected member yet."}
               </div>
 
               <CardActionRow style={workspaceActionRowStyle(12)}>

@@ -632,7 +632,7 @@ export default function RepaymentPage() {
         toneText: "#0B63D1",
         step: "Payment",
         title: "Pay using the exact repayment reference.",
-        detail: "Once payment is made, keep this route focused until the repayment is clearly awaiting reconciliation.",
+        detail: "Once payment is made, keep this repayment focused until it is clearly awaiting reconciliation.",
       };
     }
 
@@ -642,7 +642,7 @@ export default function RepaymentPage() {
       toneText: "#92400E",
       step: "Awaiting reconciliation",
       title: "Repayment is waiting for reconciliation.",
-      detail: "The payment has been declared on this route and should now remain visible until finance or admin reconciliation confirms it.",
+      detail: "The payment has been declared here and should remain visible until finance or admin reconciliation confirms it.",
     };
   }, [numericLoanId, summary, canRepay, instruction, paymentConfirmedAt]);
 
@@ -872,14 +872,14 @@ export default function RepaymentPage() {
         <PageTopNav
           sectionLabel="Repayment"
           title="Support Repayment"
-          subtitle="Loading the repayment route..."
+          subtitle="Loading the repayment page..."
           homeTo={routes.dashboard}
           homeLabel="Dashboard"
           backTo={routes.loans}
           backLabel="Loans & Support"
         />
         <section style={pageCard("#FFFFFF")}>
-          <div style={{ color: "rgba(230,238,248,0.76)", lineHeight: 1.45 }}>Loading repayment route...</div>
+          <div style={{ color: "rgba(230,238,248,0.76)", lineHeight: 1.45 }}>Loading repayment page...</div>
         </section>
       </div>
     );
@@ -923,7 +923,7 @@ export default function RepaymentPage() {
         label="What this screen does"
         what="This gives the exact repayment amount, reference, and result state."
         why="It keeps payment tied to the right support item."
-        next="Generate the instruction and declare payment only after paying; this route does not confirm money received, close support, or release supporter exposure."
+        next="Generate the instruction and declare payment only after paying; this page does not confirm money received, close support, or release supporter exposure."
         tone="blue"
       />
 
@@ -1052,13 +1052,13 @@ export default function RepaymentPage() {
               <span style={badge(false)}>GSN ID: {gmfnId}</span>
               <span style={badge(false)}>Member: {memberName}</span>
               {memberRole ? <span style={badge(false)}>Role: {memberRole}</span> : null}
-              <span style={badge(false)}>Current page: Repayment</span>
+              <span style={badge(false)}>You are on repayment</span>
               <span style={badge(false)}>Current step: {routeState.step}</span>
             </div>
           </div>
 
           <div style={{ ...softCard(routeState.toneBg), border: routeState.toneBorder }}>
-            <div style={routeStateLabelStyle}>Current route state</div>
+            <div style={routeStateLabelStyle}>Payment step status</div>
             <div style={{ marginTop: 10, color: routeState.toneText, fontWeight: 900, fontSize: 20, lineHeight: 1.25 }}>
               {routeState.title}
             </div>
@@ -1455,7 +1455,7 @@ export default function RepaymentPage() {
 
             <div style={softCard("#FFFFFF")}>
               <div style={sectionLabel()}>
-                {repaymentTaskActive ? "Current route actions" : "Completion actions"}
+                {repaymentTaskActive ? "Current payment actions" : "Completion actions"}
               </div>
               <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
                 <PrimaryButton
@@ -1473,7 +1473,7 @@ export default function RepaymentPage() {
 
                 {repaymentTaskActive ? (
                   <div style={innerCard("#F8FBFF")}>
-                    <div style={sectionLabel()}>Keep the route focused</div>
+                    <div style={sectionLabel()}>Keep this payment focused</div>
                     <div style={{ marginTop: 8, ...helperText(), color: "#F8FBFF" }}>
                       Declare payment only after using the exact reference.
                     </div>
@@ -1497,11 +1497,11 @@ export default function RepaymentPage() {
         <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
           <div>
             <div style={sectionLabel()}>
-              {repaymentTaskActive ? "Route focus" : "Next routes"}
+              {repaymentTaskActive ? "Payment focus" : "Next pages"}
             </div>
             <div style={{ marginTop: 8, ...helperText() }}>
               {repaymentTaskActive
-                ? "Finish this repayment before moving to another route."
+                ? "Finish this repayment before moving somewhere else."
                 : "Open the next page you need."}
             </div>
           </div>

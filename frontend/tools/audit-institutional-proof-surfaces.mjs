@@ -152,6 +152,18 @@ function assertNotContains(key, pattern, message) {
   }
 }
 
+assertContains(
+  "trustDocumentLanguage",
+  /data-gsn-trust-document-collapsible="true"[\s\S]*export function TrustDocumentDisclosureSection[\s\S]*data-gsn-trust-document-section-disclosure="true"[\s\S]*More security details[\s\S]*More limits[\s\S]*More confirmed details/,
+  "Shared Trust Document panels must keep long supporting proof details and deeper record sections collapsible instead of exposing every line on public records."
+);
+
+assertContains(
+  "trustPaperMarks",
+  /export function TrustPaperWatermarkField[\s\S]*Array\.from\(\{ length: 12 \}[\s\S]*data-gsn-trust-paper-watermark-field="true"/,
+  "Shared Trust Paper marks must provide a recurring watermark field for long public records, not only a single top or bottom mark."
+);
+
 function assertOrdered(key, snippets, message) {
   const source = sourceByFile[key];
   let cursor = -1;
@@ -1084,6 +1096,66 @@ assertContains(
 );
 assertContains(
   "communityMemberVerify",
+  /data-gsn-trust-document-certificate="community-member-credential"[\s\S]*?gridTemplateColumns: "repeat\(auto-fit, minmax\(min\(100%, 320px\), 1fr\)\)"[\s\S]*?gridTemplateColumns:[\s\S]*?"repeat\(auto-fit, minmax\(min\(100%, 240px\), 1fr\)\)"/,
+  "Public Community Member Credential panels must collapse on phone before boundaries and fingerprint cards squeeze or overlap."
+);
+assertContains(
+  "communityMemberVerify",
+  /TrustDocumentDisclosureSection[\s\S]*title="Full public reading"[\s\S]*Open for currentness, evidence, and decision guidance\./,
+  "Public Community Member Credential must keep deeper public-reading guidance collapsed behind a clear institutional disclosure."
+);
+assertContains(
+  "communityMemberVerify",
+  /data-gsn-member-credential-primary-facts="true"[\s\S]*?Member GSN ID[\s\S]*?Community ID[\s\S]*?Status[\s\S]*?Witness strength[\s\S]*?TrustDocumentDisclosureSection[\s\S]*?title="All credential facts"[\s\S]*?data-gsn-member-credential-secondary-facts="true"[\s\S]*?Next witness status[\s\S]*?TrustDocumentDisclosureSection[\s\S]*?title="Evidence notes and privacy"/,
+  "Public Community Member Credential must expose only the core facts first and collapse secondary facts plus evidence/privacy notes."
+);
+assertNotContains(
+  "communityMemberVerify",
+  /minmax\(0, 1fr\) minmax\(240px, 0\.74fr\)/,
+  "Public Community Member Credential must not restore the old phone-squeezing two-column certificate layout."
+);
+assertContains(
+  "communityMemberVerify",
+  /TrustPaperWatermarkField[\s\S]*names=\{\["shield", "id", "qr", "document"\]\}/,
+  "Public Community Member Credential must carry a recurring GSN watermark field through the long public paper body."
+);
+assertContains(
+  "communityVerify",
+  /TrustPaperWatermarkField[\s\S]*names=\{\["shield", "home", "qr", "document"\]\}[\s\S]*data-gsn-trust-document-certificate="community-verification"[\s\S]*gridTemplateColumns: "repeat\(auto-fit, minmax\(min\(100%, 260px\), 1fr\)\)"/,
+  "Public Community Verification must carry a recurring watermark field and phone-safe public-paper proof grid."
+);
+assertContains(
+  "communityConfirmationOutcome",
+  /TrustPaperWatermarkField[\s\S]*names=\{\["shield", "community", "document", "qr"\]\}[\s\S]*data-gsn-trust-document-certificate="community-confirmation-outcome"[\s\S]*gridTemplateColumns:[\s\S]*"repeat\(auto-fit, minmax\(min\(100%, 320px\), 1fr\)\)"/,
+  "Public Community Confirmation Outcome must carry a recurring watermark field and phone-safe public-paper proof grid."
+);
+assertContains(
+  "merchantRelease",
+  /TrustPaperWatermarkField[\s\S]*names=\{\["shield", "shop", "document", "qr"\]\}[\s\S]*data-gsn-trust-document-certificate="merchant-release"[\s\S]*gridTemplateColumns: "repeat\(auto-fit, minmax\(min\(100%, 260px\), 1fr\)\)"/,
+  "Merchant Release Evidence must carry a recurring watermark field and phone-safe public-paper proof grid."
+);
+assertContains(
+  "publicPaper",
+  /TrustPaperWatermarkField[\s\S]*names=\{\["shield", "globe", "qr", "document"\]\}/,
+  "TrustSlip Verify public paper must carry a recurring GSN watermark field through the long public paper body."
+);
+assertNotContains(
+  "communityConfirmationOutcome",
+  /minmax\(0, 1fr\) minmax\(250px, 0\.78fr\)/,
+  "Public Community Confirmation Outcome must not restore the forced two-column proof layout on public records."
+);
+assertNotContains(
+  "communityVerify",
+  /repeat\(auto-fit, minmax\(260px, 1fr\)\)/,
+  "Public Community Verification must not use a proof grid that can squeeze phone text into narrow columns."
+);
+assertNotContains(
+  "merchantRelease",
+  /repeat\(auto-fit, minmax\(260px, 1fr\)\)/,
+  "Merchant Release Evidence must not use a proof grid that can squeeze phone text into narrow columns."
+);
+assertContains(
+  "communityMemberVerify",
   /Reference fingerprint[\s\S]*?not a cryptographic hash[\s\S]*?Reference fingerprint for this visible public member credential\. It is not a cryptographic proof\./,
   "Public Community Member Credential fingerprint copy must stay truthful and must not claim cryptographic proof."
 );
@@ -1305,16 +1377,16 @@ assertContains(
 assertContains(
   "communityConfirmationInbox",
   /GSN Community Confirmation Review Case/,
-  "Community Confirmation Inbox queue and case copies must use bounded internal GSN review papers with private-contact redaction language."
+  "Community Confirmation Inbox queue and case copies must use bounded protected GSN review papers with private-contact redaction language."
 );
 assertContains(
   "communityConfirmationInbox",
   /GSN Community Confirmation Review Queue/,
-  "Community Confirmation Inbox queue copy must use a bounded internal GSN review queue paper."
+  "Community Confirmation Inbox queue copy must use a bounded protected GSN review queue paper."
 );
 assertContains(
   "communityConfirmationInbox",
-  /private contacts, responder notes, phone numbers, and raw witness details/,
+  /private contacts, responder notes, phone numbers, and protected witness details/,
   "Community Confirmation Inbox copied papers must preserve private-contact redaction language."
 );
 assertContains(
@@ -1330,12 +1402,17 @@ assertContains(
 assertContains(
   "communityConfirmationPolicy",
   /GSN Community Confirmation Policy Summary/,
-  "Community Confirmation Policy copied summary must use a bounded internal GSN policy paper."
+  "Community Confirmation Policy copied summary must use a bounded protected GSN policy paper."
 );
 assertContains(
   "communityConfirmationPolicy",
-  /private contacts, raw member lists, responder notes, phone numbers, and private witness details/,
+  /private contacts, protected member lists, responder notes, phone numbers, and private witness details/,
   "Community Confirmation Policy copied summary must keep redaction language."
+);
+assertNotContains(
+  "communityConfirmationPolicy",
+  /raw votes|raw member lists/,
+  "Community Confirmation Policy visible copy must use private/protected wording, not raw-vote or raw-list wording."
 );
 assertContains(
   "communityConfirmationPolicy",
@@ -1345,27 +1422,27 @@ assertContains(
 assertContains(
   "adminIncompleteLoans",
   /GSN Incomplete Support Review Snapshot/,
-  "Admin Incomplete Loans per-support copies must use bounded internal GSN support review papers."
+  "Admin Incomplete Loans per-support copies must use bounded protected GSN support review papers."
 );
 assertContains(
   "adminIncompleteLoans",
   /GSN Incomplete Support Queue Snapshot/,
-  "Admin Incomplete Loans queue copy must use a bounded internal GSN support queue paper."
+  "Admin Incomplete Loans queue copy must use a bounded protected GSN support queue paper."
 );
 assertContains(
   "adminIncompleteLoans",
-  /private borrower contact details, supporter contacts, bank details, raw metadata, and internal notes/,
+  /private borrower contact details, supporter contacts, bank details, protected support details, and protected notes/,
   "Admin Incomplete Loans copied papers must keep private support-record redaction language."
 );
 assertContains(
   "adminTrustEvents",
   /GSN Trust Event Audit Snapshot/,
-  "Admin Trust Events copies must use bounded internal GSN audit papers and must not copy raw JSON payloads."
+  "Admin Trust Events copies must use bounded protected GSN audit papers and must not copy raw JSON payloads."
 );
 assertContains(
   "adminTrustEvents",
-  /exclude raw JSON metadata, private contacts, phone numbers, bank details, and complete private records/,
-  "Admin Trust Events copied papers must keep raw-metadata redaction language."
+  /exclude protected event details, private contacts, phone numbers, bank details, and complete private records/,
+  "Admin Trust Events copied papers must keep protected-event-detail redaction language."
 );
 assertContains(
   "adminTrustEvents",
@@ -1385,8 +1462,22 @@ assertContains(
 assertContains(
   "bankConsole",
   /GSN Bank Console Settings Review/,
-  "Bank Console settings copy must use a bounded internal settings review paper."
+  "Bank Console settings copy must use a bounded protected settings review paper."
 );
+
+[
+  "adminIncompleteLoans",
+  "adminTrustEvents",
+  "bankConsole",
+  "communityConfirmationInbox",
+  "communityConfirmationPolicy",
+].forEach((key) => {
+  assertNotContains(
+    key,
+    /Internal review|internal support review|internal admin review|Internal queue|internal queue|internal notes|Internal audit|internal trust-event|internal finance review|Internal settings|internal reconciliation|internal settings summary|Internal policy|internal policy summary|Internal evidence|internal evidence|internally and keeps|stays internal/i,
+    "Copied admin/review papers must use protected-review wording instead of internal wording."
+  );
+});
 assertContains(
   "bankConsole",
   /reconciliation review evidence only/,
@@ -1394,8 +1485,8 @@ assertContains(
 );
 assertContains(
   "bankConsole",
-  /avoids raw JSON and secrets/,
-  "Bank Console settings paper must state that it avoids raw JSON and secrets."
+  /avoids protected technical details and secrets/,
+  "Bank Console settings paper must state that it avoids protected technical details and secrets."
 );
 assertContains(
   "bankConsole",
@@ -1409,13 +1500,13 @@ assertContains(
 );
 assertNotContains(
   "bankConsole",
-  /safeCopy\(JSON\.stringify\(cfg, null, 2\)\)/g,
-  "Bank Console settings copy must not expose raw JSON configuration."
+  /safeCopy\(JSON\.stringify\(cfg, null, 2\)\)|raw bank payloads|Configuration visible|No configuration visible|protected configuration review|raw provider payloads|raw JSON configuration/g,
+  "Bank Console settings copy must not expose raw JSON/configuration wording."
 );
 assertContains(
   "revenueAllocation",
   /GSN Revenue Allocation Review Summary/,
-  "Revenue Allocation summary copy must use a bounded internal GSN allocation review paper."
+  "Revenue Allocation summary copy must use a bounded protected GSN allocation review paper."
 );
 assertContains(
   "revenueAllocation",
@@ -1429,8 +1520,13 @@ assertContains(
 );
 assertContains(
   "revenueAllocation",
-  /private bank details, private supporter contacts, raw ledger metadata/,
+  /private bank details, private supporter contacts, protected ledger details/,
   "Revenue Allocation copied paper must keep private finance-record redaction language."
+);
+assertNotContains(
+  "revenueAllocation",
+  /raw ledger metadata|Internal review summary/i,
+  "Revenue Allocation copied paper must use protected-ledger/protected-review wording, not raw-metadata or internal wording."
 );
 assertContains(
   "revenueAllocation",
@@ -1495,7 +1591,7 @@ assertContains(
 );
 assertContains(
   "trustTimeline",
-  /trustTimelineDoesNotConfirmList[\s\S]*?Government registration, legal identity, or bank approval[\s\S]*?Payment movement, escrow, payout approval, credit approval[\s\S]*?Future behaviour, future repayment, delivery, marketplace outcome[\s\S]*?Authority to release goods, money, credit, services, or private records[\s\S]*?Private contacts, complete private Trust Passport history, raw metadata, or admin-only notes/,
+  /trustTimelineDoesNotConfirmList[\s\S]*?Government registration, legal identity, or bank approval[\s\S]*?Payment movement, escrow, payout approval, credit approval[\s\S]*?Future behaviour, future repayment, delivery, marketplace outcome[\s\S]*?Authority to release goods, money, credit, services, or private records[\s\S]*?Private contacts, complete private Trust Passport history, protected event details, or admin-only notes/,
   "Signed-in Trust Timeline must keep legal, finance, future-outcome, release-authority, and private-record boundaries visible."
 );
 assertNotContains(

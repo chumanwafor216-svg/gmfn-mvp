@@ -2081,7 +2081,7 @@ export default function IdentityIntegrityPage() {
 
     showNotice(
       "error",
-      `${item.title} needs a dedicated signed-in identity-completion route before it can be finished here.`
+      `${item.title} needs a dedicated signed-in identity-completion page before it can be finished here.`
     );
   }
 

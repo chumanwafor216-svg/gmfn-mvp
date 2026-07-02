@@ -8,6 +8,7 @@ import {
   TrustPaperSeal,
   TrustPaperSecurityNote,
   TrustPaperWatermark,
+  TrustPaperWatermarkField,
 } from "../../components/TrustPaperMarks";
 import {
   institutionalInnerCard,
@@ -1014,6 +1015,10 @@ export default function TrustSlipVerifyPublicPaper({
       style={publicVerifyPaperShell(compact)}
     >
       {officialPaperWatermark(compact)}
+      <TrustPaperWatermarkField
+        names={["shield", "globe", "qr", "document"]}
+        opacity={0.024}
+      />
       <header style={publicVerifyHero(compact)}>
         <TrustPaperWatermark
           name="globe"

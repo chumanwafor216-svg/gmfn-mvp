@@ -3702,7 +3702,7 @@ export default function TrustScorePage() {
                   fontWeight: 850,
                 }}
               >
-                Choose the missing evidence. Only real completion routes open; pending routes are
+                Choose the missing evidence. Only ready completion pages open; pending pages are
                 marked plainly so this button does not send people to another explanation page.
               </div>
               <div

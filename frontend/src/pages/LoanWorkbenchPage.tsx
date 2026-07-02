@@ -2410,7 +2410,7 @@ export default function LoanWorkbenchPage() {
         >
           <div>
             <div style={sectionLabel()}>
-              {workbenchSupportActive ? "Next support routes" : "Next routes"}
+              {workbenchSupportActive ? "Next support steps" : "Next pages"}
             </div>
             <div style={{ marginTop: 8, ...helperText() }}>
               {workbenchSupportActive

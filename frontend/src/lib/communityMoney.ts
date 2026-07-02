@@ -597,7 +597,7 @@ function buildRouteFromContext(params: {
 
   return {
     title: params.title,
-    detail: detailLines.join("\n") || "Route loaded.",
+    detail: detailLines.join("\n") || "Payment path loaded.",
     status: firstTruthy(defaultRail?.status, settlement ? "active" : "pending"),
     reference: "",
     currency: firstTruthy(params.context?.currency, "NGN"),
@@ -1059,7 +1059,7 @@ export async function getLoanWithdrawalInstruction(
   const settlement = normalizeCommunitySettlement(raw);
 
   return {
-    title: firstTruthy(raw?.title, "Approved Loan Withdrawal Instruction"),
+    title: firstTruthy(raw?.title, "Approved Support Withdrawal Instruction"),
     detail: [
       settlement?.railName ? `Rail: ${settlement.railName}` : "",
       ...settlementDetailLines(settlement),

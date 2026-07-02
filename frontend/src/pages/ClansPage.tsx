@@ -553,7 +553,7 @@ export default function ClansPage() {
       }
 
       setCreateMessage(
-        "Community created. The app could not open the next route automatically, so choose the new community below and continue into your next step."
+        "Community created. GSN could not open the next page automatically, so choose the new community below and continue into your next step."
       );
     } finally {
       setCreatingCommunity(false);
@@ -684,7 +684,7 @@ export default function ClansPage() {
           label="What this does"
           what="This create-community block starts a new community and reminds you that the next steps continue into activation, invite, and community work."
           why="It helps you treat community creation as the first guided move, not the whole workflow."
-          next="Create the community here first, then select it and move into the route you need next."
+          next="Create the community here first, then select it and move into the next page you need."
           tone="dark"
           style={{ marginTop: 14 }}
         />

@@ -272,7 +272,7 @@ function buildBankEventReviewPaper(row: BankConsoleRow, displayReference: string
   return buildGsnSnapshotPaper({
     title: "GSN Bank Console Event Review",
     purpose:
-      "Internal reconciliation review for one bank-console event or expected payment row.",
+      "Protected reconciliation review for one bank-console event or expected payment row.",
     reference: firstTruthy(displayReference, row.id, row.bank_txn_id, "bank-row"),
     context: [
       { label: "Reference", value: displayReference },
@@ -289,33 +289,33 @@ function buildBankEventReviewPaper(row: BankConsoleRow, displayReference: string
       "Reader boundary: this is reconciliation review evidence only. It does not prove settlement, confirm money moved, approve payout, or authorize release of goods or credit.",
     ],
     privacyNote:
-      "Privacy: copied bank-console summaries exclude raw bank payloads, full account details, private contacts, and complete configuration secrets.",
+      "Privacy: copied bank-console summaries exclude protected bank event details, full account details, private contacts, and complete setup secrets.",
     limitationNote:
-      "Limitation: internal finance review only. Not a receipt, bank guarantee, payment confirmation, payout approval, or release authority.",
+      "Limitation: protected finance review only. Not a receipt, bank guarantee, payment confirmation, payout approval, or release authority.",
   });
 }
 
 function buildBankSettingsReviewPaper(cfg: any): string {
-  const enabledText = cfg ? "Configuration visible to this admin surface" : "No configuration visible";
+  const enabledText = cfg ? "Bank setup visible to this admin page" : "No bank setup visible";
   return buildGsnSnapshotPaper({
     title: "GSN Bank Console Settings Review",
     purpose:
-      "Internal settings summary for bank-console reconciliation behavior.",
+      "Protected settings summary for bank-console reconciliation behavior.",
     reference: "bank-console-settings",
     context: [
-      { label: "Configuration state", value: enabledText },
+      { label: "Setup state", value: enabledText },
       { label: "Provider", value: firstTruthy(cfg?.provider, cfg?.bank_provider, "not shown") },
       { label: "Expected payment detail", value: firstTruthy(cfg?.detail, "not shown") },
       { label: "Public mode", value: firstTruthy(cfg?.mode, cfg?.status, "not shown") },
     ],
     bodyLines: [
-      "Reader boundary: this settings paper is for internal reconciliation review. It deliberately avoids raw JSON and secrets.",
-      "Use the live admin console for complete protected configuration review.",
+      "Reader boundary: this settings paper is for protected reconciliation review. It deliberately avoids protected technical details and secrets.",
+      "Use the live admin console for complete protected setup review.",
     ],
     privacyNote:
-      "Privacy: API keys, webhook secrets, raw provider payloads, account secrets, and private contacts are not included in this copied settings paper.",
+      "Privacy: API keys, webhook secrets, protected provider details, account secrets, and private contacts are not included in this copied settings paper.",
     limitationNote:
-      "Limitation: internal settings summary only. Not a payment instruction, bank guarantee, receipt, payout approval, or release authority.",
+      "Limitation: protected settings summary only. Not a payment instruction, bank guarantee, receipt, payout approval, or release authority.",
   });
 }
 

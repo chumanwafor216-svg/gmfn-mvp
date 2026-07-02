@@ -37,6 +37,21 @@ function assertContains(file, pattern, message) {
   }
 }
 
+function assertNotContains(file, pattern, message) {
+  const text = read(file);
+
+  text.split(/\r?\n/).forEach((line, index) => {
+    if (pattern.test(line)) {
+      findings.push({
+        file,
+        line: index + 1,
+        message,
+        text: line.trim(),
+      });
+    }
+  });
+}
+
 function assertStableActionsHaveDebugIds(file) {
   const text = read(file);
   const actionPattern =
@@ -123,6 +138,24 @@ assertContains(
   "src/pages/MyGMFNAndIPage.tsx",
   /debugId: "my-gmfn\.route\.dashboard"[\s\S]*?debugId="my-gmfn\.hero\.dashboard"[\s\S]*?debugId="my-gmfn\.tab\.guide"[\s\S]*?debugId="my-gmfn\.settings\.save"/,
   "My GSN and I hero, guide, route, and settings actions must remain traceable."
+);
+
+assertNotContains(
+  "src/pages/MyGMFNAndIPage.tsx",
+  /Choose the route that matches|protected routes|welcome route/,
+  "Public My GSN and I guide copy must speak in page/user terms, not route language."
+);
+
+assertNotContains(
+  "src/pages/MemberActivationPage.tsx",
+  /session token/i,
+  "Member Activation fallback copy must explain sign-in recovery without exposing token language."
+);
+
+assertNotContains(
+  "src/pages/ProfilePage.tsx",
+  /Backend profile storage/i,
+  "Profile save copy must not expose backend-storage language to users."
 );
 
 assertContains(

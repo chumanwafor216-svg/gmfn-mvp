@@ -389,14 +389,14 @@ export default function CommunityDomainServiceBoundaryPanels({
       </div>
 
       <div style={softCard()}>
-        <div style={sectionLabel()}>Configuration map</div>
+        <div style={sectionLabel()}>Setup map</div>
         <div style={{ ...helperText(), marginTop: 7 }}>
           {configurationMap
             ? `${cleanText(
                 configurationMap.primary_next_action?.label,
-                "Review configuration boundaries"
-              )}. ${configurationMapReadyTotal} of ${visibleConfigurationMapLanes.length} configuration checks are ready.`
-            : "GSN could not load the read-only configuration map for this Community Domain."}
+                "Review setup boundaries"
+              )}. ${configurationMapReadyTotal} of ${visibleConfigurationMapLanes.length} setup checks are ready.`
+            : "GSN could not load the read-only setup map for this Community Domain."}
         </div>
         {factGrid([
           ["Mode", compactStatus(configurationMapSummary.configuration_mode)],
@@ -424,12 +424,12 @@ export default function CommunityDomainServiceBoundaryPanels({
         ])}
         {blockedConfigurationMapLanes.length ? (
           <div style={{ ...helperText(), marginTop: 9 }}>
-            Configuration checks needing attention:{" "}
+            Setup checks needing attention:{" "}
             <strong>
               {blockedConfigurationMapLanes
                 .slice(0, 3)
                 .map((lane) =>
-                  cleanText(lane.label, lane.lane_key || "configuration check")
+                  cleanText(lane.label, lane.lane_key || "setup check")
                 )
                 .join(", ")}
             </strong>
@@ -437,16 +437,16 @@ export default function CommunityDomainServiceBoundaryPanels({
           </div>
         ) : configurationMap ? (
           <div style={{ ...helperText(), marginTop: 9 }}>
-            No blocked configuration check is visible, but this is still template
-            configuration, not a custom platform build.
+            No blocked setup check is visible, but this is still template setup,
+            not a custom platform build.
           </div>
         ) : null}
         {visibleConfigurationMapLanes.length ? (
           <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
             {visibleConfigurationMapLanes.slice(0, 4).map((lane) =>
               statusRow(
-                cleanText(lane.lane_key, cleanText(lane.label, "configuration")),
-                cleanText(lane.label, "Configuration check"),
+                cleanText(lane.lane_key, cleanText(lane.label, "setup")),
+                cleanText(lane.label, "Setup check"),
                 cleanText(
                   lane.next_step,
                   "Keep this as configurable template planning before requesting custom product work."
@@ -457,10 +457,10 @@ export default function CommunityDomainServiceBoundaryPanels({
           </div>
         ) : null}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          This configuration map is read-only configuration planning. It does not
+          This setup map is read-only service planning. It does not
           create a custom schema, custom tenant, custom billing package, custom
           permission model, custom database table, custom field, per-client code
-          fork, nodes, members, roles, policies, reviews, evidence, module
+          fork, nodes, members, roles, policies, reviews, evidence, service
           settings, payments, entitlements, marketplace records, social Community
           links, TrustSlips, Trust Passport records, public proof, or private record
           exposure.
@@ -605,7 +605,7 @@ export default function CommunityDomainServiceBoundaryPanels({
                 cleanText(lane.label, "Appeal path"),
                 cleanText(
                   lane.next_step,
-                  "Keep this as fairness planning until a real appeal route exists."
+                  "Keep this as fairness planning until a real appeal process exists."
                 ),
                 lane.status
               )
