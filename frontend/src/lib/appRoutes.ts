@@ -21,6 +21,7 @@ export const APP_ROUTES = {
   DEMAND_BOX: "/app/demand-box",
   TRUST: "/app/trust",
   OPEN_TRUST: "/app/open-trust-reading",
+  TRUST_TIMELINE: "/app/trust-timeline",
   CCI: "/app/identity",
   CCI_READING: "/app/cci-reading",
   TRUST_SLIP: "/app/trust-slip",

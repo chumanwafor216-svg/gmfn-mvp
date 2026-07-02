@@ -243,13 +243,13 @@ lineForbid(
 
 wholeFileFind(
   "src/lib/actionTargetRoutes.ts",
-  /export const ACTION_TARGETS = \{[\s\S]*?NOTIFICATIONS: APP_ROUTES\.NOTIFICATIONS[\s\S]*?FREE_SPOTLIGHT: APP_ROUTES\.FREE_SPOTLIGHT[\s\S]*?SUBSCRIPTION_SPOTLIGHT: APP_ROUTES\.SUBSCRIPTION_SPOTLIGHT[\s\S]*?\} as const;/,
-  "Shared action-target routes must own notification, free spotlight, and subscription spotlight targets."
+  /export const ACTION_TARGETS = \{[\s\S]*?TRUST_TIMELINE: APP_ROUTES\.TRUST_TIMELINE[\s\S]*?NOTIFICATIONS: APP_ROUTES\.NOTIFICATIONS[\s\S]*?FREE_SPOTLIGHT: APP_ROUTES\.FREE_SPOTLIGHT[\s\S]*?SUBSCRIPTION_SPOTLIGHT: APP_ROUTES\.SUBSCRIPTION_SPOTLIGHT[\s\S]*?\} as const;/,
+  "Shared action-target routes must own Trust Timeline, notification, free spotlight, and subscription spotlight targets."
 );
 
 wholeFileFind(
   "src/lib/actionTargetRoutes.ts",
-  /export const CTA_INTENT_ROUTES = \{[\s\S]*?marketplace: "MARKETPLACE"[\s\S]*?trust: "TRUST"[\s\S]*?notifications: "NOTIFICATIONS"[\s\S]*?welcome: "WELCOME"[\s\S]*?\} as const satisfies Record<string, keyof typeof APP_ROUTES>;/,
+  /export const CTA_INTENT_ROUTES = \{[\s\S]*?marketplace: "MARKETPLACE"[\s\S]*?trust: "TRUST"[\s\S]*?trustTimeline: "TRUST_TIMELINE"[\s\S]*?notifications: "NOTIFICATIONS"[\s\S]*?welcome: "WELCOME"[\s\S]*?\} as const satisfies Record<string, keyof typeof APP_ROUTES>;/,
   "Shared action-target routes must own CTA intent route keys."
 );
 
@@ -258,6 +258,7 @@ wholeFileFind(
   ["market", "ACTION_TARGETS.MARKETPLACE"],
   ['"community-home"', "ACTION_TARGETS.COMMUNITY"],
   ['"payment-rails"', "ACTION_TARGETS.PAYMENT_RAILS"],
+  ['"trust-timeline"', "ACTION_TARGETS.TRUST_TIMELINE"],
   ['"shop-control/paid-spotlight"', "ACTION_TARGETS.SUBSCRIPTION_SPOTLIGHT"],
 ].forEach(([alias, target]) => {
   lineFind(

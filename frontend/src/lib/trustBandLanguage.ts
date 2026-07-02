@@ -32,7 +32,7 @@ export const TRUST_BAND_LANGUAGE: TrustBandLanguage[] = [
     band: "B",
     title: "Good visible evidence",
     plainMeaning:
-      "The record has useful evidence, but the reader should still check what kind of events created it.",
+      "The record has useful evidence, but you should still check what kind of events created it.",
     implication:
       "A small or moderate decision may be reasonable. For bigger money, goods, work, or responsibility, ask for the fuller Trust Passport.",
     nextStep: "Proceed with care; ask for more evidence if the risk is meaningful.",
@@ -72,7 +72,7 @@ export const TRUST_BAND_LANGUAGE: TrustBandLanguage[] = [
     band: "F",
     title: "No usable evidence basis yet",
     plainMeaning:
-      "The record is missing usable evidence or has a negative reading. The reader cannot make a careful trust decision from this alone.",
+      "The record is missing usable evidence or has a negative reading. You cannot make a careful trust decision from this alone.",
     implication:
       "Do not approve credit, release goods, accept responsibility, or make a serious referral from this record alone.",
     nextStep: "Ask the person to rebuild visible evidence before relying on the record.",
@@ -101,7 +101,7 @@ export const TRUST_EVIDENCE_LANGUAGE: Record<
     plainMeaning:
       "There is enough visible history to understand why the trust reading looks this way.",
     implication:
-      "The reader can use the record as a useful trust signal, while still matching the decision to the risk.",
+      "You can use the record as a useful trust signal, while still matching the decision to the risk.",
     tone: "strong",
   },
   mixed: {
@@ -119,7 +119,7 @@ export const TRUST_EVIDENCE_LANGUAGE: Record<
     plainMeaning:
       "Only a small amount of usable trust history is visible so far. The record can still become stronger as more current evidence is added.",
     implication:
-      "This does not mean bad behaviour. It means the reader should reduce the risk or ask for more evidence before relying on the record.",
+      "This does not mean bad behaviour. It means you should reduce the risk or ask for more evidence before relying on the record.",
     tone: "care",
   },
 };

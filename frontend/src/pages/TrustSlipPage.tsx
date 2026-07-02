@@ -16,6 +16,14 @@ import {
   TrustPaperSecurityFooter,
   TrustPaperWatermark,
 } from "../components/TrustPaperMarks";
+import {
+  TrustDocumentBoundaryPanel,
+  TrustDocumentConfidenceRibbon,
+  TrustDocumentFingerprint,
+  TrustDocumentSecurityPanel,
+  type TrustDocumentPanelItem,
+  type TrustDocumentRibbonItem,
+} from "../components/TrustDocumentLanguage";
 import TrustDocumentActionGuide from "../components/TrustDocumentActionGuide";
 import TrustDocumentFamilyMap from "../components/TrustDocumentFamilyMap";
 import TrustDocumentUseCases from "../components/TrustDocumentUseCases";
@@ -343,6 +351,22 @@ function firstTruthy(...values: any[]): string {
     if (text) return text;
   }
   return "";
+}
+
+function trustSlipHolderReferenceFingerprint(...values: unknown[]): string {
+  const input = values.map((value) => safeStr(value)).join("|") || "gsn-trustslip-holder";
+  let hashA = 0x811c9dc5;
+  let hashB = 0x45d9f3b;
+  for (let index = 0; index < input.length; index += 1) {
+    const code = input.charCodeAt(index);
+    hashA ^= code;
+    hashA = Math.imul(hashA, 0x01000193);
+    hashB ^= code + index;
+    hashB = Math.imul(hashB, 0x27d4eb2d);
+  }
+  const left = (hashA >>> 0).toString(16).padStart(8, "0");
+  const right = (hashB >>> 0).toString(16).padStart(8, "0");
+  return `GSN-TS-${left}-${right}`.toUpperCase();
 }
 
 function firstStringList(...values: any[]): string[] {
@@ -1490,39 +1514,55 @@ function mergeFreshTrustSlipSummary(
   summary: TrustSlipSummary | null,
   reissueResult: any
 ): TrustSlipSummary | null {
-  if (!summary || !reissueResult) return summary;
+  if (!reissueResult) return summary;
 
   const freshCode = firstTruthy(reissueResult.code, reissueResult.trust_slip_code);
   if (!freshCode) return summary;
 
+  const baseSummary =
+    summary ||
+    normalizeTrustSlipSummary({
+      ...reissueResult,
+      code: freshCode,
+    });
+  if (!baseSummary) return summary;
+
   const issuedAt = firstTruthy(reissueResult.issued_at, reissueResult.created_at);
   const expiresAt = firstTruthy(reissueResult.expires_at);
-  const freshVerifyUrl = `/t/${encodeURIComponent(freshCode)}`;
+  const freshStatus = firstTruthy(reissueResult.status, "active");
+  const freshVerifyUrl = trustSlipVerifyFrontendPath(
+    freshCode,
+    firstTruthy(reissueResult.public_verify_url, baseSummary.public_verify_url)
+  );
 
   return {
-    ...summary,
+    ...baseSummary,
+    active: true,
+    status: freshStatus,
     code: freshCode,
     verification_code: freshCode,
     verification_token: freshCode,
     token: freshCode,
     public_verify_url: freshVerifyUrl,
-    created_at: issuedAt || summary.created_at,
-    issued_at: issuedAt || summary.issued_at,
-    expires_at: expiresAt || summary.expires_at,
+    created_at: issuedAt || baseSummary.created_at,
+    issued_at: issuedAt || baseSummary.issued_at,
+    expires_at: expiresAt || baseSummary.expires_at,
     is_current: true,
     merchant_view: {
-      ...(summary.merchant_view || {}),
+      ...(baseSummary.merchant_view || {}),
+      active: true,
+      status: freshStatus,
       code: freshCode,
       merchant_summary: {
-        ...((summary.merchant_view || {}).merchant_summary || {}),
+        ...((baseSummary.merchant_view || {}).merchant_summary || {}),
         code: freshCode,
-        expires_at: expiresAt || (summary.merchant_view || {}).merchant_summary?.expires_at,
+        expires_at: expiresAt || (baseSummary.merchant_view || {}).merchant_summary?.expires_at,
       },
     },
     merchant_summary: {
-      ...(summary.merchant_summary || {}),
+      ...(baseSummary.merchant_summary || {}),
       code: freshCode,
-      expires_at: expiresAt || summary.merchant_summary?.expires_at,
+      expires_at: expiresAt || baseSummary.merchant_summary?.expires_at,
     },
   };
 }
@@ -2005,7 +2045,7 @@ export default function TrustSlipPage() {
       ? "Do not rely on this TrustSlip until the status is cleared and a fresh verification record is available."
       : trustSlipCode
       ? "This TrustSlip has a code and can be checked through the verify page."
-      : "The TrustSlip code is not ready yet.";
+      : "A public TrustSlip code is not ready yet. Refresh TrustSlip, and if it still stays here, complete the required phone or identity step first.";
 
   const cciScore = firstTruthy(
     summary?.merchant_view?.cci_score,
@@ -2361,7 +2401,7 @@ export default function TrustSlipPage() {
     );
   const readerVerdict = hasBlockingTrustSlipState
     ? "Do not ask someone to rely on this TrustSlip by itself. The current state needs fresh evidence before support, goods, money, work, or a referral."
-    : `This TrustSlip gives a reader a short public trust story for ${holderName}. It should help them decide what to do next, not replace their judgement.`;
+    : `Use this TrustSlip as a short public trust story for ${holderName}. It can help you decide what to check next, but it does not replace your judgement.`;
   const fourDecisionQuestions = [
     {
       title: "What decision can this TrustSlip evidence support?",
@@ -2396,7 +2436,7 @@ export default function TrustSlipPage() {
       answer:
         safeStr(summary?.code || summary?.verification_code || summary?.merchant_view?.code)
           ? "A TrustSlip code and verification route exist. For a higher-risk decision, ask for the Trust Passport, Trust Events, or direct community confirmation."
-          : "The TrustSlip code is not ready yet, so the reader cannot check the portable claim from this page alone.",
+          : "The TrustSlip code is not ready yet, so you cannot check this public claim from this page alone.",
     },
   ];
   const briefDecisionAnswers = [
@@ -2612,6 +2652,112 @@ export default function TrustSlipPage() {
   const confirmationPublicPath = confirmationOutcome?.public_token
     ? `/community-confirmations/public/${encodeURIComponent(String(confirmationOutcome.public_token))}`
     : "";
+  const trustSlipHolderFingerprint = trustSlipHolderReferenceFingerprint(
+    trustSlipCode,
+    gmfnId,
+    holderName,
+    communityRef,
+    trustSlipPublicStatus,
+    merchantBand,
+    merchantTrustLimit,
+    merchantCurrency,
+    cciScore,
+    cciBand,
+    trustSlipIssuedLabel,
+    trustSlipExpiryLabel
+  );
+  const trustSlipDocumentTone: TrustDocumentRibbonItem["tone"] =
+    trustSlipSecurityTone === "active"
+      ? "good"
+      : trustSlipSecurityTone === "expired" || trustSlipSecurityTone === "blocked"
+        ? "warn"
+        : "info";
+  const trustSlipRecordIntegrityTone: TrustDocumentRibbonItem["tone"] =
+    trustSlipCode && verifyPath ? "good" : trustSlipBlockedByPhone ? "warn" : "info";
+  const trustSlipEvidenceTone: TrustDocumentRibbonItem["tone"] =
+    trustSlipEvidenceStatus === "strong"
+      ? "good"
+      : trustSlipEvidenceStatus === "mixed"
+        ? "info"
+        : "warn";
+  const trustSlipVerifyTone: TrustDocumentRibbonItem["tone"] = verifyPath ? "good" : "warn";
+  const trustSlipHolderConfidenceRibbonItems: TrustDocumentRibbonItem[] = [
+    {
+      label: "TrustSlip status",
+      value: trustSlipPublicStatus,
+      tone: trustSlipDocumentTone,
+    },
+    {
+      label: "Record integrity",
+      value: trustSlipCode && verifyPath ? "Checkable" : "Limited",
+      tone: trustSlipRecordIntegrityTone,
+      detail: trustSlipCode ? "Visible code present" : "Code not ready",
+    },
+    {
+      label: "Evidence chain",
+      value: trustSlipEvidenceLanguage.label,
+      tone: trustSlipEvidenceTone,
+      detail: trustSlipEvidenceStatus === "limited" ? "Use with caution" : "Visible evidence summarized",
+    },
+    {
+      label: "Verification path",
+      value: verifyPath ? "Available" : "Unavailable",
+      tone: trustSlipVerifyTone,
+    },
+    {
+      label: "Valid until",
+      value: trustSlipExpiryLabel,
+      tone: trustSlipSecurityTone === "expired" ? "warn" : trustSlipCode ? "good" : "info",
+    },
+  ];
+  const trustSlipHolderSecurityItems: TrustDocumentPanelItem[] = [
+    {
+      title: "TrustSlip code",
+      detail: trustSlipCode
+        ? `This holder-facing TrustSlip is tied to visible code ${trustSlipCode}.`
+        : "No public TrustSlip code is available yet. Refresh or complete the required identity step first.",
+      tone: trustSlipCode ? "good" : "warn",
+    },
+    {
+      title: "Public verification route",
+      detail: verifyPath
+        ? "The verify action opens the current public TrustSlip reading for this code."
+        : "The public verify link is not ready yet, so people you share with cannot check this TrustSlip from the QR or link.",
+      tone: verifyPath ? "good" : "warn",
+    },
+    {
+      title: "Privacy boundary",
+      detail:
+        "This TrustSlip is a short portable summary. It does not expose the holder's private Trust Passport, private notes, contacts, or admin records.",
+      tone: "good",
+    },
+    {
+      title: "Reference fingerprint",
+      detail:
+        "Reference fingerprint generated from visible TrustSlip fields; not a cryptographic hash or legal proof.",
+      tone: "info",
+    },
+    {
+      title: "Reader decision boundary",
+      detail:
+        "Use this as trust evidence beside the public verify paper, scoped member credential, and community record where available.",
+      tone: "info",
+    },
+  ];
+  const trustSlipHolderConfirmsList = [
+    "Holder display name and GSN ID shown on this TrustSlip",
+    "Community label and Community ID/reference shown on this TrustSlip",
+    "Current TrustSlip status, code, issue window, and expiry window where available",
+    "Visible trust band, TrustSlip limit signal, and cross-community consistency reading",
+    "QR, verify action, and copied verify link open the public TrustSlip reading when available",
+  ];
+  const trustSlipHolderDoesNotConfirmList = [
+    "Government registration or legal identity beyond recorded evidence",
+    "Bank approval, credit approval, payment movement, or escrow",
+    "Future behaviour, future repayment, delivery, or marketplace outcome",
+    "Authority to release goods, money, credit, or services",
+    "Private Trust Passport history, private notes, private contacts, or admin records",
+  ];
 
   async function requestCommunityPulse() {
     if (!trustSlipCode) {
@@ -3226,6 +3372,53 @@ export default function TrustSlipPage() {
           </header>
 
           <section
+            data-gsn-trust-document-certificate="trustslip-holder"
+            style={{
+              ...trustSlipScrollClearance(isCompact),
+              order: 1,
+              gridColumn: "1 / -1",
+              display: "grid",
+              gap: 12,
+            }}
+          >
+            <TrustDocumentConfidenceRibbon items={trustSlipHolderConfidenceRibbonItems} />
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: isCompact
+                  ? "minmax(0, 1fr)"
+                  : "minmax(0, 1fr) minmax(270px, 0.78fr)",
+                gap: 12,
+                alignItems: "start",
+              }}
+            >
+              <div style={{ display: "grid", gap: 12 }}>
+                <TrustDocumentBoundaryPanel
+                  title="This TrustSlip confirms"
+                  tone="good"
+                  items={trustSlipHolderConfirmsList}
+                />
+                <TrustDocumentBoundaryPanel
+                  title="This TrustSlip does not confirm"
+                  tone="warn"
+                  items={trustSlipHolderDoesNotConfirmList}
+                />
+              </div>
+              <div style={{ display: "grid", gap: 12 }}>
+                <TrustDocumentSecurityPanel
+                  title="TrustSlip security"
+                  items={trustSlipHolderSecurityItems}
+                />
+                <TrustDocumentFingerprint
+                  label="TrustSlip holder reference fingerprint"
+                  value={trustSlipHolderFingerprint}
+                  detail="Reference fingerprint for this visible holder-facing TrustSlip. It is not a cryptographic proof."
+                />
+              </div>
+            </div>
+          </section>
+
+          <section
             style={{
               ...trustSlipDarkPanel(),
               padding: 16,
@@ -3741,7 +3934,7 @@ export default function TrustSlipPage() {
               <TrustPaperWatermark name="shield" color="#166534" size={178} opacity={0.04} />
               <div style={trustSlipPanelContent()}>
               <div style={trustSlipPaperTitle(isCompact)}>
-                Why a reader may trust this
+                Why you may trust this
               </div>
               <div style={{ ...documentMetaCard("#F0FBF4"), marginTop: 12, position: "relative", overflow: "hidden" }}>
                 <TrustPaperWatermark name="shield" color="#166534" size={132} opacity={0.075} />
@@ -3951,8 +4144,8 @@ export default function TrustSlipPage() {
                 maxWidth: 840,
               }}
             >
-              A short public trust paper for a careful reader. It shows who this
-              belongs to, what the current evidence says, and how to verify it.
+              A short public trust paper you can share. It shows who this belongs
+              to, what the current evidence says, and how to verify it.
             </div>
 
             <div
@@ -4924,7 +5117,7 @@ export default function TrustSlipPage() {
               <div style={{ marginTop: 10, ...helperText() }}>
                 {commitmentPlainLanguage ||
                   personalCommitmentPlainLanguage ||
-                  "Recorded contribution or repayment expectations are not shown yet. A reader should ask for more evidence before taking a bigger risk."}
+                  "Recorded contribution or repayment expectations are not shown yet. Ask for more evidence before taking a bigger risk."}
               </div>
               <div style={{ marginTop: 8, ...helperText() }}>
                 Personal commitments show member-recorded discipline. Expected payments show contribution or repayment evidence.

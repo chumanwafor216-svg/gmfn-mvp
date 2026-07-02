@@ -137,6 +137,30 @@ assertContains(
 );
 
 assertContains(
+  "src/pages/TrustSlipPage.tsx",
+  /TrustDocumentConfidenceRibbon[\s\S]*?trustSlipHolderConfidenceRibbonItems[\s\S]*?TrustSlip status[\s\S]*?Record integrity[\s\S]*?Evidence chain[\s\S]*?Verification path[\s\S]*?Valid until/,
+  "Signed-in TrustSlip holder paper must expose the Trust Document Language confidence ribbon."
+);
+
+assertContains(
+  "src/pages/TrustSlipPage.tsx",
+  /data-gsn-trust-document-certificate="trustslip-holder"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This TrustSlip confirms"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This TrustSlip does not confirm"[\s\S]*?TrustDocumentSecurityPanel[\s\S]*?title="TrustSlip security"[\s\S]*?TrustDocumentFingerprint[\s\S]*?label="TrustSlip holder reference fingerprint"/,
+  "Signed-in TrustSlip holder paper must render the Trust Document Language sequence with security, confirms/does-not-confirm panels, and holder reference fingerprint."
+);
+
+assertContains(
+  "src/pages/TrustSlipPage.tsx",
+  /Reference fingerprint generated from visible TrustSlip fields; not a cryptographic hash[\s\S]*?Reference fingerprint for this visible holder-facing TrustSlip\. It is not a cryptographic proof\./,
+  "Signed-in TrustSlip holder paper must not call the generated reference fingerprint cryptographic proof."
+);
+
+assertContains(
+  "src/pages/TrustSlipPage.tsx",
+  /trustSlipHolderDoesNotConfirmList[\s\S]*?Government registration or legal identity beyond recorded evidence[\s\S]*?Bank approval, credit approval, payment movement, or escrow[\s\S]*?Future behaviour, future repayment, delivery, or marketplace outcome[\s\S]*?Authority to release goods, money, credit, or services[\s\S]*?Private Trust Passport history, private notes, private contacts, or admin records/,
+  "Signed-in TrustSlip holder paper must keep legal, finance, future-outcome, release-authority, and private-passport boundaries visible."
+);
+
+assertContains(
   "src/lib/api.ts",
   /export async function reissueMyTrustSlip[\s\S]*?\/trust-slips\/me\/reissue[\s\S]*?force: params\?\.force \?\? true/,
   "TrustSlip refresh must have an API client path that can request a fresh public code/date instead of only reloading the current slip."
@@ -164,6 +188,12 @@ assertContains(
   "src/pages/TrustSlipPage.tsx",
   /fetchTrustSlipPageData\(selectedClanId, \{[\s\S]*?networkFirst: true[\s\S]*?\}\)[\s\S]*?mergeFreshTrustSlipSummary\(data\.summary, reissueResult\)/,
   "TrustSlip refresh must reload the current slip network-first and seed the visible code/date from the reissue response so stale helper responses cannot keep an old QR/date on screen."
+);
+
+assertContains(
+  "src/pages/TrustSlipPage.tsx",
+  /const baseSummary =[\s\S]*?summary \|\|[\s\S]*?normalizeTrustSlipSummary\(\{[\s\S]*?\.\.\.reissueResult[\s\S]*?code: freshCode[\s\S]*?status: freshStatus[\s\S]*?public_verify_url: freshVerifyUrl/,
+  "TrustSlip refresh must still seed a visible fresh code, active status, and public QR link when the follow-up summary response is empty or stale."
 );
 
 assertContains(
@@ -391,6 +421,36 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityConfirmationOutcomePage.tsx",
+  /TrustDocumentConfidenceRibbon[\s\S]*?outcomeConfidenceRibbonItems[\s\S]*?Outcome status[\s\S]*?Response window[\s\S]*?Response evidence[\s\S]*?Privacy boundary[\s\S]*?Verification path/,
+  "Public Community Confirmation Outcome must expose the Trust Document Language confidence ribbon."
+);
+
+assertContains(
+  "src/pages/CommunityConfirmationOutcomePage.tsx",
+  /data-gsn-trust-document-certificate="community-confirmation-outcome"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This outcome confirms"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This outcome does not confirm"[\s\S]*?TrustDocumentSecurityPanel[\s\S]*?title="Outcome security"[\s\S]*?TrustDocumentFingerprint[\s\S]*?label="Community confirmation outcome fingerprint"/,
+  "Public Community Confirmation Outcome must render the Trust Document Language sequence with security, confirms/does-not-confirm panels, and record fingerprint."
+);
+
+assertContains(
+  "src/pages/CommunityConfirmationOutcomePage.tsx",
+  /Reference fingerprint[\s\S]*?not a cryptographic hash[\s\S]*?Reference fingerprint for this visible public confirmation outcome\. It is not a cryptographic proof\./,
+  "Public Community Confirmation Outcome must not call the generated reference fingerprint cryptographic proof."
+);
+
+assertContains(
+  "src/pages/CommunityConfirmationOutcomePage.tsx",
+  /outcomeDoesNotConfirmList[\s\S]*?Whole-community vote or approval by every member[\s\S]*?Private responder names, contacts, notes, or private review details[\s\S]*?Payment received, bank guarantee, escrow, loan approval, or credit approval[\s\S]*?Permission to release goods, money, credit, or services/,
+  "Public Community Confirmation Outcome must keep whole-community, privacy, finance, and release-authority boundaries visible."
+);
+
+assertContains(
+  "src/pages/CommunityConfirmationOutcomePage.tsx",
+  /title: "Your decision boundary"[\s\S]*?Use this as community response evidence beside current TrustSlip, member credential, and community record where available[\s\S]*?label="Your decision note"[\s\S]*?title="Use as evidence"/,
+  "Public Community Confirmation Outcome must use direct user decision language instead of reader-facing document-author wording."
+);
+
+assertContains(
+  "src/pages/CommunityConfirmationOutcomePage.tsx",
   /Responses are counted against the contacts asked, not as a whole-community vote[\s\S]*?\$\{responsesReceived\} of \$\{requestsSent\} requested contacts responded/,
   "Community confirmation outcome page must explain response counts as requested-contact evidence, not whole-community voting."
 );
@@ -481,7 +541,7 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityVerifyPage.tsx",
-  /title: "Trust anchor"[\s\S]*?Names are display labels; the Community ID is what the reader should check[\s\S]*?title: "Hidden by design"[\s\S]*?Private member lists, phone numbers, verifier names, witness details, disputes, and admin records are not shown on this public page[\s\S]*?Private by design[\s\S]*?Member lists, contacts, disputes, and admin notes stay hidden/,
+  /title: "Trust anchor"[\s\S]*?check the Community ID before relying on the name[\s\S]*?title: "Hidden by design"[\s\S]*?Private member lists, phone numbers, verifier names, witness details, disputes, and private review records are not shown on this public page[\s\S]*?Private by design[\s\S]*?Member lists, contacts, disputes, and private review notes stay hidden/,
   "CommunityVerifyPage must implement the Community Public Face anchor rule and public/member/admin privacy boundary using existing data only."
 );
 
@@ -505,8 +565,8 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityVerifyPage.tsx",
-  /title: "Trust anchor"[\s\S]*?title: "What this means"[\s\S]*?title: "What remains unchecked"[\s\S]*?title: "Hidden by design"[\s\S]*?Private member lists, phone numbers, verifier names, witness details, disputes, and admin records are not shown on this public page[\s\S]*?title: "Next safe step"[\s\S]*?title: "Reader decision"/,
-  "CommunityVerifyPage public reading must follow the Community Public Face order: anchor, meaning, unchecked limits, hidden private evidence, next action, and reader decision."
+  /title: "Trust anchor"[\s\S]*?title: "What this means"[\s\S]*?title: "What remains unchecked"[\s\S]*?title: "Hidden by design"[\s\S]*?Private member lists, phone numbers, verifier names, witness details, disputes, and private review records are not shown on this public page[\s\S]*?title: "Next safe step"[\s\S]*?title: "Your decision boundary"/,
+  "CommunityVerifyPage public reading must follow the Community Public Face order: anchor, meaning, unchecked limits, hidden private evidence, next action, and direct user decision boundary."
 );
 
 assertContains(
@@ -571,14 +631,14 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityVerifyPage.tsx",
-  /const readerDecisionScope = firstTruthy\([\s\S]*?serious trade, lending, membership, shop, line, welfare, or affiliate decisions[\s\S]*?current scoped evidence before acting/,
+  /const readerDecisionScope = firstTruthy\([\s\S]*?Before serious trade, lending, membership, shop, line, welfare, or affiliate decisions[\s\S]*?ask for current scoped evidence/,
   "CommunityVerifyPage reader-decision guidance must keep serious decisions tied to current scoped evidence."
 );
 
 assertContains(
   "src/pages/CommunityVerifyPage.tsx",
-  /title: "Reader decision"[\s\S]*?body: `\$\{readerDecisionLabel\}\. \$\{readerDecisionScope\}`/,
-  "CommunityVerifyPage must render a reader-decision boundary in the public reading."
+  /title: "Your decision boundary"[\s\S]*?body: `\$\{readerDecisionLabel\}\. \$\{readerDecisionScope\}`/,
+  "CommunityVerifyPage must render a direct user decision boundary in the public reading."
 );
 
 assertContains(
@@ -804,6 +864,36 @@ assertContains(
 );
 
 assertContains(
+  "src/App.tsx",
+  /const TrustTimelinePage = React\.lazy\(\(\) => import\("\.\/pages\/TrustTimelinePage"\)\);[\s\S]*?path="\/trust-timeline" element=\{<PreserveRedirect to=\{APP_ROUTES\.TRUST_TIMELINE\} \/>\}[\s\S]*?path="trust-timeline" element=\{<TrustTimelinePage \/>\}/,
+  "Trust Timeline must stay mounted at /app/trust-timeline with a public shorthand redirect through the shared route registry so the evidence surface remains testable."
+);
+
+assertContains(
+  "src/pages/TrustTimelinePage.tsx",
+  /TrustDocumentConfidenceRibbon[\s\S]*?trustTimelineConfidenceRibbonItems[\s\S]*?Timeline status[\s\S]*?Record integrity[\s\S]*?Evidence chain[\s\S]*?Verification path[\s\S]*?Last registry update/,
+  "Trust Timeline must expose the Trust Document Language confidence ribbon."
+);
+
+assertContains(
+  "src/pages/TrustTimelinePage.tsx",
+  /data-gsn-trust-document-certificate="trust-timeline"[\s\S]*?TrustDocumentRegistryMasthead[\s\S]*?title="Trust Timeline Evidence Record"[\s\S]*?TrustDocumentConfidenceRibbon[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This timeline confirms"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This timeline does not confirm"[\s\S]*?TrustDocumentSecurityPanel[\s\S]*?title="Trust Timeline security"[\s\S]*?TrustDocumentFingerprint[\s\S]*?label="Trust Timeline reference fingerprint"/,
+  "Trust Timeline must render the Trust Document Language sequence with visible masthead record title, confidence, boundary, security, and fingerprint panels."
+);
+
+assertContains(
+  "src/pages/TrustTimelinePage.tsx",
+  /Reference fingerprint generated from visible timeline fields; not a cryptographic hash[\s\S]*?Reference fingerprint for this visible signed-in Trust Timeline\. It is not a cryptographic proof\./,
+  "Trust Timeline must not call the generated reference fingerprint cryptographic proof."
+);
+
+assertContains(
+  "src/pages/TrustTimelinePage.tsx",
+  /trustTimelineDoesNotConfirmList[\s\S]*?Government registration, legal identity, or bank approval[\s\S]*?Payment movement, escrow, payout approval, credit approval[\s\S]*?Future behaviour, future repayment, delivery, marketplace outcome[\s\S]*?Authority to release goods, money, credit, services, or private records[\s\S]*?Private contacts, complete private Trust Passport history, raw metadata, or admin-only notes/,
+  "Trust Timeline must keep legal, finance, future-outcome, release-authority, and private-record boundaries visible."
+);
+
+assertContains(
   "../gmfn_backend/app/services/trust_timeline_service.py",
   /FOLLOW_ATTENTION_EVENT_TYPES[\s\S]*?community\.followed[\s\S]*?marketplace\.shop\.followed[\s\S]*?FOLLOW_ATTENTION_NOTE[\s\S]*?Attention only[\s\S]*?not[\s\S]*?membership[\s\S]*?endorsement[\s\S]*?verification[\s\S]*?payment evidence[\s\S]*?trust-score increase[\s\S]*?reason = "Attention event"[\s\S]*?note = FOLLOW_ATTENTION_NOTE/,
   "Trust Timeline API must return follow events as neutral attention notes for the user audience."
@@ -919,7 +1009,7 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityConfirmationPolicyPage.tsx",
-  /witness response[\s\S]*?response link[\s\S]*?Witness response link copied[\s\S]*?response package[\s\S]*?respond to a request[\s\S]*?One-time witness response code[\s\S]*?Record witness[\s\S]*?responds with the one-time code[\s\S]*?Witness response[\s\S]*?one-time response[\s\S]*?QR\/OTP response[\s\S]*?response[\s\S]*?lane[\s\S]*?Scan to respond[\s\S]*?Copy response link/,
+  /witness response[\s\S]*?response link[\s\S]*?Witness response link copied[\s\S]*?response package[\s\S]*?respond to a request[\s\S]*?One-time witness response code[\s\S]*?Record witness[\s\S]*?responds with the one-time code[\s\S]*?Witness response[\s\S]*?one-time response[\s\S]*?Share the QR and one-time code with the member who will answer[\s\S]*?opens the response page[\s\S]*?Scan to respond[\s\S]*?Copy response link/,
   "Community confirmation policy witness-request lane must present verifier action as a response/record, not broad approval."
 );
 
@@ -943,7 +1033,7 @@ assertNotContains(
 
 assertContains(
   "src/pages/CommunityConfirmationPolicyPage.tsx",
-  /witness records[\s\S]*?witness-strength summary[\s\S]*?Member witness records[\s\S]*?Member for witness[\s\S]*?Ask for witness[\s\S]*?QR\/OTP response is live[\s\S]*?member-witness packages[\s\S]*?member-backed witness evidence/,
+  /witness records[\s\S]*?witness-strength summary[\s\S]*?Member witness records[\s\S]*?Member for witness[\s\S]*?Ask for witness[\s\S]*?Share the QR and one-time code with the member who will answer[\s\S]*?member who will answer[\s\S]*?member-backed witness evidence/,
   "Community confirmation policy member-witness lane must frame the flow as witness records, not blanket verification."
 );
 
@@ -1638,8 +1728,8 @@ assertContains(
 
 assertContains(
   "src/pages/MerchantReleasePage.tsx",
-  /function buildMerchantTradePacketPaper[\s\S]*?Official GSN headed paper[\s\S]*?Title: GSN Merchant Trade Packet Evidence[\s\S]*?WhatsApp or the parties keep the conversation[\s\S]*?Privacy: Keep only the final evidence needed for reference[\s\S]*?Security marks: GSN headed paper/,
-  "Merchant Release copied packet must use institutional GSN headed-paper language and privacy/security marks."
+  /function buildMerchantTradePacketPaper[\s\S]*?Official GSN public record[\s\S]*?Title: GSN Merchant Trade Packet Evidence[\s\S]*?Keep your WhatsApp conversation separately[\s\S]*?Privacy: Keep only the final evidence you need for reference[\s\S]*?Security note: Keep the GSN mark/,
+  "Merchant Release copied packet must use direct GSN public-record language and privacy/security notes."
 );
 
 assertContains(

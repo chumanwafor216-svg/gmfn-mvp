@@ -46,6 +46,7 @@ Bottom navigation is allowed here.
 11. CommunityConfirmationPolicyPage
 12. IdentityIntegrityPage
 13. CommunityDomainDashboardPage
+14. TrustTimelinePage
 
 ## Current Repo Name Notes
 

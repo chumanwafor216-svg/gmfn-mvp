@@ -2746,9 +2746,8 @@ function CommunityConfirmationPolicyPage() {
               data-field-id="community-confirmation-policy.member-witness.note"
             />
             <p style={{ margin: "10px 0 0", ...helperText(), fontSize: 13 }}>
-              QR/OTP response is live through the assigned verifier package. Assisted
-              field-agent capture, yearly renewal prompts, and paid member-witness packages
-              remain separate follow-ups.
+              Share the QR and one-time code with the member who will answer.
+              GSN records nothing until that person opens the response page and submits their answer.
             </p>
             {memberWitnessRequest && canShareMemberWitnessRequest ? (
               <div style={{ marginTop: 10, ...innerCard("#F8FBFF") }}>
@@ -2765,8 +2764,8 @@ function CommunityConfirmationPolicyPage() {
                       {labelWithIcon("certificate", "Request ready", "gold")}
                     </div>
                     <p style={{ margin: "8px 0 10px", ...helperText(), fontSize: 13 }}>
-                      Share this package with the assigned verifier. The QR opens the response
-                      lane; the one-time code is needed before GSN records their witness.
+                      Share this with the member who will answer. The QR opens the response page,
+                      and the one-time code lets GSN record their witness safely.
                     </p>
                     <div
                       style={{

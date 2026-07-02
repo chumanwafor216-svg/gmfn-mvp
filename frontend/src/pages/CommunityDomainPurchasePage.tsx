@@ -5,6 +5,7 @@ import {
   EntryBackLink,
 } from "../components/EntryControls";
 import { GsnRealisticIcon } from "../components/GsnRealisticIcon";
+import { StableDisclosureSummary } from "../components/StableButton";
 import {
   checkCommunityDomainAvailability,
   createCommunityDomainDraft,
@@ -652,7 +653,7 @@ export default function CommunityDomainPurchasePage() {
               alignItems: "start",
             }}
           >
-            <EntryBackLink to="/welcome" />
+            <EntryBackLink to="/" />
             <div style={{ display: "grid", gap: 8, justifyItems: isCompact ? "start" : "center" }}>
               <div style={labelText()}>GSN / Community Domain</div>
               <h1
@@ -1149,7 +1150,8 @@ export default function CommunityDomainPurchasePage() {
           </div>
 
           <details style={darkPanel()}>
-            <summary
+            <StableDisclosureSummary
+              debugId="community-domain-purchase.after-draft"
               style={{
                 cursor: "pointer",
                 color: "#F8FBFF",
@@ -1158,7 +1160,7 @@ export default function CommunityDomainPurchasePage() {
               }}
             >
               What happens after the draft?
-            </summary>
+            </StableDisclosureSummary>
             <div style={{ ...helperText(), marginTop: 10 }}>
               The owner reviews the draft, requests a package quote, receives payment
               instructions only when that rail exists, and waits for payment confirmation

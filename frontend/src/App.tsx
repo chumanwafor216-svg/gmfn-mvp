@@ -42,6 +42,7 @@ const MarketplacePage = React.lazy(() => import("./pages/MarketplacePage"));
 const ShopGalleryPage = React.lazy(() => import("./pages/ShopGalleryPage"));
 const TrustScorePage = React.lazy(() => import("./pages/TrustScorePage"));
 const TrustSlipPage = React.lazy(() => import("./pages/TrustSlipPage"));
+const TrustTimelinePage = React.lazy(() => import("./pages/TrustTimelinePage"));
 const TrustSlipVerifyPage = React.lazy(
   () => import("./pages/TrustSlipVerifyPage")
 );
@@ -660,6 +661,7 @@ export default function App() {
       <Route path="/trust" element={<PreserveRedirect to={APP_ROUTES.TRUST} />} />
       <Route path="/trust-passport" element={<PreserveRedirect to={APP_ROUTES.TRUST} />} />
       <Route path="/open-trust" element={<PreserveRedirect to={APP_ROUTES.TRUST} />} />
+      <Route path="/trust-timeline" element={<PreserveRedirect to={APP_ROUTES.TRUST_TIMELINE} />} />
 
       <Route path="/trust-slip" element={<PreserveRedirect to={APP_ROUTES.TRUST_SLIP} />} />
       <Route path="/trustslip" element={<PreserveRedirect to={APP_ROUTES.TRUST_SLIP} />} />
@@ -1035,6 +1037,7 @@ export default function App() {
         <Route path="open-trust-reading" element={<OpenTrustPage />} />
         <Route path="trust-passport" element={<PreserveRedirect to={APP_ROUTES.TRUST} />} />
         <Route path="open-trust" element={<PreserveRedirect to={APP_ROUTES.TRUST} />} />
+        <Route path="trust-timeline" element={<TrustTimelinePage />} />
         <Route path="trust-slip" element={<TrustSlipPage />} />
         <Route path="trustslip" element={<PreserveRedirect to={APP_ROUTES.TRUST_SLIP} />} />
         <Route path="open-trust-slip" element={<PreserveRedirect to={APP_ROUTES.TRUST_SLIP} />} />

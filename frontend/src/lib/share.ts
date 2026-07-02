@@ -72,12 +72,12 @@ function compactPaperMessage(value: string): string {
     .filter(
       (line) =>
         !/^GLOBAL SUPPORT NETWORK/i.test(line) &&
-        !/^Official GSN headed paper/i.test(line) &&
-        !/^Generated \(UTC\):/i.test(line) &&
-        !/^Reference:/i.test(line) &&
-        !/^GSN record context/i.test(line) &&
-        !/^Record details/i.test(line) &&
-        !/^Verification \/ action link:/i.test(line) &&
+        !/^Official GSN (?:headed paper|public record)/i.test(line) &&
+        !/^(?:Generated \(UTC\)|Prepared for you \(UTC\)):/i.test(line) &&
+        !/^(?:Reference|Record code):/i.test(line) &&
+        !/^(?:GSN record context|Public record context)/i.test(line) &&
+        !/^(?:Record details|What you need to know)/i.test(line) &&
+        !/^(?:Verification \/ action link|Open this record):/i.test(line) &&
         !/^Privacy:/i.test(line) &&
         !/^Limitation:/i.test(line) &&
         !/^Footer:/i.test(line)
@@ -105,7 +105,7 @@ function socialMessageForTarget(target: ShareTarget): string {
   const raw = String(target.message || "").trim();
   if (!raw) return "";
 
-  if (/GLOBAL SUPPORT NETWORK|Official GSN headed paper/i.test(raw)) {
+  if (/GLOBAL SUPPORT NETWORK|Official GSN (?:headed paper|public record)/i.test(raw)) {
     return compactPaperMessage(raw);
   }
 

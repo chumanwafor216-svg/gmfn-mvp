@@ -10,6 +10,14 @@ import {
   TrustPaperWatermark,
 } from "../components/TrustPaperMarks";
 import {
+  TrustDocumentBoundaryPanel,
+  TrustDocumentConfidenceRibbon,
+  TrustDocumentFingerprint,
+  TrustDocumentSecurityPanel,
+  type TrustDocumentPanelItem,
+  type TrustDocumentRibbonItem,
+} from "../components/TrustDocumentLanguage";
+import {
   addCommunityConfirmationReviewEvidence,
   getAccessToken,
   getCommunityConfirmationReviewEvidence,
@@ -150,6 +158,23 @@ function formatCountdown(totalSeconds: number): string {
   return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }
 
+function confirmationOutcomeReferenceFingerprint(...values: unknown[]): string {
+  const input =
+    values.map((value) => safeStr(value)).join("|") || "gsn-confirmation-outcome";
+  let hashA = 0x811c9dc5;
+  let hashB = 0x45d9f3b;
+  for (let index = 0; index < input.length; index += 1) {
+    const code = input.charCodeAt(index);
+    hashA ^= code;
+    hashA = Math.imul(hashA, 0x01000193);
+    hashB ^= code + index;
+    hashB = Math.imul(hashB, 0x27d4eb2d);
+  }
+  const left = (hashA >>> 0).toString(16).padStart(8, "0");
+  const right = (hashB >>> 0).toString(16).padStart(8, "0");
+  return `GSN-CO-${left}-${right}`.toUpperCase();
+}
+
 function labelize(value: any): string {
   const text = safeStr(value).replace(/[_-]+/g, " ");
   if (!text) return "Not shown";
@@ -181,7 +206,7 @@ function normalizeReviewEvidence(raw: any): ReviewEvidenceSnapshot {
     title: firstTruthy(raw?.title, "Review evidence"),
     body: firstTruthy(raw?.body),
     externalRef: firstTruthy(raw?.external_ref),
-    visibility: firstTruthy(raw?.visibility, "internal"),
+    visibility: firstTruthy(raw?.visibility, "private"),
     createdAt: firstTruthy(raw?.created_at),
   };
 }
@@ -432,7 +457,7 @@ function outcomeMeaning(status: string, confidence: string): string {
     return "Enough approved community contacts have confirmed this person for a low-risk first trust check.";
   }
   if (confidence === "moderate") {
-    return "The community response is useful, but a careful reader should still keep the decision proportionate.";
+    return "The community response is useful, but you should still keep your decision proportionate.";
   }
   if (confidence === "limited") {
     return "Some confirmation exists, but it is not deep enough for heavy reliance. Ask for more evidence for higher-risk decisions.";
@@ -516,7 +541,7 @@ export default function CommunityConfirmationOutcomePage() {
       setRequestStatusBusy("");
       setReviewBusy("");
       setReviewEvidenceBusy("");
-      setError("Community confirmation token is missing.");
+      setError("Community confirmation link code is missing.");
       setLoading(false);
       return;
     }
@@ -611,7 +636,7 @@ export default function CommunityConfirmationOutcomePage() {
         if (next) setDecisionSnapshot(next);
       })
       .catch(() => {
-        // Public readers may not be signed in. The paper remains usable without provider controls.
+        // Public visitors may not be signed in. The paper remains usable without response controls.
       });
   }, [outcome?.request_id, decisionSnapshot, tokenText]);
 
@@ -701,6 +726,111 @@ export default function CommunityConfirmationOutcomePage() {
       : confirmedKnown > 0 || confidence === "strong" || confidence === "moderate"
         ? "good"
         : "info";
+  const outcomeStatusTone =
+    status === "closed" || confidence === "strong" || confidence === "moderate"
+      ? "good"
+      : status === "expired" ||
+          status === "cancelled" ||
+          status === "under_review" ||
+          confidence === "caution"
+        ? "warn"
+        : "info";
+  const responseWindowTone =
+    liveWindowOpen || status === "closed" ? "good" : status === "expired" ? "warn" : "info";
+  const verificationPathValue = memberCredentialPath
+    ? "Outcome + member credential"
+    : firstTruthy(outcome?.community_code, outcome?.community_id)
+      ? "Outcome + community record"
+      : "Public outcome link";
+  const confirmationOutcomeFingerprint = confirmationOutcomeReferenceFingerprint(
+    firstTruthy(outcome?.public_token, tokenText),
+    outcome?.request_id,
+    status,
+    confidence,
+    firstTruthy(outcome?.community_code, outcome?.community_id),
+    outcome?.subject_public_reference,
+    requestsSent,
+    responsesReceived,
+    confirmedKnown,
+    cautionCount,
+    objectionCount
+  );
+  const outcomeConfidenceRibbonItems: TrustDocumentRibbonItem[] = [
+    {
+      label: "Outcome status",
+      value: labelize(status),
+      tone: outcomeStatusTone,
+    },
+    {
+      label: "Response window",
+      value: liveWindowOpen ? "Live" : status === "expired" ? "Expired" : "Closed or waiting",
+      tone: responseWindowTone,
+    },
+    {
+      label: "Response evidence",
+      value:
+        requestsSent > 0
+          ? `${responsesReceived} of ${requestsSent} contacts`
+          : "No contacts shown",
+      tone: responseTone,
+      detail: "Requested contacts only",
+    },
+    {
+      label: "Privacy boundary",
+      value: response.private_contacts_exposed ? "Check privacy" : "Contacts hidden",
+      tone: response.private_contacts_exposed ? "warn" : "good",
+    },
+    {
+      label: "Verification path",
+      value: verificationPathValue,
+      tone: memberCredentialPath ? "good" : "info",
+    },
+  ];
+  const outcomeSecurityItems: TrustDocumentPanelItem[] = [
+    {
+      title: "Public outcome record",
+      detail: `This page opens the public confirmation link code ${firstTruthy(outcome?.public_token, tokenText, "not shown")}.`,
+      tone: "good",
+    },
+    {
+      title: "Aggregate response counts",
+      detail:
+        "Counts come from the contacts asked to respond. They are not a whole-community vote or a private responder list.",
+      tone: "info",
+    },
+    {
+      title: "Privacy-safe publication",
+      detail:
+        "Private contacts, verifier names, phone numbers, shop details, payment records, and credit approval stay hidden.",
+      tone: response.private_contacts_exposed ? "warn" : "good",
+    },
+    {
+      title: "Reference fingerprint",
+      detail:
+        "Reference fingerprint generated from visible outcome fields; not a cryptographic hash or legal proof.",
+      tone: "info",
+    },
+    {
+      title: "Your decision boundary",
+      detail:
+        "Use this as community response evidence beside current TrustSlip, member credential, and community record where available.",
+      tone: "info",
+    },
+  ];
+  const outcomeConfirmsList = [
+    "Public confirmation link code and request status shown on this page",
+    "Community name and Community ID/code shown by this public record",
+    "Reason, risk level, response window, and aggregate response counts",
+    "Whether requested contacts confirmed, cautioned, objected, or have not responded",
+    "QR and public link reopen this same confirmation outcome",
+  ];
+  const outcomeDoesNotConfirmList = [
+    "Whole-community vote or approval by every member",
+    "Private responder names, contacts, notes, or private review details",
+    "Legal identity, legal promise, repayment promise, or government registration",
+    "Payment received, bank guarantee, escrow, loan approval, or credit approval",
+    "Permission to release goods, money, credit, or services",
+  ];
   const isCurrentOutcomeContext = useCallback((contextKey: string) => {
     return outcomeContextRef.current === contextKey;
   }, []);
@@ -771,7 +901,7 @@ export default function CommunityConfirmationOutcomePage() {
         tone: "error",
         text:
           err?.message ||
-          "Decision could not be recorded. Sign in as the provider or try again.",
+          "Decision could not be recorded. Sign in with the account allowed to answer this request, or try again.",
       });
     } finally {
       if (isCurrentOutcomeContext(contextKey)) setDecisionBusy("");
@@ -780,7 +910,7 @@ export default function CommunityConfirmationOutcomePage() {
 
   async function updateDecisionStatus(statusValue: string) {
     if (!decisionSnapshot?.decisionId) {
-      setNotice({ tone: "error", text: "Record a provider decision before updating its status." });
+      setNotice({ tone: "error", text: "Record your decision before updating its status." });
       return;
     }
     const contextKey = outcomeContextRef.current;
@@ -829,14 +959,14 @@ export default function CommunityConfirmationOutcomePage() {
             : current
         );
       }
-      setNotice({ tone: "success", text: "Decision status recorded into the Trust Event trail." });
+      setNotice({ tone: "success", text: "Decision saved on this confirmation record." });
     } catch (err: any) {
       if (!isCurrentOutcomeContext(contextKey)) return;
       setNotice({
         tone: "error",
         text:
           err?.message ||
-          "Decision status could not be updated. Sign in as the provider or admin.",
+          "Decision status could not be updated. Sign in with an account allowed to manage this confirmation.",
       });
     } finally {
       if (isCurrentOutcomeContext(contextKey)) setDecisionBusy("");
@@ -872,14 +1002,14 @@ export default function CommunityConfirmationOutcomePage() {
       if (!isCurrentOutcomeContext(contextKey)) return;
       setOutcome(nextOutcome);
       setRequestStatusNote("");
-      setNotice({ tone: "success", text: "Request status recorded into the Trust Event trail." });
+      setNotice({ tone: "success", text: "Request status saved on this confirmation record." });
     } catch (err: any) {
       if (!isCurrentOutcomeContext(contextKey)) return;
       setNotice({
         tone: "error",
         text:
           err?.message ||
-          "Request status could not be updated. Sign in as the requester, provider, or admin.",
+          "Request status could not be updated. Sign in with an account allowed to manage this confirmation.",
       });
     } finally {
       if (isCurrentOutcomeContext(contextKey)) setRequestStatusBusy("");
@@ -928,14 +1058,14 @@ export default function CommunityConfirmationOutcomePage() {
           : current
       );
       setReviewNote("");
-      setNotice({ tone: "success", text: "Review outcome recorded into the Trust Event trail." });
+      setNotice({ tone: "success", text: "Review outcome saved on this confirmation record." });
     } catch (err: any) {
       if (!isCurrentOutcomeContext(contextKey)) return;
       setNotice({
         tone: "error",
         text:
           err?.message ||
-          "Review case could not be updated. Sign in as the requester, provider, or admin.",
+          "Review case could not be updated. Sign in with an account allowed to manage this confirmation.",
       });
     } finally {
       if (isCurrentOutcomeContext(contextKey)) setReviewBusy("");
@@ -970,14 +1100,14 @@ export default function CommunityConfirmationOutcomePage() {
       setEvidenceTitle("");
       setEvidenceBody("");
       setEvidenceRef("");
-      setNotice({ tone: "success", text: "Review evidence added to the Trust Event trail." });
+      setNotice({ tone: "success", text: "Review evidence added to this confirmation record." });
     } catch (err: any) {
       if (!isCurrentOutcomeContext(contextKey)) return;
       setNotice({
         tone: "error",
         text:
           err?.message ||
-          "Review evidence could not be added. Sign in as the opener, reviewer, or admin.",
+          "Review evidence could not be added. Sign in with an account allowed to manage this confirmation.",
       });
     } finally {
       if (isCurrentOutcomeContext(contextKey)) setReviewEvidenceBusy("");
@@ -1153,6 +1283,44 @@ export default function CommunityConfirmationOutcomePage() {
               </section>
             ) : outcome ? (
               <>
+                <TrustDocumentConfidenceRibbon items={outcomeConfidenceRibbonItems} />
+
+                <section
+                  data-gsn-trust-document-certificate="community-confirmation-outcome"
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: isCompactPaper
+                      ? "1fr"
+                      : "minmax(0, 1fr) minmax(250px, 0.78fr)",
+                    gap: isCompactPaper ? 12 : 14,
+                    alignItems: "start",
+                  }}
+                >
+                  <div style={{ display: "grid", gap: isCompactPaper ? 10 : 12 }}>
+                    <TrustDocumentBoundaryPanel
+                      title="This outcome confirms"
+                      tone="good"
+                      items={outcomeConfirmsList}
+                    />
+                    <TrustDocumentBoundaryPanel
+                      title="This outcome does not confirm"
+                      tone="warn"
+                      items={outcomeDoesNotConfirmList}
+                    />
+                  </div>
+                  <div style={{ display: "grid", gap: isCompactPaper ? 10 : 12 }}>
+                    <TrustDocumentSecurityPanel
+                      title="Outcome security"
+                      items={outcomeSecurityItems}
+                    />
+                    <TrustDocumentFingerprint
+                      label="Community confirmation outcome fingerprint"
+                      value={confirmationOutcomeFingerprint}
+                      detail="Reference fingerprint for this visible public confirmation outcome. It is not a cryptographic proof."
+                    />
+                  </div>
+                </section>
+
                 <section
                   style={{
                     ...sectionCard(liveWindowOpen ? "#EAF3FF" : status === "expired" ? "#FEF2F2" : "#F7FAFF"),
@@ -1388,7 +1556,7 @@ export default function CommunityConfirmationOutcomePage() {
                       <ReadingCard
                         compact={isCompactPaper}
                         icon="shield"
-                        label="Reader decision note"
+                        label="Your decision note"
                         title="Use as evidence"
                         body={decisionNoteText}
                         tone="info"
@@ -1500,7 +1668,7 @@ export default function CommunityConfirmationOutcomePage() {
                 >
                   <div style={sectionCard("#ECFDF3")}>
                     <TrustPaperWatermark name="shield" color="#2E9B62" size={132} opacity={0.08} />
-                    <h2 style={sectionTitle()}>Why a reader may use this</h2>
+                    <h2 style={sectionTitle()}>Why you may use this</h2>
                     <ul style={{ ...helperText(), margin: "12px 0 0", paddingLeft: 20 }}>
                       <li>It is linked to a recorded GSN community record.</li>
                       <li>It uses approved community contacts.</li>
@@ -1576,7 +1744,7 @@ export default function CommunityConfirmationOutcomePage() {
                   >
                     <span style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
                       {outcomeIconBadge("pen", 28, "blue")}
-                      Record provider decision
+                      Record your decision
                     </span>
                     <span style={badgeStyle("info")}>Signed-in action</span>
                   </StableDisclosureSummary>
@@ -1813,7 +1981,7 @@ export default function CommunityConfirmationOutcomePage() {
                             >
                               <span style={{ display: "inline-flex", alignItems: "center", gap: 10 }}>
                                 {outcomeIconBadge("document", 28, "blue")}
-                                Internal evidence
+                                Private review evidence
                               </span>
                               <span style={badgeStyle("info")}>
                                 {reviewEvidenceBusy === "load"
@@ -1843,7 +2011,7 @@ export default function CommunityConfirmationOutcomePage() {
                                       <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                                         <span style={badgeStyle("info")}>{labelize(item.evidenceType)}</span>
                                         <span style={badgeStyle("warn")}>
-                                          {labelize(item.visibility || "internal")}
+                                          {labelize(item.visibility === "internal" ? "private" : item.visibility || "private")}
                                         </span>
                                       </div>
                                       <strong style={{ color: "#07172C", fontWeight: 1000 }}>
@@ -1871,7 +2039,7 @@ export default function CommunityConfirmationOutcomePage() {
                                   }}
                                 >
                                   <p style={helperText()}>
-                                    No internal review evidence is visible to this signed-in actor yet.
+                                    No private review evidence is visible to you yet.
                                   </p>
                                 </div>
                               )}
@@ -2037,7 +2205,7 @@ export default function CommunityConfirmationOutcomePage() {
                       color: "#07172C",
                     }}
                   >
-                    <span>Full evidence and technical detail</span>
+                    <span>More record details</span>
                     <span style={badgeStyle("info")}>Open / close</span>
                   </StableDisclosureSummary>
                   <div
@@ -2048,8 +2216,8 @@ export default function CommunityConfirmationOutcomePage() {
                       marginTop: 14,
                     }}
                   >
-                    <InfoTile label="Request ID" value={outcome.request_id || "Not shown"} />
-                    <InfoTile label="Public token" value={outcome.public_token || tokenText} />
+                    <InfoTile label="Request reference" value={outcome.request_id || "Not shown"} />
+                    <InfoTile label="Public link code" value={outcome.public_token || tokenText} />
                     <InfoTile label="Created" value={safeDateTime(outcome.created_at)} />
                     <InfoTile label="Expires" value={safeDateTime(outcome.expires_at)} />
                     <InfoTile

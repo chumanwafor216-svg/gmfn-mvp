@@ -10,6 +10,7 @@ const findings = [];
 
 const files = {
   package: "frontend/package.json",
+  indexCss: "frontend/src/index.css",
   institutionalPdf: "gmfn_backend/app/services/institutional_pdf.py",
   evidencePack: "gmfn_backend/app/services/evidence_pack_pdf_service.py",
   evidencePackRoute: "gmfn_backend/app/api/routes/evidence_pack.py",
@@ -40,6 +41,7 @@ const files = {
   publicPaper: "frontend/src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx",
   trustPaperMarks: "frontend/src/components/TrustPaperMarks.tsx",
   trustDocumentLanguage: "frontend/src/components/TrustDocumentLanguage.tsx",
+  gsnRealisticIcon: "frontend/src/components/GsnRealisticIcon.tsx",
   privateEvidence: "frontend/src/pages/trustSlipVerify/TrustSlipVerifyPrivateEvidence.tsx",
   boundary: "frontend/src/pages/trustSlipVerify/TrustSlipVerifyBoundary.tsx",
   resultCard: "frontend/src/pages/trustSlipVerify/TrustSlipVerifyResultCard.tsx",
@@ -81,6 +83,7 @@ const files = {
     "frontend/src/pages/CommunityConfirmationPolicyPage.tsx",
   communityConfirmationInbox:
     "frontend/src/pages/CommunityConfirmationInboxPage.tsx",
+  trustTimeline: "frontend/src/pages/TrustTimelinePage.tsx",
   adminIncompleteLoans: "frontend/src/pages/AdminIncompleteLoansPage.tsx",
   adminTrustEvents: "frontend/src/pages/AdminTrustEventsPage.tsx",
   bankConsole: "frontend/src/pages/BankConsolePage.tsx",
@@ -748,8 +751,8 @@ assertContains(
 );
 assertContains(
   "publicPaper",
-  /GSN Trust Evidence[\s\S]*?public evidence first, private details protected, decision left with the reader/,
-  "Public TrustSlip paper footer must keep the reader-decision limitation."
+  /GSN Trust Evidence[\s\S]*?public evidence first, private details protected, you decide with the record in front of you/,
+  "Public TrustSlip paper footer must keep the direct user decision limitation."
 );
 assertNotContains(
   "publicPaper",
@@ -758,7 +761,7 @@ assertNotContains(
 );
 assertContains(
   "trustSlipRoute",
-  /GSN Trust Evidence - public evidence first, private details protected, decision left with the reader\./,
+  /GSN Trust Evidence - public evidence first, private details protected, you decide with the record in front of you\./,
   "Backend TrustSlip verification paper must keep evidence-facing footer wording."
 );
 assertNotContains(
@@ -856,8 +859,8 @@ assertContains(
 
 assertContains(
   "snapshotPaper",
-  /Official GSN headed paper[\s\S]*?Generated \(UTC\):[\s\S]*?Security marks: GSN brand mark, watermark, UTC time, reference, privacy note, and limitation note must travel with screenshots or printed copies\.[\s\S]*?Global Support Network \(GSN\)/,
-  "Shared copied snapshot papers must keep GSN headed-paper authority, generated time, security marks, and footer."
+  /Official GSN public record[\s\S]*?Prepared for you \(UTC\):[\s\S]*?Security note: Keep the GSN mark, time, record code, privacy limit, and limitation with any screenshot, printout, or forwarded copy\.[\s\S]*?Global Support Network \(GSN\)/,
+  "Shared copied snapshot papers must keep GSN public-record authority, prepared time, security note, and footer."
 );
 assertContains(
   "snapshotPaper",
@@ -911,27 +914,27 @@ assertContains(
 );
 assertContains(
   "snapshotPaperCard",
-  /Title:[\s\S]*?Generated \(UTC\):[\s\S]*?Reference:[\s\S]*?Verification \/ action link:[\s\S]*?Privacy:[\s\S]*?Limitation:/,
-  "Shared visual snapshot paper card must parse headed-paper title, generated time, reference, link, privacy, and limitation fields."
+  /Title:[\s\S]*?Prepared for you \(UTC\):[\s\S]*?Record code:[\s\S]*?Open this record:[\s\S]*?Privacy:[\s\S]*?Limitation:/,
+  "Shared visual snapshot paper card must parse public-record title, prepared time, record code, link, privacy, and limitation fields."
 );
 assertContains(
   "snapshotPaperCard",
-  /GSN record context[\s\S]*?Record details[\s\S]*?Record Details/,
-  "Shared visual snapshot paper card must render context and record details as official paper sections."
+  /Public record context[\s\S]*?What you need to know[\s\S]*?What you need to know/,
+  "Shared visual snapshot paper card must render public context and direct reader details as official paper sections."
 );
 assertContains(
   "trustPaperMarks",
-  /function isGeneratedPlaceholder[\s\S]*?current when viewed[\s\S]*?current when copied[\s\S]*?function utcGeneratedText[\s\S]*?const generatedAtText = React\.useMemo[\s\S]*?Generated: \{generatedAtText\} \| Reference:/,
-  "Shared GSN authority strip must turn placeholder generated labels into a stable UTC generated mark."
+  /function isGeneratedPlaceholder[\s\S]*?current when viewed[\s\S]*?current when copied[\s\S]*?function utcGeneratedText[\s\S]*?const generatedAtText = React\.useMemo[\s\S]*?Prepared: \{generatedAtText\} \| Record:/,
+  "Shared GSN authority strip must turn placeholder generated labels into a stable UTC prepared mark."
 );
 assertContains(
   "trustPaperMarks",
-  /Generated: \{generatedAtText\} \| Reference:/,
-  "Shared GSN authority strip must use an ASCII separator between generated time and reference."
+  /Prepared: \{generatedAtText\} \| Record:/,
+  "Shared GSN authority strip must use an ASCII separator between prepared time and record code."
 );
 assertNotContains(
   "trustPaperMarks",
-  /Generated:[\s\S]{0,120}·[\s\S]{0,120}Reference:/g,
+  /Prepared:[\s\S]{0,120}·[\s\S]{0,120}Record:/g,
   "Shared GSN authority strip must not use a middle-dot separator that can render badly in copied or screenshot papers."
 );
 assertContains(
@@ -991,8 +994,23 @@ assertContains(
 );
 assertContains(
   "trustDocumentLanguage",
-  /TrustDocumentRegistryMasthead[\s\S]*?data-gsn-trust-document-masthead="true"[\s\S]*?TrustDocumentConfidenceRibbon[\s\S]*?data-gsn-confidence-ribbon="true"[\s\S]*?TrustDocumentSecurityPanel[\s\S]*?data-gsn-security-panel="true"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?data-gsn-confirmation-boundary=\{tone\}[\s\S]*?TrustDocumentFingerprint[\s\S]*?data-gsn-record-fingerprint="true"/,
-  "Shared Trust Document Language primitives must include masthead, confidence ribbon, security panel, confirmation boundary, and record fingerprint components."
+  /TrustDocumentRegistryMasthead[\s\S]*?className="gsn-trust-document-masthead"[\s\S]*?data-gsn-trust-document-masthead="true"[\s\S]*?\{eyebrow\}[\s\S]*?\{title\}[\s\S]*?\{subtitle\}[\s\S]*?TrustDocumentConfidenceRibbon[\s\S]*?data-gsn-confidence-ribbon="true"[\s\S]*?TrustDocumentSecurityPanel[\s\S]*?data-gsn-security-panel="true"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?data-gsn-confirmation-boundary=\{tone\}[\s\S]*?TrustDocumentFingerprint[\s\S]*?data-gsn-record-fingerprint="true"/,
+  "Shared Trust Document Language primitives must include a responsive masthead with visible eyebrow, record title, subtitle, confidence ribbon, security panel, confirmation boundary, and record fingerprint components."
+);
+assertContains(
+  "gsnRealisticIcon",
+  /loading\?: "eager" \| "lazy"[\s\S]*?loading = "lazy"[\s\S]*?loading=\{loading\}/,
+  "GSN realistic icons must stay lazy by default while allowing critical official marks to opt into eager loading."
+);
+assertContains(
+  "trustDocumentLanguage",
+  /<GsnRealisticIcon[\s\S]*?name="trust-shield"[\s\S]*?size=\{36\}[\s\S]*?loading="eager"[\s\S]*?decorative[\s\S]*?\/>/,
+  "Trust Document registry masthead shield must eager-load so official record headers do not screenshot with a blank trust mark."
+);
+assertContains(
+  "indexCss",
+  /\.gsn-trust-document-masthead[\s\S]*?grid-template-columns: minmax\(0, 1fr\) minmax\(240px, auto\)[\s\S]*?@media \(max-width: 640px\)[\s\S]*?\.gsn-trust-document-masthead[\s\S]*?grid-template-columns: minmax\(0, 1fr\)[\s\S]*?\.gsn-trust-document-masthead-record[\s\S]*?justify-self: stretch/,
+  "Shared Trust Document Language masthead must stack the record-title block on phone widths instead of overlapping brand and record text."
 );
 assertContains(
   "communityVerify",
@@ -1083,6 +1101,26 @@ assertContains(
   "communityConfirmationOutcome",
   /TrustPaperAuthorityStrip[\s\S]*?GSN Community Confirmation Outcome[\s\S]*?TrustPaperSecurityNote[\s\S]*?TrustPaperSecurityFooter/,
   "Public Community Confirmation Outcome paper must carry shared GSN authority, screenshot security, and footer marks."
+);
+assertContains(
+  "communityConfirmationOutcome",
+  /TrustDocumentConfidenceRibbon[\s\S]*?outcomeConfidenceRibbonItems[\s\S]*?Outcome status[\s\S]*?Response window[\s\S]*?Response evidence[\s\S]*?Privacy boundary[\s\S]*?Verification path/,
+  "Public Community Confirmation Outcome must carry the Trust Document Language confidence ribbon."
+);
+assertContains(
+  "communityConfirmationOutcome",
+  /data-gsn-trust-document-certificate="community-confirmation-outcome"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This outcome confirms"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This outcome does not confirm"[\s\S]*?TrustDocumentSecurityPanel[\s\S]*?title="Outcome security"[\s\S]*?TrustDocumentFingerprint[\s\S]*?Community confirmation outcome fingerprint/,
+  "Public Community Confirmation Outcome must implement the Trust Document Language sequence with security, confirms/does-not-confirm panels, and fingerprint."
+);
+assertContains(
+  "communityConfirmationOutcome",
+  /Reference fingerprint[\s\S]*?not a cryptographic hash[\s\S]*?Reference fingerprint for this visible public confirmation outcome\. It is not a cryptographic proof\./,
+  "Public Community Confirmation Outcome fingerprint copy must stay truthful and must not claim cryptographic proof."
+);
+assertContains(
+  "communityConfirmationOutcome",
+  /outcomeDoesNotConfirmList[\s\S]*?Whole-community vote or approval by every member[\s\S]*?Private responder names, contacts, notes, or private review details[\s\S]*?Payment received, bank guarantee, escrow, loan approval, or credit approval[\s\S]*?Permission to release goods, money, credit, or services/,
+  "Public Community Confirmation Outcome must keep whole-community, privacy, finance, and release-authority boundaries visible."
 );
 assertNotContains(
   "communityConfirmationOutcome",
@@ -1420,6 +1458,46 @@ assertContains(
   /What decision can this TrustSlip evidence support\?/,
   "TrustSlip decision questions must frame the paper as evidence support, not a personal trust verdict."
 );
+assertContains(
+  "trustSlip",
+  /TrustDocumentConfidenceRibbon[\s\S]*?trustSlipHolderConfidenceRibbonItems[\s\S]*?TrustSlip status[\s\S]*?Record integrity[\s\S]*?Evidence chain[\s\S]*?Verification path[\s\S]*?Valid until/,
+  "Signed-in TrustSlip holder paper must carry the Trust Document Language confidence ribbon."
+);
+assertContains(
+  "trustSlip",
+  /data-gsn-trust-document-certificate="trustslip-holder"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This TrustSlip confirms"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This TrustSlip does not confirm"[\s\S]*?TrustDocumentSecurityPanel[\s\S]*?title="TrustSlip security"[\s\S]*?TrustDocumentFingerprint[\s\S]*?TrustSlip holder reference fingerprint/,
+  "Signed-in TrustSlip holder paper must implement the Trust Document Language sequence with security, boundary, and fingerprint panels."
+);
+assertContains(
+  "trustSlip",
+  /Reference fingerprint generated from visible TrustSlip fields; not a cryptographic hash[\s\S]*?Reference fingerprint for this visible holder-facing TrustSlip\. It is not a cryptographic proof\./,
+  "Signed-in TrustSlip holder paper fingerprint copy must stay truthful and must not claim cryptographic proof."
+);
+assertContains(
+  "trustSlip",
+  /trustSlipHolderDoesNotConfirmList[\s\S]*?Government registration or legal identity beyond recorded evidence[\s\S]*?Bank approval, credit approval, payment movement, or escrow[\s\S]*?Future behaviour, future repayment, delivery, or marketplace outcome[\s\S]*?Authority to release goods, money, credit, or services[\s\S]*?Private Trust Passport history, private notes, private contacts, or admin records/,
+  "Signed-in TrustSlip holder paper must keep legal, finance, future-outcome, release-authority, and private-passport boundaries visible."
+);
+assertContains(
+  "trustTimeline",
+  /TrustDocumentConfidenceRibbon[\s\S]*?trustTimelineConfidenceRibbonItems[\s\S]*?Timeline status[\s\S]*?Record integrity[\s\S]*?Evidence chain[\s\S]*?Verification path[\s\S]*?Last registry update/,
+  "Signed-in Trust Timeline must carry the Trust Document Language confidence ribbon."
+);
+assertContains(
+  "trustTimeline",
+  /data-gsn-trust-document-certificate="trust-timeline"[\s\S]*?TrustDocumentRegistryMasthead[\s\S]*?title="Trust Timeline Evidence Record"[\s\S]*?TrustDocumentConfidenceRibbon[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This timeline confirms"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This timeline does not confirm"[\s\S]*?TrustDocumentSecurityPanel[\s\S]*?title="Trust Timeline security"[\s\S]*?TrustDocumentFingerprint[\s\S]*?Trust Timeline reference fingerprint/,
+  "Signed-in Trust Timeline must implement the Trust Document Language sequence with visible masthead record title, confidence, boundary, security, and fingerprint panels."
+);
+assertContains(
+  "trustTimeline",
+  /Reference fingerprint generated from visible timeline fields; not a cryptographic hash[\s\S]*?Reference fingerprint for this visible signed-in Trust Timeline\. It is not a cryptographic proof\./,
+  "Signed-in Trust Timeline fingerprint copy must stay truthful and must not claim cryptographic proof."
+);
+assertContains(
+  "trustTimeline",
+  /trustTimelineDoesNotConfirmList[\s\S]*?Government registration, legal identity, or bank approval[\s\S]*?Payment movement, escrow, payout approval, credit approval[\s\S]*?Future behaviour, future repayment, delivery, marketplace outcome[\s\S]*?Authority to release goods, money, credit, services, or private records[\s\S]*?Private contacts, complete private Trust Passport history, raw metadata, or admin-only notes/,
+  "Signed-in Trust Timeline must keep legal, finance, future-outcome, release-authority, and private-record boundaries visible."
+);
 assertNotContains(
   "trustSlip",
   /Can this person be trusted for support, contribution, finance, or trade\?/g,
@@ -1427,8 +1505,8 @@ assertNotContains(
 );
 assertContains(
   "trustSlipRoute",
-  /GSN TrustSlip Release Evidence Paper[\s\S]*?Security marks: GSN\s+watermark[\s\S]*?This page prepares an admin release evidence record only[\s\S]*?does not collect[\s\S]*?confirm bank receipt[\s\S]*?approve credit[\s\S]*?guarantee delivery[\s\S]*?permission to release goods, credit, or money[\s\S]*?Release evidence helper; not\s+a bank[\s\S]*?guarantee[\s\S]*?automatic release authority/,
-  "TrustSlip release helper page must read as a restricted GSN evidence paper, not a developer/plain release page."
+  /GSN TrustSlip Release Evidence Paper[\s\S]*?Security marks: GSN\s+watermark[\s\S]*?This page prepares a protected release evidence record only[\s\S]*?does not collect[\s\S]*?confirm bank receipt[\s\S]*?approve credit[\s\S]*?guarantee delivery[\s\S]*?permission to release goods, credit, or money[\s\S]*?Release evidence helper; not\s+a bank[\s\S]*?guarantee[\s\S]*?automatic release authority/,
+  "TrustSlip release helper page must read as a restricted GSN evidence paper with user-facing release-boundary language."
 );
 assertNotContains(
   "trustSlipRoute",

@@ -2293,7 +2293,7 @@ export default function ShopGalleryPage() {
         shopLabel: "Shop",
         communityLabel: "Community",
         helperLine:
-          "Spotlight is now rendered only from the backend community spotlight contract.",
+          "Live Spotlight appears here only after GSN receives a current community spotlight record.",
       };
     }
 
@@ -2502,7 +2502,7 @@ export default function ShopGalleryPage() {
     autoRefreshingShop
       ? "This public shop link is reconnecting to the owner's active shop so Shop Diaries can load."
       : shopLoadFailed
-      ? "This public shop link has reached the shop page, but the backend has not connected it to an active owner shop yet."
+      ? "This public shop link opened, but GSN has not connected it to an active owner shop yet."
       : effectiveShop?.description ||
           "Public shop face for visible product records. Private Vault offers open only through an owner-issued link."
   );
@@ -2635,7 +2635,7 @@ export default function ShopGalleryPage() {
 
     const copied = await safeCopy(
       buildPublicShopPackage(absoluteShopShareLink, [
-        "Public marketplace record. Real people. Current evidence.",
+        "Open this public shop, then check the seller and current evidence before you act.",
         "Open the shop link to view the public shop face and public blocks.",
         "Check current availability and trust evidence before goods, credit, or money move.",
       ])
@@ -2856,7 +2856,7 @@ export default function ShopGalleryPage() {
       shopLocationText,
       "this community"
     );
-    const message = `Hello, I am checking ${shopTitle} on GSN. Please connect me with the right community confirmation route for ${communityLabel}, or send the current community verification link for this shop owner (${shopGmfnText || "owner ID not visible yet"}).`;
+    const message = `Hello, I am checking ${shopTitle} on GSN. Please send the right community confirmation link for ${communityLabel}, or send the current community verification link for this shop owner (${shopGmfnText || "owner ID not visible yet"}).`;
     const evidenceContext = firstMeaningful(
       shopCommunityVerifyPath ? publicFrontendUrl(shopCommunityVerifyPath) : "",
       absoluteShopShareLink,
@@ -2866,7 +2866,7 @@ export default function ShopGalleryPage() {
     if (
       openOwnerWhatsAppChat(
         message,
-        "WhatsApp opened. Ask the owner for the community confirmation route."
+        "WhatsApp opened. Ask the owner for the community confirmation link."
       )
     ) {
       return;
@@ -3072,7 +3072,7 @@ export default function ShopGalleryPage() {
                 lineHeight: 1.25,
               }}
             >
-              Public marketplace record. Real people. Current evidence.
+              Open this public shop, then check the seller and current evidence before you act.
             </div>
           </div>
         </div>
@@ -3278,7 +3278,7 @@ export default function ShopGalleryPage() {
                     }}
                   >
                     {inlineShopIcon("shield", "#8C6829", 14)}
-                    <span>Public marketplace record. Real people. Current evidence.</span>
+                    <span>Open this public shop, then check the seller and current evidence before you act.</span>
                   </div>
                 ) : null}
               </div>
@@ -3575,7 +3575,7 @@ export default function ShopGalleryPage() {
                   "GSN public shop"
                 ),
                 message: buildPublicShopPackage(absoluteShopShareLink, [
-                  "Public marketplace record. Real people. Current evidence.",
+                  "Open this public shop, then check the seller and current evidence before you act.",
                 ]),
                 socialMessage: `${firstMeaningful(
                   effectiveShop?.shopName,

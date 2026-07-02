@@ -191,20 +191,20 @@ function buildMerchantTradePacketPaper(result: MerchantReleaseResponse): string 
 
   return [
     "GLOBAL SUPPORT NETWORK (GSN)",
-    "Official GSN headed paper",
+    "Official GSN public record",
     "Title: GSN Merchant Trade Packet Evidence",
-    "Purpose: Timestamped minimum evidence for a merchant release conversation. WhatsApp or the parties keep the conversation; GSN records the final evidence reference packet.",
-    `Generated (UTC): ${generatedAt}`,
+    "Purpose: Keep the minimum evidence for a merchant release conversation. Keep your WhatsApp conversation separately; this GSN paper keeps the final record code and release details together.",
+    `Prepared for you (UTC): ${generatedAt}`,
     `Link ID: ${result.verification_link_id || "Not shown"}`,
     `Pack ID: ${result.pack_id || "Not shown"}`,
     `Trade Packet ID: ${result.trade_packet_id || packet.trade_packet_id || "Not shown"}`,
-    "Packet context",
+    "Trade context",
     `Trade shape: ${tradeContextLabel(packet.trade_context)}`,
     `Goods value: ${result.currency || "NGN"} ${result.goods_value || "Not recorded"}`,
     `Item / product: ${packet.item_title || "Not recorded"}`,
     `Other party: ${packet.counterparty_label || "Not recorded"}`,
     `WhatsApp label: ${packet.counterparty_whatsapp_label || "Not recorded"}`,
-    "Evidence references",
+    "Evidence you should keep",
     slotLine("Product evidence", "product"),
     slotLine("Invoice evidence", "invoice"),
     `Invoice reference: ${packet.invoice_reference || "Not recorded"}`,
@@ -218,15 +218,15 @@ function buildMerchantTradePacketPaper(result: MerchantReleaseResponse): string 
     slotLine("Payment schedule evidence", "payment_schedule"),
     `Payment schedule: ${packet.payment_schedule_note || "Not recorded"}`,
     `Receipt state: ${packet.receipt_status || "awaiting_delivery"}`,
-    "Evidence notes",
+    "Your notes",
     `Product note: ${packet.product_evidence_note || "Not recorded"}`,
     `Invoice note: ${packet.invoice_evidence_note || "Not recorded"}`,
     `Agreement note: ${packet.agreement_evidence_note || "Not recorded"}`,
-    "Boundary",
+    "Before you rely on this",
     result.evidence_boundary,
     "GSN does not store the full WhatsApp conversation in this packet, does not control the courier, does not hold money, and does not approve payout.",
-    "Privacy: Keep only the final evidence needed for reference. Avoid unnecessary private chat, addresses, bank details, third-party names, and unrelated personal information.",
-    "Security marks: GSN headed paper, watermark, Link ID, Pack ID, Trade Packet ID, issue time, evidence slots, privacy boundary, limitation note, and official footer.",
+    "Privacy: Keep only the final evidence you need for reference. Avoid unnecessary private chat, addresses, bank details, third-party names, and unrelated personal information.",
+    "Security note: Keep the GSN mark, Link ID, Pack ID, Trade Packet ID, issue time, evidence slots, privacy boundary, limitation note, and footer with any forwarded copy.",
     "Footer: Global Support Network (GSN). Community commerce evidence for organized trust, portable records, and safer marketplace decisions.",
   ].join("\n");
 }
@@ -304,7 +304,7 @@ export default function MerchantReleasePage() {
     async function run() {
       if (!token) {
         setChecking(false);
-        setNotice({ tone: "error", text: "This merchant release link is missing its verification token." });
+        setNotice({ tone: "error", text: "This merchant release link is missing its public link code." });
         return;
       }
 
@@ -366,9 +366,9 @@ export default function MerchantReleasePage() {
     },
     {
       label: "Evidence chain",
-      value: releaseResult ? "Trade packet recorded" : "Release evidence pending",
+      value: releaseResult ? "Trade packet recorded" : "Enter release evidence",
       tone: releaseResult ? "good" : "info",
-      detail: "WhatsApp or the parties keep the full conversation.",
+      detail: "Keep your full conversation outside this public paper.",
     },
     {
       label: "Verification path",
@@ -418,9 +418,9 @@ export default function MerchantReleasePage() {
   const merchantConfirmsList = [
     "Signed merchant rail check result",
     "Visible Link ID and Pack ID when available",
-    "Minimum trade packet fields after submission",
-    "Evidence slots and release reference after recording",
-    "Reader boundary for marketplace judgement",
+    "Minimum trade fields after submission",
+    "Evidence slots and release record after recording",
+    "Clear limits before anyone relies on this paper",
   ];
   const merchantDoesNotConfirmList = [
     "Payment received or payout approved",

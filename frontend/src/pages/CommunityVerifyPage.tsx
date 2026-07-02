@@ -617,7 +617,7 @@ export default function CommunityVerifyPage() {
   );
   const readerDecisionScope = firstTruthy(
     record?.community_reader_decision_scope,
-    "Use this record to see whether a Community ID resolves to a recorded GSN community. For serious trade, lending, membership, shop, line, welfare, or affiliate decisions, ask for current scoped evidence before acting."
+    "Use this record to check whether this Community ID resolves to a recorded GSN community. Before serious trade, lending, membership, shop, line, welfare, or affiliate decisions, ask for current scoped evidence."
   );
   const evidenceCurrentnessLabel = firstTruthy(
     record?.community_evidence_currentness_label,
@@ -682,7 +682,7 @@ export default function CommunityVerifyPage() {
   const communityReading = [
     {
       title: "Trust anchor",
-      body: `${domainStatus}. ${domainEvidenceScope} Names are display labels; the Community ID is what the reader should check.`,
+      body: `${domainStatus}. ${domainEvidenceScope} Names are display labels; check the Community ID before relying on the name.`,
       tone: "good" as const,
     },
     {
@@ -707,7 +707,7 @@ export default function CommunityVerifyPage() {
     },
     {
       title: "Hidden by design",
-      body: "Private member lists, phone numbers, verifier names, witness details, disputes, and admin records are not shown on this public page.",
+      body: "Private member lists, phone numbers, verifier names, witness details, disputes, and private review records are not shown on this public page.",
       tone: "info" as const,
     },
     {
@@ -718,7 +718,7 @@ export default function CommunityVerifyPage() {
       tone: "info" as const,
     },
     {
-      title: "Reader decision",
+      title: "Your decision boundary",
       body: `${readerDecisionLabel}. ${readerDecisionScope}`,
       tone: "info" as const,
     },
@@ -804,7 +804,7 @@ export default function CommunityVerifyPage() {
   const securityPanelItems = [
     {
       title: "Live registry record",
-      detail: "Loaded from the GSN public community verification route.",
+      detail: "Loaded from this GSN public community record page.",
       tone: active ? ("good" as const) : ("warn" as const),
     },
     {
@@ -929,7 +929,7 @@ export default function CommunityVerifyPage() {
     setRequestingConfirmation(true);
     try {
       const result = await requestPublicCommunityVerificationConfirmation(requestKey, {
-        requester_external_label: "Public verification viewer",
+        requester_external_label: "Person checking the public record",
       });
       if (!isCurrentVerifyContext(contextKey)) return;
       setNotice({
@@ -1044,7 +1044,7 @@ export default function CommunityVerifyPage() {
             {loading ? (
               <section style={sectionCard("#F7FAFF")}>
                 <h2 style={sectionTitle()}>Loading community record</h2>
-                <p style={helperText()}>GSN is checking the public community verification route.</p>
+                <p style={helperText()}>GSN is checking this public community record.</p>
               </section>
             ) : error ? (
               <section style={sectionCard("#FEF2F2")}>
@@ -1665,7 +1665,7 @@ export default function CommunityVerifyPage() {
                           Share this public record
                         </h2>
                         <p style={{ margin: "7px 0 0", ...helperText(), lineHeight: 1.38 }}>
-                          Scan or copy the link to reopen this same Community ID record. Private member lists and admin evidence stay hidden.
+                          Scan or copy the link to reopen this same Community ID record. Private member lists and private review evidence stay hidden.
                         </p>
                       </div>
                     </div>
@@ -1690,7 +1690,7 @@ export default function CommunityVerifyPage() {
                         Private by design
                       </h2>
                       <p style={{ margin: "4px 0 0", ...helperText(), lineHeight: 1.34 }}>
-                        Member lists, contacts, disputes, and admin notes stay hidden.
+                        Member lists, contacts, disputes, and private review notes stay hidden.
                       </p>
                     </div>
                     <span aria-hidden="true" style={{ color: "#8AA0B8", fontSize: 24, fontWeight: 700 }}>

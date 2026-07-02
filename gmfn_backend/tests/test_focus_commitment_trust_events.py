@@ -786,6 +786,11 @@ def test_holder_can_force_fresh_trustslip_for_new_public_qr(
     data = response.json()
     assert data["reissued"] is True
     assert data["code"] != "CURRENT-TRUSTSLIP"
+    assert data["status"] == "active"
+    assert data["verification_code"] == data["code"]
+    assert data["verification_token"] == data["code"]
+    assert data["token"] == data["code"]
+    assert data["public_verify_url"] == f"/t/{data['code']}"
     assert data["issued_at"]
 
     with SessionLocal() as db:

@@ -77,6 +77,7 @@ export function TrustDocumentRegistryMasthead({
 }) {
   return (
     <header
+      className="gsn-trust-document-masthead"
       data-gsn-trust-document-masthead="true"
       style={{
         minHeight: 86,
@@ -86,14 +87,16 @@ export function TrustDocumentRegistryMasthead({
         color: "#F7FAFF",
         padding: "16px 18px",
         display: "grid",
-        gridTemplateColumns: "minmax(0, 1fr) auto",
         gap: 16,
         alignItems: "center",
         border: "1px solid rgba(214,170,69,0.24)",
         boxShadow: "inset 0 1px 0 rgba(255,255,255,0.08)",
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: 13, minWidth: 0 }}>
+      <div
+        className="gsn-trust-document-masthead-brand"
+        style={{ display: "flex", alignItems: "center", gap: 13, minWidth: 0 }}
+      >
         <GSNBrandMark width={44} height={54} />
         <div style={{ minWidth: 0 }}>
           <div
@@ -141,8 +144,8 @@ export function TrustDocumentRegistryMasthead({
         </div>
       </div>
       <div
+        className="gsn-trust-document-masthead-record"
         style={{
-          justifySelf: "end",
           minWidth: 0,
           display: "grid",
           gridTemplateColumns: "38px minmax(0, 1fr)",
@@ -162,7 +165,12 @@ export function TrustDocumentRegistryMasthead({
             background: "rgba(255,255,255,0.06)",
           }}
         >
-          <GsnRealisticIcon name="trust-shield" size={36} decorative />
+          <GsnRealisticIcon
+            name="trust-shield"
+            size={36}
+            loading="eager"
+            decorative
+          />
         </span>
         <div style={{ minWidth: 0 }}>
           <div
@@ -178,15 +186,32 @@ export function TrustDocumentRegistryMasthead({
           </div>
           <div
             style={{
-              marginTop: 3,
-              color: "#C8D8EA",
-              fontSize: 12,
-              fontWeight: 850,
-              lineHeight: 1.25,
+              marginTop: 4,
+              color: "#FFFFFF",
+              fontSize: 16,
+              fontWeight: 1000,
+              lineHeight: 1.12,
+              overflowWrap: "normal",
+              wordBreak: "normal",
             }}
           >
-            {subtitle || title}
+            {title}
           </div>
+          {subtitle ? (
+            <div
+              style={{
+                marginTop: 3,
+                color: "#C8D8EA",
+                fontSize: 12,
+                fontWeight: 850,
+                lineHeight: 1.25,
+                overflowWrap: "normal",
+                wordBreak: "normal",
+              }}
+            >
+              {subtitle}
+            </div>
+          ) : null}
         </div>
       </div>
     </header>

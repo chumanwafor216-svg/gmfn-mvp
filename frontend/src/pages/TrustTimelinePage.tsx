@@ -8,6 +8,15 @@ import {
   SubtleButton,
 } from "../components/StableButton";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
+import {
+  TrustDocumentBoundaryPanel,
+  TrustDocumentConfidenceRibbon,
+  TrustDocumentFingerprint,
+  TrustDocumentRegistryMasthead,
+  TrustDocumentSecurityPanel,
+  type TrustDocumentPanelItem,
+  type TrustDocumentRibbonItem,
+} from "../components/TrustDocumentLanguage";
 import { getSelectedClanId, safeCopy as copyWithFallback } from "../lib/api";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 
@@ -236,7 +245,7 @@ function sectionLabel(): React.CSSProperties {
     fontSize: 12,
     color: "#39526C",
     fontWeight: 1000,
-    letterSpacing: 0.45,
+    letterSpacing: 0,
     textTransform: "uppercase",
   };
 }
@@ -283,6 +292,21 @@ function sectionHeading(icon: GsnIconName, label: string): React.ReactNode {
 
 function routeTarget(intent: CtaIntent, communityId: number, debugId: string): string {
   return resolveCtaTarget(intent, { communityId, debugId }).to as string;
+}
+
+function cleanRecordText(value: unknown, fallback = "Not shown"): string {
+  const text = String(value ?? "").trim();
+  return text || fallback;
+}
+
+function buildTimelineReferenceFingerprint(parts: unknown[]): string {
+  const source = parts.map((part) => String(part ?? "").trim()).join("|");
+  let hash = 2166136261;
+  for (let index = 0; index < source.length; index += 1) {
+    hash ^= source.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return `GSN-TL-REF-${(hash >>> 0).toString(16).toUpperCase().padStart(8, "0")}`;
 }
 
 export default function TrustTimelinePage() {
@@ -377,6 +401,93 @@ export default function TrustTimelinePage() {
     }
     return { pos, neg, total: items.length };
   }, [items]);
+
+  const trustTimelineConfidenceRibbonItems: TrustDocumentRibbonItem[] = [
+    {
+      label: "Timeline status",
+      value: loading ? "Loading current record" : err ? "Needs refresh" : "Visible record loaded",
+      tone: loading ? "info" : err ? "warn" : "good",
+      detail: err ? "The latest timeline request did not complete." : "Signed-in trust timeline view.",
+    },
+    {
+      label: "Record integrity",
+      value: packId ? "Evidence reference available" : "Evidence reference pending",
+      tone: packId ? "good" : "info",
+      detail: packId || "Downloadable pack reference has not loaded yet.",
+    },
+    {
+      label: "Evidence chain",
+      value: totals.total ? `${totals.total} visible events` : "No visible events yet",
+      tone: totals.total ? "good" : "warn",
+      detail: `${totals.pos} positive, ${totals.neg} caution or negative movement.`,
+    },
+    {
+      label: "Verification path",
+      value: packId ? "PDF and share copy available" : "Refresh to load package",
+      tone: packId ? "good" : "info",
+      detail: "Timeline PDF and redacted evidence ZIP use signed-in access.",
+    },
+    {
+      label: "Last registry update",
+      value: cleanRecordText(packMeta?.generated_at_utc || lastChange?.created_at, "Not shown yet"),
+      tone: packMeta?.generated_at_utc || lastChange?.created_at ? "good" : "info",
+    },
+  ];
+
+  const trustTimelineSecurityItems: TrustDocumentPanelItem[] = [
+    {
+      title: "Signed-in access",
+      detail:
+        "This page uses the current member session before loading timeline events, PDF, or evidence pack files.",
+      tone: "good",
+    },
+    {
+      title: "Visibility-bound evidence",
+      detail:
+        "The share copy follows the TrustSlip visibility level and leaves private contact details out of the portable package.",
+      tone: packId ? "good" : "info",
+    },
+    {
+      title: "Reference fingerprint",
+      detail:
+        "Reference fingerprint generated from visible timeline fields; not a cryptographic hash or legal proof.",
+      tone: "info",
+    },
+    {
+      title: "Reader boundary",
+      detail:
+        "The timeline explains recorded trust movement only. It does not approve credit, move money, or authorize release of goods or services.",
+      tone: "warn",
+    },
+  ];
+
+  const trustTimelineConfirmsList = [
+    "The signed-in member can view this Trust Timeline evidence surface.",
+    `The current visible timeline contains ${totals.total} trust event${totals.total === 1 ? "" : "s"}.`,
+    packId
+      ? `The visible evidence pack reference is ${packId}.`
+      : "The evidence pack reference is not currently visible on this page.",
+    "The timeline PDF and evidence share copy are generated through signed-in GSN routes.",
+  ];
+
+  const trustTimelineDoesNotConfirmList = [
+    "Government registration, legal identity, or bank approval.",
+    "Payment movement, escrow, payout approval, credit approval, or automatic debit authority.",
+    "Future behaviour, future repayment, delivery, marketplace outcome, or support outcome.",
+    "Authority to release goods, money, credit, services, or private records.",
+    "Private contacts, complete private Trust Passport history, raw metadata, or admin-only notes.",
+  ];
+
+  const trustTimelineReferenceFingerprint = buildTimelineReferenceFingerprint([
+    packId,
+    scoreExplained?.score,
+    totals.total,
+    totals.pos,
+    totals.neg,
+    lastChange?.event_type,
+    lastChange?.created_at,
+    selectedClanId,
+  ]);
 
   async function downloadTimelinePdf() {
     setErr(null);
@@ -477,6 +588,52 @@ export default function TrustTimelinePage() {
           <b>Issue:</b> {err}
         </div>
       ) : null}
+
+      <section
+        data-gsn-trust-document-certificate="trust-timeline"
+        style={{
+          ...pageCard("#FFFFFF"),
+          padding: 0,
+          display: "grid",
+          gap: 14,
+        }}
+      >
+        <TrustDocumentRegistryMasthead
+          eyebrow="Private evidence"
+          title="Trust Timeline Evidence Record"
+          subtitle="Signed-in GSN evidence timeline"
+        />
+        <div style={{ padding: "0 18px 18px", display: "grid", gap: 14 }}>
+          <TrustDocumentConfidenceRibbon items={trustTimelineConfidenceRibbonItems} />
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+              gap: 12,
+            }}
+          >
+            <TrustDocumentBoundaryPanel
+              title="This timeline confirms"
+              tone="good"
+              items={trustTimelineConfirmsList}
+            />
+            <TrustDocumentBoundaryPanel
+              title="This timeline does not confirm"
+              tone="warn"
+              items={trustTimelineDoesNotConfirmList}
+            />
+          </div>
+          <TrustDocumentSecurityPanel
+            title="Trust Timeline security"
+            items={trustTimelineSecurityItems}
+          />
+          <TrustDocumentFingerprint
+            label="Trust Timeline reference fingerprint"
+            value={trustTimelineReferenceFingerprint}
+            detail="Reference fingerprint for this visible signed-in Trust Timeline. It is not a cryptographic proof."
+          />
+        </div>
+      </section>
 
       <div
         style={{

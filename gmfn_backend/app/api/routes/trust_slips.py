@@ -833,6 +833,12 @@ def reissue_my_trust_slip(
         "ok": True,
         "reissued": True,
         **result,
+        "verification_token": result.get("code"),
+        "verification_code": result.get("code"),
+        "token": result.get("code"),
+        "public_verify_url": (
+            _verify_page_url(result.get("code")) if result.get("code") else None
+        ),
     }
 
 
@@ -1151,7 +1157,7 @@ def trust_slip_share_text_public(
         "merchant_visibility_level": visibility_level,
         "merchant_verify_active": bool(merchant_verify_active),
         "text": text,
-        "offline_note": "If link fails, open /trust-slips/verify/{code} or show this message to an admin.",
+        "offline_note": "If the link fails, open /trust-slips/verify/{code} or show this message to GSN support.",
     }
 
 
@@ -1811,10 +1817,10 @@ def trust_slip_verify_page(
       </div>
       <div class="badge {status_class}">{_html(badge_text)}</div>
       <div class="plain">
-        <strong>Reader meaning:</strong> {_html(plain_reading)}
+        <strong>What this means for you:</strong> {_html(plain_reading)}
         <div class="decision">
           <div>
-            <small>Current reader action</small>
+            <small>Your next check</small>
             <b>{_html(status_label)}</b>
           </div>
           <div class="decision-code">Code: {_html(code)}</div>
@@ -1838,7 +1844,7 @@ def trust_slip_verify_page(
         <div class="row"><b>Community sponsor signals</b><span>{_html(sponsor_count)}</span></div>
         <div class="row"><b>Phone</b><span>{_html(phone_status)}</span></div>
         <div class="row"><b>Visibility</b><span>{_html(visibility_level)}</span></div>
-        <div class="row"><b>Public verify access</b><span>{"Active" if merchant_verify_active else "Public record only"}</span></div>
+        <div class="row"><b>Public check access</b><span>{"Active" if merchant_verify_active else "Public record only"}</span></div>
         <div class="row"><b>Issued</b><span>{_html(issued_text)}</span></div>
         <div class="row"><b>Expires</b><span>{_html(expires_text)}</span></div>
         <div class="row"><b>Not a bank guarantee</b><span>Yes</span></div>
@@ -1877,7 +1883,7 @@ def trust_slip_verify_page(
         goods or money without current context.
       </div>
       </section>
-      <div class="footer">GSN Trust Evidence - public evidence first, private details protected, decision left with the reader.</div>
+      <div class="footer">GSN Trust Evidence - public evidence first, private details protected, you decide with the record in front of you.</div>
     </main>
   </body>
 </html>"""
@@ -1928,7 +1934,7 @@ def trust_slip_share_bundle(
     ):
         raise HTTPException(
             status_code=403,
-            detail="Only the TrustSlip holder or an admin can open this share bundle.",
+            detail="Only the TrustSlip holder or an authorized GSN account can open this share bundle.",
         )
 
     merchant_verify_active = _merchant_verify_active_for_holder(
@@ -2205,8 +2211,8 @@ def trust_slip_release_page(
           <div class="eyebrow">Global Support Network</div>
           <h1>GSN TrustSlip Release Evidence Paper</h1>
           <div class="muted">
-            Restricted admin evidence helper. Security marks: GSN watermark, TrustSlip code,
-            GSN ID, protected action path, no-store response, and limitation note.
+            Protected GSN evidence helper. Security marks: GSN watermark, TrustSlip code,
+            GSN ID, protected save path, no-store response, and limitation note.
           </div>
         </section>
 
@@ -2220,19 +2226,19 @@ def trust_slip_release_page(
             <div class="value">{safe_holder_gmfn_id}</div>
           </div>
           <div class="fact">
-            <div class="label">Protected action</div>
-            <div class="value">POST {safe_post_path}</div>
+            <div class="label">Saved through</div>
+            <div class="value">Protected GSN release action</div>
           </div>
         </section>
 
         <div class="notice">
-          This page prepares an admin release evidence record only. It does not collect
+          This page prepares a protected release evidence record only. It does not collect
           payment, confirm bank receipt, approve credit, guarantee delivery, or grant
           permission to release goods, credit, or money.
         </div>
 
         <p class="muted" style="position:relative;z-index:1;margin:14px 0 0;">
-          Submit the record through the protected admin action using this payload shape.
+          Use the protected release action with the details shown below.
           Keep the note factual and do not include private information that is not needed
           for the evidence record.
         </p>

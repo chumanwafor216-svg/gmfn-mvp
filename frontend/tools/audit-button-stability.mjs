@@ -31,7 +31,7 @@ function assertNotContains(file, pattern, message) {
 
 assertContains(
   "src/lib/appRoutes.ts",
-  /export const APP_ROUTES =[\s\S]*?DASHBOARD:[\s\S]*?COMMUNITY:[\s\S]*?MARKETPLACE:[\s\S]*?MONEY_IN:[\s\S]*?MONEY_OUT:[\s\S]*?PAYOUT_DETAILS:[\s\S]*?PAYMENT_RAILS:[\s\S]*?TRUST_SLIP:[\s\S]*?MERCHANT_VERIFY:[\s\S]*?LOAN_WORKBENCH:[\s\S]*?LOAN_SUMMARY:[\s\S]*?GUARANTOR_INBOX:[\s\S]*?NOTIFICATIONS:[\s\S]*?BUILD_FIRST_CIRCLE:[\s\S]*?ADMIN_COMMAND:[\s\S]*?SYSTEM_OPERATIONS:[\s\S]*?BANK_CONSOLE:[\s\S]*?INCOMPLETE_LOANS:[\s\S]*?IDENTITY_RISK:[\s\S]*?TRUST_ANALYTICS:[\s\S]*?TRUST_GRAPH:[\s\S]*?EXPOSURE_ADMIN:/,
+  /export const APP_ROUTES =[\s\S]*?DASHBOARD:[\s\S]*?COMMUNITY:[\s\S]*?MARKETPLACE:[\s\S]*?MONEY_IN:[\s\S]*?MONEY_OUT:[\s\S]*?PAYOUT_DETAILS:[\s\S]*?PAYMENT_RAILS:[\s\S]*?TRUST_TIMELINE:[\s\S]*?TRUST_SLIP:[\s\S]*?MERCHANT_VERIFY:[\s\S]*?LOAN_WORKBENCH:[\s\S]*?LOAN_SUMMARY:[\s\S]*?GUARANTOR_INBOX:[\s\S]*?NOTIFICATIONS:[\s\S]*?BUILD_FIRST_CIRCLE:[\s\S]*?ADMIN_COMMAND:[\s\S]*?SYSTEM_OPERATIONS:[\s\S]*?BANK_CONSOLE:[\s\S]*?INCOMPLETE_LOANS:[\s\S]*?IDENTITY_RISK:[\s\S]*?TRUST_ANALYTICS:[\s\S]*?TRUST_GRAPH:[\s\S]*?EXPOSURE_ADMIN:/,
   "Important app destinations must live in the shared route registry."
 );
 
@@ -151,8 +151,8 @@ assertNotContains(
 
 assertContains(
   "src/pages/CommunityHomePage.tsx",
-  /import \{ StableButton \} from "\.\.\/components\/StableButton";[\s\S]*?import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function routeTarget\([\s\S]*?intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?debugId=\{`community-home\.tool\.\$\{item\.id\}`\}[\s\S]*?debugId="community-home\.communities\.header-toggle"[\s\S]*?debugId=\{`community-home\.communities\.\$\{clan\.id \?\? clan\.clan_id \?\? clan\.name \?\? "unknown"\}\.open-marketplace`\}/,
-  "Community Home must use the shared stable button primitive and shared CTA resolution for community selection, owner routes, and local action rows."
+  /import \{ StableButton \} from "\.\.\/components\/StableButton";[\s\S]*?import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function routeTarget\([\s\S]*?intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?debugId=\{`community-home\.next-action\.\$\{item\.id\}`\}[\s\S]*?debugId="community-home\.communities\.header-toggle"[\s\S]*?debugId=\{`community-home\.communities\.\$\{clan\.id \?\? clan\.clan_id \?\? clan\.name \?\? "unknown"\}\.open-marketplace`\}/,
+  "Community Home must use the shared stable button primitive and shared CTA resolution for community selection, owner routes, and front next-action rows."
 );
 
 assertContains(

@@ -317,7 +317,7 @@ export function buildTrustPassportViewModel(
       meaning:
         contributionStatus === "Evidence still building"
           ? "Contribution or pooled-activity discipline is not visible enough yet."
-          : "There is visible activity, but the reader should still check whether commitments were completed on time.",
+          : "There is visible activity, but you should still check whether commitments were completed on time.",
     },
     {
       title: "Finance discipline",
@@ -332,7 +332,7 @@ export function buildTrustPassportViewModel(
       meaning:
         tradeStatus === "Evidence still building"
           ? "Marketplace or merchant evidence is not enough yet."
-          : "Trade evidence exists, but the reader should still match the risk to the evidence shown.",
+          : "Trade evidence exists, but you should still match the risk to the evidence shown.",
     },
     {
       title: "Follow-through",

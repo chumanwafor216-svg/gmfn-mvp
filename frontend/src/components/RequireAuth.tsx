@@ -450,9 +450,9 @@ export default function RequireAuth({ children, requireRole }: Props) {
                 Open Sign In
               </StableCtaLink>
               <StableCtaLink
-                to="/cover"
+                to="/login?session=expired&force=1"
                 kind="secondary"
-                debugId="require-auth.loading.cover"
+                debugId="require-auth.loading.start-again"
               >
                 Start Again
               </StableCtaLink>

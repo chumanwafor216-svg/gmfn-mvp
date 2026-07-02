@@ -147,6 +147,29 @@ html, body {
   font: inherit;
 }
 
+.gsn-trust-document-masthead {
+  grid-template-columns: minmax(0, 1fr) minmax(240px, auto);
+}
+
+.gsn-trust-document-masthead-record {
+  justify-self: end;
+}
+
+@media (max-width: 640px) {
+  .gsn-trust-document-masthead {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .gsn-trust-document-masthead-brand {
+    align-items: flex-start !important;
+  }
+
+  .gsn-trust-document-masthead-record {
+    justify-self: stretch;
+  }
+}
+
 :where(a, button, [role="button"], summary):focus:not(:focus-visible) {
   outline: none;
 }

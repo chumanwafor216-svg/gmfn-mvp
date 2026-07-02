@@ -579,7 +579,7 @@ export default function TrustSlipVerifyPage() {
       const result = await (api as any).requestCommunityConfirmation({
         trust_slip_code: requestCode,
         requester_external_label:
-          firstTruthy(draft.requesterExternalLabel, "TrustSlip public viewer"),
+          firstTruthy(draft.requesterExternalLabel, "Person checking this TrustSlip"),
         requester_callback_channel: draft.callbackChannel || "none",
         requester_callback_contact: draft.callbackContact || undefined,
         requester_callback_consent: Boolean(draft.callbackConsent),

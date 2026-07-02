@@ -222,7 +222,7 @@ const REVIEW_RESOLUTIONS = [
   {
     value: "resolved_with_caution",
     label: "Resolved with caution",
-    meaning: "Use when the person is not rejected, but the reader should reduce risk.",
+    meaning: "Use when the person is not rejected, but you should reduce risk.",
   },
   {
     value: "insufficient_evidence",

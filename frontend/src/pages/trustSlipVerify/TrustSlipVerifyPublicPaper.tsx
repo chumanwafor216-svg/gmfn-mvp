@@ -1458,7 +1458,7 @@ export default function TrustSlipVerifyPublicPaper({
             </div>
 
             <div style={innerCard("#FFFFFF")}>
-              <div style={{ ...sectionLabel(), color: "#0B63D1" }}>Public reader view</div>
+              <div style={{ ...sectionLabel(), color: "#0B63D1" }}>Your public view</div>
               <h3 style={{ margin: "8px 0 0", color: "#07172C", fontSize: 18, fontWeight: 1000 }}>
                 Quick trust answers
               </h3>
@@ -1949,7 +1949,7 @@ export default function TrustSlipVerifyPublicPaper({
             GSN Trust Evidence
           </div>
           <div style={{ marginTop: 4, color: "#DCE8F4", fontSize: compact ? 13 : 16, lineHeight: 1.35, fontWeight: 780 }}>
-            public evidence first, private details protected, decision left with the reader.
+            public evidence first, private details protected, you decide with the record in front of you.
           </div>
         </div>
         {!compact ? <GsnRealisticIcon name="public-globe" size={66} decorative /> : null}

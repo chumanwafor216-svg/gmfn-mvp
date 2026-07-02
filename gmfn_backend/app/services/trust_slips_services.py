@@ -2185,6 +2185,7 @@ def reissue_trust_slip(
         "new_trust_slip_id": int(new_slip.id),
         "code": new_slip.code,
         "reason": new_slip.issued_reason,
+        "status": new_slip.status,
         "created_at": new_slip.created_at.isoformat() if new_slip.created_at else None,
         "issued_at": new_slip.created_at.isoformat() if new_slip.created_at else None,
         "expires_at": new_slip.expires_at.isoformat() if new_slip.expires_at else None,

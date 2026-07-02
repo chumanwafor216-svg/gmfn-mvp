@@ -524,13 +524,13 @@ export default function CommunityMemberVerifyPage() {
     {
       title: "Privacy boundary",
       detail:
-        "Private verifier names, contacts, admin notes, payment records, and the full Trust Passport stay hidden.",
+        "Private verifier names, contacts, review notes, payment records, and the full Trust Passport stay hidden.",
       tone: "good",
     },
   ];
   const memberCredentialConfirmsList = [
     "Member GSN ID and Community ID shown on this public page",
-    "Membership status and role as returned by the public credential endpoint",
+    "Membership status and role shown by this public credential record",
     "Witness count, renewal status, and currentness labels where available",
     "Community record currentness and broad activity summary where available",
     "QR and public link reopen this scoped community-member credential",

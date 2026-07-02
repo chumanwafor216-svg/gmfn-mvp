@@ -74,11 +74,11 @@ function parsePaperText(paperText: string): ParsedPaper {
   let mode: "none" | "context" | "details" = "none";
 
   for (const line of lines) {
-    if (line === "GSN record context") {
+    if (line === "GSN record context" || line === "Public record context") {
       mode = "context";
       continue;
     }
-    if (line === "Record details") {
+    if (line === "Record details" || line === "What you need to know") {
       mode = "details";
       continue;
     }
@@ -97,8 +97,18 @@ function parsePaperText(paperText: string): ParsedPaper {
       mode = "none";
       continue;
     }
+    if (line.startsWith("Prepared for you (UTC):")) {
+      paper.generatedAt = stripPrefix(line, "Prepared for you (UTC):");
+      mode = "none";
+      continue;
+    }
     if (line.startsWith("Reference:")) {
       paper.reference = stripPrefix(line, "Reference:");
+      mode = "none";
+      continue;
+    }
+    if (line.startsWith("Record code:")) {
+      paper.reference = stripPrefix(line, "Record code:");
       mode = "none";
       continue;
     }
@@ -107,7 +117,17 @@ function parsePaperText(paperText: string): ParsedPaper {
       mode = "none";
       continue;
     }
+    if (line.startsWith("Open this record:")) {
+      paper.actionLink = stripPrefix(line, "Open this record:");
+      mode = "none";
+      continue;
+    }
     if (line.startsWith("Security marks:")) {
+      paper.securityMarks = line;
+      mode = "none";
+      continue;
+    }
+    if (line.startsWith("Security note:")) {
       paper.securityMarks = line;
       mode = "none";
       continue;
@@ -127,7 +147,11 @@ function parsePaperText(paperText: string): ParsedPaper {
       mode = "none";
       continue;
     }
-    if (line === "GLOBAL SUPPORT NETWORK (GSN)" || line === "Official GSN headed paper") {
+    if (
+      line === "GLOBAL SUPPORT NETWORK (GSN)" ||
+      line === "Official GSN headed paper" ||
+      line === "Official GSN public record"
+    ) {
       continue;
     }
 
@@ -315,7 +339,7 @@ export default function GsnSnapshotPaperCard({
             border: "1px solid rgba(123,161,204,0.18)",
           }}
         >
-          <div style={labelStyle()}>Generated UTC</div>
+          <div style={labelStyle()}>Prepared UTC</div>
           <div style={valueStyle()}>{generatedAtText}</div>
         </div>
         <div
@@ -326,7 +350,7 @@ export default function GsnSnapshotPaperCard({
             border: "1px solid rgba(123,161,204,0.18)",
           }}
         >
-          <div style={labelStyle()}>Reference</div>
+          <div style={labelStyle()}>Record code</div>
           <div style={valueStyle()}>{paper.reference || "GSN current record"}</div>
         </div>
       </section>
@@ -368,7 +392,7 @@ export default function GsnSnapshotPaperCard({
             gap: 8,
           }}
         >
-          <div style={labelStyle()}>Record Details</div>
+          <div style={labelStyle()}>What you need to know</div>
           {visibleDetails.map((detail, index) => (
             <div
               key={`${index}-${detail}`}
@@ -422,7 +446,7 @@ export default function GsnSnapshotPaperCard({
             padding: "11px 12px",
           }}
         >
-          <div style={labelStyle()}>Verification / Action Link</div>
+          <div style={labelStyle()}>Open this record</div>
           <div style={{ ...valueStyle(), color: "#0B4AA2" }}>{paper.actionLink}</div>
         </section>
       ) : null}

@@ -52,21 +52,21 @@ export function buildGsnSnapshotPaper(params: GsnSnapshotPaperParams): string {
 
   return [
     "GLOBAL SUPPORT NETWORK (GSN)",
-    "Official GSN headed paper",
+    "Official GSN public record",
     "",
     `Title: ${safeText(params.title) || "GSN Snapshot"}`,
     params.purpose ? `Purpose: ${safeText(params.purpose)}` : "",
-    `Generated (UTC): ${generatedAt}`,
-    reference ? `Reference: ${reference}` : "",
-    `Security marks: GSN brand mark, watermark, UTC time, reference, privacy note, and limitation note must travel with screenshots or printed copies.`,
+    `Prepared for you (UTC): ${generatedAt}`,
+    reference ? `Record code: ${reference}` : "",
+    `Security note: Keep the GSN mark, time, record code, privacy limit, and limitation with any screenshot, printout, or forwarded copy.`,
     "",
-    contextLines.length ? "GSN record context" : "",
+    contextLines.length ? "Public record context" : "",
     ...contextLines,
     "",
-    bodyLines.length ? "Record details" : "",
+    bodyLines.length ? "What you need to know" : "",
     ...bodyLines,
     "",
-    link ? `Verification / action link: ${link}` : "",
+    link ? `Open this record: ${link}` : "",
     privacyNote,
     limitationNote,
     "",
@@ -89,7 +89,7 @@ export function buildGsnCommunityVerifyLinkPackage(params: {
 }): string {
   return buildGsnSnapshotPaper({
     title: "GSN Community Verification Link",
-    purpose: "Check the public GSN record for this community.",
+    purpose: "Open this link to check the public GSN record for this community.",
     reference: safeText(params.communityId),
     link: params.verifyLink,
     context: [
@@ -100,7 +100,7 @@ export function buildGsnCommunityVerifyLinkPackage(params: {
       { label: "Relay availability", value: params.relayAvailability },
     ],
     bodyLines: [
-      "Check the community record GSN is allowed to show publicly.",
+      "Use this page to confirm which Community ID the public link points to.",
       "Private member details, phone numbers, sponsor details, and private trust history stay protected.",
     ],
     privacyNote:
@@ -148,7 +148,7 @@ export function buildGsnPublicShopLinkPackage(params: {
 }): string {
   return buildGsnSnapshotPaper({
     title: "GSN Public Shop Invitation",
-    purpose: "Open this shop link to view the public shop face and public blocks.",
+    purpose: "Open this shop link to view the public shop page and visible public items.",
     reference: safeText(params.gsnId),
     link: params.shopLink,
     context: [
@@ -162,7 +162,7 @@ export function buildGsnPublicShopLinkPackage(params: {
     ],
     bodyLines: cleanLines(params.messageLines),
     privacyNote:
-      "Privacy: only public shop information is shown. Private Vault items need a separate owner link.",
+      "Privacy: only public shop information is shown. Private Vault items need a separate private link from the shop.",
     limitationNote:
       "Limitation: verify current price, availability, and trust evidence before relying on the offer.",
   });
@@ -227,7 +227,7 @@ export function buildGsnPaymentInstructionPackage(params: {
       { label: "GSN ID", value: params.gsnId },
       { label: "Community", value: params.communityName },
       { label: "Community ID", value: params.communityId },
-      { label: "Route", value: params.routeName },
+      { label: "Action area", value: params.routeName },
       { label: "Amount", value: params.amount },
       { label: "Status", value: params.status },
       { label: "Due / currentness", value: params.dueAt },
@@ -272,7 +272,7 @@ export function buildGsnSupportEvidencePackage(params: {
       { label: "Role", value: params.memberRole },
       { label: "Community", value: params.communityName },
       { label: "Community ID", value: params.communityId },
-      { label: "Route", value: params.routeName },
+      { label: "Action area", value: params.routeName },
       { label: "Loan / support ID", value: params.loanId },
       { label: "Amount", value: params.amount },
       { label: "Status", value: params.status },

@@ -12,6 +12,7 @@ type GsnRealisticIconProps = {
   className?: string;
   style?: React.CSSProperties;
   imageStyle?: React.CSSProperties;
+  loading?: "eager" | "lazy";
   renderPending?: boolean;
 };
 
@@ -23,6 +24,7 @@ export function GsnRealisticIcon({
   className,
   style,
   imageStyle,
+  loading = "lazy",
   renderPending = false,
 }: GsnRealisticIconProps) {
   const asset = getGsn3DIconAsset(name);
@@ -76,7 +78,7 @@ export function GsnRealisticIcon({
         alt={decorative ? "" : accessibleLabel}
         width={size}
         height={size}
-        loading="lazy"
+        loading={loading}
         decoding="async"
         draggable={false}
         style={{
