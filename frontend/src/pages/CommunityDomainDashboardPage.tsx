@@ -1265,7 +1265,7 @@ export default function CommunityDomainDashboardPage() {
   const primaryActionLaneLabel = laneDisplayLabel(primaryActionLane, "work");
   const primaryActionFallbackNote =
     !setupPrimaryActionHasLane && setupPrimaryActionLaneKey === "verification" && hasServicesLane
-      ? "GSN opens Services because authority verification is shown there as a read-only readiness row. Actual authority verification still needs its separate owner/admin path."
+      ? "GSN opens Services because authority verification is shown there as a readiness row. Actual authority verification still needs its separate owner or admin path."
       : "";
   const billingIsActive =
     cleanText(status.billing_status || selectedLane?.status).toLowerCase() === "active";
@@ -2089,7 +2089,7 @@ export default function CommunityDomainDashboardPage() {
                         Loading readiness checks
                       </h2>
                       <div style={helperText()}>
-                        GSN is loading the read-only setup checklist while the main
+                        GSN is loading the setup checklist while the main
                         Community Domain dashboard remains usable.
                       </div>
                     </div>
@@ -2101,7 +2101,7 @@ export default function CommunityDomainDashboardPage() {
                         Loading setup plan
                       </h2>
                       <div style={helperText()}>
-                        GSN is loading the read-only setup plan while the main
+                        GSN is loading the setup plan while the main
                         Community Domain dashboard remains usable.
                       </div>
                     </div>
@@ -2187,7 +2187,7 @@ export default function CommunityDomainDashboardPage() {
                   <div style={softCard()}>
                     <div style={sectionLabel()}>Loading setup intelligence</div>
                     <div style={{ ...helperText(), marginTop: 7 }}>
-                      GSN is loading the read-only maps, readiness checks, and lane
+                      GSN is loading the maps, readiness checks, and lane
                       details for this Community Domain. The primary dashboard is
                       already available; write actions remain separate and permission
                       checked.
@@ -2226,8 +2226,8 @@ export default function CommunityDomainDashboardPage() {
                       .{" "}
                       {billingIsActive
                         ? "Quote details remain available for reference, but this lane is no longer asking for a quote before setup continues."
-                        : "Quote details are still required before a payment instruction exists."}{" "}
-                      Renewal period and payment instruction are not configured here.
+                        : "Quote details are still required before a payment step exists."}{" "}
+                      Renewal period and payment step are not configured here.
                     </div>
                     <div style={{ ...helperText(), marginTop: 7 }}>
                       Package quote:{" "}
@@ -2286,7 +2286,7 @@ export default function CommunityDomainDashboardPage() {
                         <Suspense
                           fallback={
                             <div style={{ ...helperText(), marginTop: 4 }}>
-                              Loading local service projections...
+                              Loading local service views...
                             </div>
                           }
                         >
@@ -2320,7 +2320,7 @@ export default function CommunityDomainDashboardPage() {
                     <Suspense
                       fallback={
                         <div style={{ ...helperText(), marginTop: 4 }}>
-                          Loading trust evidence projections...
+                          Loading trust evidence views...
                         </div>
                       }
                     >
@@ -2367,7 +2367,7 @@ export default function CommunityDomainDashboardPage() {
                   <Suspense
                     fallback={
                       <div style={{ ...helperText(), marginTop: 4 }}>
-                        Loading local structure projections...
+                        Loading local structure views...
                       </div>
                     }
                   >
@@ -2384,7 +2384,7 @@ export default function CommunityDomainDashboardPage() {
                   <Suspense
                     fallback={
                       <div style={{ ...helperText(), marginTop: 4 }}>
-                        Loading domain-boundary projection...
+                        Loading boundary view...
                       </div>
                     }
                   >
@@ -2399,7 +2399,7 @@ export default function CommunityDomainDashboardPage() {
                   <Suspense
                     fallback={
                       <div style={{ ...helperText(), marginTop: 4 }}>
-                        Loading activity detail projections...
+                        Loading activity detail views...
                       </div>
                     }
                   >
@@ -2463,7 +2463,7 @@ export default function CommunityDomainDashboardPage() {
                       <Suspense
                         fallback={
                           <div style={{ ...helperText(), marginTop: 4 }}>
-                            Loading member placement projection...
+                            Loading member placement view...
                           </div>
                         }
                       >
@@ -2528,7 +2528,7 @@ export default function CommunityDomainDashboardPage() {
             <div style={{ display: "grid", gap: 8 }}>
               <div style={sectionLabel()}>Boundary</div>
               <div style={helperText()}>
-                This dashboard does not create payment instructions, confirm payment,
+                This dashboard does not create payment steps, confirm payment,
                 activate billing, activate a Community Domain, verify ownership, expose
                 private finance records, or expose private member evidence.
               </div>

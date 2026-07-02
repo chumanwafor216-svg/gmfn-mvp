@@ -49,7 +49,7 @@ assertContains(
 );
 
 assertContains(
-  /gridTemplateColumns: isCompact[\s\S]*?\? "1fr"[\s\S]*?: "54px minmax\(0, 1fr\) auto"[\s\S]*?ROSCA savings circles[\s\S]*?Financial support requests[\s\S]*?ROSCA savings[\s\S]*?circles stay separate above and open their own desk/,
+  /gridTemplateColumns: isCompact[\s\S]*?\? "52px minmax\(0, 1fr\)"[\s\S]*?: "54px minmax\(0, 1fr\) auto"[\s\S]*?gridTemplateAreas: isCompact[\s\S]*?\? `"icon body" "button button"`[\s\S]*?ROSCA savings circles[\s\S]*?Financial support requests[\s\S]*?ROSCA savings[\s\S]*?circles stay separate above and open their own desk/,
   "Marketplace Support gateway must keep the ROSCA handoff full-width on phone and visibly separate it from Financial Support requests."
 );
 

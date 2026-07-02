@@ -209,7 +209,7 @@ export default function CommunityDomainGovernanceReadinessPanels({
         <div style={sectionLabel()}>Governance review pulse</div>
         <div style={{ ...helperText(), marginTop: 7 }}>
           {isAdmin
-            ? "Open decisions come from the scoped reviewer queue; approved-but-unapplied reviews come from the approved action-review list."
+            ? "Your open decisions show what you can handle now. Approved items may still need an authorized admin to apply them."
             : "Open decisions are handled by owner/admin reviewers. This lane shows whether the domain has visible review attention."}
         </div>
         <div
@@ -237,7 +237,7 @@ export default function CommunityDomainGovernanceReadinessPanels({
         ) : isAdmin &&
           Number(institutionalOpenReviewCount || 0) > governanceAttentionCount ? (
           <div style={{ ...helperText(), marginTop: 10 }}>
-            This account has no pending decision in its scoped queue, but the
+            You have no pending decision in your review queue, but the
             Community Domain still has institutional review pressure. Another
             eligible reviewer may need to decide, or an approved review may
             still need apply by an authorized admin.
@@ -245,13 +245,13 @@ export default function CommunityDomainGovernanceReadinessPanels({
         ) : (
           <div style={{ ...helperText(), marginTop: 10 }}>
             {isAdmin
-              ? "No membership access request currently needs action from this account."
+              ? "No membership access request currently needs your action."
               : "You can see review pressure here, but decision queues and private review details stay with authorized reviewers."}
           </div>
         )}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          This summary does not decide reviews, apply membership, assign roles,
-          expose private evidence, or bypass reviewer policy.
+          This view only shows governance review pressure. It does not decide reviews,
+          apply membership, assign roles, expose private evidence, or bypass reviewer policy.
         </div>
       </div>
 
@@ -263,7 +263,7 @@ export default function CommunityDomainGovernanceReadinessPanels({
                 delegationMap.primary_next_action?.label,
                 "Review delegation"
               )}. ${delegationReadyTotal} of ${visibleDelegationLanes.length} authority checks are ready.`
-            : "GSN could not load the read-only delegation map for this Community Domain."}
+            : "GSN could not load the delegation map for this Community Domain."}
         </div>
         {factGrid([
           [
@@ -316,8 +316,8 @@ export default function CommunityDomainGovernanceReadinessPanels({
           </div>
         ) : delegationMap ? (
           <div style={{ ...helperText(), marginTop: 9 }}>
-            No blocked delegation lane is visible, but legal authority verification
-            and role assignment remain separate.
+            No blocked delegation lane is visible. Authority verification and role
+            assignment remain separate.
           </div>
         ) : null}
         {visibleDelegationLanes.length ? (
@@ -336,12 +336,10 @@ export default function CommunityDomainGovernanceReadinessPanels({
           </div>
         ) : null}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          This delegation view is read-only authority projection. It does not
-          assign roles, create node memberships, create policies, create action
-          reviews, decide reviews, apply reviews, change inheritance, verify
-          legal or institutional authority, activate billing, create marketplace
-          activity, create a social Community, publish proof, or expose private
-          member, review, or evidence records.
+          This view only shows authority planning. It does not assign roles, create
+          memberships or policies, decide or apply reviews, change inheritance,
+          verify authority, activate billing, publish public proof, create marketplace
+          activity, move money, or expose private member records.
         </div>
       </div>
 
@@ -353,7 +351,7 @@ export default function CommunityDomainGovernanceReadinessPanels({
                 governanceCoverage.primary_next_action?.label,
                 "Review Community Domain governance coverage"
               )}. This shows whether operating units have local admins and policy coverage.`
-            : "GSN could not load the read-only governance coverage map for this view."}
+            : "GSN could not load the governance coverage map for this view."}
         </div>
         <div
           style={{
@@ -393,14 +391,14 @@ export default function CommunityDomainGovernanceReadinessPanels({
           </div>
         ) : governanceCoverage ? (
           <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-            No local-admin or policy coverage gap is visible in the read-only governance map.
+            No local-admin or policy coverage gap is visible in the governance map.
           </div>
         ) : null}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          This coverage view does not create policy, assign roles, create
-          reviews, decide reviews, apply reviews, verify legal or institutional
-          authority, move money, activate billing, publish a public page, create
-          marketplace activity, create a social Community, or expose private review payloads.
+          This view only shows governance coverage. It does not create policy,
+          assign roles, decide or apply reviews, verify authority, move money,
+          activate billing, publish a public page, create marketplace activity,
+          or expose private review records.
         </div>
       </div>
     </>

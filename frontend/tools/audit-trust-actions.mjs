@@ -745,8 +745,8 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityVerifyPage.tsx",
-  /buildGsnCommunityVerifyLinkPackage[\s\S]*?communityVerifyLinkPackage[\s\S]*?communityName[\s\S]*?communityId: communityAnchor[\s\S]*?verifyLink: publicLink[\s\S]*?async function copyLink\(\) \{[\s\S]*?safeCopy\(communityVerifyLinkPackage\)[\s\S]*?GSN community verification paper copied\./,
-  "CommunityVerifyPage Copy link must copy the branded GSN verification link paper, not a bare URL."
+  /buildGsnCommunityVerifyLinkMessage[\s\S]*?communityVerifyLinkMessage[\s\S]*?communityName[\s\S]*?communityId: communityAnchor[\s\S]*?verifyLink: publicLink[\s\S]*?async function copyLink\(\) \{[\s\S]*?safeCopy\(communityVerifyLinkMessage\)[\s\S]*?GSN community verification link copied\./,
+  "CommunityVerifyPage Copy link must copy the compact branded GSN verification link message, not a bare URL or long paper."
 );
 
 assertContains(
@@ -1878,8 +1878,8 @@ assertContains(
 
 assertContains(
   "src/pages/MerchantReleasePage.tsx",
-  /function buildMerchantTradePacketPaper[\s\S]*?Official GSN public record[\s\S]*?Title: GSN Merchant Trade Packet Evidence[\s\S]*?Keep your WhatsApp conversation separately[\s\S]*?Privacy: Keep only the final evidence you need for reference[\s\S]*?Security note: Keep the GSN mark/,
-  "Merchant Release copied packet must use direct GSN public-record language and privacy/security notes."
+  /function buildMerchantTradePacketPaper[\s\S]*?Title: GSN Merchant Trade Packet Evidence[\s\S]*?Purpose: Keep the final merchant release evidence and record codes together\.[\s\S]*?Generated \(UTC\): \$\{generatedAt\}[\s\S]*?Privacy: keep only the final evidence needed for reference[\s\S]*?Security note: Keep the GSN mark/,
+  "Merchant Release copied packet must use compact GSN evidence language and privacy/security notes."
 );
 
 assertContains(

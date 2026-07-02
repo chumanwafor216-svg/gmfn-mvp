@@ -192,10 +192,9 @@ function buildMerchantTradePacketPaper(result: MerchantReleaseResponse): string 
 
   return [
     "GLOBAL SUPPORT NETWORK (GSN)",
-    "Official GSN public record",
     "Title: GSN Merchant Trade Packet Evidence",
-    "Purpose: Keep the minimum evidence for a merchant release conversation. Keep your WhatsApp conversation separately; this GSN paper keeps the final record code and release details together.",
-    `Prepared for you (UTC): ${generatedAt}`,
+    "Purpose: Keep the final merchant release evidence and record codes together.",
+    `Generated (UTC): ${generatedAt}`,
     `Link ID: ${result.verification_link_id || "Not shown"}`,
     `Pack ID: ${result.pack_id || "Not shown"}`,
     `Trade Packet ID: ${result.trade_packet_id || packet.trade_packet_id || "Not shown"}`,
@@ -226,9 +225,8 @@ function buildMerchantTradePacketPaper(result: MerchantReleaseResponse): string 
     "Before you rely on this",
     result.evidence_boundary,
     "GSN does not store the full WhatsApp conversation in this packet, does not control the courier, does not hold money, and does not approve payout.",
-    "Privacy: Keep only the final evidence you need for reference. Avoid unnecessary private chat, addresses, bank details, third-party names, and unrelated personal information.",
-    "Security note: Keep the GSN mark, Link ID, Pack ID, Trade Packet ID, issue time, evidence slots, privacy boundary, limitation note, and footer with any forwarded copy.",
-    "Footer: Global Support Network (GSN). Community commerce evidence for organized trust, portable records, and safer marketplace decisions.",
+    "Privacy: keep only the final evidence needed for reference. Avoid private chats, addresses, bank details, and unrelated personal information.",
+    "Security note: Keep the GSN mark, Link ID, Pack ID, Trade Packet ID, time, privacy note, and limit with any copy.",
   ].join("\n");
 }
 

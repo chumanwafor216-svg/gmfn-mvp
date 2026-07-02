@@ -240,15 +240,15 @@ export default function CommunityDomainMemberReadinessPanels({
             </div>
           ) : null}
           <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-            This is read-only. Admins still control placement, role changes,
-            and review decisions through scoped Community Domain tools.
+            This view only shows your placement. Admins still control placement,
+            role changes, and review decisions.
           </div>
         </div>
       ) : (
         <div style={softCard()}>
           <div style={sectionLabel()}>Member and role summary</div>
           <div style={{ ...helperText(), marginTop: 7 }}>
-            GSN could not load this viewer's placement projection, so this lane
+            GSN could not load this viewer's placement view, so this lane
             is showing only safe domain-level counts from the dashboard summary.
           </div>
           <div
@@ -293,7 +293,7 @@ export default function CommunityDomainMemberReadinessPanels({
                 memberVerificationMap.primary_next_action?.label,
                 "Review member verification readiness"
               )}. ${memberVerificationReadyTotal} of ${visibleMemberVerificationLanes.length} member-readiness checks are ready.`
-            : "GSN could not load the read-only member verification map for this Community Domain."}
+            : "GSN could not load the member verification map for this Community Domain."}
         </div>
         {factGrid([
           ["Active members", memberVerificationSummary.active_member_count],
@@ -342,8 +342,9 @@ export default function CommunityDomainMemberReadinessPanels({
           </div>
         ) : memberVerificationMap ? (
           <div style={{ ...helperText(), marginTop: 9 }}>
-            No blocked member-readiness lane is visible, but KYC, credential
-            issuing, TrustSlips, and Trust Passport writes are still not connected here.
+            No blocked member-readiness lane is visible, but formal identity
+            checks, credential issuing, and trust records are still handled
+            elsewhere.
           </div>
         ) : null}
         {visibleMemberVerificationLanes.length ? (
@@ -362,12 +363,9 @@ export default function CommunityDomainMemberReadinessPanels({
           </div>
         ) : null}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          This member verification map is read-only readiness planning. It does
-          not perform KYC, issue credentials, verify government identity, create
-          or change members, place members in units, assign roles, grant
-          permissions, create policy, decide reviews, upload evidence, expose
-          storage keys, publish proof, issue TrustSlips, write Trust Passport
-          entries, move money, or expose private member, review, or evidence records.
+          This view only shows member readiness. It does not verify identity,
+          issue credentials, change members or roles, decide reviews, publish
+          proof, create trust records, move money, or expose private member records.
         </div>
       </div>
     </>

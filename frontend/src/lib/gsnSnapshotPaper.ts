@@ -68,17 +68,16 @@ export function buildGsnSnapshotPaper(params: GsnSnapshotPaperParams): string {
     "Privacy: only details needed for this GSN check are shown.";
   const limitationNote =
     safeText(params.limitationNote) ||
-    "Limitation: GSN record only. Not a bank guarantee, credit approval, payment instruction, or automatic debit authority.";
+    "Limitation: GSN evidence only. Not approval, guarantee, payment instruction, or auto-debit.";
 
   return [
     "GLOBAL SUPPORT NETWORK (GSN)",
-    "Official GSN public record",
     "",
     `Title: ${safeText(params.title) || "GSN Snapshot"}`,
     params.purpose ? `Purpose: ${safeText(params.purpose)}` : "",
-    `Prepared for you (UTC): ${generatedAt}`,
+    `Generated (UTC): ${generatedAt}`,
     reference ? `Record code: ${reference}` : "",
-    `Security note: Keep the GSN mark, time, record code, privacy limit, and limitation with any screenshot, printout, or forwarded copy.`,
+    `Security note: Keep the GSN mark, time, code, privacy note, and limit with any copy.`,
     "",
     contextLines.length ? "Public record context" : "",
     ...contextLines,
@@ -89,8 +88,6 @@ export function buildGsnSnapshotPaper(params: GsnSnapshotPaperParams): string {
     link ? `Open this record: ${link}` : "",
     privacyNote,
     limitationNote,
-    "",
-    "Footer: Global Support Network (GSN). Trust infrastructure for organized communities.",
   ]
     .filter((line, index, lines) => {
       if (line !== "") return true;

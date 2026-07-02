@@ -215,7 +215,7 @@ export default function CommunityDomainStructurePlanningPanels({
                 rolloutPlan.primary_next_action?.label,
                 "Review Community Domain rollout plan"
               )}. Current phase: ${compactStatus(rolloutPlan.rollout_phase)}.`
-            : "GSN could not load the read-only rollout plan for this view."}
+            : "GSN could not load the rollout plan for this view."}
         </div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 10 }}>
           {[
@@ -245,7 +245,7 @@ export default function CommunityDomainStructurePlanningPanels({
           </div>
         ) : rolloutPlan ? (
           <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-            No open rollout phase is visible in the read-only rollout plan.
+            No open rollout phase is visible in this rollout plan.
           </div>
         ) : null}
         {rolloutUnitsWithAttention.length ? (
@@ -265,11 +265,9 @@ export default function CommunityDomainStructurePlanningPanels({
           </div>
         ) : null}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          This rollout view does not create nodes, invite members, add members,
-          assign admins, place members, create policy, open reviews, verify authority,
-          activate billing, activate the Community Domain, publish a public page,
-          create marketplace activity, create a social Community, move money, or
-          expose private evidence.
+          This view only shows rollout steps and units needing attention. It does not
+          change structure, membership, authority, billing, public pages, marketplace
+          activity, money, or private evidence.
         </div>
       </div>
 
@@ -281,7 +279,7 @@ export default function CommunityDomainStructurePlanningPanels({
                 activityMap.primary_next_action?.label,
                 "Review activity boundaries"
               )}. ${activityMapReadyTotal} of ${visibleActivityMapLanes.length} activity checks are ready.`
-            : "GSN could not load the read-only activity map for this Community Domain."}
+            : "GSN could not load the activity map for this Community Domain."}
         </div>
         {factGrid([
           ["Template lanes", activityMapSummary.activity_lane_count],
@@ -319,7 +317,7 @@ export default function CommunityDomainStructurePlanningPanels({
         ) : activityMap ? (
           <div style={{ ...helperText(), marginTop: 9 }}>
             No blocked activity lane is visible, but paid activity, scheduled activity, and
-            Trust Passport writes are still not connected here.
+            trust records are still handled elsewhere.
           </div>
         ) : null}
         {visibleActivityMapLanes.length ? (
@@ -338,32 +336,27 @@ export default function CommunityDomainStructurePlanningPanels({
           </div>
         ) : null}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          This activity map is read-only operating-activity planning. It does not
-          create activities, events, meetings, classes, services, programmes,
-          attendance, dues, levies, travel fees, contributions, tickets,
-          subscriptions, payment instructions, invoices, receipts, bank matches,
-          ledger entries, payouts, money movement, marketplace records, shops,
-          listings, demand, Spotlight, notifications, TrustSlips, Trust Passport
-          entries, public proof, or private member, review, evidence, or finance
-          exposure.
+          This view only shows activity planning. It does not create activities,
+          payments, marketplace records, notifications, trust records, public proof,
+          money movement, or private member records.
         </div>
       </div>
 
       <div style={softCard()}>
-        <div style={sectionLabel()}>Activity-group readiness</div>
+        <div style={sectionLabel()}>Group readiness</div>
         <div style={{ ...helperText(), marginTop: 7 }}>
           {activityGroupReadiness
             ? `${cleanText(
                 activityGroupReadiness.primary_next_action?.label,
-                "Review activity-group readiness"
-              )}. ${activityGroupReadyTotal} of ${visibleActivityGroups.length} group-like units are ready for future activity-group planning.`
-            : "GSN could not load the read-only activity-group readiness map for this Community Domain."}
+                "Review group readiness"
+              )}. ${activityGroupReadyTotal} of ${visibleActivityGroups.length} units are ready for future group planning.`
+            : "GSN could not load the group readiness map for this Community Domain."}
         </div>
         {factGrid([
           ["Candidates", activityGroupSummary.activity_group_candidate_count],
-          ["Nodes", activityGroupSummary.node_count],
+          ["Units", activityGroupSummary.node_count],
           [
-            "Node members",
+            "Unit members",
             activityGroupSummary.active_node_memberships == null
               ? "admin only"
               : countValue(activityGroupSummary.active_node_memberships),
@@ -383,7 +376,7 @@ export default function CommunityDomainStructurePlanningPanels({
         ])}
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 10 }}>
           <span style={statusBadge(activityGroupSummary.activity_group_engine_status)}>
-            Group engine: {compactStatus(activityGroupSummary.activity_group_engine_status)}
+            Group setup: {compactStatus(activityGroupSummary.activity_group_engine_status)}
           </span>
           <span style={statusBadge("not_created_in_this_slice")}>
             Records created: {countValue(activityGroupSummary.activity_group_records_created)}
@@ -394,20 +387,19 @@ export default function CommunityDomainStructurePlanningPanels({
         </div>
         {blockedActivityGroups.length ? (
           <div style={{ ...helperText(), marginTop: 9 }}>
-            Group-like units needing attention:{" "}
+            Group candidates needing attention:{" "}
             <strong>
               {blockedActivityGroups
                 .slice(0, 3)
-                .map((group) => cleanText(group.node?.name, "activity-group candidate"))
+                .map((group) => cleanText(group.node?.name, "group candidate"))
                 .join(", ")}
             </strong>
             .
           </div>
         ) : activityGroupReadiness ? (
           <div style={{ ...helperText(), marginTop: 9 }}>
-            No blocked activity-group candidate is visible, but the activity-group
-            engine, attendance, payment, and Trust Passport writes are still not
-            connected here.
+            No blocked group candidate is visible, but group setup, attendance,
+            payment, and trust records are still handled elsewhere.
           </div>
         ) : null}
         {visibleActivityGroups.length ? (
@@ -415,10 +407,10 @@ export default function CommunityDomainStructurePlanningPanels({
             {visibleActivityGroups.slice(0, 4).map((group) =>
               statusRow({
                 rowKey: cleanText(group.node?.id, cleanText(group.node?.name, "activity-group")),
-                title: cleanText(group.node?.name, "Activity-group candidate"),
+                title: cleanText(group.node?.name, "Group candidate"),
                 detail: cleanText(
                   group.next_step,
-                  "Keep this as group planning until a real activity-group engine exists."
+                  "Keep this as group planning until a real group setup flow exists."
                 ),
                 status: group.activity_group_status,
               })
@@ -426,10 +418,9 @@ export default function CommunityDomainStructurePlanningPanels({
           </div>
         ) : null}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          This activity-group readiness map is read-only group planning. It does not
-          create activity groups, ROSCA cycles, meetings, attendance records, payment
-          instructions, ledger entries, notifications, marketplace records, money
-          movement, TrustSlips, Trust Passport entries, or private member activity.
+          This view only shows group planning. It does not create groups, ROSCA
+          cycles, attendance, payment records, marketplace records, notifications,
+          trust records, or private member records.
         </div>
       </div>
     </>

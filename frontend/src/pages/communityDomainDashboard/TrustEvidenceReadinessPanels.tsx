@@ -227,7 +227,7 @@ export default function CommunityDomainTrustEvidenceReadinessPanels({
                 evidenceRecordReadiness.primary_next_action?.label,
                 "Review evidence record readiness"
               )}. ${evidenceRecordReadyTotal} of ${visibleEvidenceRecordTypes.length} record types are ready for future evidence records.`
-            : "GSN could not load the read-only evidence record readiness view for this Community Domain."}
+            : "GSN could not load the evidence record readiness view for this Community Domain."}
         </div>
         {factGrid([
           [
@@ -281,10 +281,9 @@ export default function CommunityDomainTrustEvidenceReadinessPanels({
           </div>
         ) : null}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          This is read-only evidence-record readiness. It does not create evidence
+          This view only shows evidence-record readiness. It does not create
           records, upload files, issue credentials, publish proof, verify authority,
-          move money, activate billing, create marketplace activity, score trust, or
-          expose private evidence.
+          score trust, move money, or expose private evidence.
         </div>
       </div>
 
@@ -296,7 +295,7 @@ export default function CommunityDomainTrustEvidenceReadinessPanels({
                 evidenceReleaseReadiness.primary_next_action?.label,
                 "Review evidence release readiness"
               )}. ${evidenceReleaseReadyTotal} of ${visibleEvidenceReleaseLanes.length} release checks are ready.`
-            : "GSN could not load the read-only evidence release readiness view for this Community Domain."}
+            : "GSN could not load the evidence release readiness view for this Community Domain."}
         </div>
         {factGrid([
           [
@@ -351,11 +350,10 @@ export default function CommunityDomainTrustEvidenceReadinessPanels({
           </div>
         ) : null}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          This is read-only evidence-release readiness. It does not release evidence,
-          expose files, publish proof, create public URLs or QR codes, issue
-          credentials, share records, verify authority, move money, activate billing,
-          create marketplace activity, change permissions, score trust, or expose
-          private evidence.
+          This view only shows public-release readiness. It does not release
+          evidence, publish proof, create public links or QR codes, issue
+          credentials, share records, change permissions, score trust, move money,
+          or expose private evidence.
         </div>
       </div>
 
@@ -367,7 +365,7 @@ export default function CommunityDomainTrustEvidenceReadinessPanels({
                 trustRelayReadiness.primary_next_action?.label,
                 "Review trust relay readiness"
               )}. ${trustRelayReadyTotal} of ${visibleTrustRelayLanes.length} relay checks are ready.`
-            : "GSN could not load the read-only trust relay readiness view for this Community Domain."}
+            : "GSN could not load the trust relay readiness view for this Community Domain."}
         </div>
         {factGrid([
           ["Relay engine", compactStatus(trustRelaySummary.trust_relay_engine_status)],
@@ -408,10 +406,10 @@ export default function CommunityDomainTrustEvidenceReadinessPanels({
           </div>
         ) : null}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          This is read-only trust-relay readiness. It does not create relay paths,
-          publish proof, repost Spotlight, create cross-domain discovery, share
-          private records, issue credentials, create marketplace activity, create
-          affiliations, activate billing, or move money.
+          This view only shows relay readiness. It does not create relay paths,
+          publish proof, repost Spotlight, create discovery or affiliations, share
+          private records, issue credentials, create marketplace activity, activate
+          billing, or move money.
         </div>
       </div>
 
@@ -423,7 +421,7 @@ export default function CommunityDomainTrustEvidenceReadinessPanels({
                 notificationScopeReadiness.primary_next_action?.label,
                 "Review notification scope readiness"
               )}. ${notificationScopeReadyTotal} of ${visibleNotificationScopeLanes.length} audience checks are ready.`
-            : "GSN could not load the read-only notification scope readiness view for this Community Domain."}
+            : "GSN could not load the notification scope readiness view for this Community Domain."}
         </div>
         {factGrid([
           [
@@ -477,10 +475,10 @@ export default function CommunityDomainTrustEvidenceReadinessPanels({
           </div>
         ) : null}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          This is read-only audience readiness. It does not send messages, create
-          notification jobs or audience lists, publish announcements, expose member
-          lists, create marketplace records, move money, issue TrustSlips, write Trust
-          Passport entries, or expose private records.
+          This view only shows audience readiness. It does not send messages,
+          create delivery jobs or audience lists, publish announcements, expose
+          member lists, create marketplace records, move money, create trust
+          records, or expose private records.
         </div>
       </div>
 
@@ -492,7 +490,7 @@ export default function CommunityDomainTrustEvidenceReadinessPanels({
                 trustMobility.primary_next_action?.label,
                 "Review trust mobility readiness"
               )}. ${trustMobilityReadyTotal} of ${visibleTrustMobilityLanes.length} portability checks are ready.`
-            : "GSN could not load the read-only trust mobility view for this Community Domain."}
+            : "GSN could not load the trust mobility view for this Community Domain."}
         </div>
         {factGrid([
           ["Authority", compactStatus(trustMobilitySummary.verification_status)],
@@ -536,11 +534,10 @@ export default function CommunityDomainTrustEvidenceReadinessPanels({
           </div>
         ) : null}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          This is read-only trust-mobility readiness. It does not create TrustSlips,
-          write Trust Passport entries, create credentials or relay paths, release
-          evidence, expose files, verify authority, publish proof, create outward
-          links, move money, activate billing, create marketplace activity, create a
-          social Community, or expose private records.
+          This view only shows trust-mobility readiness. It does not create trust
+          records, credentials, relay paths, public proof, outward links,
+          marketplace activity, separate communities, move money, or expose
+          private records.
         </div>
       </div>
     </>

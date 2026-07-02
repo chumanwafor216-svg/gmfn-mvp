@@ -228,7 +228,7 @@ export default function CommunityDomainServiceBoundaryPanels({
                 networkExchangeMap.primary_next_action?.label,
                 "Review network exchange readiness"
               )}. ${networkExchangeReadyTotal} of ${visibleNetworkExchangeLanes.length} outside-network checks are ready.`
-            : "GSN could not load the read-only network exchange map for this Community Domain."}
+            : "GSN could not load the network exchange map for this Community Domain."}
         </div>
         {factGrid([
           ["Domain exchange", compactStatus(networkExchangeSummary.domain_exchange_status)],
@@ -293,13 +293,10 @@ export default function CommunityDomainServiceBoundaryPanels({
           </div>
         ) : null}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          This network exchange map is read-only outside-network planning. It does
-          not create domain-to-domain exchange, cross-domain discovery, public
-          member directories, public search, social Community links, affiliation
-          decisions, marketplace records, shops, listings, demand, Spotlight, vault
-          links, TrustSlips, Trust Passport entries, public proof, payment
-          instructions, finance records, loans, guarantees, money movement, or
-          private member, review, evidence, marketplace, or finance exposure.
+          This view only shows outside-network readiness. It does not create
+          exchange, discovery, directories, affiliations, marketplace activity,
+          trust records, proof, payment records, loans, guarantees, money
+          movement, or private records.
         </div>
       </div>
 
@@ -311,7 +308,7 @@ export default function CommunityDomainServiceBoundaryPanels({
                 recordPrivacyMap.primary_next_action?.label,
                 "Review record privacy readiness"
               )}. ${recordPrivacyReadyTotal} of ${visibleRecordPrivacyLanes.length} privacy checks are ready.`
-            : "GSN could not load the read-only record privacy map for this Community Domain."}
+            : "GSN could not load the record privacy map for this Community Domain."}
         </div>
         {factGrid([
           [
@@ -377,14 +374,9 @@ export default function CommunityDomainServiceBoundaryPanels({
           </div>
         ) : null}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          This record privacy map is read-only privacy planning. It does not change
-          permissions, create access-control rules, create members, expose member
-          lists, expose node rosters, publish hierarchies, expose review payloads,
-          expose evidence files, expose storage keys, publish proof, issue
-          TrustSlips, write Trust Passport records, expose marketplace activity,
-          expose finance records, create cross-domain discovery, create public
-          search, create member directories, share records across institutions, or
-          move money.
+          This view only shows privacy readiness. It does not change permissions,
+          add members, expose rosters, publish hierarchy or proof, create trust
+          records, share private records, open public search, or move money.
         </div>
       </div>
 
@@ -396,13 +388,13 @@ export default function CommunityDomainServiceBoundaryPanels({
                 configurationMap.primary_next_action?.label,
                 "Review setup boundaries"
               )}. ${configurationMapReadyTotal} of ${visibleConfigurationMapLanes.length} setup checks are ready.`
-            : "GSN could not load the read-only setup map for this Community Domain."}
+            : "GSN could not load the setup map for this Community Domain."}
         </div>
         {factGrid([
           ["Mode", compactStatus(configurationMapSummary.configuration_mode)],
-          ["Custom schema", compactStatus(configurationMapSummary.custom_schema_status)],
-          ["Custom billing", compactStatus(configurationMapSummary.custom_billing_status)],
-          ["Modules", countValue(configurationMapBlueprint.default_modules?.length)],
+          ["Special data model", compactStatus(configurationMapSummary.custom_schema_status)],
+          ["Special billing", compactStatus(configurationMapSummary.custom_billing_status)],
+          ["Services", countValue(configurationMapBlueprint.default_modules?.length)],
           [
             "Operating units",
             countValue(configurationMapSummary.active_operating_unit_count),
@@ -415,8 +407,8 @@ export default function CommunityDomainServiceBoundaryPanels({
           ],
         ])}
         {statusChips([
-          ["Tenant", configurationMapSummary.custom_tenant_status],
-          ["Permissions", configurationMapSummary.custom_permission_status],
+          ["Dedicated setup", configurationMapSummary.custom_tenant_status],
+          ["Access rules", configurationMapSummary.custom_permission_status],
           [
             "Public profile",
             configurationMapSummary.public_profile_present ? "ready" : "needed",
@@ -437,8 +429,8 @@ export default function CommunityDomainServiceBoundaryPanels({
           </div>
         ) : configurationMap ? (
           <div style={{ ...helperText(), marginTop: 9 }}>
-            No blocked setup check is visible, but this is still template setup,
-            not a custom platform build.
+            No blocked setup check is visible, but this is still guided setup,
+            not a private platform build.
           </div>
         ) : null}
         {visibleConfigurationMapLanes.length ? (
@@ -449,7 +441,7 @@ export default function CommunityDomainServiceBoundaryPanels({
                 cleanText(lane.label, "Setup check"),
                 cleanText(
                   lane.next_step,
-                  "Keep this as configurable template planning before requesting custom product work."
+                  "Keep this as guided setup planning before requesting special product work."
                 ),
                 lane.status
               )
@@ -457,13 +449,10 @@ export default function CommunityDomainServiceBoundaryPanels({
           </div>
         ) : null}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          This setup map is read-only service planning. It does not
-          create a custom schema, custom tenant, custom billing package, custom
-          permission model, custom database table, custom field, per-client code
-          fork, nodes, members, roles, policies, reviews, evidence, service
-          settings, payments, entitlements, marketplace records, social Community
-          links, TrustSlips, Trust Passport records, public proof, or private record
-          exposure.
+          This view only shows setup readiness. It does not create special
+          builds, units, members, roles, policies, reviews, evidence, service
+          settings, payments, entitlements, marketplace records, trust records,
+          proof, or private records.
         </div>
       </div>
 
@@ -475,7 +464,7 @@ export default function CommunityDomainServiceBoundaryPanels({
                 complianceMap.primary_next_action?.label,
                 "Review compliance and risk boundaries"
               )}. ${complianceMapReadyTotal} of ${visibleComplianceMapLanes.length} compliance checks are ready.`
-            : "GSN could not load the read-only compliance map for this Community Domain."}
+            : "GSN could not load the compliance map for this Community Domain."}
         </div>
         {factGrid([
           ["Domain", compactStatus(complianceMapSummary.domain_status)],
@@ -539,14 +528,11 @@ export default function CommunityDomainServiceBoundaryPanels({
           </div>
         ) : null}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          This compliance map is read-only compliance planning and risk posture
-          mapping, not legal advice. It does not certify compliance, create a
-          compliance decision, verify legal authority, upload evidence, expose
-          storage keys, expose member lists, create policy, decide reviews, create
-          marketplace or finance records, create payment instructions, move money,
-          create invoices, activate subscriptions, share records across
-          institutions, publish public proof, issue TrustSlips, write Trust
-          Passport records, or expose private member, review, evidence, or finance
+          This view only shows compliance planning. It is not legal advice or a
+          certificate. It does not certify compliance, verify authority, upload
+          evidence, expose member lists, create policy, decide reviews, create
+          payment or finance records, move money, activate subscriptions, share
+          records, publish proof, create trust records, or expose private
           records.
         </div>
       </div>
@@ -557,11 +543,11 @@ export default function CommunityDomainServiceBoundaryPanels({
           {appealReadiness
             ? `${cleanText(
                 appealReadiness.primary_next_action?.label,
-                "Keep appeal path planning read-only"
+                "Keep appeal path planning separate"
               )}. ${appealReadinessSignalTotal} review signal${
                 appealReadinessSignalTotal === 1 ? "" : "s"
               } are visible across ${visibleAppealReadinessLanes.length} future appeal paths.`
-            : "GSN could not load the read-only appeal readiness view for this Community Domain."}
+            : "GSN could not load the appeal readiness view for this Community Domain."}
         </div>
         {factGrid([
           ["Appeal engine", compactStatus(appealReadinessSummary.appeal_engine_status)],
@@ -583,7 +569,7 @@ export default function CommunityDomainServiceBoundaryPanels({
         ])}
         {blockedAppealReadinessLanes.length ? (
           <div style={{ ...helperText(), marginTop: 9 }}>
-            Future appeal paths still read-only:{" "}
+            Future appeal paths still need separate review:{" "}
             <strong>
               {blockedAppealReadinessLanes
                 .slice(0, 3)
@@ -613,13 +599,11 @@ export default function CommunityDomainServiceBoundaryPanels({
           </div>
         ) : null}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          This appeal readiness view is read-only fairness and dispute planning. It
-          does not create appeals, reopen rejected membership, assign mediators,
-          decide disputes, grant roles, verify or revoke evidence, publish content,
-          grant shop or vault access, move nodes, reverse payments, move money,
-          create loans, issue TrustSlips, write Trust Passport entries, share records
-          across institutions, or expose private member, review, evidence, or
-          finance records.
+          This view only shows fairness readiness. It does not create appeals,
+          reopen membership, assign mediators, decide disputes, change roles,
+          verify or revoke evidence, publish content, grant shop or vault access,
+          reverse payments, move money, create loans, create trust records, share
+          records, or expose private records.
         </div>
       </div>
     </>

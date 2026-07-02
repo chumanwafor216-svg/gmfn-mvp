@@ -255,8 +255,9 @@ export default function CommunityDomainIdentityReadinessPanels({
           </div>
         )}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          This identity summary does not expose owner contact details, private member
-          lists, finance records, evidence files, or verification proof.
+          This summary shows public-safe identity only. It does not expose owner
+          contact details, private member lists, finance records, evidence files,
+          or verification proof.
         </div>
       </div>
 
@@ -268,7 +269,7 @@ export default function CommunityDomainIdentityReadinessPanels({
                 institutionalProfile.primary_next_action?.label,
                 "Review the institutional profile"
               )}. ${institutionalProfileReadyTotal} of ${visibleInstitutionalProfileLanes.length} institutional checks are ready.`
-            : "GSN could not load the read-only institutional profile for this Community Domain."}
+            : "GSN could not load the institutional profile for this Community Domain."}
         </div>
         {factGrid([
           [
@@ -352,22 +353,22 @@ export default function CommunityDomainIdentityReadinessPanels({
           </div>
         ) : null}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          This is read-only institutional profile readiness. It does not create
-          structures, members, policies, reviews, evidence, billing packages, shops,
-          payments, finance records, social Community links, verification, activation,
-          public pages, or private records.
+          This view only shows institutional profile readiness. It does not create
+          structures, members, policies, reviews, evidence, billing packages,
+          shops, payments, finance records, community links, verification,
+          activation, public pages, or private records.
         </div>
       </div>
 
       <div style={softCard()}>
-        <div style={sectionLabel()}>Social bridge readiness</div>
+        <div style={sectionLabel()}>Community bridge readiness</div>
         <div style={{ ...helperText(), marginTop: 7 }}>
           {socialBridge
             ? `${cleanText(
                 socialBridge.primary_next_action?.label,
-                "Review social bridge boundaries"
+                "Review community bridge boundaries"
               )}. ${socialBridgeReadyTotal} of ${visibleSocialBridgeLanes.length} bridge checks are ready.`
-            : "GSN could not load the read-only social bridge view for this Community Domain."}
+            : "GSN could not load the community bridge view for this Community Domain."}
         </div>
         {factGrid([
           ["Bridge", compactStatus(socialBridgeSummary.bridge_status)],
@@ -393,7 +394,7 @@ export default function CommunityDomainIdentityReadinessPanels({
           </div>
         ) : socialBridge ? (
           <div style={{ ...helperText(), marginTop: 9 }}>
-            No blocked social bridge lane is visible, but Community upgrade and
+            No blocked community bridge lane is visible, but Community upgrade and
             member movement are still not connected here.
           </div>
         ) : null}
@@ -401,7 +402,7 @@ export default function CommunityDomainIdentityReadinessPanels({
           <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
             {visibleSocialBridgeLanes.slice(0, 4).map((lane) =>
               statusRow(
-                cleanText(lane.lane_key, cleanText(lane.label, "social bridge")),
+                cleanText(lane.lane_key, cleanText(lane.label, "community bridge")),
                 cleanText(lane.label, "Bridge check"),
                 cleanText(
                   lane.next_step,
@@ -413,10 +414,11 @@ export default function CommunityDomainIdentityReadinessPanels({
           </div>
         ) : null}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          This is read-only social-bridge readiness. It does not create or upgrade a
-          social Community, set internal links, create or decide affiliations, copy or
-          invite members, move marketplace activity, activate billing, verify
-          authority, merge records, or expose private member records.
+          This view only shows community bridge readiness. It does not create or
+          upgrade an ordinary community, connect private records, decide
+          affiliations, copy or invite members, move marketplace activity,
+          activate billing, verify authority, merge records, or expose private
+          member records.
         </div>
       </div>
 
@@ -428,7 +430,7 @@ export default function CommunityDomainIdentityReadinessPanels({
                 affiliationReadiness.primary_next_action?.label,
                 "Review affiliation readiness"
               )}. ${affiliationReadyTotal} of ${visibleAffiliationLanes.length} affiliation checks are ready.`
-            : "GSN could not load the read-only affiliation readiness view for this Community Domain."}
+            : "GSN could not load the affiliation readiness view for this Community Domain."}
         </div>
         {factGrid([
           ["Bridge", compactStatus(affiliationSummary.bridge_status)],
@@ -484,11 +486,11 @@ export default function CommunityDomainIdentityReadinessPanels({
           </div>
         ) : null}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          This is read-only affiliation readiness. It does not create parent or child
-          Community Domain links, approve requests, set social Community links, copy
-          or transfer members, inherit policy, activate billing, verify authority,
-          publish public URLs, create marketplace activity, move money, issue
-          TrustSlips, write Trust Passport entries, or expose private records.
+          This view only shows affiliation readiness. It does not create parent
+          or child Community Domain links, approve requests, set community links,
+          copy or transfer members, inherit policy, activate billing, verify
+          authority, publish public links, create marketplace activity, move
+          money, create trust records, or expose private records.
         </div>
       </div>
     </>

@@ -111,7 +111,7 @@ export default function CommunityDomainStructurePreviewPanel({
     <div style={softCard()}>
       <div style={sectionLabel()}>Structure preview</div>
       <div style={{ ...helperText(), marginTop: 7 }}>
-        Root institution and first operating units, shown from the read-only Community Domain tree.
+        Root institution and first operating units, shown from the Community Domain tree.
       </div>
       {visibleStructureRows.length ? (
         <div style={{ display: "grid", gap: 8, marginTop: 10 }}>

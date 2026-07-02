@@ -111,7 +111,7 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /getCommunityDomainDashboard[\s\S]*setupPrimaryActionHasLane[\s\S]*hasServicesLane[\s\S]*setupPrimaryActionLaneKey === "verification"[\s\S]*\? "modules"[\s\S]*primaryActionFallbackNote[\s\S]*authority verification is shown there as a read-only readiness row[\s\S]*Open the \{primaryActionLaneLabel\} lane[\s\S]*deeper changes still use[\s\S]*owner\/admin tools that check permissions[\s\S]*does not create payment instructions[\s\S]*verify ownership/,
+  /getCommunityDomainDashboard[\s\S]*setupPrimaryActionHasLane[\s\S]*hasServicesLane[\s\S]*setupPrimaryActionLaneKey === "verification"[\s\S]*\? "modules"[\s\S]*primaryActionFallbackNote[\s\S]*authority verification is shown there as a readiness row[\s\S]*separate owner or admin path[\s\S]*Open the \{primaryActionLaneLabel\} lane[\s\S]*deeper changes still use[\s\S]*owner\/admin tools that check permissions[\s\S]*does not create payment steps[\s\S]*verify ownership/,
   "Community Domain dashboard page must use the scoped backend summary, route authority-verification readiness to Services instead of an unrelated lane, and keep payment, activation, and verification boundaries honest.",
   { frontend: true }
 );
@@ -167,7 +167,7 @@ assertContains(
 
 assertContains(
   "src/pages/communityDomainDashboard/BillingReadinessPanels.tsx",
-  /Capacity plan[\s\S]*package_name[\s\S]*limits_source[\s\S]*primary_next_action[\s\S]*Capacity attention[\s\S]*Used:[\s\S]*Limit:[\s\S]*Remaining:[\s\S]*This is read-only capacity guidance\. It does not increase limits, create\s+nodes, add members, assign roles, create shops, meter live usage, change\s+pricing, activate billing, verify authority, move money, publish a public\s+page, or expose private evidence/,
+  /Package capacity[\s\S]*package_name[\s\S]*limits_source[\s\S]*primary_next_action[\s\S]*Capacity attention[\s\S]*Used:[\s\S]*Limit:[\s\S]*Remaining:[\s\S]*This view only shows package limits[\s\S]*does not raise limits, add\s+units, members, or shops, change pricing or billing, publish pages,\s+move money, or expose private evidence/,
   "Community Domain dashboard Billing lane must show read-only package capacity without implying limit increases, writes, billing activation, pricing changes, money movement, publishing, or private evidence access.",
   { frontend: true }
 );
@@ -223,15 +223,22 @@ assertNotContains(
 
 assertContains(
   "src/pages/communityDomainDashboard/SetupIntelligenceCards.tsx",
-  /function setupReadinessItems[\s\S]*function setupPlanSteps[\s\S]*blockedSetupReadinessItems[\s\S]*visibleSetupPlanSteps[\s\S]*openSetupPlanSteps[\s\S]*Setup readiness[\s\S]*checks ready[\s\S]*setup checks still need attention[\s\S]*This is a read-only checklist[\s\S]*does not change membership,\s+billing, authority, payments, or private evidence/,
+  /function setupReadinessItems[\s\S]*function setupPlanSteps[\s\S]*blockedSetupReadinessItems[\s\S]*visibleSetupPlanSteps[\s\S]*openSetupPlanSteps[\s\S]*Setup readiness[\s\S]*checks ready[\s\S]*setup checks still need attention[\s\S]*This checklist only shows setup gaps[\s\S]*does not change membership,\s+billing, authority, payments, or private evidence/,
   "Lazy Community Domain setup intelligence component must derive setup readiness blockers from raw setup readiness and keep read-only boundary language.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/communityDomainDashboard/SetupIntelligenceCards.tsx",
-  /Setup plan[\s\S]*steps complete[\s\S]*Current phase:[\s\S]*primary_next_action[\s\S]*missing item[\s\S]*admin guided[\s\S]*This is a read-only setup plan[\s\S]*does not change structure,\s+policy, billing, public pages, money, or private evidence/,
+  /Setup plan[\s\S]*steps complete[\s\S]*Current phase:[\s\S]*primary_next_action[\s\S]*missing item[\s\S]*admin guided[\s\S]*view only[\s\S]*This plan only shows next setup steps[\s\S]*does not change structure,\s+policy, billing, public pages, money, or private evidence/,
   "Lazy Community Domain setup intelligence component must derive setup plan steps from raw setup plan and avoid implying setup writes, authority verification, publishing, money movement, or private evidence access.",
+  { frontend: true }
+);
+
+assertNotContains(
+  "src/pages/communityDomainDashboard/SetupIntelligenceCards.tsx",
+  /read-only setup (checklist|plan)|read-only readiness checklist|read-only setup plan|Read only/,
+  "Community Domain setup intelligence visible copy must avoid old read-only setup wording.",
   { frontend: true }
 );
 
@@ -272,7 +279,7 @@ assertContains(
 
 assertContains(
   "src/pages/communityDomainDashboard/ServiceReadinessPanels.tsx",
-  /Service readiness[\s\S]*Billing[\s\S]*Settings[\s\S]*This is read-only service readiness[\s\S]*does not enable services,\s+activate billing, grant permissions, publish Spotlight, create shops,\s+open vault links, or expose private member activity/,
+  /Service readiness[\s\S]*Billing[\s\S]*Settings[\s\S]*This view only shows service readiness[\s\S]*does not turn on services,\s+activate billing, grant permissions, publish Spotlight, create shops,\s+open vault links, or expose private member records/,
   "Community Domain dashboard Services lane must use read-only module-scope readiness rows for core services, billing, and settings without implying activation or private-record writes.",
   { frontend: true }
 );
@@ -300,21 +307,21 @@ assertContains(
 
 assertContains(
   "src/pages/communityDomainDashboard/ServiceBoundaryPanels.tsx",
-  /Network exchange readiness[\s\S]*primary_next_action[\s\S]*domain_exchange_status[\s\S]*cross_domain_discovery_status[\s\S]*active_affiliations[\s\S]*external_finance_status[\s\S]*does\s+not create domain-to-domain exchange, cross-domain discovery, public\s+member directories, public search, social Community links, affiliation\s+decisions, marketplace records, shops, listings, demand, Spotlight, vault\s+links, TrustSlips, Trust Passport entries, public proof, payment\s+instructions, finance records, loans, guarantees, money movement, or\s+private member, review, evidence, marketplace, or finance exposure/,
+  /Network exchange readiness[\s\S]*primary_next_action[\s\S]*domain_exchange_status[\s\S]*cross_domain_discovery_status[\s\S]*active_affiliations[\s\S]*external_finance_status[\s\S]*This view only shows outside-network readiness[\s\S]*does not create\s+exchange, discovery, directories, affiliations, marketplace activity,\s+trust records, proof, payment records, loans, guarantees, money\s+movement, or private records/,
   "Community Domain dashboard Services lane must show read-only network exchange readiness without implying domain exchange, cross-domain discovery, public directories/search, social Community links, affiliation decisions, marketplace/shop/demand/Spotlight/vault writes, TrustSlips, Trust Passport writes, public proof, payment/finance records, loans, guarantees, money movement, or private record exposure.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/communityDomainDashboard/ServiceBoundaryPanels.tsx",
-  /Record privacy readiness[\s\S]*primary_next_action[\s\S]*public_url_status[\s\S]*marketplace_private_record_status[\s\S]*finance_private_record_status[\s\S]*cross_domain_record_sharing_status[\s\S]*does not change\s+permissions, create access-control rules, create members, expose member\s+lists, expose node rosters, publish hierarchies, expose review payloads,\s+expose evidence files, expose storage keys, publish proof, issue\s+TrustSlips, write Trust Passport records, expose marketplace activity,\s+expose finance records, create cross-domain discovery, create public\s+search, create member directories, share records across institutions, or\s+move money/,
+  /Record privacy readiness[\s\S]*primary_next_action[\s\S]*public_url_status[\s\S]*marketplace_private_record_status[\s\S]*finance_private_record_status[\s\S]*cross_domain_record_sharing_status[\s\S]*This view only shows privacy readiness[\s\S]*does not change permissions,\s+add members, expose rosters, publish hierarchy or proof, create trust\s+records, share private records, open public search, or move money/,
   "Community Domain dashboard Services lane must show read-only record privacy readiness without implying permission changes, access-control writes, member creation, member/node exposure, hierarchy publication, review/evidence/storage exposure, proof publishing, TrustSlips, Trust Passport writes, marketplace/finance exposure, cross-domain discovery, public search/directories, record sharing, or money movement.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/communityDomainDashboard/ServiceBoundaryPanels.tsx",
-  /Setup map[\s\S]*primary_next_action[\s\S]*configuration_mode[\s\S]*custom_schema_status[\s\S]*custom_billing_status[\s\S]*custom_tenant_status[\s\S]*custom_permission_status[\s\S]*does not\s+create a custom schema, custom tenant, custom billing package, custom\s+permission model, custom database table, custom field, per-client code\s+fork, nodes, members, roles, policies, reviews, evidence, service\s+settings, payments, entitlements, marketplace records, social Community\s+links, TrustSlips, Trust Passport records, public proof, or private record\s+exposure/,
+  /Setup map[\s\S]*primary_next_action[\s\S]*configuration_mode[\s\S]*Special data model[\s\S]*custom_schema_status[\s\S]*Special billing[\s\S]*custom_billing_status[\s\S]*Services[\s\S]*default_modules[\s\S]*Dedicated setup[\s\S]*custom_tenant_status[\s\S]*Access rules[\s\S]*custom_permission_status[\s\S]*This view only shows setup readiness[\s\S]*does not create special\s+builds, units, members, roles, policies, reviews, evidence, service\s+settings, payments, entitlements, marketplace records, trust records,\s+proof, or private records/,
   "Community Domain dashboard Services lane must show read-only setup planning without implying custom schema, tenant, billing, permissions, fields, code fork, node/member/role/policy/review/evidence/service-setting writes, payments, entitlements, marketplace records, social Community links, TrustSlips, Trust Passport writes, public proof, or private record exposure.",
   { frontend: true }
 );
@@ -328,21 +335,28 @@ assertNotContains(
 
 assertContains(
   "src/pages/communityDomainDashboard/ServiceBoundaryPanels.tsx",
-  /Compliance map[\s\S]*primary_next_action[\s\S]*compliance_engine_status[\s\S]*legal_advice_status[\s\S]*payment_compliance_status[\s\S]*cross_domain_record_sharing_status[\s\S]*not legal advice[\s\S]*does not certify compliance, create a\s+compliance decision, verify legal authority, upload evidence, expose\s+storage keys, expose member lists, create policy, decide reviews, create\s+marketplace or finance records, create payment instructions, move money,\s+create invoices, activate subscriptions, share records across\s+institutions, publish public proof, issue TrustSlips, write Trust\s+Passport records, or expose private member, review, evidence, or finance\s+records/,
+  /Compliance map[\s\S]*primary_next_action[\s\S]*compliance_engine_status[\s\S]*legal_advice_status[\s\S]*payment_compliance_status[\s\S]*cross_domain_record_sharing_status[\s\S]*This view only shows compliance planning[\s\S]*not legal advice or a\s+certificate[\s\S]*does not certify compliance, verify authority, upload\s+evidence, expose member lists, create policy, decide reviews, create\s+payment or finance records, move money, activate subscriptions, share\s+records, publish proof, create trust records, or expose private\s+records/,
   "Community Domain dashboard Services lane must show read-only compliance planning without implying legal advice, compliance certification/decision, legal authority verification, evidence upload, storage/member exposure, policy/review writes, marketplace/finance/payment/invoice/subscription writes, record sharing, public proof, TrustSlips, Trust Passport writes, private exposure, or money movement.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/communityDomainDashboard/ServiceBoundaryPanels.tsx",
-  /Appeal readiness[\s\S]*primary_next_action[\s\S]*appeal_engine_status[\s\S]*appeal_records_created[\s\S]*mediator_assignment_status[\s\S]*appeal_decision_status[\s\S]*does not create appeals, reopen rejected membership, assign mediators,\s+decide disputes, grant roles, verify or revoke evidence, publish content,\s+grant shop or vault access, move nodes, reverse payments, move money,\s+create loans, issue TrustSlips, write Trust Passport entries, share records\s+across institutions, or expose private member, review, evidence, or\s+finance records/,
+  /Appeal readiness[\s\S]*primary_next_action[\s\S]*appeal_engine_status[\s\S]*appeal_records_created[\s\S]*mediator_assignment_status[\s\S]*appeal_decision_status[\s\S]*This view only shows fairness readiness[\s\S]*does not create appeals,\s+reopen membership, assign mediators, decide disputes, change roles,\s+verify or revoke evidence, publish content, grant shop or vault access,\s+reverse payments, move money, create loans, create trust records, share\s+records, or expose private records/,
   "Community Domain dashboard Services lane must show read-only appeal readiness without implying appeal creation, membership reopening, mediator assignment, dispute decisions, role grants, evidence revocation/verification, content publication, shop/vault grants, node movement, payment reversal, money movement, loan creation, TrustSlips, Trust Passport writes, record sharing, or private exposure.",
+  { frontend: true }
+);
+
+assertNotContains(
+  "src/pages/communityDomainDashboard/ServiceBoundaryPanels.tsx",
+  /GSN could not load the read-only (network exchange map|record privacy map|setup map|compliance map|appeal readiness view)/,
+  "Community Domain Service Boundary load states must avoid old read-only map/view wording in visible fallback copy.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/communityDomainDashboard/ServiceReadinessPanels.tsx",
-  /Service settings projection[\s\S]*serviceSettingsProjection\.enabled_total[\s\S]*serviceSettingsProjection\.optional_total[\s\S]*visibleServiceSettingsItems[\s\S]*enabledServiceSettingsItems[\s\S]*optionalServiceSettingsItems[\s\S]*This is read-only template guidance[\s\S]*does not save settings, enable\s+modules, activate billing, grant permissions, create shops, publish\s+Spotlight, open vault links, or expose private records/,
+  /visibleServiceSettingsItems[\s\S]*enabledServiceSettingsItems[\s\S]*optionalServiceSettingsItems[\s\S]*Service settings view[\s\S]*serviceSettingsProjection\?\.enabled_total[\s\S]*serviceSettingsProjection\?\.optional_total[\s\S]*This view only shows service template guidance[\s\S]*does not save\s+settings, turn on services, activate billing, grant permissions,\s+create shops, publish Spotlight, open vault links, or expose private\s+records/,
   "Community Domain dashboard Services lane must show read-only service settings projection without implying persisted settings, module enablement/disablement, billing/domain activation, permission grants, shops, Spotlight, vault links, TrustSlips, Trust Passport writes, or private-record exposure.",
   { frontend: true }
 );
@@ -356,22 +370,29 @@ assertContains(
 
 assertContains(
   "src/pages/communityDomainDashboard/NodeProjectionGroups.tsx",
-  /groupKey="services-node-projections"[\s\S]*Local service projections[\s\S]*5 read-only node maps are grouped here[\s\S]*Node service map[\s\S]*Node privacy map[\s\S]*Node analytics map[\s\S]*Node communication map[\s\S]*Node vault map/,
+  /groupKey="services-node-projections"[\s\S]*Local service planning[\s\S]*5 local service views are grouped here[\s\S]*Unit service map[\s\S]*Unit privacy map[\s\S]*Unit analytics map[\s\S]*Unit communication map[\s\S]*Unit vault map/,
   "Lazy Community Domain node projection component must preserve the grouped Services projection cards.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/communityDomainDashboard/ServiceReadinessPanels.tsx",
-  /Economic participation[\s\S]*primary_next_action[\s\S]*economicParticipationTemplate\.marketplace_role[\s\S]*economicParticipationCounts\.finance_records[\s\S]*This is read-only economic readiness[\s\S]*does not create shops,\s+listings, demand, Spotlight, vault links, payment instructions, finance\s+records, billing changes, social Community links, or private member\s+activity/,
+  /Economic participation[\s\S]*primary_next_action[\s\S]*economicParticipationTemplate\.marketplace_role[\s\S]*Units[\s\S]*economicParticipationCounts\.nodes[\s\S]*economicParticipationCounts\.finance_records[\s\S]*This view only shows economic readiness[\s\S]*does not create shops,\s+listings, demand, Spotlight, vault links, payment steps, finance\s+records, billing changes, community links, or private member records/,
   "Community Domain dashboard Services lane must show read-only economic participation without implying marketplace/shop/listing/demand/Spotlight/vault creation, money movement, payment instructions, finance records, trust verification, billing/domain activation, social Community creation, or private activity exposure.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/communityDomainDashboard/ServiceReadinessPanels.tsx",
-  /Network presence[\s\S]*primary_next_action[\s\S]*networkPresenceStatus\.public_url_status[\s\S]*networkPresenceStatus\.social_community_bridge_status[\s\S]*This is read-only public-presence guidance[\s\S]*does not publish a\s+public page, finalize the domain URL format, create outward links,\s+verify the domain, create marketplace or Spotlight exposure, activate\s+billing, or expose private member activity/,
+  /Network presence[\s\S]*primary_next_action[\s\S]*networkPresenceStatus\.public_url_status[\s\S]*networkPresenceStatus\.social_community_bridge_status[\s\S]*This view only shows public-presence readiness[\s\S]*does not publish a\s+public page, finalize the domain link, create outward links, verify the\s+domain, create marketplace or Spotlight exposure, activate billing, or\s+expose private member records/,
   "Community Domain dashboard Services lane must show read-only network presence without implying public publishing, URL finalization, outward links, domain verification, marketplace exposure, Spotlight placement, vault links, social Community bridge creation, billing/domain activation, or private activity exposure.",
+  { frontend: true }
+);
+
+assertNotContains(
+  "src/pages/communityDomainDashboard/ServiceReadinessPanels.tsx",
+  /GSN could not load the read-only (service settings view|economic participation view|network presence view)/,
+  "Community Domain Service Readiness load states must avoid old read-only view wording in visible fallback copy.",
   { frontend: true }
 );
 
@@ -384,21 +405,21 @@ assertContains(
 
 assertContains(
   "src/pages/communityDomainDashboard/NodeProjectionGroups.tsx",
-  /Node autonomy map[\s\S]*locally_governed[\s\S]*needs_local_governance[\s\S]*This is a read-only local authority view[\s\S]*does not grant authority, assign roles, change structure, activate billing, move money, publish proof, create finance or marketplace records, or expose private member activity/,
+  /Unit authority map[\s\S]*locally_governed[\s\S]*needs_local_governance[\s\S]*This view only shows local authority readiness[\s\S]*does not grant authority, assign roles, change structure, activate billing, move money, publish proof, create records, or expose private member records/,
   "Community Domain dashboard Structure lane must show read-only node autonomy without implying local authority grants, role/policy writes, inheritance changes, node splits, separate domains, billing, marketplace/finance records, money movement, proof, TrustSlips, Trust Passport writes, or private activity exposure.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/communityDomainDashboard/NodeProjectionGroups.tsx",
-  /Node economic map[\s\S]*marketplace_role[\s\S]*finance_records[\s\S]*This is a read-only local economy view[\s\S]*does not create shops, listings, demand, Spotlight, vault links, payment instructions, loans, finance records, separate domains, proof, or private member activity/,
+  /Unit economy map[\s\S]*marketplace_role[\s\S]*finance_records[\s\S]*This view only shows local economy readiness[\s\S]*does not create shops, listings, demand, Spotlight, vault links, payment steps, loans, finance records, separate domains, proof, or private member records/,
   "Community Domain dashboard Structure lane must show read-only node economic planning without implying marketplace/shop/listing/demand/Spotlight/vault writes, payment instructions, finance records, loans, money movement, trust verification, proof, TrustSlips, Trust Passport writes, separate domains, or private activity exposure.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/communityDomainDashboard/NodeProjectionGroups.tsx",
-  /Node activity map[\s\S]*scheduled_activities[\s\S]*paid_activities[\s\S]*attendance_records[\s\S]*This is a read-only local activity view[\s\S]*does not create activities, attendance, notices, payment instructions, evidence, TrustSlips, Trust Passport entries, finance or marketplace records, money movement, or private member activity/,
+  /Unit activity map[\s\S]*scheduled_activities[\s\S]*paid_activities[\s\S]*attendance_records[\s\S]*This view only shows local activity readiness[\s\S]*does not create activities, attendance, notices, payment steps, evidence, trust records, money movement, or private member records/,
   "Community Domain dashboard Structure lane must show read-only node activity planning without implying event/meeting/class/service/travel/paid-activity/dues/attendance/reminder/notification/payment/evidence writes, TrustSlips, Trust Passport entries, marketplace/finance records, money movement, or private activity exposure.",
   { frontend: true }
 );
@@ -412,7 +433,7 @@ assertContains(
 
 assertContains(
   "src/pages/communityDomainDashboard/NodeProjectionGroups.tsx",
-  /Node trust map[\s\S]*local_trust_ready[\s\S]*review_records[\s\S]*active_evidence_records[\s\S]*trustslips[\s\S]*This is a read-only local trust view[\s\S]*does not upload evidence, publish proof, issue TrustSlips, write Trust Passport entries, move money, create finance or marketplace records, or expose private member activity/,
+  /Unit trust map[\s\S]*local_trust_ready[\s\S]*review_records[\s\S]*active_evidence_records[\s\S]*Trust records[\s\S]*trustslips[\s\S]*This view only shows local trust readiness[\s\S]*does not upload evidence, publish proof, create trust records, move money, create records, or expose private member records/,
   "Community Domain dashboard must show read-only node trust planning without implying evidence upload, storage exposure, credentials, TrustSlips, Trust Passport writes, proof publication, legal verification, money movement, finance/marketplace records, or private activity exposure.",
   { frontend: true }
 );
@@ -447,28 +468,28 @@ assertContains(
 
 assertContains(
   "src/pages/communityDomainDashboard/NodeProjectionGroups.tsx",
-  /Node participation map[\s\S]*active_node_memberships[\s\S]*unplaced_domain_members[\s\S]*multi_node_members[\s\S]*This is a read-only member placement view[\s\S]*does not create invites, add or place members, assign roles, create a social Community, expose rosters, create finance or marketplace records, or expose private member activity/,
+  /Unit participation map[\s\S]*active_node_memberships[\s\S]*unplaced_domain_members[\s\S]*multi_node_members[\s\S]*This view only shows member placement readiness[\s\S]*does not create invites, add or place members, assign roles, create a separate community, expose rosters, create records, or expose private member records/,
   "Community Domain dashboard Members lane must show read-only node participation planning without implying invite/member/placement/role writes, social Community creation, roster exposure, marketplace/finance records, TrustSlips, Trust Passport writes, or private activity exposure.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/communityDomainDashboard/NodeProjectionGroups.tsx",
-  /Node service map[\s\S]*template_module_count[\s\S]*local_services_ready[\s\S]*live_service_records[\s\S]*vault_links[\s\S]*This is a read-only local service view[\s\S]*does not enable modules, save settings, activate billing, grant permissions, create events, shops, vault links, finance or marketplace records, or expose private member activity/,
+  /Unit service map[\s\S]*Service options[\s\S]*template_module_count[\s\S]*local_services_ready[\s\S]*live_service_records[\s\S]*vault_links[\s\S]*This view only shows local service readiness[\s\S]*does not turn on services, save settings, activate billing, grant permissions, create events, shops, vault links, records, or expose private member records/,
   "Community Domain dashboard must show read-only node service planning without implying module/settings/billing/permission/event/notification/shop/vault/marketplace/finance writes, TrustSlips, Trust Passport writes, or private activity exposure.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/communityDomainDashboard/NodeProjectionGroups.tsx",
-  /Node privacy map[\s\S]*member_visible[\s\S]*node_private[\s\S]*public_review_needed[\s\S]*cross_domain_shares[\s\S]*This is a read-only local privacy view[\s\S]*does not change permissions, publish hierarchy, expose members, rosters, evidence, storage keys, public pages, cross-institution records, or private member activity/,
+  /Unit privacy map[\s\S]*member_visible[\s\S]*Unit private[\s\S]*node_private[\s\S]*public_review_needed[\s\S]*cross_domain_shares[\s\S]*This view only shows local privacy readiness[\s\S]*does not change permissions, publish hierarchy, expose members, rosters, evidence, protected storage, public pages, institutional records, or private member records/,
   "Community Domain dashboard must show read-only node privacy planning without implying permission changes, hierarchy publication, member/node/evidence/storage exposure, public pages, institutional sharing, TrustSlips, Trust Passport writes, or private activity exposure.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/communityDomainDashboard/NodeProjectionGroups.tsx",
-  /Node analytics map[\s\S]*local_analytics_ready[\s\S]*review_records[\s\S]*active_evidence_records[\s\S]*marketplace_metrics[\s\S]*This is a read-only local analytics view[\s\S]*does not create telemetry, reports, dashboards, marketplace or finance metrics, TrustSlips, Trust Passport entries, or expose private member activity/,
+  /Unit analytics map[\s\S]*local_analytics_ready[\s\S]*review_records[\s\S]*active_evidence_records[\s\S]*Marketplace signals[\s\S]*marketplace_metrics[\s\S]*This view only shows local analytics readiness[\s\S]*does not create tracking records, reports, dashboards, marketplace or finance signals, trust records, or expose private member records/,
   "Community Domain dashboard must show read-only node analytics planning without implying telemetry, reports, live dashboards, marketplace/finance metrics, storage-key exposure, Trust Passport writes, TrustSlips, or private activity exposure.",
   { frontend: true }
 );
@@ -482,42 +503,42 @@ assertContains(
 
 assertContains(
   "src/pages/communityDomainDashboard/NodeProjectionGroups.tsx",
-  /Node domain-boundary map[\s\S]*child_domain_candidate[\s\S]*affiliate_review_needed[\s\S]*public_urls_published[\s\S]*This is a read-only domain-boundary view[\s\S]*does not create child domains, affiliate links, public URLs, billing changes, hierarchy splits, member transfers, legal verification, finance or marketplace records, or private member activity/,
+  /Unit boundary map[\s\S]*child_domain_candidate[\s\S]*affiliate_review_needed[\s\S]*public_urls_published[\s\S]*This view only shows domain-boundary readiness[\s\S]*does not create child domains, affiliate links, public URLs, billing changes, hierarchy splits, member transfers, legal verification, records, or private member records/,
   "Community Domain dashboard Structure lane must show read-only node domain-boundary planning without implying child-domain creation, affiliate links, URL publication, billing, hierarchy splits, member transfer, legal verification, marketplace/finance records, TrustSlips, Trust Passport writes, or private activity exposure.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/communityDomainDashboard/NodeProjectionGroups.tsx",
-  /Node evidence authority map[\s\S]*local_evidence_authority_ready[\s\S]*needs_local_evidence_issuer[\s\S]*public_evidence_review_needed[\s\S]*credentials_issued[\s\S]*This is a read-only evidence authority view[\s\S]*does not upload or verify evidence, publish proof, issue credentials, create finance or marketplace records, verify legal authority, or expose private member activity/,
+  /Unit evidence authority map[\s\S]*local_evidence_authority_ready[\s\S]*needs_local_evidence_issuer[\s\S]*public_evidence_review_needed[\s\S]*credentials_issued[\s\S]*This view only shows local evidence authority[\s\S]*does not upload or verify evidence, publish proof, issue credentials, create records, verify legal authority, or expose private member records/,
   "Community Domain dashboard must show read-only node evidence-authority planning without implying evidence upload/verification/publication, storage or review payload exposure, credentials, TrustSlips, Trust Passport writes, marketplace/finance records, legal verification, or private activity exposure.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/communityDomainDashboard/NodeProjectionGroups.tsx",
-  /Node communication map[\s\S]*local_communication_ready[\s\S]*public_notice_review_needed[\s\S]*notices_created[\s\S]*notifications_sent[\s\S]*This is a read-only local communication view[\s\S]*does not create notices, send messages, publish announcements, schedule events, expose member lists, create finance or marketplace records, or expose private member activity/,
+  /Unit communication map[\s\S]*local_communication_ready[\s\S]*public_notice_review_needed[\s\S]*notices_created[\s\S]*notifications_sent[\s\S]*This view only shows local communication readiness[\s\S]*does not create notices, send messages, publish announcements, schedule events, expose member lists, create records, or expose private member records/,
   "Community Domain dashboard must show read-only node communication planning without implying notices, notifications, announcements, meetings, events, reminders, emergency notices, member-list exposure, marketplace/finance records, TrustSlips, Trust Passport writes, or private activity exposure.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/communityDomainDashboard/NodeProjectionGroups.tsx",
-  /Node vault map[\s\S]*local_vault_ready[\s\S]*active_evidence_records[\s\S]*needs_vault_steward[\s\S]*storage_keys_exposed[\s\S]*This is a read-only local vault view[\s\S]*does not upload or download files, create vault links, grant permissions, expose storage keys or member lists, publish proof, create finance or marketplace records, or expose private member activity/,
+  /Unit vault map[\s\S]*local_vault_ready[\s\S]*active_evidence_records[\s\S]*needs_vault_steward[\s\S]*Protected storage[\s\S]*storage_keys_exposed[\s\S]*This view only shows local vault readiness[\s\S]*does not upload or download files, create vault links, grant permissions, expose protected storage or member lists, publish proof, create records, or expose private member records/,
   "Community Domain dashboard must show read-only node vault planning without implying file upload/download, vault links, permission grants, storage/member exposure, external readers, proof publishing, TrustSlips, Trust Passport writes, marketplace/finance records, or private activity exposure.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/communityDomainDashboard/NodeProjectionGroups.tsx",
-  /Node scheduled activity map[\s\S]*local_schedule_ready[\s\S]*attendance_records[\s\S]*payment_instructions_created[\s\S]*This is a read-only local schedule view[\s\S]*does not create events, calendars, attendance, reminders, notifications, dues, tickets, payment instructions, evidence, finance or marketplace records, or private member activity/,
+  /Unit scheduled activity map[\s\S]*local_schedule_ready[\s\S]*attendance_records[\s\S]*payment_instructions_created[\s\S]*This view only shows local schedule readiness[\s\S]*does not create events, calendars, attendance, reminders, notifications, payment steps, evidence, records, or private member records/,
   "Community Domain dashboard Structure lane must show read-only node scheduled activity planning without implying event/meeting/calendar/attendance/reminder/notification/dues/ticket/payment/evidence writes, TrustSlips, Trust Passport writes, marketplace/finance records, or private activity exposure.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/communityDomainDashboard/NodeProjectionGroups.tsx",
-  /Node paid activity map[\s\S]*local_paid_activity_ready[\s\S]*payment_instructions_created[\s\S]*ledger_entries_written[\s\S]*This is a read-only local payment-readiness view[\s\S]*does not create dues, invoices, payment instructions, receipts, ledger entries, loans, money movement, TrustSlips, Trust Passport entries, finance or marketplace records, or private member activity/,
+  /Unit paid activity map[\s\S]*local_paid_activity_ready[\s\S]*Payment steps[\s\S]*payment_instructions_created[\s\S]*ledger_entries_written[\s\S]*This view only shows local payment readiness[\s\S]*does not create dues, invoices, payment steps, receipts, ledger entries, loans, money movement, trust records, or private member records/,
   "Community Domain dashboard Structure lane must show read-only node paid activity planning without implying dues/levy/ticket/travel-fee/contribution/invoice/payment/receipt/bank-match/ledger writes, money movement, loans, TrustSlips, Trust Passport writes, marketplace/finance records, or private activity exposure.",
   { frontend: true }
 );
@@ -545,8 +566,15 @@ assertContains(
 
 assertContains(
   "src/pages/communityDomainDashboard/NodeProjectionGroups.tsx",
-  /groupKey="structure-activity-projections"[\s\S]*Activity detail projections[\s\S]*2 read-only activity detail maps are grouped here[\s\S]*Node scheduled activity map[\s\S]*Node paid activity map/,
+  /groupKey="structure-activity-projections"[\s\S]*Activity detail planning[\s\S]*Unit views for scheduled activity and paid activity readiness[\s\S]*2 local activity views are grouped here[\s\S]*Unit scheduled activity map[\s\S]*Unit paid activity map/,
   "Lazy Community Domain node projection component must preserve the grouped Structure activity projection cards.",
+  { frontend: true }
+);
+
+assertNotContains(
+  "src/pages/communityDomainDashboard/NodeProjectionGroups.tsx",
+  /GSN could not load the read-only|read-only view|Read-only unit|read-only planning|TrustSlips|Trust Passport entries|payment instructions|storage keys|payload|social Community/,
+  "Community Domain node projection visible copy must avoid old read-only, technical TrustSlip/passport, storage-key, payload, and social-community wording.",
   { frontend: true }
 );
 
@@ -573,36 +601,43 @@ assertContains(
 
 assertContains(
   "src/pages/communityDomainDashboard/TrustEvidenceReadinessPanels.tsx",
-  /Evidence record readiness[\s\S]*primary_next_action[\s\S]*evidence_record_engine_status[\s\S]*record_type_count[\s\S]*evidence_records_created[\s\S]*review_evidence_metadata_count[\s\S]*This is read-only evidence-record readiness\. It does not create evidence\s+records, upload files, issue credentials, publish proof, verify authority,\s+move money, activate billing, create marketplace activity, score trust, or\s+expose private evidence/,
+  /Evidence record readiness[\s\S]*primary_next_action[\s\S]*evidence_record_engine_status[\s\S]*record_type_count[\s\S]*evidence_records_created[\s\S]*review_evidence_metadata_count[\s\S]*This view only shows evidence-record readiness\. It does not create\s+records, upload files, issue credentials, publish proof, verify authority,\s+score trust, move money, or expose private evidence/,
   "Community Domain dashboard Services lane must show read-only evidence record readiness without implying durable evidence writes, file upload, storage-key exposure, validity calculation, visibility-policy persistence, credentials, TrustSlips, Trust Passport writes, public proof, legal verification, money movement, billing activation, marketplace activity, social Community creation, private evidence exposure, or trust scoring.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/communityDomainDashboard/TrustEvidenceReadinessPanels.tsx",
-  /Evidence release readiness[\s\S]*primary_next_action[\s\S]*evidence_release_engine_status[\s\S]*evidence_releases_created[\s\S]*public_proofs_published[\s\S]*release_evidence_count[\s\S]*This is read-only evidence-release readiness\. It does not release evidence,\s+expose files, publish proof, create public URLs or QR codes, issue\s+credentials, share records, verify authority, move money, activate billing,\s+create marketplace activity, change permissions, score trust, or expose\s+private evidence/,
+  /Evidence release readiness[\s\S]*primary_next_action[\s\S]*evidence_release_engine_status[\s\S]*evidence_releases_created[\s\S]*public_proofs_published[\s\S]*release_evidence_count[\s\S]*This view only shows public-release readiness\. It does not release\s+evidence, publish proof, create public links or QR codes, issue\s+credentials, share records, change permissions, score trust, move money,\s+or expose private evidence/,
   "Community Domain dashboard Services lane must show read-only evidence release readiness without implying evidence release, file or storage-key exposure, public proof publishing, public URL or QR creation, credentials, TrustSlips, Trust Passport writes, cross-domain sharing, trust relay paths, legal verification, money movement, billing activation, marketplace activity, social Community creation, permission changes, private evidence exposure, or trust scoring.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/communityDomainDashboard/TrustEvidenceReadinessPanels.tsx",
-  /Trust relay readiness[\s\S]*primary_next_action[\s\S]*trust_relay_engine_status[\s\S]*relay_paths_created[\s\S]*bridge_member_candidates[\s\S]*open_relay_review_count[\s\S]*This is read-only trust-relay readiness\. It does not create relay paths,\s+publish proof, repost Spotlight, create cross-domain discovery, share\s+private records, issue credentials, create marketplace activity, create\s+affiliations, activate billing, or move money/,
+  /Trust relay readiness[\s\S]*primary_next_action[\s\S]*trust_relay_engine_status[\s\S]*relay_paths_created[\s\S]*bridge_member_candidates[\s\S]*open_relay_review_count[\s\S]*This view only shows relay readiness\. It does not create relay paths,\s+publish proof, repost Spotlight, create discovery or affiliations, share\s+private records, issue credentials, create marketplace activity, activate\s+billing, or move money/,
   "Community Domain dashboard Services lane must show read-only trust relay readiness without implying relay path creation, Spotlight reposting, proof publishing, cross-domain discovery, private evidence access, TrustSlip issuing, Trust Passport writes, credentials, marketplace activity, affiliations, billing activation, or money movement.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/communityDomainDashboard/TrustEvidenceReadinessPanels.tsx",
-  /Notification scope readiness[\s\S]*primary_next_action[\s\S]*notification_scope_engine_status[\s\S]*notification_policy_count[\s\S]*notifications_sent[\s\S]*This is read-only audience readiness\. It does not send messages, create\s+notification jobs or audience lists, publish announcements, expose member\s+lists, create marketplace records, move money, issue TrustSlips, write Trust\s+Passport entries, or expose private records/,
+  /Notification scope readiness[\s\S]*primary_next_action[\s\S]*notification_scope_engine_status[\s\S]*notification_policy_count[\s\S]*notifications_sent[\s\S]*This view only shows audience readiness\. It does not send messages,\s+create delivery jobs or audience lists, publish announcements, expose\s+member lists, create marketplace records, move money, create trust\s+records, or expose private records/,
   "Community Domain dashboard Services lane must show read-only notification scope readiness without implying notification delivery, jobs, email/SMS/WhatsApp/push sending, audience-list creation, public announcements, cross-domain broadcasts, member-list exposure, marketplace records, money movement, TrustSlips, Trust Passport writes, or private record exposure.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/communityDomainDashboard/TrustEvidenceReadinessPanels.tsx",
-  /Trust mobility readiness[\s\S]*primary_next_action[\s\S]*verification_status[\s\S]*review_evidence_records[\s\S]*relay_paths[\s\S]*This is read-only trust-mobility readiness\. It does not create TrustSlips,\s+write Trust Passport entries, create credentials or relay paths, release\s+evidence, expose files, verify authority, publish proof, create outward\s+links, move money, activate billing, create marketplace activity, create a\s+social Community, or expose private records/,
+  /Trust mobility readiness[\s\S]*primary_next_action[\s\S]*verification_status[\s\S]*review_evidence_records[\s\S]*relay_paths[\s\S]*This view only shows trust-mobility readiness\. It does not create trust\s+records, credentials, relay paths, public proof, outward links,\s+marketplace activity, separate communities, move money, or expose\s+private records/,
   "Community Domain dashboard Services lane must show read-only trust mobility readiness without implying TrustSlips, Trust Passport writes, credentials, relay paths, evidence release, file or storage-key exposure, legal verification, proof publishing, outward links, money movement, billing, activation, marketplace activity, social Community creation, or private record exposure.",
+  { frontend: true }
+);
+
+assertNotContains(
+  "src/pages/communityDomainDashboard/TrustEvidenceReadinessPanels.tsx",
+  /GSN could not load the read-only (evidence record readiness view|evidence release readiness view|trust relay readiness view|notification scope readiness view|trust mobility view)/,
+  "Community Domain Trust/Evidence load states must avoid old read-only view wording in visible fallback copy.",
   { frontend: true }
 );
 
@@ -629,35 +664,42 @@ assertContains(
 
 assertContains(
   "src/pages/communityDomainDashboard/IdentityReadinessPanels.tsx",
-  /Domain identity[\s\S]*public-safe identity anchor[\s\S]*Code[\s\S]*domain\.domain_name[\s\S]*Owner[\s\S]*domain\.owner_user_id[\s\S]*Template[\s\S]*template\.label[\s\S]*Location[\s\S]*domain\.state[\s\S]*domain\.country[\s\S]*Public profile:[\s\S]*No public profile text is recorded yet[\s\S]*This identity summary does not expose owner contact details, private member\s+lists, finance records, evidence files, or verification proof/,
+  /Domain identity[\s\S]*public-safe identity anchor[\s\S]*Code[\s\S]*domain\.domain_name[\s\S]*Owner[\s\S]*domain\.owner_user_id[\s\S]*Template[\s\S]*template\.label[\s\S]*Location[\s\S]*domain\.state[\s\S]*domain\.country[\s\S]*Public profile:[\s\S]*No public profile text is recorded yet[\s\S]*This summary shows public-safe identity only[\s\S]*does not expose owner\s+contact details, private member lists, finance records, evidence files,\s+or verification proof/,
   "Community Domain dashboard Identity lane must show a public-safe identity summary without exposing owner contact, private members, finance, evidence, or verification proof.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/communityDomainDashboard/IdentityReadinessPanels.tsx",
-  /Affiliation readiness[\s\S]*primary_next_action[\s\S]*bridge_status[\s\S]*domain_affiliation_engine_status[\s\S]*approved_affiliations[\s\S]*pending_affiliations[\s\S]*This is read-only affiliation readiness\. It does not create parent or child\s+Community Domain links, approve requests, set social Community links, copy\s+or transfer members, inherit policy, activate billing, verify authority,\s+publish public URLs, create marketplace activity, move money, issue\s+TrustSlips, write Trust Passport entries, or expose private records/,
+  /Affiliation readiness[\s\S]*primary_next_action[\s\S]*bridge_status[\s\S]*domain_affiliation_engine_status[\s\S]*approved_affiliations[\s\S]*pending_affiliations[\s\S]*This view only shows affiliation readiness[\s\S]*does not create parent\s+or child Community Domain links, approve requests, set community links,\s+copy or transfer members, inherit policy, activate billing, verify\s+authority, publish public links, create marketplace activity, move\s+money, create trust records, or expose private records/,
   "Community Domain dashboard Identity lane must show read-only affiliation readiness without implying domain-domain affiliation creation, parent/child domain creation, affiliation decisions, social Community linking, member transfer, inherited policy, billing, verification, public URLs, marketplace activity, money movement, TrustSlips, Trust Passport writes, or private record exposure.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/communityDomainDashboard/IdentityReadinessPanels.tsx",
-  /Social bridge readiness[\s\S]*primary_next_action[\s\S]*bridge_status[\s\S]*upgrade_path_status[\s\S]*linked_member_count[\s\S]*This is read-only social-bridge readiness\. It does not create or upgrade a\s+social Community, set internal links, create or decide affiliations, copy or\s+invite members, move marketplace activity, activate billing, verify\s+authority, merge records, or expose private member records/,
+  /Community bridge readiness[\s\S]*primary_next_action[\s\S]*bridge_status[\s\S]*upgrade_path_status[\s\S]*linked_member_count[\s\S]*This view only shows community bridge readiness[\s\S]*does not create or\s+upgrade an ordinary community, connect private records, decide\s+affiliations, copy or invite members, move marketplace activity,\s+activate billing, verify authority, merge records, or expose private\s+member records/,
   "Community Domain dashboard Identity lane must show read-only social bridge readiness without implying social Community creation, Community upgrade, clan_id linking, affiliation writes or decisions, member copying/invites, marketplace movement, billing activation, authority verification, record merging, or private member exposure.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/communityDomainDashboard/IdentityReadinessPanels.tsx",
-  /Institutional profile[\s\S]*primary_next_action[\s\S]*template_label[\s\S]*marketplace_role[\s\S]*active_member_count[\s\S]*active_policy_count[\s\S]*This is read-only institutional profile readiness\. It does not create\s+structures, members, policies, reviews, evidence, billing packages, shops,\s+payments, finance records, social Community links, verification, activation,\s+public pages, or private records/,
+  /Institutional profile[\s\S]*primary_next_action[\s\S]*template_label[\s\S]*marketplace_role[\s\S]*active_member_count[\s\S]*active_policy_count[\s\S]*This view only shows institutional profile readiness[\s\S]*does not create\s+structures, members, policies, reviews, evidence, billing packages,\s+shops, payments, finance records, community links, verification,\s+activation, public pages, or private records/,
   "Community Domain dashboard Identity lane must show read-only institutional profile classification without implying custom schema, tenant, billing package, node/member/policy/review/evidence writes, marketplace/shop/payment/finance records, social Community links, verification, activation, publication, or private record exposure.",
+  { frontend: true }
+);
+
+assertNotContains(
+  "src/pages/communityDomainDashboard/IdentityReadinessPanels.tsx",
+  /GSN could not load the read-only (institutional profile|community bridge view|affiliation readiness view)/,
+  "Community Domain Identity load states must avoid old read-only profile/bridge/affiliation wording in visible fallback copy.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/communityDomainDashboard/BillingReadinessPanels.tsx",
-  /Subscription lifecycle[\s\S]*primary_next_action[\s\S]*pricing_status[\s\S]*billing_status[\s\S]*renewal_status[\s\S]*This is read-only billing readiness\. It does not accept quotes, create or\s+confirm payments, create invoices or receipts, activate billing, activate\s+the Community Domain, change renewal status, verify authority, move money,\s+or expose private records/,
+  /Subscription lifecycle[\s\S]*primary_next_action[\s\S]*pricing_status[\s\S]*billing_status[\s\S]*renewal_status[\s\S]*This view only shows package, pricing, billing, and renewal status[\s\S]*does not take payment, issue receipts, activate or renew the domain,\s+move money, or expose private records/,
   "Community Domain dashboard Billing lane must show read-only subscription lifecycle without implying quote acceptance, payment instruction, expected payment, payment records, invoices, receipts, billing activation, Community Domain activation, entitlements, renewal, suspension, reactivation, authority verification, money movement, or private record exposure.",
   { frontend: true }
 );
@@ -685,7 +727,7 @@ assertContains(
 
 assertContains(
   "src/pages/communityDomainDashboard/StructurePreviewPanel.tsx",
-  /Structure preview[\s\S]*read-only Community Domain tree[\s\S]*No operating-unit structure has been mapped yet[\s\S]*does not create nodes, change parentage, place\s+members, grant roles,\s+activate billing, or verify a branch/,
+  /Structure preview[\s\S]*shown from the Community Domain tree[\s\S]*No operating-unit structure has been mapped yet[\s\S]*does not create nodes, change parentage, place\s+members, grant roles,\s+activate billing, or verify a branch/,
   "Community Domain dashboard Structure lane must show a compact read-only node-tree preview without implying structure writes or authority changes.",
   { frontend: true }
 );
@@ -713,28 +755,28 @@ assertContains(
 
 assertContains(
   "src/pages/communityDomainDashboard/StructurePlanningPanels.tsx",
-  /Rollout plan[\s\S]*primary_next_action[\s\S]*Current phase:[\s\S]*First units[\s\S]*rolloutPlanCounts\.first_level_units[\s\S]*Ready units[\s\S]*rolloutPlanCounts\.ready_units[\s\S]*Units needing attention[\s\S]*does not create nodes, invite members, add members,\s+assign admins, place members, create policy, open reviews, verify authority,\s+activate billing, activate the Community Domain, publish a public page,\s+create marketplace activity, create a social Community, move money, or\s+expose private evidence/,
+  /Rollout plan[\s\S]*primary_next_action[\s\S]*Current phase:[\s\S]*First units[\s\S]*rolloutPlanCounts\.first_level_units[\s\S]*Ready units[\s\S]*rolloutPlanCounts\.ready_units[\s\S]*Units needing attention[\s\S]*This view only shows rollout steps and units needing attention[\s\S]*does not\s+change structure, membership, authority, billing, public pages, marketplace\s+activity, money, or private evidence/,
   "Community Domain dashboard Structure lane must show the backend rollout plan as read-only institutional onboarding guidance without implying structure writes, invitations, placements, policy creation, billing, publishing, marketplace activity, social Community creation, money movement, or private evidence access.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/communityDomainDashboard/StructurePlanningPanels.tsx",
-  /Activity map[\s\S]*primary_next_action[\s\S]*activity_lane_count[\s\S]*active_operating_unit_count[\s\S]*active_policy_count[\s\S]*paid_activity_status[\s\S]*scheduled_activity_status[\s\S]*does not\s+create activities, events, meetings, classes, services, programmes,\s+attendance, dues, levies, travel fees, contributions, tickets,\s+subscriptions, payment instructions, invoices, receipts, bank matches,\s+ledger entries, payouts, money movement, marketplace records, shops,\s+listings, demand, Spotlight, notifications, TrustSlips, Trust Passport\s+entries, public proof, or private member, review, evidence, or finance\s+exposure/,
+  /Activity map[\s\S]*primary_next_action[\s\S]*activity_lane_count[\s\S]*active_operating_unit_count[\s\S]*active_policy_count[\s\S]*paid_activity_status[\s\S]*scheduled_activity_status[\s\S]*This view only shows activity planning[\s\S]*does not create activities,\s+payments, marketplace records, notifications, trust records, public proof,\s+money movement, or private member records/,
   "Community Domain dashboard Structure lane must show read-only activity map planning without implying activity/event/attendance/dues/payment/marketplace/notification/TrustSlip/Trust Passport/public proof/private-record writes.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/communityDomainDashboard/StructurePlanningPanels.tsx",
-  /Activity-group readiness[\s\S]*primary_next_action[\s\S]*activity_group_candidate_count[\s\S]*active_node_memberships[\s\S]*active_policies[\s\S]*review_records[\s\S]*activity_group_engine_status[\s\S]*activity_group_records_created[\s\S]*rosca_cycles_created[\s\S]*does not\s+create activity groups, ROSCA cycles, meetings, attendance records, payment\s+instructions, ledger entries, notifications, marketplace records, money\s+movement, TrustSlips, Trust Passport entries, or private member activity/,
+  /Group readiness[\s\S]*primary_next_action[\s\S]*activity_group_candidate_count[\s\S]*Units[\s\S]*activityGroupSummary\.node_count[\s\S]*Unit members[\s\S]*active_node_memberships[\s\S]*active_policies[\s\S]*review_records[\s\S]*activity_group_engine_status[\s\S]*activity_group_records_created[\s\S]*rosca_cycles_created[\s\S]*This view only shows group planning[\s\S]*does not create groups, ROSCA\s+cycles, attendance, payment records, marketplace records, notifications,\s+trust records, or private member records/,
   "Community Domain dashboard Structure lane must show read-only activity-group readiness without implying group/ROSCA/attendance/payment/marketplace/notification/TrustSlip/Trust Passport/private-member writes.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/communityDomainDashboard/MemberReadinessPanels.tsx",
-  /Member verification readiness[\s\S]*primary_next_action[\s\S]*active_member_count[\s\S]*members_with_gsn_id[\s\S]*members_without_unit_placement[\s\S]*open_member_review_count[\s\S]*credential_issuance_status[\s\S]*does\s+not perform KYC, issue credentials, verify government identity, create\s+or change members, place members in units, assign roles, grant\s+permissions, create policy, decide reviews, upload evidence, expose\s+storage keys, publish proof, issue TrustSlips, write Trust Passport\s+entries, move money, or expose private member, review, or evidence records/,
+  /Member verification readiness[\s\S]*primary_next_action[\s\S]*active_member_count[\s\S]*members_with_gsn_id[\s\S]*members_without_unit_placement[\s\S]*open_member_review_count[\s\S]*credential_issuance_status[\s\S]*This view only shows member readiness[\s\S]*does not verify identity,\s+issue credentials, change members or roles, decide reviews, publish\s+proof, create trust records, move money, or expose private member records/,
   "Community Domain dashboard Members lane must show read-only member verification readiness without implying KYC/credential/member/role/review/evidence/TrustSlip/Trust Passport writes or private record exposure.",
   { frontend: true }
 );
@@ -762,28 +804,28 @@ assertContains(
 
 assertContains(
   "src/pages/communityDomainDashboard/GovernanceReadinessPanels.tsx",
-  /reviewPulseRows[\s\S]*Needs review[\s\S]*Ready to apply[\s\S]*Access requests[\s\S]*Governance review pulse[\s\S]*does not decide reviews, apply membership, assign roles,\s+expose private evidence, or bypass reviewer policy/,
+  /reviewPulseRows[\s\S]*Needs review[\s\S]*Ready to apply[\s\S]*Access requests[\s\S]*Governance review pulse[\s\S]*Your open decisions show what you can handle now[\s\S]*This view only shows governance review pressure[\s\S]*does not decide reviews,\s+apply membership, assign roles, expose private evidence, or bypass reviewer policy/,
   "Community Domain dashboard Governance lane must show a compact review pulse without deciding reviews, applying membership, or exposing private review evidence.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/communityDomainDashboard/GovernanceReadinessPanels.tsx",
-  /Governance coverage[\s\S]*primary_next_action[\s\S]*local admins and policy coverage[\s\S]*Domain policies[\s\S]*governanceCoverageCounts\.domain_policies[\s\S]*Needs admin[\s\S]*governanceCoverageCounts\.needs_local_admin[\s\S]*Needs policy[\s\S]*governanceCoverageCounts\.needs_policy[\s\S]*does not create policy, assign roles, create\s+reviews, decide reviews, apply reviews, verify legal or institutional\s+authority, move money, activate billing, publish a public page, create\s+marketplace activity, create a social Community, or expose private review payloads/,
+  /Governance coverage[\s\S]*primary_next_action[\s\S]*local admins and policy coverage[\s\S]*Domain policies[\s\S]*governanceCoverageCounts\.domain_policies[\s\S]*Needs admin[\s\S]*governanceCoverageCounts\.needs_local_admin[\s\S]*Needs policy[\s\S]*governanceCoverageCounts\.needs_policy[\s\S]*This view only shows governance coverage[\s\S]*does not create policy,\s+assign roles, decide or apply reviews, verify authority, move money,\s+activate billing, publish a public page, create marketplace activity,\s+or expose private review records/,
   "Community Domain dashboard Governance lane must show read-only governance coverage without implying policy creation, role assignment, review decisions, authority verification, billing, publishing, marketplace activity, social Community creation, or private review access.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/communityDomainDashboard/GovernanceReadinessPanels.tsx",
-  /Delegation map[\s\S]*primary_next_action[\s\S]*central_authority_count[\s\S]*operating_units_with_local_admin[\s\S]*active_policy_count[\s\S]*open_review_count[\s\S]*does not\s+assign roles, create node memberships, create policies, create action\s+reviews, decide reviews, apply reviews, change inheritance, verify\s+legal or institutional authority, activate billing, create marketplace\s+activity, create a social Community, publish proof, or expose private\s+member, review, or evidence records/,
+  /Delegation map[\s\S]*primary_next_action[\s\S]*central_authority_count[\s\S]*operating_units_with_local_admin[\s\S]*active_policy_count[\s\S]*open_review_count[\s\S]*This view only shows authority planning[\s\S]*does not assign roles, create\s+memberships or policies, decide or apply reviews, change inheritance,\s+verify authority, activate billing, publish public proof, create marketplace\s+activity, move money, or expose private member records/,
   "Community Domain dashboard Governance lane must show read-only delegation authority without implying role assignment, node memberships, policy/review writes, inheritance changes, authority verification, billing, marketplace activity, social Community creation, proof publication, or private record exposure.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/communityDomainDashboard/MemberReadinessPanels.tsx",
-  /Your placement[\s\S]*Active operating-unit placements[\s\S]*This is read-only[\s\S]*Admins still control placement, role changes,\s+and review decisions/,
+  /Your placement[\s\S]*Active operating-unit placements[\s\S]*This view only shows your placement[\s\S]*Admins still control placement,\s+role changes, and review decisions/,
   "Community Domain dashboard Members lane must show the current viewer's read-only placement summary without implying self-service placement or role changes.",
   { frontend: true }
 );
@@ -791,7 +833,7 @@ assertContains(
 assertContains(
   "src/pages/communityDomainDashboard/MemberReadinessPanels.tsx",
   /Member and role summary[\s\S]*safe domain-level counts[\s\S]*Active members[\s\S]*counts\.active_members[\s\S]*Role placements[\s\S]*counts\.active_node_memberships[\s\S]*Open reviews[\s\S]*counts\.open_reviews[\s\S]*refresh the dashboard[\s\S]*does not expose private member lists, assign roles,\s+place members, decide reviews, or grant permissions/,
-  "Community Domain dashboard Members lane must show a safe count-only fallback when the viewer placement projection is not available.",
+  "Community Domain dashboard Members lane must show a safe count-only fallback when the viewer placement view is not available.",
   { frontend: true }
 );
 
@@ -832,7 +874,7 @@ assertNotContains(
 
 assertContains(
   "src/pages/communityDomainDashboard/GovernanceReadinessPanels.tsx",
-  /institutionalOpenReviewCount[\s\S]*reviewPulseRows[\s\S]*Needs review[\s\S]*Ready to apply[\s\S]*isAdmin[\s\S]*Institution open[\s\S]*institutionalOpenReviewCount[\s\S]*Access requests[\s\S]*Governance review pulse[\s\S]*Open decisions come from the scoped reviewer queue; approved-but-unapplied reviews come from the approved action-review list[\s\S]*reviewPulseRows\.map[\s\S]*This account has no pending decision in its scoped queue[\s\S]*institutional review pressure[\s\S]*Another\s+eligible reviewer may need to decide[\s\S]*approved review may\s+still need apply/,
+  /institutionalOpenReviewCount[\s\S]*reviewPulseRows[\s\S]*Needs review[\s\S]*Ready to apply[\s\S]*isAdmin[\s\S]*Institution open[\s\S]*institutionalOpenReviewCount[\s\S]*Access requests[\s\S]*Governance review pulse[\s\S]*Your open decisions show what you can handle now[\s\S]*Approved items may still need an authorized admin to apply them[\s\S]*reviewPulseRows\.map[\s\S]*You have no pending decision in your review queue[\s\S]*institutional review pressure[\s\S]*Another\s+eligible reviewer may need to decide[\s\S]*approved review may\s+still need apply/,
   "Lazy Community Domain Governance panel must distinguish the current admin's scoped reviewer queue from broader institutional open-review pressure, and must not show the institution-open badge to non-admin members as a false zero.",
   { frontend: true }
 );

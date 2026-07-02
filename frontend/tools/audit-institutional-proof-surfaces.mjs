@@ -871,13 +871,18 @@ assertContains(
 
 assertContains(
   "snapshotPaper",
-  /Official GSN public record[\s\S]*?Prepared for you \(UTC\):[\s\S]*?Security note: Keep the GSN mark, time, record code, privacy limit, and limitation with any screenshot, printout, or forwarded copy\.[\s\S]*?Global Support Network \(GSN\)/,
-  "Shared copied snapshot papers must keep GSN public-record authority, prepared time, security note, and footer."
+  /Generated \(UTC\): \$\{generatedAt\}[\s\S]*?Security note: Keep the GSN mark, time, code, privacy note, and limit with any copy\./,
+  "Shared copied snapshot papers must keep generated time and compact security note."
 );
 assertContains(
   "snapshotPaper",
-  /Footer: Global Support Network \(GSN\)\. Trust infrastructure for organized communities\./,
-  "Shared copied snapshot paper footer must position GSN as trust infrastructure, not only a marketplace."
+  /Limitation: GSN evidence only\. Not approval, guarantee, payment instruction, or auto-debit\./,
+  "Shared copied snapshot papers must keep the compact limitation."
+);
+assertContains(
+  "snapshotPaper",
+  /GLOBAL SUPPORT NETWORK \(GSN\)[\s\S]*?Title: \$\{safeText\(params\.title\) \|\| "GSN Snapshot"\}/,
+  "Shared copied snapshot paper must keep the GSN masthead and title before evidence details."
 );
 assertContains(
   "snapshotPaper",
@@ -1001,7 +1006,7 @@ assertNotContains(
 );
 assertContains(
   "communityVerify",
-  /buildGsnCommunityVerifyLinkMessage[\s\S]*?communityVerifyLinkPackage[\s\S]*?communityName[\s\S]*?communityId: communityAnchor[\s\S]*?verifyLink: publicLink[\s\S]*?copyLink[\s\S]*?safeCopy\(communityVerifyLinkPackage\)[\s\S]*?GSN community verification paper copied\./,
+  /buildGsnCommunityVerifyLinkMessage[\s\S]*?communityVerifyLinkMessage[\s\S]*?communityName[\s\S]*?communityId: communityAnchor[\s\S]*?verifyLink: publicLink[\s\S]*?copyLink[\s\S]*?safeCopy\(communityVerifyLinkMessage\)[\s\S]*?GSN community verification link copied\./,
   "Public Community Verification Copy link must copy compact GSN verification link text, not a bare URL or full paper."
 );
 assertContains(
@@ -1781,7 +1786,7 @@ assertNotContains(
 );
 assertContains(
   "marketplace",
-  /Title: GSN Trade Evidence Paper[\s\S]*?Limitation: Evidence for judgement only\. Not escrow, not automatic payout, not bank confirmation, not a bank guarantee, and not a delivery guarantee\./,
+  /Title: GSN Trade Evidence Paper[\s\S]*?Purpose: Recorded trade evidence\. GSN does not hold money or release funds\.[\s\S]*?Limitation: evidence only\. Not escrow, payout approval, bank confirmation, or delivery guarantee\./,
   "Marketplace trade evidence paper must keep the evidence-first title and explicit non-custodial limits."
 );
 assertContains(

@@ -146,13 +146,13 @@ function serviceReadinessRows(
     label: "Billing",
     status: compactStatus(billingStatus || quote?.pricing_status || quote?.quote_status),
     detail: billingIsActive
-      ? "Billing is shown as active here, but payment instructions and renewals remain separate owner/admin work."
-      : "Package, payment instruction, activation, and renewal are still separate from service readiness.",
+      ? "Billing is shown as active here, but payment steps and renewals remain separate owner or admin work."
+      : "Package, payment step, activation, and renewal are still separate from service readiness.",
   });
   rows.push({
     key: "settings",
     label: "Settings",
-    status: moduleScopeReadiness ? "read only" : "not loaded",
+    status: moduleScopeReadiness ? "view only" : "not loaded",
     detail: moduleScopeReadiness
       ? "Settings are shown as planning status here. This page does not enable services or grant permissions."
       : "Service settings could not be loaded for this view. No setting has been changed.",
@@ -354,14 +354,14 @@ export default function CommunityDomainServiceReadinessPanels({
           )}
         </div>
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          This is read-only service readiness. It does not enable services,
+          This view only shows service readiness. It does not turn on services,
           activate billing, grant permissions, publish Spotlight, create shops,
-          open vault links, or expose private member activity.
+          open vault links, or expose private member records.
         </div>
       </div>
 
       <div style={softCard()}>
-        <div style={sectionLabel()}>Service settings projection</div>
+        <div style={sectionLabel()}>Service settings view</div>
         <div style={{ ...helperText(), marginTop: 7 }}>
           {serviceSettingsProjection
             ? `${countValue(
@@ -369,7 +369,7 @@ export default function CommunityDomainServiceReadinessPanels({
               )} template services are included and ${countValue(
                 serviceSettingsProjection.optional_total
               )} optional services remain only catalogue options.`
-            : "GSN could not load the read-only service settings projection for this Community Domain."}
+            : "GSN could not load the service settings view for this Community Domain."}
         </div>
         {factGrid([
           ["Template", cleanText(serviceSettingsProjection?.template_key, "not loaded")],
@@ -392,9 +392,10 @@ export default function CommunityDomainServiceReadinessPanels({
           </div>
         ) : null}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          This is read-only template guidance. It does not save settings, enable
-          modules, activate billing, grant permissions, create shops, publish
-          Spotlight, open vault links, or expose private records.
+          This view only shows service template guidance. It does not save
+          settings, turn on services, activate billing, grant permissions,
+          create shops, publish Spotlight, open vault links, or expose private
+          records.
         </div>
       </div>
 
@@ -408,11 +409,11 @@ export default function CommunityDomainServiceReadinessPanels({
                 economicParticipation.primary_next_action?.label,
                 "Review economic participation"
               )}. ${economicParticipationReadyTotal} of ${visibleEconomicParticipationLanes.length} economic lanes are ready as template guidance.`
-            : "GSN could not load the read-only economic participation view for this Community Domain."}
+            : "GSN could not load the economic participation view for this Community Domain."}
         </div>
         {factGrid([
           ["Market role", compactStatus(economicParticipationTemplate.marketplace_role)],
-          ["Nodes", countValue(economicParticipationCounts.nodes)],
+          ["Units", countValue(economicParticipationCounts.nodes)],
           ["Members", countValue(economicParticipationCounts.active_members)],
           ["Shops", countValue(economicParticipationCounts.shops)],
           ["Listings", countValue(economicParticipationCounts.listings)],
@@ -454,10 +455,9 @@ export default function CommunityDomainServiceReadinessPanels({
           </div>
         ) : null}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          This is read-only economic readiness. It does not create shops,
-          listings, demand, Spotlight, vault links, payment instructions, finance
-          records, billing changes, social Community links, or private member
-          activity.
+          This view only shows economic readiness. It does not create shops,
+          listings, demand, Spotlight, vault links, payment steps, finance
+          records, billing changes, community links, or private member records.
         </div>
       </div>
 
@@ -469,7 +469,7 @@ export default function CommunityDomainServiceReadinessPanels({
                 networkPresence.primary_next_action?.label,
                 "Review public presence"
               )}. ${networkPresenceReadyTotal} of ${visibleNetworkPresenceLanes.length} public-presence checks are ready.`
-            : "GSN could not load the read-only network presence view for this Community Domain."}
+            : "GSN could not load the network presence view for this Community Domain."}
         </div>
         {factGrid([
           [
@@ -517,10 +517,10 @@ export default function CommunityDomainServiceReadinessPanels({
           </div>
         ) : null}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          This is read-only public-presence guidance. It does not publish a
-          public page, finalize the domain URL format, create outward links,
-          verify the domain, create marketplace or Spotlight exposure, activate
-          billing, or expose private member activity.
+          This view only shows public-presence readiness. It does not publish a
+          public page, finalize the domain link, create outward links, verify the
+          domain, create marketplace or Spotlight exposure, activate billing, or
+          expose private member records.
         </div>
       </div>
     </>

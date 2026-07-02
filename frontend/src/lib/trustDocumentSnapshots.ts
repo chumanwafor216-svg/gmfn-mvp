@@ -198,13 +198,9 @@ export function buildTrustSlipSnapshot(params: TrustSlipSnapshotParams) {
       ),
       cleanLine("Cross-community reading", friendlyConsistency(params.cciBand)),
       cleanLine("Expires", params.expiresAt),
-      cleanLine("Verify link", params.verifyUrl),
-      params.memberCredentialUrl
-        ? cleanLine("Member credential link", params.memberCredentialUrl)
-        : "",
       cleanLine(
         "Reader boundary",
-        "Use this as decision evidence beside current community records. It is not an instruction to release money or goods."
+        "Evidence only. Check the current community record before money, goods, or credit."
       ),
     ],
     privacyNote:
@@ -234,10 +230,9 @@ export function buildTrustSlipVerifySnapshot(
       cleanLine("Verification", params.verificationStatus),
       cleanLine("Issued", params.issuedAt),
       cleanLine("Expires", params.expiresAt),
-      cleanLine("Verify link", params.verifyUrl),
       cleanLine(
         "Reader boundary",
-        "Check current status and supporting community records before relying on it. This is not approval to lend, sell on credit, or release money."
+        "Evidence only. Check current status before lending, credit, money, or goods."
       ),
     ],
     privacyNote:
@@ -287,12 +282,9 @@ export function buildTrustPassportSnapshot(
           )
         : "",
       cleanLine("Next step", params.nextStepLabel),
-      params.memberCredentialUrl
-        ? cleanLine("Member credential link", params.memberCredentialUrl)
-        : "",
     ],
     privacyNote: "Privacy: private evidence is not included.",
     limitationNote:
-      "Limitation: GSN record only. Not a bank guarantee, credit approval, payment instruction, or automatic debit authority.",
+      "Limitation: GSN evidence only. Not approval, guarantee, payment instruction, or auto-debit.",
   });
 }

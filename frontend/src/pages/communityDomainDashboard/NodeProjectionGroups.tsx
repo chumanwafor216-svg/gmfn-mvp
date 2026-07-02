@@ -225,7 +225,7 @@ function renderNodeProjectionCard({
         </div>
       ) : loaded ? (
         <div style={{ ...helperText(), marginTop: 9 }}>
-          No blocked local node path is visible in this read-only projection.
+          No blocked local unit path is visible in this view.
         </div>
       ) : null}
       {rows.length ? (
@@ -357,7 +357,7 @@ export default function CommunityDomainNodeProjectionGroups(props: ProjectionGro
     return (
       <>
         {renderNodeProjectionCard({
-          title: "Node evidence authority map",
+          title: "Unit evidence authority map",
           detail: props.nodeEvidenceAuthorityMap
             ? `${cleanText(
                 props.nodeEvidenceAuthorityMap.primary_next_action?.label,
@@ -373,7 +373,7 @@ export default function CommunityDomainNodeProjectionGroups(props: ProjectionGro
               )} need issuer, policy, evidence, or public-exposure review.`
             : "",
           unloaded:
-            "GSN could not load the read-only node evidence authority map for this Community Domain.",
+            "GSN could not load the unit evidence authority map for this Community Domain.",
           metrics: [
             [
               "Ready units",
@@ -409,11 +409,11 @@ export default function CommunityDomainNodeProjectionGroups(props: ProjectionGro
           defaultNextStep:
             "Keep evidence authority tied to local issuers, policy, and reviewed signals.",
           boundary:
-            "This is a read-only evidence authority view. It does not upload or verify evidence, publish proof, issue credentials, create finance or marketplace records, verify legal authority, or expose private member activity.",
+            "This view only shows local evidence authority. It does not upload or verify evidence, publish proof, issue credentials, create records, verify legal authority, or expose private member records.",
         })}
 
         {renderNodeProjectionCard({
-          title: "Node trust map",
+          title: "Unit trust map",
           detail: props.nodeTrustMap
             ? `${cleanText(
                 props.nodeTrustMap.primary_next_action?.label,
@@ -424,7 +424,7 @@ export default function CommunityDomainNodeProjectionGroups(props: ProjectionGro
                 nodeTrustGaps.length
               )} need governance, review, or evidence attention.`
             : "",
-          unloaded: "GSN could not load the read-only node trust map for this Community Domain.",
+          unloaded: "GSN could not load the unit trust map for this Community Domain.",
           metrics: [
             ["Ready units", countValue(nodeTrustCounts.local_trust_ready)],
             [
@@ -439,7 +439,7 @@ export default function CommunityDomainNodeProjectionGroups(props: ProjectionGro
                 ? "admin only"
                 : countValue(nodeTrustCounts.active_evidence_records),
             ],
-            ["TrustSlips", countValue(nodeTrustCounts.trustslips)],
+            ["Trust records", countValue(nodeTrustCounts.trustslips)],
           ],
           gapLabel: "Units needing local trust review",
           gapRows: nodeTrustGaps,
@@ -448,7 +448,7 @@ export default function CommunityDomainNodeProjectionGroups(props: ProjectionGro
           rowFallback: "Trust unit",
           defaultNextStep: "Keep trust evidence tied to governed local units.",
           boundary:
-            "This is a read-only local trust view. It does not upload evidence, publish proof, issue TrustSlips, write Trust Passport entries, move money, create finance or marketplace records, or expose private member activity.",
+            "This view only shows local trust readiness. It does not upload evidence, publish proof, create trust records, move money, create records, or expose private member records.",
         })}
       </>
     );
@@ -477,7 +477,7 @@ export default function CommunityDomainNodeProjectionGroups(props: ProjectionGro
     return (
       <>
         {renderNodeProjectionCard({
-          title: "Node autonomy map",
+          title: "Unit authority map",
           detail: props.nodeAutonomyMap
             ? `${cleanText(
                 props.nodeAutonomyMap.primary_next_action?.label,
@@ -489,9 +489,9 @@ export default function CommunityDomainNodeProjectionGroups(props: ProjectionGro
               )} need local authority attention.`
             : "",
           unloaded:
-            "GSN could not load the read-only node autonomy map for this Community Domain.",
+            "GSN could not load the unit authority map for this Community Domain.",
           metrics: [
-            ["Nodes", countValue(nodeAutonomyCounts.nodes)],
+            ["Units", countValue(nodeAutonomyCounts.nodes)],
             ["Local governance", countValue(nodeAutonomyCounts.locally_governed)],
             [
               "Local admins",
@@ -508,11 +508,11 @@ export default function CommunityDomainNodeProjectionGroups(props: ProjectionGro
           rowFallback: "Autonomy unit",
           defaultNextStep: "Keep local authority tied to existing governance.",
           boundary:
-            "This is a read-only local authority view. It does not grant authority, assign roles, change structure, activate billing, move money, publish proof, create finance or marketplace records, or expose private member activity.",
+            "This view only shows local authority readiness. It does not grant authority, assign roles, change structure, activate billing, move money, publish proof, create records, or expose private member records.",
         })}
 
         {renderNodeProjectionCard({
-          title: "Node economic map",
+          title: "Unit economy map",
           detail: props.nodeEconomicMap
             ? `${cleanText(
                 props.nodeEconomicMap.primary_next_action?.label,
@@ -524,7 +524,7 @@ export default function CommunityDomainNodeProjectionGroups(props: ProjectionGro
               )} need governance, admin, or participant attention.`
             : "",
           unloaded:
-            "GSN could not load the read-only node economic map for this Community Domain.",
+            "GSN could not load the unit economy map for this Community Domain.",
           metrics: [
             ["Market role", compactStatus(props.nodeEconomicMap?.template?.marketplace_role)],
             ["Ready units", countValue(nodeEconomicCounts.local_economy_ready)],
@@ -545,11 +545,11 @@ export default function CommunityDomainNodeProjectionGroups(props: ProjectionGro
           rowFallback: "Economic unit",
           defaultNextStep: "Keep commerce and finance tied to governed local units.",
           boundary:
-            "This is a read-only local economy view. It does not create shops, listings, demand, Spotlight, vault links, payment instructions, loans, finance records, separate domains, proof, or private member activity.",
+            "This view only shows local economy readiness. It does not create shops, listings, demand, Spotlight, vault links, payment steps, loans, finance records, separate domains, proof, or private member records.",
         })}
 
         {renderNodeProjectionCard({
-          title: "Node activity map",
+          title: "Unit activity map",
           detail: props.nodeActivityMap
             ? `${cleanText(
                 props.nodeActivityMap.primary_next_action?.label,
@@ -561,7 +561,7 @@ export default function CommunityDomainNodeProjectionGroups(props: ProjectionGro
               )} need admin, participants, or governance attention.`
             : "",
           unloaded:
-            "GSN could not load the read-only node activity map for this Community Domain.",
+            "GSN could not load the unit activity map for this Community Domain.",
           metrics: [
             ["Template", cleanText(props.nodeActivityMap?.template?.template_key, "not loaded")],
             ["Ready units", countValue(nodeActivityCounts.local_activity_ready)],
@@ -582,7 +582,7 @@ export default function CommunityDomainNodeProjectionGroups(props: ProjectionGro
           rowFallback: "Activity unit",
           defaultNextStep: "Keep activity capture tied to governed local units.",
           boundary:
-            "This is a read-only local activity view. It does not create activities, attendance, notices, payment instructions, evidence, TrustSlips, Trust Passport entries, finance or marketplace records, money movement, or private member activity.",
+            "This view only shows local activity readiness. It does not create activities, attendance, notices, payment steps, evidence, trust records, money movement, or private member records.",
         })}
       </>
     );
@@ -602,11 +602,11 @@ export default function CommunityDomainNodeProjectionGroups(props: ProjectionGro
     );
 
     return renderNodeProjectionCard({
-      title: "Node domain-boundary map",
+      title: "Unit boundary map",
       detail: props.nodeDomainBoundaryMap
         ? `${cleanText(
             props.nodeDomainBoundaryMap.primary_next_action?.label,
-            "Review node domain boundaries"
+            "Review unit boundaries"
           )}. ${countValue(
             nodeDomainBoundaryCounts.child_domain_candidate
           )} possible child-domain candidate${
@@ -618,7 +618,7 @@ export default function CommunityDomainNodeProjectionGroups(props: ProjectionGro
           } are visible.`
         : "",
       unloaded:
-        "GSN could not load the read-only node domain-boundary map for this Community Domain.",
+        "GSN could not load the unit boundary map for this Community Domain.",
       metrics: [
         ["Child candidates", countValue(nodeDomainBoundaryCounts.child_domain_candidate)],
         ["Affiliate review", countValue(nodeDomainBoundaryCounts.affiliate_review_needed)],
@@ -639,7 +639,7 @@ export default function CommunityDomainNodeProjectionGroups(props: ProjectionGro
       rowFallback: "Domain-boundary unit",
       defaultNextStep: "Keep operating units inside the parent domain until review is complete.",
       boundary:
-        "This is a read-only domain-boundary view. It does not create child domains, affiliate links, public URLs, billing changes, hierarchy splits, member transfers, legal verification, finance or marketplace records, or private member activity.",
+        "This view only shows domain-boundary readiness. It does not create child domains, affiliate links, public URLs, billing changes, hierarchy splits, member transfers, legal verification, records, or private member records.",
     });
   }
 
@@ -653,7 +653,7 @@ export default function CommunityDomainNodeProjectionGroups(props: ProjectionGro
     );
 
     return renderNodeProjectionCard({
-      title: "Node participation map",
+      title: "Unit participation map",
       detail: props.nodeParticipationMap
         ? `${cleanText(
             props.nodeParticipationMap.primary_next_action?.label,
@@ -665,9 +665,9 @@ export default function CommunityDomainNodeProjectionGroups(props: ProjectionGro
           )} units need local member attention.`
         : "",
       unloaded:
-        "GSN could not load the read-only node participation map for this Community Domain.",
+        "GSN could not load the unit participation map for this Community Domain.",
       metrics: [
-        ["Nodes", countValue(nodeParticipationCounts.nodes)],
+        ["Units", countValue(nodeParticipationCounts.nodes)],
         [
           "Placed",
           nodeParticipationCounts.active_node_memberships == null
@@ -694,7 +694,7 @@ export default function CommunityDomainNodeProjectionGroups(props: ProjectionGro
       rowFallback: "Participation unit",
       defaultNextStep: "Keep member placement tied to the nearest responsible unit.",
       boundary:
-        "This is a read-only member placement view. It does not create invites, add or place members, assign roles, create a social Community, expose rosters, create finance or marketplace records, or expose private member activity.",
+        "This view only shows member placement readiness. It does not create invites, add or place members, assign roles, create a separate community, expose rosters, create records, or expose private member records.",
     });
   }
 
@@ -721,12 +721,12 @@ export default function CommunityDomainNodeProjectionGroups(props: ProjectionGro
     return (
       <ProjectionGroup
         groupKey="structure-activity-projections"
-        title="Activity detail projections"
-        detail="Read-only node maps for scheduled activity and paid activity readiness."
-        closedSummary="2 read-only activity detail maps are grouped here so Structure stays focused on the operating tree."
+        title="Activity detail planning"
+        detail="Unit views for scheduled activity and paid activity readiness."
+        closedSummary="2 local activity views are grouped here so Structure stays focused on the operating tree."
       >
         {renderNodeProjectionCard({
-          title: "Node scheduled activity map",
+          title: "Unit scheduled activity map",
           detail: props.nodeScheduledActivityMap
             ? `${cleanText(
                 props.nodeScheduledActivityMap.primary_next_action?.label,
@@ -738,7 +738,7 @@ export default function CommunityDomainNodeProjectionGroups(props: ProjectionGro
               )} need coordinator, audience, policy, attendance, or public schedule review.`
             : "",
           unloaded:
-            "GSN could not load the read-only node scheduled activity map for this Community Domain.",
+            "GSN could not load the unit scheduled activity map for this Community Domain.",
           metrics: [
             ["Ready units", countValue(nodeScheduledActivityCounts.local_schedule_ready)],
             [
@@ -756,7 +756,7 @@ export default function CommunityDomainNodeProjectionGroups(props: ProjectionGro
             ["Events", countValue(nodeScheduledActivityCounts.events_created)],
             ["Attendance", countValue(nodeScheduledActivityCounts.attendance_records)],
             [
-              "Payment instructions",
+              "Payment steps",
               countValue(nodeScheduledActivityCounts.payment_instructions_created),
             ],
           ],
@@ -767,11 +767,11 @@ export default function CommunityDomainNodeProjectionGroups(props: ProjectionGro
           rowFallback: "Scheduled activity unit",
           defaultNextStep: "Keep meetings, events, and attendance tied to governed local units.",
           boundary:
-            "This is a read-only local schedule view. It does not create events, calendars, attendance, reminders, notifications, dues, tickets, payment instructions, evidence, finance or marketplace records, or private member activity.",
+            "This view only shows local schedule readiness. It does not create events, calendars, attendance, reminders, notifications, payment steps, evidence, records, or private member records.",
         })}
 
         {renderNodeProjectionCard({
-          title: "Node paid activity map",
+          title: "Unit paid activity map",
           detail: props.nodePaidActivityMap
             ? `${cleanText(
                 props.nodePaidActivityMap.primary_next_action?.label,
@@ -783,7 +783,7 @@ export default function CommunityDomainNodeProjectionGroups(props: ProjectionGro
               )} need steward, payer audience, policy, finance signal, or public payment review.`
             : "",
           unloaded:
-            "GSN could not load the read-only node paid activity map for this Community Domain.",
+            "GSN could not load the unit paid activity map for this Community Domain.",
           metrics: [
             ["Ready units", countValue(nodePaidActivityCounts.local_paid_activity_ready)],
             [
@@ -799,7 +799,7 @@ export default function CommunityDomainNodeProjectionGroups(props: ProjectionGro
                 : countValue(nodePaidActivityCounts.review_records),
             ],
             ["Dues", countValue(nodePaidActivityCounts.dues_created)],
-            ["Instructions", countValue(nodePaidActivityCounts.payment_instructions_created)],
+            ["Payment steps", countValue(nodePaidActivityCounts.payment_instructions_created)],
             ["Ledger entries", countValue(nodePaidActivityCounts.ledger_entries_written)],
           ],
           gapLabel: "Units needing local paid activity review",
@@ -808,9 +808,9 @@ export default function CommunityDomainNodeProjectionGroups(props: ProjectionGro
           statusKey: "paid_activity_status",
           rowFallback: "Paid activity unit",
           defaultNextStep:
-            "Keep dues, fees, and contributions as read-only planning until finance controls exist.",
+            "Keep dues, fees, and contributions as planning until finance controls exist.",
           boundary:
-            "This is a read-only local payment-readiness view. It does not create dues, invoices, payment instructions, receipts, ledger entries, loans, money movement, TrustSlips, Trust Passport entries, finance or marketplace records, or private member activity.",
+            "This view only shows local payment readiness. It does not create dues, invoices, payment steps, receipts, ledger entries, loans, money movement, trust records, or private member records.",
         })}
       </ProjectionGroup>
     );
@@ -854,12 +854,12 @@ export default function CommunityDomainNodeProjectionGroups(props: ProjectionGro
   return (
     <ProjectionGroup
       groupKey="services-node-projections"
-      title="Local service projections"
-      detail="Read-only node maps for service readiness, privacy, analytics, communication, and vault planning."
-      closedSummary="5 read-only node maps are grouped here so Services stays usable before deeper review."
+      title="Local service planning"
+      detail="Unit views for service readiness, privacy, analytics, communication, and vault planning."
+      closedSummary="5 local service views are grouped here so Services stays usable before deeper review."
     >
       {renderNodeProjectionCard({
-        title: "Node service map",
+        title: "Unit service map",
         detail: props.nodeServiceMap
           ? `${cleanText(
               props.nodeServiceMap.primary_next_action?.label,
@@ -870,9 +870,9 @@ export default function CommunityDomainNodeProjectionGroups(props: ProjectionGro
               nodeServiceGaps.length
             )} need governance, admins, participants, or template review.`
           : "",
-        unloaded: "GSN could not load the read-only node service map for this Community Domain.",
+        unloaded: "GSN could not load the unit service map for this Community Domain.",
         metrics: [
-          ["Template modules", countValue(nodeServiceCounts.template_module_count)],
+          ["Service options", countValue(nodeServiceCounts.template_module_count)],
           ["Ready units", countValue(nodeServiceCounts.local_services_ready)],
           [
             "Members",
@@ -891,11 +891,11 @@ export default function CommunityDomainNodeProjectionGroups(props: ProjectionGro
         rowFallback: "Service unit",
         defaultNextStep: "Keep local services tied to governed operating units.",
         boundary:
-          "This is a read-only local service view. It does not enable modules, save settings, activate billing, grant permissions, create events, shops, vault links, finance or marketplace records, or expose private member activity.",
+          "This view only shows local service readiness. It does not turn on services, save settings, activate billing, grant permissions, create events, shops, vault links, records, or expose private member records.",
       })}
 
       {renderNodeProjectionCard({
-        title: "Node privacy map",
+        title: "Unit privacy map",
         detail: props.nodePrivacyMap
           ? `${cleanText(
               props.nodePrivacyMap.primary_next_action?.label,
@@ -906,10 +906,10 @@ export default function CommunityDomainNodeProjectionGroups(props: ProjectionGro
               nodePrivacyGaps.length
             )} need visibility review.`
           : "",
-        unloaded: "GSN could not load the read-only node privacy map for this Community Domain.",
+        unloaded: "GSN could not load the unit privacy map for this Community Domain.",
         metrics: [
           ["Member visible", countValue(nodePrivacyCounts.member_visible)],
-          ["Node private", countValue(nodePrivacyCounts.node_private)],
+          ["Unit private", countValue(nodePrivacyCounts.node_private)],
           ["Admin restricted", countValue(nodePrivacyCounts.admin_restricted)],
           ["Public review", countValue(nodePrivacyCounts.public_review_needed)],
           ["Public pages", countValue(nodePrivacyCounts.public_pages)],
@@ -922,11 +922,11 @@ export default function CommunityDomainNodeProjectionGroups(props: ProjectionGro
         rowFallback: "Privacy unit",
         defaultNextStep: "Keep local visibility private until the right review path exists.",
         boundary:
-          "This is a read-only local privacy view. It does not change permissions, publish hierarchy, expose members, rosters, evidence, storage keys, public pages, cross-institution records, or private member activity.",
+          "This view only shows local privacy readiness. It does not change permissions, publish hierarchy, expose members, rosters, evidence, protected storage, public pages, institutional records, or private member records.",
       })}
 
       {renderNodeProjectionCard({
-        title: "Node analytics map",
+        title: "Unit analytics map",
         detail: props.nodeAnalyticsMap
           ? `${cleanText(
               props.nodeAnalyticsMap.primary_next_action?.label,
@@ -938,7 +938,7 @@ export default function CommunityDomainNodeProjectionGroups(props: ProjectionGro
             )} need member, governance, review, or evidence signals.`
           : "",
         unloaded:
-          "GSN could not load the read-only node analytics map for this Community Domain.",
+          "GSN could not load the unit analytics map for this Community Domain.",
         metrics: [
           ["Ready units", countValue(nodeAnalyticsCounts.local_analytics_ready)],
           [
@@ -959,8 +959,8 @@ export default function CommunityDomainNodeProjectionGroups(props: ProjectionGro
               ? "admin only"
               : countValue(nodeAnalyticsCounts.active_evidence_records),
           ],
-          ["Live dashboards", countValue(nodeAnalyticsCounts.live_dashboards)],
-          ["Marketplace metrics", countValue(nodeAnalyticsCounts.marketplace_metrics)],
+          ["Live reports", countValue(nodeAnalyticsCounts.live_dashboards)],
+          ["Marketplace signals", countValue(nodeAnalyticsCounts.marketplace_metrics)],
         ],
         gapLabel: "Units needing local analytics review",
         gapRows: nodeAnalyticsGaps,
@@ -969,11 +969,11 @@ export default function CommunityDomainNodeProjectionGroups(props: ProjectionGro
         rowFallback: "Analytics unit",
         defaultNextStep: "Keep local analytics tied to governed member and evidence signals.",
         boundary:
-          "This is a read-only local analytics view. It does not create telemetry, reports, dashboards, marketplace or finance metrics, TrustSlips, Trust Passport entries, or expose private member activity.",
+          "This view only shows local analytics readiness. It does not create tracking records, reports, dashboards, marketplace or finance signals, trust records, or expose private member records.",
       })}
 
       {renderNodeProjectionCard({
-        title: "Node communication map",
+        title: "Unit communication map",
         detail: props.nodeCommunicationMap
           ? `${cleanText(
               props.nodeCommunicationMap.primary_next_action?.label,
@@ -987,7 +987,7 @@ export default function CommunityDomainNodeProjectionGroups(props: ProjectionGro
             )} need communicator, audience, policy, or notice review.`
           : "",
         unloaded:
-          "GSN could not load the read-only node communication map for this Community Domain.",
+          "GSN could not load the unit communication map for this Community Domain.",
         metrics: [
           ["Ready units", countValue(nodeCommunicationCounts.local_communication_ready)],
           [
@@ -1014,11 +1014,11 @@ export default function CommunityDomainNodeProjectionGroups(props: ProjectionGro
         defaultNextStep:
           "Keep notices tied to governed local communicator and audience signals.",
         boundary:
-          "This is a read-only local communication view. It does not create notices, send messages, publish announcements, schedule events, expose member lists, create finance or marketplace records, or expose private member activity.",
+          "This view only shows local communication readiness. It does not create notices, send messages, publish announcements, schedule events, expose member lists, create records, or expose private member records.",
       })}
 
       {renderNodeProjectionCard({
-        title: "Node vault map",
+        title: "Unit vault map",
         detail: props.nodeVaultMap
           ? `${cleanText(
               props.nodeVaultMap.primary_next_action?.label,
@@ -1029,7 +1029,7 @@ export default function CommunityDomainNodeProjectionGroups(props: ProjectionGro
               nodeVaultGaps.length
             )} need steward, audience, policy, document, or public exposure review.`
           : "",
-        unloaded: "GSN could not load the read-only node vault map for this Community Domain.",
+        unloaded: "GSN could not load the unit vault map for this Community Domain.",
         metrics: [
           ["Ready units", countValue(nodeVaultCounts.local_vault_ready)],
           [
@@ -1046,7 +1046,7 @@ export default function CommunityDomainNodeProjectionGroups(props: ProjectionGro
           ],
           ["Needs steward", countValue(nodeVaultCounts.needs_vault_steward)],
           ["Vault links", countValue(nodeVaultCounts.vault_links_created)],
-          ["Storage keys", countValue(nodeVaultCounts.storage_keys_exposed)],
+          ["Protected storage", countValue(nodeVaultCounts.storage_keys_exposed)],
         ],
         gapLabel: "Units needing local vault review",
         gapRows: nodeVaultGaps,
@@ -1056,7 +1056,7 @@ export default function CommunityDomainNodeProjectionGroups(props: ProjectionGro
         defaultNextStep:
           "Keep controlled documents tied to local steward, audience, policy, and reviewed signals.",
         boundary:
-          "This is a read-only local vault view. It does not upload or download files, create vault links, grant permissions, expose storage keys or member lists, publish proof, create finance or marketplace records, or expose private member activity.",
+          "This view only shows local vault readiness. It does not upload or download files, create vault links, grant permissions, expose protected storage or member lists, publish proof, create records, or expose private member records.",
       })}
     </ProjectionGroup>
   );

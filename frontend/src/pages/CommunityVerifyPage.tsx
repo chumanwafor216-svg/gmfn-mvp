@@ -734,7 +734,7 @@ export default function CommunityVerifyPage() {
     return verifyContextRef.current === contextKey;
   }, []);
 
-  const communityVerifyLinkPackage = useMemo(
+  const communityVerifyLinkMessage = useMemo(
     () =>
       buildGsnCommunityVerifyLinkMessage({
         communityName,
@@ -847,11 +847,11 @@ export default function CommunityVerifyPage() {
   ];
 
   async function copyLink() {
-    const copied = await safeCopy(communityVerifyLinkPackage);
+    const copied = await safeCopy(communityVerifyLinkMessage);
     setNotice({
       tone: copied ? "success" : "error",
       text: copied
-        ? "GSN community verification paper copied."
+        ? "GSN community verification link copied."
         : "Copy failed. Use the browser address bar.",
     });
   }

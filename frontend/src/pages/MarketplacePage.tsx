@@ -1471,10 +1471,9 @@ function buildProtectedTradeEvidencePaperText({
 
   return [
     "GLOBAL SUPPORT NETWORK (GSN)",
-    "Official GSN public record",
     "Title: GSN Trade Evidence Paper",
-    "Purpose: Use this signed-in Marketplace paper to show what was recorded before, during, or after a trade. It does not mean GSN held money.",
-    `Prepared for you (UTC): ${generatedAt}`,
+    "Purpose: Recorded trade evidence. GSN does not hold money or release funds.",
+    `Generated (UTC): ${generatedAt}`,
     `Record code: ${tradeCode}`,
     "Public record context",
     `Community: ${communityLabel || "Selected community"}`,
@@ -1494,17 +1493,16 @@ function buildProtectedTradeEvidencePaperText({
     `Invoice / product / agreement / courier / payment references: ${
       minimumPacketNote || "No minimum packet note recorded yet."
     }`,
-    "Conversation boundary: GSN stores the agreed evidence reference. WhatsApp, phone calls, or in-person discussion remain outside GSN unless the parties add final evidence notes.",
+    "Conversation boundary: GSN keeps the agreed evidence reference. Outside chats or calls stay outside GSN unless final evidence is added.",
     `Created in GSN: ${createdAt}`,
     `Last updated in GSN: ${updatedAt}`,
     ...timelineLines,
     `Boundary: ${boundaryNote}`,
-    "Signed-in evidence paper: screenshot-ready inside Marketplace for the people who can already see this trade evidence record.",
+    "Signed-in evidence only for people who can already see this Marketplace record.",
     `Open this record: ${actionPath} (signed-in Marketplace record only)`,
-    "Security note: Keep the GSN mark, record code, issue time, community identity, privacy boundary, limitation note, and footer with any forwarded copy.",
-    "Privacy: Private participant/community record. Do not forward as public verification unless GSN later provides a public verification link for this exact record.",
-    "Limitation: Evidence for judgement only. Not escrow, not automatic payout, not bank confirmation, not a bank guarantee, and not a delivery guarantee.",
-    "Footer: Global Support Network (GSN). Community commerce evidence for organized trust, portable records, and safer marketplace decisions.",
+    "Security note: Keep the GSN mark, code, time, privacy note, and limit with any copy.",
+    "Privacy: private trade record. Do not forward as public verification unless GSN provides a public link for this exact record.",
+    "Limitation: evidence only. Not escrow, payout approval, bank confirmation, or delivery guarantee.",
   ].join("\n");
 }
 
@@ -11815,10 +11813,13 @@ export default function MarketplacePage() {
               ...innerCard("#FFFDF7"),
               display: "grid",
               gridTemplateColumns: isCompact
-                ? "1fr"
+                ? "52px minmax(0, 1fr)"
                 : "54px minmax(0, 1fr) auto",
+              gridTemplateAreas: isCompact
+                ? `"icon body" "button button"`
+                : undefined,
               gap: 12,
-              alignItems: isCompact ? "start" : "center",
+              alignItems: "center",
             }}
           >
             <span
@@ -11830,7 +11831,7 @@ export default function MarketplacePage() {
             >
               <MarketplaceGlyph name="rosca" size={24} />
             </span>
-            <div style={{ minWidth: 0 }}>
+            <div style={{ minWidth: 0, gridArea: isCompact ? "body" : undefined }}>
               <div style={sectionLabel()}>ROSCA savings circles</div>
               <div style={{ marginTop: 6, ...helperText(), fontSize: 13 }}>
                 Build a selected-member contribution cycle for this marketplace.
@@ -11846,7 +11847,8 @@ export default function MarketplacePage() {
               style={{
                 ...marketplaceActionStyle("secondary"),
                 width: isCompact ? "100%" : 150,
-                gridColumn: isCompact ? "1 / -1" : undefined,
+                gridArea: isCompact ? "button" : undefined,
+                justifySelf: isCompact ? "stretch" : undefined,
               }}
             >
               Open ROSCA

@@ -57,8 +57,13 @@ function assertNotContains(file, pattern, message) {
   ],
   [
     "src/lib/gsnSnapshotPaper.ts",
-    /buildGsnCompactPublicLinkPackage[\s\S]*GSN Public Record[\s\S]*Open this GSN record and check the current details before you act[\s\S]*buildGsnCommunityVerifyLinkMessage[\s\S]*Open this link to check the current public community record[\s\S]*buildGsnInviteLinkMessage[\s\S]*Open this invite to request access[\s\S]*buildGsnPublicShopLinkMessage[\s\S]*Open this shop link to check current items and visible evidence[\s\S]*buildGsnVaultInviteMessage[\s\S]*Open this private link to view the selected Vault block/,
+    /Generated \(UTC\): \$\{generatedAt\}[\s\S]*Security note: Keep the GSN mark, time, code, privacy note, and limit with any copy[\s\S]*buildGsnCompactPublicLinkPackage[\s\S]*GSN Public Record[\s\S]*Open this GSN record and check the current details before you act[\s\S]*buildGsnCommunityVerifyLinkMessage[\s\S]*Open this link to check the current public community record[\s\S]*buildGsnInviteLinkMessage[\s\S]*Open this invite to request access[\s\S]*buildGsnPublicShopLinkMessage[\s\S]*Open this shop link to check current items and visible evidence[\s\S]*buildGsnVaultInviteMessage[\s\S]*Open this private link to view the selected Vault block/,
     "Public link packages must have compact forwarding messages separate from full snapshot/evidence papers.",
+  ],
+  [
+    "src/lib/trustDocumentSnapshots.ts",
+    /buildTrustSlipSnapshot[\s\S]*Evidence only\. Check the current community record before money, goods, or credit\.[\s\S]*buildTrustSlipVerifySnapshot[\s\S]*Evidence only\. Check current status before lending, credit, money, or goods\./,
+    "TrustSlip copied snapshots must keep the full verification in the link and avoid repeated long link/body language.",
   ],
   ["src/lib/share.ts", /buildXIntentShareUrl/, "X intent share URL helper is missing."],
   [
@@ -212,6 +217,18 @@ assertNotContains(
   "src/components/SocialTagShareButton.tsx",
   /setXHandle|setInstagramHandle|setTiktokHandle|setLinkedinHandle|Tag on X|Instagram copy|TikTok copy/,
   "Social share chooser must stay simple: one optional handle/name field and short channel labels."
+);
+
+assertNotContains(
+  "src/lib/gsnSnapshotPaper.ts",
+  /Official GSN public record|Prepared for you \(UTC\)|Footer: Global Support Network|record code, privacy limit, and limitation/,
+  "Core public snapshot paper must not restore long headed-paper boilerplate in copied/shareable messages."
+);
+
+assertNotContains(
+  "src/lib/trustDocumentSnapshots.ts",
+  /cleanLine\("Verify link"|cleanLine\("Member credential link"/,
+  "TrustSlip snapshot body must not duplicate verification or credential URLs already carried by the public record link."
 );
 
 assertNotContains(

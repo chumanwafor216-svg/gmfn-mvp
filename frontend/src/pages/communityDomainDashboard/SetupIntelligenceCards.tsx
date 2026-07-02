@@ -116,12 +116,12 @@ export default function CommunityDomainSetupIntelligenceCards({
           </h2>
           <div style={helperText()}>
             {isBaseReadinessLoading && !setupReadiness
-              ? "GSN is loading the read-only setup checklist while the main Community Domain dashboard remains usable."
+              ? "GSN is loading the setup checklist while the main Community Domain dashboard remains usable."
               : setupReadiness
               ? `${countValue(
                   setupReadiness.blocked_total
-                )} setup checks still need attention before this domain should be treated as fully ready.`
-              : "GSN could not load the read-only setup checklist for this view."}
+                )} setup checks still need attention before this domain is ready.`
+              : "GSN could not load the setup checklist for this view."}
           </div>
           {blockedSetupReadinessItems.length ? (
             <div style={{ display: "grid", gap: 8 }}>
@@ -161,11 +161,11 @@ export default function CommunityDomainSetupIntelligenceCards({
             </div>
           ) : setupReadiness ? (
             <div style={{ ...helperText(), fontSize: 13 }}>
-              No setup blocker is visible in the read-only readiness checklist.
+              No setup blocker is visible in this readiness checklist.
             </div>
           ) : null}
           <div style={{ ...helperText(), fontSize: 13 }}>
-            This is a read-only checklist. It does not change membership,
+            This checklist only shows setup gaps. It does not change membership,
             billing, authority, payments, or private evidence.
           </div>
         </div>
@@ -185,13 +185,13 @@ export default function CommunityDomainSetupIntelligenceCards({
           </h2>
           <div style={helperText()}>
             {isBaseReadinessLoading && !setupPlan
-              ? "GSN is loading the read-only setup plan while the main Community Domain dashboard remains usable."
+              ? "GSN is loading the setup plan while the main Community Domain dashboard remains usable."
               : setupPlan
               ? `Current phase: ${compactStatus(setupPlan.setup_phase)}. ${cleanText(
                   setupPlan.primary_next_action?.label,
                   "Review the next setup step with a Community Domain admin."
                 )}.`
-              : "GSN could not load the read-only setup plan for this view."}
+              : "GSN could not load the setup plan for this view."}
           </div>
           {openSetupPlanSteps.length ? (
             <div style={{ display: "grid", gap: 8 }}>
@@ -233,8 +233,8 @@ export default function CommunityDomainSetupIntelligenceCards({
                           : "This step still needs owner/admin review before completion is relied on."}
                       </span>
                     </span>
-                    <span style={statusBadge(step.requires_admin ? "admin guided" : "read only")}>
-                      {step.requires_admin ? "Admin" : "Read only"}
+                    <span style={statusBadge(step.requires_admin ? "admin guided" : "view only")}>
+                      {step.requires_admin ? "Admin" : "View only"}
                     </span>
                   </div>
                 );
@@ -242,11 +242,11 @@ export default function CommunityDomainSetupIntelligenceCards({
             </div>
           ) : setupPlan ? (
             <div style={{ ...helperText(), fontSize: 13 }}>
-              No open setup step is visible in the read-only setup plan.
+              No open setup step is visible in this setup plan.
             </div>
           ) : null}
           <div style={{ ...helperText(), fontSize: 13 }}>
-            This is a read-only setup plan. It does not change structure,
+            This plan only shows next setup steps. It does not change structure,
             policy, billing, public pages, money, or private evidence.
           </div>
         </div>
