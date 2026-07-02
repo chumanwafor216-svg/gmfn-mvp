@@ -432,7 +432,7 @@ def test_trust_slip_release_helper_page_is_institutional_and_bounded():
 
     assert "GSN TrustSlip Release Evidence Paper" in text
     assert "Security marks: GSN watermark" in text
-    assert "This page prepares an admin release evidence record only" in text
+    assert "This page prepares a protected release evidence record only" in text
     assert "does not collect" in text
     assert "confirm bank receipt" in text
     assert "approve credit" in text
