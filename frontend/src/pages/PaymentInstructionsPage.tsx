@@ -407,6 +407,18 @@ function getCommunityRole(currentClan: any): string {
   );
 }
 
+function moneyInIdentityBlocker(selectedClanId: number, gmfnId: string): string {
+  if (!selectedClanId) {
+    return "Choose a community before generating a Money In reference.";
+  }
+
+  if (!safeStr(gmfnId)) {
+    return "Your GSN ID is still awaiting issue. Sign in again or finish member activation, then return to Money In.";
+  }
+
+  return "";
+}
+
 function settlementLines(settlement: CommunityMoneySettlement | null): string[] {
   if (!settlement) return [];
   if (!communityPayInReady(settlement)) return [];
@@ -816,7 +828,7 @@ export default function PaymentInstructionsPage() {
   }, [notice]);
 
   const currentGmfnId = useMemo(() => {
-    return firstTruthy(me?.gmfn_id);
+    return firstTruthy(me?.gmfn_id, (api as any).getStoredGmfnId?.());
   }, [me]);
 
   useEffect(() => {
@@ -876,7 +888,7 @@ export default function PaymentInstructionsPage() {
         setMe(meRes || null);
         setCurrentClan(clanRes || null);
 
-        const gmfnId = firstTruthy(meRes?.gmfn_id);
+        const gmfnId = firstTruthy(meRes?.gmfn_id, (api as any).getStoredGmfnId?.());
 
         if (!selectedClanId || !gmfnId) {
           setMoneySurface(null);
@@ -979,6 +991,12 @@ export default function PaymentInstructionsPage() {
     return getCommunityPublicId(currentClan);
   }, [currentClan]);
 
+  const identityBlockerText = useMemo(() => {
+    return moneyInIdentityBlocker(selectedClanId, currentGmfnId);
+  }, [selectedClanId, currentGmfnId]);
+
+  const moneyInIdentityReady = !identityBlockerText;
+
   const memberRole = useMemo(() => {
     return getCommunityRole(currentClan);
   }, [currentClan]);
@@ -1048,6 +1066,15 @@ export default function PaymentInstructionsPage() {
   }, [instruction, moneySurface]);
 
   const inferredResult = useMemo(() => {
+    if (identityBlockerText) {
+      return {
+        tone: "gold" as const,
+        step: "Identity",
+        title: currentGmfnId ? "Choose the community first." : "Finish member ID first.",
+        detail: identityBlockerText,
+      };
+    }
+
     if (!instruction) {
       return {
         tone: "blue" as const,
@@ -1098,7 +1125,15 @@ export default function PaymentInstructionsPage() {
       detail:
         "Use the exact reference. Upload proof here if automatic matching is not live yet.",
     };
-  }, [instruction, paymentConfirmed, matchedEvent, proofFileName, proofUploaded]);
+  }, [
+    currentGmfnId,
+    identityBlockerText,
+    instruction,
+    paymentConfirmed,
+    matchedEvent,
+    proofFileName,
+    proofUploaded,
+  ]);
 
   const resultTone = useMemo(() => {
     if (inferredResult.tone === "green") {
@@ -1130,10 +1165,11 @@ export default function PaymentInstructionsPage() {
   const compactGeneratedLayout = isCompact && instructionReady;
 
   async function handleRefreshRoute() {
-    if (!selectedClanId || !currentGmfnId) {
+    const blocker = moneyInIdentityBlocker(selectedClanId, currentGmfnId);
+    if (blocker) {
       setNotice({
         tone: "error",
-        text: "Community or member identity is not ready.",
+        text: blocker,
       });
       return;
     }
@@ -1172,10 +1208,11 @@ export default function PaymentInstructionsPage() {
   }
 
   async function handleGenerateInstruction() {
-    if (!selectedClanId || !currentGmfnId) {
+    const blocker = moneyInIdentityBlocker(selectedClanId, currentGmfnId);
+    if (blocker) {
       setNotice({
         tone: "error",
-        text: "Community or member identity is not ready.",
+        text: blocker,
       });
       return;
     }
@@ -1793,6 +1830,22 @@ export default function PaymentInstructionsPage() {
               GSN ID: {currentGmfnId || "Awaiting issue"}
             </span>
           </div>
+          {identityBlockerText ? (
+            <div
+              style={{
+                borderRadius: 16,
+                border: "1px solid rgba(245,158,11,0.22)",
+                background: "linear-gradient(180deg, #FFF8E7 0%, #FFFDF6 100%)",
+                color: "#8A5A00",
+                padding: "12px 14px",
+                fontSize: 14,
+                fontWeight: 850,
+                lineHeight: 1.5,
+              }}
+            >
+              {identityBlockerText}
+            </div>
+          ) : null}
         </div>
 
         <div style={moneyInInputShell()}>
@@ -1919,12 +1972,15 @@ export default function PaymentInstructionsPage() {
         >
           <PrimaryButton
             onClick={() => void handleGenerateInstruction()}
-            disabled={generatingInstruction}
+            disabled={generatingInstruction || !moneyInIdentityReady}
             debugId="money-in.generate-instruction"
             stableHeight={52}
             fullWidth
             style={{
-              ...moneyInActionButtonStyle("primary", generatingInstruction),
+              ...moneyInActionButtonStyle(
+                "primary",
+                generatingInstruction || !moneyInIdentityReady
+              ),
               gridColumn: isCompact ? "1 / -1" : undefined,
             }}
           >
@@ -1937,13 +1993,15 @@ export default function PaymentInstructionsPage() {
           {!isCompact ? (
             <SecondaryButton
               onClick={() => void handleRefreshRoute()}
-              disabled={generatingInstruction || refreshingRoute}
+              disabled={
+                generatingInstruction || refreshingRoute || !moneyInIdentityReady
+              }
               debugId="money-in.refresh-route"
               stableHeight={52}
               fullWidth
               style={moneyInActionButtonStyle(
                 "secondary",
-                generatingInstruction || refreshingRoute
+                generatingInstruction || refreshingRoute || !moneyInIdentityReady
               )}
             >
               {moneyInActionText("refresh", refreshingRoute ? "Refreshing" : "Refresh")}

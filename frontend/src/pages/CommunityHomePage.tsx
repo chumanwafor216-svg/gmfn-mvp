@@ -2692,7 +2692,7 @@ export default function CommunityHomePage() {
                       lineHeight: 1.18,
                     }}
                   >
-                    All communities summary
+                    Communities and domains
                   </div>
                 </div>
                 <span
@@ -2736,7 +2736,7 @@ export default function CommunityHomePage() {
                         lineHeight: 1.2,
                       }}
                     >
-                      {communityCountFromSummary} visible {communityCountFromSummary === 1 ? "community" : "communities"}
+                      {communityCountFromSummary} community {communityCountFromSummary === 1 ? "marketplace" : "marketplaces"}
                     </span>
                     <span
                       style={{
@@ -2749,6 +2749,45 @@ export default function CommunityHomePage() {
                       }}
                     >
                       Choose one community below, then do local work inside its Marketplace.
+                    </span>
+                  </span>
+                  <span aria-hidden="true" style={{ color: "#0B2D4A", fontSize: 24 }}>
+                    {">"}
+                  </span>
+                </StableButton>
+
+                <StableButton
+                  type="button"
+                  debugId="community-home.summary.community-domain"
+                  onClick={(event) => openCommunityRoute(event, routes.communityDomain)}
+                  style={communityToolRowStyle()}
+                >
+                  <span style={communityActionIcon(false)}>
+                    {communityIconGlyph("financeInstitution", 34)}
+                  </span>
+                  <span style={{ minWidth: 0 }}>
+                    <span
+                      style={{
+                        ...brandClampLines(1),
+                        color: "#07172C",
+                        fontSize: isCompact ? 14.5 : 16,
+                        fontWeight: 950,
+                        lineHeight: 1.2,
+                      }}
+                    >
+                      Community Domains
+                    </span>
+                    <span
+                      style={{
+                        ...brandClampLines(2),
+                        marginTop: 4,
+                        color: "#617085",
+                        fontSize: isCompact ? 12 : 13,
+                        fontWeight: 720,
+                        lineHeight: 1.35,
+                      }}
+                    >
+                      Institutional domains for schools, unions, churches, and markets.
                     </span>
                   </span>
                   <span aria-hidden="true" style={{ color: "#0B2D4A", fontSize: 24 }}>

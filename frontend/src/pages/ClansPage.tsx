@@ -11,7 +11,10 @@ import {
 import { navigateWithOrigin } from "../lib/nav";
 import { publicFrontendUrl } from "../lib/publicLinks";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
-import { buildGsnInviteLinkPackage } from "../lib/gsnSnapshotPaper";
+import {
+  buildGsnInviteLinkMessage,
+  buildGsnInviteLinkPackage,
+} from "../lib/gsnSnapshotPaper";
 import {
   createClan,
   createClanInvite,
@@ -333,6 +336,12 @@ function buildInviteState(
       "Sent through GSN",
     ],
   });
+  const compactShareText = buildGsnInviteLinkMessage({
+    senderName: senderName || "A known GSN member",
+    communityName: selectedCommunityName,
+    inviteLink: shareLink,
+    note: personalNote || "Open this invite to request access.",
+  });
 
   return {
     code,
@@ -341,7 +350,7 @@ function buildInviteState(
     guideUrl,
     fallbackGuideUrl,
     packagedShareText,
-    whatsappShareText: packagedShareText,
+    whatsappShareText: compactShareText,
   };
 }
 

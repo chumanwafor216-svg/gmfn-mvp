@@ -32,7 +32,7 @@ import {
   safeCopy,
   unfollowCommunity,
 } from "../lib/api";
-import { buildGsnCommunityVerifyLinkPackage } from "../lib/gsnSnapshotPaper";
+import { buildGsnCommunityVerifyLinkMessage } from "../lib/gsnSnapshotPaper";
 import { publicFrontendUrl } from "../lib/publicLinks";
 
 type CommunityVerifyRecord = {
@@ -736,20 +736,16 @@ export default function CommunityVerifyPage() {
 
   const communityVerifyLinkPackage = useMemo(
     () =>
-      buildGsnCommunityVerifyLinkPackage({
+      buildGsnCommunityVerifyLinkMessage({
         communityName,
         communityId: communityAnchor,
         status: evidenceCurrentnessLabel,
-        publicRecord,
-        relayAvailability,
         verifyLink: publicLink,
       }),
     [
       communityName,
       communityAnchor,
       evidenceCurrentnessLabel,
-      publicRecord,
-      relayAvailability,
       publicLink,
     ]
   );

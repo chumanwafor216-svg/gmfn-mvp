@@ -15,6 +15,19 @@ type GsnSnapshotPaperParams = {
   generatedAt?: Date;
 };
 
+type GsnCompactPublicLinkParams = {
+  title: string;
+  link: string;
+  primaryLabel?: string;
+  primaryValue?: unknown;
+  secondaryLabel?: string;
+  secondaryValue?: unknown;
+  referenceLabel?: string;
+  referenceValue?: unknown;
+  status?: unknown;
+  note?: string;
+};
+
 function safeText(value: unknown): string {
   return String(value ?? "").trim();
 }
@@ -29,6 +42,13 @@ function factLine(fact: PaperFact): string {
   const label = safeText(fact.label);
   const value = safeText(fact.value) || "-";
   return `${label}: ${value}`;
+}
+
+function compactFactLine(label: string | undefined, value: unknown): string {
+  const cleanLabel = safeText(label);
+  const cleanValue = safeText(value);
+  if (!cleanLabel || !cleanValue) return "";
+  return `${cleanLabel}: ${cleanValue}`;
 }
 
 export function gsnGeneratedAt(date = new Date()): string {
@@ -77,6 +97,107 @@ export function buildGsnSnapshotPaper(params: GsnSnapshotPaperParams): string {
       return lines[index - 1] !== "";
     })
     .join("\n");
+}
+
+export function buildGsnCompactPublicLinkPackage(
+  params: GsnCompactPublicLinkParams
+): string {
+  const title = safeText(params.title) || "GSN Public Record";
+  const link = safeText(params.link);
+  const note =
+    safeText(params.note) || "Open this GSN record and check the current details before you act.";
+
+  return [
+    title,
+    compactFactLine(params.primaryLabel, params.primaryValue),
+    compactFactLine(params.secondaryLabel, params.secondaryValue),
+    compactFactLine(params.referenceLabel, params.referenceValue),
+    compactFactLine("Status", params.status),
+    note,
+    link,
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
+export function buildGsnCommunityVerifyLinkMessage(params: {
+  communityName?: string;
+  communityId?: string;
+  status?: string;
+  verifyLink: string;
+}): string {
+  return buildGsnCompactPublicLinkPackage({
+    title: "GSN Community Record",
+    primaryLabel: "Community",
+    primaryValue: params.communityName,
+    referenceLabel: "Community ID",
+    referenceValue: params.communityId,
+    status: params.status,
+    note: "Open this link to check the current public community record.",
+    link: params.verifyLink,
+  });
+}
+
+export function buildGsnInviteLinkMessage(params: {
+  senderName?: string;
+  senderGsnId?: string;
+  communityName?: string;
+  inviteLink: string;
+  note?: string;
+}): string {
+  return buildGsnCompactPublicLinkPackage({
+    title: "GSN Community Invite",
+    primaryLabel: "Community",
+    primaryValue: params.communityName,
+    secondaryLabel: "From",
+    secondaryValue: params.senderName,
+    referenceLabel: "GSN ID",
+    referenceValue: params.senderGsnId,
+    note: safeText(params.note) || "Open this invite to request access.",
+    link: params.inviteLink,
+  });
+}
+
+export function buildGsnPublicShopLinkMessage(params: {
+  shopName?: string;
+  ownerName?: string;
+  gsnId?: string;
+  communityName?: string;
+  itemName?: string;
+  shopLink: string;
+}): string {
+  return buildGsnCompactPublicLinkPackage({
+    title: "GSN Public Shop",
+    primaryLabel: "Shop",
+    primaryValue: params.itemName || params.shopName,
+    secondaryLabel: "Seller",
+    secondaryValue: params.ownerName,
+    referenceLabel: "GSN ID",
+    referenceValue: params.gsnId,
+    status: params.communityName,
+    note: "Open this shop link to check current items and visible evidence.",
+    link: params.shopLink,
+  });
+}
+
+export function buildGsnVaultInviteMessage(params: {
+  shopName?: string;
+  gsnId?: string;
+  blockName?: string;
+  blockLabel?: string;
+  vaultLink: string;
+}): string {
+  return buildGsnCompactPublicLinkPackage({
+    title: "GSN Private Vault Link",
+    primaryLabel: "Shop",
+    primaryValue: params.shopName,
+    secondaryLabel: "Private offer",
+    secondaryValue: params.blockName || params.blockLabel,
+    referenceLabel: "GSN ID",
+    referenceValue: params.gsnId,
+    note: "Open this private link to view the selected Vault block.",
+    link: params.vaultLink,
+  });
 }
 
 export function buildGsnCommunityVerifyLinkPackage(params: {

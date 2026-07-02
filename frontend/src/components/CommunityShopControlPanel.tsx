@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { PrimaryButton, SecondaryButton, StableCtaLink, SubtleButton } from "./StableButton";
 import * as api from "../lib/api";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
-import { buildGsnPublicShopLinkPackage } from "../lib/gsnSnapshotPaper";
+import { buildGsnPublicShopLinkMessage } from "../lib/gsnSnapshotPaper";
 import { navigateWithOrigin } from "../lib/nav";
 import {
   OWNER_SHOP_HANDLES,
@@ -662,17 +662,12 @@ export default function CommunityShopControlPanel({
     }
 
     const copied = await api.safeCopy(
-      buildGsnPublicShopLinkPackage({
+      buildGsnPublicShopLinkMessage({
         shopName: shop?.shopName,
         ownerName: shop?.ownerName,
         gsnId: shop?.gmfnId,
         communityName: shop?.communityName,
-        category: "Public shop face",
         shopLink: publicShopLink,
-        messageLines: [
-          "This package opens the public shop face and visible Shop Diaries.",
-          "Private Vault items require a separate owner-issued link.",
-        ],
       })
     );
     setNotice({

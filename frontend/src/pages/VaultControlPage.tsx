@@ -27,7 +27,7 @@ import {
 } from "../lib/api";
 import {
   buildGsnPaymentInstructionPackage,
-  buildGsnVaultInvitePackage,
+  buildGsnVaultInviteMessage,
 } from "../lib/gsnSnapshotPaper";
 import { publicFrontendUrl } from "../lib/publicLinks";
 import { createShopGalleryCoverFromVideo } from "../lib/shopGalleryMediaProtocol";
@@ -1155,13 +1155,11 @@ export default function VaultControlPage() {
   const selectedBlockLinkExpiresAt = firstTruthy(selectedBlockPrimaryLink?.expires_at);
   const shopName = firstTruthy(shop?.name, me?.display_name, me?.gmfn_id, "Your shop");
   function buildVaultInvitePackage(linkUrl: string, link?: VaultLinkItem | null): string {
-    return buildGsnVaultInvitePackage({
+    return buildGsnVaultInviteMessage({
       shopName,
       gsnId: firstTruthy(me?.gmfn_id, shop?.gmfn_id),
       blockLabel: `Vault block #${selectedSlot}`,
       blockName: firstTruthy(selectedProduct?.name, `Vault block #${selectedSlot}`),
-      status: firstTruthy(link?.status, selectedBlockLinkStatus),
-      expiresAt: firstTruthy(link?.expires_at, selectedBlockLinkExpiresAt, "No expiry returned yet"),
       vaultLink: linkUrl,
     });
   }

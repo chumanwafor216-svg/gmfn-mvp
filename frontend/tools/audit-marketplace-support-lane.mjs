@@ -150,6 +150,8 @@ if (!supportSection.text) {
     /Selected marketplace[\s\S]*?ID: \{activeCommunityId \|\| "not ready"\}[\s\S]*?GSN ID: \{currentGmfnId \|\| "not ready"\}/,
     /From Money Out/,
     /ROSCA savings circles[\s\S]*?Build a selected-member contribution cycle for this marketplace[\s\S]*?debugId="marketplace\.support\.open-rosca"[\s\S]*?openMarketplaceSection\(event, "rosca", "marketplace-rosca"\)[\s\S]*?Open ROSCA/,
+    /gridTemplateColumns: isCompact[\s\S]*?\? "1fr"[\s\S]*?: "54px minmax\(0, 1fr\) auto"[\s\S]*?ROSCA savings circles/,
+    /Financial support requests[\s\S]*?Use this area for one marketplace support request[\s\S]*?ROSCA savings[\s\S]*?circles stay separate above and open their own desk/,
     /This withdrawal needs support here[\s\S]*?Requested:[\s\S]*?Support needed:/,
     /Step \{step\}/,
     /Start request[\s\S]*?Amount, duration, repayment, purpose/,

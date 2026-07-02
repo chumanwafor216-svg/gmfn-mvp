@@ -34,7 +34,7 @@ import {
   prepareSpotlightVideoFile,
 } from "../lib/spotlightMediaPrep";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
-import { buildGsnVaultInvitePackage } from "../lib/gsnSnapshotPaper";
+import { buildGsnVaultInviteMessage } from "../lib/gsnSnapshotPaper";
 import {
   SPOTLIGHT_MAX_IMAGE_BYTES,
   SPOTLIGHT_MAX_VIDEO_BYTES,
@@ -1733,13 +1733,11 @@ export default function ShopControlPage() {
       vaultProducts[0] ||
       null;
 
-    return buildGsnVaultInvitePackage({
+    return buildGsnVaultInviteMessage({
       shopName: firstTruthy(shopName, shop?.name, "GSN Private Vault"),
       gsnId: firstTruthy(shop?.owner_gmfn_id, shop?.gmfn_id, me?.gmfn_id),
       blockLabel: link?.id ? `Vault link #${link.id}` : "Vault viewing link",
       blockName: firstTruthy(product?.name, product?.description, "Private Vault offer"),
-      status: firstTruthy(link?.status, "active"),
-      expiresAt: safeDateTime(link?.expires_at) || "No expiry set",
       vaultLink: url,
     });
   }

@@ -10,13 +10,13 @@ const appLayoutFile = "src/layout/AppLayout.tsx";
 const source = readFileSync(join(frontendRoot, communityFile), "utf8");
 const appLayoutSource = readFileSync(join(frontendRoot, appLayoutFile), "utf8");
 const findings = [];
-const expectedStableButtonTemplateCount = 18;
+const expectedStableButtonTemplateCount = 19;
 const expectedNativeFieldCount = 0;
 const expectedNextActionGuideItemCount = 12;
 const expectedFrontQuickActionCount = 4;
 const expectedSpotlightGuidedActionCount = 5;
 const expectedGroupedLaneRowCount = 22;
-const expectedExpandedRouteLocalActionTemplates = 39;
+const expectedExpandedRouteLocalActionTemplates = 40;
 const expectedMobileShellBreakdown = {
   top: 2,
   drawer: 25,
@@ -154,6 +154,7 @@ for (const action of actions) {
 const frontToInnerOrder = [
   { label: "empty state", pattern: /^community-home\.empty\./ },
   { label: "visible communities summary", pattern: /^community-home\.summary\.visible-communities/ },
+  { label: "community domain summary", pattern: /^community-home\.summary\.community-domain/ },
   { label: "finance summary", pattern: /^community-home\.finance-summary\./ },
   { label: "trust summary", pattern: /^community-home\.trust-summary\./ },
   { label: "front next actions", pattern: /^community-home\.next-action\./ },
@@ -288,6 +289,11 @@ assertContains(
 assertContains(
   /debugId="community-home\.summary\.visible-communities"[\s\S]*?aria-expanded=\{!collapsed\.communities\}[\s\S]*?aria-controls="community-home-communities-panel"[\s\S]*?openCommunityHomeSection\([\s\S]*?"community-home-community-list"[\s\S]*?"communities"/,
   "Community Home visible-communities summary must be a real stable action that opens the community list, not a button-looking inert row."
+);
+
+assertContains(
+  /Communities and domains[\s\S]*?debugId="community-home\.summary\.visible-communities"[\s\S]*?\{communityCountFromSummary\} community \{communityCountFromSummary === 1 \? "marketplace" : "marketplaces"\}[\s\S]*?debugId="community-home\.summary\.community-domain"[\s\S]*?Community Domains[\s\S]*?Institutional domains for schools, unions, churches, and markets\.[\s\S]*?openCommunityRoute\(event, routes\.communityDomain\)/,
+  "Community Home summary must distinguish community marketplaces from institutional Community Domains."
 );
 
 if (/<div\s+style=\{communityToolRowStyle\(\)\}/.test(source)) {

@@ -23,7 +23,7 @@ const JOIN_INVITE_EVIDENCE_LINES = [
 ];
 
 const JOIN_INVITE_LINK_HINT =
-  "⬆️ Tap the GSN Link preview above to open the invitation.";
+  "⬆️ Tap the preview above to open the invitation.";
 
 function cleanText(value: unknown): string {
   return String(value ?? "").trim();

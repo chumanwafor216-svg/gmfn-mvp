@@ -55,6 +55,11 @@ function assertNotContains(file, pattern, message) {
     /function compactPaperMessage[\s\S]*valueFor\("Title"\)[\s\S]*valueFor\([\s\S]*"Main reading"[\s\S]*"Visible trust reading"[\s\S]*"Portable trust reading"[\s\S]*"Verification"[\s\S]*"Status"[\s\S]*"Trade status"[\s\S]*"Open the link to check the current GSN record\."/,
     "Official paper share captions must keep only the useful title/context/reading and move full detail to the link.",
   ],
+  [
+    "src/lib/gsnSnapshotPaper.ts",
+    /buildGsnCompactPublicLinkPackage[\s\S]*GSN Public Record[\s\S]*Open this GSN record and check the current details before you act[\s\S]*buildGsnCommunityVerifyLinkMessage[\s\S]*Open this link to check the current public community record[\s\S]*buildGsnInviteLinkMessage[\s\S]*Open this invite to request access[\s\S]*buildGsnPublicShopLinkMessage[\s\S]*Open this shop link to check current items and visible evidence[\s\S]*buildGsnVaultInviteMessage[\s\S]*Open this private link to view the selected Vault block/,
+    "Public link packages must have compact forwarding messages separate from full snapshot/evidence papers.",
+  ],
   ["src/lib/share.ts", /buildXIntentShareUrl/, "X intent share URL helper is missing."],
   [
     "src/lib/share.ts",
@@ -166,13 +171,13 @@ function assertNotContains(file, pattern, message) {
   ],
   [
     "src/pages/ShopGalleryPage.tsx",
-    /publicShopSocialPreviewUrl[\s\S]*<SocialTagShareButton[\s\S]*socialMessage: `\$\{firstMeaningful\([\s\S]*?Public shop record\. Open the shop link\.[\s\S]*socialUrl: firstMeaningful\([\s\S]*?publicShopSocialPreviewUrl[\s\S]*buttonLabel="Share"[\s\S]*buttonKind="primary"[\s\S]*debugId="shop-gallery\.share-shop"[\s\S]*debugId="shop-gallery\.owner-contact\.choose"/,
-    "Public Shop Share must open the social chooser with a short caption and backend social-preview URL while WhatsApp/formal copy stay separate.",
+    /buildGsnPublicShopLinkMessage[\s\S]*function buildPublicShopMessage[\s\S]*message: buildPublicShopMessage\(absoluteShopShareLink\)[\s\S]*socialMessage: `\$\{firstMeaningful\([\s\S]*?Public shop record\. Open the shop link\.[\s\S]*socialUrl: firstMeaningful\([\s\S]*?publicShopSocialPreviewUrl[\s\S]*buttonLabel="Share"[\s\S]*buttonKind="primary"[\s\S]*debugId="shop-gallery\.share-shop"[\s\S]*debugId="shop-gallery\.owner-contact\.choose"/,
+    "Public Shop Share must open the social chooser with compact public-shop text and backend social-preview URL.",
   ],
   [
     "src/pages/ShopGalleryPage.tsx",
-    /async function copyShopLink\(\)[\s\S]*safeCopy\([\s\S]*buildPublicShopPackage\(absoluteShopShareLink[\s\S]*GSN public shop invitation copied\./,
-    "Public Shop Copy action must copy the formal GSN public shop invitation package while Share keeps the short social caption.",
+    /async function copyShopLink\(\)[\s\S]*safeCopy\([\s\S]*buildPublicShopMessage\(absoluteShopShareLink\)[\s\S]*GSN public shop invitation copied\./,
+    "Public Shop Copy action must copy compact public-shop link text, not a full formal paper.",
   ],
   [
     "src/pages/ShopGalleryPage.tsx",
@@ -181,8 +186,8 @@ function assertNotContains(file, pattern, message) {
   ],
   [
     "src/pages/ShopGalleryPage.tsx",
-    /const productSocialUrl = publicShopSocialPreviewUrl\([\s\S]*const socialMessage = \[[\s\S]*Open \$\{blockLabel\} on GSN\.[\s\S]*message: buildPublicShopPackage\(productUrl, \[message\]\),[\s\S]*socialMessage,[\s\S]*socialUrl: productSocialUrl,[\s\S]*showBlockPlacementAction \? \([\s\S]*<SocialTagShareButton[\s\S]*target=\{buildProductSocialShareTarget\(product\)\}[\s\S]*debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.owner-share`\}/,
-    "Shop Diary block social sharing must stay owner-only and use a short caption plus backend social-preview URL in the shared chooser.",
+    /const productSocialUrl = publicShopSocialPreviewUrl\([\s\S]*const socialMessage = \[[\s\S]*Open \$\{blockLabel\} on GSN\.[\s\S]*message: buildPublicShopMessage\(productUrl, productTitle\),[\s\S]*socialMessage,[\s\S]*socialUrl: productSocialUrl,[\s\S]*showBlockPlacementAction \? \([\s\S]*<SocialTagShareButton[\s\S]*target=\{buildProductSocialShareTarget\(product\)\}[\s\S]*debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.owner-share`\}/,
+    "Shop Diary block social sharing must stay owner-only and use compact link text plus backend social-preview URL.",
   ],
   [
     "src/pages/VaultControlPage.tsx",

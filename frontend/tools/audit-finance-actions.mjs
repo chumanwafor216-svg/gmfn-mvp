@@ -161,6 +161,24 @@ assertContains(
 
 assertContains(
   "src/pages/PaymentInstructionsPage.tsx",
+  /function moneyInIdentityBlocker[\s\S]*?Your GSN ID is still awaiting issue\. Sign in again or finish member activation, then return to Money In\.[\s\S]*?identityBlockerText[\s\S]*?moneyInIdentityReady[\s\S]*?disabled=\{generatingInstruction \|\| !moneyInIdentityReady\}/,
+  "Money In must clearly block reference generation until the signed-in member has an issued GSN ID."
+);
+
+assertContains(
+  "src/pages/PaymentInstructionsPage.tsx",
+  /const currentGmfnId = useMemo\(\(\) => \{[\s\S]*?firstTruthy\(me\?\.gmfn_id, \(api as any\)\.getStoredGmfnId\?\.\(\)\)[\s\S]*?const gmfnId = firstTruthy\(meRes\?\.gmfn_id, \(api as any\)\.getStoredGmfnId\?\.\(\)\)/,
+  "Money In must fall back to the stored issued GSN ID when the live profile response is partial, matching Marketplace identity parity."
+);
+
+assertNotContains(
+  "src/pages/PaymentInstructionsPage.tsx",
+  /Community or member identity is not ready\./,
+  "Money In must not use the vague old identity blocker; it must name the missing community or GSN ID step."
+);
+
+assertContains(
+  "src/pages/PaymentInstructionsPage.tsx",
   /debugId="money-in\.route\.finance"[\s\S]*?debugId="money-in\.route\.money-out"[\s\S]*?debugId="money-in\.route\.payment-rails"[\s\S]*?debugId="money-in\.route\.payout-details"[\s\S]*?debugId="money-in\.route\.loans"/,
   "Money In next-route actions must keep their route-specific debug IDs."
 );

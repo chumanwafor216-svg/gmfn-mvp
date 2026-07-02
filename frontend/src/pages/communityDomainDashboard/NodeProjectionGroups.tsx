@@ -409,7 +409,7 @@ export default function CommunityDomainNodeProjectionGroups(props: ProjectionGro
           defaultNextStep:
             "Keep evidence authority tied to local issuers, policy, and reviewed signals.",
           boundary:
-            "This node evidence authority map is read-only local evidence authority planning. It does not upload evidence, verify evidence, publish public evidence, expose storage keys, expose review payloads, issue credentials, issue TrustSlips, write Trust Passport entries, create marketplace records, create finance records, verify legal authority, or expose private member activity.",
+            "This is a read-only evidence authority view. It does not upload or verify evidence, publish proof, issue credentials, create finance or marketplace records, verify legal authority, or expose private member activity.",
         })}
 
         {renderNodeProjectionCard({
@@ -448,7 +448,7 @@ export default function CommunityDomainNodeProjectionGroups(props: ProjectionGro
           rowFallback: "Trust unit",
           defaultNextStep: "Keep trust evidence tied to governed local units.",
           boundary:
-            "This node trust map is read-only local trust planning. It does not upload evidence, expose storage keys, create credentials, issue TrustSlips, write Trust Passport entries, publish proof, verify legal authority, move money, create finance records, create marketplace records, or expose private member activity.",
+            "This is a read-only local trust view. It does not upload evidence, publish proof, issue TrustSlips, write Trust Passport entries, move money, create finance or marketplace records, or expose private member activity.",
         })}
       </>
     );
@@ -508,7 +508,7 @@ export default function CommunityDomainNodeProjectionGroups(props: ProjectionGro
           rowFallback: "Autonomy unit",
           defaultNextStep: "Keep local authority tied to existing governance.",
           boundary:
-            "This node autonomy map is read-only local authority planning. It does not grant local authority, assign roles, create policy, change inheritance, split nodes, create separate Community Domains, activate billing, create marketplace records, create finance records, move money, publish proof, issue TrustSlips, write Trust Passport records, or expose private member activity.",
+            "This is a read-only local authority view. It does not grant authority, assign roles, change structure, activate billing, move money, publish proof, create finance or marketplace records, or expose private member activity.",
         })}
 
         {renderNodeProjectionCard({
@@ -545,7 +545,7 @@ export default function CommunityDomainNodeProjectionGroups(props: ProjectionGro
           rowFallback: "Economic unit",
           defaultNextStep: "Keep commerce and finance tied to governed local units.",
           boundary:
-            "This node economic map is read-only local economy planning. It does not create a marketplace, create shops, publish listings, create demand, place Spotlight, open vault links, create payment instructions, create finance records, create loans, move money, verify trust evidence, publish proof, issue TrustSlips, write Trust Passport records, create separate Community Domains, or expose private member activity.",
+            "This is a read-only local economy view. It does not create shops, listings, demand, Spotlight, vault links, payment instructions, loans, finance records, separate domains, proof, or private member activity.",
         })}
 
         {renderNodeProjectionCard({
@@ -582,7 +582,7 @@ export default function CommunityDomainNodeProjectionGroups(props: ProjectionGro
           rowFallback: "Activity unit",
           defaultNextStep: "Keep activity capture tied to governed local units.",
           boundary:
-            "This node activity map is read-only local activity planning. It does not create events, meetings, classes, services, travel activities, paid activities, dues, levies, attendance records, reminders, notifications, payment instructions, evidence records, TrustSlips, Trust Passport entries, marketplace records, finance records, money movement, or private member activity.",
+            "This is a read-only local activity view. It does not create activities, attendance, notices, payment instructions, evidence, TrustSlips, Trust Passport entries, finance or marketplace records, money movement, or private member activity.",
         })}
       </>
     );
@@ -639,7 +639,7 @@ export default function CommunityDomainNodeProjectionGroups(props: ProjectionGro
       rowFallback: "Domain-boundary unit",
       defaultNextStep: "Keep operating units inside the parent domain until review is complete.",
       boundary:
-        "This node domain-boundary map is read-only child-domain planning. It does not create child Community Domains, create affiliate links, publish public URLs, activate billing, split hierarchy, transfer members, verify legal identity, create marketplace records, create finance records, issue TrustSlips, write Trust Passport entries, or expose private member activity.",
+        "This is a read-only domain-boundary view. It does not create child domains, affiliate links, public URLs, billing changes, hierarchy splits, member transfers, legal verification, finance or marketplace records, or private member activity.",
     });
   }
 
@@ -694,7 +694,7 @@ export default function CommunityDomainNodeProjectionGroups(props: ProjectionGro
       rowFallback: "Participation unit",
       defaultNextStep: "Keep member placement tied to the nearest responsible unit.",
       boundary:
-        "This node participation map is read-only member placement planning. It does not create invites, add members, place members, assign roles, create a social Community, expose rosters, create marketplace records, create finance records, issue TrustSlips, write Trust Passport entries, or expose private member activity.",
+        "This is a read-only member placement view. It does not create invites, add or place members, assign roles, create a social Community, expose rosters, create finance or marketplace records, or expose private member activity.",
     });
   }
 
@@ -767,7 +767,7 @@ export default function CommunityDomainNodeProjectionGroups(props: ProjectionGro
           rowFallback: "Scheduled activity unit",
           defaultNextStep: "Keep meetings, events, and attendance tied to governed local units.",
           boundary:
-            "This node scheduled activity map is read-only local schedule planning. It does not create events, create meetings, create calendar entries, record attendance, send reminders, send notifications, create dues, create tickets, create payment instructions, upload evidence files, issue TrustSlips, write Trust Passport entries, create marketplace records, create finance records, or expose private member activity.",
+            "This is a read-only local schedule view. It does not create events, calendars, attendance, reminders, notifications, dues, tickets, payment instructions, evidence, finance or marketplace records, or private member activity.",
         })}
 
         {renderNodeProjectionCard({
@@ -810,7 +810,7 @@ export default function CommunityDomainNodeProjectionGroups(props: ProjectionGro
           defaultNextStep:
             "Keep dues, fees, and contributions as read-only planning until finance controls exist.",
           boundary:
-            "This node paid activity map is read-only local payment readiness planning. It does not create dues, create levies, create tickets, create travel fees, create contributions, create invoices, create payment instructions, record receipts, match bank events, write ledger entries, move money, create loans, issue TrustSlips, write Trust Passport entries, create marketplace records, create finance records, or expose private member activity.",
+            "This is a read-only local payment-readiness view. It does not create dues, invoices, payment instructions, receipts, ledger entries, loans, money movement, TrustSlips, Trust Passport entries, finance or marketplace records, or private member activity.",
         })}
       </ProjectionGroup>
     );
@@ -891,7 +891,7 @@ export default function CommunityDomainNodeProjectionGroups(props: ProjectionGro
         rowFallback: "Service unit",
         defaultNextStep: "Keep local services tied to governed operating units.",
         boundary:
-          "This node service map is read-only local service planning. It does not enable modules, persist settings, activate billing, grant permissions, create events, create notifications, create shops, create vault links, create marketplace records, create finance records, issue TrustSlips, write Trust Passport entries, or expose private member activity.",
+          "This is a read-only local service view. It does not enable modules, save settings, activate billing, grant permissions, create events, shops, vault links, finance or marketplace records, or expose private member activity.",
       })}
 
       {renderNodeProjectionCard({
@@ -922,7 +922,7 @@ export default function CommunityDomainNodeProjectionGroups(props: ProjectionGro
         rowFallback: "Privacy unit",
         defaultNextStep: "Keep local visibility private until the right review path exists.",
         boundary:
-          "This node privacy map is read-only local privacy planning. It does not change permissions, publish hierarchy, expose member lists, expose node rosters, expose evidence files, expose storage keys, create public pages, share records across institutions, issue TrustSlips, write Trust Passport entries, or expose private member activity.",
+          "This is a read-only local privacy view. It does not change permissions, publish hierarchy, expose members, rosters, evidence, storage keys, public pages, cross-institution records, or private member activity.",
       })}
 
       {renderNodeProjectionCard({
@@ -969,7 +969,7 @@ export default function CommunityDomainNodeProjectionGroups(props: ProjectionGro
         rowFallback: "Analytics unit",
         defaultNextStep: "Keep local analytics tied to governed member and evidence signals.",
         boundary:
-          "This node analytics map is read-only local analytics planning. It does not create telemetry, export reports, create live dashboards, create marketplace metrics, create finance metrics, expose storage keys, write Trust Passport entries, issue TrustSlips, or expose private member activity.",
+          "This is a read-only local analytics view. It does not create telemetry, reports, dashboards, marketplace or finance metrics, TrustSlips, Trust Passport entries, or expose private member activity.",
       })}
 
       {renderNodeProjectionCard({
@@ -1014,7 +1014,7 @@ export default function CommunityDomainNodeProjectionGroups(props: ProjectionGro
         defaultNextStep:
           "Keep notices tied to governed local communicator and audience signals.",
         boundary:
-          "This node communication map is read-only local communication planning. It does not create notices, send notifications, publish announcements, schedule meetings, create events, send reminders, send emergency notices, expose member lists, create marketplace records, create finance records, issue TrustSlips, write Trust Passport entries, or expose private member activity.",
+          "This is a read-only local communication view. It does not create notices, send messages, publish announcements, schedule events, expose member lists, create finance or marketplace records, or expose private member activity.",
       })}
 
       {renderNodeProjectionCard({
@@ -1056,7 +1056,7 @@ export default function CommunityDomainNodeProjectionGroups(props: ProjectionGro
         defaultNextStep:
           "Keep controlled documents tied to local steward, audience, policy, and reviewed signals.",
         boundary:
-          "This node vault map is read-only local vault planning. It does not upload files, download files, create vault links, grant permissions, expose storage keys, expose member lists, connect external readers, publish proof, issue TrustSlips, write Trust Passport entries, create marketplace records, create finance records, or expose private member activity.",
+          "This is a read-only local vault view. It does not upload or download files, create vault links, grant permissions, expose storage keys or member lists, publish proof, create finance or marketplace records, or expose private member activity.",
       })}
     </ProjectionGroup>
   );

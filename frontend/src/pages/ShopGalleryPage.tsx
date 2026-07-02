@@ -34,7 +34,7 @@ import {
   publicShopUrl,
   publicVaultRequestPreviewUrl,
 } from "../lib/publicLinks";
-import { buildGsnPublicShopLinkPackage } from "../lib/gsnSnapshotPaper";
+import { buildGsnPublicShopLinkMessage } from "../lib/gsnSnapshotPaper";
 import { buildWhatsAppChatUrl } from "../lib/whatsappLinks";
 import { getCachedShopProductMedia } from "../lib/shopProductMediaCache";
 import { ownerSurfaceIdentityMatches } from "../lib/ownerSurfaceIdentity";
@@ -2604,18 +2604,14 @@ export default function ShopGalleryPage() {
   const shopCommerceDecisionText =
     "Before credit, goods, or money move, read the shop ID, Community ID, current TrustSlip, and community confirmation together. This panel is evidence for judgement, not approval to release goods or credit.";
 
-  function buildPublicShopPackage(
-    link: string,
-    messageLines: Array<string | null | undefined | false>
-  ): string {
-    return buildGsnPublicShopLinkPackage({
+  function buildPublicShopMessage(link: string, itemName?: string): string {
+    return buildGsnPublicShopLinkMessage({
       shopName: shopNameText,
       ownerName: effectiveShop?.ownerName,
       gsnId: shopGmfnText,
       communityName: shopLocationText,
-      category: shopCategoryText,
+      itemName,
       shopLink: link,
-      messageLines,
     });
   }
 
@@ -2634,11 +2630,7 @@ export default function ShopGalleryPage() {
     }
 
     const copied = await safeCopy(
-      buildPublicShopPackage(absoluteShopShareLink, [
-        "Open this public shop, then check the seller and current evidence before you act.",
-        "Open the shop link to view the public shop face and public blocks.",
-        "Check current availability and trust evidence before goods, credit, or money move.",
-      ])
+      buildPublicShopMessage(absoluteShopShareLink)
     );
     setNotice({
       tone: copied ? "success" : "error",
@@ -2708,7 +2700,7 @@ export default function ShopGalleryPage() {
 
     return {
       title,
-      message: buildPublicShopPackage(productUrl, [message]),
+      message: buildPublicShopMessage(productUrl, productTitle),
       socialMessage,
       socialUrl: productSocialUrl,
       url: productUrl,
@@ -2741,7 +2733,7 @@ export default function ShopGalleryPage() {
       tone: opened ? "success" : "error",
       text: opened
         ? successText
-        : "WhatsApp could not open. Check that the owner number includes the correct country code.",
+        : "WhatsApp could not open. Ask the owner to refresh the saved GSN contact path for this shop.",
     });
     return true;
   }
@@ -2774,7 +2766,7 @@ export default function ShopGalleryPage() {
     if (!phoneUrl || typeof window === "undefined") {
       setNotice({
         tone: "error",
-        text: "No owner phone number is ready on this public shop yet.",
+        text: "No owner call path is ready on this public shop yet.",
       });
       return;
     }
@@ -2783,7 +2775,7 @@ export default function ShopGalleryPage() {
     setOwnerContactPanelOpen(false);
     setNotice({
       tone: "success",
-      text: "Phone call opened. If the call prompt does not appear, use the visible owner number on the shop card.",
+      text: "Call path opened. If the call prompt does not appear, use another contact action on this shop card.",
     });
   }
 
@@ -2798,7 +2790,7 @@ export default function ShopGalleryPage() {
     if (
       openOwnerWhatsAppChat(
         message,
-        "WhatsApp chat opened for the shop owner. If WhatsApp says this number is not registered, come back and use Call phone."
+        "WhatsApp chat opened for the shop owner. If WhatsApp cannot complete the chat, come back and use Call phone."
       )
     ) {
       setOwnerContactPanelOpen(false);
@@ -2965,7 +2957,7 @@ export default function ShopGalleryPage() {
 
     setNotice({
       tone: "error",
-      text: "This Spotlight does not expose an owner contact number yet.",
+      text: "This Spotlight does not expose an owner contact path yet.",
     });
   }
 
@@ -2974,7 +2966,7 @@ export default function ShopGalleryPage() {
     if (!phoneUrl || typeof window === "undefined") {
       setNotice({
         tone: "error",
-        text: "This Spotlight does not expose an owner call number yet.",
+        text: "This Spotlight does not expose an owner call path yet.",
       });
       return;
     }
@@ -3574,9 +3566,7 @@ export default function ShopGalleryPage() {
                   effectiveShop?.ownerName,
                   "GSN public shop"
                 ),
-                message: buildPublicShopPackage(absoluteShopShareLink, [
-                  "Open this public shop, then check the seller and current evidence before you act.",
-                ]),
+                message: buildPublicShopMessage(absoluteShopShareLink),
                 socialMessage: `${firstMeaningful(
                   effectiveShop?.shopName,
                   effectiveShop?.ownerName,

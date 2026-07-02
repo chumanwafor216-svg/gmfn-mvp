@@ -531,13 +531,13 @@ assertContains(
 
 assertContains(
   "index.html",
-  /<title>GSN<\/title>[\s\S]*?GSN Link[\s\S]*?Open this GSN page\.[\s\S]*?property="og:image"[\s\S]*?https:\/\/gmfn-frontend\.onrender\.com\/gsn-share-poster\.png[\s\S]*?property="og:image:type" content="image\/png"[\s\S]*?name="twitter:image"[\s\S]*?https:\/\/gmfn-frontend\.onrender\.com\/gsn-share-poster\.png/,
-  "The static frontend shell must use a short generic frontend-hosted PNG fallback poster, not a shop-specific or repeated trusted-link fallback."
+  /<title>GSN<\/title>[\s\S]*?GSN Public Record[\s\S]*?Check the current GSN page before you act\.[\s\S]*?property="og:image"[\s\S]*?https:\/\/gmfn-frontend\.onrender\.com\/gsn-share-poster\.png[\s\S]*?property="og:image:type" content="image\/png"[\s\S]*?name="twitter:image"[\s\S]*?https:\/\/gmfn-frontend\.onrender\.com\/gsn-share-poster\.png/,
+  "The static frontend shell must use a short, human-facing frontend-hosted PNG fallback poster, not a shop-specific or repeated trusted-link fallback."
 );
 
 assertContains(
   "public/gsn-share-poster.svg",
-  /<text x="600" y="382"[\s\S]*>GSN<\/text>[\s\S]*Public GSN record[\s\S]*Open the current shop, community route, or trust check\.[\s\S]*gmfn-frontend\.onrender\.com/,
+  /<text x="600" y="382"[\s\S]*>GSN<\/text>[\s\S]*GSN Public Record[\s\S]*Check the current GSN page before you act\.[\s\S]*gmfn-frontend\.onrender\.com/,
   "The static fallback share poster must keep important text centered, crop-safe, and bounded to public-record language for social preview cards."
 );
 
@@ -815,8 +815,8 @@ assertContains(
 
 assertContains(
   "src/components/CommunityShopControlPanel.tsx",
-  /async function copyShopLink\(\)[\s\S]*?if \(!publicShopTo\)[\s\S]*?not connected to an active shop[\s\S]*?const copied = await api\.safeCopy\([\s\S]*?buildGsnPublicShopLinkPackage\([\s\S]*?shopLink: publicShopLink/,
-  "Owner shop control must not copy a public shop package until the active shop link is confirmed."
+  /async function copyShopLink\(\)[\s\S]*?if \(!publicShopTo\)[\s\S]*?not connected to an active shop[\s\S]*?const copied = await api\.safeCopy\([\s\S]*?buildGsnPublicShopLinkMessage\([\s\S]*?shopLink: publicShopLink/,
+  "Owner shop control must not copy a public shop message until the active shop link is confirmed."
 );
 
 assertContains(
@@ -839,8 +839,8 @@ assertContains(
 
 assertContains(
   "src/pages/ShopAssetsPage.tsx",
-  /buildShopLink\(gmfnId: string\)[\s\S]*?publicShopShareUrl\(\{ gmfnId \}\)[\s\S]*?buildProductDeepLink\([\s\S]*?publicShopShareUrl\(\{ gmfnId, productId, block \}\)[\s\S]*?buildPublicShopPackage\([\s\S]*?buildGsnPublicShopLinkPackage\([\s\S]*?shopLink: link[\s\S]*?Public shop package copied\.[\s\S]*?Public shop block package copied\. It opens this block inside the Shop Diaries\.[\s\S]*?Public shop item package copied\. It opens this item inside the Shop Diaries\./,
-  "Shop Assets copy actions must copy frontend-domain preview-ready GSN packages for Shop Diaries and exact block/item links with honest feedback."
+  /buildShopLink\(gmfnId: string\)[\s\S]*?publicShopShareUrl\(\{ gmfnId \}\)[\s\S]*?buildProductDeepLink\([\s\S]*?publicShopShareUrl\(\{ gmfnId, productId, block \}\)[\s\S]*?buildPublicShopMessage\([\s\S]*?buildGsnPublicShopLinkMessage\([\s\S]*?shopLink: link[\s\S]*?Public shop package copied\.[\s\S]*?Public shop block package copied\. It opens this block inside the Shop Diaries\.[\s\S]*?Public shop item package copied\. It opens this item inside the Shop Diaries\./,
+  "Shop Assets copy actions must copy frontend-domain preview-ready compact GSN messages for Shop Diaries and exact block/item links with honest feedback."
 );
 
 assertContains(
@@ -875,8 +875,8 @@ assertNotContains(
 
 assertContains(
   "src/pages/ShopGalleryPage.tsx",
-  /const absoluteShopLink = useMemo\(\(\) => \{[\s\S]*?publicShopUrl\(ownerId\)[\s\S]*?const absoluteShopShareLink = useMemo\(\(\) => \{[\s\S]*?publicShopShareUrl\(\{ gmfnId: ownerId \}\)[\s\S]*?async function copyShopLink\(\) \{[\s\S]*?if \(shopLoadFailed\)[\s\S]*?not active yet[\s\S]*?return;[\s\S]*?const copied = await safeCopy\([\s\S]*?buildPublicShopPackage\(absoluteShopShareLink[\s\S]*?GSN public shop invitation copied\.[\s\S]*?Clipboard copy was blocked\. Use Share, or copy the page address from your browser\./,
-  "Public Shop Gallery copy must block failed public-shop links and copy the branded GSN public shop invitation package."
+  /const absoluteShopLink = useMemo\(\(\) => \{[\s\S]*?publicShopUrl\(ownerId\)[\s\S]*?const absoluteShopShareLink = useMemo\(\(\) => \{[\s\S]*?publicShopShareUrl\(\{ gmfnId: ownerId \}\)[\s\S]*?async function copyShopLink\(\) \{[\s\S]*?if \(shopLoadFailed\)[\s\S]*?not active yet[\s\S]*?return;[\s\S]*?const copied = await safeCopy\([\s\S]*?buildPublicShopMessage\(absoluteShopShareLink\)[\s\S]*?GSN public shop invitation copied\.[\s\S]*?Clipboard copy was blocked\. Use Share, or copy the page address from your browser\./,
+  "Public Shop Gallery copy must block failed public-shop links and copy compact GSN public shop link text."
 );
 
 assertContains(

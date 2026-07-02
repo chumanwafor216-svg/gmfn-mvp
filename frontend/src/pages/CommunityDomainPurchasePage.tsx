@@ -361,7 +361,7 @@ export default function CommunityDomainPurchasePage() {
   useEffect(() => {
     if (restoredDraft?.domainName || restoredDraft?.organizationName) {
       setMessage(
-        "Your Community Domain draft details were restored after sign-in. Check the name again before creating the draft."
+        "Your Community Domain draft was restored after sign-in. Check the name before creating the draft."
       );
     }
   }, [restoredDraft]);
@@ -478,7 +478,7 @@ export default function CommunityDomainPurchasePage() {
       setAvailability(result);
       setMessage(
         result?.available
-          ? "This domain name can be used for a draft Community Domain request."
+          ? "Name available. You can create a Community Domain draft next."
           : availabilityReasonText(result?.reason)
       );
     } catch (err: any) {
@@ -678,7 +678,7 @@ export default function CommunityDomainPurchasePage() {
                 }}
               >
                 Check the institutional domain name first. A draft request is not a live
-                community, not a payment, and not a verified public record.
+                domain, not a payment, and not a verified public record.
               </p>
               <div
                 style={{
@@ -764,8 +764,9 @@ export default function CommunityDomainPurchasePage() {
                       Reserve the name before setup.
                     </div>
                     <div style={helperText(false)}>
-                      Ordinary Create Community remains the free social entry path. This
-                      page is for a paid institutional Community Domain.
+                      Use this for schools, unions, churches, markets, and other
+                      recognized organizations. The free self-created path remains a
+                      Committee/community entry.
                     </div>
                   </div>
                 </div>
@@ -856,7 +857,7 @@ export default function CommunityDomainPurchasePage() {
                 >
                   <div style={helperText(false)}>
                     {selectedTemplate.summary ||
-                      "Templates are planning presets. They do not create, activate, verify, or bill a Community Domain."}
+                      "Template is a planning preset only. Activation, verification, and billing happen later."}
                   </div>
                   <EntryActionButton
                     type="submit"
@@ -905,7 +906,7 @@ export default function CommunityDomainPurchasePage() {
                         ) : null}
                       </>
                     ) : (
-                      "GSN checks availability by the domain name/code, not by display-name similarity."
+                      "GSN checks the requested domain code, not the display name."
                     )}
                   </div>
                 </div>
@@ -928,7 +929,7 @@ export default function CommunityDomainPurchasePage() {
                         <strong>{draftResult.community_domain.verification_status}</strong>
                       </>
                     ) : (
-                      "Signed-in owners can create a draft after a name is available. The draft does not create a live social Community."
+                      "Signed-in owners can create a draft after the name is available. Drafts do not create a live Committee or public record."
                     )}
                   </div>
                   {quoteResult ? (
@@ -1032,13 +1033,13 @@ export default function CommunityDomainPurchasePage() {
           >
             <div style={darkPanel()}>
               <div style={{ display: "grid", gap: 8 }}>
-                <div style={labelText()}>Create Community</div>
+                <div style={labelText()}>Committee path</div>
                 <div style={{ fontSize: 21, fontWeight: 950, lineHeight: 1.12 }}>
-                  Free social/community start
+                  Create a free Committee
                 </div>
                 <div style={helperText()}>
-                  Use this for a normal GSN community and member invitations. It is not
-                  the paid institutional domain purchase path.
+                  Use this for a lightweight group created by members. It stays separate
+                  from paid institutional Community Domains.
                 </div>
                 <EntryActionButton
                   type="button"
@@ -1047,20 +1048,20 @@ export default function CommunityDomainPurchasePage() {
                   debugId="community-domain-purchase.open-create-community"
                   style={{ width: "100%" }}
                 >
-                  Create a free community
+                  Create free Committee
                 </EntryActionButton>
               </div>
             </div>
 
             <div style={darkPanel()}>
               <div style={{ display: "grid", gap: 8 }}>
-                <div style={labelText()}>Existing owner</div>
+                <div style={labelText()}>Existing domain</div>
                 <div style={{ fontSize: 21, fontWeight: 950, lineHeight: 1.12 }}>
-                  Find or reopen a domain
+                  Find an institution domain
                 </div>
                 <div style={helperText()}>
-                  Already started or joined a Community Domain? Open your saved
-                  domains, or enter the domain code your organization gave you.
+                  Enter the domain code your organization gave you, or open the
+                  Community Domains already linked to your account.
                 </div>
                 <label>
                   <div

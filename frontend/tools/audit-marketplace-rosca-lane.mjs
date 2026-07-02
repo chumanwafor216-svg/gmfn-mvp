@@ -49,6 +49,11 @@ assertContains(
 );
 
 assertContains(
+  /gridTemplateColumns: isCompact[\s\S]*?\? "1fr"[\s\S]*?: "54px minmax\(0, 1fr\) auto"[\s\S]*?ROSCA savings circles[\s\S]*?Financial support requests[\s\S]*?ROSCA savings[\s\S]*?circles stay separate above and open their own desk/,
+  "Marketplace Support gateway must keep the ROSCA handoff full-width on phone and visibly separate it from Financial Support requests."
+);
+
+assertContains(
   /id: "rosca"[\s\S]*?label: "Open ROSCA"[\s\S]*?to: "#marketplace-rosca"/,
   "ROSCA must remain available from the expanded More tools intent list and open the ROSCA section anchor."
 );

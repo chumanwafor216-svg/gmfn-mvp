@@ -255,7 +255,7 @@ export default function CommunityDomainIdentityReadinessPanels({
           </div>
         )}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          This identity view does not expose owner contact details, private member
+          This identity summary does not expose owner contact details, private member
           lists, finance records, evidence files, or verification proof.
         </div>
       </div>
@@ -330,7 +330,7 @@ export default function CommunityDomainIdentityReadinessPanels({
         ) : institutionalProfile ? (
           <div style={{ ...helperText(), marginTop: 9 }}>
             No blocked institutional lane is visible, but verification, publication,
-            billing, and custom schema are still separate.
+            billing, and advanced profile setup are still separate.
           </div>
         ) : null}
         {visibleInstitutionalProfileLanes.length ? (
@@ -352,11 +352,10 @@ export default function CommunityDomainIdentityReadinessPanels({
           </div>
         ) : null}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          This institutional profile view is read-only package classification. It
-          does not create a custom schema, custom tenant, custom billing package,
-          nodes, members, policies, reviews, evidence, marketplace activity,
-          shops, payments, finance records, social Community links, verification,
-          activation, public publication, or private member, review, or evidence exposure.
+          This is read-only institutional profile readiness. It does not create
+          structures, members, policies, reviews, evidence, billing packages, shops,
+          payments, finance records, social Community links, verification, activation,
+          public pages, or private records.
         </div>
       </div>
 
@@ -414,11 +413,10 @@ export default function CommunityDomainIdentityReadinessPanels({
           </div>
         ) : null}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          This social bridge view is read-only relationship planning. It does not
-          create a social Community, upgrade an existing Community, set clan_id,
-          create affiliations, decide affiliations, copy members, invite members,
-          move marketplace activity, activate billing, verify authority, merge
-          Community and Community Domain records, or expose private member records.
+          This is read-only social-bridge readiness. It does not create or upgrade a
+          social Community, set internal links, create or decide affiliations, copy or
+          invite members, move marketplace activity, activate billing, verify
+          authority, merge records, or expose private member records.
         </div>
       </div>
 
@@ -486,14 +484,11 @@ export default function CommunityDomainIdentityReadinessPanels({
           </div>
         ) : null}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          This affiliation view is read-only parent and child affiliation planning.
-          It does not create domain-domain affiliations, create parent Community
-          Domains, create child Community Domains, approve or reject affiliation
-          requests, set social Community links, copy or transfer members, inherit
-          policy, activate billing, verify authority, publish public URLs, create
-          marketplace activity, move money, issue TrustSlips, write Trust Passport
-          entries, or expose private member, node, evidence, review, marketplace,
-          finance, or affiliate records.
+          This is read-only affiliation readiness. It does not create parent or child
+          Community Domain links, approve requests, set social Community links, copy
+          or transfer members, inherit policy, activate billing, verify authority,
+          publish public URLs, create marketplace activity, move money, issue
+          TrustSlips, write Trust Passport entries, or expose private records.
         </div>
       </div>
     </>

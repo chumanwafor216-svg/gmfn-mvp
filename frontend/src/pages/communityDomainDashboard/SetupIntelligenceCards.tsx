@@ -165,9 +165,8 @@ export default function CommunityDomainSetupIntelligenceCards({
             </div>
           ) : null}
           <div style={{ ...helperText(), fontSize: 13 }}>
-            This checklist does not create nodes, add members, assign roles,
-            decide reviews, create payment instructions, activate billing,
-            activate the domain, verify authority, or expose private evidence.
+            This is a read-only checklist. It does not change membership,
+            billing, authority, payments, or private evidence.
           </div>
         </div>
       </div>
@@ -247,9 +246,8 @@ export default function CommunityDomainSetupIntelligenceCards({
             </div>
           ) : null}
           <div style={{ ...helperText(), fontSize: 13 }}>
-            This setup plan does not create nodes, add members, assign roles,
-            create policy, decide reviews, activate billing, verify authority,
-            publish a public page, move money, or expose private evidence.
+            This is a read-only setup plan. It does not change structure,
+            policy, billing, public pages, money, or private evidence.
           </div>
         </div>
       </div>

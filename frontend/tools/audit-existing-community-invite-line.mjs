@@ -79,7 +79,7 @@ assertContains(
 
 assertContains(
   "frontend/src/lib/joinInviteMessaging.ts",
-  /JOIN_INVITE_LINK_HINT[\s\S]*?Tap the GSN Link preview above to open the invitation[\s\S]*?export function buildJoinInviteDoorwayMessage[\s\S]*?inviteLink \? JOIN_INVITE_LINK_HINT : null/,
+  /JOIN_INVITE_LINK_HINT[\s\S]*?Tap the preview above to open the invitation[\s\S]*?export function buildJoinInviteDoorwayMessage[\s\S]*?inviteLink \? JOIN_INVITE_LINK_HINT : null/,
   "Copied existing-community invite messages must place a clear tap instruction beside the top GSN link preview."
 );
 
@@ -163,8 +163,8 @@ assertContains(
 
 assertContains(
   "frontend/src/pages/MarketplacePage.tsx",
-  /const compactInviteLink = useMemo\([\s\S]*?compactJoinInviteUrl\(personalizedInviteLink\) \|\| personalizedInviteLink[\s\S]*?buildGsnInviteLinkPackage\([\s\S]*?senderName: joinSenderDisplayName[\s\S]*?senderGsnId: currentGmfnId[\s\S]*?inviteLink: compactInviteLink/,
-  "Marketplace outbound invite messages must use the branded GSN invite paper with a compact link so WhatsApp does not expose a long duplicate URL block."
+  /const compactInviteLink = useMemo\([\s\S]*?compactJoinInviteUrl\(personalizedInviteLink\) \|\| personalizedInviteLink[\s\S]*?buildGsnInviteLinkMessage\([\s\S]*?senderName: joinSenderDisplayName[\s\S]*?senderGsnId: currentGmfnId[\s\S]*?inviteLink: compactInviteLink/,
+  "Marketplace outbound invite messages must use compact GSN invite text with a compact link so WhatsApp does not expose a long duplicate paper block."
 );
 
 assertContains(

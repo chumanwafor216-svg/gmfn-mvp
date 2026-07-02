@@ -195,7 +195,7 @@ export default function CommunityDomainBillingReadinessPanels({
                 subscriptionLifecycle.primary_next_action?.label,
                 "Review subscription setup"
               )}. ${subscriptionReadyTotal} of ${visibleSubscriptionLanes.length} billing checks are ready.`
-            : "GSN could not load the read-only subscription lifecycle view for this Community Domain."}
+            : "GSN could not load the read-only billing readiness view for this Community Domain."}
         </div>
         {factGrid([
           ["Package", cleanText(subscriptionPackage.package_name, "not selected")],
@@ -216,7 +216,7 @@ export default function CommunityDomainBillingReadinessPanels({
           </div>
         ) : subscriptionLifecycle ? (
           <div style={{ ...helperText(), marginTop: 9 }}>
-            No blocked billing lane is visible, but payment and renewal automation are
+            No blocked billing lane is visible, but payment and renewal steps are
             still not connected here.
           </div>
         ) : null}
@@ -239,12 +239,10 @@ export default function CommunityDomainBillingReadinessPanels({
           </div>
         ) : null}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          This subscription lifecycle view is read-only billing planning. It does not
-          create quote acceptance, create payment instruction, create expected payment,
-          record payment, confirm payment, create invoices, create receipts, activate
-          billing, activate the Community Domain, create entitlements, renew a domain,
-          suspend a domain, reactivate a domain, verify authority, move money, or
-          expose private finance, member, evidence, or review records.
+          This is read-only billing readiness. It does not accept quotes, create or
+          confirm payments, create invoices or receipts, activate billing, activate
+          the Community Domain, change renewal status, verify authority, move money,
+          or expose private records.
         </div>
       </div>
 
@@ -293,10 +291,10 @@ export default function CommunityDomainBillingReadinessPanels({
           </div>
         ) : null}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          This capacity view does not increase limits, create nodes, add members,
-          assign roles, create shops, meter live shop usage, meter storage usage,
-          change pricing, activate billing, verify authority, move money, publish
-          a public page, or expose private evidence.
+          This is read-only capacity guidance. It does not increase limits, create
+          nodes, add members, assign roles, create shops, meter live usage, change
+          pricing, activate billing, verify authority, move money, publish a public
+          page, or expose private evidence.
         </div>
       </div>
     </>

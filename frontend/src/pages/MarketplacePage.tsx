@@ -18,9 +18,9 @@ import {
 } from "../lib/ctaTargets";
 import { APP_ROUTES, routeWithCommunity } from "../lib/appRoutes";
 import {
-  buildGsnCommunityVerifyLinkPackage,
-  buildGsnInviteLinkPackage,
-  buildGsnPublicShopLinkPackage,
+  buildGsnCommunityVerifyLinkMessage,
+  buildGsnInviteLinkMessage,
+  buildGsnPublicShopLinkMessage,
 } from "../lib/gsnSnapshotPaper";
 import {
   publicApiUrl,
@@ -4976,6 +4976,16 @@ export default function MarketplacePage() {
     return preparePublicShopLink();
   }
 
+  function buildPublicShopLinkMessage(link: string): string {
+    return buildGsnPublicShopLinkMessage({
+      shopName: firstPublicIdentity(publicShopRecord?.name) || "Public GSN Shop",
+      ownerName: memberName,
+      gsnId: publicShopOwnerId || currentGmfnId,
+      communityName: activeCommunityName,
+      shopLink: link,
+    });
+  }
+
   async function copyFreshPublicShopLink() {
     const freshLink = await getFreshPublicShopLink();
     if (!freshLink && !publicShopViewLink) {
@@ -4991,18 +5001,7 @@ export default function MarketplacePage() {
       link,
       "Public shop package refreshed and copied.",
       publicShopUnavailableText,
-      buildGsnPublicShopLinkPackage({
-        shopName: firstPublicIdentity(publicShopRecord?.name) || "Public GSN Shop",
-        ownerName: memberName,
-        gsnId: publicShopOwnerId || currentGmfnId,
-        communityName: activeCommunityName,
-        category: "Public shop face",
-        shopLink: link,
-        messageLines: [
-          "This package opens the public shop face and visible Shop Diaries.",
-          "Private Vault items require a separate owner-issued link.",
-        ],
-      })
+      buildPublicShopLinkMessage(link)
     );
   }
 
@@ -5019,18 +5018,7 @@ export default function MarketplacePage() {
         : freshLink);
     openMarketplaceEmail(
       shopEmailSubject,
-      buildGsnPublicShopLinkPackage({
-        shopName: firstPublicIdentity(publicShopRecord?.name) || "Public GSN Shop",
-        ownerName: memberName,
-        gsnId: publicShopOwnerId || currentGmfnId,
-        communityName: activeCommunityName,
-        category: "Public shop face",
-        shopLink: link,
-        messageLines: [
-          "This package opens the public shop face and visible Shop Diaries.",
-          "Private Vault items require a separate owner-issued link.",
-        ],
-      }),
+      buildPublicShopLinkMessage(link),
       link,
       publicShopUnavailableText
     );
@@ -5620,31 +5608,18 @@ export default function MarketplacePage() {
 
   const joinInviteDoorwayMessage = useMemo(() => {
     if (!compactInviteLink) return "";
-    return buildGsnInviteLinkPackage({
+    return buildGsnInviteLinkMessage({
       senderName: joinSenderDisplayName,
       senderGsnId: currentGmfnId,
       communityName: activeJoinCommunityName,
       inviteLink: compactInviteLink,
-      messageLines: [
-        joinRecipientName ? `Receiver: ${joinRecipientName}` : null,
-        joinSenderDisplayName ? `Invited by ${joinSenderDisplayName}.` : null,
-        activeCommunityName && activeCommunityName !== activeJoinCommunityName
-          ? `Marketplace context: ${activeCommunityName}`
-          : null,
-        joinInviteNote ? `Personal note: ${joinInviteNote}` : null,
-        "This invite opens a request path into the named GSN community.",
-        "Community membership is reviewed before approval.",
-        "GSN helps communities turn visible trust into portable evidence for trade, support, work, and opportunity.",
-        "Private member lists, phone numbers, relationship notes, and private trust history are not included in this invite paper.",
-      ],
+      note: joinInviteNote || "Open this invite to request access.",
     });
   }, [
     compactInviteLink,
     joinSenderDisplayName,
     currentGmfnId,
     activeJoinCommunityName,
-    activeCommunityName,
-    joinRecipientName,
     joinInviteNote,
   ]);
 
@@ -5658,12 +5633,10 @@ export default function MarketplacePage() {
 
   const marketplaceEmailMessage = useMemo(() => {
     if (!publicCommunityWorkspaceLink) return "";
-    return buildGsnCommunityVerifyLinkPackage({
+    return buildGsnCommunityVerifyLinkMessage({
       communityName: activeCommunityName,
       communityId: activeCommunityId ? String(activeCommunityId) : "",
       status: publicCommunityWorkspaceLink ? "Ready" : "Pending",
-      publicRecord: "Community verification record",
-      relayAvailability: "Public verify link can be opened by the receiver.",
       verifyLink: publicCommunityWorkspaceLink,
     });
   }, [activeCommunityName, activeCommunityId, publicCommunityWorkspaceLink]);
@@ -5689,17 +5662,12 @@ export default function MarketplacePage() {
 
   const publicShopSocialPackage = useMemo(() => {
     if (!publicShopSocialLink) return "";
-    return buildGsnPublicShopLinkPackage({
+    return buildGsnPublicShopLinkMessage({
       shopName: firstPublicIdentity(publicShopRecord?.name) || "Public GSN Shop",
       ownerName: memberName,
       gsnId: publicShopOwnerId || currentGmfnId,
       communityName: activeCommunityName,
-      category: "Public shop face",
       shopLink: publicShopSocialLink,
-      messageLines: [
-        "This package opens the public shop face and visible Shop Diaries.",
-        "Private Vault items require a separate owner-issued link.",
-      ],
     });
   }, [
     activeCommunityName,
@@ -11847,10 +11815,10 @@ export default function MarketplacePage() {
               ...innerCard("#FFFDF7"),
               display: "grid",
               gridTemplateColumns: isCompact
-                ? "44px minmax(0, 1fr)"
+                ? "1fr"
                 : "54px minmax(0, 1fr) auto",
               gap: 12,
-              alignItems: "center",
+              alignItems: isCompact ? "start" : "center",
             }}
           >
             <span
@@ -11883,6 +11851,22 @@ export default function MarketplacePage() {
             >
               Open ROSCA
             </StableButton>
+          </div>
+        ) : null}
+
+        {sectionsOpen.support ? (
+          <div
+            style={{
+              marginTop: 14,
+              ...innerCard("#F8FBFF"),
+              border: "1px solid rgba(37,166,90,0.16)",
+            }}
+          >
+            <div style={sectionLabel()}>Financial support requests</div>
+            <div style={{ marginTop: 8, ...helperText(), maxWidth: 760 }}>
+              Use this area for one marketplace support request. ROSCA savings
+              circles stay separate above and open their own desk.
+            </div>
           </div>
         ) : null}
 

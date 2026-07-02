@@ -281,13 +281,10 @@ export default function CommunityDomainTrustEvidenceReadinessPanels({
           </div>
         ) : null}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          This evidence record view is read-only planning. It does not create
-          CommunityDomainEvidenceRecord rows, upload files, expose storage keys,
-          calculate validity windows, persist visibility policy, issue credentials,
-          issue TrustSlips, write Trust Passport entries, publish public proof,
-          verify legal authority, move money, activate billing, create marketplace
-          activity, create a social Community, expose private member evidence, or
-          score trust.
+          This is read-only evidence-record readiness. It does not create evidence
+          records, upload files, issue credentials, publish proof, verify authority,
+          move money, activate billing, create marketplace activity, score trust, or
+          expose private evidence.
         </div>
       </div>
 
@@ -354,13 +351,11 @@ export default function CommunityDomainTrustEvidenceReadinessPanels({
           </div>
         ) : null}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          This evidence release view is read-only public-safe proof planning. It
-          does not release evidence, expose files, expose storage keys, publish
-          public proof, create public URLs, create QR codes, issue credentials,
-          issue TrustSlips, write Trust Passport entries, share records across
-          domains, create trust relay paths, verify legal authority, move money,
-          activate billing, create marketplace activity, create a social Community,
-          change permissions, expose private member evidence, or score trust.
+          This is read-only evidence-release readiness. It does not release evidence,
+          expose files, publish proof, create public URLs or QR codes, issue
+          credentials, share records, verify authority, move money, activate billing,
+          create marketplace activity, change permissions, score trust, or expose
+          private evidence.
         </div>
       </div>
 
@@ -413,12 +408,10 @@ export default function CommunityDomainTrustEvidenceReadinessPanels({
           </div>
         ) : null}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          This trust relay view is read-only planning. It does not create relay paths,
-          record source-domain, bridge-member, or destination-domain rows, publish
-          proof, repost Spotlight, create cross-domain discovery, share private
-          records, expose evidence files, expose storage keys, issue TrustSlips,
-          write Trust Passport entries, create credentials, create marketplace
-          activity, create affiliations, activate billing, or move money.
+          This is read-only trust-relay readiness. It does not create relay paths,
+          publish proof, repost Spotlight, create cross-domain discovery, share
+          private records, issue credentials, create marketplace activity, create
+          affiliations, activate billing, or move money.
         </div>
       </div>
 
@@ -484,13 +477,10 @@ export default function CommunityDomainTrustEvidenceReadinessPanels({
           </div>
         ) : null}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          This notification scope view is read-only audience planning. It does not
-          send notifications, create notification jobs, send emails, send SMS, send
-          WhatsApp messages, send push notifications, create audience lists, publish
-          public announcements, create cross-domain broadcasts, expose member lists,
-          create marketplace records, move money, issue TrustSlips, write Trust
-          Passport entries, or expose private member, review, evidence, marketplace,
-          or finance records.
+          This is read-only audience readiness. It does not send messages, create
+          notification jobs or audience lists, publish announcements, expose member
+          lists, create marketplace records, move money, issue TrustSlips, write Trust
+          Passport entries, or expose private records.
         </div>
       </div>
 
@@ -546,13 +536,11 @@ export default function CommunityDomainTrustEvidenceReadinessPanels({
           </div>
         ) : null}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          This trust mobility view is read-only portability planning. It does not
-          create TrustSlips, write Trust Passport entries, create credentials, create
-          trust relay paths, release evidence, expose files, expose storage keys,
-          verify legal or institutional authority, publish proof, create outward
-          links, move money, activate billing, activate the Community Domain, create
-          marketplace activity, create a social Community, or expose private member,
-          finance, evidence, or review records.
+          This is read-only trust-mobility readiness. It does not create TrustSlips,
+          write Trust Passport entries, create credentials or relay paths, release
+          evidence, expose files, verify authority, publish proof, create outward
+          links, move money, activate billing, create marketplace activity, create a
+          social Community, or expose private records.
         </div>
       </div>
     </>

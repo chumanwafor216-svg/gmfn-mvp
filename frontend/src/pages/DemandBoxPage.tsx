@@ -641,7 +641,9 @@ export default function DemandBoxPage() {
       row?.allow_trust_credit
         ? "Trust-credit preference: requester is open to trust credit where appropriate."
         : "",
-      row?.whatsapp_number ? `Visible contact: ${safeStr(row.whatsapp_number)}` : "",
+      row?.whatsapp_number
+        ? "Public contact path: WhatsApp contact is available from this Demand Box request."
+        : "",
       row?.requester_trust_band
         ? `Visible trust band: ${safeStr(row.requester_trust_band)}`
         : "",
@@ -2115,9 +2117,7 @@ export default function DemandBoxPage() {
                       </span>
                     ) : null}
                     {safeStr(row?.whatsapp_number) ? (
-                      <span style={badge(false)}>
-                        Contact: {safeStr(row?.whatsapp_number)}
-                      </span>
+                      <span style={badge(false)}>Contact path: WhatsApp</span>
                     ) : null}
                     {safeStr(row?.area) ? (
                       <span style={badge(false)}>Area: {safeStr(row?.area)}</span>
@@ -2213,9 +2213,7 @@ export default function DemandBoxPage() {
                               </span>
                             ) : null}
                             {safeStr(row?.whatsapp_number) ? (
-                              <span style={badge(false)}>
-                                Contact: {safeStr(row?.whatsapp_number)}
-                              </span>
+                              <span style={badge(false)}>Contact path: WhatsApp</span>
                             ) : null}
                             {safeStr(row?.area) ? (
                               <span style={badge(false)}>

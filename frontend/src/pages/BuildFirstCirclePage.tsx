@@ -21,7 +21,10 @@ import {
 } from "../lib/api";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 import * as firstCircle from "../lib/firstCircle";
-import { buildGsnInviteLinkPackage } from "../lib/gsnSnapshotPaper";
+import {
+  buildGsnInviteLinkMessage,
+  buildGsnInviteLinkPackage,
+} from "../lib/gsnSnapshotPaper";
 import { normalizedJoinInviteUrl } from "../lib/joinLinks";
 
 type FirstCircleContact = {
@@ -932,6 +935,16 @@ export default function BuildFirstCirclePage() {
     });
   }, [communityName, gmfnId, memberName]);
 
+  const buildCompactInviteMessageForLink = useCallback((link: string): string => {
+    return buildGsnInviteLinkMessage({
+      senderName: memberName,
+      senderGsnId: gmfnId,
+      communityName,
+      inviteLink: link,
+      note: "Open this invite to request access.",
+    });
+  }, [communityName, gmfnId, memberName]);
+
   const joinInviteMessage = useMemo(() => {
     return buildJoinInviteMessageForLink(inviteLink);
   }, [buildJoinInviteMessageForLink, inviteLink]);
@@ -1262,7 +1275,7 @@ export default function BuildFirstCirclePage() {
     const trustedLink = await prepareTrustedInviteLink();
     if (!trustedLink) return;
 
-    const copied = await safeCopy(buildInviteBundleForLink(trustedLink));
+    const copied = await safeCopy(buildCompactInviteMessageForLink(trustedLink));
     showNotice(
       copied ? "success" : "error",
       copied
@@ -1275,7 +1288,7 @@ export default function BuildFirstCirclePage() {
     const trustedLink = await prepareTrustedInviteLink();
     if (!trustedLink) return;
 
-    const copied = await safeCopy(buildJoinInviteMessageForLink(trustedLink));
+    const copied = await safeCopy(buildCompactInviteMessageForLink(trustedLink));
     if (!copied) {
       showNotice(
         "error",
@@ -1292,7 +1305,7 @@ export default function BuildFirstCirclePage() {
     const trustedLink = await prepareTrustedInviteLink();
     if (!trustedLink) return;
 
-    const trustedMessage = buildJoinInviteMessageForLink(trustedLink);
+    const trustedMessage = buildCompactInviteMessageForLink(trustedLink);
 
     const navAny = navigator as any;
     if (navAny?.share) {
@@ -1325,7 +1338,7 @@ export default function BuildFirstCirclePage() {
 
     const opened = window.open(
       `https://wa.me/?text=${encodeURIComponent(
-        buildJoinInviteMessageForLink(trustedLink)
+        buildCompactInviteMessageForLink(trustedLink)
       )}`,
       "_blank",
       "noopener,noreferrer"
@@ -1347,7 +1360,7 @@ export default function BuildFirstCirclePage() {
     setFocusedAction(null);
     window.location.href = `mailto:?subject=${encodeURIComponent(
       subject
-    )}&body=${encodeURIComponent(buildJoinInviteMessageForLink(trustedLink))}`;
+    )}&body=${encodeURIComponent(buildCompactInviteMessageForLink(trustedLink))}`;
   }
 
   async function openFacebookInvite() {

@@ -881,8 +881,13 @@ assertContains(
 );
 assertContains(
   "snapshotPaper",
+  /buildGsnCompactPublicLinkPackage[\s\S]*?buildGsnCommunityVerifyLinkMessage[\s\S]*?GSN Community Record[\s\S]*?buildGsnInviteLinkMessage[\s\S]*?GSN Community Invite[\s\S]*?buildGsnPublicShopLinkMessage[\s\S]*?GSN Public Shop/,
+  "Shared snapshot helpers must keep formal paper packages and compact public forwarding messages separate."
+);
+assertContains(
+  "snapshotPaper",
   /buildGsnCommunityVerifyLinkPackage[\s\S]*?GSN Community Verification Link[\s\S]*?buildGsnInviteLinkPackage[\s\S]*?GSN Community Invite[\s\S]*?buildGsnPublicShopLinkPackage[\s\S]*?GSN Public Shop Invitation/,
-  "Shared evidence package helper must cover community verification, community invites, and public shop invitations."
+  "Shared snapshot helpers must keep formal public-link paper packages available for evidence previews."
 );
 assertContains(
   "snapshotPaper",
@@ -896,8 +901,8 @@ assertNotContains(
 );
 assertContains(
   "snapshotPaper",
-  /buildGsnVaultInvitePackage[\s\S]*?GSN Private Vault Invitation/,
-  "Shared evidence package helper must cover private Vault invitation packages."
+  /buildGsnVaultInviteMessage[\s\S]*?GSN Private Vault Link[\s\S]*?buildGsnVaultInvitePackage[\s\S]*?GSN Private Vault Invitation/,
+  "Shared snapshot helpers must cover formal and compact private Vault invitation messages."
 );
 assertContains(
   "snapshotPaper",
@@ -996,8 +1001,8 @@ assertNotContains(
 );
 assertContains(
   "communityVerify",
-  /buildGsnCommunityVerifyLinkPackage[\s\S]*?communityVerifyLinkPackage[\s\S]*?communityName[\s\S]*?communityId: communityAnchor[\s\S]*?verifyLink: publicLink[\s\S]*?copyLink[\s\S]*?safeCopy\(communityVerifyLinkPackage\)[\s\S]*?GSN community verification paper copied\./,
-  "Public Community Verification Copy link must copy the branded GSN verification link paper, not a bare URL."
+  /buildGsnCommunityVerifyLinkMessage[\s\S]*?communityVerifyLinkPackage[\s\S]*?communityName[\s\S]*?communityId: communityAnchor[\s\S]*?verifyLink: publicLink[\s\S]*?copyLink[\s\S]*?safeCopy\(communityVerifyLinkPackage\)[\s\S]*?GSN community verification paper copied\./,
+  "Public Community Verification Copy link must copy compact GSN verification link text, not a bare URL or full paper."
 );
 assertContains(
   "communityVerify",
@@ -1201,13 +1206,23 @@ assertNotContains(
 );
 assertContains(
   "firstCircle",
-  /GsnSnapshotPaperCard[\s\S]*?buildGsnInviteLinkPackage[\s\S]*?joinInviteMessage[\s\S]*?inviteBundle[\s\S]*?paperText=\{readyContacts\.length > 0 \? inviteBundle : joinInviteMessage\}[\s\S]*?paperText=\{inviteBundle \|\| joinInviteMessage\}/,
-  "First Circle community invite copy/share text and visible preview must use the branded GSN invite paper package."
+  /buildGsnInviteLinkMessage[\s\S]*?buildCompactInviteMessageForLink[\s\S]*?safeCopy\(buildCompactInviteMessageForLink\(trustedLink\)\)[\s\S]*?wa\.me\/\?text=\$\{encodeURIComponent\([\s\S]*?buildCompactInviteMessageForLink\(trustedLink\)/,
+  "First Circle must keep formal invite previews while copied/forwarded invite text stays compact."
+);
+assertContains(
+  "firstCircle",
+  /buildGsnInviteLinkPackage[\s\S]*?joinInviteMessage[\s\S]*?inviteBundle[\s\S]*?GsnSnapshotPaperCard[\s\S]*?paperText=\{readyContacts\.length > 0 \? inviteBundle : joinInviteMessage\}[\s\S]*?paperText=\{inviteBundle \|\| joinInviteMessage\}/,
+  "First Circle visible invite preview must keep the formal GSN invite paper."
 );
 assertContains(
   "clansPage",
-  /buildGsnInviteLinkPackage[\s\S]*?packagedShareText[\s\S]*?GSN invite paper[\s\S]*?Copy GSN invite paper/,
-  "Legacy Clans invite package copy must use the branded GSN invite paper package."
+  /buildGsnInviteLinkMessage[\s\S]*?compactShareText[\s\S]*?whatsappShareText: compactShareText/,
+  "Legacy Clans must keep the formal invite paper copy while WhatsApp uses compact invite text."
+);
+assertContains(
+  "clansPage",
+  /buildGsnInviteLinkPackage[\s\S]*?packagedShareText[\s\S]*?GSN invite paper[\s\S]*?clans\.invite\.copy-package/,
+  "Legacy Clans must still show and copy the formal invite paper where explicitly requested."
 );
 assertContains(
   "joinInviteMessaging",
@@ -1216,13 +1231,13 @@ assertContains(
 );
 assertContains(
   "joinInviteMessaging",
-  /JOIN_INVITE_LINK_HINT[\s\S]*?Tap the GSN Link preview above to open the invitation[\s\S]*?export function buildJoinInviteDoorwayMessage[\s\S]*?inviteLink \? JOIN_INVITE_LINK_HINT : null/,
+  /JOIN_INVITE_LINK_HINT[\s\S]*?Tap the preview above to open the invitation[\s\S]*?export function buildJoinInviteDoorwayMessage[\s\S]*?inviteLink \? JOIN_INVITE_LINK_HINT : null/,
   "Shared join invite messaging must place a clear tap instruction beside the top GSN link preview in copied doorway messages."
 );
 assertContains(
   "marketplace",
-  /import \{[\s\S]*?compactJoinInviteUrl[\s\S]*?personalizedJoinInviteUrl[\s\S]*?\} from "\.\.\/lib\/joinLinks";[\s\S]*?buildGsnInviteLinkPackage[\s\S]*?activeJoinCommunityCode[\s\S]*?communityCode\(selectedCommunity\)[\s\S]*?personalizedInviteLink[\s\S]*?personalizedJoinInviteUrl\(inviteLink[\s\S]*?recipientName: joinRecipientName[\s\S]*?communityCode: activeJoinCommunityCode[\s\S]*?marketplaceName: activeCommunityName[\s\S]*?message: joinInviteNote[\s\S]*?compactInviteLink[\s\S]*?compactJoinInviteUrl\(personalizedInviteLink\)[\s\S]*?buildGsnInviteLinkPackage\([\s\S]*?senderName: joinSenderDisplayName[\s\S]*?senderGsnId: currentGmfnId[\s\S]*?inviteLink: compactInviteLink[\s\S]*?Community membership is reviewed before approval\.[\s\S]*?Private member lists, phone numbers, relationship notes, and private trust history are not included[\s\S]*?copyMarketplaceLink\([\s\S]*?personalizedInviteLink[\s\S]*?"GSN join link copied\."[\s\S]*?wa\.me\/\?text=\$\{encodeURIComponent\(joinInviteDoorwayMessage\)\}/,
-  "Marketplace join sharing must use branded GSN invite paper while the actual Join URL preserves receiver/community code/community/marketplace context for the request form."
+  /import \{[\s\S]*?compactJoinInviteUrl[\s\S]*?personalizedJoinInviteUrl[\s\S]*?\} from "\.\.\/lib\/joinLinks";[\s\S]*?buildGsnInviteLinkMessage[\s\S]*?activeJoinCommunityCode[\s\S]*?communityCode\(selectedCommunity\)[\s\S]*?personalizedInviteLink[\s\S]*?personalizedJoinInviteUrl\(inviteLink[\s\S]*?recipientName: joinRecipientName[\s\S]*?communityCode: activeJoinCommunityCode[\s\S]*?marketplaceName: activeCommunityName[\s\S]*?message: joinInviteNote[\s\S]*?compactInviteLink[\s\S]*?compactJoinInviteUrl\(personalizedInviteLink\)[\s\S]*?buildGsnInviteLinkMessage\([\s\S]*?senderName: joinSenderDisplayName[\s\S]*?senderGsnId: currentGmfnId[\s\S]*?inviteLink: compactInviteLink[\s\S]*?copyMarketplaceLink\([\s\S]*?personalizedInviteLink[\s\S]*?"GSN join link copied\."[\s\S]*?wa\.me\/\?text=\$\{encodeURIComponent\(joinInviteDoorwayMessage\)\}/,
+  "Marketplace join sharing must use compact GSN invite text while the actual Join URL preserves receiver/community code/community/marketplace context for the request form."
 );
 assertContains(
   "joinEntry",
@@ -1236,18 +1251,28 @@ assertContains(
 );
 assertContains(
   "marketplace",
-  /buildGsnCommunityVerifyLinkPackage[\s\S]*?marketplaceEmailMessage[\s\S]*?copyMarketplaceLink\([\s\S]*?marketplaceEmailMessage/,
-  "Marketplace community verification link copy must use the branded GSN verification package."
+  /buildGsnCommunityVerifyLinkMessage[\s\S]*?marketplaceEmailMessage[\s\S]*?copyMarketplaceLink\([\s\S]*?marketplaceEmailMessage/,
+  "Marketplace community verification link copy must use compact GSN verification link text."
 );
 assertContains(
   "marketplace",
-  /buildGsnPublicShopLinkPackage[\s\S]*?Public shop package refreshed and copied/,
-  "Marketplace public shop link copy/email must use the branded GSN public shop package."
+  /buildGsnPublicShopLinkMessage[\s\S]*?function buildPublicShopLinkMessage[\s\S]*?Public shop package refreshed and copied/,
+  "Marketplace public shop link copy/email must use compact GSN public shop link text."
 );
 assertContains(
   "demandBox",
   /buildDemandRequestPaper[\s\S]*?Reader boundary: confirm identity evidence, TrustSlip context, price, availability, and fit before acting\.[\s\S]*?Do not treat this request paper as release authority for goods, money, credit, or service\.[\s\S]*?buildGsnSnapshotPaper[\s\S]*?GSN Demand Request Paper[\s\S]*?not proof that the request was fulfilled/,
   "Demand Box request copies must use a branded GSN demand request paper with a release-authority boundary."
+);
+assertContains(
+  "demandBox",
+  /Public contact path: WhatsApp contact is available from this Demand Box request\.[\s\S]*?Contact path: WhatsApp/,
+  "Demand Box public request contact language must describe the GSN contact path, not expose the raw WhatsApp number as the record."
+);
+assertNotContains(
+  "demandBox",
+  /Visible contact:\s*\$\{|Contact:\s*\{safeStr\(row\?\.whatsapp_number\)\}/g,
+  "Demand Box public request papers and badges must not expose raw WhatsApp numbers as visible contact labels."
 );
 assertContains(
   "demandBox",
@@ -1261,8 +1286,8 @@ assertContains(
 );
 assertContains(
   "publicShop",
-  /function copyShopLink[\s\S]*?safeCopy\([\s\S]*?buildPublicShopPackage\(absoluteShopShareLink[\s\S]*?GSN public shop invitation copied\./,
-  "Public Shop direct Copy action must copy the branded GSN public shop invitation package."
+  /function copyShopLink[\s\S]*?safeCopy\([\s\S]*?buildPublicShopMessage\(absoluteShopShareLink\)[\s\S]*?GSN public shop invitation copied\./,
+  "Public Shop direct Copy action must copy compact GSN public shop link text."
 );
 assertContains(
   "publicShop",
@@ -1274,20 +1299,25 @@ assertNotContains(
   /owner contact can be trusted/,
   "Public Shop must not say stale owner contact can become trusted just because the owner refreshes the link."
 );
+assertNotContains(
+  "publicShop",
+  /owner (?:phone|contact|call) number|owner number|visible owner number|WhatsApp says this number/gi,
+  "Public Shop public notices must speak about GSN contact paths, not owner numbers as public identity."
+);
 assertContains(
   "shopAssets",
-  /buildGsnPublicShopLinkPackage[\s\S]*?function buildPublicShopPackage[\s\S]*?Public shop package copied[\s\S]*?Public shop block package copied[\s\S]*?Public shop item package copied/,
-  "Shop Assets public shop and item copy actions must use the branded GSN public shop package."
+  /buildGsnPublicShopLinkMessage[\s\S]*?function buildPublicShopMessage[\s\S]*?Public shop package copied[\s\S]*?Public shop block package copied[\s\S]*?Public shop item package copied/,
+  "Shop Assets public shop and item copy actions must use compact GSN public shop link text."
 );
 assertContains(
   "communityShopControl",
-  /buildGsnPublicShopLinkPackage[\s\S]*?api\.safeCopy\([\s\S]*?Public shop package copied/,
-  "Community Home shop-control public link copy must use the branded GSN public shop package."
+  /buildGsnPublicShopLinkMessage[\s\S]*?api\.safeCopy\([\s\S]*?Public shop package copied/,
+  "Community Home shop-control public link copy must use compact GSN public shop link text."
 );
 assertContains(
   "shopControl",
-  /buildGsnVaultInvitePackage[\s\S]*?function buildVaultViewingLinkPackage[\s\S]*?Vault viewing package/,
-  "Shop Control private Vault viewing links must use the branded GSN Vault invitation package."
+  /buildGsnVaultInviteMessage[\s\S]*?function buildVaultViewingLinkPackage[\s\S]*?Vault viewing package/,
+  "Shop Control private Vault viewing links must use compact GSN Vault link text."
 );
 assertContains(
   "shopAccess",
@@ -1301,8 +1331,8 @@ assertContains(
 );
 assertContains(
   "vaultControl",
-  /buildGsnVaultInvitePackage[\s\S]*?function buildVaultInvitePackage[\s\S]*?safeCopy\(buildVaultInvitePackage\(url, link\)\)[\s\S]*?safeCopy\(buildVaultInvitePackage\(selectedBlockLinkUrl, selectedBlockPrimaryLink\)\)/,
-  "Private Vault copied links must use the branded GSN private Vault package."
+  /buildGsnVaultInviteMessage[\s\S]*?function buildVaultInvitePackage[\s\S]*?safeCopy\(buildVaultInvitePackage\(url, link\)\)[\s\S]*?safeCopy\(buildVaultInvitePackage\(selectedBlockLinkUrl, selectedBlockPrimaryLink\)\)/,
+  "Private Vault copied links must use compact GSN private Vault link text."
 );
 assertContains(
   "paymentInstructions",

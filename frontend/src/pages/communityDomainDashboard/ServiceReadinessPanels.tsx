@@ -354,9 +354,9 @@ export default function CommunityDomainServiceReadinessPanels({
           )}
         </div>
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          This readiness view does not enable services, activate billing, grant
-          permissions, publish Spotlight, create shops, open vault links, write Trust
-          Passport records, or expose private member activity.
+          This is read-only service readiness. It does not enable services,
+          activate billing, grant permissions, publish Spotlight, create shops,
+          open vault links, or expose private member activity.
         </div>
       </div>
 
@@ -392,11 +392,9 @@ export default function CommunityDomainServiceReadinessPanels({
           </div>
         ) : null}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          This service settings projection is read-only template guidance. It does
-          not persist settings, enable or disable modules, activate billing, activate
-          the Community Domain, grant permissions, create shops, publish Spotlight,
-          open vault links, issue TrustSlips, write Trust Passport records, or expose
-          private records.
+          This is read-only template guidance. It does not save settings, enable
+          modules, activate billing, grant permissions, create shops, publish
+          Spotlight, open vault links, or expose private records.
         </div>
       </div>
 
@@ -456,12 +454,10 @@ export default function CommunityDomainServiceReadinessPanels({
           </div>
         ) : null}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          This economic participation view is read-only template and readiness
-          guidance. It does not create a marketplace, create a shop, publish
-          listings, create demand, place Spotlight, create vault links, move money,
-          create payment instructions, create finance records, verify trust
-          evidence, activate billing, activate the Community Domain, create a social
-          Community, or expose private member activity.
+          This is read-only economic readiness. It does not create shops,
+          listings, demand, Spotlight, vault links, payment instructions, finance
+          records, billing changes, social Community links, or private member
+          activity.
         </div>
       </div>
 
@@ -521,12 +517,10 @@ export default function CommunityDomainServiceReadinessPanels({
           </div>
         ) : null}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          This network presence view is read-only guidance. It does not publish a
-          public page, finalize whether public Community Domain URLs use
-          /domains/:name or /community-domains/:name, create outward links, verify
-          the domain, create marketplace exposure, create Spotlight placement, create
-          vault links, create a social Community bridge, activate billing, activate
-          the Community Domain, or expose private member activity.
+          This is read-only public-presence guidance. It does not publish a
+          public page, finalize the domain URL format, create outward links,
+          verify the domain, create marketplace or Spotlight exposure, activate
+          billing, or expose private member activity.
         </div>
       </div>
     </>
