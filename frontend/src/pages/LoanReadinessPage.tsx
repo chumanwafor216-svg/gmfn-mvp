@@ -13,7 +13,7 @@ import {
   institutionalSoftCard,
   institutionalStatTile,
 } from "../lib/institutionalSurface";
-import { buildGsnSupportEvidencePackage } from "../lib/gsnSnapshotPaper";
+import { buildGsnSupportEvidenceShareText } from "../lib/gsnSnapshotPaper";
 import { brandClampLines } from "../styles/gmfnBrand";
 
 type LoanRow = {
@@ -79,6 +79,40 @@ function firstTruthy(...values: any[]): string {
     if (text) return text;
   }
   return "";
+}
+
+function normalizeMemberGmfnId(value: any): string {
+  const raw = safeStr(value).toUpperCase().replace(/^GSN-/, "GMFN-");
+  if (!/^GMFN-[A-Z]-[A-Z0-9-]+$/.test(raw)) return "";
+  return raw.startsWith("GMFN-C-") ? "" : raw;
+}
+
+function firstMemberGmfnId(...values: any[]): string {
+  for (const value of values) {
+    const gmfnId = normalizeMemberGmfnId(value);
+    if (gmfnId) return gmfnId;
+  }
+  return "";
+}
+
+function resolveMemberGmfnId(me: any, currentClan: any): string {
+  return firstMemberGmfnId(
+    me?.gmfn_id,
+    me?.gmfnId,
+    me?.profile?.gmfn_id,
+    currentClan?.current_member_gmfn_id,
+    currentClan?.currentUserGmfnId,
+    currentClan?.member_gmfn_id,
+    currentClan?.memberGmfnId,
+    currentClan?.membership?.gmfn_id,
+    currentClan?.membership?.member_gmfn_id,
+    currentClan?.member?.gmfn_id,
+    currentClan?.profile?.member_gmfn_id,
+    currentClan?.profile?.gmfn_id,
+    currentClan?.user?.gmfn_id,
+    currentClan?.gmfn_id,
+    (api as any).getStoredGmfnId?.()
+  );
 }
 
 function positiveNumber(value: any): number {
@@ -767,6 +801,11 @@ export default function LoanReadinessPage() {
         setPoolInfo(poolRes);
         setLoans(filteredLoans);
         setGuarantorInbox(normalizedGuarantorRows);
+
+        const resolvedGmfnId = resolveMemberGmfnId(meRes, clanRes);
+        if (resolvedGmfnId && typeof (api as any).setStoredGmfnId === "function") {
+          (api as any).setStoredGmfnId(resolvedGmfnId);
+        }
       } finally {
         if (isCurrentReadinessLoad()) setLoading(false);
       }
@@ -789,9 +828,13 @@ export default function LoanReadinessPage() {
     );
   }, [me]);
 
+  const currentGmfnId = useMemo(() => {
+    return resolveMemberGmfnId(me, currentClan);
+  }, [me, currentClan]);
+
   const gmfnId = useMemo(() => {
-    return firstTruthy(me?.gmfn_id, "Awaiting issue");
-  }, [me]);
+    return firstTruthy(currentGmfnId, "Awaiting issue");
+  }, [currentGmfnId]);
 
   const communityLabel = useMemo(() => {
     return communityName(currentClan, selectedClanId);
@@ -834,8 +877,8 @@ export default function LoanReadinessPage() {
   }, [borrowerLoans]);
 
   const withdrawalTask = useMemo(
-    () => readWithdrawalTask(selectedClanId, safeStr(me?.gmfn_id)),
-    [selectedClanId, me]
+    () => readWithdrawalTask(selectedClanId, currentGmfnId),
+    [selectedClanId, currentGmfnId]
   );
 
   const cameFromWithdrawalSupport = useMemo(() => {
@@ -854,12 +897,12 @@ export default function LoanReadinessPage() {
     const borrowerCount = borrowerLoans.length;
     const guarantorCount = guarantorLoans.length;
 
-    if (!selectedClanId || !safeStr(me?.gmfn_id)) {
+    if (!selectedClanId || !currentGmfnId) {
       return {
         level: "blocked" as const,
         title: "Community or member identity is not ready.",
         detail:
-          "The support process should not continue without your current community and visible member identity.",
+          "The support process should not continue without your current community and visible member GSN ID.",
       };
     }
 
@@ -920,7 +963,7 @@ export default function LoanReadinessPage() {
     };
   }, [
     selectedClanId,
-    me,
+    currentGmfnId,
     cameFromWithdrawalSupport,
     borrowerLoans.length,
     guarantorInbox.length,
@@ -1101,12 +1144,10 @@ export default function LoanReadinessPage() {
   const readinessSupportActive =
     cameFromWithdrawalSupport || Boolean(activeBorrowerLoan) || guarantorInbox.length > 0;
 
-  const readinessPaper = useMemo(
-    () =>
-      buildGsnSupportEvidencePackage({
+  function copyReadinessPaper() {
+    api.safeCopy(
+      buildGsnSupportEvidenceShareText({
         title: "GSN Support Readiness Snapshot",
-        purpose:
-          "Keep the current support-readiness reading with the visible community and member context.",
         memberName,
         gsnId: gmfnId,
         memberRole,
@@ -1122,53 +1163,10 @@ export default function LoanReadinessPage() {
         status: readiness.level,
         detailLines: [
           `Readiness: ${readiness.title}`,
-          `Reading detail: ${readiness.detail}`,
           `Recommended next action: ${recommendedNext.ctaLabel}`,
-          `Recommended next reason: ${recommendedNext.title}`,
-          `My active support requests: ${borrowerLoans.length}`,
-          `Waiting support decisions: ${guarantorInbox.length}`,
-          `Active support responsibility: ${guarantorLoans.length}`,
-          `Visible pool position: ${poolAmount} ${poolCurrency}`,
-          cameFromWithdrawalSupport ? "Money Out support context: present" : "",
-          supportGap ? `Support gap: ${supportGap} ${poolCurrency}` : "",
-          withdrawalNote ? `Money Out note: ${withdrawalNote}` : "",
-          "What helps readiness:",
-          ...readinessHelps.map((item) => `- ${item}`),
-          "What reduces readiness:",
-          ...(blockers.length
-            ? blockers.map((item) => `- ${item}`)
-            : ["- No strong visible blocker is active right now."]),
-          "Boundary: readiness is decision support only. It is not support approval, supporter selection, payout confirmation, or authority to release goods, credit, or money.",
         ],
-      }),
-    [
-      activeBorrowerLoan,
-      blockers,
-      borrowerLoans.length,
-      cameFromWithdrawalSupport,
-      communityLabel,
-      gmfnId,
-      guarantorInbox.length,
-      guarantorLoans.length,
-      memberName,
-      memberRole,
-      poolAmount,
-      poolCurrency,
-      publicCommunityId,
-      readiness.detail,
-      readiness.level,
-      readiness.title,
-      readinessHelps,
-      recommendedNext.ctaLabel,
-      recommendedNext.title,
-      supportGap,
-      withdrawalAmount,
-      withdrawalNote,
-    ]
-  );
-
-  function copyReadinessPaper() {
-    api.safeCopy(readinessPaper);
+      })
+    );
   }
 
   function toggleSection(key: keyof CollapseState) {

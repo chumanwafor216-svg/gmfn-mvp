@@ -153,7 +153,7 @@ for (const action of actions) {
 
 const frontToInnerOrder = [
   { label: "empty state", pattern: /^community-home\.empty\./ },
-  { label: "visible communities summary", pattern: /^community-home\.summary\.visible-communities/ },
+  { label: "visible marketplace summary", pattern: /^community-home\.summary\.visible-communities/ },
   { label: "community domain summary", pattern: /^community-home\.summary\.community-domain/ },
   { label: "finance summary", pattern: /^community-home\.finance-summary\./ },
   { label: "trust summary", pattern: /^community-home\.trust-summary\./ },
@@ -263,7 +263,7 @@ assertContains(
 
 assertContains(
   /communityPackages: routeTarget\([\s\S]*?"shop"[\s\S]*?hash: OWNER_SHOP_HASHES\.communityPackage[\s\S]*?case "community-packages"[\s\S]*?routes\.communityPackages/,
-  "Community Home Community packages guide item must open the Shop Control community package lane."
+  "Community Home marketplace-capacity guide item must open the Shop Control capacity lane."
 );
 
 assertContains(
@@ -292,8 +292,33 @@ assertContains(
 );
 
 assertContains(
-  /Communities and domains[\s\S]*?debugId="community-home\.summary\.visible-communities"[\s\S]*?\{communityCountFromSummary\} community \{communityCountFromSummary === 1 \? "marketplace" : "marketplaces"\}[\s\S]*?debugId="community-home\.summary\.community-domain"[\s\S]*?Community Domains[\s\S]*?Institutional domains for schools, unions, churches, and markets\.[\s\S]*?openCommunityRoute\(event, routes\.communityDomain\)/,
+  /Marketplaces and Community Domains[\s\S]*?debugId="community-home\.summary\.visible-communities"[\s\S]*?\{communityCountFromSummary\} community \{communityCountFromSummary === 1 \? "marketplace" : "marketplaces"\}[\s\S]*?Self-created or joined marketplace communities for local work\.[\s\S]*?debugId="community-home\.summary\.community-domain"[\s\S]*?Community Domains[\s\S]*?Institutional domains for schools, unions, churches, and markets\.[\s\S]*?openCommunityRoute\(event, routes\.communityDomain\)/,
   "Community Home summary must distinguish community marketplaces from institutional Community Domains."
+);
+
+assertContains(
+  /debugId="community-home\.communities\.header-toggle"[\s\S]*?Your Community Marketplaces[\s\S]*?\{sortedClans\.length\} \{sortedClans\.length === 1 \? "marketplace" : "marketplaces"\}[\s\S]*?Marketplace workspace for this community[\s\S]*?Open Marketplace/,
+  "Community Home opened list must label ordinary clan workspaces as Community Marketplaces, not generic Communities."
+);
+
+assertContains(
+  /Loading your marketplace communities[\s\S]*?No marketplace communities yet[\s\S]*?visible marketplace communities[\s\S]*?marketplace communities will appear here[\s\S]*?Create marketplace community/,
+  "Community Home empty and loading states must describe ordinary communities as marketplace communities."
+);
+
+assertContains(
+  /id: "communities"[\s\S]*?lane: "communities"[\s\S]*?title: "Marketplaces"[\s\S]*?Marketplace communities[\s\S]*?title: "Choose marketplace"[\s\S]*?title: "Create marketplace"[\s\S]*?title: "Join marketplace"/,
+  "Community Home grouped lane must show marketplace-community wording instead of generic Communities copy."
+);
+
+assertContains(
+  /id: "choose-community"[\s\S]*?label: "Choose marketplace"[\s\S]*?Marketplace community list[\s\S]*?id: "marketplace"[\s\S]*?Select a marketplace community first[\s\S]*?id: "create-community"[\s\S]*?label: "Create marketplace"[\s\S]*?Create marketplace community[\s\S]*?id: "join-community"[\s\S]*?label: "Join marketplace"[\s\S]*?Join marketplace community[\s\S]*?continueLabel: "Choose marketplace"/,
+  "Community Home next-action guide must use marketplace-community wording for ordinary community selection."
+);
+
+assertContains(
+  /id: "community-packages"[\s\S]*?label: "Marketplace capacity"[\s\S]*?Choose one marketplace first, then open its capacity tools\.[\s\S]*?technical: "Marketplace capacity"[\s\S]*?routes\.communityPackages[\s\S]*?Choose a marketplace first, then open marketplace capacity\.[\s\S]*?title: "Marketplace capacity"[\s\S]*?Member places, shop blocks, ROSCA, meeting packs, and capacity upgrades\.[\s\S]*?capacity payments, and renewal checks/,
+  "Community Home capacity lane must not expose ordinary marketplace capacity with old package wording."
 );
 
 if (/<div\s+style=\{communityToolRowStyle\(\)\}/.test(source)) {

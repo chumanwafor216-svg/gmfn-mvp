@@ -123,6 +123,28 @@ assertNotContains(
   { frontend: true }
 );
 
+[
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  "src/pages/communityDomainDashboard/AccessRequestsPanel.tsx",
+  "src/pages/communityDomainDashboard/BillingReadinessPanels.tsx",
+  "src/pages/communityDomainDashboard/DashboardRecoveryPanel.tsx",
+  "src/pages/communityDomainDashboard/DomainSelectorPanel.tsx",
+  "src/pages/communityDomainDashboard/GovernanceReadinessPanels.tsx",
+  "src/pages/communityDomainDashboard/IdentityReadinessPanels.tsx",
+  "src/pages/communityDomainDashboard/LaneSelectorPanel.tsx",
+  "src/pages/communityDomainDashboard/NodeProjectionGroups.tsx",
+  "src/pages/communityDomainDashboard/SetupIntelligenceCards.tsx",
+  "src/pages/communityDomainDashboard/StructurePlanningPanels.tsx",
+  "src/pages/communityDomainDashboard/StructurePreviewPanel.tsx",
+].forEach((relativePath) => {
+  assertNotContains(
+    relativePath,
+    /letterSpacing:\s*(?:0\.[1-9][0-9]*|[1-9][0-9.]*)/,
+    "Community Domain surfaces must not use spaced-out micro-label typography.",
+    { frontend: true }
+  );
+});
+
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
   /function laneDisplayLabel[\s\S]*key === "modules"[\s\S]*return "Services"[\s\S]*const primaryActionLaneLabel = laneDisplayLabel\(primaryActionLane, "work"\)[\s\S]*\{laneDisplayLabel\(selectedLane, "Community Domain setup"\)\}/,
@@ -162,6 +184,13 @@ assertContains(
   "src/pages/communityDomainDashboard/BillingReadinessPanels.tsx",
   /function readinessLanes[\s\S]*function blockedLanes[\s\S]*function readyTotal[\s\S]*function attentionCapacityLanes[\s\S]*subscriptionLifecycle\?\.summary[\s\S]*subscriptionLifecycle\?\.package[\s\S]*readinessLanes\(subscriptionLifecycle\)[\s\S]*readinessLanes\(capacityPlan\)[\s\S]*attentionCapacityLanes\(visibleCapacityLanes\)/,
   "Lazy Community Domain Billing readiness component must derive subscription summary, package, lanes, blocked rows, ready total, and capacity attention lanes from raw maps.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/communityDomainDashboard/BillingReadinessPanels.tsx",
+  /BILLING_DETAIL_OPTIONS[\s\S]*key: "lifecycle"[\s\S]*key: "capacity"[\s\S]*activeBillingDetail[\s\S]*community-domain-billing\.detail\.\$\{option\.key\}[\s\S]*activeBillingDetail === "lifecycle"[\s\S]*Subscription lifecycle[\s\S]*activeBillingDetail === "capacity"[\s\S]*Package capacity/,
+  "Community Domain Billing readiness panel must expose one focused billing packet at a time instead of dumping lifecycle and capacity together.",
   { frontend: true }
 );
 
@@ -260,6 +289,13 @@ assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
   /lazy\([\s\S]*import\("\.\/communityDomainDashboard\/ServiceReadinessPanels"\)[\s\S]*listCommunityDomainServiceSettings[\s\S]*getCommunityDomainEconomicParticipation[\s\S]*getCommunityDomainNetworkPresence[\s\S]*CommunityDomainServiceReadinessPanels[\s\S]*moduleScopeReadiness=\{moduleScopeReadiness\}[\s\S]*moduleKeys=\{moduleKeys\}[\s\S]*billingStatus=\{status\.billing_status\}[\s\S]*quote=\{quote\}[\s\S]*serviceSettingsProjection=\{serviceSettingsProjection\}[\s\S]*economicParticipation=\{economicParticipation\}[\s\S]*networkPresence=\{networkPresence\}/,
   "Community Domain dashboard Services lane must lazy-load the read-only service readiness panels and pass raw service maps plus billing/module context from the parent route.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /SERVICE_DETAIL_OPTIONS[\s\S]*key: "readiness"[\s\S]*key: "local"[\s\S]*key: "boundaries"[\s\S]*key: "trust"[\s\S]*key: "evidence"[\s\S]*activeServiceDetail[\s\S]*community-domain-dashboard\.service-detail\.\$\{option\.key\}[\s\S]*activeServiceDetail === "readiness"[\s\S]*CommunityDomainServiceReadinessPanels[\s\S]*activeServiceDetail === "local"[\s\S]*variant="services"[\s\S]*activeServiceDetail === "boundaries"[\s\S]*CommunityDomainServiceBoundaryPanels[\s\S]*activeServiceDetail === "trust"[\s\S]*variant="trustEvidence"[\s\S]*activeServiceDetail === "evidence"[\s\S]*CommunityDomainTrustEvidenceReadinessPanels/,
+  "Community Domain dashboard Services lane must expose one focused service packet at a time instead of dumping readiness, local service maps, boundary panels, trust maps, and evidence readiness together.",
   { frontend: true }
 );
 
@@ -449,6 +485,13 @@ assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
   /lazy\([\s\S]*import\("\.\/communityDomainDashboard\/MemberReadinessPanels"\)[\s\S]*activeLane === "members"[\s\S]*CommunityDomainMemberReadinessPanels[\s\S]*placementSummary=\{placementSummary\}[\s\S]*memberVerificationMap=\{memberVerificationMap\}[\s\S]*CommunityDomainNodeProjectionGroups[\s\S]*variant="memberParticipation"/,
   "Community Domain dashboard Members lane must lazy-load placement and member-verification readiness panels, pass only raw placement/member verification maps from the parent route, and preserve the member participation projection order.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /MEMBER_DETAIL_OPTIONS[\s\S]*key: "readiness"[\s\S]*key: "placement"[\s\S]*activeMemberDetail[\s\S]*community-domain-dashboard\.member-detail\.\$\{option\.key\}[\s\S]*activeMemberDetail === "readiness"[\s\S]*CommunityDomainMemberReadinessPanels[\s\S]*activeMemberDetail === "placement"[\s\S]*variant="memberParticipation"/,
+  "Community Domain dashboard Members lane must expose one focused member packet at a time instead of dumping member readiness and unit placement together.",
   { frontend: true }
 );
 
@@ -664,6 +707,13 @@ assertContains(
 
 assertContains(
   "src/pages/communityDomainDashboard/IdentityReadinessPanels.tsx",
+  /IDENTITY_DETAIL_OPTIONS[\s\S]*key: "identity"[\s\S]*key: "profile"[\s\S]*key: "bridge"[\s\S]*key: "affiliation"[\s\S]*activeIdentityDetail[\s\S]*community-domain-identity\.detail\.\$\{option\.key\}[\s\S]*activeIdentityDetail === "identity"[\s\S]*Domain identity[\s\S]*activeIdentityDetail === "profile"[\s\S]*Institutional profile[\s\S]*activeIdentityDetail === "bridge"[\s\S]*Community bridge readiness[\s\S]*activeIdentityDetail === "affiliation"[\s\S]*Affiliation readiness/,
+  "Community Domain Identity readiness panel must expose one focused identity packet at a time instead of dumping identity, profile, bridge, and affiliation together.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/communityDomainDashboard/IdentityReadinessPanels.tsx",
   /Domain identity[\s\S]*public-safe identity anchor[\s\S]*Code[\s\S]*domain\.domain_name[\s\S]*Owner[\s\S]*domain\.owner_user_id[\s\S]*Template[\s\S]*template\.label[\s\S]*Location[\s\S]*domain\.state[\s\S]*domain\.country[\s\S]*Public profile:[\s\S]*No public profile text is recorded yet[\s\S]*This summary shows public-safe identity only[\s\S]*does not expose owner\s+contact details, private member lists, finance records, evidence files,\s+or verification proof/,
   "Community Domain dashboard Identity lane must show a public-safe identity summary without exposing owner contact, private members, finance, evidence, or verification proof.",
   { frontend: true }
@@ -708,6 +758,13 @@ assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
   /lazy\([\s\S]*import\("\.\/communityDomainDashboard\/StructurePreviewPanel"\)[\s\S]*listCommunityDomainNodeTree[\s\S]*CommunityDomainStructurePreviewPanel[\s\S]*nodeTree=\{nodeTree\}/,
   "Community Domain dashboard Structure lane must lazy-load the compact read-only node-tree preview and pass the raw node tree from the parent route.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /STRUCTURE_DETAIL_OPTIONS[\s\S]*key: "preview"[\s\S]*key: "foundation"[\s\S]*key: "boundary"[\s\S]*key: "activity"[\s\S]*key: "planning"[\s\S]*activeStructureDetail[\s\S]*community-domain-dashboard\.structure-detail\.\$\{option\.key\}[\s\S]*activeStructureDetail === "preview"[\s\S]*CommunityDomainStructurePreviewPanel[\s\S]*activeStructureDetail === "foundation"[\s\S]*variant="structureFoundation"[\s\S]*activeStructureDetail === "boundary"[\s\S]*variant="structureBoundary"[\s\S]*activeStructureDetail === "activity"[\s\S]*variant="structureActivity"[\s\S]*activeStructureDetail === "planning"[\s\S]*CommunityDomainStructurePlanningPanels/,
+  "Community Domain dashboard Structure lane must expose one focused institutional detail view at a time instead of dumping all Structure panels on first open.",
   { frontend: true }
 );
 
@@ -799,6 +856,13 @@ assertContains(
   "src/pages/communityDomainDashboard/GovernanceReadinessPanels.tsx",
   /function readinessLanes[\s\S]*function readyTotal[\s\S]*function governanceCoverageGaps[\s\S]*delegationMap\?\.summary[\s\S]*readinessLanes\(delegationMap\)[\s\S]*readyTotal\(delegationMap, visibleDelegationLanes\)[\s\S]*governanceCoverage\?\.counts[\s\S]*governanceCoverageGaps\(governanceCoverage\)/,
   "Lazy Community Domain Governance readiness component must derive delegation summary, lane lists, ready totals, blocked lanes, coverage counts, and coverage gaps from raw maps.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/communityDomainDashboard/GovernanceReadinessPanels.tsx",
+  /GOVERNANCE_DETAIL_OPTIONS[\s\S]*key: "review"[\s\S]*key: "delegation"[\s\S]*key: "coverage"[\s\S]*activeGovernanceDetail[\s\S]*community-domain-governance\.detail\.\$\{option\.key\}[\s\S]*activeGovernanceDetail === "review"[\s\S]*Governance review pulse[\s\S]*activeGovernanceDetail === "delegation"[\s\S]*Delegation map[\s\S]*activeGovernanceDetail === "coverage"[\s\S]*Governance coverage/,
+  "Community Domain Governance readiness panel must expose one focused governance packet at a time instead of dumping review pulse, delegation, and coverage together.",
   { frontend: true }
 );
 

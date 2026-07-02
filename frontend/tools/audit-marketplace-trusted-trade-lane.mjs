@@ -44,7 +44,7 @@ assertContains(
 );
 
 assertContains(
-  /debugId="marketplace\.tile\.members"[\s\S]*?aria-label="Open evidence-backed trade, members and visible shops"[\s\S]*?openMarketplaceSection\(\s*event,\s*"members",\s*"marketplace-members-shops"\s*\)[\s\S]*?<MarketplaceGlyph name="trade"[\s\S]*?Trade & Shops[\s\S]*?Shops, offers, and visible trade[\s\S]*?Trade Evidence[\s\S]*?Demand Box[\s\S]*?Public Shops/,
+  /debugId="marketplace\.tile\.members"[\s\S]*?aria-label="Open evidence-backed trade, members and visible shops"[\s\S]*?openMarketplaceSection\(\s*event,\s*"members",\s*"marketplace-members-shops"\s*\)[\s\S]*?<MarketplaceGlyph name="trade"[\s\S]*?Trade & Shops[\s\S]*?Shops, offers, and visible trade[\s\S]*?Trade Evidence[\s\S]*?Public Shops[\s\S]*?Members/,
   "Trade & Shops grouped card must stay a guided trade launcher and open only the members/shops section."
 );
 
@@ -54,7 +54,7 @@ assertContains(
 );
 
 assertContains(
-  /function focusedMarketplaceSectionState\(key: keyof SectionState\): SectionState \{[\s\S]*?money: key === "money"[\s\S]*?rosca: key === "rosca"[\s\S]*?tools: key === "tools"[\s\S]*?members: key === "members"[\s\S]*?support: key === "support"/,
+  /function focusedMarketplaceSectionState\(key: keyof SectionState\): SectionState \{[\s\S]*?money: key === "money"[\s\S]*?rosca: key === "rosca"[\s\S]*?tools: key === "tools"[\s\S]*?members: key === "members"[\s\S]*?demand: key === "demand"[\s\S]*?support: key === "support"/,
   "Opening Trade Evidence must use the focused one-lane state, leaving unrelated lanes stepped back."
 );
 
@@ -79,12 +79,12 @@ assertContains(
 );
 
 assertContains(
-  /Title: GSN Trade Evidence Paper[\s\S]*?Privacy: Private participant\/community record[\s\S]*?Limitation: Evidence for judgement only\. Not escrow, not automatic payout, not bank confirmation, not a bank guarantee, and not a delivery guarantee\./,
+  /Title: GSN Trade Evidence Paper[\s\S]*?Privacy: private trade record\. Do not forward as public verification unless GSN provides a public link for this exact record\.[\s\S]*?Limitation: evidence only\. Not escrow, payout approval, bank confirmation, or delivery guarantee\./,
   "Trade Evidence paper must carry private-record privacy and non-custodial limitation language."
 );
 
 assertContains(
-  /Minimum trade packet[\s\S]*?Invoice \/ product \/ agreement \/ courier \/ payment references[\s\S]*?Conversation boundary: GSN stores the agreed evidence reference/,
+  /Minimum trade packet[\s\S]*?Invoice \/ product \/ agreement \/ courier \/ payment references[\s\S]*?Conversation boundary: GSN keeps the agreed evidence reference/,
   "Trade Evidence paper must expose the minimum packet reference without pretending to store the whole conversation."
 );
 
@@ -100,11 +100,11 @@ assertContains(
 
 const trustedTradeSection = sectionBetween(
   /id="marketplace-members-shops"/,
-  /id="marketplace-loans-support"/
+  /id="marketplace-demand-box"/
 );
 
 if (!trustedTradeSection.text) {
-  addFinding(-1, "Trade Evidence detail section must exist before Support Requests.");
+  addFinding(-1, "Trade Evidence detail section must exist before Demand Box.");
 } else {
   [
     /Trade Evidence/,
@@ -113,9 +113,6 @@ if (!trustedTradeSection.text) {
     /\{memberRows\.length\} visible member/,
     /\{visibleTradeShopCount\} public shop/,
     /Community-bound trade/,
-    /<MarketplaceGlyph name="demand" size=\{24\} \/>/,
-    /Demand Box[\s\S]*?Post a local need or offer request for this marketplace/,
-    /debugId="marketplace\.members\.demand-box"[\s\S]*?openMarketplaceCta\(event, "demandBox"\)[\s\S]*?Demand Box/,
     /Trade Evidence Record/,
     /creates evidence, not escrow/,
     /marketplaceFieldTouchProps\("marketplace\.protected-trade\.role"\)/,
@@ -158,6 +155,14 @@ if (!trustedTradeSection.text) {
       trustedTradeSection.start,
       "Trade Evidence detail section must not expose other major lane responsibilities.",
       "Trade Evidence should stay member/shop focused; Support Requests owns guarantor selection."
+    );
+  }
+
+  if (/Demand Box|marketplace\.members\.demand-box|Post a local need or offer request for this marketplace/.test(trustedTradeSection.text)) {
+    addFinding(
+      trustedTradeSection.start,
+      "Trade Evidence detail section must not embed Demand Box.",
+      "Demand Box owns its own marketplace-local lane between Trade & Shops and Support Requests."
     );
   }
 

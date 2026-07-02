@@ -324,22 +324,26 @@ Must show:
 - Community identity hero
 - Holder count
 - GSN ID status
-- Communities count
+- Marketplace communities count
 - Money across communities
 - What do you want to do next?
-- Choose community
+- Choose marketplace community
 - Enter marketplace
-- Create community
-- Join community
+- Create marketplace community
+- Join marketplace community
 - Grow circle
-- Your Communities compact row
+- Your Community Marketplaces compact row
   - row title
-  - community count
-  - opens to a simple community list
-  - each opened community item shows community name and Open Marketplace
+  - marketplace count
+  - opens to a simple marketplace-community list
+  - each opened community item shows community name, marketplace workspace context, and Open Marketplace
+- Community Domains summary row
+  - clearly separated from community marketplaces
+  - opens the institutional Community Domain dashboard
 - compact rows:
   - Owner Actions
   - Owner Shop Control
+  - Marketplace Capacity
   - Vault Control
   - Free Spotlight
   - Spotlight Subscription
@@ -349,7 +353,7 @@ Must show:
 Rules:
 - Community Home is an overview page, not a full content dump.
 - Do not expose all owner tools on this page.
-- Create community must appear here as one compact action only.
+- Create marketplace community must appear here as one compact action only.
 - The full create-community process belongs in the StartCommunityPage 3-step wizard.
 - Owner Shop Control must stay a separate page, not an expanded panel inside Community Home.
 - Owner Spotlight Status on Community Home must be current-member scoped. It may show the signed-in member's own live spotlight status/preview for the selected community, but it must not render another member's spotlight media on the member's personal Community Home.

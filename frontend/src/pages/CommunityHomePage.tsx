@@ -1336,9 +1336,9 @@ export default function CommunityHomePage() {
     () => [
       {
         id: "choose-community",
-        label: "Choose community",
-        detail: "Open the community list and pick where you want to work.",
-        technical: "Community list",
+        label: "Choose marketplace",
+        detail: "Open your marketplace-community list and pick where you want to work.",
+        technical: "Marketplace community list",
         keywords: ["community", "communities", "group", "select", "choose", "work"],
         tone: "primary",
       },
@@ -1346,23 +1346,23 @@ export default function CommunityHomePage() {
         id: "marketplace",
         label: "Enter marketplace",
         detail: selectedClanId
-          ? `Enter ${selectedClanName || "the selected community"} to work inside that one community.`
-          : "Select a community first, then enter its marketplace.",
+          ? `Enter ${selectedClanName || "the selected marketplace community"} to work inside that marketplace.`
+          : "Select a marketplace community first, then enter its marketplace.",
         technical: "Selected marketplace",
         keywords: ["marketplace", "market", "trade", "work", "open community"],
       },
       {
         id: "create-community",
-        label: "Create community",
-        detail: "Start a new community and build its first circle.",
-        technical: "Create community",
+        label: "Create marketplace",
+        detail: "Start a marketplace community and build its first circle.",
+        technical: "Create marketplace community",
         keywords: ["create", "new community", "start group", "founder"],
       },
       {
         id: "join-community",
-        label: "Join community",
-        detail: "Enter an existing community path or use an invite.",
-        technical: "Join existing community",
+        label: "Join marketplace",
+        detail: "Enter an existing marketplace-community path or use an invite.",
+        technical: "Join marketplace community",
         keywords: ["join", "existing", "invite", "enter community"],
       },
       {
@@ -1383,11 +1383,11 @@ export default function CommunityHomePage() {
       },
       {
         id: "community-packages",
-        label: "Community packages",
+        label: "Marketplace capacity",
         detail: selectedClanId
           ? "See the 15-member quota, extra member places, shop blocks, ROSCA, and meeting packs."
-          : "Choose one community first, then open its package and capacity tools.",
-        technical: "Community package",
+          : "Choose one marketplace first, then open its capacity tools.",
+        technical: "Marketplace capacity",
         keywords: ["package", "capacity", "members", "15", "shop blocks", "rosca"],
       },
       {
@@ -1519,7 +1519,7 @@ export default function CommunityHomePage() {
             detail:
               "Marketplace belongs to one community at a time. First pick the community you want to work in, then GSN will open its Marketplace.",
             firstStep: "Choose the community you want to enter.",
-            continueLabel: "Choose community",
+            continueLabel: "Choose marketplace",
             continueTone: "primary",
             payload: { nextStep: "choose-community" },
           };
@@ -1566,7 +1566,7 @@ export default function CommunityHomePage() {
             detail:
               "Your shop work must stay tied to one community. First choose the community you want to work in, then GSN will open its shop controls.",
             firstStep: "Choose the community for this shop work.",
-            continueLabel: "Choose community",
+            continueLabel: "Choose marketplace",
             continueTone: "primary",
             payload: { nextStep: "choose-community" },
           };
@@ -1595,7 +1595,7 @@ export default function CommunityHomePage() {
             detail:
               "Spotlight must belong to one community. First choose the community you want to publish into, then GSN will check the shop requirement for that one.",
             firstStep: "Choose the target community.",
-            continueLabel: "Choose community",
+            continueLabel: "Choose marketplace",
             continueTone: "primary",
             payload: { nextStep: "choose-community" },
           };
@@ -1630,7 +1630,7 @@ export default function CommunityHomePage() {
             detail:
               "Paid spotlight still belongs to one community. First choose the community, then GSN will open the paid spotlight lane for that one.",
             firstStep: "Choose the target community.",
-            continueLabel: "Choose community",
+            continueLabel: "Choose marketplace",
             continueTone: "primary",
             payload: { nextStep: "choose-community" },
           };
@@ -1679,7 +1679,7 @@ export default function CommunityHomePage() {
             detail:
               "Repost starts from your shop, but GSN still needs the active community context before it can open the paid Repost composer.",
             firstStep: "Choose your active community.",
-            continueLabel: "Choose community",
+            continueLabel: "Choose marketplace",
             continueTone: "primary",
             payload: { nextStep: "choose-community" },
           };
@@ -1729,7 +1729,7 @@ export default function CommunityHomePage() {
             detail:
               "Vault belongs under your owner shop, but Community Home still needs an active community context before it can hand you into the private shop lane.",
             firstStep: "Choose the community context you are working from.",
-            continueLabel: "Choose community",
+            continueLabel: "Choose marketplace",
             continueTone: "primary",
             payload: { nextStep: "choose-community" },
           };
@@ -1780,7 +1780,7 @@ export default function CommunityHomePage() {
             detail:
               "The shop must belong to one community. First choose the community, then GSN will open the shop setup lane for that one.",
             firstStep: "Choose the target community.",
-            continueLabel: "Choose community",
+            continueLabel: "Choose marketplace",
             continueTone: "primary",
             payload: { nextStep: "choose-community" },
           };
@@ -1810,7 +1810,7 @@ export default function CommunityHomePage() {
             detail:
               "Loans and support belong to one community at a time. First pick the community, then GSN will open that local support path.",
             firstStep: "Choose the community first.",
-            continueLabel: "Choose community",
+            continueLabel: "Choose marketplace",
             continueTone: "primary",
             payload: { nextStep: "choose-community" },
           };
@@ -2209,7 +2209,7 @@ export default function CommunityHomePage() {
         openSelectedCommunityRoute(
           event,
           routes.communityPackages,
-          "Choose a community first, then open Community Packages."
+          "Choose a marketplace first, then open marketplace capacity."
         );
         break;
       case "spotlight":
@@ -2442,7 +2442,7 @@ export default function CommunityHomePage() {
           <PageTopNav
             sectionLabel="Community Home"
             title="Community Home"
-            subtitle="Loading your current community..."
+            subtitle="Loading your marketplace communities..."
             homeTo={routes.dashboard}
             homeLabel="Dashboard"
             backTo={routes.dashboard}
@@ -2450,7 +2450,7 @@ export default function CommunityHomePage() {
 
           <section style={communityBlockCard("quiet")}>
             <div style={{ color: "#64748B", lineHeight: 1.8 }}>
-              Loading your communities...
+              Loading your marketplace communities...
             </div>
           </section>
         </div>
@@ -2466,7 +2466,7 @@ export default function CommunityHomePage() {
           <PageTopNav
             sectionLabel="Community Home"
             title="Community Home"
-            subtitle="Choose the community you want to open."
+            subtitle="Choose the marketplace community you want to open."
             homeTo={routes.dashboard}
             homeLabel="Dashboard"
             backTo={routes.dashboard}
@@ -2476,7 +2476,7 @@ export default function CommunityHomePage() {
             title="About Community Home"
             body="Create or join first. Then choose the group you want to open."
             bullets={[
-              "Create or join a community first.",
+              "Create or join a marketplace community first.",
               "Open one group at a time.",
               "Marketplace and local activity stay inside that group.",
             ]}
@@ -2494,7 +2494,7 @@ export default function CommunityHomePage() {
           />
 
           <section style={communityBlockCard("blue")}>
-            <div style={sectionLabel()}>No communities yet</div>
+            <div style={sectionLabel()}>No marketplace communities yet</div>
 
             <div
               style={{
@@ -2506,7 +2506,7 @@ export default function CommunityHomePage() {
                 maxWidth: 760,
               }}
             >
-              You do not have any visible communities in Community Home yet.
+              You do not have any visible marketplace communities in Community Home yet.
             </div>
 
             <div
@@ -2518,7 +2518,7 @@ export default function CommunityHomePage() {
               maxWidth: 680,
             }}
           >
-              Create or join first. Your communities will appear here.
+              Create or join first. Your marketplace communities will appear here.
             </div>
 
             <div
@@ -2535,7 +2535,7 @@ export default function CommunityHomePage() {
                 onClick={(event) => openCommunityRoute(event, routes.createCommunity)}
                 style={communityActionStyle("primary")}
               >
-                Create New Community
+                Create marketplace community
               </StableButton>
               <StableButton
                 type="button"
@@ -2692,7 +2692,7 @@ export default function CommunityHomePage() {
                       lineHeight: 1.18,
                     }}
                   >
-                    Communities and domains
+                    Marketplaces and Community Domains
                   </div>
                 </div>
                 <span
@@ -2748,7 +2748,7 @@ export default function CommunityHomePage() {
                         lineHeight: 1.35,
                       }}
                     >
-                      Choose one community below, then do local work inside its Marketplace.
+                      Self-created or joined marketplace communities for local work.
                     </span>
                   </span>
                   <span aria-hidden="true" style={{ color: "#0B2D4A", fontSize: 24 }}>
@@ -2930,7 +2930,7 @@ export default function CommunityHomePage() {
                   id: "communities",
                   lane: "communities",
                   icon: "community",
-                  title: "Communities",
+                  title: "Marketplaces",
                   primary: true,
                 },
                 {
@@ -3167,7 +3167,7 @@ export default function CommunityHomePage() {
           >
             {!collapsed.communities ? (
               <div>
-                <div style={sectionLabel()}>Communities</div>
+                <div style={sectionLabel()}>Marketplace communities</div>
                 <div
                   style={{
                     marginTop: 10,
@@ -3182,24 +3182,24 @@ export default function CommunityHomePage() {
                     {
                       icon: "community",
                       id: "choose-community",
-                      title: "Choose community",
-                      detail: "Pick the community you want to work inside now.",
+                      title: "Choose marketplace",
+                      detail: "Pick the marketplace community you want to work inside now.",
                       onClick: (event: React.SyntheticEvent<HTMLElement>) =>
                         openCommunityNextAction(event, "choose-community"),
                     },
                     {
                       icon: "home",
                       id: "create-community",
-                      title: "Create community",
-                      detail: "Start a new community under your same GSN ID.",
+                      title: "Create marketplace",
+                      detail: "Start a marketplace community under your same GSN ID.",
                       onClick: (event: React.SyntheticEvent<HTMLElement>) =>
                         openCommunityNextAction(event, "create-community"),
                     },
                     {
                       icon: "join-person-plus",
                       id: "join-community",
-                      title: "Join community",
-                      detail: "Use an invite or approval path for an existing community.",
+                      title: "Join marketplace",
+                      detail: "Use an invite or approval path for an existing marketplace community.",
                       onClick: (event: React.SyntheticEvent<HTMLElement>) =>
                         openCommunityNextAction(event, "join-community"),
                     },
@@ -3477,8 +3477,8 @@ export default function CommunityHomePage() {
                     {
                       icon: "financeInstitution",
                       id: "community-packages",
-                      title: "Community packages",
-                      detail: "Member capacity, marketplace extension, ROSCA, meeting, and package upgrades.",
+                      title: "Marketplace capacity",
+                      detail: "Member places, shop blocks, ROSCA, meeting packs, and capacity upgrades.",
                       onClick: (event: React.SyntheticEvent<HTMLElement>) =>
                         openCommunityNextAction(event, "community-packages"),
                     },
@@ -3494,7 +3494,7 @@ export default function CommunityHomePage() {
                       icon: "finance-wallet-card",
                       id: "payments-renewals",
                       title: "Payments and renewals",
-                      detail: "Open Finance for payment records, package payments, and renewal checks.",
+                      detail: "Open Finance for payment records, capacity payments, and renewal checks.",
                       onClick: (event: React.SyntheticEvent<HTMLElement>) =>
                         openCommunityRoute(event, routes.finance),
                     },
@@ -3959,7 +3959,7 @@ export default function CommunityHomePage() {
                 lineHeight: 1.18,
               }}
             >
-              Your Communities
+              Your Community Marketplaces
             </span>
             <span
               style={{
@@ -3971,7 +3971,7 @@ export default function CommunityHomePage() {
                 lineHeight: 1.35,
               }}
             >
-              {sortedClans.length} {sortedClans.length === 1 ? "community" : "communities"}
+              {sortedClans.length} {sortedClans.length === 1 ? "marketplace" : "marketplaces"}
             </span>
           </span>
           <span aria-hidden="true" style={{ color: "#1E5D91", fontSize: 24 }}>
@@ -4060,7 +4060,7 @@ export default function CommunityHomePage() {
                           lineHeight: isCompact ? 1.45 : 1.75,
                         }}
                       >
-                        Marketplace for this community
+                        Marketplace workspace for this community
                       </div>
                     </div>
 

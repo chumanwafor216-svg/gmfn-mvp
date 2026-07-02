@@ -190,7 +190,7 @@ assertContains(
 
 assertContains(
   /debugId="marketplace\.public-shop\.visible-link"[\s\S]*?\{publicShopViewLink\}[\s\S]*?gridTemplateColumns: isCompact[\s\S]*?\? "1fr"[\s\S]*?: "repeat\(4, minmax\(0, 1fr\)\)"/,
-  "Link Center must show the full public shop domain while stacking Community Package cards as readable one-column records on phone."
+  "Link Center must show the full public shop domain while stacking marketplace capacity cards as readable one-column records on phone."
 );
 
 if (findings.length > 0) {

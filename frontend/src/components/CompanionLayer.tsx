@@ -20,6 +20,8 @@ type CompanionLayerProps = {
 };
 
 const LOCAL_COMPANION_SETTINGS_KEY = "gmfn_companion_settings_local";
+const DISMISSED_COMPANION_TOASTS_KEY = "gmfn_companion_dismissed_toasts";
+const DISMISSED_COMPANION_TOAST_TTL_MS = 14 * 24 * 60 * 60 * 1000;
 const URGENT_CONFIRMATION_KIND = "community_confirmation.request_to_respond";
 const URGENT_CONFIRMATION_OUTCOME_KINDS = new Set([
   URGENT_CONFIRMATION_KIND,
@@ -35,6 +37,50 @@ function readLocalCompanionSettings(): Partial<CompanionSettings> {
     return JSON.parse(raw);
   } catch {
     return {};
+  }
+}
+
+function readDismissedCompanionToastMap(): Record<string, number> {
+  try {
+    if (typeof window === "undefined") return {};
+    const raw = window.localStorage.getItem(DISMISSED_COMPANION_TOASTS_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {};
+
+    const now = Date.now();
+    const next: Record<string, number> = {};
+    Object.entries(parsed as Record<string, unknown>).forEach(([id, value]) => {
+      const dismissedAt = Number(value || 0);
+      if (!id || !Number.isFinite(dismissedAt)) return;
+      if (now - dismissedAt > DISMISSED_COMPANION_TOAST_TTL_MS) return;
+      next[id] = dismissedAt;
+    });
+
+    if (Object.keys(next).length !== Object.keys(parsed).length) {
+      window.localStorage.setItem(
+        DISMISSED_COMPANION_TOASTS_KEY,
+        JSON.stringify(next)
+      );
+    }
+
+    return next;
+  } catch {
+    return {};
+  }
+}
+
+function rememberDismissedCompanionToast(id: string): void {
+  try {
+    if (!id) return;
+    const next = readDismissedCompanionToastMap();
+    next[id] = Date.now();
+    window.localStorage.setItem(
+      DISMISSED_COMPANION_TOASTS_KEY,
+      JSON.stringify(next)
+    );
+  } catch {
+    // local storage is best-effort
   }
 }
 
@@ -139,7 +185,9 @@ export default function CompanionLayer({ snapshot }: CompanionLayerProps) {
 
   const timerMapRef = useRef<Record<string, number>>({});
   const lastUrgentPollRef = useRef(0);
-  const dismissedToastIdsRef = useRef<Set<string>>(new Set());
+  const dismissedToastIdsRef = useRef<Set<string>>(
+    new Set(Object.keys(readDismissedCompanionToastMap()))
+  );
 
   const clearToastTimer = useCallback((id: string) => {
     const timerId = timerMapRef.current[id];
@@ -157,6 +205,7 @@ export default function CompanionLayer({ snapshot }: CompanionLayerProps) {
   const dismissToast = useCallback((toast: CompanionToastPayload) => {
     markCompanionUserInteraction();
     dismissedToastIdsRef.current.add(toast.id);
+    rememberDismissedCompanionToast(toast.id);
     removeToast(toast.id);
   }, [removeToast]);
 
@@ -207,6 +256,9 @@ export default function CompanionLayer({ snapshot }: CompanionLayerProps) {
   
   useEffect(() => {
     return subscribeCompanionToasts((payload) => {
+      const persistedDismissals = readDismissedCompanionToastMap();
+      dismissedToastIdsRef.current = new Set(Object.keys(persistedDismissals));
+
       if (dismissedToastIdsRef.current.has(payload.id)) {
         return;
       }

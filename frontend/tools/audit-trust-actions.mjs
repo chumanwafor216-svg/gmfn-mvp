@@ -156,14 +156,14 @@ assertContains(
 
 assertContains(
   "src/pages/TrustSlipPage.tsx",
-  /data-gsn-trust-document-certificate="trustslip-holder"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This TrustSlip confirms"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This TrustSlip does not confirm"[\s\S]*?TrustDocumentSecurityPanel[\s\S]*?title="TrustSlip security"[\s\S]*?TrustDocumentFingerprint[\s\S]*?label="TrustSlip holder reference fingerprint"/,
-  "Signed-in TrustSlip holder paper must render the Trust Document Language sequence with security, confirms/does-not-confirm panels, and holder reference fingerprint."
+  /data-gsn-trust-document-certificate="trustslip-holder"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This TrustSlip confirms"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This TrustSlip does not confirm"[\s\S]*?TrustDocumentSecurityPanel[\s\S]*?title="TrustSlip security"[\s\S]*?TrustDocumentFingerprint[\s\S]*?label="TrustSlip holder record reference"/,
+  "Signed-in TrustSlip holder paper must render the Trust Document Language sequence with security, confirms/does-not-confirm panels, and holder record reference."
 );
 
 assertContains(
   "src/pages/TrustSlipPage.tsx",
-  /Reference fingerprint generated from visible TrustSlip fields; not a cryptographic hash[\s\S]*?Reference fingerprint for this visible holder-facing TrustSlip\. It is not a cryptographic proof\./,
-  "Signed-in TrustSlip holder paper must not call the generated reference fingerprint cryptographic proof."
+  /Record reference made from the visible TrustSlip fields\. It is not legal proof or payment approval\.[\s\S]*?Record reference for this visible holder-facing TrustSlip\. It helps match this page with its GSN record; it is not legal proof or payment approval\./,
+  "Signed-in TrustSlip holder paper must use plain record-reference copy instead of technical fingerprint language."
 );
 
 assertContains(
@@ -222,14 +222,14 @@ assertContains(
 
 assertContains(
   "src/pages/TrustScorePage.tsx",
-  /data-gsn-trust-document-certificate="trust-passport"[\s\S]*?TrustDocumentSecurityPanel[\s\S]*?title="Trust Passport security"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This passport confirms"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This passport does not confirm"[\s\S]*?TrustDocumentFingerprint[\s\S]*?label="Trust Passport record fingerprint"/,
-  "Trust Passport must render the Trust Document Language sequence with security, confirms/does-not-confirm panels, and record fingerprint."
+  /data-gsn-trust-document-certificate="trust-passport"[\s\S]*?TrustDocumentSecurityPanel[\s\S]*?title="Trust Passport security"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This passport confirms"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This passport does not confirm"[\s\S]*?TrustDocumentFingerprint[\s\S]*?label="Trust Passport record reference"/,
+  "Trust Passport must render the Trust Document Language sequence with security, confirms/does-not-confirm panels, and record reference."
 );
 
 assertContains(
   "src/pages/TrustScorePage.tsx",
-  /Reference fingerprint[\s\S]*?not a cryptographic hash[\s\S]*?Reference fingerprint for this visible private Trust Passport\. It is not a cryptographic proof\./,
-  "Trust Passport must not call the generated reference fingerprint cryptographic proof."
+  /Record reference[\s\S]*?This reference is made from the visible Trust Passport fields\. Use it to match this paper with its GSN record; it is not legal proof or payment approval\.[\s\S]*?Record reference for this visible private Trust Passport\. It helps match this page with its GSN record; it is not legal proof or payment approval\./,
+  "Trust Passport must use plain record-reference copy instead of technical fingerprint language."
 );
 
 assertContains(
@@ -246,14 +246,14 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityMemberVerifyPage.tsx",
-  /data-gsn-trust-document-certificate="community-member-credential"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This credential confirms"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This credential does not confirm"[\s\S]*?TrustDocumentSecurityPanel[\s\S]*?title="Member credential security"[\s\S]*?TrustDocumentFingerprint[\s\S]*?label="Community member credential fingerprint"/,
-  "Public Community Member Credential must render the Trust Document Language sequence with security, confirms/does-not-confirm panels, and record fingerprint."
+  /data-gsn-trust-document-certificate="community-member-credential"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This credential confirms"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This credential does not confirm"[\s\S]*?TrustDocumentSecurityPanel[\s\S]*?title="Member credential security"[\s\S]*?TrustDocumentFingerprint[\s\S]*?label="Community member credential reference"/,
+  "Public Community Member Credential must render the Trust Document Language sequence with security, confirms/does-not-confirm panels, and record reference."
 );
 
 assertContains(
   "src/pages/CommunityMemberVerifyPage.tsx",
-  /data-gsn-trust-document-certificate="community-member-credential"[\s\S]*?gridTemplateColumns: "repeat\(auto-fit, minmax\(min\(100%, 320px\), 1fr\)\)"[\s\S]*?gridTemplateColumns:[\s\S]*?"repeat\(auto-fit, minmax\(min\(100%, 240px\), 1fr\)\)"/,
-  "Public Community Member Credential certificate panels must collapse before phone text is squeezed into narrow stacked columns."
+  /data-gsn-trust-document-certificate="community-member-credential"[\s\S]*?data-gsn-member-credential-primary-facts="true"[\s\S]*?gridTemplateColumns: "repeat\(auto-fit, minmax\(min\(100%, 190px\), 1fr\)\)"[\s\S]*?TrustDocumentDisclosureSection[\s\S]*?title="Credential security and limits"[\s\S]*?data-gsn-member-credential-security-limits="true"[\s\S]*?gridTemplateColumns: "repeat\(auto-fit, minmax\(min\(100%, 320px\), 1fr\)\)"/,
+  "Public Community Member Credential must show core anchor facts before collapsing the heavier security and limitation panels."
 );
 
 assertContains(
@@ -324,8 +324,8 @@ assertNotContains(
 
 assertContains(
   "src/pages/CommunityMemberVerifyPage.tsx",
-  /Reference fingerprint[\s\S]*?not a cryptographic hash[\s\S]*?Reference fingerprint for this visible public member credential\. It is not a cryptographic proof\./,
-  "Public Community Member Credential must not call the generated reference fingerprint cryptographic proof."
+  /Record reference[\s\S]*?Record reference made from the visible credential fields\. It is not legal identity proof\.[\s\S]*?Record reference for this visible public member credential\. It helps match this page with its GSN record; it is not legal proof or payment approval\./,
+  "Public Community Member Credential must use plain record-reference copy instead of technical fingerprint language."
 );
 
 assertContains(
@@ -438,15 +438,27 @@ assertContains(
 );
 
 assertContains(
-  "src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx",
-  /data-gsn-trust-document-certificate="trustslip-verify"[\s\S]*?TrustDocumentSecurityPanel[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This paper confirms"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This paper does not confirm"[\s\S]*?TrustDocumentFingerprint[\s\S]*?label="TrustSlip record fingerprint"/,
-  "TrustSlip Verify public paper must render the Trust Document Language sequence with security, confirms/does-not-confirm panels, and record fingerprint."
+  "src/pages/TrustSlipVerifyPage.tsx",
+  /isAppRoute \? \([\s\S]*?<PageTopNav[\s\S]*?\) : noPublicCodeSupplied \? \([\s\S]*?TrustSlip Verify[\s\S]*?\) : null\}[\s\S]*?\{noPublicCodeSupplied \? null : \([\s\S]*?<TrustSlipVerifyPublicPaper/,
+  "TrustSlip Verify public links with a code must open directly into the paper instead of showing a duplicate intro hero above it."
 );
 
 assertContains(
   "src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx",
-  /Reference fingerprint[\s\S]*?not a cryptographic hash[\s\S]*?Reference fingerprint for this visible public TrustSlip paper\. It is not a cryptographic proof\./,
-  "TrustSlip Verify public paper must not call the generated reference fingerprint cryptographic proof."
+  /data-gsn-trust-document-certificate="trustslip-verify"[\s\S]*?TrustDocumentSecurityPanel[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This paper confirms"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This paper does not confirm"[\s\S]*?TrustDocumentFingerprint[\s\S]*?label="TrustSlip record reference"/,
+  "TrustSlip Verify public paper must render the Trust Document Language sequence with security, confirms/does-not-confirm panels, and record reference."
+);
+
+assertContains(
+  "src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx",
+  /TrustDocumentDisclosureSection[\s\S]*?title="TrustSlip security and limits"[\s\S]*?Open for what this paper confirms, limits, security, and record reference\.[\s\S]*?data-gsn-trustslip-verify-security-limits="true"[\s\S]*?TrustDocumentSecurityPanel[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?TrustDocumentFingerprint/,
+  "TrustSlip Verify public paper must keep security, limits, and record-reference detail collapsed behind one disclosure."
+);
+
+assertContains(
+  "src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx",
+  /Record reference[\s\S]*?This reference is made from the visible TrustSlip fields\. Use it to match this paper with its GSN record; it is not legal proof or payment approval\.[\s\S]*?Record reference for this visible public TrustSlip paper\. It helps match this page with its GSN record; it is not legal proof or payment approval\./,
+  "TrustSlip Verify public paper must use plain record-reference copy instead of technical fingerprint language."
 );
 
 assertContains(
@@ -517,14 +529,20 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityConfirmationOutcomePage.tsx",
-  /data-gsn-trust-document-certificate="community-confirmation-outcome"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This outcome confirms"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This outcome does not confirm"[\s\S]*?TrustDocumentSecurityPanel[\s\S]*?title="Outcome security"[\s\S]*?TrustDocumentFingerprint[\s\S]*?label="Community confirmation outcome fingerprint"/,
-  "Public Community Confirmation Outcome must render the Trust Document Language sequence with security, confirms/does-not-confirm panels, and record fingerprint."
+  /data-gsn-trust-document-certificate="community-confirmation-outcome"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This outcome confirms"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This outcome does not confirm"[\s\S]*?TrustDocumentSecurityPanel[\s\S]*?title="Outcome security"[\s\S]*?TrustDocumentFingerprint[\s\S]*?label="Community confirmation outcome reference"/,
+  "Public Community Confirmation Outcome must render the Trust Document Language sequence with security, confirms/does-not-confirm panels, and record reference."
 );
 
 assertContains(
   "src/pages/CommunityConfirmationOutcomePage.tsx",
-  /Reference fingerprint[\s\S]*?not a cryptographic hash[\s\S]*?Reference fingerprint for this visible public confirmation outcome\. It is not a cryptographic proof\./,
-  "Public Community Confirmation Outcome must not call the generated reference fingerprint cryptographic proof."
+  /TrustDocumentDisclosureSection[\s\S]*?title="Outcome security and limits"[\s\S]*?Open for what this outcome confirms, limits, security, and record reference\.[\s\S]*?data-gsn-community-confirmation-outcome-security-limits="true"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?TrustDocumentSecurityPanel[\s\S]*?TrustDocumentFingerprint/,
+  "Public Community Confirmation Outcome must keep security, limits, and record-reference detail collapsed behind one disclosure."
+);
+
+assertContains(
+  "src/pages/CommunityConfirmationOutcomePage.tsx",
+  /Record reference[\s\S]*?Record reference made from the visible outcome fields\. It is not legal proof or payment approval\.[\s\S]*?Record reference for this visible public confirmation outcome\. It helps match this page with its GSN record; it is not legal proof or payment approval\./,
+  "Public Community Confirmation Outcome must use plain record-reference copy instead of technical fingerprint language."
 );
 
 assertContains(
@@ -619,14 +637,26 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityVerifyPage.tsx",
-  /TrustDocumentRegistryMasthead[\s\S]*?Official GSN Registry Record[\s\S]*?TrustDocumentConfidenceRibbon items=\{confidenceRibbonItems\}[\s\S]*?data-gsn-trust-document-certificate="community-verification"[\s\S]*?TrustDocumentSecurityPanel[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This page confirms"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This page does not confirm"[\s\S]*?TrustDocumentFingerprint[\s\S]*?label="Record fingerprint"/,
-  "CommunityVerifyPage must render the GSN Trust Document Language sequence with masthead, confidence ribbon, security panel, confirms/does-not-confirm panels, and record fingerprint."
+  /TrustDocumentRegistryMasthead[\s\S]*?Official GSN Registry Record[\s\S]*?TrustDocumentConfidenceRibbon items=\{confidenceRibbonItems\}[\s\S]*?data-gsn-trust-document-certificate="community-verification"[\s\S]*?TrustDocumentSecurityPanel[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This page confirms"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This page does not confirm"[\s\S]*?TrustDocumentFingerprint[\s\S]*?label="Record reference"/,
+  "CommunityVerifyPage must render the GSN Trust Document Language sequence with masthead, confidence ribbon, security panel, confirms/does-not-confirm panels, and record reference."
+);
+
+assertNotContains(
+  "src/pages/CommunityVerifyPage.tsx",
+  /Public verification navigation|community-verify\.home|community-verify\.back/,
+  "CommunityVerifyPage public links must open directly into the official registry paper, not a duplicate pre-paper navigation strip."
 );
 
 assertContains(
   "src/pages/CommunityVerifyPage.tsx",
-  /Reference fingerprint[\s\S]*?not a cryptographic hash[\s\S]*?Reference fingerprint for this visible public record\. It is not a cryptographic proof\./,
-  "CommunityVerifyPage must not call the generated reference fingerprint cryptographic proof."
+  /TrustDocumentDisclosureSection[\s\S]*?title="Community record security and limits"[\s\S]*?Open for what this page confirms, limits, security, and record reference\.[\s\S]*?data-gsn-community-verify-security-limits="true"[\s\S]*?TrustDocumentSecurityPanel[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?TrustDocumentFingerprint/,
+  "CommunityVerifyPage must keep security, limits, and record-reference detail collapsed behind one disclosure."
+);
+
+assertContains(
+  "src/pages/CommunityVerifyPage.tsx",
+  /Record reference[\s\S]*?This reference is made from the visible public record fields\. Use it to match this page with its GSN record; it is not legal ID or payment approval\.[\s\S]*?Record reference for this visible public record\. It helps match this page with its GSN record; it is not legal proof or payment approval\./,
+  "CommunityVerifyPage must use plain record-reference copy instead of technical fingerprint language."
 );
 
 assertContains(
@@ -829,7 +859,7 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityMemberVerifyPage.tsx",
-  /const memberAnchor = firstTruthy\(credential\?\.member_gsn_id, cleanMemberKey, "Not shown"\);[\s\S]*?const communityAnchor = firstTruthy\([\s\S]*?credential\?\.community_code[\s\S]*?credential\?\.community_id[\s\S]*?cleanCommunityKey[\s\S]*?"Not shown"[\s\S]*?Community-scoped credential[\s\S]*?Read this member only inside this Community ID[\s\S]*?not a\s+universal trust score, transaction approval, or parent-domain[\s\S]*?membership claim[\s\S]*?\{fact\("Member GSN ID", memberAnchor\)\}[\s\S]*?\{fact\("Community ID", communityAnchor\)\}/,
+  /const memberAnchor = firstTruthy\(credential\?\.member_gsn_id, cleanMemberKey, "Not shown"\);[\s\S]*?const communityAnchor = firstTruthy\([\s\S]*?credential\?\.community_code[\s\S]*?credential\?\.community_id[\s\S]*?cleanCommunityKey[\s\S]*?"Not shown"[\s\S]*?Community-scoped credential[\s\S]*?Use only for this Community ID[\s\S]*?Not universal trust, payment[\s\S]*?approval, or parent-domain membership[\s\S]*?\{fact\("Member GSN ID", memberAnchor\)\}[\s\S]*?\{fact\("Community ID", communityAnchor\)\}/,
   "Community member public credential must visibly anchor the member GSN ID to one Community ID before any wider trust reading."
 );
 
@@ -901,26 +931,26 @@ assertContains(
 
 assertContains(
   "src/pages/ShopGalleryPage.tsx",
-  /aria-label="Shop follow controls"[\s\S]*?record a neutral GSN attention event[\s\S]*?debugId="shop-gallery\.public-shop\.sign-in-follow"[\s\S]*?debugId="shop-gallery\.public-shop\.follow"/,
-  "Public Shop follow controls must tell signed-out users that following records a neutral attention event."
+  /Sign in to follow this shop and keep it in your GSN updates[\s\S]*?aria-label="Shop follow controls"[\s\S]*?debugId="shop-gallery\.public-shop\.sign-in-follow"[\s\S]*?debugId="shop-gallery\.public-shop\.follow"/,
+  "Public Shop follow controls must tell signed-out users that following keeps the shop in their GSN updates."
 );
 
 assertContains(
   "src/pages/ShopGalleryPage.tsx",
-  /Following writes a neutral attention event in GSN[\s\S]*?not[\s\S]*?endorsement[\s\S]*?verification[\s\S]*?payment evidence[\s\S]*?trust-score[\s\S]*?growth/,
-  "Public Shop following must explain that follow is not endorsement, verification, payment evidence, or trust-score growth."
+  /Follow to keep this shop in your GSN updates[\s\S]*?Still verify[\s\S]*?seller[\s\S]*?before goods, credit, or money move/,
+  "Public Shop following must use user-facing updates language while keeping the verify-before-trade boundary."
 );
 
 assertContains(
   "src/pages/ShopGalleryPage.tsx",
-  /Shop followed\. GSN records this as a neutral attention event[\s\S]*?not endorsement[\s\S]*?verification[\s\S]*?payment evidence[\s\S]*?trust-score growth[\s\S]*?Shop unfollowed\. GSN records the update as a neutral attention event\./,
-  "Public Shop follow and unfollow notices must expose the neutral TrustEvent boundary."
+  /Shop followed\. You will see this shop in your GSN updates[\s\S]*?does not verify the seller[\s\S]*?approve goods, credit, or payment[\s\S]*?Shop unfollowed\. This shop will no longer stay in your GSN updates\./,
+  "Public Shop follow and unfollow notices must keep the verification/payment boundary in direct user language."
 );
 
 assertNotContains(
   "src/pages/ShopGalleryPage.tsx",
-  /receive GSN marketplace updates|You are now following this shop|You have unfollowed this shop/g,
-  "Public Shop follow notices must not hide the TrustEvent boundary behind generic social-follow wording."
+  /neutral(?:\s+GSN)?\s+attention event|trust-score growth|You are now following this shop|You have unfollowed this shop/g,
+  "Public Shop follow notices must not expose event-engine wording or hide the verification boundary behind generic social-follow wording."
 );
 
 assertNotContains(
@@ -979,14 +1009,14 @@ assertContains(
 
 assertContains(
   "src/pages/TrustTimelinePage.tsx",
-  /data-gsn-trust-document-certificate="trust-timeline"[\s\S]*?TrustDocumentRegistryMasthead[\s\S]*?title="Trust Timeline Evidence Record"[\s\S]*?TrustDocumentConfidenceRibbon[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This timeline confirms"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This timeline does not confirm"[\s\S]*?TrustDocumentSecurityPanel[\s\S]*?title="Trust Timeline security"[\s\S]*?TrustDocumentFingerprint[\s\S]*?label="Trust Timeline reference fingerprint"/,
-  "Trust Timeline must render the Trust Document Language sequence with visible masthead record title, confidence, boundary, security, and fingerprint panels."
+  /data-gsn-trust-document-certificate="trust-timeline"[\s\S]*?TrustDocumentRegistryMasthead[\s\S]*?title="Trust Timeline Evidence Record"[\s\S]*?TrustDocumentConfidenceRibbon[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This timeline confirms"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This timeline does not confirm"[\s\S]*?TrustDocumentSecurityPanel[\s\S]*?title="Trust Timeline security"[\s\S]*?TrustDocumentFingerprint[\s\S]*?label="Trust Timeline record reference"/,
+  "Trust Timeline must render the Trust Document Language sequence with visible masthead record title, confidence, boundary, security, and record reference."
 );
 
 assertContains(
   "src/pages/TrustTimelinePage.tsx",
-  /Reference fingerprint generated from visible timeline fields; not a cryptographic hash[\s\S]*?Reference fingerprint for this visible signed-in Trust Timeline\. It is not a cryptographic proof\./,
-  "Trust Timeline must not call the generated reference fingerprint cryptographic proof."
+  /Record reference made from the visible timeline fields\. It is not legal proof or payment approval\.[\s\S]*?Record reference for this visible signed-in Trust Timeline\. It helps match this page with its GSN record; it is not legal proof or payment approval\./,
+  "Trust Timeline must use plain record-reference copy instead of technical fingerprint language."
 );
 
 assertContains(
@@ -1860,14 +1890,20 @@ assertContains(
 
 assertContains(
   "src/pages/MerchantReleasePage.tsx",
-  /data-gsn-trust-document-certificate="merchant-release"[\s\S]*?TrustDocumentSecurityPanel[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This page confirms"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This page does not confirm"[\s\S]*?TrustDocumentFingerprint[\s\S]*?label="Merchant release record fingerprint"/,
-  "Merchant Release must render the Trust Document Language sequence with security, confirms/does-not-confirm panels, and record fingerprint."
+  /data-gsn-trust-document-certificate="merchant-release"[\s\S]*?TrustDocumentSecurityPanel[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This page confirms"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This page does not confirm"[\s\S]*?TrustDocumentFingerprint[\s\S]*?label="Merchant release record reference"/,
+  "Merchant Release must render the Trust Document Language sequence with security, confirms/does-not-confirm panels, and record reference."
 );
 
 assertContains(
   "src/pages/MerchantReleasePage.tsx",
-  /Reference fingerprint[\s\S]*?not a cryptographic hash[\s\S]*?Reference fingerprint for this visible merchant release paper\. It is not a cryptographic proof\./,
-  "Merchant Release must not call the generated reference fingerprint cryptographic proof."
+  /TrustDocumentDisclosureSection[\s\S]*?title="Merchant record security and limits"[\s\S]*?Open for what this page confirms, limits, security, and record reference\.[\s\S]*?data-gsn-merchant-release-security-limits="true"[\s\S]*?TrustDocumentSecurityPanel[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?TrustDocumentFingerprint/,
+  "Merchant Release must keep security, limits, and record-reference detail collapsed behind one disclosure."
+);
+
+assertContains(
+  "src/pages/MerchantReleasePage.tsx",
+  /Record reference[\s\S]*?This reference is made from the visible merchant record fields\. Use it to match this page with its GSN record; it is not legal proof or payment approval\.[\s\S]*?Record reference for this visible merchant release paper\. It helps match this page with its GSN record; it is not legal proof or payment approval\./,
+  "Merchant Release must use plain record-reference copy instead of technical fingerprint language."
 );
 
 assertContains(

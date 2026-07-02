@@ -17,7 +17,7 @@ import {
 } from "../lib/institutionalSurface";
 import { navigateWithOrigin } from "../lib/nav";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
-import { buildTrustSlipVerifySnapshot } from "../lib/trustDocumentSnapshots";
+import { buildTrustSlipVerifyShareText } from "../lib/trustDocumentSnapshots";
 import TrustSlipVerifyBoundary from "./trustSlipVerify/TrustSlipVerifyBoundary";
 import TrustSlipVerifyPublicPaper from "./trustSlipVerify/TrustSlipVerifyPublicPaper";
 import type { CommunityConfirmationCallbackDraft } from "./trustSlipVerify/TrustSlipVerifyPublicPaper";
@@ -647,7 +647,7 @@ export default function TrustSlipVerifyPage() {
 
   async function copyVerificationSnapshot() {
     await copyTextWithNotice(
-      buildTrustSlipVerifySnapshot({
+      buildTrustSlipVerifyShareText({
         holderName,
         gmfnId,
         communityLabel,
@@ -800,7 +800,7 @@ export default function TrustSlipVerifyPage() {
       <SocialTagShareButton
         target={{
           title: "TrustSlip Verify",
-          message: buildTrustSlipVerifySnapshot({
+          message: buildTrustSlipVerifyShareText({
             holderName,
             gmfnId,
             communityLabel,
@@ -939,7 +939,7 @@ export default function TrustSlipVerifyPage() {
             backLabel="TrustSlip"
           />
         </div>
-      ) : (
+      ) : noPublicCodeSupplied ? (
         <section
           style={pageCard(
             "linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)"
@@ -998,7 +998,7 @@ export default function TrustSlipVerifyPage() {
             </StableCtaLink>
           </div>
         </section>
-      )}
+      ) : null}
 
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
 

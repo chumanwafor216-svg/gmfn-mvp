@@ -57,8 +57,8 @@ assertContains(
 );
 
 assertContains(
-  /debugId="marketplace\.tile\.support"[\s\S]*?aria-label="Open Support Requests, ROSCA, supporters and loans"[\s\S]*?openMarketplaceSection\(\s*event,\s*"support",\s*"marketplace-loans-support"\s*\)[\s\S]*?<MarketplaceGlyph name="support"[\s\S]*?Support & ROSCA[\s\S]*?Get help and run savings circles[\s\S]*?Support Requests[\s\S]*?ROSCA[\s\S]*?Loans/,
-  "Support & ROSCA grouped card must stay a guided support launcher and open the support section before deeper ROSCA handoff."
+  /debugId="marketplace\.tile\.support"[\s\S]*?aria-label="Open Support Requests for this marketplace"[\s\S]*?openMarketplaceSection\(\s*event,\s*"support",\s*"marketplace-loans-support"\s*\)[\s\S]*?<MarketplaceGlyph name="support"[\s\S]*?Support Requests[\s\S]*?Ask for backing when balance is not enough[\s\S]*?Start Request[\s\S]*?Supporters[\s\S]*?Repayment/,
+  "Support Requests front card must open support directly instead of presenting ROSCA as the same public choice."
 );
 
 assertContains(
@@ -82,7 +82,7 @@ assertNotContains(
 );
 
 assertContains(
-  /function focusedMarketplaceSectionState\(key: keyof SectionState\): SectionState \{[\s\S]*?money: key === "money"[\s\S]*?rosca: key === "rosca"[\s\S]*?tools: key === "tools"[\s\S]*?members: key === "members"[\s\S]*?support: key === "support"[\s\S]*?function touchedMarketplaceSectionState[\s\S]*?\[key\]: true/,
+  /function focusedMarketplaceSectionState\(key: keyof SectionState\): SectionState \{[\s\S]*?money: key === "money"[\s\S]*?rosca: key === "rosca"[\s\S]*?tools: key === "tools"[\s\S]*?members: key === "members"[\s\S]*?demand: key === "demand"[\s\S]*?support: key === "support"[\s\S]*?function touchedMarketplaceSectionState[\s\S]*?\[key\]: true/,
   "Opening Support Requests must focus only the support lane, not visually open Members too."
 );
 
@@ -149,9 +149,9 @@ if (!supportSection.text) {
     /ask the selected marketplace for support/,
     /Selected marketplace[\s\S]*?ID: \{activeCommunityId \|\| "not ready"\}[\s\S]*?GSN ID: \{currentGmfnId \|\| "not ready"\}/,
     /From Money Out/,
-    /ROSCA savings circles[\s\S]*?Build a selected-member contribution cycle for this marketplace[\s\S]*?debugId="marketplace\.support\.open-rosca"[\s\S]*?openMarketplaceSection\(event, "rosca", "marketplace-rosca"\)[\s\S]*?Open ROSCA/,
-    /gridTemplateColumns: isCompact[\s\S]*?\? "52px minmax\(0, 1fr\)"[\s\S]*?: "54px minmax\(0, 1fr\) auto"[\s\S]*?gridTemplateAreas: isCompact[\s\S]*?\? `"icon body" "button button"`[\s\S]*?ROSCA savings circles/,
-    /Financial support requests[\s\S]*?Use this area for one marketplace support request[\s\S]*?ROSCA savings[\s\S]*?circles stay separate above and open their own desk/,
+    /Financial support requests[\s\S]*?Use this area for one marketplace support request[\s\S]*?ROSCA savings[\s\S]*?circles have their own desk and do not share this form/,
+    /Separate ROSCA desk[\s\S]*?Open ROSCA only when you want a selected-member contribution[\s\S]*?It is not a support request[\s\S]*?debugId="marketplace\.support\.open-rosca"[\s\S]*?openMarketplaceSection\(event, "rosca", "marketplace-rosca"\)[\s\S]*?Open ROSCA/,
+    /gridTemplateColumns: isCompact[\s\S]*?\? "1fr"[\s\S]*?: "minmax\(0, 1fr\) minmax\(142px, 160px\)"[\s\S]*?Separate ROSCA desk/,
     /This withdrawal needs support here[\s\S]*?Requested:[\s\S]*?Support needed:/,
     /Step \{step\}/,
     /Start request[\s\S]*?Amount, duration, repayment, purpose/,

@@ -62,8 +62,8 @@ function assertNotContains(file, pattern, message) {
   ],
   [
     "src/lib/trustDocumentSnapshots.ts",
-    /buildTrustSlipSnapshot[\s\S]*Evidence only\. Check the current community record before money, goods, or credit\.[\s\S]*buildTrustSlipVerifySnapshot[\s\S]*Evidence only\. Check current status before lending, credit, money, or goods\./,
-    "TrustSlip copied snapshots must keep the full verification in the link and avoid repeated long link/body language.",
+    /buildTrustSlipShareText[\s\S]*Open the link to check the current GSN record\.[\s\S]*buildTrustSlipVerifyShareText[\s\S]*Open the link to check the current GSN record\.[\s\S]*buildTrustPassportShareText[\s\S]*Open the link to check the current GSN record\./,
+    "Trust document public share text must stay compact and let the verification link carry the full record.",
   ],
   ["src/lib/share.ts", /buildXIntentShareUrl/, "X intent share URL helper is missing."],
   [

@@ -19,11 +19,11 @@ const actionTargetRoutesSource = readFileSync(
   "utf8"
 );
 const findings = [];
-const expectedStableActionCount = 70;
+const expectedStableActionCount = 72;
 const expectedNativeFieldCount = 37;
 const expectedSourceBreakdown = {
-  front: 9,
-  body: 61,
+  front: 10,
+  body: 62,
 };
 const expectedVisibleIntentActionCount = 5;
 const expectedMobileShellBreakdown = {
@@ -360,8 +360,8 @@ assertContains(
 );
 
 assertContains(
-  /debugId="marketplace\.tile\.support"[\s\S]*?aria-label="Open Support Requests, ROSCA, supporters and loans"[\s\S]*?openMarketplaceSection\(\s*event,\s*"support",\s*"marketplace-loans-support"\s*\)[\s\S]*?<MarketplaceGlyph name="support"[\s\S]*?Support & ROSCA[\s\S]*?Get help and run savings circles[\s\S]*?Support Requests[\s\S]*?ROSCA[\s\S]*?Loans/,
-  "Marketplace Support & ROSCA grouped card must open the support lane first and expose ROSCA as a deeper grouped support tool."
+  /debugId="marketplace\.tile\.support"[\s\S]*?aria-label="Open Support Requests for this marketplace"[\s\S]*?openMarketplaceSection\(\s*event,\s*"support",\s*"marketplace-loans-support"\s*\)[\s\S]*?<MarketplaceGlyph name="support"[\s\S]*?Support Requests[\s\S]*?Ask for backing when balance is not enough[\s\S]*?Start Request[\s\S]*?Supporters[\s\S]*?Repayment/,
+  "Marketplace Support Requests card must open support directly while ROSCA stays a separate desk handoff."
 );
 
 assertContains(
@@ -370,8 +370,13 @@ assertContains(
 );
 
 assertContains(
-  /debugId="marketplace\.tile\.members"[\s\S]*?aria-label="Open evidence-backed trade, members and visible shops"[\s\S]*?openMarketplaceSection\(\s*event,\s*"members",\s*"marketplace-members-shops"\s*\)[\s\S]*?<MarketplaceGlyph name="trade"[\s\S]*?Trade & Shops[\s\S]*?Shops, offers, and visible trade[\s\S]*?Trade Evidence[\s\S]*?Demand Box[\s\S]*?Public Shops/,
+  /debugId="marketplace\.tile\.members"[\s\S]*?aria-label="Open evidence-backed trade, members and visible shops"[\s\S]*?openMarketplaceSection\(\s*event,\s*"members",\s*"marketplace-members-shops"\s*\)[\s\S]*?<MarketplaceGlyph name="trade"[\s\S]*?Trade & Shops[\s\S]*?Shops, offers, and visible trade[\s\S]*?Trade Evidence[\s\S]*?Public Shops[\s\S]*?Members/,
   "Marketplace Trade & Shops grouped card must open the members/shops trade lane with community-bound wording."
+);
+
+assertContains(
+  /debugId="marketplace\.tile\.demand"[\s\S]*?aria-label="Open Demand Box for this marketplace"[\s\S]*?openMarketplaceSection\(\s*event,\s*"demand",\s*"marketplace-demand-box"\s*\)[\s\S]*?<MarketplaceGlyph name="demand"[\s\S]*?Demand Box[\s\S]*?Post local needs and offers[\s\S]*?Needs[\s\S]*?Offers[\s\S]*?Requests/,
+  "Marketplace Demand Box grouped card must open its own marketplace-local demand lane."
 );
 
 assertContains(
@@ -385,7 +390,7 @@ assertContains(
 );
 
 assertContains(
-  /function focusedMarketplaceSectionState\(key: keyof SectionState\): SectionState \{[\s\S]*?money: key === "money"[\s\S]*?rosca: key === "rosca"[\s\S]*?tools: key === "tools"[\s\S]*?members: key === "members"[\s\S]*?support: key === "support"[\s\S]*?function touchedMarketplaceSectionState[\s\S]*?\[key\]: true/,
+  /function focusedMarketplaceSectionState\(key: keyof SectionState\): SectionState \{[\s\S]*?money: key === "money"[\s\S]*?rosca: key === "rosca"[\s\S]*?tools: key === "tools"[\s\S]*?members: key === "members"[\s\S]*?demand: key === "demand"[\s\S]*?support: key === "support"[\s\S]*?function touchedMarketplaceSectionState[\s\S]*?\[key\]: true/,
   "Marketplace Support Requests must no longer open Members visually; each major lane must focus one open body."
 );
 
@@ -504,7 +509,7 @@ if (!roscaSection) {
 
 const trustedTradeSection = sectionBetween(
   /id="marketplace-members-shops"/,
-  /id="marketplace-loans-support"/
+  /id="marketplace-demand-box"/
 );
 
 if (!trustedTradeSection) {
@@ -521,7 +526,6 @@ if (!trustedTradeSection) {
     /\{memberRows\.length\} visible member/,
     /\{visibleTradeShopCount\} public shop/,
     /Community-bound trade/,
-    /Demand Box[\s\S]*?Post a local need or offer request for this marketplace/,
     /Visible members/,
     /more tucked away/,
     /debugId="marketplace\.members\.more-visible\.summary"[\s\S]*?More visible members/,
@@ -563,6 +567,46 @@ if (!trustedTradeSection) {
       line: lineAt(source.indexOf(trustedTradeSection)),
       message: "Marketplace Trade Evidence lane must not restore the old Trusted Trade label.",
       text: "Use Trade Evidence so the customer-facing lane does not overclaim protected commerce.",
+    });
+  }
+}
+
+const demandSection = sectionBetween(
+  /id="marketplace-demand-box"/,
+  /id="marketplace-loans-support"/
+);
+
+if (!demandSection) {
+  findings.push({
+    file: marketplaceFile,
+    line: 1,
+    message: "Marketplace Demand Box section was not found for scoped button auditing.",
+    text: "Expected id=\"marketplace-demand-box\" before id=\"marketplace-loans-support\".",
+  });
+} else {
+  const demandActionIds = [
+    ...demandSection.matchAll(/debugId="(marketplace\.demand\.[^"]+)"/g),
+  ].map((item) => item[1]);
+  const expectedDemandActionIds = [
+    "marketplace.demand.toggle",
+    "marketplace.demand.open",
+  ];
+
+  if (demandActionIds.join("|") !== expectedDemandActionIds.join("|")) {
+    findings.push({
+      file: marketplaceFile,
+      line: lineAt(source.indexOf(demandSection)),
+      message: "Marketplace Demand Box section must expose only the audited demand actions in order.",
+      text: `found=${demandActionIds.join(", ") || "none"}`,
+    });
+  }
+
+  if (!/Marketplace-local request[\s\S]*?Open Demand Box/.test(demandSection)) {
+    findings.push({
+      file: marketplaceFile,
+      line: lineAt(source.indexOf(demandSection)),
+      message: "Marketplace Demand Box section must stay a concise local request launcher.",
+      text: "Expected marketplace-local request summary and Open Demand Box action.",
     });
   }
 }
@@ -738,11 +782,12 @@ const expectedOrder = [
   exactDebugId("marketplace.network-repost.place"),
   exactDebugId("marketplace.network-repost.subscription"),
   exactDebugId("marketplace.members.toggle"),
-  exactDebugId("marketplace.members.demand-box"),
   dynamicDebugId(
     "marketplace.member.*.shop",
     /debugId=\{`marketplace\.member\.\$\{row\.gmfnId[\s\S]{0,140}\}\.shop`\}/
   ),
+  exactDebugId("marketplace.demand.toggle"),
+  exactDebugId("marketplace.demand.open"),
   exactDebugId("marketplace.support.toggle"),
   exactDebugId("marketplace.support.open-rosca"),
   exactDebugId("marketplace.support.start-request"),

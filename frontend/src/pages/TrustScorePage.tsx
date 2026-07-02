@@ -44,7 +44,10 @@ import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 import { navigateWithOrigin } from "../lib/nav";
 import { resolveSharedProfileImage } from "../lib/profileImage";
 import { publicCommunityMemberCredentialPath } from "../lib/publicLinks";
-import { buildTrustPassportSnapshot } from "../lib/trustDocumentSnapshots";
+import {
+  buildTrustPassportShareText,
+  buildTrustPassportSnapshot,
+} from "../lib/trustDocumentSnapshots";
 import { TRUST_BAND_SHORT_LABELS } from "../lib/trustBandLanguage";
 import { buildTrustPassportViewModel } from "../lib/trustPassportViewModel";
 import { buildIdentityEvidenceCompletion } from "../lib/identityEvidenceCompletion";
@@ -2461,6 +2464,53 @@ export default function TrustScorePage() {
     ]
   );
 
+  const trustPassportShareText = useMemo(
+    () =>
+      buildTrustPassportShareText({
+        memberName,
+        gmfnId,
+        communityName,
+        communityCode,
+        currentBand,
+        currentScore,
+        openTrustClass: openTrust.classText,
+        cciClass: cci.classText,
+        communityActivitySummary: communityActivityCardValue,
+        communityActivityCategories: communityActivityCategories.join(", "),
+        communityActivityLatest:
+          safeDateTime(communityActivityLatestAt) || communityActivityLatestAt,
+        membershipCurrentnessLabel,
+        membershipCurrentnessScope,
+        nextWitnessRenewalAt: safeDateTime(nextWitnessRenewalAt) || nextWitnessRenewalAt,
+        nextWitnessRenewalStatusLabel,
+        trustSlipCode,
+        nextStepLabel: nextStep.ctaLabel,
+        verifyUrl,
+        memberCredentialUrl,
+      }),
+    [
+      cci.classText,
+      communityCode,
+      communityName,
+      currentBand,
+      currentScore,
+      communityActivityCardValue,
+      communityActivityCategories,
+      communityActivityLatestAt,
+      membershipCurrentnessLabel,
+      membershipCurrentnessScope,
+      nextWitnessRenewalAt,
+      nextWitnessRenewalStatusLabel,
+      gmfnId,
+      memberCredentialUrl,
+      memberName,
+      nextStep.ctaLabel,
+      openTrust.classText,
+      trustSlipCode,
+      verifyUrl,
+    ]
+  );
+
   function copyTrustSnapshot() {
     if (!trustPassportSnapshotReady) {
       setNotice({
@@ -2470,7 +2520,7 @@ export default function TrustScorePage() {
       return;
     }
     handleCopy(
-      trustPassportPaper,
+      trustPassportShareText,
       "Trust snapshot copied.",
       "Trust snapshot is not available yet."
     );
@@ -2635,9 +2685,9 @@ export default function TrustScorePage() {
       tone: passportVm.verdict.evidenceStatus === "limited" ? "warn" : "good",
     },
     {
-      title: "Reference fingerprint",
+      title: "Record reference",
       detail:
-        "This reference fingerprint is derived from visible Trust Passport fields; it is not a cryptographic hash.",
+        "This reference is made from the visible Trust Passport fields. Use it to match this paper with its GSN record; it is not legal proof or payment approval.",
       tone: "info",
     },
     {
@@ -3532,9 +3582,9 @@ export default function TrustScorePage() {
               </div>
             </div>
             <TrustDocumentFingerprint
-              label="Trust Passport record fingerprint"
+              label="Trust Passport record reference"
               value={trustPassportRecordFingerprint}
-              detail="Reference fingerprint for this visible private Trust Passport. It is not a cryptographic proof."
+              detail="Record reference for this visible private Trust Passport. It helps match this page with its GSN record; it is not legal proof or payment approval."
             />
           </div>
 

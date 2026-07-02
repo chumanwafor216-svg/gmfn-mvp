@@ -6,6 +6,7 @@ import { TrustPaperWatermarkField } from "../components/TrustPaperMarks";
 import {
   TrustDocumentBoundaryPanel,
   TrustDocumentConfidenceRibbon,
+  TrustDocumentDisclosureSection,
   TrustDocumentFingerprint,
   TrustDocumentSecurityPanel,
   type TrustDocumentPanelItem,
@@ -389,9 +390,9 @@ export default function MerchantReleasePage() {
       tone: verifyResult?.verified ? "good" : "warn",
     },
     {
-      title: "Reference fingerprint",
+      title: "Record reference",
       detail:
-        "This reference fingerprint is derived from visible merchant record fields; it is not a cryptographic hash.",
+        "This reference is made from the visible merchant record fields. Use it to match this page with its GSN record; it is not legal proof or payment approval.",
       tone: "info",
     },
     {
@@ -547,36 +548,42 @@ export default function MerchantReleasePage() {
 
         <div style={{ position: "relative", zIndex: 1, marginTop: 16, display: "grid", gap: 12 }}>
           <TrustDocumentConfidenceRibbon items={merchantConfidenceRibbonItems} />
-          <div
-            data-gsn-trust-document-certificate="merchant-release"
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 260px), 1fr))",
-              gap: 12,
-            }}
+          <TrustDocumentDisclosureSection
+            title="Merchant record security and limits"
+            summary="Open for what this page confirms, limits, security, and record reference."
           >
-            <TrustDocumentSecurityPanel
-              title="Merchant record security"
-              items={merchantSecurityItems}
-            />
-            <div style={{ display: "grid", gap: 12 }}>
-              <TrustDocumentBoundaryPanel
-                title="This page confirms"
-                tone="good"
-                items={merchantConfirmsList}
+            <div
+              data-gsn-trust-document-certificate="merchant-release"
+              data-gsn-merchant-release-security-limits="true"
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 260px), 1fr))",
+                gap: 12,
+              }}
+            >
+              <TrustDocumentSecurityPanel
+                title="Merchant record security"
+                items={merchantSecurityItems}
               />
-              <TrustDocumentBoundaryPanel
-                title="This page does not confirm"
-                tone="warn"
-                items={merchantDoesNotConfirmList}
-              />
+              <div style={{ display: "grid", gap: 12 }}>
+                <TrustDocumentBoundaryPanel
+                  title="This page confirms"
+                  tone="good"
+                  items={merchantConfirmsList}
+                />
+                <TrustDocumentBoundaryPanel
+                  title="This page does not confirm"
+                  tone="warn"
+                  items={merchantDoesNotConfirmList}
+                />
+                <TrustDocumentFingerprint
+                  label="Merchant release record reference"
+                  value={merchantRecordFingerprint}
+                  detail="Record reference for this visible merchant release paper. It helps match this page with its GSN record; it is not legal proof or payment approval."
+                />
+              </div>
             </div>
-          </div>
-          <TrustDocumentFingerprint
-            label="Merchant release record fingerprint"
-            value={merchantRecordFingerprint}
-            detail="Reference fingerprint for this visible merchant release paper. It is not a cryptographic proof."
-          />
+          </TrustDocumentDisclosureSection>
         </div>
 
         <section

@@ -1980,7 +1980,7 @@ export default function ShopControlPage() {
   ) {
     const clanId = Number(shop?.clan_id || selectedClanId || 0);
     if (!clanId) {
-      showNotice("error", "Choose a community first.");
+      showNotice("error", "Choose a marketplace first.");
       return;
     }
     if (options.needsShop && !shop?.id) {
@@ -2024,7 +2024,7 @@ export default function ShopControlPage() {
     const amount = Number(roscaContributionAmount || 0);
     const interval = Number(roscaIntervalDays || 30);
     if (!clanId) {
-      showNotice("error", "Choose a community first.");
+      showNotice("error", "Choose a marketplace first.");
       return;
     }
     if (!Number.isFinite(amount) || amount <= 0) {
@@ -2042,7 +2042,7 @@ export default function ShopControlPage() {
           contribution_amount: amount.toFixed(2),
           currency: safeStr(roscaCurrency).toUpperCase() || "GBP",
           interval_days: Number.isFinite(interval) && interval > 0 ? Math.floor(interval) : 30,
-          note: "Started from Shop Control community packages.",
+          note: "Started from Shop Control marketplace capacity.",
         }),
       });
 
@@ -2099,7 +2099,7 @@ export default function ShopControlPage() {
   async function createMeetingReminder() {
     const clanId = Number(shop?.clan_id || selectedClanId || 0);
     if (!clanId) {
-      showNotice("error", "Choose a community first.");
+      showNotice("error", "Choose a marketplace first.");
       return;
     }
     if (!safeStr(meetingTitle)) {
@@ -2117,7 +2117,7 @@ export default function ShopControlPage() {
           purpose: safeStr(meetingPurpose) || undefined,
           scheduled_at: safeStr(meetingScheduledAt) || undefined,
           whatsapp_number: safeStr(meetingWhatsappNumber) || undefined,
-          note: "Created from Shop Control community packages.",
+          note: "Created from Shop Control marketplace capacity.",
         }),
       });
 
@@ -2164,7 +2164,7 @@ export default function ShopControlPage() {
             decisions: safeStr(meetingDecisions) || undefined,
             attendance_count:
               Number.isFinite(attendance) && attendance >= 0 ? Math.floor(attendance) : undefined,
-            note: "Recorded from Shop Control community packages.",
+            note: "Recorded from Shop Control marketplace capacity.",
           }),
         }
       );
@@ -3444,7 +3444,7 @@ export default function ShopControlPage() {
             </div>
             <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
               Use this lane for pictures, products, diary blocks, and the public shop face.
-              When the community needs extra public shop blocks, open Community Package.
+              When the marketplace needs extra public shop blocks, open Marketplace Capacity.
             </div>
             <div style={{ marginTop: 12, ...controlGrid(isCompact, 170) }}>
               <StableCtaLink
@@ -3461,7 +3461,7 @@ export default function ShopControlPage() {
                 fullWidth
                 debugId="shop-control.gallery.community-package"
               >
-                Community package
+                Marketplace capacity
               </StableCtaLink>
             </div>
           </div>
@@ -3852,18 +3852,18 @@ export default function ShopControlPage() {
             id="shop-control-community-packages"
             style={innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 58%, #FFF8DE 100%)")}
           >
-            <div style={sectionLabel()}>Community packages</div>
+            <div style={sectionLabel()}>Marketplace capacity</div>
             <div style={{ marginTop: 10, color: "#0B1F33", fontSize: 20, fontWeight: 950 }}>
-              Add capacity when the community needs more.
+              Add capacity when the marketplace needs more.
             </div>
             <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
-              Generate the exact package reference. Extra shop blocks and member places
+              Generate the exact capacity reference. Extra shop blocks and member places
               activate after bank match. ROSCA starts contribution cycles, while meeting
               packs create reminder and summary evidence for TrustEvents.
             </div>
             <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
               <span style={badge(false)}>ROSCA: GBP 60 yearly</span>
-              <span style={badge(false)}>Other package units: GBP 1</span>
+              <span style={badge(false)}>Other capacity units: GBP 1</span>
               <span style={badge(Boolean(latestCommunityPackagePayment))}>
                 {latestCommunityPackagePayment
                   ? firstTruthy(latestCommunityPackagePayment.status, "Expected")
@@ -3909,7 +3909,7 @@ export default function ShopControlPage() {
                   border: "1px solid rgba(13,95,168,0.10)",
                 }}
               >
-                <div style={sectionLabel()}>Latest package reference</div>
+                <div style={sectionLabel()}>Latest capacity reference</div>
                 <div style={{ marginTop: 8, color: "#0B1F33", fontSize: 16, fontWeight: 950 }}>
                   {firstTruthy(latestCommunityPackagePayment.reference_display, "Awaiting reference")}
                 </div>

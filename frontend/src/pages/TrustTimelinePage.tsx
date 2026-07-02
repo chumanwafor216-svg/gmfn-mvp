@@ -448,9 +448,9 @@ export default function TrustTimelinePage() {
       tone: packId ? "good" : "info",
     },
     {
-      title: "Reference fingerprint",
+      title: "Record reference",
       detail:
-        "Reference fingerprint generated from visible timeline fields; not a cryptographic hash or legal proof.",
+        "Record reference made from the visible timeline fields. It is not legal proof or payment approval.",
       tone: "info",
     },
     {
@@ -628,9 +628,9 @@ export default function TrustTimelinePage() {
             items={trustTimelineSecurityItems}
           />
           <TrustDocumentFingerprint
-            label="Trust Timeline reference fingerprint"
+            label="Trust Timeline record reference"
             value={trustTimelineReferenceFingerprint}
-            detail="Reference fingerprint for this visible signed-in Trust Timeline. It is not a cryptographic proof."
+            detail="Record reference for this visible signed-in Trust Timeline. It helps match this page with its GSN record; it is not legal proof or payment approval."
           />
         </div>
       </section>

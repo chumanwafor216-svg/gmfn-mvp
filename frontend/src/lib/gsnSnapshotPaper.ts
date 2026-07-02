@@ -28,6 +28,23 @@ type GsnCompactPublicLinkParams = {
   note?: string;
 };
 
+type GsnSupportEvidenceParams = {
+  title?: string;
+  purpose?: string;
+  reference?: string;
+  memberName?: string;
+  gsnId?: string;
+  memberRole?: string;
+  communityName?: string;
+  communityId?: string;
+  routeName?: string;
+  loanId?: string | number;
+  amount?: string;
+  status?: string;
+  detailLines?: Array<string | null | undefined | false>;
+  actionLink?: string;
+};
+
 function safeText(value: unknown): string {
   return String(value ?? "").trim();
 }
@@ -401,4 +418,29 @@ export function buildGsnSupportEvidencePackage(params: {
     limitationNote:
       "Limitation: support evidence only. Not a guarantee, lending approval, receipt, or payout.",
   });
+}
+
+export function buildGsnSupportEvidenceShareText(
+  params: GsnSupportEvidenceParams
+): string {
+  const title = safeText(params.title) || "GSN Support Evidence";
+  const supportId = safeText(params.reference || params.loanId);
+  const details = cleanLines(params.detailLines).slice(0, 2);
+  const link = safeText(params.actionLink);
+
+  return [
+    title,
+    compactFactLine("Member", params.memberName),
+    compactFactLine("GSN ID", params.gsnId),
+    compactFactLine("Community", params.communityName),
+    compactFactLine("Support ID", supportId),
+    compactFactLine("Amount", params.amount),
+    compactFactLine("Status", params.status),
+    ...details,
+    "Open GSN to check the current support record before you act.",
+    link,
+    "GSN support evidence is not approval, a guarantee, a receipt, or payout authority.",
+  ]
+    .filter(Boolean)
+    .join("\n");
 }

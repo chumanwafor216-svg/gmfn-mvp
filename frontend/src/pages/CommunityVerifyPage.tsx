@@ -5,7 +5,6 @@ import { GsnRealisticIcon, type Gsn3DIconKey } from "../components/GsnRealisticI
 import {
   PrimaryButton,
   SecondaryButton,
-  StableCtaLink,
   StableDisclosureSummary,
 } from "../components/StableButton";
 import {
@@ -18,6 +17,7 @@ import {
 import {
   TrustDocumentBoundaryPanel,
   TrustDocumentConfidenceRibbon,
+  TrustDocumentDisclosureSection,
   TrustDocumentFingerprint,
   TrustDocumentRegistryMasthead,
   TrustDocumentSecurityPanel,
@@ -805,9 +805,9 @@ export default function CommunityVerifyPage() {
       tone: active ? ("good" as const) : ("warn" as const),
     },
     {
-      title: "Reference fingerprint",
+      title: "Record reference",
       detail:
-        "This reference fingerprint is derived from visible public record fields; it is not a cryptographic hash.",
+        "This reference is made from the visible public record fields. Use it to match this page with its GSN record; it is not legal ID or payment approval.",
       tone: "info" as const,
     },
     {
@@ -956,58 +956,6 @@ export default function CommunityVerifyPage() {
       }}
     >
       <div style={pageShell()}>
-        <nav
-          aria-label="Public verification navigation"
-          style={{
-            minHeight: 54,
-            borderRadius: 18,
-            background: "rgba(255,255,255,0.96)",
-            border: "1px solid rgba(8,35,58,0.10)",
-            boxShadow: "0 10px 24px rgba(6,24,39,0.08)",
-            padding: 8,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: 8,
-          }}
-        >
-          <span
-            style={{
-              color: "#0B63D1",
-              fontSize: 12,
-              fontWeight: 1000,
-              letterSpacing: 0.8,
-              textTransform: "uppercase",
-            }}
-          >
-            Public verification
-          </span>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <StableCtaLink
-              to="/"
-              debugId="community-verify.home"
-              stableHeight={38}
-              style={{ minWidth: 76, borderRadius: 12, fontSize: 13 }}
-            >
-              Home
-            </StableCtaLink>
-            <SecondaryButton
-              debugId="community-verify.back"
-              stableHeight={38}
-              style={{ minWidth: 76, borderRadius: 12, fontSize: 13 }}
-              onClick={() => {
-                if (window.history.length > 1) {
-                  window.history.back();
-                  return;
-                }
-                window.location.assign("/");
-              }}
-            >
-              Back
-            </SecondaryButton>
-          </div>
-        </nav>
-
         <article style={paperCard()}>
           <TrustDocumentRegistryMasthead
             eyebrow="Public verification"
@@ -1195,28 +1143,39 @@ export default function CommunityVerifyPage() {
                       </p>
                     </div>
                   </div>
-                  <div
-                    data-gsn-trust-document-certificate="community-verification"
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 260px), 1fr))",
-                      gap: 12,
-                    }}
+                  <TrustDocumentDisclosureSection
+                    title="Community record security and limits"
+                    summary="Open for what this page confirms, limits, security, and record reference."
                   >
-                    <TrustDocumentSecurityPanel items={securityPanelItems} />
-                    <div style={{ display: "grid", gap: 12 }}>
-                      <TrustDocumentBoundaryPanel
-                        title="This page confirms"
-                        tone="good"
-                        items={confirmsList}
-                      />
-                      <TrustDocumentBoundaryPanel
-                        title="This page does not confirm"
-                        tone="warn"
-                        items={doesNotConfirmList}
-                      />
+                    <div
+                      data-gsn-trust-document-certificate="community-verification"
+                      data-gsn-community-verify-security-limits="true"
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 260px), 1fr))",
+                        gap: 12,
+                      }}
+                    >
+                      <TrustDocumentSecurityPanel items={securityPanelItems} />
+                      <div style={{ display: "grid", gap: 12 }}>
+                        <TrustDocumentBoundaryPanel
+                          title="This page confirms"
+                          tone="good"
+                          items={confirmsList}
+                        />
+                        <TrustDocumentBoundaryPanel
+                          title="This page does not confirm"
+                          tone="warn"
+                          items={doesNotConfirmList}
+                        />
+                        <TrustDocumentFingerprint
+                          label="Record reference"
+                          value={recordFingerprint}
+                          detail="Record reference for this visible public record. It helps match this page with its GSN record; it is not legal proof or payment approval."
+                        />
+                      </div>
                     </div>
-                  </div>
+                  </TrustDocumentDisclosureSection>
                   <div
                     style={{
                       ...sectionCard("#FFFFFF"),
@@ -1671,11 +1630,6 @@ export default function CommunityVerifyPage() {
                       </div>
                     </div>
                   </div>
-                  <TrustDocumentFingerprint
-                    label="Record fingerprint"
-                    value={recordFingerprint}
-                    detail="Reference fingerprint for this visible public record. It is not a cryptographic proof."
-                  />
                   <div
                     style={{
                       ...sectionCard("#FFFFFF"),

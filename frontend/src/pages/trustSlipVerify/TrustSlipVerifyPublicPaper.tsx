@@ -18,6 +18,7 @@ import {
 import {
   TrustDocumentBoundaryPanel,
   TrustDocumentConfidenceRibbon,
+  TrustDocumentDisclosureSection,
   TrustDocumentFingerprint,
   TrustDocumentSecurityPanel,
   type TrustDocumentPanelItem,
@@ -866,9 +867,9 @@ export default function TrustSlipVerifyPublicPaper({
       tone: resolvedCode ? "good" : "warn",
     },
     {
-      title: "Reference fingerprint",
+      title: "Record reference",
       detail:
-        "This reference fingerprint is derived from visible TrustSlip fields; it is not a cryptographic hash.",
+        "This reference is made from the visible TrustSlip fields. Use it to match this paper with its GSN record; it is not legal proof or payment approval.",
       tone: "info",
     },
     {
@@ -1157,37 +1158,42 @@ export default function TrustSlipVerifyPublicPaper({
 
         <TrustDocumentConfidenceRibbon items={trustSlipConfidenceRibbonItems} />
 
-        <div
-          data-gsn-trust-document-certificate="trustslip-verify"
-          style={{
-            display: "grid",
-            gridTemplateColumns: compact ? "1fr" : "minmax(280px, 0.9fr) minmax(0, 1fr)",
-            gap: 12,
-          }}
+        <TrustDocumentDisclosureSection
+          title="TrustSlip security and limits"
+          summary="Open for what this paper confirms, limits, security, and record reference."
         >
-          <TrustDocumentSecurityPanel
-            title="Digital security"
-            items={trustSlipSecurityItems}
-          />
-          <div style={{ display: "grid", gap: 12 }}>
-            <TrustDocumentBoundaryPanel
-              title="This paper confirms"
-              tone="good"
-              items={trustSlipConfirmsList}
+          <div
+            data-gsn-trust-document-certificate="trustslip-verify"
+            data-gsn-trustslip-verify-security-limits="true"
+            style={{
+              display: "grid",
+              gridTemplateColumns: compact ? "1fr" : "minmax(280px, 0.9fr) minmax(0, 1fr)",
+              gap: 12,
+            }}
+          >
+            <TrustDocumentSecurityPanel
+              title="Digital security"
+              items={trustSlipSecurityItems}
             />
-            <TrustDocumentBoundaryPanel
-              title="This paper does not confirm"
-              tone="warn"
-              items={trustSlipDoesNotConfirmList}
-            />
+            <div style={{ display: "grid", gap: 12 }}>
+              <TrustDocumentBoundaryPanel
+                title="This paper confirms"
+                tone="good"
+                items={trustSlipConfirmsList}
+              />
+              <TrustDocumentBoundaryPanel
+                title="This paper does not confirm"
+                tone="warn"
+                items={trustSlipDoesNotConfirmList}
+              />
+              <TrustDocumentFingerprint
+                label="TrustSlip record reference"
+                value={recordFingerprint}
+                detail="Record reference for this visible public TrustSlip paper. It helps match this page with its GSN record; it is not legal proof or payment approval."
+              />
+            </div>
           </div>
-        </div>
-
-        <TrustDocumentFingerprint
-          label="TrustSlip record fingerprint"
-          value={recordFingerprint}
-          detail="Reference fingerprint for this visible public TrustSlip paper. It is not a cryptographic proof."
-        />
+        </TrustDocumentDisclosureSection>
 
         <div style={publicVerifyShell("#F8FBFF", compact)}>
           <TrustPaperWatermark

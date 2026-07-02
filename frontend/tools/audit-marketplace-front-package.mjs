@@ -114,13 +114,19 @@ assertContains(
     id: "marketplace.tile.members",
     glyph: "trade",
     label: "Trade & Shops",
-    tags: ["Trade Evidence", "Demand Box", "Public Shops"],
+    tags: ["Trade Evidence", "Public Shops", "Members"],
+  },
+  {
+    id: "marketplace.tile.demand",
+    glyph: "demand",
+    label: "Demand Box",
+    tags: ["Needs", "Offers", "Requests"],
   },
   {
     id: "marketplace.tile.support",
     glyph: "support",
-    label: "Support & ROSCA",
-    tags: ["Support Requests", "ROSCA", "Loans"],
+    label: "Support Requests",
+    tags: ["Start Request", "Supporters", "Repayment"],
   },
   {
     id: "marketplace.row.records-links",
@@ -160,8 +166,15 @@ assertContains(
 assertContains(
   marketplaceFile,
   marketplaceSource,
-  /Post a local need or offer request for this marketplace[\s\S]*?debugId="marketplace\.members\.demand-box"[\s\S]*?openMarketplaceCta\(event, "demandBox"\)[\s\S]*?Demand Box/,
-  "Demand Box must stay caged inside Trade & Shops as the marketplace-local demand launcher."
+  /debugId="marketplace\.tile\.demand"[\s\S]*?aria-label="Open Demand Box for this marketplace"[\s\S]*?openMarketplaceSection\(event, "demand", "marketplace-demand-box"\)[\s\S]*?id="marketplace-demand-box"[\s\S]*?Post a local need or offer for this marketplace[\s\S]*?debugId="marketplace\.demand\.open"[\s\S]*?openMarketplaceCta\(event, "demandBox"\)[\s\S]*?Open Demand Box/,
+  "Demand Box must be its own marketplace-local lane between Trade & Shops and Support Requests."
+);
+
+assertNotContains(
+  marketplaceFile,
+  marketplaceSource,
+  /debugId="marketplace\.members\.demand-box"|Post a local need or offer request for this marketplace/,
+  "Demand Box must not be embedded inside the Trade Evidence lane."
 );
 
 assertContains(

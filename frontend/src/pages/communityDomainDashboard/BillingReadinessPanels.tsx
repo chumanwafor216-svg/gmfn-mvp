@@ -1,9 +1,29 @@
-import React from "react";
+import React, { useState } from "react";
+import { StableButton } from "../../components/StableButton";
 
 type BillingReadinessPanelsProps = {
   subscriptionLifecycle?: any;
   capacityPlan?: any;
 };
+
+type BillingDetailKey = "lifecycle" | "capacity";
+
+const BILLING_DETAIL_OPTIONS: Array<{
+  key: BillingDetailKey;
+  label: string;
+  note: string;
+}> = [
+  {
+    key: "lifecycle",
+    label: "Lifecycle",
+    note: "Review package, pricing, billing, and renewal readiness.",
+  },
+  {
+    key: "capacity",
+    label: "Capacity",
+    note: "Check package limits and capacity pressure.",
+  },
+];
 
 function cleanText(value: unknown, fallback = ""): string {
   return typeof value === "string" && value.trim() ? value.trim() : fallback;
@@ -55,7 +75,7 @@ function sectionLabel(): React.CSSProperties {
     fontSize: 13,
     fontWeight: 900,
     textTransform: "uppercase",
-    letterSpacing: "0.08em",
+    letterSpacing: 0,
   };
 }
 
@@ -184,9 +204,63 @@ export default function CommunityDomainBillingReadinessPanels({
   );
   const visibleCapacityLanes = readinessLanes(capacityPlan);
   const capacityAttentionLanes = attentionCapacityLanes(visibleCapacityLanes);
+  const [activeBillingDetail, setActiveBillingDetail] =
+    useState<BillingDetailKey>("lifecycle");
+  const selectedBillingDetail =
+    BILLING_DETAIL_OPTIONS.find((option) => option.key === activeBillingDetail) ||
+    BILLING_DETAIL_OPTIONS[0];
 
   return (
     <>
+      <div
+        style={{
+          ...softCard(),
+          display: "grid",
+          gap: 10,
+        }}
+      >
+        <div style={sectionLabel()}>Billing focus</div>
+        <div style={helperText()}>
+          Open one billing packet at a time. Current view:{" "}
+          <strong>{selectedBillingDetail.label}</strong>.
+        </div>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 140px), 1fr))",
+            gap: 8,
+          }}
+        >
+          {BILLING_DETAIL_OPTIONS.map((option) => {
+            const selected = option.key === activeBillingDetail;
+            return (
+              <StableButton
+                key={option.key}
+                type="button"
+                kind={selected ? "primary" : "secondary"}
+                stableHeight={48}
+                fullWidth
+                aria-pressed={selected}
+                title={option.note}
+                debugId={`community-domain-billing.detail.${option.key}`}
+                onClick={() => setActiveBillingDetail(option.key)}
+                style={{
+                  justifyContent: "center",
+                  fontSize: 13,
+                  textTransform: "none",
+                }}
+              >
+                {option.label}
+              </StableButton>
+            );
+          })}
+        </div>
+        <div style={{ ...helperText(), fontSize: 13 }}>
+          {selectedBillingDetail.note}
+        </div>
+      </div>
+
+      {activeBillingDetail === "lifecycle" ? (
       <div style={softCard()}>
         <div style={sectionLabel()}>Subscription lifecycle</div>
         <div style={{ ...helperText(), marginTop: 7 }}>
@@ -244,7 +318,9 @@ export default function CommunityDomainBillingReadinessPanels({
           move money, or expose private records.
         </div>
       </div>
+      ) : null}
 
+      {activeBillingDetail === "capacity" ? (
       <div style={softCard()}>
         <div style={sectionLabel()}>Package capacity</div>
         <div style={{ ...helperText(), marginTop: 7 }}>
@@ -295,6 +371,7 @@ export default function CommunityDomainBillingReadinessPanels({
           move money, or expose private evidence.
         </div>
       </div>
+      ) : null}
     </>
   );
 }

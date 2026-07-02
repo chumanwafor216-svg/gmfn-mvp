@@ -18,7 +18,10 @@ import {
 } from "../lib/institutionalSurface";
 import { brandClampLines } from "../styles/gmfnBrand";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
-import { buildGsnSupportEvidencePackage } from "../lib/gsnSnapshotPaper";
+import {
+  buildGsnSupportEvidencePackage,
+  buildGsnSupportEvidenceShareText,
+} from "../lib/gsnSnapshotPaper";
 import {
   decideLoanGuarantor,
   getAccessToken,
@@ -1213,9 +1216,8 @@ export default function LoanSummaryPage() {
       typeof window !== "undefined" ? window.location.origin : "";
     const auditLink = `${origin}/app/trust-analytics?${p.toString()}`;
     safeCopy(
-      buildGsnSupportEvidencePackage({
+      buildGsnSupportEvidenceShareText({
         title: "GSN Support Audit Link",
-        purpose: "Review the trust analytics attached to this support item.",
         reference: `support-${summary.id}`,
         memberName,
         gsnId: gmfnId,
@@ -1230,8 +1232,6 @@ export default function LoanSummaryPage() {
         detailLines: [
           `Supporters needed: ${requiredCount}`,
           `Recorded support: ${approvedCount}`,
-          `Pending supporters: ${pendingGuarantors.length}`,
-          "This package points to the current trust analytics review page for the support item.",
         ],
       })
     );
@@ -1243,9 +1243,27 @@ export default function LoanSummaryPage() {
   }
 
   function copyLoanSummary() {
-    if (!loanSummaryPaper) return;
+    if (!summary || !loanSummaryPaper) return;
 
-    safeCopy(loanSummaryPaper);
+    safeCopy(
+      buildGsnSupportEvidenceShareText({
+        title: "GSN Support Summary Snapshot",
+        reference: `support-${summary.id}`,
+        memberName,
+        gsnId: gmfnId,
+        memberRole,
+        communityName: communityLabel,
+        communityId: communityPublicId,
+        routeName: "Support Summary",
+        loanId: summary.id,
+        amount: fmtMoney(n(summary.amount), currency),
+        status: safeStr(summary.status),
+        detailLines: [
+          supportPurpose ? `Purpose: ${supportPurpose}` : "",
+          summaryNextStep ? `Next step: ${summaryNextStep}` : "",
+        ],
+      })
+    );
     setFeedback({
       tone: "success",
       text: "Support summary snapshot copied.",

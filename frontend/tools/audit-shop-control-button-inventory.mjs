@@ -335,7 +335,12 @@ if (allActionRootMarkers !== expectedFileInputActionRoots * 2) {
 
 assertShopContains(
   /SHOP_CONTROL_SHORTCUTS[\s\S]*?from "\.\.\/lib\/ownerShopHandles";[\s\S]*?const SHOP_CONTROL_SHORTCUT_ICONS:[\s\S]*?"shop-billboard": "shop"[\s\S]*?"shop-diaries": "document"[\s\S]*?"shop-summary": "chart"[\s\S]*?"community-package": "financeInstitution"[\s\S]*?const shopHeroShortcuts:[\s\S]*?SHOP_CONTROL_SHORTCUTS\.map/,
-  "Shop Control hero shortcuts must focus owner shop control: billboard, 12 Shop Diaries, summary, and Community package."
+  "Shop Control hero shortcuts must focus owner shop control: billboard, 12 Shop Diaries, summary, and Marketplace Capacity."
+);
+
+assertOwnerShopHandlesContains(
+  /id: "community-package"[\s\S]*?label: "Marketplace Capacity"[\s\S]*?detail: "Extra member places, shop blocks, ROSCA, and meeting pack"[\s\S]*?SHOP_CONTROL_SHORTCUTS[\s\S]*?id: "community-package"[\s\S]*?label: "Marketplace capacity"/,
+  "Shared owner-shop handles must expose the capacity lane as Marketplace Capacity while keeping the legacy community-package id."
 );
 
 assertOwnerShopHandlesContains(
@@ -412,8 +417,8 @@ assertShopContains(
 );
 
 assertShopContains(
-  /id="shop-control-gallery-tools"[\s\S]*?Shop Gallery Tools[\s\S]*?Control the public shop billboard and 12 Shop Diaries[\s\S]*?debugId="shop-control\.gallery\.shop-billboard"[\s\S]*?debugId="shop-control\.gallery\.community-package"/,
-  "Shop Control gallery tools must expose billboard control and Community package from the 12 Shop Diaries lane."
+  /id="shop-control-gallery-tools"[\s\S]*?Shop Gallery Tools[\s\S]*?Control the public shop billboard and 12 Shop Diaries[\s\S]*?open Marketplace Capacity[\s\S]*?debugId="shop-control\.gallery\.shop-billboard"[\s\S]*?debugId="shop-control\.gallery\.community-package"[\s\S]*?Marketplace capacity/,
+  "Shop Control gallery tools must expose billboard control and Marketplace Capacity from the 12 Shop Diaries lane."
 );
 
 if (
@@ -431,8 +436,8 @@ if (
 }
 
 assertShopContains(
-  /debugId="shop-control\.package\.rosca-cycle"[\s\S]*?debugId="shop-control\.rosca\.start-cycle"[\s\S]*?debugId="shop-control\.rosca\.record-payout"/,
-  "Shop Control must keep the ROSCA paid package action connected to the ROSCA cycle and payout controls."
+  /Marketplace capacity[\s\S]*?Add capacity when the marketplace needs more[\s\S]*?Generate the exact capacity reference[\s\S]*?Other capacity units: GBP 1[\s\S]*?Latest capacity reference[\s\S]*?debugId="shop-control\.package\.rosca-cycle"[\s\S]*?debugId="shop-control\.rosca\.start-cycle"[\s\S]*?debugId="shop-control\.rosca\.record-payout"/,
+  "Shop Control must keep Marketplace Capacity wording and connect the ROSCA capacity action to the ROSCA cycle and payout controls."
 );
 
 assertShopContains(

@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useState } from "react";
+import { StableButton } from "../../components/StableButton";
 
 type GovernanceReadinessPanelsProps = {
   isAdmin?: boolean;
@@ -9,6 +10,30 @@ type GovernanceReadinessPanelsProps = {
   delegationMap?: any;
   governanceCoverage?: any;
 };
+
+type GovernanceDetailKey = "review" | "delegation" | "coverage";
+
+const GOVERNANCE_DETAIL_OPTIONS: Array<{
+  key: GovernanceDetailKey;
+  label: string;
+  note: string;
+}> = [
+  {
+    key: "review",
+    label: "Review pulse",
+    note: "See the open governance decisions and access-review pressure.",
+  },
+  {
+    key: "delegation",
+    label: "Delegation",
+    note: "Check delegated authority and local-admin readiness.",
+  },
+  {
+    key: "coverage",
+    label: "Coverage",
+    note: "Review local admin and policy coverage gaps.",
+  },
+];
 
 function cleanText(value: unknown, fallback = ""): string {
   return typeof value === "string" && value.trim() ? value.trim() : fallback;
@@ -59,7 +84,7 @@ function sectionLabel(): React.CSSProperties {
     fontSize: 13,
     fontWeight: 900,
     textTransform: "uppercase",
-    letterSpacing: "0.08em",
+    letterSpacing: 0,
   };
 }
 
@@ -202,9 +227,63 @@ export default function CommunityDomainGovernanceReadinessPanels({
       : []),
     ["Access requests", isAdmin ? membershipAccessRequests.length : 0],
   ];
+  const [activeGovernanceDetail, setActiveGovernanceDetail] =
+    useState<GovernanceDetailKey>("review");
+  const selectedGovernanceDetail =
+    GOVERNANCE_DETAIL_OPTIONS.find((option) => option.key === activeGovernanceDetail) ||
+    GOVERNANCE_DETAIL_OPTIONS[0];
 
   return (
     <>
+      <div
+        style={{
+          ...softCard(),
+          display: "grid",
+          gap: 10,
+        }}
+      >
+        <div style={sectionLabel()}>Governance focus</div>
+        <div style={helperText()}>
+          Open one governance packet at a time. Current view:{" "}
+          <strong>{selectedGovernanceDetail.label}</strong>.
+        </div>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 140px), 1fr))",
+            gap: 8,
+          }}
+        >
+          {GOVERNANCE_DETAIL_OPTIONS.map((option) => {
+            const selected = option.key === activeGovernanceDetail;
+            return (
+              <StableButton
+                key={option.key}
+                type="button"
+                kind={selected ? "primary" : "secondary"}
+                stableHeight={48}
+                fullWidth
+                aria-pressed={selected}
+                title={option.note}
+                debugId={`community-domain-governance.detail.${option.key}`}
+                onClick={() => setActiveGovernanceDetail(option.key)}
+                style={{
+                  justifyContent: "center",
+                  fontSize: 13,
+                  textTransform: "none",
+                }}
+              >
+                {option.label}
+              </StableButton>
+            );
+          })}
+        </div>
+        <div style={{ ...helperText(), fontSize: 13 }}>
+          {selectedGovernanceDetail.note}
+        </div>
+      </div>
+
+      {activeGovernanceDetail === "review" ? (
       <div style={softCard()}>
         <div style={sectionLabel()}>Governance review pulse</div>
         <div style={{ ...helperText(), marginTop: 7 }}>
@@ -254,7 +333,9 @@ export default function CommunityDomainGovernanceReadinessPanels({
           apply membership, assign roles, expose private evidence, or bypass reviewer policy.
         </div>
       </div>
+      ) : null}
 
+      {activeGovernanceDetail === "delegation" ? (
       <div style={softCard()}>
         <div style={sectionLabel()}>Delegation map</div>
         <div style={{ ...helperText(), marginTop: 7 }}>
@@ -342,7 +423,9 @@ export default function CommunityDomainGovernanceReadinessPanels({
           activity, move money, or expose private member records.
         </div>
       </div>
+      ) : null}
 
+      {activeGovernanceDetail === "coverage" ? (
       <div style={softCard()}>
         <div style={sectionLabel()}>Governance coverage</div>
         <div style={{ ...helperText(), marginTop: 7 }}>
@@ -401,6 +484,7 @@ export default function CommunityDomainGovernanceReadinessPanels({
           or expose private review records.
         </div>
       </div>
+      ) : null}
     </>
   );
 }

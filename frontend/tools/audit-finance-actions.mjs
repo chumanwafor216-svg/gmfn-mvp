@@ -161,14 +161,14 @@ assertContains(
 
 assertContains(
   "src/pages/PaymentInstructionsPage.tsx",
-  /function moneyInIdentityBlocker[\s\S]*?Your GSN ID is still awaiting issue\. Sign in again or finish member activation, then return to Money In\.[\s\S]*?identityBlockerText[\s\S]*?moneyInIdentityReady[\s\S]*?disabled=\{generatingInstruction \|\| !moneyInIdentityReady\}/,
-  "Money In must clearly block reference generation until the signed-in member has an issued GSN ID."
+  /function moneyInIdentityBlocker[\s\S]*?Your member GSN ID is not visible here yet\. Sign in again or finish member activation, then return to Money In\.[\s\S]*?identityBlockerText[\s\S]*?moneyInIdentityReady[\s\S]*?disabled=\{generatingInstruction \|\| !moneyInIdentityReady\}/,
+  "Money In must clearly block reference generation until the signed-in member has a visible member GSN ID."
 );
 
 assertContains(
   "src/pages/PaymentInstructionsPage.tsx",
-  /const currentGmfnId = useMemo\(\(\) => \{[\s\S]*?firstTruthy\(me\?\.gmfn_id, \(api as any\)\.getStoredGmfnId\?\.\(\)\)[\s\S]*?const gmfnId = firstTruthy\(meRes\?\.gmfn_id, \(api as any\)\.getStoredGmfnId\?\.\(\)\)/,
-  "Money In must fall back to the stored issued GSN ID when the live profile response is partial, matching Marketplace identity parity."
+  /function resolveMoneyInMemberGmfnId\(me: any, currentClan: any\): string \{[\s\S]*?me\?\.gmfn_id[\s\S]*?currentClan\?\.member_gmfn_id[\s\S]*?\(api as any\)\.getStoredGmfnId\?\.\(\)[\s\S]*?const currentGmfnId = useMemo\(\(\) => \{[\s\S]*?resolveMoneyInMemberGmfnId\(me, currentClan\)[\s\S]*?const gmfnId = resolveMoneyInMemberGmfnId\(meRes, clanRes\);/,
+  "Money In must fall back to selected-community and stored member GSN IDs when the live profile response is partial, matching Marketplace identity parity."
 );
 
 assertNotContains(

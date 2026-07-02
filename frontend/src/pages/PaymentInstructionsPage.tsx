@@ -77,6 +77,40 @@ function firstTruthy(...values: unknown[]): string {
   return "";
 }
 
+function normalizeMoneyInMemberGmfnId(value: unknown): string {
+  const raw = safeStr(value).toUpperCase().replace(/^GSN-/, "GMFN-");
+  if (!/^GMFN-[A-Z]-[A-Z0-9-]+$/.test(raw)) return "";
+  return raw.startsWith("GMFN-C-") ? "" : raw;
+}
+
+function firstMemberGmfnId(...values: unknown[]): string {
+  for (const value of values) {
+    const gmfnId = normalizeMoneyInMemberGmfnId(value);
+    if (gmfnId) return gmfnId;
+  }
+  return "";
+}
+
+function resolveMoneyInMemberGmfnId(me: any, currentClan: any): string {
+  return firstMemberGmfnId(
+    me?.gmfn_id,
+    me?.gmfnId,
+    me?.profile?.gmfn_id,
+    currentClan?.current_member_gmfn_id,
+    currentClan?.currentUserGmfnId,
+    currentClan?.member_gmfn_id,
+    currentClan?.memberGmfnId,
+    currentClan?.membership?.gmfn_id,
+    currentClan?.membership?.member_gmfn_id,
+    currentClan?.member?.gmfn_id,
+    currentClan?.profile?.member_gmfn_id,
+    currentClan?.profile?.gmfn_id,
+    currentClan?.user?.gmfn_id,
+    currentClan?.gmfn_id,
+    (api as any).getStoredGmfnId?.()
+  );
+}
+
 function normalizeCurrency(value: unknown, fallback = "NGN"): string {
   const code = safeStr(value).toUpperCase();
   if (MONEY_IN_CURRENCY_CODES.has(code)) return code;
@@ -413,7 +447,7 @@ function moneyInIdentityBlocker(selectedClanId: number, gmfnId: string): string 
   }
 
   if (!safeStr(gmfnId)) {
-    return "Your GSN ID is still awaiting issue. Sign in again or finish member activation, then return to Money In.";
+    return "Your member GSN ID is not visible here yet. Sign in again or finish member activation, then return to Money In.";
   }
 
   return "";
@@ -828,8 +862,8 @@ export default function PaymentInstructionsPage() {
   }, [notice]);
 
   const currentGmfnId = useMemo(() => {
-    return firstTruthy(me?.gmfn_id, (api as any).getStoredGmfnId?.());
-  }, [me]);
+    return resolveMoneyInMemberGmfnId(me, currentClan);
+  }, [me, currentClan]);
 
   useEffect(() => {
     moneyInActionContextRef.current = [
@@ -888,7 +922,11 @@ export default function PaymentInstructionsPage() {
         setMe(meRes || null);
         setCurrentClan(clanRes || null);
 
-        const gmfnId = firstTruthy(meRes?.gmfn_id, (api as any).getStoredGmfnId?.());
+        const gmfnId = resolveMoneyInMemberGmfnId(meRes, clanRes);
+
+        if (gmfnId && typeof (api as any).setStoredGmfnId === "function") {
+          (api as any).setStoredGmfnId(gmfnId);
+        }
 
         if (!selectedClanId || !gmfnId) {
           setMoneySurface(null);

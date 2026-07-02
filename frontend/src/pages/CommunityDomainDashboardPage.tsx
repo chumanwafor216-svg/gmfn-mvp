@@ -124,6 +124,91 @@ type DomainLane = {
   count?: number;
 };
 
+type StructureDetailKey = "preview" | "foundation" | "boundary" | "activity" | "planning";
+type ServiceDetailKey = "readiness" | "local" | "boundaries" | "trust" | "evidence";
+type MemberDetailKey = "readiness" | "placement";
+
+const STRUCTURE_DETAIL_OPTIONS: Array<{
+  key: StructureDetailKey;
+  label: string;
+  note: string;
+}> = [
+  {
+    key: "preview",
+    label: "Structure map",
+    note: "Show the operating-unit tree first.",
+  },
+  {
+    key: "foundation",
+    label: "Foundation",
+    note: "Review local authority, economy, and activity readiness.",
+  },
+  {
+    key: "boundary",
+    label: "Boundaries",
+    note: "Check child-domain and public boundary readiness.",
+  },
+  {
+    key: "activity",
+    label: "Activities",
+    note: "Inspect scheduled and paid activity readiness.",
+  },
+  {
+    key: "planning",
+    label: "Rollout",
+    note: "Open rollout, activity map, and group planning.",
+  },
+];
+
+const SERVICE_DETAIL_OPTIONS: Array<{
+  key: ServiceDetailKey;
+  label: string;
+  note: string;
+}> = [
+  {
+    key: "readiness",
+    label: "Readiness",
+    note: "Review service, billing, settings, economy, and presence readiness.",
+  },
+  {
+    key: "local",
+    label: "Local maps",
+    note: "Inspect service, privacy, analytics, communication, and vault maps.",
+  },
+  {
+    key: "boundaries",
+    label: "Boundaries",
+    note: "Check exchange, privacy, configuration, compliance, and appeal boundaries.",
+  },
+  {
+    key: "trust",
+    label: "Trust maps",
+    note: "Review local evidence authority and trust readiness maps.",
+  },
+  {
+    key: "evidence",
+    label: "Evidence",
+    note: "Open evidence records, release, relay, notices, and mobility readiness.",
+  },
+];
+
+const MEMBER_DETAIL_OPTIONS: Array<{
+  key: MemberDetailKey;
+  label: string;
+  note: string;
+}> = [
+  {
+    key: "readiness",
+    label: "Member readiness",
+    note: "Review placement, member counts, and verification readiness.",
+  },
+  {
+    key: "placement",
+    label: "Unit placement",
+    note: "Inspect member participation readiness by operating unit.",
+  },
+];
+
 type DashboardPayload = {
   community_domain?: any;
   template?: any;
@@ -334,7 +419,7 @@ function sectionLabel(onDark = false): React.CSSProperties {
     fontSize: 12,
     color: onDark ? "#F3D06A" : "#506A82",
     fontWeight: 900,
-    letterSpacing: 0.5,
+    letterSpacing: 0,
     textTransform: "uppercase",
   };
 }
@@ -646,6 +731,12 @@ export default function CommunityDomainDashboardPage() {
   const [subscriptionLifecycle, setSubscriptionLifecycle] = useState<any | null>(null);
   const [quote, setQuote] = useState<any | null>(null);
   const [activeLane, setActiveLane] = useState("structure");
+  const [activeStructureDetail, setActiveStructureDetail] =
+    useState<StructureDetailKey>("preview");
+  const [activeServiceDetail, setActiveServiceDetail] =
+    useState<ServiceDetailKey>("readiness");
+  const [activeMemberDetail, setActiveMemberDetail] =
+    useState<MemberDetailKey>("readiness");
   const [loadedReadinessLanes, setLoadedReadinessLanes] = useState<Record<string, boolean>>({});
   const [loadingReadinessLanes, setLoadingReadinessLanes] = useState<Record<string, boolean>>({});
   const readinessLoadSequence = useRef(0);
@@ -1246,6 +1337,15 @@ export default function CommunityDomainDashboardPage() {
     ? governancePendingCount
     : institutionalOpenReviewCount;
   const selectedLane = lanes.find((lane) => lane.lane_key === activeLane) || lanes[0];
+  const selectedStructureDetail =
+    STRUCTURE_DETAIL_OPTIONS.find((option) => option.key === activeStructureDetail) ||
+    STRUCTURE_DETAIL_OPTIONS[0];
+  const selectedServiceDetail =
+    SERVICE_DETAIL_OPTIONS.find((option) => option.key === activeServiceDetail) ||
+    SERVICE_DETAIL_OPTIONS[0];
+  const selectedMemberDetail =
+    MEMBER_DETAIL_OPTIONS.find((option) => option.key === activeMemberDetail) ||
+    MEMBER_DETAIL_OPTIONS[0];
   const isBaseReadinessLoading = Boolean(loadingReadinessLanes.__base);
   const isActiveLaneReadinessLoading = Boolean(
     loadingReadinessLanes[cleanText(activeLane, "structure")]
@@ -2267,164 +2367,277 @@ export default function CommunityDomainDashboardPage() {
 
                 {!isActiveLaneReadinessLoading && activeLane === "modules" ? (
                   <>
-                    <Suspense
-                      fallback={
-                        <div style={{ ...helperText(), marginTop: 4 }}>
-                          Loading service readiness panels...
-                        </div>
-                      }
+                    <div
+                      style={{
+                        ...softCard(),
+                        display: "grid",
+                        gap: 10,
+                      }}
                     >
-                      <CommunityDomainServiceReadinessPanels
-                        moduleScopeReadiness={moduleScopeReadiness}
-                        moduleKeys={moduleKeys}
-                        billingStatus={status.billing_status}
-                        quote={quote}
-                        serviceSettingsProjection={serviceSettingsProjection}
-                        economicParticipation={economicParticipation}
-                        networkPresence={networkPresence}
+                      <div style={sectionLabel()}>Services focus</div>
+                      <div style={helperText()}>
+                        Open one service packet at a time. Current view:{" "}
+                        <strong>{selectedServiceDetail.label}</strong>.
+                      </div>
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns:
+                            "repeat(auto-fit, minmax(min(100%, 136px), 1fr))",
+                          gap: 8,
+                        }}
                       >
-                        <Suspense
-                          fallback={
-                            <div style={{ ...helperText(), marginTop: 4 }}>
-                              Loading local service views...
-                            </div>
-                          }
-                        >
-                          <CommunityDomainNodeProjectionGroups
-                            variant="services"
-                            nodeServiceMap={nodeServiceMap}
-                            nodePrivacyMap={nodePrivacyMap}
-                            nodeAnalyticsMap={nodeAnalyticsMap}
-                            nodeCommunicationMap={nodeCommunicationMap}
-                            nodeVaultMap={nodeVaultMap}
-                          />
-                        </Suspense>
-                      </CommunityDomainServiceReadinessPanels>
-                    </Suspense>
+                        {SERVICE_DETAIL_OPTIONS.map((option) => {
+                          const selected = option.key === activeServiceDetail;
+                          return (
+                            <StableButton
+                              key={option.key}
+                              type="button"
+                              kind={selected ? "primary" : "secondary"}
+                              stableHeight={48}
+                              fullWidth
+                              aria-pressed={selected}
+                              title={option.note}
+                              debugId={`community-domain-dashboard.service-detail.${option.key}`}
+                              onClick={() => setActiveServiceDetail(option.key)}
+                              style={{
+                                justifyContent: "center",
+                                fontSize: 13,
+                                textTransform: "none",
+                              }}
+                            >
+                              {option.label}
+                            </StableButton>
+                          );
+                        })}
+                      </div>
+                      <div style={{ ...helperText(), fontSize: 13 }}>
+                        {selectedServiceDetail.note}
+                      </div>
+                    </div>
 
-                    <Suspense
-                      fallback={
-                        <div style={{ ...helperText(), marginTop: 4 }}>
-                          Loading service boundary panels...
-                        </div>
-                      }
-                    >
-                      <CommunityDomainServiceBoundaryPanels
-                        networkExchangeMap={networkExchangeMap}
-                        recordPrivacyMap={recordPrivacyMap}
-                        configurationMap={configurationMap}
-                        complianceMap={complianceMap}
-                        appealReadiness={appealReadiness}
-                      />
-                    </Suspense>
-                    <Suspense
-                      fallback={
-                        <div style={{ ...helperText(), marginTop: 4 }}>
-                          Loading trust evidence views...
-                        </div>
-                      }
-                    >
-                      <CommunityDomainNodeProjectionGroups
-                        variant="trustEvidence"
-                        nodeEvidenceAuthorityMap={nodeEvidenceAuthorityMap}
-                        nodeTrustMap={nodeTrustMap}
-                      />
-                    </Suspense>
+                    {activeServiceDetail === "readiness" ? (
+                      <Suspense
+                        fallback={
+                          <div style={{ ...helperText(), marginTop: 4 }}>
+                            Loading service readiness panels...
+                          </div>
+                        }
+                      >
+                        <CommunityDomainServiceReadinessPanels
+                          moduleScopeReadiness={moduleScopeReadiness}
+                          moduleKeys={moduleKeys}
+                          billingStatus={status.billing_status}
+                          quote={quote}
+                          serviceSettingsProjection={serviceSettingsProjection}
+                          economicParticipation={economicParticipation}
+                          networkPresence={networkPresence}
+                        />
+                      </Suspense>
+                    ) : null}
 
-                    <Suspense
-                      fallback={
-                        <div style={{ ...helperText(), marginTop: 4 }}>
-                          Loading trust evidence readiness panels...
-                        </div>
-                      }
-                    >
-                      <CommunityDomainTrustEvidenceReadinessPanels
-                        evidenceRecordReadiness={evidenceRecordReadiness}
-                        evidenceReleaseReadiness={evidenceReleaseReadiness}
-                        trustRelayReadiness={trustRelayReadiness}
-                        notificationScopeReadiness={notificationScopeReadiness}
-                        trustMobility={trustMobility}
-                      />
-                    </Suspense>
+                    {activeServiceDetail === "local" ? (
+                      <Suspense
+                        fallback={
+                          <div style={{ ...helperText(), marginTop: 4 }}>
+                            Loading local service views...
+                          </div>
+                        }
+                      >
+                        <CommunityDomainNodeProjectionGroups
+                          variant="services"
+                          nodeServiceMap={nodeServiceMap}
+                          nodePrivacyMap={nodePrivacyMap}
+                          nodeAnalyticsMap={nodeAnalyticsMap}
+                          nodeCommunicationMap={nodeCommunicationMap}
+                          nodeVaultMap={nodeVaultMap}
+                        />
+                      </Suspense>
+                    ) : null}
+
+                    {activeServiceDetail === "boundaries" ? (
+                      <Suspense
+                        fallback={
+                          <div style={{ ...helperText(), marginTop: 4 }}>
+                            Loading service boundary panels...
+                          </div>
+                        }
+                      >
+                        <CommunityDomainServiceBoundaryPanels
+                          networkExchangeMap={networkExchangeMap}
+                          recordPrivacyMap={recordPrivacyMap}
+                          configurationMap={configurationMap}
+                          complianceMap={complianceMap}
+                          appealReadiness={appealReadiness}
+                        />
+                      </Suspense>
+                    ) : null}
+
+                    {activeServiceDetail === "trust" ? (
+                      <Suspense
+                        fallback={
+                          <div style={{ ...helperText(), marginTop: 4 }}>
+                            Loading trust evidence views...
+                          </div>
+                        }
+                      >
+                        <CommunityDomainNodeProjectionGroups
+                          variant="trustEvidence"
+                          nodeEvidenceAuthorityMap={nodeEvidenceAuthorityMap}
+                          nodeTrustMap={nodeTrustMap}
+                        />
+                      </Suspense>
+                    ) : null}
+
+                    {activeServiceDetail === "evidence" ? (
+                      <Suspense
+                        fallback={
+                          <div style={{ ...helperText(), marginTop: 4 }}>
+                            Loading trust evidence readiness panels...
+                          </div>
+                        }
+                      >
+                        <CommunityDomainTrustEvidenceReadinessPanels
+                          evidenceRecordReadiness={evidenceRecordReadiness}
+                          evidenceReleaseReadiness={evidenceReleaseReadiness}
+                          trustRelayReadiness={trustRelayReadiness}
+                          notificationScopeReadiness={notificationScopeReadiness}
+                          trustMobility={trustMobility}
+                        />
+                      </Suspense>
+                    ) : null}
                   </>
                 ) : null}
 
                 {!isActiveLaneReadinessLoading && activeLane === "structure" ? (
-                  <Suspense
-                    fallback={
-                      <div style={{ ...helperText(), marginTop: 4 }}>
-                        Loading structure preview...
+                  <>
+                    <div
+                      style={{
+                        ...softCard(),
+                        display: "grid",
+                        gap: 10,
+                      }}
+                    >
+                      <div style={sectionLabel()}>Structure focus</div>
+                      <div style={helperText()}>
+                        Open one institutional structure view at a time. Current
+                        view: <strong>{selectedStructureDetail.label}</strong>.
                       </div>
-                    }
-                  >
-                    <CommunityDomainStructurePreviewPanel
-                      nodeTree={nodeTree}
-                    />
-                  </Suspense>
-                ) : null}
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns:
+                            "repeat(auto-fit, minmax(min(100%, 136px), 1fr))",
+                          gap: 8,
+                        }}
+                      >
+                        {STRUCTURE_DETAIL_OPTIONS.map((option) => {
+                          const selected = option.key === activeStructureDetail;
+                          return (
+                            <StableButton
+                              key={option.key}
+                              type="button"
+                              kind={selected ? "primary" : "secondary"}
+                              stableHeight={48}
+                              fullWidth
+                              aria-pressed={selected}
+                              title={option.note}
+                              debugId={`community-domain-dashboard.structure-detail.${option.key}`}
+                              onClick={() => setActiveStructureDetail(option.key)}
+                              style={{
+                                justifyContent: "center",
+                                fontSize: 13,
+                                textTransform: "none",
+                              }}
+                            >
+                              {option.label}
+                            </StableButton>
+                          );
+                        })}
+                      </div>
+                      <div style={{ ...helperText(), fontSize: 13 }}>
+                        {selectedStructureDetail.note}
+                      </div>
+                    </div>
 
-                {!isActiveLaneReadinessLoading && activeLane === "structure" ? (
-                  <Suspense
-                    fallback={
-                      <div style={{ ...helperText(), marginTop: 4 }}>
-                        Loading local structure views...
-                      </div>
-                    }
-                  >
-                    <CommunityDomainNodeProjectionGroups
-                      variant="structureFoundation"
-                      nodeAutonomyMap={nodeAutonomyMap}
-                      nodeEconomicMap={nodeEconomicMap}
-                      nodeActivityMap={nodeActivityMap}
-                    />
-                  </Suspense>
-                ) : null}
+                    {activeStructureDetail === "preview" ? (
+                      <Suspense
+                        fallback={
+                          <div style={{ ...helperText(), marginTop: 4 }}>
+                            Loading structure map...
+                          </div>
+                        }
+                      >
+                        <CommunityDomainStructurePreviewPanel
+                          nodeTree={nodeTree}
+                        />
+                      </Suspense>
+                    ) : null}
 
-                {!isActiveLaneReadinessLoading && activeLane === "structure" ? (
-                  <Suspense
-                    fallback={
-                      <div style={{ ...helperText(), marginTop: 4 }}>
-                        Loading boundary view...
-                      </div>
-                    }
-                  >
-                    <CommunityDomainNodeProjectionGroups
-                      variant="structureBoundary"
-                      nodeDomainBoundaryMap={nodeDomainBoundaryMap}
-                    />
-                  </Suspense>
-                ) : null}
+                    {activeStructureDetail === "foundation" ? (
+                      <Suspense
+                        fallback={
+                          <div style={{ ...helperText(), marginTop: 4 }}>
+                            Loading foundation views...
+                          </div>
+                        }
+                      >
+                        <CommunityDomainNodeProjectionGroups
+                          variant="structureFoundation"
+                          nodeAutonomyMap={nodeAutonomyMap}
+                          nodeEconomicMap={nodeEconomicMap}
+                          nodeActivityMap={nodeActivityMap}
+                        />
+                      </Suspense>
+                    ) : null}
 
-                {!isActiveLaneReadinessLoading && activeLane === "structure" ? (
-                  <Suspense
-                    fallback={
-                      <div style={{ ...helperText(), marginTop: 4 }}>
-                        Loading activity detail views...
-                      </div>
-                    }
-                  >
-                    <CommunityDomainNodeProjectionGroups
-                      variant="structureActivity"
-                      nodeScheduledActivityMap={nodeScheduledActivityMap}
-                      nodePaidActivityMap={nodePaidActivityMap}
-                    />
-                  </Suspense>
-                ) : null}
+                    {activeStructureDetail === "boundary" ? (
+                      <Suspense
+                        fallback={
+                          <div style={{ ...helperText(), marginTop: 4 }}>
+                            Loading boundary view...
+                          </div>
+                        }
+                      >
+                        <CommunityDomainNodeProjectionGroups
+                          variant="structureBoundary"
+                          nodeDomainBoundaryMap={nodeDomainBoundaryMap}
+                        />
+                      </Suspense>
+                    ) : null}
 
-                {!isActiveLaneReadinessLoading && activeLane === "structure" ? (
-                  <Suspense
-                    fallback={
-                      <div style={{ ...helperText(), marginTop: 4 }}>
-                        Loading structure planning panels...
-                      </div>
-                    }
-                  >
-                    <CommunityDomainStructurePlanningPanels
-                      rolloutPlan={rolloutPlan}
-                      activityMap={activityMap}
-                      activityGroupReadiness={activityGroupReadiness}
-                    />
-                  </Suspense>
+                    {activeStructureDetail === "activity" ? (
+                      <Suspense
+                        fallback={
+                          <div style={{ ...helperText(), marginTop: 4 }}>
+                            Loading activity detail views...
+                          </div>
+                        }
+                      >
+                        <CommunityDomainNodeProjectionGroups
+                          variant="structureActivity"
+                          nodeScheduledActivityMap={nodeScheduledActivityMap}
+                          nodePaidActivityMap={nodePaidActivityMap}
+                        />
+                      </Suspense>
+                    ) : null}
+
+                    {activeStructureDetail === "planning" ? (
+                      <Suspense
+                        fallback={
+                          <div style={{ ...helperText(), marginTop: 4 }}>
+                            Loading rollout planning...
+                          </div>
+                        }
+                      >
+                        <CommunityDomainStructurePlanningPanels
+                          rolloutPlan={rolloutPlan}
+                          activityMap={activityMap}
+                          activityGroupReadiness={activityGroupReadiness}
+                        />
+                      </Suspense>
+                    ) : null}
+                  </>
                 ) : null}
 
                 {!isActiveLaneReadinessLoading && activeLane === "governance" ? (
@@ -2448,18 +2661,73 @@ export default function CommunityDomainDashboardPage() {
                 ) : null}
 
                 {!isActiveLaneReadinessLoading && activeLane === "members" ? (
-                  <Suspense
-                    fallback={
-                      <div style={{ ...helperText(), marginTop: 4 }}>
-                        Loading member readiness panels...
-                      </div>
-                    }
-                  >
-                    <CommunityDomainMemberReadinessPanels
-                      placementSummary={placementSummary}
-                      counts={counts}
-                      memberVerificationMap={memberVerificationMap}
+                  <>
+                    <div
+                      style={{
+                        ...softCard(),
+                        display: "grid",
+                        gap: 10,
+                      }}
                     >
+                      <div style={sectionLabel()}>Members focus</div>
+                      <div style={helperText()}>
+                        Open one member packet at a time. Current view:{" "}
+                        <strong>{selectedMemberDetail.label}</strong>.
+                      </div>
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns:
+                            "repeat(auto-fit, minmax(min(100%, 148px), 1fr))",
+                          gap: 8,
+                        }}
+                      >
+                        {MEMBER_DETAIL_OPTIONS.map((option) => {
+                          const selected = option.key === activeMemberDetail;
+                          return (
+                            <StableButton
+                              key={option.key}
+                              type="button"
+                              kind={selected ? "primary" : "secondary"}
+                              stableHeight={48}
+                              fullWidth
+                              aria-pressed={selected}
+                              title={option.note}
+                              debugId={`community-domain-dashboard.member-detail.${option.key}`}
+                              onClick={() => setActiveMemberDetail(option.key)}
+                              style={{
+                                justifyContent: "center",
+                                fontSize: 13,
+                                textTransform: "none",
+                              }}
+                            >
+                              {option.label}
+                            </StableButton>
+                          );
+                        })}
+                      </div>
+                      <div style={{ ...helperText(), fontSize: 13 }}>
+                        {selectedMemberDetail.note}
+                      </div>
+                    </div>
+
+                    {activeMemberDetail === "readiness" ? (
+                      <Suspense
+                        fallback={
+                          <div style={{ ...helperText(), marginTop: 4 }}>
+                            Loading member readiness panels...
+                          </div>
+                        }
+                      >
+                        <CommunityDomainMemberReadinessPanels
+                          placementSummary={placementSummary}
+                          counts={counts}
+                          memberVerificationMap={memberVerificationMap}
+                        />
+                      </Suspense>
+                    ) : null}
+
+                    {activeMemberDetail === "placement" ? (
                       <Suspense
                         fallback={
                           <div style={{ ...helperText(), marginTop: 4 }}>
@@ -2472,8 +2740,8 @@ export default function CommunityDomainDashboardPage() {
                           nodeParticipationMap={nodeParticipationMap}
                         />
                       </Suspense>
-                    </CommunityDomainMemberReadinessPanels>
-                  </Suspense>
+                    ) : null}
+                  </>
                 ) : null}
 
                 {!isActiveLaneReadinessLoading &&

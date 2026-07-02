@@ -324,7 +324,7 @@ if (
 }
 
 if (
-  !/dismissedToastIdsRef = useRef<Set<string>>\(new Set\(\)\)[\s\S]*?const dismissToast = useCallback[\s\S]*?markCompanionUserInteraction\(\);[\s\S]*?dismissedToastIdsRef\.current\.add\(toast\.id\);[\s\S]*?if \(dismissedToastIdsRef\.current\.has\(payload\.id\)\) \{[\s\S]*?return;[\s\S]*?zIndex: 2200[\s\S]*?onClick=\{\(\) => dismissToast\(toast\)\}[\s\S]*?debugId=\{`companion-toast\.\$\{toast\.id\}\.dismiss-icon`\}[\s\S]*?onClick=\{\(\) => dismissToast\(toast\)\}[\s\S]*?debugId=\{`companion-toast\.\$\{toast\.id\}\.dismiss`\}/.test(
+  !/DISMISSED_COMPANION_TOASTS_KEY[\s\S]*?function readDismissedCompanionToastMap\(\): Record<string, number>[\s\S]*?function rememberDismissedCompanionToast\(id: string\): void[\s\S]*?dismissedToastIdsRef = useRef<Set<string>>\([\s\S]*?new Set\(Object\.keys\(readDismissedCompanionToastMap\(\)\)\)[\s\S]*?const dismissToast = useCallback[\s\S]*?markCompanionUserInteraction\(\);[\s\S]*?dismissedToastIdsRef\.current\.add\(toast\.id\);[\s\S]*?rememberDismissedCompanionToast\(toast\.id\);[\s\S]*?const persistedDismissals = readDismissedCompanionToastMap\(\);[\s\S]*?dismissedToastIdsRef\.current = new Set\(Object\.keys\(persistedDismissals\)\);[\s\S]*?if \(dismissedToastIdsRef\.current\.has\(payload\.id\)\) \{[\s\S]*?return;[\s\S]*?zIndex: 2200[\s\S]*?onClick=\{\(\) => dismissToast\(toast\)\}[\s\S]*?debugId=\{`companion-toast\.\$\{toast\.id\}\.dismiss-icon`\}[\s\S]*?onClick=\{\(\) => dismissToast\(toast\)\}[\s\S]*?debugId=\{`companion-toast\.\$\{toast\.id\}\.dismiss`\}/.test(
     companionLayerSource
   )
 ) {
@@ -332,9 +332,9 @@ if (
     file: relative(frontendRoot, companionLayerPath),
     line: 1,
     label:
-      "Companion toast dismiss controls must remain above mobile overlays and suppress the dismissed toast id for the current session",
+      "Companion toast dismiss controls must remain above mobile overlays and suppress dismissed toast ids across the current session and short persistent window",
     text:
-      "Expected Companion dismiss session memory, high overlay z-index, and shared dismiss handler were not found.",
+      "Expected Companion dismiss session memory, persistent suppression, high overlay z-index, and shared dismiss handler were not found.",
   });
 }
 

@@ -22,7 +22,10 @@ import {
   setSelectedClanId,
 } from "../lib/api";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
-import { buildGsnSupportEvidencePackage } from "../lib/gsnSnapshotPaper";
+import {
+  buildGsnSupportEvidencePackage,
+  buildGsnSupportEvidenceShareText,
+} from "../lib/gsnSnapshotPaper";
 
 type FilterKey = "pending" | "approved" | "declined" | "all";
 
@@ -808,7 +811,23 @@ export default function GuarantorInboxPage() {
   );
 
   function copyQueueSummary() {
-    safeCopy(queuePaper);
+    safeCopy(
+      buildGsnSupportEvidenceShareText({
+        title: "GSN Support Queue Snapshot",
+        reference: `guarantor-queue-${communityPublicId || selectedClanId || "current"}`,
+        memberName,
+        gsnId: gmfnId,
+        memberRole,
+        communityName: selectedCommunityLabel,
+        communityId: communityPublicId,
+        routeName: "Incoming Requests",
+        status: filter,
+        detailLines: [
+          `Pending: ${counts.pending}`,
+          `Recorded support: ${counts.approved}`,
+        ],
+      })
+    );
   }
 
   async function handleDecision(row: InboxRow, status: "approved" | "declined") {

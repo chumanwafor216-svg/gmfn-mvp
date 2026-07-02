@@ -68,40 +68,45 @@ if (!moreVisibleBlock) {
 
 const trustedTradeSection = sectionBetween(
   /id="marketplace-members-shops"/,
-  /id="marketplace-loans-support"/
+  /id="marketplace-demand-box"/
 );
 
 if (!trustedTradeSection.text) {
-  addFinding(-1, "Trade & Shops section must exist before Support Requests.");
+  addFinding(-1, "Trade & Shops section must exist before Demand Box.");
+} else if (/Demand Box|marketplace\.members\.demand-box|Post a local need or offer request for this marketplace/.test(trustedTradeSection.text)) {
+  addFinding(
+    trustedTradeSection.start,
+    "Demand Box must not be embedded inside the Trade & Shops lane.",
+    trustedTradeSection.text
+  );
+}
+
+const demandSection = sectionBetween(
+  /id="marketplace-demand-box"/,
+  /id="marketplace-loans-support"/
+);
+
+if (!demandSection.text) {
+  addFinding(-1, "Demand Box section must exist before Support Requests.");
 } else {
   [
-    /<MarketplaceGlyph name="demand" size=\{24\} \/>/,
-    /Demand Box[\s\S]*?Post a local need or offer request for this marketplace/,
-    /debugId="marketplace\.members\.demand-box"/,
-    /onClick=\{\(event\) => openMarketplaceCta\(event, "demandBox"\)\}/,
-    /Demand Box/,
-    /innerCard\("#FFFDF7"\)[\s\S]*?width: "100%"[\s\S]*?maxWidth: "100%"[\s\S]*?minWidth: 0[\s\S]*?display: isCompact \? "block" : "grid"[\s\S]*?overflow: "hidden"[\s\S]*?position: "relative"[\s\S]*?paddingRight: isCompact \? 62 : undefined[\s\S]*?position: "absolute"[\s\S]*?right: 16[\s\S]*?top: 18[\s\S]*?width: 46[\s\S]*?height: 46[\s\S]*?display: "block"[\s\S]*?wordBreak: "normal"[\s\S]*?hyphens: "none"/,
+    /debugId="marketplace\.tile\.demand"[\s\S]*?aria-label="Open Demand Box for this marketplace"[\s\S]*?openMarketplaceSection\(event, "demand", "marketplace-demand-box"\)/,
+    /demand: "marketplace"/,
+    /id="marketplace-demand-box"/,
+    /<MarketplaceGlyph name="demand" size=\{26\} \/>/,
+    /Demand Box[\s\S]*?Local needs and offers, separate from ROSCA savings and Support[\s\S]*?Requests[\s\S]*?Standalone lane/,
+    /Local needs and offers[\s\S]*?what is needed, wanted,[\s\S]*?available, or being sourced/,
+    /debugId="marketplace\.demand\.toggle"/,
+    /debugId="marketplace\.demand\.open"[\s\S]*?openMarketplaceCta\(event, "demandBox"\)[\s\S]*?Open Demand Box/,
   ].forEach((pattern) => {
-    if (!pattern.test(trustedTradeSection.text)) {
+    if (!pattern.test(source) && !pattern.test(demandSection.text)) {
       addFinding(
-        trustedTradeSection.start,
-        "Demand Box must be caged as a marketplace-local Trade & Shops sub-route.",
+        demandSection.start,
+        "Demand Box must be a separate marketplace-local lane with a direct route action.",
         pattern.toString()
       );
     }
   });
-
-  if (
-    /debugId=\{`marketplace\.intent\.\$\{item\.id\}`\}[\s\S]*?Demand Box/.test(
-      trustedTradeSection.text
-    )
-  ) {
-    addFinding(
-      trustedTradeSection.start,
-      "Demand Box must not be rendered from the visible More intent grid inside Trade.",
-      trustedTradeSection.text
-    );
-  }
 }
 
 if (findings.length > 0) {

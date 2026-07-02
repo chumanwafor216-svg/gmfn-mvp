@@ -17,7 +17,7 @@ import {
   institutionalSoftCard,
   institutionalStatTile,
 } from "../lib/institutionalSurface";
-import { buildGsnSupportEvidencePackage } from "../lib/gsnSnapshotPaper";
+import { buildGsnSupportEvidenceShareText } from "../lib/gsnSnapshotPaper";
 import { brandClampLines } from "../styles/gmfnBrand";
 
 type LoanRow = {
@@ -106,6 +106,40 @@ function firstTruthy(...values: any[]): string {
     if (text) return text;
   }
   return "";
+}
+
+function normalizeMemberGmfnId(value: any): string {
+  const raw = safeStr(value).toUpperCase().replace(/^GSN-/, "GMFN-");
+  if (!/^GMFN-[A-Z]-[A-Z0-9-]+$/.test(raw)) return "";
+  return raw.startsWith("GMFN-C-") ? "" : raw;
+}
+
+function firstMemberGmfnId(...values: any[]): string {
+  for (const value of values) {
+    const gmfnId = normalizeMemberGmfnId(value);
+    if (gmfnId) return gmfnId;
+  }
+  return "";
+}
+
+function resolveMemberGmfnId(me: any, currentClan: any): string {
+  return firstMemberGmfnId(
+    me?.gmfn_id,
+    me?.gmfnId,
+    me?.profile?.gmfn_id,
+    currentClan?.current_member_gmfn_id,
+    currentClan?.currentUserGmfnId,
+    currentClan?.member_gmfn_id,
+    currentClan?.memberGmfnId,
+    currentClan?.membership?.gmfn_id,
+    currentClan?.membership?.member_gmfn_id,
+    currentClan?.member?.gmfn_id,
+    currentClan?.profile?.member_gmfn_id,
+    currentClan?.profile?.gmfn_id,
+    currentClan?.user?.gmfn_id,
+    currentClan?.gmfn_id,
+    (api as any).getStoredGmfnId?.()
+  );
 }
 
 function firstDefined(...values: any[]): any {
@@ -784,6 +818,11 @@ export default function LoanSuggestionsPage() {
         setMe(meRes || null);
         setCurrentClan(clanRes || null);
         setLoans(filteredLoans);
+
+        const resolvedGmfnId = resolveMemberGmfnId(meRes, clanRes);
+        if (resolvedGmfnId && typeof (api as any).setStoredGmfnId === "function") {
+          (api as any).setStoredGmfnId(resolvedGmfnId);
+        }
       } finally {
         if (alive) setLoading(false);
       }
@@ -806,9 +845,13 @@ export default function LoanSuggestionsPage() {
     );
   }, [me]);
 
+  const currentGmfnId = useMemo(() => {
+    return resolveMemberGmfnId(me, currentClan);
+  }, [me, currentClan]);
+
   const gmfnId = useMemo(() => {
-    return firstTruthy(me?.gmfn_id, "Pending");
-  }, [me]);
+    return firstTruthy(currentGmfnId, "Pending");
+  }, [currentGmfnId]);
 
   const communityLabel = useMemo(() => {
     return communityName(currentClan, selectedClanId);
@@ -841,8 +884,8 @@ export default function LoanSuggestionsPage() {
   const suggestionContextKey = `${selectedClanId || 0}:${activeBorrowerLoanId}`;
 
   const withdrawalTask = useMemo(
-    () => readWithdrawalTask(selectedClanId, safeStr(me?.gmfn_id)),
-    [selectedClanId, me]
+    () => readWithdrawalTask(selectedClanId, currentGmfnId),
+    [selectedClanId, currentGmfnId]
   );
 
   const cameFromWithdrawalSupport = useMemo(() => {
@@ -949,11 +992,11 @@ export default function LoanSuggestionsPage() {
   const sentGuarantors = positiveNumber(loanSummary?.guarantorsTotal);
 
   const fitReading = useMemo(() => {
-    if (!selectedClanId || !safeStr(me?.gmfn_id)) {
+    if (!selectedClanId || !currentGmfnId) {
       return {
         title: "Community or member identity is not ready.",
         detail:
-          "The fit-reading stage works best when your current community and visible member identity are ready.",
+          "The fit-reading stage works best when your current community and visible member GSN ID are ready.",
         tone: "error" as const,
       };
     }
@@ -1005,12 +1048,12 @@ export default function LoanSuggestionsPage() {
     };
   }, [
     selectedClanId,
-    me,
     cameFromWithdrawalSupport,
     activeBorrowerLoan,
     requiredGuarantors,
     suggestedSupporters.length,
     suggestionMessage,
+    currentGmfnId,
   ]);
 
   const fitTone =
@@ -1097,12 +1140,10 @@ export default function LoanSuggestionsPage() {
   const suggestionsSupportActive =
     cameFromWithdrawalSupport || Boolean(activeBorrowerLoan);
 
-  const suggestionsPaper = useMemo(
-    () =>
-      buildGsnSupportEvidencePackage({
+  function copySuggestionsPaper() {
+    api.safeCopy(
+      buildGsnSupportEvidenceShareText({
         title: "GSN Supporter Fit Snapshot",
-        purpose:
-          "Keep the current supporter-fit reading with the visible community and support-request context.",
         memberName,
         gsnId: gmfnId,
         memberRole,
@@ -1114,74 +1155,10 @@ export default function LoanSuggestionsPage() {
         status: fitReading.title,
         detailLines: [
           `Fit reading: ${fitReading.title}`,
-          `Reading detail: ${fitReading.detail}`,
-          `Fit note: ${
-            suggestionMessage ||
-            (activeBorrowerLoan
-              ? "The system has not returned a fuller fit note yet."
-              : "Start or resume the support draft first to see fit suggestions.")
-          }`,
-          `Recommended next action: ${nextRoute.ctaLabel}`,
-          `Recommended next reason: ${nextRoute.title}`,
-          `Supporters needed: ${requiredGuarantors}`,
           `Suggested supporters visible: ${suggestedSupporters.length}`,
-          `Recorded / sent: ${approvedGuarantors} / ${sentGuarantors}`,
-          `Status: ${safeStr(loanSummary?.status || activeBorrowerLoan?.status || "Awaiting issue")}`,
-          `Decision at: ${safeDateTime(loanSummary?.decisionAt)}`,
-          `Due at: ${safeDateTime(loanSummary?.dueAt)}`,
-          cameFromWithdrawalSupport ? "Money Out support context: present" : "",
-          supportGap ? `Support gap: ${supportGap}` : "",
-          withdrawalAmount ? `Money Out amount: ${withdrawalAmount}` : "",
-          withdrawalNote ? `Money Out note: ${withdrawalNote}` : "",
-          "Visible supporter-fit candidates:",
-          ...(suggestedSupporters.length
-            ? suggestedSupporters.slice(0, 5).map((item, index) => {
-                const parts = [
-                  safeStr(item.name),
-                  safeStr(item.gmfnId) ? `GSN ID ${safeStr(item.gmfnId)}` : "",
-                  safeStr(item.reason) ? `reason: ${safeStr(item.reason)}` : "",
-                  safeStr(item.recommendedPledge)
-                    ? `suggested support: ${safeStr(item.recommendedPledge)}`
-                    : "",
-                  safeStr(item.trustScore)
-                    ? `visible trust signal: ${safeStr(item.trustScore)}${
-                        safeStr(item.trustBand) ? ` / ${safeStr(item.trustBand)}` : ""
-                      }`
-                    : "",
-                ].filter(Boolean);
-
-                return `- ${index + 1}. ${parts.join("; ")}`;
-              })
-            : ["- No fit suggestion is available for this support item right now."]),
-          "Boundary: supporter fit is decision support only. It does not choose a supporter, approve support, confirm payout, verify private records, or authorize release of goods, credit, or money.",
         ],
-      }),
-    [
-      activeBorrowerLoan,
-      approvedGuarantors,
-      cameFromWithdrawalSupport,
-      communityLabel,
-      fitReading.detail,
-      fitReading.title,
-      gmfnId,
-      loanSummary,
-      memberName,
-      memberRole,
-      nextRoute.ctaLabel,
-      nextRoute.title,
-      publicCommunityId,
-      requiredGuarantors,
-      sentGuarantors,
-      suggestedSupporters,
-      suggestionMessage,
-      supportGap,
-      withdrawalAmount,
-      withdrawalNote,
-    ]
-  );
-
-  function copySuggestionsPaper() {
-    api.safeCopy(suggestionsPaper);
+      })
+    );
   }
 
   function toggleSection(key: keyof CollapseState) {

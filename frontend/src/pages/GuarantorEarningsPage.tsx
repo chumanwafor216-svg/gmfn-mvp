@@ -21,7 +21,10 @@ import {
   setSelectedClanId,
 } from "../lib/api";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
-import { buildGsnSupportEvidencePackage } from "../lib/gsnSnapshotPaper";
+import {
+  buildGsnSupportEvidencePackage,
+  buildGsnSupportEvidenceShareText,
+} from "../lib/gsnSnapshotPaper";
 
 type GuarantorEarningItem = {
   loan_guarantor_id?: number;
@@ -828,7 +831,24 @@ export default function GuarantorEarningsPage() {
   );
 
   function copySummary() {
-    safeCopy(earningsPaper);
+    safeCopy(
+      buildGsnSupportEvidenceShareText({
+        title: "GSN Supporter Value Snapshot",
+        reference: `guarantor-earnings-${communityPublicId || selectedClanId || "current"}`,
+        memberName,
+        gsnId: gmfnId,
+        memberRole,
+        communityName: selectedCommunityLabel,
+        communityId: communityPublicId,
+        routeName: "Supporter Value",
+        amount: `${fmtMoney(totals.total)} ${currency}`,
+        status: totals.pendingCount > 0 ? "Pending items visible" : "Current visible total",
+        detailLines: [
+          `Total earned: ${fmtMoney(totals.total)} ${currency}`,
+          `Potential share: ${fmtMoney(totals.estimatedTotal)} ${currency}`,
+        ],
+      })
+    );
   }
 
   return (

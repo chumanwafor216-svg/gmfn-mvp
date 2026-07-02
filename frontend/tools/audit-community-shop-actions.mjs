@@ -192,7 +192,7 @@ assertContains(
 assertContains(
   "src/components/CommunityShopControlPanel.tsx",
   /OWNER_SHOP_HASHES[\s\S]*?PAID_REPOST_HASH[\s\S]*?ownerShopHandle[\s\S]*?debugId="community-shop-control\.shortcut\.spotlight"[\s\S]*?ownerShopHandle\("free-spotlight"\)\.label[\s\S]*?debugId="community-shop-control\.shortcut\.paid-spotlight"[\s\S]*?ownerShopHandle\("spotlight-subscription"\)\.label[\s\S]*?debugId="community-shop-control\.shortcut\.paid-repost"[\s\S]*?ownerShopHandle\("paid-repost"\)\.label[\s\S]*?debugId="community-shop-control\.shortcut\.community-package"[\s\S]*?ownerShopHandle\("community-package"\)\.label/,
-  "Community Shop Control shortcut buttons must use shared owner-shop handles for Free Spotlight, Spotlight Subscription, Paid Repost, and Community Package."
+  "Community Shop Control shortcut buttons must use shared owner-shop handles for Free Spotlight, Spotlight Subscription, Paid Repost, and Marketplace Capacity."
 );
 
 assertContains(

@@ -44,13 +44,13 @@ assertContains(
 );
 
 assertContains(
-  /debugId="marketplace\.tile\.support"[\s\S]*?Support & ROSCA[\s\S]*?Support Requests[\s\S]*?ROSCA[\s\S]*?Loans[\s\S]*?debugId="marketplace\.support\.open-rosca"[\s\S]*?openMarketplaceSection\(event, "rosca", "marketplace-rosca"\)[\s\S]*?Open ROSCA/,
-  "ROSCA must stay reachable through the grouped Support & ROSCA lane without returning as a separate busy front-door button."
+  /debugId="marketplace\.tile\.support"[\s\S]*?Support Requests[\s\S]*?Start Request[\s\S]*?Supporters[\s\S]*?Repayment[\s\S]*?Separate ROSCA desk[\s\S]*?debugId="marketplace\.support\.open-rosca"[\s\S]*?openMarketplaceSection\(event, "rosca", "marketplace-rosca"\)[\s\S]*?Open ROSCA/,
+  "ROSCA must stay reachable from the support lane as a clearly separate desk, not as the same Support Requests front-door choice."
 );
 
 assertContains(
-  /gridTemplateColumns: isCompact[\s\S]*?\? "52px minmax\(0, 1fr\)"[\s\S]*?: "54px minmax\(0, 1fr\) auto"[\s\S]*?gridTemplateAreas: isCompact[\s\S]*?\? `"icon body" "button button"`[\s\S]*?ROSCA savings circles[\s\S]*?Financial support requests[\s\S]*?ROSCA savings[\s\S]*?circles stay separate above and open their own desk/,
-  "Marketplace Support gateway must keep the ROSCA handoff full-width on phone and visibly separate it from Financial Support requests."
+  /Financial support requests[\s\S]*?ROSCA savings[\s\S]*?circles have their own desk and do not share this form[\s\S]*?gridTemplateColumns: isCompact[\s\S]*?\? "1fr"[\s\S]*?: "minmax\(0, 1fr\) minmax\(142px, 160px\)"[\s\S]*?Separate ROSCA desk[\s\S]*?It is not a support request/,
+  "Marketplace Support gateway must keep Financial Support first and present ROSCA as a separate full-width desk handoff."
 );
 
 assertContains(

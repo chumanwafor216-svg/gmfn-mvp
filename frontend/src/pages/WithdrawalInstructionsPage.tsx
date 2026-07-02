@@ -55,6 +55,40 @@ function firstTruthy(...values: any[]): string {
   return "";
 }
 
+function normalizeMemberGmfnId(value: any): string {
+  const raw = safeStr(value).toUpperCase().replace(/^GSN-/, "GMFN-");
+  if (!/^GMFN-[A-Z]-[A-Z0-9-]+$/.test(raw)) return "";
+  return raw.startsWith("GMFN-C-") ? "" : raw;
+}
+
+function firstMemberGmfnId(...values: any[]): string {
+  for (const value of values) {
+    const gmfnId = normalizeMemberGmfnId(value);
+    if (gmfnId) return gmfnId;
+  }
+  return "";
+}
+
+function resolveMemberGmfnId(me: any, currentClan: any): string {
+  return firstMemberGmfnId(
+    me?.gmfn_id,
+    me?.gmfnId,
+    me?.profile?.gmfn_id,
+    currentClan?.current_member_gmfn_id,
+    currentClan?.currentUserGmfnId,
+    currentClan?.member_gmfn_id,
+    currentClan?.memberGmfnId,
+    currentClan?.membership?.gmfn_id,
+    currentClan?.membership?.member_gmfn_id,
+    currentClan?.member?.gmfn_id,
+    currentClan?.profile?.member_gmfn_id,
+    currentClan?.profile?.gmfn_id,
+    currentClan?.user?.gmfn_id,
+    currentClan?.gmfn_id,
+    (api as any).getStoredGmfnId?.()
+  );
+}
+
 function parseMoneyNumber(value: any): number {
   const raw = safeStr(value).replace(/,/g, "");
   const n = Number(raw);
@@ -772,8 +806,8 @@ export default function WithdrawalInstructionsPage() {
   }, [notice]);
 
   const currentGmfnId = useMemo(() => {
-    return firstTruthy(me?.gmfn_id);
-  }, [me]);
+    return resolveMemberGmfnId(me, currentClan);
+  }, [me, currentClan]);
 
   useEffect(() => {
     withdrawalActionContextRef.current = [
@@ -824,7 +858,11 @@ export default function WithdrawalInstructionsPage() {
       setMe(meRes || null);
       setCurrentClan(clanRes || null);
 
-      const resolvedGmfnId = firstTruthy(meRes?.gmfn_id);
+      const resolvedGmfnId = resolveMemberGmfnId(meRes, clanRes);
+
+      if (resolvedGmfnId && typeof (api as any).setStoredGmfnId === "function") {
+        (api as any).setStoredGmfnId(resolvedGmfnId);
+      }
 
       if (selectedClanId && resolvedGmfnId) {
         const surface = await getCommunityMoneySurface(
@@ -961,7 +999,7 @@ export default function WithdrawalInstructionsPage() {
         step: "Context",
         title: "Community or member identity is not ready.",
         detail:
-          "Keep the correct community active before continuing with withdrawal.",
+          "Keep the correct community active and sign in with a visible member GSN ID before continuing.",
       };
     }
 

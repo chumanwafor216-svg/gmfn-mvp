@@ -83,7 +83,7 @@ function sectionLabel(): React.CSSProperties {
     fontSize: 12,
     color: "#506A82",
     fontWeight: 900,
-    letterSpacing: 0.5,
+    letterSpacing: 0,
     textTransform: "uppercase",
   };
 }

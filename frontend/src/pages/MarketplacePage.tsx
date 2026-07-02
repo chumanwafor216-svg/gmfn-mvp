@@ -424,6 +424,7 @@ type SectionState = {
   rosca: boolean;
   tools: boolean;
   members: boolean;
+  demand: boolean;
   support: boolean;
 };
 
@@ -459,6 +460,7 @@ const DEFAULT_SECTION_STATE: SectionState = {
   rosca: false,
   tools: false,
   members: false,
+  demand: false,
   support: false,
 };
 
@@ -467,6 +469,7 @@ const MARKETPLACE_SECTION_ANCHORS: Record<keyof SectionState, string> = {
   rosca: "marketplace-rosca",
   tools: "marketplace-owned-links",
   members: "marketplace-members-shops",
+  demand: "marketplace-demand-box",
   support: "marketplace-loans-support",
 };
 
@@ -476,6 +479,7 @@ function focusedMarketplaceSectionState(key: keyof SectionState): SectionState {
     rosca: key === "rosca",
     tools: key === "tools",
     members: key === "members",
+    demand: key === "demand",
     support: key === "support",
   };
 }
@@ -495,6 +499,7 @@ function normalizeMarketplaceSectionState(
 ): SectionState {
   if (!state) return DEFAULT_SECTION_STATE;
   if (state.support) return focusedMarketplaceSectionState("support");
+  if (state.demand) return focusedMarketplaceSectionState("demand");
   if (state.rosca) return focusedMarketplaceSectionState("rosca");
   if (state.members) return focusedMarketplaceSectionState("members");
   if (state.tools) return focusedMarketplaceSectionState("tools");
@@ -7515,12 +7520,60 @@ export default function MarketplacePage() {
                   <span
                     style={marketplaceFrontTagStyle("#805A0F", "#F7EED8", isCompact)}
                   >
-                    Demand Box
+                    Public Shops
                   </span>
                   <span
                     style={marketplaceFrontTagStyle("#805A0F", "#F7EED8", isCompact)}
                   >
-                    Public Shops
+                    Members
+                  </span>
+                </span>
+              </span>
+              <span aria-hidden="true" style={marketplaceOsArrowStyle()}>
+                <MarketplaceGlyph name="chevron" size={18} />
+              </span>
+            </StableButton>
+
+            <StableButton
+              type="button"
+              debugId="marketplace.tile.demand"
+              aria-label="Open Demand Box for this marketplace"
+              onClick={(event) =>
+                openMarketplaceSection(event, "demand", "marketplace-demand-box")
+              }
+              style={marketplaceFrontLaneCardStyle(isCompact)}
+            >
+              <span
+                aria-hidden="true"
+                style={marketplaceFrontLaneIconStyle(
+                  "linear-gradient(180deg, #B98921 0%, #6E4B08 100%)",
+                  isCompact
+                )}
+              >
+                <MarketplaceGlyph name="demand" size={isCompact ? 26 : 34} />
+              </span>
+              <span style={marketplaceOsRowTextStackStyle()}>
+                <span style={marketplaceOsRowTitleStyle(isCompact)}>
+                  Demand Box
+                </span>
+                <span style={marketplaceOsRowDetailStyle(isCompact)}>
+                  Post local needs and offers.
+                </span>
+                <span style={marketplaceFrontTagRowStyle(isCompact)}>
+                  <span
+                    style={marketplaceFrontTagStyle("#805A0F", "#F7EED8", isCompact)}
+                  >
+                    Needs
+                  </span>
+                  <span
+                    style={marketplaceFrontTagStyle("#805A0F", "#F7EED8", isCompact)}
+                  >
+                    Offers
+                  </span>
+                  <span
+                    style={marketplaceFrontTagStyle("#805A0F", "#F7EED8", isCompact)}
+                  >
+                    Requests
                   </span>
                 </span>
               </span>
@@ -7532,7 +7585,7 @@ export default function MarketplacePage() {
             <StableButton
               type="button"
               debugId="marketplace.tile.support"
-              aria-label="Open Support Requests, ROSCA, supporters and loans"
+              aria-label="Open Support Requests for this marketplace"
               onClick={(event) =>
                 openMarketplaceSection(
                   event,
@@ -7553,26 +7606,26 @@ export default function MarketplacePage() {
               </span>
               <span style={marketplaceOsRowTextStackStyle()}>
                 <span style={marketplaceOsRowTitleStyle(isCompact)}>
-                  Support & ROSCA
+                  Support Requests
                 </span>
                 <span style={marketplaceOsRowDetailStyle(isCompact)}>
-                  Get help and run savings circles.
+                  Ask for backing when balance is not enough.
                 </span>
                 <span style={marketplaceFrontTagRowStyle(isCompact)}>
                   <span
                     style={marketplaceFrontTagStyle("#0B6B3B", "#DFF3E8", isCompact)}
                   >
-                    Support Requests
+                    Start Request
                   </span>
                   <span
                     style={marketplaceFrontTagStyle("#0B6B3B", "#DFF3E8", isCompact)}
                   >
-                    ROSCA
+                    Supporters
                   </span>
                   <span
                     style={marketplaceFrontTagStyle("#0B6B3B", "#DFF3E8", isCompact)}
                   >
-                    Loans
+                    Repayment
                   </span>
                 </span>
               </span>
@@ -10698,107 +10751,6 @@ export default function MarketplacePage() {
           <div
             style={{
               marginTop: 12,
-              ...innerCard("#FFFDF7"),
-              width: "100%",
-              maxWidth: "100%",
-              minWidth: 0,
-              boxSizing: "border-box",
-              display: isCompact ? "block" : "grid",
-              gridTemplateColumns: isCompact ? undefined : "46px minmax(0, 1fr) 190px",
-              gap: isCompact ? 10 : 14,
-              alignItems: "center",
-              borderColor: "rgba(128,90,15,0.18)",
-              padding: isCompact ? 12 : undefined,
-              overflow: "hidden",
-              position: "relative",
-            }}
-          >
-            <div
-              style={{
-                width: "100%",
-                maxWidth: "100%",
-                minWidth: 0,
-                boxSizing: "border-box",
-                display: isCompact ? "block" : "grid",
-                gridTemplateColumns: isCompact ? undefined : "46px minmax(0, 1fr)",
-                gap: isCompact ? 10 : 14,
-                alignItems: "start",
-                paddingRight: isCompact ? 62 : undefined,
-              }}
-            >
-              <span
-                aria-hidden="true"
-                style={{
-                  ...marketplaceOsIconStyle(
-                    "linear-gradient(180deg, #D7A22D 0%, #805A0F 100%)",
-                    true
-                  ),
-                  ...(isCompact
-                    ? {
-                        position: "absolute",
-                        right: 16,
-                        top: 18,
-                        width: 46,
-                        height: 46,
-                        minWidth: 46,
-                        maxWidth: 46,
-                        minHeight: 46,
-                        maxHeight: 46,
-                      }
-                    : null),
-                }}
-              >
-                <MarketplaceGlyph name="demand" size={24} />
-              </span>
-              <div
-                style={{
-                  width: "100%",
-                  maxWidth: "100%",
-                  minWidth: 0,
-                  boxSizing: "border-box",
-                }}
-              >
-                <div style={sectionLabel()}>Demand Box</div>
-                <div
-                  style={{
-                    marginTop: 5,
-                    ...helperText(),
-                    fontSize: 13,
-                    lineHeight: 1.35,
-                    maxWidth: "100%",
-                    display: "block",
-                    overflowWrap: "break-word",
-                    wordBreak: "normal",
-                    hyphens: "none",
-                  }}
-                >
-                  Post a local need or offer request for this marketplace.
-                </div>
-              </div>
-            </div>
-            <StableButton
-              debugId="marketplace.members.demand-box"
-              type="button"
-              onClick={(event) => openMarketplaceCta(event, "demandBox")}
-              style={{
-                ...marketplaceInlineActionStyle(
-                  "secondary",
-                  false,
-                  isCompact
-                ),
-                gridColumn: isCompact ? "1 / -1" : undefined,
-                marginTop: isCompact ? 10 : undefined,
-              }}
-            >
-              Demand Box
-            </StableButton>
-          </div>
-        ) : null}
-
-        {sectionsOpen.members ? (
-          <div
-            style={{
-              marginTop: 12,
               ...innerCard("#F8FBFF"),
               borderColor: "rgba(13,95,168,0.12)",
               display: "grid",
@@ -11704,6 +11656,122 @@ export default function MarketplacePage() {
       </section>
       ) : null}
 
+      {sectionsOpen.demand ? (
+      <section
+        id="marketplace-demand-box"
+        style={{ ...pageCard("#FFFDF7"), ...marketplaceSectionStyle(), order: 5 }}
+      >
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 12,
+            alignItems: "center",
+            flexWrap: "wrap",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 14,
+              minWidth: 0,
+            }}
+          >
+            <span
+              aria-hidden="true"
+              style={marketplaceOsIconStyle(
+                "linear-gradient(180deg, #D7A22D 0%, #805A0F 100%)",
+                true
+              )}
+            >
+              <MarketplaceGlyph name="demand" size={26} />
+            </span>
+            <div style={{ minWidth: 0 }}>
+              <div
+                style={{
+                  color: "#08233A",
+                  fontSize: isCompact ? 20 : 24,
+                  fontWeight: 950,
+                  lineHeight: 1.08,
+                  overflowWrap: "break-word",
+                }}
+              >
+                Demand Box
+              </div>
+              <div style={{ marginTop: 6, ...helperText() }}>
+                Local needs and offers, separate from ROSCA savings and Support
+                Requests.
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <span style={badge(true)}>Standalone lane</span>
+            <StableButton
+              debugId="marketplace.demand.toggle"
+              type="button"
+              onClick={(event) => toggleSectionFromButton(event, "demand")}
+              style={marketplaceActionStyle("soft")}
+            >
+              {sectionsOpen.demand ? "Collapse" : "Open"}
+            </StableButton>
+          </div>
+        </div>
+
+        {sectionsOpen.demand ? (
+          <div style={{ marginTop: 12, ...innerCard("#FFFFFF") }}>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) 190px",
+                gap: 12,
+                alignItems: "center",
+              }}
+            >
+              <div style={{ minWidth: 0 }}>
+                <div style={sectionLabel()}>Local needs and offers</div>
+                <div style={{ marginTop: 6, ...helperText(), fontSize: 13 }}>
+                  Use this when people here should see what is needed, wanted,
+                  available, or being sourced inside this community market.
+                </div>
+                <div
+                  style={{
+                    marginTop: 10,
+                    display: "flex",
+                    gap: 8,
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <span style={stableStatusPillStyle(Boolean(activeCommunityName))}>
+                    {activeCommunityName || "Select marketplace"}
+                  </span>
+                  <span style={stableStatusPillStyle(Boolean(activeCommunityId))}>
+                    ID: {activeCommunityId || "not ready"}
+                  </span>
+                  <span style={stableStatusPillStyle(Boolean(currentGmfnId))}>
+                    GSN ID: {currentGmfnId || "not ready"}
+                  </span>
+                </div>
+              </div>
+
+              <StableButton
+                debugId="marketplace.demand.open"
+                type="button"
+                onClick={(event) => openMarketplaceCta(event, "demandBox")}
+                style={{
+                  ...marketplaceInlineActionStyle("primary", false, isCompact),
+                  gridColumn: isCompact ? "1 / -1" : undefined,
+                }}
+              >
+                Open Demand Box
+              </StableButton>
+            </div>
+          </div>
+        ) : null}
+      </section>
+      ) : null}
+
       {sectionsOpen.support ? (
       <section
         id="marketplace-loans-support"
@@ -11809,33 +11877,56 @@ export default function MarketplacePage() {
         {sectionsOpen.support ? (
           <div
             style={{
+              marginTop: 14,
+              ...innerCard("#F8FBFF"),
+              border: "1px solid rgba(37,166,90,0.16)",
+            }}
+          >
+            <div style={sectionLabel()}>Financial support requests</div>
+            <div style={{ marginTop: 8, ...helperText(), maxWidth: 760 }}>
+              Use this area for one marketplace support request. ROSCA savings
+              circles have their own desk and do not share this form.
+            </div>
+          </div>
+        ) : null}
+
+        {sectionsOpen.support ? (
+          <div
+            style={{
               marginTop: 12,
               ...innerCard("#FFFDF7"),
+              border: "1px solid rgba(184,135,30,0.18)",
               display: "grid",
               gridTemplateColumns: isCompact
-                ? "52px minmax(0, 1fr)"
-                : "54px minmax(0, 1fr) auto",
-              gridTemplateAreas: isCompact
-                ? `"icon body" "button button"`
-                : undefined,
+                ? "1fr"
+                : "minmax(0, 1fr) minmax(142px, 160px)",
               gap: 12,
               alignItems: "center",
             }}
           >
-            <span
-              aria-hidden="true"
-              style={marketplaceOsIconStyle(
-                "linear-gradient(180deg, #B8871E 0%, #513A0B 100%)",
-                true
-              )}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+                minWidth: 0,
+              }}
             >
-              <MarketplaceGlyph name="rosca" size={24} />
-            </span>
-            <div style={{ minWidth: 0, gridArea: isCompact ? "body" : undefined }}>
-              <div style={sectionLabel()}>ROSCA savings circles</div>
-              <div style={{ marginTop: 6, ...helperText(), fontSize: 13 }}>
-                Build a selected-member contribution cycle for this marketplace.
-                Open the ROSCA desk only when that is the support task.
+              <span
+                aria-hidden="true"
+                style={marketplaceOsIconStyle(
+                  "linear-gradient(180deg, #B8871E 0%, #513A0B 100%)",
+                  true
+                )}
+              >
+                <MarketplaceGlyph name="rosca" size={24} />
+              </span>
+              <div style={{ minWidth: 0 }}>
+                <div style={sectionLabel()}>Separate ROSCA desk</div>
+                <div style={{ marginTop: 6, ...helperText(), fontSize: 13 }}>
+                  Open ROSCA only when you want a selected-member contribution
+                  cycle. It is not a support request.
+                </div>
               </div>
             </div>
             <StableButton
@@ -11846,29 +11937,12 @@ export default function MarketplacePage() {
               }
               style={{
                 ...marketplaceActionStyle("secondary"),
-                width: isCompact ? "100%" : 150,
-                gridArea: isCompact ? "button" : undefined,
-                justifySelf: isCompact ? "stretch" : undefined,
+                width: "100%",
+                justifySelf: "stretch",
               }}
             >
               Open ROSCA
             </StableButton>
-          </div>
-        ) : null}
-
-        {sectionsOpen.support ? (
-          <div
-            style={{
-              marginTop: 14,
-              ...innerCard("#F8FBFF"),
-              border: "1px solid rgba(37,166,90,0.16)",
-            }}
-          >
-            <div style={sectionLabel()}>Financial support requests</div>
-            <div style={{ marginTop: 8, ...helperText(), maxWidth: 760 }}>
-              Use this area for one marketplace support request. ROSCA savings
-              circles stay separate above and open their own desk.
-            </div>
           </div>
         ) : null}
 

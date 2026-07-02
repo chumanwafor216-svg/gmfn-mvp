@@ -157,6 +157,85 @@ function firstTruthy(...values: any[]): string {
   return "";
 }
 
+function hasUsableGsnIdentity(me: any | null | undefined): boolean {
+  const value = firstTruthy(
+    me?.gmfn_id,
+    me?.gmfnId,
+    me?.gmfnID,
+    me?.gsn_id,
+    me?.gsnId,
+    me?.global_member_id
+  );
+  if (!value) return false;
+
+  const normalized = value.toUpperCase();
+  return (
+    /^(GMFN|GMFM|GSN)-[A-Z0-9-]+$/.test(normalized) ||
+    normalized.length >= 8
+  );
+}
+
+function normalizedStatusText(value: any): string {
+  return safeStr(value).toLowerCase().replace(/[_-]+/g, " ");
+}
+
+function statusLooksPendingActivation(value: any): boolean {
+  const text = normalizedStatusText(value);
+  if (!text) return false;
+
+  return (
+    text.includes("pending") ||
+    text.includes("not activated") ||
+    text.includes("not active") ||
+    text.includes("awaiting activation") ||
+    text.includes("activation required")
+  );
+}
+
+function statusLooksCompletedActivation(value: any): boolean {
+  const text = normalizedStatusText(value);
+  if (!text || statusLooksPendingActivation(text)) return false;
+
+  return /\b(active|activated|complete|completed|live|ready)\b/.test(text);
+}
+
+function hasCompletedMemberActivation(me: any | null | undefined): boolean {
+  if (!me) return false;
+
+  const explicitPending =
+    me?.activation_pending === true ||
+    me?.activationPending === true ||
+    me?.membership_activation_pending === true ||
+    me?.membershipActivationPending === true ||
+    statusLooksPendingActivation(me?.activation_status) ||
+    statusLooksPendingActivation(me?.activationStatus) ||
+    statusLooksPendingActivation(me?.account_status) ||
+    statusLooksPendingActivation(me?.accountStatus) ||
+    statusLooksPendingActivation(me?.status);
+  if (explicitPending) return false;
+
+  if (hasUsableGsnIdentity(me)) return true;
+
+  const explicitCompleted =
+    me?.is_active === true ||
+    me?.isActive === true ||
+    me?.active === true ||
+    me?.activated === true ||
+    me?.activation_complete === true ||
+    me?.activationComplete === true ||
+    me?.membership_activated === true ||
+    me?.membershipActivated === true ||
+    statusLooksCompletedActivation(me?.activation_status) ||
+    statusLooksCompletedActivation(me?.activationStatus) ||
+    statusLooksCompletedActivation(me?.account_status) ||
+    statusLooksCompletedActivation(me?.accountStatus) ||
+    statusLooksCompletedActivation(me?.status);
+  if (explicitCompleted) return true;
+
+  // /auth/me is only returned for authenticated, non-pending users on the API.
+  return Boolean(me?.id && firstTruthy(me?.email, me?.phone_e164, me?.role));
+}
+
 function supportDisplayText(value: any, fallback = ""): string {
   const text = safeStr(value);
   if (!text) return fallback;
@@ -834,6 +913,33 @@ function isResolvedJoinReviewNotification(raw: any): boolean {
     raw?.status
   ).toLowerCase();
   return Boolean(status && status !== "pending");
+}
+
+function isCompletedActivationNotification(raw: any, me: any | null | undefined): boolean {
+  if (!hasCompletedMemberActivation(me)) return false;
+
+  const text = [
+    safeStr(raw?.kind),
+    safeStr(raw?.title),
+    safeStr(raw?.message),
+    safeStr(raw?.detail),
+    safeStr(raw?.description),
+    safeStr(raw?.action_label),
+    safeStr(raw?.action_url || raw?.cta_to || raw?.ctaTo || raw?.to),
+  ]
+    .join(" ")
+    .toLowerCase();
+
+  if (!text) return false;
+
+  return (
+    text.includes("activate membership") ||
+    text.includes("activate your gmfn") ||
+    text.includes("activate your gsn") ||
+    text.includes("activate now") ||
+    (text.includes("approved") && text.includes("activate")) ||
+    text.includes("/activate-membership")
+  );
 }
 
 function buildGuarantorInboxNotices(raw: any): GuidanceNotice[] {
@@ -1543,6 +1649,7 @@ function buildActionInboxSummary(params: {
 }): GuidanceActionInboxSummary {
   const notificationRows = toArrayRows(params.rawNotifications)
     .filter((item) => !isResolvedJoinReviewNotification(item))
+    .filter((item) => !isCompletedActivationNotification(item, params.me))
     .map(normalizeNotificationNotice);
   const guarantorRows = buildGuarantorInboxNotices(params.rawGuarantorInbox);
   const identityRows = buildIdentityEvidenceNotices({

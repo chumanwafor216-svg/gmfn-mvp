@@ -513,9 +513,9 @@ export default function CommunityMemberVerifyPage() {
       tone: "info",
     },
     {
-      title: "Reference fingerprint",
+      title: "Record reference",
       detail:
-        "Reference fingerprint generated from visible credential fields; not a cryptographic hash or legal identity proof.",
+        "Record reference made from the visible credential fields. It is not legal identity proof.",
       tone: "info",
     },
     {
@@ -657,8 +657,6 @@ export default function CommunityMemberVerifyPage() {
             </div>
           ) : credential ? (
             <>
-              <TrustDocumentConfidenceRibbon items={memberCredentialConfidenceRibbonItems} />
-
               <div
                 style={{
                   borderRadius: 22,
@@ -686,87 +684,73 @@ export default function CommunityMemberVerifyPage() {
                         lineHeight: 1.5,
                       }}
                     >
-                      Read this member only inside this Community ID. It is not a
-                      universal trust score, transaction approval, or parent-domain
-                      membership claim.
+                      Use only for this Community ID. Not universal trust, payment
+                      approval, or parent-domain membership.
                     </p>
                   </div>
                 </div>
                 <div
+                  data-gsn-trust-document-certificate="community-member-credential"
+                  data-gsn-member-credential-primary-facts="true"
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))",
-                    gap: 8,
+                    gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 190px), 1fr))",
+                    gap: 10,
                   }}
                 >
-                  <div style={innerCard("rgba(255,255,255,0.1)")}>
-                    <div style={{ ...sectionLabel(), color: "rgba(242,199,102,0.9)" }}>
-                      Member GSN ID
-                    </div>
-                    <div
-                      style={{
-                        marginTop: 7,
-                        color: "#FFFFFF",
-                        fontSize: 16,
-                        fontWeight: 1000,
-                        overflowWrap: "anywhere",
-                      }}
-                    >
-                      {memberAnchor}
-                    </div>
-                  </div>
-                  <div style={innerCard("rgba(255,255,255,0.1)")}>
-                    <div style={{ ...sectionLabel(), color: "rgba(242,199,102,0.9)" }}>
-                      Community ID
-                    </div>
-                    <div
-                      style={{
-                        marginTop: 7,
-                        color: "#FFFFFF",
-                        fontSize: 16,
-                        fontWeight: 1000,
-                        overflowWrap: "anywhere",
-                      }}
-                    >
-                      {communityAnchor}
-                    </div>
-                  </div>
+                  {fact("Member GSN ID", memberAnchor)}
+                  {fact("Community ID", communityAnchor)}
+                  {fact("Status", firstTruthy(credential.membership_status, "active"))}
+                  {fact(
+                    "Witness strength",
+                    firstTruthy(
+                      credential.membership_strength_label,
+                      "Joined / witness not started"
+                    )
+                  )}
                 </div>
               </div>
 
-              <div
-                data-gsn-trust-document-certificate="community-member-credential"
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))",
-                  gap: 12,
-                  alignItems: "start",
-                }}
+              <TrustDocumentConfidenceRibbon items={memberCredentialConfidenceRibbonItems} />
+
+              <TrustDocumentDisclosureSection
+                title="Credential security and limits"
+                summary="Open for what this confirms, limits, security, and record reference."
               >
-                <div style={{ display: "grid", gap: 12 }}>
-                  <TrustDocumentBoundaryPanel
-                    title="This credential confirms"
-                    tone="good"
-                    items={memberCredentialConfirmsList}
-                  />
-                  <TrustDocumentBoundaryPanel
-                    title="This credential does not confirm"
-                    tone="warn"
-                    items={memberCredentialDoesNotConfirmList}
-                  />
+                <div
+                  data-gsn-member-credential-security-limits="true"
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))",
+                    gap: 12,
+                    alignItems: "start",
+                  }}
+                >
+                  <div style={{ display: "grid", gap: 12 }}>
+                    <TrustDocumentBoundaryPanel
+                      title="This credential confirms"
+                      tone="good"
+                      items={memberCredentialConfirmsList}
+                    />
+                    <TrustDocumentBoundaryPanel
+                      title="This credential does not confirm"
+                      tone="warn"
+                      items={memberCredentialDoesNotConfirmList}
+                    />
+                  </div>
+                  <div style={{ display: "grid", gap: 12 }}>
+                    <TrustDocumentSecurityPanel
+                      title="Member credential security"
+                      items={memberCredentialSecurityItems}
+                    />
+                    <TrustDocumentFingerprint
+                      label="Community member credential reference"
+                      value={memberCredentialFingerprint}
+                      detail="Record reference for this visible public member credential. It helps match this page with its GSN record; it is not legal proof or payment approval."
+                    />
+                  </div>
                 </div>
-                <div style={{ display: "grid", gap: 12 }}>
-                  <TrustDocumentSecurityPanel
-                    title="Member credential security"
-                    items={memberCredentialSecurityItems}
-                  />
-                  <TrustDocumentFingerprint
-                    label="Community member credential fingerprint"
-                    value={memberCredentialFingerprint}
-                    detail="Reference fingerprint for this visible public member credential. It is not a cryptographic proof."
-                  />
-                </div>
-              </div>
+              </TrustDocumentDisclosureSection>
 
               <div style={innerCard("#FFFFFF")}>
                 <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
@@ -807,26 +791,6 @@ export default function CommunityMemberVerifyPage() {
                     </div>
                   </TrustDocumentDisclosureSection>
                 </div>
-              </div>
-
-              <div
-                data-gsn-member-credential-primary-facts="true"
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 190px), 1fr))",
-                  gap: 10,
-                }}
-              >
-                {fact("Member GSN ID", memberAnchor)}
-                {fact("Community ID", communityAnchor)}
-                {fact("Status", firstTruthy(credential.membership_status, "active"))}
-                {fact(
-                  "Witness strength",
-                  firstTruthy(
-                    credential.membership_strength_label,
-                    "Joined / witness not started"
-                  )
-                )}
               </div>
 
               <TrustDocumentDisclosureSection

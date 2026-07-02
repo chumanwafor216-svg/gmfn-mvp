@@ -77,6 +77,13 @@ function cleanLine(label: string, value: string) {
   return `${label}: ${text || "-"}`;
 }
 
+function compactShareLines(lines: Array<string | null | undefined | false>) {
+  return lines
+    .map((line) => String(line || "").trim())
+    .filter(Boolean)
+    .join("\n");
+}
+
 function friendlyTrustBand(raw: string): string {
   const text = String(raw || "").trim();
   const band = normalizeTrustBand(text);
@@ -210,6 +217,19 @@ export function buildTrustSlipSnapshot(params: TrustSlipSnapshotParams) {
   });
 }
 
+export function buildTrustSlipShareText(params: TrustSlipSnapshotParams) {
+  return compactShareLines([
+    "GSN TrustSlip",
+    cleanLine("Holder", params.holderName || params.gmfnId),
+    cleanLine("GSN ID", params.gmfnId),
+    cleanLine("Community", params.communityName),
+    cleanLine("Reading", friendlyTrustBand(params.merchantBand)),
+    cleanLine("Expires", params.expiresAt),
+    "Open the link to check the current GSN record.",
+    params.verifyUrl,
+  ]);
+}
+
 export function buildTrustSlipVerifySnapshot(
   params: TrustSlipVerifySnapshotParams
 ) {
@@ -240,6 +260,21 @@ export function buildTrustSlipVerifySnapshot(
     limitationNote:
       "Limitation: TrustSlip verification is GSN evidence only. Not a bank guarantee, credit approval, payment instruction, legal promise, or automatic debit.",
   });
+}
+
+export function buildTrustSlipVerifyShareText(
+  params: TrustSlipVerifySnapshotParams
+) {
+  return compactShareLines([
+    "GSN TrustSlip Verification",
+    cleanLine("Holder", params.holderName || params.gmfnId),
+    cleanLine("GSN ID", params.gmfnId),
+    cleanLine("Community", params.communityLabel),
+    cleanLine("Status", params.verificationStatus),
+    cleanLine("Reading", friendlyTrustBand(params.visibleBand)),
+    "Open the link to check the current GSN record.",
+    params.verifyUrl,
+  ]);
 }
 
 export function buildTrustPassportSnapshot(
@@ -287,4 +322,22 @@ export function buildTrustPassportSnapshot(
     limitationNote:
       "Limitation: GSN evidence only. Not approval, guarantee, payment instruction, or auto-debit.",
   });
+}
+
+export function buildTrustPassportShareText(
+  params: TrustPassportSnapshotParams
+) {
+  return compactShareLines([
+    "GSN Trust Passport",
+    cleanLine("Member", params.memberName || params.gmfnId),
+    cleanLine("GSN ID", params.gmfnId),
+    cleanLine("Community", params.communityName),
+    cleanLine("Main reading", friendlyTrustBand(params.currentBand)),
+    cleanLine(
+      "Witness currentness",
+      params.membershipCurrentnessLabel || "Witness renewal not started"
+    ),
+    "Open the link to check the current GSN record.",
+    params.verifyUrl,
+  ]);
 }

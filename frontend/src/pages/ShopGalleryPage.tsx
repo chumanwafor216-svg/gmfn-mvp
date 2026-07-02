@@ -2120,7 +2120,7 @@ export default function ShopGalleryPage() {
     if (!getAccessToken()) {
       setNotice({
         tone: "error",
-        text: "Sign in to follow this shop and record a neutral GSN attention event.",
+        text: "Sign in to follow this shop and keep it in your GSN updates.",
       });
       return;
     }
@@ -2146,7 +2146,7 @@ export default function ShopGalleryPage() {
       setNotice({
         tone: "success",
         text:
-          "Shop followed. GSN records this as a neutral attention event, not endorsement, verification, payment evidence, or trust-score growth.",
+          "Shop followed. You will see this shop in your GSN updates. This does not verify the seller or approve goods, credit, or payment.",
       });
     } catch (err: any) {
       setShopFollowState((current) => ({ ...current, busy: false }));
@@ -2175,7 +2175,7 @@ export default function ShopGalleryPage() {
       setNotice({
         tone: "success",
         text:
-          "Shop unfollowed. GSN records the update as a neutral attention event.",
+          "Shop unfollowed. This shop will no longer stay in your GSN updates.",
       });
     } catch (err: any) {
       setShopFollowState((current) => ({ ...current, busy: false }));
@@ -2678,18 +2678,12 @@ export default function ShopGalleryPage() {
     });
     const productTitle = productDisplayTitle(product);
     const title = `${blockLabel} - ${productTitle}`;
-    const text = firstMeaningful(
-      productBuyerCue(product, ""),
-      product.description,
-      "Public shop block"
-    );
     const shopContext = firstMeaningful(
       effectiveShop?.shopName,
       effectiveShop?.ownerName,
       "this public shop"
     );
     const priceText = firstMeaningful(product.priceText);
-    const message = `${blockLabel}\n${text}\n${priceText}\nFrom ${shopContext}.\nOpen this public shop block directly.`;
     const socialMessage = [
       `${productTitle} in ${shopContext}.`,
       priceText ? `Price: ${priceText}.` : "",
@@ -3329,7 +3323,7 @@ export default function ShopGalleryPage() {
                         onClick={() =>
                           setNotice({
                             tone: "error",
-                            text: "Sign in to follow this shop and record a neutral GSN attention event.",
+                            text: "Sign in to follow this shop and keep it in your GSN updates.",
                           })
                         }
                         minWidth={0}
@@ -3421,9 +3415,8 @@ export default function ShopGalleryPage() {
                     maxWidth: "100%",
                   }}
                 >
-                  Following writes a neutral attention event in GSN. It is not
-                  endorsement, verification, payment evidence, or trust-score
-                  growth.
+                  Follow to keep this shop in your GSN updates. Still verify
+                  the seller before goods, credit, or money move.
                 </div>
               </div>
               <div

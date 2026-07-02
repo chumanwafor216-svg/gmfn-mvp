@@ -38,7 +38,7 @@ import { buildTrustSlipActionGuide } from "../lib/trustDocumentActionGuide";
 import { buildTrustDocumentFamilyItems } from "../lib/trustDocumentFamilyMap";
 import { buildTrustDocumentUseCaseItems } from "../lib/trustDocumentUseCases";
 import { buildTrustSlipGuideItems } from "../lib/trustDocumentGuide";
-import { buildTrustSlipSnapshot } from "../lib/trustDocumentSnapshots";
+import { buildTrustSlipShareText } from "../lib/trustDocumentSnapshots";
 import {
   getMerchantLink,
   merchantReleaseDeskPath,
@@ -2732,9 +2732,9 @@ export default function TrustSlipPage() {
       tone: "good",
     },
     {
-      title: "Reference fingerprint",
+      title: "Record reference",
       detail:
-        "Reference fingerprint generated from visible TrustSlip fields; not a cryptographic hash or legal proof.",
+        "Record reference made from the visible TrustSlip fields. It is not legal proof or payment approval.",
       tone: "info",
     },
     {
@@ -2892,7 +2892,7 @@ export default function TrustSlipPage() {
 
   function copyTrustSlipSnapshot() {
     void handleCopy(
-      buildTrustSlipSnapshot({
+      buildTrustSlipShareText({
         holderName,
         gmfnId,
         communityName,
@@ -3410,9 +3410,9 @@ export default function TrustSlipPage() {
                   items={trustSlipHolderSecurityItems}
                 />
                 <TrustDocumentFingerprint
-                  label="TrustSlip holder reference fingerprint"
+                  label="TrustSlip holder record reference"
                   value={trustSlipHolderFingerprint}
-                  detail="Reference fingerprint for this visible holder-facing TrustSlip. It is not a cryptographic proof."
+                  detail="Record reference for this visible holder-facing TrustSlip. It helps match this page with its GSN record; it is not legal proof or payment approval."
                 />
               </div>
             </div>

@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useState } from "react";
+import { StableButton } from "../../components/StableButton";
 
 type IdentityReadinessPanelsProps = {
   domain?: Record<string, any>;
@@ -9,6 +10,35 @@ type IdentityReadinessPanelsProps = {
   socialBridge?: any;
   affiliationReadiness?: any;
 };
+
+type IdentityDetailKey = "identity" | "profile" | "bridge" | "affiliation";
+
+const IDENTITY_DETAIL_OPTIONS: Array<{
+  key: IdentityDetailKey;
+  label: string;
+  note: string;
+}> = [
+  {
+    key: "identity",
+    label: "Domain identity",
+    note: "Confirm the public-safe identity anchor for this institution.",
+  },
+  {
+    key: "profile",
+    label: "Profile",
+    note: "Review institutional profile readiness and market posture.",
+  },
+  {
+    key: "bridge",
+    label: "Bridge",
+    note: "Check ordinary-community bridge readiness boundaries.",
+  },
+  {
+    key: "affiliation",
+    label: "Affiliation",
+    note: "Review parent, child, and domain relationship readiness.",
+  },
+];
 
 function cleanText(value: unknown, fallback = ""): string {
   return typeof value === "string" && value.trim() ? value.trim() : fallback;
@@ -53,7 +83,7 @@ function sectionLabel(): React.CSSProperties {
     fontSize: 13,
     fontWeight: 900,
     textTransform: "uppercase",
-    letterSpacing: "0.08em",
+    letterSpacing: 0,
   };
 }
 
@@ -199,9 +229,63 @@ export default function CommunityDomainIdentityReadinessPanels({
     affiliationReadiness,
     visibleAffiliationLanes
   );
+  const [activeIdentityDetail, setActiveIdentityDetail] =
+    useState<IdentityDetailKey>("identity");
+  const selectedIdentityDetail =
+    IDENTITY_DETAIL_OPTIONS.find((option) => option.key === activeIdentityDetail) ||
+    IDENTITY_DETAIL_OPTIONS[0];
 
   return (
     <>
+      <div
+        style={{
+          ...softCard(),
+          display: "grid",
+          gap: 10,
+        }}
+      >
+        <div style={sectionLabel()}>Identity focus</div>
+        <div style={helperText()}>
+          Open one identity packet at a time. Current view:{" "}
+          <strong>{selectedIdentityDetail.label}</strong>.
+        </div>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 140px), 1fr))",
+            gap: 8,
+          }}
+        >
+          {IDENTITY_DETAIL_OPTIONS.map((option) => {
+            const selected = option.key === activeIdentityDetail;
+            return (
+              <StableButton
+                key={option.key}
+                type="button"
+                kind={selected ? "primary" : "secondary"}
+                stableHeight={48}
+                fullWidth
+                aria-pressed={selected}
+                title={option.note}
+                debugId={`community-domain-identity.detail.${option.key}`}
+                onClick={() => setActiveIdentityDetail(option.key)}
+                style={{
+                  justifyContent: "center",
+                  fontSize: 13,
+                  textTransform: "none",
+                }}
+              >
+                {option.label}
+              </StableButton>
+            );
+          })}
+        </div>
+        <div style={{ ...helperText(), fontSize: 13 }}>
+          {selectedIdentityDetail.note}
+        </div>
+      </div>
+
+      {activeIdentityDetail === "identity" ? (
       <div style={softCard()}>
         <div style={sectionLabel()}>Domain identity</div>
         <div style={{ ...helperText(), marginTop: 7 }}>
@@ -260,7 +344,9 @@ export default function CommunityDomainIdentityReadinessPanels({
           or verification proof.
         </div>
       </div>
+      ) : null}
 
+      {activeIdentityDetail === "profile" ? (
       <div style={softCard()}>
         <div style={sectionLabel()}>Institutional profile</div>
         <div style={{ ...helperText(), marginTop: 7 }}>
@@ -359,7 +445,9 @@ export default function CommunityDomainIdentityReadinessPanels({
           activation, public pages, or private records.
         </div>
       </div>
+      ) : null}
 
+      {activeIdentityDetail === "bridge" ? (
       <div style={softCard()}>
         <div style={sectionLabel()}>Community bridge readiness</div>
         <div style={{ ...helperText(), marginTop: 7 }}>
@@ -421,7 +509,9 @@ export default function CommunityDomainIdentityReadinessPanels({
           member records.
         </div>
       </div>
+      ) : null}
 
+      {activeIdentityDetail === "affiliation" ? (
       <div style={softCard()}>
         <div style={sectionLabel()}>Affiliation readiness</div>
         <div style={{ ...helperText(), marginTop: 7 }}>
@@ -493,6 +583,7 @@ export default function CommunityDomainIdentityReadinessPanels({
           money, create trust records, or expose private records.
         </div>
       </div>
+      ) : null}
     </>
   );
 }

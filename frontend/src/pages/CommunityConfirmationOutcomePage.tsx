@@ -13,6 +13,7 @@ import {
 import {
   TrustDocumentBoundaryPanel,
   TrustDocumentConfidenceRibbon,
+  TrustDocumentDisclosureSection,
   TrustDocumentFingerprint,
   TrustDocumentSecurityPanel,
   type TrustDocumentPanelItem,
@@ -806,9 +807,9 @@ export default function CommunityConfirmationOutcomePage() {
       tone: response.private_contacts_exposed ? "warn" : "good",
     },
     {
-      title: "Reference fingerprint",
+      title: "Record reference",
       detail:
-        "Reference fingerprint generated from visible outcome fields; not a cryptographic hash or legal proof.",
+        "Record reference made from the visible outcome fields. It is not legal proof or payment approval.",
       tone: "info",
     },
     {
@@ -1290,40 +1291,46 @@ export default function CommunityConfirmationOutcomePage() {
               <>
                 <TrustDocumentConfidenceRibbon items={outcomeConfidenceRibbonItems} />
 
-                <section
-                  data-gsn-trust-document-certificate="community-confirmation-outcome"
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns:
-                      "repeat(auto-fit, minmax(min(100%, 320px), 1fr))",
-                    gap: isCompactPaper ? 12 : 14,
-                    alignItems: "start",
-                  }}
+                <TrustDocumentDisclosureSection
+                  title="Outcome security and limits"
+                  summary="Open for what this outcome confirms, limits, security, and record reference."
                 >
-                  <div style={{ display: "grid", gap: isCompactPaper ? 10 : 12 }}>
-                    <TrustDocumentBoundaryPanel
-                      title="This outcome confirms"
-                      tone="good"
-                      items={outcomeConfirmsList}
-                    />
-                    <TrustDocumentBoundaryPanel
-                      title="This outcome does not confirm"
-                      tone="warn"
-                      items={outcomeDoesNotConfirmList}
-                    />
-                  </div>
-                  <div style={{ display: "grid", gap: isCompactPaper ? 10 : 12 }}>
-                    <TrustDocumentSecurityPanel
-                      title="Outcome security"
-                      items={outcomeSecurityItems}
-                    />
-                    <TrustDocumentFingerprint
-                      label="Community confirmation outcome fingerprint"
-                      value={confirmationOutcomeFingerprint}
-                      detail="Reference fingerprint for this visible public confirmation outcome. It is not a cryptographic proof."
-                    />
-                  </div>
-                </section>
+                  <section
+                    data-gsn-trust-document-certificate="community-confirmation-outcome"
+                    data-gsn-community-confirmation-outcome-security-limits="true"
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns:
+                        "repeat(auto-fit, minmax(min(100%, 320px), 1fr))",
+                      gap: isCompactPaper ? 12 : 14,
+                      alignItems: "start",
+                    }}
+                  >
+                    <div style={{ display: "grid", gap: isCompactPaper ? 10 : 12 }}>
+                      <TrustDocumentBoundaryPanel
+                        title="This outcome confirms"
+                        tone="good"
+                        items={outcomeConfirmsList}
+                      />
+                      <TrustDocumentBoundaryPanel
+                        title="This outcome does not confirm"
+                        tone="warn"
+                        items={outcomeDoesNotConfirmList}
+                      />
+                    </div>
+                    <div style={{ display: "grid", gap: isCompactPaper ? 10 : 12 }}>
+                      <TrustDocumentSecurityPanel
+                        title="Outcome security"
+                        items={outcomeSecurityItems}
+                      />
+                      <TrustDocumentFingerprint
+                        label="Community confirmation outcome reference"
+                        value={confirmationOutcomeFingerprint}
+                        detail="Record reference for this visible public confirmation outcome. It helps match this page with its GSN record; it is not legal proof or payment approval."
+                      />
+                    </div>
+                  </section>
+                </TrustDocumentDisclosureSection>
 
                 <section
                   style={{
