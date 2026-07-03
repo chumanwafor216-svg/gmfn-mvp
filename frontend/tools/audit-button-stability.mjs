@@ -42,6 +42,18 @@ assertContains(
 );
 
 assertContains(
+  "src/components/WorkspaceCompanionBridge.tsx",
+  /COMPANION_BLOCKED_PATH_PREFIXES[\s\S]*?\"\/app\/my-gmfn-and-i\"/,
+  "The My GSN Identity command-centre page must stay free of Companion overlays so the identity block remains readable and testable."
+);
+
+assertContains(
+  "src/components/WorkspaceCompanionBridge.tsx",
+  /COMPANION_BLOCKED_PATH_PREFIXES[\s\S]*?\"\/app\/marketplace\"/,
+  "Marketplace must stay free of Companion overlays so operational lane boundaries remain readable and testable."
+);
+
+assertContains(
   "src/components/StableButton.tsx",
   /function stableStyle[\s\S]*?const fixedHeight = typeof args\.stableHeight === "number" \? args\.stableHeight : undefined;[\s\S]*?minHeight: fixedHeight \?\? base\.minHeight,[\s\S]*?height: fixedHeight,[\s\S]*?maxHeight: fixedHeight,[\s\S]*?export function StableButton[\s\S]*?inFlight[\s\S]*?const softDisabled =[\s\S]*?aria-disabled[\s\S]*?const resolvedStyle = useMemo[\s\S]*?const guardedPointerDown = useMemo[\s\S]*?const guardedPointerUp = useMemo[\s\S]*?const handleClick = useCallback[\s\S]*?const customClick = Boolean\(onClick\);[\s\S]*?if \(locked \|\| inFlight\.current\)[\s\S]*?event\.preventDefault\(\);[\s\S]*?if \(type !== "submit" \|\| customClick\)[\s\S]*?event\.preventDefault\(\);[\s\S]*?aria-disabled=\{locked \|\| softDisabled \|\| undefined\}[\s\S]*?tabIndex=\{locked \? -1 : tabIndex\}[\s\S]*?onPointerDown=\{guardedPointerDown\}[\s\S]*?onPointerUp=\{guardedPointerUp\}[\s\S]*?style=\{resolvedStyle\}[\s\S]*?export function StableCtaLink[\s\S]*?const softDisabled =[\s\S]*?aria-disabled[\s\S]*?const resolvedStyle = useMemo[\s\S]*?const guardedPointerDown = useMemo[\s\S]*?aria-disabled=\{locked \|\| softDisabled \|\| undefined\}[\s\S]*?onPointerDown=\{guardedPointerDown\}[\s\S]*?onPointerUp=\{guardedPointerUp\}[\s\S]*?style=\{resolvedStyle\}[\s\S]*?export function PrimaryButton[\s\S]*?export function SecondaryButton[\s\S]*?export function SubtleButton[\s\S]*?export function DangerButton[\s\S]*?export function CardActionRow[\s\S]*?export function StableDisclosureSummary[\s\S]*?onPointerUp=\{\(event\) => \{[\s\S]*?stopTap\(event\);/,
   "Shared button primitives must include duplicate-click protection, guarded default-action prevention that preserves plain submit buttons, guarded aria-disabled state, pointer-down/up tap guards, link support, stable action rows, and stable disclosure summaries."
@@ -574,7 +586,7 @@ assertNotContains(
 
 assertContains(
   "src/pages/ProfilePage.tsx",
-  /import \{ GsnLegacyIcon, type GsnIconName \} from "\.\.\/components\/GsnLegacyIcon";[\s\S]*?import \{ CardActionRow, PrimaryButton, SecondaryButton \} from "\.\.\/components\/StableButton";[\s\S]*?function profileIconText\([\s\S]*?name: GsnIconName[\s\S]*?<GsnLegacyIcon name=\{name\}[\s\S]*?debugId="profile\.save-local"[\s\S]*?profileIconText\("check", "Save"\)[\s\S]*?debugId="profile\.refresh"[\s\S]*?profileIconText\("refresh", "Refresh"\)/,
+  /import \{ GsnLegacyIcon, type GsnIconName \} from "\.\.\/components\/GsnLegacyIcon";[\s\S]*?import \{ CardActionRow, PrimaryButton, SecondaryButton \} from "\.\.\/components\/StableButton";[\s\S]*?function profileIconText\([\s\S]*?name: GsnIconName[\s\S]*?<GsnLegacyIcon name=\{name\}[\s\S]*?debugId="profile\.save-account"[\s\S]*?profileIconText\("check", "Save"\)[\s\S]*?debugId="profile\.refresh"[\s\S]*?profileIconText\("refresh", "Refresh"\)/,
   "Profile page must use shared stable button primitives and shared 3D GSN icon helpers for save and refresh actions."
 );
 

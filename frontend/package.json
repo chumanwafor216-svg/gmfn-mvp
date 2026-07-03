@@ -27,6 +27,7 @@
     "audit:marketplace-more-tools-lane": "node tools/audit-marketplace-more-tools-lane.mjs",
     "audit:marketplace-trust-pill": "node tools/audit-marketplace-trust-pill.mjs",
     "audit:marketplace-demand-box-lane": "node tools/audit-marketplace-demand-box-lane.mjs",
+    "audit:marketplace-department-boundaries": "node tools/audit-marketplace-department-boundaries.mjs",
     "audit:marketplace-front-package": "node tools/audit-marketplace-front-package.mjs",
     "audit:demand-box-front-package": "node tools/audit-demand-box-front-package.mjs",
     "audit:loans-actions": "node tools/audit-loans-actions.mjs",
@@ -91,6 +92,8 @@
     "audit:finance-support-identity-fallback": "node tools/audit-finance-support-identity-fallback.mjs",
     "audit:money-in-identity-fallback": "node tools/audit-money-in-identity-fallback.mjs",
     "audit:payment-instruction-phone-rows": "node tools/audit-payment-instruction-phone-rows.mjs",
+    "smoke:marketplace-boundaries": "node tools/smoke-marketplace-boundaries.mjs",
+    "smoke:marketplace-hero": "node tools/smoke-marketplace-hero.mjs",
     "smoke:live-marketplace-join-form": "node tools/smoke-live-marketplace-join-form.mjs",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"

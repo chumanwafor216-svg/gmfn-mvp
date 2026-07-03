@@ -8,6 +8,8 @@ import {
 
 const COMPANION_BLOCKED_PATH_PREFIXES = [
   "/app/finance",
+  "/app/marketplace",
+  "/app/my-gmfn-and-i",
   "/app/payment/pool",
   "/app/payment/withdraw",
   "/app/payment-rails",

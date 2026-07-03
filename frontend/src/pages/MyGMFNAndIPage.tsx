@@ -40,6 +40,23 @@ type SettingsState = {
 };
 
 type NoticeTone = "success" | "error";
+type CapabilityMapCategory =
+  | "Identity & Verification"
+  | "Trust & Evidence"
+  | "Buying & Selling"
+  | "Community & Membership"
+  | "Finance & Support"
+  | "Visibility & Opportunity"
+  | "Security & Privacy";
+
+type CapabilityMapDetail = {
+  category: CapabilityMapCategory;
+  problem: string;
+  tools: string;
+  where: string;
+  evidence: string;
+  helps: string;
+};
 
 const SETTINGS_STORAGE_KEY = "gmfn.myGmfnAndI.settings.v2";
 const SLOW_WORKSPACE_SETTINGS_LOAD_MS = 8000;
@@ -185,6 +202,20 @@ function sectionLabel(): React.CSSProperties {
 
 function badge(primary = false): React.CSSProperties {
   return brandBadge(primary);
+}
+
+function identityBadge(primary = false): React.CSSProperties {
+  return {
+    ...brandBadge(primary),
+    background: primary
+      ? "rgba(47,129,247,0.18)"
+      : "rgba(255,255,255,0.10)",
+    color: primary ? "#7DB7FF" : "#E6F1FF",
+    border: primary
+      ? "1px solid rgba(47,129,247,0.34)"
+      : "1px solid rgba(255,255,255,0.16)",
+    boxShadow: primary ? "inset 0 1px 0 rgba(255,255,255,0.10)" : "none",
+  };
 }
 
 function helperText(): React.CSSProperties {
@@ -518,12 +549,224 @@ const CAPABILITY_ICON_NAMES: Record<number, GsnIconName> = {
   23: "home",
 };
 
+const CAPABILITY_MAP_CATEGORIES: readonly CapabilityMapCategory[] = [
+  "Identity & Verification",
+  "Trust & Evidence",
+  "Buying & Selling",
+  "Community & Membership",
+  "Finance & Support",
+  "Visibility & Opportunity",
+  "Security & Privacy",
+];
+
+const CAPABILITY_MAP_DETAILS: Record<number, CapabilityMapDetail> = {
+  1: {
+    category: "Buying & Selling",
+    problem: "Goods, credit, or service can move before the other side has enough identity and community evidence.",
+    tools: "TrustSlip, Merchant Verification, Community Member Credential, Protected Trade Record.",
+    where: "Marketplace -> Members & Trade; Trust -> TrustSlip; Shop -> Public Shop.",
+    evidence: "Identity check, community context, TrustSlip code, release note, and trade evidence record.",
+    helps: "Reduces blind release by making the seller check evidence before accepting payment risk or credit risk.",
+  },
+  2: {
+    category: "Buying & Selling",
+    problem: "People buy, sell, supply, and trade without enough visible evidence about who they are dealing with.",
+    tools: "Public Shop, Merchant Verification, TrustSlip, Merchant Release Rail, Shop Diary, Vault.",
+    where: "Marketplace -> Members & Trade; Shop -> Public Shop / Vault; Trust -> TrustSlip.",
+    evidence: "Shop identity, shelf activity, followers, trade records, verification links, and public shop record.",
+    helps: "Reduces blind dealing by connecting shops, buyers, sellers, followers, and trade activity to visible community evidence.",
+  },
+  3: {
+    category: "Buying & Selling",
+    problem: "A trustworthy member or shop may lose credibility when moving beyond one local circle.",
+    tools: "GSN ID, Community Record, Public Shop, TrustSlip, Community Credential.",
+    where: "Marketplace -> Members & Trade; Community -> Community Record; Trust -> TrustSlip.",
+    evidence: "Cross-community identity trail, member credential, shop record, and community-scoped confirmation.",
+    helps: "Lets trust travel with context while keeping each community boundary visible.",
+  },
+  4: {
+    category: "Security & Privacy",
+    problem: "Fraud risk often becomes obvious only after goods, money, or access has already moved.",
+    tools: "Trust Reading, TrustSlip Verify, Community Member Verify, Trust Passport boundary notes.",
+    where: "Trust -> TrustSlip; Marketplace -> Members & Trade; Community -> Verify Member.",
+    evidence: "Visible score, grade, caution notes, missing evidence signals, and verification limits.",
+    helps: "Shows warning signs before action without pretending GSN can guarantee a person's future behaviour.",
+  },
+  5: {
+    category: "Visibility & Opportunity",
+    problem: "Useful shop updates can disappear in noise before the right community sees them.",
+    tools: "Spotlight, Public Shop, Marketplace Broadcast, Shop Gallery.",
+    where: "Shop -> Spotlight; Marketplace -> Public Shops; Dashboard -> Spotlight preview.",
+    evidence: "Published spotlight, shop owner identity, community placement, media record, and timestamp.",
+    helps: "Gives recorded value a clearer place to be seen while keeping visibility separate from verification.",
+  },
+  6: {
+    category: "Visibility & Opportunity",
+    problem: "Attention can reward noise instead of stronger evidence, leaving serious members harder to find.",
+    tools: "Reputation signals, Trust Reading, Spotlight ranking, Marketplace visibility.",
+    where: "Dashboard -> Market Wisdom; Marketplace -> Public Shops; Trust -> Trust Passport.",
+    evidence: "Trust score band, activity trail, shop status, community context, and current public record.",
+    helps: "Lets stronger recorded evidence support visibility without turning reach into a trust guarantee.",
+  },
+  7: {
+    category: "Visibility & Opportunity",
+    problem: "A merchant can rebuild the same shop identity again and again across communities.",
+    tools: "Public Shop, Shop Gallery, Spotlight, WhatsApp contact, Merchant Verification.",
+    where: "Shop -> Public Shop; Marketplace -> Public Shops; Trust -> Merchant Verification.",
+    evidence: "One public shop link, shelf items, spotlight media, owner GSN ID, and verification entry points.",
+    helps: "Keeps one shop presence connected across marketplaces while preserving community context.",
+  },
+  8: {
+    category: "Finance & Support",
+    problem: "Support requests can look like informal begging or blind lending when amount, purpose, and backing are unclear.",
+    tools: "Loans & Support, Support Draft, Fit Check, Supporter List, Guarantor Request.",
+    where: "Marketplace -> Loans & Support; Loans -> Readiness / Suggestions / Workbench.",
+    evidence: "Amount, purpose, duration, repayment plan, fit signal, suggested supporters, and request record.",
+    helps: "Turns support into a visible request that people can review before backing it.",
+  },
+  9: {
+    category: "Finance & Support",
+    problem: "People who want to help may not know the request, responsibility, or evidence around the person asking.",
+    tools: "Supporter Check, Guarantor Inbox, Trust Passport, Community Relationship Evidence.",
+    where: "Loans -> Guarantor Inbox; Trust -> Trust Passport; Marketplace -> Support Requests.",
+    evidence: "Support invitation, relationship context, trust reading, guarantor decision, and support trail.",
+    helps: "Keeps help connected to responsibility, evidence, and community-backed judgement.",
+  },
+  10: {
+    category: "Finance & Support",
+    problem: "Urgent support decisions often happen before identity, community, or need can be checked.",
+    tools: "TrustSlip, Community Confirmation, Demand Box, Support Request, Identity Record.",
+    where: "Trust -> TrustSlip; Community -> Confirmation; Marketplace -> Demand Box / Support.",
+    evidence: "Urgent need record, member identity, community confirmation, TrustSlip code, and support response.",
+    helps: "Shortens uncertainty in urgent moments while preserving the evidence boundary.",
+  },
+  11: {
+    category: "Community & Membership",
+    problem: "Diaspora members and distant supporters often cannot read local trust context clearly.",
+    tools: "Community Record, TrustSlip, Public Shop, Community Confirmation, GSN ID.",
+    where: "Community -> Community Record; Trust -> TrustSlip; Shop -> Public Shop.",
+    evidence: "Community membership, public identity, shop record, confirmation notes, and verification link.",
+    helps: "Lets people across distance see controlled evidence before sending support, goods, or opportunity.",
+  },
+  12: {
+    category: "Finance & Support",
+    problem: "Savings circles can depend on memory and informal pressure without a visible contribution trail.",
+    tools: "ROSCA Desk, Contribution Cycle, Payout Record, Member Evidence.",
+    where: "Marketplace -> Loans & Support -> ROSCA; Finance -> Community Money.",
+    evidence: "Cycle setup, selected members, contribution schedule, payout record, and community context.",
+    helps: "Adds a visible trust layer to familiar savings culture without turning GSN into a bank.",
+  },
+  13: {
+    category: "Trust & Evidence",
+    problem: "Contribution, repayment, and support history can disappear when people change groups or phones.",
+    tools: "Trust Events, Finance Records, Repayment Record, Support Evidence, Trust Passport.",
+    where: "Trust -> Trust Passport; Finance -> Records; Loans -> Repayment.",
+    evidence: "Contribution events, repayment behaviour, support records, timestamps, and community source.",
+    helps: "Turns useful history into reviewable evidence for future decisions.",
+  },
+  14: {
+    category: "Community & Membership",
+    problem: "When people move or reconnect, their role, identity, and trust history can reset from zero.",
+    tools: "GSN ID, Community Membership, Trust Passport, Community Record.",
+    where: "Profile -> My GSN Identity; Community -> My Communities; Trust -> Trust Passport.",
+    evidence: "GSN ID, active community count, role context, community membership, and trust trail.",
+    helps: "Keeps identity continuity visible without merging distinct community records.",
+  },
+  15: {
+    category: "Identity & Verification",
+    problem: "A person may be known locally, but outsiders still need a controlled identity and evidence reference.",
+    tools: "GSN ID, Trust Passport, TrustSlip, Profile photo/selfie, Community Credential.",
+    where: "Profile -> My GSN Identity; Trust -> Trust Passport / TrustSlip; Community -> Member Verify.",
+    evidence: "GSN ID, display name, photo/selfie status, credential, TrustSlip code, and verification boundary.",
+    helps: "Makes identity portable while keeping private evidence protected.",
+  },
+  16: {
+    category: "Trust & Evidence",
+    problem: "Earned reputation can stay trapped in one street, shop, phone contact, or local circle.",
+    tools: "Trust Passport, Trust Graph, Community Record, TrustSlip.",
+    where: "Trust -> Trust Passport; Dashboard -> Trust signals; Community -> Community Record.",
+    evidence: "Recorded activity, relationship evidence, community footprint, TrustSlip, and current reading.",
+    helps: "Lets reputation move with evidence instead of gossip.",
+  },
+  17: {
+    category: "Buying & Selling",
+    problem: "A shop needs one public identity for shelf items, media, verification, and contact.",
+    tools: "Public Shop, Vault, Shop Gallery, Spotlight, Merchant Verification.",
+    where: "Shop -> Public Shop / Vault; Marketplace -> Public Shops.",
+    evidence: "Public shop link, shelf blocks, owner GSN ID, spotlight media, and verification actions.",
+    helps: "Gives one shop a controlled public home instead of scattered screenshots and phone-only claims.",
+  },
+  18: {
+    category: "Visibility & Opportunity",
+    problem: "Service work is often informal, under-recorded, and hard to verify before hiring.",
+    tools: "Demand Box, Public Shop, TrustSlip, Community Activity, Shop Diary.",
+    where: "Marketplace -> Demand Box; Shop -> Public Shop; Trust -> TrustSlip.",
+    evidence: "Service offer, demand response, community context, public identity, and follow-up activity.",
+    helps: "Makes informal service participation more visible and reviewable.",
+  },
+  19: {
+    category: "Trust & Evidence",
+    problem: "Hiring decisions can depend on guesswork, weak referrals, or unverified claims.",
+    tools: "Trust Passport, Community Credential, TrustSlip, Community Confirmation.",
+    where: "Trust -> Trust Passport; Community -> Member Verify; Marketplace -> Members & Trade.",
+    evidence: "Identity status, role evidence, community activity, TrustSlip code, and confirmation note.",
+    helps: "Helps work decisions read credibility before commitment.",
+  },
+  20: {
+    category: "Visibility & Opportunity",
+    problem: "Local needs and offers can remain invisible until opportunity is already missed.",
+    tools: "Demand Box, Marketplace Needs, Public Shop, Community Broadcast.",
+    where: "Marketplace -> Demand Box; Dashboard -> What Matters Now.",
+    evidence: "Need or offer post, community placement, requester context, and response trail.",
+    helps: "Makes demand visible so members can match needs, supply, and opportunity earlier.",
+  },
+  21: {
+    category: "Community & Membership",
+    problem: "A community's identity, trade, finance, trust, and opportunity evidence can sit in separate places.",
+    tools: "Community Home, Marketplace, Finance, Trust Passport, Community Domain.",
+    where: "Community -> Community Home; Marketplace; Finance; Trust.",
+    evidence: "Community identity, member activity, marketplace records, finance evidence, and trust records.",
+    helps: "Connects community power into one working layer without confusing personal marketplaces with institutions.",
+  },
+  22: {
+    category: "Trust & Evidence",
+    problem: "Goals, repayment plans, savings targets, and business promises can fade without execution discipline.",
+    tools: "Commitment Builder, Focus Commitments, Reminders, Progress Evidence.",
+    where: "Dashboard -> Focus Commitments; Profile -> Member Guide.",
+    evidence: "Commitment record, progress steps, reminders, completion trail, and follow-through signal.",
+    helps: "Turns intention into a visible discipline record that can support future judgement.",
+  },
+  23: {
+    category: "Community & Membership",
+    problem: "Institutions need structured membership, branches, roles, policies, and public claims separate from personal marketplaces.",
+    tools: "Community Domain, Domain Settings, Governance Roles, Service Panels, Public Community Record.",
+    where: "Community -> Community Domain; Profile -> Route list; Community -> Settings.",
+    evidence: "Domain identity, member placement, branch/unit records, role structure, service status, and controlled public claim.",
+    helps: "Helps schools, unions, churches, cooperatives, markets, and associations operate with institutional structure.",
+  },
+};
+
 function publicCapabilityLine(item: (typeof GMFN_CAPABILITIES)[number]) {
   return PUBLIC_CAPABILITY_LINES[item.id] || item.gmfn || item.proverb;
 }
 
 function capabilityIconName(item: (typeof GMFN_CAPABILITIES)[number]): GsnIconName {
   return CAPABILITY_ICON_NAMES[item.id] || "spark";
+}
+
+function capabilityMapDetail(
+  item: (typeof GMFN_CAPABILITIES)[number]
+): CapabilityMapDetail {
+  return (
+    CAPABILITY_MAP_DETAILS[item.id] || {
+      category: "Trust & Evidence",
+      problem: item.proverb,
+      tools: item.title,
+      where: "Profile -> GSN Capability Map.",
+      evidence: item.gmfn,
+      helps: publicCapabilityLine(item),
+    }
+  );
 }
 
 function publicCategoryKey(category: string): string {
@@ -669,7 +912,7 @@ function PublicCapabilitiesGuidePage({
               textTransform: "uppercase",
             }}
           >
-            My GSN and I
+            GSN Identity Guide
           </div>
 
           <h1
@@ -682,7 +925,7 @@ function PublicCapabilitiesGuidePage({
               letterSpacing: 0,
             }}
           >
-            {GMFN_CAPABILITY_COUNT} things GSN does
+            GSN Capability Map
           </h1>
 
           <div
@@ -694,8 +937,8 @@ function PublicCapabilitiesGuidePage({
               maxWidth: 760,
             }}
           >
-            Read the number, the name, the sign, and the short line. When you
-            are done, close this page and continue into the entry protocol.
+            See the problems GSN solves, the tools that solve them, and where
+            each tool lives in the app.
           </div>
         </section>
 
@@ -822,15 +1065,16 @@ function PublicCapabilitiesGuidePage({
                 alignItems: "center",
               }}
             >
-              <button
+              <SecondaryButton
                 type="button"
+                debugId="my-gmfn.public.previous-capability"
                 onClick={() => stepPublicCapability(-1)}
                 aria-label="Show previous public GSN capability"
                 style={capabilityPagerButton(false)}
               >
                 <span aria-hidden="true">{"<"}</span>
                 Previous
-              </button>
+              </SecondaryButton>
               {!useIosSingleColumn ? (
                 <div
                   style={{
@@ -852,15 +1096,16 @@ function PublicCapabilitiesGuidePage({
                   {publicSelectedIndex + 1} of {GMFN_CAPABILITY_COUNT}
                 </div>
               ) : null}
-              <button
+              <SecondaryButton
                 type="button"
+                debugId="my-gmfn.public.next-capability"
                 onClick={() => stepPublicCapability(1)}
                 aria-label="Show next public GSN capability"
                 style={capabilityPagerButton(true)}
               >
                 Next
                 <span aria-hidden="true">{">"}</span>
-              </button>
+              </SecondaryButton>
             </div>
 
             <div style={{ display: "flex", justifyContent: "center" }}>
@@ -1121,6 +1366,10 @@ export default function MyGMFNAndIPage() {
   const [me, setMe] = useState<any>(null);
   const [currentClan, setCurrentClan] = useState<any>(null);
   const [selectedCapabilityId, setSelectedCapabilityId] = useState<number>(1);
+  const [capabilitySearch, setCapabilitySearch] = useState<string>("");
+  const [capabilityCategory, setCapabilityCategory] = useState<
+    CapabilityMapCategory | "All"
+  >("All");
   const [settings, setSettings] = useState<SettingsState>(() =>
     readLocalJSON(SETTINGS_STORAGE_KEY, DEFAULT_SETTINGS)
   );
@@ -1227,6 +1476,11 @@ export default function MyGMFNAndIPage() {
     return firstTruthy(me?.gmfn_id, "Awaiting issue");
   }, [me]);
 
+  const hasGsnId = useMemo(() => {
+    const text = safeStr(me?.gmfn_id);
+    return Boolean(text && text.toLowerCase() !== "awaiting issue");
+  }, [me]);
+
   const communityLabel = useMemo(() => {
     return (
       firstTruthy(
@@ -1238,32 +1492,110 @@ export default function MyGMFNAndIPage() {
     );
   }, [currentClan]);
 
+  const activeCommunityCount = useMemo(() => {
+    const raw = firstTruthy(
+      me?.active_clan_count,
+      me?.active_membership_count,
+      me?.communities_count,
+      me?.community_count,
+      currentClan ? 1 : ""
+    );
+    const count = Number(raw || 0);
+    return Number.isFinite(count) && count > 0 ? count : 0;
+  }, [currentClan, me]);
+
+  const identityStatus = useMemo(() => {
+    if (hasGsnId && displayName !== "Member") return "Named GSN profile";
+    if (hasGsnId) return "GSN ID issued";
+    return "Identity pending";
+  }, [displayName, hasGsnId]);
+
+  const trustPassportStatus = useMemo(() => {
+    if (
+      me?.passport_verified === true ||
+      me?.trust_passport_verified === true ||
+      me?.trustPassportVerified === true
+    ) {
+      return "Verified";
+    }
+    if (
+      me?.passport_recorded === true ||
+      me?.trust_passport_recorded === true ||
+      me?.trustPassportRecorded === true ||
+      firstTruthy(me?.trust_passport_status, me?.trustPassportStatus)
+    ) {
+      return firstTruthy(me?.trust_passport_status, me?.trustPassportStatus, "Recorded");
+    }
+    return "Not shown";
+  }, [me]);
+
+  const profilePhotoRecorded = useMemo(() => {
+    const photo = firstTruthy(
+      me?.profile_image_url,
+      me?.profile_photo_url,
+      me?.photo_url,
+      me?.avatar_url
+    );
+    return Boolean(photo || me?.photo_recorded === true || me?.selfie_recorded === true);
+  }, [me]);
+  const profilePhotoStatus = profilePhotoRecorded ? "Photo recorded" : "Photo not shown";
+
   const capabilityCount = GMFN_CAPABILITY_COUNT;
+  const filteredCapabilities = useMemo(() => {
+    const query = safeStr(capabilitySearch).toLowerCase();
+    return GMFN_CAPABILITIES.filter((item) => {
+      const detail = capabilityMapDetail(item);
+      const categoryOk =
+        capabilityCategory === "All" || detail.category === capabilityCategory;
+      if (!categoryOk) return false;
+      if (!query) return true;
+      return [
+        item.title,
+        detail.category,
+        detail.problem,
+        detail.tools,
+        detail.where,
+        detail.evidence,
+        detail.helps,
+      ]
+        .join(" ")
+        .toLowerCase()
+        .includes(query);
+    });
+  }, [capabilityCategory, capabilitySearch]);
   const selectedCapability = useMemo(
     () =>
+      filteredCapabilities.find((item) => item.id === selectedCapabilityId) ||
+      filteredCapabilities[0] ||
       GMFN_CAPABILITIES.find((item) => item.id === selectedCapabilityId) ||
       GMFN_CAPABILITIES[0],
-    [selectedCapabilityId]
+    [filteredCapabilities, selectedCapabilityId]
+  );
+  const selectedCapabilityDetail = useMemo(
+    () => capabilityMapDetail(selectedCapability),
+    [selectedCapability]
   );
   const selectedCapabilityIndex = useMemo(() => {
-    const index = GMFN_CAPABILITIES.findIndex((item) => item.id === selectedCapability?.id);
+    const list = filteredCapabilities.length ? filteredCapabilities : GMFN_CAPABILITIES;
+    const index = list.findIndex((item) => item.id === selectedCapability?.id);
     return index >= 0 ? index : 0;
-  }, [selectedCapability?.id]);
+  }, [filteredCapabilities, selectedCapability?.id]);
   function stepCapability(direction: -1 | 1) {
     setSelectedCapabilityId((currentId) => {
-      const currentIndex = GMFN_CAPABILITIES.findIndex((item) => item.id === currentId);
+      const list = filteredCapabilities.length ? filteredCapabilities : GMFN_CAPABILITIES;
+      const currentIndex = list.findIndex((item) => item.id === currentId);
       const safeIndex = currentIndex >= 0 ? currentIndex : 0;
       const nextIndex =
-        (safeIndex + direction + GMFN_CAPABILITIES.length) %
-        GMFN_CAPABILITIES.length;
-      return GMFN_CAPABILITIES[nextIndex]?.id || GMFN_CAPABILITIES[0]?.id || 1;
+        (safeIndex + direction + list.length) %
+        list.length;
+      return list[nextIndex]?.id || GMFN_CAPABILITIES[0]?.id || 1;
     });
   }
   const topNavHomeTo = isAppRoute ? routes.dashboard : "/cover";
   const topNavHomeLabel = isAppRoute ? "Dashboard" : "Cover";
-  const topNavTitle = isAppRoute ? "My GSN and I" : "GSN Guide";
+  const topNavTitle = isAppRoute ? "My GSN Identity" : "GSN Guide";
   const topNavSubtitle = isAppRoute
-    ? `Keep the ${capabilityCount} core capabilities visible here while workspace settings stay in a separate tab.`
+    ? "Identity, trust records, communities, shops, and opportunities."
     : `Understand what GSN can do before you sign in, enter a community, or move into protected pages.`;
   const publicGuideEntryItems = useMemo<NextActionGuideItem[]>(
     () => [
@@ -1280,7 +1612,7 @@ export default function MyGMFNAndIPage() {
         id: "create-or-join",
         label: "Create or join a community",
         detail:
-          "Use the welcome page when the next job is entering, building, or joining a real community path.",
+          "Use the entry page when the next job is entering, building, or joining a real community path.",
         to: "/welcome",
         keywords: ["welcome", "join", "create", "community"],
         tone: "primary",
@@ -1349,7 +1681,7 @@ export default function MyGMFNAndIPage() {
         debugId: "my-gmfn.route.demand-box",
       },
       {
-        label: "My GSN and I",
+        label: "My GSN Identity",
         detail: "Guidance, settings, and capability overview.",
         icon: "user" as GsnIconName,
         to: routes.guide,
@@ -1499,126 +1831,147 @@ export default function MyGMFNAndIPage() {
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
 
       <section style={appGuidePanel(isCompact)}>
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) minmax(280px, 0.92fr)",
-            gap: isCompact ? 12 : 16,
-            alignItems: "start",
-          }}
-        >
-          <div style={appNavyCard(isCompact)}>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: isCompact ? "48px minmax(0, 1fr)" : "54px minmax(0, 1fr)",
-                alignItems: "center",
-                gap: isCompact ? 10 : 12,
-              }}
-            >
-              <span style={appGuideIconBox(true, isCompact)}>
-                <GsnLegacyIcon
-                  name="shield"
-                  size={isCompact ? 38 : 44}
-                  decorative
-                />
-              </span>
+        <div style={appNavyCard(isCompact)}>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: isCompact ? "48px minmax(0, 1fr)" : "60px minmax(0, 1fr)",
+              alignItems: "center",
+              gap: isCompact ? 10 : 14,
+            }}
+          >
+            <span style={appGuideIconBox(true, isCompact)}>
+              <GsnLegacyIcon
+                name="id"
+                size={isCompact ? 38 : 46}
+                decorative
+              />
+            </span>
+            <div style={{ minWidth: 0 }}>
               <div
                 style={{
-                  fontSize: isCompact ? 20 : 26,
-                  lineHeight: 1.08,
+                  color: "#C8A85C",
+                  fontSize: 11,
                   fontWeight: 1000,
+                  letterSpacing: 1.8,
+                  textTransform: "uppercase",
                 }}
               >
-                My GSN and I
+                Personal command centre
+              </div>
+              <h1
+                style={{
+                  margin: "5px 0 0",
+                  fontSize: isCompact ? 24 : 34,
+                  lineHeight: 1.05,
+                  fontWeight: 1000,
+                  letterSpacing: 0,
+                }}
+              >
+                My GSN Identity
+              </h1>
+              <div
+                style={{
+                  marginTop: 7,
+                  color: "#DCEBFA",
+                  fontSize: isCompact ? 13 : 15,
+                  lineHeight: 1.4,
+                  fontWeight: 750,
+                  maxWidth: 780,
+                }}
+              >
+                Your identity, trust records, communities, shops, and
+                opportunities in one place.
               </div>
             </div>
-
-            <div
-              style={{
-                marginTop: isCompact ? 14 : 18,
-                color: "#DCEBFA",
-                fontSize: isCompact ? 14 : 15,
-                lineHeight: 1.45,
-                fontWeight: 700,
-              }}
-            >
-              See the {capabilityCount} things GSN does and where each tool lives.
-            </div>
-
-            <StableCtaLink
-              to={routes.dashboard}
-              kind="primary"
-              debugId="my-gmfn.hero.dashboard"
-              style={{
-                marginTop: isCompact ? 14 : 18,
-                width: "fit-content",
-                minHeight: isCompact ? 44 : 52,
-                borderRadius: 999,
-                padding: isCompact ? "11px 17px" : "14px 20px",
-                background:
-                  "linear-gradient(180deg, #F2C766 0%, #D6AA45 100%)",
-                color: "#07172C",
-                border: "1px solid rgba(255,255,255,0.38)",
-                boxShadow: "0 14px 24px rgba(214,170,69,0.22)",
-              }}
-            >
-              Dashboard {">"}
-            </StableCtaLink>
           </div>
 
-          <div style={appNavyCard(isCompact)}>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: isCompact ? "48px minmax(0, 1fr)" : "54px minmax(0, 1fr)",
-                alignItems: "center",
-                gap: isCompact ? 10 : 12,
-              }}
-            >
-              <span style={appGuideIconBox(false, isCompact)}>
-                <GsnLegacyIcon
-                  name="user"
-                  size={isCompact ? 38 : 44}
-                  decorative
-                />
-              </span>
-              <div>
+          <div
+            data-my-gsn-identity-status-grid="true"
+            style={{
+              marginTop: isCompact ? 14 : 18,
+              display: "grid",
+              gridTemplateColumns: isCompact
+                ? "repeat(2, minmax(0, 1fr))"
+                : "repeat(3, minmax(0, 1fr))",
+              gap: 9,
+            }}
+          >
+            {[
+              ["GSN ID status", hasGsnId ? "Issued" : "Awaiting issue"],
+              ["Identity status", identityStatus],
+              ["Active communities", String(activeCommunityCount || "Not shown")],
+              ["Trust Passport", trustPassportStatus],
+              ["Photo/selfie", profilePhotoStatus],
+              ["Main context", communityLabel],
+            ].map(([label, value]) => (
+              <div
+                key={label}
+                style={{
+                  minHeight: isCompact ? 66 : 72,
+                  borderRadius: 16,
+                  border: "1px solid rgba(255,255,255,0.13)",
+                  background: "rgba(255,255,255,0.075)",
+                  padding: isCompact ? 10 : 12,
+                  boxSizing: "border-box",
+                  minWidth: 0,
+                }}
+              >
                 <div
                   style={{
-                    fontSize: isCompact ? 20 : 26,
-                    lineHeight: 1.08,
+                    color: "#9FB5CA",
+                    fontSize: 10.5,
                     fontWeight: 1000,
+                    letterSpacing: 0.7,
+                    textTransform: "uppercase",
+                  }}
+                >
+                  {label}
+                </div>
+                <div
+                  style={{
+                    marginTop: 5,
+                    color: "#F8FBFF",
+                    fontSize: isCompact ? 12.5 : 14,
+                    fontWeight: 950,
+                    lineHeight: 1.18,
                     overflowWrap: "anywhere",
                   }}
                 >
-                  Welcome, {displayName}
-                </div>
-                <div
-                  style={{
-                    marginTop: 7,
-                    color: "#DCEBFA",
-                    fontSize: isCompact ? 13 : 14,
-                    lineHeight: 1.42,
-                    fontWeight: 700,
-                  }}
-                >
-                  GSN keeps your identity, trust, and opportunities visible in one place.
+                  {value}
                 </div>
               </div>
-            </div>
-
-            <div
-              style={{
-                marginTop: isCompact ? 14 : 18,
-                display: "grid",
-                gap: 8,
-              }}
-            >
-              <span style={badge(true)}>GSN ID: {gmfnId}</span>
-              <span style={badge(false)}>Community: {communityLabel}</span>
-            </div>
+            ))}
           </div>
+
+          <div
+            style={{
+              marginTop: isCompact ? 14 : 18,
+              display: "flex",
+              gap: 8,
+              flexWrap: "wrap",
+            }}
+          >
+            <span style={identityBadge(true)}>GSN ID: {gmfnId}</span>
+            <span style={identityBadge(false)}>Member: {displayName}</span>
+            <span style={identityBadge(false)}>Community: {communityLabel}</span>
+          </div>
+
+          <StableCtaLink
+            to={routes.dashboard}
+            kind="primary"
+            debugId="my-gmfn.hero.dashboard"
+            style={{
+              marginTop: isCompact ? 14 : 18,
+              minHeight: isCompact ? 54 : 58,
+              borderRadius: 18,
+              justifyContent: "center",
+              fontSize: isCompact ? 14 : 15,
+            }}
+          >
+            Open dashboard
+            <span aria-hidden="true">{">"}</span>
+          </StableCtaLink>
         </div>
 
         <div
@@ -1643,7 +1996,7 @@ export default function MyGMFNAndIPage() {
             }}
           >
             <GsnLegacyIcon name="spark" size={24} decorative />
-            {capabilityCount} Capabilities
+            Capability Map
           </StableCtaLink>
 
           <StableCtaLink
@@ -1681,7 +2034,9 @@ export default function MyGMFNAndIPage() {
             <span>
               <strong>Quick Guide</strong>
               <br />
-              Strengthen your identity evidence. Add a clear photo/selfie to keep your Trust Passport and TrustSlip strong.
+              {profilePhotoRecorded
+                ? "Review your Trust Passport and TrustSlip evidence before sharing a public record."
+                : "Strengthen your identity evidence. Add a clear photo/selfie to keep your Trust Passport and TrustSlip strong."}
             </span>
           </StableCtaLink>
         </div>
@@ -1698,7 +2053,7 @@ export default function MyGMFNAndIPage() {
                 lineHeight: 1.08,
               }}
             >
-              {capabilityCount} things GSN does
+              GSN Capability Map
             </div>
 
             <div
@@ -1710,15 +2065,77 @@ export default function MyGMFNAndIPage() {
                 lineHeight: 1.45,
               }}
             >
-              Institutional map of the {capabilityCount} core capabilities.
-              This guide explains what GSN is built to support; it is not proof
-              that any one member, shop, payout, paid verification, or protected
-              trade release is already approved.
+              See the problems GSN solves, the tools that solve them, and where
+              each tool lives in the app. This map explains capability; it is
+              not proof that any one member, shop, payout, paid verification,
+              or protected trade release is already approved.
             </div>
 
             <div
               style={{
                 marginTop: 14,
+                display: "grid",
+                gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) minmax(220px, 0.55fr)",
+                gap: 10,
+              }}
+            >
+              <div style={{ display: "grid", gap: 8 }}>
+                <label
+                  htmlFor="my-gmfn-capability-search"
+                  style={{
+                    ...sectionLabel(),
+                    color: "#425466",
+                    fontSize: 12,
+                  }}
+                >
+                  Search by problem
+                </label>
+                <input
+                  id="my-gmfn-capability-search"
+                  aria-label="Search GSN capabilities by problem, tool, location, or evidence"
+                  value={capabilitySearch}
+                  onChange={(event) => setCapabilitySearch(event.target.value)}
+                  placeholder="Search risk, tool, page, or evidence"
+                  style={selectStyle()}
+                />
+              </div>
+              <div style={{ display: "grid", gap: 8 }}>
+                <label
+                  htmlFor="my-gmfn-capability-category"
+                  style={{
+                    ...sectionLabel(),
+                    color: "#425466",
+                    fontSize: 12,
+                  }}
+                >
+                  Category filter
+                </label>
+                <select
+                  id="my-gmfn-capability-category"
+                  aria-label="Filter GSN capabilities by category"
+                  value={capabilityCategory}
+                  onChange={(event) =>
+                    setCapabilityCategory(
+                      event.target.value === "All"
+                        ? "All"
+                        : (event.target.value as CapabilityMapCategory)
+                    )
+                  }
+                  style={selectStyle()}
+                >
+                  <option value="All">All categories</option>
+                  {CAPABILITY_MAP_CATEGORIES.map((category) => (
+                    <option key={category} value={category}>
+                      {category}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div
+              style={{
+                marginTop: 12,
                 display: "grid",
                 gap: 8,
               }}
@@ -1736,13 +2153,13 @@ export default function MyGMFNAndIPage() {
               <select
                 id="my-gmfn-capability-select"
                 aria-label="Choose GSN capability"
-                value={selectedCapabilityId}
+                value={selectedCapability?.id || selectedCapabilityId}
                 onChange={(event) =>
                   setSelectedCapabilityId(Number(event.target.value) || 1)
                 }
                 style={selectStyle()}
               >
-                {GMFN_CAPABILITIES.map((item) => (
+                {(filteredCapabilities.length ? filteredCapabilities : GMFN_CAPABILITIES).map((item) => (
                   <option key={item.id} value={item.id}>
                     {item.id}. {item.title}
                   </option>
@@ -1759,15 +2176,16 @@ export default function MyGMFNAndIPage() {
                   alignItems: "center",
                 }}
               >
-                <button
+                <SecondaryButton
                   type="button"
+                  debugId="my-gmfn.profile.previous-capability"
                   onClick={() => stepCapability(-1)}
                   aria-label="Show previous GSN capability"
                   style={capabilityPagerButton(false)}
                 >
                   <span aria-hidden="true">{"<"}</span>
                   Previous
-                </button>
+                </SecondaryButton>
                 {!isCompact ? (
                   <div
                     style={{
@@ -1786,18 +2204,23 @@ export default function MyGMFNAndIPage() {
                       textAlign: "center",
                     }}
                   >
-                    {selectedCapabilityIndex + 1} of {capabilityCount}
+                    {selectedCapabilityIndex + 1} of{" "}
+                    {(filteredCapabilities.length
+                      ? filteredCapabilities
+                      : GMFN_CAPABILITIES
+                    ).length}
                   </div>
                 ) : null}
-                <button
+                <SecondaryButton
                   type="button"
+                  debugId="my-gmfn.profile.next-capability"
                   onClick={() => stepCapability(1)}
                   aria-label="Show next GSN capability"
                   style={capabilityPagerButton(true)}
                 >
                   Next
                   <span aria-hidden="true">{">"}</span>
-                </button>
+                </SecondaryButton>
               </div>
             </div>
 
@@ -1805,110 +2228,116 @@ export default function MyGMFNAndIPage() {
               <div
                 data-my-gmfn-selected-capability="true"
                 style={{
-                  ...(isCompact
-                    ? capabilityCompactCard(selectedCapability.id === 1)
-                    : capabilityCard(selectedCapability.id === 1)),
+                  borderRadius: isCompact ? 18 : 22,
+                  border: "1px solid rgba(15,23,42,0.08)",
+                  background:
+                    "linear-gradient(180deg, rgba(255,255,255,0.998) 0%, rgba(247,250,255,0.99) 100%)",
+                  boxShadow:
+                    "0 14px 28px rgba(15,23,42,0.07), inset 0 1px 0 rgba(255,255,255,0.98)",
+                  padding: isCompact ? 14 : 16,
                   marginTop: 12,
                   minHeight: 0,
                 }}
               >
-                {isCompact ? (
-                  <div style={capabilityCardTop()}>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: isCompact ? "1fr" : "64px minmax(0, 1fr)",
+                    gap: 12,
+                    alignItems: "start",
+                  }}
+                >
+                  <div style={isCompact ? capabilityCardTop() : capabilityVisualRail()}>
                     <span style={appGuideNumber()}>{selectedCapability.id}</span>
                     <span style={appGuideMiniIconBubble()}>
                       <GsnLegacyIcon
                         name={capabilityIconName(selectedCapability)}
-                        size={24}
+                        size={isCompact ? 24 : 30}
                         decorative
                       />
                     </span>
                   </div>
-                ) : (
-                  <span style={capabilityVisualRail()}>
-                    <span style={appGuideNumber()}>{selectedCapability.id}</span>
-                    <span style={appGuideMiniIconBubble()}>
-                      <GsnLegacyIcon
-                        name={capabilityIconName(selectedCapability)}
-                        size={28}
-                        decorative
-                      />
+                  <div style={{ minWidth: 0 }}>
+                    <span style={publicKeyChip("category")}>
+                      {selectedCapabilityDetail.category}
                     </span>
-                  </span>
-                )}
-                <div style={{ minWidth: 0 }}>
-                  <div
-                    style={{
-                      color: "#07172C",
-                      fontSize: isCompact ? 15 : 16,
-                      fontWeight: 1000,
-                      lineHeight: 1.16,
-                      overflowWrap: "normal",
-                    }}
-                  >
-                    {selectedCapability.title}
-                  </div>
-                  <div
-                    style={{
-                      marginTop: 7,
-                      color: "#425466",
-                      fontSize: isCompact ? 13 : 13.5,
-                      fontWeight: 750,
-                      lineHeight: 1.38,
-                    }}
-                  >
-                    {publicCapabilityLine(selectedCapability)}
-                  </div>
-                </div>
-              </div>
-            ) : null}
-
-            {!isCompact ? (
-              <div
-                style={{
-                  marginTop: 16,
-                  display: "grid",
-                  gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
-                  gap: 10,
-                }}
-              >
-                {GMFN_CAPABILITIES.map((item, index) => (
-                  <div key={item.id} style={capabilityCard(index === 0)}>
-                    <span style={capabilityVisualRail()}>
-                      <span style={appGuideNumber()}>{item.id}</span>
-                      <span style={appGuideMiniIconBubble()}>
-                        <GsnLegacyIcon
-                          name={capabilityIconName(item)}
-                          size={28}
-                          decorative
-                        />
-                      </span>
-                    </span>
-                    <div style={{ minWidth: 0 }}>
-                      <div
-                        style={{
-                          color: "#07172C",
-                          fontSize: 12.5,
-                          fontWeight: 1000,
-                          lineHeight: 1.18,
-                          overflowWrap: "normal",
-                        }}
-                      >
-                        {item.title}
-                      </div>
-                      <div
-                        style={{
-                          marginTop: 6,
-                          color: "#425466",
-                          fontSize: 11.5,
-                          fontWeight: 700,
-                          lineHeight: 1.35,
-                        }}
-                      >
-                        {publicCapabilityLine(item)}
-                      </div>
+                    <h2
+                      style={{
+                        margin: "9px 0 0",
+                        color: "#07172C",
+                        fontSize: isCompact ? 20 : 24,
+                        fontWeight: 1000,
+                        lineHeight: 1.08,
+                        letterSpacing: 0,
+                        overflowWrap: "normal",
+                      }}
+                    >
+                      {selectedCapability.title}
+                    </h2>
+                    <div
+                      style={{
+                        marginTop: 8,
+                        color: "#425466",
+                        fontSize: isCompact ? 13 : 14,
+                        fontWeight: 760,
+                        lineHeight: 1.45,
+                      }}
+                    >
+                      {selectedCapabilityDetail.helps}
                     </div>
                   </div>
-                ))}
+                </div>
+
+                <div
+                  style={{
+                    marginTop: 14,
+                    display: "grid",
+                    gridTemplateColumns: isCompact ? "1fr" : "repeat(2, minmax(0, 1fr))",
+                    gap: 10,
+                  }}
+                >
+                  {[
+                    ["Problem it solves", selectedCapabilityDetail.problem],
+                    ["GSN tools involved", selectedCapabilityDetail.tools],
+                    ["Where to open it", selectedCapabilityDetail.where],
+                    ["What evidence it creates", selectedCapabilityDetail.evidence],
+                  ].map(([label, value]) => (
+                    <div
+                      key={label}
+                      style={{
+                        borderRadius: 16,
+                        border: "1px solid rgba(15,23,42,0.07)",
+                        background: "#FFFFFF",
+                        padding: 12,
+                        minHeight: isCompact ? 0 : 112,
+                        boxSizing: "border-box",
+                      }}
+                    >
+                      <div
+                        style={{
+                          color: "#526579",
+                          fontSize: 11,
+                          fontWeight: 1000,
+                          letterSpacing: 0.7,
+                          textTransform: "uppercase",
+                        }}
+                      >
+                        {label}
+                      </div>
+                      <div
+                        style={{
+                          marginTop: 7,
+                          color: "#10253B",
+                          fontSize: isCompact ? 13 : 13.5,
+                          fontWeight: 760,
+                          lineHeight: 1.42,
+                        }}
+                      >
+                        {value}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             ) : null}
           </section>

@@ -103,6 +103,13 @@ assertContains(
   "Marketplace row icons must use light embossed tiles by default, not heavy color shields."
 );
 
+assertContains(
+  marketplaceFile,
+  marketplaceSource,
+  /marketplaceHeroShellStyle[\s\S]*?MARKETPLACE[\s\S]*?activeCommunityName[\s\S]*?Trade\. Support\. Finance\. Members\. Records\.[\s\S]*?marketplaceHeroStatsStyle[\s\S]*?marketplaceFrontSummaryGridStyle[\s\S]*?Marketplace Trust[\s\S]*?Finance Summary[\s\S]*?Quick Actions/,
+  "Marketplace front package must use a premium identity hero with stats, trust, finance, and quick-action summary cards."
+);
+
 [
   {
     id: "marketplace.tile.money",
@@ -133,6 +140,12 @@ assertContains(
     glyph: "links",
     label: "Marketplace Tools",
     tags: ["Verify", "Invite", "Create", "Shop Face", "Helpers"],
+  },
+  {
+    id: "marketplace.tile.spotlight",
+    glyph: "repost",
+    label: "Spotlight",
+    tags: ["Promotion", "Paid credit", "Public reach"],
   },
 ].forEach((card) => {
   const pattern = new RegExp(
@@ -166,7 +179,7 @@ assertContains(
 assertContains(
   marketplaceFile,
   marketplaceSource,
-  /debugId="marketplace\.tile\.demand"[\s\S]*?aria-label="Open Demand Box for this marketplace"[\s\S]*?openMarketplaceSection\(event, "demand", "marketplace-demand-box"\)[\s\S]*?id="marketplace-demand-box"[\s\S]*?Post a local need or offer for this marketplace[\s\S]*?debugId="marketplace\.demand\.open"[\s\S]*?openMarketplaceCta\(event, "demandBox"\)[\s\S]*?Open Demand Box/,
+  /debugId="marketplace\.tile\.demand"[\s\S]*?aria-label="Open Demand Box for this marketplace"[\s\S]*?openMarketplaceSection\(event, "demand", "marketplace-demand-box"\)[\s\S]*?Post local needs and offers[\s\S]*?id="marketplace-demand-box"[\s\S]*?marketplace\.demand\.module[\s\S]*?marketplaceDepartmentShellStyle\("demand", isCompact\)[\s\S]*?debugId="marketplace\.demand\.open"[\s\S]*?openMarketplaceCta\(event, "demandBox"\)[\s\S]*?Open Demand Box/,
   "Demand Box must be its own marketplace-local lane between Trade & Shops and Support Requests."
 );
 
@@ -193,7 +206,9 @@ assertContains(
   "audit:marketplace-more-tools-lane",
   "audit:marketplace-trust-pill",
   "audit:marketplace-demand-box-lane",
+  "audit:marketplace-department-boundaries",
   "audit:marketplace-front-package",
+  "smoke:marketplace-hero",
 ].forEach((scriptName) => {
   assertContains(
     packageFile,

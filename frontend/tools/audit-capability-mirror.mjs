@@ -104,20 +104,25 @@ for (const value of [
 
 assertContains(
   "frontend/src/pages/MyGMFNAndIPage.tsx",
-  /\{GMFN_CAPABILITY_COUNT\} things GSN does[\s\S]*?\{capabilityCount\} things GSN does/,
-  "The public and signed-in My GSN and I guides must use the dynamic institutional capability heading."
+  /GSN Capability Map[\s\S]*?See the problems GSN solves, the tools that solve them, and where[\s\S]*?each tool lives in the app/,
+  "The public and signed-in My GSN guides must use the institutional capability-map heading."
 );
 
 assertContains(
   "frontend/src/pages/MyGMFNAndIPage.tsx",
-  /Institutional map of the \{capabilityCount\} core capabilities[\s\S]*?not proof[\s\S]*?member[\s\S]*?shop[\s\S]*?payout[\s\S]*?paid verification[\s\S]*?protected[\s\S]*?trade release/,
+  /GSN Capability Map[\s\S]*?This map explains capability; it is[\s\S]*?not proof[\s\S]*?member[\s\S]*?shop[\s\S]*?payout[\s\S]*?paid verification[\s\S]*?protected[\s\S]*?trade release/,
   "The signed-in My GSN and I capability map must keep an institutional boundary against overclaiming live approvals, payout, paid verification, or protected trade release."
 );
 
 for (const value of [
   "selectedCapabilityId",
   "selectedCapability",
+  "capabilitySearch",
+  "capabilityCategory",
+  "CAPABILITY_MAP_CATEGORIES",
   'id="my-gmfn-capability-select"',
+  'id="my-gmfn-capability-search"',
+  'id="my-gmfn-capability-category"',
   "Choose capability",
   "{item.id}. {item.title}",
 ]) {
@@ -130,8 +135,8 @@ for (const value of [
 
 assertContains(
   "frontend/src/pages/MyGMFNAndIPage.tsx",
-  /data-my-gmfn-selected-capability="true"[\s\S]*selectedCapability\.title[\s\S]*publicCapabilityLine\(selectedCapability\)[\s\S]*\{!isCompact \? \(/,
-  "The signed-in My GSN and I capability map must show one selected capability first and keep the full capability grid off the compact phone layout."
+  /data-my-gmfn-selected-capability="true"[\s\S]*selectedCapabilityDetail\.helps[\s\S]*Problem it solves[\s\S]*GSN tools involved[\s\S]*Where to open it[\s\S]*What evidence it creates/,
+  "The signed-in My GSN and I capability map must show one selected institutional card with problem, tool, location, and evidence fields."
 );
 
 assertContains(
@@ -154,6 +159,18 @@ for (const value of [
     "frontend/src/pages/MyGMFNAndIPage.tsx",
     value,
     "The public My GSN and I guide must default to one focused capability with previous/next controls and keep the full capability list optional."
+  );
+}
+
+for (const value of [
+  "23 things GSN does",
+  "{capabilityCount} things GSN does",
+  "{GMFN_CAPABILITY_COUNT} things GSN does",
+]) {
+  assertTextExcludes(
+    "frontend/src/pages/MyGMFNAndIPage.tsx",
+    value,
+    "The My GSN page must not drift back to childish things-GSN-does wording."
   );
 }
 

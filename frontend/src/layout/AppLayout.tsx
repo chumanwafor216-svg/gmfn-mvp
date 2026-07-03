@@ -277,7 +277,7 @@ function makeSettingsItem(): NavLinkItem {
 
 function makeGuideItem(): NavLinkItem {
   return {
-    label: "My GSN and I",
+    label: "My GSN Identity",
     to: "/app/my-gmfn-and-i",
     match: (pathname, search) =>
       pathname === "/app/my-gmfn-and-i" && !search.includes("tab=settings"),
@@ -637,7 +637,7 @@ function getSpecialRouteMeta(
   if (pathname === "/app/my-gmfn-and-i") {
     return {
       section: "Identity & settings",
-      page: "My GSN and I",
+      page: "My GSN Identity",
     };
   }
 
@@ -753,7 +753,7 @@ function getPageActions(
       makeCommunityItem(),
       { label: "Notifications", to: "/app/notifications" },
       makeDashboardItem(),
-      { label: "My GSN and I", to: "/app/my-gmfn-and-i" },
+      { label: "My GSN Identity", to: "/app/my-gmfn-and-i" },
     ]);
   }
 
@@ -856,7 +856,7 @@ function getPageActions(
       { label: "Notifications", to: "/app/notifications" },
       makeCommunityItem(),
       makeMarketplaceItem(),
-      { label: "My GSN and I", to: "/app/my-gmfn-and-i" },
+      { label: "My GSN Identity", to: "/app/my-gmfn-and-i" },
     ]);
   }
 

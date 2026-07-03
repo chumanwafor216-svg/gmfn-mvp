@@ -154,14 +154,20 @@ assertContains(
 
 assertContains(
   "src/pages/MyGMFNAndIPage.tsx",
-  /htmlFor="my-gmfn-capability-select"[\s\S]*?Choose capability[\s\S]*?<select[\s\S]*?id="my-gmfn-capability-select"[\s\S]*?aria-label="Choose GSN capability"[\s\S]*?GMFN_CAPABILITIES\.map/,
-  "My GSN and I capability guide must keep the dropdown selector above the capability cards."
+  /htmlFor="my-gmfn-capability-search"[\s\S]*?Search by problem[\s\S]*?id="my-gmfn-capability-search"[\s\S]*?htmlFor="my-gmfn-capability-category"[\s\S]*?Category filter[\s\S]*?id="my-gmfn-capability-category"[\s\S]*?htmlFor="my-gmfn-capability-select"[\s\S]*?Choose capability[\s\S]*?id="my-gmfn-capability-select"[\s\S]*?aria-label="Choose GSN capability"/,
+  "My GSN and I capability guide must keep search, category filter, and dropdown selector above the focused capability card."
 );
 
 assertContains(
   "src/pages/MyGMFNAndIPage.tsx",
-  /Lets a seller check identity, community, TrustSlip, and current evidence before releasing goods or credit\.[\s\S]*?Turns support requests into recorded drafts with amount, purpose, duration, supporters, and fit signals\.[\s\S]*?Connects community identity, marketplace activity, finance evidence, and trust records into one working layer\./,
-  "My GSN and I profile capability lines must stay concrete enough to explain daily GSN use, not collapse back to slogans."
+  /Problem it solves[\s\S]*?GSN tools involved[\s\S]*?Where to open it[\s\S]*?What evidence it creates/,
+  "My GSN and I profile capability map must stay concrete enough to explain daily GSN use as Problem -> Tool -> App Location -> Evidence, not collapse back to slogans."
+);
+
+assertContains(
+  "src/pages/MyGMFNAndIPage.tsx",
+  /Public Shop, Merchant Verification, TrustSlip, Merchant Release Rail, Shop Diary, Vault[\s\S]*?Marketplace -> Members & Trade; Shop -> Public Shop \/ Vault; Trust -> TrustSlip[\s\S]*?Shop identity, shelf activity, followers, trade records, verification links, and public shop record/,
+  "The Evidence-Backed Buying and Selling capability must keep the owner's requested tool, location, and evidence depth."
 );
 
 assertNotContains(

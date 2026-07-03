@@ -19,10 +19,10 @@ const actionTargetRoutesSource = readFileSync(
   "utf8"
 );
 const findings = [];
-const expectedStableActionCount = 72;
+const expectedStableActionCount = 73;
 const expectedNativeFieldCount = 37;
 const expectedSourceBreakdown = {
-  front: 10,
+  front: 11,
   body: 62,
 };
 const expectedVisibleIntentActionCount = 5;
@@ -601,12 +601,16 @@ if (!demandSection) {
     });
   }
 
-  if (!/Marketplace-local request[\s\S]*?Open Demand Box/.test(demandSection)) {
+  if (
+    !/marketplace\.demand\.module[\s\S]*?Local needs and offers[\s\S]*?Use this when people here should see what is needed, wanted,[\s\S]*?Open Demand Box/.test(
+      demandSection
+    )
+  ) {
     findings.push({
       file: marketplaceFile,
       line: lineAt(source.indexOf(demandSection)),
       message: "Marketplace Demand Box section must stay a concise local request launcher.",
-      text: "Expected marketplace-local request summary and Open Demand Box action.",
+      text: "Expected local needs/offers department shell and Open Demand Box action.",
     });
   }
 }
@@ -732,8 +736,10 @@ const expectedOrder = [
   exactDebugId("marketplace.tile.trust"),
   exactDebugId("marketplace.tile.money"),
   exactDebugId("marketplace.tile.members"),
+  exactDebugId("marketplace.tile.demand"),
   exactDebugId("marketplace.tile.support"),
   exactDebugId("marketplace.row.records-links"),
+  exactDebugId("marketplace.tile.spotlight"),
   exactDebugId("marketplace.intent.submit"),
   dynamicDebugId(
     "marketplace.intent.${item.id}",

@@ -98,6 +98,16 @@ assertContains(
   "Marketplace must load selected protected-trade detail so event trails can back the evidence paper."
 );
 
+assertContains(
+  /type MarketplaceDepartmentTone[\s\S]*?marketplaceDepartmentShellStyle[\s\S]*?marketplaceDepartmentHeaderStyle/,
+  "Marketplace must keep a shared department shell so nested marketplace arms are visibly separated system-wide."
+);
+
+assertContains(
+  /textAreaStyle\(\): React\.CSSProperties \{[\s\S]*?fontFamily: "inherit"[\s\S]*?overflowY: "hidden"[\s\S]*?whiteSpace: "pre-wrap"/,
+  "Marketplace textareas must keep human app styling and avoid code-like internal scroll boxes."
+);
+
 const trustedTradeSection = sectionBetween(
   /id="marketplace-members-shops"/,
   /id="marketplace-demand-box"/
@@ -114,6 +124,8 @@ if (!trustedTradeSection.text) {
     /\{visibleTradeShopCount\} public shop/,
     /Community-bound trade/,
     /Trade Evidence Record/,
+    /marketplace\.members\.trade-evidence-module/,
+    /marketplaceDepartmentShellStyle\("trade", isCompact\)/,
     /creates evidence, not escrow/,
     /marketplaceFieldTouchProps\("marketplace\.protected-trade\.role"\)/,
     /marketplaceFieldTouchProps\("marketplace\.protected-trade\.counterpart"\)/,
@@ -133,6 +145,8 @@ if (!trustedTradeSection.text) {
     /<GsnSnapshotPaperCard[\s\S]*?paperText=\{protectedTradeEvidencePaperText\}/,
     /debugId="marketplace\.protected-trade\.copy-paper"[\s\S]*?Copy paper text/,
     /Visible members/,
+    /marketplace\.members\.visible-members-module/,
+    /marketplaceDepartmentShellStyle\("members", isCompact\)/,
     /Full visible list shown/,
     /more tucked away/,
     /debugId="marketplace\.members\.more-visible\.summary"[\s\S]*?More visible members/,
@@ -189,6 +203,50 @@ if (!trustedTradeSection.text) {
       "Use Trade Evidence so the customer-facing lane does not overclaim protected commerce."
     );
   }
+}
+
+const demandSection = sectionBetween(
+  /id="marketplace-demand-box"/,
+  /id="marketplace-loans-support"/
+);
+if (demandSection.text) {
+  [
+    /marketplace\.demand\.module/,
+    /marketplaceDepartmentShellStyle\("demand", isCompact\)/,
+    /Local needs and offers/,
+  ].forEach((pattern) => {
+    if (!pattern.test(demandSection.text)) {
+      addFinding(
+        demandSection.start,
+        "Demand Box must remain a visibly separate marketplace department.",
+        pattern.toString()
+      );
+    }
+  });
+}
+
+const supportSection = sectionBetween(
+  /id="marketplace-loans-support"/,
+  /<BottomNav/
+);
+if (supportSection.text) {
+  [
+    /marketplace\.support\.selected-module/,
+    /marketplace\.support\.financial-support-module/,
+    /marketplaceDepartmentShellStyle\("support", isCompact\)/,
+    /marketplace\.support\.rosca-module/,
+    /marketplaceDepartmentShellStyle\("rosca", isCompact\)/,
+    /Financial support requests/,
+    /Separate ROSCA desk/,
+  ].forEach((pattern) => {
+    if (!pattern.test(supportSection.text)) {
+      addFinding(
+        supportSection.start,
+        "Support and ROSCA must remain visibly separate marketplace departments.",
+        pattern.toString()
+      );
+    }
+  });
 }
 
 if (findings.length > 0) {

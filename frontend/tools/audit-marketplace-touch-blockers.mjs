@@ -133,8 +133,16 @@ if (/<label[\s\S]{0,240}\{\.\.\.marketplaceFieldTouchProps\("marketplace\.join\.
   );
 }
 
-const surfaceUses = [...marketplaceSource.matchAll(/marketplaceSurfaceTouchProps\("([^"]+)"\)/g)];
+const surfaceUses = [
+  ...marketplaceSource.matchAll(/marketplaceSurfaceTouchProps\(\s*"([^"]+)"\s*\)/g),
+];
 const expectedSurfaceIds = [
+  "marketplace.members.trade-evidence-module",
+  "marketplace.members.visible-members-module",
+  "marketplace.demand.module",
+  "marketplace.support.selected-module",
+  "marketplace.support.financial-support-module",
+  "marketplace.support.rosca-module",
   "marketplace.rosca.actions",
   "marketplace.links.join.surface",
   "marketplace.links.join.actions",
