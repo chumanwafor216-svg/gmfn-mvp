@@ -1315,7 +1315,7 @@ def test_operating_map_aggregates_domain_package_without_side_effects(
     assert "/domains/:name" in operating_map["boundary"]
     assert "/community-domains/:name" in operating_map["boundary"]
     assert "create marketplace activity" in operating_map["boundary"]
-    assert "create a social Community" in operating_map["boundary"]
+    assert "create a linked Community" in operating_map["boundary"]
     assert "move money" in operating_map["boundary"]
     assert "private member evidence" in operating_map["boundary"]
 
@@ -3584,7 +3584,7 @@ def test_node_trust_map_projects_local_unit_trust_without_writes(
     }
     assert "read-only local trust" in trust_map["boundary"]
     assert "upload evidence" in trust_map["boundary"]
-    assert "expose storage keys" in trust_map["boundary"]
+    assert "show storage keys" in trust_map["boundary"]
     assert "issue TrustSlips" in trust_map["boundary"]
     assert "Trust Passport entries" in trust_map["boundary"]
     assert "private member activity" in trust_map["boundary"]
@@ -5579,7 +5579,7 @@ def test_node_evidence_authority_map_projects_local_evidence_authority_without_w
     assert "upload evidence" in evidence_map["boundary"]
     assert "verify evidence" in evidence_map["boundary"]
     assert "publish public evidence" in evidence_map["boundary"]
-    assert "expose storage keys" in evidence_map["boundary"]
+    assert "show storage keys" in evidence_map["boundary"]
     assert "issue credentials" in evidence_map["boundary"]
     assert "Trust Passport entries" in evidence_map["boundary"]
     assert "private/evidence/node-evidence-ready.pdf" not in str(evidence_map)
@@ -9100,8 +9100,8 @@ def test_trust_mobility_projects_portability_readiness_without_issuing_records(
     assert lanes["external_relay"]["count"] == 0
     assert "does not create TrustSlips" in trust_mobility["boundary"]
     assert "write Trust Passport entries" in trust_mobility["boundary"]
-    assert "expose files" in trust_mobility["boundary"]
-    assert "expose storage keys" in trust_mobility["boundary"]
+    assert "show files" in trust_mobility["boundary"]
+    assert "show storage keys" in trust_mobility["boundary"]
     assert "private member" in trust_mobility["boundary"]
     assert "create a social Community" in trust_mobility["boundary"]
     assert "trusted-trader-attestation.pdf" not in str(trust_mobility)
@@ -11860,8 +11860,8 @@ def test_record_privacy_map_projects_record_boundaries_without_permission_writes
         "requires_admin": True,
     }
     assert "does not change permissions" in privacy_map["boundary"]
-    assert "expose member lists" in privacy_map["boundary"]
-    assert "expose storage keys" in privacy_map["boundary"]
+    assert "show member lists" in privacy_map["boundary"]
+    assert "show storage keys" in privacy_map["boundary"]
     assert "share records across institutions" in privacy_map["boundary"]
     assert "private/evidence/private-standing-note.pdf" not in str(privacy_map)
 
@@ -13305,7 +13305,7 @@ def test_network_presence_projects_public_readiness_without_publishing(
     assert "verify the domain" in presence["boundary"]
     assert "create marketplace exposure" in presence["boundary"]
     assert "create vault links" in presence["boundary"]
-    assert "social Community bridge" in presence["boundary"]
+    assert "linked Community bridge" in presence["boundary"]
     assert "private member activity" in presence["boundary"]
 
     lanes = {item["lane_key"]: item for item in presence["lanes"]}
