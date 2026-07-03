@@ -107,9 +107,9 @@ function serviceReadinessStatus(item: ServiceReadinessItem | undefined, fallback
 
 function serviceFallbackDetail(fallbackEnabled: boolean): string {
   if (fallbackEnabled) {
-    return "Listed by this Community Domain template. Readiness details are not loaded yet.";
+    return "Included by this Community Domain template. Readiness details are not available yet.";
   }
-  return "Not included by the current template unless an owner later chooses to configure it.";
+  return "Not included by the current template unless an owner later adds it.";
 }
 
 function serviceReadinessRows(
@@ -153,7 +153,7 @@ function serviceReadinessRows(
   rows.push({
     key: "settings",
     label: "Settings",
-    status: moduleScopeReadiness ? "view only" : "not loaded",
+    status: moduleScopeReadiness ? "planning only" : "not available yet",
     detail: moduleScopeReadiness
       ? "Settings are shown as planning status here. This page does not enable services or grant permissions."
       : "Service settings could not be loaded for this view. No setting has been changed.",
@@ -377,7 +377,7 @@ export default function CommunityDomainServiceReadinessPanels({
             : "GSN could not load the service settings view for this Community Domain."}
         </div>
         {factGrid([
-          ["Template", cleanText(serviceSettingsProjection?.template_key, "not loaded")],
+          ["Template", cleanText(serviceSettingsProjection?.template_key, "not available yet")],
           ["Domain type", compactStatus(serviceSettingsProjection?.domain_type)],
           ["Included", countValue(serviceSettingsProjection?.enabled_total)],
           ["Optional", countValue(serviceSettingsProjection?.optional_total)],

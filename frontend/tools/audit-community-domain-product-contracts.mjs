@@ -175,10 +175,31 @@ assertContains(
   { frontend: true }
 );
 
+assertNotContains(
+  "src/pages/communityDomainDashboard/NodeProjectionGroups.tsx",
+  /This view only shows local|This view only shows domain-boundary|This view only shows member placement|private member records|create records/,
+  "Community Domain node projection boundary notes must stay concise and user-facing instead of returning to long legal-style lists.",
+  { frontend: true }
+);
+
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
   /function laneDisplayLabel[\s\S]*key === "modules"[\s\S]*return "Services"[\s\S]*const primaryActionLaneLabel = laneDisplayLabel\(primaryActionLane, "work"\)[\s\S]*\{laneDisplayLabel\(selectedLane, "Community Domain setup"\)\}/,
   "Community Domain dashboard parent must show service language for primary and opened modules-lane labels without changing internal lane keys.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /Check exchange, privacy, setup, compliance, and appeal boundaries[\s\S]*Renewal period and payment step are not set up here/,
+  "Community Domain dashboard visible notes must use setup wording for service boundaries and billing steps.",
+  { frontend: true }
+);
+
+assertNotContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /Check exchange, privacy, configuration|not configured here/,
+  "Community Domain dashboard visible copy must use setup language instead of configuration/configured wording.",
   { frontend: true }
 );
 
@@ -310,14 +331,21 @@ assertContains(
 
 assertContains(
   "src/pages/communityDomainDashboard/SetupIntelligenceCards.tsx",
-  /Setup plan[\s\S]*steps complete[\s\S]*Current phase:[\s\S]*primary_next_action[\s\S]*missing item[\s\S]*admin guided[\s\S]*view only[\s\S]*This plan only shows next setup steps[\s\S]*does not change structure,\s+policy, billing, public pages, money, or private evidence/,
+  /Setup plan[\s\S]*steps complete[\s\S]*Current phase:[\s\S]*primary_next_action[\s\S]*missing item[\s\S]*admin guided[\s\S]*planning only[\s\S]*Planning only[\s\S]*This plan only shows next setup steps[\s\S]*does not change structure,\s+policy, billing, public pages, money, or private evidence/,
   "Lazy Community Domain setup intelligence component must derive setup plan steps from raw setup plan and avoid implying setup writes, authority verification, publishing, money movement, or private evidence access.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/communityDomainDashboard/SetupIntelligenceCards.tsx",
+  /Readiness is not available yet[\s\S]*gridTemplateColumns: "minmax\(0, 1fr\)"[\s\S]*Setup plan is not available yet[\s\S]*gridTemplateColumns: "minmax\(0, 1fr\)"/,
+  "Community Domain setup intelligence unavailable states and rows must be user-facing and phone-safe.",
   { frontend: true }
 );
 
 assertNotContains(
   "src/pages/communityDomainDashboard/SetupIntelligenceCards.tsx",
-  /read-only setup (checklist|plan)|read-only readiness checklist|read-only setup plan|Read only/,
+  /read-only setup (checklist|plan)|read-only readiness checklist|read-only setup plan|Read only|not loaded|"view only"|View only|gridTemplateColumns: "minmax\(0, 1fr\) auto"/,
   "Community Domain setup intelligence visible copy must avoid old read-only setup wording.",
   { frontend: true }
 );
@@ -449,6 +477,20 @@ assertContains(
 );
 
 assertContains(
+  "src/pages/communityDomainDashboard/ServiceReadinessPanels.tsx",
+  /Included by this Community Domain template[\s\S]*not available yet[\s\S]*later adds it[\s\S]*planning only/,
+  "Community Domain service readiness fallbacks must use included/available/add/planning wording.",
+  { frontend: true }
+);
+
+assertNotContains(
+  "src/pages/communityDomainDashboard/ServiceReadinessPanels.tsx",
+  /not loaded|"view only"|View only|configure it/,
+  "Community Domain service readiness visible copy must use available/planning/add wording instead of loaded/view-only/configure wording.",
+  { frontend: true }
+);
+
+assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
   /lazy\([\s\S]*import\("\.\/communityDomainDashboard\/NodeProjectionGroups"\)[\s\S]*CommunityDomainNodeProjectionGroups[\s\S]*variant="services"[\s\S]*nodeServiceMap=\{nodeServiceMap\}[\s\S]*nodePrivacyMap=\{nodePrivacyMap\}[\s\S]*nodeAnalyticsMap=\{nodeAnalyticsMap\}[\s\S]*nodeCommunicationMap=\{nodeCommunicationMap\}[\s\S]*nodeVaultMap=\{nodeVaultMap\}/,
   "Community Domain dashboard Services lane must lazy-load the read-only service node projection group instead of carrying the full card dump in the main route chunk.",
@@ -492,22 +534,22 @@ assertContains(
 
 assertContains(
   "src/pages/communityDomainDashboard/NodeProjectionGroups.tsx",
-  /Unit authority map[\s\S]*locally_governed[\s\S]*needs_local_governance[\s\S]*This view only shows local authority readiness[\s\S]*does not grant authority, assign roles, change structure, activate billing, move money, publish proof, create records, or expose private member records/,
-  "Community Domain dashboard Structure lane must show read-only node autonomy without implying local authority grants, role/policy writes, inheritance changes, node splits, separate domains, billing, marketplace/finance records, money movement, proof, TrustSlips, Trust Passport writes, or private activity exposure.",
+  /Unit authority map[\s\S]*locally_governed[\s\S]*needs_local_governance[\s\S]*local authority snapshot only[\s\S]*does not grant roles, change structure, activate billing, or expose private member data/,
+  "Community Domain dashboard Structure lane must keep node autonomy public copy short while preserving authority, structure, billing, and privacy boundaries.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/communityDomainDashboard/NodeProjectionGroups.tsx",
-  /Unit economy map[\s\S]*marketplace_role[\s\S]*finance_records[\s\S]*This view only shows local economy readiness[\s\S]*does not create shops, listings, demand, Spotlight, vault links, payment steps, loans, finance records, separate domains, proof, or private member records/,
-  "Community Domain dashboard Structure lane must show read-only node economic planning without implying marketplace/shop/listing/demand/Spotlight/vault writes, payment instructions, finance records, loans, money movement, trust verification, proof, TrustSlips, Trust Passport writes, separate domains, or private activity exposure.",
+  /Unit economy map[\s\S]*marketplace_role[\s\S]*finance_records[\s\S]*local economy snapshot only[\s\S]*does not create shops, loans, finance records, payment steps, or private member data/,
+  "Community Domain dashboard Structure lane must keep node economy public copy short while preserving shop, finance, payment, and privacy boundaries.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/communityDomainDashboard/NodeProjectionGroups.tsx",
-  /Unit activity map[\s\S]*scheduled_activities[\s\S]*paid_activities[\s\S]*attendance_records[\s\S]*This view only shows local activity readiness[\s\S]*does not create activities, attendance, notices, payment steps, evidence, trust records, money movement, or private member records/,
-  "Community Domain dashboard Structure lane must show read-only node activity planning without implying event/meeting/class/service/travel/paid-activity/dues/attendance/reminder/notification/payment/evidence writes, TrustSlips, Trust Passport entries, marketplace/finance records, money movement, or private activity exposure.",
+  /Unit activity map[\s\S]*scheduled_activities[\s\S]*paid_activities[\s\S]*attendance_records[\s\S]*local activity snapshot only[\s\S]*does not create activities, attendance, payment steps, trust records, or private member data/,
+  "Community Domain dashboard Structure lane must keep node activity public copy short while preserving activity, payment, trust, and privacy boundaries.",
   { frontend: true }
 );
 
@@ -520,8 +562,8 @@ assertContains(
 
 assertContains(
   "src/pages/communityDomainDashboard/NodeProjectionGroups.tsx",
-  /Unit trust map[\s\S]*local_trust_ready[\s\S]*review_records[\s\S]*active_evidence_records[\s\S]*Trust records[\s\S]*trustslips[\s\S]*This view only shows local trust readiness[\s\S]*does not upload evidence, publish proof, create trust records, move money, create records, or expose private member records/,
-  "Community Domain dashboard must show read-only node trust planning without implying evidence upload, storage exposure, credentials, TrustSlips, Trust Passport writes, proof publication, legal verification, money movement, finance/marketplace records, or private activity exposure.",
+  /Unit trust map[\s\S]*local_trust_ready[\s\S]*review_records[\s\S]*active_evidence_records[\s\S]*Trust records[\s\S]*trustslips[\s\S]*local trust snapshot only[\s\S]*does not publish proof, create trust records, move money, or expose private member data/,
+  "Community Domain dashboard must keep node trust public copy short while preserving proof, trust-record, money, and privacy boundaries.",
   { frontend: true }
 );
 
@@ -562,29 +604,29 @@ assertContains(
 
 assertContains(
   "src/pages/communityDomainDashboard/NodeProjectionGroups.tsx",
-  /Unit participation map[\s\S]*active_node_memberships[\s\S]*unplaced_domain_members[\s\S]*multi_node_members[\s\S]*This view only shows member placement readiness[\s\S]*does not create invites, add or place members, assign roles, create a separate community, expose rosters, create records, or expose private member records/,
-  "Community Domain dashboard Members lane must show read-only node participation planning without implying invite/member/placement/role writes, social Community creation, roster exposure, marketplace/finance records, TrustSlips, Trust Passport writes, or private activity exposure.",
+  /Unit participation map[\s\S]*active_node_memberships[\s\S]*unplaced_domain_members[\s\S]*multi_node_members[\s\S]*member-placement snapshot only[\s\S]*does not invite, add, place, or expose members/,
+  "Community Domain dashboard Members lane must keep node participation public copy short while preserving member-placement and roster boundaries.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/communityDomainDashboard/NodeProjectionGroups.tsx",
-  /Unit service map[\s\S]*Service options[\s\S]*template_module_count[\s\S]*local_services_ready[\s\S]*live_service_records[\s\S]*vault_links[\s\S]*This view only shows local service readiness[\s\S]*does not turn on services, save settings, activate billing, grant permissions, create events, shops, vault links, records, or expose private member records/,
-  "Community Domain dashboard must show read-only node service planning without implying module/settings/billing/permission/event/notification/shop/vault/marketplace/finance writes, TrustSlips, Trust Passport writes, or private activity exposure.",
+  /Unit service map[\s\S]*Service options[\s\S]*template_module_count[\s\S]*local_services_ready[\s\S]*live_service_records[\s\S]*vault_links[\s\S]*local service snapshot only[\s\S]*does not turn on services, grant permissions, activate billing, or expose private member data/,
+  "Community Domain dashboard must keep node service public copy short while preserving service, permission, billing, and privacy boundaries.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/communityDomainDashboard/NodeProjectionGroups.tsx",
-  /Unit privacy map[\s\S]*member_visible[\s\S]*Unit private[\s\S]*node_private[\s\S]*public_review_needed[\s\S]*cross_domain_shares[\s\S]*This view only shows local privacy readiness[\s\S]*does not change permissions, publish hierarchy, expose members, rosters, evidence, protected storage, public pages, institutional records, or private member records/,
-  "Community Domain dashboard must show read-only node privacy planning without implying permission changes, hierarchy publication, member/node/evidence/storage exposure, public pages, institutional sharing, TrustSlips, Trust Passport writes, or private activity exposure.",
+  /Unit privacy map[\s\S]*member_visible[\s\S]*Unit private[\s\S]*node_private[\s\S]*public_review_needed[\s\S]*cross_domain_shares[\s\S]*local privacy snapshot only[\s\S]*does not change access, publish rosters, or expose protected records/,
+  "Community Domain dashboard must keep node privacy public copy short while preserving access, roster, and protected-record boundaries.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/communityDomainDashboard/NodeProjectionGroups.tsx",
-  /Unit analytics map[\s\S]*local_analytics_ready[\s\S]*review_records[\s\S]*active_evidence_records[\s\S]*Marketplace signals[\s\S]*marketplace_metrics[\s\S]*This view only shows local analytics readiness[\s\S]*does not create tracking records, reports, dashboards, marketplace or finance signals, trust records, or expose private member records/,
-  "Community Domain dashboard must show read-only node analytics planning without implying telemetry, reports, live dashboards, marketplace/finance metrics, storage-key exposure, Trust Passport writes, TrustSlips, or private activity exposure.",
+  /Unit analytics map[\s\S]*local_analytics_ready[\s\S]*review_records[\s\S]*active_evidence_records[\s\S]*Marketplace signals[\s\S]*marketplace_metrics[\s\S]*local analytics snapshot only[\s\S]*does not create reports, tracking, finance signals, or private member data/,
+  "Community Domain dashboard must keep node analytics public copy short while preserving report, tracking, finance, and privacy boundaries.",
   { frontend: true }
 );
 
@@ -597,43 +639,43 @@ assertContains(
 
 assertContains(
   "src/pages/communityDomainDashboard/NodeProjectionGroups.tsx",
-  /Unit boundary map[\s\S]*child_domain_candidate[\s\S]*affiliate_review_needed[\s\S]*public_urls_published[\s\S]*This view only shows domain-boundary readiness[\s\S]*does not create child domains, affiliate links, public URLs, billing changes, hierarchy splits, member transfers, legal verification, records, or private member records/,
-  "Community Domain dashboard Structure lane must show read-only node domain-boundary planning without implying child-domain creation, affiliate links, URL publication, billing, hierarchy splits, member transfer, legal verification, marketplace/finance records, TrustSlips, Trust Passport writes, or private activity exposure.",
+  /Unit boundary map[\s\S]*child_domain_candidate[\s\S]*affiliate_review_needed[\s\S]*public_urls_published[\s\S]*boundary snapshot only[\s\S]*does not create child domains, publish links, move members, or expose private member data/,
+  "Community Domain dashboard Structure lane must keep node boundary public copy short while preserving child-domain, link, member-transfer, and privacy boundaries.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/communityDomainDashboard/NodeProjectionGroups.tsx",
-  /Unit evidence authority map[\s\S]*local_evidence_authority_ready[\s\S]*needs_local_evidence_issuer[\s\S]*public_evidence_review_needed[\s\S]*credentials_issued[\s\S]*This view only shows local evidence authority[\s\S]*does not upload or verify evidence, publish proof, issue credentials, create records, verify legal authority, or expose private member records/,
-  "Community Domain dashboard must show read-only node evidence-authority planning without implying evidence upload/verification/publication, storage or review payload exposure, credentials, TrustSlips, Trust Passport writes, marketplace/finance records, legal verification, or private activity exposure.",
+  /Unit evidence authority map[\s\S]*local_evidence_authority_ready[\s\S]*needs_local_evidence_issuer[\s\S]*public_evidence_review_needed[\s\S]*credentials_issued[\s\S]*local evidence-authority snapshot only[\s\S]*does not upload evidence, issue proof, or expose private member data/,
+  "Community Domain dashboard must keep node evidence-authority public copy short while preserving evidence, proof, and privacy boundaries.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/communityDomainDashboard/NodeProjectionGroups.tsx",
-  /Unit communication map[\s\S]*local_communication_ready[\s\S]*public_notice_review_needed[\s\S]*notices_created[\s\S]*notifications_sent[\s\S]*This view only shows local communication readiness[\s\S]*does not create notices, send messages, publish announcements, schedule events, expose member lists, create records, or expose private member records/,
-  "Community Domain dashboard must show read-only node communication planning without implying notices, notifications, announcements, meetings, events, reminders, emergency notices, member-list exposure, marketplace/finance records, TrustSlips, Trust Passport writes, or private activity exposure.",
+  /Unit communication map[\s\S]*local_communication_ready[\s\S]*public_notice_review_needed[\s\S]*notices_created[\s\S]*notifications_sent[\s\S]*local communication snapshot only[\s\S]*does not send messages, publish notices, or expose member lists/,
+  "Community Domain dashboard must keep node communication public copy short while preserving message, notice, and member-list boundaries.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/communityDomainDashboard/NodeProjectionGroups.tsx",
-  /Unit vault map[\s\S]*local_vault_ready[\s\S]*active_evidence_records[\s\S]*needs_vault_steward[\s\S]*Protected storage[\s\S]*storage_keys_exposed[\s\S]*This view only shows local vault readiness[\s\S]*does not upload or download files, create vault links, grant permissions, expose protected storage or member lists, publish proof, create records, or expose private member records/,
-  "Community Domain dashboard must show read-only node vault planning without implying file upload/download, vault links, permission grants, storage/member exposure, external readers, proof publishing, TrustSlips, Trust Passport writes, marketplace/finance records, or private activity exposure.",
+  /Unit vault map[\s\S]*local_vault_ready[\s\S]*active_evidence_records[\s\S]*needs_vault_steward[\s\S]*Protected storage[\s\S]*storage_keys_exposed[\s\S]*local vault snapshot only[\s\S]*does not move files, grant access, publish proof, or expose protected storage/,
+  "Community Domain dashboard must keep node vault public copy short while preserving file, access, proof, and protected-storage boundaries.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/communityDomainDashboard/NodeProjectionGroups.tsx",
-  /Unit scheduled activity map[\s\S]*local_schedule_ready[\s\S]*attendance_records[\s\S]*payment_instructions_created[\s\S]*This view only shows local schedule readiness[\s\S]*does not create events, calendars, attendance, reminders, notifications, payment steps, evidence, records, or private member records/,
-  "Community Domain dashboard Structure lane must show read-only node scheduled activity planning without implying event/meeting/calendar/attendance/reminder/notification/dues/ticket/payment/evidence writes, TrustSlips, Trust Passport writes, marketplace/finance records, or private activity exposure.",
+  /Unit scheduled activity map[\s\S]*local_schedule_ready[\s\S]*attendance_records[\s\S]*payment_instructions_created[\s\S]*local schedule snapshot only[\s\S]*does not create events, reminders, attendance, payment steps, or private member data/,
+  "Community Domain dashboard Structure lane must keep node schedule public copy short while preserving event, attendance, payment, and privacy boundaries.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/communityDomainDashboard/NodeProjectionGroups.tsx",
-  /Unit paid activity map[\s\S]*local_paid_activity_ready[\s\S]*Payment steps[\s\S]*payment_instructions_created[\s\S]*ledger_entries_written[\s\S]*This view only shows local payment readiness[\s\S]*does not create dues, invoices, payment steps, receipts, ledger entries, loans, money movement, trust records, or private member records/,
-  "Community Domain dashboard Structure lane must show read-only node paid activity planning without implying dues/levy/ticket/travel-fee/contribution/invoice/payment/receipt/bank-match/ledger writes, money movement, loans, TrustSlips, Trust Passport writes, marketplace/finance records, or private activity exposure.",
+  /Unit paid activity map[\s\S]*local_paid_activity_ready[\s\S]*Payment steps[\s\S]*payment_instructions_created[\s\S]*ledger_entries_written[\s\S]*local payment snapshot only[\s\S]*does not create dues, receipts, ledger entries, loans, or money movement/,
+  "Community Domain dashboard Structure lane must keep node paid-activity public copy short while preserving dues, receipt, ledger, loan, and money boundaries.",
   { frontend: true }
 );
 

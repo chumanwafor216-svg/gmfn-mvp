@@ -58,8 +58,7 @@ function statusBadge(status: unknown): React.CSSProperties {
     text.includes("not") ||
     text.includes("needs") ||
     text.includes("pending") ||
-    text.includes("optional") ||
-    text.includes("read only");
+    text.includes("optional");
   const danger = text.includes("suspended") || text.includes("expired") || text.includes("closed");
   const palette = danger
     ? { bg: "rgba(153,27,27,0.10)", color: "#991B1B", border: "rgba(153,27,27,0.20)" }
@@ -113,7 +112,7 @@ export default function CommunityDomainSetupIntelligenceCards({
               ? `${countValue(setupReadiness.ready_total)} of ${countValue(
                   setupReadiness.total
                 )} checks ready`
-              : "Readiness is not loaded"}
+              : "Readiness is not available yet"}
           </h2>
           <div style={helperText()}>
             {isBaseReadinessLoading && !setupReadiness
@@ -131,7 +130,7 @@ export default function CommunityDomainSetupIntelligenceCards({
                   key={cleanText(item.lane_key, cleanText(item.label, "setup-check"))}
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "minmax(0, 1fr) auto",
+                    gridTemplateColumns: "minmax(0, 1fr)",
                     gap: 10,
                     alignItems: "center",
                     borderRadius: 14,
@@ -182,7 +181,7 @@ export default function CommunityDomainSetupIntelligenceCards({
               ? `${countValue(setupPlan.completed_steps)} of ${countValue(
                   visibleSetupPlanSteps.length
                 )} steps complete`
-              : "Setup plan is not loaded"}
+              : "Setup plan is not available yet"}
           </h2>
           <div style={helperText()}>
             {isBaseReadinessLoading && !setupPlan
@@ -205,7 +204,7 @@ export default function CommunityDomainSetupIntelligenceCards({
                     key={cleanText(step.step_key, cleanText(step.label, "setup-step"))}
                     style={{
                       display: "grid",
-                      gridTemplateColumns: "minmax(0, 1fr) auto",
+                      gridTemplateColumns: "minmax(0, 1fr)",
                       gap: 10,
                       alignItems: "center",
                       borderRadius: 14,
@@ -234,8 +233,8 @@ export default function CommunityDomainSetupIntelligenceCards({
                           : "This step still needs owner/admin review before completion is relied on."}
                       </span>
                     </span>
-                    <span style={statusBadge(step.requires_admin ? "admin guided" : "view only")}>
-                      {step.requires_admin ? "Admin" : "View only"}
+                    <span style={statusBadge(step.requires_admin ? "admin guided" : "planning only")}>
+                      {step.requires_admin ? "Admin" : "Planning only"}
                     </span>
                   </div>
                 );

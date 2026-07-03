@@ -179,7 +179,7 @@ const SERVICE_DETAIL_OPTIONS: Array<{
   {
     key: "boundaries",
     label: "Boundaries",
-    note: "Check exchange, privacy, configuration, compliance, and appeal boundaries.",
+    note: "Check exchange, privacy, setup, compliance, and appeal boundaries.",
   },
   {
     key: "trust",
@@ -2328,7 +2328,7 @@ export default function CommunityDomainDashboardPage() {
                       {billingIsActive
                         ? "Quote details remain available for reference, but this lane is no longer asking for a quote before setup continues."
                         : "Quote details are still required before a payment step exists."}{" "}
-                      Renewal period and payment step are not configured here.
+                      Renewal period and payment step are not set up here.
                     </div>
                     <div style={{ ...helperText(), marginTop: 7 }}>
                       Package quote:{" "}

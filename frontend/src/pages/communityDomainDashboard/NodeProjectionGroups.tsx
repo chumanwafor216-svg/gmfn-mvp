@@ -416,7 +416,7 @@ export default function CommunityDomainNodeProjectionGroups(props: ProjectionGro
           defaultNextStep:
             "Keep evidence authority tied to local issuers, policy, and reviewed signals.",
           boundary:
-            "This view only shows local evidence authority. It does not upload or verify evidence, publish proof, issue credentials, create records, verify legal authority, or expose private member records.",
+            "Use this as a local evidence-authority snapshot only. It does not upload evidence, issue proof, or expose private member data.",
         })}
 
         {renderNodeProjectionCard({
@@ -455,7 +455,7 @@ export default function CommunityDomainNodeProjectionGroups(props: ProjectionGro
           rowFallback: "Trust unit",
           defaultNextStep: "Keep trust evidence tied to governed local units.",
           boundary:
-            "This view only shows local trust readiness. It does not upload evidence, publish proof, create trust records, move money, create records, or expose private member records.",
+            "Use this as a local trust snapshot only. It does not publish proof, create trust records, move money, or expose private member data.",
         })}
       </>
     );
@@ -515,7 +515,7 @@ export default function CommunityDomainNodeProjectionGroups(props: ProjectionGro
           rowFallback: "Autonomy unit",
           defaultNextStep: "Keep local authority tied to existing governance.",
           boundary:
-            "This view only shows local authority readiness. It does not grant authority, assign roles, change structure, activate billing, move money, publish proof, create records, or expose private member records.",
+            "Use this as a local authority snapshot only. It does not grant roles, change structure, activate billing, or expose private member data.",
         })}
 
         {renderNodeProjectionCard({
@@ -552,7 +552,7 @@ export default function CommunityDomainNodeProjectionGroups(props: ProjectionGro
           rowFallback: "Economic unit",
           defaultNextStep: "Keep commerce and finance tied to governed local units.",
           boundary:
-            "This view only shows local economy readiness. It does not create shops, listings, demand, Spotlight, vault links, payment steps, loans, finance records, separate domains, proof, or private member records.",
+            "Use this as a local economy snapshot only. It does not create shops, loans, finance records, payment steps, or private member data.",
         })}
 
         {renderNodeProjectionCard({
@@ -570,7 +570,7 @@ export default function CommunityDomainNodeProjectionGroups(props: ProjectionGro
           unloaded:
             "GSN could not load the unit activity map for this Community Domain.",
           metrics: [
-            ["Template", cleanText(props.nodeActivityMap?.template?.template_key, "not loaded")],
+            ["Template", cleanText(props.nodeActivityMap?.template?.template_key, "not available yet")],
             ["Ready units", countValue(nodeActivityCounts.local_activity_ready)],
             [
               "Participants",
@@ -589,7 +589,7 @@ export default function CommunityDomainNodeProjectionGroups(props: ProjectionGro
           rowFallback: "Activity unit",
           defaultNextStep: "Keep activity capture tied to governed local units.",
           boundary:
-            "This view only shows local activity readiness. It does not create activities, attendance, notices, payment steps, evidence, trust records, money movement, or private member records.",
+            "Use this as a local activity snapshot only. It does not create activities, attendance, payment steps, trust records, or private member data.",
         })}
       </>
     );
@@ -646,7 +646,7 @@ export default function CommunityDomainNodeProjectionGroups(props: ProjectionGro
       rowFallback: "Domain-boundary unit",
       defaultNextStep: "Keep operating units inside the parent domain until review is complete.",
       boundary:
-        "This view only shows domain-boundary readiness. It does not create child domains, affiliate links, public URLs, billing changes, hierarchy splits, member transfers, legal verification, records, or private member records.",
+        "Use this as a boundary snapshot only. It does not create child domains, publish links, move members, or expose private member data.",
     });
   }
 
@@ -701,7 +701,7 @@ export default function CommunityDomainNodeProjectionGroups(props: ProjectionGro
       rowFallback: "Participation unit",
       defaultNextStep: "Keep member placement tied to the nearest responsible unit.",
       boundary:
-        "This view only shows member placement readiness. It does not create invites, add or place members, assign roles, create a separate community, expose rosters, create records, or expose private member records.",
+        "Use this as a member-placement snapshot only. It does not invite, add, place, or expose members.",
     });
   }
 
@@ -774,7 +774,7 @@ export default function CommunityDomainNodeProjectionGroups(props: ProjectionGro
           rowFallback: "Scheduled activity unit",
           defaultNextStep: "Keep meetings, events, and attendance tied to governed local units.",
           boundary:
-            "This view only shows local schedule readiness. It does not create events, calendars, attendance, reminders, notifications, payment steps, evidence, records, or private member records.",
+            "Use this as a local schedule snapshot only. It does not create events, reminders, attendance, payment steps, or private member data.",
         })}
 
         {renderNodeProjectionCard({
@@ -817,7 +817,7 @@ export default function CommunityDomainNodeProjectionGroups(props: ProjectionGro
           defaultNextStep:
             "Keep dues, fees, and contributions as planning until finance controls exist.",
           boundary:
-            "This view only shows local payment readiness. It does not create dues, invoices, payment steps, receipts, ledger entries, loans, money movement, trust records, or private member records.",
+            "Use this as a local payment snapshot only. It does not create dues, receipts, ledger entries, loans, or money movement.",
         })}
       </ProjectionGroup>
     );
@@ -898,7 +898,7 @@ export default function CommunityDomainNodeProjectionGroups(props: ProjectionGro
         rowFallback: "Service unit",
         defaultNextStep: "Keep local services tied to governed operating units.",
         boundary:
-          "This view only shows local service readiness. It does not turn on services, save settings, activate billing, grant permissions, create events, shops, vault links, records, or expose private member records.",
+          "Use this as a local service snapshot only. It does not turn on services, grant permissions, activate billing, or expose private member data.",
       })}
 
       {renderNodeProjectionCard({
@@ -929,7 +929,7 @@ export default function CommunityDomainNodeProjectionGroups(props: ProjectionGro
         rowFallback: "Privacy unit",
         defaultNextStep: "Keep local visibility private until the right review path exists.",
         boundary:
-          "This view only shows local privacy readiness. It does not change permissions, publish hierarchy, expose members, rosters, evidence, protected storage, public pages, institutional records, or private member records.",
+          "Use this as a local privacy snapshot only. It does not change access, publish rosters, or expose protected records.",
       })}
 
       {renderNodeProjectionCard({
@@ -976,7 +976,7 @@ export default function CommunityDomainNodeProjectionGroups(props: ProjectionGro
         rowFallback: "Analytics unit",
         defaultNextStep: "Keep local analytics tied to governed member and evidence signals.",
         boundary:
-          "This view only shows local analytics readiness. It does not create tracking records, reports, dashboards, marketplace or finance signals, trust records, or expose private member records.",
+          "Use this as a local analytics snapshot only. It does not create reports, tracking, finance signals, or private member data.",
       })}
 
       {renderNodeProjectionCard({
@@ -1021,7 +1021,7 @@ export default function CommunityDomainNodeProjectionGroups(props: ProjectionGro
         defaultNextStep:
           "Keep notices tied to governed local communicator and audience signals.",
         boundary:
-          "This view only shows local communication readiness. It does not create notices, send messages, publish announcements, schedule events, expose member lists, create records, or expose private member records.",
+          "Use this as a local communication snapshot only. It does not send messages, publish notices, or expose member lists.",
       })}
 
       {renderNodeProjectionCard({
@@ -1063,7 +1063,7 @@ export default function CommunityDomainNodeProjectionGroups(props: ProjectionGro
         defaultNextStep:
           "Keep controlled documents tied to local steward, audience, policy, and reviewed signals.",
         boundary:
-          "This view only shows local vault readiness. It does not upload or download files, create vault links, grant permissions, expose protected storage or member lists, publish proof, create records, or expose private member records.",
+          "Use this as a local vault snapshot only. It does not move files, grant access, publish proof, or expose protected storage.",
       })}
     </ProjectionGroup>
   );
