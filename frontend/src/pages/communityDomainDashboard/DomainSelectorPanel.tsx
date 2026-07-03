@@ -1,6 +1,7 @@
 import React from "react";
 import { StableCtaLink } from "../../components/StableButton";
 import { APP_ROUTES } from "../../lib/appRoutes";
+import { humanStatus } from "./statusLanguage";
 
 type DomainSelectorPanelProps = {
   domainItems?: any[];
@@ -12,7 +13,7 @@ function cleanText(value: unknown, fallback = ""): string {
 }
 
 function compactStatus(value: unknown): string {
-  return cleanText(value, "not recorded").replace(/_/g, " ");
+  return humanStatus(value);
 }
 
 function softCard(): React.CSSProperties {
@@ -46,7 +47,7 @@ function helperText(): React.CSSProperties {
 }
 
 function statusBadge(status: unknown): React.CSSProperties {
-  const text = cleanText(status).toLowerCase();
+  const text = compactStatus(status).toLowerCase();
   const warning =
     text.includes("draft") ||
     text.includes("quote") ||

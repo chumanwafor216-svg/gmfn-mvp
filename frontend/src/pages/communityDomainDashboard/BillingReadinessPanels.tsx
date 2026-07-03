@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { StableButton } from "../../components/StableButton";
+import { humanStatus } from "./statusLanguage";
 
 type BillingReadinessPanelsProps = {
   subscriptionLifecycle?: any;
@@ -30,14 +31,7 @@ function cleanText(value: unknown, fallback = ""): string {
 }
 
 function compactStatus(value: unknown): string {
-  const normalized = cleanText(value, "not recorded").replace(/_/g, " ");
-  if (/not\s+created\s+in\s+this\s+slice/i.test(normalized)) {
-    return "not created yet";
-  }
-  if (/not\s+recorded\s+in\s+this\s+slice/i.test(normalized)) {
-    return "not recorded yet";
-  }
-  return normalized;
+  return humanStatus(value);
 }
 
 function countValue(value: unknown): string {
@@ -95,7 +89,7 @@ function helperText(): React.CSSProperties {
 }
 
 function statusBadge(status: unknown): React.CSSProperties {
-  const value = String(status || "").toLowerCase();
+  const value = compactStatus(status).toLowerCase();
   const positive =
     value.includes("ready") ||
     value.includes("active") ||

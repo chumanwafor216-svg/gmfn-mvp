@@ -532,7 +532,7 @@ function publicKeyChip(kind: "category" | "tone" = "category"): React.CSSPropert
     color: kind === "category" ? "#12314D" : "#76591D",
     fontSize: 10,
     fontWeight: 1000,
-    letterSpacing: 0.7,
+    letterSpacing: 0,
     textTransform: "uppercase",
     whiteSpace: "nowrap",
   };

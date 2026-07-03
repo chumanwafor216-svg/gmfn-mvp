@@ -103,6 +103,8 @@ const DOMAIN_ENGINE_POINTS = [
   },
 ];
 
+const COMMUNITY_DOMAIN_PURCHASE_COMPACT_WIDTH = 980;
+
 function pageShell(): React.CSSProperties {
   return {
     minHeight: "100svh",
@@ -135,6 +137,9 @@ function glassCard(): React.CSSProperties {
 
 function whiteCard(): React.CSSProperties {
   return {
+    width: "100%",
+    minWidth: 0,
+    boxSizing: "border-box",
     borderRadius: 22,
     background:
       "linear-gradient(180deg, rgba(248,251,255,0.99) 0%, rgba(232,239,247,0.97) 100%)",
@@ -161,8 +166,10 @@ function labelText(onDark = true): React.CSSProperties {
     fontSize: 12,
     color: onDark ? "#F3D06A" : "#526B83",
     fontWeight: 900,
-    letterSpacing: 2.6,
+    letterSpacing: 0,
     textTransform: "uppercase",
+    overflowWrap: "normal",
+    wordBreak: "normal",
   };
 }
 
@@ -210,6 +217,7 @@ function statusPill(kind: "ready" | "blocked" | "waiting"): React.CSSProperties 
   return {
     display: "inline-flex",
     alignItems: "center",
+    justifyContent: "center",
     minHeight: 30,
     padding: "6px 10px",
     borderRadius: 999,
@@ -218,6 +226,12 @@ function statusPill(kind: "ready" | "blocked" | "waiting"): React.CSSProperties 
     border: `1px solid ${palette.border}`,
     fontSize: 12,
     fontWeight: 900,
+    lineHeight: 1.15,
+    maxWidth: "100%",
+    whiteSpace: "normal",
+    textAlign: "center",
+    overflowWrap: "normal",
+    wordBreak: "normal",
   };
 }
 
@@ -309,7 +323,7 @@ export default function CommunityDomainPurchasePage() {
   const restoredDraft = useMemo(() => readPurchaseDraftSnapshot(), []);
   const [isCompact, setIsCompact] = useState(() => {
     if (typeof window === "undefined") return false;
-    return window.innerWidth <= 860;
+    return window.innerWidth <= COMMUNITY_DOMAIN_PURCHASE_COMPACT_WIDTH;
   });
   const [organizationName, setOrganizationName] = useState(
     restoredDraft?.organizationName || ""
@@ -370,7 +384,7 @@ export default function CommunityDomainPurchasePage() {
     if (typeof window === "undefined") return;
 
     function handleResize() {
-      setIsCompact(window.innerWidth <= 860);
+      setIsCompact(window.innerWidth <= COMMUNITY_DOMAIN_PURCHASE_COMPACT_WIDTH);
     }
 
     handleResize();
@@ -707,7 +721,7 @@ export default function CommunityDomainPurchasePage() {
                       gap: 6,
                     }}
                   >
-                    <div style={{ ...labelText(), letterSpacing: 1.4 }}>
+                    <div style={labelText()}>
                       {point.label}
                     </div>
                     <div
@@ -875,9 +889,9 @@ export default function CommunityDomainPurchasePage() {
               </div>
             </form>
 
-            <aside style={{ display: "grid", gap: 12 }}>
+            <aside style={{ display: "grid", gap: 12, minWidth: 0 }}>
               <div style={whiteCard()}>
-                <div style={{ display: "grid", gap: 10 }}>
+                <div style={{ display: "grid", gap: 10, minWidth: 0 }}>
                   <div style={labelText(false)}>Availability result</div>
                   <div style={statusPill(availabilityKind)}>
                     {availability
@@ -888,7 +902,15 @@ export default function CommunityDomainPurchasePage() {
                       ? "Loading templates"
                       : "Not checked"}
                   </div>
-                  <div style={helperText(false)}>
+                  <div
+                    style={{
+                      ...helperText(false),
+                      minWidth: 0,
+                      overflowWrap: "normal",
+                      wordBreak: "normal",
+                      hyphens: "none",
+                    }}
+                  >
                     {availability ? (
                       <>
                         Requested name:{" "}
@@ -913,12 +935,20 @@ export default function CommunityDomainPurchasePage() {
               </div>
 
               <div style={whiteCard()}>
-                <div style={{ display: "grid", gap: 10 }}>
+                <div style={{ display: "grid", gap: 10, minWidth: 0 }}>
                   <div style={labelText(false)}>Draft and quote state</div>
                   <div style={statusPill(draftResult ? "ready" : "waiting")}>
                     {draftResult ? "Draft created" : "Waiting for owner"}
                   </div>
-                  <div style={helperText(false)}>
+                  <div
+                    style={{
+                      ...helperText(false),
+                      minWidth: 0,
+                      overflowWrap: "normal",
+                      wordBreak: "normal",
+                      hyphens: "none",
+                    }}
+                  >
                     {draftResult?.community_domain ? (
                       <>
                         Draft ID: <strong>{draftResult.community_domain.id}</strong>
@@ -933,7 +963,15 @@ export default function CommunityDomainPurchasePage() {
                     )}
                   </div>
                   {quoteResult ? (
-                    <div style={helperText(false)}>
+                    <div
+                      style={{
+                        ...helperText(false),
+                        minWidth: 0,
+                        overflowWrap: "normal",
+                        wordBreak: "normal",
+                        hyphens: "none",
+                      }}
+                    >
                       {quoteResult.error ? (
                         <>Package quote: {quoteResult.error}</>
                       ) : (
@@ -996,13 +1034,22 @@ export default function CommunityDomainPurchasePage() {
               </div>
 
               <div style={whiteCard()}>
-                <div style={{ display: "grid", gap: 10 }}>
+                <div style={{ display: "grid", gap: 10, minWidth: 0 }}>
                   <div style={labelText(false)}>Payment instruction</div>
-                  <div style={statusPill("waiting")}>Not generated here</div>
-                  <div style={helperText(false)}>
-                    Payment instruction, payment confirmation, and domain activation are
-                    separate steps. This screen will not claim the institution is active or
-                    verified.
+                  <div style={{ ...statusPill("waiting"), justifySelf: "start" }}>
+                    Not generated here
+                  </div>
+                  <div
+                    style={{
+                      ...helperText(false),
+                      minWidth: 0,
+                      overflowWrap: "normal",
+                      wordBreak: "normal",
+                      hyphens: "none",
+                    }}
+                  >
+                    Payment instructions, confirmation, and activation are separate.
+                    This page will not claim the institution is active or verified.
                   </div>
                 </div>
               </div>

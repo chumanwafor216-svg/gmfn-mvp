@@ -140,6 +140,18 @@ assertContains(
   "My GSN and I hero, guide, route, and settings actions must remain traceable."
 );
 
+assertContains(
+  "src/pages/MyGMFNAndIPage.tsx",
+  /label: "Marketplace"[\s\S]*?debugId: "my-gmfn\.route\.marketplace"[\s\S]*?label: "Finance"[\s\S]*?detail: "Money records and payment evidence\."[\s\S]*?icon: "financeInstitution"[\s\S]*?to: routes\.finance[\s\S]*?debugId: "my-gmfn\.route\.finance"[\s\S]*?label: "Loans & Support"/,
+  "My GSN and I route list must keep Finance visible between Marketplace and Loans & Support."
+);
+
+assertContains(
+  "src/pages/MyGMFNAndIPage.tsx",
+  /htmlFor="my-gmfn-capability-select"[\s\S]*?Choose capability[\s\S]*?<select[\s\S]*?id="my-gmfn-capability-select"[\s\S]*?aria-label="Choose GSN capability"[\s\S]*?GMFN_CAPABILITIES\.map/,
+  "My GSN and I capability guide must keep the dropdown selector above the capability cards."
+);
+
 assertNotContains(
   "src/pages/MyGMFNAndIPage.tsx",
   /Choose the route that matches|protected routes|welcome route/,

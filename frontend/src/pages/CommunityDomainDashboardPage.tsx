@@ -70,6 +70,7 @@ import {
   reviseCommunityDomainActionReview,
 } from "../lib/api";
 import { APP_ROUTES } from "../lib/appRoutes";
+import { humanStatus } from "./communityDomainDashboard/statusLanguage";
 
 const CommunityDomainNodeProjectionGroups = lazy(
   () => import("./communityDomainDashboard/NodeProjectionGroups")
@@ -336,7 +337,7 @@ function activeMembershipRecoveryMessage(): string {
 }
 
 function compactStatus(value: unknown): string {
-  return cleanText(value, "not recorded").replace(/_/g, " ");
+  return humanStatus(value);
 }
 
 function remainingAccessApprovalMessage(review: ActionReviewItem | null | undefined): string {

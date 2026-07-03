@@ -1,5 +1,6 @@
 import React from "react";
 import { StableButton } from "../../components/StableButton";
+import { humanStatus } from "./statusLanguage";
 
 type DomainLane = {
   lane_key?: string;
@@ -20,7 +21,7 @@ function cleanText(value: unknown, fallback = ""): string {
 }
 
 function compactStatus(value: unknown): string {
-  return cleanText(value, "not recorded").replace(/_/g, " ");
+  return humanStatus(value);
 }
 
 function countValue(value: unknown): string {
@@ -59,7 +60,7 @@ function sectionLabel(): React.CSSProperties {
 }
 
 function statusBadge(status: unknown): React.CSSProperties {
-  const text = cleanText(status).toLowerCase();
+  const text = compactStatus(status).toLowerCase();
   const warning =
     text.includes("draft") ||
     text.includes("quote") ||

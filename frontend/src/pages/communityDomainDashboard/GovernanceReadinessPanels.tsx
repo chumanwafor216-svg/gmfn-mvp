@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { StableButton } from "../../components/StableButton";
+import { humanStatus } from "./statusLanguage";
 
 type GovernanceReadinessPanelsProps = {
   isAdmin?: boolean;
@@ -40,7 +41,7 @@ function cleanText(value: unknown, fallback = ""): string {
 }
 
 function compactStatus(value: unknown): string {
-  return cleanText(value, "not recorded").replace(/_/g, " ");
+  return humanStatus(value);
 }
 
 function countValue(value: unknown): string {
@@ -97,7 +98,7 @@ function helperText(): React.CSSProperties {
 }
 
 function statusBadge(status: unknown): React.CSSProperties {
-  const value = String(status || "").toLowerCase();
+  const value = compactStatus(status).toLowerCase();
   const positive =
     value.includes("ready") ||
     value.includes("active") ||
@@ -126,6 +127,9 @@ function statusBadge(status: unknown): React.CSSProperties {
       positive ? "rgba(21,87,58,0.16)" : attention ? "rgba(122,75,0,0.18)" : "rgba(37,65,95,0.14)"
     }`,
     textTransform: "capitalize",
+    maxWidth: "100%",
+    whiteSpace: "normal",
+    textAlign: "center",
   };
 }
 
@@ -171,13 +175,14 @@ function statusRow(
       key={key}
       style={{
         display: "grid",
-        gridTemplateColumns: "minmax(0, 1fr) auto",
-        gap: 10,
-        alignItems: "center",
+        gridTemplateColumns: "minmax(0, 1fr)",
+        gap: 8,
+        alignItems: "start",
         borderRadius: 14,
         border: "1px solid rgba(9,27,46,0.10)",
         background: "rgba(255,255,255,0.72)",
-        padding: "10px 10px 10px 12px",
+        padding: 12,
+        minWidth: 0,
       }}
     >
       <span style={{ minWidth: 0 }}>
@@ -194,7 +199,7 @@ function statusRow(
           {detail}
         </span>
       </span>
-      <span style={statusBadge(status)}>{compactStatus(status)}</span>
+      <span style={{ ...statusBadge(status), justifySelf: "start" }}>{compactStatus(status)}</span>
     </div>
   );
 }

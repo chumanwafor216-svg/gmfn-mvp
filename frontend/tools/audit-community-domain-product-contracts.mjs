@@ -132,18 +132,48 @@ assertNotContains(
   "src/pages/communityDomainDashboard/GovernanceReadinessPanels.tsx",
   "src/pages/communityDomainDashboard/IdentityReadinessPanels.tsx",
   "src/pages/communityDomainDashboard/LaneSelectorPanel.tsx",
+  "src/pages/communityDomainDashboard/MemberReadinessPanels.tsx",
   "src/pages/communityDomainDashboard/NodeProjectionGroups.tsx",
+  "src/pages/communityDomainDashboard/ServiceBoundaryPanels.tsx",
+  "src/pages/communityDomainDashboard/ServiceReadinessPanels.tsx",
   "src/pages/communityDomainDashboard/SetupIntelligenceCards.tsx",
   "src/pages/communityDomainDashboard/StructurePlanningPanels.tsx",
   "src/pages/communityDomainDashboard/StructurePreviewPanel.tsx",
+  "src/pages/communityDomainDashboard/TrustEvidenceReadinessPanels.tsx",
+  "src/pages/communityDomainDashboard/statusLanguage.ts",
 ].forEach((relativePath) => {
   assertNotContains(
     relativePath,
-    /letterSpacing:\s*(?:0\.[1-9][0-9]*|[1-9][0-9.]*)/,
+    /letterSpacing:\s*(?:"0\.[1-9][0-9]*em"|(?:0\.[1-9][0-9]*|[1-9][0-9.]*))/,
     "Community Domain surfaces must not use spaced-out micro-label typography.",
     { frontend: true }
   );
 });
+
+[
+  "src/pages/communityDomainDashboard/BillingReadinessPanels.tsx",
+  "src/pages/communityDomainDashboard/GovernanceReadinessPanels.tsx",
+  "src/pages/communityDomainDashboard/IdentityReadinessPanels.tsx",
+  "src/pages/communityDomainDashboard/MemberReadinessPanels.tsx",
+  "src/pages/communityDomainDashboard/ServiceBoundaryPanels.tsx",
+  "src/pages/communityDomainDashboard/ServiceReadinessPanels.tsx",
+  "src/pages/communityDomainDashboard/StructurePlanningPanels.tsx",
+  "src/pages/communityDomainDashboard/TrustEvidenceReadinessPanels.tsx",
+].forEach((relativePath) => {
+  assertNotContains(
+    relativePath,
+    /gridTemplateColumns: "minmax\(0, 1fr\) auto"/,
+    "Community Domain readiness status rows must stay stacked on phone instead of squeezing copy beside status pills.",
+    { frontend: true }
+  );
+});
+
+assertContains(
+  "src/pages/communityDomainDashboard/NodeProjectionGroups.tsx",
+  /function statusBadge[\s\S]*compactStatus\(status\)\.toLowerCase\(\)[\s\S]*gridTemplateColumns: "minmax\(0, 1fr\)"[\s\S]*justifySelf: "start"[\s\S]*gridTemplateColumns: "minmax\(0, 1fr\) auto"/,
+  "Community Domain node projection status rows must stay stacked while the projection-group header may keep its compact two-column disclosure layout.",
+  { frontend: true }
+);
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
@@ -195,9 +225,16 @@ assertContains(
 );
 
 assertContains(
+  "src/pages/communityDomainDashboard/statusLanguage.ts",
+  /connected: "not connected yet"[\s\S]*created: "not created yet"[\s\S]*recorded: "not recorded yet"[\s\S]*normalized\.match\(/,
+  "Community Domain status language helper must translate raw slice statuses before they reach user-facing panels.",
+  { frontend: true }
+);
+
+assertContains(
   "src/pages/communityDomainDashboard/BillingReadinessPanels.tsx",
-  /not\\s\+created\\s\+in\\s\+this\\s\+slice[\s\S]*return "not created yet"[\s\S]*not\\s\+recorded\\s\+in\\s\+this\\s\+slice[\s\S]*return "not recorded yet"[\s\S]*gridTemplateColumns: "minmax\(0, 1fr\)"[\s\S]*justifySelf: "start"/,
-  "Community Domain Billing readiness rows must stack phone text and show user-facing not-created/not-recorded statuses instead of squeezing copy beside maker-language status pills.",
+  /humanStatus[\s\S]*function compactStatus[\s\S]*return humanStatus\(value\)[\s\S]*gridTemplateColumns: "minmax\(0, 1fr\)"[\s\S]*justifySelf: "start"/,
+  "Community Domain Billing readiness rows must use shared human status language and stack phone text instead of squeezing copy beside status pills.",
   { frontend: true }
 );
 
@@ -826,6 +863,20 @@ assertContains(
 
 assertContains(
   "src/pages/communityDomainDashboard/StructurePlanningPanels.tsx",
+  /humanStatus[\s\S]*function compactStatus[\s\S]*return humanStatus\(value\)[\s\S]*gridTemplateColumns: "minmax\(0, 1fr\)"[\s\S]*justifySelf: "start"/,
+  "Community Domain Structure planning rows must use shared human status language and stack phone text instead of squeezing copy beside maker-language status pills.",
+  { frontend: true }
+);
+
+assertNotContains(
+  "src/pages/communityDomainDashboard/StructurePlanningPanels.tsx",
+  /statusBadge\("not_created_in_this_slice"\)|gridTemplateColumns: "minmax\(0, 1fr\) auto"/,
+  "Community Domain Structure planning rows must not pass raw slice statuses into visible badges or return to two-column phone rows.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/communityDomainDashboard/StructurePlanningPanels.tsx",
   /Rollout plan[\s\S]*primary_next_action[\s\S]*Current phase:[\s\S]*First units[\s\S]*rolloutPlanCounts\.first_level_units[\s\S]*Ready units[\s\S]*rolloutPlanCounts\.ready_units[\s\S]*Units needing attention[\s\S]*This view only shows rollout steps and units needing attention[\s\S]*does not\s+change structure, membership, authority, billing, public pages, marketplace\s+activity, money, or private evidence/,
   "Community Domain dashboard Structure lane must show the backend rollout plan as read-only institutional onboarding guidance without implying structure writes, invitations, placements, policy creation, billing, publishing, marketplace activity, social Community creation, money movement, or private evidence access.",
   { frontend: true }
@@ -1126,6 +1177,27 @@ assertNotContains(
   "src/pages/CommunityDomainPurchasePage.tsx",
   /backend status proves it/,
   "Community Domain purchase user copy must not expose builder-facing backend language.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainPurchasePage.tsx",
+  /COMMUNITY_DOMAIN_PURCHASE_COMPACT_WIDTH = 980[\s\S]*window\.innerWidth <= COMMUNITY_DOMAIN_PURCHASE_COMPACT_WIDTH[\s\S]*setIsCompact\(window\.innerWidth <= COMMUNITY_DOMAIN_PURCHASE_COMPACT_WIDTH\)/,
+  "Community Domain purchase page must use a phone-safe compact breakpoint before the status aside can squeeze card text into one-word columns.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainPurchasePage.tsx",
+  /aside style=\{\{ display: "grid", gap: 12, minWidth: 0 \}\}[\s\S]*overflowWrap: "normal"[\s\S]*wordBreak: "normal"[\s\S]*hyphens: "none"[\s\S]*Payment instructions, confirmation, and activation are separate/,
+  "Community Domain purchase payment/draft status cards must stay readable and avoid narrow word-stacking.",
+  { frontend: true }
+);
+
+assertNotContains(
+  "src/pages/CommunityDomainPurchasePage.tsx",
+  /letterSpacing:\s*(?:"0\.[1-9][0-9]*em"|(?:0\.[1-9][0-9]*|[1-9][0-9.]*))/,
+  "Community Domain purchase page must not use spaced-out micro-label typography.",
   { frontend: true }
 );
 

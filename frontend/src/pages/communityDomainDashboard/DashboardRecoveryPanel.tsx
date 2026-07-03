@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { StableButton, StableCtaLink } from "../../components/StableButton";
 import { APP_ROUTES } from "../../lib/appRoutes";
+import { humanStatus } from "./statusLanguage";
 
 type ActionReviewItem = {
   id?: number | string;
@@ -32,7 +33,7 @@ function cleanText(value: unknown, fallback = ""): string {
 }
 
 function compactStatus(value: unknown): string {
-  return cleanText(value, "not recorded").replace(/_/g, " ");
+  return humanStatus(value);
 }
 
 function numericCount(value: unknown): number | null {

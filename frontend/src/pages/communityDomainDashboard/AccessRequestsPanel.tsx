@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { StableButton } from "../../components/StableButton";
+import { humanStatus } from "./statusLanguage";
 
 type ActionReviewItem = {
   id?: number | string;
@@ -42,7 +43,7 @@ function cleanText(value: unknown, fallback = ""): string {
 }
 
 function compactStatus(value: unknown): string {
-  return cleanText(value, "not recorded").replace(/_/g, " ");
+  return humanStatus(value);
 }
 
 function numericCount(value: unknown): number | null {
