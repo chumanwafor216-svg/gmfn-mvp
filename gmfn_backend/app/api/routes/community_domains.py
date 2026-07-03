@@ -1792,7 +1792,7 @@ def _public_domain_entry_payload(domain: CommunityDomain) -> dict[str, Any]:
         "dashboard_path": f"/app/community-domain/{int(domain.id)}",
         "membership_request_route": f"/community-domains/{int(domain.id)}/membership-requests",
         "boundary": (
-            "Public-safe Community Domain lookup only. This does not expose "
+            "Public-safe Community Domain lookup only. This does not show "
             "member lists, private evidence, finance records, payment "
             "instructions, owner contact details, governance queue details, "
             "or verification proof. Opening the dashboard still requires active "
@@ -2216,7 +2216,7 @@ def _community_domain_module_scope_readiness_payload(
                     "enable services, activate billing, grant permissions, create "
                     "shops, create vault links, publish Spotlight, create events, "
                     "send notifications, create TrustSlips, write Trust Passport "
-                    "entries, or expose private member activity."
+                    "entries, or show private member activity."
                 ),
             }
         )
@@ -2313,7 +2313,7 @@ def _community_domain_module_scope_readiness_payload(
             "records, create demand records, publish Spotlight, create vault "
             "links, upload files, create meetings or events, send notifications, "
             "create activity groups, issue TrustSlips, write Trust Passport "
-            "entries, expose private member activity, or move money."
+            "entries, show private member activity, or move money."
         ),
     }
 
@@ -2415,7 +2415,7 @@ def _community_domain_economic_participation_payload(
                     "a marketplace, create a shop, publish listings, create demand, "
                     "place spotlight, create vault links, move money, create payment "
                     "instructions, create finance records, verify trust evidence, "
-                    "or expose private member activity."
+                    "or show private member activity."
                 ),
             }
         )
@@ -2556,7 +2556,7 @@ def _community_domain_network_presence_payload(
                     "public page, finalize a public URL, create outward links, "
                     "verify the domain, create marketplace exposure, create "
                     "Spotlight placement, create vault links, create a social "
-                    "Community bridge, or expose private member activity."
+                    "Community bridge, or show private member activity."
                 ),
             }
         )
@@ -2906,7 +2906,7 @@ def _community_domain_readiness_payload(
             "admin_visible": bool(can_admin),
             "boundary": (
                 "Read-only readiness item. This does not create records, activate "
-                "billing, verify authority, grant permissions, or expose private evidence."
+                "billing, verify authority, grant permissions, or show private evidence."
             ),
         }
 
@@ -3121,7 +3121,7 @@ def _community_domain_verification_requirements_payload(
                 "admin_visible": bool(can_admin),
                 "boundary": (
                     "Read-only verification requirement. This does not upload, "
-                    "store, accept, reject, verify, or expose evidence."
+                    "store, accept, reject, verify, or show evidence."
                 ),
             }
         )
@@ -3261,7 +3261,7 @@ def _community_domain_activation_requirements_payload(
                     "Read-only activation requirement. This does not create a "
                     "payment instruction, record payment, activate billing, "
                     "activate the Community Domain, verify authority, change "
-                    "members, create policy, or expose private evidence."
+                    "members, create policy, or show private evidence."
                 ),
             }
         )
@@ -3324,7 +3324,7 @@ def _community_domain_activation_requirements_payload(
             "Activation requirements are launch guidance for owner review. "
             "This view does not create a payment instruction, record "
             "payment, create an invoice, activate billing, activate the Community "
-            "Domain, verify authority, change members, create policy, or expose "
+            "Domain, verify authority, change members, create policy, or show "
             "private evidence."
         ),
     }
@@ -3983,7 +3983,7 @@ def _community_domain_dashboard_payload(
         "boundary": (
             "Dashboard summary only. This does not create a payment instruction, "
             "activate billing, activate the Community Domain, verify ownership, "
-            "expose private finance records, or expose private member evidence."
+            "show private finance records, or show private member evidence."
         ),
     }
     if can_admin:
@@ -4071,7 +4071,7 @@ def _community_domain_operating_map_payload(
                 "Read-only operating map lane. This does not create records, "
                 "change members, assign roles, create policy, decide reviews, "
                 "create payment instructions, activate billing, verify authority, "
-                "publish public presence, create marketplace activity, or expose "
+                "publish public presence, create marketplace activity, or show "
                 "private member evidence."
             ),
         }
@@ -4549,7 +4549,7 @@ def _community_domain_template_fit_payload(
             "not create nodes, add members, assign roles, create policy, create "
             "action reviews, approve or apply reviews, activate billing, verify "
             "authority, create marketplace activity, create a social Community, "
-            "move money, publish a public page, or expose private evidence."
+            "move money, publish a public page, or show private evidence."
         ),
     }
 
@@ -4612,7 +4612,7 @@ def _community_domain_setup_plan_payload(
                 "members, assign roles, create policy, open reviews, approve "
                 "reviews, verify authority, activate billing, activate the "
                 "Community Domain, create marketplace activity, create a social "
-                "Community, move money, or expose private evidence."
+                "Community, move money, or show private evidence."
             ),
         }
 
@@ -4800,7 +4800,7 @@ def _community_domain_setup_plan_payload(
             "does not create nodes, add members, assign roles, create policy, "
             "open or decide reviews, verify authority, activate billing, "
             "activate the Community Domain, create marketplace activity, create "
-            "a social Community, move money, publish a public page, or expose "
+            "a social Community, move money, publish a public page, or show "
             "private evidence."
         ),
     }
@@ -4962,7 +4962,7 @@ def _community_domain_capacity_plan_payload(
             ),
             "boundary": (
                 "Allowance visibility only. This does not upload files, reserve "
-                "storage, verify evidence, expose private evidence, or change "
+                "storage, verify evidence, show private evidence, or change "
                 "storage billing."
             ),
         },
@@ -5044,7 +5044,7 @@ def _community_domain_capacity_plan_payload(
             "shops, meter live shop usage, meter storage usage, create policy, "
             "open reviews, activate billing, change pricing, verify authority, "
             "create marketplace activity, create a social Community, move money, "
-            "publish a public page, or expose private evidence."
+            "publish a public page, or show private evidence."
         ),
     }
 
@@ -5144,7 +5144,7 @@ def _community_domain_rollout_plan_payload(
                 "boundary": (
                     "Read-only rollout unit. This does not invite members, assign "
                     "admins, place members, change node status, create policy, "
-                    "activate billing, launch marketplace activity, or expose "
+                    "activate billing, launch marketplace activity, or show "
                     "private evidence."
                 ),
             }
@@ -5353,7 +5353,7 @@ def _community_domain_rollout_plan_payload(
             "place members, create policy, open reviews, verify authority, "
             "activate billing, activate the Community Domain, publish a public "
             "page, create marketplace activity, create a social Community, move "
-            "money, or expose private evidence."
+            "money, or show private evidence."
         ),
     }
 
@@ -5497,7 +5497,7 @@ def _community_domain_rollout_tree_payload(
                 "Read-only recursive rollout item. This does not create nodes, "
                 "invite members, add members, assign admins, place members, "
                 "create policy, change node status, create marketplace activity, "
-                "or expose private evidence."
+                "or show private evidence."
             ),
             "children": [node_item(child) for child in child_nodes],
         }
@@ -5589,7 +5589,7 @@ def _community_domain_rollout_tree_payload(
             "members, assign admins, place members, create policy, open reviews, "
             "change node status, verify authority, activate billing, publish a "
             "public page, create marketplace activity, create a social Community, "
-            "move money, or expose private evidence."
+            "move money, or show private evidence."
         ),
     }
 
@@ -5782,7 +5782,7 @@ def _community_domain_node_autonomy_map_payload(
                 "Read-only local autonomy item. This does not grant local "
                 "authority, assign roles, create policy, change inheritance, "
                 "create or split nodes, create separate Community Domains, or "
-                "expose private member/review/evidence records."
+                "show private member/review/evidence records."
             ),
             "children": [node_item(child) for child in child_nodes],
         }
@@ -5874,7 +5874,7 @@ def _community_domain_node_autonomy_map_payload(
             "policy, change inheritance, create or split nodes, create separate Community Domains, "
             "verify institutional authority, activate billing, "
             "create marketplace or finance records, move money, publish proof, or "
-            "expose private member/review/evidence records."
+            "show private member/review/evidence records."
         ),
     }
 
@@ -7007,8 +7007,8 @@ def _community_domain_node_participation_map_payload(
             "boundary": (
                 "Read-only local participation item. This does not invite "
                 "members, add members, approve join requests, assign roles, "
-                "place members, create a social Community, expose member lists, "
-                "or expose private member activity."
+                "place members, create a social Community, show member lists, "
+                "or show private member activity."
             ),
             "children": [node_item(child) for child in child_nodes],
         }
@@ -7099,7 +7099,7 @@ def _community_domain_node_participation_map_payload(
             "departments, committees, chapters, or other operating units have "
             "real local member participation. It does not invite members, add "
             "members, approve or reject join requests, assign roles, place "
-            "members, create a social Community, expose member lists, expose "
+            "members, create a social Community, show member lists, show "
             "private member activity, create marketplace records, create "
             "finance records, issue TrustSlips, or write Trust Passport entries."
         ),
@@ -7300,7 +7300,7 @@ def _community_domain_node_service_map_payload(
                 "Local service readiness item. This does not enable "
                 "services, save settings, activate billing, grant permissions, "
                 "create events, create notifications, create shops, create vault "
-                "links, place members, expose member lists, or expose private "
+                "links, place members, show member lists, or show private "
                 "member activity."
             ),
             "children": [node_item(child) for child in child_nodes],
@@ -7411,7 +7411,7 @@ def _community_domain_node_service_map_payload(
             "for future GSN services. It does not enable services, save "
             "settings, activate billing, grant permissions, create events, "
             "create notifications, create shops, create vault links, place "
-            "members, expose member lists, expose private member activity, "
+            "members, show member lists, show private member activity, "
             "create marketplace records, create finance records, issue "
             "TrustSlips, or write Trust Passport entries."
         ),
@@ -7602,9 +7602,9 @@ def _community_domain_node_privacy_map_payload(
             "next_step": next_step,
             "boundary": (
                 "Read-only local privacy item. This does not change permissions, "
-                "publish hierarchy, expose member lists, expose node rosters, "
-                "expose storage keys, share records across institutions, create "
-                "a public page, or expose private member activity."
+                "publish hierarchy, show member lists, show node rosters, "
+                "show storage keys, share records across institutions, create "
+                "a public page, or show private member activity."
             ),
             "children": [node_item(child) for child in child_nodes],
         }
@@ -7692,11 +7692,11 @@ def _community_domain_node_privacy_map_payload(
             "planning. It shows whether branches, lines, classes, departments, "
             "committees, chapters, or other operating units are member-visible, "
             "node-private, admin-restricted, or need public-exposure review. It "
-            "does not change permissions, publish hierarchy, expose member "
-            "lists, expose node rosters, expose review payloads, expose storage "
+            "does not change permissions, publish hierarchy, show member "
+            "lists, show node rosters, show review records, show storage "
             "keys, share records across institutions, create public pages, "
             "create marketplace records, create finance records, issue "
-            "TrustSlips, write Trust Passport entries, or expose private member "
+            "TrustSlips, write Trust Passport entries, or show private member "
             "activity."
         ),
     }
@@ -8027,7 +8027,7 @@ def _community_domain_node_analytics_map_payload(
             "governance, review, and evidence signals for a safe local snapshot. "
             "It does not create telemetry, export reports, live dashboards, "
             "marketplace metrics, finance metrics, storage keys, Trust "
-            "Passport entries, TrustSlips, or expose private member activity."
+            "Passport entries, TrustSlips, or show private member activity."
         ),
     }
 
@@ -8275,7 +8275,7 @@ def _community_domain_node_domain_boundary_map_payload(
                 "Community Domains, create affiliate links, publish public URLs, "
                 "activate billing, split hierarchy, transfer members, verify legal "
                 "identity, create marketplace records, create finance records, "
-                "issue TrustSlips, write Trust Passport entries, or expose private "
+                "issue TrustSlips, write Trust Passport entries, or show private "
                 "member activity."
             ),
             "children": [node_item(child) for child in child_nodes],
@@ -8371,7 +8371,7 @@ def _community_domain_node_domain_boundary_map_payload(
             "create child Community Domains, create affiliate links, publish public URLs, "
             "activate billing, split hierarchy, transfer members, "
             "verify legal identity, create marketplace records, create finance "
-            "records, issue TrustSlips, write Trust Passport entries, or expose "
+            "records, issue TrustSlips, write Trust Passport entries, or show "
             "private member activity."
         ),
     }
@@ -8885,8 +8885,8 @@ def _community_domain_node_communication_map_payload(
             "boundary": (
                 "Read-only local communication item. This does not create notices, "
                 "send notifications, publish announcements, schedule meetings, "
-                "create events, send reminders, send emergency notices, expose "
-                "member lists, expose private member activity, create marketplace "
+                "create events, send reminders, send emergency notices, show "
+                "member lists, show private member activity, create marketplace "
                 "records, create finance records, issue TrustSlips, or write "
                 "Trust Passport entries."
             ),
@@ -9011,7 +9011,7 @@ def _community_domain_node_communication_map_payload(
             "policy, and reviewed notice signals for future announcements, member "
             "notices, meeting notices, or emergency notices. It does not create notices, "
             "send notifications, publish announcements, schedule meetings, create events, "
-            "send reminders, send emergency notices, expose member lists, expose private "
+            "send reminders, send emergency notices, show member lists, show private "
             "member activity, create marketplace records, create finance records, issue "
             "TrustSlips, or write Trust Passport entries."
         ),
@@ -9227,10 +9227,10 @@ def _community_domain_node_vault_map_payload(
             "next_step": next_step,
             "boundary": (
                 "Read-only local vault item. This does not upload files, download files, "
-                "create vault links, grant permissions, expose storage keys, expose "
+                "create vault links, grant permissions, show storage keys, show "
                 "member lists, connect external readers, publish proof, issue TrustSlips, "
                 "write Trust Passport entries, create marketplace records, create finance "
-                "records, or expose private member activity."
+                "records, or show private member activity."
             ),
             "children": [node_item(child) for child in child_nodes],
         }
@@ -9343,10 +9343,10 @@ def _community_domain_node_vault_map_payload(
             "It shows whether branches, departments, classes, committees, chapters, "
             "lines, or other units have local steward, audience, policy, review, "
             "and evidence signals for future controlled documents. It does not upload files, "
-            "download files, create vault links, grant permissions, expose storage keys, "
-            "expose member lists, connect external readers, publish proof, issue TrustSlips, "
+            "download files, create vault links, grant permissions, show storage keys, "
+            "show member lists, connect external readers, publish proof, issue TrustSlips, "
             "write Trust Passport entries, create marketplace records, create finance records, "
-            "or expose private member activity."
+            "or show private member activity."
         ),
     }
 
@@ -9543,7 +9543,7 @@ def _community_domain_node_scheduled_activity_map_payload(
                 "create meetings, create calendar entries, record attendance, send reminders, "
                 "send notifications, create dues, create tickets, create payment instructions, "
                 "upload evidence files, issue TrustSlips, write Trust Passport entries, "
-                "or expose private member activity."
+                "or show private member activity."
             ),
             "children": [node_item(child) for child in child_nodes],
         }
@@ -9668,7 +9668,7 @@ def _community_domain_node_scheduled_activity_map_payload(
             "send reminders, send notifications, create dues, create tickets, create "
             "payment instructions, upload evidence files, issue TrustSlips, write "
             "Trust Passport entries, create marketplace records, create finance records, "
-            "or expose private member activity."
+            "or show private member activity."
         ),
     }
 
@@ -9871,7 +9871,7 @@ def _community_domain_node_paid_activity_map_payload(
                 "create invoices, create payment instructions, record receipts, match bank "
                 "events, write ledger entries, move money, create loans, issue TrustSlips, "
                 "write Trust Passport entries, create marketplace records, create finance "
-                "records, or expose private member activity."
+                "records, or show private member activity."
             ),
             "children": [node_item(child) for child in child_nodes],
         }
@@ -10002,7 +10002,7 @@ def _community_domain_node_paid_activity_map_payload(
             "create invoices, create payment instructions, record receipts, match bank "
             "events, write ledger entries, move money, create loans, issue TrustSlips, "
             "write Trust Passport entries, create marketplace records, create finance "
-            "records, or expose private member activity."
+            "records, or show private member activity."
         ),
     }
 
@@ -10449,7 +10449,7 @@ def _community_domain_analytics_payload(
             "requires_admin": False,
             "boundary": (
                 "Aggregate structure analytics only. This does not create nodes "
-                "or expose private unit records."
+                "or show private unit records."
             ),
         },
         {
@@ -10460,7 +10460,7 @@ def _community_domain_analytics_payload(
             "route_hint": route_hint("/members", requires_admin=True),
             "requires_admin": True,
             "boundary": (
-                "Aggregate membership analytics only. This does not expose member "
+                "Aggregate membership analytics only. This does not show member "
                 "lists, private profiles, node placement details, or invite data."
             ),
         },
@@ -10633,7 +10633,7 @@ def _community_domain_analytics_payload(
             "decide reviews, apply reviews, verify legal or institutional "
             "authority, activate billing, meter live marketplace/shop/finance "
             "usage, publish a public page, create a social Community, move money, "
-            "or expose private member, finance, evidence, or review records."
+            "or show private member, finance, evidence, or review records."
         ),
     }
 
@@ -10813,7 +10813,7 @@ def _community_domain_evidence_map_payload(
             route_suffix="/members",
             requires_admin=True,
             boundary=(
-                "Membership evidence is aggregate only. This does not expose member "
+                "Membership evidence is aggregate only. This does not show member "
                 "lists, private profiles, invite records, or individual evidence."
             ),
         ),
@@ -10826,7 +10826,7 @@ def _community_domain_evidence_map_payload(
             route_suffix="/rollout-tree",
             requires_admin=False,
             boundary=(
-                "Node membership evidence is aggregate only. This does not expose "
+                "Node membership evidence is aggregate only. This does not show "
                 "private member placement rows."
             ),
         ),
@@ -10865,8 +10865,8 @@ def _community_domain_evidence_map_payload(
             route_suffix="/action-reviews",
             requires_admin=True,
             boundary=(
-                "Review evidence is counted as metadata only. This does not expose "
-                "files, storage keys, comments, private evidence, or review payloads."
+                "Review evidence is counted as metadata only. This does not show "
+                "files, storage keys, comments, private evidence, or review records."
             ),
         ),
         lane(
@@ -10993,11 +10993,11 @@ def _community_domain_evidence_map_payload(
         "boundary": (
             "Community Domain evidence map is a read-only evidence readiness "
             "projection. It does not upload evidence, does not store files, "
-            "does not expose files, does not expose storage keys, create member "
+            "does not show files, does not show storage keys, create member "
             "credentials, create TrustSlips, create Trust Passport entries, create "
             "trust relay paths, verify legal or institutional authority, publish a "
             "public page, move money, activate billing, create marketplace activity, "
-            "create a social Community, or expose private member, finance, evidence, "
+            "create a social Community, or show private member, finance, evidence, "
             "or review records."
         ),
     }
@@ -11313,9 +11313,9 @@ def _community_domain_evidence_record_readiness_payload(
                 "boundary": (
                     "This is a read-only durable evidence record readiness item. "
                     "It does not create CommunityDomainEvidenceRecord rows, upload files, "
-                    "expose storage keys, calculate validity, persist "
+                    "show storage keys, calculate validity, persist "
                     "visibility policy, issue credentials, issue TrustSlips, "
-                    "write Trust Passport entries, publish proof, or expose "
+                    "write Trust Passport entries, publish proof, or show "
                     "private member evidence."
                 ),
             }
@@ -11632,7 +11632,7 @@ def _community_domain_evidence_release_readiness_payload(
         "public_safe_identity": "Prepare public-safe wording before any evidence is shown outside the domain.",
         "authority_currentness": "Keep authority current before outsiders rely on institutional evidence.",
         "release_policy": "Define who may prepare, approve, or block evidence release.",
-        "evidence_metadata": "Keep file and storage details private; expose only safe evidence summaries later.",
+        "evidence_metadata": "Keep file and storage details private; show only safe evidence summaries later.",
         "visibility_scope": "Review which units are public, member-visible, or admin-only before release.",
         "review_currentness": "Resolve open reviews before treating evidence as current for release.",
         "dispute_and_revocation": "Do not release proof without a future dispute and revocation path.",
@@ -11670,7 +11670,7 @@ def _community_domain_evidence_release_readiness_payload(
                 "next_step": next_step_by_lane[lane_key],
                 "boundary": (
                     "Read-only evidence release readiness lane. This does not "
-                    "release evidence, expose files, expose storage keys, publish "
+                    "release evidence, show files, show storage keys, publish "
                     "public proof, create URLs, create QR codes, issue credentials, "
                     "issue TrustSlips, write Trust Passport entries, share records "
                     "across domains, or change permissions."
@@ -12444,7 +12444,7 @@ def _community_domain_notification_scope_readiness_payload(
                     "notifications, create notification jobs, send emails, "
                     "send SMS, send WhatsApp messages, send push notifications, "
                     "create audience lists, publish public announcements, "
-                    "create cross-domain broadcasts, expose member lists, "
+                    "create cross-domain broadcasts, show member lists, "
                     "create marketplace records, or move money."
                 ),
             }
@@ -12541,8 +12541,8 @@ def _community_domain_notification_scope_readiness_payload(
             "does not send notifications, create notification jobs, send emails, "
             "send SMS, send WhatsApp messages, send push notifications, create "
             "audience lists, publish public announcements, create cross-domain "
-            "broadcasts, expose member lists, create marketplace records, move "
-            "money, issue TrustSlips, write Trust Passport entries, or expose "
+            "broadcasts, show member lists, create marketplace records, move "
+            "money, issue TrustSlips, write Trust Passport entries, or show "
             "private member, review, evidence, marketplace, or finance records."
         ),
     }
@@ -12687,7 +12687,7 @@ def _community_domain_trust_mobility_payload(
                     "Read-only trust mobility lane. This does not create "
                     "TrustSlips, write Trust Passport entries, create credentials, "
                     "create relay paths, release evidence, publish proof, verify "
-                    "authority, move money, or expose private member, finance, "
+                    "authority, move money, or show private member, finance, "
                     "evidence, or review records."
                 ),
             }
@@ -12933,7 +12933,7 @@ def _community_domain_subscription_lifecycle_payload(
             "payment, create an invoice, create a receipt, activate billing, "
             "activate the Community Domain, create entitlements, renew a domain, "
             "suspend a domain, reactivate a domain, verify authority, move money, "
-            "or expose private finance, member, evidence, or review records."
+            "or show private finance, member, evidence, or review records."
         ),
     }
 
@@ -13089,7 +13089,7 @@ def _community_domain_social_bridge_payload(
             requires_admin=True,
             boundary=(
                 "Membership alignment is aggregate only. This does not copy, "
-                "invite, approve, remove, or expose member lists."
+                "invite, approve, remove, or show member lists."
             ),
         ),
         lane(
@@ -13185,7 +13185,7 @@ def _community_domain_social_bridge_payload(
             "existing Community, set clan_id, create affiliations, decide "
             "affiliations, copy members, invite members, move marketplace "
             "activity, activate billing, verify authority, merge Community and "
-            "Community Domain records, or expose private member records."
+            "Community Domain records, or show private member records."
         ),
     }
 
@@ -13379,7 +13379,7 @@ def _community_domain_affiliation_readiness_payload(
             route_suffix="/record-privacy-map",
             requires_admin=False,
             boundary=(
-                "Privacy boundary only. This does not expose member lists, node "
+                "Privacy boundary only. This does not show member lists, node "
                 "rosters, private evidence, finance records, marketplace records, "
                 "or affiliate private records."
             ),
@@ -13698,7 +13698,7 @@ def _community_domain_network_exchange_map_payload(
             requires_admin=True,
             boundary=(
                 "Affiliation exchange boundary only. This does not create, "
-                "approve, reject, apply, or expose affiliation records."
+                "approve, reject, apply, or show affiliation records."
             ),
         ),
         lane(
@@ -13726,7 +13726,7 @@ def _community_domain_network_exchange_map_payload(
             route_suffix="/evidence-map",
             requires_admin=True,
             boundary=(
-                "Trust evidence exchange signal only. This does not expose files, "
+                "Trust evidence exchange signal only. This does not show files, "
                 "publish proof, issue credentials, issue TrustSlips, or write "
                 "Trust Passport records."
             ),
@@ -13752,7 +13752,7 @@ def _community_domain_network_exchange_map_payload(
             "not_connected_in_this_slice",
             False,
             0,
-            "Do not expose one institution's members or internal units to another domain until privacy and permission rules are designed.",
+            "Do not show one institution's members or internal units to another domain until privacy and permission rules are designed.",
             route_suffix="/network-presence",
             requires_admin=True,
             boundary=(
@@ -13973,7 +13973,7 @@ def _community_domain_record_privacy_map_payload(
             requires_admin=False,
             boundary=(
                 "Public identity boundary only. This does not publish a public "
-                "page, finalize public URLs, verify authority, or expose private "
+                "page, finalize public URLs, verify authority, or show private "
                 "records."
             ),
         ),
@@ -13988,7 +13988,7 @@ def _community_domain_record_privacy_map_payload(
             requires_admin=True,
             boundary=(
                 "Member register boundary only. This does not create, invite, "
-                "approve, remove, expose, export, or publish member records."
+                "approve, remove, show, export, or publish member records."
             ),
         ),
         lane(
@@ -14002,7 +14002,7 @@ def _community_domain_record_privacy_map_payload(
             requires_admin=False,
             boundary=(
                 "Operating-unit visibility signal only. This does not change "
-                "node visibility, expose private node rosters, or publish the "
+                "node visibility, show private node rosters, or publish the "
                 "institutional hierarchy."
             ),
         ),
@@ -14022,16 +14022,16 @@ def _community_domain_record_privacy_map_payload(
         ),
         lane(
             "review_payload_boundary",
-            "Review payload boundary",
+            "Review record boundary",
             "open_reviews" if open_review_count else "quiet",
             not bool(open_review_count),
             admin_count(review_count),
-            "Keep action review notes, payloads, decisions, and comments private to authorized review flows.",
+            "Keep action review notes, records, decisions, and comments private to authorized review flows.",
             route_suffix="/action-reviews",
             requires_admin=True,
             boundary=(
-                "Review payload boundary only. This does not expose review "
-                "payloads, comments, decisions, request notes, or reviewer data."
+                "Review record boundary only. This does not show review "
+                "records, comments, decisions, request notes, or reviewer data."
             ),
         ),
         lane(
@@ -14045,7 +14045,7 @@ def _community_domain_record_privacy_map_payload(
             requires_admin=True,
             boundary=(
                 "Evidence storage boundary only. This does not upload evidence, "
-                "download files, expose storage keys, publish proof, issue "
+                "download files, show storage keys, publish proof, issue "
                 "TrustSlips, or write Trust Passport records."
             ),
         ),
@@ -14059,7 +14059,7 @@ def _community_domain_record_privacy_map_payload(
             route_suffix="/economic-participation",
             requires_admin=True,
             boundary=(
-                "Marketplace and finance boundary only. This does not expose "
+                "Marketplace and finance boundary only. This does not show "
                 "shops, listings, demand, Spotlight, vaults, loans, guarantees, "
                 "payments, ledgers, payouts, or private finance records."
             ),
@@ -14352,7 +14352,7 @@ def _community_domain_configuration_map_payload(
             requires_admin=True,
             boundary=(
                 "Evidence configuration signal only. This does not upload files, "
-                "expose storage keys, publish proof, issue TrustSlips, or write "
+                "show storage keys, publish proof, issue TrustSlips, or write "
                 "Trust Passport records."
             ),
         ),
@@ -14597,7 +14597,7 @@ def _community_domain_compliance_map_payload(
             requires_admin=False,
             boundary=(
                 "Record privacy signal only. This does not change permissions, "
-                "expose member lists, expose storage keys, or share records "
+                "show member lists, show storage keys, or share records "
                 "across institutions."
             ),
         ),
@@ -14670,8 +14670,8 @@ def _community_domain_compliance_map_payload(
             route_suffix="/evidence-map",
             requires_admin=True,
             boundary=(
-                "Audit trail signal only. This does not expose private evidence, "
-                "storage keys, member records, review payloads, legal advice, "
+                "Audit trail signal only. This does not show private evidence, "
+                "storage keys, member records, review records, legal advice, "
                 "or compliance decisions."
             ),
         ),
@@ -14858,7 +14858,7 @@ def _community_domain_appeal_readiness_payload(
             boundary=(
                 "Membership appeal readiness only. This does not reopen a rejected "
                 "membership, approve a member, create an appeal, assign a mediator, "
-                "or expose private member records."
+                "or show private member records."
             ),
         ),
         lane(
@@ -14883,7 +14883,7 @@ def _community_domain_appeal_readiness_payload(
             boundary=(
                 "Evidence dispute readiness only. This does not verify evidence, "
                 "revoke evidence, publish evidence, issue credentials, issue "
-                "TrustSlips, write Trust Passport entries, or expose storage keys."
+                "TrustSlips, write Trust Passport entries, or show storage keys."
             ),
         ),
         lane(
@@ -14896,7 +14896,7 @@ def _community_domain_appeal_readiness_payload(
             boundary=(
                 "Content appeal readiness only. This does not publish content, "
                 "restore a blocked Spotlight, send notices, create marketplace "
-                "records, or expose private activity."
+                "records, or show private activity."
             ),
         ),
         lane(
@@ -14908,7 +14908,7 @@ def _community_domain_appeal_readiness_payload(
             requires_admin=True,
             boundary=(
                 "Shop and vault appeal readiness only. This does not grant shop "
-                "visibility, create vault links, expose storage keys, reveal member "
+                "visibility, create vault links, show storage keys, reveal member "
                 "lists, or share private documents."
             ),
         ),
@@ -15008,7 +15008,7 @@ def _community_domain_appeal_readiness_payload(
             "grant roles, verify or revoke evidence, publish content, grant shop or "
             "vault access, move nodes, reverse payments, move money, create loans, "
             "issue TrustSlips, write Trust Passport entries, share records across "
-            "institutions, or expose private member/review/evidence/finance records."
+            "institutions, or show private member/review/evidence/finance records."
         ),
     }
 
@@ -15134,7 +15134,7 @@ def _community_domain_institutional_profile_payload(
             requires_admin=True,
             boundary=(
                 "Public profile readiness only. This does not publish a URL, "
-                "create outward links, or expose private member activity."
+                "create outward links, or show private member activity."
             ),
         ),
         lane(
@@ -15452,7 +15452,7 @@ def _community_domain_delegation_map_payload(
             requires_admin=True,
             boundary=(
                 "Central authority count only. This does not assign owners, "
-                "grant domain admin rights, verify legal authority, or expose "
+                "grant domain admin rights, verify legal authority, or show "
                 "private member records."
             ),
         ),
@@ -15789,7 +15789,7 @@ def _community_domain_identity_context_payload(
             route_suffix="/nodes/tree",
             boundary=(
                 "Node context only. This does not place the member, assign roles, "
-                "grant permissions, or expose other members."
+                "grant permissions, or show other members."
             ),
         ),
         lane(
@@ -15815,8 +15815,8 @@ def _community_domain_identity_context_payload(
             "Resolve open reviews involving this member before treating the context as stable.",
             route_suffix="/action-reviews/my-requests",
             boundary=(
-                "Review signal only. This does not expose private review "
-                "payloads, decide reviews, apply reviews, or upload evidence."
+                "Review signal only. This does not show private review "
+                "records, decide reviews, apply reviews, or upload evidence."
             ),
         ),
     ]
@@ -16049,7 +16049,7 @@ def _community_domain_activity_map_payload(
             requires_admin=True,
             boundary=(
                 "Activity evidence aggregate only. This does not upload files, "
-                "expose storage keys, publish proof, issue TrustSlips, or write "
+                "show storage keys, publish proof, issue TrustSlips, or write "
                 "Trust Passport records."
             ),
         ),
@@ -16499,7 +16499,7 @@ def _community_domain_activity_group_readiness_payload(
             "does not create activity groups, create ROSCA cycles, create meetings, "
             "record attendance, create payment instructions, write ledger entries, "
             "send notifications, create marketplace records, move money, issue "
-            "TrustSlips, write Trust Passport entries, or expose private member "
+            "TrustSlips, write Trust Passport entries, or show private member "
             "activity."
         ),
     }
@@ -16661,7 +16661,7 @@ def _community_domain_member_verification_map_payload(
             requires_admin=False,
             boundary=(
                 "Placement aggregate only. This does not place members, assign "
-                "roles, or expose local member lists."
+                "roles, or show local member lists."
             ),
         ),
         lane(
@@ -16702,7 +16702,7 @@ def _community_domain_member_verification_map_payload(
             route_suffix="/evidence-map",
             requires_admin=True,
             boundary=(
-                "Evidence aggregate only. This does not upload files, expose "
+                "Evidence aggregate only. This does not upload files, show "
                 "storage keys, publish credentials, issue TrustSlips, or write "
                 "Trust Passport entries."
             ),
@@ -16801,8 +16801,8 @@ def _community_domain_member_verification_map_payload(
             "planning. This view does not perform KYC, issue credentials, "
             "verify government identity, create or change members, place members "
             "in units, assign roles, grant permissions, create policy, decide "
-            "reviews, upload evidence, expose storage keys, publish proof, issue "
-            "TrustSlips, write Trust Passport entries, move money, or expose "
+            "reviews, upload evidence, show storage keys, publish proof, issue "
+            "TrustSlips, write Trust Passport entries, move money, or show "
             "private member/review/evidence records."
         ),
     }
@@ -18700,7 +18700,7 @@ def list_my_community_domains(
         "total": len(items),
         "boundary": (
             "Current user's active Community Domain memberships only. This does not "
-            "expose private member lists, finance records, evidence attachments, "
+            "show private member lists, finance records, evidence attachments, "
             "payment instructions, activation authority, verification authority, "
             "or domains the current user does not actively belong to."
         ),
@@ -18746,7 +18746,7 @@ def lookup_community_domain_by_name(
         "community_domain": _public_domain_entry_payload(domain),
         "boundary": (
             "Lookup returns public-safe Community Domain identity and the next "
-            "safe route only. It does not prove verification, expose private "
+            "safe route only. It does not prove verification, show private "
             "records, add membership, send notifications, or publish a final "
             "public proof page."
         ),
@@ -20327,7 +20327,7 @@ def request_community_domain_membership(
             "Membership request recorded as a Community Domain governance review. "
             "This does not add the member, place the member in a node, assign "
             "roles, grant permissions, activate billing, verify authority, send "
-            "notifications, or expose private member records. An authorized "
+            "notifications, or show private member records. An authorized "
             "Community Domain reviewer must approve and apply the review before "
             "membership changes."
         ),
@@ -20377,7 +20377,7 @@ def list_my_community_domain_membership_requests(
         "total": len(rows),
         "boundary": (
             "Current user's own Community Domain membership requests only. "
-            "This does not expose the reviewer queue, reviewer identities, "
+            "This does not show the reviewer queue, reviewer identities, "
             "decision notes, decision records, member lists, private evidence, "
             "governance records, or grant membership."
         ),
@@ -20769,7 +20769,7 @@ def list_community_domain_action_reviews(
             "Action reviews are decision records. They do not execute the requested "
             "business action until a later approved action applies that decision. Optional "
             "node and user filters narrow the admin-visible record list; they do not "
-            "grant reviewer authority or expose records outside the viewer's domain scope."
+            "grant reviewer authority or show records outside the viewer's domain scope."
         ),
     }
 
@@ -20933,7 +20933,7 @@ def list_my_community_domain_action_reviews(
         "total": len(rows),
         "boundary": (
             "My requests only shows action reviews submitted by the current user. "
-            "It does not expose the wider governance queue or admin review list."
+            "It does not show the wider governance queue or admin review list."
         ),
     }
 

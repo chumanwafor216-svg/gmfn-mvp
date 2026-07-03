@@ -701,7 +701,7 @@ export default function CommunityDomainNodeProjectionGroups(props: ProjectionGro
       rowFallback: "Participation unit",
       defaultNextStep: "Keep member placement tied to the nearest responsible unit.",
       boundary:
-        "Use this as a member-placement snapshot only. It does not invite, add, place, or expose members.",
+        "Use this as a member-placement snapshot only. It does not invite, add, place, or show members.",
     });
   }
 
@@ -929,7 +929,7 @@ export default function CommunityDomainNodeProjectionGroups(props: ProjectionGro
         rowFallback: "Privacy unit",
         defaultNextStep: "Keep local visibility private until the right review path exists.",
         boundary:
-          "Use this as a local privacy snapshot only. It does not change access, publish rosters, or expose protected records.",
+          "Use this as a local privacy snapshot only. It does not change access, publish rosters, or show protected records.",
       })}
 
       {renderNodeProjectionCard({
@@ -1021,7 +1021,7 @@ export default function CommunityDomainNodeProjectionGroups(props: ProjectionGro
         defaultNextStep:
           "Keep notices tied to governed local communicator and audience signals.",
         boundary:
-          "Use this as a local communication snapshot only. It does not send messages, publish notices, or expose member lists.",
+          "Use this as a local communication snapshot only. It does not send messages, publish notices, or show member lists.",
       })}
 
       {renderNodeProjectionCard({
@@ -1063,7 +1063,7 @@ export default function CommunityDomainNodeProjectionGroups(props: ProjectionGro
         defaultNextStep:
           "Keep controlled documents tied to local steward, audience, policy, and reviewed signals.",
         boundary:
-          "Use this as a local vault snapshot only. It does not move files, grant access, publish proof, or expose protected storage.",
+          "Use this as a local vault snapshot only. It does not move files, grant access, publish proof, or show protected storage.",
       })}
     </ProjectionGroup>
   );

@@ -344,7 +344,7 @@ export default function CommunityDomainIdentityReadinessPanels({
           </div>
         )}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          This summary shows public-safe identity only. It does not expose owner
+          This summary shows public-safe identity only. It does not show owner
           contact details, private member lists, finance records, evidence files,
           or verification proof.
         </div>

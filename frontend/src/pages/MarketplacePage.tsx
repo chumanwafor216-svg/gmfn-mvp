@@ -7636,7 +7636,7 @@ export default function MarketplacePage() {
                   lineHeight: 1.35,
                 }}
               >
-                Trade. Support. Finance. Members. Records.
+                Trade. Finance. Members. Records.
               </div>
             </div>
 
@@ -7885,90 +7885,6 @@ export default function MarketplacePage() {
                 </span>
                 <span style={marketplaceFrontTagStyle("#805A0F", "#F7EED8", isCompact)}>
                   Members
-                </span>
-              </span>
-            </span>
-            <span aria-hidden="true" style={marketplaceOsArrowStyle()}>
-              <MarketplaceGlyph name="chevron" size={18} />
-            </span>
-          </StableButton>
-
-          <StableButton
-            type="button"
-            debugId="marketplace.tile.demand"
-            aria-label="Open Demand Box for this marketplace"
-            onClick={(event) =>
-              openMarketplaceSection(event, "demand", "marketplace-demand-box")
-            }
-            style={marketplaceFrontLaneCardStyle(isCompact)}
-          >
-            <span
-              aria-hidden="true"
-              style={marketplaceFrontLaneIconStyle(
-                "linear-gradient(180deg, #B98921 0%, #6E4B08 100%)",
-                isCompact
-              )}
-            >
-              <MarketplaceGlyph name="demand" size={isCompact ? 26 : 34} />
-            </span>
-            <span style={marketplaceOsRowTextStackStyle()}>
-              <span style={marketplaceOsRowTitleStyle(isCompact)}>
-                Demand Box
-              </span>
-              <span style={marketplaceOsRowDetailStyle(isCompact)}>
-                Post local needs and offers.
-              </span>
-              <span style={marketplaceFrontTagRowStyle(isCompact)}>
-                <span style={marketplaceFrontTagStyle("#805A0F", "#F7EED8", isCompact)}>
-                  Needs
-                </span>
-                <span style={marketplaceFrontTagStyle("#805A0F", "#F7EED8", isCompact)}>
-                  Offers
-                </span>
-                <span style={marketplaceFrontTagStyle("#805A0F", "#F7EED8", isCompact)}>
-                  Requests
-                </span>
-              </span>
-            </span>
-            <span aria-hidden="true" style={marketplaceOsArrowStyle()}>
-              <MarketplaceGlyph name="chevron" size={18} />
-            </span>
-          </StableButton>
-
-          <StableButton
-            type="button"
-            debugId="marketplace.tile.support"
-            aria-label="Open Support Requests for this marketplace"
-            onClick={(event) =>
-              openMarketplaceSection(event, "support", "marketplace-loans-support")
-            }
-            style={marketplaceFrontLaneCardStyle(isCompact)}
-          >
-            <span
-              aria-hidden="true"
-              style={marketplaceFrontLaneIconStyle(
-                "linear-gradient(180deg, #25A65A 0%, #0B5A34 100%)",
-                isCompact
-              )}
-            >
-              <MarketplaceGlyph name="support" size={isCompact ? 26 : 34} />
-            </span>
-            <span style={marketplaceOsRowTextStackStyle()}>
-              <span style={marketplaceOsRowTitleStyle(isCompact)}>
-                Support Requests
-              </span>
-              <span style={marketplaceOsRowDetailStyle(isCompact)}>
-                Ask for backing when balance is not enough.
-              </span>
-              <span style={marketplaceFrontTagRowStyle(isCompact)}>
-                <span style={marketplaceFrontTagStyle("#0B6B3B", "#DFF3E8", isCompact)}>
-                  Start Request
-                </span>
-                <span style={marketplaceFrontTagStyle("#0B6B3B", "#DFF3E8", isCompact)}>
-                  Supporters
-                </span>
-                <span style={marketplaceFrontTagStyle("#0B6B3B", "#DFF3E8", isCompact)}>
-                  Repayment
                 </span>
               </span>
             </span>

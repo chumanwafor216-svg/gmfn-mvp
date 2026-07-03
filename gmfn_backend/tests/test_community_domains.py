@@ -3871,7 +3871,7 @@ def test_node_participation_map_projects_member_placement_without_writes(
     assert "read-only member placement planning" in participation["boundary"]
     assert "invite members" in participation["boundary"]
     assert "place members" in participation["boundary"]
-    assert "expose member lists" in participation["boundary"]
+    assert "show member lists" in participation["boundary"]
     assert "private member activity" in participation["boundary"]
     assert "issue TrustSlips" in participation["boundary"]
 
@@ -3997,7 +3997,7 @@ def test_member_can_read_node_participation_map_but_admin_counts_are_hidden(
     assert flat["Lagos Chapter"]["route_hint"].endswith("/operating-summary")
     assert flat["Lagos Chapter"]["admin_action_route_hint"] is None
     assert "read-only member placement planning" in participation["boundary"]
-    assert "expose member lists" in participation["boundary"]
+    assert "show member lists" in participation["boundary"]
     assert "private member activity" in participation["boundary"]
 
 
@@ -4488,9 +4488,9 @@ def test_node_privacy_map_projects_local_visibility_without_permission_writes(
     assert "read-only local privacy planning" in privacy_map["boundary"]
     assert "does not change permissions" in privacy_map["boundary"]
     assert "publish hierarchy" in privacy_map["boundary"]
-    assert "expose member lists" in privacy_map["boundary"]
-    assert "expose node rosters" in privacy_map["boundary"]
-    assert "expose storage keys" in privacy_map["boundary"]
+    assert "show member lists" in privacy_map["boundary"]
+    assert "show node rosters" in privacy_map["boundary"]
+    assert "show storage keys" in privacy_map["boundary"]
     assert "share records across institutions" in privacy_map["boundary"]
     assert "Trust Passport entries" in privacy_map["boundary"]
     assert "private/evidence/node-privacy.pdf" not in str(privacy_map)
@@ -4623,7 +4623,7 @@ def test_member_can_read_node_privacy_map_but_admin_counts_are_hidden(
     assert flat["Primary Branch"]["storage_key_status"] == "not_exposed_in_this_slice"
     assert flat["Primary Branch"]["admin_action_route_hint"] is None
     assert "does not change permissions" in privacy_map["boundary"]
-    assert "expose member lists" in privacy_map["boundary"]
+    assert "show member lists" in privacy_map["boundary"]
     assert "private member activity" in privacy_map["boundary"]
 
 
@@ -5922,7 +5922,7 @@ def test_node_communication_map_projects_local_notice_readiness_without_writes(
     assert "publish announcements" in communication_map["boundary"]
     assert "schedule meetings" in communication_map["boundary"]
     assert "emergency notices" in communication_map["boundary"]
-    assert "expose member lists" in communication_map["boundary"]
+    assert "show member lists" in communication_map["boundary"]
 
     flat = {item["node"]["name"]: item for item in communication_map["flat_nodes"]}
     assert flat["Node Communication School"]["communication_status"] == "domain_root"
@@ -6058,7 +6058,7 @@ def test_member_can_read_node_communication_map_but_admin_counts_are_hidden(
         "not_sent_in_this_slice"
     )
     assert "send notifications" in communication_map["boundary"]
-    assert "expose member lists" in communication_map["boundary"]
+    assert "show member lists" in communication_map["boundary"]
     assert "private member activity" in communication_map["boundary"]
 
 
@@ -6266,8 +6266,8 @@ def test_node_vault_map_projects_local_document_readiness_without_writes(
     assert "upload files" in vault_map["boundary"]
     assert "download files" in vault_map["boundary"]
     assert "create vault links" in vault_map["boundary"]
-    assert "expose storage keys" in vault_map["boundary"]
-    assert "expose member lists" in vault_map["boundary"]
+    assert "show storage keys" in vault_map["boundary"]
+    assert "show member lists" in vault_map["boundary"]
     assert "Trust Passport entries" in vault_map["boundary"]
     assert "private/evidence" not in str(vault_map)
 
@@ -7514,7 +7514,7 @@ def test_analytics_projects_aggregate_domain_snapshot_without_private_records(
     assert lanes["economic"]["state"] == "not_metered_in_this_slice"
     assert "Aggregate membership analytics only" in lanes["membership"]["boundary"]
     assert "not wired to live marketplace" in lanes["economic"]["boundary"]
-    assert "expose private member" in analytics["boundary"]
+    assert "show private member" in analytics["boundary"]
     assert "meter live marketplace/shop/finance usage" in analytics["boundary"]
 
     with SessionLocal() as db:
@@ -7741,7 +7741,7 @@ def test_evidence_map_projects_safe_evidence_readiness_without_private_records(
     assert lanes["review_evidence"]["count"] == 1
     assert lanes["public_safe_summary"]["state"] == "profile_present"
     assert lanes["trust_mobility"]["state"] == "not_connected_in_this_slice"
-    assert "does not expose files" in evidence_map["boundary"]
+    assert "does not show files" in evidence_map["boundary"]
     assert "storage keys" in evidence_map["boundary"]
     assert "create TrustSlips" in evidence_map["boundary"]
     assert "private member" in evidence_map["boundary"]
@@ -8844,7 +8844,7 @@ def test_notification_scope_readiness_projects_audiences_without_sending(
     assert "audience lists" in readiness["boundary"]
     assert "public announcements" in readiness["boundary"]
     assert "cross-domain broadcasts" in readiness["boundary"]
-    assert "expose member lists" in readiness["boundary"]
+    assert "show member lists" in readiness["boundary"]
     assert "move money" in readiness["boundary"]
 
     with SessionLocal() as db:
@@ -8941,7 +8941,7 @@ def test_member_can_read_notification_scope_readiness_but_admin_counts_are_hidde
     assert lanes["cross_domain_broadcast_boundary"]["route_hint"] is None
     assert lanes["notification_scope_policy"]["count"] is None
     assert "does not send notifications" in readiness["boundary"]
-    assert "expose member lists" in readiness["boundary"]
+    assert "show member lists" in readiness["boundary"]
     assert "private member" in readiness["boundary"]
 
 
@@ -22080,7 +22080,7 @@ def test_outsider_can_track_only_own_domain_membership_request(
         my_data = my_requests.json()
         assert my_data["total"] == 1
         assert "own Community Domain membership requests only" in my_data["boundary"]
-        assert "does not expose the reviewer queue" in my_data["boundary"]
+        assert "does not show the reviewer queue" in my_data["boundary"]
         assert "reviewer identities" in my_data["boundary"]
         assert "decision notes" in my_data["boundary"]
         assert "or grant membership" in my_data["boundary"]
@@ -24977,7 +24977,7 @@ def test_member_can_track_only_their_own_action_review_requests(
         assert my_requests.status_code == 200, my_requests.text
         assert my_requests.json()["total"] == 1
         assert my_requests.json()["items"][0]["id"] == review["id"]
-        assert "does not expose" in my_requests.json()["boundary"]
+        assert "does not show" in my_requests.json()["boundary"]
 
         app.dependency_overrides[get_current_user] = lambda: owner
         decision = client.post(

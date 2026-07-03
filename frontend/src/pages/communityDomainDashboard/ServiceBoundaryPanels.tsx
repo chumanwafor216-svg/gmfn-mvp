@@ -529,7 +529,7 @@ export default function CommunityDomainServiceBoundaryPanels({
         ) : null}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
           Use this as compliance planning only. It is not legal advice or a
-          certificate, and it does not certify compliance, move money, or expose
+          certificate, and it does not certify compliance, move money, or show
           private records.
         </div>
       </div>

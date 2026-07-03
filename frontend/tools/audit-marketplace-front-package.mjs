@@ -106,7 +106,7 @@ assertContains(
 assertContains(
   marketplaceFile,
   marketplaceSource,
-  /marketplaceHeroShellStyle[\s\S]*?MARKETPLACE[\s\S]*?activeCommunityName[\s\S]*?Trade\. Support\. Finance\. Members\. Records\.[\s\S]*?marketplaceHeroStatsStyle[\s\S]*?marketplaceFrontSummaryGridStyle[\s\S]*?Finance Summary[\s\S]*?marketplaceFinanceSummaryValue[\s\S]*?Finance details[\s\S]*?Owing total[\s\S]*?Locked by guarantees[\s\S]*?Current guarantee earning/,
+  /marketplaceHeroShellStyle[\s\S]*?MARKETPLACE[\s\S]*?activeCommunityName[\s\S]*?Trade\. Finance\. Members\. Records\.[\s\S]*?marketplaceHeroStatsStyle[\s\S]*?marketplaceFrontSummaryGridStyle[\s\S]*?Finance Summary[\s\S]*?marketplaceFinanceSummaryValue[\s\S]*?Finance details[\s\S]*?Owing total[\s\S]*?Locked by guarantees[\s\S]*?Current guarantee earning/,
   "Marketplace front package must use a premium identity hero with local Trust/CCI stats and one finance summary disclosure."
 );
 
@@ -120,8 +120,8 @@ assertContains(
 assertNotContains(
   marketplaceFile,
   marketplaceSource,
-  /Quick Actions|debugId="marketplace\.tile\.trust"|Trust preparing/g,
-  "Marketplace front package must not expose the removed Quick Actions card, old Trust tile, or Trust preparing fallback."
+  /Quick Actions|debugId="marketplace\.tile\.trust"|debugId="marketplace\.tile\.demand"|debugId="marketplace\.tile\.support"|Trust preparing/g,
+  "Marketplace front package must not expose the removed Quick Actions card, old Trust tile, Demand Box tile, Support Requests tile, or Trust preparing fallback."
 );
 
 [
@@ -136,18 +136,6 @@ assertNotContains(
     glyph: "trade",
     label: "Trade & Shops",
     tags: ["Trade Evidence", "Public Shops", "Members"],
-  },
-  {
-    id: "marketplace.tile.demand",
-    glyph: "demand",
-    label: "Demand Box",
-    tags: ["Needs", "Offers", "Requests"],
-  },
-  {
-    id: "marketplace.tile.support",
-    glyph: "support",
-    label: "Support Requests",
-    tags: ["Start Request", "Supporters", "Repayment"],
   },
   {
     id: "marketplace.row.records-links",
@@ -186,8 +174,8 @@ assertContains(
 assertContains(
   marketplaceFile,
   marketplaceSource,
-  /debugId="marketplace\.tile\.demand"[\s\S]*?aria-label="Open Demand Box for this marketplace"[\s\S]*?openMarketplaceSection\(event, "demand", "marketplace-demand-box"\)[\s\S]*?Post local needs and offers[\s\S]*?id="marketplace-demand-box"[\s\S]*?marketplace\.demand\.module[\s\S]*?marketplaceDepartmentShellStyle\("demand", isCompact\)[\s\S]*?debugId="marketplace\.demand\.open"[\s\S]*?openMarketplaceCta\(event, "demandBox"\)[\s\S]*?Open Demand Box/,
-  "Demand Box must be its own marketplace-local lane between Trade & Shops and Support Requests."
+  /id="marketplace-demand-box"[\s\S]*?Local needs and offers, separate from ROSCA savings and Support\s+Requests\.[\s\S]*?marketplace\.demand\.module[\s\S]*?marketplaceDepartmentShellStyle\("demand", isCompact\)[\s\S]*?Local needs and offers[\s\S]*?debugId="marketplace\.demand\.open"[\s\S]*?openMarketplaceCta\(event, "demandBox"\)[\s\S]*?Open Demand Box/,
+  "Demand Box must remain a separate marketplace-local department without appearing as a hero/front tile."
 );
 
 assertNotContains(

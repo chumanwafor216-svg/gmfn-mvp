@@ -469,7 +469,7 @@ assertNotContains(
 
 assertContains(
   "src/pages/communityDomainDashboard/ServiceBoundaryPanels.tsx",
-  /Compliance map[\s\S]*primary_next_action[\s\S]*compliance_engine_status[\s\S]*legal_advice_status[\s\S]*payment_compliance_status[\s\S]*cross_domain_record_sharing_status[\s\S]*compliance planning only[\s\S]*not legal advice or a\s+certificate[\s\S]*does not certify compliance, move money, or expose\s+private records/,
+  /Compliance map[\s\S]*primary_next_action[\s\S]*compliance_engine_status[\s\S]*legal_advice_status[\s\S]*payment_compliance_status[\s\S]*cross_domain_record_sharing_status[\s\S]*compliance planning only[\s\S]*not legal advice or a\s+certificate[\s\S]*does not certify compliance, move money, or show\s+private records/,
   "Community Domain dashboard Services lane must keep compliance copy concise while preserving legal-advice, certification, money, and private-record boundaries.",
   { frontend: true }
 );
@@ -630,7 +630,7 @@ assertContains(
 
 assertContains(
   "src/pages/communityDomainDashboard/NodeProjectionGroups.tsx",
-  /Unit participation map[\s\S]*active_node_memberships[\s\S]*unplaced_domain_members[\s\S]*multi_node_members[\s\S]*member-placement snapshot only[\s\S]*does not invite, add, place, or expose members/,
+  /Unit participation map[\s\S]*active_node_memberships[\s\S]*unplaced_domain_members[\s\S]*multi_node_members[\s\S]*member-placement snapshot only[\s\S]*does not invite, add, place, or show members/,
   "Community Domain dashboard Members lane must keep node participation public copy short while preserving member-placement and roster boundaries.",
   { frontend: true }
 );
@@ -644,7 +644,7 @@ assertContains(
 
 assertContains(
   "src/pages/communityDomainDashboard/NodeProjectionGroups.tsx",
-  /Unit privacy map[\s\S]*member_visible[\s\S]*Unit private[\s\S]*node_private[\s\S]*public_review_needed[\s\S]*cross_domain_shares[\s\S]*local privacy snapshot only[\s\S]*does not change access, publish rosters, or expose protected records/,
+  /Unit privacy map[\s\S]*member_visible[\s\S]*Unit private[\s\S]*node_private[\s\S]*public_review_needed[\s\S]*cross_domain_shares[\s\S]*local privacy snapshot only[\s\S]*does not change access, publish rosters, or show protected records/,
   "Community Domain dashboard must keep node privacy public copy short while preserving access, roster, and protected-record boundaries.",
   { frontend: true }
 );
@@ -679,14 +679,14 @@ assertContains(
 
 assertContains(
   "src/pages/communityDomainDashboard/NodeProjectionGroups.tsx",
-  /Unit communication map[\s\S]*local_communication_ready[\s\S]*public_notice_review_needed[\s\S]*notices_created[\s\S]*notifications_sent[\s\S]*local communication snapshot only[\s\S]*does not send messages, publish notices, or expose member lists/,
+  /Unit communication map[\s\S]*local_communication_ready[\s\S]*public_notice_review_needed[\s\S]*notices_created[\s\S]*notifications_sent[\s\S]*local communication snapshot only[\s\S]*does not send messages, publish notices, or show member lists/,
   "Community Domain dashboard must keep node communication public copy short while preserving message, notice, and member-list boundaries.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/communityDomainDashboard/NodeProjectionGroups.tsx",
-  /Unit vault map[\s\S]*local_vault_ready[\s\S]*active_evidence_records[\s\S]*needs_vault_steward[\s\S]*Protected storage[\s\S]*storage_keys_exposed[\s\S]*local vault snapshot only[\s\S]*does not move files, grant access, publish proof, or expose protected storage/,
+  /Unit vault map[\s\S]*local_vault_ready[\s\S]*active_evidence_records[\s\S]*needs_vault_steward[\s\S]*Protected storage[\s\S]*storage_keys_exposed[\s\S]*local vault snapshot only[\s\S]*does not move files, grant access, publish proof, or show protected storage/,
   "Community Domain dashboard must keep node vault public copy short while preserving file, access, proof, and protected-storage boundaries.",
   { frontend: true }
 );
@@ -833,7 +833,7 @@ assertContains(
 
 assertContains(
   "src/pages/communityDomainDashboard/IdentityReadinessPanels.tsx",
-  /Domain identity[\s\S]*public-safe identity anchor[\s\S]*Code[\s\S]*domain\.domain_name[\s\S]*Owner[\s\S]*domain\.owner_user_id[\s\S]*Template[\s\S]*template\.label[\s\S]*Location[\s\S]*domain\.state[\s\S]*domain\.country[\s\S]*Public profile:[\s\S]*No public profile text is recorded yet[\s\S]*This summary shows public-safe identity only[\s\S]*does not expose owner\s+contact details, private member lists, finance records, evidence files,\s+or verification proof/,
+  /Domain identity[\s\S]*public-safe identity anchor[\s\S]*Code[\s\S]*domain\.domain_name[\s\S]*Owner[\s\S]*domain\.owner_user_id[\s\S]*Template[\s\S]*template\.label[\s\S]*Location[\s\S]*domain\.state[\s\S]*domain\.country[\s\S]*Public profile:[\s\S]*No public profile text is recorded yet[\s\S]*This summary shows public-safe identity only[\s\S]*does not show owner\s+contact details, private member lists, finance records, evidence files,\s+or verification proof/,
   "Community Domain dashboard Identity lane must show a public-safe identity summary without exposing owner contact, private members, finance, evidence, or verification proof.",
   { frontend: true }
 );
@@ -1624,7 +1624,7 @@ assertContains(
 
 assertContains(
   "gmfn_backend/app/api/routes/community_domains.py",
-  /def _membership_request_status_payload[\s\S]*_action_review_payload\(row\)[\s\S]*"decision"[\s\S]*"decision_note"[\s\S]*"decided_by_user_id"[\s\S]*"applied_by_user_id"[\s\S]*"policy_id"[\s\S]*"policy_key"[\s\S]*"recusal_count"[\s\S]*"decisions"[\s\S]*payload\.pop[\s\S]*"action_review": _membership_request_status_payload\(existing_request\)[\s\S]*@router\.get\(\s*"\/\{community_domain_id\}\/membership-requests\/my"[\s\S]*def list_my_community_domain_membership_requests[\s\S]*requested_by_user_id == int\(current_user\.id\)[\s\S]*subject_user_id == int\(current_user\.id\)[\s\S]*target_type == "domain_member"[\s\S]*target_id == str\(int\(current_user\.id\)\)[\s\S]*candidate_rows[\s\S]*_is_self_service_domain_membership_review_for_user[\s\S]*_membership_request_status_payload\(row\) for row in rows[\s\S]*own Community Domain membership requests only[\s\S]*does not expose the reviewer queue[\s\S]*reviewer identities[\s\S]*decision notes[\s\S]*or grant membership/,
+  /def _membership_request_status_payload[\s\S]*_action_review_payload\(row\)[\s\S]*"decision"[\s\S]*"decision_note"[\s\S]*"decided_by_user_id"[\s\S]*"applied_by_user_id"[\s\S]*"policy_id"[\s\S]*"policy_key"[\s\S]*"recusal_count"[\s\S]*"decisions"[\s\S]*payload\.pop[\s\S]*"action_review": _membership_request_status_payload\(existing_request\)[\s\S]*@router\.get\(\s*"\/\{community_domain_id\}\/membership-requests\/my"[\s\S]*def list_my_community_domain_membership_requests[\s\S]*requested_by_user_id == int\(current_user\.id\)[\s\S]*subject_user_id == int\(current_user\.id\)[\s\S]*target_type == "domain_member"[\s\S]*target_id == str\(int\(current_user\.id\)\)[\s\S]*candidate_rows[\s\S]*_is_self_service_domain_membership_review_for_user[\s\S]*_membership_request_status_payload\(row\) for row in rows[\s\S]*own Community Domain membership requests only[\s\S]*does not show the reviewer queue[\s\S]*reviewer identities[\s\S]*decision notes[\s\S]*or grant membership/,
   "Backend must expose a requester-only and self-service-only Community Domain membership-request status route without exposing reviewer queues, reviewer identities, decision notes, decision records, governance policy identifiers, generic governance reviews, or granting membership."
 );
 
@@ -1845,7 +1845,7 @@ assertContains(
 
 assertContains(
   "gmfn_backend/app/api/routes/community_domains.py",
-  /def _community_domain_node_trust_map_payload[\s\S]*read-only local trust[\s\S]*upload evidence[\s\S]*expose storage keys[\s\S]*issue TrustSlips[\s\S]*Trust Passport entries[\s\S]*private member activity[\s\S]*@router\.get\("\/\{community_domain_id\}\/node-trust-map"[\s\S]*def get_community_domain_node_trust_map[\s\S]*_require_domain_member_scope/,
+  /def _community_domain_node_trust_map_payload[\s\S]*read-only local trust[\s\S]*upload evidence[\s\S]*show storage keys[\s\S]*issue TrustSlips[\s\S]*Trust Passport entries[\s\S]*private member activity[\s\S]*@router\.get\("\/\{community_domain_id\}\/node-trust-map"[\s\S]*def get_community_domain_node_trust_map[\s\S]*_require_domain_member_scope/,
   "Backend route must expose scoped read-only Community Domain node trust map without evidence upload, private payload, credential, TrustSlip, Trust Passport, identity, proof, finance, money, or private-activity side effects."
 );
 
@@ -1863,7 +1863,7 @@ assertContains(
 
 assertContains(
   "gmfn_backend/app/api/routes/community_domains.py",
-  /def _community_domain_node_participation_map_payload[\s\S]*read-only member[\s\S]*placement planning[\s\S]*invite members[\s\S]*place[\s\S]*members[\s\S]*expose member lists[\s\S]*private member activity[\s\S]*issue TrustSlips[\s\S]*Trust Passport entries/,
+  /def _community_domain_node_participation_map_payload[\s\S]*read-only member[\s\S]*placement planning[\s\S]*invite members[\s\S]*place[\s\S]*members[\s\S]*show member lists[\s\S]*private member activity[\s\S]*issue TrustSlips[\s\S]*Trust Passport entries/,
   "Backend helper must keep Community Domain node participation map read-only without invite, membership, role, placement, social Community, roster, marketplace, finance, TrustSlip, Trust Passport, or private-activity side effects."
 );
 
@@ -1983,7 +1983,7 @@ assertContains(
 
 assertContains(
   "gmfn_backend/app/api/routes/community_domains.py",
-  /def _community_domain_node_evidence_authority_map_payload[\s\S]*read-only local evidence authority[\s\S]*upload evidence[\s\S]*verify evidence[\s\S]*publish public evidence[\s\S]*expose storage keys[\s\S]*issue credentials[\s\S]*Trust Passport entries[\s\S]*private member activity/,
+  /def _community_domain_node_evidence_authority_map_payload[\s\S]*read-only local evidence authority[\s\S]*upload evidence[\s\S]*verify evidence[\s\S]*publish public evidence[\s\S]*show storage keys[\s\S]*issue credentials[\s\S]*Trust Passport entries[\s\S]*private member activity/,
   "Backend helper must keep Community Domain node evidence-authority map read-only without upload, verification, publication, storage-key, credential, TrustSlip, Trust Passport, marketplace, finance, legal-authority, or private-activity side effects."
 );
 
@@ -2007,7 +2007,7 @@ assertContains(
 
 assertContains(
   "gmfn_backend/app/api/routes/community_domains.py",
-  /def _community_domain_node_communication_map_payload[\s\S]*read-only local communication[\s\S]*create notices[\s\S]*send notifications[\s\S]*publish announcements[\s\S]*schedule meetings[\s\S]*emergency notices[\s\S]*expose member lists[\s\S]*private member activity/,
+  /def _community_domain_node_communication_map_payload[\s\S]*read-only local communication[\s\S]*create notices[\s\S]*send notifications[\s\S]*publish announcements[\s\S]*schedule meetings[\s\S]*emergency notices[\s\S]*show member lists[\s\S]*private member activity/,
   "Backend helper must keep Community Domain node communication map read-only without notices, notifications, announcements, meetings, events, reminders, emergency notices, member-list exposure, marketplace, finance, TrustSlip, Trust Passport, or private-activity side effects."
 );
 
@@ -2031,7 +2031,7 @@ assertContains(
 
 assertContains(
   "gmfn_backend/app/api/routes/community_domains.py",
-  /def _community_domain_node_vault_map_payload[\s\S]*read-only local vault[\s\S]*upload files[\s\S]*download files[\s\S]*create vault links[\s\S]*expose storage keys[\s\S]*expose member lists[\s\S]*Trust Passport entries[\s\S]*private member activity/,
+  /def _community_domain_node_vault_map_payload[\s\S]*read-only local vault[\s\S]*upload files[\s\S]*download files[\s\S]*create vault links[\s\S]*show storage keys[\s\S]*show member lists[\s\S]*Trust Passport entries[\s\S]*private member activity/,
   "Backend helper must keep Community Domain node vault map read-only without file upload, download, vault-link, storage-key, member-list, permission, external-reader, TrustSlip, Trust Passport, marketplace, finance, proof, or private-activity side effects."
 );
 
@@ -2157,7 +2157,7 @@ assertContains(
 
 assertContains(
   "gmfn_backend/app/api/routes/community_domains.py",
-  /def _community_domain_evidence_record_readiness_payload[\s\S]*read-only durable evidence[\s\S]*does not create CommunityDomainEvidenceRecord[\s\S]*upload files[\s\S]*expose storage keys[\s\S]*issue credentials[\s\S]*Trust Passport entries[\s\S]*@router\.get\("\/\{community_domain_id\}\/evidence-record-readiness"[\s\S]*def get_community_domain_evidence_record_readiness[\s\S]*_require_domain_member_scope/,
+  /def _community_domain_evidence_record_readiness_payload[\s\S]*read-only durable evidence[\s\S]*does not create CommunityDomainEvidenceRecord[\s\S]*upload files[\s\S]*show storage keys[\s\S]*issue credentials[\s\S]*Trust Passport entries[\s\S]*@router\.get\("\/\{community_domain_id\}\/evidence-record-readiness"[\s\S]*def get_community_domain_evidence_record_readiness[\s\S]*_require_domain_member_scope/,
   "Backend route must expose scoped read-only Community Domain evidence record readiness without evidence-record rows, file uploads, storage keys, credentials, TrustSlips, Trust Passport entries, proof publication, authority verification, billing, marketplace, social Community, money, or private-record side effects."
 );
 
@@ -2211,7 +2211,7 @@ assertContains(
 
 assertContains(
   "gmfn_backend/app/api/routes/community_domains.py",
-  /def _community_domain_notification_scope_readiness_payload[\s\S]*read-only[\s\S]*notification scope[\s\S]*does not send[\s\S]*notifications[\s\S]*create notification jobs[\s\S]*emails[\s\S]*SMS[\s\S]*WhatsApp[\s\S]*push notifications[\s\S]*audience lists[\s\S]*public announcements[\s\S]*cross-domain[\s\S]*broadcasts[\s\S]*expose member lists[\s\S]*@router\.get\("\/\{community_domain_id\}\/notification-scope-readiness"[\s\S]*def get_community_domain_notification_scope_readiness[\s\S]*_require_domain_member_scope/,
+  /def _community_domain_notification_scope_readiness_payload[\s\S]*read-only[\s\S]*notification scope[\s\S]*does not send[\s\S]*notifications[\s\S]*create notification jobs[\s\S]*emails[\s\S]*SMS[\s\S]*WhatsApp[\s\S]*push notifications[\s\S]*audience lists[\s\S]*public announcements[\s\S]*cross-domain[\s\S]*broadcasts[\s\S]*show member lists[\s\S]*@router\.get\("\/\{community_domain_id\}\/notification-scope-readiness"[\s\S]*def get_community_domain_notification_scope_readiness[\s\S]*_require_domain_member_scope/,
   "Backend route must expose scoped read-only Community Domain notification scope readiness without sending notifications, creating jobs, delivery, audience lists, announcements, broadcasts, member-list exposure, marketplace activity, money, trust, or private-record side effects."
 );
 
@@ -2229,7 +2229,7 @@ assertContains(
 
 assertContains(
   "gmfn_backend/app/api/routes/community_domains.py",
-  /def _community_domain_trust_mobility_payload[\s\S]*read-only portability planning[\s\S]*does not create TrustSlips[\s\S]*write Trust Passport[\s\S]*expose storage keys[\s\S]*create a social Community[\s\S]*@router\.get\("\/\{community_domain_id\}\/trust-mobility"[\s\S]*def get_community_domain_trust_mobility[\s\S]*_require_domain_member_scope/,
+  /def _community_domain_trust_mobility_payload[\s\S]*read-only portability planning[\s\S]*does not create TrustSlips[\s\S]*write Trust Passport[\s\S]*show storage keys[\s\S]*create a social Community[\s\S]*@router\.get\("\/\{community_domain_id\}\/trust-mobility"[\s\S]*def get_community_domain_trust_mobility[\s\S]*_require_domain_member_scope/,
   "Backend route must expose scoped read-only Community Domain trust mobility without TrustSlip, Trust Passport, credential, relay, evidence release, public proof, outward link, billing, marketplace, social Community, money, or private-record side effects."
 );
 
@@ -2433,7 +2433,7 @@ assertContains(
 
 assertContains(
   "gmfn_backend/app/api/routes/community_domains.py",
-  /def _community_domain_record_privacy_map_payload[\s\S]*read-only privacy planning[\s\S]*does not change permissions[\s\S]*expose member lists[\s\S]*share records across institutions[\s\S]*@router\.get\("\/\{community_domain_id\}\/record-privacy-map"[\s\S]*def get_community_domain_record_privacy_map[\s\S]*_require_domain_member_scope/,
+  /def _community_domain_record_privacy_map_payload[\s\S]*read-only privacy planning[\s\S]*does not change permissions[\s\S]*show member lists[\s\S]*share records across institutions[\s\S]*@router\.get\("\/\{community_domain_id\}\/record-privacy-map"[\s\S]*def get_community_domain_record_privacy_map[\s\S]*_require_domain_member_scope/,
   "Backend route must expose scoped read-only Community Domain record privacy map without permission, member-list, evidence, marketplace, finance, discovery, directory, sharing, or money side effects."
 );
 
@@ -2710,7 +2710,7 @@ assertContains(
 assertContains(
   "gmfn_backend/tests/test_community_domains.py",
   /test_node_operating_summary_rolls_up_branch_without_writes[\s\S]*\/operating-summary[\s\S]*node_member\.role_change[\s\S]*private review details[\s\S]*CommunityDomainActionReviewDecision[\s\S]*count\(\) == 0/,
-  "Backend tests must prove node operating summary rolls up branch members, policy, and reviews without deciding reviews or exposing private payloads."
+  "Backend tests must prove node operating summary rolls up branch members, policy, and reviews without deciding reviews or showing private records."
 );
 
 assertContains(
@@ -2806,7 +2806,7 @@ assertContains(
 assertContains(
   "gmfn_backend/tests/test_community_domains.py",
   /test_member_placement_summary_projects_roles_without_writes[\s\S]*domain_member\.upsert[\s\S]*\/placement-summary[\s\S]*\/action-reviews\?user_id=\{teacher\.id\}[\s\S]*filtered_payload\["user_id"\] == teacher\.id[\s\S]*filtered_payload\["total"\] == 1[\s\S]*filtered_payload\["items"\]\[0\]\["id"\] == review_id[\s\S]*review_member_action_reviews[\s\S]*private review details[\s\S]*CommunityDomainActionReviewDecision[\s\S]*count\(\) == 0/,
-  "Backend tests must prove member placement summary projects roles and reviews without deciding reviews or exposing private payloads, and that its member-specific action-review route hint has a real filtered backend list."
+  "Backend tests must prove member placement summary projects roles and reviews without deciding reviews or showing private records, and that its member-specific action-review route hint has a real filtered backend list."
 );
 
 assertContains(

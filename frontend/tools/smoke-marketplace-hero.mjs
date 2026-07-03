@@ -175,8 +175,6 @@ async function run() {
         "CCI",
         "Money & Trust",
         "Trade & Shops",
-        "Demand Box",
-        "Support Requests",
         "Marketplace Tools",
         "Spotlight",
       ];
