@@ -30,7 +30,14 @@ function cleanText(value: unknown, fallback = ""): string {
 }
 
 function compactStatus(value: unknown): string {
-  return cleanText(value, "not recorded").replace(/_/g, " ");
+  const normalized = cleanText(value, "not recorded").replace(/_/g, " ");
+  if (/not\s+created\s+in\s+this\s+slice/i.test(normalized)) {
+    return "not created yet";
+  }
+  if (/not\s+recorded\s+in\s+this\s+slice/i.test(normalized)) {
+    return "not recorded yet";
+  }
+  return normalized;
 }
 
 function countValue(value: unknown): string {
@@ -111,12 +118,17 @@ function statusBadge(status: unknown): React.CSSProperties {
     padding: "7px 10px",
     fontSize: 12,
     fontWeight: 850,
+    lineHeight: 1.15,
     color: positive ? "#15573A" : attention ? "#7A4B00" : "#25415F",
     background: positive ? "#E7F8EF" : attention ? "#FFF3D8" : "#EEF4FB",
     border: `1px solid ${
       positive ? "rgba(21,87,58,0.16)" : attention ? "rgba(122,75,0,0.18)" : "rgba(37,65,95,0.14)"
     }`,
     textTransform: "capitalize",
+    maxWidth: "100%",
+    whiteSpace: "normal",
+    overflowWrap: "normal",
+    textAlign: "center",
   };
 }
 
@@ -162,17 +174,20 @@ function statusRow(
       key={key}
       style={{
         display: "grid",
-        gridTemplateColumns: "minmax(0, 1fr) auto",
-        gap: 10,
-        alignItems: "center",
+        gridTemplateColumns: "minmax(0, 1fr)",
+        gap: 8,
+        alignItems: "start",
         borderRadius: 14,
         border: "1px solid rgba(9,27,46,0.10)",
         background: "rgba(255,255,255,0.72)",
-        padding: "10px 10px 10px 12px",
+        padding: "12px",
+        minWidth: 0,
       }}
     >
       <span style={{ minWidth: 0 }}>
-        <span style={{ display: "block", fontWeight: 950 }}>{title}</span>
+        <span style={{ display: "block", fontWeight: 950, fontSize: 15, lineHeight: 1.18 }}>
+          {title}
+        </span>
         <span
           style={{
             display: "block",
@@ -185,7 +200,7 @@ function statusRow(
           {detail}
         </span>
       </span>
-      <span style={statusBadge(status)}>{compactStatus(status)}</span>
+      <span style={{ ...statusBadge(status), justifySelf: "start" }}>{compactStatus(status)}</span>
     </div>
   );
 }

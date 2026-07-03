@@ -15,6 +15,7 @@ from app.services.institutional_pdf import (
     draw_institutional_header,
     safe_pdf_text,
     utc_generated_label,
+    wrap_pdf_text_lines,
 )
 from app.services.trust_score_service import trust_band_for_score, compute_trust_score_explained
 
@@ -88,6 +89,8 @@ def build_loan_evidence_pack_pdf(
 
     clan = db.get(Clan, getattr(loan, "clan_id", None))
     clan_name = getattr(clan, "name", None) if clan else None
+    community_reference = getattr(clan, "community_code", None) or f"GSN-C-{int(getattr(loan, 'clan_id', 0) or 0):06d}"
+    support_reference = f"GSN-SUPPORT-{int(loan_id):06d}"
 
     borrower_user_id = getattr(loan, "borrower_user_id", None)
     borrower: Optional[User] = db.get(User, borrower_user_id) if borrower_user_id is not None else None
@@ -195,43 +198,52 @@ def build_loan_evidence_pack_pdf(
         c,
         width,
         height,
-        title="GSN Loan Evidence Pack",
-        subtitle="Loan, trust snapshot, supporter, repayment, and timeline evidence.",
+        title="GSN Support Evidence Pack",
+        subtitle="Support record, trust snapshot, supporters, repayment, and evidence timeline.",
         generated_at=ts,
-        reference=f"Loan {loan_id}",
+        reference=support_reference,
     )
+    content_left = 56
+    content_width = width - (content_left * 2)
 
     def line(text: str, size: int = 11, gap: int = 16, bold: bool = False):
         nonlocal y
-        if y < 60:
-            draw_institutional_footer(c, width, "GSN loan evidence paper")
-            c.showPage()
-            y = draw_institutional_header(
-                c,
-                width,
-                height,
-                title="GSN Loan Evidence Pack",
-                subtitle="Loan, trust snapshot, supporter, repayment, and timeline evidence.",
-                generated_at=ts,
-                reference=f"Loan {loan_id}",
-            )
-        c.setFont("Helvetica-Bold" if bold else "Helvetica", size)
-        c.drawString(56, y, safe_pdf_text(text))
-        y -= gap
+        if not str(text if text is not None else "").strip():
+            y -= gap
+            return
+
+        font_name = "Helvetica-Bold" if bold else "Helvetica"
+        for wrapped_line in wrap_pdf_text_lines(text, font_name, size, content_width):
+            if y < 60:
+                draw_institutional_footer(c, width, "GSN support evidence paper")
+                c.showPage()
+                y = draw_institutional_header(
+                    c,
+                    width,
+                    height,
+                    title="GSN Support Evidence Pack",
+                    subtitle="Support record, trust snapshot, supporters, repayment, and evidence timeline.",
+                    generated_at=ts,
+                    reference=support_reference,
+                )
+            c.setFont(font_name, size)
+            c.drawString(content_left, y, safe_pdf_text(wrapped_line))
+            y -= gap
 
     def kv(label: str, value: str):
         line(f"{label}: {value}", size=10, gap=14)
 
     line("Official evidence summary", size=14, gap=20, bold=True)
     kv("Generated", ts)
-    kv("Loan ID", str(loan_id))
+    kv("Support record", support_reference)
     kv("Community", clan_name or "-")
+    kv("Community ID", community_reference)
     kv("Borrower", borrower_reference)
     kv("Redaction", "ON (member references redacted)" if redact else "OFF (authorized complete-record contact)")
     line("")
 
     # Trust Snapshot
-    line("Trust Snapshot (Explainable)", bold=True)
+    line("Trust snapshot", bold=True)
     kv("Borrower score", str(borrower_trust.get("score")) if borrower_trust.get("score") is not None else "-")
     kv("Borrower band", borrower_trust.get("band") or "-")
     if borrower_trust.get("updated_at"):
@@ -252,8 +264,8 @@ def build_loan_evidence_pack_pdf(
 
     line("")
 
-    # Loan summary
-    line("Loan summary", bold=True)
+    # Support summary
+    line("Support summary", bold=True)
     kv("Status", str(getattr(loan, "status", "-")))
     kv("Amount", str(getattr(loan, "amount", getattr(loan, "principal_amount", "-"))))
     kv("Created", str(getattr(loan, "created_at", "-")))
@@ -298,7 +310,7 @@ def build_loan_evidence_pack_pdf(
     line("")
 
     # Trust timeline
-    line("Trust timeline (events linked to this loan)", bold=True)
+    line("Evidence timeline for this support record", bold=True)
     if not trust_events:
         line("- None", size=10, gap=14)
     else:
@@ -334,12 +346,12 @@ def build_loan_evidence_pack_pdf(
         gap=13,
     )
     line(
-        "Use the redacted share copy for outside review. Use the complete record only when the reviewer is allowed to see private loan, supporter, and repayment details.",
+        "Use the redacted share copy for outside review. Use the complete record only when the reviewer is allowed to see private support, supporter, and repayment details.",
         size=9,
         gap=13,
     )
 
-    draw_institutional_footer(c, width, "GSN loan evidence paper - controlled community trust record.")
+    draw_institutional_footer(c, width, "GSN support evidence paper - controlled community trust record.")
     c.showPage()
     c.save()
 

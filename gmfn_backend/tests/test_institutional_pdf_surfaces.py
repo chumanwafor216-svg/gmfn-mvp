@@ -1,5 +1,6 @@
 from pathlib import Path
 from decimal import Decimal
+import importlib.util
 
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
@@ -37,20 +38,282 @@ def _assert_pdf_bytes(pdf: bytes) -> None:
     assert b"%%EOF" in pdf[-128:]
 
 
+def _load_module(path: Path, name: str):
+    spec = importlib.util.spec_from_file_location(name, path)
+    assert spec is not None
+    assert spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
 def test_shared_institutional_pdf_helper_exists():
     text = read_service("app/services/institutional_pdf.py")
 
     assert "def draw_gsn_watermark" in text
+    assert "def wrap_pdf_text_lines" in text
+    assert "_split_oversized_pdf_word" in text
+    assert "_set_alpha(pdf_canvas, 1)" in text
+    assert "GSN TRUST RECORD" in text
+    assert "for x_factor, y_factor, rotation in" in text
     assert "def draw_institutional_header" in text
     assert "def draw_institutional_footer" in text
     assert "GLOBAL SUPPORT NETWORK" in text
+    assert "GSN_WATERMARK_BLUE" in text
+    assert "GSN_WATERMARK_GOLD" in text
     assert "Security marks: GSN watermark | UTC time | reference | limitation" in text
+
+
+def test_shared_pdf_text_wrapper_keeps_lines_inside_page_width():
+    from app.services.institutional_pdf import wrap_pdf_text_lines
+
+    max_width = 160
+    text = (
+        "Use the redacted share copy for outside review. Use the complete record "
+        "only when the reviewer is allowed to see private member evidence."
+    )
+
+    lines = wrap_pdf_text_lines(text, "Helvetica", 9, max_width)
+
+    assert len(lines) > 1
+    assert all(stringWidth(line, "Helvetica", 9) <= max_width for line in lines)
+    assert wrap_pdf_text_lines("", "Helvetica", 9, max_width, fallback=None) == []
+
+    long_word_lines = wrap_pdf_text_lines("GSN-" + ("A" * 90), "Helvetica", 9, max_width)
+    assert len(long_word_lines) > 1
+    assert all(stringWidth(line, "Helvetica", 9) <= max_width for line in long_word_lines)
+
+
+def test_institutional_pdf_smoke_generator_writes_valid_review_artifact():
+    module = _load_module(
+        ROOT / "tools/generate_institutional_pdf_smoke.py",
+        "generate_institutional_pdf_smoke",
+    )
+    output_path = ROOT.parent / "pytest-tmp-pdf-smoke" / "institutional-watermark-smoke.pdf"
+
+    try:
+        returned_path = module.build_smoke_pdf(output_path)
+
+        assert returned_path == output_path
+        assert returned_path.exists()
+        _assert_pdf_bytes(returned_path.read_bytes())
+    finally:
+        output_path.unlink(missing_ok=True)
+
+    text = read_service("tools/generate_institutional_pdf_smoke.py")
+    assert "draw_institutional_header" in text
+    assert "draw_institutional_footer" in text
+    assert "not a live member, payment, or legal record" in text
+    assert "not a bank guarantee" not in text
+
+
+def test_institutional_pdf_smoke_renderer_writes_png_review_artifact():
+    generator = _load_module(
+        ROOT / "tools/generate_institutional_pdf_smoke.py",
+        "generate_institutional_pdf_smoke_for_render",
+    )
+    renderer = _load_module(
+        ROOT / "tools/render_pdf_to_png.py",
+        "render_pdf_to_png",
+    )
+    temp_dir = ROOT.parent / "pytest-tmp-pdf-smoke"
+    pdf_path = temp_dir / "institutional-watermark-smoke.pdf"
+    png_path = temp_dir / "institutional-watermark-smoke.png"
+
+    try:
+        generator.build_smoke_pdf(pdf_path)
+        returned_path = renderer.render_first_page(pdf_path, png_path, zoom=1.0)
+
+        assert returned_path == png_path
+        assert png_path.exists()
+        assert png_path.read_bytes().startswith(b"\x89PNG\r\n\x1a\n")
+        assert png_path.stat().st_size > 1000
+    finally:
+        pdf_path.unlink(missing_ok=True)
+        png_path.unlink(missing_ok=True)
+
+    text = read_service("tools/render_pdf_to_png.py")
+    assert "import fitz" in text
+    assert "def render_page" in text
+    assert "--page" in text
+    assert "render_first_page" in text
+
+
+def test_service_pdf_smoke_generator_writes_member_evidence_pdf_and_png():
+    module = _load_module(
+        ROOT / "tools/generate_service_pdf_smoke.py",
+        "generate_service_pdf_smoke",
+    )
+    temp_dir = ROOT.parent / "pytest-tmp-pdf-smoke"
+    pdf_path = temp_dir / "member-evidence-pack-smoke.pdf"
+    png_path = temp_dir / "member-evidence-pack-smoke.png"
+
+    try:
+        result = module.build_member_evidence_smoke(pdf_path, png_path)
+
+        assert result["pdf"] == pdf_path
+        assert result["png"] == png_path
+        assert pdf_path.exists()
+        assert png_path.exists()
+        _assert_pdf_bytes(pdf_path.read_bytes())
+        assert png_path.read_bytes().startswith(b"\x89PNG\r\n\x1a\n")
+        assert png_path.stat().st_size > 1000
+    finally:
+        pdf_path.unlink(missing_ok=True)
+        png_path.unlink(missing_ok=True)
+
+    text = read_service("tools/generate_service_pdf_smoke.py")
+    assert "build_user_evidence_pack_pdf" in text
+    assert "GSN-U-SERVICE-SMOKE" in text
+    assert "member-evidence-smoke@example.com" in text
+
+
+def test_service_pdf_smoke_generator_writes_community_evidence_pdf_and_png():
+    module = _load_module(
+        ROOT / "tools/generate_service_pdf_smoke.py",
+        "generate_service_pdf_community_smoke",
+    )
+    temp_dir = ROOT.parent / "pytest-tmp-pdf-smoke"
+    pdf_path = temp_dir / "community-evidence-pack-smoke.pdf"
+    png_path = temp_dir / "community-evidence-pack-smoke.png"
+
+    try:
+        result = module.build_community_evidence_smoke(pdf_path, png_path)
+
+        assert result["pdf"] == pdf_path
+        assert result["png"] == png_path
+        assert pdf_path.exists()
+        assert png_path.exists()
+        _assert_pdf_bytes(pdf_path.read_bytes())
+        assert png_path.read_bytes().startswith(b"\x89PNG\r\n\x1a\n")
+        assert png_path.stat().st_size > 1000
+    finally:
+        pdf_path.unlink(missing_ok=True)
+        png_path.unlink(missing_ok=True)
+
+    text = read_service("tools/generate_service_pdf_smoke.py")
+    assert "build_clan_evidence_pack_pdf" in text
+    assert "GSN-C-EVIDENCE-SMOKE" in text
+    assert "community-owner-smoke@example.com" in text
+
+
+def test_service_pdf_smoke_generator_writes_loan_evidence_pdf_and_png():
+    module = _load_module(
+        ROOT / "tools/generate_service_pdf_smoke.py",
+        "generate_service_pdf_loan_smoke",
+    )
+    temp_dir = ROOT.parent / "pytest-tmp-pdf-smoke"
+    pdf_path = temp_dir / "loan-evidence-pack-smoke.pdf"
+    png_path = temp_dir / "loan-evidence-pack-smoke.png"
+
+    try:
+        result = module.build_loan_evidence_smoke(pdf_path, png_path)
+
+        assert result["pdf"] == pdf_path
+        assert result["png"] == png_path
+        assert pdf_path.exists()
+        assert png_path.exists()
+        _assert_pdf_bytes(pdf_path.read_bytes())
+        assert png_path.read_bytes().startswith(b"\x89PNG\r\n\x1a\n")
+        assert png_path.stat().st_size > 1000
+    finally:
+        pdf_path.unlink(missing_ok=True)
+        png_path.unlink(missing_ok=True)
+
+    text = read_service("tools/generate_service_pdf_smoke.py")
+    assert "build_loan_evidence_pack_pdf" in text
+    assert "GSN-U-SUPPORT-SMOKE" in text
+    assert "GSN-C-SUPPORT-SMOKE" in text
+    assert "support-borrower-smoke@example.com" in text
+
+
+def test_service_pdf_smoke_generator_writes_trustslip_evidence_pdf_and_png():
+    module = _load_module(
+        ROOT / "tools/generate_service_pdf_smoke.py",
+        "generate_service_pdf_trustslip_smoke",
+    )
+    temp_dir = ROOT.parent / "pytest-tmp-pdf-smoke"
+    pdf_path = temp_dir / "trustslip-evidence-smoke.pdf"
+    png_path = temp_dir / "trustslip-evidence-smoke.png"
+    page2_png_path = temp_dir / "trustslip-evidence-smoke-page2.png"
+
+    try:
+        result = module.build_trustslip_evidence_smoke(pdf_path, png_path, page2_png_path)
+
+        assert result["pdf"] == pdf_path
+        assert result["png"] == png_path
+        assert result["page2_png"] == page2_png_path
+        assert pdf_path.exists()
+        assert png_path.exists()
+        assert page2_png_path.exists()
+        _assert_pdf_bytes(pdf_path.read_bytes())
+        assert png_path.read_bytes().startswith(b"\x89PNG\r\n\x1a\n")
+        assert page2_png_path.read_bytes().startswith(b"\x89PNG\r\n\x1a\n")
+        assert png_path.stat().st_size > 1000
+        assert page2_png_path.stat().st_size > 1000
+    finally:
+        pdf_path.unlink(missing_ok=True)
+        png_path.unlink(missing_ok=True)
+        page2_png_path.unlink(missing_ok=True)
+
+    text = read_service("tools/generate_service_pdf_smoke.py")
+    assert "build_trust_slip_pdf" in text
+    assert "render_page" in text
+    assert "--trustslip-page2-png" in text
+    assert "GSN-PACK-TRUSTSLIP-SMOKE" in text
+    assert "trustslip-smoke@example.com" in text
+
+
+def test_trustslip_evidence_smoke_pdf_text_keeps_private_fields_out():
+    module = _load_module(
+        ROOT / "tools/generate_service_pdf_smoke.py",
+        "generate_service_pdf_trustslip_smoke_text_audit",
+    )
+    temp_dir = ROOT.parent / "pytest-tmp-pdf-smoke"
+    pdf_path = temp_dir / "trustslip-evidence-smoke.pdf"
+
+    try:
+        result = module.build_trustslip_evidence_smoke(pdf_path, render_png=False)
+
+        assert result["pdf"] == pdf_path
+        assert pdf_path.exists()
+        _assert_pdf_bytes(pdf_path.read_bytes())
+
+        import fitz
+
+        document = fitz.open(pdf_path)
+        try:
+            assert document.page_count >= 2
+            text = "\n".join(page.get_text() for page in document)
+        finally:
+            document.close()
+
+        assert "Private member reference: redacted for TrustSlip evidence paper" in text
+        assert "Reconciliation reference: private operational detail redacted" in text
+        assert "Public TrustSlip verification QR" in text
+        assert "Scan to open this public TrustSlip verification page." in text
+        assert "Merchant verification QR" not in text
+        assert "Scan to open merchant verification view." not in text
+        assert "trustslip-smoke@example.com" not in text
+        assert "9201" not in text
+        assert "user_id" not in text
+        assert "actor_user_id" not in text
+        assert "subject_user_id" not in text
+        assert "confirmed_by" not in text
+        assert "payment_reference" not in text
+        assert "Payment reference" not in text
+    finally:
+        pdf_path.unlink(missing_ok=True)
 
 
 class _RecordingPdfCanvas:
     def __init__(self):
         self.draw_strings = []
         self.round_rects = []
+        self.fill_alphas = []
+        self.stroke_alphas = []
+        self.fonts = []
+        self.transforms = []
 
     def saveState(self):
         pass
@@ -59,16 +322,16 @@ class _RecordingPdfCanvas:
         pass
 
     def setFillAlpha(self, value):
-        pass
+        self.fill_alphas.append(value)
 
     def setStrokeAlpha(self, value):
-        pass
+        self.stroke_alphas.append(value)
 
     def translate(self, x, y):
-        pass
+        self.transforms.append(("translate", x, y))
 
     def rotate(self, degrees):
-        pass
+        self.transforms.append(("rotate", degrees))
 
     def setFillColor(self, color):
         pass
@@ -80,7 +343,7 @@ class _RecordingPdfCanvas:
         pass
 
     def setFont(self, name, size):
-        pass
+        self.fonts.append((name, size))
 
     def drawCentredString(self, x, y, text):
         self.draw_strings.append(("center", x, y, text))
@@ -93,6 +356,28 @@ class _RecordingPdfCanvas:
 
     def line(self, x1, y1, x2, y2):
         pass
+
+
+def test_shared_institutional_pdf_watermark_draws_repeated_trust_record_field():
+    from app.services.institutional_pdf import draw_gsn_watermark
+
+    width, height = A4
+    canvas = _RecordingPdfCanvas()
+
+    draw_gsn_watermark(canvas, width, height)
+
+    drawn_text = [row[3] for row in canvas.draw_strings]
+    assert drawn_text.count("GSN") == 1
+    assert drawn_text.count("GLOBAL SUPPORT NETWORK") == 1
+    assert drawn_text.count("GSN TRUST RECORD") == 4
+    assert canvas.fill_alphas.count(1) == 2
+    assert ("Helvetica-Bold", 78) in canvas.fonts
+    assert ("Helvetica-Bold", 26) in canvas.fonts
+
+    rotations = [entry[1] for entry in canvas.transforms if entry[0] == "rotate"]
+    assert 32 in rotations
+    assert rotations.count(-18) == 2
+    assert rotations.count(18) == 2
 
 
 def test_shared_institutional_pdf_header_security_strip_has_safe_geometry():
@@ -375,12 +660,38 @@ def test_simple_evidence_pdfs_use_gsn_institutional_shell():
         assert "draw_institutional_header" in text
         assert "draw_institutional_footer" in text
         assert "safe_pdf_text" in text
+        assert "wrap_pdf_text_lines" in text
+        assert "content_width = width - (content_left * 2)" in text
         assert "Official evidence summary" in text
         assert "GMFN Evidence Pack" not in text
 
     loan_text = read_service("app/services/loan_evidence_pack_pdf_service.py")
     assert 'kv("Community", clan_name or "-")' in loan_text
+    assert 'kv("Community ID", community_reference)' in loan_text
+    assert 'kv("Support record", support_reference)' in loan_text
     assert 'kv("Clan"' not in loan_text
+    assert 'kv("Loan ID", str(loan_id))' not in loan_text
+
+    community_text = read_service("app/services/evidence_pack_pdf_service.py")
+    assert "community_reference = getattr(clan, \"community_code\", None)" in community_text
+    assert "Community ID: {community_reference}" in community_text
+    assert "Community entry summary" in community_text
+    assert "Evidence activity summary" in community_text
+    assert "Member joined by invite" in community_text
+    assert "Community ID: {clan_id}" not in community_text
+    assert "TrustEvent summary counts" not in community_text
+
+    assert "Trust snapshot" in loan_text
+    assert "Support summary" in loan_text
+    assert "Evidence timeline for this support record" in loan_text
+    assert "GSN Support Evidence Pack" in loan_text
+    assert "GSN support evidence paper" in loan_text
+    assert "private support, supporter, and repayment details" in loan_text
+    assert "GSN Loan Evidence Pack" not in loan_text
+    assert "GSN loan evidence paper" not in loan_text
+    assert "Loan summary" not in loan_text
+    assert "Trust Snapshot (Explainable)" not in loan_text
+    assert "Trust timeline (events linked to this loan)" not in loan_text
 
 
 def test_trust_slip_pdf_uses_gsn_title_and_watermark():
@@ -392,6 +703,9 @@ def test_trust_slip_pdf_uses_gsn_title_and_watermark():
     assert "draw_institutional_header" in text
     assert "draw_institutional_footer" in text
     assert "Trust-limit signal" in text
+    assert "KeepTogether" in text
+    assert 'Paragraph("Public TrustSlip verification QR", styles["Heading2"])' in text
+    assert "Merchant verification QR" not in text
     assert "Available support capacity" in text
     assert "Support pressure reading" in text
     assert "Estimated support gap" in text
@@ -403,6 +717,8 @@ def test_trust_slip_pdf_uses_gsn_title_and_watermark():
     assert "Available Guarantee Capacity" not in text
     assert "Overexposure ratio" not in text
     assert "Estimated Guarantee Gap" not in text
+    assert "from reportlab.lib.units import inch, mm" in text
+    assert "topMargin=80 * mm" in text
     assert "Confirmed By (Actor ID)" not in text
     assert "Confirmed by record" not in text
     assert "confirmation_source = \"GSN recorded trust event\"" in text
@@ -454,6 +770,9 @@ def test_public_trust_slip_verify_page_title_and_links_are_institutional():
     assert 'safe_code_path = quote(str(code), safe="")' in text
     assert 'print_link = f"/trust-slips/verify/{safe_code_path}/print?level={visibility_level}"' in text
     assert 'qr_img = f"/trust-slips/verify/{safe_code_path}/qr.png?level={visibility_level}"' in text
+    assert '<div class="watermark-field" aria-hidden="true">' in text
+    assert "<span>Public</span><span>Trust</span>" in text
+    assert "border: 22px solid rgba(11,99,209,0.085)" in text
     assert '"A": "Strong evidence"' in text
     assert '"B": "Generally steady evidence"' in text
     assert '"A": "Strongly trusted"' not in text
@@ -648,7 +967,8 @@ def test_governance_pack_uses_gsn_community_language():
     assert "GSN Community Governance Pack" in text
     assert "Community ID:" in text
     assert "Community Name:" in text
-    assert "GSN Loan Evidence Pack" in text
+    assert "GSN Support Evidence Pack" in text
+    assert "Support record:" in text
     assert "gsn-community-{clan_id}-governance-pack" in text
     assert "gsn_community_governance_pack" in text
     assert "complete_admin_record" in text
@@ -660,9 +980,11 @@ def test_governance_pack_uses_gsn_community_language():
     assert "gsn-loan-{loan.id}-trust-report.pdf" in text
     assert "gsn-loan-{loan.id}-evidence-pack-{ts}.zip" in text
     assert '"artifact": "gsn_loan_evidence_pack"' in text
-    assert "Use the redacted loan trust report PDF for borrower-facing or outside review." in text
+    assert "Use the redacted support trust report PDF for borrower-facing or outside review." in text
     assert "GMFN Clan Governance Pack" not in text
     assert "GMFN Loan Evidence Pack" not in text
+    assert "GSN Loan Evidence Pack" not in text
+    assert "Loan ID: {loan.id}" not in text
     assert "gmfn-loan-{loan.id}-trust-report.csv" not in text
     assert "gmfn-loan-{loan.id}-trust-report.pdf" not in text
     assert "gmfn-loan-{loan.id}-evidence-pack-{ts}.zip" not in text
@@ -737,7 +1059,7 @@ def test_simple_evidence_pdfs_keep_reader_boundaries_and_redaction_guards():
     assert "redact: bool = True" in loan_text
     assert "Reader boundary" in loan_text
     assert "meta: redacted for share copy" in loan_text
-    assert "private loan, supporter, and repayment details" in loan_text
+    assert "private support, supporter, and repayment details" in loan_text
     assert "def _mask_email" not in loan_text
     assert "show_email" not in loan_text
     assert "r['email'] or r['user_id']" not in loan_text

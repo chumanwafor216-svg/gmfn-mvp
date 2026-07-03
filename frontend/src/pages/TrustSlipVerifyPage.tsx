@@ -196,6 +196,8 @@ export default function TrustSlipVerifyPage() {
   const [me, setMe] = useState<any>(null);
   const [currentClan, setCurrentClan] = useState<any>(null);
   const [record, setRecord] = useState<TrustSlipVerifyRecord | null>(null);
+  const [privateEvidenceRecord, setPrivateEvidenceRecord] =
+    useState<TrustSlipVerifyRecord | null>(null);
   const [resolvedCode, setResolvedCode] = useState("");
   const [codeEntry, setCodeEntry] = useState("");
   const [loadError, setLoadError] = useState("");
@@ -276,6 +278,7 @@ export default function TrustSlipVerifyPage() {
       setMe(null);
       setCurrentClan(null);
       setRecord(null);
+      setPrivateEvidenceRecord(null);
       setResolvedCode("");
       resolvedCodeRef.current = "";
       setConfirmationOutcome(null);
@@ -301,10 +304,18 @@ export default function TrustSlipVerifyPage() {
         setCurrentClan(clanRes || null);
 
         let codeToUse = requestedCode;
+        let mySlip: any = null;
 
-        if (!codeToUse && isAppRoute && typeof (api as any).getMyTrustSlip === "function") {
-          const mySlip = await (api as any).getMyTrustSlip().catch(() => null);
-          codeToUse = firstTruthy(mySlip?.code, mySlip?.trust_slip_code);
+        if (isAppRoute && typeof (api as any).getMyTrustSlip === "function") {
+          mySlip = await (api as any).getMyTrustSlip().catch(() => null);
+          if (!codeToUse) {
+            codeToUse = firstTruthy(
+              mySlip?.code,
+              mySlip?.trust_slip_code,
+              mySlip?.token,
+              mySlip?.verification_code
+            );
+          }
           if (
             !alive ||
             loadSeq !== verifyLoadSeqRef.current ||
@@ -347,6 +358,17 @@ export default function TrustSlipVerifyPage() {
 
         const normalized = normalizeTrustSlipVerification(verifyResult, codeToUse);
         setRecord(normalized);
+        const mySlipCode = firstTruthy(
+          mySlip?.code,
+          mySlip?.trust_slip_code,
+          mySlip?.token,
+          mySlip?.verification_code
+        );
+        const privateNormalized =
+          isAppRoute && mySlipCode && mySlipCode === codeToUse
+            ? normalizeTrustSlipVerification(mySlip, codeToUse)
+            : null;
+        setPrivateEvidenceRecord(privateNormalized);
         setConfirmationOutcome(null);
 
         if (!normalized) {
@@ -418,14 +440,20 @@ export default function TrustSlipVerifyPage() {
   );
 
   const banner = useMemo(() => deriveBanner(record), [record]);
-  const bannerStyle = bannerToneStyle(banner.tone);
+  const privateEvidenceCode = firstTruthy(privateEvidenceRecord?.code);
+  const visibleRecordCode = firstTruthy(record?.code, resolvedCode);
+  const ownsVisibleTrustSlip =
+    isAppRoute &&
+    Boolean(privateEvidenceRecord) &&
+    Boolean(privateEvidenceCode) &&
+    privateEvidenceCode === visibleRecordCode;
 
   const trustSlipView = useMemo(
     () =>
       buildTrustSlipVerifyViewModel({
         record,
-        me,
-        isAppRoute,
+        me: ownsVisibleTrustSlip ? me : null,
+        isAppRoute: ownsVisibleTrustSlip,
         holderName,
         communityLabel,
         visibleBand,
@@ -436,7 +464,7 @@ export default function TrustSlipVerifyPage() {
     [
       record,
       me,
-      isAppRoute,
+      ownsVisibleTrustSlip,
       holderName,
       communityLabel,
       visibleBand,
@@ -445,18 +473,41 @@ export default function TrustSlipVerifyPage() {
       banner,
     ]
   );
+  const privateEvidenceBanner = useMemo(
+    () => deriveBanner(privateEvidenceRecord || record),
+    [privateEvidenceRecord, record]
+  );
+  const privateEvidenceBannerStyle = bannerToneStyle(privateEvidenceBanner.tone);
+  const privateEvidenceView = useMemo(
+    () =>
+      buildTrustSlipVerifyViewModel({
+        record: privateEvidenceRecord || record,
+        me,
+        isAppRoute,
+        holderName,
+        communityLabel,
+        visibleBand,
+        visibleScore,
+        resolvedCode,
+        banner: privateEvidenceBanner,
+      }),
+    [
+      privateEvidenceRecord,
+      record,
+      me,
+      isAppRoute,
+      holderName,
+      communityLabel,
+      visibleBand,
+      visibleScore,
+      resolvedCode,
+      privateEvidenceBanner,
+    ]
+  );
+  const canShowPrivateEvidence = ownsVisibleTrustSlip;
 
   const {
-    trustLimit,
-    currency,
-    cciReading,
-    cciBand,
-    sponsorCount,
     profileImageUrl,
-    communityGlobalId,
-    holderRole,
-    activeMemberCount,
-    activeCommunityCount,
     memberWitnessCount,
     membershipStrengthLabel,
     membershipRenewalStatusLabel,
@@ -471,22 +522,6 @@ export default function TrustSlipVerifyPage() {
     communityActivityLatestAt,
     communityActivityCategories,
     communityActivityLabel,
-    identityStatusLabel,
-    cciMeaning,
-    phoneVerified,
-    merchantVerifyActive,
-    lastReleaseText,
-    lastFullRepaymentText,
-    snapshotLabel,
-    riskFlags,
-    personalCommitmentDiscipline,
-    contributionDiscipline,
-    repaymentDiscipline,
-    commitmentPlainLanguage,
-    personalCommitmentPlainLanguage,
-    commitmentSourceNote,
-    fourDecisionQuestions,
-    readerVerdict,
     verifyPath,
     verifyUrl,
     compactTrustLimit,
@@ -504,12 +539,8 @@ export default function TrustSlipVerifyPage() {
     communityConfirmationText,
     communityConfirmationRows,
     memberCredentialPath,
-    statusLabel,
     issuedAtLabel,
     expiresAtLabel,
-    systemNote,
-    verificationState,
-    verificationNote,
   } = trustSlipView;
 
   const confirmationResult = confirmationOutcome?.community_response || null;
@@ -1137,7 +1168,7 @@ export default function TrustSlipVerifyPage() {
       )}
       {noPublicCodeSupplied ? null : <TrustSlipVerifyBoundary compact={isCompact} />}
 
-      {isAppRoute ? (
+      {canShowPrivateEvidence ? (
         <details
           className="print-trust-support"
           open={privateEvidenceOpen}
@@ -1217,61 +1248,61 @@ export default function TrustSlipVerifyPage() {
             >
               <TrustSlipVerifyPrivateEvidence
                 compact={isCompact}
-                bannerTitle={banner.title}
-                bannerDetail={banner.detail}
-                bannerStyle={bannerStyle}
+                bannerTitle={privateEvidenceBanner.title}
+                bannerDetail={privateEvidenceBanner.detail}
+                bannerStyle={privateEvidenceBannerStyle}
                 loadError={loadError}
                 resolvedCode={resolvedCode}
-                statusLabel={loadError ? "Unavailable" : statusLabel}
+                statusLabel={loadError ? "Unavailable" : privateEvidenceView.statusLabel}
                 holderName={holderName}
                 gsnId={gmfnId}
-                profileImageUrl={profileImageUrl}
+                profileImageUrl={privateEvidenceView.profileImageUrl}
                 communityLabel={communityLabel}
-                communityGlobalId={communityGlobalId}
-                holderRole={holderRole}
-                activeMemberCount={activeMemberCount}
-                activeCommunityCount={activeCommunityCount}
-                memberWitnessCount={memberWitnessCount}
-                membershipStrengthLabel={membershipStrengthLabel}
-                membershipRenewalStatusLabel={membershipRenewalStatusLabel}
-                membershipValidUntil={membershipValidUntil}
-                nextWitnessRenewalAt={nextWitnessRenewalAt}
-                nextWitnessRenewalStatusLabel={nextWitnessRenewalStatusLabel}
-                memberCredentialPath={memberCredentialPath}
-                communityActivityCount={communityActivityCount}
-                communityActivityLatestAt={communityActivityLatestAt}
-                communityActivityCategories={communityActivityCategories}
-                communityActivityLabel={communityActivityLabel}
-                sponsorCount={sponsorCount}
-                phoneVerifiedRaw={record?.phone_verified}
-                identityStatusLabel={identityStatusLabel}
-                cciReading={cciReading}
-                cciBand={cciBand}
-                cciMeaning={cciMeaning}
-                trustLimit={trustLimit}
-                currency={currency}
-                readerVerdict={readerVerdict}
-                questions={fourDecisionQuestions}
+                communityGlobalId={privateEvidenceView.communityGlobalId}
+                holderRole={privateEvidenceView.holderRole}
+                activeMemberCount={privateEvidenceView.activeMemberCount}
+                activeCommunityCount={privateEvidenceView.activeCommunityCount}
+                memberWitnessCount={privateEvidenceView.memberWitnessCount}
+                membershipStrengthLabel={privateEvidenceView.membershipStrengthLabel}
+                membershipRenewalStatusLabel={privateEvidenceView.membershipRenewalStatusLabel}
+                membershipValidUntil={privateEvidenceView.membershipValidUntil}
+                nextWitnessRenewalAt={privateEvidenceView.nextWitnessRenewalAt}
+                nextWitnessRenewalStatusLabel={privateEvidenceView.nextWitnessRenewalStatusLabel}
+                memberCredentialPath={privateEvidenceView.memberCredentialPath}
+                communityActivityCount={privateEvidenceView.communityActivityCount}
+                communityActivityLatestAt={privateEvidenceView.communityActivityLatestAt}
+                communityActivityCategories={privateEvidenceView.communityActivityCategories}
+                communityActivityLabel={privateEvidenceView.communityActivityLabel}
+                sponsorCount={privateEvidenceView.sponsorCount}
+                phoneVerifiedRaw={privateEvidenceRecord?.phone_verified}
+                identityStatusLabel={privateEvidenceView.identityStatusLabel}
+                cciReading={privateEvidenceView.cciReading}
+                cciBand={privateEvidenceView.cciBand}
+                cciMeaning={privateEvidenceView.cciMeaning}
+                trustLimit={privateEvidenceView.trustLimit}
+                currency={privateEvidenceView.currency}
+                readerVerdict={privateEvidenceView.readerVerdict}
+                questions={privateEvidenceView.fourDecisionQuestions}
                 visibleBand={visibleBand}
                 visibleScore={visibleScore}
-                issuedAt={record?.issued_at}
-                expiresAt={record?.expires_at}
-                merchantVerifyActive={merchantVerifyActive}
-                phoneVerified={phoneVerified}
-                contributionDiscipline={contributionDiscipline}
-                repaymentDiscipline={repaymentDiscipline}
-                personalCommitmentDiscipline={personalCommitmentDiscipline}
-                commitmentPlainLanguage={commitmentPlainLanguage}
-                personalCommitmentPlainLanguage={personalCommitmentPlainLanguage}
-                commitmentSourceNote={commitmentSourceNote}
-                systemNote={systemNote}
-                verificationState={verificationState}
-                verifyPath={verifyPath}
-                lastReleaseText={lastReleaseText}
-                lastFullRepaymentText={lastFullRepaymentText}
-                snapshotLabel={snapshotLabel}
-                riskFlags={riskFlags}
-                verificationNote={verificationNote}
+                issuedAt={privateEvidenceRecord?.issued_at}
+                expiresAt={privateEvidenceRecord?.expires_at}
+                merchantVerifyActive={privateEvidenceView.merchantVerifyActive}
+                phoneVerified={privateEvidenceView.phoneVerified}
+                contributionDiscipline={privateEvidenceView.contributionDiscipline}
+                repaymentDiscipline={privateEvidenceView.repaymentDiscipline}
+                personalCommitmentDiscipline={privateEvidenceView.personalCommitmentDiscipline}
+                commitmentPlainLanguage={privateEvidenceView.commitmentPlainLanguage}
+                personalCommitmentPlainLanguage={privateEvidenceView.personalCommitmentPlainLanguage}
+                commitmentSourceNote={privateEvidenceView.commitmentSourceNote}
+                systemNote={privateEvidenceView.systemNote}
+                verificationState={privateEvidenceView.verificationState}
+                verifyPath={privateEvidenceView.verifyPath}
+                lastReleaseText={privateEvidenceView.lastReleaseText}
+                lastFullRepaymentText={privateEvidenceView.lastFullRepaymentText}
+                snapshotLabel={privateEvidenceView.snapshotLabel}
+                riskFlags={privateEvidenceView.riskFlags}
+                verificationNote={privateEvidenceView.verificationNote}
               />
               <section className="print-trust-support" style={pageCard("#FFFFFF")}>
                 <div style={sectionLabel()}>Internal actions</div>

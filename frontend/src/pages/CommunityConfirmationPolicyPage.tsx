@@ -1388,7 +1388,7 @@ function CommunityConfirmationPolicyPage() {
     if (!memberWitnessApprovalUrl || !memberWitnessRequest?.oneTimeCode) {
       setNotice({
         tone: "error",
-        text: "Create a witness request before sharing its response package.",
+        text: "Create a witness request before sharing its response details.",
       });
       return;
     }
@@ -1419,8 +1419,8 @@ function CommunityConfirmationPolicyPage() {
     setNotice({
       tone: ok ? "success" : "error",
       text: ok
-        ? "Witness request package copied."
-        : "GSN could not open sharing or copy the witness request package yet.",
+        ? "Witness request details copied."
+        : "GSN could not open sharing or copy the witness request details yet.",
     });
   }
 
@@ -2841,7 +2841,7 @@ function CommunityConfirmationPolicyPage() {
                     stableHeight={48}
                     debugId="community-confirmation-policy.member-witness.share-request-package"
                   >
-                    {labelWithIcon("navigation", "Share package", "navy")}
+                    {labelWithIcon("navigation", "Share request", "navy")}
                   </PrimaryButton>
                   <SecondaryButton
                     type="button"

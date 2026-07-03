@@ -1290,7 +1290,7 @@ export default function ClansPage() {
                       </div>
                     ) : null}
 
-                    {inviteState.packagedShareText ? (
+                    {inviteState.whatsappShareText ? (
                       <div>
                         <div
                           style={{
@@ -1301,7 +1301,7 @@ export default function ClansPage() {
                             textTransform: "uppercase",
                           }}
                         >
-                          GSN invite paper
+                          Share message
                         </div>
                         <div
                           style={{
@@ -1317,7 +1317,7 @@ export default function ClansPage() {
                             lineHeight: 1.7,
                           }}
                         >
-                          {inviteState.packagedShareText}
+                          {inviteState.whatsappShareText}
                         </div>
                       </div>
                     ) : null}
@@ -1339,17 +1339,17 @@ export default function ClansPage() {
                         </SecondaryButton>
                       ) : null}
 
-                      {inviteState.packagedShareText ? (
+                      {inviteState.whatsappShareText ? (
                         <SecondaryButton
                           style={btn(false)}
                           onClick={() =>
-                            copyText(inviteState.packagedShareText || "", "package")
+                            copyText(inviteState.whatsappShareText || "", "share")
                           }
                           debugId="clans.invite.copy-package"
                         >
-                          {copied === "package"
-                            ? "Copied paper"
-                            : "Copy GSN invite paper"}
+                          {copied === "share"
+                            ? "Copied message"
+                            : "Copy share message"}
                         </SecondaryButton>
                       ) : null}
 

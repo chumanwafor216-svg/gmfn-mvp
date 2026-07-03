@@ -219,8 +219,8 @@ assertContains(
 );
 assertContains(
   "institutionalPdf",
-  /stringWidth[\s\S]*?lines = lines\[:2\][\s\S]*?for line in lines:/,
-  "Institutional PDF footer must wrap long limitation text instead of drawing one clipped line."
+  /def wrap_pdf_text_lines\([\s\S]*?_split_oversized_pdf_word[\s\S]*?stringWidth[\s\S]*?def draw_institutional_footer\([\s\S]*?wrap_pdf_text_lines\(text, font_name, font_size, max_width\)\[:2\][\s\S]*?for line in lines:/,
+  "Institutional PDF helper must wrap long limitation text instead of drawing one clipped line."
 );
 assertContains(
   "institutionalPdf",
@@ -244,6 +244,37 @@ for (const key of institutionalShellServices) {
   assertContains(key, /safe_pdf_text/, "PDF services must sanitize visible PDF text.");
   assertContains(key, /utc_generated_label/, "PDF services must stamp a UTC generated time.");
 }
+
+assertContains(
+  "evidencePack",
+  /community_reference = getattr\(clan, "community_code", None\)[\s\S]*?Community ID: \{community_reference\}[\s\S]*?Community entry summary[\s\S]*?Evidence activity summary/,
+  "Community evidence PDF must show the public GSN community reference instead of the raw database community id."
+);
+assertNotContains(
+  "evidencePack",
+  /Community ID: \{clan_id\}|TrustEvent summary counts/g,
+  "Community evidence PDF must not label the raw database clan id as the public Community ID or expose machine event headings."
+);
+assertContains(
+  "loanEvidencePack",
+  /support_reference = f"GSN-SUPPORT-\{int\(loan_id\):06d\}"[\s\S]*?title="GSN Support Evidence Pack"[\s\S]*?reference=support_reference/,
+  "Loan evidence PDF must title and reference the paper as a support evidence pack."
+);
+assertContains(
+  "loanEvidencePack",
+  /kv\("Support record", support_reference\)[\s\S]*?kv\("Community ID", community_reference\)[\s\S]*?Trust snapshot[\s\S]*?Support summary[\s\S]*?Evidence timeline for this support record/,
+  "Loan evidence PDF must use user-facing support-record sections and the public community reference."
+);
+assertContains(
+  "loanEvidencePack",
+  /private support, supporter, and repayment details/,
+  "Loan evidence PDF reader boundary must use support language instead of loan language."
+);
+assertNotContains(
+  "loanEvidencePack",
+  /title="GSN Loan Evidence Pack"|GSN loan evidence paper|kv\("Loan ID", str\(loan_id\)\)|Loan summary|Trust Snapshot \(Explainable\)|Trust timeline \(events linked to this loan\)|private loan, supporter/g,
+  "Loan evidence PDF must not expose the raw loan id as the primary user-facing paper label or use machine-style section headings."
+);
 
 assertContains(
   "trustSlipPdf",
@@ -284,6 +315,16 @@ assertContains(
   "trustSlipPdf",
   /draw_institutional_header[\s\S]*?draw_institutional_footer/,
   "TrustSlip PDF must draw the shared official header, watermark, and footer on every page."
+);
+assertContains(
+  "trustSlipPdf",
+  /from reportlab\.lib\.units import inch, mm[\s\S]*?topMargin=80 \* mm/,
+  "TrustSlip PDF body content must start below the institutional header and security strip."
+);
+assertContains(
+  "trustSlipPdf",
+  /KeepTogether[\s\S]*?Public TrustSlip verification QR[\s\S]*?Scan to open this public TrustSlip verification page\.[\s\S]*?_qr_block/,
+  "TrustSlip PDF QR heading and QR image must stay together instead of orphaning the heading at the bottom of a page."
 );
 assertContains(
   "trustSlipEvidenceRoute",
@@ -518,7 +559,7 @@ assertNotContains(
 );
 assertContains(
   "loanEvidencePack",
-  /def _private_member_boundary[\s\S]*?private member reference redacted[\s\S]*?redact: bool = True[\s\S]*?def member_reference[\s\S]*?meta: redacted for share copy[\s\S]*?Reader boundary[\s\S]*?private loan, supporter, and repayment details/,
+  /def _private_member_boundary[\s\S]*?private member reference redacted[\s\S]*?redact: bool = True[\s\S]*?def member_reference[\s\S]*?meta: redacted for share copy[\s\S]*?Reader boundary[\s\S]*?private support, supporter, and repayment details/,
   "Loan evidence pack PDFs must redact participant references and trust-event metadata in share copies and explain the reader boundary."
 );
 assertNotContains(
@@ -615,13 +656,13 @@ assertNotContains(
 );
 assertContains(
   "reportsRoute",
-  /GSN Loan Evidence Pack[\s\S]*?Community ID: \{loan\.clan_id\}[\s\S]*?Audience: community admin or platform admin only[\s\S]*?Privacy: complete private admin record[\s\S]*?Use the redacted loan trust report PDF for borrower-facing or outside review\./,
-  "Loan evidence ZIP README must mark the ZIP as a private complete admin record and point outside review to the redacted PDF."
+  /GSN Support Evidence Pack[\s\S]*?Support record: \{support_reference\}[\s\S]*?Community ID: \{community_reference\}[\s\S]*?Audience: community admin or platform admin only[\s\S]*?Privacy: complete private admin record[\s\S]*?Use the redacted support trust report PDF for borrower-facing or outside review\./,
+  "Support evidence ZIP README must mark the ZIP as a private complete admin record and point outside review to the redacted PDF."
 );
 assertNotContains(
   "reportsRoute",
-  /GMFN Loan Evidence Pack|Clan ID: \{loan\.clan_id\}/,
-  "Loan evidence ZIP README must not expose older GMFN/clan wording."
+  /GMFN Loan Evidence Pack|GSN Loan Evidence Pack|Loan ID: \{loan\.id\}|Clan ID: \{loan\.clan_id\}/,
+  "Support evidence ZIP README must not expose older GMFN/loan/clan wording."
 );
 assertContains(
   "analyticsRoute",
@@ -937,8 +978,18 @@ assertNotContains(
 );
 assertContains(
   "snapshotPaperCard",
-  /import GSNBrandMark[\s\S]*?TrustPaperAuthorityStrip[\s\S]*?TrustPaperSecurityNote[\s\S]*?TrustPaperWatermark[\s\S]*?TrustPaperSecurityFooter/,
-  "Shared visual snapshot paper card must use the GSN mark, authority strip, screenshot security note, watermark, and institutional footer."
+  /import GSNBrandMark[\s\S]*?TrustPaperAuthorityStrip[\s\S]*?TrustPaperSecurityNote[\s\S]*?TrustPaperWatermark[\s\S]*?TrustPaperWatermarkField[\s\S]*?TrustPaperSecurityFooter/,
+  "Shared visual snapshot paper card must use the GSN mark, authority strip, screenshot security note, recurring watermark field, and institutional footer."
+);
+assertContains(
+  "snapshotPaperCard",
+  /<TrustPaperWatermark[\s\S]*?opacity=\{0\.08\}[\s\S]*?<TrustPaperWatermarkField[\s\S]*?names=\{\["shield", "document", "qr", "globe"\]\}[\s\S]*?opacity=\{0\.044\}/,
+  "Shared visual snapshot paper card must carry a stronger main watermark and a recurring GSN watermark field through the body."
+);
+assertContains(
+  "snapshotPaperCard",
+  /more detail\{hiddenCount === 1 \? "" : "s"\} kept in[\s\S]*?the full GSN record/,
+  "Shared visual snapshot paper card must not claim hidden details are included in copied paper when copy actions may use compact share text."
 );
 assertContains(
   "snapshotPaperCard",
@@ -1253,12 +1304,17 @@ assertContains(
 assertContains(
   "clansPage",
   /buildGsnInviteLinkMessage[\s\S]*?compactShareText[\s\S]*?whatsappShareText: compactShareText/,
-  "Legacy Clans must keep the formal invite paper copy while WhatsApp uses compact invite text."
+  "Legacy Clans must build a compact invite message for ordinary public sharing."
 );
 assertContains(
   "clansPage",
-  /buildGsnInviteLinkPackage[\s\S]*?packagedShareText[\s\S]*?GSN invite paper[\s\S]*?clans\.invite\.copy-package/,
-  "Legacy Clans must still show and copy the formal invite paper where explicitly requested."
+  /Share message[\s\S]*?\{inviteState\.whatsappShareText\}[\s\S]*?copyText\(inviteState\.whatsappShareText \|\| "", "share"\)[\s\S]*?Copy share message[\s\S]*?clans\.invite\.share-whatsapp/,
+  "Legacy Clans must show, copy, and WhatsApp-share the compact invite message instead of the full formal invite paper."
+);
+assertNotContains(
+  "clansPage",
+  /GSN invite paper|Copy GSN invite paper|Copied paper/g,
+  "Legacy Clans must not restore the long formal invite paper as the ordinary public invite copy."
 );
 assertContains(
   "joinInviteMessaging",

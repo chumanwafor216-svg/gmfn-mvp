@@ -292,8 +292,8 @@ assertContains(
 );
 
 assertContains(
-  /Marketplaces and Community Domains[\s\S]*?debugId="community-home\.summary\.visible-communities"[\s\S]*?\{communityCountFromSummary\} community \{communityCountFromSummary === 1 \? "marketplace" : "marketplaces"\}[\s\S]*?Self-created or joined marketplace communities for local work\.[\s\S]*?debugId="community-home\.summary\.community-domain"[\s\S]*?Community Domains[\s\S]*?Institutional domains for schools, unions, churches, and markets\.[\s\S]*?openCommunityRoute\(event, routes\.communityDomain\)/,
-  "Community Home summary must distinguish community marketplaces from institutional Community Domains."
+  /listMyCommunityDomains[\s\S]*?const \[communityDomainCount, setCommunityDomainCount\] = useState<number \| null>\(null\)[\s\S]*?listMyCommunityDomains\(\)\.catch\(\(\) => \(\{ items: null \}\)\)[\s\S]*?setCommunityDomainCount\(Array\.isArray\(domainRows\) \? domainRows\.length : null\)[\s\S]*?Marketplaces and Community Domains[\s\S]*?debugId="community-home\.summary\.visible-communities"[\s\S]*?\{communityCountFromSummary\} community \{communityCountFromSummary === 1 \? "marketplace" : "marketplaces"\}[\s\S]*?Self-created or joined marketplace communities for local work\.[\s\S]*?debugId="community-home\.summary\.community-domain"[\s\S]*?communityDomainCount === null[\s\S]*?"Community Domains"[\s\S]*?`\$\{communityDomainCount\} community \$\{[\s\S]*?communityDomainCount === 1 \? "domain" : "domains"[\s\S]*?Institutional domains for schools, unions, churches, and markets\.[\s\S]*?openCommunityRoute\(event, routes\.communityDomain\)/,
+  "Community Home summary must distinguish community marketplaces from institutional Community Domains and show the signed-in domain count when available."
 );
 
 assertContains(

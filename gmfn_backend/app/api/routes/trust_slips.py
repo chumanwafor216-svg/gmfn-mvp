@@ -155,7 +155,7 @@ def _public_visibility_level(
     stored_level: str,
     requested_level: Optional[str],
 ) -> str:
-    ranks = {"minimal": 0, "standard": 1, "detailed": 2}
+    ranks = {"minimal": 0, "standard": 1}
     stored = stored_level if stored_level in ranks else "standard"
     if not requested_level:
         return stored
@@ -167,16 +167,74 @@ def _public_visibility_level(
 
 def _verify_page_url(code: str, level: Optional[str] = None) -> str:
     base = f"/t/{quote(str(code), safe='')}"
-    if level in {"minimal", "standard", "detailed"}:
+    if level in {"minimal", "standard"}:
         return f"{base}?level={level}"
     return base
 
 
 def _lite_page_url(code: str, level: Optional[str] = None) -> str:
     base = f"/t/{quote(str(code), safe='')}/lite"
-    if level in {"minimal", "standard", "detailed"}:
+    if level in {"minimal", "standard"}:
         return f"{base}?level={level}"
     return base
+
+
+PUBLIC_TRUSTSLIP_BLOCKED_KEYS = {
+    "email",
+    "email_masked",
+    "holder_email_masked",
+    "phone",
+    "phone_e164",
+    "phone_number",
+    "mobile",
+    "contact",
+    "contacts",
+    "private_contact",
+    "private_contacts",
+    "internal_contacts",
+    "sponsors",
+    "owner",
+    "last_full_repayment_at",
+    "days_since_last_full_repayment",
+    "risk_flags",
+    "evidence_summary",
+    "commitment_discipline",
+    "personal_commitment_discipline",
+    "human_terms",
+    "payment_reference",
+    "account_number",
+    "bank_account",
+    "sort_code",
+    "iban",
+    "verifier_user_id",
+    "verifier_name",
+    "verifier_email",
+    "verifier_phone",
+    "private_notes",
+    "admin_notes",
+    "notes",
+    "raw_event_type",
+    "event_type",
+}
+
+
+def _public_trustslip_value(value: Any) -> Any:
+    if isinstance(value, dict):
+        out: Dict[str, Any] = {}
+        for key, child in value.items():
+            normalized = str(key).strip().lower()
+            if normalized in PUBLIC_TRUSTSLIP_BLOCKED_KEYS:
+                continue
+            out[key] = _public_trustslip_value(child)
+        return out
+    if isinstance(value, list):
+        return [_public_trustslip_value(item) for item in value]
+    return value
+
+
+def _public_trustslip_merchant_view(view: Dict[str, Any]) -> Dict[str, Any]:
+    safe = _public_trustslip_value(view)
+    return safe if isinstance(safe, dict) else {}
 
 
 def _safe_public_path_key(value: Any) -> str:
@@ -464,7 +522,7 @@ def _aligned_snapshot_for_slip(
         if not full_summary.get(key) and full_payload.get(key) is not None:
             full_summary[key] = full_payload.get(key)
 
-    if requested_level and effective_level != stored_level:
+    if effective_level != stored_level:
         merchant_view = build_trust_slip_visibility_view(
             dict(full_summary),
             level=effective_level,
@@ -938,7 +996,7 @@ def verify_trust_slip_public(
     )
 
     merchant_view_out = {
-        **merchant_view,
+        **_public_trustslip_merchant_view(merchant_view),
         "display_name": display_name,
         "gmfn_id": gmfn_id,
         "community": community,
@@ -970,6 +1028,11 @@ def verify_trust_slip_public(
         },
     }
 
+    merchant_summary = dict(_public_trustslip_merchant_view(merchant_summary))
+    merchant_view_out["merchant_summary"] = dict(
+        _public_trustslip_merchant_view(merchant_view_out.get("merchant_summary") or {})
+    )
+
     top_level_cci_score = merchant_view_out.get("cci_score") or merchant_summary.get("cci_score")
     top_level_cci_band = merchant_view_out.get("cci_band") or merchant_summary.get("cci_band")
     top_level_sponsor_count = (
@@ -980,10 +1043,6 @@ def verify_trust_slip_public(
     top_level_phone_verified = merchant_view_out.get("phone_verified")
     if top_level_phone_verified is None:
         top_level_phone_verified = merchant_summary.get("phone_verified")
-    evidence_summary = full_summary.get("evidence_summary") or {}
-    commitment_discipline = evidence_summary.get("commitment_discipline") or {}
-    personal_commitment_discipline = evidence_summary.get("personal_commitment_discipline") or {}
-    human_terms = evidence_summary.get("human_terms") or {}
     identity_context = merchant_view_out.get("identity_context") or {}
     community_context = merchant_view_out.get("community_context") or {}
     cci_explainer = merchant_view_out.get("cci_explainer") or {}
@@ -1080,13 +1139,6 @@ def verify_trust_slip_public(
         "membership_currentness_scope": membership_currentness_scope,
         "visibility_level": visibility_level,
         "last_release_at": last_release_at_value,
-        "last_full_repayment_at": merchant_view_out.get("last_full_repayment_at"),
-        "days_since_last_full_repayment": merchant_view_out.get("days_since_last_full_repayment"),
-        "risk_flags": merchant_view_out.get("risk_flags", []),
-        "commitment_discipline": commitment_discipline if visibility_level != "minimal" else {},
-        "personal_commitment_discipline": personal_commitment_discipline if visibility_level != "minimal" else {},
-        "human_terms": human_terms if visibility_level != "minimal" else {},
-        "holder_email_masked": _mask_email(getattr(holder, "email", None)),
         "verify_page": _verify_page_url(slip.code, visibility_level),
         "lite_page": _lite_page_url(slip.code, visibility_level),
         "verified_at": _now_utc().isoformat(),
@@ -1130,7 +1182,10 @@ def trust_slip_share_text_public(
     )
     msg, _ = _merchant_badge(effective)
 
-    visibility_level = _safe_visibility_level(holder, level) if holder else "standard"
+    visibility_level = _public_visibility_level(
+        stored_level=_safe_visibility_level(holder, None) if holder else "standard",
+        requested_level=level,
+    )
     verify_page = _verify_page_url(code, visibility_level)
     holder_gmfn_id = getattr(holder, "gmfn_id", None) if holder else None
     clan_id = int(getattr(slip, "clan_id", 0) or 0)
@@ -1141,13 +1196,19 @@ def trust_slip_share_text_public(
         holder=holder,
     )
 
-    text = (
-        f"TrustSlip verify: {verify_page}  Code: {code}  "
-        f"GSN ID: {holder_gmfn_id or 'N/A'}  Visibility: {visibility_level}  Status: {msg}"
-    )
+    text_lines = [
+        "GSN TrustSlip public check",
+        "Open this link to check the current public TrustSlip record before you rely on it.",
+        verify_page,
+        f"TrustSlip code: {code}",
+        f"GSN ID: {holder_gmfn_id or 'N/A'}",
+        f"Public record level: {visibility_level}",
+        f"Current reading: {msg}",
+    ]
     if member_credential_page:
-        text = f"{text}  Member credential: {member_credential_page}"
-    text = f"{text}  Evidence only: not credit approval, payment instruction, or release permission."
+        text_lines.append(f"Member credential: {member_credential_page}")
+    text_lines.append("Evidence only: not credit approval, payment instruction, or release permission.")
+    text = "\n".join(text_lines)
 
     return {
         "code": code,
@@ -1246,6 +1307,7 @@ def trust_slip_verify_lite_page(
         color: #07172C;
       }}
       .paper {{
+        position: relative;
         max-width: 520px;
         margin: 0 auto;
         border: 1px solid rgba(37,78,119,0.18);
@@ -1253,6 +1315,32 @@ def trust_slip_verify_lite_page(
         background: #FFFFFF;
         box-shadow: 0 22px 54px rgba(7,23,44,0.13);
         overflow: hidden;
+      }}
+      .paper > *:not(.watermark-field) {{
+        position: relative;
+        z-index: 1;
+      }}
+      .watermark-field {{
+        position: absolute;
+        inset: 72px 18px 32px;
+        z-index: 0;
+        pointer-events: none;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 26px;
+        opacity: .12;
+        color: #164E94;
+        transform: rotate(-7deg);
+      }}
+      .watermark-field span {{
+        display: grid;
+        place-items: center;
+        min-height: 96px;
+        border: 2px solid currentColor;
+        border-radius: 999px;
+        font-size: 24px;
+        font-weight: 1000;
+        letter-spacing: .08em;
       }}
       .head {{ padding: 18px 20px; border-bottom: 1px solid #D8E3EE; }}
       .eyebrow {{ color: #164E94; font-size: 12px; font-weight: 1000; letter-spacing: .08em; text-transform: uppercase; }}
@@ -1299,6 +1387,9 @@ def trust_slip_verify_lite_page(
   </head>
   <body>
     <main class="paper">
+      <div class="watermark-field" aria-hidden="true">
+        <span>GSN</span><span>PUBLIC</span><span>TRUST</span><span>RECORD</span>
+      </div>
       <header class="head">
         <div class="eyebrow">GSN public lite check</div>
         <h1>TrustSlip Lite</h1>
@@ -1336,7 +1427,10 @@ def trust_slip_verify_qr_png(
         raise HTTPException(status_code=404, detail="TrustSlip not found")
 
     holder = _slip_holder(db, slip)
-    visibility_level = _safe_visibility_level(holder, level) if holder else "standard"
+    visibility_level = _public_visibility_level(
+        stored_level=_safe_visibility_level(holder, None) if holder else "standard",
+        requested_level=level,
+    )
 
     png = _qr_png_bytes(_verify_page_url(slip.code, visibility_level))
     return Response(content=png, media_type="image/png", headers=_no_store_headers())
@@ -1536,8 +1630,40 @@ def trust_slip_verify_page(
         width: 260px;
         height: 260px;
         border-radius: 50%;
-        border: 22px solid rgba(11,99,209,0.035);
+        border: 22px solid rgba(11,99,209,0.085);
+        box-shadow: inset 0 0 0 10px rgba(214,170,69,0.08);
         pointer-events: none;
+        z-index: 0;
+      }}
+      .watermark-field {{
+        position: absolute;
+        inset: 92px 26px 76px;
+        z-index: 0;
+        pointer-events: none;
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 38px;
+        opacity: .105;
+        color: #164E94;
+        transform: rotate(-7deg);
+      }}
+      .watermark-field span {{
+        min-height: 116px;
+        display: grid;
+        place-items: center;
+        border: 2px solid currentColor;
+        border-radius: 999px;
+        color: currentColor;
+        font-size: clamp(22px, 4vw, 34px);
+        font-weight: 1000;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+      }}
+      .header,
+      .body,
+      .footer {{
+        position: relative;
+        z-index: 1;
       }}
       .trustmark {{
         display: flex;
@@ -1799,6 +1925,11 @@ def trust_slip_verify_page(
   <body>
     <main class="paper">
       <div class="watermark"></div>
+      <div class="watermark-field" aria-hidden="true">
+        <span>GSN</span><span>Public</span><span>Trust</span>
+        <span>Record</span><span>Verify</span><span>GSN</span>
+        <span>Trust</span><span>Public</span><span>Record</span>
+      </div>
       <header class="header">
         <div>
           <div class="eyebrow">Public Verification Paper</div>
@@ -1970,14 +2101,15 @@ def trust_slip_share_bundle(
     )
 
     whatsapp_lines = [
-        "Please verify TrustSlip before making a trade decision:",
+        "GSN TrustSlip public check",
+        "Open this link to check the current public TrustSlip record before you rely on it.",
         verify_page,
-        f"Code: {code}",
+        f"TrustSlip code: {code}",
         f"GSN ID: {holder_gmfn_id or 'N/A'}",
-        f"Visibility: {visibility_level}",
+        f"Public record level: {visibility_level}",
         f"Trust-limit signal: {trust_limit} {currency}",
         f"Expires: {expires_text}",
-        f"Status: {msg}",
+        f"Current reading: {msg}",
         "Evidence only - not approval to release goods, credit, or money.",
     ]
     if member_credential_page:
@@ -1985,8 +2117,9 @@ def trust_slip_share_bundle(
     whatsapp_text = "\n".join(whatsapp_lines)
 
     sms_text = (
-        f"Verify TrustSlip: {verify_page} | Code: {code} | GSN ID: {holder_gmfn_id or 'N/A'} | "
-        f"Visibility: {visibility_level} | Trust-limit signal: {trust_limit} {currency} | Expires: {expires_text} | "
+        f"GSN TrustSlip public check: {verify_page} | TrustSlip code: {code} | "
+        f"GSN ID: {holder_gmfn_id or 'N/A'} | Public record level: {visibility_level} | "
+        f"Trust-limit signal: {trust_limit} {currency} | Expires: {expires_text} | "
         "Evidence only, not release approval"
     )
     if member_credential_page:

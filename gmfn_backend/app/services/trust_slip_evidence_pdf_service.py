@@ -9,8 +9,8 @@ from reportlab.graphics.barcode import qr
 from reportlab.graphics.shapes import Drawing
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet
-from reportlab.lib.units import inch
-from reportlab.platypus import ListFlowable, ListItem, Paragraph, SimpleDocTemplate, Spacer
+from reportlab.lib.units import inch, mm
+from reportlab.platypus import KeepTogether, ListFlowable, ListItem, Paragraph, SimpleDocTemplate, Spacer
 from sqlalchemy.orm import Session
 
 from app.db.models import TrustEvent
@@ -120,7 +120,7 @@ def build_trust_slip_pdf(db: Session, summary: Dict[str, Any], pack_meta: Option
         pagesize=A4,
         leftMargin=48,
         rightMargin=48,
-        topMargin=162,
+        topMargin=80 * mm,
         bottomMargin=48,
     )
     elements = []
@@ -192,11 +192,17 @@ def build_trust_slip_pdf(db: Session, summary: Dict[str, Any], pack_meta: Option
     elements.append(_paragraph("Confirmation source", confirmation_source, styles))
     elements.append(Spacer(1, 0.25 * inch))
 
-    elements.append(Paragraph("Merchant verification QR", styles["Heading2"]))
-    elements.append(Paragraph("Scan to open merchant verification view.", styles["Normal"]))
-    elements.append(Spacer(1, 0.1 * inch))
-    elements.append(_qr_block(str(qr_url)))
-    elements.append(Spacer(1, 0.25 * inch))
+    elements.append(
+        KeepTogether(
+            [
+                Paragraph("Public TrustSlip verification QR", styles["Heading2"]),
+                Paragraph("Scan to open this public TrustSlip verification page.", styles["Normal"]),
+                Spacer(1, 0.1 * inch),
+                _qr_block(str(qr_url)),
+                Spacer(1, 0.25 * inch),
+            ]
+        )
+    )
 
     elements.append(Paragraph("Trust breakdown", styles["Heading2"]))
 

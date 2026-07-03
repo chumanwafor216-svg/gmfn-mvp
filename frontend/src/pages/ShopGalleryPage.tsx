@@ -2981,8 +2981,8 @@ export default function ShopGalleryPage() {
       <OwnerOnlySurfaceNav
         ownerGmfnId={shopOwnerGmfnId}
         compact={isCompact}
-        label="Owner shop shortcuts"
-        ariaLabel="Public Shop owner shortcuts"
+        label="Your shop shortcuts"
+        ariaLabel="Your Public Shop shortcuts"
         links={memberSurfaceLinks}
         refreshKey={shopReconnectRetryKey}
         requireOwnerMatch={true}
@@ -3058,7 +3058,7 @@ export default function ShopGalleryPage() {
                 lineHeight: 1.25,
               }}
             >
-              Open this public shop, then check the seller and current evidence before you act.
+              Public shop page. Check seller evidence before trade.
             </div>
           </div>
         </div>
@@ -3264,7 +3264,7 @@ export default function ShopGalleryPage() {
                     }}
                   >
                     {inlineShopIcon("shield", "#8C6829", 14)}
-                    <span>Open this public shop, then check the seller and current evidence before you act.</span>
+                    <span>Public listing. Verify current evidence before goods, credit, or money move.</span>
                   </div>
                 ) : null}
               </div>

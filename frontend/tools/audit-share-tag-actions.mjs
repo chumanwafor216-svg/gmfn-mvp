@@ -160,6 +160,11 @@ function assertNotContains(file, pattern, message) {
     "Build First Circle invite surface is missing social tag sharing.",
   ],
   [
+    "src/pages/ClansPage.tsx",
+    /buildGsnInviteLinkMessage[\s\S]*whatsappShareText: compactShareText[\s\S]*Share message[\s\S]*copyText\(inviteState\.whatsappShareText \|\| "", "share"\)[\s\S]*Copy share message[\s\S]*Share on WhatsApp/,
+    "Community invite sharing must show and copy the compact invite message, not the full formal invite paper.",
+  ],
+  [
     "src/pages/MarketplacePage.tsx",
     /debugId="marketplace\.links\.join\.tag-social"/,
     "Marketplace join-link surface is missing social tag sharing.",
@@ -247,6 +252,12 @@ assertNotContains(
   "src/pages/ShopAccessPage.tsx",
   /SocialTagShareButton|social-share|share-tag|tag-social/,
   "Vault access recipients must not get a private-link rebroadcast chooser from the visitor page."
+);
+
+assertNotContains(
+  "src/pages/ClansPage.tsx",
+  /GSN invite paper|Copy GSN invite paper|Copied paper/,
+  "Community invite copy must not restore the long formal invite paper as the normal public share message."
 );
 
 if (findings.length > 0) {

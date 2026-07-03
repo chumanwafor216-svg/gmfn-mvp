@@ -6,6 +6,7 @@ import {
   TrustPaperSecurityNote,
   TrustPaperSecurityFooter,
   TrustPaperWatermark,
+  TrustPaperWatermarkField,
   type TrustPaperIconName,
 } from "./TrustPaperMarks";
 
@@ -237,9 +238,18 @@ export default function GsnSnapshotPaperCard({
       <TrustPaperWatermark
         name="shield"
         size={compact ? 150 : 190}
-        opacity={0.055}
+        opacity={0.08}
         color="#0B63D1"
         style={{ right: compact ? -28 : -24, bottom: compact ? -18 : -28 }}
+      />
+      <TrustPaperWatermarkField
+        names={["shield", "document", "qr", "globe"]}
+        opacity={0.044}
+        color="#0B63D1"
+        style={{
+          padding: compact ? "92px 16px 74px" : "116px 24px 90px",
+          gap: compact ? 26 : 34,
+        }}
       />
 
       <header
@@ -429,7 +439,8 @@ export default function GsnSnapshotPaperCard({
                 fontWeight: 900,
               }}
             >
-              {hiddenCount} more detail{hiddenCount === 1 ? "" : "s"} included in copied paper.
+              {hiddenCount} more detail{hiddenCount === 1 ? "" : "s"} kept in
+              the full GSN record.
             </div>
           ) : null}
         </section>

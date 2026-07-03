@@ -21,6 +21,7 @@ import {
   getMe,
   getPoolMeSummary,
   getSelectedClanId,
+  listMyCommunityDomains,
   listMyClans,
   selectClan,
 } from "../lib/api";
@@ -944,6 +945,7 @@ export default function CommunityHomePage() {
 
   const [me, setMe] = useState<any>(null);
   const [clans, setClans] = useState<ClanItem[]>([]);
+  const [communityDomainCount, setCommunityDomainCount] = useState<number | null>(null);
   const [selectedClan, setSelectedClan] = useState<ClanItem | null>(null);
   const [poolSummary, setPoolSummary] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -1085,9 +1087,10 @@ export default function CommunityHomePage() {
       setLoading(true);
 
       try {
-        const [meRes, clansRes] = await Promise.all([
+        const [meRes, clansRes, domainsRes] = await Promise.all([
           getMe().catch(() => null),
           listMyClans().catch(() => ({ items: [] })),
+          listMyCommunityDomains().catch(() => ({ items: null })),
         ]);
 
         const rows: ClanItem[] = Array.isArray(clansRes)
@@ -1095,6 +1098,11 @@ export default function CommunityHomePage() {
           : Array.isArray(clansRes?.items)
           ? clansRes.items
           : [];
+        const domainRows = Array.isArray(domainsRes)
+          ? domainsRes
+          : Array.isArray(domainsRes?.items)
+          ? domainsRes.items
+          : null;
 
         const storedId = Number(getSelectedClanId() || 0);
         const current =
@@ -1112,6 +1120,7 @@ export default function CommunityHomePage() {
 
         setMe(meRes || null);
         setClans(rows);
+        setCommunityDomainCount(Array.isArray(domainRows) ? domainRows.length : null);
         setSelectedClan(current);
       } finally {
         if (alive) {
@@ -2775,7 +2784,11 @@ export default function CommunityHomePage() {
                         lineHeight: 1.2,
                       }}
                     >
-                      Community Domains
+                      {communityDomainCount === null
+                        ? "Community Domains"
+                        : `${communityDomainCount} community ${
+                            communityDomainCount === 1 ? "domain" : "domains"
+                          }`}
                     </span>
                     <span
                       style={{

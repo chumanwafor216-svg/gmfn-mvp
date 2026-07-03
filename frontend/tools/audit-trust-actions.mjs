@@ -116,7 +116,7 @@ assertContains(
 
 assertContains(
   "src/components/TrustPaperMarks.tsx",
-  /export function TrustPaperWatermarkField[\s\S]*Array\.from\(\{ length: 12 \}[\s\S]*data-gsn-trust-paper-watermark-field="true"/,
+  /export function TrustPaperWatermarkField[\s\S]*opacity = 0\.055[\s\S]*Array\.from\(\{ length: 12 \}[\s\S]*data-gsn-trust-paper-watermark-field="true"/,
   "Shared Trust Paper marks must provide a recurring watermark field for long public records, not only a single top or bottom mark."
 );
 
@@ -300,7 +300,7 @@ assertContains(
 
 assertContains(
   "src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx",
-  /TrustPaperWatermarkField[\s\S]*names=\{\["shield", "globe", "qr", "document"\]\}/,
+  /TrustPaperWatermarkField[\s\S]*names=\{\["shield", "globe", "qr", "document"\]\}[\s\S]*opacity=\{0\.052\}/,
   "TrustSlip Verify public paper must carry a recurring GSN watermark field through the long public paper body."
 );
 
@@ -336,8 +336,20 @@ assertContains(
 
 assertContains(
   "src/pages/TrustSlipVerifyPage.tsx",
-  /if \(!codeToUse && isAppRoute && typeof \(api as any\)\.getMyTrustSlip === "function"\) \{[\s\S]*?const mySlip = await \(api as any\)\.getMyTrustSlip\(\)\.catch\(\(\) => null\);[\s\S]*?codeToUse = firstTruthy\(mySlip\?\.code, mySlip\?\.trust_slip_code\);/,
-  "Signed-in TrustSlip Verify must try the current member TrustSlip before showing a missing-code state."
+  /if \(isAppRoute && typeof \(api as any\)\.getMyTrustSlip === "function"\) \{[\s\S]*?mySlip = await \(api as any\)\.getMyTrustSlip\(\)\.catch\(\(\) => null\);[\s\S]*?if \(!codeToUse\) \{[\s\S]*?codeToUse = firstTruthy\([\s\S]*?mySlip\?\.code[\s\S]*?mySlip\?\.verification_code[\s\S]*?\);/,
+  "Signed-in TrustSlip Verify must load the authenticated member TrustSlip before showing a missing-code state, while keeping public-code checks separate."
+);
+
+assertContains(
+  "src/pages/TrustSlipVerifyPage.tsx",
+  /const \[privateEvidenceRecord, setPrivateEvidenceRecord\][\s\S]*?let mySlip: any = null;[\s\S]*?if \(isAppRoute && typeof \(api as any\)\.getMyTrustSlip === "function"\) \{[\s\S]*?mySlip = await \(api as any\)\.getMyTrustSlip\(\)\.catch\(\(\) => null\);[\s\S]*?const mySlipCode = firstTruthy\([\s\S]*?mySlip\?\.code[\s\S]*?mySlip\?\.verification_code[\s\S]*?isAppRoute && mySlipCode && mySlipCode === codeToUse[\s\S]*?setPrivateEvidenceRecord\(privateNormalized\);[\s\S]*?const ownsVisibleTrustSlip =[\s\S]*?privateEvidenceCode === visibleRecordCode[\s\S]*?const canShowPrivateEvidence = ownsVisibleTrustSlip[\s\S]*?\{canShowPrivateEvidence \? \(/,
+  "Signed-in TrustSlip Verify private evidence must come from the authenticated member TrustSlip and only render when the visible code matches the signed-in member's own current TrustSlip."
+);
+
+assertContains(
+  "src/pages/TrustSlipVerifyPage.tsx",
+  /buildTrustSlipVerifyViewModel\(\{[\s\S]*?record,[\s\S]*?me: ownsVisibleTrustSlip \? me : null,[\s\S]*?isAppRoute: ownsVisibleTrustSlip/,
+  "TrustSlip Verify public paper view model must not use signed-in user fallbacks while checking another person's public TrustSlip code inside the app."
 );
 
 assertContains(
@@ -1165,14 +1177,14 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityConfirmationPolicyPage.tsx",
-  /witness response[\s\S]*?response link[\s\S]*?Witness response link copied[\s\S]*?response package[\s\S]*?respond to a request[\s\S]*?One-time witness response code[\s\S]*?Record witness[\s\S]*?responds with the one-time code[\s\S]*?Witness response[\s\S]*?one-time response[\s\S]*?Share the QR and one-time code with the member who will answer[\s\S]*?opens the response page[\s\S]*?Scan to respond[\s\S]*?Copy response link/,
+  /witness response[\s\S]*?response link[\s\S]*?Witness response link copied[\s\S]*?response details[\s\S]*?respond to a request[\s\S]*?One-time witness response code[\s\S]*?Record witness[\s\S]*?responds with the one-time code[\s\S]*?Witness response[\s\S]*?one-time response[\s\S]*?Share the QR and one-time code with the member who will answer[\s\S]*?opens the response page[\s\S]*?Scan to respond[\s\S]*?Copy response link/,
   "Community confirmation policy witness-request lane must present verifier action as a response/record, not broad approval."
 );
 
 assertContains(
   "src/pages/CommunityConfirmationPolicyPage.tsx",
-  /const canShareMemberWitnessRequest = Boolean\(memberWitnessRequest\?\.oneTimeCode\);[\s\S]*?\{memberWitnessRequest && canShareMemberWitnessRequest \? \([\s\S]*?Request ready[\s\S]*?One-time code[\s\S]*?Share package[\s\S]*?Copy one-time code/,
-  "Community confirmation policy must only show requester-side witness package/code controls when the backend returned a one-time code."
+  /const canShareMemberWitnessRequest = Boolean\(memberWitnessRequest\?\.oneTimeCode\);[\s\S]*?\{memberWitnessRequest && canShareMemberWitnessRequest \? \([\s\S]*?Request ready[\s\S]*?One-time code[\s\S]*?Share request[\s\S]*?Copy one-time code/,
+  "Community confirmation policy must only show requester-side witness request/code controls when the backend returned a one-time code."
 );
 
 assertContains(
@@ -1726,6 +1738,19 @@ assertFunctionNotContains(
   "verify_trust_slip_public",
   /verifies TrustSlip validity only/i,
   "TrustSlip public verify payload must say it checks public validity, not that it verifies broad TrustSlip validity."
+);
+
+assertContains(
+  "../gmfn_backend/app/api/routes/trust_slips.py",
+  /def _public_visibility_level[\s\S]*ranks = \{"minimal": 0, "standard": 1\}[\s\S]*PUBLIC_TRUSTSLIP_BLOCKED_KEYS[\s\S]*"holder_email_masked"[\s\S]*"internal_contacts"[\s\S]*"sponsors"[\s\S]*"last_full_repayment_at"[\s\S]*def _public_trustslip_merchant_view/,
+  "Public TrustSlip verification must clamp public visibility and scrub private contacts, masked email, sponsor/contact lists, and repayment detail from the public payload."
+);
+
+assertFunctionNotContains(
+  "../gmfn_backend/app/api/routes/trust_slips.py",
+  "verify_trust_slip_public",
+  /"holder_email_masked"|"last_full_repayment_at"|"days_since_last_full_repayment"|"risk_flags"|"commitment_discipline"|"personal_commitment_discipline"|"human_terms"/,
+  "TrustSlip public verify payload must not expose private contact, repayment, risk flag, or discipline fields at top level."
 );
 
 assertNotContains(

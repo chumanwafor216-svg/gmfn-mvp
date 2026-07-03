@@ -14,6 +14,7 @@ from app.services.institutional_pdf import (
     draw_institutional_header,
     safe_pdf_text,
     utc_generated_label,
+    wrap_pdf_text_lines,
 )
 from app.services.invite_analytics_service import (
     get_invite_analytics,
@@ -41,6 +42,15 @@ def _mask_code(code: Optional[str]) -> str:
     return f"***{tail}"
 
 
+def _event_label(event_type: str) -> str:
+    labels = {
+        "invite_created": "Invite created",
+        "invite_revoked": "Invite revoked",
+        "clan_join_via_invite": "Member joined by invite",
+    }
+    return labels.get(str(event_type or "").strip(), safe_pdf_text(event_type))
+
+
 def build_clan_evidence_pack_pdf(
     db: Session,
     *,
@@ -49,6 +59,7 @@ def build_clan_evidence_pack_pdf(
 ) -> bytes:
     clan = db.get(Clan, clan_id)
     clan_name = getattr(clan, "name", None) if clan else None
+    community_reference = getattr(clan, "community_code", None) or f"GSN-C-{int(clan_id):06d}"
 
     analytics = get_invite_analytics(db, clan_id=clan_id, top_n=10)
     recent = get_recent_invite_joins(db, clan_id=clan_id, limit=20)
@@ -77,43 +88,51 @@ def build_clan_evidence_pack_pdf(
         title="GSN Community Evidence Pack",
         subtitle="Invite growth, community entry, and trust audit evidence.",
         generated_at=ts,
-        reference=f"Community {clan_id}",
+        reference=community_reference,
     )
+    content_left = 56
+    content_width = width - (content_left * 2)
 
     def line(text: str, size: int = 11, gap: int = 16, bold: bool = False):
         nonlocal y
-        if y < 70:
-            draw_institutional_footer(c, width, "GSN community evidence paper")
-            c.showPage()
-            y = draw_institutional_header(
-                c,
-                width,
-                height,
-                title="GSN Community Evidence Pack",
-                subtitle="Invite growth, community entry, and trust audit evidence.",
-                generated_at=ts,
-                reference=f"Community {clan_id}",
-            )
-        c.setFont("Helvetica-Bold" if bold else "Helvetica", size)
-        c.drawString(56, y, safe_pdf_text(text))
-        y -= gap
+        if not str(text if text is not None else "").strip():
+            y -= gap
+            return
+
+        font_name = "Helvetica-Bold" if bold else "Helvetica"
+        for wrapped_line in wrap_pdf_text_lines(text, font_name, size, content_width):
+            if y < 70:
+                draw_institutional_footer(c, width, "GSN community evidence paper")
+                c.showPage()
+                y = draw_institutional_header(
+                    c,
+                    width,
+                    height,
+                    title="GSN Community Evidence Pack",
+                    subtitle="Invite growth, community entry, and trust audit evidence.",
+                    generated_at=ts,
+                    reference=community_reference,
+                )
+            c.setFont(font_name, size)
+            c.drawString(content_left, y, safe_pdf_text(wrapped_line))
+            y -= gap
 
     line("Official evidence summary", size=14, gap=20, bold=True)
-    line(f"Community ID: {clan_id}", bold=True)
+    line(f"Community ID: {community_reference}", bold=True)
     line(f"Community Name: {clan_name or '-'}", bold=True)
     line(f"Generated: {ts}")
     line("")
 
     s = analytics["summary"]
-    line("Invite KPIs", bold=True)
+    line("Community entry summary", bold=True)
     line(f"- Invites created: {s['invites_created']}")
-    line(f"- Joins via invite: {s['joins_via_invite']}")
+    line(f"- Members joined by invite: {s['joins_via_invite']}")
     line(f"- Invites revoked: {s['invites_revoked']}")
     line(f"- Unique invite codes used: {s['unique_invites_used']}")
     line(f"- Conversion rate: {round(s['conversion_rate'] * 100, 1)}%")
     line("")
 
-    line("Top inviters (by joins)", bold=True)
+    line("Invite activity", bold=True)
     top_inviters = analytics["top_inviters"]
     if not top_inviters:
         line("- None yet")
@@ -123,7 +142,7 @@ def build_clan_evidence_pack_pdf(
             line(f"- inviter contact: {contact} | joins: {r['joins']}", size=10, gap=14)
     line("")
 
-    line("Recent joins via invite", bold=True)
+    line("Recent community entries", bold=True)
     if not recent:
         line("- None yet")
     else:
@@ -139,9 +158,9 @@ def build_clan_evidence_pack_pdf(
             )
 
     line("")
-    line("TrustEvent summary counts", bold=True)
+    line("Evidence activity summary", bold=True)
     for k in sorted(counts.keys()):
-        line(f"- {k}: {counts[k]}")
+        line(f"- {_event_label(k)}: {counts[k]}")
 
     line("")
     line("Reader boundary", bold=True, gap=18)

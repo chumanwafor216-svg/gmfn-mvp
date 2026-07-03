@@ -251,8 +251,23 @@ assertContains(
 );
 
 assertContains(
-  /<OwnerOnlySurfaceNav[\s\S]*?label="Owner shop shortcuts"[\s\S]*?ariaLabel="Public Shop owner shortcuts"[\s\S]*?links=\{memberSurfaceLinks\}[\s\S]*?requireOwnerMatch=\{true\}/,
-  "Public Shop shortcut strip must stay hidden from ordinary visitors and non-owner signed-in members through OwnerOnlySurfaceNav."
+  /<OwnerOnlySurfaceNav[\s\S]*?label="Your shop shortcuts"[\s\S]*?ariaLabel="Your Public Shop shortcuts"[\s\S]*?links=\{memberSurfaceLinks\}[\s\S]*?requireOwnerMatch=\{true\}/,
+  "Public Shop owner shortcut strip must use owner-facing language and stay hidden from ordinary visitors and non-owner signed-in members through OwnerOnlySurfaceNav."
+);
+
+assertContains(
+  /Public shop page\. Check seller evidence before trade\./,
+  "Public Shop brand bar must keep the public-page guidance short and user-facing."
+);
+
+assertContains(
+  /Public listing\. Verify current evidence before goods, credit, or money move\./,
+  "Public Shop signboard must keep the trade warning concise and user-facing."
+);
+
+assertNotContains(
+  /Open this public shop, then check the seller and current evidence before you act\./,
+  "Public Shop must not restore the repeated long public-shop warning."
 );
 
 assertContains(

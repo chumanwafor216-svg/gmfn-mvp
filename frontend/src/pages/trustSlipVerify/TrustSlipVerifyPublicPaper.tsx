@@ -339,7 +339,7 @@ function officialPaperWatermark(compact: boolean): React.ReactNode {
         position: "absolute",
         top: compact ? -34 : -42,
         right: compact ? -54 : -26,
-        opacity: 0.055,
+        opacity: 0.11,
         pointerEvents: "none",
         transform: "rotate(-7deg)",
         zIndex: 0,
@@ -1018,7 +1018,7 @@ export default function TrustSlipVerifyPublicPaper({
       {officialPaperWatermark(compact)}
       <TrustPaperWatermarkField
         names={["shield", "globe", "qr", "document"]}
-        opacity={0.024}
+        opacity={0.052}
       />
       <header style={publicVerifyHero(compact)}>
         <TrustPaperWatermark

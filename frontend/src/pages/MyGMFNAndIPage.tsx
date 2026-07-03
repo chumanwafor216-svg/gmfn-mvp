@@ -867,6 +867,7 @@ export default function MyGMFNAndIPage() {
       dashboard: routeTarget("dashboard", selectedClanId, "my-gmfn.route.dashboard-target"),
       community: routeTarget("communityHome", selectedClanId, "my-gmfn.route.community-target"),
       marketplace: routeTarget("marketplace", selectedClanId, "my-gmfn.route.marketplace-target"),
+      finance: routeTarget("finance", selectedClanId, "my-gmfn.route.finance-target"),
       loans: routeTarget("loans", selectedClanId, "my-gmfn.route.loans-target"),
       guide: routeTarget("profile", selectedClanId, "my-gmfn.route.guide-target"),
       settings: routeTarget("settings", selectedClanId, "my-gmfn.route.settings-target"),
@@ -896,6 +897,7 @@ export default function MyGMFNAndIPage() {
 
   const [me, setMe] = useState<any>(null);
   const [currentClan, setCurrentClan] = useState<any>(null);
+  const [selectedCapabilityId, setSelectedCapabilityId] = useState<number>(1);
   const [settings, setSettings] = useState<SettingsState>(() =>
     readLocalJSON(SETTINGS_STORAGE_KEY, DEFAULT_SETTINGS)
   );
@@ -1014,6 +1016,12 @@ export default function MyGMFNAndIPage() {
   }, [currentClan]);
 
   const capabilityCount = GMFN_CAPABILITY_COUNT;
+  const selectedCapability = useMemo(
+    () =>
+      GMFN_CAPABILITIES.find((item) => item.id === selectedCapabilityId) ||
+      GMFN_CAPABILITIES[0],
+    [selectedCapabilityId]
+  );
   const topNavHomeTo = isAppRoute ? routes.dashboard : "/cover";
   const topNavHomeLabel = isAppRoute ? "Dashboard" : "Cover";
   const topNavTitle = isAppRoute ? "My GSN and I" : "GSN Guide";
@@ -1074,6 +1082,13 @@ export default function MyGMFNAndIPage() {
         icon: "shop" as GsnIconName,
         to: routes.marketplace,
         debugId: "my-gmfn.route.marketplace",
+      },
+      {
+        label: "Finance",
+        detail: "Money records and payment evidence.",
+        icon: "financeInstitution" as GsnIconName,
+        to: routes.finance,
+        debugId: "my-gmfn.route.finance",
       },
       {
         label: "Loans & Support",
@@ -1466,35 +1481,110 @@ export default function MyGMFNAndIPage() {
 
             <div
               style={{
-                marginTop: 16,
+                marginTop: 14,
                 display: "grid",
-                gridTemplateColumns: isCompact
-                  ? "repeat(2, minmax(0, 1fr))"
-                  : "repeat(4, minmax(0, 1fr))",
-                gap: isCompact ? 9 : 10,
+                gap: 8,
               }}
             >
-              {GMFN_CAPABILITIES.map((item, index) => (
-                <div
-                  key={item.id}
-                  style={
-                    isCompact
-                      ? capabilityCompactCard(index === 0)
-                      : capabilityCard(index === 0)
-                  }
-                >
-                  {isCompact ? (
-                    <div style={capabilityCardTop()}>
-                      <span style={appGuideNumber()}>{item.id}</span>
-                      <span style={appGuideMiniIconBubble()}>
-                        <GsnLegacyIcon
-                          name={capabilityIconName(item)}
-                          size={24}
-                          decorative
-                        />
-                      </span>
-                    </div>
-                  ) : (
+              <label
+                htmlFor="my-gmfn-capability-select"
+                style={{
+                  ...sectionLabel(),
+                  color: "#425466",
+                  fontSize: 12,
+                }}
+              >
+                Choose capability
+              </label>
+              <select
+                id="my-gmfn-capability-select"
+                aria-label="Choose GSN capability"
+                value={selectedCapabilityId}
+                onChange={(event) =>
+                  setSelectedCapabilityId(Number(event.target.value) || 1)
+                }
+                style={selectStyle()}
+              >
+                {GMFN_CAPABILITIES.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.id}. {item.title}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {selectedCapability ? (
+              <div
+                data-my-gmfn-selected-capability="true"
+                style={{
+                  ...(isCompact
+                    ? capabilityCompactCard(selectedCapability.id === 1)
+                    : capabilityCard(selectedCapability.id === 1)),
+                  marginTop: 12,
+                  minHeight: 0,
+                }}
+              >
+                {isCompact ? (
+                  <div style={capabilityCardTop()}>
+                    <span style={appGuideNumber()}>{selectedCapability.id}</span>
+                    <span style={appGuideMiniIconBubble()}>
+                      <GsnLegacyIcon
+                        name={capabilityIconName(selectedCapability)}
+                        size={24}
+                        decorative
+                      />
+                    </span>
+                  </div>
+                ) : (
+                  <span style={capabilityVisualRail()}>
+                    <span style={appGuideNumber()}>{selectedCapability.id}</span>
+                    <span style={appGuideMiniIconBubble()}>
+                      <GsnLegacyIcon
+                        name={capabilityIconName(selectedCapability)}
+                        size={28}
+                        decorative
+                      />
+                    </span>
+                  </span>
+                )}
+                <div style={{ minWidth: 0 }}>
+                  <div
+                    style={{
+                      color: "#07172C",
+                      fontSize: isCompact ? 15 : 16,
+                      fontWeight: 1000,
+                      lineHeight: 1.16,
+                      overflowWrap: "normal",
+                    }}
+                  >
+                    {selectedCapability.title}
+                  </div>
+                  <div
+                    style={{
+                      marginTop: 7,
+                      color: "#425466",
+                      fontSize: isCompact ? 13 : 13.5,
+                      fontWeight: 750,
+                      lineHeight: 1.38,
+                    }}
+                  >
+                    {publicCapabilityLine(selectedCapability)}
+                  </div>
+                </div>
+              </div>
+            ) : null}
+
+            {!isCompact ? (
+              <div
+                style={{
+                  marginTop: 16,
+                  display: "grid",
+                  gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+                  gap: 10,
+                }}
+              >
+                {GMFN_CAPABILITIES.map((item, index) => (
+                  <div key={item.id} style={capabilityCard(index === 0)}>
                     <span style={capabilityVisualRail()}>
                       <span style={appGuideNumber()}>{item.id}</span>
                       <span style={appGuideMiniIconBubble()}>
@@ -1505,34 +1595,34 @@ export default function MyGMFNAndIPage() {
                         />
                       </span>
                     </span>
-                  )}
-                  <div style={{ minWidth: 0 }}>
-                    <div
-                      style={{
-                        color: "#07172C",
-                        fontSize: isCompact ? 11.2 : 12.5,
-                        fontWeight: 1000,
-                        lineHeight: isCompact ? 1.14 : 1.18,
-                        overflowWrap: "normal",
-                      }}
-                    >
-                      {item.title}
-                    </div>
-                    <div
-                      style={{
-                        marginTop: 6,
-                        color: "#425466",
-                        fontSize: isCompact ? 10.4 : 11.5,
-                        fontWeight: 700,
-                        lineHeight: isCompact ? 1.28 : 1.35,
-                      }}
-                    >
-                      {publicCapabilityLine(item)}
+                    <div style={{ minWidth: 0 }}>
+                      <div
+                        style={{
+                          color: "#07172C",
+                          fontSize: 12.5,
+                          fontWeight: 1000,
+                          lineHeight: 1.18,
+                          overflowWrap: "normal",
+                        }}
+                      >
+                        {item.title}
+                      </div>
+                      <div
+                        style={{
+                          marginTop: 6,
+                          color: "#425466",
+                          fontSize: 11.5,
+                          fontWeight: 700,
+                          lineHeight: 1.35,
+                        }}
+                      >
+                        {publicCapabilityLine(item)}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : null}
           </section>
 
           <section style={appGuidePanel(isCompact)}>

@@ -196,6 +196,20 @@ assertContains(
 
 assertContains(
   "src/pages/communityDomainDashboard/BillingReadinessPanels.tsx",
+  /not\\s\+created\\s\+in\\s\+this\\s\+slice[\s\S]*return "not created yet"[\s\S]*not\\s\+recorded\\s\+in\\s\+this\\s\+slice[\s\S]*return "not recorded yet"[\s\S]*gridTemplateColumns: "minmax\(0, 1fr\)"[\s\S]*justifySelf: "start"/,
+  "Community Domain Billing readiness rows must stack phone text and show user-facing not-created/not-recorded statuses instead of squeezing copy beside maker-language status pills.",
+  { frontend: true }
+);
+
+assertNotContains(
+  "src/pages/communityDomainDashboard/BillingReadinessPanels.tsx",
+  /gridTemplateColumns: "minmax\(0, 1fr\) auto"/,
+  "Community Domain Billing readiness rows must not return to the two-column phone layout that squeezes copy into one-word lines.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/communityDomainDashboard/BillingReadinessPanels.tsx",
   /Package capacity[\s\S]*package_name[\s\S]*limits_source[\s\S]*primary_next_action[\s\S]*Capacity attention[\s\S]*Used:[\s\S]*Limit:[\s\S]*Remaining:[\s\S]*This view only shows package limits[\s\S]*does not raise limits, add\s+units, members, or shops, change pricing or billing, publish pages,\s+move money, or expose private evidence/,
   "Community Domain dashboard Billing lane must show read-only package capacity without implying limit increases, writes, billing activation, pricing changes, money movement, publishing, or private evidence access.",
   { frontend: true }

@@ -628,15 +628,17 @@ def download_loan_evidence_pack_zip(
         "trust_timeline_pdf_bytes": len(pdf_bytes),
         "trustslip_snapshot_checksum": getattr(trust_slip, "snapshot_checksum", None) if trust_slip else None,
     }
+    support_reference = f"GSN-SUPPORT-{int(loan.id):06d}"
+    community_reference = getattr(clan, "community_code", None) or f"GSN-C-{int(loan.clan_id):06d}"
 
     readme = (
-        "GSN Loan Evidence Pack\n"
-        f"Loan ID: {loan.id}\n"
-        f"Community ID: {loan.clan_id}\n"
+        "GSN Support Evidence Pack\n"
+        f"Support record: {support_reference}\n"
+        f"Community ID: {community_reference}\n"
         "Audience: community admin or platform admin only\n"
         "Privacy: complete private admin record\n"
-        "Boundary: contains unredacted loan, supporter, repayment, TrustSlip, and trust timeline evidence. "
-        "Use the redacted loan trust report PDF for borrower-facing or outside review.\n"
+        "Boundary: contains unredacted support, supporter, repayment, TrustSlip, and trust timeline evidence. "
+        "Use the redacted support trust report PDF for borrower-facing or outside review.\n"
         "Limitation: not a bank guarantee, credit approval, payment instruction, automatic debit authority, or public verification paper.\n"
         "Contents:\n"
         "- manifest.json\n"

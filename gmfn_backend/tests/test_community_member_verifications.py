@@ -1526,6 +1526,108 @@ def test_backend_trustslip_verify_page_links_scoped_member_credential(
     assert "Evidence only: not credit approval, payment instruction, or release permission." in share_data["text"]
 
 
+def test_public_trustslip_verify_does_not_upgrade_or_leak_private_payload(
+    client: TestClient,
+):
+    _seed_member_verification_context(member_count=2)
+    issued_at = datetime(2026, 6, 19, 9, 30, tzinfo=timezone.utc)
+
+    with SessionLocal() as db:
+        holder = db.get(User, 2)
+        holder.email = "holder-private@example.com"
+        holder.merchant_visibility_level = "detailed"
+        holder.phone_e164 = "+234800000002"
+        holder.phone_verified_at = issued_at
+        db.add(
+            TrustSlip(
+                code="PUBLIC-TRUSTSLIP-PRIVACY",
+                clan_id=1,
+                holder_user_id=2,
+                trust_limit=Decimal("0.00"),
+                currency="NGN",
+                status="active",
+                expires_at=issued_at + timedelta(days=7),
+                created_at=issued_at,
+                is_current=True,
+            )
+        )
+        db.commit()
+
+    response = client.get("/trust-slips/verify/PUBLIC-TRUSTSLIP-PRIVACY?level=detailed")
+    assert response.status_code == 200, response.text
+    data = response.json()
+    payload_text = json.dumps(data, default=str).lower()
+
+    assert data["visibility_level"] == "standard"
+    assert data["merchant_view"]["visibility_level"] == "standard"
+    assert "holder_email_masked" not in data
+    assert "last_full_repayment_at" not in data
+    assert "days_since_last_full_repayment" not in data
+    assert "risk_flags" not in data
+    assert "commitment_discipline" not in data
+    assert "personal_commitment_discipline" not in data
+    assert "human_terms" not in data
+    assert "sponsors" not in data["merchant_view"]
+    assert "internal_contacts" not in data["merchant_view"]
+    assert "holder-private" not in payload_text
+    assert "example.com" not in payload_text
+    assert "+234800000002" not in payload_text
+
+    share_text = client.get("/trust-slips/verify/PUBLIC-TRUSTSLIP-PRIVACY/share-text?level=detailed")
+    assert share_text.status_code == 200, share_text.text
+    share_data = share_text.json()
+    assert share_data["merchant_visibility_level"] == "standard"
+    assert "GSN TrustSlip public check" in share_data["text"]
+    assert "Open this link to check the current public TrustSlip record before you rely on it." in share_data["text"]
+    assert "Public record level: standard" in share_data["text"]
+    assert "TrustSlip verify:" not in share_data["text"]
+    assert "Visibility: standard" not in share_data["text"]
+    assert "detailed" not in share_data["text"].lower()
+
+
+def test_trustslip_share_bundle_uses_short_public_reader_language(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    _seed_member_verification_context(member_count=2)
+    issued_at = datetime(2026, 6, 19, 9, 30, tzinfo=timezone.utc)
+
+    with SessionLocal() as db:
+        db.add(
+            TrustSlip(
+                code="PUBLIC-TRUSTSLIP-SHARE-BUNDLE",
+                clan_id=1,
+                holder_user_id=2,
+                trust_limit=Decimal("125000.00"),
+                currency="NGN",
+                status="active",
+                expires_at=issued_at + timedelta(days=7),
+                created_at=issued_at,
+                is_current=True,
+            )
+        )
+        db.commit()
+
+    monkeypatch.setattr("app.api.routes.trust_slips.has_active_feature", lambda *args, **kwargs: True)
+    app.dependency_overrides[get_current_user] = _as_user(2)
+    try:
+        response = client.get("/trust-slips/PUBLIC-TRUSTSLIP-SHARE-BUNDLE/share?level=standard")
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    assert response.status_code == 200, response.text
+    data = response.json()
+    assert "GSN TrustSlip public check" in data["whatsapp_text"]
+    assert "Open this link to check the current public TrustSlip record before you rely on it." in data["whatsapp_text"]
+    assert "TrustSlip code: PUBLIC-TRUSTSLIP-SHARE-BUNDLE" in data["whatsapp_text"]
+    assert "Public record level: standard" in data["whatsapp_text"]
+    assert "Current reading:" in data["whatsapp_text"]
+    assert "Please verify TrustSlip before making a trade decision:" not in data["whatsapp_text"]
+    assert "Visibility:" not in data["whatsapp_text"]
+    assert "Verify TrustSlip:" not in data["sms_text"]
+    assert "Public record level: standard" in data["sms_text"]
+
+
 def test_backend_trustslip_suppresses_member_credential_for_pending_holder(
     client: TestClient,
 ):

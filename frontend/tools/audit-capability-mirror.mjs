@@ -112,6 +112,32 @@ assertContains(
   "The signed-in My GSN and I capability map must keep an institutional boundary against overclaiming live approvals, payout, paid verification, or protected trade release."
 );
 
+for (const value of [
+  "selectedCapabilityId",
+  "selectedCapability",
+  'id="my-gmfn-capability-select"',
+  "Choose capability",
+  "{item.id}. {item.title}",
+]) {
+  assertTextIncludes(
+    "frontend/src/pages/MyGMFNAndIPage.tsx",
+    value,
+    "The signed-in My GSN and I capability map must provide a native dropdown plus one focused capability card on phone instead of exposing all 22 cards at once."
+  );
+}
+
+assertContains(
+  "frontend/src/pages/MyGMFNAndIPage.tsx",
+  /data-my-gmfn-selected-capability="true"[\s\S]*selectedCapability\.title[\s\S]*publicCapabilityLine\(selectedCapability\)[\s\S]*\{!isCompact \? \(/,
+  "The signed-in My GSN and I capability map must show one selected capability first and keep the full 22-card grid off the compact phone layout."
+);
+
+assertContains(
+  "frontend/src/pages/MyGMFNAndIPage.tsx",
+  /finance: routeTarget\("finance"[\s\S]*label: "Finance"[\s\S]*Money records and payment evidence[\s\S]*icon: "financeInstitution"[\s\S]*debugId: "my-gmfn\.route\.finance"/,
+  "The signed-in My GSN and I app route list must include Finance with the finance-institution icon and a stable debug id."
+);
+
 assertTextExcludes(
   "frontend/src/pages/MyGMFNAndIPage.tsx",
   "22 things GSN can do for you",

@@ -15,6 +15,7 @@ from app.services.institutional_pdf import (
     draw_institutional_header,
     safe_pdf_text,
     utc_generated_label,
+    wrap_pdf_text_lines,
 )
 from app.services.trust_score_service import compute_trust_score_explained, trust_band_for_score
 
@@ -103,24 +104,32 @@ def build_user_evidence_pack_pdf(
         generated_at=ts,
         reference="GSN member evidence",
     )
+    content_left = 56
+    content_width = width - (content_left * 2)
 
     def line(text: str, size: int = 11, gap: int = 16, bold: bool = False):
         nonlocal y
-        if y < 60:
-            draw_institutional_footer(c, width, "GSN member evidence paper")
-            c.showPage()
-            y = draw_institutional_header(
-                c,
-                width,
-                height,
-                title="GSN Member Evidence Pack",
-                subtitle="Trust snapshot and recent evidence from the member record.",
-                generated_at=ts,
-                reference="GSN member evidence",
-            )
-        c.setFont("Helvetica-Bold" if bold else "Helvetica", size)
-        c.drawString(56, y, safe_pdf_text(text))
-        y -= gap
+        if not str(text if text is not None else "").strip():
+            y -= gap
+            return
+
+        font_name = "Helvetica-Bold" if bold else "Helvetica"
+        for wrapped_line in wrap_pdf_text_lines(text, font_name, size, content_width):
+            if y < 60:
+                draw_institutional_footer(c, width, "GSN member evidence paper")
+                c.showPage()
+                y = draw_institutional_header(
+                    c,
+                    width,
+                    height,
+                    title="GSN Member Evidence Pack",
+                    subtitle="Trust snapshot and recent evidence from the member record.",
+                    generated_at=ts,
+                    reference="GSN member evidence",
+                )
+            c.setFont(font_name, size)
+            c.drawString(content_left, y, safe_pdf_text(wrapped_line))
+            y -= gap
 
     line("Official evidence summary", size=14, gap=20, bold=True)
     line(f"Generated: {ts}", size=10, gap=14)

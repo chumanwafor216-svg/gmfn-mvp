@@ -301,7 +301,7 @@ export function TrustPaperWatermark({
 export function TrustPaperWatermarkField({
   names = ["shield", "qr", "document", "globe"],
   color = "#0B63D1",
-  opacity = 0.035,
+  opacity = 0.055,
   style,
 }: {
   names?: TrustPaperIconName[];
