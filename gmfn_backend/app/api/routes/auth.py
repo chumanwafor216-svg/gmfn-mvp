@@ -8,7 +8,7 @@ from typing import Any, Literal, Optional
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from fastapi.security import OAuth2PasswordRequestForm
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -17,7 +17,7 @@ from app.core.clan_auth import ensure_membership
 from app.core.dev_guard import require_dev_mode
 from app.core.security import create_access_token, get_password_hash, verify_password
 from app.db.database import get_db
-from app.db.models import Clan, ClanInvite, ClanJoinRequest, ClanMembership, User
+from app.db.models import Clan, ClanInvite, ClanJoinRequest, ClanMembership, TrustEvent, User
 from app.services.global_identity_service import ensure_user_gmfn_id
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -61,6 +61,17 @@ class UserOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class ProfileUpdateIn(BaseModel):
+    display_name: str = Field(..., min_length=2, max_length=120)
+
+    @field_validator("display_name", mode="before")
+    @classmethod
+    def _reject_non_text_display_name(cls, value: object) -> object:
+        if not isinstance(value, str):
+            raise ValueError("display_name must be text.")
+        return value
+
+
 class TokenOut(BaseModel):
     access_token: str
     token_type: str = "bearer"
@@ -88,8 +99,18 @@ class FounderSignupWithInviteIn(BaseModel):
     invite_code: str = Field(..., min_length=3)
     email: EmailStr
     password: str = Field(..., min_length=6)
+    display_name: Optional[str] = Field(default=None, min_length=2, max_length=120)
     clan_name: str = Field(..., min_length=2, max_length=80)
     clan_description: Optional[str] = Field(default=None, max_length=500)
+
+    @field_validator("display_name", mode="before")
+    @classmethod
+    def _reject_non_text_display_name(cls, value: object) -> object:
+        if value is None:
+            return value
+        if not isinstance(value, str):
+            raise ValueError("display_name must be text.")
+        return value
 
 
 class FounderSignupWithInviteOut(BaseModel):
@@ -97,6 +118,8 @@ class FounderSignupWithInviteOut(BaseModel):
     user_id: int
     email: EmailStr
     gmfn_id: Optional[str] = None
+    display_name: Optional[str] = None
+    nickname: Optional[str] = None
     clan_id: int
     clan_name: str
     membership_role: str
@@ -116,6 +139,8 @@ class ActivateApprovedMemberOut(BaseModel):
     user_id: int
     email: str
     gmfn_id: str
+    display_name: Optional[str] = None
+    nickname: Optional[str] = None
     phone_e164: Optional[str] = None
     phone_verified_at: Optional[str] = None
     phone_verified: bool = False
@@ -502,6 +527,85 @@ def _build_me_payload(db: Session, user: User) -> dict[str, Any]:
     }
 
 
+def _clean_profile_display_name(value: object) -> str:
+    text = str(value or "").strip()
+    collapsed = " ".join(text.split())
+    if not collapsed:
+        raise HTTPException(status_code=400, detail="Display name is required")
+
+    lowered = collapsed.lower()
+    if lowered in {
+        "member name not set",
+        "name not set",
+        "not set",
+        "not shown",
+        "unknown",
+    }:
+        raise HTTPException(
+            status_code=400,
+            detail="Use the name or street name people know you by",
+        )
+
+    return collapsed[:120]
+
+
+def _join_evidence_display_name_for_user(db: Session, user: User) -> Optional[str]:
+    rows = (
+        db.query(TrustEvent)
+        .filter(TrustEvent.subject_user_id == int(user.id))
+        .order_by(TrustEvent.created_at.desc(), TrustEvent.id.desc())
+        .limit(10)
+        .all()
+    )
+
+    for row in rows:
+        meta = getattr(row, "meta", None) or {}
+        if not isinstance(meta, dict):
+            continue
+        profile = meta.get("applicant_profile")
+        if not isinstance(profile, dict):
+            continue
+        candidate = " ".join(
+            part
+            for part in (
+                str(profile.get("first_name") or "").strip(),
+                str(profile.get("surname") or "").strip(),
+            )
+            if part
+        )
+        if not candidate:
+            continue
+        try:
+            return _clean_profile_display_name(candidate)
+        except HTTPException:
+            continue
+
+    return None
+
+
+def _recover_missing_display_name_from_join_evidence(
+    db: Session,
+    user: User,
+) -> User:
+    current = str(getattr(user, "display_name", "") or "").strip()
+    if current:
+        try:
+            _clean_profile_display_name(current)
+            return user
+        except HTTPException:
+            pass
+
+    recovered = _join_evidence_display_name_for_user(db, user)
+    if not recovered:
+        return user
+
+    user.display_name = recovered
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    return user
+
+
 def _activation_phone_status(user: User) -> dict[str, Any]:
     phone_e164 = getattr(user, "phone_e164", None)
     phone_verified_at = getattr(user, "phone_verified_at", None)
@@ -519,6 +623,25 @@ def _activation_phone_status(user: User) -> dict[str, Any]:
         if phone_verified
         else "/app/identity?task=phone&mode=complete",
     }
+
+
+@router.patch("/me/profile", response_model=UserOut)
+def update_my_profile(
+    payload: ProfileUpdateIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    current_user.display_name = _clean_profile_display_name(payload.display_name)
+    db.add(current_user)
+    db.commit()
+    db.refresh(current_user)
+
+    try:
+        current_user = _ensure_user_gmfn_id(db, current_user)
+    except Exception:
+        pass
+
+    return _build_me_payload(db, current_user)
 
 
 @router.post("/register", response_model=UserOut, status_code=201)
@@ -593,6 +716,7 @@ def activate_approved_member(
             detail="This approved identity has already been activated",
         )
 
+    user = _recover_missing_display_name_from_join_evidence(db, user)
     user.hashed_password = get_password_hash(payload.password)
     db.add(user)
     db.commit()
@@ -604,6 +728,8 @@ def activate_approved_member(
         "user_id": int(user.id),
         "email": user.email,
         "gmfn_id": str(user.gmfn_id),
+        "display_name": getattr(user, "display_name", None),
+        "nickname": getattr(user, "display_name", None),
         **_activation_phone_status(user),
         "access_token": access_token,
         "token_type": "bearer",
@@ -657,6 +783,7 @@ def activate_membership(
             },
         )
 
+    user = _recover_missing_display_name_from_join_evidence(db, user)
     user.hashed_password = get_password_hash(password)
     db.add(user)
     db.commit()
@@ -667,6 +794,8 @@ def activate_membership(
     return {
         "status": "activated",
         "gmfn_id": user.gmfn_id,
+        "display_name": getattr(user, "display_name", None),
+        "nickname": getattr(user, "display_name", None),
         **_activation_phone_status(user),
         "access_token": access_token,
         "token_type": "bearer",
@@ -734,6 +863,11 @@ def signup_with_invite(payload: FounderSignupWithInviteIn, db: Session = Depends
         email=payload.email,
         hashed_password=get_password_hash(payload.password),
         role="admin",
+        display_name=(
+            _clean_profile_display_name(payload.display_name)
+            if payload.display_name
+            else None
+        ),
     )
     db.add(user)
 
@@ -768,6 +902,8 @@ def signup_with_invite(payload: FounderSignupWithInviteIn, db: Session = Depends
         "user_id": int(user.id),
         "email": user.email,
         "gmfn_id": getattr(user, "gmfn_id", None),
+        "display_name": getattr(user, "display_name", None),
+        "nickname": getattr(user, "display_name", None),
         "clan_id": int(clan.id),
         "clan_name": clan.name,
         "membership_role": membership_role,
@@ -869,6 +1005,8 @@ def get_approved_member_activation_status(
         "status": (latest_join_request.status if latest_join_request else None),
         "user_id": int(user.id),
         "email": user.email,
+        "display_name": getattr(user, "display_name", None),
+        "nickname": getattr(user, "display_name", None),
     }
 
 

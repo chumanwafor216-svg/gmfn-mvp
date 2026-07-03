@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import { CardActionRow, PrimaryButton, SecondaryButton } from "../components/StableButton";
-import { getMe } from "../lib/api";
+import { getMe, updateMyProfile } from "../lib/api";
 
 function card(): React.CSSProperties {
   return {
@@ -29,18 +29,21 @@ function profileIconText(
 export default function ProfilePage() {
   const [me, setMe] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [note, setNote] = useState<string>("");
 
-  // Local browser fields until permanent profile storage is available.
   const [displayName, setDisplayName] = useState<string>(localStorage.getItem("gmfn_profile_name") || "");
-  const [phone, setPhone] = useState<string>(localStorage.getItem("gmfn_profile_phone") || "");
-  const [country, setCountry] = useState<string>(localStorage.getItem("gmfn_profile_country") || "");
 
   async function load() {
     setLoading(true);
     try {
       const m = await getMe();
       setMe(m);
+      const accountName = String(m?.display_name || m?.nickname || "").trim();
+      if (accountName) {
+        setDisplayName(accountName);
+        localStorage.setItem("gmfn_profile_name", accountName);
+      }
     } catch {
       setMe(null);
     } finally {
@@ -52,13 +55,35 @@ export default function ProfilePage() {
     load();
   }, []);
 
-  function saveLocal() {
-    localStorage.setItem("gmfn_profile_name", displayName.trim());
-    localStorage.setItem("gmfn_profile_phone", phone.trim());
-    localStorage.setItem("gmfn_profile_country", country.trim());
-    setNote("Saved on this device. Permanent profile storage is a future upgrade.");
-    setTimeout(() => setNote(""), 2200);
+  async function saveProfile() {
+    const cleanName = displayName.trim();
+    if (cleanName.length < 2) {
+      setNote("Enter the name or street name people know you by.");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const updated = await updateMyProfile({ display_name: cleanName });
+      setMe(updated);
+      const savedName = String(updated?.display_name || cleanName).trim();
+      setDisplayName(savedName);
+      localStorage.setItem("gmfn_profile_name", savedName);
+      setNote("Name saved to your GSN account. TrustSlip and profile screens can now use it.");
+    } catch (err: any) {
+      setNote(err?.message || "GSN could not save this name. Check it and try again.");
+    } finally {
+      setSaving(false);
+      setTimeout(() => setNote(""), 3200);
+    }
   }
+
+  const accountPhone = String(me?.phone_e164 || "").trim();
+  const phoneStatus = me?.phone_verified
+    ? "Verified phone"
+    : accountPhone
+      ? "Phone recorded, verification needed"
+      : "No phone recorded yet";
 
   return (
     <div style={{ padding: 18, maxWidth: 900 }}>
@@ -107,36 +132,29 @@ export default function ProfilePage() {
           <input
             value={displayName}
             onChange={(e) => setDisplayName(e.target.value)}
-            placeholder="e.g., Chuma"
+            placeholder="Name or street name people know you by"
             style={{ padding: "10px 12px", borderRadius: 12, border: "1px solid #e5e7eb" }}
           />
 
           <div style={{ color: "#64748b", fontSize: 12 }}>
-            {profileIconText("phone", "Phone", 20)}
+            {profileIconText("phone", phoneStatus, 20)}
           </div>
           <input
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            placeholder="e.g., +44..."
-            style={{ padding: "10px 12px", borderRadius: 12, border: "1px solid #e5e7eb" }}
-          />
-
-          <div style={{ color: "#64748b", fontSize: 12 }}>
-            {profileIconText("globe", "Country", 20)}
-          </div>
-          <input
-            value={country}
-            onChange={(e) => setCountry(e.target.value)}
-            placeholder="e.g., UK / Nigeria"
-            style={{ padding: "10px 12px", borderRadius: 12, border: "1px solid #e5e7eb" }}
+            value={accountPhone || "Open phone verification to add it"}
+            readOnly
+            aria-readonly="true"
+            style={{ padding: "10px 12px", borderRadius: 12, border: "1px solid #e5e7eb", background: "#f8fafc" }}
           />
         </div>
 
         <CardActionRow style={{ marginTop: 12 }}>
           <PrimaryButton
             type="button"
-            onClick={saveLocal}
-            debugId="profile.save-local"
+            onClick={() => void saveProfile()}
+            disabled={saving || loading}
+            busy={saving}
+            busyLabel="Saving..."
+            debugId="profile.save-account"
           >
             {profileIconText("check", "Save")}
           </PrimaryButton>
@@ -161,7 +179,7 @@ export default function ProfilePage() {
         <div style={{ marginTop: 10, fontSize: 12, color: "#64748b" }}>
           {profileIconText(
             "records-folder",
-            "Later upgrade: save profile fields for cross-device portability.",
+            "Your display name can appear on GSN account, TrustSlip, and profile surfaces. Phone changes use verified phone steps.",
             20
           )}
         </div>

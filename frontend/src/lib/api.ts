@@ -613,6 +613,17 @@ export async function getMe() {
   return out;
 }
 
+export async function updateMyProfile(payload: {
+  display_name: string;
+}): Promise<any> {
+  const out = await httpJson("/auth/me/profile", "PATCH", {
+    display_name: String(payload?.display_name || "").trim(),
+  });
+  rememberGmfnIdFrom(out);
+  rememberRoleFrom(out);
+  return out;
+}
+
 export async function getMeWithToken(
   token: string,
   options?: { fresh?: boolean }
@@ -737,6 +748,7 @@ export async function founderSignupWithInvite(payload: {
   invite_code: string;
   email: string;
   password: string;
+  display_name?: string | null;
   clan_name: string;
   clan_description?: string | null;
 }): Promise<any> {

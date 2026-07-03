@@ -361,7 +361,7 @@ export default function CommunityDomainServiceReadinessPanels({
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
           This view only shows service readiness. It does not turn on services,
           activate billing, grant permissions, publish Spotlight, create shops,
-          open vault links, or expose private member records.
+          open vault links, or show private member records.
         </div>
       </div>
 
@@ -399,7 +399,7 @@ export default function CommunityDomainServiceReadinessPanels({
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
           This view only shows service template guidance. It does not save
           settings, turn on services, activate billing, grant permissions,
-          create shops, publish Spotlight, open vault links, or expose private
+          create shops, publish Spotlight, open vault links, or show private
           records.
         </div>
       </div>
@@ -525,7 +525,7 @@ export default function CommunityDomainServiceReadinessPanels({
           This view only shows public-presence readiness. It does not publish a
           public page, finalize the domain link, create outward links, verify the
           domain, create marketplace or Spotlight exposure, activate billing, or
-          expose private member records.
+          show private member records.
         </div>
       </div>
     </>

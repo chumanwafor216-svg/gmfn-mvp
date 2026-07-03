@@ -510,7 +510,7 @@ export default function CommunityDomainIdentityReadinessPanels({
           This view only shows community bridge readiness. It does not create or
           upgrade an ordinary community, connect private records, decide
           affiliations, copy or invite members, move marketplace activity,
-          activate billing, verify authority, merge records, or expose private
+          activate billing, verify authority, merge records, or show private
           member records.
         </div>
       </div>
@@ -585,7 +585,7 @@ export default function CommunityDomainIdentityReadinessPanels({
           or child Community Domain links, approve requests, set community links,
           copy or transfer members, inherit policy, activate billing, verify
           authority, publish public links, create marketplace activity, move
-          money, create trust records, or expose private records.
+          money, create trust records, or show private records.
         </div>
       </div>
       ) : null}

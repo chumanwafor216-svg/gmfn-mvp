@@ -129,17 +129,43 @@ def _looks_like_public_identity_code(value: Any) -> bool:
     return bool(re.match(r"^(GMFN|GSN|GMFM)-(U|P)-", text))
 
 
+def _is_missing_public_holder_name(value: Any) -> bool:
+    text = _safe_str(value).strip().lower()
+    return text in {
+        "",
+        "-",
+        "member name not set",
+        "name not set",
+        "name not shown",
+        "not set",
+        "not shown",
+        "unknown",
+    }
+
+
 def _public_holder_name(holder: Optional[User], *fallbacks: Any) -> str:
     display_name = _safe_str(getattr(holder, "display_name", None) if holder else None)
-    if display_name and not _looks_like_public_identity_code(display_name):
+    if (
+        display_name
+        and not _is_missing_public_holder_name(display_name)
+        and not _looks_like_public_identity_code(display_name)
+    ):
         return display_name
 
     for fallback in fallbacks:
         candidate = _safe_str(fallback)
-        if candidate and not _looks_like_public_identity_code(candidate):
+        if (
+            candidate
+            and not _is_missing_public_holder_name(candidate)
+            and not _looks_like_public_identity_code(candidate)
+        ):
             return candidate
 
-    return "Member name not set"
+    public_id = _safe_str(getattr(holder, "gmfn_id", None) if holder else None)
+    if public_id:
+        return f"GSN holder {public_id}"
+
+    return "GSN holder"
 
 
 def _safe_visibility_level(user: Optional[User], requested_level: Optional[str]) -> str:

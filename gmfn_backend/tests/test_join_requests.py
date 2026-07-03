@@ -95,10 +95,13 @@ def test_public_join_request_accepts_clan_invite_record_code(client):
     with SessionLocal() as db:
         invite = db.get(ClanInvite, 1)
         join_request = db.query(ClanJoinRequest).first()
+        applicant = db.get(User, int(data["user_id"]))
         assert invite is not None
         assert invite.uses == 1
         assert join_request is not None
         assert join_request.invite_id == 1
+        assert applicant is not None
+        assert applicant.display_name == "Arinze Nnamani"
 
 
 def test_public_join_invite_preview_reports_ready_invite(client):

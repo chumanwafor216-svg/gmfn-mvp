@@ -130,8 +130,14 @@ assertContains(
 
 assertContains(
   "src/pages/ProfilePage.tsx",
-  /debugId="profile\.save-local"[\s\S]*?debugId="profile\.refresh"/,
+  /updateMyProfile[\s\S]*?debugId="profile\.save-account"[\s\S]*?debugId="profile\.refresh"/,
   "Profile actions must remain traceable."
+);
+
+assertContains(
+  "src/lib/api.ts",
+  /export async function updateMyProfile[\s\S]*?\/auth\/me\/profile[\s\S]*?display_name/,
+  "Profile display-name save must use the account profile endpoint, not local-only storage."
 );
 
 assertContains(
@@ -150,6 +156,18 @@ assertContains(
   "src/pages/MyGMFNAndIPage.tsx",
   /htmlFor="my-gmfn-capability-select"[\s\S]*?Choose capability[\s\S]*?<select[\s\S]*?id="my-gmfn-capability-select"[\s\S]*?aria-label="Choose GSN capability"[\s\S]*?GMFN_CAPABILITIES\.map/,
   "My GSN and I capability guide must keep the dropdown selector above the capability cards."
+);
+
+assertContains(
+  "src/pages/MyGMFNAndIPage.tsx",
+  /Lets a seller check identity, community, TrustSlip, and current evidence before releasing goods or credit\.[\s\S]*?Turns support requests into recorded drafts with amount, purpose, duration, supporters, and fit signals\.[\s\S]*?Connects community identity, marketplace activity, finance evidence, and trust records into one working layer\./,
+  "My GSN and I profile capability lines must stay concrete enough to explain daily GSN use, not collapse back to slogans."
+);
+
+assertNotContains(
+  "src/pages/CoverPage.tsx",
+  /GMFN_CAPABILITIES|gmfnCapabilities/,
+  "Cover page 22-things content must remain separate from the authenticated My GSN and I capability guide."
 );
 
 assertNotContains(

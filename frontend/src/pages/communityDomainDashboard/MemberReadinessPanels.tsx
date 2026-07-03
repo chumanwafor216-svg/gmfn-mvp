@@ -282,7 +282,7 @@ export default function CommunityDomainMemberReadinessPanels({
             Community Domain admin to review member placement.
           </div>
           <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-            This fallback does not expose private member lists, assign roles,
+            This fallback does not show private member lists, assign roles,
             place members, decide reviews, or grant permissions.
           </div>
         </div>
@@ -370,7 +370,7 @@ export default function CommunityDomainMemberReadinessPanels({
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
           This view only shows member readiness. It does not verify identity,
           issue credentials, change members or roles, decide reviews, publish
-          proof, create trust records, move money, or expose private member records.
+          proof, create trust records, move money, or show private member records.
         </div>
       </div>
     </>

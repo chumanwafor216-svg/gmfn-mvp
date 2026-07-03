@@ -71,6 +71,18 @@ assertContains(
 );
 
 assertContains(
+  "src/lib/api.ts",
+  /founderSignupWithInvite\(payload: \{[\s\S]*?display_name\?: string \| null;[\s\S]*?\/auth\/signup-with-invite/,
+  "Founder invite signup must keep carrying the typed display/street name into the account fallback route."
+);
+
+assertContains(
+  "src/pages/CreateEntryPage.tsx",
+  /function buildCreateEntryPayload\(activeVerificationId: number\)[\s\S]*?display_name: safeStr\(displayName\)/,
+  "Create Entry must send the typed known name so fallback account creation does not lose it."
+);
+
+assertContains(
   "src/pages/CoverPage.tsx",
   /function nextRouteForMode\(mode: EntryMode\): string \{[\s\S]*?return "\/welcome\?entry_from=cover";/,
   "Cover Continue must mark Welcome as cover-entered so bare /welcome shortcuts return to Cover."

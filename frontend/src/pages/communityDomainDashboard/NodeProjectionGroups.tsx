@@ -416,7 +416,7 @@ export default function CommunityDomainNodeProjectionGroups(props: ProjectionGro
           defaultNextStep:
             "Keep evidence authority tied to local issuers, policy, and reviewed signals.",
           boundary:
-            "Use this as a local evidence-authority snapshot only. It does not upload evidence, issue proof, or expose private member data.",
+            "Use this as a local evidence-authority snapshot only. It does not upload evidence, issue proof, or show private member data.",
         })}
 
         {renderNodeProjectionCard({
@@ -455,7 +455,7 @@ export default function CommunityDomainNodeProjectionGroups(props: ProjectionGro
           rowFallback: "Trust unit",
           defaultNextStep: "Keep trust evidence tied to governed local units.",
           boundary:
-            "Use this as a local trust snapshot only. It does not publish proof, create trust records, move money, or expose private member data.",
+            "Use this as a local trust snapshot only. It does not publish proof, create trust records, move money, or show private member data.",
         })}
       </>
     );
@@ -515,7 +515,7 @@ export default function CommunityDomainNodeProjectionGroups(props: ProjectionGro
           rowFallback: "Autonomy unit",
           defaultNextStep: "Keep local authority tied to existing governance.",
           boundary:
-            "Use this as a local authority snapshot only. It does not grant roles, change structure, activate billing, or expose private member data.",
+            "Use this as a local authority snapshot only. It does not grant roles, change structure, activate billing, or show private member data.",
         })}
 
         {renderNodeProjectionCard({
@@ -646,7 +646,7 @@ export default function CommunityDomainNodeProjectionGroups(props: ProjectionGro
       rowFallback: "Domain-boundary unit",
       defaultNextStep: "Keep operating units inside the parent domain until review is complete.",
       boundary:
-        "Use this as a boundary snapshot only. It does not create child domains, publish links, move members, or expose private member data.",
+        "Use this as a boundary snapshot only. It does not create child domains, publish links, move members, or show private member data.",
     });
   }
 
@@ -898,7 +898,7 @@ export default function CommunityDomainNodeProjectionGroups(props: ProjectionGro
         rowFallback: "Service unit",
         defaultNextStep: "Keep local services tied to governed operating units.",
         boundary:
-          "Use this as a local service snapshot only. It does not turn on services, grant permissions, activate billing, or expose private member data.",
+          "Use this as a local service snapshot only. It does not turn on services, grant permissions, activate billing, or show private member data.",
       })}
 
       {renderNodeProjectionCard({

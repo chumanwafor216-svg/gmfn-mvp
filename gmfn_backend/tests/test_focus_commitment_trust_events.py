@@ -849,7 +849,7 @@ def test_public_trustslip_verify_uses_holder_name_separate_from_gsn_id(
     assert datetime.fromisoformat(data["issued_at"]).replace(tzinfo=timezone.utc) == issued_at
 
 
-def test_public_trustslip_verify_does_not_use_gsn_id_as_missing_holder_name(
+def test_public_trustslip_verify_uses_public_id_when_holder_name_is_missing(
     client: TestClient,
     seed_clan_member_membership,
     monkeypatch,
@@ -860,7 +860,7 @@ def test_public_trustslip_verify_does_not_use_gsn_id_as_missing_holder_name(
     with SessionLocal() as db:
         user = db.get(User, 1)
         assert user is not None
-        user.display_name = None
+        user.display_name = "Member name not set"
         user.gmfn_id = "GMFN-U-9867079C"
         slip = TrustSlip(
             code="PUBLIC-HOLDER-MISSING-NAME",
@@ -881,6 +881,6 @@ def test_public_trustslip_verify_does_not_use_gsn_id_as_missing_holder_name(
     data = response.json()
 
     assert data["gmfn_id"] == "GMFN-U-9867079C"
-    assert data["holder_name"] == "Member name not set"
-    assert data["display_name"] == "Member name not set"
-    assert data["holder_name"] != data["gmfn_id"]
+    assert data["holder_name"] == "GSN holder GMFN-U-9867079C"
+    assert data["display_name"] == "GSN holder GMFN-U-9867079C"
+    assert data["holder_name"] != "Member name not set"

@@ -4169,8 +4169,8 @@ def test_node_service_map_projects_local_service_readiness_without_writes(
         "requires_admin": True,
     }
     assert "read-only local service planning" in service_map["boundary"]
-    assert "enable modules" in service_map["boundary"]
-    assert "persist settings" in service_map["boundary"]
+    assert "enable services" in service_map["boundary"]
+    assert "save settings" in service_map["boundary"]
     assert "activate billing" in service_map["boundary"]
     assert "grant permissions" in service_map["boundary"]
     assert "create notifications" in service_map["boundary"]
@@ -4296,7 +4296,7 @@ def test_member_can_read_node_service_map_but_admin_counts_are_hidden(
     assert flat["Primary Branch"]["route_hint"].endswith("/operating-summary")
     assert flat["Primary Branch"]["admin_action_route_hint"] is None
     assert flat["Primary Branch"]["live_service_records"] == 0
-    assert "enable modules" in service_map["boundary"]
+    assert "enable services" in service_map["boundary"]
     assert "grant permissions" in service_map["boundary"]
     assert "private member activity" in service_map["boundary"]
 
@@ -7237,7 +7237,7 @@ def test_governance_coverage_projects_recursive_policy_fit_without_writes(
     assert "does not create policy" in coverage["boundary"]
     assert "assign roles" in coverage["boundary"]
     assert "verify legal or institutional authority" in coverage["boundary"]
-    assert "private review payloads" in coverage["boundary"]
+    assert "private review details" in coverage["boundary"]
 
     flat = {item["node"]["name"]: item for item in coverage["flat_nodes"]}
     assert flat["Governance Coverage Market Domain"]["governance_status"] == (
@@ -7337,7 +7337,7 @@ def test_member_can_read_governance_coverage_but_admin_actions_are_hidden(
     assert coverage["tree"][0]["governance_status"] == "needs_domain_policy"
     assert coverage["tree"][0]["admin_action_route_hint"] is None
     assert coverage["flat_nodes"][0]["admin_action_route_hint"] is None
-    assert "private review payloads" in coverage["boundary"]
+    assert "private review details" in coverage["boundary"]
 
 
 def test_analytics_projects_aggregate_domain_snapshot_without_private_records(
@@ -8031,7 +8031,7 @@ def test_evidence_record_readiness_projects_future_records_without_writes(
     }
     assert "CommunityDomainEvidenceRecord" in readiness["boundary"]
     assert "upload files" in readiness["boundary"]
-    assert "expose storage keys" in readiness["boundary"]
+    assert "show storage keys" in readiness["boundary"]
     assert "issue credentials" in readiness["boundary"]
     assert "Trust Passport entries" in readiness["boundary"]
     assert "private/evidence/domain-registration.pdf" not in str(readiness)
@@ -8275,7 +8275,7 @@ def test_evidence_release_readiness_projects_public_safe_release_without_writes(
     }
     assert "read-only public-safe proof planning" in readiness["boundary"]
     assert "does not release evidence" in readiness["boundary"]
-    assert "expose storage keys" in readiness["boundary"]
+    assert "show storage keys" in readiness["boundary"]
     assert "publish public proof" in readiness["boundary"]
     assert "create public URLs" in readiness["boundary"]
     assert "issue TrustSlips" in readiness["boundary"]
@@ -12758,8 +12758,8 @@ def test_service_settings_are_template_projection_without_activation(
     assert settings["domain_type"] == "market_cooperative"
     assert settings["editable"] is False
     assert settings["enabled_total"] >= 7
-    assert "does not persist settings" in settings["boundary"]
-    assert "enable or disable modules" in settings["boundary"]
+    assert "does not save settings" in settings["boundary"]
+    assert "enable or disable services" in settings["boundary"]
     assert "activate billing" in settings["boundary"]
     assert "grant permissions" in settings["boundary"]
 
@@ -13003,10 +13003,10 @@ def test_module_scope_readiness_projects_template_modules_without_writes(
     assert modules["marketplace"]["permission_status"] == "not_granted_in_this_slice"
     assert "CommunityDomainModuleScope" in modules["shops"]["boundary"]
     assert "Trust Passport entries" in modules["shops"]["boundary"]
-    assert "read-only module scope planning" in readiness["boundary"]
+    assert "service readiness is planning guidance" in readiness["boundary"]
     assert "does not create CommunityDomainModuleScope records" in readiness["boundary"]
-    assert "persist settings" in readiness["boundary"]
-    assert "enable or disable modules" in readiness["boundary"]
+    assert "save settings" in readiness["boundary"]
+    assert "enable or disable services" in readiness["boundary"]
     assert "grant permissions" in readiness["boundary"]
     assert "move money" in readiness["boundary"]
 
@@ -13662,7 +13662,7 @@ def test_governance_model_projects_policy_and_review_shape_without_deciding(
     assert "apply reviews" in model["boundary"]
     assert "grant authority" in model["boundary"]
     assert "activate billing" in model["boundary"]
-    assert "private review payloads" in model["boundary"]
+    assert "private review details" in model["boundary"]
 
     assert model["policy_counts"]["total"] == 2
     assert model["policy_counts"]["active"] == 2
@@ -13753,7 +13753,7 @@ def test_member_can_read_governance_model_but_outsider_is_rejected(
     assert by_key["domain_admin_review"]["admin_visible"] is False
     assert by_key["action_review_record"]["configured"] is False
     assert model["editable"] is False
-    assert "private review payloads" in model["boundary"]
+    assert "private review details" in model["boundary"]
 
 
 def test_readiness_projection_guides_package_setup_without_activation(
@@ -14651,7 +14651,7 @@ def test_node_operating_summary_rolls_up_branch_without_writes(
     assert "decide reviews" in summary["boundary"]
     assert "verify a branch" in summary["boundary"]
     assert "separate Community Domain" in summary["boundary"]
-    assert "private review payloads" in summary["boundary"]
+    assert "private review details" in summary["boundary"]
 
     lanes = {item["lane_key"]: item for item in summary["lanes"]}
     assert lanes["structure"]["state"] == "has_child_units"
@@ -14660,7 +14660,7 @@ def test_node_operating_summary_rolls_up_branch_without_writes(
     assert lanes["local_governance"]["state"] == "ready"
     assert lanes["open_reviews"]["state"] == "open"
     assert lanes["open_reviews"]["ready"] is False
-    assert "private review payloads" in lanes["open_reviews"]["boundary"]
+    assert "private review details" in lanes["open_reviews"]["boundary"]
 
     with SessionLocal() as db:
         domain_row = db.query(CommunityDomain).one()
@@ -15294,7 +15294,7 @@ def test_member_can_read_node_operating_summary_but_admin_routes_are_hidden(
     assert lanes["local_governance"]["route_hint"] is None
     assert lanes["open_reviews"]["route_hint"] is None
     assert summary["editable"] is False
-    assert "private review payloads" in summary["boundary"]
+    assert "private review details" in summary["boundary"]
 
 
 def test_community_domain_node_create_rejects_duplicate_sibling_name(
@@ -15950,8 +15950,8 @@ def test_member_placement_summary_projects_roles_without_writes(
     assert "place the member in a node" in summary["boundary"]
     assert "assign roles" in summary["boundary"]
     assert "decide reviews" in summary["boundary"]
-    assert "expose other domains" in summary["boundary"]
-    assert "private review payloads" in summary["boundary"]
+    assert "show other domains" in summary["boundary"]
+    assert "private review details" in summary["boundary"]
 
     lanes = {item["lane_key"]: item for item in summary["lanes"]}
     assert lanes["domain_membership"]["state"] == "active"
@@ -15962,7 +15962,7 @@ def test_member_placement_summary_projects_roles_without_writes(
     assert lanes["open_reviews"]["route_hint"].endswith(
         f"/action-reviews?user_id={teacher.id}"
     )
-    assert "private review payloads" in lanes["open_reviews"]["boundary"]
+    assert "private review details" in lanes["open_reviews"]["boundary"]
 
     with SessionLocal() as db:
         domain = db.query(CommunityDomain).one()
@@ -16038,7 +16038,7 @@ def test_member_can_read_own_placement_summary_but_not_other_members(
     assert lanes["admin_assignments"]["route_hint"] is None
     assert lanes["open_reviews"]["route_hint"] is None
     assert summary["editable"] is False
-    assert "private review payloads" in summary["boundary"]
+    assert "private review details" in summary["boundary"]
 
 
 def test_node_membership_requires_active_domain_membership(

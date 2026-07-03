@@ -335,7 +335,7 @@ export default function CommunityDomainGovernanceReadinessPanels({
         )}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
           This view only shows governance review pressure. It does not decide reviews,
-          apply membership, assign roles, expose private evidence, or bypass reviewer policy.
+          apply membership, assign roles, show private evidence, or bypass reviewer policy.
         </div>
       </div>
       ) : null}
@@ -425,7 +425,7 @@ export default function CommunityDomainGovernanceReadinessPanels({
           This view only shows authority planning. It does not assign roles, create
           memberships or policies, decide or apply reviews, change inheritance,
           verify authority, activate billing, publish public proof, create marketplace
-          activity, move money, or expose private member records.
+          activity, move money, or show private member records.
         </div>
       </div>
       ) : null}
@@ -486,7 +486,7 @@ export default function CommunityDomainGovernanceReadinessPanels({
           This view only shows governance coverage. It does not create policy,
           assign roles, decide or apply reviews, verify authority, move money,
           activate billing, publish a public page, create marketplace activity,
-          or expose private review records.
+          or show private review records.
         </div>
       </div>
       ) : null}

@@ -2966,6 +2966,7 @@ export default function CreateEntryPage() {
       clan_description: safeStr(description) || undefined,
       password: safeStr(password),
       confirm_password: safeStr(confirmPassword),
+      display_name: safeStr(displayName),
     };
 
     payload.email = safeStr(email);

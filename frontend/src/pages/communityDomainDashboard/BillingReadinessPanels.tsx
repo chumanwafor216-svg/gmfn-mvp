@@ -324,7 +324,7 @@ export default function CommunityDomainBillingReadinessPanels({
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
           This view only shows package, pricing, billing, and renewal status. It
           does not take payment, issue receipts, activate or renew the domain,
-          move money, or expose private records.
+          move money, or show private records.
         </div>
       </div>
       ) : null}
@@ -377,7 +377,7 @@ export default function CommunityDomainBillingReadinessPanels({
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
           This view only shows package limits. It does not raise limits, add
           units, members, or shops, change pricing or billing, publish pages,
-          move money, or expose private evidence.
+          move money, or show private evidence.
         </div>
       </div>
       ) : null}

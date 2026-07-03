@@ -3497,10 +3497,18 @@ def create_join_request(
                 email=applicant_email,
                 hashed_password="PENDING_APPROVAL",
                 role="user",
+                display_name=_join_applicant_display_name(payload) or None,
             )
             db.add(applicant_user)
             db.commit()
             db.refresh(applicant_user)
+
+        if (
+            _join_applicant_display_name(payload)
+            and not _safe_str(getattr(applicant_user, "display_name", None))
+        ):
+            applicant_user.display_name = _join_applicant_display_name(payload)
+            db.add(applicant_user)
 
         if join_identity_profile_payload:
             _record_join_identity_profile_check(

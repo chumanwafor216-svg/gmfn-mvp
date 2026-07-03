@@ -49,6 +49,19 @@ function firstTruthy(...values: any[]): string {
   return "";
 }
 
+function isMissingPublicHolderName(value: any): boolean {
+  const text = safeStr(value).toLowerCase();
+  return [
+    "-",
+    "member name not set",
+    "name not set",
+    "name not shown",
+    "not set",
+    "not shown",
+    "unknown",
+  ].includes(text);
+}
+
 function firstNumberLike(...values: any[]): number | null {
   for (const value of values) {
     if (value === null || value === undefined || String(value).trim() === "") {
@@ -411,16 +424,18 @@ export default function TrustSlipVerifyPage() {
   }, [record, me, isAppRoute]);
 
   const holderName = useMemo(() => {
-    return (
-      firstTruthy(
-        record?.holder_name,
-        isAppRoute ? me?.display_name : null,
-        isAppRoute ? me?.nickname : null,
-        isAppRoute ? me?.name : null,
-        isAppRoute ? me?.first_name : null,
-        isAppRoute ? me?.email : null
-      ) || "Member"
+    const candidate = firstTruthy(
+      record?.holder_name,
+      isAppRoute ? me?.display_name : null,
+      isAppRoute ? me?.nickname : null,
+      isAppRoute ? me?.name : null,
+      isAppRoute ? me?.first_name : null,
+      isAppRoute ? me?.email : null
     );
+    if (candidate && !isMissingPublicHolderName(candidate)) return candidate;
+
+    const publicId = firstTruthy(record?.gmfn_id, isAppRoute ? me?.gmfn_id : null);
+    return publicId ? `GSN holder ${publicId}` : "GSN holder";
   }, [record, me, isAppRoute]);
 
   const visibleBand = firstTruthy(

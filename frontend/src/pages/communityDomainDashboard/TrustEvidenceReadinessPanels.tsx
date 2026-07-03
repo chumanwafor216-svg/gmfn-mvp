@@ -288,7 +288,7 @@ export default function CommunityDomainTrustEvidenceReadinessPanels({
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
           This view only shows evidence-record readiness. It does not create
           records, upload files, issue credentials, publish proof, verify authority,
-          score trust, move money, or expose private evidence.
+          score trust, move money, or show private evidence.
         </div>
       </div>
 
@@ -358,7 +358,7 @@ export default function CommunityDomainTrustEvidenceReadinessPanels({
           This view only shows public-release readiness. It does not release
           evidence, publish proof, create public links or QR codes, issue
           credentials, share records, change permissions, score trust, move money,
-          or expose private evidence.
+          or show private evidence.
         </div>
       </div>
 
@@ -481,9 +481,9 @@ export default function CommunityDomainTrustEvidenceReadinessPanels({
         ) : null}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
           This view only shows audience readiness. It does not send messages,
-          create delivery jobs or audience lists, publish announcements, expose
+          create delivery jobs or audience lists, publish announcements, show
           member lists, create marketplace records, move money, create trust
-          records, or expose private records.
+          records, or show private records.
         </div>
       </div>
 
@@ -541,7 +541,7 @@ export default function CommunityDomainTrustEvidenceReadinessPanels({
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
           This view only shows trust-mobility readiness. It does not create trust
           records, credentials, relay paths, public proof, outward links,
-          marketplace activity, separate communities, move money, or expose
+          marketplace activity, separate communities, move money, or show
           private records.
         </div>
       </div>

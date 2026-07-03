@@ -2798,8 +2798,8 @@ export default function CommunityDomainDashboardPage() {
               <div style={sectionLabel()}>Boundary</div>
               <div style={helperText()}>
                 This dashboard does not create payment steps, confirm payment,
-                activate billing, activate a Community Domain, verify ownership, expose
-                private finance records, or expose private member evidence.
+                activate billing, activate a Community Domain, verify ownership, show
+                private finance records, or show private member evidence.
               </div>
             </div>
           </section>

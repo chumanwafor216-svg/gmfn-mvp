@@ -298,10 +298,8 @@ export default function CommunityDomainServiceBoundaryPanels({
           </div>
         ) : null}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          This view only shows outside-network readiness. It does not create
-          exchange, discovery, directories, affiliations, marketplace activity,
-          trust records, proof, payment records, loans, guarantees, money
-          movement, or private records.
+          Use this as outside-network planning only. It does not open exchange,
+          discovery, finance, loans, money movement, or private records.
         </div>
       </div>
 
@@ -379,9 +377,8 @@ export default function CommunityDomainServiceBoundaryPanels({
           </div>
         ) : null}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          This view only shows privacy readiness. It does not change permissions,
-          add members, expose rosters, publish hierarchy or proof, create trust
-          records, share private records, open public search, or move money.
+          Use this as privacy planning only. It does not change access, publish
+          rosters or proof, share private records, or move money.
         </div>
       </div>
 
@@ -454,10 +451,8 @@ export default function CommunityDomainServiceBoundaryPanels({
           </div>
         ) : null}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          This view only shows setup readiness. It does not create special
-          builds, units, members, roles, policies, reviews, evidence, service
-          settings, payments, entitlements, marketplace records, trust records,
-          proof, or private records.
+          Use this as setup planning only. It does not create special builds,
+          service settings, payments, records, or private data.
         </div>
       </div>
 
@@ -533,12 +528,9 @@ export default function CommunityDomainServiceBoundaryPanels({
           </div>
         ) : null}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          This view only shows compliance planning. It is not legal advice or a
-          certificate. It does not certify compliance, verify authority, upload
-          evidence, expose member lists, create policy, decide reviews, create
-          payment or finance records, move money, activate subscriptions, share
-          records, publish proof, create trust records, or expose private
-          records.
+          Use this as compliance planning only. It is not legal advice or a
+          certificate, and it does not certify compliance, move money, or expose
+          private records.
         </div>
       </div>
 
@@ -604,11 +596,8 @@ export default function CommunityDomainServiceBoundaryPanels({
           </div>
         ) : null}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          This view only shows fairness readiness. It does not create appeals,
-          reopen membership, assign mediators, decide disputes, change roles,
-          verify or revoke evidence, publish content, grant shop or vault access,
-          reverse payments, move money, create loans, create trust records, share
-          records, or expose private records.
+          Use this as fairness planning only. It does not create appeals, decide
+          disputes, reverse payments, move money, or show private records.
         </div>
       </div>
     </>

@@ -3,7 +3,7 @@ const SLICE_STATUS_LABELS: Record<string, string> = {
   approved: "not approved yet",
   calculated: "not calculated yet",
   changed: "not changed yet",
-  configured: "not configured yet",
+  configured: "not set up yet",
   connected: "not connected yet",
   created: "not created yet",
   downloaded: "not downloaded yet",
@@ -25,6 +25,9 @@ const SLICE_STATUS_LABELS: Record<string, string> = {
 
 export function humanStatus(value: unknown, fallback = "not recorded"): string {
   const normalized = String(value ?? "").trim().replace(/_/g, " ") || fallback;
+  if (normalized.toLowerCase() === "not configured") {
+    return "not set up yet";
+  }
   const sliceMatch = normalized.match(/^not\s+([a-z]+)\s+in\s+this\s+slice$/i);
   if (!sliceMatch) {
     return normalized;

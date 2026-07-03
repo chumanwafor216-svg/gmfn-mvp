@@ -338,7 +338,7 @@ COMMUNITY_DOMAIN_ACTIVATION_REQUIREMENT_PRESETS: list[dict[str, Any]] = [
     {
         "requirement_key": "payment_instruction",
         "label": "Payment instruction",
-        "summary": "No payment instruction is created by this MVP projection.",
+        "summary": "Payment instructions are created only through the dedicated billing step.",
         "requires_admin": True,
         "route_suffix": "/package-quote",
     },
@@ -389,14 +389,14 @@ COMMUNITY_DOMAIN_SUBSCRIPTION_LIFECYCLE_PRESETS: list[dict[str, Any]] = [
     {
         "lane_key": "pricing_confirmation",
         "label": "Pricing confirmation",
-        "summary": "Final price, currency, cycle, and renewal terms are not configured in this MVP slice.",
+        "summary": "Final price, currency, billing cycle, and renewal terms still need owner review.",
         "requires_admin": True,
         "route_suffix": "/package-quote",
     },
     {
         "lane_key": "payment_instruction",
         "label": "Payment instruction",
-        "summary": "A Community Domain payment instruction is not created by this projection.",
+        "summary": "Payment instructions are created only through the dedicated billing step.",
         "requires_admin": True,
         "route_suffix": "/package-quote",
     },
@@ -417,14 +417,14 @@ COMMUNITY_DOMAIN_SUBSCRIPTION_LIFECYCLE_PRESETS: list[dict[str, Any]] = [
     {
         "lane_key": "subscription_period",
         "label": "Subscription period",
-        "summary": "Start date, expiry date, grace period, and seat/module entitlements are not configured here.",
+        "summary": "Start date, expiry date, grace period, and seat or service allowances still need owner review.",
         "requires_admin": True,
         "route_suffix": "/capacity-plan",
     },
     {
         "lane_key": "renewal_policy",
         "label": "Renewal policy",
-        "summary": "Renewal reminders, renewal price, and renewal approval are not configured here.",
+        "summary": "Renewal reminders, renewal price, and renewal approval still need owner review.",
         "requires_admin": True,
         "route_suffix": "/package-quote",
     },
@@ -1996,10 +1996,10 @@ def _community_domain_service_settings_payload(
         "optional_total": sum(1 for item in items if not item["enabled"]),
         "editable": False,
         "boundary": (
-            "Service settings are read-only template defaults in this MVP slice. "
-            "This endpoint does not persist settings, enable or disable modules, "
+            "Service settings shown here are template defaults for review. "
+            "This view does not save settings, enable or disable services, "
             "activate billing, activate the Community Domain, grant permissions, "
-            "or expose private records."
+            "or show private records."
         ),
     }
 
@@ -2211,9 +2211,9 @@ def _community_domain_module_scope_readiness_payload(
                 "requires_admin": True,
                 "next_step": next_step,
                 "boundary": (
-                    "Read-only module-scope readiness item. This does not create "
-                    "CommunityDomainModuleScope records, persist service settings, "
-                    "enable modules, activate billing, grant permissions, create "
+                    "Service readiness item. This does not create "
+                    "CommunityDomainModuleScope records, save service settings, "
+                    "enable services, activate billing, grant permissions, create "
                     "shops, create vault links, publish Spotlight, create events, "
                     "send notifications, create TrustSlips, write Trust Passport "
                     "entries, or expose private member activity."
@@ -2306,9 +2306,9 @@ def _community_domain_module_scope_readiness_payload(
         "primary_next_action": primary_next_action,
         "editable": False,
         "boundary": (
-            "Community Domain module-scope readiness is read-only module scope "
-            "planning. This endpoint does not create CommunityDomainModuleScope "
-            "records, persist settings, enable or disable modules, activate "
+            "Community Domain service readiness is planning guidance. "
+            "This view does not create CommunityDomainModuleScope "
+            "records, save settings, enable or disable services, activate "
             "billing, grant permissions, create shops, create marketplace "
             "records, create demand records, publish Spotlight, create vault "
             "links, upload files, create meetings or events, send notifications, "
@@ -2475,11 +2475,11 @@ def _community_domain_economic_participation_payload(
         "editable": False,
         "boundary": (
             "Economic participation is read-only template and readiness guidance "
-            "in this MVP slice. This endpoint does not create a marketplace, "
+            "for this Community Domain. This view does not create a marketplace, "
             "create a shop, publish listings, create demand, place spotlight, "
             "create vault links, move money, create payment instructions, create "
             "finance records, verify trust evidence, activate billing, activate "
-            "the Community Domain, create a social Community, or expose private "
+            "the Community Domain, create a linked community, or show private "
             "member activity."
         ),
     }
@@ -2616,13 +2616,13 @@ def _community_domain_network_presence_payload(
         "viewer": {"can_admin": bool(can_admin)},
         "editable": False,
         "boundary": (
-            "Network presence is read-only guidance in this MVP slice. This "
-            "endpoint does not publish a public page, finalize whether public "
+            "Network presence is guidance for public visibility. This "
+            "view does not publish a public page, finalize whether public "
             "Community Domain URLs use /domains/:name or /community-domains/:name, "
             "create outward links, verify the domain, create marketplace exposure, "
-            "create Spotlight placement, create vault links, create a social "
+            "create Spotlight placement, create vault links, create a linked "
             "Community bridge, activate billing, activate the Community Domain, "
-            "or expose private member activity."
+            "or show private member activity."
         ),
     }
 
@@ -2714,9 +2714,9 @@ def _community_domain_role_projection_payload(
         "editable": False,
         "boundary": (
             "Roles are a read-only projection from current memberships and "
-            "institutional presets in this MVP slice. This endpoint does not "
+            "institutional presets. This view does not "
             "create roles, assign roles, grant permissions, change membership, "
-            "activate billing, verify authority, or expose private member evidence."
+            "activate billing, verify authority, or show private member evidence."
         ),
     }
 
@@ -2831,10 +2831,10 @@ def _community_domain_governance_model_payload(
         "editable": False,
         "boundary": (
             "Governance model is a read-only summary of existing policies and "
-            "action-review records in this MVP slice. This endpoint does not "
+            "review records. This view does not "
             "create policy, create action reviews, decide reviews, apply reviews, "
             "grant authority, verify ownership, move money, activate billing, or "
-            "expose private review payloads."
+            "show private review details."
         ),
     }
 
@@ -3078,10 +3078,10 @@ def _community_domain_readiness_payload(
         "viewer": {"can_admin": bool(can_admin)},
         "editable": False,
         "boundary": (
-            "Readiness is a read-only package setup checklist in this MVP slice. "
-            "This endpoint does not create nodes, add members, assign roles, create "
+            "Readiness is a package setup checklist for review. "
+            "This view does not create nodes, add members, assign roles, create "
             "policy, decide reviews, create a payment instruction, activate billing, "
-            "activate the Community Domain, verify authority, or expose private evidence."
+            "activate the Community Domain, verify authority, or show private evidence."
         ),
     }
 
@@ -3169,10 +3169,10 @@ def _community_domain_verification_requirements_payload(
         "viewer": {"can_admin": bool(can_admin)},
         "editable": False,
         "boundary": (
-            "Verification requirements are read-only guidance in this MVP slice. "
-            "This endpoint does not upload evidence, store evidence, accept evidence, "
+            "Verification requirements are guidance for owner review. "
+            "This view does not upload evidence, store evidence, accept evidence, "
             "reject evidence, verify authority, activate billing, activate the "
-            "Community Domain, create a public claim, or expose private evidence."
+            "Community Domain, create a public claim, or show private evidence."
         ),
     }
 
@@ -3321,8 +3321,8 @@ def _community_domain_activation_requirements_payload(
         "viewer": {"can_admin": bool(can_admin)},
         "editable": False,
         "boundary": (
-            "Activation requirements are read-only launch guidance in this MVP "
-            "slice. This endpoint does not create a payment instruction, record "
+            "Activation requirements are launch guidance for owner review. "
+            "This view does not create a payment instruction, record "
             "payment, create an invoice, activate billing, activate the Community "
             "Domain, verify authority, change members, create policy, or expose "
             "private evidence."
@@ -3464,8 +3464,8 @@ def _community_domain_node_operating_summary_payload(
             "boundary": (
                 "Read-only node operating item. This does not create child "
                 "nodes, add members, assign roles, create policy, decide "
-                "reviews, activate billing, verify a branch, or expose private "
-                "review payloads."
+                "reviews, activate billing, verify a branch, or show private "
+                "review details."
             ),
         }
 
@@ -3611,10 +3611,10 @@ def _community_domain_node_operating_summary_payload(
         "editable": False,
         "boundary": (
             "Node operating summary is a read-only projection for one branch, "
-            "department, line, chapter, class, committee, or unit. This endpoint "
+            "department, line, chapter, class, committee, or unit. This view "
             "does not create child nodes, add members, assign roles, create "
             "policy, decide reviews, activate billing, verify a branch, create a "
-            "separate Community Domain, or expose private review payloads."
+            "separate Community Domain, or show private review details."
         ),
     }
 
@@ -3712,8 +3712,8 @@ def _community_domain_member_placement_summary_payload(
             "boundary": (
                 "Read-only member placement item. This does not add the member, "
                 "place the member in a node, assign roles, grant permissions, "
-                "decide reviews, verify authority, activate billing, or expose "
-                "private review payloads."
+                "decide reviews, verify authority, activate billing, or show "
+                "private review details."
             ),
         }
 
@@ -3836,10 +3836,10 @@ def _community_domain_member_placement_summary_payload(
         "editable": False,
         "boundary": (
             "Member placement summary is a read-only projection of one person's "
-            "role and node placement inside this Community Domain. This endpoint "
+            "role and node placement inside this Community Domain. This view "
             "does not add the member, place the member in a node, assign roles, "
             "grant permissions, decide reviews, verify authority, activate "
-            "billing, expose other domains, or expose private review payloads."
+            "billing, show other domains, or show private review details."
         ),
     }
 
@@ -4292,14 +4292,14 @@ def _community_domain_operating_map_payload(
         "editable": False,
         "boundary": (
             "Operating map is a read-only Community Domain package map in this "
-            "MVP slice. This endpoint does not create a payment instruction, "
+            "view. This view does not create a payment instruction, "
             "record payment, activate billing, activate the Community Domain, "
             "verify authority, create nodes, add members, assign roles, create "
             "policy, decide reviews, publish a public page, finalize whether "
             "public URLs use /domains/:name or /community-domains/:name, create "
             "marketplace activity, create shops, create listings, create demand, "
-            "place Spotlight, create vault links, create a social Community, move "
-            "money, or expose private member evidence."
+            "place Spotlight, create vault links, create a linked Community, move "
+            "money, or show private member evidence."
         ),
     }
 
@@ -4448,7 +4448,7 @@ def _community_domain_template_fit_payload(
                 "boundary": (
                     "Read-only template fit item. This does not create policy, "
                     "open reviews, decide reviews, apply actions, upload "
-                    "evidence, or expose private review payloads."
+                    "evidence, or show private review details."
                 ),
             }
         )
@@ -6734,9 +6734,9 @@ def _community_domain_node_trust_map_payload(
             "next_step": next_step,
             "boundary": (
                 "Read-only local trust readiness item. This does not upload "
-                "evidence, expose storage keys, expose review payloads, issue "
+                "evidence, show storage keys, show review details, issue "
                 "credentials, issue TrustSlips, write Trust Passport entries, "
-                "verify legal identity, publish proof, or expose private member "
+                "verify legal identity, publish proof, or show private member "
                 "activity."
             ),
             "children": [node_item(child) for child in child_nodes],
@@ -6839,10 +6839,10 @@ def _community_domain_node_trust_map_payload(
             "classes, departments, committees, chapters, or other operating "
             "units have enough local admin, participant, policy, review, and "
             "evidence posture for trust to be carried forward. It does not "
-            "upload evidence, expose storage keys, expose review payloads, issue "
+            "upload evidence, show storage keys, show review details, issue "
             "credentials, issue TrustSlips, write Trust Passport entries, verify "
             "legal identity, publish public proof, create finance records, move "
-            "money, or expose private member activity."
+            "money, or show private member activity."
         ),
     }
 
@@ -7297,8 +7297,8 @@ def _community_domain_node_service_map_payload(
             "admin_action_route_hint": route_hint(admin_route, requires_admin=True),
             "next_step": next_step,
             "boundary": (
-                "Read-only local service readiness item. This does not enable "
-                "modules, persist settings, activate billing, grant permissions, "
+                "Local service readiness item. This does not enable "
+                "services, save settings, activate billing, grant permissions, "
                 "create events, create notifications, create shops, create vault "
                 "links, place members, expose member lists, or expose private "
                 "member activity."
@@ -7408,7 +7408,7 @@ def _community_domain_node_service_map_payload(
             "planning. It shows whether branches, lines, classes, departments, "
             "committees, chapters, or other operating units have enough local "
             "admin, participant, policy posture, and template module coverage "
-            "for future GSN services. It does not enable modules, persist "
+            "for future GSN services. It does not enable services, save "
             "settings, activate billing, grant permissions, create events, "
             "create notifications, create shops, create vault links, place "
             "members, expose member lists, expose private member activity, "
@@ -8574,10 +8574,10 @@ def _community_domain_node_evidence_authority_map_payload(
             "next_step": next_step,
             "boundary": (
                 "Read-only local evidence authority item. This does not upload evidence, "
-                "verify evidence, publish public evidence, expose storage keys, "
-                "expose review payloads, issue credentials, issue "
+                "verify evidence, publish public evidence, show storage keys, "
+                "show review details, issue credentials, issue "
                 "TrustSlips, write Trust Passport entries, create marketplace "
-                "records, create finance records, or expose private member "
+                "records, create finance records, or show private member "
                 "activity."
             ),
             "children": [node_item(child) for child in child_nodes],
@@ -8687,10 +8687,10 @@ def _community_domain_node_evidence_authority_map_payload(
             "classes, departments, committees, chapters, or other units appear "
             "ready to carry evidence later and which still need local issuers, "
             "policy, evidence signals, or public-exposure review. It does not "
-            "upload evidence, verify evidence, publish public evidence, expose storage keys, "
-            "expose review payloads, issue credentials, issue "
+            "upload evidence, verify evidence, publish public evidence, show storage keys, "
+            "show review details, issue credentials, issue "
             "TrustSlips, write Trust Passport entries, create marketplace "
-            "records, create finance records, verify legal authority, or expose "
+            "records, create finance records, verify legal authority, or show "
             "private member activity."
         ),
     }
@@ -10198,7 +10198,7 @@ def _community_domain_governance_coverage_payload(
                 "Read-only governance coverage item. This does not create policy, "
                 "assign roles, create reviews, decide reviews, apply reviews, "
                 "verify authority, move money, activate billing, publish a page, "
-                "or expose private review payloads."
+                "or show private review details."
             ),
             "children": [node_item(child) for child in child_nodes],
         }
@@ -10288,7 +10288,7 @@ def _community_domain_governance_coverage_payload(
             "not create policy, assign roles, create reviews, decide reviews, "
             "apply reviews, verify legal or institutional authority, move money, "
             "activate billing, publish a public page, create marketplace activity, "
-            "create a social Community, or expose private review payloads."
+            "create a social Community, or show private review details."
         ),
     }
 
@@ -10498,8 +10498,8 @@ def _community_domain_analytics_payload(
             "route_hint": route_hint("/action-reviews", requires_admin=True),
             "requires_admin": True,
             "boundary": (
-                "Aggregate review analytics only. This does not expose private "
-                "review payloads, comments, evidence, or decisions."
+                "Aggregate review analytics only. This does not show private "
+                "review details, comments, evidence, or decisions."
             ),
         },
         {
@@ -10510,8 +10510,8 @@ def _community_domain_analytics_payload(
             "route_hint": route_hint("/service-settings"),
             "requires_admin": False,
             "boundary": (
-                "Template-module analytics only. This does not enable modules, "
-                "activate billing, or persist service settings."
+                "Template-service analytics only. This does not enable services, "
+                "activate billing, or save service settings."
             ),
         },
         {
@@ -10853,7 +10853,7 @@ def _community_domain_evidence_map_payload(
             requires_admin=False,
             boundary=(
                 "Governance evidence is aggregate only. This does not create policy, "
-                "decide reviews, or expose private review payloads."
+                "decide reviews, or show private review details."
             ),
         ),
         lane(
@@ -11414,13 +11414,13 @@ def _community_domain_evidence_record_readiness_payload(
         "editable": False,
         "boundary": (
             "Community Domain evidence-record readiness is read-only durable "
-            "evidence planning. This endpoint does not create "
-            "CommunityDomainEvidenceRecord rows, upload files, expose storage "
+            "evidence planning. This view does not create "
+            "CommunityDomainEvidenceRecord rows, upload files, show storage "
             "keys, calculate validity windows, persist visibility policy, issue "
             "credentials, issue TrustSlips, write Trust Passport entries, publish "
             "public proof, verify legal authority, move money, activate billing, "
-            "create marketplace activity, create a social Community, or expose "
-            "private member evidence or review payloads."
+            "create marketplace activity, create a social Community, or show "
+            "private member evidence or review details."
         ),
     }
 
@@ -11765,13 +11765,13 @@ def _community_domain_evidence_release_readiness_payload(
         "editable": False,
         "boundary": (
             "Community Domain evidence release readiness is read-only public-safe "
-            "proof planning. This endpoint does not release evidence, expose "
-            "files, expose storage keys, publish public proof, create public "
+            "proof planning. This view does not release evidence, show "
+            "files, show storage keys, publish public proof, create public "
             "URLs, create QR codes, issue credentials, issue TrustSlips, write "
             "Trust Passport entries, share records across domains, create trust "
             "relay paths, verify legal authority, move money, activate billing, "
             "create marketplace activity, create a social Community, change "
-            "permissions, or expose private member evidence or review payloads."
+            "permissions, or show private member evidence or review details."
         ),
     }
 
@@ -12139,13 +12139,13 @@ def _community_domain_trust_relay_readiness_payload(
         "editable": False,
         "boundary": (
             "Community Domain trust relay readiness is read-only relay path "
-            "planning. This endpoint does not create trust relay path records, "
+            "planning. This view does not create trust relay path records, "
             "record source-domain/bridge-member/destination-domain rows, repost "
             "Spotlight, publish proof, create cross-domain discovery, create "
-            "public member directories, share private records, expose evidence "
-            "files, expose storage keys, issue TrustSlips, write Trust Passport entries, "
+            "public member directories, share private records, show evidence "
+            "files, show storage keys, issue TrustSlips, write Trust Passport entries, "
             "create credentials, create marketplace activity, create "
-            "affiliations, move money, activate billing, or expose private member, "
+            "affiliations, move money, activate billing, or show private member, "
             "review, evidence, marketplace, or finance records."
         ),
     }
@@ -12779,12 +12779,12 @@ def _community_domain_trust_mobility_payload(
         "editable": False,
         "boundary": (
             "Community Domain trust mobility is read-only portability planning. "
-            "This endpoint does not create TrustSlips, write Trust Passport "
+            "This view does not create TrustSlips, write Trust Passport "
             "entries, create credentials, create trust relay paths, release "
-            "evidence, expose files, expose storage keys, verify legal or "
+            "evidence, show files, show storage keys, verify legal or "
             "institutional authority, publish proof, create outward links, move "
             "money, activate billing, activate the Community Domain, create "
-            "marketplace activity, create a social Community, or expose private "
+            "marketplace activity, create a social Community, or show private "
             "member, finance, evidence, or review records."
         ),
     }
@@ -13533,13 +13533,13 @@ def _community_domain_affiliation_readiness_payload(
         "editable": False,
         "boundary": (
             "Community Domain affiliation readiness is read-only parent/child "
-            "affiliation planning. This endpoint projects existing clan-to-clan "
+            "affiliation planning. This view projects existing clan-to-clan "
             "CommunityDomainAffiliation rows only. It does not create domain-domain "
             "affiliations, create parent Community Domains, create child Community "
             "Domains, approve or reject affiliation requests, set clan_id, copy or "
             "transfer members, inherit policy, activate billing, verify authority, "
             "publish public URLs, create marketplace activity, move money, issue "
-            "TrustSlips, write Trust Passport entries, or expose private member, "
+            "TrustSlips, write Trust Passport entries, or show private member, "
             "node, evidence, review, marketplace, finance, or affiliate records."
         ),
     }
@@ -14017,7 +14017,7 @@ def _community_domain_record_privacy_map_payload(
             requires_admin=True,
             boundary=(
                 "Governance boundary only. This does not create policies, decide "
-                "reviews, apply reviews, or expose private review payloads."
+                "reviews, apply reviews, or show private review details."
             ),
         ),
         lane(
@@ -14144,11 +14144,11 @@ def _community_domain_record_privacy_map_payload(
         "editable": False,
         "boundary": (
             "Community Domain record privacy map is read-only privacy planning. "
-            "This endpoint does not change permissions, create access-control "
-            "rules, create members, expose member lists, expose node rosters, "
-            "publish hierarchies, expose review payloads, expose evidence files, "
-            "expose storage keys, publish proof, issue TrustSlips, write Trust "
-            "Passport records, expose marketplace activity, expose finance "
+            "This view does not change permissions, create access-control "
+            "rules, create members, show member lists, show node rosters, "
+            "publish hierarchies, show review details, show evidence files, "
+            "show storage keys, publish proof, issue TrustSlips, write Trust "
+            "Passport records, show marketplace activity, show finance "
             "records, create cross-domain discovery, create public search, create "
             "member directories, share records across institutions, or move money."
         ),
@@ -14337,8 +14337,8 @@ def _community_domain_configuration_map_payload(
             route_suffix="/service-settings",
             requires_admin=True,
             boundary=(
-                "Module configuration signal only. This does not enable modules, "
-                "persist settings, activate billing, or grant permissions."
+                "Service setup signal only. This does not enable services, "
+                "save settings, activate billing, or grant permissions."
             ),
         ),
         lane(
@@ -14741,14 +14741,14 @@ def _community_domain_compliance_map_payload(
         "editable": False,
         "boundary": (
             "Community Domain compliance map is read-only compliance planning "
-            "and risk posture mapping, not legal advice. This endpoint does not certify compliance, "
+            "and risk posture mapping, not legal advice. This view does not certify compliance, "
             "create a compliance decision, verify legal authority, upload "
-            "evidence, expose storage keys, expose member lists, create policy, "
+            "evidence, show storage keys, show member lists, create policy, "
             "decide reviews, or create marketplace or finance records. It does not create payment instructions, "
             "move money, create invoices, "
             "activate subscriptions, share records across institutions, publish "
             "public proof, issue TrustSlips, write Trust Passport records, or "
-            "expose private member/review/evidence/finance records."
+            "show private member/review/evidence/finance records."
         ),
     }
 
@@ -15510,8 +15510,8 @@ def _community_domain_delegation_map_payload(
             route_suffix="/action-reviews",
             requires_admin=True,
             boundary=(
-                "Review record projection only. This does not expose private "
-                "review payloads, create decisions, apply decisions, or cancel "
+                "Review record projection only. This does not show private "
+                "review details, create decisions, apply decisions, or cancel "
                 "reviews."
             ),
         ),
@@ -15625,11 +15625,11 @@ def _community_domain_delegation_map_payload(
         "editable": False,
         "boundary": (
             "Community Domain delegation map is a read-only authority projection. "
-            "This endpoint does not assign roles, create node memberships, create "
+            "This view does not assign roles, create node memberships, create "
             "policies, create action reviews, decide reviews, apply reviews, "
             "change inheritance, verify legal or institutional authority, activate "
             "billing, create marketplace activity, create a social Community, "
-            "publish proof, or expose private member/review/evidence records."
+            "publish proof, or show private member/review/evidence records."
         ),
     }
 
@@ -15888,13 +15888,13 @@ def _community_domain_identity_context_payload(
         "editable": False,
         "boundary": (
             "Community Domain identity context is a read-only current-member "
-            "projection. This endpoint does not issue a GSN/GMFN ID, merge "
+            "projection. This view does not issue a GSN/GMFN ID, merge "
             "identities, create users, create Community Domain memberships, join "
             "social Communities, link social Communities, copy members, create "
             "shops, move money, write Trust Passport entries, issue TrustSlips, "
             "create marketplace activity, verify authority, activate billing, or "
-            "expose other members, other domain names, private finance records, "
-            "private evidence, or private review payloads."
+            "show other members, other domain names, private finance records, "
+            "private evidence, or private review details."
         ),
     }
 
@@ -16063,8 +16063,8 @@ def _community_domain_activity_map_payload(
             route_suffix="/action-reviews/activity",
             requires_admin=True,
             boundary=(
-                "Reviewed activity aggregate only. This does not expose private "
-                "review payloads, comments, evidence, or decisions."
+                "Reviewed activity aggregate only. This does not show private "
+                "review details, comments, evidence, or decisions."
             ),
         ),
         lane(
@@ -16183,7 +16183,7 @@ def _community_domain_activity_map_payload(
         "editable": False,
         "boundary": (
             "Community Domain activity map is read-only operating-activity "
-            "planning. This endpoint does not create activities, events, meetings, "
+            "planning. This view does not create activities, events, meetings, "
             "classes, services, programmes, attendance, dues, levies, travel "
             "fees, contributions, tickets, subscriptions, payment instructions, "
             "invoices, receipts, bank matches, ledger entries, payouts, money "
