@@ -117,6 +117,13 @@ assertContains(
   "Marketplace hero stats must carry local Trust and CCI values."
 );
 
+assertContains(
+  marketplaceFile,
+  marketplaceSource,
+  /getMyTrustSlip[\s\S]*?const \[trustSlip, setTrustSlip\][\s\S]*?getMyTrustSlip\(\)\.catch\(\(\) => null\)[\s\S]*?setTrustSlip\(trustSlipRes \|\| null\)[\s\S]*?marketplaceCciLabel\([\s\S]*?trustSlip[\s\S]*?marketplaceTrustLabel\([\s\S]*?trustSlip[\s\S]*?marketplaceTrustEventCount\(marketplaceTrust, me, trustSlip\)/,
+  "Marketplace Trust and CCI must read the same TrustSlip source used by Dashboard before falling back to community-only data."
+);
+
 assertNotContains(
   marketplaceFile,
   marketplaceSource,
@@ -134,8 +141,14 @@ assertNotContains(
   {
     id: "marketplace.tile.members",
     glyph: "trade",
-    label: "Trade & Shops",
-    tags: ["Trade Evidence", "Public Shops", "Members"],
+    label: "Members & Shops",
+    tags: ["Public Shops", "Members"],
+  },
+  {
+    id: "marketplace.tile.trade-evidence",
+    glyph: "ledger",
+    label: "Trade Evidence",
+    tags: ["Evidence", "Terms", "Record"],
   },
   {
     id: "marketplace.row.records-links",
@@ -163,6 +176,41 @@ assertNotContains(
     `Marketplace grouped front card must keep ${card.label} with audited pictogram and tags.`
   );
 });
+
+assertContains(
+  marketplaceFile,
+  marketplaceSource,
+  /debugId="marketplace\.tile\.members"[\s\S]*?openMarketplaceSection\(event, "members", "marketplace-members-shops"\)[\s\S]*?Members & Shops[\s\S]*?Known members and public shops\.[\s\S]*?Public Shops[\s\S]*?Members/,
+  "Members & Shops must open only the visible members and shop directory lane."
+);
+
+assertContains(
+  marketplaceFile,
+  marketplaceSource,
+  /debugId="marketplace\.tile\.trade-evidence"[\s\S]*?openMarketplaceSection\(event, "trade", "marketplace-trade-evidence"\)[\s\S]*?Trade Evidence[\s\S]*?Record goods, service, and terms\.[\s\S]*?Evidence[\s\S]*?Terms[\s\S]*?Record/,
+  "Trade Evidence must be its own front card and open the protected trade record lane."
+);
+
+assertContains(
+  marketplaceFile,
+  marketplaceSource,
+  /id="marketplace-trade-evidence"[\s\S]*?Trade Evidence[\s\S]*?Record the item, the other side, and agreed terms[\s\S]*?marketplace\.trade\.evidence-module[\s\S]*?Trade Evidence Record[\s\S]*?debugId="marketplace\.protected-trade\.create"/,
+  "Trade Evidence must render as a separate lane from the members directory."
+);
+
+assertContains(
+  marketplaceFile,
+  marketplaceSource,
+  /id="marketplace-members-shops"[\s\S]*?Members & Shops[\s\S]*?visible member[\s\S]*?public shop[\s\S]*?marketplace\.members\.visible-members-module[\s\S]*?Visible members/,
+  "Members & Shops must render as a separate visible member and shop directory lane."
+);
+
+assertNotContains(
+  marketplaceFile,
+  marketplaceSource,
+  /id="marketplace-members-shops"[\s\S]*?Trade Evidence Record/,
+  "Trade Evidence Record must not be embedded inside the Members & Shops lane."
+);
 
 assertContains(
   marketplaceFile,

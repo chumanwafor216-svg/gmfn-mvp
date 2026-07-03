@@ -59,6 +59,7 @@ import {
   getProtectedTrade,
   getMarketplaceShopByGmfnId,
   getMyMarketplaceShop,
+  getMyTrustSlip,
   getMarketplaceShops,
   getMe,
   getPoolMe,
@@ -424,6 +425,7 @@ type SectionState = {
   rosca: boolean;
   tools: boolean;
   members: boolean;
+  trade: boolean;
   demand: boolean;
   support: boolean;
 };
@@ -460,6 +462,7 @@ const DEFAULT_SECTION_STATE: SectionState = {
   rosca: false,
   tools: false,
   members: false,
+  trade: false,
   demand: false,
   support: false,
 };
@@ -469,6 +472,7 @@ const MARKETPLACE_SECTION_ANCHORS: Record<keyof SectionState, string> = {
   rosca: "marketplace-rosca",
   tools: "marketplace-owned-links",
   members: "marketplace-members-shops",
+  trade: "marketplace-trade-evidence",
   demand: "marketplace-demand-box",
   support: "marketplace-loans-support",
 };
@@ -479,6 +483,7 @@ function focusedMarketplaceSectionState(key: keyof SectionState): SectionState {
     rosca: key === "rosca",
     tools: key === "tools",
     members: key === "members",
+    trade: key === "trade",
     demand: key === "demand",
     support: key === "support",
   };
@@ -500,6 +505,7 @@ function normalizeMarketplaceSectionState(
   if (!state) return DEFAULT_SECTION_STATE;
   if (state.support) return focusedMarketplaceSectionState("support");
   if (state.demand) return focusedMarketplaceSectionState("demand");
+  if (state.trade) return focusedMarketplaceSectionState("trade");
   if (state.rosca) return focusedMarketplaceSectionState("rosca");
   if (state.members) return focusedMarketplaceSectionState("members");
   if (state.tools) return focusedMarketplaceSectionState("tools");
@@ -1534,9 +1540,27 @@ function buildProtectedTradeEvidencePaperText({
 
 function marketplaceTrustLabel(
   row: CommunityRow | null | undefined,
-  trust: any
+  trust: any,
+  me?: any,
+  trustSlip?: any
 ): string {
   const band = firstTruthy(
+    me?.open_trust_class,
+    me?.open_trust_band,
+    me?.current_community_trust_class,
+    me?.current_community_trust_band,
+    me?.community_trust_class,
+    me?.community_trust_band,
+    me?.selected_clan_trust_class,
+    me?.selected_clan_trust_band,
+    me?.trust_class,
+    me?.trust_band,
+    trustSlip?.open_trust_class,
+    trustSlip?.open_trust_band,
+    trustSlip?.community_trust_class,
+    trustSlip?.community_trust_band,
+    trustSlip?.trust_class,
+    trustSlip?.trust_band,
     trust?.band,
     trust?.trust_band,
     row?.community_trust_band,
@@ -1553,6 +1577,14 @@ function marketplaceTrustLabel(
     row?.community_standing?.trust_band
   );
   const score = firstTruthy(
+    me?.open_trust_score,
+    me?.current_community_trust_score,
+    me?.community_trust_score,
+    me?.selected_clan_trust_score,
+    me?.trust_score,
+    trustSlip?.open_trust_score,
+    trustSlip?.community_trust_score,
+    trustSlip?.trust_score,
     trust?.score,
     trust?.trust_score,
     row?.community_trust_score,
@@ -1571,7 +1603,11 @@ function marketplaceTrustLabel(
   return band || score || "No trust value yet";
 }
 
-function marketplaceTrustEventCount(trust: any): string {
+function marketplaceTrustEventCount(
+  trust: any,
+  me?: any,
+  trustSlip?: any
+): string {
   const counts =
     trust?.counts && typeof trust.counts === "object" ? trust.counts : {};
   const countTotal = Object.values(counts).reduce<number>((sum, value) => {
@@ -1581,10 +1617,94 @@ function marketplaceTrustEventCount(trust: any): string {
 
   if (countTotal > 0) return `${countTotal} trust events`;
 
+  const passportReading = firstTruthy(
+    me?.open_trust_class,
+    me?.open_trust_band,
+    me?.current_community_trust_class,
+    me?.current_community_trust_band,
+    me?.community_trust_class,
+    me?.community_trust_band,
+    me?.selected_clan_trust_class,
+    me?.selected_clan_trust_band,
+    me?.trust_class,
+    me?.trust_band,
+    trustSlip?.open_trust_class,
+    trustSlip?.open_trust_band,
+    trustSlip?.community_trust_class,
+    trustSlip?.community_trust_band,
+    trustSlip?.trust_class,
+    trustSlip?.trust_band,
+    me?.open_trust_score,
+    me?.current_community_trust_score,
+    me?.community_trust_score,
+    me?.selected_clan_trust_score,
+    me?.trust_score,
+    trustSlip?.open_trust_score,
+    trustSlip?.community_trust_score,
+    trustSlip?.trust_score
+  );
+  if (passportReading) return "Trust Passport reading";
+
+  const reason = firstTruthy(
+    me?.open_trust_reason,
+    me?.current_community_trust_reason,
+    me?.community_trust_reason,
+    me?.selected_clan_trust_reason,
+    me?.trust_reason,
+    trustSlip?.open_trust_reason,
+    trustSlip?.community_trust_reason,
+    trustSlip?.trust_reason
+  );
+  if (reason) return "Trust Passport reading";
+
   const lastEvents = Array.isArray(trust?.last_events)
     ? trust.last_events.length
     : 0;
   return lastEvents > 0 ? `${lastEvents} recent events` : "No trust events yet";
+}
+
+function marketplaceCciLabel(
+  row: CommunityRow | null | undefined,
+  trust: any,
+  me?: any,
+  trustSlip?: any
+): string {
+  const cciValue = firstTruthy(
+    me?.cci_score,
+    me?.cross_client_integrity_score,
+    me?.cross_clan_integrity_score,
+    me?.cross_community_integrity_score,
+    trustSlip?.cci_score,
+    trustSlip?.cross_client_integrity_score,
+    trustSlip?.cross_clan_integrity_score,
+    trustSlip?.cross_community_integrity_score,
+    trust?.cci_score,
+    trust?.cci?.score,
+    trust?.community_cci,
+    (row as any)?.cci_score,
+    (row as any)?.community_standing?.cci_score,
+    (row as any)?.marketplace?.cci_score,
+    (row as any)?.clan?.cci_score
+  );
+  const cciBand = firstTruthy(
+    me?.cci_class,
+    me?.cross_client_integrity_class,
+    me?.cross_clan_integrity_class,
+    me?.cross_community_integrity_class,
+    trustSlip?.cci_class,
+    trustSlip?.cross_client_integrity_class,
+    trustSlip?.cross_clan_integrity_class,
+    trustSlip?.cross_community_integrity_class,
+    trust?.cci_band,
+    trust?.cci?.band,
+    (row as any)?.cci_band,
+    (row as any)?.community_standing?.cci_band,
+    (row as any)?.marketplace?.cci_band,
+    (row as any)?.clan?.cci_band
+  );
+
+  if (cciBand && cciValue) return `${cciBand} / ${cciValue}`;
+  return cciBand || cciValue || "Pending";
 }
 
 function communityFinanceLabel(row: CommunityRow | null | undefined): string {
@@ -4097,6 +4217,7 @@ export default function MarketplacePage() {
   const [shops, setShops] = useState<MarketplaceShop[]>([]);
   const [poolInfo, setPoolInfo] = useState<any>(null);
   const [marketplaceTrust, setMarketplaceTrust] = useState<any>(null);
+  const [trustSlip, setTrustSlip] = useState<any>(null);
   const [inviteLink, setInviteLink] = useState<string>("");
   const [joinSenderName, setJoinSenderName] = useState("");
   const [joinRecipientName, setJoinRecipientName] = useState("");
@@ -5026,10 +5147,11 @@ export default function MarketplacePage() {
     setLoading(true);
 
     try {
-      const [meRes, currentClanRes, clanListRes] = await Promise.all([
+      const [meRes, currentClanRes, clanListRes, trustSlipRes] = await Promise.all([
         getMe().catch(() => null),
         getCurrentClan().catch(() => null),
         listMyClans().catch(() => ({ items: [] })),
+        getMyTrustSlip().catch(() => null),
       ]);
 
       const clanRows = rowsOf<any>(clanListRes);
@@ -5146,6 +5268,7 @@ export default function MarketplacePage() {
       setPublicShopRecord(normalizeMarketplaceShop(ownerShopRes));
       setPoolInfo(poolRes);
       setMarketplaceTrust(trustRes || null);
+      setTrustSlip(trustSlipRes || null);
       setInviteLink(getInviteUrl(inviteRes));
       setLoans(filteredLoans);
       setProtectedTrades(filteredProtectedTrades);
@@ -6424,28 +6547,12 @@ export default function MarketplacePage() {
       : "Not shown yet";
   const localNetPosition =
     localPoolBalance - localOwingTotal - localLockedGuaranteeTotal;
-  const marketplaceCciValue = firstTruthy(
-    (marketplaceTrust as any)?.cci_score,
-    (marketplaceTrust as any)?.cci?.score,
-    (marketplaceTrust as any)?.community_cci,
-    (selectedCommunity as any)?.cci_score,
-    (selectedCommunity as any)?.community_standing?.cci_score,
-    (selectedCommunity as any)?.marketplace?.cci_score,
-    (selectedCommunity as any)?.clan?.cci_score
+  const marketplaceCciDisplay = marketplaceCciLabel(
+    selectedCommunity,
+    marketplaceTrust,
+    me,
+    trustSlip
   );
-  const marketplaceCciBand = firstTruthy(
-    (marketplaceTrust as any)?.cci_band,
-    (marketplaceTrust as any)?.cci?.band,
-    (selectedCommunity as any)?.cci_band,
-    (selectedCommunity as any)?.community_standing?.cci_band,
-    (selectedCommunity as any)?.marketplace?.cci_band,
-    (selectedCommunity as any)?.clan?.cci_band
-  );
-  const marketplaceCciDisplay = marketplaceCciValue
-    ? marketplaceCciBand
-      ? `${marketplaceCciBand} / ${marketplaceCciValue}`
-      : marketplaceCciValue
-    : "Pending";
   const localFinanceStandingTone =
     localNetPosition > 0
       ? "Positive"
@@ -6570,10 +6677,12 @@ export default function MarketplacePage() {
 
   const marketplaceTrustDisplay = marketplaceTrustLabel(
     selectedCommunity,
-    marketplaceTrust
+    marketplaceTrust,
+    me,
+    trustSlip
   );
   const marketplaceTrustEvidenceLabel =
-    marketplaceTrustEventCount(marketplaceTrust);
+    marketplaceTrustEventCount(marketplaceTrust, me, trustSlip);
   const communityPackageByCode = useMemo(() => {
     const map = new Map<string, CommunityPackageStatusItem>();
     communityPackageItems.forEach((item) => {
@@ -7854,7 +7963,7 @@ export default function MarketplacePage() {
           <StableButton
             type="button"
             debugId="marketplace.tile.members"
-            aria-label="Open evidence-backed trade, members and visible shops"
+            aria-label="Open visible members and public shops"
             onClick={(event) =>
               openMarketplaceSection(event, "members", "marketplace-members-shops")
             }
@@ -7871,20 +7980,59 @@ export default function MarketplacePage() {
             </span>
             <span style={marketplaceOsRowTextStackStyle()}>
               <span style={marketplaceOsRowTitleStyle(isCompact)}>
-                Trade & Shops
+                Members & Shops
               </span>
               <span style={marketplaceOsRowDetailStyle(isCompact)}>
-                Shops, offers, and visible trade.
+                Known members and public shops.
               </span>
               <span style={marketplaceFrontTagRowStyle(isCompact)}>
-                <span style={marketplaceFrontTagStyle("#805A0F", "#F7EED8", isCompact)}>
-                  Trade Evidence
-                </span>
                 <span style={marketplaceFrontTagStyle("#805A0F", "#F7EED8", isCompact)}>
                   Public Shops
                 </span>
                 <span style={marketplaceFrontTagStyle("#805A0F", "#F7EED8", isCompact)}>
                   Members
+                </span>
+              </span>
+            </span>
+            <span aria-hidden="true" style={marketplaceOsArrowStyle()}>
+              <MarketplaceGlyph name="chevron" size={18} />
+            </span>
+          </StableButton>
+
+          <StableButton
+            type="button"
+            debugId="marketplace.tile.trade-evidence"
+            aria-label="Open Trade Evidence records"
+            onClick={(event) =>
+              openMarketplaceSection(event, "trade", "marketplace-trade-evidence")
+            }
+            style={marketplaceFrontLaneCardStyle(isCompact)}
+          >
+            <span
+              aria-hidden="true"
+              style={marketplaceFrontLaneIconStyle(
+                "linear-gradient(180deg, #244969 0%, #061827 100%)",
+                isCompact
+              )}
+            >
+              <MarketplaceGlyph name="ledger" size={isCompact ? 26 : 34} />
+            </span>
+            <span style={marketplaceOsRowTextStackStyle()}>
+              <span style={marketplaceOsRowTitleStyle(isCompact)}>
+                Trade Evidence
+              </span>
+              <span style={marketplaceOsRowDetailStyle(isCompact)}>
+                Record goods, service, and terms.
+              </span>
+              <span style={marketplaceFrontTagRowStyle(isCompact)}>
+                <span style={marketplaceFrontTagStyle("#173750", "#EEF3F7", isCompact)}>
+                  Evidence
+                </span>
+                <span style={marketplaceFrontTagStyle("#173750", "#EEF3F7", isCompact)}>
+                  Terms
+                </span>
+                <span style={marketplaceFrontTagStyle("#173750", "#EEF3F7", isCompact)}>
+                  Record
                 </span>
               </span>
             </span>
@@ -10940,9 +11088,9 @@ export default function MarketplacePage() {
       </section>
       ) : null}
 
-      {sectionsOpen.members ? (
+      {sectionsOpen.trade ? (
       <section
-        id="marketplace-members-shops"
+        id="marketplace-trade-evidence"
         style={{ ...pageCard("#FFFFFF"), ...marketplaceSectionStyle(), order: 3 }}
       >
         <div
@@ -10974,24 +11122,23 @@ export default function MarketplacePage() {
             <div style={{ minWidth: 0 }}>
               <div style={sectionLabel()}>Trade Evidence</div>
               <div style={{ marginTop: 8, ...helperText() }}>
-                See known members and visible shops inside this selected
-                community. Open the shop record for current evidence before
-                trade, credit, goods, or money move.
+                Record the item, the other side, and agreed terms before goods,
+                service, or money move. This is evidence, not escrow.
               </div>
             </div>
           </div>
 
           <StableButton
-            debugId="marketplace.members.toggle"
+            debugId="marketplace.trade.toggle"
             type="button"
-            onClick={(event) => toggleSectionFromButton(event, "members")}
+            onClick={(event) => toggleSectionFromButton(event, "trade")}
             style={marketplaceActionStyle("soft")}
           >
-            {sectionsOpen.members ? "Collapse" : "Open"}
+            {sectionsOpen.trade ? "Collapse" : "Open"}
           </StableButton>
         </div>
 
-        {sectionsOpen.members ? (
+        {sectionsOpen.trade ? (
           <div
             style={{
               marginTop: 12,
@@ -11000,22 +11147,21 @@ export default function MarketplacePage() {
               gap: 8,
             }}
           >
-            <span style={stableStatusPillStyle(memberRows.length > 0)}>
-              {memberRows.length} visible member{memberRows.length === 1 ? "" : "s"}
-            </span>
-            <span style={stableStatusPillStyle(visibleTradeShopCount > 0)}>
-              {visibleTradeShopCount} public shop{visibleTradeShopCount === 1 ? "" : "s"}
-            </span>
             <span style={stableStatusPillStyle(true)}>
-              Community-bound trade
+              Trade record lane
+            </span>
+            <span style={stableStatusPillStyle(protectedTrades.length > 0)}>
+              {protectedTrades.length
+                ? `${protectedTrades.length} recent`
+                : "No records yet"}
             </span>
           </div>
         ) : null}
 
-        {sectionsOpen.members ? (
+        {sectionsOpen.trade ? (
           <div
             {...marketplaceSurfaceTouchProps(
-              "marketplace.members.trade-evidence-module"
+              "marketplace.trade.evidence-module"
             )}
             style={{
               ...marketplaceDepartmentShellStyle("trade", isCompact),
@@ -11619,8 +11765,79 @@ export default function MarketplacePage() {
             )}
           </div>
         ) : null}
+      </section>
+      ) : null}
 
         {sectionsOpen.members ? (
+      <section
+        id="marketplace-members-shops"
+        style={{ ...pageCard("#FFFFFF"), ...marketplaceSectionStyle(), order: 4 }}
+      >
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 12,
+            alignItems: "center",
+            flexWrap: "wrap",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 14,
+              minWidth: 0,
+            }}
+          >
+            <span
+              aria-hidden="true"
+              style={marketplaceOsIconStyle(
+                "linear-gradient(180deg, #D7A22D 0%, #805A0F 100%)",
+                true
+              )}
+            >
+              <MarketplaceGlyph name="members" size={26} />
+            </span>
+            <div style={{ minWidth: 0 }}>
+              <div style={sectionLabel()}>Members & Shops</div>
+              <div style={{ marginTop: 8, ...helperText() }}>
+                See known members and visible shops inside this selected
+                marketplace. Open a shop record for current evidence before you
+                act.
+              </div>
+            </div>
+          </div>
+
+          <StableButton
+            debugId="marketplace.members.toggle"
+            type="button"
+            onClick={(event) => toggleSectionFromButton(event, "members")}
+            style={marketplaceActionStyle("soft")}
+          >
+            {sectionsOpen.members ? "Collapse" : "Open"}
+          </StableButton>
+        </div>
+
+        <div
+          style={{
+            marginTop: 12,
+            display: "flex",
+            flexWrap: "wrap",
+            gap: 8,
+          }}
+        >
+          <span style={stableStatusPillStyle(memberRows.length > 0)}>
+            {memberRows.length} visible member{memberRows.length === 1 ? "" : "s"}
+          </span>
+          <span style={stableStatusPillStyle(visibleTradeShopCount > 0)}>
+            {visibleTradeShopCount} public shop{visibleTradeShopCount === 1 ? "" : "s"}
+          </span>
+          <span style={stableStatusPillStyle(true)}>
+            Community-bound directory
+          </span>
+        </div>
+
           <div
             {...marketplaceSurfaceTouchProps(
               "marketplace.members.visible-members-module"
@@ -11915,7 +12132,6 @@ export default function MarketplacePage() {
               </details>
             ) : null}
           </div>
-        ) : null}
       </section>
       ) : null}
 

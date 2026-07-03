@@ -174,7 +174,8 @@ async function run() {
         "Trust",
         "CCI",
         "Money & Trust",
-        "Trade & Shops",
+        "Members & Shops",
+        "Trade Evidence",
         "Marketplace Tools",
         "Spotlight",
       ];
