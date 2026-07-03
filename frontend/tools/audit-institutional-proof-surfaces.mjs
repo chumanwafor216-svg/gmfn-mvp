@@ -923,7 +923,7 @@ assertContains(
 
 assertContains(
   "snapshotPaper",
-  /Generated \(UTC\): \$\{generatedAt\}[\s\S]*?Security note: Keep the GSN mark, time, code, privacy note, and limit with any copy\./,
+  /Generated \(UTC\): \$\{generatedAt\}[\s\S]*?Security note: Keep the GSN mark, generated time, record code, privacy note, and limitation note with any copy\./,
   "Shared copied snapshot papers must keep generated time and compact security note."
 );
 assertContains(
@@ -968,7 +968,7 @@ assertContains(
 );
 assertContains(
   "snapshotPaper",
-  /buildGsnSupportEvidencePackage[\s\S]*?GSN Support Evidence Snapshot[\s\S]*?Not a guarantee, lending approval, receipt, or payout[\s\S]*?buildGsnSupportEvidenceShareText[\s\S]*?Open GSN to check the current support record before you act\./,
+  /buildGsnSupportEvidencePackage[\s\S]*?GSN Support Evidence Snapshot[\s\S]*?Not a guarantee, lending approval, receipt, or payout[\s\S]*?buildGsnSupportEvidenceShareText[\s\S]*?Evidence only\. Open GSN to check the current support record before you act\./,
   "Shared evidence helpers must cover formal loan/support evidence papers and compact support share text."
 );
 assertNotContains(
@@ -1033,7 +1033,7 @@ assertNotContains(
 );
 assertContains(
   "trustSnapshots",
-  /import \{ buildGsnSnapshotPaper \} from "\.\/gsnSnapshotPaper";[\s\S]*?GSN Identity & Integrity Snapshot[\s\S]*?GSN Cross-Community Consistency Snapshot[\s\S]*?GSN TrustSlip Snapshot[\s\S]*?GSN TrustSlip Verification Snapshot[\s\S]*?buildTrustPassportSnapshot[\s\S]*?return buildGsnSnapshotPaper\(\{[\s\S]*?GSN Trust Passport Snapshot/,
+  /import \{ buildGsnSnapshotPaper \} from "\.\/gsnSnapshotPaper";[\s\S]*?GSN Identity & Integrity Snapshot[\s\S]*?Not legal identity proof, government ID, professional licence, bank approval, or a guarantee of future behaviour[\s\S]*?GSN Cross-Community Consistency Snapshot[\s\S]*?Not a character label, credit approval, bank guarantee, payment instruction, or automatic debit[\s\S]*?GSN TrustSlip Snapshot[\s\S]*?GSN TrustSlip Verification Snapshot[\s\S]*?buildTrustPassportSnapshot[\s\S]*?return buildGsnSnapshotPaper\(\{[\s\S]*?GSN Trust Passport Snapshot/,
   "Trust document copy snapshots must use GSN headed-paper helpers and keep Trust Passport official."
 );
 assertNotContains(
@@ -1300,6 +1300,16 @@ assertContains(
   "firstCircle",
   /buildGsnInviteLinkPackage[\s\S]*?joinInviteMessage[\s\S]*?inviteBundle[\s\S]*?GsnSnapshotPaperCard[\s\S]*?paperText=\{readyContacts\.length > 0 \? inviteBundle : joinInviteMessage\}[\s\S]*?paperText=\{inviteBundle \|\| joinInviteMessage\}/,
   "First Circle visible invite preview must keep the formal GSN invite paper."
+);
+assertContains(
+  "firstCircle",
+  /Relationship evidence[\s\S]*?Known from[\s\S]*?Known duration[\s\S]*?Choose duration[\s\S]*?Confidence/,
+  "First Circle relationship evidence must label duration as duration, not as a person's role or profession."
+);
+assertNotContains(
+  "firstCircle",
+  /Known for[\s\S]*?Choose duration/g,
+  "First Circle must not call the relationship-duration field 'Known for'."
 );
 assertContains(
   "clansPage",

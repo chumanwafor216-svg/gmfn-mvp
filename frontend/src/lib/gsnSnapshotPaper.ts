@@ -94,7 +94,7 @@ export function buildGsnSnapshotPaper(params: GsnSnapshotPaperParams): string {
     params.purpose ? `Purpose: ${safeText(params.purpose)}` : "",
     `Generated (UTC): ${generatedAt}`,
     reference ? `Record code: ${reference}` : "",
-    `Security note: Keep the GSN mark, time, code, privacy note, and limit with any copy.`,
+    `Security note: Keep the GSN mark, generated time, record code, privacy note, and limitation note with any copy.`,
     "",
     contextLines.length ? "Public record context" : "",
     ...contextLines,
@@ -119,7 +119,8 @@ export function buildGsnCompactPublicLinkPackage(
   const title = safeText(params.title) || "GSN Public Record";
   const link = safeText(params.link);
   const note =
-    safeText(params.note) || "Open this GSN record and check the current details before you act.";
+    safeText(params.note) ||
+    "Evidence only. Open this GSN record and check the current public details before you act.";
 
   return [
     title,
@@ -147,7 +148,7 @@ export function buildGsnCommunityVerifyLinkMessage(params: {
     referenceLabel: "Community ID",
     referenceValue: params.communityId,
     status: params.status,
-    note: "Open this link to check the current public community record.",
+    note: "Evidence only. Open this link to check the current public community record.",
     link: params.verifyLink,
   });
 }
@@ -189,7 +190,7 @@ export function buildGsnPublicShopLinkMessage(params: {
     referenceLabel: "GSN ID",
     referenceValue: params.gsnId,
     status: params.communityName,
-    note: "Open this shop link to check current items and visible evidence.",
+    note: "Evidence only. Open this shop link to check current items and visible evidence.",
     link: params.shopLink,
   });
 }
@@ -437,7 +438,7 @@ export function buildGsnSupportEvidenceShareText(
     compactFactLine("Amount", params.amount),
     compactFactLine("Status", params.status),
     ...details,
-    "Open GSN to check the current support record before you act.",
+    "Evidence only. Open GSN to check the current support record before you act.",
     link,
     "GSN support evidence is not approval, a guarantee, a receipt, or payout authority.",
   ]

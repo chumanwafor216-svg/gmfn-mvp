@@ -169,9 +169,10 @@ async function run() {
       const text = document.body.textContent || "";
       const required = [
         "Homeland isa Marketplace",
-        "Marketplace Trust",
         "Finance Summary",
-        "Quick Actions",
+        "Finance details",
+        "Trust",
+        "CCI",
         "Money & Trust",
         "Trade & Shops",
         "Demand Box",

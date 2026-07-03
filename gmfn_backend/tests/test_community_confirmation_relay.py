@@ -1328,7 +1328,7 @@ def test_public_community_verify_accepts_gsn_gmfn_and_trustslip_aliases(client: 
         assert "ask for current scoped evidence before acting" in data["community_reader_decision_scope"]
         assert data["community_evidence_currentness_status"] == "active_basic_record"
         assert data["community_evidence_currentness_label"] == "Active recorded Community ID"
-        assert "Parent-domain acknowledgement" in data["community_evidence_currentness_scope"]
+        assert "Parent community acknowledgement" in data["community_evidence_currentness_scope"]
         assert data["public_record"] == "Recorded in GSN"
         assert data["domain_label"] == "GSN Community ID Domain"
         assert data["domain_status"] == "Recorded community domain"
@@ -1339,9 +1339,9 @@ def test_public_community_verify_accepts_gsn_gmfn_and_trustslip_aliases(client: 
         assert "Community ID is the record anchor" in data["domain_proof_scope"]
         assert "not exposed" in data["membership_credential_status"]
         assert data["official_affiliate_status"] == "not_asserted"
-        assert data["official_affiliate_label"] == "No parent-domain affiliate claim on this record"
-        assert "Parent-domain acknowledgement needs its own record" in data["official_affiliate_note"]
-        assert "acknowledged under the parent domain" in data["group_affiliation_status"]
+        assert data["official_affiliate_label"] == "No parent community affiliate claim on this record"
+        assert "Parent community acknowledgement needs its own record" in data["official_affiliate_note"]
+        assert "acknowledged under the parent community" in data["group_affiliation_status"]
         assert "does not automatically verify every person" in data["public_limitation"]
         assert data["member_confirmation"] == "By controlled request only"
         assert data["request_confirmation_available"] is True

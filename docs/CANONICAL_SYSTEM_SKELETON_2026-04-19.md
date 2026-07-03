@@ -540,6 +540,40 @@ Important consequences:
   as repost logic, shop links, vault links, or other authorized invite/share
   links
 
+#### Future Spotlight Credit Model
+
+The post-pilot Spotlight model should move away from "paid per day/month" as
+the primary mental model and toward exposure credits / appearance slots.
+
+Working concept:
+
+- one Spotlight appearance consumes one Spotlight credit;
+- a paid package buys a number of appearances, not a calendar duration;
+- for example, a small paid package may buy 30 Spotlight credits, meaning 30
+  appearances in the rotation;
+- the member chooses or buys a rotation pace, such as once every hour, once
+  every 30 minutes, or once every 15 minutes;
+- faster rotation consumes the same credit balance faster;
+- slower rotation stretches the same credit balance longer;
+- when the paid credit balance reaches zero, the paid Spotlight leaves the
+  paid rotation unless renewed;
+- Network Repost / Subscription Spotlight should use the same credit/slot
+  language rather than "one paid day" language.
+
+Free Spotlight can later use the same credit vocabulary:
+
+- GSN may grant each global member identity a daily free credit allowance;
+- each free appearance consumes one free credit;
+- when the daily free credits are exhausted, the free Spotlight drops out until
+  the next daily refresh;
+- if the member also has paid credits, paid rotation can continue after the
+  free allowance is exhausted, or can run in a separate paid lane depending on
+  the final product decision.
+
+This is not implemented in the current pilot. The current pilot rule is simpler:
+one global member identity gets one free Spotlight run per UTC day, while paid
+Spotlight and Network Repost remain separate paid-credit lanes.
+
 ### Demand Box
 Demand Box is the opposite-side counterpart to Spotlight.
 

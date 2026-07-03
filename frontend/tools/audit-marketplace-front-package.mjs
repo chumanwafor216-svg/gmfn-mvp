@@ -106,8 +106,22 @@ assertContains(
 assertContains(
   marketplaceFile,
   marketplaceSource,
-  /marketplaceHeroShellStyle[\s\S]*?MARKETPLACE[\s\S]*?activeCommunityName[\s\S]*?Trade\. Support\. Finance\. Members\. Records\.[\s\S]*?marketplaceHeroStatsStyle[\s\S]*?marketplaceFrontSummaryGridStyle[\s\S]*?Marketplace Trust[\s\S]*?Finance Summary[\s\S]*?Quick Actions/,
-  "Marketplace front package must use a premium identity hero with stats, trust, finance, and quick-action summary cards."
+  /marketplaceHeroShellStyle[\s\S]*?MARKETPLACE[\s\S]*?activeCommunityName[\s\S]*?Trade\. Support\. Finance\. Members\. Records\.[\s\S]*?marketplaceHeroStatsStyle[\s\S]*?marketplaceFrontSummaryGridStyle[\s\S]*?Finance Summary[\s\S]*?marketplaceFinanceSummaryValue[\s\S]*?Finance details[\s\S]*?Owing total[\s\S]*?Locked by guarantees[\s\S]*?Current guarantee earning/,
+  "Marketplace front package must use a premium identity hero with local Trust/CCI stats and one finance summary disclosure."
+);
+
+assertContains(
+  marketplaceFile,
+  marketplaceSource,
+  /const marketplaceStats = \[[\s\S]*?label: "Trust"[\s\S]*?value: marketplaceTrustDisplay[\s\S]*?label: "CCI"[\s\S]*?value: marketplaceCciDisplay/,
+  "Marketplace hero stats must carry local Trust and CCI values."
+);
+
+assertNotContains(
+  marketplaceFile,
+  marketplaceSource,
+  /Quick Actions|debugId="marketplace\.tile\.trust"|Trust preparing/g,
+  "Marketplace front package must not expose the removed Quick Actions card, old Trust tile, or Trust preparing fallback."
 );
 
 [
@@ -161,13 +175,6 @@ assertContains(
     `Marketplace grouped front card must keep ${card.label} with audited pictogram and tags.`
   );
 });
-
-assertContains(
-  marketplaceFile,
-  marketplaceSource,
-  /Local Marketplace Trust[\s\S]*?selected community's local trust signal[\s\S]*?fuller evidence routes[\s\S]*?Member-level witness currentness belongs in those fuller[\s\S]*?evidence routes, not this local marketplace summary/,
-  "Compact Trust pill expansion must remain a local Marketplace Trust summary and must send member currentness to fuller evidence routes."
-);
 
 assertContains(
   marketplaceFile,

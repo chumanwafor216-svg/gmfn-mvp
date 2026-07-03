@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import secrets
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
@@ -55,6 +56,77 @@ def _safe_str(value: Any, default: str = "") -> str:
         return default
     s = str(value).strip()
     return s if s else default
+
+
+def _looks_like_public_identity_code(value: Any) -> bool:
+    text = _safe_str(value).upper()
+    return bool(re.match(r"^(GMFN|GMFM|GSN)-(U|P)-", text))
+
+
+def _clean_trust_slip_display_name(value: Any) -> str:
+    text = " ".join(_safe_str(value).split())
+    if not text:
+        return ""
+    if text.lower() in {
+        "member name not set",
+        "name not set",
+        "name not shown",
+        "not set",
+        "unknown",
+        "member",
+    }:
+        return ""
+    if _looks_like_public_identity_code(text):
+        return ""
+    return text[:120]
+
+
+def _join_evidence_display_name(db: Session, *, user_id: int) -> str:
+    rows = (
+        db.query(TrustEvent)
+        .filter(TrustEvent.subject_user_id == int(user_id))
+        .order_by(TrustEvent.created_at.desc(), TrustEvent.id.desc())
+        .limit(25)
+        .all()
+    )
+    for row in rows:
+        meta = getattr(row, "meta", None) or {}
+        if not isinstance(meta, dict):
+            continue
+        profile = meta.get("applicant_profile")
+        if not isinstance(profile, dict):
+            continue
+        candidate = " ".join(
+            part
+            for part in (
+                _safe_str(profile.get("first_name")),
+                _safe_str(profile.get("surname")),
+            )
+            if part
+        )
+        cleaned = _clean_trust_slip_display_name(candidate)
+        if cleaned:
+            return cleaned
+    return ""
+
+
+def _trust_slip_display_name(
+    db: Session,
+    *,
+    user: Optional[User],
+    user_id: int,
+    gmfn_id: str,
+) -> str:
+    direct = _clean_trust_slip_display_name(getattr(user, "display_name", None) if user else None)
+    if direct:
+        return direct
+    recovered = _join_evidence_display_name(db, user_id=user_id)
+    if recovered:
+        return recovered
+    if gmfn_id:
+        return f"GSN holder {gmfn_id}"
+    masked_email = _mask_email(getattr(user, "email", None) if user else None)
+    return masked_email or "GSN holder"
 
 
 def _aware_utc(value: datetime | None) -> datetime | None:
@@ -536,6 +608,142 @@ CCI_BAND_EXPLANATIONS: Dict[str, str] = {
     "E": "Very limited or concerning evidence. Do not use this TrustSlip alone for a meaningful risk.",
     "F": "Not enough usable evidence, or a negative reading. Do not rely on this TrustSlip for trust decisions.",
 }
+
+
+RELATIONSHIP_TYPE_LABELS: Dict[str, str] = {
+    "blood_or_family": "Blood or family relation",
+    "school_days": "School days",
+    "marketplace_trade": "Marketplace or trade",
+    "work_or_colleague": "Work or colleague",
+    "neighbourhood": "Neighbour or area",
+    "faith_or_association": "Faith group or association",
+    "cooperative_or_savings": "Cooperative or savings group",
+    "friendship": "Friendship",
+    "known_through_trusted_person": "Known through someone trusted",
+}
+
+KNOWN_DURATION_LABELS: Dict[str, str] = {
+    "under_6_months": "Under 6 months",
+    "6_to_24_months": "6 months to 2 years",
+    "2_to_5_years": "2 to 5 years",
+    "over_5_years": "Over 5 years",
+}
+
+CONFIDENCE_LEVEL_LABELS: Dict[str, str] = {
+    "known_directly": "Known directly",
+    "known_through_family_or_group": "Known through family or group",
+    "known_through_trade": "Known through trade or service",
+}
+
+
+def _controlled_label(value: Any, labels: Dict[str, str], fallback: str) -> str:
+    key = _safe_str(value).lower()
+    if not key:
+        return fallback
+    return labels.get(key, fallback)
+
+
+def _invite_relationship_evidence_summary(db: Session, *, user_id: int) -> Dict[str, Any]:
+    accepted_rows = (
+        db.query(TrustEvent)
+        .filter(
+            TrustEvent.subject_user_id == int(user_id),
+            TrustEvent.event_type == TrustEventType.INVITE_ACCEPTED,
+        )
+        .order_by(TrustEvent.created_at.desc(), TrustEvent.id.desc())
+        .limit(25)
+        .all()
+    )
+
+    rows: list[dict[str, Any]] = []
+    seen_invites: set[str] = set()
+    for accepted in accepted_rows:
+        accepted_meta = getattr(accepted, "meta", None) or {}
+        if not isinstance(accepted_meta, dict):
+            continue
+        invite_code = _safe_str(accepted_meta.get("invite_code"))
+        if not invite_code or invite_code in seen_invites:
+            continue
+        seen_invites.add(invite_code)
+
+        created = (
+            db.query(TrustEvent)
+            .filter(
+                TrustEvent.clan_id == getattr(accepted, "clan_id", None),
+                TrustEvent.event_type == TrustEventType.INVITE_CREATED,
+            )
+            .order_by(TrustEvent.created_at.desc(), TrustEvent.id.desc())
+            .limit(50)
+            .all()
+        )
+        matched_meta: Dict[str, Any] = {}
+        for created_row in created:
+            created_meta = getattr(created_row, "meta", None) or {}
+            if (
+                isinstance(created_meta, dict)
+                and _safe_str(created_meta.get("invite_code")) == invite_code
+            ):
+                matched_meta = created_meta
+                break
+        evidence = matched_meta.get("relationship_evidence") if matched_meta else None
+        if not isinstance(evidence, dict):
+            continue
+
+        clan = db.get(Clan, int(getattr(accepted, "clan_id", 0) or 0))
+        row = {
+            "invite_code": invite_code,
+            "community_id": int(getattr(accepted, "clan_id", 0) or 0) or None,
+            "community_name": (
+                _safe_str(getattr(clan, "marketplace_name", None))
+                or _safe_str(getattr(clan, "name", None))
+                or None
+            ),
+            "relationship_label": _controlled_label(
+                evidence.get("relationship_type"),
+                RELATIONSHIP_TYPE_LABELS,
+                "Relationship category recorded",
+            ),
+            "known_duration_label": _controlled_label(
+                evidence.get("known_duration"),
+                KNOWN_DURATION_LABELS,
+                "Known duration recorded",
+            ),
+            "confidence_label": _controlled_label(
+                evidence.get("confidence_level"),
+                CONFIDENCE_LEVEL_LABELS,
+                "Relationship confidence recorded",
+            ),
+            "first_circle_role_label": (
+                "Circle role recorded"
+                if _safe_str(evidence.get("first_circle_role"))
+                else "Circle role not shown"
+            ),
+            "recorded_at": (
+                getattr(accepted, "created_at", None).isoformat()
+                if getattr(accepted, "created_at", None)
+                else None
+            ),
+        }
+        rows.append(row)
+        if len(rows) >= 3:
+            break
+
+    first = rows[0] if rows else {}
+    summary_label = (
+        f"{first.get('relationship_label')} - {first.get('known_duration_label')}"
+        if first
+        else "No invite relationship evidence shown"
+    )
+    return {
+        "source": "invite_relationship_evidence",
+        "evidence_count": len(rows),
+        "summary_label": summary_label,
+        "rows": rows,
+        "privacy_boundary": (
+            "Shows invite relationship categories only. Raw inviter notes, phone numbers, "
+            "addresses, bank details, and private context are not included."
+        ),
+    }
 
 
 def _cci_explainer(score: Any, band: Any) -> Dict[str, Any]:
@@ -1274,6 +1482,7 @@ def build_trust_slip_visibility_view(payload: Dict[str, Any], *, level: Optional
     internal_contacts = list(payload.get("internal_contacts") or [])
     identity_context = dict(payload.get("identity_context") or {})
     community_context = dict(payload.get("community_context") or {})
+    relationship_evidence_summary = dict(payload.get("relationship_evidence_summary") or {})
     cci_explainer = dict(payload.get("cci_explainer") or {})
 
     base: Dict[str, Any] = {
@@ -1288,6 +1497,7 @@ def build_trust_slip_visibility_view(payload: Dict[str, Any], *, level: Optional
         "community": payload.get("community"),
         "identity_context": identity_context,
         "community_context": community_context,
+        "relationship_evidence_summary": relationship_evidence_summary,
         "cci_explainer": cci_explainer,
         "band": payload.get("band"),
         "trust_limit": payload.get("trust_limit") or payload.get("trust_slip_limit"),
@@ -1332,6 +1542,7 @@ def build_trust_slip_visibility_view(payload: Dict[str, Any], *, level: Optional
         base.pop("profile_image_url", None)
         base.pop("identity_context", None)
         base.pop("community_context", None)
+        base.pop("relationship_evidence_summary", None)
         base.pop("cci_explainer", None)
         return base
 
@@ -1364,6 +1575,10 @@ def build_trust_slip_visibility_view(payload: Dict[str, Any], *, level: Optional
             "display_name": merchant_summary.get("display_name"),
             "profile_image_url": merchant_summary.get("profile_image_url"),
             "community": merchant_summary.get("community"),
+            "relationship_evidence_summary": merchant_summary.get(
+                "relationship_evidence_summary"
+            )
+            or relationship_evidence_summary,
             "community_global_id": merchant_summary.get("community_global_id"),
             "community_code": merchant_summary.get("community_code"),
             "community_evidence_currentness_status": merchant_summary.get("community_evidence_currentness_status"),
@@ -1544,12 +1759,7 @@ def get_trust_slip_payload(db: Session, *, user_id: int) -> Dict[str, Any]:
     saved_level = _saved_visibility_level(user)
     effective_limit = _safe_decimal_str(slip_limit_value, trust_limit)
     gmfn_id = _ensure_user_gmfn_id_payload(user)
-    display_name = (
-        _safe_str(getattr(user, "display_name", None))
-        or gmfn_id
-        or _mask_email(getattr(user, "email", None))
-        or "Member"
-    )
+    display_name = _trust_slip_display_name(db, user=user, user_id=uid, gmfn_id=gmfn_id)
     clan = db.get(Clan, int(clan_id)) if clan_id else None
     community = (
         _safe_str(summary.get("community_name") if isinstance(summary, dict) else None)
@@ -1577,6 +1787,7 @@ def get_trust_slip_payload(db: Session, *, user_id: int) -> Dict[str, Any]:
         sponsor_count=graph_summary.get("sponsor_count"),
         unique_counterparties=graph_summary.get("unique_counterparties"),
     )
+    relationship_evidence_summary = _invite_relationship_evidence_summary(db, user_id=uid)
     entry_verification_context = _entry_verification_context(db, user=user)
     community_identity_confirmed = bool(
         community_context.get("current_user_is_active_member")
@@ -1779,6 +1990,7 @@ def get_trust_slip_payload(db: Session, *, user_id: int) -> Dict[str, Any]:
         "community": community,
         "identity_context": identity_context,
         "community_context": community_context,
+        "relationship_evidence_summary": relationship_evidence_summary,
         "community_footprint": community_footprint,
         "community_role_counts": community_role_counts,
         "identity_evidence_summary": identity_evidence_summary,
@@ -1867,6 +2079,7 @@ def get_trust_slip_payload(db: Session, *, user_id: int) -> Dict[str, Any]:
             "display_name": display_name,
             "profile_image_url": getattr(user, "profile_image_url", None) if user else None,
             "community": community,
+            "relationship_evidence_summary": relationship_evidence_summary,
             "community_global_id": community_context.get("community_global_id"),
             "community_code": community_context.get("community_code"),
             "community_public_face_status": community_context.get("community_public_face_status"),

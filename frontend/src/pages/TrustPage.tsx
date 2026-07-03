@@ -133,23 +133,20 @@ function buildTrustEvidenceShareText(why: TrustWhy | null): string {
     `Evidence reference: ${supportDisplayText(why?.pack_id, "-")}`,
     `Checksum: ${supportDisplayText(why?.checksum, "-")}`,
     `Based on: ${supportDisplayText(why?.latest_event_at, "-")}`,
-    "Privacy: private operational details and internal member ids are not included in this share copy.",
+    "Privacy: private operational details, internal member ids, event notes, and free-text reasons are not included in this share copy.",
     "Boundary: this is supporting evidence, not a bank guarantee, credit approval, payment instruction, or automatic debit authority.",
   ];
 
   const events = Array.isArray(why?.events) ? why.events.slice(0, 5) : [];
   if (events.length) {
-    lines.push("Recent trust records:");
+    lines.push("Recent trust records shown as labels only:");
     events.forEach((event: any) => {
       const label = supportDisplayText(
         event.reference_label || humanizeEventType(event.event_type),
         "Trust record"
       );
-      const reason = supportDisplayText(event.reason, "");
-      const note = supportDisplayText(event.note, "");
-      lines.push(
-        `- ${label}${reason ? ` | Reason: ${reason}` : ""}${note ? ` | Note: ${note}` : ""}`
-      );
+      const when = supportDisplayText(event.created_at, "");
+      lines.push(`- ${label}${when ? ` | Date: ${when}` : ""}`);
     });
   }
 

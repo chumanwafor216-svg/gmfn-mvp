@@ -61,11 +61,15 @@ FEATURE_VAULT_SLOT = "vault_slot"
 FEATURE_SPOTLIGHT_PRIORITY = "spotlight_priority"
 FEATURE_EXTRA_SHOP_BLOCK = "extra_shop_block"
 
-# Temporary pilot override requested during live testing.
-# Product owner extended this on 2026-05-10 for one week so testers can publish
-# Free Spotlight runs without the community-capacity quota blocking the flow.
-# Keep this date-limited and visible; do not turn it into an open-ended bypass.
+# Historical test-week capacity override. It is kept only so older status
+# payloads can report whether that date-limited bypass is active; current free
+# Spotlight fairness is enforced by the daily global-identity rule below.
 SPOTLIGHT_CAPACITY_PILOT_OVERRIDE_UNTIL = datetime(2026, 5, 17, 23, 59, 59, tzinfo=timezone.utc)
+
+# Live pilot fairness rule: one global member identity gets one free
+# direct-community Spotlight run per UTC day. Paid Spotlight and Network Repost
+# credits stay separate.
+FREE_SPOTLIGHT_DAILY_LIMIT_PER_AUTHOR = 1
 
 SHOP_IMAGE_ATTRS = (
     "image_url",
@@ -782,6 +786,33 @@ def _count_active_spotlights_for_clan(
             (MarketplaceBroadcast.expires_at.is_(None))
             | (MarketplaceBroadcast.expires_at > current_time),
         )
+        .count()
+    )
+
+
+def _free_spotlight_day_bounds(now: Optional[datetime] = None) -> tuple[datetime, datetime]:
+    current_time = now or _now_utc()
+    if current_time.tzinfo is None:
+        current_time = current_time.replace(tzinfo=timezone.utc)
+    else:
+        current_time = current_time.astimezone(timezone.utc)
+    start = current_time.replace(hour=0, minute=0, second=0, microsecond=0)
+    return start, start + timedelta(days=1)
+
+
+def _count_free_spotlight_runs_for_author_today(
+    *,
+    db: Session,
+    author_user_id: int,
+    now: Optional[datetime] = None,
+) -> int:
+    start, end = _free_spotlight_day_bounds(now)
+    return (
+        db.query(MarketplaceBroadcast)
+        .filter(MarketplaceBroadcast.author_user_id == int(author_user_id))
+        .filter(MarketplaceBroadcast.priority_mode != SPOTLIGHT_PAID)
+        .filter(MarketplaceBroadcast.created_at >= start)
+        .filter(MarketplaceBroadcast.created_at < end)
         .count()
     )
 
@@ -3621,6 +3652,7 @@ def create_marketplace_broadcast(
 
     current_time = _now_utc()
     skipped_capacity_clan_ids: list[int] = []
+    daily_free_spotlight_count = 0
 
     if priority_mode == SPOTLIGHT_PAID:
         if not shop:
@@ -3650,43 +3682,22 @@ def create_marketplace_broadcast(
                 status_code=400,
                 detail="A paid spotlight is already active for this shop. Wait for it to end before starting another one.",
             )
-    elif not _spotlight_capacity_pilot_override_active(current_time):
-        available_target_clan_ids: list[int] = []
-        for clan_id in target_clan_ids:
-            active_count = _count_active_spotlights_for_clan(
-                db=db,
-                clan_id=int(clan_id),
-                now=current_time,
-            )
-            max_allowed = _max_spotlights_for_clan(
-                db=db,
-                clan_id=int(clan_id),
-            )
-            if active_count >= max_allowed:
-                skipped_capacity_clan_ids.append(int(clan_id))
-                continue
-            available_target_clan_ids.append(int(clan_id))
-
-        if not available_target_clan_ids:
-            detail = (
-                "Spotlight capacity reached for all eligible communities. "
-                "Wait for an active spotlight to expire or use paid boost."
-            )
-            if len(skipped_capacity_clan_ids) == 1:
-                detail = (
-                    f"Spotlight capacity reached for community {skipped_capacity_clan_ids[0]}. "
-                    "Wait for an active spotlight to expire or use paid boost."
-                )
-            raise HTTPException(status_code=400, detail=detail)
-
-        target_clan_ids = available_target_clan_ids
-
-    if not target_clan_ids:
-        if skipped_capacity_clan_ids:
+    else:
+        daily_free_spotlight_count = _count_free_spotlight_runs_for_author_today(
+            db=db,
+            author_user_id=int(current_user.id),
+            now=current_time,
+        )
+        if daily_free_spotlight_count >= FREE_SPOTLIGHT_DAILY_LIMIT_PER_AUTHOR:
             raise HTTPException(
                 status_code=400,
-                detail="Spotlight capacity reached for all eligible communities. Wait for an active spotlight to expire or use paid boost.",
+                detail=(
+                    "Your free Spotlight for today is already active. "
+                    "Wait until the next UTC day or use paid Spotlight."
+                ),
             )
+
+    if not target_clan_ids:
         raise HTTPException(status_code=400, detail="No eligible community spotlight placements found")
 
     created_at = _now_utc()
@@ -3764,6 +3775,9 @@ def create_marketplace_broadcast(
                 "propagated_to_all_active_clans": True,
                 "propagated_clan_count": len(target_clan_ids),
                 "skipped_capacity_clan_ids": skipped_capacity_clan_ids,
+                "free_spotlight_daily_limit_per_author": (
+                    FREE_SPOTLIGHT_DAILY_LIMIT_PER_AUTHOR
+                ),
                 "reason": "marketplace_broadcast_created",
             },
             commit=False,
@@ -3811,6 +3825,8 @@ def create_marketplace_broadcast(
         "propagated_count": len(created_items),
         "skipped_capacity_clan_ids": skipped_capacity_clan_ids,
         "skipped_capacity_count": len(skipped_capacity_clan_ids),
+        "free_spotlight_daily_limit_per_author": FREE_SPOTLIGHT_DAILY_LIMIT_PER_AUTHOR,
+        "free_spotlight_used_today_before_publish": daily_free_spotlight_count,
         "spotlight_capacity_pilot_override_active": _spotlight_capacity_pilot_override_active(),
     }
 

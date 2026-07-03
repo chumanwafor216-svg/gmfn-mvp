@@ -63,6 +63,7 @@ type TrustSlipVerifyPublicPaperProps = {
   holderName: string;
   gsnId: string;
   communityLabel: string;
+  holderRole?: string | null;
   memberWitnessCount?: string | number | null;
   membershipStrengthLabel?: string | null;
   membershipRenewalStatusLabel?: string | null;
@@ -78,6 +79,7 @@ type TrustSlipVerifyPublicPaperProps = {
   communityActivityLatestAt?: string | null;
   communityActivityCategories?: string[] | null;
   communityActivityLabel?: string | null;
+  relationshipEvidenceSummary?: Record<string, any> | null;
   visibleBand: string;
   visibleBandLabel: string;
   visibleBandMeaning: string;
@@ -147,6 +149,14 @@ function dateLabel(value: unknown): string {
   const parsed = new Date(text);
   if (!Number.isFinite(parsed.getTime())) return text;
   return parsed.toLocaleDateString();
+}
+
+function compactListLabel(values: string[], fallback: string): string {
+  const cleaned = values
+    .map((value) => safeText(value))
+    .filter(Boolean)
+    .slice(0, 3);
+  return cleaned.length ? cleaned.join(", ") : fallback;
 }
 
 function lockedActionFrame(compact: boolean): React.CSSProperties {
@@ -718,6 +728,7 @@ export default function TrustSlipVerifyPublicPaper({
   holderName,
   gsnId,
   communityLabel,
+  holderRole,
   memberWitnessCount,
   membershipStrengthLabel,
   membershipRenewalStatusLabel,
@@ -733,6 +744,7 @@ export default function TrustSlipVerifyPublicPaper({
   communityActivityLatestAt,
   communityActivityCategories,
   communityActivityLabel,
+  relationshipEvidenceSummary,
   visibleBand,
   visibleBandLabel,
   visibleBandMeaning,
@@ -798,11 +810,14 @@ export default function TrustSlipVerifyPublicPaper({
   );
   const communityRecordCurrentnessScope = firstTruthy(
     communityEvidenceCurrentnessScope,
-    "This Community ID resolves to an active GSN community record. Parent-domain acknowledgement and member-level proof still need separate current scoped evidence."
+    "This Community ID resolves to an active GSN community record. Parent community acknowledgement and member-level proof still need separate current scoped evidence."
   );
   const communityActivityCountLabel = firstTruthy(communityActivityCount, "0");
   const communityActivityCategoriesLabel = Array.isArray(communityActivityCategories)
     ? communityActivityCategories.map((item) => safeText(item)).filter(Boolean).join(", ")
+    : "";
+  const knownAsCategoryLabel = Array.isArray(communityActivityCategories)
+    ? compactListLabel(communityActivityCategories, "")
     : "";
   const communityActivityEvidence = `${firstTruthy(
     communityActivityLabel,
@@ -810,7 +825,71 @@ export default function TrustSlipVerifyPublicPaper({
   )} (${communityActivityCountLabel} event${
     communityActivityCountLabel === "1" ? "" : "s"
   })`;
+  const relationshipEvidenceLabel = firstTruthy(
+    relationshipEvidenceSummary?.summary_label,
+    Array.isArray(relationshipEvidenceSummary?.rows)
+      ? relationshipEvidenceSummary.rows[0]?.relationship_label
+      : ""
+  );
+  const relationshipEvidenceCount = positiveNumber(
+    relationshipEvidenceSummary?.evidence_count
+  );
   const communityActivityLatest = dateLabel(communityActivityLatestAt);
+  const witnessTone: EvidenceTone =
+    memberWitnessLabel.toLowerCase().includes("not") ||
+    memberWitnessCurrentness.toLowerCase().includes("not")
+      ? "warning"
+      : "good";
+  const holderRoleLabel = firstTruthy(holderRole, "Community member");
+  const communityKnownAsRows: Array<{
+    icon: Gsn3DIconKey;
+    label: string;
+    value: string;
+    note: string;
+    tone: "trust" | "neutral" | "warning";
+  }> = [
+    {
+      icon: "identity-card",
+      label: "Community role",
+      value: holderRoleLabel,
+      note: `Shown inside ${communityLabel || "this community record"}.`,
+      tone: holderRoleLabel.toLowerCase().includes("member") ? "neutral" : "trust",
+    },
+    {
+      icon: "community-building",
+      label: "Community signals",
+      value:
+        positiveNumber(communityActivityCountLabel) > 0
+          ? `${communityActivityCountLabel} recorded event${
+              communityActivityCountLabel === "1" ? "" : "s"
+            }`
+          : "Activity not yet shown",
+      note: knownAsCategoryLabel
+        ? `Categories: ${knownAsCategoryLabel}`
+        : "Service or activity labels are not shown on this paper yet.",
+      tone: positiveNumber(communityActivityCountLabel) > 0 ? "trust" : "warning",
+    },
+    {
+      icon: "records-folder",
+      label: "Relationship route",
+      value:
+        relationshipEvidenceCount > 0 && relationshipEvidenceLabel
+          ? relationshipEvidenceLabel
+          : "Invite relationship category not shown",
+      note:
+        relationshipEvidenceCount > 0
+          ? "Raw inviter notes, phone numbers, addresses, and private context are not included."
+          : "This paper does not yet show how the holder came through a known relationship.",
+      tone: relationshipEvidenceCount > 0 ? "trust" : "neutral",
+    },
+    {
+      icon: "certificate-seal",
+      label: "Witness route",
+      value: memberWitnessEvidence,
+      note: memberWitnessCurrentness,
+      tone: witnessTone === "good" ? "trust" : "warning",
+    },
+  ];
   const callbackNeedsConsent = callbackChannel !== "none" && safeText(callbackContact);
   const callbackBlocked = Boolean(callbackNeedsConsent && !callbackConsent);
   const requesterCallback = confirmationOutcome?.requester_callback || null;
@@ -907,11 +986,6 @@ export default function TrustSlipVerifyPublicPaper({
     "Every community member, shop, transaction, or dispute",
     "Future behaviour or guaranteed performance",
   ];
-  const witnessTone: EvidenceTone =
-    memberWitnessLabel.toLowerCase().includes("not") ||
-    memberWitnessCurrentness.toLowerCase().includes("not")
-      ? "warning"
-      : "good";
   const evidenceResults: EvidenceResult[] = [
     {
       icon: "certificate-seal",
@@ -1380,6 +1454,78 @@ export default function TrustSlipVerifyPublicPaper({
                   <div style={{ ...readableText(), color: "#64748B", fontSize: 12, fontWeight: 800 }}>
                     Community: {communityLabel}
                   </div>
+                </div>
+              </div>
+
+              <div
+                data-gsn-community-known-as-evidence="true"
+                style={{
+                  marginTop: 12,
+                  borderRadius: 16,
+                  border: "1px solid rgba(11,99,209,0.16)",
+                  background:
+                    "linear-gradient(180deg, rgba(248,251,255,0.98) 0%, rgba(235,244,255,0.96) 100%)",
+                  padding: 12,
+                  display: "grid",
+                  gap: 10,
+                }}
+              >
+                <div>
+                  <div style={{ ...sectionLabel(), color: "#0B63D1" }}>
+                    Community known-as evidence
+                  </div>
+                  <p
+                    style={{
+                      ...readableText(),
+                      margin: "4px 0 0",
+                      color: "#475569",
+                      fontSize: 12,
+                      fontWeight: 820,
+                      lineHeight: 1.35,
+                    }}
+                  >
+                    What this public record can safely show about how the holder is known here.
+                  </p>
+                </div>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: compact ? "1fr" : "repeat(3, minmax(0, 1fr))",
+                    gap: 8,
+                  }}
+                >
+                  {communityKnownAsRows.map((row) => (
+                    <div key={row.label} style={documentMetaCard("#FFFFFF")}>
+                      <div style={paperMiniRow()}>
+                        {paperIconBadge(row.icon, row.tone)}
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ color: "#64748B", fontSize: 10, fontWeight: 1000, textTransform: "uppercase" }}>
+                            {row.label}
+                          </div>
+                          <div style={{ marginTop: 3, color: "#07172C", fontSize: 13, fontWeight: 1000, lineHeight: 1.18 }}>
+                            {row.value}
+                          </div>
+                          <div style={{ marginTop: 3, color: "#64748B", fontSize: 11, fontWeight: 800, lineHeight: 1.3 }}>
+                            {row.note}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div
+                  style={{
+                    borderRadius: 12,
+                    background: "#FFF7E6",
+                    border: "1px solid rgba(245,158,11,0.22)",
+                    color: "#5F4100",
+                    padding: "8px 10px",
+                    fontSize: 11,
+                    fontWeight: 850,
+                    lineHeight: 1.35,
+                  }}
+                >
+                  This is community-scoped evidence. It is not a licence, certificate, or guarantee of future work.
                 </div>
               </div>
 

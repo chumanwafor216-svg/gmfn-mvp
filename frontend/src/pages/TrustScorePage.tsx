@@ -2358,6 +2358,7 @@ export default function TrustScorePage() {
         safeStr(trustSlipSummary?.status).toLowerCase()
       ) || trustSlipSummary?.active === false,
   });
+  const trustPassportHolderRole = roleLabel(passportVm.identity.holderRole);
   const hasProfileImage = Boolean(passportVm.identity.profileImageUrl);
   const passportInitials =
     passportVm.identity.displayName
@@ -2424,6 +2425,7 @@ export default function TrustScorePage() {
         gmfnId,
         communityName,
         communityCode,
+        holderRole: trustPassportHolderRole,
         currentBand,
         currentScore,
         openTrustClass: openTrust.classText,
@@ -2447,6 +2449,7 @@ export default function TrustScorePage() {
       communityName,
       currentBand,
       currentScore,
+      trustPassportHolderRole,
       communityActivityCardValue,
       communityActivityCategories,
       communityActivityLatestAt,
@@ -2471,6 +2474,7 @@ export default function TrustScorePage() {
         gmfnId,
         communityName,
         communityCode,
+        holderRole: trustPassportHolderRole,
         currentBand,
         currentScore,
         openTrustClass: openTrust.classText,
@@ -2494,6 +2498,7 @@ export default function TrustScorePage() {
       communityName,
       currentBand,
       currentScore,
+      trustPassportHolderRole,
       communityActivityCardValue,
       communityActivityCategories,
       communityActivityLatestAt,

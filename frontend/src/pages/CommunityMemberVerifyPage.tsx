@@ -419,7 +419,7 @@ export default function CommunityMemberVerifyPage() {
   );
   const communityRecordCurrentnessScope = firstTruthy(
     credential?.community_evidence_currentness_scope,
-    "This Community ID resolves to an active GSN community record. Parent-domain acknowledgement and member-level proof still need separate current scoped evidence."
+    "This Community ID resolves to an active GSN community record. Parent community acknowledgement and member-level proof still need separate current scoped evidence."
   );
   const witnessStrengthBoundary =
     "Low, missing, expired, withdrawn, or disputed witness evidence should be treated as weaker evidence until renewed.";
@@ -509,7 +509,7 @@ export default function CommunityMemberVerifyPage() {
     {
       title: "Community-scoped evidence",
       detail:
-        "The credential is scoped to this one community. It is not a universal trust score or parent-domain membership claim.",
+        "The credential is scoped to this one community. It is not a universal trust score or parent community membership claim.",
       tone: "info",
     },
     {
@@ -685,7 +685,7 @@ export default function CommunityMemberVerifyPage() {
                       }}
                     >
                       Use only for this Community ID. Not universal trust, payment
-                      approval, or parent-domain membership.
+                      approval, or parent community membership.
                     </p>
                   </div>
                 </div>
@@ -763,7 +763,7 @@ export default function CommunityMemberVerifyPage() {
                       Read this as scoped membership evidence inside one Community ID,
                       not as universal trust or automatic approval.
                       It does not certify shop, line, subgroup, payment, loan, or
-                      parent-domain approval claims.
+                      parent community approval claims.
                     </p>
                   </div>
                 </div>
@@ -811,7 +811,7 @@ export default function CommunityMemberVerifyPage() {
                   {fact("Community record", communityRecordCurrentnessLabel)}
                   {fact(
                     "Affiliate status",
-                    firstTruthy(credential.official_affiliate_label, "No parent-domain claim")
+                    firstTruthy(credential.official_affiliate_label, "No parent community claim")
                   )}
                   {fact("Member witnesses", witnessCount)}
                   {fact("Activity events", activityCount)}

@@ -24,7 +24,11 @@ const SLICE_STATUS_LABELS: Record<string, string> = {
 };
 
 export function humanStatus(value: unknown, fallback = "not recorded"): string {
-  const normalized = String(value ?? "").trim().replace(/_/g, " ") || fallback;
+  const normalized =
+    String(value ?? "")
+      .trim()
+      .replace(/[-_]+/g, " ")
+      .replace(/\s+/g, " ") || fallback;
   if (normalized.toLowerCase() === "not configured") {
     return "not set up yet";
   }

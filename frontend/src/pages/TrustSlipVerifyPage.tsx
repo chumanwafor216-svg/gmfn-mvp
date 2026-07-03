@@ -523,6 +523,7 @@ export default function TrustSlipVerifyPage() {
 
   const {
     profileImageUrl,
+    holderRole,
     memberWitnessCount,
     membershipStrengthLabel,
     membershipRenewalStatusLabel,
@@ -533,6 +534,7 @@ export default function TrustSlipVerifyPage() {
     membershipCurrentnessScope,
     communityEvidenceCurrentnessLabel,
     communityEvidenceCurrentnessScope,
+    relationshipEvidenceSummary,
     communityActivityCount,
     communityActivityLatestAt,
     communityActivityCategories,
@@ -557,6 +559,19 @@ export default function TrustSlipVerifyPage() {
     issuedAtLabel,
     expiresAtLabel,
   } = trustSlipView;
+  const verifyCommunityActivityEvidence = communityActivityCount
+    ? `${communityActivityCount} community activity event${
+        communityActivityCount === "1" ? "" : "s"
+      }${
+        communityActivityCategories.length
+          ? ` across ${communityActivityCategories.slice(0, 3).join(", ")}`
+          : ""
+      }`
+    : "";
+  const verifyWitnessEvidence = firstTruthy(
+    membershipStrengthLabel,
+    membershipCurrentnessLabel
+  );
 
   const confirmationResult = confirmationOutcome?.community_response || null;
   const confirmationPublicPath = confirmationOutcome?.public_token
@@ -697,6 +712,9 @@ export default function TrustSlipVerifyPage() {
         holderName,
         gmfnId,
         communityLabel,
+        holderRole,
+        communityEvidence: verifyCommunityActivityEvidence,
+        witnessEvidence: verifyWitnessEvidence,
         trustSlipCode: resolvedCode || "Not available",
         visibleBand,
         visibleScore: visibleScore === null ? "-" : String(Math.round(visibleScore)),
@@ -850,6 +868,9 @@ export default function TrustSlipVerifyPage() {
             holderName,
             gmfnId,
             communityLabel,
+            holderRole,
+            communityEvidence: verifyCommunityActivityEvidence,
+            witnessEvidence: verifyWitnessEvidence,
             trustSlipCode: resolvedCode || "Not available",
             visibleBand,
             visibleScore: visibleScore === null ? "-" : String(Math.round(visibleScore)),
@@ -1138,6 +1159,7 @@ export default function TrustSlipVerifyPage() {
           holderName={holderName}
           gsnId={gmfnId}
           communityLabel={communityLabel}
+          holderRole={holderRole}
           memberWitnessCount={memberWitnessCount}
           membershipStrengthLabel={membershipStrengthLabel}
           membershipRenewalStatusLabel={membershipRenewalStatusLabel}
@@ -1149,6 +1171,7 @@ export default function TrustSlipVerifyPage() {
           communityEvidenceCurrentnessLabel={communityEvidenceCurrentnessLabel}
           communityEvidenceCurrentnessScope={communityEvidenceCurrentnessScope}
           memberCredentialPath={memberCredentialPath}
+          relationshipEvidenceSummary={relationshipEvidenceSummary}
           communityActivityCount={communityActivityCount}
           communityActivityLatestAt={communityActivityLatestAt}
           communityActivityCategories={communityActivityCategories}

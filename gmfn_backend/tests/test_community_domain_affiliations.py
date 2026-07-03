@@ -367,10 +367,10 @@ def test_public_community_verification_shows_approved_parent_domain_affiliation(
     assert "serious trade, lending, membership" in data["community_reader_decision_scope"]
     assert "ask for current scoped evidence before acting" in data["community_reader_decision_scope"]
     assert data["community_evidence_currentness_status"] == "current_parent_acknowledgement"
-    assert data["community_evidence_currentness_label"] == "Current parent-domain acknowledgement"
-    assert "current parent-domain acknowledgement" in data["community_evidence_currentness_scope"]
+    assert data["community_evidence_currentness_label"] == "Current parent community acknowledgement"
+    assert "current parent community acknowledgement" in data["community_evidence_currentness_scope"]
     assert data["official_affiliate_status"] == "approved"
-    assert data["official_affiliate_label"] == "Acknowledged affiliate under parent domain"
+    assert data["official_affiliate_label"] == "Acknowledged affiliate under parent community"
     assert data["parent_domain"]["community_id"] == 1
     assert data["parent_domain"]["community_code"] == "GMFN-C-000001"
     assert data["parent_domain"]["community_name"] == "Onitsha Main Market"
@@ -404,13 +404,13 @@ def test_public_community_verification_marks_inactive_affiliation_not_current(
     assert response.status_code == 200, response.text
     data = response.json()
     assert data["official_affiliate_status"] == "not_current"
-    assert data["official_affiliate_label"] == "Parent-domain acknowledgement not current"
+    assert data["official_affiliate_label"] == "Parent community acknowledgement not current"
     assert "historical approved affiliation" in data["official_affiliate_note"]
     assert "does not treat it as current" in data["official_affiliate_note"]
     assert data["community_public_face_status"] == "basic_public_record"
     assert data["parent_domain"]["current"] is False
     assert data["community_evidence_currentness_status"] == "historical_parent_acknowledgement"
-    assert data["community_evidence_currentness_label"] == "Parent-domain acknowledgement not current"
+    assert data["community_evidence_currentness_label"] == "Parent community acknowledgement not current"
     assert "historical approved affiliation record" in data["community_evidence_currentness_scope"]
 
 

@@ -52,17 +52,17 @@ function assertNotContains(file, pattern, message) {
   ],
   [
     "src/lib/share.ts",
-    /function compactPaperMessage[\s\S]*valueFor\("Title"\)[\s\S]*valueFor\([\s\S]*"Main reading"[\s\S]*"Visible trust reading"[\s\S]*"Portable trust reading"[\s\S]*"Verification"[\s\S]*"Status"[\s\S]*"Trade status"[\s\S]*"Open the link to check the current GSN record\."/,
+    /function compactPaperMessage[\s\S]*valueFor\("Title"\)[\s\S]*valueFor\([\s\S]*"Main reading"[\s\S]*"Visible trust reading"[\s\S]*"Portable trust reading"[\s\S]*"Verification"[\s\S]*"Status"[\s\S]*"Trade status"[\s\S]*"Evidence only\. Open the link to check the current public GSN record\."/,
     "Official paper share captions must keep only the useful title/context/reading and move full detail to the link.",
   ],
   [
     "src/lib/gsnSnapshotPaper.ts",
-    /Generated \(UTC\): \$\{generatedAt\}[\s\S]*Security note: Keep the GSN mark, time, code, privacy note, and limit with any copy[\s\S]*buildGsnCompactPublicLinkPackage[\s\S]*GSN Public Record[\s\S]*Open this GSN record and check the current details before you act[\s\S]*buildGsnCommunityVerifyLinkMessage[\s\S]*Open this link to check the current public community record[\s\S]*buildGsnInviteLinkMessage[\s\S]*Open this invite to request access[\s\S]*buildGsnPublicShopLinkMessage[\s\S]*Open this shop link to check current items and visible evidence[\s\S]*buildGsnVaultInviteMessage[\s\S]*Open this private link to view the selected Vault block/,
+    /Generated \(UTC\): \$\{generatedAt\}[\s\S]*Security note: Keep the GSN mark, generated time, record code, privacy note, and limitation note with any copy[\s\S]*buildGsnCompactPublicLinkPackage[\s\S]*GSN Public Record[\s\S]*Evidence only\. Open this GSN record and check the current public details before you act[\s\S]*buildGsnCommunityVerifyLinkMessage[\s\S]*Evidence only\. Open this link to check the current public community record[\s\S]*buildGsnInviteLinkMessage[\s\S]*Open this invite to request access[\s\S]*buildGsnPublicShopLinkMessage[\s\S]*Evidence only\. Open this shop link to check current items and visible evidence[\s\S]*buildGsnVaultInviteMessage[\s\S]*Open this private link to view the selected Vault block/,
     "Public link packages must have compact forwarding messages separate from full snapshot/evidence papers.",
   ],
   [
     "src/lib/trustDocumentSnapshots.ts",
-    /buildTrustSlipShareText[\s\S]*Open the link to check the current GSN record\.[\s\S]*buildTrustSlipVerifyShareText[\s\S]*Open the link to check the current GSN record\.[\s\S]*buildTrustPassportShareText[\s\S]*Open the link to check the current GSN record\./,
+    /buildTrustSlipShareText[\s\S]*Known here as[\s\S]*Evidence only\. Open the link to check the current public GSN record\.[\s\S]*buildTrustSlipVerifyShareText[\s\S]*Known here as[\s\S]*Evidence only\. Open the link to check the current public GSN record\.[\s\S]*buildTrustPassportShareText[\s\S]*Known here as[\s\S]*Community evidence[\s\S]*Evidence only\. Open the link to check the current public GSN record\./,
     "Trust document public share text must stay compact and let the verification link carry the full record.",
   ],
   ["src/lib/share.ts", /buildXIntentShareUrl/, "X intent share URL helper is missing."],

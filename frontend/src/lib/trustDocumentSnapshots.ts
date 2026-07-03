@@ -27,6 +27,9 @@ type TrustSlipSnapshotParams = {
   gmfnId: string;
   communityName: string;
   communityRef: string;
+  holderRole?: string;
+  communityEvidence?: string;
+  witnessEvidence?: string;
   trustSlipCode: string;
   merchantBand: string;
   merchantTrustLimit: string;
@@ -41,6 +44,9 @@ type TrustSlipVerifySnapshotParams = {
   holderName: string;
   gmfnId: string;
   communityLabel: string;
+  holderRole?: string;
+  communityEvidence?: string;
+  witnessEvidence?: string;
   trustSlipCode: string;
   visibleBand: string;
   visibleScore: string;
@@ -55,6 +61,7 @@ type TrustPassportSnapshotParams = {
   gmfnId: string;
   communityName: string;
   communityCode: string;
+  holderRole?: string;
   currentBand: string;
   currentScore: string;
   openTrustClass: string;
@@ -162,6 +169,8 @@ export function buildIdentityIntegritySnapshot(
     ],
     privacyNote:
       "Privacy: identity and trust-reading fields only. Private documents and contacts are not shown.",
+    limitationNote:
+      "Limitation: identity snapshot only. Not legal identity proof, government ID, professional licence, bank approval, or a guarantee of future behaviour.",
   });
 }
 
@@ -181,6 +190,8 @@ export function buildCciSnapshot(params: CciSnapshotParams) {
     ],
     privacyNote:
       "Privacy: consistency signals only. Private community records are not shown.",
+    limitationNote:
+      "Limitation: consistency evidence only. Not a character label, credit approval, bank guarantee, payment instruction, or automatic debit.",
   });
 }
 
@@ -198,6 +209,15 @@ export function buildTrustSlipSnapshot(params: TrustSlipSnapshotParams) {
       { label: "TrustSlip code", value: params.trustSlipCode },
     ],
     bodyLines: [
+      params.holderRole
+        ? cleanLine("Known here as", `${params.holderRole} inside ${params.communityName}`)
+        : "",
+      params.communityEvidence
+        ? cleanLine("Community evidence", params.communityEvidence)
+        : "",
+      params.witnessEvidence
+        ? cleanLine("Witness route", params.witnessEvidence)
+        : "",
       cleanLine("Portable trust reading", friendlyTrustBand(params.merchantBand)),
       cleanLine(
         "Trust-limit signal",
@@ -223,9 +243,15 @@ export function buildTrustSlipShareText(params: TrustSlipSnapshotParams) {
     cleanLine("Holder", params.holderName || params.gmfnId),
     cleanLine("GSN ID", params.gmfnId),
     cleanLine("Community", params.communityName),
+    params.holderRole
+      ? cleanLine("Known here as", `${params.holderRole} inside this community`)
+      : "",
     cleanLine("Reading", friendlyTrustBand(params.merchantBand)),
+    params.communityEvidence
+      ? cleanLine("Evidence", params.communityEvidence)
+      : "",
     cleanLine("Expires", params.expiresAt),
-    "Open the link to check the current GSN record.",
+    "Evidence only. Open the link to check the current public GSN record.",
     params.verifyUrl,
   ]);
 }
@@ -245,6 +271,15 @@ export function buildTrustSlipVerifySnapshot(
       { label: "TrustSlip code", value: params.trustSlipCode },
     ],
     bodyLines: [
+      params.holderRole
+        ? cleanLine("Known here as", `${params.holderRole} inside ${params.communityLabel}`)
+        : "",
+      params.communityEvidence
+        ? cleanLine("Community evidence", params.communityEvidence)
+        : "",
+      params.witnessEvidence
+        ? cleanLine("Witness route", params.witnessEvidence)
+        : "",
       cleanLine("Visible trust reading", friendlyTrustBand(params.visibleBand)),
       cleanLine("Score note", friendlyScore(params.visibleScore)),
       cleanLine("Verification", params.verificationStatus),
@@ -270,9 +305,15 @@ export function buildTrustSlipVerifyShareText(
     cleanLine("Holder", params.holderName || params.gmfnId),
     cleanLine("GSN ID", params.gmfnId),
     cleanLine("Community", params.communityLabel),
+    params.holderRole
+      ? cleanLine("Known here as", `${params.holderRole} inside this community`)
+      : "",
     cleanLine("Status", params.verificationStatus),
     cleanLine("Reading", friendlyTrustBand(params.visibleBand)),
-    "Open the link to check the current GSN record.",
+    params.communityEvidence
+      ? cleanLine("Evidence", params.communityEvidence)
+      : "",
+    "Evidence only. Open the link to check the current public GSN record.",
     params.verifyUrl,
   ]);
 }
@@ -292,6 +333,9 @@ export function buildTrustPassportSnapshot(
       { label: "TrustSlip", value: params.trustSlipCode },
     ],
     bodyLines: [
+      params.holderRole && params.holderRole.toLowerCase() !== "member"
+        ? cleanLine("Known here as", `${params.holderRole} inside ${params.communityName}`)
+        : "",
       cleanLine("Main reading", friendlyTrustBand(params.currentBand)),
       cleanLine("Score", friendlyScore(params.currentScore)),
       cleanLine("Community reading", friendlyTrustBand(params.openTrustClass)),
@@ -332,12 +376,18 @@ export function buildTrustPassportShareText(
     cleanLine("Member", params.memberName || params.gmfnId),
     cleanLine("GSN ID", params.gmfnId),
     cleanLine("Community", params.communityName),
+    params.holderRole && params.holderRole.toLowerCase() !== "member"
+      ? cleanLine("Known here as", `${params.holderRole} inside this community`)
+      : "",
     cleanLine("Main reading", friendlyTrustBand(params.currentBand)),
+    params.communityActivitySummary
+      ? cleanLine("Community evidence", params.communityActivitySummary)
+      : "",
     cleanLine(
       "Witness currentness",
       params.membershipCurrentnessLabel || "Witness renewal not started"
     ),
-    "Open the link to check the current GSN record.",
+    "Evidence only. Open the link to check the current public GSN record.",
     params.verifyUrl,
   ]);
 }

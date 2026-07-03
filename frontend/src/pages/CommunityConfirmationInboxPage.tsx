@@ -617,7 +617,7 @@ function buildReviewCasePaper(row: ReviewCaseRow): string {
     bodyLines: [
       `Visible outcome: ${firstTruthy(row.visibleOutcome, "not shown")}`,
       `Trust-reading effect: ${reviewTrustLabel(row)}`,
-      "Reader boundary: this is protected GSN/community review evidence. It is not a public certificate, parent-domain approval, membership guarantee, or transaction authority.",
+      "Reader boundary: this is protected GSN/community review evidence. It is not a public certificate, parent community approval, membership guarantee, or transaction authority.",
     ],
     privacyNote:
       "Privacy: private contacts, responder notes, phone numbers, and protected witness details are not included in this copied review paper.",
@@ -765,7 +765,7 @@ function CommunityConfirmationInboxPage() {
       privacyNote:
         "Privacy: this copied queue summary excludes private contacts, phone numbers, responder notes, and protected witness details.",
       limitationNote:
-        "Limitation: protected review coordination only. Not public verification, parent-domain approval, payment confirmation, or transaction release authority.",
+        "Limitation: protected review coordination only. Not public verification, parent community approval, payment confirmation, or transaction release authority.",
     });
   }, [
     currentUserRole,
@@ -1466,7 +1466,7 @@ function CommunityConfirmationInboxPage() {
           >
             <p style={{ margin: 0, ...helperText() }}>
               Check cases here before they become a public trust signal. Sensitive review work stays inside GSN.
-              A review resolution changes GSN's trust reading only; it is not parent-domain
+              A review resolution changes GSN's trust reading only; it is not parent community
               certification, legal approval, or permission to release goods, credit, or money.
             </p>
             <SecondaryButton
@@ -2621,7 +2621,7 @@ function CommunityConfirmationInboxPage() {
                     </div>
                     <p style={{ margin: "12px 0 0", ...helperText() }}>
                       Community: {firstTruthy(row.communityName, row.communityId, "Not shown")}. {row.readerNote || "Answer only if you genuinely know this member."}
-                      {" "}Your answer records what you personally know; it is not parent-domain certification or a whole-community vote.
+                      {" "}Your answer records what you personally know; it is not parent community certification or a whole-community vote.
                     </p>
                     <div style={{ marginTop: 10, display: "grid", gap: 5, ...helperText() }}>
                       <span>Created: {safeDateTime(row.createdAt)}</span>

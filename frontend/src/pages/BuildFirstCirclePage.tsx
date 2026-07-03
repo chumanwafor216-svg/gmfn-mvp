@@ -2235,7 +2235,7 @@ export default function BuildFirstCirclePage() {
               </div>
 
               <div>
-                <div style={sectionLabel()}>Known for</div>
+                <div style={sectionLabel()}>Known duration</div>
                 <select
                   value={inviteEvidence.knownDuration}
                   onChange={(e) =>

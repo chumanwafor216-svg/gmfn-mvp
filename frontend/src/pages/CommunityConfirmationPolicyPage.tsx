@@ -669,7 +669,7 @@ function CommunityConfirmationPolicyPage() {
         `Outgoing domain affiliation requests: ${outgoingAffiliations.length}`,
         `External registration evidence records: ${externalRegistrationRecords.length}`,
         `Active member candidates: ${members.length}`,
-        "Reader boundary: this summary explains the confirmation policy and review flow. It is not public membership proof, parent-domain approval, or transaction authority.",
+        "Reader boundary: this summary explains the confirmation policy and review flow. It is not public membership proof, parent community approval, or transaction authority.",
       ],
       privacyNote:
         "Privacy: private contacts, protected member lists, responder notes, phone numbers, and private witness details are not included in this copied policy paper.",
@@ -1112,7 +1112,7 @@ function CommunityConfirmationPolicyPage() {
       const result = await requestCommunityDomainAffiliation(communityId, {
         parent_community_key: parentKey,
         request_note:
-          "Admin requested parent-domain acknowledgement from the community confirmation policy page.",
+          "Admin requested parent community acknowledgement from the community confirmation policy page.",
       });
       setParentCommunityKey("");
       setNotice({
@@ -2050,7 +2050,7 @@ function CommunityConfirmationPolicyPage() {
             </h2>
             <p style={{ margin: "8px 0 0", ...helperText() }}>
               Names can be copied. A parent Community ID Domain must acknowledge the group before
-              GSN shows it as a parent-domain acknowledged affiliate.
+              GSN shows it as a parent community acknowledged affiliate.
             </p>
           </div>
           <SecondaryButton
@@ -2085,14 +2085,14 @@ function CommunityConfirmationPolicyPage() {
             icon="lock"
             label="Pending request"
             title="Not public record yet"
-            text="A requested affiliation stays private workflow evidence until the parent domain accepts or rejects it."
+            text="A requested affiliation stays private workflow evidence until the parent community accepts or rejects it."
             tone="warn"
           />
           <MeaningTile
             icon="community"
             label="Acknowledged affiliate"
             title="Group acknowledged"
-            text="Acknowledgement says the parent domain accepts this group. It does not verify every person, shop, line, payment, or loan claim inside it."
+            text="Acknowledgement says the parent community accepts this group. It does not verify every person, shop, line, payment, or loan claim inside it."
             tone="good"
           />
         </div>
@@ -2114,7 +2114,7 @@ function CommunityConfirmationPolicyPage() {
                 <p style={{ margin: "8px 0 0", ...helperText(), fontSize: 13 }}>
                   A verifier uses this lane to respond to a request from a member they
                   personally know. The one-time code must come from the member who asked.
-                  This records one witness event; it is not parent-domain
+                  This records one witness event; it is not parent community
                   approval or a guarantee for every claim.
                 </p>
               </div>
@@ -2277,7 +2277,7 @@ function CommunityConfirmationPolicyPage() {
         >
           <div style={innerCard("#FFFFFF")}>
             <div style={{ color: "#07172C", fontWeight: 1000 }}>
-              {labelWithIcon("community", "Ask parent domain", "gold")}
+              {labelWithIcon("community", "Ask parent community", "gold")}
             </div>
             <p style={{ margin: "8px 0 10px", ...helperText(), fontSize: 13 }}>
               Enter the parent Community ID, not a market or church name.
@@ -2454,7 +2454,7 @@ function CommunityConfirmationPolicyPage() {
               {affiliationLoading ? (
                 <div style={innerCard("#F8FBFF")}>Loading domain affiliation requests...</div>
               ) : incomingAffiliations.length === 0 ? (
-                <div style={innerCard("#F8FBFF")}>No groups have requested this parent domain yet.</div>
+                <div style={innerCard("#F8FBFF")}>No groups have requested this parent community yet.</div>
               ) : (
                 incomingAffiliations.map((row) => {
                   const status = safeStr(row.status) || "pending";
@@ -2981,7 +2981,7 @@ function CommunityConfirmationPolicyPage() {
             ) : (
               <div style={innerCard("#F8FBFF")}>
                 No member selected. This lane records member-backed witness evidence, not
-                paid parent-domain affiliation.
+                paid parent community affiliation.
               </div>
             )}
           </div>

@@ -4348,11 +4348,11 @@ def public_community_verification(db: Session, *, community_key: str) -> Dict[st
     )
 
     official_affiliate_status = "not_asserted"
-    official_affiliate_label = "No parent-domain affiliate claim on this record"
+    official_affiliate_label = "No parent community affiliate claim on this record"
     official_affiliate_note = (
         "This public record does not certify that any subgroup, line, shop "
         "cluster, or independent group has been accepted under this "
-        "community domain. Parent-domain acknowledgement needs its own "
+        "community. Parent community acknowledgement needs its own "
         "record."
     )
     parent_domain = None
@@ -4364,7 +4364,7 @@ def public_community_verification(db: Session, *, community_key: str) -> Dict[st
     ):
         official_affiliate_status = "approved"
         parent_code = getattr(parent_community, "community_code", None) or f"GMFN-C-{int(parent_community.id):06d}"
-        official_affiliate_label = "Acknowledged affiliate under parent domain"
+        official_affiliate_label = "Acknowledged affiliate under parent community"
         official_affiliate_note = (
             f"This community has been acknowledged as an affiliate "
             f"under {parent_community.name} ({parent_code})."
@@ -4379,7 +4379,7 @@ def public_community_verification(db: Session, *, community_key: str) -> Dict[st
     elif approved_affiliation is not None and parent_community is not None:
         official_affiliate_status = "not_current"
         parent_code = getattr(parent_community, "community_code", None) or f"GMFN-C-{int(parent_community.id):06d}"
-        official_affiliate_label = "Parent-domain acknowledgement not current"
+        official_affiliate_label = "Parent community acknowledgement not current"
         official_affiliate_note = (
             f"GSN has a historical approved affiliation under "
             f"{parent_community.name} ({parent_code}), but this public record "
@@ -4457,19 +4457,19 @@ def public_community_verification(db: Session, *, community_key: str) -> Dict[st
         )
     elif official_affiliate_status == "approved":
         evidence_currentness_status = "current_parent_acknowledgement"
-        evidence_currentness_label = "Current parent-domain acknowledgement"
+        evidence_currentness_label = "Current parent community acknowledgement"
         evidence_currentness_scope = (
-            "This record has a current parent-domain acknowledgement and an "
+            "This record has a current parent community acknowledgement and an "
             "active affiliate community record. Still ask for scoped member, "
             "shop, subgroup, TrustSlip, or controlled confirmation evidence "
             "before a serious decision."
         )
     elif official_affiliate_status == "not_current":
         evidence_currentness_status = "historical_parent_acknowledgement"
-        evidence_currentness_label = "Parent-domain acknowledgement not current"
+        evidence_currentness_label = "Parent community acknowledgement not current"
         evidence_currentness_scope = (
             "GSN has a historical approved affiliation record, but it is not "
-            "current because the affiliate or parent domain is not active. "
+            "current because the affiliate or parent community is not active. "
             "Ask for fresh scoped evidence before relying on the claim."
         )
     else:
@@ -4477,7 +4477,7 @@ def public_community_verification(db: Session, *, community_key: str) -> Dict[st
         evidence_currentness_label = "Active recorded Community ID"
         evidence_currentness_scope = (
             "This Community ID resolves to an active GSN community record. "
-            "Parent-domain acknowledgement and member-level proof still need "
+            "Parent community acknowledgement and member-level proof still need "
             "separate current scoped evidence."
         )
 
@@ -4513,7 +4513,7 @@ def public_community_verification(db: Session, *, community_key: str) -> Dict[st
         "domain_lifecycle_label": "Recorded in GSN",
         "domain_lifecycle_note": (
             "GSN has a community ID record for this community. Paid protected "
-            "domain ownership, parent-domain control, and affiliate approval "
+            "domain ownership, parent community control, and affiliate approval "
             "are not asserted by this public record yet."
         ),
         "domain_evidence_scope": domain_evidence_scope,
@@ -4526,7 +4526,7 @@ def public_community_verification(db: Session, *, community_key: str) -> Dict[st
         "official_affiliate_note": official_affiliate_note,
         "parent_domain": parent_domain,
         "group_affiliation_status": (
-            "Affiliate groups must be acknowledged under the parent domain"
+            "Affiliate groups must be acknowledged under the parent community"
         ),
         "public_limitation": (
             "This record shows the community identity recorded in GSN. It does not "

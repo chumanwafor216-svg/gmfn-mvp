@@ -19,10 +19,10 @@ const actionTargetRoutesSource = readFileSync(
   "utf8"
 );
 const findings = [];
-const expectedStableActionCount = 73;
+const expectedStableActionCount = 72;
 const expectedNativeFieldCount = 37;
 const expectedSourceBreakdown = {
-  front: 11,
+  front: 10,
   body: 62,
 };
 const expectedVisibleIntentActionCount = 5;
@@ -365,8 +365,8 @@ assertContains(
 );
 
 assertContains(
-  /debugId="marketplace\.tile\.trust"[\s\S]*?aria-label="Open this marketplace trust summary"[\s\S]*?onClick=\{toggleProfileDetails\}[\s\S]*?\{marketplaceTrustDisplay\}/,
-  "Marketplace Trust tile must toggle the local marketplace trust summary, not hijack the Money Pool tile or route directly to Trust Passport."
+  /label: "Trust"[\s\S]*?value: marketplaceTrustDisplay[\s\S]*?label: "CCI"[\s\S]*?value: marketplaceCciDisplay[\s\S]*?debugId="marketplace\.finance-standing\.details"[\s\S]*?Owing total[\s\S]*?Locked by guarantees[\s\S]*?Current guarantee earning/,
+  "Marketplace front stats must expose local Trust and CCI, while finance detail stays inside one disclosure."
 );
 
 assertContains(
@@ -733,7 +733,6 @@ assertFileContains(
 const expectedOrder = [
   exactDebugId("marketplace.empty.community-home"),
   exactDebugId("marketplace.empty.dashboard"),
-  exactDebugId("marketplace.tile.trust"),
   exactDebugId("marketplace.tile.money"),
   exactDebugId("marketplace.tile.members"),
   exactDebugId("marketplace.tile.demand"),

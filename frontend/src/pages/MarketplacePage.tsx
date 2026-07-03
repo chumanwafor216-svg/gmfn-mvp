@@ -827,6 +827,27 @@ function formatRailMoney(amount: unknown, currency = "GBP"): string {
   return `${code} ${n.toFixed(Math.abs(n % 1) > 0 ? 2 : 0)}`;
 }
 
+function moneyNumber(value: unknown): number {
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? value : 0;
+  }
+  const text = safeStr(value).replace(/,/g, "");
+  if (!text) return 0;
+  const n = Number(text);
+  return Number.isFinite(n) ? n : 0;
+}
+
+function signedFinanceText(amount: number, currency: string): string {
+  const code = safeStr(currency || "NGN").toUpperCase() || "NGN";
+  const prefix = amount > 0 ? "+" : amount < 0 ? "-" : "";
+  return `${prefix}${Math.abs(amount).toFixed(2)} ${code}`;
+}
+
+function financeText(amount: number, currency: string): string {
+  const code = safeStr(currency || "NGN").toUpperCase() || "NGN";
+  return `${amount.toFixed(2)} ${code}`;
+}
+
 function mergeFirstVisible(...rows: any[]): any {
   const out: any = {};
 
@@ -1505,7 +1526,7 @@ function buildProtectedTradeEvidencePaperText({
     `Boundary: ${boundaryNote}`,
     "Signed-in evidence only for people who can already see this Marketplace record.",
     `Open this record: ${actionPath} (signed-in Marketplace record only)`,
-    "Security note: Keep the GSN mark, code, time, privacy note, and limit with any copy.",
+    "Security note: Keep the GSN mark, record code, generated time, privacy note, and limitation note with any copy.",
     "Privacy: private trade record. Do not forward as public verification unless GSN provides a public link for this exact record.",
     "Limitation: evidence only. Not escrow, payout approval, bank confirmation, or delivery guarantee.",
   ].join("\n");
@@ -1547,7 +1568,7 @@ function marketplaceTrustLabel(
   );
 
   if (band && score) return `${band} / ${score}`;
-  return band || score || "Trust preparing";
+  return band || score || "No trust value yet";
 }
 
 function marketplaceTrustEventCount(trust: any): string {
@@ -3348,21 +3369,15 @@ function marketplaceFrontSummaryGridStyle(isCompact: boolean): React.CSSProperti
   return {
     marginTop: 14,
     display: "grid",
-    gridTemplateColumns: isCompact ? "1fr" : "repeat(3, minmax(0, 1fr))",
+    gridTemplateColumns: "1fr",
     gap: isCompact ? 10 : 12,
   };
 }
 
 function marketplaceFrontSummaryCardStyle(
-  isCompact: boolean,
-  tone: "trust" | "finance" | "actions"
+  isCompact: boolean
 ): React.CSSProperties {
-  const color =
-    tone === "finance"
-      ? "rgba(46,155,98,0.18)"
-      : tone === "actions"
-      ? "rgba(214,170,69,0.22)"
-      : "rgba(78,129,232,0.18)";
+  const color = "rgba(46,155,98,0.18)";
   return {
     borderRadius: isCompact ? 18 : 20,
     border: `1px solid ${color}`,
@@ -4206,7 +4221,6 @@ export default function MarketplacePage() {
     useState<SectionState>(DEFAULT_SECTION_STATE);
   const [, setSectionsTouched] =
     useState<SectionState>(DEFAULT_SECTION_STATE);
-  const [profileDetailsOpen, setProfileDetailsOpen] = useState(false);
   const [intentQuery, setIntentQuery] = useState("");
   const [intentGuideOpen] = useState(false);
 
@@ -4739,13 +4753,6 @@ export default function MarketplacePage() {
       "",
       `${window.location.pathname}${window.location.search}`
     );
-  }
-
-  function toggleProfileDetails(
-    event?: React.SyntheticEvent<HTMLElement>
-  ) {
-    consumeMarketplaceButtonEvent(event);
-    setProfileDetailsOpen((prev) => !prev);
   }
 
   function openMarketplaceRoute(
@@ -6373,6 +6380,78 @@ export default function MarketplacePage() {
       return !FINAL_LOAN_STATUSES.has(status);
     }).length;
   }, [loans]);
+  const localOwingTotal = useMemo(() => {
+    return loans.reduce((sum, item) => {
+      const status = safeStr(item?.status).toLowerCase();
+      if (FINAL_LOAN_STATUSES.has(status)) return sum;
+
+      const role = safeStr(item?.role).toLowerCase();
+      if (role.includes("support") || role.includes("guarant")) return sum;
+      const isBorrowerSide =
+        role.includes("borrow") ||
+        role.includes("request") ||
+        role.includes("applicant") ||
+        !safeStr(item?.guarantor_name);
+
+      return isBorrowerSide ? sum + moneyNumber(item?.amount) : sum;
+    }, 0);
+  }, [loans]);
+  const localPoolBalance = moneyNumber(moneySurface?.poolAmount || poolAmount);
+  const localLockedGuaranteeTotal = moneyNumber(
+    moneySurface?.guarantorExposure?.totalLocked
+  );
+  const currentGuaranteeEarningAmount = moneyNumber(
+    firstDefined(
+      (moneySurface?.guarantorExposure as any)?.currentEarning,
+      (moneySurface?.guarantorExposure as any)?.current_earning,
+      (moneySurface?.guarantorExposure as any)?.pendingEarning,
+      (moneySurface?.guarantorExposure as any)?.pending_earning,
+      (moneySurface?.guarantorExposure as any)?.activeEarning,
+      (moneySurface?.guarantorExposure as any)?.active_earning,
+      (moneySurface?.guarantorExposure as any)?.currentGuaranteeEarning,
+      (moneySurface?.guarantorExposure as any)?.current_guarantee_earning,
+      (moneySurface?.guarantorExposure as any)?.expectedEarning,
+      (moneySurface?.guarantorExposure as any)?.expected_earning,
+      (moneySurface as any)?.currentGuaranteeEarning,
+      (moneySurface as any)?.current_guarantee_earning,
+      (moneySurface as any)?.pendingGuaranteeEarning,
+      (moneySurface as any)?.pending_guarantee_earning
+    )
+  );
+  const currentGuaranteeEarningText =
+    currentGuaranteeEarningAmount > 0
+      ? financeText(currentGuaranteeEarningAmount, visiblePoolCurrency)
+      : "Not shown yet";
+  const localNetPosition =
+    localPoolBalance - localOwingTotal - localLockedGuaranteeTotal;
+  const marketplaceCciValue = firstTruthy(
+    (marketplaceTrust as any)?.cci_score,
+    (marketplaceTrust as any)?.cci?.score,
+    (marketplaceTrust as any)?.community_cci,
+    (selectedCommunity as any)?.cci_score,
+    (selectedCommunity as any)?.community_standing?.cci_score,
+    (selectedCommunity as any)?.marketplace?.cci_score,
+    (selectedCommunity as any)?.clan?.cci_score
+  );
+  const marketplaceCciBand = firstTruthy(
+    (marketplaceTrust as any)?.cci_band,
+    (marketplaceTrust as any)?.cci?.band,
+    (selectedCommunity as any)?.cci_band,
+    (selectedCommunity as any)?.community_standing?.cci_band,
+    (selectedCommunity as any)?.marketplace?.cci_band,
+    (selectedCommunity as any)?.clan?.cci_band
+  );
+  const marketplaceCciDisplay = marketplaceCciValue
+    ? marketplaceCciBand
+      ? `${marketplaceCciBand} / ${marketplaceCciValue}`
+      : marketplaceCciValue
+    : "Pending";
+  const localFinanceStandingTone =
+    localNetPosition > 0
+      ? "Positive"
+      : localNetPosition < 0
+      ? "Owing"
+      : "Balanced";
 
   const currentMemberRole = useMemo(() => {
     const currentUserId = positiveNumber(me?.id || me?.user_id);
@@ -6495,35 +6574,6 @@ export default function MarketplacePage() {
   );
   const marketplaceTrustEvidenceLabel =
     marketplaceTrustEventCount(marketplaceTrust);
-  const marketplaceTrustPositiveLabel = firstTruthy(
-    marketplaceTrust?.positives,
-    "0"
-  );
-  const marketplaceTrustNegativeLabel = firstTruthy(
-    marketplaceTrust?.negatives,
-    "0"
-  );
-  const marketplaceTrustFrontDeskFacts = useMemo(
-    () => [
-      ["Community ID", communityIdentity(selectedCommunity)],
-      ["Local trust", marketplaceTrustDisplay],
-      ["Trust evidence", marketplaceTrustEvidenceLabel],
-      ["Members", members.length ? `${members.length} visible` : "Preparing"],
-      ["Shops", shops.length ? `${shops.length} visible` : "No public shops yet"],
-      [
-        "Support records",
-        activeLoanCount ? `${activeLoanCount} active` : "No active support",
-      ],
-    ],
-    [
-      activeLoanCount,
-      marketplaceTrustDisplay,
-      marketplaceTrustEvidenceLabel,
-      members.length,
-      selectedCommunity,
-      shops.length,
-    ]
-  );
   const communityPackageByCode = useMemo(() => {
     const map = new Map<string, CommunityPackageStatusItem>();
     communityPackageItems.forEach((item) => {
@@ -7351,31 +7401,24 @@ export default function MarketplacePage() {
       tone: "linear-gradient(180deg, #0B63D1 0%, #08264B 100%)",
     },
     {
-      label: "Support",
-      value: `${activeLoanCount}`,
-      detail: activeLoanCount === 1 ? "Active request" : "Active requests",
-      glyph: "support" as MarketplaceGlyphName,
+      label: "Trust",
+      value: marketplaceTrustDisplay,
+      detail: marketplaceTrustEvidenceLabel,
+      glyph: "trust" as MarketplaceGlyphName,
       tone: "linear-gradient(180deg, #25A65A 0%, #0B5A34 100%)",
     },
     {
-      label: "Demand",
-      value: "Open",
-      detail: "Needs and offers lane",
-      glyph: "demand" as MarketplaceGlyphName,
+      label: "CCI",
+      value: marketplaceCciDisplay,
+      detail: "Local integrity signal",
+      glyph: "chart" as MarketplaceGlyphName,
       tone: "linear-gradient(180deg, #B98921 0%, #6E4B08 100%)",
     },
   ];
   const marketplaceFinanceSummaryValue =
-    visiblePoolAmount && visiblePoolAmount !== "-"
-      ? `${visiblePoolAmount} ${visiblePoolCurrency}`
+    moneySurface || visiblePoolAmount !== "-"
+      ? signedFinanceText(localNetPosition, visiblePoolCurrency)
       : communityFinanceLabel(selectedCommunity);
-  const marketplaceSpotlightSummary =
-    availableMarketplaceRepostCredits > 0
-      ? `${availableMarketplaceRepostCredits} paid credit${
-          availableMarketplaceRepostCredits === 1 ? "" : "s"
-        }`
-      : "Prepare spotlight";
-
   function showGuarantorRequestBlockedNotice() {
     if (sendingGuarantorRequests) {
       showNotice("error", "GSN is already sending these support requests.");
@@ -7669,49 +7712,7 @@ export default function MarketplacePage() {
         </div>
 
         <div style={marketplaceFrontSummaryGridStyle(isCompact)}>
-          <StableButton
-            type="button"
-            debugId="marketplace.tile.trust"
-            aria-label="Open this marketplace trust summary"
-            onClick={toggleProfileDetails}
-            aria-expanded={profileDetailsOpen}
-            stableHeight={isCompact ? 112 : 154}
-            style={{
-              ...marketplaceFrontSummaryCardStyle(isCompact, "trust"),
-              cursor: "pointer",
-              textAlign: "left",
-              appearance: "none",
-              WebkitAppearance: "none",
-              display: "grid",
-              alignContent: "space-between",
-            }}
-          >
-            <span style={{ display: "grid", gap: 6 }}>
-              <span style={{ ...sectionLabel(), color: "#0B4EA2" }}>
-                Marketplace Trust
-              </span>
-              <span
-                style={{
-                  color: "#07172C",
-                  fontSize: isCompact ? 22 : 30,
-                  fontWeight: 950,
-                  lineHeight: 1.05,
-                }}
-              >
-                {marketplaceTrustDisplay}
-              </span>
-              <span style={{ ...helperText(), fontSize: 12.5 }}>
-                {marketplaceTrustEvidenceLabel} recorded for this community.
-              </span>
-            </span>
-            <span style={marketplaceFrontTagRowStyle(isCompact)}>
-              <span style={marketplaceFrontTagStyle("#0B4EA2", "#E7F1FE", isCompact)}>
-                Trust Details
-              </span>
-            </span>
-          </StableButton>
-
-          <div style={marketplaceFrontSummaryCardStyle(isCompact, "finance")}>
+          <div style={marketplaceFrontSummaryCardStyle(isCompact)}>
             <div style={{ ...sectionLabel(), color: "#0B6B3B" }}>
               Finance Summary
             </div>
@@ -7728,46 +7729,79 @@ export default function MarketplacePage() {
               {marketplaceFinanceSummaryValue}
             </div>
             <div style={{ marginTop: 8, ...helperText(), fontSize: 12.5 }}>
-              Pool signal, pay-in rail, money-out path, and finance review stay
-              inside Money & Trust.
+              Your local net position inside this marketplace.
             </div>
             <div style={{ marginTop: 10, ...marketplaceFrontTagRowStyle(isCompact) }}>
               <span style={marketplaceFrontTagStyle("#0B6B3B", "#DFF3E8", isCompact)}>
-                Finance
+                Net position
               </span>
               <span style={marketplaceFrontTagStyle("#0B6B3B", "#DFF3E8", isCompact)}>
-                {communitySettlementReady ? "Pay-in ready" : "Pay-in pending"}
+                {localFinanceStandingTone}
               </span>
             </div>
-          </div>
-
-          <div style={marketplaceFrontSummaryCardStyle(isCompact, "actions")}>
-            <div style={{ ...sectionLabel(), color: "#805A0F" }}>
-              Quick Actions
-            </div>
-            <div
+            <details
               style={{
-                marginTop: 8,
-                display: "grid",
-                gap: 8,
-                color: "#07172C",
-                fontSize: isCompact ? 13 : 14,
-                fontWeight: 900,
-                lineHeight: 1.2,
+                marginTop: 10,
+                borderTop: "1px solid rgba(11,107,59,0.12)",
+                paddingTop: 10,
               }}
             >
-              <div>Open Money & Trust for finance rails.</div>
-              <div>Open Trade & Shops for visible members.</div>
-              <div>Open Spotlight for promotion credits.</div>
-            </div>
-            <div style={{ marginTop: 10, ...marketplaceFrontTagRowStyle(isCompact) }}>
-              <span style={marketplaceFrontTagStyle("#805A0F", "#F7EED8", isCompact)}>
-                6 lanes
-              </span>
-              <span style={marketplaceFrontTagStyle("#805A0F", "#F7EED8", isCompact)}>
-                {marketplaceSpotlightSummary}
-              </span>
-            </div>
+              <StableDisclosureSummary
+                debugId="marketplace.finance-standing.details"
+                stableHeight={34}
+                style={{
+                  color: "#0B6B3B",
+                  fontSize: 13,
+                  fontWeight: 950,
+                }}
+              >
+                Finance details
+              </StableDisclosureSummary>
+              <div
+                style={{
+                  marginTop: 10,
+                  display: "grid",
+                  gridTemplateColumns: isCompact
+                    ? "1fr"
+                    : "repeat(4, minmax(0, 1fr))",
+                  gap: 8,
+                }}
+              >
+                {[
+                  [
+                    "Pool balance",
+                    financeText(localPoolBalance, visiblePoolCurrency),
+                  ],
+                  ["Owing total", financeText(localOwingTotal, visiblePoolCurrency)],
+                  [
+                    "Locked by guarantees",
+                    financeText(localLockedGuaranteeTotal, visiblePoolCurrency),
+                  ],
+                  ["Current guarantee earning", currentGuaranteeEarningText],
+                ].map(([label, value]) => (
+                  <div key={label} style={marketplaceProfileStatStyle()}>
+                    <div style={{ ...sectionLabel(), fontSize: 10 }}>{label}</div>
+                    <div
+                      style={{
+                        marginTop: 5,
+                        color: "#07172C",
+                        fontSize: 13,
+                        fontWeight: 950,
+                        lineHeight: 1.2,
+                        overflowWrap: "anywhere",
+                      }}
+                    >
+                      {value}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div style={{ marginTop: 8, ...helperText(), fontSize: 12 }}>
+                These figures are scoped to this selected marketplace. Current
+                guarantee earning appears only when the finance record exposes
+                a current or pending earning amount.
+              </div>
+            </details>
           </div>
         </div>
 
@@ -8113,56 +8147,6 @@ export default function MarketplacePage() {
               ))
             : null}
         </div>
-
-          {profileDetailsOpen ? (
-            <div style={{ marginTop: 12, ...innerCard("#FFFFFF") }}>
-              <div style={sectionLabel()}>Local Marketplace Trust</div>
-              <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
-                This is this selected community's local trust signal. Use More
-                / Marketplace Tools when you need fuller evidence routes.
-                Member-level witness currentness belongs in those fuller
-                evidence routes, not this local marketplace summary.
-              </div>
-              <div
-                style={{
-                  marginTop: 10,
-                  display: "grid",
-                  gridTemplateColumns: isCompact
-                    ? "1fr"
-                    : "repeat(4, minmax(0, 1fr))",
-                  gap: 10,
-                }}
-              >
-                {[
-                  ["Marketplace ID", communityIdentity(selectedCommunity)],
-                  ["Local trust", marketplaceTrustDisplay],
-                  ["Trust events", marketplaceTrustEvidenceLabel],
-                  ["Positive trust", marketplaceTrustPositiveLabel],
-                  ["Negative trust", marketplaceTrustNegativeLabel],
-                  [
-                    "Local finance signal",
-                    communityFinanceLabel(selectedCommunity),
-                  ],
-                ].map(([label, value]) => (
-                  <div key={label} style={marketplaceProfileStatStyle()}>
-                    <div style={sectionLabel()}>{label}</div>
-                    <div
-                      style={{
-                        marginTop: 6,
-                        color: "#0B1F33",
-                        fontWeight: 950,
-                        fontSize: 15,
-                        lineHeight: 1.25,
-                        overflowWrap: "anywhere",
-                      }}
-                    >
-                      {value}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : null}
 
           {intentGuideOpen ? (
             <div style={intentGuideCardStyle()}>

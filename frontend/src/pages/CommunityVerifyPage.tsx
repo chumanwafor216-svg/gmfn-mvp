@@ -627,7 +627,7 @@ export default function CommunityVerifyPage() {
   const evidenceCurrentnessScope = firstTruthy(
     record?.community_evidence_currentness_scope,
     active
-      ? "This Community ID resolves to an active GSN community record. Parent-domain acknowledgement and member-level proof still need separate current scoped evidence."
+      ? "This Community ID resolves to an active GSN community record. Parent community acknowledgement and member-level proof still need separate current scoped evidence."
       : "This Community ID resolves to a GSN record, but the community record is not active. Treat it as historical or unavailable public evidence until current scoped evidence is supplied."
   );
   const evidenceCurrentnessStatus = safeStr(
@@ -646,7 +646,7 @@ export default function CommunityVerifyPage() {
   );
   const domainLifecycleNote = firstTruthy(
     record?.domain_lifecycle_note,
-    "GSN has a community ID record for this community. Paid protected domain ownership, parent-domain control, and affiliate approval are not asserted by this public record yet."
+    "GSN has a community ID record for this community. Paid protected domain ownership, parent community control, and affiliate approval are not asserted by this public record yet."
   );
   const domainEvidenceScope = firstTruthy(
     record?.domain_evidence_scope,
@@ -659,11 +659,11 @@ export default function CommunityVerifyPage() {
   );
   const officialAffiliateLabel = firstTruthy(
     record?.official_affiliate_label,
-    "No parent-domain affiliate claim on this record"
+    "No parent community affiliate claim on this record"
   );
   const officialAffiliateNote = firstTruthy(
     record?.official_affiliate_note,
-    "This public record does not certify that any subgroup, line, shop cluster, or independent group has been accepted under this community domain. Parent-domain acknowledgement needs its own record."
+    "This public record does not certify that any subgroup, line, shop cluster, or independent group has been accepted under this community. Parent community acknowledgement needs its own record."
   );
   const parentDomain = record?.parent_domain || null;
   const parentDomainLabel = firstTruthy(
@@ -672,7 +672,7 @@ export default function CommunityVerifyPage() {
   );
   const groupAffiliationStatus = firstTruthy(
     record?.group_affiliation_status,
-    "Affiliate groups must be acknowledged under the parent domain"
+    "Affiliate groups must be acknowledged under the parent community"
   );
   const publicLimitation = firstTruthy(
     record?.public_limitation,
@@ -1527,7 +1527,7 @@ export default function CommunityVerifyPage() {
                         <InfoTile icon="trust-shield" label="Currentness" value={evidenceCurrentnessLabel} />
                         <InfoTile icon="community-building" label="Affiliate claim" value={officialAffiliateLabel} />
                         {parentDomainLabel ? (
-                          <InfoTile icon="records-folder" label="Parent domain" value={parentDomainLabel} />
+                          <InfoTile icon="records-folder" label="Parent community" value={parentDomainLabel} />
                         ) : null}
                         <InfoTile icon="public-globe" label="Public record" value={publicRecord} />
                         <InfoTile icon="records-folder" label="Public face" value={publicFaceLabel} />
@@ -1566,7 +1566,7 @@ export default function CommunityVerifyPage() {
                         />
                         <EvidenceScopeCard
                           title="Community type"
-                          body={`${communityTypeLabel}. ${communityTypeSource}. This is a public reading, not ownership, membership, or parent-domain approval.`}
+                          body={`${communityTypeLabel}. ${communityTypeSource}. This is a public reading, not ownership, membership, or parent community approval.`}
                           tone="info"
                         />
                         <EvidenceScopeCard

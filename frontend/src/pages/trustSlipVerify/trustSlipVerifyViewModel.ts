@@ -37,6 +37,7 @@ export type TrustSlipVerifyViewModel = {
   sponsorCount: number | null;
   identityContext: Record<string, any>;
   communityContext: Record<string, any>;
+  relationshipEvidenceSummary: Record<string, any>;
   cciExplainer: Record<string, any>;
   profileImageUrl: string | null;
   communityGlobalId: string;
@@ -179,6 +180,11 @@ export function buildTrustSlipVerifyViewModel({
   const sponsorCount = firstNumberLike(record?.sponsor_count);
   const identityContext = record?.identity_context || {};
   const communityContext = record?.community_context || {};
+  const merchantSummary = record?.merchant_summary || {};
+  const relationshipEvidenceSummary =
+    record?.relationship_evidence_summary ||
+    merchantSummary?.relationship_evidence_summary ||
+    {};
   const cciExplainer = record?.cci_explainer || {};
   const profileImageUrl = resolveSharedProfileImage(
     isAppRoute ? me : null,
@@ -241,7 +247,7 @@ export function buildTrustSlipVerifyViewModel({
   const communityEvidenceCurrentnessScope = firstTruthy(
     record?.community_evidence_currentness_scope,
     communityContext?.community_evidence_currentness_scope,
-    "This Community ID resolves to an active GSN community record. Parent-domain acknowledgement and member-level proof still need separate current scoped evidence."
+    "This Community ID resolves to an active GSN community record. Parent community acknowledgement and member-level proof still need separate current scoped evidence."
   );
   const communityActivityCount = firstTruthy(
     record?.community_activity_count,
@@ -268,6 +274,15 @@ export function buildTrustSlipVerifyViewModel({
           : ""
       }`
     : "not shown";
+  const relationshipEvidenceLabel = firstTruthy(
+    relationshipEvidenceSummary?.summary_label,
+    Array.isArray(relationshipEvidenceSummary?.rows)
+      ? relationshipEvidenceSummary.rows[0]?.relationship_label
+      : ""
+  );
+  const relationshipEvidenceCount = firstNumberLike(
+    relationshipEvidenceSummary?.evidence_count
+  );
   const identityStatusLabel = firstTruthy(
     record?.identity_status_label,
     identityContext?.identity_status_label
@@ -384,20 +399,26 @@ export function buildTrustSlipVerifyViewModel({
   const publicValidityLabel = validNow ? "VALID NOW" : banner.title;
   const quickTrustAnswers: TrustSlipVerifyQuickAnswer[] = [
     [
-      "community-building",
-      "Support, finance, contribution, or trade?",
-      hasBlockingState ? "Not from this paper alone." : "Use carefully for low-risk decisions.",
+      "identity-card",
+      "What are they known for here?",
+      relationshipEvidenceCount && relationshipEvidenceLabel
+        ? `${relationshipEvidenceLabel}. Raw inviter notes are not shown.`
+        : holderRole && holderRole.toLowerCase() !== "member"
+        ? `${holderRole} inside ${communityLabel}.`
+        : communityActivityCount
+          ? `Community activity is visible inside ${communityLabel}.`
+          : "This paper shows identity and community scope, not a full profession record.",
     ],
     [
       "trust-shield",
-      "Do they follow through?",
+      "Do records support trust?",
       safeStr(record?.last_full_repayment_at)
         ? "Some evidence is visible."
         : "Not enough evidence is visible.",
     ],
     [
       "community-building",
-      "Are they stable inside a real community?",
+      "Is there a real community?",
       communityLabel !== "Not stated"
         ? communityActivityCount
           ? "Community context and activity evidence are visible."
@@ -406,10 +427,10 @@ export function buildTrustSlipVerifyViewModel({
     ],
     [
       "trust-shield",
-      "Is there checkable history behind the claim?",
+      "What should you do next?",
       snapshotLabel === "Snapshot recorded"
-        ? "A recorded snapshot exists."
-        : "No checkable history is visible.",
+        ? "Use this paper, then request live community confirmation for bigger risk."
+        : "Ask for a fresh TrustSlip or full Trust Passport before bigger risk.",
     ],
   ];
   const communityConfirmation = record?.community_confirmation || null;
@@ -468,6 +489,7 @@ export function buildTrustSlipVerifyViewModel({
     sponsorCount,
     identityContext,
     communityContext,
+    relationshipEvidenceSummary,
     cciExplainer,
     profileImageUrl,
     communityGlobalId,

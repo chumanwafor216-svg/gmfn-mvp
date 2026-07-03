@@ -1227,10 +1227,10 @@ def test_public_member_credential_shows_aggregate_membership_without_private_wit
         assert body["community_public_face_status"] == "basic_public_record"
         assert body["community_public_face_label"] == "Basic public record"
         assert body["official_affiliate_status"] == "not_asserted"
-        assert body["official_affiliate_label"] == "No parent-domain affiliate claim on this record"
+        assert body["official_affiliate_label"] == "No parent community affiliate claim on this record"
         assert body["community_evidence_currentness_status"] == "active_basic_record"
         assert body["community_evidence_currentness_label"] == "Active recorded Community ID"
-        assert "Parent-domain acknowledgement" in body["community_evidence_currentness_scope"]
+        assert "Parent community acknowledgement" in body["community_evidence_currentness_scope"]
         assert body["member_gsn_id"] == "GMFN-P-000002"
         assert body["membership_status"] == "active"
         assert body["member_witness_count"] == 3
@@ -1261,7 +1261,7 @@ def test_public_member_credential_shows_aggregate_membership_without_private_wit
             trustslip = get_trust_slip_payload(db, user_id=2)
         assert trustslip["community_evidence_currentness_status"] == "active_basic_record"
         assert trustslip["community_evidence_currentness_label"] == "Active recorded Community ID"
-        assert "Parent-domain acknowledgement" in trustslip["community_evidence_currentness_scope"]
+        assert "Parent community acknowledgement" in trustslip["community_evidence_currentness_scope"]
         assert trustslip["community_activity_count"] == 3
         assert trustslip["community_activity_label"] == "Community activity recorded"
         assert "Community verification" in trustslip["community_activity_categories"]
@@ -1320,16 +1320,16 @@ def test_public_member_credential_shows_parent_domain_currentness(
     assert body["community_public_face_status"] == "affiliate_acknowledged_record"
     assert body["community_public_face_label"] == "Affiliate acknowledged public record"
     assert body["official_affiliate_status"] == "approved"
-    assert body["official_affiliate_label"] == "Acknowledged affiliate under parent domain"
+    assert body["official_affiliate_label"] == "Acknowledged affiliate under parent community"
     assert body["community_evidence_currentness_status"] == "current_parent_acknowledgement"
-    assert body["community_evidence_currentness_label"] == "Current parent-domain acknowledgement"
-    assert "current parent-domain acknowledgement" in body["community_evidence_currentness_scope"]
+    assert body["community_evidence_currentness_label"] == "Current parent community acknowledgement"
+    assert "current parent community acknowledgement" in body["community_evidence_currentness_scope"]
     assert "member, shop, subgroup" in body["community_evidence_currentness_scope"]
 
     with SessionLocal() as db:
         trustslip = get_trust_slip_payload(db, user_id=2)
     assert trustslip["community_evidence_currentness_status"] == "current_parent_acknowledgement"
-    assert trustslip["community_evidence_currentness_label"] == "Current parent-domain acknowledgement"
+    assert trustslip["community_evidence_currentness_label"] == "Current parent community acknowledgement"
     assert (
         trustslip["merchant_summary"]["community_evidence_currentness_status"]
         == "current_parent_acknowledgement"

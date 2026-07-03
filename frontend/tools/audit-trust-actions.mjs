@@ -116,7 +116,7 @@ assertContains(
 
 assertContains(
   "src/components/TrustPaperMarks.tsx",
-  /export function TrustPaperWatermarkField[\s\S]*opacity = 0\.055[\s\S]*Array\.from\(\{ length: 12 \}[\s\S]*data-gsn-trust-paper-watermark-field="true"/,
+  /export function TrustPaperWatermarkField[\s\S]*opacity = 0\.055[\s\S]*Array\.from\(\{ length: 30 \}[\s\S]*fieldOpacity = Math\.max\(opacity, 0\.068\)[\s\S]*data-gsn-trust-paper-watermark-field="true"/,
   "Shared Trust Paper marks must provide a recurring watermark field for long public records, not only a single top or bottom mark."
 );
 
@@ -170,6 +170,24 @@ assertContains(
   "src/pages/TrustSlipPage.tsx",
   /trustSlipHolderDoesNotConfirmList[\s\S]*?Government registration or legal identity beyond recorded evidence[\s\S]*?Bank approval, credit approval, payment movement, or escrow[\s\S]*?Future behaviour, future repayment, delivery, or marketplace outcome[\s\S]*?Authority to release goods, money, credit, or services[\s\S]*?Private Trust Passport history, private notes, private contacts, or admin records/,
   "Signed-in TrustSlip holder paper must keep legal, finance, future-outcome, release-authority, and private-passport boundaries visible."
+);
+
+assertContains(
+  "src/pages/TrustSlipPage.tsx",
+  /const trustSlipKnownAsRows[\s\S]*?Community role[\s\S]*?Community signals[\s\S]*?Witness route[\s\S]*?const trustSlipEvidenceSummaryCards[\s\S]*?Known here as[\s\S]*?Evidence basis[\s\S]*?Good for[\s\S]*?Not proof of[\s\S]*?data-gsn-trustslip-holder-practical-evidence="true"[\s\S]*?Practical evidence summary[\s\S]*?how the holder is known in this community[\s\S]*?where the record stops/,
+  "Signed-in TrustSlip holder paper must condense known-as evidence, evidence basis, use cases, and limits into one practical summary instead of repeating long panels."
+);
+
+assertContains(
+  "src/pages/TrustSlipPage.tsx",
+  /function isMissingHolderName\(value: any\): boolean \{[\s\S]*?"member name not set"[\s\S]*?\}\s*function trustSlipHolderReferenceFingerprint[\s\S]*?const holderName = useMemo\(\(\) => \{[\s\S]*?if \(candidate && !isMissingHolderName\(candidate\)\) return candidate;[\s\S]*?return holderId \? `GSN holder \$\{holderId\}` : "GSN holder";/,
+  "Signed-in TrustSlip holder paper must not expose placeholder names like Member name not set; it must fall back to the GSN holder identifier."
+);
+
+assertContains(
+  "src/pages/TrustSlipVerifyPage.tsx",
+  /function isMissingPublicHolderName\(value: any\): boolean \{[\s\S]*?"member name not set"[\s\S]*?\}\s*function firstNumberLike[\s\S]*?const holderName = useMemo\(\(\) => \{[\s\S]*?if \(candidate && !isMissingPublicHolderName\(candidate\)\) return candidate;[\s\S]*?return publicId \? `GSN holder \$\{publicId\}` : "GSN holder";/,
+  "TrustSlip Verify public paper must not expose placeholder names like Member name not set; it must fall back to the public GSN holder identifier."
 );
 
 assertContains(
@@ -441,6 +459,18 @@ assertContains(
   "src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx",
   /membershipCurrentnessLabel[\s\S]*?memberWitnessCurrentnessScope[\s\S]*?communityEvidenceCurrentnessLabel[\s\S]*?communityRecordCurrentnessScope[\s\S]*?label="Supporting evidence"[\s\S]*?title=\{memberWitnessCurrentness\}[\s\S]*?Witness currentness: \$\{memberWitnessCurrentnessScope\}[\s\S]*?Community record: \$\{communityRecordCurrentness\}/,
   "TrustSlip Verify public paper must show membership evidence currentness inside supporting community evidence."
+);
+
+assertContains(
+  "src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx",
+  /const communityKnownAsRows[\s\S]*?Community role[\s\S]*?Community signals[\s\S]*?Witness route[\s\S]*?data-gsn-community-known-as-evidence="true"[\s\S]*?Community known-as evidence[\s\S]*?communityKnownAsRows\.map[\s\S]*?community-scoped evidence[\s\S]*?not a licence, certificate, or guarantee of future work/,
+  "TrustSlip Verify public paper must add compact community known-as evidence without overclaiming certification or guarantees."
+);
+
+assertContains(
+  "src/pages/trustSlipVerify/trustSlipVerifyViewModel.ts",
+  /What are they known for here\?[\s\S]*?This paper shows identity and community scope, not a full profession record[\s\S]*?What should you do next\?[\s\S]*?request live community confirmation/,
+  "TrustSlip Verify quick answers must give real-world known-as and next-step meaning without pretending to certify a profession."
 );
 
 assertContains(
@@ -721,8 +751,8 @@ assertContains(
 
 assertContains(
   "../gmfn_backend/app/services/community_confirmation_service.py",
-  /official_affiliate_label = "No parent-domain affiliate claim on this record"[\s\S]*?Parent-domain acknowledgement needs its own[\s\S]*?record[\s\S]*?official_affiliate_label = "Acknowledged affiliate under parent domain"[\s\S]*?acknowledged as an affiliate[\s\S]*?acknowledged affiliate record[\s\S]*?acknowledged affiliate records/,
-  "Public community verification payload must present affiliate claims as parent-domain acknowledgement, not broad official approval."
+  /official_affiliate_label = "No parent community affiliate claim on this record"[\s\S]*?Parent community acknowledgement needs its own[\s\S]*?record[\s\S]*?official_affiliate_label = "Acknowledged affiliate under parent community"[\s\S]*?acknowledged as an affiliate[\s\S]*?acknowledged affiliate record[\s\S]*?acknowledged affiliate records/,
+  "Public community verification payload must present affiliate claims as parent community acknowledgement, not broad official approval."
 );
 
 assertNotContains(
@@ -733,8 +763,8 @@ assertNotContains(
 
 assertContains(
   "src/pages/CommunityVerifyPage.tsx",
-  /No parent-domain affiliate claim on this record[\s\S]*?Parent-domain acknowledgement needs its own record/,
-  "CommunityVerifyPage fallback affiliate copy must stay scoped to parent-domain acknowledgement."
+  /No parent community affiliate claim on this record[\s\S]*?Parent community acknowledgement needs its own record/,
+  "CommunityVerifyPage fallback affiliate copy must stay scoped to parent community acknowledgement."
 );
 
 assertNotContains(
@@ -871,7 +901,7 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityMemberVerifyPage.tsx",
-  /const memberAnchor = firstTruthy\(credential\?\.member_gsn_id, cleanMemberKey, "Not shown"\);[\s\S]*?const communityAnchor = firstTruthy\([\s\S]*?credential\?\.community_code[\s\S]*?credential\?\.community_id[\s\S]*?cleanCommunityKey[\s\S]*?"Not shown"[\s\S]*?Community-scoped credential[\s\S]*?Use only for this Community ID[\s\S]*?Not universal trust, payment[\s\S]*?approval, or parent-domain membership[\s\S]*?\{fact\("Member GSN ID", memberAnchor\)\}[\s\S]*?\{fact\("Community ID", communityAnchor\)\}/,
+  /const memberAnchor = firstTruthy\(credential\?\.member_gsn_id, cleanMemberKey, "Not shown"\);[\s\S]*?const communityAnchor = firstTruthy\([\s\S]*?credential\?\.community_code[\s\S]*?credential\?\.community_id[\s\S]*?cleanCommunityKey[\s\S]*?"Not shown"[\s\S]*?Community-scoped credential[\s\S]*?Use only for this Community ID[\s\S]*?Not universal trust, payment[\s\S]*?approval, or parent community membership[\s\S]*?\{fact\("Member GSN ID", memberAnchor\)\}[\s\S]*?\{fact\("Community ID", communityAnchor\)\}/,
   "Community member public credential must visibly anchor the member GSN ID to one Community ID before any wider trust reading."
 );
 
@@ -895,8 +925,8 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityMemberVerifyPage.tsx",
-  /It does not certify shop, line, subgroup, payment, loan, or[\s\S]*?parent-domain approval claims\./,
-  "Community member public credential must separate scoped membership evidence from shop, subgroup, payment, loan, and parent-domain claims."
+  /It does not certify shop, line, subgroup, payment, loan, or[\s\S]*?parent community approval claims\./,
+  "Community member public credential must separate scoped membership evidence from shop, subgroup, payment, loan, and parent community claims."
 );
 
 assertContains(
@@ -1087,8 +1117,8 @@ assertContains(
 
 assertContains(
   "src/pages/TrustPage.tsx",
-  /function buildTrustEvidenceShareText\(why: TrustWhy \| null\)[\s\S]*?internal member ids are not included in this share copy[\s\S]*?not a bank guarantee, credit approval, payment instruction, or automatic debit authority[\s\S]*?safeCopy\(buildTrustEvidenceShareText\(why\)\)[\s\S]*?Copy share summary/,
-  "Trust page evidence copy must be a redacted share summary instead of raw Trust Why JSON."
+  /function buildTrustEvidenceShareText\(why: TrustWhy \| null\)[\s\S]*?event notes, and free-text reasons are not included in this share copy[\s\S]*?not a bank guarantee, credit approval, payment instruction, or automatic debit authority[\s\S]*?Recent trust records shown as labels only[\s\S]*?lines\.push\(`- \$\{label\}\$\{when \? ` \| Date: \$\{when\}` : ""\}`\)[\s\S]*?safeCopy\(buildTrustEvidenceShareText\(why\)\)[\s\S]*?Copy share summary/,
+  "Trust page evidence copy must be a redacted share summary instead of raw Trust Why JSON, event notes, or free-text reasons."
 );
 
 assertNotContains(
@@ -1159,20 +1189,20 @@ assertNotContains(
 
 assertContains(
   "src/pages/CommunityConfirmationPolicyPage.tsx",
-  /Parent community admin recorded this affiliation \$\{decisionLabel\}[\s\S]*?Affiliation \$\{decisionLabel\} recorded[\s\S]*?parent-domain acknowledged affiliate[\s\S]*?Acknowledged affiliate[\s\S]*?Acknowledgement says the parent domain accepts this group[\s\S]*?Acknowledge only groups[\s\S]*?busyLabel="Acknowledging\.\.\."[\s\S]*?Acknowledge/,
-  "Community confirmation policy parent-domain affiliation must present public acceptance as acknowledgement, not broad approval."
+  /Parent community admin recorded this affiliation \$\{decisionLabel\}[\s\S]*?Affiliation \$\{decisionLabel\} recorded[\s\S]*?parent community acknowledged affiliate[\s\S]*?Acknowledged affiliate[\s\S]*?Acknowledgement says the parent community accepts this group[\s\S]*?Acknowledge only groups[\s\S]*?busyLabel="Acknowledging\.\.\."[\s\S]*?Acknowledge/,
+  "Community confirmation policy parent community affiliation must present public acceptance as acknowledgement, not broad approval."
 );
 
 assertNotContains(
   "src/pages/CommunityConfirmationPolicyPage.tsx",
   /official affiliate|Approved affiliate|Approval says the parent domain accepts this group|Approve only groups|busyLabel="Approving\.\.\."|>\s*\{labelWithIcon\("check", "Approve", "navy"\)\}/,
-  "Community confirmation policy parent-domain affiliation must not use broad approval wording for acknowledgement."
+  "Community confirmation policy parent community affiliation must not use broad approval wording for acknowledgement."
 );
 
 assertContains(
   "src/pages/CommunityConfirmationPolicyPage.tsx",
-  /This records one witness event; it is not parent-domain[\s\S]*?approval or a guarantee for every claim\./,
-  "Community confirmation policy witness review must separate one witness event from parent-domain approval."
+  /This records one witness event; it is not parent community[\s\S]*?approval or a guarantee for every claim\./,
+  "Community confirmation policy witness review must separate one witness event from parent community approval."
 );
 
 assertContains(
@@ -1219,8 +1249,8 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityConfirmationInboxPage.tsx",
-  /A review resolution changes GSN's trust reading only; it is not parent-domain[\s\S]*?certification, legal approval, or permission to release goods, credit, or money\./,
-  "Community confirmation inbox review cases must separate internal trust-reading decisions from parent-domain or transaction authority."
+  /A review resolution changes GSN's trust reading only; it is not parent community[\s\S]*?certification, legal approval, or permission to release goods, credit, or money\./,
+  "Community confirmation inbox review cases must separate internal trust-reading decisions from parent community or transaction authority."
 );
 
 assertNotContains(
@@ -1231,7 +1261,7 @@ assertNotContains(
 
 assertContains(
   "src/pages/CommunityConfirmationInboxPage.tsx",
-  /Your answer records what you personally know; it is not parent-domain certification or a whole-community vote\./,
+  /Your answer records what you personally know; it is not parent community certification or a whole-community vote\./,
   "Community confirmation inbox responder lane must scope individual answers as personal knowledge, not certification."
 );
 
@@ -2052,6 +2082,24 @@ assertFunctionNotContains(
   "get_trust_slip_payload",
   /Phone and community membership are verified|Identity confirmed by active community membership/,
   "TrustSlip payload must not describe active community membership as full identity/member verification."
+);
+
+assertContains(
+  "../gmfn_backend/app/services/trust_slips_services.py",
+  /def _trust_slip_display_name[\s\S]*?_clean_trust_slip_display_name[\s\S]*?_join_evidence_display_name[\s\S]*?GSN holder/,
+  "TrustSlip payload must recover safe holder names from join evidence and fall back to a GSN holder label instead of exposing missing-name placeholders."
+);
+
+assertContains(
+  "../gmfn_backend/app/services/trust_slips_services.py",
+  /def _invite_relationship_evidence_summary[\s\S]*?TrustEventType\.INVITE_ACCEPTED[\s\S]*?TrustEventType\.INVITE_CREATED[\s\S]*?relationship_evidence[\s\S]*?Raw inviter notes/,
+  "TrustSlip payload must summarize invite relationship evidence through accepted invite codes without exposing raw inviter notes."
+);
+
+assertContains(
+  "src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx",
+  /Relationship route[\s\S]*?Raw inviter notes, phone numbers, addresses, and private context are not included/,
+  "Public TrustSlip paper must show relationship-route evidence with a clear private-note boundary."
 );
 
 assertContains(

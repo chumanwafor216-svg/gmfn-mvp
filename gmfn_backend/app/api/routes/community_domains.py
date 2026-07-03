@@ -4936,7 +4936,7 @@ def _community_domain_capacity_plan_payload(
                 "Package allowance exists, but live Community Domain shop usage "
                 "is not metered here because shops belong to global member "
                 "identity and marketplace exposure is not connected to this "
-                "capacity counter in this slice."
+                "capacity counter yet."
             ),
             "boundary": (
                 "Allowance visibility only. This does not create shops, connect "
@@ -4958,7 +4958,7 @@ def _community_domain_capacity_plan_payload(
             "admin_visible": bool(can_admin),
             "summary": (
                 "Package storage allowance exists, but file storage usage is not "
-                "metered by this Community Domain endpoint in this slice."
+                "metered by this Community Domain record yet."
             ),
             "boundary": (
                 "Allowance visibility only. This does not upload files, reserve "
@@ -10523,7 +10523,7 @@ def _community_domain_analytics_payload(
             "requires_admin": False,
             "boundary": (
                 "Economic analytics are not wired to live marketplace, shop, "
-                "finance, demand, or spotlight tables in this slice."
+                "finance, demand, or spotlight records yet."
             ),
         },
     ]
@@ -10891,7 +10891,7 @@ def _community_domain_evidence_map_payload(
             route_suffix="/network-presence",
             requires_admin=False,
             boundary=(
-                "Trust mobility is not connected in this slice. This does not create "
+                "Trust mobility is not connected yet. This does not create "
                 "TrustSlip, Trust Passport, credential, relay, or external proof records."
             ),
         ),
@@ -12928,7 +12928,7 @@ def _community_domain_subscription_lifecycle_payload(
         "editable": False,
         "boundary": (
             "Community Domain subscription lifecycle is read-only billing planning. "
-            "This endpoint does not create a quote acceptance, create a payment "
+            "This view does not create a quote acceptance, create a payment "
             "instruction, create an expected payment, record payment, confirm "
             "payment, create an invoice, create a receipt, activate billing, "
             "activate the Community Domain, create entitlements, renew a domain, "
@@ -13181,7 +13181,7 @@ def _community_domain_social_bridge_payload(
         "editable": False,
         "boundary": (
             "Community Domain social bridge is read-only relationship planning. "
-            "This endpoint does not create a social Community, upgrade an "
+            "This view does not create a social Community, upgrade an "
             "existing Community, set clan_id, create affiliations, decide "
             "affiliations, copy members, invite members, move marketplace "
             "activity, activate billing, verify authority, merge Community and "
@@ -13858,7 +13858,7 @@ def _community_domain_network_exchange_map_payload(
         "editable": False,
         "boundary": (
             "Community Domain network exchange map is read-only outside-network "
-            "planning. This endpoint does not create domain-to-domain exchange, "
+            "planning. This view does not create domain-to-domain exchange, "
             "cross-domain discovery, public member directories, public search, "
             "social Community links, affiliation decisions, marketplace records, "
             "shops, listings, demand, Spotlight, vault links, TrustSlips, Trust "
@@ -14466,7 +14466,7 @@ def _community_domain_configuration_map_payload(
         "editable": False,
         "boundary": (
             "Community Domain configuration map is read-only configuration "
-            "planning. This endpoint does not create a custom schema, custom "
+            "planning. This view does not create a custom schema, custom "
             "tenant, custom billing package, custom permission model, custom "
             "database table, custom field, per-client code fork, nodes, members, "
             "roles, policies, reviews, evidence, module settings, payments, "
@@ -15291,7 +15291,7 @@ def _community_domain_institutional_profile_payload(
         "editable": False,
         "boundary": (
             "Community Domain institutional profile is read-only package "
-            "classification. This endpoint does not create a custom schema, "
+            "classification. This view does not create a custom schema, "
             "custom tenant, custom billing package, nodes, members, policies, "
             "reviews, evidence, marketplace activity, shops, payments, finance "
             "records, social Community links, verification, activation, public "
@@ -16798,7 +16798,7 @@ def _community_domain_member_verification_map_payload(
         "editable": False,
         "boundary": (
             "Community Domain member verification map is read-only readiness "
-            "planning. This endpoint does not perform KYC, issue credentials, "
+            "planning. This view does not perform KYC, issue credentials, "
             "verify government identity, create or change members, place members "
             "in units, assign roles, grant permissions, create policy, decide "
             "reviews, upload evidence, expose storage keys, publish proof, issue "
@@ -20767,7 +20767,7 @@ def list_community_domain_action_reviews(
         "total": len(rows),
         "boundary": (
             "Action reviews are decision records. They do not execute the requested "
-            "business action until a later endpoint applies that decision. Optional "
+            "business action until a later approved action applies that decision. Optional "
             "node and user filters narrow the admin-visible record list; they do not "
             "grant reviewer authority or expose records outside the viewer's domain scope."
         ),
@@ -21406,7 +21406,7 @@ def list_community_domain_action_review_evidence(
         "total": len(evidence_items),
         "boundary": (
             "Review evidence records metadata for documents or references supplied "
-            "with a Community Domain action review. This endpoint does not upload, "
+            "with a Community Domain action review. This view does not upload, "
             "download, verify, or approve files."
         ),
     }

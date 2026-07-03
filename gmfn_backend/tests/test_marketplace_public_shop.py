@@ -1610,7 +1610,7 @@ def test_shop_spotlight_publish_targets_all_eligible_owner_communities(
     assert [int(row[0]) for row in rows] == [1, 2]
 
 
-def test_shop_spotlight_publish_skips_full_community_and_uses_open_community(
+def test_shop_spotlight_publish_ignores_community_capacity_but_blocks_second_daily_free_run(
     client,
     override_current_user_user,
     monkeypatch,
@@ -1702,10 +1702,12 @@ def test_shop_spotlight_publish_skips_full_community_and_uses_open_community(
     body = res.json()
 
     assert body["ok"] is True
-    assert body["propagated_count"] == 1
-    assert body["propagated_clan_ids"] == [2]
-    assert body["skipped_capacity_clan_ids"] == [1]
-    assert body["skipped_capacity_count"] == 1
+    assert body["propagated_count"] == 2
+    assert body["propagated_clan_ids"] == [1, 2]
+    assert body["skipped_capacity_clan_ids"] == []
+    assert body["skipped_capacity_count"] == 0
+    assert body["free_spotlight_daily_limit_per_author"] == 1
+    assert body["free_spotlight_used_today_before_publish"] == 0
 
     with engine.begin() as conn:
         rows = conn.execute(
@@ -1721,8 +1723,23 @@ def test_shop_spotlight_publish_skips_full_community_and_uses_open_community(
     assert [(int(row[0]), row[1]) for row in rows] == [
         (1, "Already live"),
         (2, "Paid reach should not consume free quota"),
+        (1, "Fresh spotlight"),
         (2, "Fresh spotlight"),
     ]
+
+    second_res = client.post(
+        "/marketplace/broadcasts",
+        json={
+            "clan_id": 1,
+            "shop_id": 1,
+            "message": "Second free spotlight",
+            "image_url": "/uploads/marketplace/images/second-live-spotlight.jpg",
+            "priority_mode": "free",
+            "visibility_scope": "direct_communities",
+        },
+    )
+    assert second_res.status_code == 400, second_res.text
+    assert "free Spotlight for today is already active" in second_res.text
 
 
 def test_shop_spotlight_publish_ignores_stale_requested_clan_for_owned_shop(
@@ -1793,7 +1810,7 @@ def test_shop_spotlight_publish_ignores_stale_requested_clan_for_owned_shop(
     assert body["propagated_clan_ids"] == [1]
 
 
-def test_free_spotlight_capacity_reached_is_suspended_for_test_week(
+def test_free_spotlight_daily_identity_limit_blocks_same_author_test_week_override(
     client,
     override_current_user_user,
     monkeypatch,
@@ -1871,16 +1888,15 @@ def test_free_spotlight_capacity_reached_is_suspended_for_test_week(
             "visibility_scope": "direct_communities",
         },
     )
-    assert res.status_code == 200, res.text
-    assert "Spotlight capacity reached" not in res.text
-    assert res.json()["ok"] is True
+    assert res.status_code == 400, res.text
+    assert "free Spotlight for today is already active" in res.text
 
     with engine.begin() as conn:
         broadcast_count = conn.execute(
             text("SELECT COUNT(*) FROM marketplace_broadcasts WHERE clan_id = 3")
         ).scalar_one()
 
-    assert int(broadcast_count) == 2
+    assert int(broadcast_count) == 1
 
 
 def test_paid_spotlight_requires_unused_subscription_credit(

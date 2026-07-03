@@ -84,6 +84,7 @@ type MerchantSummary = {
   photo_recorded?: boolean | null;
   bank_details_recorded?: boolean | null;
   profile_image_url?: string | null;
+  relationship_evidence_summary?: Record<string, any> | null;
   community_global_id?: string | null;
   holder_role?: string | null;
   active_member_count?: string | number | null;
@@ -126,6 +127,7 @@ type MerchantView = {
   community?: string | null;
   identity_context?: Record<string, any> | null;
   community_context?: Record<string, any> | null;
+  relationship_evidence_summary?: Record<string, any> | null;
   cci_explainer?: Record<string, any> | null;
   identity_status_label?: string | null;
   community_global_id?: string | null;
@@ -215,6 +217,7 @@ type TrustSlipSummary = {
   profile_image_url?: string | null;
   identity_context?: Record<string, any> | null;
   community_context?: Record<string, any> | null;
+  relationship_evidence_summary?: Record<string, any> | null;
   community_confirmation?: CommunityConfirmationSummary | null;
   cci_explainer?: Record<string, any> | null;
   identity_verified?: boolean | null;
@@ -351,6 +354,19 @@ function firstTruthy(...values: any[]): string {
     if (text) return text;
   }
   return "";
+}
+
+function isMissingHolderName(value: any): boolean {
+  const text = safeStr(value).toLowerCase();
+  return [
+    "-",
+    "member name not set",
+    "name not set",
+    "name not shown",
+    "not set",
+    "not shown",
+    "unknown",
+  ].includes(text);
 }
 
 function trustSlipHolderReferenceFingerprint(...values: unknown[]): string {
@@ -1867,18 +1883,28 @@ export default function TrustSlipPage() {
   }
 
   const holderName = useMemo(() => {
-    return (
-      firstTruthy(
-        summary?.merchant_view?.display_name,
-        summary?.merchant_summary?.display_name,
-        summary?.display_name,
-        me?.display_name,
-        me?.nickname,
-        me?.name,
-        me?.first_name,
-        me?.email
-      ) || "Member"
+    const candidate = firstTruthy(
+      summary?.merchant_view?.display_name,
+      summary?.merchant_summary?.display_name,
+      summary?.display_name,
+      me?.display_name,
+      me?.nickname,
+      me?.name,
+      me?.first_name,
+      me?.email
     );
+    if (candidate && !isMissingHolderName(candidate)) return candidate;
+
+    const holderId = firstTruthy(
+      summary?.merchant_view?.gmfn_id,
+      summary?.merchant_view?.identity_context?.gmfn_id,
+      summary?.merchant_summary?.gmfn_id,
+      summary?.identity_context?.gmfn_id,
+      summary?.gmfn_id,
+      me?.gmfn_id,
+      api.getStoredGmfnId()
+    );
+    return holderId ? `GSN holder ${holderId}` : "GSN holder";
   }, [summary, me]);
 
   const gmfnId = useMemo(() => {
@@ -2221,6 +2247,21 @@ export default function TrustSlipPage() {
           : ""
       }`
     : "not shown";
+  const relationshipEvidenceSummary =
+    summary?.relationship_evidence_summary ||
+    summary?.merchant_view?.relationship_evidence_summary ||
+    summary?.merchant_view?.merchant_summary?.relationship_evidence_summary ||
+    summary?.merchant_summary?.relationship_evidence_summary ||
+    {};
+  const relationshipEvidenceLabel = firstTruthy(
+    relationshipEvidenceSummary?.summary_label,
+    Array.isArray(relationshipEvidenceSummary?.rows)
+      ? relationshipEvidenceSummary.rows[0]?.relationship_label
+      : "",
+  );
+  const relationshipEvidenceCount = numericCount(
+    relationshipEvidenceSummary?.evidence_count
+  );
   const visibleEvidencePoints =
     numericCount(summary?.sponsor_count ?? summary?.merchant_summary?.sponsor_count) +
     numericCount(summary?.active_clan_count) +
@@ -2600,6 +2641,75 @@ export default function TrustSlipPage() {
     "Based on recorded trust signals where available",
     "Linked to community activity where shown",
   ];
+  const trustSlipKnownAsRows: Array<[GsnIconName, string, string]> = [
+    [
+      "id",
+      "Community role",
+      holderRole && holderRole.toLowerCase() !== "member"
+        ? `${holderRole} inside ${communityName}.`
+        : `Community member inside ${communityName}.`,
+    ],
+    [
+      "community",
+      "Community signals",
+      communityActivityCount
+        ? `${communityActivitySignal}.`
+        : "No activity labels are shown on this TrustSlip yet.",
+    ],
+    [
+      "briefcase",
+      "Relationship route",
+      relationshipEvidenceCount > 0 && relationshipEvidenceLabel
+        ? `${relationshipEvidenceLabel}; raw inviter notes stay private.`
+        : "No invite relationship category is shown on this TrustSlip yet.",
+    ],
+    [
+      "certificate-seal",
+      "Witness route",
+      memberWitnessSignal !== "not shown"
+        ? memberWitnessSignal
+        : "Member witness evidence is not shown yet.",
+    ],
+  ];
+  const trustSlipEvidenceSummaryCards: Array<{
+    title: string;
+    tone: "blue" | "green" | "red";
+    icon: GsnIconName;
+    rows: Array<[GsnIconName, string, string]>;
+  }> = [
+    {
+      title: "Known here as",
+      tone: "blue",
+      icon: "id",
+      rows: trustSlipKnownAsRows,
+    },
+    {
+      title: "Evidence basis",
+      tone: "green",
+      icon: "shield",
+      rows: trustSlipTrustReasons.map((item): [GsnIconName, string, string] => [
+        "check",
+        "Signal",
+        item,
+      ]),
+    },
+    {
+      title: "Good for",
+      tone: "blue",
+      icon: "globe",
+      rows: trustSlipUseCases.map(([icon, item]) => [icon, "Use", item]),
+    },
+    {
+      title: "Not proof of",
+      tone: "red",
+      icon: "alert",
+      rows: trustSlipLimits.map((item): [GsnIconName, string, string] => [
+        "alert",
+        "Limit",
+        item,
+      ]),
+    },
+  ];
   const communityConfirmation = summary?.community_confirmation || null;
   const communityVerifyKey = firstTruthy(
     communityConfirmation?.community_code,
@@ -2897,6 +3007,9 @@ export default function TrustSlipPage() {
         gmfnId,
         communityName,
         communityRef,
+        holderRole,
+        communityEvidence: communityActivitySignal,
+        witnessEvidence: memberWitnessSignal,
         trustSlipCode,
         merchantBand,
         merchantTrustLimit,
@@ -3857,91 +3970,128 @@ export default function TrustSlipPage() {
             </div>
 
             <div
+              data-gsn-trustslip-holder-practical-evidence="true"
               style={{
                 ...trustSlipPaperPanel("#FFFFFF"),
                 order: 5,
-                gridColumn: isCompact ? "1 / -1" : "1 / 2",
+                gridColumn: "1 / -1",
               }}
             >
-              <TrustPaperWatermark name="globe" color="#0B63D1" size={178} opacity={0.035} />
+              <TrustPaperWatermark name="globe" color="#0B63D1" size={210} opacity={0.035} />
               <div style={trustSlipPanelContent()}>
               <div style={trustSlipPaperTitle(isCompact)}>
-                What this can be used for
+                Practical evidence summary
               </div>
-              <div style={{ marginTop: 12, display: "grid", gap: 13 }}>
-                {trustSlipUseCases.map(([icon, item]) => (
-                  <div key={item} style={{ display: "grid", gridTemplateColumns: "38px 1fr", gap: 12, alignItems: "center" }}>
-                    <span
-                      aria-hidden
+              <p
+                style={{
+                  margin: "8px 0 0",
+                  color: "#526579",
+                  fontSize: isCompact ? 13 : 14,
+                  fontWeight: 850,
+                  lineHeight: 1.45,
+                }}
+              >
+                Use this paper to see how the holder is known in this community, what evidence is visible, and where the record stops.
+              </p>
+              <div
+                style={{
+                  marginTop: 12,
+                  display: "grid",
+                  gridTemplateColumns: isCompact
+                    ? "1fr"
+                    : "repeat(4, minmax(0, 1fr))",
+                  gap: 10,
+                }}
+              >
+                {trustSlipEvidenceSummaryCards.map((card) => (
+                  <div
+                    key={card.title}
+                    style={{
+                      ...documentMetaCard(
+                        card.tone === "red"
+                          ? "#FFF1F2"
+                          : card.tone === "green"
+                            ? "#F0FBF4"
+                            : "#F8FBFF"
+                      ),
+                      display: "grid",
+                      alignContent: "start",
+                      gap: 8,
+                      border:
+                        card.tone === "red"
+                          ? "1px solid rgba(153,27,27,0.14)"
+                          : card.tone === "green"
+                            ? "1px solid rgba(46,155,98,0.16)"
+                            : "1px solid rgba(11,99,209,0.14)",
+                    }}
+                  >
+                    <div
                       style={{
-                        width: 38,
-                        height: 38,
-                        borderRadius: 19,
-                        background: "#EAF3FF",
                         display: "grid",
-                        placeItems: "center",
-                        color: "#0B63D1",
-                        fontWeight: 1000,
+                        gridTemplateColumns: "30px minmax(0, 1fr)",
+                        gap: 8,
+                        alignItems: "center",
+                        color:
+                          card.tone === "red"
+                            ? "#991B1B"
+                            : card.tone === "green"
+                              ? "#166534"
+                              : "#0B3E78",
                       }}
                     >
-                      <GsnLegacyIcon name={icon} size={32} />
-                    </span>
-                    <span style={{ color: "#334155", fontWeight: 900 }}>{item}</span>
-                  </div>
-                ))}
-              </div>
-              </div>
-            </div>
-          </section>
-
-          <section
-            style={{
-              ...trustSlipScrollClearance(isCompact),
-              display: "contents",
-            }}
-          >
-            <div
-              style={{
-                ...trustSlipPaperPanel("#FFFFFF"),
-                order: 7,
-                gridColumn: isCompact ? "1 / -1" : "2 / 3",
-              }}
-            >
-              <TrustPaperWatermark name="alert" color="#991B1B" size={178} opacity={0.035} />
-              <div style={trustSlipPanelContent()}>
-              <div style={trustSlipPaperTitle(isCompact)}>
-                Important limitations
-              </div>
-              <div style={{ ...documentMetaCard("#FFF1F2"), marginTop: 12, position: "relative", overflow: "hidden" }}>
-                <TrustPaperWatermark name="alert" color="#991B1B" size={132} opacity={0.065} />
-                {trustSlipLimits.map((item) => (
-                  <div key={item} style={{ color: "#991B1B", fontWeight: 900, marginTop: 6, display: "flex", alignItems: "center", gap: 8 }}>
-                    {trustSlipIconBadge("alert", 26, "red")}
-                    {item}
-                  </div>
-                ))}
-              </div>
-              </div>
-            </div>
-
-            <div
-              style={{
-                ...trustSlipPaperPanel("#FFFFFF"),
-                order: 8,
-                gridColumn: isCompact ? "1 / -1" : "1 / 2",
-              }}
-            >
-              <TrustPaperWatermark name="shield" color="#166534" size={178} opacity={0.04} />
-              <div style={trustSlipPanelContent()}>
-              <div style={trustSlipPaperTitle(isCompact)}>
-                Why you may trust this
-              </div>
-              <div style={{ ...documentMetaCard("#F0FBF4"), marginTop: 12, position: "relative", overflow: "hidden" }}>
-                <TrustPaperWatermark name="shield" color="#166534" size={132} opacity={0.075} />
-                {trustSlipTrustReasons.map((item) => (
-                  <div key={item} style={{ color: "#166534", fontWeight: 900, marginTop: 6, display: "flex", alignItems: "center", gap: 8 }}>
-                    <GsnLegacyIcon name="check" size={24} />
-                    {item}
+                      {trustSlipIconBadge(
+                        card.icon,
+                        30,
+                        card.tone === "red" ? "red" : card.tone === "green" ? "green" : "blue"
+                      )}
+                      <div style={{ fontSize: 13, fontWeight: 1000, lineHeight: 1.15 }}>
+                        {card.title}
+                      </div>
+                    </div>
+                    <div style={{ display: "grid", gap: 7 }}>
+                      {card.rows.map(([icon, label, value]) => (
+                        <div
+                          key={`${card.title}-${label}-${value}`}
+                          style={{
+                            display: "grid",
+                            gridTemplateColumns: "24px minmax(0, 1fr)",
+                            gap: 7,
+                            alignItems: "start",
+                          }}
+                        >
+                          {trustSlipIconBadge(
+                            icon,
+                            24,
+                            card.tone === "red" ? "red" : card.tone === "green" ? "green" : "blue"
+                          )}
+                          <span style={{ minWidth: 0 }}>
+                            <span
+                              style={{
+                                display: "block",
+                                color: "#64748B",
+                                fontSize: 9.5,
+                                fontWeight: 1000,
+                                textTransform: "uppercase",
+                              }}
+                            >
+                              {label}
+                            </span>
+                            <span
+                              style={{
+                                display: "block",
+                                marginTop: 2,
+                                color: card.tone === "red" ? "#991B1B" : "#334155",
+                                fontSize: 12,
+                                fontWeight: 880,
+                                lineHeight: 1.28,
+                              }}
+                            >
+                              {value}
+                            </span>
+                          </span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 ))}
               </div>

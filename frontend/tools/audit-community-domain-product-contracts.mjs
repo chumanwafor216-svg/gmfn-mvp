@@ -247,8 +247,8 @@ assertContains(
 
 assertContains(
   "src/pages/communityDomainDashboard/statusLanguage.ts",
-  /configured: "not set up yet"[\s\S]*connected: "not connected yet"[\s\S]*created: "not created yet"[\s\S]*recorded: "not recorded yet"[\s\S]*normalized\.toLowerCase\(\) === "not configured"[\s\S]*return "not set up yet"[\s\S]*normalized\.match\(/,
-  "Community Domain status language helper must translate raw slice statuses before they reach user-facing panels.",
+  /configured: "not set up yet"[\s\S]*connected: "not connected yet"[\s\S]*created: "not created yet"[\s\S]*recorded: "not recorded yet"[\s\S]*replace\(\s*\/\[-_\]\+\/g,\s*" "\s*\)[\s\S]*replace\(\s*\/\\s\+\/g,\s*" "\s*\)[\s\S]*normalized\.toLowerCase\(\) === "not configured"[\s\S]*return "not set up yet"[\s\S]*normalized\.match\(/,
+  "Community Domain status language helper must normalize raw snake-case or hyphenated slice statuses before they reach user-facing panels.",
   { frontend: true }
 );
 
@@ -257,6 +257,18 @@ assertNotContains(
   /not configured yet/,
   "Community Domain status language must use setup wording instead of configuration wording.",
   { frontend: true }
+);
+
+assertNotContains(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  /\bin this slice\b/,
+  "Community Domain backend summaries and boundaries must not send builder-language 'in this slice' copy to user-facing panels.",
+);
+
+assertNotContains(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  /This endpoint|later endpoint/,
+  "Community Domain backend summaries and boundaries must use user-facing 'view/action' language instead of endpoint language.",
 );
 
 assertContains(

@@ -48,14 +48,14 @@ assertContains(
 
 assertContains(
   "gmfn_backend/app/api/routes/marketplace.py",
-  /available_target_clan_ids: list\[int\] = \[[\s\S]*?for clan_id in target_clan_ids:[\s\S]*?active_count = _count_active_spotlights_for_clan[\s\S]*?if active_count >= max_allowed:[\s\S]*?skipped_capacity_clan_ids\.append\(int\(clan_id\)\)[\s\S]*?continue[\s\S]*?available_target_clan_ids\.append\(int\(clan_id\)\)[\s\S]*?target_clan_ids = available_target_clan_ids/,
-  "Free Spotlight quota must be checked per community, skipping full communities while still placing into open communities."
+  /FREE_SPOTLIGHT_DAILY_LIMIT_PER_AUTHOR = 1[\s\S]*?def _count_free_spotlight_runs_for_author_today\([\s\S]*?MarketplaceBroadcast\.author_user_id == int\(author_user_id\)[\s\S]*?MarketplaceBroadcast\.priority_mode != SPOTLIGHT_PAID[\s\S]*?MarketplaceBroadcast\.created_at >= start[\s\S]*?MarketplaceBroadcast\.created_at < end/,
+  "Free Spotlight quota must be checked by global member identity per UTC day, not by per-community capacity."
 );
 
 assertContains(
   "gmfn_backend/app/api/routes/marketplace.py",
-  /"skipped_capacity_clan_ids": skipped_capacity_clan_ids[\s\S]*?"skipped_capacity_count": len\(skipped_capacity_clan_ids\)/,
-  "Spotlight publish responses must expose skipped-capacity communities so the UI/system can explain partial placement truth."
+  /daily_free_spotlight_count = _count_free_spotlight_runs_for_author_today\([\s\S]*?author_user_id=int\(current_user\.id\)[\s\S]*?if daily_free_spotlight_count >= FREE_SPOTLIGHT_DAILY_LIMIT_PER_AUTHOR:[\s\S]*?Your free Spotlight for today is already active/,
+  "Free Spotlight publish must block a second same-day run for the same global member identity."
 );
 
 assertContains(
@@ -114,8 +114,8 @@ assertContains(
 
 assertContains(
   "gmfn_backend/tests/test_marketplace_public_shop.py",
-  /test_shop_spotlight_publish_skips_full_community_and_uses_open_community[\s\S]*?assert body\["propagated_clan_ids"\] == \[2\][\s\S]*?assert body\["skipped_capacity_clan_ids"\] == \[1\][\s\S]*?\(2, "Paid reach should not consume free quota"\),[\s\S]*?\(2, "Fresh spotlight"\),/,
-  "Backend tests must lock partial free-quota placement: full communities are skipped, open communities still publish."
+  /test_shop_spotlight_publish_ignores_community_capacity_but_blocks_second_daily_free_run[\s\S]*?assert body\["propagated_clan_ids"\] == \[1, 2\][\s\S]*?assert body\["free_spotlight_daily_limit_per_author"\] == 1[\s\S]*?Second free spotlight[\s\S]*?assert second_res\.status_code == 400/,
+  "Backend tests must lock pilot fairness: community fullness no longer blocks the first free run, but same-day second free runs are blocked per identity."
 );
 
 assertContains(
@@ -135,5 +135,5 @@ if (findings.length > 0) {
 }
 
 console.log(
-  "Spotlight system feed audit passed: shop-owned placement, per-community quota, paid/repost separation, and Dashboard/Public Shop feed parity are caged."
+  "Spotlight system feed audit passed: shop-owned placement, daily identity quota, paid/repost separation, and Dashboard/Public Shop feed parity are caged."
 );

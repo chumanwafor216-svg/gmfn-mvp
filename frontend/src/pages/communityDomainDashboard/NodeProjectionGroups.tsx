@@ -644,7 +644,7 @@ export default function CommunityDomainNodeProjectionGroups(props: ProjectionGro
       rows: visibleNodeDomainBoundaryRows,
       statusKey: "domain_boundary_status",
       rowFallback: "Domain-boundary unit",
-      defaultNextStep: "Keep operating units inside the parent domain until review is complete.",
+      defaultNextStep: "Keep operating units inside the parent community until review is complete.",
       boundary:
         "Use this as a boundary snapshot only. It does not create child domains, publish links, move members, or show private member data.",
     });

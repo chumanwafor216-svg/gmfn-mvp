@@ -27,94 +27,40 @@ function assertContains(pattern, message) {
   addFinding(-1, message);
 }
 
-const trustDebugId = 'debugId="marketplace.tile.trust"';
-const trustDebugIndex = source.indexOf(trustDebugId);
-const trustTileStart =
-  trustDebugIndex >= 0 ? source.lastIndexOf("<StableButton", trustDebugIndex) : -1;
-const trustTileEnd =
-  trustDebugIndex >= 0 ? source.indexOf("</StableButton>", trustDebugIndex) : -1;
-const trustTile =
-  trustTileStart >= 0 && trustTileEnd >= 0
-    ? source.slice(trustTileStart, trustTileEnd + "</StableButton>".length)
-    : "";
-
-if (!trustTile) {
-  addFinding(-1, "Marketplace compact Trust pill must remain a stable button.");
-} else {
-  [
-    /aria-label="Open this marketplace trust summary"/,
-    /onClick=\{toggleProfileDetails\}/,
-    /aria-expanded=\{profileDetailsOpen\}/,
-    /stableHeight=\{isCompact \? 46 : 48\}/,
-    /<MarketplaceGlyph name="trust" size=\{16\} \/>/,
-    /\{marketplaceTrustDisplay\}/,
-  ].forEach((pattern) => {
-    if (!pattern.test(trustTile)) {
-      addFinding(
-        source.indexOf(trustTile),
-        "Marketplace compact Trust pill must only toggle the local trust summary and keep its stable frame.",
-        trustTile
-      );
-    }
-  });
-}
-
-const trustSummary =
-  source.match(
-    /\{profileDetailsOpen \? \([\s\S]*?<div style=\{sectionLabel\(\)\}>Local Marketplace Trust<\/div>[\s\S]*?\]\.map\(\(\[label, value\]\) => \([\s\S]*?\)\)\}[\s\S]*?<\/div>[\s\S]*?<\/div>[\s\S]*?\) : null\}/
-  )?.[0] || "";
-
-if (!trustSummary) {
-  addFinding(
-    source.indexOf("profileDetailsOpen"),
-    "Expanded Trust pill summary must be clearly caged as Local Marketplace Trust."
-  );
-} else {
-  [
-    /This is this selected community's local trust signal\.[\s\S]*?Use More[\s\S]*?Marketplace Tools[\s\S]*?fuller evidence routes\./,
-    /Member-level witness currentness belongs in those fuller[\s\S]*?evidence routes, not this local marketplace summary\./,
-    /\["Marketplace ID", communityIdentity\(selectedCommunity\)\]/,
-    /\["Local trust", marketplaceTrustDisplay\]/,
-    /\["Trust events", marketplaceTrustEvidenceLabel\]/,
-    /\["Positive trust", marketplaceTrustPositiveLabel\]/,
-    /\["Negative trust", marketplaceTrustNegativeLabel\]/,
-    /"Local finance signal"[\s\S]*?communityFinanceLabel\(selectedCommunity\)/,
-  ].forEach((pattern) => {
-    if (!pattern.test(trustSummary)) {
-      addFinding(
-        source.indexOf(trustSummary),
-        "Local Marketplace Trust summary must explain itself and keep only compact local status facts.",
-        trustSummary
-      );
-    }
-  });
-
-  [
-    /openMarketplaceCta/,
-    /openMarketplaceSection/,
-    /href=/,
-    /to=/,
-    /Trust Passport/,
-    /TrustSlip/,
-    /CCI/,
-  ].forEach((pattern) => {
-    if (pattern.test(trustSummary)) {
-      addFinding(
-        source.indexOf(trustSummary),
-        "Local Marketplace Trust summary must not become a route launcher or full Trust Passport surface.",
-        trustSummary
-      );
-    }
-  });
+function assertNotContains(pattern, message) {
+  let match;
+  while ((match = pattern.exec(source))) {
+    addFinding(match.index, message, match[0]);
+  }
 }
 
 assertContains(
+  /function marketplaceTrustLabel[\s\S]*?return band \|\| score \|\| "No trust value yet";/,
+  "Marketplace trust fallback must be truthful when no local trust value is available."
+);
+
+assertContains(
+  /const marketplaceStats = \[[\s\S]*?label: "Members"[\s\S]*?label: "Shops"[\s\S]*?label: "Trust"[\s\S]*?value: marketplaceTrustDisplay[\s\S]*?detail: marketplaceTrustEvidenceLabel[\s\S]*?glyph: "trust"[\s\S]*?label: "CCI"[\s\S]*?value: marketplaceCciDisplay[\s\S]*?glyph: "chart"/,
+  "Marketplace hero stats must show local Trust and CCI instead of duplicating Support or Demand."
+);
+
+assertContains(
+  /const marketplaceCciValue = firstTruthy\([\s\S]*?marketplaceTrust[\s\S]*?selectedCommunity[\s\S]*?\);[\s\S]*?const marketplaceCciDisplay = marketplaceCciValue[\s\S]*?: "Pending";/,
+  "Marketplace CCI stat must read existing trust/community fields and fall back to Pending."
+);
+
+assertNotContains(
+  /debugId="marketplace\.tile\.trust"|profileDetailsOpen|toggleProfileDetails|Local Marketplace Trust|Trust preparing/g,
+  "Marketplace must not keep the removed Trust tile, expansion state, or preparing copy."
+);
+
+assertContains(
   /debugId="marketplace\.row\.records-links"[\s\S]*?Marketplace Tools[\s\S]*?Invite, verify, share, and open helper tools\./,
-  "Fuller evidence and trust routes must remain under Marketplace Tools, not inside the compact Trust pill."
+  "Fuller evidence and trust routes must remain under Marketplace Tools, not inside the front summary."
 );
 
 if (findings.length > 0) {
-  console.error("Marketplace Trust pill audit failed:");
+  console.error("Marketplace trust/CCI stat audit failed:");
   for (const finding of findings) {
     console.error(
       `- ${finding.file}:${finding.line} ${finding.message}\n  ${finding.text}`
@@ -123,4 +69,4 @@ if (findings.length > 0) {
   process.exit(1);
 }
 
-console.log("Marketplace Trust pill audit passed.");
+console.log("Marketplace trust/CCI stat audit passed.");

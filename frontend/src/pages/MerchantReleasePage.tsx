@@ -227,7 +227,7 @@ function buildMerchantTradePacketPaper(result: MerchantReleaseResponse): string 
     result.evidence_boundary,
     "GSN does not store the full WhatsApp conversation in this packet, does not control the courier, does not hold money, and does not approve payout.",
     "Privacy: keep only the final evidence needed for reference. Avoid private chats, addresses, bank details, and unrelated personal information.",
-    "Security note: Keep the GSN mark, Link ID, Pack ID, Trade Packet ID, time, privacy note, and limit with any copy.",
+    "Security note: Keep the GSN mark, Link ID, Pack ID, Trade Packet ID, generated time, privacy note, and limitation note with any copy.",
   ].join("\n");
 }
 

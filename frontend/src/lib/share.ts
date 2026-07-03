@@ -125,7 +125,7 @@ function compactPaperMessage(value: string): string {
     title,
     context,
     reading || purpose,
-    "Open the link to check the current GSN record.",
+    "Evidence only. Open the link to check the current public GSN record.",
   ]
     .filter(Boolean)
     .slice(0, 4)
