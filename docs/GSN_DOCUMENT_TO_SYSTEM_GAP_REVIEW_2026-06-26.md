@@ -15,13 +15,13 @@ The uploaded documents are not an exact replica of the current GSN system.
 
 They are a strong institutional mirror of the north-star model: communities create trust, GSN preserves and organizes trust evidence, and trust then supports finance, trade, work, commitment discipline, and opportunity.
 
-The current repo already implements many of the bones of that model. It also contains operational details that the uploaded documents do not fully explain, especially bank rails, expected payments, reconciliation, payout destinations, repayment schedules, pilot/manual money-out handling, and Commitment Builder.
+The current repo already implements many of the bones of that model. It also contains operational details that the uploaded documents do not fully explain, especially bank rails, expected payments, reconciliation, payout destinations, repayment schedules, pilot/manual money-out handling, Commitment Builder, and institutional Community Domain.
 
-Truth: the documents are broader than the MVP in trade protection, paid/API verification, and automated payout. The MVP already has stronger foundations than the first pass gave it credit for in dispute recording/admin review, distance verification, hiring support through Trust Passport/TrustSlip, community finance/trust readings, and Commitment Builder. The MVP is also deeper than the documents in practical finance plumbing.
+Truth: the documents are broader than the MVP in trade protection, paid/API verification, and automated payout. The MVP already has stronger foundations than the first pass gave it credit for in dispute recording/admin review, distance verification, hiring support through Trust Passport/TrustSlip, community finance/trust readings, Commitment Builder, and institutional Community Domain. The MVP is also deeper than the documents in practical finance plumbing.
 
 ## Current Institutional Mirror State
 
-As of this cleanup, the public executive-summary paper now presents **22 things GSN does**, not the old 21-capability mirror. It includes Commitment Builder because the repo already treats it as capability 22.
+As of this cleanup, the public executive-summary paper now presents **23 things GSN does**, not the old 21-capability mirror. It includes Commitment Builder as capability 22 and Institutional Community Domain as capability 23 because the repo now treats organized institutional communities as a distinct GSN capability.
 
 This closes the outsider-facing institutional-presentation gap around capability count, branding, and system explanation. It does **not** mean every future integration is live. The remaining explicit boundary is paid/API verification and regulated automation: API-paid verification, automatic payout, and full protected trade-release rails must not be claimed as live until the active environment proves them end to end.
 
@@ -30,7 +30,7 @@ The strategic frame for the next ten years is:
 - e-commerce can move goods without proving enough community context;
 - community platforms can hold belonging without making demonstrated value portable;
 - finance tools can read balances without reading contribution, support, repayment, and commitment behaviour;
-- GSN's wedge is to connect these gaps through community trust portability, community capital, Trust Passport, TrustSlip, public verification, evidence-backed commerce, and Commitment Builder.
+- GSN's wedge is to connect these gaps through community trust portability, community capital, Trust Passport, TrustSlip, public verification, evidence-backed commerce, Commitment Builder, and institutional Community Domain.
 
 ## Document Model
 
@@ -83,7 +83,8 @@ That structure is directionally present in the repo through:
 | Trust-Based Hiring | Pilot-ready presentation layer | Trust Passport, TrustSlip, Demand Box, public verification | Existing trust evidence can support hiring judgement. Dedicated hiring/employer workflow can come later. |
 | Demand Box | Implemented/partial | `/app/demand-box`, marketplace request backend | Good base exists; still needs simpler focus and stronger connection to evidence-backed trade. |
 | Community Economic Power | Pilot-ready with current readings | dashboard, finance, community summaries, trust command centre, pool/contribution/support readings | Current summaries can carry pilot. Deeper tailored analytics and exportable institutional reports can come later. |
-| Commitment Builder | Institutional mirror aligned | `frontend/src/lib/gmfnCapabilities.ts` capability 22, Commitment Builder notes, and `frontend/tools/generate-static-gsn-pdfs.py` public executive summary generator | Dedicated goal/commitment workflows can deepen over time, but the outsider-facing 22-capability institutional mirror now includes it. |
+| Commitment Builder | Institutional mirror aligned | `frontend/src/lib/gmfnCapabilities.ts` capability 22, Commitment Builder notes, and `frontend/tools/generate-static-gsn-pdfs.py` public executive summary generator | Dedicated goal/commitment workflows can deepen over time, but the outsider-facing 23-capability institutional mirror now includes it. |
+| Institutional Community Domain | Institutional mirror aligned | `frontend/src/lib/gmfnCapabilities.ts` capability 23, Community Domain dashboard/purchase routes, community-domain API routes, and `frontend/tools/generate-static-gsn-pdfs.py` public executive summary generator | The product lane exists for organized bodies such as schools, unions, churches, cooperatives, markets, and associations. It must remain distinct from personal marketplace communities so public claims, branches, roles, policies, and member placement are not confused with ordinary shop/community activity. |
 
 ## Finance Line Truth
 
@@ -147,7 +148,7 @@ Main gap:
 3. The loan/support backend is stronger than the current visible borrower journey.
 4. Money Out still needs a clean pilot/manual payout frame and a later automatic payout bridge.
 5. The documents understate operational finance plumbing already in the repo.
-6. The old uploaded institutional PDF stopped at 21, but the repo and regenerated public executive summary now include Commitment Builder as capability 22.
+6. The old uploaded institutional PDF stopped at 21, but the repo and regenerated public executive summary now include Commitment Builder as capability 22 and Institutional Community Domain as capability 23.
 7. Diaspora, hiring, service economy, and community economic power can be pilot-mirrored through Trust Passport, TrustSlip, public verification, shop/services, Demand Box, current community finance/trust summaries, and commitment discipline. Dedicated vertical flows can come later.
 8. Paid/API verification, automatic payout, and full protected trade-release rails remain integration boundaries and must not be presented as live until proven in the deployed environment.
 
@@ -158,6 +159,7 @@ Main gap:
 3. Hide readiness, suggestions, workbench, inbox, and earnings behind the guided flow unless the user asks for deeper tools.
 4. Keep Money In direct and simple, with exact generated reference and account details.
 5. Continue deepening Commitment Builder as a lived workflow, because the institutional mirror now names it but the execution-discipline product lane can still mature.
-6. Add a real configured GSN support email for help/dispute contact.
-7. Create a live capability matrix test/audit so documentation, routes, public PDFs, and user-facing labels cannot drift apart again.
-8. Keep paid/API verification as the only deliberate not-yet-live book gap until the owner approves and verifies the integration.
+6. Continue separating institutional Community Domain from ordinary marketplace communities so schools, unions, churches, cooperatives, markets, and associations read as organized domains, not personal shop communities.
+7. Add a real configured GSN support email for help/dispute contact.
+8. Create a live capability matrix test/audit so documentation, routes, public PDFs, and user-facing labels cannot drift apart again.
+9. Keep paid/API verification as the only deliberate not-yet-live book gap until the owner approves and verifies the integration.

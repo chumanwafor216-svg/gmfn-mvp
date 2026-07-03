@@ -63,8 +63,9 @@ if (/const GMFN_EXEC_SUMMARY_URL = "\/gmfn-executive-summary\.pdf";/.test(trustS
 
 const generatorSource = readFileSync(join(root, "tools/generate-static-gsn-pdfs.py"), "utf8");
 for (const requiredText of [
-  "22 things GSN does",
+  "things GSN does",
   "Commitment Builder",
+  "Institutional Community Domain",
   "community capital",
   "ten-year view",
   "API-paid verification",

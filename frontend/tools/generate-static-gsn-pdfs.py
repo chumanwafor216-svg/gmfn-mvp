@@ -46,6 +46,7 @@ CAPABILITIES = [
     "Demand Box",
     "Community Economic Power",
     "Commitment Builder",
+    "Institutional Community Domain",
 ]
 
 
@@ -207,6 +208,15 @@ CAPABILITY_EXPLANATIONS = {
         "trust becomes stronger when people can show not only who knows them, "
         "but also how they keep commitments over time."
     ),
+    "Institutional Community Domain": (
+        "What it is: the larger organized-community layer for schools, unions, "
+        "churches, cooperatives, markets, associations, and similar bodies. "
+        "How it works: GSN can hold an institution's public identity, branches, "
+        "roles, member placement, policies, evidence maps, service lanes, and "
+        "controlled public claims in one structured space. Why it matters: it "
+        "keeps institutional communities separate from personal marketplaces "
+        "so readers know what kind of community they are dealing with."
+    ),
 }
 
 
@@ -326,7 +336,7 @@ def build_executive_summary_pdf() -> bytes:
         max_chars=100,
     )
     line("")
-    line("22 things GSN does", size=12, gap=16, bold=True)
+    line(f"{len(CAPABILITIES)} things GSN does", size=12, gap=16, bold=True)
     for index, capability in enumerate(CAPABILITIES, start=1):
         line(f"{index}. {capability}", size=9, gap=11)
 

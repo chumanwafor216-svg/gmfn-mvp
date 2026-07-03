@@ -309,7 +309,8 @@ export function TrustPaperWatermarkField({
   opacity?: number;
   style?: React.CSSProperties;
 }) {
-  const marks = Array.from({ length: 12 }, (_, index) => names[index % names.length]);
+  const marks = Array.from({ length: 30 }, (_, index) => names[index % names.length]);
+  const fieldOpacity = Math.max(opacity, 0.068);
 
   return (
     <div
@@ -323,10 +324,12 @@ export function TrustPaperWatermarkField({
         overflow: "hidden",
         display: "grid",
         gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-        gap: 34,
+        gridAutoRows: "minmax(118px, 1fr)",
+        columnGap: 34,
+        rowGap: 22,
         padding: "120px 24px 90px",
         color,
-        opacity,
+        opacity: fieldOpacity,
         ...style,
       }}
     >
@@ -334,17 +337,46 @@ export function TrustPaperWatermarkField({
         <div
           key={`${name}-${index}`}
           style={{
-            minHeight: 104,
+            minHeight: 118,
             display: "grid",
             placeItems: "center",
+            position: "relative",
             transform: index % 2 === 0 ? "rotate(-7deg)" : "rotate(7deg)",
           }}
         >
+          {index % 5 === 0 ? (
+            <span
+              style={{
+                position: "absolute",
+                display: "inline-grid",
+                placeItems: "center",
+                width: 74,
+                height: 74,
+                borderRadius: 999,
+                border: "2px solid currentColor",
+                opacity: 0.62,
+              }}
+            >
+              <GSNBrandMark width={38} height={46} />
+            </span>
+          ) : null}
           <TrustPaperIcon
             name={name}
             size={index % 3 === 0 ? 150 : 126}
             strokeWidth={1.25}
           />
+          <span
+            style={{
+              position: "absolute",
+              bottom: 4,
+              color: "currentColor",
+              fontSize: 13,
+              fontWeight: 1000,
+              letterSpacing: 2,
+            }}
+          >
+            GSN
+          </span>
         </div>
       ))}
     </div>

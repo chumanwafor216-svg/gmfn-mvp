@@ -277,6 +277,23 @@ export const GMFN_CAPABILITIES: readonly GmfnCapability[] = [
     whyItMatters:
       "The point is not to collect goals. The point is to build execution discipline that can support savings behavior, retirement readiness, repayment follow-through, business targets, and more dependable action over time.",
   },
+  {
+    id: 23,
+    title: "Institutional Community Domain",
+    proverb:
+      "Institutional Community Domain helps a real organization run with clearer structure, evidence, and boundaries.",
+    gmfn:
+      "GSN helps schools, unions, churches, cooperatives, markets, and associations organize members, branches, roles, evidence, governance, and public identity without confusing them with personal marketplaces.",
+    category: "community",
+    tone: "focus",
+    priority: 8,
+    whatItIs:
+      "Institutional Community Domain is the larger organized-community layer for schools, unions, churches, cooperatives, markets, associations, and similar bodies.",
+    howItWorks:
+      "A domain can hold the institution's public identity, operating units, member placement, policies, evidence maps, service lanes, participation records, and controlled public claims in one structured space.",
+    whyItMatters:
+      "It separates institutional communities from personal marketplaces, so people can see whether they are dealing with a real organized body, a branch under that body, or an ordinary marketplace community.",
+  },
 ] as const;
 
 export const GMFN_CAPABILITY_COUNT = GMFN_CAPABILITIES.length;

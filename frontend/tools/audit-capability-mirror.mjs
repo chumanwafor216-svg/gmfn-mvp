@@ -66,13 +66,14 @@ const capabilityTitles = [
   "Demand Box",
   "Community Economic Power",
   "Commitment Builder",
+  "Institutional Community Domain",
 ];
 
 for (const title of capabilityTitles) {
   assertTextIncludes(
     "frontend/src/lib/gmfnCapabilities.ts",
     `title: "${title}"`,
-    "The capability registry must keep the full 22-capability mirror."
+    "The capability registry must keep the full 23-capability mirror."
   );
 
   assertTextIncludes(
@@ -84,26 +85,27 @@ for (const title of capabilityTitles) {
   assertTextIncludes(
     "frontend/tools/generate-static-gsn-pdfs.py",
     `"${title}"`,
-    "The public executive-summary PDF generator must mirror the exact 22-capability registry titles."
+    "The public executive-summary PDF generator must mirror the exact 23-capability registry titles."
   );
 }
 
 for (const value of [
-  "22 things GSN does",
+  "things GSN does",
   "Commitment Builder",
+  "Institutional Community Domain",
   "Boundary: API-paid verification",
 ]) {
   assertTextIncludes(
     "frontend/tools/generate-static-gsn-pdfs.py",
     value,
-    "The public executive summary PDF generator must mirror all 22 GSN capabilities and keep the paid-verification boundary."
+    "The public executive summary PDF generator must mirror all 23 GSN capabilities and keep the paid-verification boundary."
   );
 }
 
-assertTextIncludes(
+assertContains(
   "frontend/src/pages/MyGMFNAndIPage.tsx",
-  "22 things GSN does",
-  "The public My GSN and I guide must use the institutional 22-capability heading."
+  /\{GMFN_CAPABILITY_COUNT\} things GSN does[\s\S]*?\{capabilityCount\} things GSN does/,
+  "The public and signed-in My GSN and I guides must use the dynamic institutional capability heading."
 );
 
 assertContains(
@@ -122,14 +124,43 @@ for (const value of [
   assertTextIncludes(
     "frontend/src/pages/MyGMFNAndIPage.tsx",
     value,
-    "The signed-in My GSN and I capability map must provide a native dropdown plus one focused capability card on phone instead of exposing all 22 cards at once."
+    "The signed-in My GSN and I capability map must provide a native dropdown plus one focused capability card on phone instead of exposing all capability cards at once."
   );
 }
 
 assertContains(
   "frontend/src/pages/MyGMFNAndIPage.tsx",
   /data-my-gmfn-selected-capability="true"[\s\S]*selectedCapability\.title[\s\S]*publicCapabilityLine\(selectedCapability\)[\s\S]*\{!isCompact \? \(/,
-  "The signed-in My GSN and I capability map must show one selected capability first and keep the full 22-card grid off the compact phone layout."
+  "The signed-in My GSN and I capability map must show one selected capability first and keep the full capability grid off the compact phone layout."
+);
+
+assertContains(
+  "frontend/src/pages/MyGMFNAndIPage.tsx",
+  /stepCapability[\s\S]*Show previous GSN capability[\s\S]*Previous[\s\S]*Show next GSN capability[\s\S]*Next/,
+  "The signed-in My GSN and I capability map must let readers move backward and forward through capabilities without reopening the dropdown."
+);
+
+for (const value of [
+  "publicCapabilityId",
+  "publicSelectedCapability",
+  "showAllPublicCapabilities",
+  'data-my-gmfn-public-selected-capability="true"',
+  "stepPublicCapability",
+  "Show previous public GSN capability",
+  "Show next public GSN capability",
+  "my-gmfn.public.toggle-all-capabilities",
+]) {
+  assertTextIncludes(
+    "frontend/src/pages/MyGMFNAndIPage.tsx",
+    value,
+    "The public My GSN and I guide must default to one focused capability with previous/next controls and keep the full capability list optional."
+  );
+}
+
+assertContains(
+  "frontend/src/pages/MyGMFNAndIPage.tsx",
+  /publicSelectedCapability \? \([\s\S]*data-my-gmfn-public-selected-capability="true"[\s\S]*publicCapabilityLine\(publicSelectedCapability\)[\s\S]*showAllPublicCapabilities \? \(/,
+  "The public My GSN and I guide must show a selected reader card before the optional full capability list."
 );
 
 assertContains(
@@ -158,8 +189,8 @@ assertContains(
 
 assertContains(
   "frontend/src/pages/MyGMFNAndIPage.tsx",
-  /5: "Helps recorded value get seen first\."[\s\S]*?8: "Turns visible trust into people-backed support confidence\."[\s\S]*?17: "Gives one identity one wider shop presence\."[\s\S]*?18: "Makes informal service work more visible and reviewable\."/,
-  "The 22-capability visible card lines must avoid implying that public visibility, lending, shop presence, or service work is already verified trust."
+  /5: "Gives approved shop updates a clearer place to be seen without pretending visibility is verification\."[\s\S]*?8: "Turns support requests into recorded drafts with amount, purpose, duration, supporters, and fit signals\."[\s\S]*?17: "Gives one shop a public home for shelf items, spotlight, WhatsApp, verification, and trust signals\."[\s\S]*?18: "Helps informal service work become visible through demand, evidence, community context, and follow-up\."[\s\S]*?23: "Gives schools, unions, churches, cooperatives, markets, and associations a structured domain/,
+  "The capability visible card lines must avoid implying that public visibility, lending, shop presence, service work, or institutional domains are already verified trust."
 );
 
 for (const oldLine of [

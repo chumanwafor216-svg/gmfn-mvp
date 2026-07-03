@@ -276,6 +276,34 @@ function selectStyle(): React.CSSProperties {
   };
 }
 
+function capabilityPagerButton(primary = false): React.CSSProperties {
+  return {
+    minHeight: 44,
+    borderRadius: 999,
+    border: primary
+      ? "1px solid rgba(214,170,69,0.34)"
+      : `1px solid ${gmfnBrand.colors.lineStrong}`,
+    background: primary
+      ? "linear-gradient(180deg, #F2C766 0%, #D6AA45 100%)"
+      : "linear-gradient(180deg, #FFFFFF 0%, #EEF4FA 100%)",
+    color: primary ? "#07172C" : "#12314D",
+    padding: "10px 13px",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    fontSize: 13,
+    fontWeight: 1000,
+    lineHeight: 1,
+    cursor: "pointer",
+    touchAction: "manipulation",
+    WebkitTapHighlightColor: "transparent",
+    boxShadow: primary
+      ? "0 12px 22px rgba(214,170,69,0.18)"
+      : "0 8px 18px rgba(15,23,42,0.06)",
+  };
+}
+
 function checkboxRow(): React.CSSProperties {
   return {
     display: "flex",
@@ -461,6 +489,7 @@ const PUBLIC_CAPABILITY_LINES: Record<number, string> = {
   20: "Lets people post local needs or offers so demand is visible before opportunity is missed.",
   21: "Connects community identity, marketplace activity, finance evidence, and trust records into one working layer.",
   22: "Turns savings, repayment, business, retirement, and personal goals into clearer commitments and follow-through.",
+  23: "Gives schools, unions, churches, cooperatives, markets, and associations a structured domain for members, roles, branches, evidence, policies, and public claims.",
 };
 
 const CAPABILITY_ICON_NAMES: Record<number, GsnIconName> = {
@@ -486,6 +515,7 @@ const CAPABILITY_ICON_NAMES: Record<number, GsnIconName> = {
   20: "document",
   21: "community",
   22: "check",
+  23: "home",
 };
 
 function publicCapabilityLine(item: (typeof GMFN_CAPABILITIES)[number]) {
@@ -574,7 +604,30 @@ function PublicCapabilitiesGuidePage({
   ios: boolean;
   onClose: () => void;
 }) {
-  const useIosSingleColumn = compact && ios;
+  const useIosSingleColumn = compact;
+  const [publicCapabilityId, setPublicCapabilityId] = useState<number>(
+    GMFN_CAPABILITIES[0]?.id || 1
+  );
+  const [showAllPublicCapabilities, setShowAllPublicCapabilities] =
+    useState<boolean>(false);
+  const publicSelectedCapability =
+    GMFN_CAPABILITIES.find((item) => item.id === publicCapabilityId) ||
+    GMFN_CAPABILITIES[0];
+  const publicSelectedIndex = Math.max(
+    0,
+    GMFN_CAPABILITIES.findIndex((item) => item.id === publicSelectedCapability?.id)
+  );
+
+  function stepPublicCapability(direction: -1 | 1) {
+    setPublicCapabilityId((currentId) => {
+      const currentIndex = GMFN_CAPABILITIES.findIndex((item) => item.id === currentId);
+      const safeIndex = currentIndex >= 0 ? currentIndex : 0;
+      const nextIndex =
+        (safeIndex + direction + GMFN_CAPABILITIES.length) %
+        GMFN_CAPABILITIES.length;
+      return GMFN_CAPABILITIES[nextIndex]?.id || GMFN_CAPABILITIES[0]?.id || 1;
+    });
+  }
 
   return (
     <main style={publicGuideShell()}>
@@ -629,7 +682,7 @@ function PublicCapabilitiesGuidePage({
               letterSpacing: 0,
             }}
           >
-            22 things GSN does
+            {GMFN_CAPABILITY_COUNT} things GSN does
           </h1>
 
           <div
@@ -654,119 +707,289 @@ function PublicCapabilitiesGuidePage({
           />
         ) : null}
 
-        <section
-          style={{
-            display: "grid",
-            gridTemplateColumns: useIosSingleColumn
-              ? "1fr"
-              : compact
-              ? "repeat(auto-fit, minmax(158px, 1fr))"
-              : "repeat(4, minmax(0, 1fr))",
-            gap: useIosSingleColumn ? 9 : 10,
-          }}
-        >
-          {GMFN_CAPABILITIES.map((item) => {
-            const line = publicCapabilityLine(item);
-
-            return (
-              <article
-                key={item.id}
+        {publicSelectedCapability ? (
+          <section
+            style={{
+              display: "grid",
+              gap: 10,
+            }}
+          >
+            <article
+              data-my-gmfn-public-selected-capability="true"
+              style={{
+                ...(useIosSingleColumn
+                  ? publicCapabilityCardIos(publicSelectedCapability.category)
+                  : publicCapabilityCard(publicSelectedCapability.category)),
+                minHeight: useIosSingleColumn ? "auto" : 190,
+              }}
+            >
+              <span
                 style={
                   useIosSingleColumn
-                    ? publicCapabilityCardIos(item.category)
-                    : publicCapabilityCard(item.category)
+                    ? publicCapabilityNumberIos()
+                    : publicCapabilityNumber()
                 }
+              >
+                {publicSelectedCapability.id}
+              </span>
+
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: useIosSingleColumn
+                    ? "48px minmax(0, 1fr)"
+                    : "68px minmax(0, 1fr)",
+                  gap: useIosSingleColumn ? 10 : 15,
+                  alignItems: "start",
+                  paddingRight: useIosSingleColumn ? 28 : 44,
+                  minWidth: 0,
+                }}
               >
                 <span
                   style={
                     useIosSingleColumn
-                      ? publicCapabilityNumberIos()
-                      : publicCapabilityNumber()
+                      ? publicCapabilityIconIos()
+                      : { ...publicCapabilityIcon(), width: 68, height: 68 }
                   }
+                  aria-hidden="true"
                 >
-                  {item.id}
+                  <GsnLegacyIcon
+                    name={capabilityIconName(publicSelectedCapability)}
+                    size={useIosSingleColumn ? 36 : 48}
+                    decorative
+                  />
                 </span>
 
+                <div style={{ minWidth: 0 }}>
+                  <h2
+                    style={{
+                      margin: 0,
+                      color: "#071D33",
+                      fontSize: useIosSingleColumn ? 16 : 24,
+                      lineHeight: 1.12,
+                      fontWeight: 1000,
+                      letterSpacing: 0,
+                      paddingTop: 2,
+                      overflowWrap: "normal",
+                      wordBreak: "normal",
+                    }}
+                  >
+                    {publicSelectedCapability.title}
+                  </h2>
+
+                  <div
+                    style={{
+                      marginTop: 8,
+                      color: "#32465C",
+                      fontSize: useIosSingleColumn ? 12.5 : 15,
+                      lineHeight: useIosSingleColumn ? 1.36 : 1.45,
+                      fontWeight: 760,
+                      overflowWrap: "normal",
+                      wordBreak: "normal",
+                    }}
+                  >
+                    {publicCapabilityLine(publicSelectedCapability)}
+                  </div>
+
+                  <div
+                    style={{
+                      marginTop: 10,
+                      display: "flex",
+                      gap: 6,
+                      flexWrap: "wrap",
+                      maxWidth: "100%",
+                    }}
+                  >
+                    <span style={publicKeyChip("category")}>
+                      {publicCategoryKey(publicSelectedCapability.category)}
+                    </span>
+                    <span style={publicKeyChip("tone")}>
+                      {publicToneKey(publicSelectedCapability.tone)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </article>
+
+            <div
+              aria-label="Move through public GSN capabilities"
+              style={{
+                display: "grid",
+                gridTemplateColumns: useIosSingleColumn
+                  ? "minmax(0, 1fr) minmax(0, 1fr)"
+                  : "150px minmax(0, 1fr) 150px",
+                gap: 8,
+                alignItems: "center",
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => stepPublicCapability(-1)}
+                aria-label="Show previous public GSN capability"
+                style={capabilityPagerButton(false)}
+              >
+                <span aria-hidden="true">{"<"}</span>
+                Previous
+              </button>
+              {!useIosSingleColumn ? (
                 <div
                   style={{
-                    display: "grid",
-                    gridTemplateColumns: useIosSingleColumn
-                      ? "48px minmax(0, 1fr)"
-                      : "58px 1fr",
-                    gap: useIosSingleColumn ? 10 : 13,
-                    alignItems: "start",
-                    paddingRight: useIosSingleColumn ? 28 : 34,
-                    minWidth: 0,
+                    minHeight: 44,
+                    borderRadius: 999,
+                    border: "1px solid rgba(214,170,69,0.22)",
+                    background: "rgba(255,255,255,0.08)",
+                    color: "#D6E3F0",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    padding: "10px 12px",
+                    fontSize: 12,
+                    fontWeight: 950,
+                    lineHeight: 1.2,
+                    textAlign: "center",
                   }}
+                >
+                  {publicSelectedIndex + 1} of {GMFN_CAPABILITY_COUNT}
+                </div>
+              ) : null}
+              <button
+                type="button"
+                onClick={() => stepPublicCapability(1)}
+                aria-label="Show next public GSN capability"
+                style={capabilityPagerButton(true)}
+              >
+                Next
+                <span aria-hidden="true">{">"}</span>
+              </button>
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "center" }}>
+              <SecondaryButton
+                onClick={() => setShowAllPublicCapabilities((value) => !value)}
+                debugId="my-gmfn.public.toggle-all-capabilities"
+                style={publicCloseButton(false)}
+              >
+                {showAllPublicCapabilities ? "Hide all" : "Show all"}
+              </SecondaryButton>
+            </div>
+          </section>
+        ) : null}
+
+        {showAllPublicCapabilities ? (
+          <section
+            style={{
+              display: "grid",
+              gridTemplateColumns: useIosSingleColumn
+                ? "1fr"
+                : compact
+                ? "repeat(auto-fit, minmax(158px, 1fr))"
+                : "repeat(4, minmax(0, 1fr))",
+              gap: useIosSingleColumn ? 9 : 10,
+            }}
+          >
+            {GMFN_CAPABILITIES.map((item) => {
+              const line = publicCapabilityLine(item);
+
+              return (
+                <article
+                  key={item.id}
+                  style={
+                    useIosSingleColumn
+                      ? publicCapabilityCardIos(item.category)
+                      : publicCapabilityCard(item.category)
+                  }
                 >
                   <span
                     style={
                       useIosSingleColumn
-                        ? publicCapabilityIconIos()
-                        : publicCapabilityIcon()
+                        ? publicCapabilityNumberIos()
+                        : publicCapabilityNumber()
                     }
-                    aria-hidden="true"
                   >
-                    <GsnLegacyIcon
-                      name={capabilityIconName(item)}
-                      size={useIosSingleColumn ? 36 : 42}
-                      decorative
-                    />
+                    {item.id}
                   </span>
 
-                  <div style={{ minWidth: 0 }}>
-                    <h2
-                      style={{
-                        margin: 0,
-                        color: "#071D33",
-                        fontSize: useIosSingleColumn ? 16 : 17,
-                        lineHeight: useIosSingleColumn ? 1.14 : 1.18,
-                        fontWeight: 1000,
-                        letterSpacing: 0,
-                        paddingTop: 2,
-                        overflowWrap: "normal",
-                        wordBreak: "normal",
-                      }}
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: useIosSingleColumn
+                        ? "48px minmax(0, 1fr)"
+                        : "58px 1fr",
+                      gap: useIosSingleColumn ? 10 : 13,
+                      alignItems: "start",
+                      paddingRight: useIosSingleColumn ? 28 : 34,
+                      minWidth: 0,
+                    }}
+                  >
+                    <span
+                      style={
+                        useIosSingleColumn
+                          ? publicCapabilityIconIos()
+                          : publicCapabilityIcon()
+                      }
+                      aria-hidden="true"
                     >
-                      {item.title}
-                    </h2>
+                      <GsnLegacyIcon
+                        name={capabilityIconName(item)}
+                        size={useIosSingleColumn ? 36 : 42}
+                        decorative
+                      />
+                    </span>
 
-                    <div
-                      style={{
-                        marginTop: 8,
-                        color: "#32465C",
-                        fontSize: useIosSingleColumn ? 12.5 : 13,
-                        lineHeight: useIosSingleColumn ? 1.36 : 1.42,
-                        fontWeight: 700,
-                        overflowWrap: "normal",
-                        wordBreak: "normal",
-                      }}
-                    >
-                      {line}
-                    </div>
+                    <div style={{ minWidth: 0 }}>
+                      <h2
+                        style={{
+                          margin: 0,
+                          color: "#071D33",
+                          fontSize: useIosSingleColumn ? 16 : 17,
+                          lineHeight: useIosSingleColumn ? 1.14 : 1.18,
+                          fontWeight: 1000,
+                          letterSpacing: 0,
+                          paddingTop: 2,
+                          overflowWrap: "normal",
+                          wordBreak: "normal",
+                        }}
+                      >
+                        {item.title}
+                      </h2>
 
-                    <div
-                      style={{
-                        marginTop: 10,
-                        display: "flex",
-                        gap: 6,
-                        flexWrap: "wrap",
-                        maxWidth: "100%",
-                      }}
-                    >
-                      <span style={publicKeyChip("category")}>
-                        {publicCategoryKey(item.category)}
-                      </span>
-                      <span style={publicKeyChip("tone")}>
-                        {publicToneKey(item.tone)}
-                      </span>
+                      <div
+                        style={{
+                          marginTop: 8,
+                          color: "#32465C",
+                          fontSize: useIosSingleColumn ? 12.5 : 13,
+                          lineHeight: useIosSingleColumn ? 1.36 : 1.42,
+                          fontWeight: 700,
+                          overflowWrap: "normal",
+                          wordBreak: "normal",
+                        }}
+                      >
+                        {line}
+                      </div>
+
+                      <div
+                        style={{
+                          marginTop: 10,
+                          display: "flex",
+                          gap: 6,
+                          flexWrap: "wrap",
+                          maxWidth: "100%",
+                        }}
+                      >
+                        <span style={publicKeyChip("category")}>
+                          {publicCategoryKey(item.category)}
+                        </span>
+                        <span style={publicKeyChip("tone")}>
+                          {publicToneKey(item.tone)}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </article>
-            );
-          })}
-        </section>
+                </article>
+              );
+            })}
+          </section>
+        ) : null}
 
         <div
           style={{
@@ -1022,6 +1245,20 @@ export default function MyGMFNAndIPage() {
       GMFN_CAPABILITIES[0],
     [selectedCapabilityId]
   );
+  const selectedCapabilityIndex = useMemo(() => {
+    const index = GMFN_CAPABILITIES.findIndex((item) => item.id === selectedCapability?.id);
+    return index >= 0 ? index : 0;
+  }, [selectedCapability?.id]);
+  function stepCapability(direction: -1 | 1) {
+    setSelectedCapabilityId((currentId) => {
+      const currentIndex = GMFN_CAPABILITIES.findIndex((item) => item.id === currentId);
+      const safeIndex = currentIndex >= 0 ? currentIndex : 0;
+      const nextIndex =
+        (safeIndex + direction + GMFN_CAPABILITIES.length) %
+        GMFN_CAPABILITIES.length;
+      return GMFN_CAPABILITIES[nextIndex]?.id || GMFN_CAPABILITIES[0]?.id || 1;
+    });
+  }
   const topNavHomeTo = isAppRoute ? routes.dashboard : "/cover";
   const topNavHomeLabel = isAppRoute ? "Dashboard" : "Cover";
   const topNavTitle = isAppRoute ? "My GSN and I" : "GSN Guide";
@@ -1306,7 +1543,7 @@ export default function MyGMFNAndIPage() {
                 fontWeight: 700,
               }}
             >
-              See the 22 things GSN does and where each tool lives.
+              See the {capabilityCount} things GSN does and where each tool lives.
             </div>
 
             <StableCtaLink
@@ -1461,7 +1698,7 @@ export default function MyGMFNAndIPage() {
                 lineHeight: 1.08,
               }}
             >
-              22 things GSN does
+              {capabilityCount} things GSN does
             </div>
 
             <div
@@ -1511,6 +1748,57 @@ export default function MyGMFNAndIPage() {
                   </option>
                 ))}
               </select>
+              <div
+                aria-label="Move through GSN capabilities"
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: isCompact
+                    ? "minmax(0, 1fr) minmax(0, 1fr)"
+                    : "140px minmax(0, 1fr) 140px",
+                  gap: 8,
+                  alignItems: "center",
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={() => stepCapability(-1)}
+                  aria-label="Show previous GSN capability"
+                  style={capabilityPagerButton(false)}
+                >
+                  <span aria-hidden="true">{"<"}</span>
+                  Previous
+                </button>
+                {!isCompact ? (
+                  <div
+                    style={{
+                      minHeight: 44,
+                      borderRadius: 999,
+                      border: "1px solid rgba(37,78,119,0.12)",
+                      background: "rgba(248,251,255,0.92)",
+                      color: "#526579",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      padding: "10px 12px",
+                      fontSize: 12,
+                      fontWeight: 950,
+                      lineHeight: 1.2,
+                      textAlign: "center",
+                    }}
+                  >
+                    {selectedCapabilityIndex + 1} of {capabilityCount}
+                  </div>
+                ) : null}
+                <button
+                  type="button"
+                  onClick={() => stepCapability(1)}
+                  aria-label="Show next GSN capability"
+                  style={capabilityPagerButton(true)}
+                >
+                  Next
+                  <span aria-hidden="true">{">"}</span>
+                </button>
+              </div>
             </div>
 
             {selectedCapability ? (

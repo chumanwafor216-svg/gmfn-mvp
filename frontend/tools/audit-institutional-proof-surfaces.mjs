@@ -161,8 +161,8 @@ assertContains(
 
 assertContains(
   "trustPaperMarks",
-  /export function TrustPaperWatermarkField[\s\S]*Array\.from\(\{ length: 12 \}[\s\S]*data-gsn-trust-paper-watermark-field="true"/,
-  "Shared Trust Paper marks must provide a recurring watermark field for long public records, not only a single top or bottom mark."
+  /export function TrustPaperWatermarkField[\s\S]*Array\.from\(\{ length: 30 \}[\s\S]*fieldOpacity = Math\.max\(opacity, 0\.068\)[\s\S]*data-gsn-trust-paper-watermark-field="true"[\s\S]*gridAutoRows: "minmax\(118px, 1fr\)"[\s\S]*GSNBrandMark[\s\S]*GSN/,
+  "Shared Trust Paper marks must provide a stronger recurring GSN watermark field for long public records, not only a single top or bottom mark."
 );
 
 function assertOrdered(key, snippets, message) {
