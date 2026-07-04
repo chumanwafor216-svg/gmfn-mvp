@@ -525,13 +525,11 @@ function communityName(currentClan: any, clanId: number): string {
 }
 
 function communityPublicId(currentClan: any): string {
-  return (
-    firstTruthy(
-      currentClan?.community_code,
-      currentClan?.community?.community_code,
-      currentClan?.profile?.community_code,
-      currentClan?.marketplace?.community_code
-    ) || "Pending"
+  return firstTruthy(
+    currentClan?.community_code,
+    currentClan?.community?.community_code,
+    currentClan?.profile?.community_code,
+    currentClan?.marketplace?.community_code
   );
 }
 
@@ -833,16 +831,19 @@ export default function LoanReadinessPage() {
   }, [me, currentClan]);
 
   const gmfnId = useMemo(() => {
-    return firstTruthy(currentGmfnId, "Awaiting issue");
+    return firstTruthy(currentGmfnId, "Not issued yet");
   }, [currentGmfnId]);
 
   const communityLabel = useMemo(() => {
     return communityName(currentClan, selectedClanId);
   }, [currentClan, selectedClanId]);
 
-  const publicCommunityId = useMemo(() => {
+  const publicCommunityIdValue = useMemo(() => {
     return communityPublicId(currentClan);
   }, [currentClan]);
+  const publicCommunityId = useMemo(() => {
+    return firstTruthy(publicCommunityIdValue, "No community ID yet");
+  }, [publicCommunityIdValue]);
 
   const memberRole = useMemo(() => {
     return communityRole(currentClan);
@@ -1149,10 +1150,10 @@ export default function LoanReadinessPage() {
       buildGsnSupportEvidenceShareText({
         title: "GSN Support Readiness Snapshot",
         memberName,
-        gsnId: gmfnId,
+        gsnId: currentGmfnId,
         memberRole,
         communityName: communityLabel,
-        communityId: publicCommunityId,
+        communityId: publicCommunityIdValue,
         routeName: "Support Readiness",
         loanId: activeBorrowerLoan?.id || "",
         amount: activeBorrowerLoan
@@ -1594,7 +1595,7 @@ export default function LoanReadinessPage() {
                   lineHeight: 1.25,
                 }}
               >
-                {cameFromWithdrawalSupport ? safeStr(supportGap || "Awaiting issue") : "Not available yet"}
+                {cameFromWithdrawalSupport ? safeStr(supportGap || "Not calculated yet") : "Not available yet"}
               </div>
             </div>
 
@@ -1750,10 +1751,10 @@ export default function LoanReadinessPage() {
 
                 <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
                   <div style={helperText()}>
-                    Requested withdrawal amount: {withdrawalAmount || "Awaiting issue"} {poolCurrency}
+                    Requested withdrawal amount: {withdrawalAmount || "No withdrawal amount yet"} {poolCurrency}
                   </div>
                   <div style={helperText()}>
-                    Support gap: {safeStr(supportGap || "Awaiting issue")}
+                    Support gap: {safeStr(supportGap || "Not calculated yet")}
                   </div>
                   {withdrawalNote ? (
                     <div style={helperText()}>

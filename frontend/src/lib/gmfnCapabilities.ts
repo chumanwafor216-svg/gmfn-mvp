@@ -21,6 +21,7 @@ export type GmfnCapability = {
   whatItIs?: string;
   howItWorks?: string;
   whyItMatters?: string;
+  decisionGuideLine?: string;
 };
 
 function safeStr(x: any): string {
@@ -53,6 +54,8 @@ export const GMFN_CAPABILITIES: readonly GmfnCapability[] = [
     category: "trade",
     tone: "focus",
     priority: 6,
+    decisionGuideLine:
+      "Before value moves, check what identity, community, TrustSlip, merchant, and trade evidence already exists.",
   },
   {
     id: 2,
@@ -63,6 +66,8 @@ export const GMFN_CAPABILITIES: readonly GmfnCapability[] = [
     category: "trade",
     tone: "focus",
     priority: 6,
+    decisionGuideLine:
+      "Before buying or selling, read shop identity, member context, TrustSlip evidence, and trade history together.",
   },
   {
     id: 3,
@@ -73,6 +78,8 @@ export const GMFN_CAPABILITIES: readonly GmfnCapability[] = [
     category: "trade",
     tone: "focus",
     priority: 6,
+    decisionGuideLine:
+      "When trust crosses communities, carry identity and community evidence without hiding where each claim came from.",
   },
   {
     id: 4,
@@ -83,6 +90,8 @@ export const GMFN_CAPABILITIES: readonly GmfnCapability[] = [
     category: "identity",
     tone: "alert",
     priority: 8,
+    decisionGuideLine:
+      "Before action, look for weak evidence, stale records, mismatch warnings, and confirmation paths.",
   },
   {
     id: 5,
@@ -93,6 +102,8 @@ export const GMFN_CAPABILITIES: readonly GmfnCapability[] = [
     category: "visibility",
     tone: "spotlight",
     priority: 7,
+    decisionGuideLine:
+      "Before attention becomes trust, separate useful visibility from verification and keep the public record attached.",
   },
   {
     id: 6,
@@ -103,6 +114,8 @@ export const GMFN_CAPABILITIES: readonly GmfnCapability[] = [
     category: "visibility",
     tone: "spotlight",
     priority: 7,
+    decisionGuideLine:
+      "When deciding who should be seen, let recorded evidence support reach while keeping evidence limits visible.",
   },
   {
     id: 7,
@@ -113,6 +126,8 @@ export const GMFN_CAPABILITIES: readonly GmfnCapability[] = [
     category: "visibility",
     tone: "spotlight",
     priority: 7,
+    decisionGuideLine:
+      "Before a shop travels across communities, keep owner, shelf, contact, and verification context connected.",
   },
   {
     id: 8,
@@ -123,6 +138,8 @@ export const GMFN_CAPABILITIES: readonly GmfnCapability[] = [
     category: "finance",
     tone: "focus",
     priority: 7,
+    decisionGuideLine:
+      "Before backing a request, read amount, purpose, duration, repayment plan, supporter fit, and responsibility.",
   },
   {
     id: 9,
@@ -133,6 +150,8 @@ export const GMFN_CAPABILITIES: readonly GmfnCapability[] = [
     category: "support",
     tone: "calm",
     priority: 6,
+    decisionGuideLine:
+      "Before standing behind someone, read the request, relationship context, trust evidence, and responsibility.",
   },
   {
     id: 10,
@@ -143,6 +162,8 @@ export const GMFN_CAPABILITIES: readonly GmfnCapability[] = [
     category: "support",
     tone: "alert",
     priority: 8,
+    decisionGuideLine:
+      "In urgent moments, reduce uncertainty by checking identity, community confirmation, TrustSlip, and need evidence.",
   },
   {
     id: 11,
@@ -153,6 +174,8 @@ export const GMFN_CAPABILITIES: readonly GmfnCapability[] = [
     category: "community",
     tone: "focus",
     priority: 6,
+    decisionGuideLine:
+      "Across distance, give supporters and traders controlled community evidence before they send value or opportunity.",
   },
   {
     id: 12,
@@ -163,6 +186,8 @@ export const GMFN_CAPABILITIES: readonly GmfnCapability[] = [
     category: "finance",
     tone: "calm",
     priority: 6,
+    decisionGuideLine:
+      "For savings circles, keep contribution, timing, payout, and community context visible without becoming a bank.",
   },
   {
     id: 13,
@@ -173,6 +198,8 @@ export const GMFN_CAPABILITIES: readonly GmfnCapability[] = [
     category: "finance",
     tone: "focus",
     priority: 6,
+    decisionGuideLine:
+      "Turn contribution, repayment, support, and follow-through into records future decisions can review.",
   },
   {
     id: 14,
@@ -183,6 +210,8 @@ export const GMFN_CAPABILITIES: readonly GmfnCapability[] = [
     category: "community",
     tone: "calm",
     priority: 6,
+    decisionGuideLine:
+      "When life moves, keep identity, role, membership, and trust trail readable without merging communities.",
   },
   {
     id: 15,
@@ -199,6 +228,8 @@ export const GMFN_CAPABILITIES: readonly GmfnCapability[] = [
       "Trust Passport keeps the fuller record of money promises, repayment behaviour, support given, supporter responsibility, identity continuity, and recorded community-backed behaviour. TrustSlip gives a smaller evidence record that can be checked before a seller releases goods on credit, before a loan is approved, or before someone accepts risk.",
     whyItMatters:
       "GSN turns informal community vouching into portable, verifiable trust evidence, especially for people who are normally invisible to formal credit systems.",
+    decisionGuideLine:
+      "When identity must travel, share a bounded GSN ID, Trust Passport, TrustSlip, credential, and verification boundary.",
   },
   {
     id: 16,
@@ -209,6 +240,8 @@ export const GMFN_CAPABILITIES: readonly GmfnCapability[] = [
     category: "identity",
     tone: "focus",
     priority: 7,
+    decisionGuideLine:
+      "Let earned reputation move with recorded behaviour, relationship evidence, community context, and current reading.",
   },
   {
     id: 17,
@@ -219,6 +252,8 @@ export const GMFN_CAPABILITIES: readonly GmfnCapability[] = [
     category: "visibility",
     tone: "spotlight",
     priority: 7,
+    decisionGuideLine:
+      "Before customers rely on scattered shop claims, give them one public shop home with verification entry points.",
   },
   {
     id: 18,
@@ -229,6 +264,8 @@ export const GMFN_CAPABILITIES: readonly GmfnCapability[] = [
     category: "work",
     tone: "focus",
     priority: 6,
+    decisionGuideLine:
+      "Before service work is chosen, connect demand, public identity, community context, and follow-up evidence.",
   },
   {
     id: 19,
@@ -239,6 +276,8 @@ export const GMFN_CAPABILITIES: readonly GmfnCapability[] = [
     category: "work",
     tone: "focus",
     priority: 6,
+    decisionGuideLine:
+      "Before hiring or assigning work, check identity, role evidence, activity, TrustSlip, and confirmation context.",
   },
   {
     id: 20,
@@ -249,6 +288,8 @@ export const GMFN_CAPABILITIES: readonly GmfnCapability[] = [
     category: "trade",
     tone: "focus",
     priority: 7,
+    decisionGuideLine:
+      "Before opportunity is missed, make demand visible with requester context, placement, and response trail.",
   },
   {
     id: 21,
@@ -259,6 +300,8 @@ export const GMFN_CAPABILITIES: readonly GmfnCapability[] = [
     category: "community",
     tone: "calm",
     priority: 8,
+    decisionGuideLine:
+      "Help a community read identity, marketplace, finance, trust, and opportunity records as one working layer.",
   },
   {
     id: 22,
@@ -276,6 +319,8 @@ export const GMFN_CAPABILITIES: readonly GmfnCapability[] = [
       "The app can help a member start a savings target, business target, repayment target, retirement-readiness target, or another structured commitment, then turn that intention into a clearer plan, reminders, step-by-step progress, and visible follow-through.",
     whyItMatters:
       "The point is not to collect goals. The point is to build execution discipline that can support savings behavior, retirement readiness, repayment follow-through, business targets, and more dependable action over time.",
+    decisionGuideLine:
+      "Turn intention into a visible commitment record with progress, reminders, completion, and follow-through evidence.",
   },
   {
     id: 23,
@@ -293,6 +338,8 @@ export const GMFN_CAPABILITIES: readonly GmfnCapability[] = [
       "A domain can hold the institution's public identity, operating units, member placement, policies, evidence maps, service lanes, participation records, and controlled public claims in one structured space.",
     whyItMatters:
       "It separates institutional communities from personal marketplaces, so people can see whether they are dealing with a real organized body, a branch under that body, or an ordinary marketplace community.",
+    decisionGuideLine:
+      "Keep institutional membership, roles, branches, services, governance, and public claims separate from personal marketplaces.",
   },
 ] as const;
 
@@ -325,6 +372,7 @@ export function getGmfnCapabilityGuideLine(id: any, fallbackSeed?: unknown): str
   }
 
   return (
+    safeStr(capability.decisionGuideLine) ||
     safeStr(capability.whyItMatters) ||
     safeStr(capability.whatItIs) ||
     safeStr(capability.proverb) ||

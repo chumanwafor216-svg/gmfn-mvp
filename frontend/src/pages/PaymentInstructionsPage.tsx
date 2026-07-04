@@ -426,7 +426,7 @@ function getCommunityPublicId(currentClan: any): string {
       currentClan?.community?.community_code,
       currentClan?.profile?.community_code,
       currentClan?.marketplace?.community_code
-    ) || "Awaiting issue"
+    ) || "No community ID yet"
   );
 }
 
@@ -1382,7 +1382,7 @@ export default function PaymentInstructionsPage() {
     const lines = [
       `Community: ${communityLabel}`,
       `Community ID: ${publicCommunityCode}`,
-      `GSN ID: ${currentGmfnId || "Awaiting issue"}`,
+      `GSN ID: ${currentGmfnId || "Not issued yet"}`,
       `Member: ${memberName}`,
       memberRole ? `Role: ${memberRole}` : "",
       contributionReason ? `Purpose: ${contributionReason}` : "",
@@ -1865,7 +1865,7 @@ export default function PaymentInstructionsPage() {
               Community ID: {publicCommunityCode}
             </span>
             <span style={moneyInIdentityChip(Boolean(currentGmfnId))}>
-              GSN ID: {currentGmfnId || "Awaiting issue"}
+              GSN ID: {currentGmfnId || "Not issued yet"}
             </span>
           </div>
           {identityBlockerText ? (

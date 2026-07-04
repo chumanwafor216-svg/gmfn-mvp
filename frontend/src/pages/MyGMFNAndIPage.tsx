@@ -17,7 +17,6 @@ import {
 import { getCurrentClan, getMe, getMySettings, getSelectedClanId } from "../lib/api";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 import {
-  brandBadge,
   brandHelperText,
   brandInnerCard,
   brandPageCard,
@@ -29,6 +28,8 @@ import {
   GMFN_CAPABILITY_COUNT,
   GMFN_CAPABILITIES,
 } from "../lib/gmfnCapabilities";
+import { buildIdentityEvidenceCompletion } from "../lib/identityEvidenceCompletion";
+import { buildTrustPassportViewModel } from "../lib/trustPassportViewModel";
 import { isIosManualInstallTarget } from "../lib/pwaInstall";
 import * as api from "../lib/api";
 
@@ -51,11 +52,13 @@ type CapabilityMapCategory =
 
 type CapabilityMapDetail = {
   category: CapabilityMapCategory;
-  problem: string;
+  realWorld: string;
+  danger: string;
+  decision: string;
   tools: string;
   where: string;
   evidence: string;
-  helps: string;
+  summary: string;
 };
 
 const SETTINGS_STORAGE_KEY = "gmfn.myGmfnAndI.settings.v2";
@@ -78,6 +81,47 @@ function firstTruthy(...values: any[]): string {
     if (text) return text;
   }
   return "";
+}
+
+function truthyEvidence(...values: any[]): boolean {
+  for (const value of values) {
+    if (value === true) return true;
+    const text = safeStr(value).toLowerCase();
+    if (
+      [
+        "true",
+        "yes",
+        "recorded",
+        "verified",
+        "active",
+        "confirmed",
+        "complete",
+        "completed",
+      ].includes(text)
+    ) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function firstPositiveNumber(...values: any[]): number {
+  for (const value of values) {
+    const n = Number(value || 0);
+    if (Number.isFinite(n) && n > 0) return n;
+  }
+
+  return 0;
+}
+
+function normalizeIdentityTrustSlip(raw: any): any | null {
+  if (!raw) return null;
+
+  const src = raw?.item || raw?.summary || raw?.trust_slip || raw?.data || raw;
+  if (!src || typeof src !== "object") return null;
+
+  return src;
 }
 
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
@@ -156,20 +200,6 @@ function capabilityCardTop(): React.CSSProperties {
 
 function sectionLabel(): React.CSSProperties {
   return brandSectionLabel();
-}
-
-function identityBadge(primary = false): React.CSSProperties {
-  return {
-    ...brandBadge(primary),
-    background: primary
-      ? "rgba(47,129,247,0.18)"
-      : "rgba(255,255,255,0.10)",
-    color: primary ? "#7DB7FF" : "#E6F1FF",
-    border: primary
-      ? "1px solid rgba(47,129,247,0.34)"
-      : "1px solid rgba(255,255,255,0.16)",
-    boxShadow: primary ? "inset 0 1px 0 rgba(255,255,255,0.10)" : "none",
-  };
 }
 
 function helperText(): React.CSSProperties {
@@ -516,187 +546,233 @@ const CAPABILITY_MAP_CATEGORIES: readonly CapabilityMapCategory[] = [
 const CAPABILITY_MAP_DETAILS: Record<number, CapabilityMapDetail> = {
   1: {
     category: "Buying & Selling",
-    problem: "Goods, credit, or service can move before the other side has enough identity and community evidence.",
-    tools: "TrustSlip, Merchant Verification, Community Member Credential, Protected Trade Record.",
+    realWorld: "Every day, people release goods, provide services, or extend credit to someone they only partly know.",
+    danger: "The buyer may be genuine, but the seller can still lose stock, time, cash flow, or reputation when the decision rests only on promises.",
+    decision: "GSN changes the question from \"Can I trust this person?\" to \"What evidence already exists before I release value?\"",
+    tools: "Community Verification -> Merchant Verification -> TrustSlip -> Protected Trade Record -> Merchant Release Rail.",
     where: "Marketplace -> Members & Trade; Trust -> TrustSlip; Shop -> Public Shop.",
-    evidence: "Identity check, community context, TrustSlip code, release note, and trade evidence record.",
-    helps: "Reduces blind release by making the seller check evidence before accepting payment risk or credit risk.",
+    evidence: "Merchant Release Record, Trade Evidence, Community Context, Trust Event, and future TrustSlip evidence.",
+    summary: "Reduces blind release by making the seller look for evidence before accepting payment risk or credit risk.",
   },
   2: {
     category: "Buying & Selling",
-    problem: "People buy, sell, supply, and trade without enough visible evidence about who they are dealing with.",
-    tools: "Public Shop, Merchant Verification, TrustSlip, Merchant Release Rail, Shop Diary, Vault.",
+    realWorld: "Buyers, sellers, suppliers, and service providers often meet through messages, referrals, or marketplace posts with thin identity context.",
+    danger: "A good-looking offer can hide a weak seller, a false buyer, an unreliable supplier, or a trade that leaves no usable record afterwards.",
+    decision: "GSN lets both sides read shop identity, member context, TrustSlip evidence, and trade history before committing.",
+    tools: "Public Shop -> Merchant Verification -> TrustSlip -> Merchant Release Rail -> Shop Diary -> Vault.",
     where: "Marketplace -> Members & Trade; Shop -> Public Shop / Vault; Trust -> TrustSlip.",
     evidence: "Shop identity, shelf activity, followers, trade records, verification links, and public shop record.",
-    helps: "Reduces blind dealing by connecting shops, buyers, sellers, followers, and trade activity to visible community evidence.",
+    summary: "Turns buying and selling into an evidence-backed decision instead of a confidence guess.",
   },
   3: {
     category: "Buying & Selling",
-    problem: "A trustworthy member or shop may lose credibility when moving beyond one local circle.",
-    tools: "GSN ID, Community Record, Public Shop, TrustSlip, Community Credential.",
+    realWorld: "A person may be trusted in one street, church, union, market, or family circle but unknown in another.",
+    danger: "Without portable context, good members restart from zero while bad actors can move to a new circle with no visible history.",
+    decision: "GSN carries identity and community evidence across circles while keeping each community boundary readable.",
+    tools: "GSN ID -> Community Record -> Public Shop -> TrustSlip -> Community Credential.",
     where: "Marketplace -> Members & Trade; Community -> Community Record; Trust -> TrustSlip.",
     evidence: "Cross-community identity trail, member credential, shop record, and community-scoped confirmation.",
-    helps: "Lets trust travel with context while keeping each community boundary visible.",
+    summary: "Lets trade travel with context without pretending every community has made the same judgement.",
   },
   4: {
     category: "Security & Privacy",
-    problem: "Fraud risk often becomes obvious only after goods, money, or access has already moved.",
-    tools: "Trust Reading, TrustSlip Verify, Community Member Verify, Trust Passport boundary notes.",
+    realWorld: "Fraud often looks ordinary until value, access, or reputation has already moved.",
+    danger: "By the time the pattern is clear, the victim may have lost goods, money, time, or social standing.",
+    decision: "GSN surfaces weak evidence, missing renewal, inactive records, and boundary notes before people act.",
+    tools: "Trust Reading -> TrustSlip Verify -> Community Member Verify -> Trust Passport boundary notes.",
     where: "Trust -> TrustSlip; Marketplace -> Members & Trade; Community -> Verify Member.",
     evidence: "Visible score, grade, caution notes, missing evidence signals, and verification limits.",
-    helps: "Shows warning signs before action without pretending GSN can guarantee a person's future behaviour.",
+    summary: "Moves caution to the front of the decision without pretending GSN can guarantee future behaviour.",
   },
   5: {
     category: "Visibility & Opportunity",
-    problem: "Useful shop updates can disappear in noise before the right community sees them.",
-    tools: "Spotlight, Public Shop, Marketplace Broadcast, Shop Gallery.",
+    realWorld: "A useful shop update, service offer, or opportunity can disappear before the right people see it.",
+    danger: "Attention can reward noise, timing, or loud posting instead of recorded value and accountable identity.",
+    decision: "GSN gives approved updates a clearer place to be seen while separating visibility from verification.",
+    tools: "Spotlight -> Public Shop -> Marketplace Broadcast -> Shop Gallery.",
     where: "Shop -> Spotlight; Marketplace -> Public Shops; Dashboard -> Spotlight preview.",
     evidence: "Published spotlight, shop owner identity, community placement, media record, and timestamp.",
-    helps: "Gives recorded value a clearer place to be seen while keeping visibility separate from verification.",
+    summary: "Helps recorded value reach people without turning publicity into a trust guarantee.",
   },
   6: {
     category: "Visibility & Opportunity",
-    problem: "Attention can reward noise instead of stronger evidence, leaving serious members harder to find.",
-    tools: "Reputation signals, Trust Reading, Spotlight ranking, Marketplace visibility.",
+    realWorld: "Serious members can be harder to find than louder members when visibility depends only on posting volume.",
+    danger: "Opportunity can flow toward noise while stronger evidence stays hidden from buyers, supporters, and partners.",
+    decision: "GSN lets recorded reputation support reach while still showing the limits of the evidence.",
+    tools: "Reputation signals -> Trust Reading -> Spotlight ranking -> Marketplace visibility.",
     where: "Dashboard -> Market Wisdom; Marketplace -> Public Shops; Trust -> Trust Passport.",
     evidence: "Trust score band, activity trail, shop status, community context, and current public record.",
-    helps: "Lets stronger recorded evidence support visibility without turning reach into a trust guarantee.",
+    summary: "Lets stronger recorded evidence influence visibility without confusing reach with certainty.",
   },
   7: {
     category: "Visibility & Opportunity",
-    problem: "A merchant can rebuild the same shop identity again and again across communities.",
-    tools: "Public Shop, Shop Gallery, Spotlight, WhatsApp contact, Merchant Verification.",
+    realWorld: "A merchant may sell across several communities while still relying on scattered screenshots, chats, and repeated introductions.",
+    danger: "Customers cannot easily tell whether the shop, owner, shelf, and contact path belong together.",
+    decision: "GSN gives one merchant a controlled shop identity that can travel with community and verification context.",
+    tools: "Public Shop -> Shop Gallery -> Spotlight -> WhatsApp contact -> Merchant Verification.",
     where: "Shop -> Public Shop; Marketplace -> Public Shops; Trust -> Merchant Verification.",
     evidence: "One public shop link, shelf items, spotlight media, owner GSN ID, and verification entry points.",
-    helps: "Keeps one shop presence connected across marketplaces while preserving community context.",
+    summary: "Keeps one shop presence connected across marketplaces while preserving community context.",
   },
   8: {
     category: "Finance & Support",
-    problem: "Support requests can look like informal begging or blind lending when amount, purpose, and backing are unclear.",
-    tools: "Loans & Support, Support Draft, Fit Check, Supporter List, Guarantor Request.",
+    realWorld: "A person may need money, stock, school fees, emergency support, or working capital before formal finance will listen.",
+    danger: "If amount, purpose, duration, and backing are unclear, support can become blind lending, pressure, or informal begging.",
+    decision: "GSN turns the request into a reviewable decision with purpose, fit, supporters, and repayment context visible.",
+    tools: "Loans & Support -> Support Draft -> Fit Check -> Supporter List -> Guarantor Request.",
     where: "Marketplace -> Loans & Support; Loans -> Readiness / Suggestions / Workbench.",
     evidence: "Amount, purpose, duration, repayment plan, fit signal, suggested supporters, and request record.",
-    helps: "Turns support into a visible request that people can review before backing it.",
+    summary: "Turns support into a visible request people can review before backing it.",
   },
   9: {
     category: "Finance & Support",
-    problem: "People who want to help may not know the request, responsibility, or evidence around the person asking.",
-    tools: "Supporter Check, Guarantor Inbox, Trust Passport, Community Relationship Evidence.",
+    realWorld: "People often want to help someone they know, but they may not know the full responsibility attached to that help.",
+    danger: "Support can become emotional pressure, unclear obligation, or hidden risk for the person standing behind the request.",
+    decision: "GSN helps a supporter read the request, relationship context, responsibility, and trust evidence before saying yes.",
+    tools: "Supporter Check -> Guarantor Inbox -> Trust Passport -> Community Relationship Evidence.",
     where: "Loans -> Guarantor Inbox; Trust -> Trust Passport; Marketplace -> Support Requests.",
     evidence: "Support invitation, relationship context, trust reading, guarantor decision, and support trail.",
-    helps: "Keeps help connected to responsibility, evidence, and community-backed judgement.",
+    summary: "Keeps help connected to responsibility, evidence, and community-backed judgement.",
   },
   10: {
     category: "Finance & Support",
-    problem: "Urgent support decisions often happen before identity, community, or need can be checked.",
-    tools: "TrustSlip, Community Confirmation, Demand Box, Support Request, Identity Record.",
+    realWorld: "Urgent support decisions often arrive through calls, messages, or relatives before anyone has time to verify the situation.",
+    danger: "A real emergency can be delayed, while a false or unclear request can pull money and attention away from safer decisions.",
+    decision: "GSN shortens uncertainty by putting identity, community confirmation, TrustSlip context, and need record together.",
+    tools: "TrustSlip -> Community Confirmation -> Demand Box -> Support Request -> Identity Record.",
     where: "Trust -> TrustSlip; Community -> Confirmation; Marketplace -> Demand Box / Support.",
     evidence: "Urgent need record, member identity, community confirmation, TrustSlip code, and support response.",
-    helps: "Shortens uncertainty in urgent moments while preserving the evidence boundary.",
+    summary: "Shortens uncertainty in urgent moments while preserving the evidence boundary.",
   },
   11: {
     category: "Community & Membership",
-    problem: "Diaspora members and distant supporters often cannot read local trust context clearly.",
-    tools: "Community Record, TrustSlip, Public Shop, Community Confirmation, GSN ID.",
+    realWorld: "Diaspora members and distant supporters often make decisions from far away with only family reports or chat messages.",
+    danger: "Distance weakens context, so support, trade, and opportunity can depend on incomplete or one-sided information.",
+    decision: "GSN gives distant readers controlled community evidence before they send support, goods, or opportunity.",
+    tools: "Community Record -> TrustSlip -> Public Shop -> Community Confirmation -> GSN ID.",
     where: "Community -> Community Record; Trust -> TrustSlip; Shop -> Public Shop.",
     evidence: "Community membership, public identity, shop record, confirmation notes, and verification link.",
-    helps: "Lets people across distance see controlled evidence before sending support, goods, or opportunity.",
+    summary: "Lets people across distance see controlled evidence before sending support, goods, or opportunity.",
   },
   12: {
     category: "Finance & Support",
-    problem: "Savings circles can depend on memory and informal pressure without a visible contribution trail.",
-    tools: "ROSCA Desk, Contribution Cycle, Payout Record, Member Evidence.",
+    realWorld: "Savings circles depend on repeated contribution, timing, and mutual confidence.",
+    danger: "When memory and informal pressure are the only record, missed contributions and payout disputes are harder to resolve.",
+    decision: "GSN adds visible contribution and payout context around familiar savings culture without acting as the bank.",
+    tools: "ROSCA Desk -> Contribution Cycle -> Payout Record -> Member Evidence.",
     where: "Marketplace -> Loans & Support -> ROSCA; Finance -> Community Money.",
     evidence: "Cycle setup, selected members, contribution schedule, payout record, and community context.",
-    helps: "Adds a visible trust layer to familiar savings culture without turning GSN into a bank.",
+    summary: "Adds a visible trust layer to familiar savings culture without turning GSN into a bank.",
   },
   13: {
     category: "Trust & Evidence",
-    problem: "Contribution, repayment, and support history can disappear when people change groups or phones.",
-    tools: "Trust Events, Finance Records, Repayment Record, Support Evidence, Trust Passport.",
+    realWorld: "People contribute, repay, support, volunteer, sell, and follow through, but much of that history disappears.",
+    danger: "When the record is lost, future decisions return to hearsay even after someone has already built evidence.",
+    decision: "GSN turns useful behaviour into reviewable Trust Events and records that can inform later decisions.",
+    tools: "Trust Events -> Finance Records -> Repayment Record -> Support Evidence -> Trust Passport.",
     where: "Trust -> Trust Passport; Finance -> Records; Loans -> Repayment.",
     evidence: "Contribution events, repayment behaviour, support records, timestamps, and community source.",
-    helps: "Turns useful history into reviewable evidence for future decisions.",
+    summary: "Turns useful history into reviewable evidence for future decisions.",
   },
   14: {
     category: "Community & Membership",
-    problem: "When people move or reconnect, their role, identity, and trust history can reset from zero.",
-    tools: "GSN ID, Community Membership, Trust Passport, Community Record.",
+    realWorld: "People move, reconnect, change work, join new circles, and still need their real history to make sense.",
+    danger: "Without continuity, a responsible member can look unknown while old accountability becomes hard to find.",
+    decision: "GSN keeps identity, community role, and trust trail readable without merging distinct communities into one claim.",
+    tools: "GSN ID -> Community Membership -> Trust Passport -> Community Record.",
     where: "Profile -> My GSN Identity; Community -> My Communities; Trust -> Trust Passport.",
     evidence: "GSN ID, active community count, role context, community membership, and trust trail.",
-    helps: "Keeps identity continuity visible without merging distinct community records.",
+    summary: "Keeps identity continuity visible without merging distinct community records.",
   },
   15: {
     category: "Identity & Verification",
-    problem: "A person may be known locally, but outsiders still need a controlled identity and evidence reference.",
-    tools: "GSN ID, Trust Passport, TrustSlip, Profile photo/selfie, Community Credential.",
+    realWorld: "A person may be known locally but still need a controlled way to present identity and trust context outside that circle.",
+    danger: "Screenshots, nicknames, and informal introductions can expose too much private information or prove too little.",
+    decision: "GSN gives the member a portable identity package while keeping deeper evidence protected and bounded.",
+    tools: "GSN ID -> Trust Passport -> TrustSlip -> Profile photo/selfie -> Community Credential.",
     where: "Profile -> My GSN Identity; Trust -> Trust Passport / TrustSlip; Community -> Member Verify.",
     evidence: "GSN ID, display name, photo/selfie status, credential, TrustSlip code, and verification boundary.",
-    helps: "Makes identity portable while keeping private evidence protected.",
+    summary: "Makes identity portable while keeping private evidence protected.",
   },
   16: {
     category: "Trust & Evidence",
-    problem: "Earned reputation can stay trapped in one street, shop, phone contact, or local circle.",
-    tools: "Trust Passport, Trust Graph, Community Record, TrustSlip.",
+    realWorld: "A good name can be real but trapped inside one street, shop, contact list, or local circle.",
+    danger: "When reputation cannot travel with evidence, opportunity stays local and new readers fall back to gossip.",
+    decision: "GSN lets reputation move with recorded behaviour, relationship evidence, and community context.",
+    tools: "Trust Passport -> Trust Graph -> Community Record -> TrustSlip.",
     where: "Trust -> Trust Passport; Dashboard -> Trust signals; Community -> Community Record.",
     evidence: "Recorded activity, relationship evidence, community footprint, TrustSlip, and current reading.",
-    helps: "Lets reputation move with evidence instead of gossip.",
+    summary: "Lets reputation move with evidence instead of gossip.",
   },
   17: {
     category: "Buying & Selling",
-    problem: "A shop needs one public identity for shelf items, media, verification, and contact.",
-    tools: "Public Shop, Vault, Shop Gallery, Spotlight, Merchant Verification.",
+    realWorld: "A shop may be represented by chats, photos, flyers, and personal contacts scattered across many places.",
+    danger: "Customers may not know whether the item, owner, contact route, and verification signal belong to the same shop.",
+    decision: "GSN gives the shop one public home for shelf items, media, contact, and verification entry points.",
+    tools: "Public Shop -> Vault -> Shop Gallery -> Spotlight -> Merchant Verification.",
     where: "Shop -> Public Shop / Vault; Marketplace -> Public Shops.",
     evidence: "Public shop link, shelf blocks, owner GSN ID, spotlight media, and verification actions.",
-    helps: "Gives one shop a controlled public home instead of scattered screenshots and phone-only claims.",
+    summary: "Gives one shop a controlled public home instead of scattered screenshots and phone-only claims.",
   },
   18: {
     category: "Visibility & Opportunity",
-    problem: "Service work is often informal, under-recorded, and hard to verify before hiring.",
-    tools: "Demand Box, Public Shop, TrustSlip, Community Activity, Shop Diary.",
+    realWorld: "Informal service work often happens through referrals, chats, and one-off introductions.",
+    danger: "Good workers remain invisible, and buyers may hire from weak claims because previous work is not easy to review.",
+    decision: "GSN helps service work become visible through demand, public identity, community context, and follow-up evidence.",
+    tools: "Demand Box -> Public Shop -> TrustSlip -> Community Activity -> Shop Diary.",
     where: "Marketplace -> Demand Box; Shop -> Public Shop; Trust -> TrustSlip.",
     evidence: "Service offer, demand response, community context, public identity, and follow-up activity.",
-    helps: "Makes informal service participation more visible and reviewable.",
+    summary: "Makes informal service participation more visible and reviewable.",
   },
   19: {
     category: "Trust & Evidence",
-    problem: "Hiring decisions can depend on guesswork, weak referrals, or unverified claims.",
-    tools: "Trust Passport, Community Credential, TrustSlip, Community Confirmation.",
+    realWorld: "Hiring, task assignment, and service decisions often depend on referrals, confidence, or a quick conversation.",
+    danger: "A weak claim can sound strong, and a strong worker can look ordinary when evidence is not visible.",
+    decision: "GSN helps the reader check identity, role evidence, community activity, and confirmation before commitment.",
+    tools: "Trust Passport -> Community Credential -> TrustSlip -> Community Confirmation.",
     where: "Trust -> Trust Passport; Community -> Member Verify; Marketplace -> Members & Trade.",
     evidence: "Identity status, role evidence, community activity, TrustSlip code, and confirmation note.",
-    helps: "Helps work decisions read credibility before commitment.",
+    summary: "Helps work decisions read credibility before commitment.",
   },
   20: {
     category: "Visibility & Opportunity",
-    problem: "Local needs and offers can remain invisible until opportunity is already missed.",
-    tools: "Demand Box, Marketplace Needs, Public Shop, Community Broadcast.",
+    realWorld: "People need work, goods, services, stock, help, or buyers before the right person knows they exist.",
+    danger: "Opportunity can be missed simply because demand stayed hidden inside private chats or late conversations.",
+    decision: "GSN makes demand visible early enough for members to match needs, supply, and opportunity.",
+    tools: "Demand Box -> Marketplace Needs -> Public Shop -> Community Broadcast.",
     where: "Marketplace -> Demand Box; Dashboard -> What Matters Now.",
     evidence: "Need or offer post, community placement, requester context, and response trail.",
-    helps: "Makes demand visible so members can match needs, supply, and opportunity earlier.",
+    summary: "Makes demand visible so members can match needs, supply, and opportunity earlier.",
   },
   21: {
     category: "Community & Membership",
-    problem: "A community's identity, trade, finance, trust, and opportunity evidence can sit in separate places.",
-    tools: "Community Home, Marketplace, Finance, Trust Passport, Community Domain.",
+    realWorld: "A community may hold identity, trade, support, finance, trust, and opportunity records across many disconnected places.",
+    danger: "When those records do not meet, the community cannot see its own economic power or protect its members consistently.",
+    decision: "GSN connects those records into one operating layer while keeping personal, shop, and institutional claims distinct.",
+    tools: "Community Home -> Marketplace -> Finance -> Trust Passport -> Community Domain.",
     where: "Community -> Community Home; Marketplace; Finance; Trust.",
     evidence: "Community identity, member activity, marketplace records, finance evidence, and trust records.",
-    helps: "Connects community power into one working layer without confusing personal marketplaces with institutions.",
+    summary: "Connects community power into one working layer without confusing personal marketplaces with institutions.",
   },
   22: {
     category: "Trust & Evidence",
-    problem: "Goals, repayment plans, savings targets, and business promises can fade without execution discipline.",
-    tools: "Commitment Builder, Focus Commitments, Reminders, Progress Evidence.",
+    realWorld: "People make savings goals, repayment plans, business promises, and personal commitments that need follow-through.",
+    danger: "Without a visible execution trail, intention fades and future readers cannot separate promise from discipline.",
+    decision: "GSN turns intention into a focused commitment record with progress, reminders, and completion evidence.",
+    tools: "Commitment Builder -> Focus Commitments -> Reminders -> Progress Evidence.",
     where: "Dashboard -> Focus Commitments; Profile -> Member Guide.",
     evidence: "Commitment record, progress steps, reminders, completion trail, and follow-through signal.",
-    helps: "Turns intention into a visible discipline record that can support future judgement.",
+    summary: "Turns intention into a visible discipline record that can support future judgement.",
   },
   23: {
     category: "Community & Membership",
-    problem: "Institutions need structured membership, branches, roles, policies, and public claims separate from personal marketplaces.",
-    tools: "Community Domain, Domain Settings, Governance Roles, Service Panels, Public Community Record.",
+    realWorld: "Schools, unions, churches, cooperatives, markets, and associations need membership, roles, branches, policies, and public claims.",
+    danger: "If institutional identity is mixed with personal marketplaces, authority, evidence, and public trust become confusing.",
+    decision: "GSN gives institutions a Community Domain so governance, membership, services, and public claims stay structured.",
+    tools: "Community Domain -> Domain Settings -> Governance Roles -> Service Panels -> Public Community Record.",
     where: "Community -> Community Domain; Profile -> Route list; Community -> Settings.",
     evidence: "Domain identity, member placement, branch/unit records, role structure, service status, and controlled public claim.",
-    helps: "Helps schools, unions, churches, cooperatives, markets, and associations operate with institutional structure.",
+    summary: "Helps schools, unions, churches, cooperatives, markets, and associations operate with institutional structure.",
   },
 };
 
@@ -714,11 +790,13 @@ function capabilityMapDetail(
   return (
     CAPABILITY_MAP_DETAILS[item.id] || {
       category: "Trust & Evidence",
-      problem: item.proverb,
+      realWorld: item.proverb,
+      danger: "The decision is weaker when the reader cannot see the identity, community, or behaviour evidence behind the claim.",
+      decision: publicCapabilityLine(item),
       tools: item.title,
-      where: "Profile -> GSN Capability Map.",
+      where: "Profile -> GSN Decision Guide.",
       evidence: item.gmfn,
-      helps: publicCapabilityLine(item),
+      summary: publicCapabilityLine(item),
     }
   );
 }
@@ -879,7 +957,7 @@ function PublicCapabilitiesGuidePage({
               letterSpacing: 0,
             }}
           >
-            GSN Capability Map
+            GSN Decision Guide
           </h1>
 
           <div
@@ -891,8 +969,9 @@ function PublicCapabilitiesGuidePage({
               maxWidth: 760,
             }}
           >
-            See the problems GSN solves, the tools that solve them, and where
-            each tool lives in the app.
+            See the real-world decisions GSN helps people make, why those
+            decisions are risky, which tools cooperate, and what evidence
+            remains afterwards.
           </div>
         </section>
 
@@ -985,7 +1064,7 @@ function PublicCapabilitiesGuidePage({
                       wordBreak: "normal",
                     }}
                   >
-                    {publicCapabilityLine(publicSelectedCapability)}
+                    {capabilityMapDetail(publicSelectedCapability).summary}
                   </div>
 
                   <div
@@ -1319,6 +1398,7 @@ export default function MyGMFNAndIPage() {
 
   const [me, setMe] = useState<any>(null);
   const [currentClan, setCurrentClan] = useState<any>(null);
+  const [trustSlipSummary, setTrustSlipSummary] = useState<any | null>(null);
   const [selectedCapabilityId, setSelectedCapabilityId] = useState<number>(1);
   const [capabilitySearch, setCapabilitySearch] = useState<string>("");
   const [capabilityCategory, setCapabilityCategory] = useState<
@@ -1389,10 +1469,19 @@ export default function MyGMFNAndIPage() {
       setLoading(true);
 
       try {
-        const [meRes, clanRes, settingsRes] = await Promise.all([
+        const [meRes, clanRes, settingsRes, trustSlipRes] = await Promise.all([
           getMe().catch(() => null),
           getCurrentClan().catch(() => null),
           getMySettings().catch(() => null),
+          callFirstAvailable(
+            [
+              "getMyTrustSlipSummary",
+              "getTrustSlipSummary",
+              "getTrustSlipMeSummary",
+              "getMyTrustSlip",
+            ],
+            [[], [{ clan_id: selectedClanId || undefined }]]
+          ),
         ]);
 
         if (!alive) return;
@@ -1401,6 +1490,7 @@ export default function MyGMFNAndIPage() {
 
         setMe(meRes || null);
         setCurrentClan(clanRes || null);
+        setTrustSlipSummary(normalizeIdentityTrustSlip(trustSlipRes));
         setSettings(
           settingsRes ? normalizeSettings(settingsRes) : normalizeSettings(localSettings)
         );
@@ -1412,11 +1502,14 @@ export default function MyGMFNAndIPage() {
     return () => {
       alive = false;
     };
-  }, [isAppRoute]);
+  }, [isAppRoute, selectedClanId]);
 
   const displayName = useMemo(() => {
     return (
       firstTruthy(
+        trustSlipSummary?.display_name,
+        trustSlipSummary?.identity_context?.display_name,
+        trustSlipSummary?.identity_context?.name,
         me?.display_name,
         me?.nickname,
         me?.name,
@@ -1424,75 +1517,324 @@ export default function MyGMFNAndIPage() {
         me?.email
       ) || "Member"
     );
-  }, [me]);
+  }, [me, trustSlipSummary]);
 
-  const gmfnId = useMemo(() => {
-    return firstTruthy(me?.gmfn_id, "Awaiting issue");
-  }, [me]);
+  const gmfnIdValue = useMemo(() => {
+    return firstTruthy(
+      trustSlipSummary?.gmfn_id,
+      trustSlipSummary?.identity_context?.gmfn_id,
+      me?.gmfn_id
+    );
+  }, [me, trustSlipSummary]);
+
+  const gmfnId = gmfnIdValue || "Not issued yet";
 
   const hasGsnId = useMemo(() => {
-    const text = safeStr(me?.gmfn_id);
-    return Boolean(text && text.toLowerCase() !== "awaiting issue");
-  }, [me]);
+    const text = safeStr(gmfnIdValue);
+    return Boolean(text && text.toLowerCase() !== "not issued yet");
+  }, [gmfnIdValue]);
 
   const communityLabel = useMemo(() => {
     return (
       firstTruthy(
+        trustSlipSummary?.community,
+        trustSlipSummary?.community_context?.community,
+        trustSlipSummary?.community_context?.name,
+        trustSlipSummary?.community_context?.marketplace_name,
         currentClan?.marketplace_name,
         currentClan?.name,
         currentClan?.display_name,
         currentClan?.title
       ) || "No current community"
     );
-  }, [currentClan]);
+  }, [currentClan, trustSlipSummary]);
 
   const activeCommunityCount = useMemo(() => {
-    const raw = firstTruthy(
+    const footprintCount = Array.isArray(trustSlipSummary?.community_footprint)
+      ? trustSlipSummary.community_footprint.length
+      : 0;
+    return firstPositiveNumber(
+      trustSlipSummary?.active_clan_count,
+      trustSlipSummary?.community_context?.active_clan_count,
+      trustSlipSummary?.community_context?.community_footprint_count,
+      footprintCount,
       me?.active_clan_count,
       me?.active_membership_count,
       me?.communities_count,
       me?.community_count,
       currentClan ? 1 : ""
     );
-    const count = Number(raw || 0);
-    return Number.isFinite(count) && count > 0 ? count : 0;
-  }, [currentClan, me]);
+  }, [currentClan, me, trustSlipSummary]);
+
+  const phoneRecorded = truthyEvidence(
+    trustSlipSummary?.phone_recorded,
+    trustSlipSummary?.phone_verified,
+    trustSlipSummary?.identity_context?.phone_recorded,
+    trustSlipSummary?.identity_context?.phone_verified,
+    trustSlipSummary?.merchant_summary?.phone_recorded,
+    trustSlipSummary?.merchant_summary?.phone_verified,
+    me?.phone_recorded,
+    me?.phone_verified
+  );
+  const phoneVerified = truthyEvidence(
+    trustSlipSummary?.phone_verified,
+    trustSlipSummary?.identity_context?.phone_verified,
+    trustSlipSummary?.merchant_summary?.phone_verified,
+    me?.phone_verified
+  );
+  const bankRecorded = truthyEvidence(
+    trustSlipSummary?.bank_details_recorded,
+    trustSlipSummary?.bank_verified,
+    trustSlipSummary?.identity_context?.bank_details_recorded,
+    trustSlipSummary?.identity_context?.bank_verified,
+    trustSlipSummary?.merchant_summary?.bank_details_recorded,
+    trustSlipSummary?.merchant_summary?.bank_verified,
+    me?.bank_details_recorded,
+    me?.bank_recorded
+  );
+  const bankVerified = trustSlipSummary?.bank_verified === true ||
+    trustSlipSummary?.identity_context?.bank_verified === true ||
+    trustSlipSummary?.merchant_summary?.bank_verified === true
+    ? true
+    : null;
+  const officialIdRecorded = truthyEvidence(
+    trustSlipSummary?.official_id_recorded,
+    trustSlipSummary?.official_id_verified,
+    trustSlipSummary?.passport_recorded,
+    trustSlipSummary?.passport_verified,
+    trustSlipSummary?.identity_context?.official_id_recorded,
+    trustSlipSummary?.identity_context?.official_id_verified,
+    trustSlipSummary?.identity_context?.passport_recorded,
+    trustSlipSummary?.merchant_summary?.official_id_recorded,
+    trustSlipSummary?.merchant_summary?.passport_recorded,
+    me?.official_id_recorded,
+    me?.passport_recorded
+  );
+  const officialIdVerified = truthyEvidence(
+    trustSlipSummary?.official_id_verified,
+    trustSlipSummary?.passport_verified,
+    trustSlipSummary?.identity_context?.official_id_verified,
+    trustSlipSummary?.identity_context?.passport_verified,
+    trustSlipSummary?.merchant_summary?.official_id_verified,
+    me?.official_id_verified,
+    me?.passport_verified
+  );
+  const profilePhotoRecorded = truthyEvidence(
+    trustSlipSummary?.photo_recorded,
+    trustSlipSummary?.identity_context?.photo_recorded,
+    trustSlipSummary?.identity_context?.photo_evidence_recorded,
+    trustSlipSummary?.merchant_summary?.photo_recorded,
+    trustSlipSummary?.profile_image_url,
+    trustSlipSummary?.identity_context?.profile_image_url,
+    me?.profile_image_url,
+    me?.profile_photo_url,
+    me?.photo_url,
+    me?.avatar_url,
+    me?.photo_recorded,
+    me?.selfie_recorded
+  );
+  const communityIdentityConfirmed = truthyEvidence(
+    trustSlipSummary?.community_identity_confirmed,
+    trustSlipSummary?.identity_context?.community_identity_confirmed,
+    trustSlipSummary?.community_context?.current_user_is_active_member,
+    currentClan ? "confirmed" : ""
+  );
+  const communityActivityCount = firstPositiveNumber(
+    trustSlipSummary?.community_activity_count,
+    trustSlipSummary?.merchant_summary?.community_activity_count,
+    trustSlipSummary?.community_context?.community_activity_count,
+    activeCommunityCount
+  );
+
+  const identityEvidence = useMemo(() => {
+    const backendSummary =
+      trustSlipSummary?.identity_evidence_summary ||
+      trustSlipSummary?.identity_context?.identity_evidence_summary ||
+      trustSlipSummary?.merchant_summary?.identity_evidence_summary ||
+      null;
+    const local = buildIdentityEvidenceCompletion({
+      detailsDone: Boolean(displayName !== "Member" || hasGsnId),
+      phoneDone: phoneRecorded,
+      photoRecorded: profilePhotoRecorded,
+      bankRecorded,
+      officialIdRecorded,
+      countReadyAsProgress: false,
+    });
+    if (!backendSummary || typeof backendSummary !== "object") return local;
+    return {
+      ...local,
+      score: Number(backendSummary.score ?? local.score),
+      degrees: Number(backendSummary.degrees ?? local.degrees),
+      label: firstTruthy(backendSummary.label, local.label),
+      status: firstTruthy(backendSummary.status, local.status) as typeof local.status,
+      next: firstTruthy(backendSummary.institutional_note, local.next),
+    };
+  }, [
+    bankRecorded,
+    displayName,
+    hasGsnId,
+    officialIdRecorded,
+    phoneRecorded,
+    profilePhotoRecorded,
+    trustSlipSummary,
+  ]);
+
+  const passportVm = useMemo(
+    () =>
+      buildTrustPassportViewModel({
+        displayName,
+        profileImageUrl: firstTruthy(
+          trustSlipSummary?.profile_image_url,
+          trustSlipSummary?.identity_context?.profile_image_url,
+          me?.profile_image_url,
+          me?.profile_photo_url,
+          me?.photo_url,
+          me?.avatar_url
+        ),
+        gmfnId,
+        communityName: communityLabel,
+        communityId: firstTruthy(
+          trustSlipSummary?.community_global_id,
+          trustSlipSummary?.community_code,
+          trustSlipSummary?.community_context?.community_global_id,
+          trustSlipSummary?.community_context?.community_code,
+          currentClan?.community_code,
+          currentClan?.id
+        ),
+        holderRole: firstTruthy(
+          trustSlipSummary?.holder_role,
+          trustSlipSummary?.community_context?.holder_role,
+          "member"
+        ),
+        activeMemberCount: firstTruthy(
+          trustSlipSummary?.active_member_count,
+          trustSlipSummary?.community_member_count,
+          trustSlipSummary?.community_context?.active_member_count,
+          activeCommunityCount
+        ),
+        phoneRecorded,
+        phoneVerified,
+        bankRecorded,
+        bankVerified,
+        bankVerificationLabel: firstTruthy(
+          trustSlipSummary?.bank_verification_label,
+          trustSlipSummary?.merchant_summary?.bank_verification_label,
+          trustSlipSummary?.identity_context?.bank_verification_label
+        ),
+        passportRecorded: officialIdRecorded,
+        officialIdRecorded,
+        passportVerified: officialIdVerified,
+        passportVerificationLabel: firstTruthy(
+          trustSlipSummary?.passport_verification_label,
+          trustSlipSummary?.merchant_summary?.passport_verification_label,
+          trustSlipSummary?.identity_context?.passport_verification_label,
+          trustSlipSummary?.official_id_label,
+          trustSlipSummary?.identity_context?.official_id_label
+        ),
+        identityEvidenceScore: identityEvidence.score,
+        identityEvidenceLabel: identityEvidence.label,
+        communityIdentityConfirmed,
+        communityIdentityLabel: firstTruthy(
+          trustSlipSummary?.community_identity_label,
+          trustSlipSummary?.merchant_summary?.community_identity_label,
+          trustSlipSummary?.identity_context?.community_identity_label
+        ),
+        communityActivityCount,
+        communityActivityLabel: firstTruthy(
+          trustSlipSummary?.community_activity_label,
+          trustSlipSummary?.merchant_summary?.community_activity_label,
+          trustSlipSummary?.community_context?.community_activity_label
+        ),
+        membershipCurrentnessLabel: firstTruthy(
+          trustSlipSummary?.membership_currentness_label,
+          trustSlipSummary?.community_context?.membership_currentness_label
+        ),
+        membershipCurrentnessScope: firstTruthy(
+          trustSlipSummary?.membership_currentness_scope,
+          trustSlipSummary?.community_context?.membership_currentness_scope
+        ),
+        identityVerified:
+          trustSlipSummary?.identity_verified ??
+          trustSlipSummary?.identity_context?.identity_verified,
+        identityStatusLabel: firstTruthy(
+          trustSlipSummary?.identity_status_label,
+          trustSlipSummary?.identity_context?.identity_status_label
+        ),
+        hasSelectedCommunity: Boolean(currentClan || selectedClanId),
+        band: firstTruthy(
+          trustSlipSummary?.band,
+          trustSlipSummary?.level,
+          trustSlipSummary?.level_label,
+          "Evidence building"
+        ),
+        score: firstTruthy(
+          trustSlipSummary?.standing_score,
+          trustSlipSummary?.trust_score,
+          "0"
+        ),
+        eventCount: firstTruthy(
+          trustSlipSummary?.event_count,
+          trustSlipSummary?.community_activity_count,
+          communityActivityCount
+        ),
+        activeClans: activeCommunityCount,
+        counterparties: trustSlipSummary?.unique_counterparties,
+        sponsorCount: trustSlipSummary?.sponsor_count,
+        riskLevel: trustSlipSummary?.risk_level,
+        riskFlags: Array.isArray(trustSlipSummary?.risk_flags)
+          ? trustSlipSummary.risk_flags
+          : [],
+        trustSlipStatus: firstTruthy(
+          trustSlipSummary?.status,
+          trustSlipSummary?.active === true ? "active" : ""
+        ),
+        trustSlipCode: firstTruthy(
+          trustSlipSummary?.code,
+          trustSlipSummary?.verification_code,
+          trustSlipSummary?.token
+        ),
+        verifyUrl: firstTruthy(trustSlipSummary?.public_verify_url),
+      }),
+    [
+      activeCommunityCount,
+      bankRecorded,
+      bankVerified,
+      communityActivityCount,
+      communityIdentityConfirmed,
+      communityLabel,
+      currentClan,
+      displayName,
+      gmfnId,
+      identityEvidence,
+      me,
+      officialIdRecorded,
+      officialIdVerified,
+      phoneRecorded,
+      phoneVerified,
+      selectedClanId,
+      trustSlipSummary,
+    ]
+  );
 
   const identityStatus = useMemo(() => {
-    if (hasGsnId && displayName !== "Member") return "Named GSN profile";
-    if (hasGsnId) return "GSN ID issued";
-    return "Identity pending";
-  }, [displayName, hasGsnId]);
+    if (passportVm.identity.identityStatusLabel) {
+      return passportVm.identity.identityStatusLabel;
+    }
+    if (passportVm.identity.identityVerified === true) return "Identity recorded";
+    if (identityEvidence.score >= 55) return `${identityEvidence.label} recorded`;
+    if (identityEvidence.score > 0) return `${identityEvidence.label} building`;
+    return "Evidence not recorded yet";
+  }, [identityEvidence, passportVm]);
 
   const trustPassportStatus = useMemo(() => {
-    if (
-      me?.passport_verified === true ||
-      me?.trust_passport_verified === true ||
-      me?.trustPassportVerified === true
-    ) {
-      return "Verified";
-    }
-    if (
-      me?.passport_recorded === true ||
-      me?.trust_passport_recorded === true ||
-      me?.trustPassportRecorded === true ||
-      firstTruthy(me?.trust_passport_status, me?.trustPassportStatus)
-    ) {
-      return firstTruthy(me?.trust_passport_status, me?.trustPassportStatus, "Recorded");
-    }
-    return "Not shown";
-  }, [me]);
+    if (passportVm.identity.identityVerified === true) return "Identity verified";
+    if (identityEvidence.score >= 35) return passportVm.verdict.evidenceLabel;
+    return "Evidence building";
+  }, [identityEvidence.score, passportVm]);
 
-  const profilePhotoRecorded = useMemo(() => {
-    const photo = firstTruthy(
-      me?.profile_image_url,
-      me?.profile_photo_url,
-      me?.photo_url,
-      me?.avatar_url
-    );
-    return Boolean(photo || me?.photo_recorded === true || me?.selfie_recorded === true);
-  }, [me]);
-  const profilePhotoStatus = profilePhotoRecorded ? "Photo recorded" : "Photo not shown";
+  const profilePhotoStatus = profilePhotoRecorded
+    ? "Photo/selfie recorded"
+    : "Photo/selfie needed";
 
   const capabilityCount = GMFN_CAPABILITY_COUNT;
   const filteredCapabilities = useMemo(() => {
@@ -1506,11 +1848,13 @@ export default function MyGMFNAndIPage() {
       return [
         item.title,
         detail.category,
-        detail.problem,
+        detail.realWorld,
+        detail.danger,
+        detail.decision,
         detail.tools,
         detail.where,
         detail.evidence,
-        detail.helps,
+        detail.summary,
       ]
         .join(" ")
         .toLowerCase()
@@ -1852,9 +2196,14 @@ export default function MyGMFNAndIPage() {
             }}
           >
             {[
-              ["GSN ID status", hasGsnId ? "Issued" : "Awaiting issue"],
-              ["Identity status", identityStatus],
-              ["Active communities", String(activeCommunityCount || "Not shown")],
+              ["GSN ID", gmfnId],
+              ["Identity evidence", identityStatus],
+              [
+                "Active communities",
+                activeCommunityCount > 0
+                  ? String(activeCommunityCount)
+                  : "No active community",
+              ],
               ["Trust Passport", trustPassportStatus],
               ["Photo/selfie", profilePhotoStatus],
               ["Main context", communityLabel],
@@ -1898,19 +2247,6 @@ export default function MyGMFNAndIPage() {
             ))}
           </div>
 
-          <div
-            style={{
-              marginTop: isCompact ? 14 : 18,
-              display: "flex",
-              gap: 8,
-              flexWrap: "wrap",
-            }}
-          >
-            <span style={identityBadge(true)}>GSN ID: {gmfnId}</span>
-            <span style={identityBadge(false)}>Member: {displayName}</span>
-            <span style={identityBadge(false)}>Community: {communityLabel}</span>
-          </div>
-
           <StableCtaLink
             to={routes.dashboard}
             kind="primary"
@@ -1950,7 +2286,7 @@ export default function MyGMFNAndIPage() {
             }}
           >
             <GsnLegacyIcon name="spark" size={24} decorative />
-            Capability Map
+            Decision Guide
           </StableCtaLink>
 
           <StableCtaLink
@@ -2007,7 +2343,7 @@ export default function MyGMFNAndIPage() {
                 lineHeight: 1.08,
               }}
             >
-              GSN Capability Map
+              GSN Decision Guide
             </div>
 
             <div
@@ -2019,10 +2355,12 @@ export default function MyGMFNAndIPage() {
                 lineHeight: 1.45,
               }}
             >
-              See the problems GSN solves, the tools that solve them, and where
-              each tool lives in the app. This map explains capability; it is
-              not proof that any one member, shop, payout, paid verification,
-              or protected trade release is already approved.
+              Read each capability as a decision story: what happens in real
+              life, why the decision is dangerous, how GSN changes the question,
+              which tools cooperate, and what evidence remains afterwards. This
+              guide explains capability; it is not proof that any one member,
+              shop, payout, paid verification, or protected trade release is
+              already approved.
             </div>
 
             <div
@@ -2042,14 +2380,14 @@ export default function MyGMFNAndIPage() {
                     fontSize: 12,
                   }}
                 >
-                  Search by problem
+                  Search by decision
                 </label>
                 <input
                   id="my-gmfn-capability-search"
-                  aria-label="Search GSN capabilities by problem, tool, location, or evidence"
+                  aria-label="Search GSN capabilities by decision, risk, tool, location, or evidence"
                   value={capabilitySearch}
                   onChange={(event) => setCapabilitySearch(event.target.value)}
-                  placeholder="Search risk, tool, page, or evidence"
+                  placeholder="Search decision, risk, tool, page, or evidence"
                   style={selectStyle()}
                 />
               </div>
@@ -2237,7 +2575,7 @@ export default function MyGMFNAndIPage() {
                         lineHeight: 1.45,
                       }}
                     >
-                      {selectedCapabilityDetail.helps}
+                      {selectedCapabilityDetail.summary}
                     </div>
                   </div>
                 </div>
@@ -2251,10 +2589,12 @@ export default function MyGMFNAndIPage() {
                   }}
                 >
                   {[
-                    ["Problem it solves", selectedCapabilityDetail.problem],
-                    ["GSN tools involved", selectedCapabilityDetail.tools],
-                    ["Where to open it", selectedCapabilityDetail.where],
-                    ["What evidence it creates", selectedCapabilityDetail.evidence],
+                    ["The real-world problem", selectedCapabilityDetail.realWorld],
+                    ["Why it is dangerous", selectedCapabilityDetail.danger],
+                    ["How GSN changes the decision", selectedCapabilityDetail.decision],
+                    ["Which GSN tools cooperate", selectedCapabilityDetail.tools],
+                    ["Where you use them", selectedCapabilityDetail.where],
+                    ["Evidence created", selectedCapabilityDetail.evidence],
                   ].map(([label, value]) => (
                     <div
                       key={label}
@@ -2436,9 +2776,9 @@ export default function MyGMFNAndIPage() {
 
               <div style={{ marginTop: 18, display: "grid", gap: 15 }}>
                 {[
-                  "Learn the capability.",
-                  "See where it lives.",
-                  "Open the right page.",
+                  "Read the real-world decision.",
+                  "Check the GSN evidence path.",
+                  "Open the page that creates or reviews evidence.",
                 ].map((step, index) => (
                   <div
                     key={step}

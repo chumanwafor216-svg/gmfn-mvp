@@ -38,6 +38,21 @@ assertContains(
   "Money In load should reuse a resolved member GSN ID before blocking."
 );
 
+assertContains(
+  /function getCommunityPublicId\(currentClan: any\): string \{[\s\S]*?\|\| "No community ID yet"/,
+  "Money In must show honest missing-community-ID copy instead of stale issue-tracking language."
+);
+
+assertContains(
+  /`GSN ID: \$\{currentGmfnId \|\| "Not issued yet"\}`/,
+  "Money In copied identity summaries must use honest missing-GSN-ID copy."
+);
+
+assertContains(
+  /GSN ID: \{currentGmfnId \|\| "Not issued yet"\}/,
+  "Money In visible identity chips must use honest missing-GSN-ID copy."
+);
+
 if (findings.length > 0) {
   console.error("Money In identity fallback audit failed:");
   for (const finding of findings) {

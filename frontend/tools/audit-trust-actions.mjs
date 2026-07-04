@@ -541,6 +541,48 @@ assertContains(
 
 assertContains(
   "src/pages/TrustSlipPage.tsx",
+  /const gmfnIdValue = useMemo[\s\S]*?const gmfnId = gmfnIdValue \|\| "Not issued yet"[\s\S]*?const communityRefValue = useMemo[\s\S]*?const communityRef = useMemo[\s\S]*?"No community ID yet"[\s\S]*?const trustSlipCodeLabel = trustSlipCode \|\| "Not issued yet"[\s\S]*?communityKey: communityVerifyKey \|\| communityRefValue[\s\S]*?memberKey: gmfnIdValue[\s\S]*?communityRefValue[\s\S]*?communityRef: communityRefValue[\s\S]*?void handleCopy\([\s\S]*?gmfnIdValue[\s\S]*?"GSN ID copied\."/,
+  "Signed-in TrustSlip must separate actual GSN/community IDs from display fallbacks and must not copy fallback labels or use them in public credential paths."
+);
+
+assertContains(
+  "src/pages/TrustSlipVerifyPage.tsx",
+  /const gmfnIdValue = useMemo[\s\S]*?const gmfnId = gmfnIdValue \|\| "Not issued yet"[\s\S]*?if \(!gmfnIdValue\)[\s\S]*?copyTextWithNotice\(gmfnIdValue, "GSN ID copied\."/,
+  "TrustSlip Verify must separate actual GSN ID from display fallback before copy/share actions."
+);
+
+assertContains(
+  "src/lib/trustDocumentSnapshots.ts",
+  /label: "TrustSlip", value: params\.trustSlipCode \|\| "Not issued yet"/,
+  "Copied identity snapshots must use honest TrustSlip missing-state language."
+);
+
+assertNotContains(
+  "src/pages/TrustSlipPage.tsx",
+  /Awaiting issue|"Pending"|communityRef: communityRef,|communityKey: communityVerifyKey \|\| communityRef,/,
+  "Signed-in TrustSlip page must not show stale pending/issue placeholders or pass display community labels into exported/public paths."
+);
+
+assertNotContains(
+  "src/pages/TrustSlipVerifyPage.tsx",
+  /Awaiting issue/,
+  "TrustSlip Verify page must not show the stale `Awaiting issue` placeholder."
+);
+
+assertNotContains(
+  "src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx",
+  /"Pending"/,
+  "TrustSlip Verify public paper must not show stale pending placeholders for missing confidence evidence."
+);
+
+assertNotContains(
+  "src/lib/trustDocumentSnapshots.ts",
+  /Awaiting issue/,
+  "Copied trust-document snapshots must not export the stale `Awaiting issue` placeholder."
+);
+
+assertContains(
+  "src/pages/TrustSlipPage.tsx",
   /debugId="trust-slip\.community-confirmation\.request"[\s\S]*?communityVerifyPath \? \([\s\S]*?<StableCtaLink[\s\S]*?to=\{communityVerifyPath\}[\s\S]*?kind="primary"[\s\S]*?debugId="trust-slip\.community-confirmation\.open-community-record"[\s\S]*?\) : \([\s\S]*?<SecondaryButton[\s\S]*?The public community record is not ready yet[\s\S]*?debugId="trust-slip\.community-confirmation\.open-community-record"/,
   "TrustSlip community record action must be highlighted when ready and explain itself when unavailable."
 );

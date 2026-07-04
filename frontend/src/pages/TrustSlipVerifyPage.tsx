@@ -419,9 +419,10 @@ export default function TrustSlipVerifyPage() {
     );
   }, [record, currentClan, isAppRoute]);
 
-  const gmfnId = useMemo(() => {
-    return firstTruthy(record?.gmfn_id, isAppRoute ? me?.gmfn_id : null, "Awaiting issue");
+  const gmfnIdValue = useMemo(() => {
+    return firstTruthy(record?.gmfn_id, isAppRoute ? me?.gmfn_id : null);
   }, [record, me, isAppRoute]);
+  const gmfnId = gmfnIdValue || "Not issued yet";
 
   const holderName = useMemo(() => {
     const candidate = firstTruthy(
@@ -698,12 +699,12 @@ export default function TrustSlipVerifyPage() {
   }
 
   async function copyGmfnId() {
-    if (!gmfnId || gmfnId === "Awaiting issue") {
+    if (!gmfnIdValue) {
       showNotice("error", "GSN ID is not available.");
       return;
     }
 
-    await copyTextWithNotice(gmfnId, "GSN ID copied.", "GSN ID is not available.");
+    await copyTextWithNotice(gmfnIdValue, "GSN ID copied.", "GSN ID is not available.");
   }
 
   async function copyVerificationSnapshot() {

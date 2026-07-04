@@ -1401,7 +1401,7 @@ export default function CommunityJoinRequestsPage() {
                           "Not available yet"
                       ),
                     ],
-                    ["Community ID", safeStr(item.community_code || "Awaiting issue")],
+                    ["Community ID", safeStr(item.community_code || "No community ID yet")],
                     ["Invite", safeStr(item.invite_code || "Not available yet")],
                     ["Submitted", safeDateTime(item.created_at)],
                     ["Required", `${approvalProgress(item).required} approvals`],

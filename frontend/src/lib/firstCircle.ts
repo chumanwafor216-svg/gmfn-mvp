@@ -449,7 +449,7 @@ export function buildInviteMessage(params: {
   operatingPattern: string;
 }): string {
   const memberName = safeStr(params.memberName) || "Member";
-  const gmfnId = safeStr(params.gmfnId) || "Pending";
+  const gmfnId = safeStr(params.gmfnId);
   const communityName = safeStr(params.communityName) || "my community";
   const roleText = roleLabel(params.memberRole);
   const relationshipText = relationshipLabel(params.contact.relationship);
@@ -458,7 +458,9 @@ export function buildInviteMessage(params: {
   const lines: string[] = [
     `Hello ${safeStr(params.contact.name) || "there"},`,
     "",
-    `I recently joined GSN and received my GSN ID ${gmfnId}.`,
+    gmfnId
+      ? `I recently joined GSN and received my GSN ID ${gmfnId}.`
+      : "I recently joined GSN. My GSN ID is not issued yet.",
     "GSN works best when people begin with those they already trust and already do real life with.",
     "",
     `I am joining as a ${roleText.toLowerCase()}.`,

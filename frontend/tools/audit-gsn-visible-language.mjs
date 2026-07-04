@@ -163,6 +163,7 @@ forbiddenByFile.push(["frontend/src/ui/format.ts", "member@gmfn.com"]);
 forbiddenByFile.push(["frontend/src/ui/format.ts", "@gmfn.com"]);
 forbiddenByFile.push(["frontend/src/ui/format.ts", "…"]);
 forbiddenByFile.push(["frontend/src/ui/format.ts", "â€¦"]);
+forbiddenByFile.push(["frontend/src/components/TrustGraphAdminPage.tsx", 'graph.gmfn_id || "Pending"']);
 
 const required = [
   ["gmfn_backend/app/api/routes/clans.py", "Community admin only"],
@@ -219,6 +220,7 @@ const required = [
   ["frontend/src/components/TrustGraphSummaryCard.tsx", "Active communities"],
   ["frontend/src/pages/JoinEntryPage.tsx", "GSN member"],
   ["frontend/src/pages/ShopGalleryPage.tsx", "GSN ID"],
+  ["frontend/src/components/TrustGraphAdminPage.tsx", 'graph.gmfn_id || "Not issued yet"'],
   ["frontend/src/ui/format.ts", "member@gsn.example"],
   ["frontend/src/ui/format.ts", "`${short}@gsn.example`"],
   ["frontend/src/lib/guidance.ts", "Support request waiting on support #"],

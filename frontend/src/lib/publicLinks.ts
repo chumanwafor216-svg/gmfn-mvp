@@ -5,7 +5,9 @@ export const PUBLIC_SHOP_VAULT_ANCHOR = "private-vault";
 const SUSPENDED_PUBLIC_FRONTEND_HOSTS = new Set(["frontend.onrender.com"]);
 const UNREADY_PUBLIC_CREDENTIAL_KEYS = new Set([
   "awaiting issue",
+  "not issued yet",
   "not available",
+  "no community id yet",
   "not shown",
   "not stated",
   "pending",

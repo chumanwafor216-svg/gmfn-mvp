@@ -11,6 +11,7 @@ const files = {
   viewModel: "src/lib/trustPassportViewModel.ts",
   app: "src/App.tsx",
   targets: "src/lib/actionTargetRoutes.ts",
+  publicLinks: "src/lib/publicLinks.ts",
   package: "package.json",
   protocol: "../docs/GUIDED_WORK_SURFACE_PROTOCOL.md",
   specs: "../docs/SCREEN_SPECS.md",
@@ -41,6 +42,19 @@ function assertContains(key, pattern, message, text) {
   const source = sourceByFile[key];
   if (pattern.test(source)) return;
   addFinding(files[key], source, -1, message, text);
+}
+
+function assertNotContains(key, pattern, message) {
+  const source = sourceByFile[key];
+  source.split(/\r?\n/).forEach((line, index) => {
+    if (!pattern.test(line)) return;
+    findings.push({
+      file: files[key],
+      line: index + 1,
+      message,
+      text: line.trim(),
+    });
+  });
 }
 
 function assertOrderedSnippets(key, snippets, message) {
@@ -234,6 +248,42 @@ assertContains(
   "trust",
   /community_footprint[\s\S]*?communityRoleCounts[\s\S]*?roleLabel\(item\.role\)[\s\S]*?data-trust-passport-community-footprint="true"[\s\S]*?Community footprint[\s\S]*?communityFootprint\.length/,
   "Trust Passport Identity Overview must show a compact multi-community footprint with community IDs and member roles."
+);
+
+assertContains(
+  "trust",
+  /const gmfnIdValue = useMemo[\s\S]*?const gmfnId = gmfnIdValue \|\| "Not issued yet"[\s\S]*?const communityCodeValue = useMemo[\s\S]*?const communityCode = communityCodeValue \|\| "No community ID yet"[\s\S]*?memberKey: gmfnIdValue/,
+  "Trust Passport must separate actual GSN/community keys from display fallback labels before building public credential paths."
+);
+
+assertContains(
+  "viewModel",
+  /gmfnId: clean\(input\.gmfnId, "Not issued yet"\)[\s\S]*?communityId: clean\(input\.communityId, "No community ID yet"\)[\s\S]*?activeMemberCount: clean\(input\.activeMemberCount, "No active community"\)[\s\S]*?identityStatusLabel: clean\(input\.identityStatusLabel, "Identity evidence building"\)/,
+  "Trust Passport view model fallbacks must use honest missing-state language, not stale placeholder copy."
+);
+
+assertContains(
+  "viewModel",
+  /trustSlipStatus: clean\(input\.trustSlipStatus, "Not issued yet"\)/,
+  "Trust Passport view model must show honest missing TrustSlip state instead of stale pending copy."
+);
+
+assertContains(
+  "publicLinks",
+  /UNREADY_PUBLIC_CREDENTIAL_KEYS[\s\S]*?"awaiting issue"[\s\S]*?"not issued yet"[\s\S]*?"no community id yet"/,
+  "Public credential links must reject display fallback labels so missing IDs cannot become fake public paths."
+);
+
+assertNotContains(
+  "trust",
+  /Awaiting issue|classText: "Pending"|TrustSlip: \{trustSlipStatus \|\| "Pending"\}/,
+  "Trust Passport visible source must not reintroduce stale pending/issue placeholders for missing evidence."
+);
+
+assertNotContains(
+  "viewModel",
+  /Awaiting issue|Identity status not shown|Community membership record not shown|trustSlipStatus: clean\(input\.trustSlipStatus, "Pending"\)/,
+  "Trust Passport view model must not reintroduce stale placeholder-style identity fallbacks."
 );
 
 assertContains(

@@ -63,22 +63,26 @@ if (/const GMFN_EXEC_SUMMARY_URL = "\/gmfn-executive-summary\.pdf";/.test(trustS
 
 const generatorSource = readFileSync(join(root, "tools/generate-static-gsn-pdfs.py"), "utf8");
 for (const requiredText of [
-  "things GSN does",
+  "decisions GSN helps members make",
+  "Decision guide",
+  "Real-world decision",
+  "GSN changes the decision",
   "Commitment Builder",
   "Institutional Community Domain",
   "community capital",
   "ten-year view",
   "API-paid verification",
-  "full escrow or automated release rail",
-  "community capital grows",
-  "private life into the open",
-  "demonstrated value into practical access",
+  "full escrow",
+  "release rail",
+  "asking what evidence exists before",
+  "visible execution trail",
+  "Community Domain for governance",
 ]) {
   if (!generatorSource.includes(requiredText)) {
     addFinding(`Static PDF generator must include institutional positioning text: ${requiredText}.`);
   }
 }
-if (!/savings, repayment,\s*"\s*\n\s*"retirement readiness/.test(generatorSource)) {
+if (!/savings, repayment,[\s\S]*?retirement[\s\S]*?readiness/.test(generatorSource)) {
   addFinding("Static PDF generator must include Commitment Builder readiness text for savings, repayment, and retirement readiness.");
 }
 if (/real community trust made visible in GSN/.test(generatorSource)) {

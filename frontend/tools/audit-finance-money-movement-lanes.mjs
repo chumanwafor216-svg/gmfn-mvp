@@ -81,7 +81,7 @@ assertContains(
 
 assertContains(
   "moneyInPage",
-  /Paying into[\s\S]*?Community: \{communityLabel\}[\s\S]*?Community ID: \{publicCommunityCode\}[\s\S]*?GSN ID: \{currentGmfnId \|\| "Awaiting issue"\}/,
+  /Paying into[\s\S]*?Community: \{communityLabel\}[\s\S]*?Community ID: \{publicCommunityCode\}[\s\S]*?GSN ID: \{currentGmfnId \|\| "Not issued yet"\}/,
   "Money In route page must visibly show community name, community ID, and GSN ID before generating a reference."
 );
 

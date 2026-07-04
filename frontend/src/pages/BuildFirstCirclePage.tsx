@@ -1614,7 +1614,7 @@ export default function BuildFirstCirclePage() {
             }}
           >
             <span style={badge(true)}>Community: {communityName}</span>
-            <span style={badge(false)}>GSN ID: {gmfnId || "Awaiting issue"}</span>
+            <span style={badge(false)}>GSN ID: {gmfnId || "Not issued yet"}</span>
           </div>
 
           <div
@@ -2054,7 +2054,7 @@ export default function BuildFirstCirclePage() {
               <span style={badge(false)}>
                 Role: {roleText(draft.memberRole)}
               </span>
-              <span style={badge(false)}>GSN ID: {gmfnId || "Awaiting issue"}</span>
+              <span style={badge(false)}>GSN ID: {gmfnId || "Not issued yet"}</span>
             </div>
           </div>
 

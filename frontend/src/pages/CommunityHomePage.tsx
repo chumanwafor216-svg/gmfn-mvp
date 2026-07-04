@@ -1271,8 +1271,7 @@ export default function CommunityHomePage() {
     me?.global_member_id,
     me?.member_global_id,
     me?.member_id,
-    me?.id,
-    "Awaiting issue"
+    me?.id
   );
   const currentUserId = useMemo(() => getCurrentUserId(me), [me]);
   const currentGmfnKey = useMemo(() => getCurrentGmfnKey(me), [me]);
@@ -1611,7 +1610,7 @@ export default function CommunityHomePage() {
         }
 
         const gmfnId = safeStr(memberGlobalId);
-        if (!gmfnId || gmfnId === "Awaiting issue") {
+        if (!gmfnId) {
           return {
             title: "Your GSN ID is still loading",
             detail:
@@ -1646,7 +1645,7 @@ export default function CommunityHomePage() {
         }
 
         const gmfnId = safeStr(memberGlobalId);
-        if (!gmfnId || gmfnId === "Awaiting issue") {
+        if (!gmfnId) {
           return {
             title: "Your GSN ID is still loading",
             detail:
@@ -1695,7 +1694,7 @@ export default function CommunityHomePage() {
         }
 
         const gmfnId = safeStr(memberGlobalId);
-        if (!gmfnId || gmfnId === "Awaiting issue") {
+        if (!gmfnId) {
           return {
             title: "Your GSN ID is still loading",
             detail:
@@ -1745,7 +1744,7 @@ export default function CommunityHomePage() {
         }
 
         const gmfnId = safeStr(memberGlobalId);
-        if (!gmfnId || gmfnId === "Awaiting issue") {
+        if (!gmfnId) {
           return {
             title: "Your GSN ID is still loading",
             detail:

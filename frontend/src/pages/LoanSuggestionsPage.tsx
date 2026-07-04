@@ -601,13 +601,11 @@ function communityName(currentClan: any, clanId: number): string {
 }
 
 function communityPublicId(currentClan: any): string {
-  return (
-    firstTruthy(
-      currentClan?.community_code,
-      currentClan?.community?.community_code,
-      currentClan?.profile?.community_code,
-      currentClan?.marketplace?.community_code
-    ) || "Pending"
+  return firstTruthy(
+    currentClan?.community_code,
+    currentClan?.community?.community_code,
+    currentClan?.profile?.community_code,
+    currentClan?.marketplace?.community_code
   );
 }
 
@@ -850,16 +848,19 @@ export default function LoanSuggestionsPage() {
   }, [me, currentClan]);
 
   const gmfnId = useMemo(() => {
-    return firstTruthy(currentGmfnId, "Pending");
+    return firstTruthy(currentGmfnId, "Not issued yet");
   }, [currentGmfnId]);
 
   const communityLabel = useMemo(() => {
     return communityName(currentClan, selectedClanId);
   }, [currentClan, selectedClanId]);
 
-  const publicCommunityId = useMemo(() => {
+  const publicCommunityIdValue = useMemo(() => {
     return communityPublicId(currentClan);
   }, [currentClan]);
+  const publicCommunityId = useMemo(() => {
+    return firstTruthy(publicCommunityIdValue, "No community ID yet");
+  }, [publicCommunityIdValue]);
 
   const memberRole = useMemo(() => {
     return communityRole(currentClan);
@@ -1145,10 +1146,10 @@ export default function LoanSuggestionsPage() {
       buildGsnSupportEvidenceShareText({
         title: "GSN Supporter Fit Snapshot",
         memberName,
-        gsnId: gmfnId,
+        gsnId: currentGmfnId,
         memberRole,
         communityName: communityLabel,
-        communityId: publicCommunityId,
+        communityId: publicCommunityIdValue,
         routeName: "Find Supporters",
         loanId: activeBorrowerLoan?.id || loanSummary?.id || "",
         amount: getLoanAmountText(loanSummary || activeBorrowerLoan),
@@ -1568,7 +1569,7 @@ export default function LoanSuggestionsPage() {
                   lineHeight: 1.25,
                 }}
               >
-                {safeStr(loanSummary?.status || activeBorrowerLoan?.status || "Awaiting issue")}
+                {safeStr(loanSummary?.status || activeBorrowerLoan?.status || "Status not recorded yet")}
               </div>
             </div>
 
@@ -1750,10 +1751,10 @@ export default function LoanSuggestionsPage() {
 
                 <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
                   <div style={helperText()}>
-                    Requested withdrawal amount: {withdrawalAmount || "Pending"}
+                    Requested withdrawal amount: {withdrawalAmount || "No withdrawal amount yet"}
                   </div>
                   <div style={helperText()}>
-                    Support gap: {safeStr(supportGap || "Pending")}
+                    Support gap: {safeStr(supportGap || "Not calculated yet")}
                   </div>
                   {withdrawalNote ? (
                     <div style={helperText()}>

@@ -416,11 +416,11 @@ export function buildTrustPassportViewModel(
     identity: {
       displayName: clean(input.displayName, "Member"),
       profileImageUrl: clean(input.profileImageUrl),
-      gmfnId: clean(input.gmfnId, "Awaiting issue"),
+      gmfnId: clean(input.gmfnId, "Not issued yet"),
       communityName: clean(input.communityName, "No current community"),
-      communityId: clean(input.communityId, "Awaiting issue"),
+      communityId: clean(input.communityId, "No community ID yet"),
       holderRole: clean(input.holderRole, "member"),
-      activeMemberCount: clean(input.activeMemberCount, "Not shown"),
+      activeMemberCount: clean(input.activeMemberCount, "No active community"),
       phoneRecorded,
       phoneVerified,
       bankRecorded,
@@ -441,7 +441,7 @@ export function buildTrustPassportViewModel(
         input.communityIdentityLabel,
         communityIdentityConfirmed
           ? "Active community membership recorded"
-          : "Community membership record not shown"
+          : "Community membership evidence not recorded yet"
       ),
       communityActivityCount: String(communityActivityCount),
       communityActivityLatestAt: clean(input.communityActivityLatestAt),
@@ -452,7 +452,7 @@ export function buildTrustPassportViewModel(
       nextWitnessRenewalAt,
       nextWitnessRenewalStatusLabel,
       identityVerified,
-      identityStatusLabel: clean(input.identityStatusLabel, "Identity status not shown"),
+      identityStatusLabel: clean(input.identityStatusLabel, "Identity evidence building"),
       membershipStatus,
       identityContinuity,
     },
@@ -474,7 +474,7 @@ export function buildTrustPassportViewModel(
       createsPressure: createsPressure.length ? createsPressure : ["no pressure signals are shown"],
     },
     outputs: {
-      trustSlipStatus: clean(input.trustSlipStatus, "Pending"),
+      trustSlipStatus: clean(input.trustSlipStatus, "Not issued yet"),
       trustSlipCode: clean(input.trustSlipCode),
       canVerify: hasVerifyCode || hasText(input.verifyUrl),
       verifyUrl: clean(input.verifyUrl),

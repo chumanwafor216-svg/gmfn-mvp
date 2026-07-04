@@ -115,6 +115,16 @@ assertNotContains(
   "Join Requests request fact grid must not return to a two-column phone layout."
 );
 
+assertContains(
+  /\["Community ID", safeStr\(item\.community_code \|\| "No community ID yet"\)\]/,
+  "Join Requests must use honest missing-community-ID copy instead of stale issue-tracking language."
+);
+
+assertNotContains(
+  /Awaiting issue/g,
+  "Join Requests must not display stale issue-tracking language for missing community IDs."
+);
+
 if (findings.length > 0) {
   console.error("Community Join Requests layout audit failed:");
   for (const finding of findings) {

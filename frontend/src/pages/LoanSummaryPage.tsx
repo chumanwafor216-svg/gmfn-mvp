@@ -526,13 +526,11 @@ function normalizeCommunityName(clan: CommunityLite | null, selectedClanId: numb
 }
 
 function normalizeCommunityId(clan: CommunityLite | null): string {
-  return (
-    firstTruthy(
-      clan?.community_code,
-      clan?.community?.community_code,
-      clan?.profile?.community_code,
-      clan?.marketplace?.community_code
-    ) || "Pending"
+  return firstTruthy(
+    clan?.community_code,
+    clan?.community?.community_code,
+    clan?.profile?.community_code,
+    clan?.marketplace?.community_code
   );
 }
 
@@ -1035,16 +1033,21 @@ export default function LoanSummaryPage() {
     );
   }, [me]);
 
-  const gmfnId = useMemo(() => firstTruthy(me?.gmfn_id, "Pending"), [me]);
+  const gmfnIdValue = useMemo(() => firstTruthy(me?.gmfn_id), [me]);
+  const gmfnId = useMemo(() => firstTruthy(gmfnIdValue, "Not issued yet"), [gmfnIdValue]);
 
   const communityLabel = useMemo(
     () => normalizeCommunityName(currentClan, selectedClanId),
     [currentClan, selectedClanId]
   );
 
-  const communityPublicId = useMemo(
+  const communityPublicIdValue = useMemo(
     () => normalizeCommunityId(currentClan),
     [currentClan]
+  );
+  const communityPublicId = useMemo(
+    () => firstTruthy(communityPublicIdValue, "No community ID yet"),
+    [communityPublicIdValue]
   );
 
   const memberRole = useMemo(
@@ -1220,10 +1223,10 @@ export default function LoanSummaryPage() {
         title: "GSN Support Audit Link",
         reference: `support-${summary.id}`,
         memberName,
-        gsnId: gmfnId,
+        gsnId: gmfnIdValue,
         memberRole,
         communityName: communityLabel,
-        communityId: communityPublicId,
+        communityId: communityPublicIdValue,
         routeName: "Support Summary",
         loanId: summary.id,
         amount: fmtMoney(n(summary.amount), currency),
@@ -1250,10 +1253,10 @@ export default function LoanSummaryPage() {
         title: "GSN Support Summary Snapshot",
         reference: `support-${summary.id}`,
         memberName,
-        gsnId: gmfnId,
+        gsnId: gmfnIdValue,
         memberRole,
         communityName: communityLabel,
-        communityId: communityPublicId,
+        communityId: communityPublicIdValue,
         routeName: "Support Summary",
         loanId: summary.id,
         amount: fmtMoney(n(summary.amount), currency),
@@ -1291,10 +1294,10 @@ export default function LoanSummaryPage() {
         : "Review current support status, supporter position, and repayment evidence.",
       reference: `support-${summary.id}`,
       memberName,
-      gsnId: gmfnId,
+      gsnId: gmfnIdValue,
       memberRole,
       communityName: communityLabel,
-      communityId: communityPublicId,
+      communityId: communityPublicIdValue,
       routeName: "Support Summary",
       loanId: summary.id,
       amount: fmtMoney(n(summary.amount), currency),
@@ -1316,9 +1319,9 @@ export default function LoanSummaryPage() {
   }, [
     approvedCount,
     communityLabel,
-    communityPublicId,
+    communityPublicIdValue,
     currency,
-    gmfnId,
+    gmfnIdValue,
     memberName,
     memberRole,
     pendingGuarantors.length,

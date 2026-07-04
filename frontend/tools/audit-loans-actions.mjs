@@ -392,6 +392,79 @@ assertContains(
 );
 
 assertContains(
+  "src/pages/LoanWorkbenchPage.tsx",
+  /const gmfnIdValue = useMemo\(\(\) => \{[\s\S]*?return firstTruthy\(me\?\.gmfn_id\);[\s\S]*?const gmfnId = useMemo\(\(\) => \{[\s\S]*?return firstTruthy\(gmfnIdValue, "Not issued yet"\);[\s\S]*?gsnId: gmfnIdValue[\s\S]*?communityId: publicCommunityIdValue/,
+  "Loan Workbench must split real identity values from display fallbacks and copy only actual IDs into support evidence."
+);
+
+assertContains(
+  "src/pages/LoanSummaryPage.tsx",
+  /const gmfnIdValue = useMemo\(\(\) => firstTruthy\(me\?\.gmfn_id\), \[me\]\);[\s\S]*?const gmfnId = useMemo\(\(\) => firstTruthy\(gmfnIdValue, "Not issued yet"\)[\s\S]*?const communityPublicIdValue = useMemo[\s\S]*?const communityPublicId = useMemo[\s\S]*?"No community ID yet"[\s\S]*?gsnId: gmfnIdValue[\s\S]*?communityId: communityPublicIdValue/,
+  "Loan Summary must show honest missing identity labels while copied support evidence uses only actual GSN/community IDs."
+);
+
+assertContains(
+  "src/pages/LoanReadinessPage.tsx",
+  /const gmfnId = useMemo\(\(\) => \{[\s\S]*?return firstTruthy\(currentGmfnId, "Not issued yet"\);[\s\S]*?const publicCommunityIdValue = useMemo[\s\S]*?const publicCommunityId = useMemo[\s\S]*?"No community ID yet"[\s\S]*?gsnId: currentGmfnId[\s\S]*?communityId: publicCommunityIdValue/,
+  "Loan Readiness must display honest missing identity labels while copied readiness evidence uses only actual GSN/community IDs."
+);
+
+assertContains(
+  "src/pages/LoanSuggestionsPage.tsx",
+  /const gmfnId = useMemo\(\(\) => \{[\s\S]*?return firstTruthy\(currentGmfnId, "Not issued yet"\);[\s\S]*?const publicCommunityIdValue = useMemo[\s\S]*?const publicCommunityId = useMemo[\s\S]*?"No community ID yet"[\s\S]*?gsnId: currentGmfnId[\s\S]*?communityId: publicCommunityIdValue[\s\S]*?Requested withdrawal amount: \{withdrawalAmount \|\| "No withdrawal amount yet"\}[\s\S]*?Support gap: \{safeStr\(supportGap \|\| "Not calculated yet"\)\}/,
+  "Loan Suggestions must display honest missing identity and Money Out support context while copied evidence uses only actual IDs."
+);
+
+assertContains(
+  "src/pages/RevenueAllocationPage.tsx",
+  /const gmfnIdValue = useMemo\(\(\) => \{[\s\S]*?return firstTruthy\(me\?\.gmfn_id\);[\s\S]*?const gmfnId = useMemo\(\(\) => \{[\s\S]*?return firstTruthy\(gmfnIdValue, "Not issued yet"\);[\s\S]*?const communityPublicIdValue = useMemo[\s\S]*?const communityPublicId = useMemo[\s\S]*?"No community ID yet"[\s\S]*?\{ label: "Community ID", value: communityPublicIdValue \}[\s\S]*?\{ label: "GSN ID", value: gmfnIdValue \}[\s\S]*?Current support ID: \{currentLoanId \|\| "No support selected yet"\}/,
+  "Revenue Allocation must show honest missing identity labels while copied review summaries use only actual IDs."
+);
+
+assertContains(
+  "src/pages/RepaymentPage.tsx",
+  /function communityPublicId\(currentClan: any\): string \{[\s\S]*?\|\| "No community ID yet"[\s\S]*?const gmfnId = firstTruthy\(me\?\.gmfn_id, "Not issued yet"\);/,
+  "Repayment must show honest missing community and member identity copy instead of stale issue-tracking language."
+);
+
+assertContains(
+  "src/pages/LoanReadinessPage.tsx",
+  /supportGap \|\| "Not calculated yet"[\s\S]*?withdrawalAmount \|\| "No withdrawal amount yet"[\s\S]*?supportGap \|\| "Not calculated yet"/,
+  "Loan Readiness must explain missing Money Out support context with plain process states."
+);
+
+assertContains(
+  "src/pages/LoanWorkbenchPage.tsx",
+  /withdrawalAmount \|\| "No withdrawal amount yet"[\s\S]*?supportGap \|\| "Not calculated yet"/,
+  "Loan Workbench must explain missing Money Out support context with plain process states."
+);
+
+assertContains(
+  "src/pages/LoanSuggestionsPage.tsx",
+  /loanSummary\?\.status \|\| activeBorrowerLoan\?\.status \|\| "Status not recorded yet"/,
+  "Loan Suggestions must show honest missing-status copy instead of stale issue-tracking language."
+);
+
+assertContains(
+  "src/pages/RepaymentPage.tsx",
+  /summary\?\.status \|\| "Status not recorded yet"/,
+  "Repayment must show honest missing-status copy instead of stale issue-tracking language."
+);
+
+[
+  "src/pages/LoanReadinessPage.tsx",
+  "src/pages/LoanWorkbenchPage.tsx",
+  "src/pages/LoanSuggestionsPage.tsx",
+  "src/pages/RepaymentPage.tsx",
+].forEach((file) => {
+  assertNotContains(
+    file,
+    /Awaiting issue/,
+    "Loan and repayment pages must not expose stale issue-tracking placeholder language."
+  );
+});
+
+assertContains(
   "src/pages/RevenueAllocationPage.tsx",
   /stableHeight=\{52\}[\s\S]*?debugId="revenue-allocation\.front-load"[\s\S]*?stableHeight=\{52\}[\s\S]*?debugId="revenue-allocation\.front-copy-summary"[\s\S]*?debugId="revenue-allocation\.load"[\s\S]*?debugId="revenue-allocation\.copy-summary"/,
   "Revenue Allocation must keep Load and Copy Summary available before the stats grid while preserving the deeper current-action card."

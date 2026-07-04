@@ -53,6 +53,41 @@ for (const file of files) {
   );
 }
 
+{
+  const source = readFileSync(
+    join(frontendRoot, "src/pages/WithdrawalInstructionsPage.tsx"),
+    "utf8"
+  );
+
+  assertContains(
+    source,
+    "src/pages/WithdrawalInstructionsPage.tsx",
+    /function communityPublicId\(currentClan: any\): string \{[\s\S]*?\|\| "No community ID yet"/,
+    "Money Out must show honest missing-community-ID copy instead of stale issue-tracking language."
+  );
+
+  assertContains(
+    source,
+    "src/pages/WithdrawalInstructionsPage.tsx",
+    /`GSN ID: \$\{currentGmfnId \|\| "Not issued yet"\}`/,
+    "Money Out copied withdrawal summaries must use honest missing-GSN-ID copy."
+  );
+}
+
+{
+  const source = readFileSync(
+    join(frontendRoot, "src/pages/LoanReadinessPage.tsx"),
+    "utf8"
+  );
+
+  assertContains(
+    source,
+    "src/pages/LoanReadinessPage.tsx",
+    /return firstTruthy\(currentGmfnId, "Not issued yet"\);/,
+    "Loan Readiness must show honest missing-GSN-ID copy while keeping actual currentGmfnId for readiness checks."
+  );
+}
+
 if (findings.length > 0) {
   console.error("Finance/support identity fallback audit failed:");
   for (const finding of findings) {

@@ -1219,7 +1219,7 @@ function getCciState(me: any, trustSlip: any): TrustReadingState {
   }
 
   return {
-    classText: "Pending",
+    classText: "Not shown yet",
     scoreText: "-",
     tone: "neutral",
     statusText: "No cross-community consistency reading yet",
@@ -1377,7 +1377,7 @@ function getOpenTrustState(
 
   if (!hasSelectedCommunity) {
     return {
-      classText: "Pending",
+      classText: "Not shown yet",
       scoreText: "-",
       tone: "neutral",
       statusText: "Select a community to view local community trust",
@@ -1387,7 +1387,7 @@ function getOpenTrustState(
   }
 
   return {
-    classText: "Pending",
+    classText: "Not shown yet",
     scoreText: "-",
     tone: "neutral",
     statusText: "No local community trust reading yet",
@@ -1786,9 +1786,10 @@ export default function TrustScorePage() {
     );
   }, [trustSlipSummary, identityContext, me]);
 
-  const gmfnId = useMemo(() => {
-    return firstTruthy(trustSlipSummary?.gmfn_id, me?.gmfn_id, "Awaiting issue");
+  const gmfnIdValue = useMemo(() => {
+    return firstTruthy(trustSlipSummary?.gmfn_id, me?.gmfn_id);
   }, [trustSlipSummary, me]);
+  const gmfnId = gmfnIdValue || "Not issued yet";
 
   const communityName = useMemo(() => {
     return (
@@ -1803,19 +1804,17 @@ export default function TrustScorePage() {
       ) || (selectedClanId ? `Community ${selectedClanId}` : "No current community")
     );
   }, [trustSlipSummary, currentClan, matchedClan, selectedClanId]);
-  const communityCode = useMemo(() => {
-    return (
-      firstTruthy(
-        trustSlipSummary?.community_code,
-        trustSlipSummary?.community_global_id,
-        communityContext?.community_code,
-        communityContext?.community_global_id,
-        matchedClan?.community_code,
-        currentClan?.community_code
-      ) ||
-      "Awaiting issue"
-     );
+  const communityCodeValue = useMemo(() => {
+    return firstTruthy(
+      trustSlipSummary?.community_code,
+      trustSlipSummary?.community_global_id,
+      communityContext?.community_code,
+      communityContext?.community_global_id,
+      matchedClan?.community_code,
+      currentClan?.community_code
+    );
   }, [trustSlipSummary, communityContext, matchedClan, currentClan]);
+  const communityCode = communityCodeValue || "No community ID yet";
   const communityVerifyKey = useMemo(() => {
     return firstTruthy(
       trustSlipSummary?.community_code,
@@ -1832,7 +1831,7 @@ export default function TrustScorePage() {
     : "";
   const memberCredentialPath = publicCommunityMemberCredentialPath({
     communityKey: communityVerifyKey,
-    memberKey: gmfnId,
+    memberKey: gmfnIdValue,
   });
   const memberCredentialUrl = useMemo(
     () => frontendAbsoluteUrl(memberCredentialPath),
@@ -1871,7 +1870,7 @@ export default function TrustScorePage() {
       byKey.set(key, {
         id,
         name: name || "Community",
-        code: code || "Awaiting issue",
+        code: code || "No community ID yet",
         role: firstTruthy(raw?.role, raw?.holder_role, "member"),
       });
     }
@@ -1879,11 +1878,11 @@ export default function TrustScorePage() {
     (trustSlipSummary?.community_footprint || []).forEach(addCommunity);
     clansList.forEach(addCommunity);
 
-    if (byKey.size <= 0 && (communityName || communityCode)) {
+    if (byKey.size <= 0 && (communityName || communityCodeValue || selectedClanId)) {
       addCommunity({
         clan_id: selectedClanId,
         community_name: communityName,
-        community_code: communityCode,
+        community_code: communityCodeValue,
         role: firstTruthy(
           trustSlipSummary?.holder_role,
           communityContext?.holder_role,
@@ -1895,7 +1894,7 @@ export default function TrustScorePage() {
     return Array.from(byKey.values());
   }, [
     clansList,
-    communityCode,
+    communityCodeValue,
     communityName,
     communityContext?.holder_role,
     selectedClanId,
@@ -2000,7 +1999,7 @@ export default function TrustScorePage() {
       explainability?.band,
       trustSlipSummary?.band,
       trustSlipSummary?.level,
-      "Awaiting issue"
+      "Evidence building"
     );
   }, [recompute, explainability, trustSlipSummary]);
 
@@ -2122,7 +2121,7 @@ export default function TrustScorePage() {
     trustSlipBlockedByPhone ? "Phone check needed" : trustSlipSummary?.status,
     trustSlipSummary?.active || trustSlipSummary?.verified || trustSlipCode
       ? "Ready"
-      : "Pending"
+      : "Not issued yet"
   );
   const expiresText = safeDateTime(trustSlipSummary?.expires_at) || "Not stated";
   const eventCount = safeStr(recompute?.event_count ?? "0");
@@ -4808,7 +4807,7 @@ export default function TrustScorePage() {
               </div>
               <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
                 <EvidenceMeter status={trustSlipStatus}>
-                  TrustSlip: {trustSlipStatus || "Pending"}
+                  TrustSlip: {trustSlipStatus || "Not issued yet"}
                 </EvidenceMeter>
                 <EvidenceMeter status={trustSlipCode ? "Ready" : "Limited"}>
                   Code: {trustSlipCode || "Not stated"}
@@ -4884,7 +4883,7 @@ export default function TrustScorePage() {
                   <p style={{ ...helperText(), margin: 0 }}>
                     {trustSlipBlockedByPhone
                       ? trustSlipBlockDetail
-                      : "A public-looking paper should not show placeholders like Awaiting issue or a blank TrustSlip code."}
+                      : "A public-looking paper should not show a missing GSN ID or a blank TrustSlip code."}
                   </p>
                   <SecondaryButton
                     onClick={() => openTrustRoute(routes.trustSlip)}

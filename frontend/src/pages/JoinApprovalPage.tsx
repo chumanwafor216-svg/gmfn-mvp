@@ -772,7 +772,7 @@ export default function JoinApprovalPage() {
                         wordBreak: "break-word",
                       }}
                     >
-                      {gmfnId || "Awaiting issue"}
+                      {gmfnId || "Not issued yet"}
                     </div>
                   </div>
                 ) : null}

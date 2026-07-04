@@ -176,7 +176,7 @@ assertContains(
 );
 
 assertContains(
-  /label: "CCI"[\s\S]*?value: readableTrustStatus\(cci\.classText\)[\s\S]*?detail: "Cross-Community Integrity"[\s\S]*?label: "TrustSlip"[\s\S]*?value: trustSlipCode \|\| "Pending"/,
+  /label: "CCI"[\s\S]*?value: readableTrustStatus\(cci\.classText\)[\s\S]*?detail: "Cross-Community Integrity"[\s\S]*?label: "TrustSlip"[\s\S]*?value: trustSlipCode \|\| "Not issued yet"/,
   "Dashboard passport signals must keep the approved Trust, CCI, and TrustSlip readings."
 );
 

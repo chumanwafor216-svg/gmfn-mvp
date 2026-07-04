@@ -638,7 +638,7 @@ function communityPublicId(currentClan: any): string {
       currentClan?.community?.community_code,
       currentClan?.profile?.community_code,
       currentClan?.marketplace?.community_code
-    ) || "Awaiting issue"
+    ) || "No community ID yet"
   );
 }
 
@@ -1469,7 +1469,7 @@ export default function WithdrawalInstructionsPage() {
     const lines = [
       `Community: ${communityLabel}`,
       `Community ID: ${publicCommunityId}`,
-      `GSN ID: ${currentGmfnId || "Awaiting issue"}`,
+      `GSN ID: ${currentGmfnId || "Not issued yet"}`,
       `Member: ${memberName}`,
       memberRole ? `Role: ${memberRole}` : "",
       `Current stage: ${guidedState.step}`,

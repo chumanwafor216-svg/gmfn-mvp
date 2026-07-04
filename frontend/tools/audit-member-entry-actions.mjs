@@ -148,26 +148,38 @@ assertContains(
 
 assertContains(
   "src/pages/MyGMFNAndIPage.tsx",
+  /getMyTrustSlipSummary[\s\S]*?getTrustSlipSummary[\s\S]*?getTrustSlipMeSummary[\s\S]*?getMyTrustSlip[\s\S]*?normalizeIdentityTrustSlip/,
+  "My GSN and I hero must load TrustSlip identity evidence instead of relying only on shallow account placeholders."
+);
+
+assertContains(
+  "src/pages/MyGMFNAndIPage.tsx",
+  /buildIdentityEvidenceCompletion[\s\S]*?buildTrustPassportViewModel[\s\S]*?Identity evidence[\s\S]*?Active communities[\s\S]*?Trust Passport[\s\S]*?Photo\/selfie[\s\S]*?Main context/,
+  "My GSN and I hero must align its visible status labels with Trust Passport evidence and avoid placeholder-only status copy."
+);
+
+assertContains(
+  "src/pages/MyGMFNAndIPage.tsx",
   /label: "Marketplace"[\s\S]*?debugId: "my-gmfn\.route\.marketplace"[\s\S]*?label: "Finance"[\s\S]*?detail: "Money records and payment evidence\."[\s\S]*?icon: "financeInstitution"[\s\S]*?to: routes\.finance[\s\S]*?debugId: "my-gmfn\.route\.finance"[\s\S]*?label: "Loans & Support"/,
   "My GSN and I route list must keep Finance visible between Marketplace and Loans & Support."
 );
 
 assertContains(
   "src/pages/MyGMFNAndIPage.tsx",
-  /htmlFor="my-gmfn-capability-search"[\s\S]*?Search by problem[\s\S]*?id="my-gmfn-capability-search"[\s\S]*?htmlFor="my-gmfn-capability-category"[\s\S]*?Category filter[\s\S]*?id="my-gmfn-capability-category"[\s\S]*?htmlFor="my-gmfn-capability-select"[\s\S]*?Choose capability[\s\S]*?id="my-gmfn-capability-select"[\s\S]*?aria-label="Choose GSN capability"/,
-  "My GSN and I capability guide must keep search, category filter, and dropdown selector above the focused capability card."
+  /htmlFor="my-gmfn-capability-search"[\s\S]*?Search by decision[\s\S]*?id="my-gmfn-capability-search"[\s\S]*?htmlFor="my-gmfn-capability-category"[\s\S]*?Category filter[\s\S]*?id="my-gmfn-capability-category"[\s\S]*?htmlFor="my-gmfn-capability-select"[\s\S]*?Choose capability[\s\S]*?id="my-gmfn-capability-select"[\s\S]*?aria-label="Choose GSN capability"/,
+  "My GSN and I decision guide must keep search, category filter, and dropdown selector above the focused capability card."
 );
 
 assertContains(
   "src/pages/MyGMFNAndIPage.tsx",
-  /Problem it solves[\s\S]*?GSN tools involved[\s\S]*?Where to open it[\s\S]*?What evidence it creates/,
-  "My GSN and I profile capability map must stay concrete enough to explain daily GSN use as Problem -> Tool -> App Location -> Evidence, not collapse back to slogans."
+  /The real-world problem[\s\S]*?Why it is dangerous[\s\S]*?How GSN changes the decision[\s\S]*?Which GSN tools cooperate[\s\S]*?Where you use them[\s\S]*?Evidence created/,
+  "My GSN and I profile decision guide must stay concrete enough to explain daily GSN use as real-world problem, danger, changed decision, tool cooperation, app location, and evidence created."
 );
 
 assertContains(
   "src/pages/MyGMFNAndIPage.tsx",
-  /Public Shop, Merchant Verification, TrustSlip, Merchant Release Rail, Shop Diary, Vault[\s\S]*?Marketplace -> Members & Trade; Shop -> Public Shop \/ Vault; Trust -> TrustSlip[\s\S]*?Shop identity, shelf activity, followers, trade records, verification links, and public shop record/,
-  "The Evidence-Backed Buying and Selling capability must keep the owner's requested tool, location, and evidence depth."
+  /realWorld: "Buyers, sellers, suppliers, and service providers often meet through messages, referrals, or marketplace posts with thin identity context\."[\s\S]*?danger: "A good-looking offer can hide a weak seller, a false buyer, an unreliable supplier, or a trade that leaves no usable record afterwards\."[\s\S]*?decision: "GSN lets both sides read shop identity, member context, TrustSlip evidence, and trade history before committing\."[\s\S]*?tools: "Public Shop -> Merchant Verification -> TrustSlip -> Merchant Release Rail -> Shop Diary -> Vault\."[\s\S]*?where: "Marketplace -> Members & Trade; Shop -> Public Shop \/ Vault; Trust -> TrustSlip\."[\s\S]*?evidence: "Shop identity, shelf activity, followers, trade records, verification links, and public shop record\."/,
+  "The Evidence-Backed Buying and Selling capability must keep the owner's requested decision-story depth."
 );
 
 assertNotContains(
@@ -180,6 +192,48 @@ assertNotContains(
   "src/pages/MyGMFNAndIPage.tsx",
   /Choose the route that matches|protected routes|welcome route/,
   "Public My GSN and I guide copy must speak in page/user terms, not route language."
+);
+
+assertNotContains(
+  "src/pages/MyGMFNAndIPage.tsx",
+  /Awaiting issue|Identity pending|Photo not shown|GSN ID status|Member: \{displayName\}|Community: \{communityLabel\}/,
+  "My GSN and I hero must not show stale placeholder statuses or repeat member/community chips under the evidence grid."
+);
+
+assertContains(
+  "src/pages/BuildFirstCirclePage.tsx",
+  /GSN ID: \{gmfnId \|\| "Not issued yet"\}/,
+  "Build First Circle must show an honest missing-GSN-ID label instead of stale issue-tracking language."
+);
+
+assertNotContains(
+  "src/pages/BuildFirstCirclePage.tsx",
+  /Awaiting issue/,
+  "Build First Circle must not display stale issue-tracking language for missing GSN IDs."
+);
+
+assertContains(
+  "src/lib/firstCircle.ts",
+  /gmfnId[\s\S]*?\? `I recently joined GSN and received my GSN ID \$\{gmfnId\}\.`[\s\S]*?: "I recently joined GSN\. My GSN ID is not issued yet\."/,
+  "First Circle copied invite messages must not claim a GSN ID was received when no issued ID exists."
+);
+
+assertNotContains(
+  "src/lib/firstCircle.ts",
+  /received my GSN ID \$\{gmfnId \|\| "Pending"\}|safeStr\(params\.gmfnId\) \|\| "Pending"/,
+  "First Circle invite copy must not export a fake Pending GSN ID."
+);
+
+assertContains(
+  "src/pages/JoinApprovalPage.tsx",
+  /\{gmfnId \|\| "Not issued yet"\}/,
+  "Join Approval must show an honest missing-GSN-ID label after approval when the issued ID is not present yet."
+);
+
+assertNotContains(
+  "src/pages/JoinApprovalPage.tsx",
+  /Awaiting issue/,
+  "Join Approval must not display stale issue-tracking language for missing GSN IDs."
 );
 
 assertNotContains(

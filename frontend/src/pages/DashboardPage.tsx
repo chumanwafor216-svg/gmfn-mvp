@@ -2547,7 +2547,7 @@ function getUserOperationalClass(params: {
     return "approval";
   }
 
-  if (!safeStr(params.trustSlipCode) || safeStr(params.gmfnId) === "Pending") {
+  if (!safeStr(params.trustSlipCode) || !safeStr(params.gmfnId)) {
     return "setup";
   }
 
@@ -2559,7 +2559,7 @@ function getUserOperationalClass(params: {
     return "demand";
   }
 
-  if (params.activeSpotlight || safeStr(params.gmfnId) !== "Pending") {
+  if (params.activeSpotlight || safeStr(params.gmfnId)) {
     return "seller";
   }
 
@@ -3564,12 +3564,11 @@ export default function DashboardPage() {
     [me]
   );
 
-  const gmfnId = safeStr(me?.gmfn_id || getStoredGmfnId() || "Pending");
-  const visibleGsnId =
-    gmfnId === "Pending" ? gmfnId : gmfnId.replace(/^GMF[MN]/i, "GSN");
+  const gmfnId = safeStr(me?.gmfn_id || getStoredGmfnId());
+  const visibleGsnId = gmfnId ? gmfnId.replace(/^GMF[MN]/i, "GSN") : "Not issued yet";
   const globalIdParts = /^([A-Za-z]+-[A-Za-z]+-)(.+)$/.exec(visibleGsnId);
   const passportGlobalIdDisplay = useMemo(() => {
-    if (visibleGsnId === "Pending") return visibleGsnId;
+    if (!gmfnId) return visibleGsnId;
 
     const parts = visibleGsnId
       .toUpperCase()
@@ -3584,7 +3583,7 @@ export default function DashboardPage() {
     }
 
     return parts.join(" - ");
-  }, [visibleGsnId]);
+  }, [gmfnId, visibleGsnId]);
   const trustSlipCode = safeStr(trustSlip?.code || "");
   const avatarInputId = "dashboard-avatar-upload-input";
 
@@ -7446,7 +7445,7 @@ export default function DashboardPage() {
               },
               {
                 label: "TrustSlip",
-                value: trustSlipCode || "Pending",
+                value: trustSlipCode || "Not issued yet",
                 detail: "",
                 strength: 0,
                 to: trustSlipCode
@@ -7794,8 +7793,8 @@ export default function DashboardPage() {
                 <span>Issued by GSN</span>
                 <span>
                   Status:{" "}
-                  <span style={{ color: visibleGsnId === "Pending" ? "#8A651E" : "#047857" }}>
-                    {visibleGsnId === "Pending" ? "Pending" : "Active"}
+                  <span style={{ color: gmfnId ? "#047857" : "#8A651E" }}>
+                    {gmfnId ? "Active" : "Not issued yet"}
                   </span>
                 </span>
               </span>
@@ -8498,7 +8497,7 @@ export default function DashboardPage() {
                             fontSize: isPhone ? 9.8 : 12,
                           }}
                         >
-                          {trustSlipCode || "Pending"}
+                          {trustSlipCode || "Not issued yet"}
                         </span>
                       </span>
                     </div>

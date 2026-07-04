@@ -808,7 +808,7 @@ export default function CommunityShopControlPanel({
                     }}
                   >
                     <span style={badge(true)}>
-                      GSN ID: {safeStr(shop?.gmfnId || "Pending")}
+                      GSN ID: {safeStr(shop?.gmfnId || "Not issued yet")}
                     </span>
                     <span style={badge(false)}>Selected community: {communityLabel}</span>
                     <span style={badge(false)}>

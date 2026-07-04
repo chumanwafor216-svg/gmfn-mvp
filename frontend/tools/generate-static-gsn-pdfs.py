@@ -52,170 +52,220 @@ CAPABILITIES = [
 
 CAPABILITY_EXPLANATIONS = {
     "Release Before Payment": (
-        "What it is: a trust-first trade posture where evidence is checked "
-        "before goods, services, or value are released on confidence. How it "
-        "works: GSN can surface TrustSlip, community context, shop identity, "
-        "and reader warnings before a decision. Why it matters: it lowers the "
-        "chance of preventable loss without pretending that GSN is already a "
-        "full escrow or automated release rail."
+        "Real-world decision: a seller may release goods, service, or credit "
+        "to someone they only partly know. Risk: promises can fail after value "
+        "moves. GSN changes the decision by asking what evidence exists before "
+        "release. Tools: community verification, merchant verification, "
+        "TrustSlip, protected trade record, and merchant release rail. Evidence "
+        "left: merchant release record, trade evidence, community context, and "
+        "future TrustSlip evidence. Boundary: not a full escrow or automated "
+        "release rail."
     ),
     "Evidence-Backed Buying and Selling": (
-        "What it is: marketplace activity strengthened by identity, community "
-        "signals, and readable trust evidence. How it works: GSN gives buyers "
-        "and sellers public shop, TrustSlip, demand, and verification cues so "
-        "they can ask better questions before acting. Why it matters: commerce "
-        "becomes less dependent on guesswork, screenshots, or noise."
+        "Real-world decision: buyers, sellers, and suppliers meet through "
+        "messages, referrals, or posts with thin identity context. Risk: a "
+        "good-looking offer can hide a weak seller or false buyer. GSN changes "
+        "the decision by letting both sides read shop identity, TrustSlip, "
+        "community evidence, and trade history before acting. Tools: public "
+        "shop, merchant verification, TrustSlip, release rail, shop diary, and "
+        "vault. Evidence left: shop identity, shelf activity, followers, trade "
+        "records, and verification links."
     ),
     "Cross-Community Trade": (
-        "What it is: the ability for trust earned in one community to support "
-        "decisions in another. How it works: GSN connects community membership, "
-        "shop presence, TrustSlip, and public verification so a person or "
-        "merchant does not restart from zero. Why it matters: trustworthy "
-        "people and businesses can travel farther without losing accountability."
+        "Real-world decision: a person trusted in one market, church, union, "
+        "or family circle may be unknown in another. Risk: good members restart "
+        "from zero while bad actors can move without visible history. GSN "
+        "changes the decision by carrying identity and community evidence with "
+        "clear boundaries. Tools: GSN ID, community record, public shop, "
+        "TrustSlip, and community credential. Evidence left: cross-community "
+        "identity trail, member credential, shop record, and confirmation."
     ),
     "Fraud Reduction Before Action": (
-        "What it is: a prevention layer that encourages checks before money, "
-        "goods, work, or support are committed. How it works: GSN exposes "
-        "limited trust evidence, mismatch warnings, stale-record warnings, and "
-        "community confirmation paths. Why it matters: the strongest fraud "
-        "control is often a timely question before the loss happens."
+        "Real-world decision: fraud often looks ordinary before goods, money, "
+        "work, or access moves. Risk: the warning signs may become obvious only "
+        "after loss. GSN changes the decision by surfacing weak evidence, stale "
+        "records, mismatch warnings, and confirmation paths before action. "
+        "Tools: trust reading, TrustSlip verify, community member verify, and "
+        "Trust Passport limits. Evidence left: caution notes, missing-evidence "
+        "signals, verification limits, and current reading."
     ),
     "Spotlight Visibility": (
-        "What it is: a focused way to show one product, service, update, or "
-        "community signal without turning the app into a noisy feed. How it "
-        "works: GSN presents active spotlight material with status, context, "
-        "and contact routes. Why it matters: visibility becomes tied to useful "
-        "community context instead of attention alone."
+        "Real-world decision: a useful shop update or service offer can vanish "
+        "before the right community sees it. Risk: attention can reward noise "
+        "instead of recorded value. GSN changes the decision by giving approved "
+        "updates a clearer place to be seen while keeping visibility separate "
+        "from verification. Tools: Spotlight, public shop, marketplace "
+        "broadcast, and shop gallery. Evidence left: published spotlight, "
+        "owner identity, community placement, media record, and timestamp."
     ),
     "Reputation-Based Visibility": (
-        "What it is: a visibility model where trust quality can shape how "
-        "people, shops, and opportunities are presented. How it works: GSN "
-        "can combine trust readings, community evidence, and marketplace "
-        "context into calmer decision surfaces. Why it matters: better "
-        "reputation should create clearer access while weak evidence stays "
-        "appropriately limited."
+        "Real-world decision: serious members can be harder to find when reach "
+        "depends only on posting volume. Risk: opportunity can flow toward "
+        "noise while better evidence stays hidden. GSN changes the decision by "
+        "letting recorded reputation support reach while showing limits. "
+        "Tools: reputation signals, trust reading, Spotlight ranking, and "
+        "marketplace visibility. Evidence left: trust band, activity trail, "
+        "shop status, community context, and public record."
     ),
     "Marketplace Presence Across Communities": (
-        "What it is: a merchant or member presence that can be understood "
-        "outside one local group. How it works: GSN links public shop, gallery, "
-        "vault, demand, community, and TrustSlip surfaces. Why it matters: "
-        "market access can grow while the reader still sees where the claim "
-        "comes from."
+        "Real-world decision: a merchant may sell across communities using "
+        "scattered chats, screenshots, and repeated introductions. Risk: "
+        "customers cannot tell whether shop, owner, shelf, and contact path "
+        "belong together. GSN changes the decision with one controlled shop "
+        "presence tied to community context. Tools: public shop, gallery, "
+        "Spotlight, WhatsApp contact, and merchant verification. Evidence left: "
+        "public shop link, shelf items, media, owner GSN ID, and verification."
     ),
     "People-Backed Loans": (
-        "What it is: support shaped by people, responsibility, and repayment "
-        "context, not only a form submission. How it works: GSN can show "
-        "support needs, supporter fit, guarantor responsibility, expected "
-        "payments, and expiry windows. Why it matters: access improves while "
-        "risk, obligation, and follow-through remain visible."
+        "Real-world decision: a person may need school fees, stock, emergency "
+        "support, or working capital before formal finance will listen. Risk: "
+        "unclear amount, purpose, duration, and backing turn support into blind "
+        "lending or pressure. GSN changes the decision by making the request "
+        "reviewable. Tools: loans and support, support draft, fit check, "
+        "supporter list, and guarantor request. Evidence left: amount, purpose, "
+        "duration, repayment plan, fit signal, supporters, and request record."
     ),
     "Supporting Others": (
-        "What it is: a way for eligible community members to stand behind another person "
-        "with clearer responsibility. How it works: GSN records support "
-        "decisions, locked responsibility, earnings or service-fee context, "
-        "and repayment status where available. Why it matters: help becomes "
-        "more accountable than a private promise."
+        "Real-world decision: someone may want to stand behind another person "
+        "without knowing the full responsibility. Risk: help can become hidden "
+        "obligation or emotional pressure. GSN changes the decision by showing "
+        "request, relationship context, trust reading, and responsibility "
+        "before a yes. Tools: supporter check, guarantor inbox, Trust Passport, "
+        "and community relationship evidence. Evidence left: invitation, "
+        "relationship context, guarantor decision, and support trail."
     ),
     "Emergency Support": (
-        "What it is: urgent help made easier when identity, community, and "
-        "trust context are already organized. How it works: GSN can reuse the "
-        "support and TrustSlip layer so a serious need is not judged from a "
-        "blank page. Why it matters: urgency should reduce confusion, not "
-        "remove accountability."
+        "Real-world decision: urgent help often arrives through calls, chats, "
+        "or relatives before anyone has time to verify. Risk: a real emergency "
+        "can be delayed, while a false request can pull money away from safer "
+        "decisions. GSN changes the decision by putting identity, community "
+        "confirmation, TrustSlip, and need record together. Tools: TrustSlip, "
+        "community confirmation, Demand Box, support request, and identity "
+        "record. Evidence left: urgent need record, member identity, "
+        "confirmation, TrustSlip code, and response."
     ),
     "Diaspora Trust Bridge": (
-        "What it is: portable confidence for people supporting, trading, or "
-        "verifying across distance. How it works: GSN lets a reader use public "
-        "verification, TrustSlip, shop, and community evidence without needing "
-        "to personally know the local circle. Why it matters: distance should "
-        "not erase trustworthy history."
+        "Real-world decision: diaspora members may send support, goods, or "
+        "opportunity from far away using only family reports or messages. Risk: "
+        "distance weakens context and can make one-sided claims look complete. "
+        "GSN changes the decision by giving distant readers controlled "
+        "community evidence. Tools: community record, TrustSlip, public shop, "
+        "community confirmation, and GSN ID. Evidence left: membership, public "
+        "identity, shop record, confirmation notes, and verification link."
     ),
     "Trust Savings (ROSCA Support)": (
-        "What it is: familiar rotating savings and contribution culture with "
-        "a clearer evidence layer. How it works: GSN can connect Money In, "
-        "expected payments, linked responsibilities, and community readings. "
-        "Why it matters: savings discipline becomes easier to read without "
-        "turning every private record into a public claim."
+        "Real-world decision: savings circles depend on repeated contribution, "
+        "timing, and mutual confidence. Risk: when memory and informal pressure "
+        "are the record, missed contributions and payout disputes are harder to "
+        "resolve. GSN changes the decision by adding contribution and payout "
+        "context without becoming the bank. Tools: ROSCA desk, contribution "
+        "cycle, payout record, and member evidence. Evidence left: cycle setup, "
+        "selected members, schedule, payout record, and community context."
     ),
     "Contribution Tracking": (
-        "What it is: a clearer record of who contributed, what was expected, "
-        "and what still needs reconciliation. How it works: GSN can show "
-        "payment references, expected-payment status, pool events, and manual "
-        "pilot review where needed. Why it matters: community capital grows "
-        "when contribution memory becomes durable and reviewable."
+        "Real-world decision: people contribute, repay, support, volunteer, "
+        "sell, and follow through, but much of that history disappears. Risk: "
+        "future decisions return to hearsay after evidence has already been "
+        "earned. GSN changes the decision by turning useful behaviour into "
+        "reviewable records. Tools: Trust Events, finance records, repayment "
+        "record, support evidence, and Trust Passport. Evidence left: "
+        "contribution events, repayment behaviour, support records, timestamps, "
+        "and community source."
     ),
     "Continuity Across Distance": (
-        "What it is: trust history that survives movement between places, "
-        "phones, markets, and communities. How it works: GSN ties identity, "
-        "community membership, TrustSlip, shop, and finance context into a "
-        "portable record. Why it matters: a person should not lose every "
-        "earned signal when life moves."
+        "Real-world decision: people move, reconnect, change work, and join "
+        "new circles while still needing their history to make sense. Risk: "
+        "responsible members can look unknown while old accountability becomes "
+        "hard to find. GSN changes the decision by keeping identity, role, and "
+        "trust trail readable without merging communities. Tools: GSN ID, "
+        "community membership, Trust Passport, and community record. Evidence "
+        "left: GSN ID, active community count, roles, membership, and trail."
     ),
     "Portable Trust Identity": (
-        "What it is: a way to carry a good name beyond the place where people "
-        "already know you. How it works: Trust Passport holds broader private "
-        "context while TrustSlip shares a smaller checkable paper. Why it "
-        "matters: informal credibility can become useful evidence without "
-        "forcing private life into the open."
+        "Real-world decision: a person known locally may still need to present "
+        "identity and trust outside that circle. Risk: screenshots, nicknames, "
+        "and introductions can expose too much or prove too little. GSN changes "
+        "the decision with a portable identity package and protected evidence "
+        "boundary. Tools: GSN ID, Trust Passport, TrustSlip, photo or selfie, "
+        "and community credential. Evidence left: GSN ID, display name, photo "
+        "status, credential, TrustSlip code, and verification boundary."
     ),
     "Reputation Mobility": (
-        "What it is: earned reputation becoming usable in new decisions and "
-        "new communities. How it works: GSN can present trust readings, "
-        "community confirmation, and public verification in proportion to the "
-        "reader's need. Why it matters: opportunity should follow dependable "
-        "behaviour, not stay trapped in one place."
+        "Real-world decision: a good name can be real but trapped in one "
+        "street, shop, contact list, or circle. Risk: opportunity stays local "
+        "and new readers fall back to gossip. GSN changes the decision by "
+        "moving reputation with behaviour evidence and community context. "
+        "Tools: Trust Passport, Trust Graph, community record, and TrustSlip. "
+        "Evidence left: recorded activity, relationship evidence, community "
+        "footprint, TrustSlip, and current reading."
     ),
     "One Global Shop": (
-        "What it is: one merchant identity that can serve more than one local "
-        "audience. How it works: GSN connects public shop, gallery, owner "
-        "contact, vault access, and trust context. Why it matters: a small "
-        "seller can grow reach without scattering their credibility across "
-        "unconnected pages."
+        "Real-world decision: a shop may be represented by chats, photos, "
+        "flyers, and personal contacts scattered across many places. Risk: "
+        "customers may not know whether item, owner, contact route, and "
+        "verification signal belong together. GSN changes the decision with one "
+        "public shop home. Tools: public shop, vault, shop gallery, Spotlight, "
+        "and merchant verification. Evidence left: public shop link, shelf "
+        "blocks, owner GSN ID, media, and verification actions."
     ),
     "Service Economy Participation": (
-        "What it is: trust evidence for work that is often informal, local, "
-        "or relationship-based. How it works: GSN can connect services, "
-        "TrustSlip, demand signals, marketplace presence, and reader-safe "
-        "verification. Why it matters: dependable workers and service "
-        "providers can show credibility before a buyer takes a risk."
+        "Real-world decision: service work often happens through referrals, "
+        "chats, and one-off introductions. Risk: good workers remain invisible "
+        "while buyers hire from weak claims because previous work is not easy "
+        "to review. GSN changes the decision by connecting demand, public "
+        "identity, community context, and follow-up evidence. Tools: Demand "
+        "Box, public shop, TrustSlip, community activity, and shop diary. "
+        "Evidence left: service offer, response, context, identity, and follow-up."
     ),
     "Trust-Based Hiring": (
-        "What it is: hiring support based on visible credibility, not only CV "
-        "claims or personal referrals. How it works: GSN can provide Trust "
-        "Passport, TrustSlip, community confirmation, and work/service signals "
-        "as decision support. Why it matters: employers and households can "
-        "make better proportionate decisions without overexposing the person."
+        "Real-world decision: hiring, task assignment, and household service "
+        "choices often depend on referrals or a quick conversation. Risk: weak "
+        "claims can sound strong, and strong workers can look ordinary without "
+        "evidence. GSN changes the decision by helping the reader check "
+        "identity, role evidence, activity, and confirmation. Tools: Trust "
+        "Passport, community credential, TrustSlip, and community confirmation. "
+        "Evidence left: identity status, role evidence, activity, TrustSlip, "
+        "and confirmation note."
     ),
     "Demand Box": (
-        "What it is: a way to record real needs before the market misses them. "
-        "How it works: GSN can collect demand, route it toward marketplace and "
-        "shop surfaces, and connect it to trust context. Why it matters: "
-        "opportunity becomes easier to match when demand is visible and "
-        "organized."
+        "Real-world decision: people need work, goods, services, stock, help, "
+        "or buyers before the right person knows they exist. Risk: opportunity "
+        "is missed when demand stays hidden inside private chats or late "
+        "conversations. GSN changes the decision by making demand visible early "
+        "enough to match need and supply. Tools: Demand Box, marketplace needs, "
+        "public shop, and community broadcast. Evidence left: need or offer "
+        "post, placement, requester context, and response trail."
     ),
     "Community Economic Power": (
-        "What it is: the shared strength created when contribution, trust, "
-        "trade, support, and participation can be read together. How it works: "
-        "GSN combines community finance, marketplace, TrustSlip, support, and "
-        "commitment surfaces into one operating layer. Why it matters: a "
-        "community can convert demonstrated value into practical access."
+        "Real-world decision: a community may hold identity, trade, support, "
+        "finance, trust, and opportunity records in disconnected places. Risk: "
+        "the community cannot see its own economic power or protect members "
+        "consistently. GSN changes the decision by connecting records into one "
+        "operating layer while separating personal, shop, and institutional "
+        "claims. Tools: community home, marketplace, finance, Trust Passport, "
+        "and Community Domain. Evidence left: community identity, activity, "
+        "marketplace records, finance evidence, and trust records."
     ),
     "Commitment Builder": (
-        "What it is: structured execution discipline for savings, repayment, "
-        "retirement readiness, business targets, and dependable follow-through. "
-        "How it works: GSN can turn intentions into clearer plans, reminders, "
-        "progress guidance, and visible commitment support. Why it matters: "
-        "trust becomes stronger when people can show not only who knows them, "
-        "but also how they keep commitments over time."
+        "Real-world decision: people make savings, repayment, retirement "
+        "readiness, business, and personal commitments that require follow-through. "
+        "Risk: intention fades when there is no visible execution trail. GSN "
+        "changes the decision by turning intention into a focused commitment "
+        "record with progress and reminders. Tools: Commitment Builder, Focus "
+        "Commitments, reminders, and progress evidence. Evidence left: "
+        "commitment record, progress steps, completion trail, and follow-through "
+        "signal."
     ),
     "Institutional Community Domain": (
-        "What it is: the larger organized-community layer for schools, unions, "
-        "churches, cooperatives, markets, associations, and similar bodies. "
-        "How it works: GSN can hold an institution's public identity, branches, "
-        "roles, member placement, policies, evidence maps, service lanes, and "
-        "controlled public claims in one structured space. Why it matters: it "
-        "keeps institutional communities separate from personal marketplaces "
-        "so readers know what kind of community they are dealing with."
+        "Real-world decision: schools, unions, churches, cooperatives, markets, "
+        "and associations need membership, roles, branches, policies, and public "
+        "claims. Risk: if institutional identity is mixed with personal "
+        "marketplaces, authority and public trust become confusing. GSN changes "
+        "the decision with a Community Domain for governance, membership, "
+        "services, and controlled claims. Tools: Community Domain, settings, "
+        "governance roles, service panels, and public community record. Evidence "
+        "left: domain identity, member placement, unit records, roles, service "
+        "status, and public claim."
     ),
 }
 
@@ -336,19 +386,20 @@ def build_executive_summary_pdf() -> bytes:
         max_chars=100,
     )
     line("")
-    line(f"{len(CAPABILITIES)} things GSN does", size=12, gap=16, bold=True)
+    line(f"{len(CAPABILITIES)} decisions GSN helps members make", size=12, gap=16, bold=True)
     for index, capability in enumerate(CAPABILITIES, start=1):
         line(f"{index}. {capability}", size=9, gap=11)
 
     line("")
-    line("How each capability works", size=12, gap=16, bold=True)
+    line("Decision guide", size=12, gap=16, bold=True)
     for index, capability in enumerate(CAPABILITIES, start=1):
         line(f"{index}. {capability}", size=10, gap=13, bold=True)
         paragraph(
             CAPABILITY_EXPLANATIONS.get(
                 capability,
-                "What it is: explanation pending. How it works: explanation pending. "
-                "Why it matters: explanation pending.",
+                "Real-world decision: explanation pending. Risk: explanation pending. "
+                "GSN changes the decision: explanation pending. Tools: explanation pending. "
+                "Evidence left: explanation pending.",
             ),
             size=8,
             gap=10,

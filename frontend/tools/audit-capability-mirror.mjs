@@ -90,7 +90,8 @@ for (const title of capabilityTitles) {
 }
 
 for (const value of [
-  "things GSN does",
+  "decisions GSN helps members make",
+  "Decision guide",
   "Commitment Builder",
   "Institutional Community Domain",
   "Boundary: API-paid verification",
@@ -104,14 +105,14 @@ for (const value of [
 
 assertContains(
   "frontend/src/pages/MyGMFNAndIPage.tsx",
-  /GSN Capability Map[\s\S]*?See the problems GSN solves, the tools that solve them, and where[\s\S]*?each tool lives in the app/,
-  "The public and signed-in My GSN guides must use the institutional capability-map heading."
+  /GSN Decision Guide[\s\S]*?real-world decisions GSN helps people make[\s\S]*?why those[\s\S]*?decisions are risky[\s\S]*?which tools cooperate[\s\S]*?evidence[\s\S]*?remains afterwards/,
+  "The public and signed-in My GSN guides must use the institutional decision-guide heading."
 );
 
 assertContains(
   "frontend/src/pages/MyGMFNAndIPage.tsx",
-  /GSN Capability Map[\s\S]*?This map explains capability; it is[\s\S]*?not proof[\s\S]*?member[\s\S]*?shop[\s\S]*?payout[\s\S]*?paid verification[\s\S]*?protected[\s\S]*?trade release/,
-  "The signed-in My GSN and I capability map must keep an institutional boundary against overclaiming live approvals, payout, paid verification, or protected trade release."
+  /GSN Decision Guide[\s\S]*?Read each capability as a decision story[\s\S]*?what happens in real[\s\S]*?why the decision is dangerous[\s\S]*?how GSN changes the question[\s\S]*?which tools cooperate[\s\S]*?evidence remains afterwards[\s\S]*?not proof[\s\S]*?member[\s\S]*?shop[\s\S]*?payout[\s\S]*?paid verification[\s\S]*?protected[\s\S]*?trade release/,
+  "The signed-in My GSN and I decision guide must keep the decision-story frame and the institutional boundary against overclaiming live approvals, payout, paid verification, or protected trade release."
 );
 
 for (const value of [
@@ -135,8 +136,8 @@ for (const value of [
 
 assertContains(
   "frontend/src/pages/MyGMFNAndIPage.tsx",
-  /data-my-gmfn-selected-capability="true"[\s\S]*selectedCapabilityDetail\.helps[\s\S]*Problem it solves[\s\S]*GSN tools involved[\s\S]*Where to open it[\s\S]*What evidence it creates/,
-  "The signed-in My GSN and I capability map must show one selected institutional card with problem, tool, location, and evidence fields."
+  /data-my-gmfn-selected-capability="true"[\s\S]*selectedCapabilityDetail\.summary[\s\S]*The real-world problem[\s\S]*selectedCapabilityDetail\.realWorld[\s\S]*Why it is dangerous[\s\S]*selectedCapabilityDetail\.danger[\s\S]*How GSN changes the decision[\s\S]*selectedCapabilityDetail\.decision[\s\S]*Which GSN tools cooperate[\s\S]*selectedCapabilityDetail\.tools[\s\S]*Where you use them[\s\S]*selectedCapabilityDetail\.where[\s\S]*Evidence created[\s\S]*selectedCapabilityDetail\.evidence/,
+  "The signed-in My GSN and I decision guide must show one selected institutional card with real-world problem, danger, decision change, cooperating tools, use location, and evidence fields."
 );
 
 assertContains(
@@ -176,7 +177,7 @@ for (const value of [
 
 assertContains(
   "frontend/src/pages/MyGMFNAndIPage.tsx",
-  /publicSelectedCapability \? \([\s\S]*data-my-gmfn-public-selected-capability="true"[\s\S]*publicCapabilityLine\(publicSelectedCapability\)[\s\S]*showAllPublicCapabilities \? \(/,
+  /publicSelectedCapability \? \([\s\S]*data-my-gmfn-public-selected-capability="true"[\s\S]*capabilityMapDetail\(publicSelectedCapability\)\.summary[\s\S]*showAllPublicCapabilities \? \(/,
   "The public My GSN and I guide must show a selected reader card before the optional full capability list."
 );
 
@@ -195,13 +196,19 @@ assertTextExcludes(
 assertTextExcludes(
   "frontend/src/pages/MyGMFNAndIPage.tsx",
   "Things GSN Can Do For You",
-  "The signed-in My GSN and I guide must not drift back to casual capability-map wording."
+  "The signed-in My GSN and I guide must not drift back to casual capability wording."
 );
 
 assertContains(
   "frontend/src/lib/gmfnCapabilities.ts",
   /export const GMFN_CAPABILITY_COUNT = GMFN_CAPABILITIES\.length;/,
   "The capability count must remain derived from the registry, not hardcoded."
+);
+
+assertContains(
+  "frontend/src/lib/gmfnCapabilities.ts",
+  /decisionGuideLine\?: string;[\s\S]*?Release Before Payment[\s\S]*?decisionGuideLine:[\s\S]*?Before value moves[\s\S]*?Evidence-Backed Buying and Selling[\s\S]*?decisionGuideLine:[\s\S]*?Before buying or selling[\s\S]*?Institutional Community Domain[\s\S]*?decisionGuideLine:[\s\S]*?institutional membership[\s\S]*?safeStr\(capability\.decisionGuideLine\)/,
+  "The shared capability registry must provide Decision Guide summary lines and the dashboard guide helper must prefer them."
 );
 
 assertContains(
@@ -242,8 +249,8 @@ assertTextIncludes(
 
 assertTextIncludes(
   "frontend/tools/generate-static-gsn-pdfs.py",
-  "eligible community members to stand behind another person",
-  "The public executive-summary PDF source must frame supporter standing as eligibility, not blanket trusted-member certification."
+  "someone may want to stand behind another person",
+  "The public executive-summary PDF source must frame supporter standing as a responsibility decision, not blanket trusted-member certification."
 );
 
 assertContains(

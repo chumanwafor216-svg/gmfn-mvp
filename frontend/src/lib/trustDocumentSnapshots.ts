@@ -153,7 +153,7 @@ export function buildIdentityIntegritySnapshot(
       { label: "Member", value: params.displayName },
       { label: "GSN ID", value: params.gmfnId },
       { label: "Community", value: params.communityLabel },
-      { label: "TrustSlip", value: params.trustSlipCode || "Awaiting issue" },
+      { label: "TrustSlip", value: params.trustSlipCode || "Not issued yet" },
     ],
     bodyLines: [
       cleanLine(

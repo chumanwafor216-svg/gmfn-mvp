@@ -1450,9 +1450,10 @@ export default function IdentityIntegrityPage() {
     );
   }, [currentClan, selectedClanId]);
 
-  const gmfnId = useMemo(() => {
-    return firstTruthy(me?.gmfn_id, trustSlip?.gmfn_id, "Pending");
+  const gmfnIdValue = useMemo(() => {
+    return firstTruthy(me?.gmfn_id, trustSlip?.gmfn_id);
   }, [me, trustSlip]);
+  const gmfnId = gmfnIdValue || "Not issued yet";
 
   const trustSlipCode = safeStr(trustSlip?.code || "");
   const guideItems = useMemo(() => buildIdentityIntegrityGuideItems(), []);
@@ -2000,12 +2001,12 @@ export default function IdentityIntegrityPage() {
   }
 
   function copyGmfnId() {
-    if (!gmfnId || gmfnId === "Pending") {
+    if (!gmfnIdValue) {
       showNotice("error", "GSN ID is not ready yet.");
       return;
     }
 
-    safeCopy(gmfnId);
+    safeCopy(gmfnIdValue);
     showNotice("success", "GSN ID copied.");
   }
 
@@ -2454,7 +2455,7 @@ export default function IdentityIntegrityPage() {
             {
               icon: "document" as GsnIconName,
               label: "TrustSlip",
-              value: trustSlipCode || "Pending",
+              value: trustSlipCode || "Not issued yet",
               tone: trustSlipCode ? "ready" as const : "neutral" as const,
             },
           ].map((item) => (
@@ -2508,20 +2509,20 @@ export default function IdentityIntegrityPage() {
         >
           <PrimaryButton
             onClick={copyGmfnId}
-            disabled={!gmfnId || gmfnId === "Pending"}
+            disabled={!gmfnIdValue}
             stableHeight={52}
             fullWidth
             minWidth={isCompact ? undefined : 132}
             debugId="identity-integrity.copy-gmfn-id"
-            style={identityCopyActionStyle(Boolean(gmfnId && gmfnId !== "Pending"), "primary")}
+            style={identityCopyActionStyle(Boolean(gmfnIdValue), "primary")}
           >
-            <span style={identityCopyIconBox(Boolean(gmfnId && gmfnId !== "Pending"), true)}>
+            <span style={identityCopyIconBox(Boolean(gmfnIdValue), true)}>
               <GsnLegacyIcon name="id" size={24} />
             </span>
             <span style={{ minWidth: 0, display: "grid", gap: 2, textAlign: "left" }}>
               <span style={{ fontWeight: 1000, lineHeight: 1.05 }}>Copy GSN ID</span>
               <span style={{ fontSize: 10.5, fontWeight: 900, opacity: 0.82 }}>
-                {gmfnId && gmfnId !== "Pending" ? "Ready" : "Pending issue"}
+                {gmfnIdValue ? "Ready" : "Not issued yet"}
               </span>
             </span>
           </PrimaryButton>
@@ -3198,7 +3199,7 @@ export default function IdentityIntegrityPage() {
                     wordBreak: "break-word",
                   }}
                 >
-                  {trustSlipCode || "Pending"}
+                  {trustSlipCode || "Not issued yet"}
                 </div>
                 <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                   {trustSlipCode

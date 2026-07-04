@@ -1907,7 +1907,7 @@ export default function TrustSlipPage() {
     return holderId ? `GSN holder ${holderId}` : "GSN holder";
   }, [summary, me]);
 
-  const gmfnId = useMemo(() => {
+  const gmfnIdValue = useMemo(() => {
     return firstTruthy(
       summary?.merchant_view?.gmfn_id,
       summary?.merchant_view?.identity_context?.gmfn_id,
@@ -1915,10 +1915,10 @@ export default function TrustSlipPage() {
       summary?.identity_context?.gmfn_id,
       summary?.gmfn_id,
       me?.gmfn_id,
-      api.getStoredGmfnId(),
-      "Pending"
+      api.getStoredGmfnId()
     );
   }, [summary, me]);
+  const gmfnId = gmfnIdValue || "Not issued yet";
 
   const communityName = useMemo(() => {
     return (
@@ -1934,19 +1934,21 @@ export default function TrustSlipPage() {
     );
   }, [summary, currentClan, selectedClanId]);
 
-  const communityRef = useMemo(() => {
-    return (
-      firstTruthy(
-        summary?.community_global_id,
-        summary?.community_code,
-        summary?.clan_code,
-        summary?.community_id,
-        currentClan?.community_global_id,
-        currentClan?.community_code,
-        currentClan?.clan_code
-      ) || "Pending"
+  const communityRefValue = useMemo(() => {
+    return firstTruthy(
+      summary?.community_global_id,
+      summary?.community_code,
+      summary?.clan_code,
+      summary?.community_id,
+      currentClan?.community_global_id,
+      currentClan?.community_code,
+      currentClan?.clan_code
     );
   }, [summary, currentClan]);
+  const communityRef = useMemo(
+    () => firstTruthy(communityRefValue, "No community ID yet"),
+    [communityRefValue]
+  );
 
   const trustSlipCode = useMemo(() => {
     return firstTruthy(
@@ -2541,7 +2543,7 @@ export default function TrustSlipPage() {
         ? "Expired"
         : trustSlipSecurityTone === "blocked"
           ? trustSlipPublicStatus
-          : "Pending";
+          : "Not issued yet";
   const trustSlipSecurityCaption =
     trustSlipSecurityTone === "active"
       ? "Current public verification window"
@@ -2550,7 +2552,7 @@ export default function TrustSlipPage() {
         : trustSlipSecurityTone === "blocked"
           ? "Do not rely until cleared"
           : "Waiting for a public code";
-  const trustSlipCodeLabel = trustSlipCode || "Awaiting issue";
+  const trustSlipCodeLabel = trustSlipCode || "Not issued yet";
   const trustSlipIssuedLabel =
     safeDateTime(summary?.issued_at) ||
     safeDateTime(summary?.created_at) ||
@@ -2604,7 +2606,7 @@ export default function TrustSlipPage() {
     {
       icon: "check" as GsnIconName,
       label: "Follow-through",
-      status: safeStr(summary?.last_full_repayment_at) ? "Strong" : "Pending",
+      status: safeStr(summary?.last_full_repayment_at) ? "Strong" : "No repayment evidence yet",
     },
     {
       icon: "home" as GsnIconName,
@@ -2725,8 +2727,8 @@ export default function TrustSlipPage() {
     ? `/verify/community/${encodeURIComponent(communityVerifyKey)}`
     : "";
   const memberCredentialPath = publicCommunityMemberCredentialPath({
-    communityKey: communityVerifyKey || communityRef,
-    memberKey: gmfnId,
+    communityKey: communityVerifyKey || communityRefValue,
+    memberKey: gmfnIdValue,
   });
   const memberCredentialUrl = useMemo(
     () => toFrontendAbsoluteUrl(memberCredentialPath),
@@ -2766,7 +2768,7 @@ export default function TrustSlipPage() {
     trustSlipCode,
     gmfnId,
     holderName,
-    communityRef,
+    communityRefValue,
     trustSlipPublicStatus,
     merchantBand,
     merchantTrustLimit,
@@ -3006,7 +3008,7 @@ export default function TrustSlipPage() {
         holderName,
         gmfnId,
         communityName,
-        communityRef,
+        communityRef: communityRefValue,
         holderRole,
         communityEvidence: communityActivitySignal,
         witnessEvidence: memberWitnessSignal,
@@ -3651,10 +3653,10 @@ export default function TrustSlipPage() {
                     <div style={{ marginTop: 10, display: "grid", gap: 6 }}>
                       <span
                         style={trustSlipRaisedMeter(
-                          firstTruthy(confirmationResult?.community_confidence, "Pending")
+                          firstTruthy(confirmationResult?.community_confidence, "Not recorded yet")
                         )}
                       >
-                        Confidence: {firstTruthy(confirmationResult?.community_confidence, "Pending")}
+                        Confidence: {firstTruthy(confirmationResult?.community_confidence, "Not recorded yet")}
                       </span>
                       <span style={{ color: "#526579", fontWeight: 800, fontSize: 13 }}>
                         Sent: {confirmationResult?.requests_sent ?? 0}; Responses:{" "}
@@ -4355,7 +4357,7 @@ export default function TrustSlipPage() {
               <SecondaryButton
                 onClick={() =>
                   void handleCopy(
-                    gmfnId,
+                    gmfnIdValue,
                     "GSN ID copied.",
                     "GSN ID is not ready yet."
                   )
@@ -4542,7 +4544,7 @@ export default function TrustSlipPage() {
               <div style={documentMetaCard("rgba(255,255,255,0.98)")}>
                 <div style={sectionLabel()}>Document reference</div>
                 <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
-                  TrustSlip code: {trustSlipCode || "Awaiting issue"}
+                  TrustSlip code: {trustSlipCode || "Not issued yet"}
                 </div>
                 <div style={{ marginTop: 6, ...helperText(), color: "#0B1F33" }}>
                   Verification code: {safeStr(summary?.verification_code || "Not stated")}
@@ -4589,7 +4591,7 @@ export default function TrustSlipPage() {
           <div>
             <div style={documentFooterLabel()}>Verification control</div>
             <div style={{ marginTop: 6, ...helperText(), color: "#D7E3F1" }}>
-              TrustSlip code: {trustSlipCode || "Awaiting issue"}
+              TrustSlip code: {trustSlipCode || "Not issued yet"}
             </div>
             <div style={{ marginTop: 4, ...helperText(), color: "#D7E3F1" }}>
               Verify path: {verifyUrl || "Not available yet"}
@@ -4855,7 +4857,7 @@ export default function TrustSlipPage() {
                 }}
               >
                 <span style={badge(true)}>
-                  Code: {trustSlipCode || "Awaiting issue"}
+                  Code: {trustSlipCode || "Not issued yet"}
                 </span>
                 <span style={badge(false)}>
                   Visibility: {merchantVisibility}

@@ -1876,8 +1876,8 @@ export default function TrustSlipVerifyPublicPaper({
                           "Community responses will appear as an aggregate result when members answer."}
                       </p>
                       <div style={{ marginTop: 10, display: "flex", flexWrap: "wrap", gap: 8 }}>
-                        <span style={paperStatusPill(firstTruthy(confirmationResult?.community_confidence, "Pending"))}>
-                          Confidence: {firstTruthy(confirmationResult?.community_confidence, "Pending")}
+                        <span style={paperStatusPill(firstTruthy(confirmationResult?.community_confidence, "Not recorded yet"))}>
+                          Confidence: {firstTruthy(confirmationResult?.community_confidence, "Not recorded yet")}
                         </span>
                         <span style={paperStatusPill("limited")}>
                           Sent: {confirmationResult?.requests_sent ?? 0}

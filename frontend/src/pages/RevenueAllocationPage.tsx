@@ -612,9 +612,12 @@ export default function RevenueAllocationPage() {
     );
   }, [me]);
 
-  const gmfnId = useMemo(() => {
-    return firstTruthy(me?.gmfn_id, "Pending");
+  const gmfnIdValue = useMemo(() => {
+    return firstTruthy(me?.gmfn_id);
   }, [me]);
+  const gmfnId = useMemo(() => {
+    return firstTruthy(gmfnIdValue, "Not issued yet");
+  }, [gmfnIdValue]);
 
   const communityLabel = useMemo(() => {
     return (
@@ -627,16 +630,19 @@ export default function RevenueAllocationPage() {
     );
   }, [currentClan, selectedClanId]);
 
-  const communityPublicId = useMemo(() => {
+  const communityPublicIdValue = useMemo(() => {
     return (
       firstTruthy(
         currentClan?.community_code,
         currentClan?.community?.community_code,
         currentClan?.profile?.community_code,
         currentClan?.marketplace?.community_code
-      ) || "Pending"
+      )
     );
   }, [currentClan]);
+  const communityPublicId = useMemo(() => {
+    return firstTruthy(communityPublicIdValue, "No community ID yet");
+  }, [communityPublicIdValue]);
 
   const memberRole = useMemo(() => {
     return (
@@ -778,9 +784,9 @@ export default function RevenueAllocationPage() {
       reference: allocation.loanId ? `support-${allocation.loanId}` : "revenue-allocation",
       context: [
         { label: "Community", value: communityLabel },
-        { label: "Community ID", value: communityPublicId },
+        { label: "Community ID", value: communityPublicIdValue },
         { label: "Member", value: memberName },
-        { label: "GSN ID", value: gmfnId },
+        { label: "GSN ID", value: gmfnIdValue },
         { label: "Role", value: memberRole },
         { label: "Status", value: allocation.status },
       ],
@@ -986,7 +992,7 @@ export default function RevenueAllocationPage() {
               <span style={badge(true)}>Member: {memberName}</span>
               {memberRole ? <span style={badge(false)}>Role: {memberRole}</span> : null}
               <span style={badge(false)}>
-                Current support ID: {currentLoanId || "Pending"}
+                Current support ID: {currentLoanId || "No support selected yet"}
               </span>
             </div>
           </div>

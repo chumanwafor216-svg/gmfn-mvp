@@ -91,7 +91,7 @@ assertContains(
 );
 
 assertContains(
-  /data-identity-integrity-copy-actions="true"[\s\S]*?identityCopyActionStyle\(Boolean\(gmfnId && gmfnId !== "Pending"\), "primary"\)[\s\S]*?Copy GSN ID[\s\S]*?identityCopyActionStyle\(Boolean\(trustSlipCode\), "secondary"\)[\s\S]*?Copy TrustSlip[\s\S]*?identityCopyActionStyle\(true, "subtle"\)[\s\S]*?Copy snapshot/,
+  /data-identity-integrity-copy-actions="true"[\s\S]*?identityCopyActionStyle\(Boolean\(gmfnIdValue\), "primary"\)[\s\S]*?Copy GSN ID[\s\S]*?Not issued yet[\s\S]*?identityCopyActionStyle\(Boolean\(trustSlipCode\), "secondary"\)[\s\S]*?Copy TrustSlip[\s\S]*?identityCopyActionStyle\(true, "subtle"\)[\s\S]*?Copy snapshot/,
   "Identity Integrity copy actions must be clear aligned action tiles, not washed-out loose controls."
 );
 

@@ -315,7 +315,7 @@ function communityPublicId(currentClan: any): string {
       currentClan?.community?.community_code,
       currentClan?.profile?.community_code,
       currentClan?.marketplace?.community_code
-    ) || "Awaiting issue"
+    ) || "No community ID yet"
   );
 }
 
@@ -505,7 +505,7 @@ export default function RepaymentPage() {
       me?.email
     ) || "Member";
 
-  const gmfnId = firstTruthy(me?.gmfn_id, "Awaiting issue");
+  const gmfnId = firstTruthy(me?.gmfn_id, "Not issued yet");
   const communityLabel = communityName(currentClan);
   const communityCode = communityPublicId(currentClan);
   const memberRole = communityRole(currentClan);
@@ -1109,7 +1109,7 @@ export default function RepaymentPage() {
             <div style={statTile()}>
               <div style={sectionLabel()}>Support status</div>
               <div style={{ marginTop: 8, color: "#F8FBFF", fontSize: 18, fontWeight: 900 }}>
-                {safeStr(summary?.status || "Awaiting issue")}
+                {safeStr(summary?.status || "Status not recorded yet")}
               </div>
             </div>
 

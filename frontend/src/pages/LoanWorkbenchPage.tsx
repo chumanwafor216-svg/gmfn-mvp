@@ -240,13 +240,11 @@ function communityName(currentClan: any, clanId: number): string {
 }
 
 function communityPublicId(currentClan: any): string {
-  return (
-    firstTruthy(
-      currentClan?.community_code,
-      currentClan?.community?.community_code,
-      currentClan?.profile?.community_code,
-      currentClan?.marketplace?.community_code
-    ) || "Pending"
+  return firstTruthy(
+    currentClan?.community_code,
+    currentClan?.community?.community_code,
+    currentClan?.profile?.community_code,
+    currentClan?.marketplace?.community_code
   );
 }
 
@@ -876,17 +874,23 @@ export default function LoanWorkbenchPage() {
     );
   }, [me]);
 
-  const gmfnId = useMemo(() => {
-    return firstTruthy(me?.gmfn_id, "Awaiting issue");
+  const gmfnIdValue = useMemo(() => {
+    return firstTruthy(me?.gmfn_id);
   }, [me]);
+  const gmfnId = useMemo(() => {
+    return firstTruthy(gmfnIdValue, "Not issued yet");
+  }, [gmfnIdValue]);
 
   const communityLabel = useMemo(() => {
     return communityName(currentClan, selectedClanId);
   }, [currentClan, selectedClanId]);
 
-  const publicCommunityId = useMemo(() => {
+  const publicCommunityIdValue = useMemo(() => {
     return communityPublicId(currentClan);
   }, [currentClan]);
+  const publicCommunityId = useMemo(() => {
+    return firstTruthy(publicCommunityIdValue, "No community ID yet");
+  }, [publicCommunityIdValue]);
 
   const memberRole = useMemo(() => {
     return communityRole(currentClan);
@@ -1227,10 +1231,10 @@ export default function LoanWorkbenchPage() {
       buildGsnSupportEvidenceShareText({
         title: "GSN Support Workbench Snapshot",
         memberName,
-        gsnId: gmfnId,
+        gsnId: gmfnIdValue,
         memberRole,
         communityName: communityLabel,
-        communityId: publicCommunityId,
+        communityId: publicCommunityIdValue,
         routeName: "Support Workbench",
         loanId: selectedLoanId || loanDetail?.id || "",
         amount: `${amountText} ${currency}`,
@@ -1245,12 +1249,12 @@ export default function LoanWorkbenchPage() {
       communityLabel,
       currency,
       currentStatus,
-      gmfnId,
+      gmfnIdValue,
       guarantorsRequired,
       loanDetail?.id,
       memberName,
       memberRole,
-      publicCommunityId,
+      publicCommunityIdValue,
       selectedLoanId,
       workbenchTitle,
     ]
@@ -2053,7 +2057,7 @@ export default function LoanWorkbenchPage() {
                       fontSize: 16,
                     }}
                   >
-                    {withdrawalAmount || "Awaiting issue"}
+                    {withdrawalAmount || "No withdrawal amount yet"}
                   </div>
                 </div>
 
@@ -2067,7 +2071,7 @@ export default function LoanWorkbenchPage() {
                       fontSize: 16,
                     }}
                   >
-                    {safeStr(supportGap || "Awaiting issue")}
+                    {safeStr(supportGap || "Not calculated yet")}
                   </div>
                 </div>
               </>

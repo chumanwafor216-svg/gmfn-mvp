@@ -467,6 +467,18 @@ assertLayoutContains(
   "Community Home mobile content must not double-reserve the bottom rail while the rail remains visible in normal layout flow."
 );
 
+if (/Awaiting issue/.test(source)) {
+  findings.push({
+    file: communityFile,
+    line: lineAt(source.search(/Awaiting issue/)),
+    message:
+      "Community Home must not store or compare a stale placeholder as if it were a real GSN ID.",
+    text: source
+      .slice(source.search(/Awaiting issue/), source.search(/Awaiting issue/) + 160)
+      .replace(/\s+/g, " "),
+  });
+}
+
 const rawActionPattern =
   /<(button|a|summary)\b|role="button"|data-gmfn-action-root|data-cta-id/g;
 while ((match = rawActionPattern.exec(source))) {
