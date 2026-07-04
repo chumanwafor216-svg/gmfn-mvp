@@ -102,6 +102,9 @@ Rules:
 - The phone-screen icon should use the balanced shield/star emblem without tiny
   internal top lettering and without an oversized bottom wordmark inside the
   icon. The visible phone label below the icon may remain `GSN`.
+- iPhone home-screen installs must use a dedicated `180x180` Apple touch icon
+  with a quiet navy safe zone around the gold border and shield/star emblem.
+  Do not point `apple-touch-icon` at a cropped or edge-to-edge manifest icon.
 
 ## DashboardPage
 

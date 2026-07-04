@@ -1,9 +1,9 @@
 <svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
   <rect width="512" height="512" rx="112" fill="#061827"/>
-  <rect x="28" y="28" width="456" height="456" rx="92" fill="url(#bg)" stroke="#D6AA45" stroke-width="10"/>
-  <path d="M256 92L364 145V257C364 330 324 389 256 426C188 389 148 330 148 257V145L256 92Z" fill="url(#shield)" stroke="#F2C766" stroke-width="10"/>
-  <path d="M256 128L332 166V253C332 306 304 348 256 379C208 348 180 306 180 253V166L256 128Z" fill="none" stroke="rgba(255,255,255,0.28)" stroke-width="5"/>
-  <path d="M256 168L276 224H336L287 258L306 315L256 280L206 315L225 258L176 224H236L256 168Z" fill="url(#star)" stroke="#FFF6CE" stroke-width="4"/>
+  <rect x="54" y="54" width="404" height="404" rx="78" fill="url(#bg)" stroke="#D6AA45" stroke-width="8"/>
+  <path d="M256 124L346 168V260C346 321 313 371 256 402C199 371 166 321 166 260V168L256 124Z" fill="url(#shield)" stroke="#F2C766" stroke-width="9"/>
+  <path d="M256 154L318 185V257C318 300 295 334 256 360C217 334 194 300 194 257V185L256 154Z" fill="none" stroke="rgba(255,255,255,0.28)" stroke-width="5"/>
+  <path d="M256 188L273 236H323L283 265L299 313L256 284L213 313L229 265L189 236H239L256 188Z" fill="url(#star)" stroke="#FFF6CE" stroke-width="4"/>
   <defs>
     <linearGradient id="bg" x1="256" y1="0" x2="256" y2="512">
       <stop stop-color="#0B2D4A"/>

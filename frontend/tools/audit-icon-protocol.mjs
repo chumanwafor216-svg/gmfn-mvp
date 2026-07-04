@@ -1,8 +1,10 @@
 /* global console, process */
 
+import { Buffer } from "node:buffer";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { inflateSync } from "node:zlib";
 
 const toolDir = dirname(fileURLToPath(import.meta.url));
 const repoRoot = join(toolDir, "..", "..");
@@ -129,6 +131,210 @@ function assertFileExists(file, message) {
   }
 }
 
+function assertBuiltArtifactContains(file, pattern, message) {
+  const fullPath = join(repoRoot, file);
+  if (!existsSync(fullPath)) {
+    findings.push({
+      file,
+      line: 1,
+      message,
+      text: "Expected built artifact was not found. Run npm run build before checking dist output.",
+    });
+    return;
+  }
+
+  const text = readFileSync(fullPath, "utf8");
+  if (!pattern.test(text)) {
+    findings.push({
+      file,
+      line: 1,
+      message,
+      text: "Expected pattern was not found in the built artifact.",
+    });
+  }
+}
+
+function assertPngDimensions(file, expectedWidth, expectedHeight, message) {
+  const fullPath = join(repoRoot, file);
+  if (!existsSync(fullPath)) {
+    findings.push({
+      file,
+      line: 1,
+      message,
+      text: "Expected PNG file was not found.",
+    });
+    return;
+  }
+
+  const buffer = readFileSync(fullPath);
+  const signature = buffer.subarray(0, 8).toString("hex");
+  const width = buffer.length >= 24 ? buffer.readUInt32BE(16) : 0;
+  const height = buffer.length >= 24 ? buffer.readUInt32BE(20) : 0;
+  if (
+    signature !== "89504e470d0a1a0a" ||
+    width !== expectedWidth ||
+    height !== expectedHeight
+  ) {
+    findings.push({
+      file,
+      line: 1,
+      message,
+      text: `Expected ${expectedWidth}x${expectedHeight} PNG, found ${width}x${height}.`,
+    });
+  }
+}
+
+function paethPredictor(left, above, upperLeft) {
+  const estimate = left + above - upperLeft;
+  const leftDistance = Math.abs(estimate - left);
+  const aboveDistance = Math.abs(estimate - above);
+  const upperLeftDistance = Math.abs(estimate - upperLeft);
+
+  if (leftDistance <= aboveDistance && leftDistance <= upperLeftDistance) {
+    return left;
+  }
+  if (aboveDistance <= upperLeftDistance) {
+    return above;
+  }
+  return upperLeft;
+}
+
+function decodePngRgba(file) {
+  const fullPath = join(repoRoot, file);
+  const buffer = readFileSync(fullPath);
+  const signature = buffer.subarray(0, 8).toString("hex");
+  if (signature !== "89504e470d0a1a0a") {
+    throw new Error("Not a PNG file.");
+  }
+
+  let offset = 8;
+  let width = 0;
+  let height = 0;
+  let bitDepth = 0;
+  let colorType = 0;
+  let interlace = 0;
+  const idatChunks = [];
+
+  while (offset < buffer.length) {
+    const length = buffer.readUInt32BE(offset);
+    const type = buffer.subarray(offset + 4, offset + 8).toString("ascii");
+    const data = buffer.subarray(offset + 8, offset + 8 + length);
+    offset += 12 + length;
+
+    if (type === "IHDR") {
+      width = data.readUInt32BE(0);
+      height = data.readUInt32BE(4);
+      bitDepth = data[8];
+      colorType = data[9];
+      interlace = data[12];
+    } else if (type === "IDAT") {
+      idatChunks.push(data);
+    } else if (type === "IEND") {
+      break;
+    }
+  }
+
+  if (bitDepth !== 8 || interlace !== 0 || (colorType !== 6 && colorType !== 2)) {
+    throw new Error(
+      `Unsupported PNG format: bitDepth=${bitDepth}, colorType=${colorType}, interlace=${interlace}.`
+    );
+  }
+
+  const bytesPerPixel = colorType === 6 ? 4 : 3;
+  const scanlineLength = width * bytesPerPixel;
+  const inflated = inflateSync(Buffer.concat(idatChunks));
+  const pixels = Buffer.alloc(width * height * 4);
+  let readOffset = 0;
+  let previous = Buffer.alloc(scanlineLength);
+
+  for (let y = 0; y < height; y += 1) {
+    const filter = inflated[readOffset];
+    readOffset += 1;
+    const raw = inflated.subarray(readOffset, readOffset + scanlineLength);
+    readOffset += scanlineLength;
+    const current = Buffer.alloc(scanlineLength);
+
+    for (let x = 0; x < scanlineLength; x += 1) {
+      const left = x >= bytesPerPixel ? current[x - bytesPerPixel] : 0;
+      const above = previous[x] || 0;
+      const upperLeft = x >= bytesPerPixel ? previous[x - bytesPerPixel] || 0 : 0;
+      const value = raw[x];
+
+      if (filter === 0) {
+        current[x] = value;
+      } else if (filter === 1) {
+        current[x] = (value + left) & 255;
+      } else if (filter === 2) {
+        current[x] = (value + above) & 255;
+      } else if (filter === 3) {
+        current[x] = (value + Math.floor((left + above) / 2)) & 255;
+      } else if (filter === 4) {
+        current[x] = (value + paethPredictor(left, above, upperLeft)) & 255;
+      } else {
+        throw new Error(`Unsupported PNG filter: ${filter}.`);
+      }
+    }
+
+    for (let x = 0; x < width; x += 1) {
+      const source = x * bytesPerPixel;
+      const target = (y * width + x) * 4;
+      pixels[target] = current[source];
+      pixels[target + 1] = current[source + 1];
+      pixels[target + 2] = current[source + 2];
+      pixels[target + 3] = colorType === 6 ? current[source + 3] : 255;
+    }
+
+    previous = current;
+  }
+
+  return { width, height, pixels };
+}
+
+function assertPngQuietEdge(file, message) {
+  let decoded;
+  try {
+    decoded = decodePngRgba(file);
+  } catch (error) {
+    findings.push({
+      file,
+      line: 1,
+      message,
+      text: error instanceof Error ? error.message : "Could not decode PNG.",
+    });
+    return;
+  }
+
+  const samples = [
+    [0, 0],
+    [Math.floor(decoded.width * 0.03), Math.floor(decoded.height * 0.03)],
+    [Math.floor(decoded.width * 0.08), Math.floor(decoded.height * 0.08)],
+    [decoded.width - 1, decoded.height - 1],
+    [
+      decoded.width - 1 - Math.floor(decoded.width * 0.08),
+      decoded.height - 1 - Math.floor(decoded.height * 0.08),
+    ],
+  ];
+
+  for (const [x, y] of samples) {
+    const index = (y * decoded.width + x) * 4;
+    const red = decoded.pixels[index];
+    const green = decoded.pixels[index + 1];
+    const blue = decoded.pixels[index + 2];
+    const quietNavy =
+      Math.abs(red - 6) <= 3 && Math.abs(green - 24) <= 3 && Math.abs(blue - 39) <= 3;
+
+    if (!quietNavy) {
+      findings.push({
+        file,
+        line: 1,
+        message,
+        text: `Expected quiet navy edge at (${x}, ${y}), found rgb(${red}, ${green}, ${blue}).`,
+      });
+      return;
+    }
+  }
+}
+
 function assertNotContains(file, pattern, message) {
   const text = read(file);
   const lines = text.split(/\r?\n/);
@@ -174,6 +380,104 @@ assertContains(
   /Meaningful icons follow the GSN Icon Protocol: premium realistic 3D object\s+icons, not flat, outline, faded, cartoon, or emoji-style primary icons\./,
   "UX acceptance checklist must require the GSN Icon Protocol."
 );
+
+assertContains(
+  "docs/SCREEN_SPECS.md",
+  /iPhone home-screen installs must use a dedicated `180x180` Apple touch icon[\s\S]*?quiet navy safe zone[\s\S]*?Do not point `apple-touch-icon` at a cropped or edge-to-edge manifest icon\./,
+  "Screen specs must preserve the iPhone home-screen icon safe-zone rule."
+);
+
+assertContains(
+  "frontend/index.html",
+  /<link rel="apple-touch-icon" sizes="180x180" href="\/gsn-app-icon-ios-180\.png" \/>/,
+  "iPhone home-screen installs must use the dedicated 180x180 safe-zone GSN touch icon."
+);
+
+assertContains(
+  "frontend/public/manifest.json",
+  /"src": "\/gsn-app-icon-ios-180\.png"[\s\S]*?"sizes": "180x180"[\s\S]*?"src": "\/gsn-app-icon-192\.png"[\s\S]*?"sizes": "192x192"[\s\S]*?"src": "\/gsn-app-icon-512\.png"[\s\S]*?"sizes": "512x512"/,
+  "PWA manifest must expose dedicated 180, 192, and 512 GSN app icons."
+);
+
+assertContains(
+  "frontend/public/manifest.webmanifest",
+  /"src": "\/gsn-app-icon-ios-180\.png"[\s\S]*?"sizes": "180x180"[\s\S]*?"src": "\/gsn-app-icon-192\.png"[\s\S]*?"sizes": "192x192"[\s\S]*?"src": "\/gsn-app-icon-512\.png"[\s\S]*?"sizes": "512x512"/,
+  "Web manifest must expose dedicated 180, 192, and 512 GSN app icons."
+);
+
+assertPngDimensions(
+  "frontend/public/gsn-app-icon-ios-180.png",
+  180,
+  180,
+  "iPhone touch icon must be a real 180x180 PNG, not a cropped or mislabeled asset."
+);
+
+assertPngDimensions(
+  "frontend/public/gsn-app-icon-192.png",
+  192,
+  192,
+  "PWA 192 icon must be a real 192x192 PNG, not a cropped or mislabeled asset."
+);
+
+assertPngDimensions(
+  "frontend/public/gsn-app-icon-512.png",
+  512,
+  512,
+  "PWA 512 icon must be a real 512x512 PNG."
+);
+
+assertPngQuietEdge(
+  "frontend/public/gsn-app-icon-ios-180.png",
+  "iPhone touch icon must keep a quiet navy safe zone so iOS rounding does not crop gold border or shield artwork."
+);
+
+assertPngQuietEdge(
+  "frontend/public/gsn-app-icon-192.png",
+  "PWA 192 icon must keep a quiet navy safe zone so phone launchers do not crop gold border or shield artwork."
+);
+
+assertPngQuietEdge(
+  "frontend/public/gsn-app-icon-512.png",
+  "PWA 512 icon must keep a quiet navy safe zone so phone launchers do not crop gold border or shield artwork."
+);
+
+if (existsSync(join(repoRoot, "frontend/dist"))) {
+  assertBuiltArtifactContains(
+    "frontend/dist/index.html",
+    /<link rel="apple-touch-icon" sizes="180x180" href="\/gsn-app-icon-ios-180\.png" \/>/,
+    "Built deploy artifact must keep the dedicated iPhone Apple touch icon metadata."
+  );
+
+  assertBuiltArtifactContains(
+    "frontend/dist/manifest.json",
+    /"src": "\/gsn-app-icon-ios-180\.png"[\s\S]*?"sizes": "180x180"[\s\S]*?"src": "\/gsn-app-icon-192\.png"[\s\S]*?"sizes": "192x192"[\s\S]*?"src": "\/gsn-app-icon-512\.png"[\s\S]*?"sizes": "512x512"/,
+    "Built deploy manifest must expose the iPhone, 192, and 512 GSN app icons."
+  );
+
+  assertBuiltArtifactContains(
+    "frontend/dist/manifest.webmanifest",
+    /"src": "\/gsn-app-icon-ios-180\.png"[\s\S]*?"sizes": "180x180"[\s\S]*?"src": "\/gsn-app-icon-192\.png"[\s\S]*?"sizes": "192x192"[\s\S]*?"src": "\/gsn-app-icon-512\.png"[\s\S]*?"sizes": "512x512"/,
+    "Built deploy web manifest must expose the iPhone, 192, and 512 GSN app icons."
+  );
+
+  assertBuiltArtifactContains(
+    "frontend/dist/sw.js",
+    /const CACHE_VERSION = "gsn-pwa-shell-v\d+"[\s\S]*?"\/gsn-app-icon-ios-180\.png"/,
+    "Built deploy service worker must precache the iPhone-safe app icon."
+  );
+
+  assertPngDimensions(
+    "frontend/dist/gsn-app-icon-ios-180.png",
+    180,
+    180,
+    "Built iPhone touch icon must be a real 180x180 PNG."
+  );
+
+  assertPngQuietEdge(
+    "frontend/dist/gsn-app-icon-ios-180.png",
+    "Built iPhone touch icon must keep a quiet navy safe zone."
+  );
+}
 
 assertContains(
   "docs/GSN_MOBILE_UI_PROTOCOL.md",

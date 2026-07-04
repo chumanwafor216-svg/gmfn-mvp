@@ -129,13 +129,13 @@ assertContains(
 
 assertContains(
   "public/manifest.json",
-  /"name": "GSN"[\s\S]*?"short_name": "GSN"[\s\S]*?"description": "Open Global Support Network from this phone\."[\s\S]*?"start_url": "\/cover\?source=pwa"[\s\S]*?"display": "browser"[\s\S]*?"display_override": \["browser"\][\s\S]*?"src": "\/gsn-app-icon-192\.png"[\s\S]*?"src": "\/gsn-app-icon-512\.png"[\s\S]*?"src": "\/gsn-app-icon\.svg"/,
+  /"name": "GSN"[\s\S]*?"short_name": "GSN"[\s\S]*?"description": "Open Global Support Network from this phone\."[\s\S]*?"start_url": "\/cover\?source=pwa"[\s\S]*?"display": "browser"[\s\S]*?"display_override": \["browser"\][\s\S]*?"src": "\/gsn-app-icon-ios-180\.png"[\s\S]*?"src": "\/gsn-app-icon-192\.png"[\s\S]*?"src": "\/gsn-app-icon-512\.png"[\s\S]*?"src": "\/gsn-app-icon\.svg"/,
   "The shortcut manifest must keep the GSN identity, Cover-first app start URL, browser display fallback, and standard phone icons."
 );
 
 assertContains(
   "public/sw.js",
-  /const CACHE_VERSION = "gsn-pwa-shell-v\d+"[\s\S]*?"\/cover\?source=pwa"[\s\S]*?if \(url\.pathname\.startsWith\("\/api"\)\) return;[\s\S]*?if \(url\.pathname\.startsWith\("\/uploads"\)\) return;[\s\S]*?request\.mode === "navigate"[\s\S]*?url\.pathname === "\/welcome"[\s\S]*?entryFrom !== "cover"[\s\S]*?Response\.redirect\(target\.toString\(\), 302\)/,
+  /const CACHE_VERSION = "gsn-pwa-shell-v\d+"[\s\S]*?"\/cover\?source=pwa"[\s\S]*?"\/gsn-app-icon-ios-180\.png"[\s\S]*?if \(url\.pathname\.startsWith\("\/api"\)\) return;[\s\S]*?if \(url\.pathname\.startsWith\("\/uploads"\)\) return;[\s\S]*?request\.mode === "navigate"[\s\S]*?url\.pathname === "\/welcome"[\s\S]*?entryFrom !== "cover"[\s\S]*?Response\.redirect\(target\.toString\(\), 302\)/,
   "The GSN service worker must support app-shell install without caching private API or uploaded user data."
 );
 
@@ -165,7 +165,7 @@ assertContains(
 
 assertContains(
   "src/components/GsnInstallPrompt.tsx",
-  /open this page in Safari first[\s\S]*?Add to Home Screen[\s\S]*?Add page to home screen or Bookmark[\s\S]*?Play Protect blocks it[\s\S]*?Show iPhone screen steps[\s\S]*?Show 3 phone steps[\s\S]*?\/gsn-app-icon\.svg/,
+  /open this page in Safari first[\s\S]*?Add to Home Screen[\s\S]*?Add page to home screen or Bookmark[\s\S]*?Play Protect blocks it[\s\S]*?Show iPhone screen steps[\s\S]*?Show 3 phone steps[\s\S]*?\/gsn-app-icon-ios-180\.png[\s\S]*?objectFit: "contain"/,
   "The GSN shortcut prompt must offer one simple setup action plus truthful Android and iPhone manual phone instructions without triggering native Android install."
 );
 
@@ -827,7 +827,7 @@ assertContains(
 
 assertContains(
   "src/pages/ShopAssetsPage.tsx",
-  /const gmfnId = useMemo\([\s\S]*?firstTruthy\(shop\?\.owner_gmfn_id, shop\?\.gmfn_id\)[\s\S]*?\[shop\]/,
+  /const gmfnIdValue = useMemo\([\s\S]*?firstTruthy\(shop\?\.owner_gmfn_id, shop\?\.gmfn_id\)[\s\S]*?\[shop\][\s\S]*?const gmfnId = useMemo\(\(\) => firstTruthy\(gmfnIdValue, "Not issued yet"\)[\s\S]*?const shopLink = useMemo\(\(\) => buildShopLink\(gmfnIdValue\)[\s\S]*?buildProductDeepLink\([\s\S]*?gmfnIdValue,/,
   "Shop Assets must build public shop links only from the backend-confirmed shop owner identity, not from a member ID fallback."
 );
 

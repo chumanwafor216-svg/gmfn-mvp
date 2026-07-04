@@ -1,6 +1,6 @@
 /* global caches, fetch, Response, self, URL */
 
-const CACHE_VERSION = "gsn-pwa-shell-v11";
+const CACHE_VERSION = "gsn-pwa-shell-v12";
 const SHELL_ASSETS = [
   "/",
   "/cover",
@@ -8,6 +8,7 @@ const SHELL_ASSETS = [
   "/manifest.json",
   "/manifest.webmanifest",
   "/gsn-app-icon.svg",
+  "/gsn-app-icon-ios-180.png",
   "/gsn-app-icon-192.png",
   "/gsn-app-icon-512.png",
 ];

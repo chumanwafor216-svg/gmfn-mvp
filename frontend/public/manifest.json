@@ -13,6 +13,12 @@
   "categories": ["business", "finance", "productivity"],
   "icons": [
     {
+      "src": "/gsn-app-icon-ios-180.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
       "src": "/gsn-app-icon-192.png",
       "sizes": "192x192",
       "type": "image/png",

@@ -1130,8 +1130,8 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
   }, [loadPage]);
 
   const gmfnIdValue = useMemo(
-    () => firstTruthy(shop?.owner_gmfn_id, shop?.gmfn_id, me?.gmfn_id),
-    [me?.gmfn_id, shop]
+    () => firstTruthy(shop?.owner_gmfn_id, shop?.gmfn_id),
+    [shop]
   );
   const gmfnId = useMemo(() => firstTruthy(gmfnIdValue, "Not issued yet"), [gmfnIdValue]);
   const shopLink = useMemo(() => buildShopLink(gmfnIdValue), [gmfnIdValue]);
@@ -2619,7 +2619,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                         copyText(
                           buildPublicShopMessage(
                             buildProductDeepLink(
-                              gmfnId,
+                              gmfnIdValue,
                               Number(selectedPublicProduct.id),
                               selectedPublicSlot
                             ),

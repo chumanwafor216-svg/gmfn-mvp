@@ -173,8 +173,14 @@ assertContains(
 
 assertContains(
   "src/pages/ShopAssetsPage.tsx",
-  /const gmfnIdValue = useMemo\([\s\S]*?firstTruthy\(shop\?\.owner_gmfn_id, shop\?\.gmfn_id, me\?\.gmfn_id\)[\s\S]*?const gmfnId = useMemo\(\(\) => firstTruthy\(gmfnIdValue, "Not issued yet"\)[\s\S]*?const shopLink = useMemo\(\(\) => buildShopLink\(gmfnIdValue\)/,
+  /const gmfnIdValue = useMemo\([\s\S]*?firstTruthy\(shop\?\.owner_gmfn_id, shop\?\.gmfn_id\)[\s\S]*?\[shop\][\s\S]*?const gmfnId = useMemo\(\(\) => firstTruthy\(gmfnIdValue, "Not issued yet"\)[\s\S]*?const shopLink = useMemo\(\(\) => buildShopLink\(gmfnIdValue\)/,
   "Shop Gallery Tools must split real GSN ID values from honest display fallback copy."
+);
+
+assertContains(
+  "src/pages/ShopAssetsPage.tsx",
+  /buildProductDeepLink\([\s\S]*?gmfnIdValue,[\s\S]*?Number\(selectedPublicProduct\.id\)/,
+  "Shop Gallery Tools copied product block links must use the real GSN ID value, not the visible fallback label."
 );
 
 assertContains(

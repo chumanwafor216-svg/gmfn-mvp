@@ -174,13 +174,13 @@ export default function GsnInstallPrompt({
       >
         <div style={markStyle(tone, compact)} aria-hidden="true">
           <img
-            src="/gsn-app-icon.svg"
+            src="/gsn-app-icon-ios-180.png"
             alt=""
             style={{
               width: "100%",
               height: "100%",
               display: "block",
-              objectFit: "cover",
+              objectFit: "contain",
             }}
           />
         </div>
