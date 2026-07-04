@@ -446,6 +446,7 @@ function getTaskModeMeta(pathname: string): TaskModeMeta | null {
       actions: [
         makeFinanceItem(),
         makeMarketplaceItem(),
+        { label: "Notifications", to: "/app/notifications" },
         makeCommunityItem(),
         makeDashboardItem(),
       ],

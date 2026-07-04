@@ -9,6 +9,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { navigateWithOrigin } from "../lib/nav";
 import {
   getCommunityJoinRequests,
+  getClanTrustScoreExplained,
   getCurrentClan,
   getDailyInsight,
   getMarketplaceBroadcasts,
@@ -19,6 +20,7 @@ import {
   getPublicMarketplaceShopByGmfnId,
   getSelectedClanId,
   getStoredGmfnId,
+  setSelectedClanId,
   listMarketplaceRequests,
   removeMyProfileImage,
   recordFocusCommitmentTrustEvent,
@@ -1135,6 +1137,38 @@ function spotlightIsActive(item: SpotlightItem | null): boolean {
   return !expiresAt || expiresAt.getTime() > Date.now();
 }
 
+function formatReadingScore(rawScore: unknown, scoreNum: number | null): string {
+  if (
+    rawScore === null ||
+    rawScore === undefined ||
+    safeStr(rawScore) === "" ||
+    scoreNum === null ||
+    Number.isNaN(scoreNum)
+  ) {
+    return "-";
+  }
+
+  if (Number.isInteger(scoreNum)) return String(scoreNum);
+  return scoreNum.toFixed(2).replace(/\.?0+$/, "");
+}
+
+function cciDisplayText(cci: ReadingState): string {
+  const classText = safeStr(cci.classText);
+  const scoreText = safeStr(cci.scoreText);
+  const hasNumericScore =
+    scoreText !== "" && scoreText !== "-" && !Number.isNaN(Number(scoreText));
+
+  if (hasNumericScore) {
+    if (classText && classText !== "Not shown yet") {
+      return `${classText} / ${scoreText}`;
+    }
+
+    return scoreText;
+  }
+
+  return readableTrustStatus(classText);
+}
+
 function spotlightPublishKey(item: SpotlightItem): string {
   const publishedParts = [
     item.author_gmfn_id,
@@ -1716,27 +1750,71 @@ function normalizeActionTargetPath(value: unknown): string {
   return DASHBOARD_TARGETS.WHAT_MATTERS_NOW;
 }
 
-function getCciState(me: any): ReadingState {
-  const rawScore =
-    me?.cci_score ??
-    me?.cross_client_integrity_score ??
-    me?.cross_clan_integrity_score ??
-    me?.cross_community_integrity_score ??
-    null;
+function getCciState(me: any, trustSlip?: any, trust?: any): ReadingState {
+  const rawScore = firstNonEmpty(
+    me?.cci_score,
+    me?.cross_client_integrity_score,
+    me?.cross_clan_integrity_score,
+    me?.cross_community_integrity_score,
+    trustSlip?.cci_score,
+    trustSlip?.cross_client_integrity_score,
+    trustSlip?.cross_clan_integrity_score,
+    trustSlip?.cross_community_integrity_score,
+    trust?.cci_score,
+    trust?.cross_client_integrity_score,
+    trust?.cross_clan_integrity_score,
+    trust?.cross_community_integrity_score,
+    trust?.cci?.score,
+    trust?.community_cci
+  );
 
-  const rawClass =
-    me?.cci_class ??
-    me?.cross_client_integrity_class ??
-    me?.cross_clan_integrity_class ??
-    me?.cross_community_integrity_class ??
-    "";
+  const rawClass = firstNonEmpty(
+    me?.cci_class,
+    me?.cci_band,
+    me?.cross_client_integrity_class,
+    me?.cross_client_integrity_band,
+    me?.cross_clan_integrity_class,
+    me?.cross_clan_integrity_band,
+    me?.cross_community_integrity_class,
+    me?.cross_community_integrity_band,
+    trustSlip?.cci_class,
+    trustSlip?.cci_band,
+    trustSlip?.cross_client_integrity_class,
+    trustSlip?.cross_client_integrity_band,
+    trustSlip?.cross_clan_integrity_class,
+    trustSlip?.cross_clan_integrity_band,
+    trustSlip?.cross_community_integrity_class,
+    trustSlip?.cross_community_integrity_band,
+    trust?.cci_class,
+    trust?.cci_band,
+    trust?.cross_client_integrity_class,
+    trust?.cross_client_integrity_band,
+    trust?.cross_clan_integrity_class,
+    trust?.cross_clan_integrity_band,
+    trust?.cross_community_integrity_class,
+    trust?.cross_community_integrity_band,
+    trust?.cci?.class,
+    trust?.cci?.band
+  );
 
-  const rawWhy =
-    me?.cci_reason ??
-    me?.cross_client_integrity_reason ??
-    me?.cross_clan_integrity_reason ??
-    me?.cross_community_integrity_reason ??
-    "";
+  const rawWhy = firstNonEmpty(
+    me?.cci_reason,
+    me?.cross_client_integrity_reason,
+    me?.cross_clan_integrity_reason,
+    me?.cross_community_integrity_reason,
+    trustSlip?.cci_reason,
+    trustSlip?.cci_explainer,
+    trustSlip?.cross_client_integrity_reason,
+    trustSlip?.cross_clan_integrity_reason,
+    trustSlip?.cross_community_integrity_reason,
+    trust?.cci_reason,
+    trust?.cci_explainer,
+    trust?.cross_client_integrity_reason,
+    trust?.cross_clan_integrity_reason,
+    trust?.cross_community_integrity_reason,
+    trust?.cci?.reason,
+    trust?.cci?.explainer
+  );
 
   const scoreNum =
     rawScore === null || rawScore === undefined || String(rawScore).trim() === ""
@@ -1752,7 +1830,7 @@ function getCciState(me: any): ReadingState {
         scoreText:
           scoreNum === null || Number.isNaN(scoreNum)
             ? "—"
-            : String(Math.round(scoreNum)),
+            : formatReadingScore(rawScore, scoreNum),
         tone: "green",
         statusText: "Healthy across visible communities",
         whyText: String(rawWhy || "Your trust position is steady right now."),
@@ -1765,7 +1843,7 @@ function getCciState(me: any): ReadingState {
         scoreText:
           scoreNum === null || Number.isNaN(scoreNum)
             ? "—"
-            : String(Math.round(scoreNum)),
+            : formatReadingScore(rawScore, scoreNum),
         tone: "green",
         statusText: "Stable and growing",
         whyText: String(
@@ -1780,7 +1858,7 @@ function getCciState(me: any): ReadingState {
         scoreText:
           scoreNum === null || Number.isNaN(scoreNum)
             ? "—"
-            : String(Math.round(scoreNum)),
+            : formatReadingScore(rawScore, scoreNum),
         tone: "yellow",
         statusText: "Needs attention",
         whyText: String(
@@ -1794,7 +1872,7 @@ function getCciState(me: any): ReadingState {
       scoreText:
         scoreNum === null || Number.isNaN(scoreNum)
           ? "—"
-          : String(Math.round(scoreNum)),
+          : formatReadingScore(rawScore, scoreNum),
       tone: "red",
       statusText: "At risk",
       whyText: String(rawWhy || "Your trust position needs action and repair."),
@@ -1805,7 +1883,7 @@ function getCciState(me: any): ReadingState {
     if (scoreNum >= 75) {
       return {
         classText: "A",
-        scoreText: String(Math.round(scoreNum)),
+        scoreText: formatReadingScore(rawScore, scoreNum),
         tone: "green",
         statusText: "Healthy across visible communities",
         whyText: String(rawWhy || "Your trust position is looking strong."),
@@ -1815,7 +1893,7 @@ function getCciState(me: any): ReadingState {
     if (scoreNum >= 55) {
       return {
         classText: "B",
-        scoreText: String(Math.round(scoreNum)),
+        scoreText: formatReadingScore(rawScore, scoreNum),
         tone: "green",
         statusText: "Stable and growing",
         whyText: String(
@@ -1827,7 +1905,7 @@ function getCciState(me: any): ReadingState {
     if (scoreNum >= 35) {
       return {
         classText: "C",
-        scoreText: String(Math.round(scoreNum)),
+        scoreText: formatReadingScore(rawScore, scoreNum),
         tone: "yellow",
         statusText: "Needs attention",
         whyText: String(
@@ -1838,7 +1916,7 @@ function getCciState(me: any): ReadingState {
 
     return {
       classText: "D",
-      scoreText: String(Math.round(scoreNum)),
+      scoreText: formatReadingScore(rawScore, scoreNum),
       tone: "red",
       statusText: "At risk",
       whyText: String(rawWhy || "Your trust position needs urgent improvement."),
@@ -2910,7 +2988,15 @@ function summarizeFocusCommitments(
 export default function DashboardPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const selectedClanId = Number(getSelectedClanId() || 0);
+  const routeSelectedClanId = useMemo(() => {
+    const query = new URLSearchParams(location.search);
+    return positiveNumber(
+      query.get("community") ||
+        query.get("clan_id") ||
+        query.get("community_id")
+    );
+  }, [location.search]);
+  const selectedClanId = routeSelectedClanId || Number(getSelectedClanId() || 0);
 
   const [isCompact, setIsCompact] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
@@ -2930,11 +3016,18 @@ export default function DashboardPage() {
   const [me, setMe] = useState<any>(null);
   const [currentClan, setCurrentClan] = useState<any>(null);
   const [trustSlip, setTrustSlip] = useState<any>(null);
+  const [trustExplanation, setTrustExplanation] = useState<any>(null);
   const [insight, setInsight] = useState<any>(null);
 
   const [guidance, setGuidance] = useState<GuidanceSnapshot | null>(null);
   const [guidanceLoading, setGuidanceLoading] = useState<boolean>(false);
   const [guidanceError, setGuidanceError] = useState<string>("");
+
+  useEffect(() => {
+    if (routeSelectedClanId > 0) {
+      setSelectedClanId(routeSelectedClanId);
+    }
+  }, [routeSelectedClanId]);
 
   const dashboardStorageIdentity = useMemo(
     () => dashboardUserStorageIdentity(me),
@@ -3131,19 +3224,27 @@ export default function DashboardPage() {
 
   useEffect(() => {
     (async () => {
-      const [meRes, clanRes, trustSlipRes, insightRes] = await Promise.all([
-        getMe().catch(() => null),
-        getCurrentClan().catch(() => null),
-        getMyTrustSlip().catch(() => null),
-        getDailyInsight().catch(() => null),
-      ]);
+      const [meRes, clanRes, trustSlipRes, trustExplanationRes, insightRes] =
+        await Promise.all([
+          getMe().catch(() => null),
+          getCurrentClan().catch(() => null),
+          getMyTrustSlip().catch(() => null),
+          selectedClanId
+            ? getClanTrustScoreExplained({
+                clan_id: selectedClanId,
+                limit: 8,
+              }).catch(() => null)
+            : Promise.resolve(null),
+          getDailyInsight().catch(() => null),
+        ]);
 
       setMe(meRes);
       setCurrentClan(clanRes);
       setTrustSlip(trustSlipRes);
+      setTrustExplanation(trustExplanationRes);
       setInsight(insightRes);
     })();
-  }, []);
+  }, [selectedClanId]);
 
   useEffect(() => {
     let alive = true;
@@ -3529,7 +3630,10 @@ export default function DashboardPage() {
     return spotlights[spotlightIndex % spotlights.length] || spotlights[0];
   }, [spotlights, spotlightIndex]);
 
-  const cci = useMemo(() => getCciState(me), [me]);
+  const cci = useMemo(
+    () => getCciState(me, trustSlip, trustExplanation),
+    [me, trustSlip, trustExplanation]
+  );
   const openTrust = useMemo(
     () => getOpenTrustState(me, trustSlip, Boolean(selectedClanId)),
     [me, trustSlip, selectedClanId]
@@ -7441,7 +7545,7 @@ export default function DashboardPage() {
               },
               {
                 label: "CCI",
-                value: readableTrustStatus(cci.classText),
+                value: cciDisplayText(cci),
                 detail: "Cross-Community Integrity",
                 strength: dashboardPassportSignalStrength(cci.classText),
                 to: DASHBOARD_TARGETS.CCI,
@@ -8489,7 +8593,7 @@ export default function DashboardPage() {
                       <span style={trustMetricTile(false, "blue")}>
                         <span style={trustMetricLabel()}>Wider</span>
                         <span style={trustMetricValue()}>
-                          {readableTrustStatus(cci.classText)}
+                          {cciDisplayText(cci)}
                         </span>
                       </span>
                       <span style={trustMetricTile(false, "steel")}>

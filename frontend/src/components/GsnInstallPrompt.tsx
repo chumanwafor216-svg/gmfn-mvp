@@ -98,7 +98,7 @@ function manualSteps(isIos: boolean): string[] {
     return [
       "If you are inside WhatsApp, open this page in Safari first.",
       "Tap Share.",
-      "Tap Add to Home Screen. Old icon still cropped? Remove that shortcut and add GSN again.",
+      "Tap Add to Home Screen. Old icon still cropped or blank? Remove that shortcut and add GSN again.",
     ];
   }
 
@@ -174,7 +174,7 @@ export default function GsnInstallPrompt({
       >
         <div style={markStyle(tone, compact)} aria-hidden="true">
           <img
-            src="/gsn-app-icon-ios-180.png"
+            src="/gsn-app-icon-ios-180-v13.png"
             alt=""
             style={{
               width: "100%",

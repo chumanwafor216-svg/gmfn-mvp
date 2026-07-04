@@ -9,6 +9,7 @@ const files = {
   finance: "src/pages/FinancePage.tsx",
   appRoutes: "src/lib/appRoutes.ts",
   actionTargets: "src/lib/actionTargetRoutes.ts",
+  appLayout: "src/layout/AppLayout.tsx",
   communityMoney: "src/lib/communityMoney.ts",
   moneyInPage: "src/pages/PaymentInstructionsPage.tsx",
   moneyOutPage: "src/pages/WithdrawalInstructionsPage.tsx",
@@ -77,6 +78,12 @@ assertContains(
   "moneyInPage",
   /sectionLabel="Money In"[\s\S]*?title="Payment Instructions"[\s\S]*?debugId="money-in\.generate-instruction"[\s\S]*?debugId="money-in\.route\.money-out"/,
   "Money In route page must remain a guided payment-instruction page with a traceable route to Money Out after completion."
+);
+
+assertContains(
+  "appLayout",
+  /if \(pathname === "\/app\/payment\/pool"\) \{[\s\S]*?title: "Money In"[\s\S]*?actions: \[[\s\S]*?makeFinanceItem\(\)[\s\S]*?makeMarketplaceItem\(\)[\s\S]*?\{ label: "Notifications", to: "\/app\/notifications" \}[\s\S]*?makeCommunityItem\(\)[\s\S]*?makeDashboardItem\(\)/,
+  "Money In focused task tools must keep a direct Notifications action so attention items do not require leaving the task through Welcome or a generic drawer."
 );
 
 assertContains(

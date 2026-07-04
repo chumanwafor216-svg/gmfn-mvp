@@ -142,6 +142,30 @@ assertContains(
   "CCI Reading missing-reading state must say the reading is not shown yet."
 );
 
+assertContains(
+  "src/pages/CCIReadingPage.tsx",
+  /function getCciState\(me: any, trustSlip\?: any, trust\?: any\)[\s\S]*?trustSlip\?\.cci_score[\s\S]*?trust\?\.cci\?\.score[\s\S]*?trustSlip\?\.cci_band[\s\S]*?trust\?\.cci\?\.band/,
+  "CCI Reading must read the same /me, TrustSlip, and trust-explanation evidence ladder as Dashboard and Marketplace."
+);
+
+assertContains(
+  "src/pages/CCIReadingPage.tsx",
+  /function formatReadingScore\(rawScore: unknown, scoreNum: number \| null\)[\s\S]*?toFixed\(2\)\.replace/,
+  "CCI Reading must preserve decimal CCI scores instead of rounding them away."
+);
+
+assertContains(
+  "src/pages/CCIReadingPage.tsx",
+  /const routeSelectedClanId = useMemo\(\(\) => \{[\s\S]*?new URLSearchParams\(location\.search\)[\s\S]*?query\.get\("community"\)[\s\S]*?query\.get\("clan_id"\)[\s\S]*?query\.get\("community_id"\)[\s\S]*?const selectedClanId = routeSelectedClanId \|\| Number\(getSelectedClanId\(\) \|\| 0\)/,
+  "CCI Reading must honor route community/clan ids before falling back to stored selected community."
+);
+
+assertContains(
+  "src/pages/CCIReadingPage.tsx",
+  /useEffect\(\(\) => \{[\s\S]*?if \(routeSelectedClanId > 0\) \{[\s\S]*?setSelectedClanId\(routeSelectedClanId\)/,
+  "CCI Reading must persist route-selected community ids for follow-on trust reads."
+);
+
 assertNotContains(
   "src/pages/OpenTrustPage.tsx",
   /classText: "Pending"/,

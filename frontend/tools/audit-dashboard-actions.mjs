@@ -224,6 +224,26 @@ assertContains(
   "Dashboard passport trust language must stay plain-language and non-numeric."
 );
 
+assertContains(
+  /function getCciState\(me: any, trustSlip\?: any, trust\?: any\)[\s\S]*?trustSlip\?\.cci_score[\s\S]*?trust\?\.cci\?\.score[\s\S]*?trustSlip\?\.cci_band[\s\S]*?trust\?\.cci\?\.band/,
+  "Dashboard CCI must read the same /me, TrustSlip, and trust-explanation evidence ladder as Marketplace."
+);
+
+assertContains(
+  /const routeSelectedClanId = useMemo\(\(\) => \{[\s\S]*?new URLSearchParams\(location\.search\)[\s\S]*?query\.get\("community"\)[\s\S]*?query\.get\("clan_id"\)[\s\S]*?query\.get\("community_id"\)[\s\S]*?const selectedClanId = routeSelectedClanId \|\| Number\(getSelectedClanId\(\) \|\| 0\)/,
+  "Dashboard must honor route community/clan ids before falling back to stored selected community."
+);
+
+assertContains(
+  /useEffect\(\(\) => \{[\s\S]*?if \(routeSelectedClanId > 0\) \{[\s\S]*?setSelectedClanId\(routeSelectedClanId\)/,
+  "Dashboard must persist route-selected community ids for follow-on trust and CCI reads."
+);
+
+assertContains(
+  /function cciDisplayText\(cci: ReadingState\)[\s\S]*?return `\$\{classText\} \/ \$\{scoreText\}`[\s\S]*?return scoreText/,
+  "Dashboard CCI display must write the real numeric reading when one exists."
+);
+
 assertNotContains(
   /classText: "Pending"/,
   "Dashboard CCI/Open Trust fallbacks must not make uncalculated evidence look like a pending identity state."
@@ -235,7 +255,7 @@ assertContains(
 );
 
 assertContains(
-  /label: "CCI"[\s\S]*?value: readableTrustStatus\(cci\.classText\)[\s\S]*?detail: "Cross-Community Integrity"[\s\S]*?label: "TrustSlip"[\s\S]*?value: trustSlipCode \|\| "Not issued yet"/,
+  /label: "CCI"[\s\S]*?value: cciDisplayText\(cci\)[\s\S]*?detail: "Cross-Community Integrity"[\s\S]*?label: "TrustSlip"[\s\S]*?value: trustSlipCode \|\| "Not issued yet"/,
   "Dashboard passport signals must keep the approved Trust, CCI, and TrustSlip readings."
 );
 

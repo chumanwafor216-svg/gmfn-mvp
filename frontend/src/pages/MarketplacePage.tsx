@@ -4327,7 +4327,7 @@ export default function MarketplacePage() {
 
   const [sectionsOpen, setSectionsOpen] =
     useState<SectionState>(DEFAULT_SECTION_STATE);
-  const [, setSectionsTouched] =
+  const [sectionsTouched, setSectionsTouched] =
     useState<SectionState>(DEFAULT_SECTION_STATE);
   const [intentQuery, setIntentQuery] = useState("");
   const [intentGuideOpen] = useState(false);
@@ -8328,7 +8328,7 @@ export default function MarketplacePage() {
           ) : null}
       </section>
 
-      {sectionsOpen.money ? (
+      {sectionsOpen.money || sectionsTouched.money ? (
       <section
         id="marketplace-money-routes"
         style={{

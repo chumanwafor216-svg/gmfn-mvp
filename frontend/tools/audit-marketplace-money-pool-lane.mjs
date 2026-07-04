@@ -68,6 +68,11 @@ assertContains(
   "Opening Money Pool must use the focused one-lane state, leaving unrelated lanes stepped back."
 );
 
+assertContains(
+  /const \[sectionsTouched, setSectionsTouched\][\s\S]*?useState<SectionState>\(DEFAULT_SECTION_STATE\)[\s\S]*?\{sectionsOpen\.money \|\| sectionsTouched\.money \? \([\s\S]*?debugId="marketplace\.money\.toggle"[\s\S]*?\{sectionsOpen\.money \? "Collapse" : "Open"\}/,
+  "Collapsed Money Pool must keep its local header and Open button after first use instead of removing its own reopen control."
+);
+
 const moneySection = sectionBetween(
   /id="marketplace-money-routes"/,
   /id="marketplace-rosca"/

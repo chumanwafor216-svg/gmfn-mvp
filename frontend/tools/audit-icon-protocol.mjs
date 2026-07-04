@@ -383,98 +383,98 @@ assertContains(
 
 assertContains(
   "docs/SCREEN_SPECS.md",
-  /iPhone home-screen installs must use a dedicated `180x180` Apple touch icon[\s\S]*?quiet navy safe zone[\s\S]*?Do not point `apple-touch-icon` at a cropped or edge-to-edge manifest icon\.[\s\S]*?old cropped icon[\s\S]*?iOS caches icons[\s\S]*?remove the\s+old shortcut and add GSN again\./,
+  /iPhone home-screen installs must use a dedicated `180x180` Apple touch icon[\s\S]*?quiet navy safe zone[\s\S]*?Do not point `apple-touch-icon` at a cropped or edge-to-edge manifest icon\.[\s\S]*?old cropped or\s+blank icon[\s\S]*?iOS caches icons[\s\S]*?remove the old shortcut and add GSN again\.[\s\S]*?fresh Apple touch icon filename/,
   "Screen specs must preserve the iPhone home-screen icon safe-zone and cache-recovery rules."
 );
 
 assertContains(
   "frontend/index.html",
-  /<link rel="apple-touch-icon" sizes="180x180" href="\/gsn-app-icon-ios-180\.png" \/>/,
+  /<link rel="apple-touch-icon" sizes="180x180" href="\/gsn-app-icon-ios-180-v13\.png" \/>/,
   "iPhone home-screen installs must use the dedicated 180x180 safe-zone GSN touch icon."
 );
 
 assertContains(
   "frontend/public/manifest.json",
-  /"src": "\/gsn-app-icon-ios-180\.png"[\s\S]*?"sizes": "180x180"[\s\S]*?"src": "\/gsn-app-icon-192\.png"[\s\S]*?"sizes": "192x192"[\s\S]*?"src": "\/gsn-app-icon-512\.png"[\s\S]*?"sizes": "512x512"/,
+  /"src": "\/gsn-app-icon-ios-180-v13\.png"[\s\S]*?"sizes": "180x180"[\s\S]*?"src": "\/gsn-app-icon-192-v13\.png"[\s\S]*?"sizes": "192x192"[\s\S]*?"src": "\/gsn-app-icon-512-v13\.png"[\s\S]*?"sizes": "512x512"/,
   "PWA manifest must expose dedicated 180, 192, and 512 GSN app icons."
 );
 
 assertContains(
   "frontend/public/manifest.webmanifest",
-  /"src": "\/gsn-app-icon-ios-180\.png"[\s\S]*?"sizes": "180x180"[\s\S]*?"src": "\/gsn-app-icon-192\.png"[\s\S]*?"sizes": "192x192"[\s\S]*?"src": "\/gsn-app-icon-512\.png"[\s\S]*?"sizes": "512x512"/,
+  /"src": "\/gsn-app-icon-ios-180-v13\.png"[\s\S]*?"sizes": "180x180"[\s\S]*?"src": "\/gsn-app-icon-192-v13\.png"[\s\S]*?"sizes": "192x192"[\s\S]*?"src": "\/gsn-app-icon-512-v13\.png"[\s\S]*?"sizes": "512x512"/,
   "Web manifest must expose dedicated 180, 192, and 512 GSN app icons."
 );
 
 assertPngDimensions(
-  "frontend/public/gsn-app-icon-ios-180.png",
+  "frontend/public/gsn-app-icon-ios-180-v13.png",
   180,
   180,
   "iPhone touch icon must be a real 180x180 PNG, not a cropped or mislabeled asset."
 );
 
 assertPngDimensions(
-  "frontend/public/gsn-app-icon-192.png",
+  "frontend/public/gsn-app-icon-192-v13.png",
   192,
   192,
   "PWA 192 icon must be a real 192x192 PNG, not a cropped or mislabeled asset."
 );
 
 assertPngDimensions(
-  "frontend/public/gsn-app-icon-512.png",
+  "frontend/public/gsn-app-icon-512-v13.png",
   512,
   512,
   "PWA 512 icon must be a real 512x512 PNG."
 );
 
 assertPngQuietEdge(
-  "frontend/public/gsn-app-icon-ios-180.png",
+  "frontend/public/gsn-app-icon-ios-180-v13.png",
   "iPhone touch icon must keep a quiet navy safe zone so iOS rounding does not crop gold border or shield artwork."
 );
 
 assertPngQuietEdge(
-  "frontend/public/gsn-app-icon-192.png",
+  "frontend/public/gsn-app-icon-192-v13.png",
   "PWA 192 icon must keep a quiet navy safe zone so phone launchers do not crop gold border or shield artwork."
 );
 
 assertPngQuietEdge(
-  "frontend/public/gsn-app-icon-512.png",
+  "frontend/public/gsn-app-icon-512-v13.png",
   "PWA 512 icon must keep a quiet navy safe zone so phone launchers do not crop gold border or shield artwork."
 );
 
 if (existsSync(join(repoRoot, "frontend/dist"))) {
   assertBuiltArtifactContains(
     "frontend/dist/index.html",
-    /<link rel="apple-touch-icon" sizes="180x180" href="\/gsn-app-icon-ios-180\.png" \/>/,
+    /<link rel="apple-touch-icon" sizes="180x180" href="\/gsn-app-icon-ios-180-v13\.png" \/>/,
     "Built deploy artifact must keep the dedicated iPhone Apple touch icon metadata."
   );
 
   assertBuiltArtifactContains(
     "frontend/dist/manifest.json",
-    /"src": "\/gsn-app-icon-ios-180\.png"[\s\S]*?"sizes": "180x180"[\s\S]*?"src": "\/gsn-app-icon-192\.png"[\s\S]*?"sizes": "192x192"[\s\S]*?"src": "\/gsn-app-icon-512\.png"[\s\S]*?"sizes": "512x512"/,
+    /"src": "\/gsn-app-icon-ios-180-v13\.png"[\s\S]*?"sizes": "180x180"[\s\S]*?"src": "\/gsn-app-icon-192-v13\.png"[\s\S]*?"sizes": "192x192"[\s\S]*?"src": "\/gsn-app-icon-512-v13\.png"[\s\S]*?"sizes": "512x512"/,
     "Built deploy manifest must expose the iPhone, 192, and 512 GSN app icons."
   );
 
   assertBuiltArtifactContains(
     "frontend/dist/manifest.webmanifest",
-    /"src": "\/gsn-app-icon-ios-180\.png"[\s\S]*?"sizes": "180x180"[\s\S]*?"src": "\/gsn-app-icon-192\.png"[\s\S]*?"sizes": "192x192"[\s\S]*?"src": "\/gsn-app-icon-512\.png"[\s\S]*?"sizes": "512x512"/,
+    /"src": "\/gsn-app-icon-ios-180-v13\.png"[\s\S]*?"sizes": "180x180"[\s\S]*?"src": "\/gsn-app-icon-192-v13\.png"[\s\S]*?"sizes": "192x192"[\s\S]*?"src": "\/gsn-app-icon-512-v13\.png"[\s\S]*?"sizes": "512x512"/,
     "Built deploy web manifest must expose the iPhone, 192, and 512 GSN app icons."
   );
 
   assertBuiltArtifactContains(
     "frontend/dist/sw.js",
-    /const CACHE_VERSION = "gsn-pwa-shell-v\d+"[\s\S]*?"\/gsn-app-icon-ios-180\.png"/,
+    /const CACHE_VERSION = "gsn-pwa-shell-v13"[\s\S]*?"\/gsn-app-icon-ios-180-v13\.png"/,
     "Built deploy service worker must precache the iPhone-safe app icon."
   );
 
   assertPngDimensions(
-    "frontend/dist/gsn-app-icon-ios-180.png",
+    "frontend/dist/gsn-app-icon-ios-180-v13.png",
     180,
     180,
     "Built iPhone touch icon must be a real 180x180 PNG."
   );
 
   assertPngQuietEdge(
-    "frontend/dist/gsn-app-icon-ios-180.png",
+    "frontend/dist/gsn-app-icon-ios-180-v13.png",
     "Built iPhone touch icon must keep a quiet navy safe zone."
   );
 }

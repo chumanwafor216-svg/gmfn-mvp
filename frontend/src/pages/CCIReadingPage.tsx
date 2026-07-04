@@ -6,7 +6,14 @@ import { CardActionRow, SecondaryButton, StableCtaLink } from "../components/Sta
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import TrustDocumentFamilyMap from "../components/TrustDocumentFamilyMap";
 import TrustDocumentUseCases from "../components/TrustDocumentUseCases";
-import { getMe, getSelectedClanId, safeCopy } from "../lib/api";
+import {
+  getClanTrustScoreExplained,
+  getMe,
+  getMyTrustSlip,
+  getSelectedClanId,
+  safeCopy,
+  setSelectedClanId,
+} from "../lib/api";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 import { navigateWithOrigin } from "../lib/nav";
 import { buildTrustDocumentFamilyItems } from "../lib/trustDocumentFamilyMap";
@@ -147,27 +154,104 @@ function labelWithIcon(icon: GsnIconName, label: React.ReactNode): React.ReactNo
   );
 }
 
-function getCciState(me: any): ReadingState {
-  const rawScore =
-    me?.cci_score ??
-    me?.cross_client_integrity_score ??
-    me?.cross_clan_integrity_score ??
-    me?.cross_community_integrity_score ??
-    null;
+function safeStr(value: unknown): string {
+  return String(value ?? "").trim();
+}
 
-  const rawClass =
-    me?.cci_class ??
-    me?.cross_client_integrity_class ??
-    me?.cross_clan_integrity_class ??
-    me?.cross_community_integrity_class ??
-    "";
+function firstNonEmpty(...values: unknown[]): string {
+  for (const value of values) {
+    const text = safeStr(value);
+    if (text) return text;
+  }
+  return "";
+}
 
-  const rawWhy =
-    me?.cci_reason ??
-    me?.cross_client_integrity_reason ??
-    me?.cross_clan_integrity_reason ??
-    me?.cross_community_integrity_reason ??
-    "";
+function positiveNumber(value: unknown): number {
+  if (value === null || value === undefined || safeStr(value) === "") return 0;
+  const num = Number(value);
+  return Number.isFinite(num) && num > 0 ? num : 0;
+}
+
+function formatReadingScore(rawScore: unknown, scoreNum: number | null): string {
+  if (
+    rawScore === null ||
+    rawScore === undefined ||
+    safeStr(rawScore) === "" ||
+    scoreNum === null ||
+    Number.isNaN(scoreNum)
+  ) {
+    return "-";
+  }
+
+  if (Number.isInteger(scoreNum)) return String(scoreNum);
+  return scoreNum.toFixed(2).replace(/\.?0+$/, "");
+}
+
+function getCciState(me: any, trustSlip?: any, trust?: any): ReadingState {
+  const rawScore = firstNonEmpty(
+    me?.cci_score,
+    me?.cross_client_integrity_score,
+    me?.cross_clan_integrity_score,
+    me?.cross_community_integrity_score,
+    trustSlip?.cci_score,
+    trustSlip?.cross_client_integrity_score,
+    trustSlip?.cross_clan_integrity_score,
+    trustSlip?.cross_community_integrity_score,
+    trust?.cci_score,
+    trust?.cross_client_integrity_score,
+    trust?.cross_clan_integrity_score,
+    trust?.cross_community_integrity_score,
+    trust?.cci?.score,
+    trust?.community_cci
+  );
+
+  const rawClass = firstNonEmpty(
+    me?.cci_class,
+    me?.cci_band,
+    me?.cross_client_integrity_class,
+    me?.cross_client_integrity_band,
+    me?.cross_clan_integrity_class,
+    me?.cross_clan_integrity_band,
+    me?.cross_community_integrity_class,
+    me?.cross_community_integrity_band,
+    trustSlip?.cci_class,
+    trustSlip?.cci_band,
+    trustSlip?.cross_client_integrity_class,
+    trustSlip?.cross_client_integrity_band,
+    trustSlip?.cross_clan_integrity_class,
+    trustSlip?.cross_clan_integrity_band,
+    trustSlip?.cross_community_integrity_class,
+    trustSlip?.cross_community_integrity_band,
+    trust?.cci_class,
+    trust?.cci_band,
+    trust?.cross_client_integrity_class,
+    trust?.cross_client_integrity_band,
+    trust?.cross_clan_integrity_class,
+    trust?.cross_clan_integrity_band,
+    trust?.cross_community_integrity_class,
+    trust?.cross_community_integrity_band,
+    trust?.cci?.class,
+    trust?.cci?.band
+  );
+
+  const rawWhy = firstNonEmpty(
+    me?.cci_reason,
+    me?.cross_client_integrity_reason,
+    me?.cross_clan_integrity_reason,
+    me?.cross_community_integrity_reason,
+    trustSlip?.cci_reason,
+    trustSlip?.cci_explainer,
+    trustSlip?.cross_client_integrity_reason,
+    trustSlip?.cross_clan_integrity_reason,
+    trustSlip?.cross_community_integrity_reason,
+    trust?.cci_reason,
+    trust?.cci_explainer,
+    trust?.cross_client_integrity_reason,
+    trust?.cross_clan_integrity_reason,
+    trust?.cross_community_integrity_reason,
+    trust?.cci?.reason,
+    trust?.cci?.explainer
+  );
 
   const scoreNum =
     rawScore === null || rawScore === undefined || String(rawScore).trim() === ""
@@ -180,7 +264,7 @@ function getCciState(me: any): ReadingState {
     if (classText === "A" || classText === "A+") {
       return {
         classText,
-        scoreText: scoreNum === null || Number.isNaN(scoreNum) ? "-" : String(Math.round(scoreNum)),
+        scoreText: formatReadingScore(rawScore, scoreNum),
         tone: "green",
         statusText: "Healthy across visible communities",
         whyText: String(rawWhy || "Your trust position is steady right now."),
@@ -189,7 +273,7 @@ function getCciState(me: any): ReadingState {
     if (classText === "B") {
       return {
         classText,
-        scoreText: scoreNum === null || Number.isNaN(scoreNum) ? "-" : String(Math.round(scoreNum)),
+        scoreText: formatReadingScore(rawScore, scoreNum),
         tone: "green",
         statusText: "Stable and growing",
         whyText: String(rawWhy || "Keep consistent positive actions across communities."),
@@ -198,7 +282,7 @@ function getCciState(me: any): ReadingState {
     if (classText === "C") {
       return {
         classText,
-        scoreText: scoreNum === null || Number.isNaN(scoreNum) ? "-" : String(Math.round(scoreNum)),
+        scoreText: formatReadingScore(rawScore, scoreNum),
         tone: "yellow",
         statusText: "Needs attention",
         whyText: String(rawWhy || "A few better actions can improve your standing."),
@@ -206,7 +290,7 @@ function getCciState(me: any): ReadingState {
     }
     return {
       classText,
-      scoreText: scoreNum === null || Number.isNaN(scoreNum) ? "-" : String(Math.round(scoreNum)),
+      scoreText: formatReadingScore(rawScore, scoreNum),
       tone: "red",
       statusText: "At risk",
       whyText: String(rawWhy || "Your trust position needs action and repair."),
@@ -217,7 +301,7 @@ function getCciState(me: any): ReadingState {
     if (scoreNum >= 75) {
       return {
         classText: "A",
-        scoreText: String(Math.round(scoreNum)),
+        scoreText: formatReadingScore(rawScore, scoreNum),
         tone: "green",
         statusText: "Healthy across visible communities",
         whyText: String(rawWhy || "Your trust position is looking strong."),
@@ -226,7 +310,7 @@ function getCciState(me: any): ReadingState {
     if (scoreNum >= 55) {
       return {
         classText: "B",
-        scoreText: String(Math.round(scoreNum)),
+        scoreText: formatReadingScore(rawScore, scoreNum),
         tone: "green",
         statusText: "Stable and growing",
         whyText: String(rawWhy || "Keep consistent actions to strengthen your standing."),
@@ -235,7 +319,7 @@ function getCciState(me: any): ReadingState {
     if (scoreNum >= 35) {
       return {
         classText: "C",
-        scoreText: String(Math.round(scoreNum)),
+        scoreText: formatReadingScore(rawScore, scoreNum),
         tone: "yellow",
         statusText: "Needs attention",
         whyText: String(rawWhy || "Some recent actions may have reduced your trust strength."),
@@ -243,7 +327,7 @@ function getCciState(me: any): ReadingState {
     }
     return {
       classText: "D",
-      scoreText: String(Math.round(scoreNum)),
+      scoreText: formatReadingScore(rawScore, scoreNum),
       tone: "red",
       statusText: "At risk",
       whyText: String(rawWhy || "Your trust position needs urgent improvement."),
@@ -283,7 +367,15 @@ function routeTarget(
 export default function CCIReadingPage() {
   const location = useLocation();
   const navigate = useNavigate();
-  const selectedClanId = Number(getSelectedClanId() || 0);
+  const routeSelectedClanId = useMemo(() => {
+    const query = new URLSearchParams(location.search);
+    return positiveNumber(
+      query.get("community") ||
+        query.get("clan_id") ||
+        query.get("community_id")
+    );
+  }, [location.search]);
+  const selectedClanId = routeSelectedClanId || Number(getSelectedClanId() || 0);
   const routes = useMemo(
     () => ({
       dashboard: routeTarget("dashboard", selectedClanId, "cci-reading.nav.dashboard"),
@@ -298,6 +390,14 @@ export default function CCIReadingPage() {
   });
   const [loading, setLoading] = useState(true);
   const [me, setMe] = useState<any>(null);
+  const [trustSlip, setTrustSlip] = useState<any>(null);
+  const [trustExplanation, setTrustExplanation] = useState<any>(null);
+
+  useEffect(() => {
+    if (routeSelectedClanId > 0) {
+      setSelectedClanId(routeSelectedClanId);
+    }
+  }, [routeSelectedClanId]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -314,9 +414,20 @@ export default function CCIReadingPage() {
     (async () => {
       setLoading(true);
       try {
-        const meRes = await getMe().catch(() => null);
+        const [meRes, trustSlipRes, trustExplanationRes] = await Promise.all([
+          getMe().catch(() => null),
+          getMyTrustSlip().catch(() => null),
+          selectedClanId
+            ? getClanTrustScoreExplained({
+                clan_id: selectedClanId,
+                limit: 8,
+              }).catch(() => null)
+            : Promise.resolve(null),
+        ]);
         if (!alive) return;
         setMe(meRes || null);
+        setTrustSlip(trustSlipRes || null);
+        setTrustExplanation(trustExplanationRes || null);
       } finally {
         if (alive) setLoading(false);
       }
@@ -324,9 +435,12 @@ export default function CCIReadingPage() {
     return () => {
       alive = false;
     };
-  }, []);
+  }, [selectedClanId]);
 
-  const cci = useMemo(() => getCciState(me), [me]);
+  const cci = useMemo(
+    () => getCciState(me, trustSlip, trustExplanation),
+    [me, trustSlip, trustExplanation]
+  );
   const tone = useMemo(() => toneMeta(cci.tone), [cci.tone]);
   const guideItems = useMemo(() => buildCciGuideItems(), []);
   const familyItems = useMemo(() => buildTrustDocumentFamilyItems(true), []);
