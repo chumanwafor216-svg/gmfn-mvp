@@ -165,8 +165,8 @@ assertContains(
 
 assertContains(
   "src/components/GsnInstallPrompt.tsx",
-  /open this page in Safari first[\s\S]*?Add to Home Screen[\s\S]*?Add page to home screen or Bookmark[\s\S]*?Play Protect blocks it[\s\S]*?Show iPhone screen steps[\s\S]*?Show 3 phone steps[\s\S]*?\/gsn-app-icon-ios-180\.png[\s\S]*?objectFit: "contain"/,
-  "The GSN shortcut prompt must offer one simple setup action plus truthful Android and iPhone manual phone instructions without triggering native Android install."
+  /return \[\s*"If you are inside WhatsApp, open this page in Safari first\.",\s*"Tap Share\.",\s*"Tap Add to Home Screen\. Old icon still cropped\? Remove that shortcut and add GSN again\.",\s*\];[\s\S]*?Add page to home screen or Bookmark[\s\S]*?Play Protect blocks it[\s\S]*?Show iPhone screen steps[\s\S]*?Show 3 phone steps[\s\S]*?\/gsn-app-icon-ios-180\.png[\s\S]*?objectFit: "contain"/,
+  "The GSN shortcut prompt must offer one simple setup action plus truthful Android and iPhone manual phone instructions, including old iPhone icon cache recovery, without triggering native Android install."
 );
 
 assertWholeFileNotContains(

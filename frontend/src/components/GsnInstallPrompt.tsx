@@ -98,7 +98,7 @@ function manualSteps(isIos: boolean): string[] {
     return [
       "If you are inside WhatsApp, open this page in Safari first.",
       "Tap Share.",
-      "Tap Add to Home Screen.",
+      "Tap Add to Home Screen. Old icon still cropped? Remove that shortcut and add GSN again.",
     ];
   }
 

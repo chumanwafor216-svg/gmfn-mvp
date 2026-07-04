@@ -383,8 +383,8 @@ assertContains(
 
 assertContains(
   "docs/SCREEN_SPECS.md",
-  /iPhone home-screen installs must use a dedicated `180x180` Apple touch icon[\s\S]*?quiet navy safe zone[\s\S]*?Do not point `apple-touch-icon` at a cropped or edge-to-edge manifest icon\./,
-  "Screen specs must preserve the iPhone home-screen icon safe-zone rule."
+  /iPhone home-screen installs must use a dedicated `180x180` Apple touch icon[\s\S]*?quiet navy safe zone[\s\S]*?Do not point `apple-touch-icon` at a cropped or edge-to-edge manifest icon\.[\s\S]*?old cropped icon[\s\S]*?iOS caches icons[\s\S]*?remove the\s+old shortcut and add GSN again\./,
+  "Screen specs must preserve the iPhone home-screen icon safe-zone and cache-recovery rules."
 );
 
 assertContains(

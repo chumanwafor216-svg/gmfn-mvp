@@ -105,6 +105,9 @@ Rules:
 - iPhone home-screen installs must use a dedicated `180x180` Apple touch icon
   with a quiet navy safe zone around the gold border and shield/star emblem.
   Do not point `apple-touch-icon` at a cropped or edge-to-edge manifest icon.
+- If an existing iPhone home-screen shortcut still shows an old cropped icon,
+  the prompt may explain that iOS caches icons and the user should remove the
+  old shortcut and add GSN again.
 
 ## DashboardPage
 
