@@ -90,13 +90,13 @@ assertContains(
 
 assertContains(
   "src/pages/LoginPage.tsx",
-  /function signInSessionError[\s\S]*secure sign-in service needs checking[\s\S]*member record check[\s\S]*secure sign-in connection needs checking/,
-  "Sign In session recovery errors must explain the problem without exposing backend/API/CORS language."
+  /function signInSessionError[\s\S]*browser did not keep you signed in[\s\S]*Return to Welcome, open Sign in again[\s\S]*same message returns[\s\S]*Activate Membership to confirm this account is active[\s\S]*member record check[\s\S]*pause and report this sign-in recovery message[\s\S]*live system could not open your member session[\s\S]*Return to Welcome, open Sign in again[\s\S]*same message returns/,
+  "Sign In session recovery errors must explain the problem and give a first safe recovery step without exposing backend/API/CORS language."
 );
 
 assertVisibleStringsDoNotContain(
   "src/pages/LoginPage.tsx",
-  /\b(?:backend session service|API or CORS setting|member-session check)\b/i,
+  /\b(?:backend session service|API or CORS setting|member-session check|try again in a moment|Refresh once)\b/i,
   "Sign In session recovery copy must not expose builder-facing service language."
 );
 
@@ -131,9 +131,33 @@ assertContains(
 );
 
 assertContains(
+  "src/pages/JoinEntryPage.tsx",
+  /invite code GSN needs[\s\S]*?Paste the invite code in the field on this page[\s\S]*?invite check to finish[\s\S]*?fresh GSN join link[\s\S]*?reopen the full invite link/,
+  "Join Entry invite-code errors must point users to the visible invite-code recovery controls and inviter fallback."
+);
+
+assertContains(
+  "src/pages/JoinEntryPage.tsx",
+  /GSN could not send this join request yet[\s\S]*?Check the required details and invite code[\s\S]*?ask the inviter or community helper to check the invite/,
+  "Join Entry generic submit failures must give a first safe recovery step."
+);
+
+assertContains(
+  "src/pages/JoinEntryPage.tsx",
+  /could not reopen this saved join request from the browser record[\s\S]*?Enter the phone number again on this invite[\s\S]*?original invite or approval message with the request ID[\s\S]*?community helper to check the saved request/,
+  "Join Entry saved-request resume failures must explain the browser-record problem and the first recovery path."
+);
+
+assertContains(
   "src/pages/JoinRequestPendingPage.tsx",
   /Waiting for community action[\s\S]*?debugId=\{approvalCta\.debugId\}[\s\S]*?Open approval status[\s\S]*?debugId="join-pending\.review-details\.toggle"/,
   "Pending Approval must tell the user what is happening and offer status/detail actions."
+);
+
+assertContains(
+  "src/pages/JoinRequestPendingPage.tsx",
+  /Request ID is missing[\s\S]*?cannot reopen the exact approval record[\s\S]*?Return to\s+Welcome[\s\S]*?original invite or approval message[\s\S]*?contains the request ID/,
+  "Pending Approval must explain the missing-request-ID blocker in place and give the first safe recovery step."
 );
 
 assertContains(
@@ -143,9 +167,33 @@ assertContains(
 );
 
 assertContains(
+  "src/pages/JoinApprovalPage.tsx",
+  /Your request was not approved at this time[\s\S]*?Ask the inviting community what to update[\s\S]*?Return to Welcome[\s\S]*?fresh invite/,
+  "Join Approval rejected-state copy must explain what happened and the first safe recovery step."
+);
+
+assertContains(
+  "src/pages/JoinApprovalPage.tsx",
+  /Approval status could not load[\s\S]*?Return to\s+Welcome[\s\S]*?original invite or\s+approval message[\s\S]*?contains the request ID[\s\S]*?debugId=\{welcomeCta\.debugId\}/,
+  "Join Approval load failures must explain the first safe recovery step and keep a stable return action."
+);
+
+assertContains(
+  "src/pages/JoinApprovalPage.tsx",
+  /GSN could not read the final approval state from this link[\s\S]*?Return to Welcome[\s\S]*?original invite or approval message[\s\S]*?contains the request ID/,
+  "Join Approval unknown-status copy must explain the problem and first safe recovery step."
+);
+
+assertContains(
   "src/pages/MemberActivationPage.tsx",
   /Membership activated\. Verify this phone next[\s\S]*?Membership activated successfully\. Build your First Circle next[\s\S]*?debugId="member-activation\.notice-action"[\s\S]*?member-activation\.verify-phone[\s\S]*?member-activation\.build-first-circle/,
   "Member Activation must answer success visibly, send unverified members to phone verification, and preserve First Circle as the next community-growth step after verification."
+);
+
+assertContains(
+  "src/pages/MemberActivationPage.tsx",
+  /Add approved GSN ID or request ID[\s\S]*?Enter either the GSN ID shown after approval or the request ID from approval status/,
+  "Member Activation missing-identifier copy must name the approved GSN ID/request ID clearly."
 );
 
 assertContains(

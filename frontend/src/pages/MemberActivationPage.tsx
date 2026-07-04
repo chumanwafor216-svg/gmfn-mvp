@@ -758,7 +758,7 @@ export default function MemberActivationPage() {
       showNotice(
         {
           tone: "warning",
-          title: "Add one approved number",
+          title: "Add approved GSN ID or request ID",
           message:
             "Enter either the GSN ID shown after approval or the request ID from approval status. You do not need both if one of them is already filled in.",
         },

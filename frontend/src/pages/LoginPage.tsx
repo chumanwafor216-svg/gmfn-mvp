@@ -331,14 +331,14 @@ function signInSessionError(error: unknown, tokenStored: boolean): string {
   if (!tokenStored) {
     return (
       "Sign-in accepted, but this browser did not keep you signed in. " +
-      "Refresh once and try again. If the same message returns, open sign-in in a fresh tab."
+      "Return to Welcome, open Sign in again, and try once more. If the same message returns, pause and report this sign-in recovery message."
     );
   }
 
   if (status === 401 || status === 403) {
     return (
       "Sign-in accepted, but the live system did not recognize your signed-in session when opening your member record. " +
-      "Try once more. If it repeats, the secure sign-in service needs checking."
+      "Return to Welcome, open Sign in again, and try once more. If it repeats, use Activate Membership to confirm this account is active before signing in."
     );
   }
 
@@ -351,13 +351,13 @@ function signInSessionError(error: unknown, tokenStored: boolean): string {
   ) {
     return (
       "Sign-in accepted, but the browser could not reach the member record check. " +
-      "Check the connection and try again. If it repeats on this live site, the secure sign-in connection needs checking."
+      "Check the connection, return to Welcome, and open Sign in again. If it repeats on the live site, pause and report this sign-in recovery message."
     );
   }
 
   return (
     "Sign-in accepted, but the live system could not open your member session. " +
-    "Please try again in a moment."
+    "Return to Welcome, open Sign in again, and try once more. If the same message returns, pause and report this sign-in recovery message."
   );
 }
 

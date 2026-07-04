@@ -696,6 +696,24 @@ function friendlyJoinError(value: any): string {
 
   const lower = raw.toLowerCase();
 
+  if (lower.includes("invite code is missing")) {
+    return (
+      "This join page is missing the invite code GSN needs. Paste the invite code in the field on this page, or ask the person who invited you to resend the full GSN join link."
+    );
+  }
+
+  if (lower.includes("invite link is not ready")) {
+    return (
+      "This invite cannot be used from this page yet. Wait for the invite check to finish. If it stays blocked, ask the person who invited you to send a fresh GSN join link."
+    );
+  }
+
+  if (lower.includes("still checking this invite link")) {
+    return (
+      "GSN is still checking this invite. Wait for the check to finish before sending the request. If the check does not finish, reopen the full invite link from the person who invited you."
+    );
+  }
+
   if (
     lower.includes("existing_account_login_required") ||
     lower.includes("existing_gsn_id_required") ||
@@ -747,7 +765,10 @@ function friendlyJoinError(value: any): string {
     );
   }
 
-  return raw || "Unable to submit your join request.";
+  return (
+    raw ||
+    "GSN could not send this join request yet. Check the required details and invite code, then send it again. If the same message returns, ask the inviter or community helper to check the invite before you retry."
+  );
 }
 
 function phoneDigits(value: string): string {
@@ -2034,7 +2055,7 @@ export default function JoinEntryPage() {
     } catch {
       if (!continueExistingRequest(storedRequest)) {
         setErr(
-          "Unable to reopen the saved join request right now. Please enter the phone number again or try once more."
+          "GSN could not reopen this saved join request from the browser record. Enter the phone number again on this invite, or reopen the original invite or approval message with the request ID. If the same message returns, ask the community helper to check the saved request."
         );
       }
     } finally {

@@ -958,6 +958,31 @@ export default function JoinRequestPendingPage() {
               : "Waiting for community action."}
           </div>
 
+          {!requestId ? (
+            <div
+              role="status"
+              style={{
+                marginTop: 14,
+                borderRadius: 18,
+                border: "1px solid rgba(242,199,102,0.38)",
+                background:
+                  "linear-gradient(180deg, rgba(90,70,20,0.34) 0%, rgba(45,38,20,0.34) 100%)",
+                padding: 14,
+                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.07)",
+              }}
+            >
+              <div style={{ color: "#FFE08A", fontSize: 15, fontWeight: 1000 }}>
+                Request ID is missing
+              </div>
+              <div style={{ marginTop: 6, ...mutedText(14), color: "#F7E7B3" }}>
+                This saved pending screen does not include the request ID, so GSN
+                cannot reopen the exact approval record from here. Return to
+                Welcome, then use the original invite or approval message that
+                contains the request ID.
+              </div>
+            </div>
+          ) : null}
+
           {reviewDetailsOpen ? (
             <div
               id="review-details"

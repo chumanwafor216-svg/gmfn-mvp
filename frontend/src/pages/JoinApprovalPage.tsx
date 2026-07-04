@@ -350,7 +350,7 @@ export default function JoinApprovalPage() {
     }
 
     if (status === "rejected") {
-      return "Your request was not approved at this time.";
+      return "Your request was not approved at this time. Ask the inviting community what to update before sending another request.";
     }
 
     return "Status information is available, but not fully classified.";
@@ -537,7 +537,33 @@ export default function JoinApprovalPage() {
             color: "#991B1B",
           }}
         >
-          {error}
+          <div style={{ fontSize: 18, fontWeight: 1000 }}>
+            Approval status could not load
+          </div>
+          <div style={{ marginTop: 8, lineHeight: 1.6, fontWeight: 700 }}>
+            {error} Return to Welcome, then reopen the original invite or
+            approval message that contains the request ID.
+          </div>
+          <div style={{ marginTop: 14, maxWidth: 260 }}>
+            <StableCtaLink
+              to={ctaPath(welcomeCta)}
+              kind="secondary"
+              debugId={welcomeCta.debugId}
+              stableHeight={48}
+              style={{
+                minHeight: 48,
+                height: 48,
+                maxHeight: 48,
+                borderRadius: 14,
+                background: "#FFFFFF",
+                color: "#7F1D1D",
+                border: "1px solid rgba(153,27,27,0.22)",
+                fontWeight: 1000,
+              }}
+            >
+              {approvalIconText("home", "Return to Welcome", 22)}
+            </StableCtaLink>
+          </div>
         </div>
       ) : null}
 
@@ -784,8 +810,8 @@ export default function JoinApprovalPage() {
                   : status === "pending"
                   ? "You can return later to check this status again."
                   : status === "rejected"
-                  ? "You can return to entry or speak again with the inviting community."
-                  : "Return to entry or try again later."}
+                  ? "Return to Welcome, then use a fresh invite after the community tells you what to update."
+                  : "GSN could not read the final approval state from this link. Return to Welcome, then reopen the original invite or approval message that contains the request ID."}
               </div>
 
               <CardActionRow style={{ marginTop: 16 }}>

@@ -137,7 +137,7 @@ const surfaceUses = [
   ...marketplaceSource.matchAll(/marketplaceSurfaceTouchProps\(\s*"([^"]+)"\s*\)/g),
 ];
 const expectedSurfaceIds = [
-  "marketplace.members.trade-evidence-module",
+  "marketplace.trade.evidence-module",
   "marketplace.members.visible-members-module",
   "marketplace.demand.module",
   "marketplace.support.selected-module",
