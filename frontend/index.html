@@ -46,9 +46,22 @@
           var entryFrom = String(params.get("entry_from") || "")
             .trim()
             .toLowerCase();
+          var coverWelcomeSession = "";
+          try {
+            coverWelcomeSession = String(
+              window.sessionStorage.getItem("gmfn_cover_welcome_session") || ""
+            )
+              .trim()
+              .toLowerCase();
+          } catch (_) {
+            coverWelcomeSession = "";
+          }
 
           if (window.location.hostname.toLowerCase() !== "frontend.onrender.com") {
-            if (window.location.pathname === "/welcome" && entryFrom !== "cover") {
+            if (
+              window.location.pathname === "/welcome" &&
+              (entryFrom !== "cover" || coverWelcomeSession !== "active")
+            ) {
               params.delete("entry_from");
               window.location.replace(
                 "/cover" +

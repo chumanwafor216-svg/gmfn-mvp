@@ -152,6 +152,7 @@ const JoinRequestPendingPage = React.lazy(
 type EntryMode = "general" | "create" | "invite" | "approved" | "existing";
 
 const LAST_AUTHENTICATED_APP_PATH_KEY = "gmfn_last_authenticated_app_path";
+const COVER_WELCOME_SESSION_KEY = "gmfn_cover_welcome_session";
 
 function RouteFallback() {
   return (
@@ -478,6 +479,19 @@ function RedirectUnknownRoute() {
   return <Navigate to={appAliasTarget || appFallbackTarget || "/cover"} replace />;
 }
 
+function hasCoverWelcomeSession(): boolean {
+  try {
+    if (typeof window === "undefined" || !window.sessionStorage) return false;
+    return (
+      String(window.sessionStorage.getItem(COVER_WELCOME_SESSION_KEY) || "")
+        .trim()
+        .toLowerCase() === "active"
+    );
+  } catch {
+    return false;
+  }
+}
+
 function WelcomeEntryGate(props: { children: React.ReactNode }) {
   const location = useLocation();
   const params = new URLSearchParams(location.search);
@@ -485,7 +499,7 @@ function WelcomeEntryGate(props: { children: React.ReactNode }) {
     .trim()
     .toLowerCase();
 
-  if (entryFrom !== "cover") {
+  if (entryFrom !== "cover" || !hasCoverWelcomeSession()) {
     params.delete("entry_from");
     const nextSearch = params.toString();
     const hash = location.hash || "";

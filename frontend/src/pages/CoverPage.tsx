@@ -12,6 +12,8 @@ const ENTRY_INVITE_CODE_KEY = "gmfn_entry_invite_code";
 
 const ENTRY_CREATE_CODE_KEY = "gmfn_entry_create_code";
 
+const COVER_WELCOME_SESSION_KEY = "gmfn_cover_welcome_session";
+
 
 
 type EntryMode = "general" | "create" | "invite" | "approved" | "existing";
@@ -384,6 +386,15 @@ function nextRouteForMode(mode: EntryMode): string {
   void mode;
   return "/welcome?entry_from=cover";
 
+}
+
+function markCoverWelcomeSession(): void {
+  try {
+    if (typeof window === "undefined" || !window.sessionStorage) return;
+    window.sessionStorage.setItem(COVER_WELCOME_SESSION_KEY, "active");
+  } catch {
+    // ignore
+  }
 }
 
 
@@ -1470,6 +1481,8 @@ export default function CoverPage() {
     if (busy) return;
 
     setBusy(true);
+
+    markCoverWelcomeSession();
 
 
 

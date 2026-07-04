@@ -84,14 +84,14 @@ assertContains(
 
 assertContains(
   "src/pages/CoverPage.tsx",
-  /function nextRouteForMode\(mode: EntryMode\): string \{[\s\S]*?return "\/welcome\?entry_from=cover";/,
-  "Cover Continue must mark Welcome as cover-entered so bare /welcome shortcuts return to Cover."
+  /const COVER_WELCOME_SESSION_KEY = "gmfn_cover_welcome_session";[\s\S]*?function nextRouteForMode\(mode: EntryMode\): string \{[\s\S]*?return "\/welcome\?entry_from=cover";[\s\S]*?function markCoverWelcomeSession\(\): void \{[\s\S]*?window\.sessionStorage\.setItem\(COVER_WELCOME_SESSION_KEY, "active"\);[\s\S]*?markCoverWelcomeSession\(\);/,
+  "Cover Continue must mark the active browser session before opening Welcome."
 );
 
 assertContains(
   "src/App.tsx",
-  /function WelcomeEntryGate\(props: \{ children: React\.ReactNode \}\)[\s\S]*?params\.get\("entry_from"\)[\s\S]*?entryFrom !== "cover"[\s\S]*?<Navigate[\s\S]*?to=\{`\/cover\$\{nextSearch \? `\?\$\{nextSearch\}` : ""\}\$\{hash\}`\}[\s\S]*?<WelcomeEntryGate>[\s\S]*?<WelcomePage \/>[\s\S]*?<\/WelcomeEntryGate>/,
-  "Bare /welcome must return to Cover, while Cover-marked Welcome remains reachable."
+  /const COVER_WELCOME_SESSION_KEY = "gmfn_cover_welcome_session";[\s\S]*?function hasCoverWelcomeSession\(\): boolean \{[\s\S]*?window\.sessionStorage\.getItem\(COVER_WELCOME_SESSION_KEY\)[\s\S]*?=== "active"[\s\S]*?function WelcomeEntryGate\(props: \{ children: React\.ReactNode \}\)[\s\S]*?params\.get\("entry_from"\)[\s\S]*?entryFrom !== "cover" \|\| !hasCoverWelcomeSession\(\)[\s\S]*?<Navigate[\s\S]*?to=\{`\/cover\$\{nextSearch \? `\?\$\{nextSearch\}` : ""\}\$\{hash\}`\}[\s\S]*?<WelcomeEntryGate>[\s\S]*?<WelcomePage \/>[\s\S]*?<\/WelcomeEntryGate>/,
+  "Bare or restored /welcome must return to Cover unless Cover opened Welcome in the active browser session."
 );
 
 assertContains(
@@ -102,8 +102,8 @@ assertContains(
 
 assertContains(
   "index.html",
-  /var params = new URLSearchParams\(window\.location\.search\);[\s\S]*?entryFrom[\s\S]*?window\.location\.pathname === "\/welcome"[\s\S]*?entryFrom !== "cover"[\s\S]*?params\.delete\("entry_from"\)[\s\S]*?window\.location\.replace\([\s\S]*?"\/cover"/,
-  "The production HTML shell must redirect bare /welcome to Cover before the React bundle loads."
+  /var params = new URLSearchParams\(window\.location\.search\);[\s\S]*?entryFrom[\s\S]*?coverWelcomeSession[\s\S]*?window\.sessionStorage\.getItem\("gmfn_cover_welcome_session"\)[\s\S]*?window\.location\.pathname === "\/welcome"[\s\S]*?entryFrom !== "cover" \|\| coverWelcomeSession !== "active"[\s\S]*?params\.delete\("entry_from"\)[\s\S]*?window\.location\.replace\([\s\S]*?"\/cover"/,
+  "The production HTML shell must redirect bare or restored /welcome to Cover before the React bundle loads."
 );
 
 assertContains(
