@@ -43,13 +43,13 @@ assertContains(
 
 assertContains(
   "src/components/WorkspaceCompanionBridge.tsx",
-  /COMPANION_BLOCKED_PATH_PREFIXES[\s\S]*?\"\/app\/my-gmfn-and-i\"/,
+  /COMPANION_BLOCKED_PATH_PREFIXES[\s\S]*?"\/app\/my-gmfn-and-i"/,
   "The My GSN Identity command-centre page must stay free of Companion overlays so the identity block remains readable and testable."
 );
 
 assertContains(
   "src/components/WorkspaceCompanionBridge.tsx",
-  /COMPANION_BLOCKED_PATH_PREFIXES[\s\S]*?\"\/app\/marketplace\"/,
+  /COMPANION_BLOCKED_PATH_PREFIXES[\s\S]*?"\/app\/marketplace"/,
   "Marketplace must stay free of Companion overlays so operational lane boundaries remain readable and testable."
 );
 

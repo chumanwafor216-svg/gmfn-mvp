@@ -1,4 +1,4 @@
-/* global console, process */
+/* global console, process, URL, localStorage, document, window */
 
 import { mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -31,10 +31,16 @@ async function installApiMocks(page, baseURL) {
     clan_id: 8,
     name: "Homeland isa Marketplace",
     display_name: "Homeland isa Marketplace",
+    community_name: "Homeland isa Marketplace",
     marketplace_name: "Homeland isa Marketplace",
+    description: "Community-bound buying, selling, support, and evidence desk.",
+    marketplace_description:
+      "Community-bound buying, selling, support, and evidence desk.",
     community_code: "GMFN-C-000008",
     clan_code: "GMFN-C-000008",
     gmfn_id: "GMFN-C-000008",
+    member_count: 7,
+    public_shop_count: 5,
     marketplace_image_url:
       "https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=320&h=320&fit=crop",
   };
@@ -160,6 +166,11 @@ async function run() {
     await page.waitForSelector('[data-cta-id="marketplace.tile.spotlight"]', {
       timeout: 30000,
     });
+    await page.waitForFunction(
+      () => (document.body.textContent || "").includes("Homeland isa Marketplace"),
+      null,
+      { timeout: 30000 }
+    );
     await page.screenshot({
       path: join(screenshotDir, "marketplace-hero-390x844.png"),
       fullPage: false,
@@ -177,6 +188,7 @@ async function run() {
         "Members & Shops",
         "Trade Evidence",
         "Marketplace Tools",
+        "Support Requests",
         "Spotlight",
       ];
       const missing = required.filter((item) => !text.includes(item));

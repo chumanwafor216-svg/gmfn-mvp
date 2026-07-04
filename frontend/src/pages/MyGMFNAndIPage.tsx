@@ -119,27 +119,6 @@ function routeTile(primary = false): React.CSSProperties {
   };
 }
 
-function capabilityCard(primary = false): React.CSSProperties {
-  return {
-    display: "grid",
-    gridTemplateColumns: "42px minmax(0, 1fr)",
-    gap: 10,
-    alignItems: "start",
-    minHeight: 118,
-    borderRadius: 14,
-    border: primary
-      ? "1px solid rgba(214,170,69,0.26)"
-      : "1px solid rgba(15,23,42,0.08)",
-    background: primary
-      ? "linear-gradient(180deg, rgba(255,255,255,0.998) 0%, rgba(255,250,235,0.98) 100%)"
-      : "linear-gradient(180deg, rgba(255,255,255,0.998) 0%, rgba(248,251,255,0.99) 100%)",
-    padding: 12,
-    boxShadow: primary
-      ? "0 12px 24px rgba(214,170,69,0.13), inset 0 1px 0 rgba(255,255,255,0.98)"
-      : "0 10px 20px rgba(15,23,42,0.06), inset 0 1px 0 rgba(255,255,255,0.98)",
-  };
-}
-
 function capabilityVisualRail(): React.CSSProperties {
   return {
     display: "grid",
@@ -165,27 +144,6 @@ function appGuideMiniIconBubble(): React.CSSProperties {
   };
 }
 
-function capabilityCompactCard(primary = false): React.CSSProperties {
-  return {
-    display: "grid",
-    gridTemplateColumns: "minmax(0, 1fr)",
-    gap: 7,
-    alignItems: "start",
-    minHeight: 132,
-    borderRadius: 16,
-    border: primary
-      ? "1px solid rgba(214,170,69,0.24)"
-      : "1px solid rgba(15,23,42,0.08)",
-    background: primary
-      ? "linear-gradient(180deg, rgba(255,253,246,0.99) 0%, rgba(255,255,255,0.99) 100%)"
-      : "linear-gradient(180deg, rgba(255,255,255,0.998) 0%, rgba(249,251,255,0.99) 100%)",
-    padding: 10,
-    boxShadow:
-      "0 9px 18px rgba(15,23,42,0.055), inset 0 1px 0 rgba(255,255,255,0.98)",
-    overflow: "hidden",
-  };
-}
-
 function capabilityCardTop(): React.CSSProperties {
   return {
     display: "flex",
@@ -198,10 +156,6 @@ function capabilityCardTop(): React.CSSProperties {
 
 function sectionLabel(): React.CSSProperties {
   return brandSectionLabel();
-}
-
-function badge(primary = false): React.CSSProperties {
-  return brandBadge(primary);
 }
 
 function identityBadge(primary = false): React.CSSProperties {

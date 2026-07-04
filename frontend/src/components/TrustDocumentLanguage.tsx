@@ -1,6 +1,7 @@
 import React from "react";
 import GSNBrandMark from "./GSNBrandMark";
 import { GsnRealisticIcon, type Gsn3DIconKey } from "./GsnRealisticIcon";
+import { StableDisclosureSummary } from "./StableButton";
 
 export type TrustDocumentTone = "good" | "warn" | "info" | "neutral";
 
@@ -38,6 +39,16 @@ function disclosureSummaryStyle(): React.CSSProperties {
   };
 }
 
+function actionIdPart(value: string): string {
+  return (
+    String(value || "")
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "") || "details"
+  );
+}
+
 function TrustDocumentMoreDetails({
   label,
   children,
@@ -53,7 +64,11 @@ function TrustDocumentMoreDetails({
         borderRadius: 18,
       }}
     >
-      <summary style={disclosureSummaryStyle()}>
+      <StableDisclosureSummary
+        debugId={`trust-document.more-details.${actionIdPart(label)}`}
+        stableHeight={36}
+        style={disclosureSummaryStyle()}
+      >
         <span>{label}</span>
         <span
           aria-hidden="true"
@@ -73,7 +88,7 @@ function TrustDocumentMoreDetails({
         >
           +
         </span>
-      </summary>
+      </StableDisclosureSummary>
       <div style={{ display: "grid", gap: 8, paddingTop: 9 }}>{children}</div>
     </details>
   );
@@ -102,7 +117,9 @@ export function TrustDocumentDisclosureSection({
         overflow: "hidden",
       }}
     >
-      <summary
+      <StableDisclosureSummary
+        debugId={`trust-document.section.${actionIdPart(title)}`}
+        stableHeight={48}
         style={{
           ...disclosureSummaryStyle(),
           border: 0,
@@ -155,7 +172,7 @@ export function TrustDocumentDisclosureSection({
         >
           +
         </span>
-      </summary>
+      </StableDisclosureSummary>
       <div style={{ display: "grid", gap: 8, padding: 12 }}>{children}</div>
     </details>
   );

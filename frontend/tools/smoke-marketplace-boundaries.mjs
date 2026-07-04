@@ -1,4 +1,4 @@
-/* global console, process */
+/* global console, process, URL, localStorage, document, window, location */
 
 import { mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -183,11 +183,78 @@ async function run() {
     money: false,
     rosca: false,
     tools: false,
-    members: true,
+    trade: true,
+    members: false,
     demand: false,
     support: false,
   });
 
+  await page.goto(`${baseURL}/app/marketplace?community=8#marketplace-trade-evidence`, {
+    waitUntil: "networkidle",
+    timeout: 60000,
+  });
+  await page.locator('[data-cta-id="marketplace.tile.trade-evidence"]').click({
+    timeout: 30000,
+  });
+  await waitForDebugSelector(
+    page,
+    '[data-gmfn-debug-id="marketplace.trade.evidence-module"]',
+    "trade"
+  );
+  await page.screenshot({
+    path: join(screenshotDir, "marketplace-trade-boundaries-390x844.png"),
+    fullPage: false,
+  });
+
+  const tradeFacts = await page.evaluate(() => {
+    const trade = document.querySelector(
+      '[data-gmfn-debug-id="marketplace.trade.evidence-module"]'
+    );
+    const overflow = Array.from(document.querySelectorAll("body *"))
+      .filter((element) => {
+        const rect = element.getBoundingClientRect();
+        return (
+          rect.width > 0 &&
+          (rect.left < -2 || rect.right > window.innerWidth + 2)
+        );
+      })
+      .slice(0, 8)
+      .map((element) => {
+        const rect = element.getBoundingClientRect();
+        return {
+          tag: element.tagName,
+          id: element.id,
+          debug: element.getAttribute("data-gmfn-debug-id"),
+          cta: element.getAttribute("data-cta-id"),
+          text: (element.textContent || "").trim().slice(0, 80),
+          rect: {
+            left: Math.round(rect.left),
+            right: Math.round(rect.right),
+            width: Math.round(rect.width),
+          },
+        };
+      });
+    return {
+      tradeExists: Boolean(trade),
+      tradeTitle: trade?.textContent?.includes("Trade Evidence Record") || false,
+      overflow,
+    };
+  });
+
+  await page.evaluate(() => {
+    localStorage.setItem(
+      "gmfn.marketplace.sections.8",
+      JSON.stringify({
+        money: false,
+        rosca: false,
+        tools: false,
+        trade: false,
+        members: true,
+        demand: false,
+        support: false,
+      })
+    );
+  });
   await page.goto(`${baseURL}/app/marketplace?community=8#marketplace-members-shops`, {
     waitUntil: "networkidle",
     timeout: 60000,
@@ -197,7 +264,7 @@ async function run() {
   });
   await waitForDebugSelector(
     page,
-    '[data-gmfn-debug-id="marketplace.members.trade-evidence-module"]',
+    '[data-gmfn-debug-id="marketplace.members.visible-members-module"]',
     "members"
   );
   await page.screenshot({
@@ -206,9 +273,6 @@ async function run() {
   });
 
   const memberFacts = await page.evaluate(() => {
-    const trade = document.querySelector(
-      '[data-gmfn-debug-id="marketplace.members.trade-evidence-module"]'
-    );
     const members = document.querySelector(
       '[data-gmfn-debug-id="marketplace.members.visible-members-module"]'
     );
@@ -237,16 +301,7 @@ async function run() {
         };
       });
     return {
-      tradeExists: Boolean(trade),
       membersExists: Boolean(members),
-      gap:
-        trade && members
-          ? Math.round(
-              members.getBoundingClientRect().top -
-                trade.getBoundingClientRect().bottom
-            )
-          : null,
-      tradeTitle: trade?.textContent?.includes("Trade Evidence Record") || false,
       membersTitle: members?.textContent?.includes("Visible members") || false,
       overflow,
     };
@@ -259,6 +314,7 @@ async function run() {
         money: false,
         rosca: false,
         tools: false,
+        trade: false,
         members: false,
         demand: false,
         support: true,
@@ -345,9 +401,11 @@ async function run() {
     JSON.stringify(
       {
         screenshots: [
+          "frontend/screenshots/marketplace-trade-boundaries-390x844.png",
           "frontend/screenshots/marketplace-members-boundaries-390x844.png",
           "frontend/screenshots/marketplace-support-boundaries-390x844.png",
         ],
+        tradeFacts,
         memberFacts,
         supportFacts,
       },

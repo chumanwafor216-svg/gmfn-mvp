@@ -37,6 +37,18 @@ function assertLineContains(file, pattern, message) {
   }
 }
 
+function assertNotContains(file, pattern, message) {
+  const text = read(file);
+  if (pattern.test(text)) {
+    findings.push({
+      file,
+      line: 1,
+      message,
+      text: "Retired pattern was found.",
+    });
+  }
+}
+
 assertLineContains(
   "gmfn_backend/app/api/routes/marketplace.py",
   /SPOTLIGHT_CAPACITY_PILOT_OVERRIDE_UNTIL = datetime\(2026, 5, 17, 23, 59, 59, tzinfo=timezone\.utc\)/,
@@ -51,14 +63,20 @@ assertContains(
 
 assertContains(
   "gmfn_backend/app/api/routes/marketplace.py",
-  /elif not _spotlight_capacity_pilot_override_active\(current_time\):[\s\S]*?_count_active_spotlights_for_clan[\s\S]*?_max_spotlights_for_clan/,
-  "Only the Free Spotlight capacity quota should be bypassed by this test-window override."
+  /FREE_SPOTLIGHT_DAILY_LIMIT_PER_AUTHOR = 1[\s\S]*?def _count_free_spotlight_runs_for_author_today\([\s\S]*?MarketplaceBroadcast\.author_user_id == int\(author_user_id\)[\s\S]*?MarketplaceBroadcast\.priority_mode != SPOTLIGHT_PAID[\s\S]*?MarketplaceBroadcast\.created_at >= start[\s\S]*?MarketplaceBroadcast\.created_at < end/,
+  "Free Spotlight fairness must be enforced by global member identity per UTC day."
 );
 
 assertContains(
   "gmfn_backend/app/api/routes/marketplace.py",
-  /if priority_mode == SPOTLIGHT_PAID:[\s\S]*?active_paid_count = _count_active_paid_spotlights_for_shop[\s\S]*?elif not _spotlight_capacity_pilot_override_active\(current_time\):/,
-  "Paid Spotlight entitlement and active-paid guards must remain separate from the Free Spotlight capacity suspension."
+  /if priority_mode == SPOTLIGHT_PAID:[\s\S]*?active_paid_count = _count_active_paid_spotlights_for_shop[\s\S]*?else:[\s\S]*?daily_free_spotlight_count = _count_free_spotlight_runs_for_author_today[\s\S]*?if daily_free_spotlight_count >= FREE_SPOTLIGHT_DAILY_LIMIT_PER_AUTHOR:[\s\S]*?Your free Spotlight for today is already active/,
+  "Paid Spotlight active-run guards must stay separate from the Free Spotlight daily identity limit."
+);
+
+assertNotContains(
+  "gmfn_backend/app/api/routes/marketplace.py",
+  /elif not _spotlight_capacity_pilot_override_active\(current_time\):/,
+  "The retired per-community Free Spotlight capacity block must not return to the publish path."
 );
 
 assertContains(
@@ -75,8 +93,8 @@ assertContains(
 
 assertContains(
   "gmfn_backend/tests/test_marketplace_public_shop.py",
-  /test_free_spotlight_capacity_reached_is_suspended_for_test_week[\s\S]*?status_code == 200[\s\S]*?Spotlight capacity reached/,
-  "Backend route tests must prove a full clan can still publish Free Spotlight during the approved test week."
+  /test_shop_spotlight_publish_ignores_community_capacity_but_blocks_second_daily_free_run[\s\S]*?assert body\["propagated_clan_ids"\] == \[1, 2\][\s\S]*?assert body\["free_spotlight_daily_limit_per_author"\] == 1[\s\S]*?Second free spotlight[\s\S]*?assert second_res\.status_code == 400/,
+  "Backend route tests must prove community fullness no longer blocks the first free run, while same-day second free runs are blocked per identity."
 );
 
 if (findings.length > 0) {

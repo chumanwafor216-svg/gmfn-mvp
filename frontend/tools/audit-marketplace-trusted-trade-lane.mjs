@@ -44,13 +44,18 @@ assertContains(
 );
 
 assertContains(
-  /debugId="marketplace\.tile\.members"[\s\S]*?aria-label="Open evidence-backed trade, members and visible shops"[\s\S]*?openMarketplaceSection\(\s*event,\s*"members",\s*"marketplace-members-shops"\s*\)[\s\S]*?<MarketplaceGlyph name="trade"[\s\S]*?Trade & Shops[\s\S]*?Shops, offers, and visible trade[\s\S]*?Trade Evidence[\s\S]*?Public Shops[\s\S]*?Members/,
-  "Trade & Shops grouped card must stay a guided trade launcher and open only the members/shops section."
+  /debugId="marketplace\.tile\.trade-evidence"[\s\S]*?aria-label="Open Trade Evidence records"[\s\S]*?openMarketplaceSection\(\s*event,\s*"trade",\s*"marketplace-trade-evidence"\s*\)[\s\S]*?<MarketplaceGlyph name="ledger"[\s\S]*?Trade Evidence[\s\S]*?Record goods, service, and terms\.[\s\S]*?Evidence[\s\S]*?Terms[\s\S]*?Record/,
+  "Trade Evidence grouped card must stay a guided evidence-record launcher and open only the trade evidence section."
 );
 
 assertContains(
-  /const MARKETPLACE_SECTION_ANCHORS:[\s\S]*?members: "marketplace-members-shops"/,
-  "Trade Evidence section anchor must remain marketplace-members-shops."
+  /debugId="marketplace\.tile\.members"[\s\S]*?aria-label="Open visible members and public shops"[\s\S]*?openMarketplaceSection\(\s*event,\s*"members",\s*"marketplace-members-shops"\s*\)[\s\S]*?<MarketplaceGlyph name="trade"[\s\S]*?Members & Shops[\s\S]*?Known members and public shops\.[\s\S]*?Public Shops[\s\S]*?Members/,
+  "Members & Shops grouped card must open only the community-bound directory."
+);
+
+assertContains(
+  /const MARKETPLACE_SECTION_ANCHORS:[\s\S]*?members: "marketplace-members-shops"[\s\S]*?trade: "marketplace-trade-evidence"/,
+  "Trade Evidence and Members & Shops section anchors must stay separate."
 );
 
 assertContains(
@@ -108,23 +113,19 @@ assertContains(
   "Marketplace textareas must keep human app styling and avoid code-like internal scroll boxes."
 );
 
-const trustedTradeSection = sectionBetween(
-  /id="marketplace-members-shops"/,
-  /id="marketplace-demand-box"/
+const tradeEvidenceSection = sectionBetween(
+  /id="marketplace-trade-evidence"/,
+  /id="marketplace-members-shops"/
 );
 
-if (!trustedTradeSection.text) {
-  addFinding(-1, "Trade Evidence detail section must exist before Demand Box.");
+if (!tradeEvidenceSection.text) {
+  addFinding(-1, "Trade Evidence detail section must exist before Members & Shops.");
 } else {
   [
     /Trade Evidence/,
-    /See known members and visible shops inside this selected/,
-    /Open the shop record for current evidence before[\s\S]*?trade, credit, goods, or money move/,
-    /\{memberRows\.length\} visible member/,
-    /\{visibleTradeShopCount\} public shop/,
-    /Community-bound trade/,
     /Trade Evidence Record/,
-    /marketplace\.members\.trade-evidence-module/,
+    /Trade record lane/,
+    /marketplace\.trade\.evidence-module/,
     /marketplaceDepartmentShellStyle\("trade", isCompact\)/,
     /creates evidence, not escrow/,
     /marketplaceFieldTouchProps\("marketplace\.protected-trade\.role"\)/,
@@ -144,6 +145,72 @@ if (!trustedTradeSection.text) {
     /Event trail/,
     /<GsnSnapshotPaperCard[\s\S]*?paperText=\{protectedTradeEvidencePaperText\}/,
     /debugId="marketplace\.protected-trade\.copy-paper"[\s\S]*?Copy paper text/,
+  ].forEach((pattern) => {
+    if (!pattern.test(tradeEvidenceSection.text)) {
+      addFinding(
+        tradeEvidenceSection.start,
+        "Trade Evidence detail section is missing an expected guided evidence-record element.",
+        pattern.toString()
+      );
+    }
+  });
+
+  if (/(choose-supporter|Choose supporter|toggleMemberAsSupporter|guarantor|Loan Readiness|Loan Suggestions|Loan Workbench|Money Pool|ROSCA|Trust Passport|TrustSlip|CCI|Owner Shop)/.test(tradeEvidenceSection.text)) {
+    addFinding(
+      tradeEvidenceSection.start,
+      "Trade Evidence detail section must not expose other major lane responsibilities.",
+      "Trade Evidence should stay member/shop focused; Support Requests owns guarantor selection."
+    );
+  }
+
+  if (/Demand Box|marketplace\.members\.demand-box|Post a local need or offer request for this marketplace/.test(tradeEvidenceSection.text)) {
+    addFinding(
+      tradeEvidenceSection.start,
+      "Trade Evidence detail section must not embed Demand Box.",
+      "Demand Box owns its own marketplace-local lane between Trade & Shops and Support Requests."
+    );
+  }
+
+  if (/What this trade lane does|Step \{step\}|Read the name and GSN ID first|Use other lanes for support, money, or trust work/.test(tradeEvidenceSection.text)) {
+    addFinding(
+      tradeEvidenceSection.start,
+      "Trade Evidence detail section must not restore the old explainer and three-card instruction stack.",
+      "The compact Trade lane should show status chips, Demand Box, visible members, and a tucked-away member disclosure."
+    );
+  }
+
+  if (/(escrow released|bank confirmed|automatic payout|guaranteed delivery|release money automatically)/i.test(tradeEvidenceSection.text)) {
+    addFinding(
+      tradeEvidenceSection.start,
+      "Trade Evidence record updates must not imply escrow, bank confirmation, payout automation, or delivery guarantee.",
+      "Keep the protected-trade lane as an evidence rail unless paid/API verification and regulated release rails exist."
+    );
+  }
+
+  if (/Trusted Trade/.test(tradeEvidenceSection.text)) {
+    addFinding(
+      tradeEvidenceSection.start,
+      "Trade Evidence detail section must not restore the old Trusted Trade label.",
+      "Use Trade Evidence so the customer-facing lane does not overclaim protected commerce."
+    );
+  }
+}
+
+const memberShopSection = sectionBetween(
+  /id="marketplace-members-shops"/,
+  /id="marketplace-demand-box"/
+);
+
+if (!memberShopSection.text) {
+  addFinding(-1, "Members & Shops detail section must exist before Demand Box.");
+} else {
+  [
+    /Members & Shops/,
+    /See known members and visible shops inside this selected/,
+    /Open a shop record for current evidence before you[\s\S]*?act/,
+    /\{memberRows\.length\} visible member/,
+    /\{visibleTradeShopCount\} public shop/,
+    /Community-bound directory/,
     /Visible members/,
     /marketplace\.members\.visible-members-module/,
     /marketplaceDepartmentShellStyle\("members", isCompact\)/,
@@ -155,52 +222,20 @@ if (!trustedTradeSection.text) {
     /debugId="marketplace\.members\.toggle"/,
     /debugId=\{`marketplace\.member\.\$\{row\.gmfnId[\s\S]{0,140}\}\.shop`\}/,
   ].forEach((pattern) => {
-    if (!pattern.test(trustedTradeSection.text)) {
+    if (!pattern.test(memberShopSection.text)) {
       addFinding(
-        trustedTradeSection.start,
-        "Trade Evidence detail section is missing an expected guided member/shop element.",
+        memberShopSection.start,
+        "Members & Shops detail section is missing an expected guided directory element.",
         pattern.toString()
       );
     }
   });
 
-  if (/(choose-supporter|Choose supporter|toggleMemberAsSupporter|guarantor|Loan Readiness|Loan Suggestions|Loan Workbench|Money Pool|ROSCA|Trust Passport|TrustSlip|CCI|Owner Shop)/.test(trustedTradeSection.text)) {
+  if (/(choose-supporter|Choose supporter|toggleMemberAsSupporter|guarantor|Loan Readiness|Loan Suggestions|Loan Workbench|Money Pool|ROSCA|Trust Passport|TrustSlip|CCI|Owner Shop|Trade Evidence Record)/.test(memberShopSection.text)) {
     addFinding(
-      trustedTradeSection.start,
-      "Trade Evidence detail section must not expose other major lane responsibilities.",
-      "Trade Evidence should stay member/shop focused; Support Requests owns guarantor selection."
-    );
-  }
-
-  if (/Demand Box|marketplace\.members\.demand-box|Post a local need or offer request for this marketplace/.test(trustedTradeSection.text)) {
-    addFinding(
-      trustedTradeSection.start,
-      "Trade Evidence detail section must not embed Demand Box.",
-      "Demand Box owns its own marketplace-local lane between Trade & Shops and Support Requests."
-    );
-  }
-
-  if (/What this trade lane does|Step \{step\}|Read the name and GSN ID first|Use other lanes for support, money, or trust work/.test(trustedTradeSection.text)) {
-    addFinding(
-      trustedTradeSection.start,
-      "Trade Evidence detail section must not restore the old explainer and three-card instruction stack.",
-      "The compact Trade lane should show status chips, Demand Box, visible members, and a tucked-away member disclosure."
-    );
-  }
-
-  if (/(escrow released|bank confirmed|automatic payout|guaranteed delivery|release money automatically)/i.test(trustedTradeSection.text)) {
-    addFinding(
-      trustedTradeSection.start,
-      "Trade Evidence record updates must not imply escrow, bank confirmation, payout automation, or delivery guarantee.",
-      "Keep the protected-trade lane as an evidence rail unless paid/API verification and regulated release rails exist."
-    );
-  }
-
-  if (/Trusted Trade/.test(trustedTradeSection.text)) {
-    addFinding(
-      trustedTradeSection.start,
-      "Trade Evidence detail section must not restore the old Trusted Trade label.",
-      "Use Trade Evidence so the customer-facing lane does not overclaim protected commerce."
+      memberShopSection.start,
+      "Members & Shops detail section must not expose other major lane responsibilities.",
+      "Members & Shops should stay directory focused; Support Requests owns guarantor selection and Trade Evidence owns records."
     );
   }
 }

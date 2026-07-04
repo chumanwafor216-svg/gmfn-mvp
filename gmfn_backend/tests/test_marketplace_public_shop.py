@@ -469,7 +469,8 @@ def test_product_repost_target_suggestions_return_public_community_codes(client,
                     (1, 1, 1, 'member', 0),
                     (2, 2, 2, 'member', 0),
                     (3, 2, 1, 'member', 0),
-                    (4, 3, 3, 'member', 0)
+                    (4, 3, 3, 'member', 0),
+                    (5, 3, 1, 'member', 0)
                 """
             )
         )
@@ -483,6 +484,21 @@ def test_product_repost_target_suggestions_return_public_community_codes(client,
                     (1, 1, 1, 'Seller Food Shop', 'Rice supplier', '07903165266', NULL, 1),
                     (2, 2, 2, 'Target Food Shop', 'Rice and food', '07903165267', NULL, 1),
                     (3, 3, 3, 'Solar Shop', 'Solar products', '07903165268', NULL, 1)
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_broadcasts (
+                    id, clan_id, author_user_id, shop_id, message, image_url,
+                    priority_mode, visibility_scope, expires_at, created_at
+                ) VALUES (
+                    1, 3, 3, 3, 'Solar spotlight is already live',
+                    '/uploads/marketplace/images/solar-live.jpg',
+                    'free', 'direct_communities',
+                    '2035-01-01T00:00:00+00:00', '2026-06-17T10:00:00+00:00'
+                )
                 """
             )
         )
@@ -520,6 +536,10 @@ def test_product_repost_target_suggestions_return_public_community_codes(client,
     assert body["items"][0]["active_public_blocks"] == 1
     assert "active_members" not in body["items"][0]
     assert "active member" not in " ".join(body["items"][0]["reasons"]).lower()
+    saturated_target = next(
+        item for item in body["items"] if item["community_code"] == "GMFN-C-010003"
+    )
+    assert "Spotlight capacity reached for community" in saturated_target["reasons"]
 
     with engine.begin() as conn:
         conn.execute(

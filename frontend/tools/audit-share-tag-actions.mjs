@@ -201,7 +201,7 @@ function assertNotContains(file, pattern, message) {
   ],
   [
     "src/pages/VaultControlPage.tsx",
-    /import SocialTagShareButton from "\.\.\/components\/SocialTagShareButton";[\s\S]*function buildVaultSocialShareTarget\(\)[\s\S]*buildVaultInvitePackage\(selectedBlockLinkUrl, selectedBlockPrimaryLink\)[\s\S]*<SocialTagShareButton[\s\S]*target=\{buildVaultSocialShareTarget\(\)\}[\s\S]*disabled=\{!selectedBlockLinkUrl\}[\s\S]*buttonLabel="Share block"[\s\S]*debugId="vault-control\.link\.social-share"/,
+    /import SocialTagShareButton from "\.\.\/components\/SocialTagShareButton";[\s\S]*function buildVaultInvitePackage\(linkUrl: string\): string[\s\S]*buildGsnVaultInviteMessage[\s\S]*function buildVaultSocialShareTarget\(\)[\s\S]*buildVaultInvitePackage\(selectedBlockLinkUrl\)[\s\S]*<SocialTagShareButton[\s\S]*target=\{buildVaultSocialShareTarget\(\)\}[\s\S]*disabled=\{!selectedBlockLinkUrl\}[\s\S]*buttonLabel="Share block"[\s\S]*debugId="vault-control\.link\.social-share"/,
     "Vault private block social sharing must stay owner-issued and disabled until a private Vault link exists.",
   ],
 ].forEach(([file, pattern, message]) => assertContains(file, pattern, message));

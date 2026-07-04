@@ -19,11 +19,11 @@ const actionTargetRoutesSource = readFileSync(
   "utf8"
 );
 const findings = [];
-const expectedStableActionCount = 72;
+const expectedStableActionCount = 73;
 const expectedNativeFieldCount = 37;
 const expectedSourceBreakdown = {
   front: 10,
-  body: 62,
+  body: 63,
 };
 const expectedVisibleIntentActionCount = 5;
 const expectedMobileShellBreakdown = {
@@ -360,8 +360,8 @@ assertContains(
 );
 
 assertContains(
-  /debugId="marketplace\.tile\.support"[\s\S]*?aria-label="Open Support Requests for this marketplace"[\s\S]*?openMarketplaceSection\(\s*event,\s*"support",\s*"marketplace-loans-support"\s*\)[\s\S]*?<MarketplaceGlyph name="support"[\s\S]*?Support Requests[\s\S]*?Ask for backing when balance is not enough[\s\S]*?Start Request[\s\S]*?Supporters[\s\S]*?Repayment/,
-  "Marketplace Support Requests card must open support directly while ROSCA stays a separate desk handoff."
+  /debugId="marketplace\.tile\.support"[\s\S]*?aria-label="Open Support Requests for this marketplace"[\s\S]*?openMarketplaceSection\(\s*event,\s*"support",\s*"marketplace-loans-support"\s*\)[\s\S]*?<MarketplaceGlyph name="support"[\s\S]*?Support Requests[\s\S]*?Ask for backing when balance is not enough\.[\s\S]*?Start Request[\s\S]*?Supporters[\s\S]*?Repayment/,
+  "Marketplace Support Requests card must open support directly while ROSCA stays a separate desk handoff inside the support lane."
 );
 
 assertContains(
@@ -370,13 +370,13 @@ assertContains(
 );
 
 assertContains(
-  /debugId="marketplace\.tile\.members"[\s\S]*?aria-label="Open evidence-backed trade, members and visible shops"[\s\S]*?openMarketplaceSection\(\s*event,\s*"members",\s*"marketplace-members-shops"\s*\)[\s\S]*?<MarketplaceGlyph name="trade"[\s\S]*?Trade & Shops[\s\S]*?Shops, offers, and visible trade[\s\S]*?Trade Evidence[\s\S]*?Public Shops[\s\S]*?Members/,
-  "Marketplace Trade & Shops grouped card must open the members/shops trade lane with community-bound wording."
+  /debugId="marketplace\.tile\.members"[\s\S]*?aria-label="Open visible members and public shops"[\s\S]*?openMarketplaceSection\(\s*event,\s*"members",\s*"marketplace-members-shops"\s*\)[\s\S]*?<MarketplaceGlyph name="trade"[\s\S]*?Members & Shops[\s\S]*?Known members and public shops\.[\s\S]*?Public Shops[\s\S]*?Members/,
+  "Marketplace Members & Shops grouped card must open the community-bound member/shop directory."
 );
 
 assertContains(
-  /debugId="marketplace\.tile\.demand"[\s\S]*?aria-label="Open Demand Box for this marketplace"[\s\S]*?openMarketplaceSection\(\s*event,\s*"demand",\s*"marketplace-demand-box"\s*\)[\s\S]*?<MarketplaceGlyph name="demand"[\s\S]*?Demand Box[\s\S]*?Post local needs and offers[\s\S]*?Needs[\s\S]*?Offers[\s\S]*?Requests/,
-  "Marketplace Demand Box grouped card must open its own marketplace-local demand lane."
+  /debugId="marketplace\.tile\.trade-evidence"[\s\S]*?aria-label="Open Trade Evidence records"[\s\S]*?openMarketplaceSection\(\s*event,\s*"trade",\s*"marketplace-trade-evidence"\s*\)[\s\S]*?<MarketplaceGlyph name="ledger"[\s\S]*?Trade Evidence[\s\S]*?Record goods, service, and terms\.[\s\S]*?Evidence[\s\S]*?Terms[\s\S]*?Record/,
+  "Marketplace Trade Evidence grouped card must open its own evidence-record lane."
 );
 
 assertContains(
@@ -390,7 +390,7 @@ assertContains(
 );
 
 assertContains(
-  /function focusedMarketplaceSectionState\(key: keyof SectionState\): SectionState \{[\s\S]*?money: key === "money"[\s\S]*?rosca: key === "rosca"[\s\S]*?tools: key === "tools"[\s\S]*?members: key === "members"[\s\S]*?demand: key === "demand"[\s\S]*?support: key === "support"[\s\S]*?function touchedMarketplaceSectionState[\s\S]*?\[key\]: true/,
+  /function focusedMarketplaceSectionState\(key: keyof SectionState\): SectionState \{[\s\S]*?money: key === "money"[\s\S]*?rosca: key === "rosca"[\s\S]*?tools: key === "tools"[\s\S]*?members: key === "members"[\s\S]*?trade: key === "trade"[\s\S]*?demand: key === "demand"[\s\S]*?support: key === "support"[\s\S]*?function touchedMarketplaceSectionState[\s\S]*?\[key\]: true/,
   "Marketplace Support Requests must no longer open Members visually; each major lane must focus one open body."
 );
 
@@ -507,25 +507,106 @@ if (!roscaSection) {
   });
 }
 
-const trustedTradeSection = sectionBetween(
-  /id="marketplace-members-shops"/,
-  /id="marketplace-demand-box"/
+const tradeEvidenceSection = sectionBetween(
+  /id="marketplace-trade-evidence"/,
+  /id="marketplace-members-shops"/
 );
 
-if (!trustedTradeSection) {
+if (!tradeEvidenceSection) {
   findings.push({
     file: marketplaceFile,
     line: 1,
     message: "Marketplace Trade Evidence section was not found for scoped button auditing.",
-    text: "Expected id=\"marketplace-members-shops\" before id=\"marketplace-loans-support\".",
+    text: "Expected id=\"marketplace-trade-evidence\" before id=\"marketplace-members-shops\".",
+  });
+} else {
+  const tradeEvidenceActionIds = [
+    ...tradeEvidenceSection.matchAll(/debugId="(marketplace\.(?:trade|protected-trade)\.[^"]+)"/g),
+  ].map((item) => item[1]);
+  const expectedTradeEvidenceActionIds = [
+    "marketplace.trade.toggle",
+    "marketplace.protected-trade.create",
+    "marketplace.protected-trade.refresh",
+    "marketplace.protected-trade.record-update",
+    "marketplace.protected-trade.copy-paper",
+  ];
+
+  if (tradeEvidenceActionIds.join("|") !== expectedTradeEvidenceActionIds.join("|")) {
+    findings.push({
+      file: marketplaceFile,
+      line: lineAt(source.indexOf(tradeEvidenceSection)),
+      message: "Marketplace Trade Evidence section must expose only the audited trade evidence actions in order.",
+      text: `found=${tradeEvidenceActionIds.join(", ") || "none"}`,
+    });
+  }
+
+  [
+    /Trade Evidence/,
+    /Record the item, the other side, and agreed terms/,
+    /This is evidence, not escrow/,
+    /Trade Evidence Record/,
+    /Trade record lane/,
+    /Start record/,
+    /Record update/,
+    /Copy paper text/,
+  ].forEach((pattern) => {
+    if (!pattern.test(tradeEvidenceSection)) {
+      findings.push({
+        file: marketplaceFile,
+        line: lineAt(source.indexOf(tradeEvidenceSection)),
+        message: "Marketplace Trade Evidence lane must keep the guided evidence-record structure.",
+        text: pattern.toString(),
+      });
+    }
+  });
+
+  if (/choose-supporter|Choose supporter|toggleMemberAsSupporter|guarantor|loan|Loan Readiness/.test(tradeEvidenceSection)) {
+    findings.push({
+      file: marketplaceFile,
+      line: lineAt(source.indexOf(tradeEvidenceSection)),
+      message: "Marketplace Trade Evidence lane must not expose support or guarantor actions.",
+      text: "Trade Evidence should stay member/shop focused; Support Requests owns guarantor selection.",
+    });
+  }
+
+  if (/What this trade lane does|Step \{step\}|Read the name and GSN ID first|Use other lanes for support, money, or trust work/.test(tradeEvidenceSection)) {
+    findings.push({
+      file: marketplaceFile,
+      line: lineAt(source.indexOf(tradeEvidenceSection)),
+      message: "Marketplace Trade Evidence lane must not restore the old explainer and three-card instruction stack.",
+      text: "The compact Trade lane should show status chips, Demand Box, visible members, and a tucked-away member disclosure.",
+    });
+  }
+
+  if (/Trusted Trade/.test(tradeEvidenceSection)) {
+    findings.push({
+      file: marketplaceFile,
+      line: lineAt(source.indexOf(tradeEvidenceSection)),
+      message: "Marketplace Trade Evidence lane must not restore the old Trusted Trade label.",
+      text: "Use Trade Evidence so the customer-facing lane does not overclaim protected commerce.",
+    });
+  }
+}
+
+const memberShopSection = sectionBetween(
+  /id="marketplace-members-shops"/,
+  /id="marketplace-demand-box"/
+);
+
+if (!memberShopSection) {
+  findings.push({
+    file: marketplaceFile,
+    line: 1,
+    message: "Marketplace Members & Shops section was not found for scoped button auditing.",
+    text: "Expected id=\"marketplace-members-shops\" before id=\"marketplace-demand-box\".",
   });
 } else {
   [
-    /Trade Evidence/,
+    /Members & Shops/,
     /See known members and visible shops inside this selected/,
     /\{memberRows\.length\} visible member/,
     /\{visibleTradeShopCount\} public shop/,
-    /Community-bound trade/,
+    /Community-bound directory/,
     /Visible members/,
     /more tucked away/,
     /debugId="marketplace\.members\.more-visible\.summary"[\s\S]*?More visible members/,
@@ -533,40 +614,22 @@ if (!trustedTradeSection) {
     /No shop yet/,
     /debugId=\{`marketplace\.member\.\$\{row\.gmfnId[\s\S]{0,140}\}\.shop`\}/,
   ].forEach((pattern) => {
-    if (!pattern.test(trustedTradeSection)) {
+    if (!pattern.test(memberShopSection)) {
       findings.push({
         file: marketplaceFile,
-        line: lineAt(source.indexOf(trustedTradeSection)),
-        message: "Marketplace Trade Evidence lane must keep the guided member/shop structure.",
+        line: lineAt(source.indexOf(memberShopSection)),
+        message: "Marketplace Members & Shops lane must keep the guided member/shop directory structure.",
         text: pattern.toString(),
       });
     }
   });
 
-  if (/choose-supporter|Choose supporter|toggleMemberAsSupporter|guarantor|loan|Loan Readiness/.test(trustedTradeSection)) {
+  if (/choose-supporter|Choose supporter|toggleMemberAsSupporter|guarantor|loan|Loan Readiness/.test(memberShopSection)) {
     findings.push({
       file: marketplaceFile,
-      line: lineAt(source.indexOf(trustedTradeSection)),
-      message: "Marketplace Trade Evidence lane must not expose support or guarantor actions.",
-      text: "Trade Evidence should stay member/shop focused; Support Requests owns guarantor selection.",
-    });
-  }
-
-  if (/What this trade lane does|Step \{step\}|Read the name and GSN ID first|Use other lanes for support, money, or trust work/.test(trustedTradeSection)) {
-    findings.push({
-      file: marketplaceFile,
-      line: lineAt(source.indexOf(trustedTradeSection)),
-      message: "Marketplace Trade Evidence lane must not restore the old explainer and three-card instruction stack.",
-      text: "The compact Trade lane should show status chips, Demand Box, visible members, and a tucked-away member disclosure.",
-    });
-  }
-
-  if (/Trusted Trade/.test(trustedTradeSection)) {
-    findings.push({
-      file: marketplaceFile,
-      line: lineAt(source.indexOf(trustedTradeSection)),
-      message: "Marketplace Trade Evidence lane must not restore the old Trusted Trade label.",
-      text: "Use Trade Evidence so the customer-facing lane does not overclaim protected commerce.",
+      line: lineAt(source.indexOf(memberShopSection)),
+      message: "Marketplace Members & Shops lane must not expose support or guarantor actions.",
+      text: "Members & Shops should stay directory focused; Support Requests owns guarantor selection.",
     });
   }
 }
@@ -735,9 +798,9 @@ const expectedOrder = [
   exactDebugId("marketplace.empty.dashboard"),
   exactDebugId("marketplace.tile.money"),
   exactDebugId("marketplace.tile.members"),
-  exactDebugId("marketplace.tile.demand"),
-  exactDebugId("marketplace.tile.support"),
+  exactDebugId("marketplace.tile.trade-evidence"),
   exactDebugId("marketplace.row.records-links"),
+  exactDebugId("marketplace.tile.support"),
   exactDebugId("marketplace.tile.spotlight"),
   exactDebugId("marketplace.intent.submit"),
   dynamicDebugId(
@@ -786,6 +849,11 @@ const expectedOrder = [
   exactDebugId("marketplace.network-repost.refresh-credits"),
   exactDebugId("marketplace.network-repost.place"),
   exactDebugId("marketplace.network-repost.subscription"),
+  exactDebugId("marketplace.trade.toggle"),
+  exactDebugId("marketplace.protected-trade.create"),
+  exactDebugId("marketplace.protected-trade.refresh"),
+  exactDebugId("marketplace.protected-trade.record-update"),
+  exactDebugId("marketplace.protected-trade.copy-paper"),
   exactDebugId("marketplace.members.toggle"),
   dynamicDebugId(
     "marketplace.member.*.shop",

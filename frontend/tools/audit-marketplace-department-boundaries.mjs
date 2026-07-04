@@ -61,7 +61,7 @@ assertContains(
 
 const expectedModules = [
   {
-    id: "marketplace.members.trade-evidence-module",
+    id: "marketplace.trade.evidence-module",
     tone: "trade",
     label: "Trade Evidence Record",
   },
@@ -121,33 +121,45 @@ if (!supportSelectedModule.text) {
   }
 }
 
-const tradeMembersSection = sectionBetween(
+const tradeToMembersSection = sectionBetween(
+  /id="marketplace-trade-evidence"/,
+  /id="marketplace-members-shops"/
+);
+
+if (!tradeToMembersSection.text) {
+  addFinding(-1, "Trade Evidence section must exist before Members & Shops.");
+} else {
+  const tradeIndex = tradeToMembersSection.text.indexOf(
+    "marketplace.trade.evidence-module"
+  );
+  if (tradeIndex === -1) {
+    addFinding(
+      tradeToMembersSection.start,
+      "Trade Evidence must appear as its own module before the Members & Shops section.",
+      "Expected marketplace.trade.evidence-module before id=\"marketplace-members-shops\"."
+    );
+  }
+}
+
+const membersToDemandSection = sectionBetween(
   /id="marketplace-members-shops"/,
   /id="marketplace-demand-box"/
 );
 
-if (!tradeMembersSection.text) {
-  addFinding(-1, "Trade and members section must exist before Demand Box.");
-} else {
-  const tradeIndex = tradeMembersSection.text.indexOf(
-    "marketplace.members.trade-evidence-module"
-  );
-  const membersIndex = tradeMembersSection.text.indexOf(
-    "marketplace.members.visible-members-module"
-  );
-  if (tradeIndex === -1 || membersIndex === -1 || tradeIndex >= membersIndex) {
-    addFinding(
-      tradeMembersSection.start,
-      "Trade Evidence must appear as its own module before the Visible Members module.",
-      "Expected trade module followed by visible members module."
-    );
-  }
-
-  assertNotContains(
-    /marketplace\.members\.demand-box|Post a local need or offer request for this marketplace/,
-    "Demand Box must not be embedded inside Trade Evidence or Visible Members."
+if (!membersToDemandSection.text) {
+  addFinding(-1, "Members & Shops section must exist before Demand Box.");
+} else if (!membersToDemandSection.text.includes("marketplace.members.visible-members-module")) {
+  addFinding(
+    membersToDemandSection.start,
+    "Visible Members must stay inside the Members & Shops section before Demand Box.",
+    "Expected marketplace.members.visible-members-module before id=\"marketplace-demand-box\"."
   );
 }
+
+assertNotContains(
+  /marketplace\.members\.demand-box|Post a local need or offer request for this marketplace/,
+  "Demand Box must not be embedded inside Trade Evidence or Visible Members."
+);
 
 assertContains(
   /textAreaStyle\(\): React\.CSSProperties \{[\s\S]*?fontFamily: "inherit"[\s\S]*?overflowY: "hidden"[\s\S]*?whiteSpace: "pre-wrap"/,

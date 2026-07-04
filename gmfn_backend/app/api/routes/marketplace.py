@@ -3155,7 +3155,7 @@ def recommend_marketplace_repost_targets(
         if active_spotlight_count < max_spotlights:
             reasons.append("Spotlight lane has room")
         else:
-            reasons.append("Spotlight lane may queue")
+            reasons.append("Spotlight capacity reached for community")
         if not reasons:
             reasons.append("Open community route")
 

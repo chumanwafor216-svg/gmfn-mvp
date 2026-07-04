@@ -101,7 +101,7 @@ assertNotContains(
 
 assertContains(
   "frontend/src/pages/TrustCommandCentrePage.tsx",
-  /completeItems[\s\S]*?remainingItems[\s\S]*?nextStep[\s\S]*?nextRoute[\s\S]*?Still needed:[\s\S]*?Open route/,
+  /completeItems[\s\S]*?remainingItems[\s\S]*?nextStep[\s\S]*?nextRoute[\s\S]*?Still needed:[\s\S]*?Open page/,
   "Readiness gap cards must show done work, remaining work, the next step, and the route action."
 );
 

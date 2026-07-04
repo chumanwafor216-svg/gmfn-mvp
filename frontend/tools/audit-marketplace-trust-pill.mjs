@@ -45,8 +45,8 @@ assertContains(
 );
 
 assertContains(
-  /const marketplaceCciValue = firstTruthy\([\s\S]*?marketplaceTrust[\s\S]*?selectedCommunity[\s\S]*?\);[\s\S]*?const marketplaceCciDisplay = marketplaceCciValue[\s\S]*?: "Pending";/,
-  "Marketplace CCI stat must read existing trust/community fields and fall back to Pending."
+  /function marketplaceCciLabel\([\s\S]*?const cciValue = firstTruthy\([\s\S]*?me\?\.cci_score[\s\S]*?trustSlip\?\.cci_score[\s\S]*?trust\?\.cci_score[\s\S]*?\(row as any\)\?\.cci_score[\s\S]*?\);[\s\S]*?const cciBand = firstTruthy\([\s\S]*?me\?\.cci_class[\s\S]*?trustSlip\?\.cci_class[\s\S]*?trust\?\.cci_band[\s\S]*?\(row as any\)\?\.cci_band[\s\S]*?if \(cciBand && cciValue\) return `\$\{cciBand\} \/ \$\{cciValue\}`;[\s\S]*?return cciBand \|\| cciValue \|\| "Pending";/,
+  "Marketplace CCI stat must read member, TrustSlip, trust, and community fields before falling back to Pending."
 );
 
 assertNotContains(

@@ -747,13 +747,23 @@ function GSNSplashArtwork() {
 
           </linearGradient>
 
-          <linearGradient id="diamondLiftFill" x1="0" y1="0" x2="0" y2="1">
+          <linearGradient id="coverBadgeTileFill" x1="0" y1="0" x2="0" y2="1">
 
-            <stop offset="0%" stopColor="#FFFFFF" />
+            <stop offset="0%" stopColor="rgba(239,248,255,0.30)" />
 
-            <stop offset="44%" stopColor="#F5F8FB" />
+            <stop offset="48%" stopColor="rgba(159,186,210,0.20)" />
 
-            <stop offset="100%" stopColor="#D5E0EA" />
+            <stop offset="100%" stopColor="rgba(57,87,112,0.30)" />
+
+          </linearGradient>
+
+          <linearGradient id="coverSmallShieldFill" x1="0" y1="0" x2="0" y2="1">
+
+            <stop offset="0%" stopColor="#061D56" />
+
+            <stop offset="48%" stopColor="#0A338F" />
+
+            <stop offset="100%" stopColor="#0D5CB8" />
 
           </linearGradient>
 
@@ -882,7 +892,7 @@ function GSNSplashArtwork() {
 
           </filter>
 
-          <filter id="diamondLiftShadow" x="-180%" y="-180%" width="420%" height="420%">
+          <filter id="coverBadgeLiftShadow" x="-180%" y="-180%" width="420%" height="420%">
 
             <feOffset dx="0" dy="4" result="offset" />
 
@@ -1353,63 +1363,94 @@ function GSNSplashArtwork() {
           />
 
           <text
-            x="332"
-            y="78"
-            textAnchor="middle"
-            fill="rgba(1,9,22,0.62)"
-            fontSize="30"
-            fontWeight="850"
-            letterSpacing="0.8"
-            fontFamily="Arial, Helvetica, sans-serif"
-          >
-            <tspan x="332" dy="0">Global Support</tspan>
-            <tspan x="332" dy="32">Network</tspan>
-          </text>
-
-          <text
             x="330"
-            y="74"
+            y="82"
             textAnchor="middle"
-            fill="url(#titleEmbossFill)"
-            stroke="rgba(238,246,255,0.24)"
-            strokeWidth="0.7"
+            fill="#F8FBFF"
+            stroke="rgba(1,9,22,0.30)"
+            strokeWidth="0.45"
             filter="url(#titleEmbossShadow)"
-            fontSize="30"
+            fontSize="31"
             fontWeight="850"
-            letterSpacing="0.8"
+            letterSpacing="0.15"
             fontFamily="Arial, Helvetica, sans-serif"
           >
-            <tspan x="330" dy="0">Global Support</tspan>
-            <tspan x="330" dy="32">Network</tspan>
+            Global Support Network
           </text>
 
-          <text
-            x="330"
-            y="72.5"
-            textAnchor="middle"
-            fill="rgba(255,255,255,0.16)"
-            fontSize="30"
-            fontWeight="850"
-            letterSpacing="0.8"
-            fontFamily="Arial, Helvetica, sans-serif"
-          >
-            <tspan x="330" dy="0">Global Support</tspan>
-            <tspan x="330" dy="32">Network</tspan>
-          </text>
-
-          <path
-            d="
-              M286 -6
-              L330 -52
-              L374 -6
-              L330 38
-              Z
-            "
-            fill="url(#diamondLiftFill)"
-            stroke="rgba(236,245,255,0.98)"
-            strokeWidth="1.8"
-            filter="url(#diamondLiftShadow)"
-          />
+          <g transform="translate(330,-8)" filter="url(#coverBadgeLiftShadow)">
+            <rect
+              x="-50"
+              y="-50"
+              width="100"
+              height="100"
+              rx="26"
+              fill="url(#coverBadgeTileFill)"
+              stroke="rgba(230,242,255,0.28)"
+              strokeWidth="2"
+            />
+            <path
+              d="
+                M0 -31
+                L30 -16
+                L30 17
+                C30 37 18 52 0 62
+                C-18 52 -30 37 -30 17
+                L-30 -16
+                Z
+              "
+              fill="url(#coverSmallShieldFill)"
+              stroke="url(#shieldBorderGlow)"
+              strokeWidth="4"
+            />
+            <path
+              d="
+                M0 -21
+                L21 -10
+                L21 14
+                C21 30 12 41 0 49
+                C-12 41 -21 30 -21 14
+                L-21 -10
+                Z
+              "
+              fill="none"
+              stroke="rgba(255,255,255,0.18)"
+              strokeWidth="2"
+            />
+            <circle
+              cx="0"
+              cy="8"
+              r="22"
+              fill="rgba(7,17,42,0.28)"
+              stroke="url(#shieldBorderGlow)"
+              strokeWidth="3"
+            />
+            <circle
+              cx="0"
+              cy="8"
+              r="14"
+              fill="rgba(255,244,184,0.18)"
+              stroke="rgba(255,244,201,0.52)"
+              strokeWidth="1"
+            />
+            <polygon
+              points="
+                0,-10
+                5,2
+                18,2
+                8,10
+                12,23
+                0,15
+                -12,23
+                -8,10
+                -18,2
+                -5,2
+              "
+              fill="url(#starReliefFill)"
+              stroke="rgba(255,247,217,0.86)"
+              strokeWidth="1.3"
+            />
+          </g>
 
         </g>
 

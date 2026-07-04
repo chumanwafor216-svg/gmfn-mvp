@@ -90,7 +90,7 @@ if (!demandSection.text) {
   addFinding(-1, "Demand Box section must exist before Support Requests.");
 } else {
   [
-    /debugId="marketplace\.tile\.demand"[\s\S]*?aria-label="Open Demand Box for this marketplace"[\s\S]*?openMarketplaceSection\(event, "demand", "marketplace-demand-box"\)/,
+    /id: "demand"[\s\S]*?intent: "demandBox"[\s\S]*?visible: false/,
     /demand: "marketplace"/,
     /id="marketplace-demand-box"/,
     /<MarketplaceGlyph name="demand" size=\{26\} \/>/,
@@ -107,6 +107,14 @@ if (!demandSection.text) {
       );
     }
   });
+
+  if (/debugId="marketplace\.tile\.demand"/.test(source)) {
+    addFinding(
+      source.search(/debugId="marketplace\.tile\.demand"/),
+      "Demand Box must remain an inner lane, not return as a front tile.",
+      "Demand is searchable from More and opens through marketplace.demand.open."
+    );
+  }
 }
 
 if (findings.length > 0) {

@@ -55,7 +55,7 @@ assertContains(
 
 const recordsLinksSection = sectionBetween(
   /id="marketplace-owned-links"/,
-  /id="marketplace-members-shops"/
+  /id="marketplace-trade-evidence"/
 );
 
 if (!recordsLinksSection.text) {

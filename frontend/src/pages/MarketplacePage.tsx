@@ -3227,19 +3227,6 @@ function marketplaceOsSectionStyle(isCompact: boolean): React.CSSProperties {
   };
 }
 
-function marketplaceOsHeaderStyle(isCompact: boolean): React.CSSProperties {
-  return {
-    borderRadius: isCompact ? 22 : 26,
-    border: "1px solid rgba(16,37,59,0.08)",
-    background:
-      "linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(248,251,255,0.98) 100%)",
-    padding: isCompact ? 14 : 18,
-    color: "var(--gsn-text-main)",
-    boxShadow: "0 18px 34px rgba(10,24,49,0.08)",
-    overflow: "hidden",
-  };
-}
-
 function marketplaceOsIconStyle(bg: string, isCompact = false): React.CSSProperties {
   return {
     gridArea: "icon",
@@ -8081,6 +8068,48 @@ export default function MarketplacePage() {
                 </span>
                 <span style={marketplaceFrontTagStyle("#173750", "#EEF3F7", isCompact)}>
                   Helpers
+                </span>
+              </span>
+            </span>
+            <span aria-hidden="true" style={marketplaceOsArrowStyle()}>
+              <MarketplaceGlyph name="chevron" size={18} />
+            </span>
+          </StableButton>
+
+          <StableButton
+            type="button"
+            debugId="marketplace.tile.support"
+            aria-label="Open Support Requests for this marketplace"
+            onClick={(event) =>
+              openMarketplaceSection(event, "support", "marketplace-loans-support")
+            }
+            style={marketplaceFrontLaneCardStyle(isCompact)}
+          >
+            <span
+              aria-hidden="true"
+              style={marketplaceFrontLaneIconStyle(
+                "linear-gradient(180deg, #1D6D46 0%, #0B3323 100%)",
+                isCompact
+              )}
+            >
+              <MarketplaceGlyph name="support" size={isCompact ? 26 : 34} />
+            </span>
+            <span style={marketplaceOsRowTextStackStyle()}>
+              <span style={marketplaceOsRowTitleStyle(isCompact)}>
+                Support Requests
+              </span>
+              <span style={marketplaceOsRowDetailStyle(isCompact)}>
+                Ask for backing when balance is not enough.
+              </span>
+              <span style={marketplaceFrontTagRowStyle(isCompact)}>
+                <span style={marketplaceFrontTagStyle("#1D6D46", "#E5F4EC", isCompact)}>
+                  Start Request
+                </span>
+                <span style={marketplaceFrontTagStyle("#1D6D46", "#E5F4EC", isCompact)}>
+                  Supporters
+                </span>
+                <span style={marketplaceFrontTagStyle("#1D6D46", "#E5F4EC", isCompact)}>
+                  Repayment
                 </span>
               </span>
             </span>

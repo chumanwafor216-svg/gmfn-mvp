@@ -127,8 +127,8 @@ assertContains(
 assertNotContains(
   marketplaceFile,
   marketplaceSource,
-  /Quick Actions|debugId="marketplace\.tile\.trust"|debugId="marketplace\.tile\.demand"|debugId="marketplace\.tile\.support"|Trust preparing/g,
-  "Marketplace front package must not expose the removed Quick Actions card, old Trust tile, Demand Box tile, Support Requests tile, or Trust preparing fallback."
+  /Quick Actions|debugId="marketplace\.tile\.trust"|debugId="marketplace\.tile\.demand"|Trust preparing/g,
+  "Marketplace front package must not expose the removed Quick Actions card, old Trust tile, Demand Box tile, or Trust preparing fallback."
 );
 
 [
@@ -155,6 +155,12 @@ assertNotContains(
     glyph: "links",
     label: "Marketplace Tools",
     tags: ["Verify", "Invite", "Create", "Shop Face", "Helpers"],
+  },
+  {
+    id: "marketplace.tile.support",
+    glyph: "support",
+    label: "Support Requests",
+    tags: ["Start Request", "Supporters", "Repayment"],
   },
   {
     id: "marketplace.tile.spotlight",
