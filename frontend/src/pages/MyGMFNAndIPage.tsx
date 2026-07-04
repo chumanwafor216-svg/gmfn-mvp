@@ -1679,6 +1679,15 @@ export default function MyGMFNAndIPage() {
     trustSlipSummary,
   ]);
 
+  const sourceIdentityStatusLabel = useMemo(
+    () =>
+      firstTruthy(
+        trustSlipSummary?.identity_status_label,
+        trustSlipSummary?.identity_context?.identity_status_label
+      ),
+    [trustSlipSummary]
+  );
+
   const passportVm = useMemo(
     () =>
       buildTrustPassportViewModel({
@@ -1756,10 +1765,7 @@ export default function MyGMFNAndIPage() {
         identityVerified:
           trustSlipSummary?.identity_verified ??
           trustSlipSummary?.identity_context?.identity_verified,
-        identityStatusLabel: firstTruthy(
-          trustSlipSummary?.identity_status_label,
-          trustSlipSummary?.identity_context?.identity_status_label
-        ),
+        identityStatusLabel: sourceIdentityStatusLabel,
         hasSelectedCommunity: Boolean(currentClan || selectedClanId),
         band: firstTruthy(
           trustSlipSummary?.band,
@@ -1812,25 +1818,33 @@ export default function MyGMFNAndIPage() {
       phoneRecorded,
       phoneVerified,
       selectedClanId,
+      sourceIdentityStatusLabel,
       trustSlipSummary,
     ]
   );
 
   const identityStatus = useMemo(() => {
-    if (passportVm.identity.identityStatusLabel) {
-      return passportVm.identity.identityStatusLabel;
+    if (sourceIdentityStatusLabel) {
+      return sourceIdentityStatusLabel;
     }
     if (passportVm.identity.identityVerified === true) return "Identity recorded";
     if (identityEvidence.score >= 55) return `${identityEvidence.label} recorded`;
     if (identityEvidence.score > 0) return `${identityEvidence.label} building`;
     return "Evidence not recorded yet";
-  }, [identityEvidence, passportVm]);
+  }, [identityEvidence, passportVm, sourceIdentityStatusLabel]);
 
   const trustPassportStatus = useMemo(() => {
     if (passportVm.identity.identityVerified === true) return "Identity verified";
-    if (identityEvidence.score >= 35) return passportVm.verdict.evidenceLabel;
+    if (identityEvidence.score >= 55) return `${identityEvidence.label} record`;
+    if (
+      identityEvidence.score >= 35 &&
+      passportVm.verdict.evidenceLabel !== "Evidence still building"
+    ) {
+      return passportVm.verdict.evidenceLabel;
+    }
+    if (identityEvidence.score >= 35) return "Evidence record building";
     return "Evidence building";
-  }, [identityEvidence.score, passportVm]);
+  }, [identityEvidence.label, identityEvidence.score, passportVm]);
 
   const profilePhotoStatus = profilePhotoRecorded
     ? "Photo/selfie recorded"

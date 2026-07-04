@@ -160,6 +160,18 @@ assertContains(
 
 assertContains(
   "src/pages/MyGMFNAndIPage.tsx",
+  /const sourceIdentityStatusLabel[\s\S]*?trustSlipSummary\?\.identity_status_label[\s\S]*?trustSlipSummary\?\.identity_context\?\.identity_status_label[\s\S]*?identityStatusLabel: sourceIdentityStatusLabel[\s\S]*?if \(sourceIdentityStatusLabel\)[\s\S]*?if \(passportVm\.identity\.identityVerified === true\) return "Identity recorded";[\s\S]*?if \(identityEvidence\.score >= 55\) return `\$\{identityEvidence\.label\} recorded`;[\s\S]*?if \(identityEvidence\.score > 0\) return `\$\{identityEvidence\.label\} building`;/,
+  "My GSN and I hero must not let the Trust Passport view-model default 'Identity evidence building' override stronger recorded identity evidence."
+);
+
+assertContains(
+  "src/pages/MyGMFNAndIPage.tsx",
+  /const trustPassportStatus = useMemo\(\(\) => \{[\s\S]*?if \(passportVm\.identity\.identityVerified === true\) return "Identity verified";[\s\S]*?if \(identityEvidence\.score >= 55\) return `\$\{identityEvidence\.label\} record`;[\s\S]*?passportVm\.verdict\.evidenceLabel !== "Evidence still building"[\s\S]*?if \(identityEvidence\.score >= 35\) return "Evidence record building";/,
+  "My GSN and I Trust Passport hero status must use the evidence score before falling back to generic building language."
+);
+
+assertContains(
+  "src/pages/MyGMFNAndIPage.tsx",
   /label: "Marketplace"[\s\S]*?debugId: "my-gmfn\.route\.marketplace"[\s\S]*?label: "Finance"[\s\S]*?detail: "Money records and payment evidence\."[\s\S]*?icon: "financeInstitution"[\s\S]*?to: routes\.finance[\s\S]*?debugId: "my-gmfn\.route\.finance"[\s\S]*?label: "Loans & Support"/,
   "My GSN and I route list must keep Finance visible between Marketplace and Loans & Support."
 );

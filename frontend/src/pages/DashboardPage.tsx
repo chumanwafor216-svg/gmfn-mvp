@@ -5133,7 +5133,6 @@ export default function DashboardPage() {
     if (!attentionSignal.active || !attentionSignal.shouldShow) return;
     if (attentionQuietActive) return;
     if (!attentionAutoOpenAllowed) {
-      setAttentionPopupVisible(false);
       return;
     }
     if (
@@ -6242,7 +6241,7 @@ export default function DashboardPage() {
                 right: isPhone ? 10 : isCompact ? 12 : 18,
                 left: isPhone ? 10 : isCompact ? 12 : "auto",
                 width: isCompact ? "auto" : 452,
-                zIndex: 1200,
+                zIndex: isPhone ? 2300 : 1200,
                 borderRadius: isPhone ? 20 : 22,
                 overflow: "hidden",
                 border: attentionPopupTone.border,
@@ -6708,19 +6707,23 @@ export default function DashboardPage() {
                 runDashboardUiMutation(event, () => setAttentionPopupVisible(true), 260)
               }
               onPointerDown={consumeDashboardPointerEvent}
+              onPointerUp={(event) =>
+                runDashboardUiMutation(event, () => setAttentionPopupVisible(true), 260)
+              }
               onMouseDown={consumeDashboardPointerEvent}
               style={dashboardStableActionFrame({
                 position: "fixed",
-                top: isCompact ? 12 : 18,
+                top: isPhone ? "auto" : isCompact ? 12 : 18,
+                bottom: isPhone ? 86 : undefined,
                 right: isCompact ? 12 : 18,
-                zIndex: 1190,
+                zIndex: isPhone ? 2300 : 1190,
                 borderRadius: 16,
                 border: attentionPopupTone.border,
                 background: attentionPopupChrome.reminderBg,
                 color: attentionPopupChrome.reminderText,
                 minHeight: 42,
                 padding: "8px 12px",
-                display: "none",
+                display: "inline-flex",
                 alignItems: "center",
                 gap: 9,
                 fontWeight: 900,

@@ -48,7 +48,7 @@ assertNotContains(
 
 assertContains(
   "src/components/RequireAuth.tsx",
-  /function loginRecoveryTarget\([\s\S]*?if \(!publishTarget\) \{[\s\S]*?to: "\/login\?session=expired"[\s\S]*?state: \{ from: location \}[\s\S]*?next\.set\("next", publishTarget\)[\s\S]*?return <Navigate to=\{target\.to\} replace state=\{target\.state\} \/>/,
+  /function loginRecoveryTarget\([\s\S]*?const publishTarget = peekPublishRecoveryTarget\(\);[\s\S]*?const currentTarget = `\$\{location\.pathname \|\| ""\}\$\{location\.search \|\| ""\}\$\{location\.hash \|\| ""\}`;[\s\S]*?if \(!publishTarget\) \{[\s\S]*?next\.set\("session", "expired"\);[\s\S]*?currentTarget === "\/app" \|\| currentTarget\.startsWith\("\/app\/"\)[\s\S]*?next\.set\("next", currentTarget\);[\s\S]*?state: \{ from: location \}[\s\S]*?next\.set\("session", "expired"\);[\s\S]*?next\.set\("next", publishTarget\);[\s\S]*?from: routeStateFromTarget\(publishTarget\),[\s\S]*?recoveredFrom: `\$\{location\.pathname \|\| ""\}\$\{location\.search \|\| ""\}\$\{location\.hash \|\| ""\}`[\s\S]*?return <Navigate to=\{target\.to\} replace state=\{target\.state\} \/>/,
   "Protected auth failures must return to login while preserving the requested route."
 );
 

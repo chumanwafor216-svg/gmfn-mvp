@@ -12,7 +12,9 @@ function read(relativePath) {
 
 const findings = [];
 const dashboardFile = "src/pages/DashboardPage.tsx";
+const attentionEngineFile = "src/lib/dashboardAttentionEngine.ts";
 const dashboardText = read(dashboardFile);
+const attentionEngineText = read(attentionEngineFile);
 
 function assertContains(pattern, message) {
   const text = read(dashboardFile);
@@ -25,6 +27,16 @@ function assertContains(pattern, message) {
       text: "Expected pattern was not found.",
     });
   }
+}
+
+function assertEngineContains(pattern, message) {
+  if (pattern.test(attentionEngineText)) return;
+  findings.push({
+    file: attentionEngineFile,
+    line: 1,
+    message,
+    text: "Expected Dashboard attention engine pattern was not found.",
+  });
 }
 
 function assertNotContains(pattern, message) {
@@ -127,6 +139,8 @@ assertDashboardSliceStaysInert(
 [
   "dashboard.attention-popup.dismiss",
   "dashboard.attention-popup.primary",
+  "dashboard.attention-popup.secondary",
+  "dashboard.attention-popup.trust-journey",
   "dashboard.attention-reminder.open",
   "dashboard.trust-detail.toggle",
   "dashboard.trust-action.trust-slip",
@@ -149,6 +163,41 @@ assertDashboardSliceStaysInert(
     `Dashboard must keep stable action debug id ${debugId}.`
   );
 });
+
+assertContains(
+  /buildDashboardAttentionSignal\(\{[\s\S]*?notificationsTo: DASHBOARD_TARGETS\.WHAT_MATTERS_NOW/,
+  "Dashboard attention signal must keep the notifications route wired to What Matters Now."
+);
+
+assertContains(
+  /debugId="dashboard\.attention-reminder\.open"[\s\S]*?onClick=\{\(event\) =>[\s\S]*?runDashboardUiMutation\(event, \(\) => setAttentionPopupVisible\(true\), 260\)[\s\S]*?onPointerUp=\{\(event\) =>[\s\S]*?runDashboardUiMutation\(event, \(\) => setAttentionPopupVisible\(true\), 260\)[\s\S]*?position: "fixed"[\s\S]*?top: isPhone \? "auto" : isCompact \? 12 : 18[\s\S]*?bottom: isPhone \? 86 : undefined[\s\S]*?zIndex: isPhone \? 2300 : 1190[\s\S]*?display: "inline-flex"/,
+  "Dashboard attention reminder must stay visible above the phone bottom nav and open from both click and pointer-up instead of being mounted as a hidden or inert Companion-covered button."
+);
+
+assertContains(
+  /attentionPopupVisible \? \([\s\S]*?position: "fixed"[\s\S]*?zIndex: isPhone \? 2300 : 1200/,
+  "Dashboard opened attention popup must sit above Companion on phone so its notifications CTA remains tappable."
+);
+
+assertContains(
+  /if \(!dashboardIdentityReady\) return;[\s\S]*?if \(!attentionSignal\.active \|\| !attentionSignal\.shouldShow\) return;[\s\S]*?if \(attentionQuietActive\) return;[\s\S]*?if \(!attentionAutoOpenAllowed\) \{\s*return;\s*\}/,
+  "Dashboard disabled auto-open mode must not force-close an attention popup that the user opened manually."
+);
+
+assertContains(
+  /debugId="dashboard\.attention-popup\.secondary"[\s\S]*?openAttentionTarget\([\s\S]*?event,[\s\S]*?attentionDisplaySignal\.secondaryCtaTo \|\| ""[\s\S]*?\)[\s\S]*?\{attentionDisplaySignal\.secondaryCtaLabel\}/,
+  "Dashboard attention popup secondary CTA must keep routing through openAttentionTarget with the engine-provided notifications target."
+);
+
+assertEngineContains(
+  /const notificationsSecondary =[\s\S]*?input\.nextRouteKey !== "notifications" && input\.totalNotifications > 0[\s\S]*?secondaryCtaLabel: "Open notifications"[\s\S]*?secondaryCtaTo: input\.notificationsTo/,
+  "Dashboard attention engine must keep a secondary Open notifications CTA when the primary next step is not notifications."
+);
+
+assertEngineContains(
+  /if \(sourceKind === "notifications"\) \{[\s\S]*?ctaTo: input\.nextRouteTo[\s\S]*?secondaryCtaLabel: "Open notifications"[\s\S]*?secondaryCtaTo: input\.notificationsTo/,
+  "Dashboard attention engine must keep notifications-source alerts tied back to the notifications page."
+);
 
 assertContains(
   /const DASHBOARD_UI_STORAGE_KEY = "gmfn\.dashboard\.ui\.v8";[\s\S]*?function restoreSpotlight\(event\?: React\.SyntheticEvent<HTMLElement>\)[\s\S]*?updateUiState\(\{ spotlightMinimized: false \}\)[\s\S]*?const showSpotlight = Boolean\(activeSpotlight\) \|\| !uiState\.spotlightMinimized;[\s\S]*?debugId="dashboard\.spotlight\.restore"[\s\S]*?Show Spotlight screen[\s\S]*?debugId="dashboard\.spotlight\.restore\.empty-card"[\s\S]*?Show Spotlight screen/,
