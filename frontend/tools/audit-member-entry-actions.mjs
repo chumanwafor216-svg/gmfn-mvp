@@ -178,8 +178,8 @@ assertContains(
 
 assertContains(
   "src/pages/MyGMFNAndIPage.tsx",
-  /htmlFor="my-gmfn-capability-search"[\s\S]*?Search by decision[\s\S]*?id="my-gmfn-capability-search"[\s\S]*?htmlFor="my-gmfn-capability-category"[\s\S]*?Category filter[\s\S]*?id="my-gmfn-capability-category"[\s\S]*?htmlFor="my-gmfn-capability-select"[\s\S]*?Choose capability[\s\S]*?id="my-gmfn-capability-select"[\s\S]*?aria-label="Choose GSN capability"/,
-  "My GSN and I decision guide must keep search, category filter, and dropdown selector above the focused capability card."
+  /data-my-gmfn-selected-capability="true"[\s\S]*data-my-gmfn-decision-guide-tools="collapsed"[\s\S]*StableDisclosureSummary[\s\S]*debugId="my-gmfn\.profile\.decision-guide-tools"[\s\S]*Find another decision[\s\S]*htmlFor="my-gmfn-capability-search"[\s\S]*?Search by decision[\s\S]*?id="my-gmfn-capability-search"[\s\S]*?htmlFor="my-gmfn-capability-category"[\s\S]*?Category filter[\s\S]*?id="my-gmfn-capability-category"[\s\S]*?htmlFor="my-gmfn-capability-select"[\s\S]*?Choose capability[\s\S]*?id="my-gmfn-capability-select"[\s\S]*?aria-label="Choose GSN capability"/,
+  "My GSN and I decision guide must show the focused capability first and keep search, category filter, and dropdown selector inside collapsed decision-guide tools."
 );
 
 assertContains(

@@ -1349,6 +1349,12 @@ assertContains(
   "Community confirmation policy must translate member-witness standing and yearly-limit backend rejections into clear next steps."
 );
 
+assertContains(
+  "src/pages/CommunityConfirmationPolicyPage.tsx",
+  /function RelayContactAvatar[\s\S]*?const \[failedImageSrc, setFailedImageSrc\][\s\S]*?const showImage = Boolean\(imageSrc && failedImageSrc !== imageSrc\)[\s\S]*?data-gsn-contact-avatar="safe-image-fallback"[\s\S]*?alt=""[\s\S]*?onError=\{\(\) => setFailedImageSrc\(imageSrc\)\}[\s\S]*?<GsnLegacyIcon name="user"/,
+  "Community confirmation policy relay contact avatars must hide broken image alt text and fall back to the GSN identity icon."
+);
+
 assertNotContains(
   "src/pages/CommunityConfirmationPolicyPage.tsx",
   /Choose the active member you want to ask for a witness approval|copying its approval link|Witness approval link copied|witness approval link|sharing its approval package|Witness request approved\.|approve or decline a request|One-time witness approval code|Approve witness|assigned verifier approves with the one-time code|label="Approval"|one-time approval|QR\/OTP approval|approval\s+lane|Scan to approve|Copy approval link/,

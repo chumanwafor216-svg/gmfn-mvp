@@ -582,8 +582,8 @@ function ReferenceShopSignboardVisual({ compact = false }: { compact?: boolean }
     <div
       aria-hidden="true"
       style={{
-        width: compact ? 74 : 204,
-        height: compact ? 72 : 194,
+        width: compact ? 64 : 204,
+        height: compact ? 64 : 194,
         borderRadius: compact ? 18 : 32,
         position: "relative",
         display: "grid",
@@ -3128,7 +3128,7 @@ export default function ShopGalleryPage() {
             style={{
               position: "relative",
               display: "grid",
-              gridTemplateColumns: isCompact ? "58px minmax(0, 1fr)" : "220px minmax(0, 1fr)",
+              gridTemplateColumns: isCompact ? "70px minmax(0, 1fr)" : "220px minmax(0, 1fr)",
               alignItems: "center",
               justifyItems: "stretch",
               gap: isCompact ? 7 : 22,
@@ -3136,21 +3136,23 @@ export default function ShopGalleryPage() {
             }}
           >
             <div
+              data-public-shop-signboard-icon="true"
               style={{
                 position: "relative",
                 zIndex: 2,
-                width: isCompact ? 58 : 206,
-                height: isCompact ? 58 : 206,
-                borderRadius: "50%",
+                width: isCompact ? 64 : 206,
+                height: isCompact ? 64 : 206,
+                borderRadius: isCompact ? 20 : "50%",
                 display: "grid",
                 placeItems: "center",
                 justifySelf: "center",
+                alignSelf: isCompact ? "start" : "center",
                 background:
                   "radial-gradient(circle at 36% 30%, rgba(255,255,255,0.95) 0%, rgba(246,196,83,0.18) 46%, rgba(4,24,43,0.92) 100%)",
                 border: "1px solid rgba(214,170,69,0.58)",
                 boxShadow:
                   "0 18px 34px rgba(8,38,67,0.18), inset 0 1px 0 rgba(255,255,255,0.68)",
-                overflow: "visible",
+                overflow: "hidden",
               }}
             >
               <ReferenceShopSignboardVisual compact={isCompact} />
@@ -3178,6 +3180,7 @@ export default function ShopGalleryPage() {
               </span>
             </div>
             <div
+              data-public-shop-signboard-content="true"
               style={{
                 display: "grid",
                 gap: isCompact ? 5 : 10,

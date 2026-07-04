@@ -389,6 +389,55 @@ function statusPillWithIcon(active: boolean, label: string, icon: GsnIconName) {
   );
 }
 
+function RelayContactAvatar({
+  src,
+  label,
+  size = 52,
+}: {
+  src?: string | null;
+  label: string;
+  size?: number;
+}) {
+  const [failedImageSrc, setFailedImageSrc] = useState("");
+  const imageSrc = firstTruthy(src);
+  const showImage = Boolean(imageSrc && failedImageSrc !== imageSrc);
+
+  return (
+    <div
+      data-gsn-contact-avatar="safe-image-fallback"
+      style={{
+        width: size,
+        height: size,
+        borderRadius: 18,
+        overflow: "hidden",
+        display: "grid",
+        placeItems: "center",
+        background: "#EAF3FF",
+        border: "1px solid rgba(11,99,209,0.16)",
+        color: "#0B63D1",
+        fontWeight: 1000,
+        flex: "0 0 auto",
+      }}
+    >
+      {showImage ? (
+        <img
+          src={imageSrc}
+          alt=""
+          onError={() => setFailedImageSrc(imageSrc)}
+          style={{
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            display: "block",
+          }}
+        />
+      ) : (
+        <GsnLegacyIcon name="user" size={34} label={label} decorative={false} />
+      )}
+    </div>
+  );
+}
+
 function MeaningTile({
   icon,
   label,
@@ -3024,41 +3073,46 @@ function CommunityConfirmationPolicyPage() {
                       alignItems: "center",
                     }}
                   >
-                    <div style={{ display: "grid", gridTemplateColumns: "56px minmax(0, 1fr)", gap: 12, alignItems: "center" }}>
-                      <div
-                        style={{
-                          width: 56,
-                          height: 56,
-                          borderRadius: 18,
-                          overflow: "hidden",
-                          display: "grid",
-                          placeItems: "center",
-                          background: "#EAF3FF",
-                          border: "1px solid rgba(11,99,209,0.16)",
-                          color: "#0B63D1",
-                          fontWeight: 1000,
-                        }}
-                      >
-                        {contact.profile_image_url ? (
-                          <img
-                            src={contact.profile_image_url}
-                            alt={`${firstTruthy(contact.display_name, "Member")} profile`}
-                            style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                          />
-                        ) : (
-                          <GsnLegacyIcon name="user" size={34} />
-                        )}
-                      </div>
-                      <div>
-                        <div style={{ color: "#07172C", fontSize: 18, fontWeight: 1000 }}>
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: `${isCompact ? 52 : 56}px minmax(0, 1fr)`,
+                        gap: 12,
+                        alignItems: "center",
+                        minWidth: 0,
+                      }}
+                    >
+                      <RelayContactAvatar
+                        src={contact.profile_image_url}
+                        label={`${firstTruthy(contact.display_name, "Member")} profile`}
+                        size={isCompact ? 52 : 56}
+                      />
+                      <div style={{ minWidth: 0 }}>
+                        <div
+                          style={{
+                            color: "#07172C",
+                            fontSize: 18,
+                            fontWeight: 1000,
+                            lineHeight: 1.2,
+                            overflowWrap: "break-word",
+                          }}
+                        >
                           {firstTruthy(contact.display_name, `Member ${contact.user_id}`)}
                         </div>
-                        <div style={{ marginTop: 6, display: "flex", flexWrap: "wrap", gap: 8 }}>
+                        <div
+                          style={{
+                            marginTop: 6,
+                            display: "flex",
+                            flexWrap: "wrap",
+                            gap: 8,
+                            minWidth: 0,
+                          }}
+                        >
                           {statusPillWithIcon(receiving, receiving ? "Receiving" : "Paused", receiving ? "check" : "lock")}
                           {statusPillWithIcon(Boolean(contact.phone_verified), contact.phone_verified ? "Phone verified" : "Phone not shown", "phone")}
                           {statusPillWithIcon(!contact.member_opted_out, contact.member_opted_out ? "Member opted out" : "Opted in", contact.member_opted_out ? "lock" : "check")}
                         </div>
-                        <p style={{ margin: "8px 0 0", ...helperText(), fontSize: 13 }}>
+                        <p style={{ margin: "8px 0 0", ...helperText(), fontSize: 13, overflowWrap: "anywhere" }}>
                           {firstTruthy(contact.gsn_id, contact.role_type, contact.membership_role, "GSN relay contact")}
                         </p>
                       </div>

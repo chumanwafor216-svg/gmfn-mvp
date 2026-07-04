@@ -9,6 +9,7 @@ import {
   PrimaryButton,
   SecondaryButton,
   StableCtaLink,
+  StableDisclosureSummary,
 } from "../components/StableButton";
 import {
   GsnLegacyIcon,
@@ -2348,188 +2349,13 @@ export default function MyGMFNAndIPage() {
 
       {activeTab === "guide" ? (
         <>
-          <section style={appGuidePanel(isCompact)}>
-            <div
-              style={{
-                color: "#07172C",
-                fontSize: isCompact ? 22 : 28,
-                fontWeight: 1000,
-                lineHeight: 1.08,
-              }}
-            >
-              GSN Decision Guide
-            </div>
-
-            <div
-              style={{
-                marginTop: 8,
-                color: "#64748B",
-                fontSize: isCompact ? 13 : 14,
-                fontWeight: 700,
-                lineHeight: 1.45,
-              }}
-            >
-              Read each capability as a decision story: what happens in real
-              life, why the decision is dangerous, how GSN changes the question,
-              which tools cooperate, and what evidence remains afterwards. This
-              guide explains capability; it is not proof that any one member,
-              shop, payout, paid verification, or protected trade release is
-              already approved.
-            </div>
-
-            <div
-              style={{
-                marginTop: 14,
-                display: "grid",
-                gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) minmax(220px, 0.55fr)",
-                gap: 10,
-              }}
-            >
-              <div style={{ display: "grid", gap: 8 }}>
-                <label
-                  htmlFor="my-gmfn-capability-search"
-                  style={{
-                    ...sectionLabel(),
-                    color: "#425466",
-                    fontSize: 12,
-                  }}
-                >
-                  Search by decision
-                </label>
-                <input
-                  id="my-gmfn-capability-search"
-                  aria-label="Search GSN capabilities by decision, risk, tool, location, or evidence"
-                  value={capabilitySearch}
-                  onChange={(event) => setCapabilitySearch(event.target.value)}
-                  placeholder="Search decision, risk, tool, page, or evidence"
-                  style={selectStyle()}
-                />
-              </div>
-              <div style={{ display: "grid", gap: 8 }}>
-                <label
-                  htmlFor="my-gmfn-capability-category"
-                  style={{
-                    ...sectionLabel(),
-                    color: "#425466",
-                    fontSize: 12,
-                  }}
-                >
-                  Category filter
-                </label>
-                <select
-                  id="my-gmfn-capability-category"
-                  aria-label="Filter GSN capabilities by category"
-                  value={capabilityCategory}
-                  onChange={(event) =>
-                    setCapabilityCategory(
-                      event.target.value === "All"
-                        ? "All"
-                        : (event.target.value as CapabilityMapCategory)
-                    )
-                  }
-                  style={selectStyle()}
-                >
-                  <option value="All">All categories</option>
-                  {CAPABILITY_MAP_CATEGORIES.map((category) => (
-                    <option key={category} value={category}>
-                      {category}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div
-              style={{
-                marginTop: 12,
-                display: "grid",
-                gap: 8,
-              }}
-            >
-              <label
-                htmlFor="my-gmfn-capability-select"
-                style={{
-                  ...sectionLabel(),
-                  color: "#425466",
-                  fontSize: 12,
-                }}
-              >
-                Choose capability
-              </label>
-              <select
-                id="my-gmfn-capability-select"
-                aria-label="Choose GSN capability"
-                value={selectedCapability?.id || selectedCapabilityId}
-                onChange={(event) =>
-                  setSelectedCapabilityId(Number(event.target.value) || 1)
-                }
-                style={selectStyle()}
-              >
-                {(filteredCapabilities.length ? filteredCapabilities : GMFN_CAPABILITIES).map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.id}. {item.title}
-                  </option>
-                ))}
-              </select>
-              <div
-                aria-label="Move through GSN capabilities"
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: isCompact
-                    ? "minmax(0, 1fr) minmax(0, 1fr)"
-                    : "140px minmax(0, 1fr) 140px",
-                  gap: 8,
-                  alignItems: "center",
-                }}
-              >
-                <SecondaryButton
-                  type="button"
-                  debugId="my-gmfn.profile.previous-capability"
-                  onClick={() => stepCapability(-1)}
-                  aria-label="Show previous GSN capability"
-                  style={capabilityPagerButton(false)}
-                >
-                  <span aria-hidden="true">{"<"}</span>
-                  Previous
-                </SecondaryButton>
-                {!isCompact ? (
-                  <div
-                    style={{
-                      minHeight: 44,
-                      borderRadius: 999,
-                      border: "1px solid rgba(37,78,119,0.12)",
-                      background: "rgba(248,251,255,0.92)",
-                      color: "#526579",
-                      display: "inline-flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      padding: "10px 12px",
-                      fontSize: 12,
-                      fontWeight: 950,
-                      lineHeight: 1.2,
-                      textAlign: "center",
-                    }}
-                  >
-                    {selectedCapabilityIndex + 1} of{" "}
-                    {(filteredCapabilities.length
-                      ? filteredCapabilities
-                      : GMFN_CAPABILITIES
-                    ).length}
-                  </div>
-                ) : null}
-                <SecondaryButton
-                  type="button"
-                  debugId="my-gmfn.profile.next-capability"
-                  onClick={() => stepCapability(1)}
-                  aria-label="Show next GSN capability"
-                  style={capabilityPagerButton(true)}
-                >
-                  Next
-                  <span aria-hidden="true">{">"}</span>
-                </SecondaryButton>
-              </div>
-            </div>
-
+          <section
+            style={{
+              ...appGuidePanel(isCompact),
+              display: "grid",
+              gap: isCompact ? 10 : 12,
+            }}
+          >
             {selectedCapability ? (
               <div
                 data-my-gmfn-selected-capability="true"
@@ -2541,7 +2367,6 @@ export default function MyGMFNAndIPage() {
                   boxShadow:
                     "0 14px 28px rgba(15,23,42,0.07), inset 0 1px 0 rgba(255,255,255,0.98)",
                   padding: isCompact ? 14 : 16,
-                  marginTop: 12,
                   minHeight: 0,
                 }}
               >
@@ -2648,6 +2473,263 @@ export default function MyGMFNAndIPage() {
                 </div>
               </div>
             ) : null}
+
+            <details
+              data-my-gmfn-decision-guide-tools="collapsed"
+              style={{
+                borderRadius: 18,
+                border: "1px solid rgba(37,78,119,0.12)",
+                background:
+                  "linear-gradient(180deg, rgba(248,251,255,0.96) 0%, rgba(255,255,255,0.995) 100%)",
+                boxShadow:
+                  "0 10px 22px rgba(15,23,42,0.05), inset 0 1px 0 rgba(255,255,255,0.98)",
+                overflow: "hidden",
+              }}
+            >
+              <StableDisclosureSummary
+                debugId="my-gmfn.profile.decision-guide-tools"
+                stableHeight={isCompact ? 56 : 60}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 12,
+                  padding: isCompact ? "11px 13px" : "12px 15px",
+                  color: "#07172C",
+                  fontSize: isCompact ? 13.5 : 14,
+                  fontWeight: 1000,
+                  background: "transparent",
+                }}
+              >
+                <span
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 9,
+                    minWidth: 0,
+                  }}
+                >
+                  <span style={appGuideMiniIconBubble()}>
+                    <GsnLegacyIcon name="search" size={24} decorative />
+                  </span>
+                  <span style={{ minWidth: 0 }}>
+                    <span style={{ display: "block" }}>Find another decision</span>
+                    {!isCompact ? (
+                      <span
+                        style={{
+                          display: "block",
+                          marginTop: 2,
+                          color: "#64748B",
+                          fontSize: 12,
+                          fontWeight: 760,
+                          lineHeight: 1.2,
+                        }}
+                      >
+                        Search, filter, or open the full guide boundary.
+                      </span>
+                    ) : null}
+                  </span>
+                </span>
+                <span
+                  aria-hidden="true"
+                  style={{
+                    width: 10,
+                    height: 10,
+                    borderRight: "2px solid #64748B",
+                    borderBottom: "2px solid #64748B",
+                    transform: "rotate(45deg)",
+                    flex: "0 0 auto",
+                    marginRight: 4,
+                  }}
+                />
+              </StableDisclosureSummary>
+
+              <div
+                style={{
+                  padding: isCompact ? "0 13px 13px" : "0 15px 15px",
+                  display: "grid",
+                  gap: 12,
+                }}
+              >
+                <div
+                  style={{
+                    color: "#07172C",
+                    fontSize: isCompact ? 18 : 22,
+                    fontWeight: 1000,
+                    lineHeight: 1.08,
+                  }}
+                >
+                  GSN Decision Guide
+                </div>
+
+                <div
+                  style={{
+                    color: "#64748B",
+                    fontSize: isCompact ? 12.5 : 13.5,
+                    fontWeight: 700,
+                    lineHeight: 1.42,
+                  }}
+                >
+                  Read each capability as a decision story: what happens in real
+                  life, why the decision is dangerous, how GSN changes the question,
+                  which tools cooperate, and what evidence remains afterwards. This
+                  guide explains capability; it is not proof that any one member,
+                  shop, payout, paid verification, or protected trade release is
+                  already approved.
+                </div>
+
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) minmax(220px, 0.55fr)",
+                    gap: 10,
+                  }}
+                >
+                  <div style={{ display: "grid", gap: 8 }}>
+                    <label
+                      htmlFor="my-gmfn-capability-search"
+                      style={{
+                        ...sectionLabel(),
+                        color: "#425466",
+                        fontSize: 12,
+                      }}
+                    >
+                      Search by decision
+                    </label>
+                    <input
+                      id="my-gmfn-capability-search"
+                      aria-label="Search GSN capabilities by decision, risk, tool, location, or evidence"
+                      value={capabilitySearch}
+                      onChange={(event) => setCapabilitySearch(event.target.value)}
+                      placeholder="Search decision, risk, tool, page, or evidence"
+                      style={selectStyle()}
+                    />
+                  </div>
+                  <div style={{ display: "grid", gap: 8 }}>
+                    <label
+                      htmlFor="my-gmfn-capability-category"
+                      style={{
+                        ...sectionLabel(),
+                        color: "#425466",
+                        fontSize: 12,
+                      }}
+                    >
+                      Category filter
+                    </label>
+                    <select
+                      id="my-gmfn-capability-category"
+                      aria-label="Filter GSN capabilities by category"
+                      value={capabilityCategory}
+                      onChange={(event) =>
+                        setCapabilityCategory(
+                          event.target.value === "All"
+                            ? "All"
+                            : (event.target.value as CapabilityMapCategory)
+                        )
+                      }
+                      style={selectStyle()}
+                    >
+                      <option value="All">All categories</option>
+                      {CAPABILITY_MAP_CATEGORIES.map((category) => (
+                        <option key={category} value={category}>
+                          {category}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    display: "grid",
+                    gap: 8,
+                  }}
+                >
+                  <label
+                    htmlFor="my-gmfn-capability-select"
+                    style={{
+                      ...sectionLabel(),
+                      color: "#425466",
+                      fontSize: 12,
+                    }}
+                  >
+                    Choose capability
+                  </label>
+                  <select
+                    id="my-gmfn-capability-select"
+                    aria-label="Choose GSN capability"
+                    value={selectedCapability?.id || selectedCapabilityId}
+                    onChange={(event) =>
+                      setSelectedCapabilityId(Number(event.target.value) || 1)
+                    }
+                    style={selectStyle()}
+                  >
+                    {(filteredCapabilities.length ? filteredCapabilities : GMFN_CAPABILITIES).map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.id}. {item.title}
+                      </option>
+                    ))}
+                  </select>
+                  <div
+                    aria-label="Move through GSN capabilities"
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: isCompact
+                        ? "minmax(0, 1fr) minmax(0, 1fr)"
+                        : "140px minmax(0, 1fr) 140px",
+                      gap: 8,
+                      alignItems: "center",
+                    }}
+                  >
+                    <SecondaryButton
+                      type="button"
+                      debugId="my-gmfn.profile.previous-capability"
+                      onClick={() => stepCapability(-1)}
+                      aria-label="Show previous GSN capability"
+                      style={capabilityPagerButton(false)}
+                    >
+                      <span aria-hidden="true">{"<"}</span>
+                      Previous
+                    </SecondaryButton>
+                    {!isCompact ? (
+                      <div
+                        style={{
+                          minHeight: 44,
+                          borderRadius: 999,
+                          border: "1px solid rgba(37,78,119,0.12)",
+                          background: "rgba(248,251,255,0.92)",
+                          color: "#526579",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          padding: "10px 12px",
+                          fontSize: 12,
+                          fontWeight: 950,
+                          lineHeight: 1.2,
+                          textAlign: "center",
+                        }}
+                      >
+                        {selectedCapabilityIndex + 1} of{" "}
+                        {(filteredCapabilities.length
+                          ? filteredCapabilities
+                          : GMFN_CAPABILITIES
+                        ).length}
+                      </div>
+                    ) : null}
+                    <SecondaryButton
+                      type="button"
+                      debugId="my-gmfn.profile.next-capability"
+                      onClick={() => stepCapability(1)}
+                      aria-label="Show next GSN capability"
+                      style={capabilityPagerButton(true)}
+                    >
+                      Next
+                      <span aria-hidden="true">{">"}</span>
+                    </SecondaryButton>
+                  </div>
+                </div>
+              </div>
+            </details>
           </section>
 
           <section style={appGuidePanel(isCompact)}>

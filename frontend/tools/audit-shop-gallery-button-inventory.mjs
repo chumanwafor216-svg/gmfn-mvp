@@ -265,6 +265,11 @@ assertContains(
   "Public Shop signboard must keep the trade warning concise and user-facing."
 );
 
+assertContains(
+  /function ReferenceShopSignboardVisual[\s\S]*?width: compact \? 64 : 204[\s\S]*?height: compact \? 64 : 194[\s\S]*?gridTemplateColumns: isCompact \? "70px minmax\(0, 1fr\)" : "220px minmax\(0, 1fr\)"[\s\S]*?data-public-shop-signboard-icon="true"[\s\S]*?width: isCompact \? 64 : 206[\s\S]*?height: isCompact \? 64 : 206[\s\S]*?borderRadius: isCompact \? 20 : "50%"[\s\S]*?alignSelf: isCompact \? "start" : "center"[\s\S]*?overflow: "hidden"[\s\S]*?data-public-shop-signboard-content="true"/,
+  "Public Shop signboard mobile icon must reserve its own rail and stay clipped inside its tile so it cannot cover follower or warning copy."
+);
+
 assertNotContains(
   /Open this public shop, then check the seller and current evidence before you act\./,
   "Public Shop must not restore the repeated long public-shop warning."

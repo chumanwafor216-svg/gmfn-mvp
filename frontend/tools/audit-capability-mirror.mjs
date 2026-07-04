@@ -121,6 +121,9 @@ for (const value of [
   "capabilitySearch",
   "capabilityCategory",
   "CAPABILITY_MAP_CATEGORIES",
+  'data-my-gmfn-decision-guide-tools="collapsed"',
+  "my-gmfn.profile.decision-guide-tools",
+  "Find another decision",
   'id="my-gmfn-capability-select"',
   'id="my-gmfn-capability-search"',
   'id="my-gmfn-capability-category"',
@@ -136,8 +139,8 @@ for (const value of [
 
 assertContains(
   "frontend/src/pages/MyGMFNAndIPage.tsx",
-  /data-my-gmfn-selected-capability="true"[\s\S]*selectedCapabilityDetail\.summary[\s\S]*The real-world problem[\s\S]*selectedCapabilityDetail\.realWorld[\s\S]*Why it is dangerous[\s\S]*selectedCapabilityDetail\.danger[\s\S]*How GSN changes the decision[\s\S]*selectedCapabilityDetail\.decision[\s\S]*Which GSN tools cooperate[\s\S]*selectedCapabilityDetail\.tools[\s\S]*Where you use them[\s\S]*selectedCapabilityDetail\.where[\s\S]*Evidence created[\s\S]*selectedCapabilityDetail\.evidence/,
-  "The signed-in My GSN and I decision guide must show one selected institutional card with real-world problem, danger, decision change, cooperating tools, use location, and evidence fields."
+  /data-my-gmfn-selected-capability="true"[\s\S]*selectedCapabilityDetail\.summary[\s\S]*The real-world problem[\s\S]*selectedCapabilityDetail\.realWorld[\s\S]*Why it is dangerous[\s\S]*selectedCapabilityDetail\.danger[\s\S]*How GSN changes the decision[\s\S]*selectedCapabilityDetail\.decision[\s\S]*Which GSN tools cooperate[\s\S]*selectedCapabilityDetail\.tools[\s\S]*Where you use them[\s\S]*selectedCapabilityDetail\.where[\s\S]*Evidence created[\s\S]*selectedCapabilityDetail\.evidence[\s\S]*data-my-gmfn-decision-guide-tools="collapsed"/,
+  "The signed-in My GSN and I decision guide must show one selected institutional card before the collapsed decision-guide controls."
 );
 
 assertContains(
