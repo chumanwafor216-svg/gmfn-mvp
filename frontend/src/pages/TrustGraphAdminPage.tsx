@@ -151,7 +151,7 @@ export default function TrustGraphAdminPage() {
 
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <Pill kind={isAdmin ? "green" : "red"}>{isAdmin ? "Admin access" : "Restricted"}</Pill>
-            <Pill kind="blue">{safeStr(me?.gmfn_id || "GSN ID pending")}</Pill>
+            <Pill kind="blue">{safeStr(me?.gmfn_id || "Not issued yet")}</Pill>
           </div>
         </div>
       </Card>
@@ -212,7 +212,7 @@ export default function TrustGraphAdminPage() {
               <input
                 value={safeStr(me?.gmfn_id || queryGmfnId)}
                 readOnly
-                placeholder="GSN ID pending"
+                placeholder="Not issued yet"
                 style={{
                   flex: 1,
                   minWidth: 180,
@@ -253,7 +253,7 @@ export default function TrustGraphAdminPage() {
               <div>
                 <div style={{ fontSize: 12, color: "#64748b", fontWeight: 900 }}>Selected node</div>
                 <div style={{ marginTop: 6, fontSize: 28, fontWeight: 1000, color: "#0B1F33" }}>
-                  {safeStr(graph.gmfn_id || "Pending")}
+                  {safeStr(graph.gmfn_id || "Not issued yet")}
                 </div>
                 <div style={{ marginTop: 8, color: "#475569", fontSize: 14 }}>
                   User #{safeStr(graph.user_id)} | {safeStr(graph.email || "No email")}

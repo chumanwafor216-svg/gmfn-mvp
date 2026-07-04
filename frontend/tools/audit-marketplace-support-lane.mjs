@@ -97,6 +97,16 @@ assertContains(
 );
 
 assertContains(
+  /function getLoanAmountText\(item: LoanSupportItem\): string \{[\s\S]*?return "No amount recorded yet"[\s\S]*?return value \|\| currency \|\| "No amount recorded yet";/,
+  "Marketplace support amount helper must show honest missing-amount language."
+);
+
+assertNotContains(
+  /Amount pending/,
+  "Marketplace support amount helper must not show fake pending amount placeholders."
+);
+
+assertContains(
   /function handleStartLoanDraft\(\)[\s\S]*?if \(!safeStr\(loanRepaymentCadence\)\)[\s\S]*?Choose how you plan to repay[\s\S]*?if \(!safeStr\(loanPurpose\)\)[\s\S]*?State what the support is for\./,
   "Support Requests must require a purpose before creating a backend support draft."
 );

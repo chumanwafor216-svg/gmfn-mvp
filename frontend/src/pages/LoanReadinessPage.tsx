@@ -295,9 +295,9 @@ function getLoanAmountText(row: LoanRow | null): string {
   const amount = safeStr(row?.amount);
   const currency = safeStr(row?.currency);
 
-  if (!amount && !currency) return "Amount pending";
+  if (!amount && !currency) return "No amount recorded yet";
   if (amount && currency) return `${amount} ${currency}`;
-  return amount || currency || "Amount pending";
+  return amount || currency || "No amount recorded yet";
 }
 
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {

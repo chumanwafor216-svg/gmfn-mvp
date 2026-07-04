@@ -164,6 +164,26 @@ forbiddenByFile.push(["frontend/src/ui/format.ts", "@gmfn.com"]);
 forbiddenByFile.push(["frontend/src/ui/format.ts", "…"]);
 forbiddenByFile.push(["frontend/src/ui/format.ts", "â€¦"]);
 forbiddenByFile.push(["frontend/src/components/TrustGraphAdminPage.tsx", 'graph.gmfn_id || "Pending"']);
+forbiddenByFile.push(["frontend/src/components/TrustGraphAdminPage.tsx", "GSN ID pending"]);
+forbiddenByFile.push(["frontend/src/pages/TrustGraphAdminPage.tsx", 'graph.gmfn_id || "Pending"']);
+forbiddenByFile.push(["frontend/src/pages/TrustGraphAdminPage.tsx", "GSN ID pending"]);
+forbiddenByFile.push(["frontend/src/pages/MarketplacePage.tsx", 'return raw ? displayGsnLabel(raw) : "Pending"']);
+forbiddenByFile.push(["frontend/src/pages/MarketplacePage.tsx", 'return cciBand || cciValue || "Pending"']);
+forbiddenByFile.push(["frontend/src/pages/MarketplacePage.tsx", "ID pending"]);
+forbiddenByFile.push(["frontend/src/pages/MarketplacePage.tsx", 'publicCommunityWorkspaceLink ? "Ready" : "Pending"']);
+forbiddenByFile.push(["frontend/src/pages/MarketplacePage.tsx", "Amount pending"]);
+forbiddenByFile.push(["frontend/src/pages/MarketplacePage.tsx", "Code pending"]);
+forbiddenByFile.push(["frontend/src/pages/LoanDecisionPage.tsx", 'loan?.status || "Pending"']);
+forbiddenByFile.push(["frontend/src/pages/LoanReadinessPage.tsx", "Amount pending"]);
+forbiddenByFile.push(["frontend/src/pages/LoanSuggestionsPage.tsx", "Amount pending"]);
+forbiddenByFile.push(["frontend/src/pages/GuarantorInboxPage.tsx", 'firstTruthy(me?.gmfn_id, "Not available yet")']);
+forbiddenByFile.push(["frontend/src/pages/GuarantorEarningsPage.tsx", 'firstTruthy(me?.gmfn_id, "Not available yet")']);
+forbiddenByFile.push(["frontend/src/pages/CommunityJoinRequestsPage.tsx", 'activationPack.community_code || "Not available yet"']);
+forbiddenByFile.push(["frontend/src/pages/MarketplaceWorkspacePage.tsx", 'Community ID: {communityIdentity || activeClanId || "Not available"}']);
+forbiddenByFile.push(["frontend/src/pages/MarketplaceWorkspacePage.tsx", 'Community ID: {communityIdentity || "Not available yet"}']);
+forbiddenByFile.push(["frontend/src/pages/ShopAssetsPage.tsx", "GSN ID awaiting issue"]);
+forbiddenByFile.push(["frontend/src/pages/RevenueAllocationPage.tsx", 'allocation_status, "pending"']);
+forbiddenByFile.push(["frontend/src/pages/RevenueAllocationPage.tsx", 'allocation.status || "pending"']);
 
 const required = [
   ["gmfn_backend/app/api/routes/clans.py", "Community admin only"],
@@ -221,6 +241,26 @@ const required = [
   ["frontend/src/pages/JoinEntryPage.tsx", "GSN member"],
   ["frontend/src/pages/ShopGalleryPage.tsx", "GSN ID"],
   ["frontend/src/components/TrustGraphAdminPage.tsx", 'graph.gmfn_id || "Not issued yet"'],
+  ["frontend/src/pages/TrustGraphAdminPage.tsx", 'graph.gmfn_id || "Not issued yet"'],
+  ["frontend/src/pages/TrustGraphAdminPage.tsx", 'placeholder="Not issued yet"'],
+  ["frontend/src/pages/MarketplacePage.tsx", 'return raw ? displayGsnLabel(raw) : "No community ID yet"'],
+  ["frontend/src/pages/MarketplacePage.tsx", 'return cciBand || cciValue || "Not shown yet"'],
+  ["frontend/src/pages/MarketplacePage.tsx", 'publicCommunityWorkspaceLink ? "Ready" : "Not ready yet"'],
+  ["frontend/src/pages/MarketplacePage.tsx", "No amount recorded yet"],
+  ["frontend/src/pages/MarketplacePage.tsx", "No trade code yet"],
+  ["frontend/src/pages/LoanDecisionPage.tsx", 'const loanStatus = safeStr(loan?.status) || "Status not recorded yet"'],
+  ["frontend/src/pages/LoanReadinessPage.tsx", "No amount recorded yet"],
+  ["frontend/src/pages/LoanSuggestionsPage.tsx", "No amount recorded yet"],
+  ["frontend/src/pages/GuarantorInboxPage.tsx", 'const gmfnId = useMemo(() => firstTruthy(gmfnIdValue, "Not issued yet")'],
+  ["frontend/src/pages/GuarantorInboxPage.tsx", 'const communityPublicId = useMemo(() =>'],
+  ["frontend/src/pages/GuarantorInboxPage.tsx", 'return firstTruthy(communityPublicIdValue, "No community ID yet")'],
+  ["frontend/src/pages/GuarantorEarningsPage.tsx", 'const gmfnId = useMemo(() => firstTruthy(gmfnIdValue, "Not issued yet")'],
+  ["frontend/src/pages/GuarantorEarningsPage.tsx", 'const communityPublicId = useMemo(() =>'],
+  ["frontend/src/pages/GuarantorEarningsPage.tsx", 'return firstTruthy(communityPublicIdValue, "No community ID yet")'],
+  ["frontend/src/pages/CommunityJoinRequestsPage.tsx", 'activationPack.community_code || "No community ID yet"'],
+  ["frontend/src/pages/MarketplaceWorkspacePage.tsx", 'Community ID: {communityIdentity || "No community ID yet"}'],
+  ["frontend/src/pages/ShopAssetsPage.tsx", 'const gmfnId = useMemo(() => firstTruthy(gmfnIdValue, "Not issued yet")'],
+  ["frontend/src/pages/RevenueAllocationPage.tsx", 'status: firstTruthy(src?.status, src?.allocation_status, "Status not recorded yet")'],
   ["frontend/src/ui/format.ts", "member@gsn.example"],
   ["frontend/src/ui/format.ts", "`${short}@gsn.example`"],
   ["frontend/src/lib/guidance.ts", "Support request waiting on support #"],

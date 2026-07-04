@@ -27,6 +27,19 @@ function assertContains(pattern, message) {
   addFinding(-1, message);
 }
 
+function assertNotContains(pattern, message) {
+  source.split(/\r?\n/).forEach((line, index) => {
+    if (pattern.test(line)) {
+      findings.push({
+        file: marketplaceFile,
+        line: index + 1,
+        message,
+        text: line.trim(),
+      });
+    }
+  });
+}
+
 function sectionBetween(startPattern, endPattern) {
   const start = source.search(startPattern);
   if (start === -1) return { text: "", start: -1 };
@@ -101,6 +114,16 @@ assertContains(
 assertContains(
   /getProtectedTrade[\s\S]*?selectedProtectedTradeDetail[\s\S]*?loadingProtectedTradeDetail/,
   "Marketplace must load selected protected-trade detail so event trails can back the evidence paper."
+);
+
+assertContains(
+  /safeStr\(trade\.trade_code\) \|\| "No trade code yet"/,
+  "Protected Trade record list must show honest missing-code language."
+);
+
+assertNotContains(
+  /Code pending/,
+  "Protected Trade record list must not show a fake pending code placeholder."
 );
 
 assertContains(

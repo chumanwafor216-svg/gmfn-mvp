@@ -175,6 +175,16 @@ assertContains(
   "Dashboard passport trust language must stay plain-language and non-numeric."
 );
 
+assertNotContains(
+  /classText: "Pending"/,
+  "Dashboard CCI/Open Trust fallbacks must not make uncalculated evidence look like a pending identity state."
+);
+
+assertContains(
+  /classText: "Not shown yet"[\s\S]*?No cross-community consistency reading yet[\s\S]*?classText: "Not shown yet"[\s\S]*?Select your community to view local trust[\s\S]*?classText: "Not shown yet"[\s\S]*?No local community reading yet/,
+  "Dashboard CCI/Open Trust missing-reading states must use honest not-shown-yet language."
+);
+
 assertContains(
   /label: "CCI"[\s\S]*?value: readableTrustStatus\(cci\.classText\)[\s\S]*?detail: "Cross-Community Integrity"[\s\S]*?label: "TrustSlip"[\s\S]*?value: trustSlipCode \|\| "Not issued yet"/,
   "Dashboard passport signals must keep the approved Trust, CCI, and TrustSlip readings."

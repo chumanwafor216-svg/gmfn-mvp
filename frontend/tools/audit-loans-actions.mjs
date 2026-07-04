@@ -133,6 +133,18 @@ assertNotContains(
 );
 
 assertContains(
+  "src/pages/LoanDecisionPage.tsx",
+  /const loanStatus = safeStr\(loan\?\.status\) \|\| "Status not recorded yet";[\s\S]*?statusStyle\(loanStatus\)[\s\S]*?\{loanStatus\}/,
+  "Loan Decision must show honest missing-status language instead of inventing a Pending support status."
+);
+
+assertNotContains(
+  "src/pages/LoanDecisionPage.tsx",
+  /loan\?\.status \|\| "Pending"|safeStr\(loan\?\.status \|\| "Pending"\)/,
+  "Loan Decision must not reintroduce fake Pending fallback status when a support item has no status."
+);
+
+assertContains(
   "src/pages/LoansPage.tsx",
   /debugId="loans\.hero\.start-support"[\s\S]*?stableHeight=\{isCompact \? 58 : 68\}[\s\S]*?fullWidth=\{isCompact\}[\s\S]*?height: isCompact \? 58 : 68,[\s\S]*?minHeight: isCompact \? 58 : 68,[\s\S]*?maxHeight: isCompact \? 58 : 68,[\s\S]*?Start Support Request/,
   "Loans first phone viewport must expose a fixed-height Start Support Request CTA in the hero before the user reaches the deeper route grid."
@@ -416,6 +428,18 @@ assertContains(
 );
 
 assertContains(
+  "src/pages/GuarantorInboxPage.tsx",
+  /const gmfnIdValue = useMemo\(\(\) => firstTruthy\(me\?\.gmfn_id\), \[me\]\);[\s\S]*?const gmfnId = useMemo\(\(\) => firstTruthy\(gmfnIdValue, "Not issued yet"\)[\s\S]*?const communityPublicIdValue = useMemo[\s\S]*?const communityPublicId = useMemo[\s\S]*?"No community ID yet"[\s\S]*?gsnId: gmfnIdValue[\s\S]*?communityId: communityPublicIdValue/,
+  "Incoming Requests must show honest missing identity labels while copied support queue evidence uses only actual IDs."
+);
+
+assertContains(
+  "src/pages/GuarantorEarningsPage.tsx",
+  /const communityPublicIdValue = useMemo[\s\S]*?const communityPublicId = useMemo[\s\S]*?"No community ID yet"[\s\S]*?const gmfnIdValue = useMemo\(\(\) => firstTruthy\(me\?\.gmfn_id\), \[me\]\);[\s\S]*?const gmfnId = useMemo\(\(\) => firstTruthy\(gmfnIdValue, "Not issued yet"\)[\s\S]*?gsnId: gmfnIdValue[\s\S]*?communityId: communityPublicIdValue/,
+  "Supporter Value must show honest missing identity labels while copied earnings evidence uses only actual IDs."
+);
+
+assertContains(
   "src/pages/RevenueAllocationPage.tsx",
   /const gmfnIdValue = useMemo\(\(\) => \{[\s\S]*?return firstTruthy\(me\?\.gmfn_id\);[\s\S]*?const gmfnId = useMemo\(\(\) => \{[\s\S]*?return firstTruthy\(gmfnIdValue, "Not issued yet"\);[\s\S]*?const communityPublicIdValue = useMemo[\s\S]*?const communityPublicId = useMemo[\s\S]*?"No community ID yet"[\s\S]*?\{ label: "Community ID", value: communityPublicIdValue \}[\s\S]*?\{ label: "GSN ID", value: gmfnIdValue \}[\s\S]*?Current support ID: \{currentLoanId \|\| "No support selected yet"\}/,
   "Revenue Allocation must show honest missing identity labels while copied review summaries use only actual IDs."
@@ -446,6 +470,30 @@ assertContains(
 );
 
 assertContains(
+  "src/pages/LoanReadinessPage.tsx",
+  /function getLoanAmountText\(row: LoanRow \| null\): string \{[\s\S]*?return "No amount recorded yet"[\s\S]*?return amount \|\| currency \|\| "No amount recorded yet";/,
+  "Loan Readiness amount helper must show honest missing-amount language."
+);
+
+assertContains(
+  "src/pages/LoanSuggestionsPage.tsx",
+  /function getLoanAmountText\(row: LoanRow \| LoanDraftSummary \| null\): string \{[\s\S]*?return "No amount recorded yet"[\s\S]*?return value \|\| currency \|\| "No amount recorded yet";/,
+  "Loan Suggestions amount helper must show honest missing-amount language."
+);
+
+assertNotContains(
+  "src/pages/LoanReadinessPage.tsx",
+  /Amount pending/,
+  "Loan Readiness amount helper must not show fake pending amount placeholders."
+);
+
+assertNotContains(
+  "src/pages/LoanSuggestionsPage.tsx",
+  /Amount pending/,
+  "Loan Suggestions amount helper must not show fake pending amount placeholders."
+);
+
+assertContains(
   "src/pages/RepaymentPage.tsx",
   /summary\?\.status \|\| "Status not recorded yet"/,
   "Repayment must show honest missing-status copy instead of stale issue-tracking language."
@@ -468,6 +516,18 @@ assertContains(
   "src/pages/RevenueAllocationPage.tsx",
   /stableHeight=\{52\}[\s\S]*?debugId="revenue-allocation\.front-load"[\s\S]*?stableHeight=\{52\}[\s\S]*?debugId="revenue-allocation\.front-copy-summary"[\s\S]*?debugId="revenue-allocation\.load"[\s\S]*?debugId="revenue-allocation\.copy-summary"/,
   "Revenue Allocation must keep Load and Copy Summary available before the stats grid while preserving the deeper current-action card."
+);
+
+assertContains(
+  "src/pages/RevenueAllocationPage.tsx",
+  /status: firstTruthy\(src\?\.status, src\?\.allocation_status, "Status not recorded yet"\)[\s\S]*?\["Status", safeStr\(allocation\.status \|\| "Status not recorded yet"\)\]/,
+  "Revenue Allocation must show honest missing-status language instead of inventing a pending allocation status."
+);
+
+assertNotContains(
+  "src/pages/RevenueAllocationPage.tsx",
+  /allocation_status, "pending"|\["Status", safeStr\(allocation\.status \|\| "pending"\)\]/,
+  "Revenue Allocation must not reintroduce fake pending status fallbacks when allocation status is missing."
 );
 
 assertContains(

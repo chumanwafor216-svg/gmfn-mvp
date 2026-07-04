@@ -701,7 +701,8 @@ export default function GuarantorInboxPage() {
   );
 
   const memberName = useMemo(() => getMemberName(me), [me]);
-  const gmfnId = useMemo(() => firstTruthy(me?.gmfn_id, "Not available yet"), [me]);
+  const gmfnIdValue = useMemo(() => firstTruthy(me?.gmfn_id), [me]);
+  const gmfnId = useMemo(() => firstTruthy(gmfnIdValue, "Not issued yet"), [gmfnIdValue]);
 
   const selectedCommunityLabel = useMemo(() => {
     return (
@@ -710,9 +711,13 @@ export default function GuarantorInboxPage() {
     );
   }, [community, selectedClanId]);
 
-  const communityPublicId = useMemo(() => {
-    return getCommunityId(community) || "Not available yet";
+  const communityPublicIdValue = useMemo(() => {
+    return getCommunityId(community);
   }, [community]);
+
+  const communityPublicId = useMemo(() => {
+    return firstTruthy(communityPublicIdValue, "No community ID yet");
+  }, [communityPublicIdValue]);
 
   const memberRole = useMemo(() => {
     return getCommunityRole(community);
@@ -778,12 +783,12 @@ export default function GuarantorInboxPage() {
       buildGsnSupportEvidencePackage({
         title: "GSN Support Queue Snapshot",
         purpose: "Review the current support decision queue for this member and community.",
-        reference: `guarantor-queue-${communityPublicId || selectedClanId || "current"}`,
+        reference: `guarantor-queue-${communityPublicIdValue || selectedClanId || "current"}`,
         memberName,
-        gsnId: gmfnId,
+        gsnId: gmfnIdValue,
         memberRole,
         communityName: selectedCommunityLabel,
-        communityId: communityPublicId,
+        communityId: communityPublicIdValue,
         routeName: "Incoming Requests",
         status: filter,
         detailLines: [
@@ -796,13 +801,13 @@ export default function GuarantorInboxPage() {
         ],
       }),
     [
-      communityPublicId,
+      communityPublicIdValue,
       counts.all,
       counts.approved,
       counts.declined,
       counts.pending,
       filter,
-      gmfnId,
+      gmfnIdValue,
       memberName,
       memberRole,
       selectedClanId,
@@ -814,12 +819,12 @@ export default function GuarantorInboxPage() {
     safeCopy(
       buildGsnSupportEvidenceShareText({
         title: "GSN Support Queue Snapshot",
-        reference: `guarantor-queue-${communityPublicId || selectedClanId || "current"}`,
+        reference: `guarantor-queue-${communityPublicIdValue || selectedClanId || "current"}`,
         memberName,
-        gsnId: gmfnId,
+        gsnId: gmfnIdValue,
         memberRole,
         communityName: selectedCommunityLabel,
-        communityId: communityPublicId,
+        communityId: communityPublicIdValue,
         routeName: "Incoming Requests",
         status: filter,
         detailLines: [

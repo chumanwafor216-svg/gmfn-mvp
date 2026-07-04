@@ -637,10 +637,9 @@ export default function MarketplaceWorkspacePage() {
         inviteInfo?.marketplace_id ||
         inviteInfo?.clan_code ||
         inviteInfo?.gmfn_id ||
-        activeClanId ||
         ""
     );
-  }, [inviteInfo, activeClanId]);
+  }, [inviteInfo]);
 
   const communityPicture = useMemo(() => {
     return safeStr(
@@ -1013,7 +1012,7 @@ export default function MarketplaceWorkspacePage() {
                 border: "1px solid rgba(255,255,255,0.16)",
               }}
             >
-              Community ID: {communityIdentity || activeClanId || "Not available"}
+              Community ID: {communityIdentity || "No community ID yet"}
             </span>
             {publicMemberCount > 0 ? (
               <span
@@ -1252,7 +1251,7 @@ export default function MarketplaceWorkspacePage() {
               }}
             >
               <span style={badge(true)}>
-                Community ID: {communityIdentity || "Not available yet"}
+                Community ID: {communityIdentity || "No community ID yet"}
               </span>
               <span style={badge(false)}>Members: {memberRows.length}</span>
               <span style={badge(false)}>Alerts: {pendingCount}</span>

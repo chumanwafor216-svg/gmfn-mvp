@@ -251,7 +251,7 @@ function getCciState(me: any): ReadingState {
   }
 
   return {
-    classText: "Pending",
+    classText: "Not shown yet",
     scoreText: "-",
     tone: "neutral",
     statusText: "No wider consistency reading yet",

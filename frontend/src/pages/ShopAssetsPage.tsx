@@ -1129,11 +1129,12 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
     void loadPage();
   }, [loadPage]);
 
-  const gmfnId = useMemo(
-    () => firstTruthy(shop?.owner_gmfn_id, shop?.gmfn_id),
-    [shop]
+  const gmfnIdValue = useMemo(
+    () => firstTruthy(shop?.owner_gmfn_id, shop?.gmfn_id, me?.gmfn_id),
+    [me?.gmfn_id, shop]
   );
-  const shopLink = useMemo(() => buildShopLink(gmfnId), [gmfnId]);
+  const gmfnId = useMemo(() => firstTruthy(gmfnIdValue, "Not issued yet"), [gmfnIdValue]);
+  const shopLink = useMemo(() => buildShopLink(gmfnIdValue), [gmfnIdValue]);
   const marketplaceBasePath = useMemo(
     () =>
       routeTarget(
@@ -1174,7 +1175,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
     return buildGsnPublicShopLinkMessage({
       shopName: firstTruthy(shopName, shop?.name, "My GSN Shop"),
       ownerName: firstTruthy(shop?.owner_display_name, shop?.owner_name, me?.display_name),
-      gsnId: gmfnId,
+      gsnId: gmfnIdValue,
       communityName: firstTruthy(
         shop?.marketplace_name,
         shop?.community_name,
@@ -2161,7 +2162,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                     {firstTruthy(shop?.marketplace_name, shop?.community_name, "Selected community")}
                   </div>
                   <div style={{ marginTop: 6, fontSize: 13, opacity: 0.95 }}>
-                    {firstTruthy(shop?.gmfn_id, me?.gmfn_id, "GSN ID awaiting issue")}
+                    {gmfnId}
                   </div>
                 </div>
               </div>

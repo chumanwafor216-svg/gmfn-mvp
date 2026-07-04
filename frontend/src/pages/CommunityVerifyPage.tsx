@@ -975,7 +975,12 @@ export default function CommunityVerifyPage() {
               compact
             />
 
-            <TrustDocumentConfidenceRibbon items={confidenceRibbonItems} />
+            <TrustDocumentDisclosureSection
+              title="Registry signals"
+              summary={`${active ? "Active registry status" : "Registry status available"} - record integrity, update status, evidence chain, and verification path.`}
+            >
+              <TrustDocumentConfidenceRibbon items={confidenceRibbonItems} />
+            </TrustDocumentDisclosureSection>
 
             {notice ? (
               <div
@@ -1143,6 +1148,119 @@ export default function CommunityVerifyPage() {
                       </p>
                     </div>
                   </div>
+                  <div
+                    data-gsn-community-verify-decision-summary="true"
+                    style={{
+                      ...sectionCard("#FFFFFF"),
+                      display: "grid",
+                      gap: 12,
+                      boxShadow: "0 14px 34px rgba(6,24,39,0.07)",
+                    }}
+                    aria-label="Public decision summary"
+                  >
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "42px minmax(0, 1fr)",
+                        gap: 10,
+                        alignItems: "start",
+                      }}
+                    >
+                      {communityVerifyIconBadge("certificate-seal", 40, "blue")}
+                      <div style={{ minWidth: 0, display: "grid", gap: 3 }}>
+                        <h2 style={{ ...sectionTitle(), fontSize: 21 }}>
+                          Fast reading
+                        </h2>
+                        <p style={{ ...helperText(), lineHeight: 1.36 }}>
+                          Use this as the community anchor. Open the registry
+                          sections only when you need the full proof trail.
+                        </p>
+                      </div>
+                    </div>
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns:
+                          "repeat(auto-fit, minmax(min(100%, 190px), 1fr))",
+                        gap: 8,
+                      }}
+                    >
+                      <DecisionSummaryCard
+                        tone="good"
+                        icon="trust-shield"
+                        title="What this shows"
+                        body={`${publicRecord}. Check the Community ID first.`}
+                      />
+                      <DecisionSummaryCard
+                        tone="warn"
+                        icon="certificate-seal"
+                        title="What it does not prove"
+                        body="It does not verify every member, shop, subgroup, line, or transaction."
+                      />
+                      <DecisionSummaryCard
+                        tone="info"
+                        icon="records-folder"
+                        title="Ask for next evidence"
+                        body={requestConfirmationAvailable
+                          ? "Request scoped confirmation before relying on a narrower claim."
+                          : "Ask for a member credential, TrustSlip, or fresh community confirmation."}
+                      />
+                    </div>
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns:
+                          "repeat(auto-fit, minmax(min(100%, 190px), 1fr))",
+                        gap: 8,
+                      }}
+                    >
+                      <SecondaryButton
+                        debugId="community-verify.copy-link"
+                        stableHeight={52}
+                        onClick={() => void copyLink()}
+                        style={{ borderRadius: 15, fontSize: 13.5 }}
+                      >
+                        {communityVerifyIconBadge("public-globe", 32, "navy")}
+                        Copy record link
+                      </SecondaryButton>
+                      <PrimaryButton
+                        debugId="community-verify.request-confirmation"
+                        stableHeight={52}
+                        busy={requestingConfirmation}
+                        busyLabel="Sending"
+                        disabled={requestingConfirmation}
+                        onClick={() => void requestConfirmation()}
+                        style={{ borderRadius: 15, fontSize: 13.5 }}
+                      >
+                        Request scoped confirmation
+                      </PrimaryButton>
+                    </div>
+                    <div
+                      style={{
+                        borderRadius: 16,
+                        background: "#F8FBFF",
+                        border: "1px solid rgba(8,35,58,0.10)",
+                        padding: 11,
+                        display: "grid",
+                        gridTemplateColumns: "34px minmax(0, 1fr)",
+                        gap: 9,
+                        alignItems: "center",
+                      }}
+                    >
+                      {communityVerifyIconBadge("certificate-seal", 32, "navy")}
+                      <p
+                        style={{
+                          ...helperText(),
+                          color: "#24415C",
+                          fontSize: 13,
+                          lineHeight: 1.35,
+                        }}
+                      >
+                        <strong style={{ color: "#07172C" }}>Private by design.</strong>{" "}
+                        Member lists, contacts, disputes, and private review notes stay hidden.
+                      </p>
+                    </div>
+                  </div>
                   <TrustDocumentDisclosureSection
                     title="Community record security and limits"
                     summary="Open for what this page confirms, limits, security, and record reference."
@@ -1176,15 +1294,19 @@ export default function CommunityVerifyPage() {
                       </div>
                     </div>
                   </TrustDocumentDisclosureSection>
-                  <div
-                    style={{
-                      ...sectionCard("#FFFFFF"),
-                      display: "grid",
-                      gap: 14,
-                      boxShadow: "0 14px 34px rgba(6,24,39,0.07)",
-                    }}
-                    aria-label="Smart verification guidance"
+                  <TrustDocumentDisclosureSection
+                    title="What are you checking?"
+                    summary="Open when the claim is about a person, shop, group, or affiliate under this community."
                   >
+                    <div
+                      style={{
+                        ...sectionCard("#FFFFFF"),
+                        display: "grid",
+                        gap: 14,
+                        boxShadow: "0 14px 34px rgba(6,24,39,0.07)",
+                      }}
+                      aria-label="Smart verification guidance"
+                    >
                     <div
                       style={{
                         display: "grid",
@@ -1289,31 +1411,25 @@ export default function CommunityVerifyPage() {
                         </p>
                       </div>
                     </div>
-                    <PrimaryButton
-                      debugId="community-verify.request-confirmation"
-                      stableHeight={56}
-                      busy={requestingConfirmation}
-                      busyLabel="Sending"
-                      disabled={!requestConfirmationAvailable || requestingConfirmation}
-                      onClick={() => void requestConfirmation()}
-                      style={{ borderRadius: 17, fontSize: 15 }}
-                    >
-                      Request scoped confirmation
-                    </PrimaryButton>
-                  </div>
-                  <div
-                    style={{
-                      borderRadius: 20,
-                      background:
-                        "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(247,251,255,0.98) 100%)",
-                      border: "1px solid rgba(8,35,58,0.12)",
-                      padding: 12,
-                      display: "grid",
-                      gap: 12,
-                      boxShadow: "0 12px 28px rgba(6,24,39,0.07)",
-                    }}
-                    aria-label="Verification snapshot"
+                    </div>
+                  </TrustDocumentDisclosureSection>
+                  <TrustDocumentDisclosureSection
+                    title="Verification snapshot"
+                    summary="Open for the compact QR-style facts and community-interest signal."
                   >
+                    <div
+                      style={{
+                        borderRadius: 20,
+                        background:
+                          "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(247,251,255,0.98) 100%)",
+                        border: "1px solid rgba(8,35,58,0.12)",
+                        padding: 12,
+                        display: "grid",
+                        gap: 12,
+                        boxShadow: "0 12px 28px rgba(6,24,39,0.07)",
+                      }}
+                      aria-label="Verification snapshot"
+                    >
                     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                       {communityVerifyIconBadge("certificate-seal", 38, "navy")}
                       <div style={{ display: "grid", gap: 2, minWidth: 0 }}>
@@ -1368,23 +1484,6 @@ export default function CommunityVerifyPage() {
                         label="Relay"
                         value={relayAvailability}
                       />
-                    </div>
-                    <div
-                      style={{
-                        display: "grid",
-                        gridTemplateColumns: "1fr",
-                        gap: 8,
-                      }}
-                    >
-                      <SecondaryButton
-                        debugId="community-verify.copy-link"
-                        stableHeight={52}
-                        onClick={() => void copyLink()}
-                        style={{ borderRadius: 15, fontSize: 13.5 }}
-                      >
-                        {communityVerifyIconBadge("public-globe", 32, "navy")}
-                        Copy
-                      </SecondaryButton>
                     </div>
                     <div
                       aria-label="Community following"
@@ -1460,28 +1559,9 @@ export default function CommunityVerifyPage() {
                         membership, endorsement, verification, or payment evidence.
                       </p>
                     </div>
-                    <div
-                      style={{
-                        display: "grid",
-                        gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))",
-                        gap: 8,
-                      }}
-                    >
-                      <SnapshotBoundary
-                        tone="good"
-                        icon="trust-shield"
-                        title="What this shows"
-                        body={`${publicRecord}. Check the Community ID first.`}
-                      />
-                      <SnapshotBoundary
-                        tone="warn"
-                        icon="certificate-seal"
-                        title="What it does not prove"
-                        body="It does not verify every member, shop, subgroup, line, or transaction."
-                      />
+                      <TrustPaperSecurityNote reference={communityAnchor} compact />
                     </div>
-                    <TrustPaperSecurityNote reference={communityAnchor} compact />
-                  </div>
+                  </TrustDocumentDisclosureSection>
                   <details
                     style={{
                       borderRadius: 20,
@@ -1587,71 +1667,54 @@ export default function CommunityVerifyPage() {
                       </div>
                     </div>
                   </details>
-                  <div
-                    style={{
-                      ...sectionCard("#FFFFFF"),
-                      display: "grid",
-                      gridTemplateColumns: "minmax(0, 1fr)",
-                      gap: 12,
-                      alignItems: "start",
-                      boxShadow: "0 10px 28px rgba(6,24,39,0.05)",
-                    }}
+                  <TrustDocumentDisclosureSection
+                    title="Share this record"
+                    summary="Open for the QR code that returns to this same public Community ID record."
                   >
-                    <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                      <div
-                        style={{
-                          width: 92,
-                          height: 92,
-                          borderRadius: 18,
-                          border: "1px solid rgba(8,35,58,0.14)",
-                          background: "#FFFFFF",
-                          display: "grid",
-                          placeItems: "center",
-                          padding: 8,
-                          flex: "0 0 auto",
-                        }}
-                      >
-                        <QRCodeSVG
-                          value={publicLink}
-                          size={74}
-                          bgColor="#FFFFFF"
-                          fgColor="#07172C"
-                          level="M"
-                          marginSize={1}
-                        />
-                      </div>
-                      <div style={{ minWidth: 0 }}>
-                        <h2 style={{ margin: 0, color: "#07172C", fontSize: 17, fontWeight: 1000 }}>
-                          Share this public record
-                        </h2>
-                        <p style={{ margin: "7px 0 0", ...helperText(), lineHeight: 1.38 }}>
-                          Scan or copy the link to reopen this same Community ID record. Private member lists and private review evidence stay hidden.
-                        </p>
+                    <div
+                      style={{
+                        ...sectionCard("#FFFFFF"),
+                        display: "grid",
+                        gridTemplateColumns: "minmax(0, 1fr)",
+                        gap: 12,
+                        alignItems: "start",
+                        boxShadow: "0 10px 28px rgba(6,24,39,0.05)",
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                        <div
+                          style={{
+                            width: 92,
+                            height: 92,
+                            borderRadius: 18,
+                            border: "1px solid rgba(8,35,58,0.14)",
+                            background: "#FFFFFF",
+                            display: "grid",
+                            placeItems: "center",
+                            padding: 8,
+                            flex: "0 0 auto",
+                          }}
+                        >
+                          <QRCodeSVG
+                            value={publicLink}
+                            size={74}
+                            bgColor="#FFFFFF"
+                            fgColor="#07172C"
+                            level="M"
+                            marginSize={1}
+                          />
+                        </div>
+                        <div style={{ minWidth: 0 }}>
+                          <h2 style={{ margin: 0, color: "#07172C", fontSize: 17, fontWeight: 1000 }}>
+                            Share this public record
+                          </h2>
+                          <p style={{ margin: "7px 0 0", ...helperText(), lineHeight: 1.38 }}>
+                            Scan or copy the link to reopen this same Community ID record. Private member lists and private review evidence stay hidden.
+                          </p>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  <div
-                    style={{
-                      ...sectionCard("#FFFFFF"),
-                      display: "grid",
-                      gridTemplateColumns: "44px minmax(0, 1fr) auto",
-                      gap: 12,
-                      alignItems: "center",
-                    }}
-                  >
-                    {communityVerifyIconBadge("certificate-seal", 40, "blue")}
-                    <div style={{ minWidth: 0 }}>
-                      <h2 style={{ margin: 0, color: "#07172C", fontSize: 18, fontWeight: 1000 }}>
-                        Private by design
-                      </h2>
-                      <p style={{ margin: "4px 0 0", ...helperText(), lineHeight: 1.34 }}>
-                        Member lists, contacts, disputes, and private review notes stay hidden.
-                      </p>
-                    </div>
-                    <span aria-hidden="true" style={{ color: "#8AA0B8", fontSize: 24, fontWeight: 700 }}>
-                      {">"}
-                    </span>
-                  </div>
+                  </TrustDocumentDisclosureSection>
                   <SecondaryButton
                     debugId="community-verify.refresh"
                     stableHeight={52}
@@ -1736,34 +1799,39 @@ function SnapshotFact({
   );
 }
 
-function SnapshotBoundary({
+function DecisionSummaryCard({
   tone,
   icon,
   title,
   body,
 }: {
-  tone: "good" | "warn";
+  tone: "good" | "warn" | "info";
   icon: Gsn3DIconKey;
   title: string;
   body: string;
 }) {
-  const styles =
-    tone === "good"
-      ? {
-          background: "#ECFDF3",
-          border: "rgba(46,155,98,0.18)",
-          title: "#166534",
-        }
-      : {
-          background: "#FFF7E6",
-          border: "rgba(245,158,11,0.22)",
-          title: "#92400E",
-        };
+  const styles = {
+    good: {
+      background: "#ECFDF3",
+      border: "rgba(46,155,98,0.18)",
+      title: "#166534",
+    },
+    warn: {
+      background: "#FFF7E6",
+      border: "rgba(245,158,11,0.22)",
+      title: "#92400E",
+    },
+    info: {
+      background: "#EAF3FF",
+      border: "rgba(11,99,209,0.16)",
+      title: "#073E83",
+    },
+  }[tone];
 
   return (
     <div
       style={{
-        minHeight: 86,
+        minHeight: 92,
         borderRadius: 16,
         background: styles.background,
         border: `1px solid ${styles.border}`,
@@ -1774,7 +1842,11 @@ function SnapshotBoundary({
         alignItems: "start",
       }}
     >
-      {communityVerifyIconBadge(icon, 32, tone === "good" ? "green" : "amber")}
+      {communityVerifyIconBadge(
+        icon,
+        32,
+        tone === "good" ? "green" : tone === "warn" ? "amber" : "blue"
+      )}
       <div style={{ minWidth: 0, display: "grid", gap: 4 }}>
         <span
           style={{

@@ -243,6 +243,18 @@ assertContains(
   "Revenue Allocation visible copy must describe next support steps, not support routes."
 );
 
+assertContains(
+  "src/pages/RevenueAllocationPage.tsx",
+  /status: firstTruthy\(src\?\.status, src\?\.allocation_status, "Status not recorded yet"\)[\s\S]*?\["Status", safeStr\(allocation\.status \|\| "Status not recorded yet"\)\]/,
+  "Revenue Allocation must show honest missing-status language instead of inventing a pending allocation status."
+);
+
+assertNotContains(
+  "src/pages/RevenueAllocationPage.tsx",
+  /allocation_status, "pending"|\["Status", safeStr\(allocation\.status \|\| "pending"\)\]/,
+  "Revenue Allocation must not reintroduce fake pending status fallbacks when allocation status is missing."
+);
+
 assertNotContains(
   "src/pages/RevenueAllocationPage.tsx",
   /Next support routes/,

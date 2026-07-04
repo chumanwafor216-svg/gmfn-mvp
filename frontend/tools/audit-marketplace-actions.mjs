@@ -343,6 +343,18 @@ assertNotContains(
 );
 
 assertContains(
+  "src/pages/MarketplaceWorkspacePage.tsx",
+  /const communityIdentity = useMemo\(\(\) => \{[\s\S]*?inviteInfo\?\.community_id[\s\S]*?inviteInfo\?\.marketplace_id[\s\S]*?inviteInfo\?\.clan_code[\s\S]*?inviteInfo\?\.gmfn_id[\s\S]*?""[\s\S]*?\}, \[inviteInfo\]\);[\s\S]*?Community ID: \{communityIdentity \|\| "No community ID yet"\}/,
+  "Marketplace Workspace must show honest missing-community-ID copy and must not label the selected internal community number as the Community ID."
+);
+
+assertNotContains(
+  "src/pages/MarketplaceWorkspacePage.tsx",
+  /Community ID: \{communityIdentity \|\| activeClanId \|\| "Not available"\}|Community ID: \{communityIdentity \|\| "Not available yet"\}/g,
+  "Marketplace Workspace must not restore internal-ID or vague not-available Community ID fallbacks."
+);
+
+assertContains(
   "src/pages/MarketplacePage.tsx",
   /import \{ GsnLegacyIcon, type GsnIconName \} from "\.\.\/components\/GsnLegacyIcon";[\s\S]*?type MarketplaceGlyphName[\s\S]*?MARKETPLACE_GLYPH_ICON_MAP[\s\S]*?satisfies Record<MarketplaceGlyphName, GsnIconName>[\s\S]*?function MarketplaceGlyph[\s\S]*?name: MarketplaceGlyphName[\s\S]*?<GsnLegacyIcon/,
   "Marketplace front action marks must use deterministic 3D GSN icons instead of device emoji fonts."

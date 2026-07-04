@@ -128,7 +128,7 @@ export default function TrustGraphAdminPage() {
 
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <Pill kind={isAdmin ? "green" : "red"}>{isAdmin ? "Admin access" : "Restricted"}</Pill>
-            <Pill kind="blue">{safeStr(me?.gmfn_id || "GSN ID pending")}</Pill>
+            <Pill kind="blue">{safeStr(me?.gmfn_id || "Not issued yet")}</Pill>
           </div>
         </div>
       </Card>

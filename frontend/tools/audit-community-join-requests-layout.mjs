@@ -120,9 +120,19 @@ assertContains(
   "Join Requests must use honest missing-community-ID copy instead of stale issue-tracking language."
 );
 
+assertContains(
+  /<strong>Community ID:<\/strong> \{safeStr\(activationPack\.community_code \|\| "No community ID yet"\)\}/,
+  "Join Requests activation package must use honest missing-community-ID copy."
+);
+
 assertNotContains(
   /Awaiting issue/g,
   "Join Requests must not display stale issue-tracking language for missing community IDs."
+);
+
+assertNotContains(
+  /activationPack\.community_code \|\| "Not available yet"/g,
+  "Join Requests must not use vague not-available copy for missing Community IDs."
 );
 
 if (findings.length > 0) {

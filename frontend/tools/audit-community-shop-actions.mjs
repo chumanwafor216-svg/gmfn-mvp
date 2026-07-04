@@ -171,6 +171,30 @@ assertContains(
   "Shop Gallery Tools local API reads must normalize Render-style /api bases and use concise user-facing recovery copy."
 );
 
+assertContains(
+  "src/pages/ShopAssetsPage.tsx",
+  /const gmfnIdValue = useMemo\([\s\S]*?firstTruthy\(shop\?\.owner_gmfn_id, shop\?\.gmfn_id, me\?\.gmfn_id\)[\s\S]*?const gmfnId = useMemo\(\(\) => firstTruthy\(gmfnIdValue, "Not issued yet"\)[\s\S]*?const shopLink = useMemo\(\(\) => buildShopLink\(gmfnIdValue\)/,
+  "Shop Gallery Tools must split real GSN ID values from honest display fallback copy."
+);
+
+assertContains(
+  "src/pages/ShopAssetsPage.tsx",
+  /buildGsnPublicShopLinkMessage\(\{[\s\S]*?gsnId: gmfnIdValue,/,
+  "Shop Gallery Tools copied public shop packages must use the real GSN ID value, not the visible fallback label."
+);
+
+assertNotContains(
+  "src/pages/ShopAssetsPage.tsx",
+  /GSN ID awaiting issue/,
+  "Shop Gallery Tools must not reintroduce fake awaiting-issue GSN ID language."
+);
+
+assertNotContains(
+  "src/pages/ShopAssetsPage.tsx",
+  /gsnId: gmfnId,/,
+  "Shop Gallery Tools must not copy display fallback text as the public package GSN ID."
+);
+
 assertNotContains(
   "src/pages/ShopControlPage.tsx",
   /apiJson<any>\("\/api\/marketplace\/broadcasts"/,

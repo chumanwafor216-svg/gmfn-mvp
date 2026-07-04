@@ -1123,7 +1123,7 @@ export default function CommunityJoinRequestsPage() {
               <strong>Community:</strong> {safeStr(activationPack.community_name || "Not available yet")}
             </div>
             <div>
-              <strong>Community ID:</strong> {safeStr(activationPack.community_code || "Not available yet")}
+              <strong>Community ID:</strong> {safeStr(activationPack.community_code || "No community ID yet")}
             </div>
             <div>
               <strong>Invited by:</strong>{" "}

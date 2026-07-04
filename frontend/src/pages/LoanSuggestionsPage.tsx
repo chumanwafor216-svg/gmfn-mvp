@@ -375,9 +375,9 @@ function getLoanAmountText(row: LoanRow | LoanDraftSummary | null): string {
   const value = safeStr(row?.amount);
   const currency = safeStr(row?.currency);
 
-  if (!value && !currency) return "Amount pending";
+  if (!value && !currency) return "No amount recorded yet";
   if (value && currency) return `${value} ${currency}`;
-  return value || currency || "Amount pending";
+  return value || currency || "No amount recorded yet";
 }
 
 function readWithdrawalTask(clanId: number, gmfnId: string): PersistedWithdrawalTask | null {

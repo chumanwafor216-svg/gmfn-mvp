@@ -1419,7 +1419,7 @@ function communityIdentity(row: CommunityRow | null | undefined): string {
     getRowId(row) ? `COMM-${getRowId(row)}` : ""
   );
 
-  return raw ? displayGsnLabel(raw) : "Pending";
+  return raw ? displayGsnLabel(raw) : "No community ID yet";
 }
 
 function protectedTradeStatusLabel(value: any, fallback = "not recorded"): string {
@@ -1704,7 +1704,7 @@ function marketplaceCciLabel(
   );
 
   if (cciBand && cciValue) return `${cciBand} / ${cciValue}`;
-  return cciBand || cciValue || "Pending";
+  return cciBand || cciValue || "Not shown yet";
 }
 
 function communityFinanceLabel(row: CommunityRow | null | undefined): string {
@@ -1914,9 +1914,9 @@ function getLoanAmountText(item: LoanSupportItem): string {
   const value = safeStr(item?.amount);
   const currency = safeStr(item?.currency);
 
-  if (!value && !currency) return "Amount pending";
+  if (!value && !currency) return "No amount recorded yet";
   if (value && currency) return `${value} ${currency}`;
-  return value || currency || "Amount pending";
+  return value || currency || "No amount recorded yet";
 }
 
 function safeDateTime(x: any): string {
@@ -6029,7 +6029,7 @@ export default function MarketplacePage() {
     return buildGsnCommunityVerifyLinkMessage({
       communityName: activeCommunityName,
       communityId: activeCommunityId ? String(activeCommunityId) : "",
-      status: publicCommunityWorkspaceLink ? "Ready" : "Pending",
+      status: "Ready",
       verifyLink: publicCommunityWorkspaceLink,
     });
   }, [activeCommunityName, activeCommunityId, publicCommunityWorkspaceLink]);
@@ -9966,7 +9966,7 @@ export default function MarketplacePage() {
                         isCompact
                       )}
                     >
-                      {publicCommunityWorkspaceLink ? "Ready" : "Pending"}
+                      {publicCommunityWorkspaceLink ? "Ready" : "Not ready yet"}
                     </span>
                   </div>
                   <div style={linkReserveTextStyle()}>
@@ -11479,7 +11479,7 @@ export default function MarketplacePage() {
                             overflowWrap: "anywhere",
                           }}
                         >
-                          {safeStr(trade.trade_code) || "Code pending"}
+                          {safeStr(trade.trade_code) || "No trade code yet"}
                         </span>
                         <span style={stableStatusPillStyle(Boolean(trade.status))}>
                           {safeStr(trade.status || "draft").replace(/_/g, " ")}
@@ -11970,7 +11970,7 @@ export default function MarketplacePage() {
                           overflowWrap: "anywhere",
                         }}
                       >
-                        {row.gmfnId ? displayGsnLabel(row.gmfnId) : "ID pending"}
+                        {row.gmfnId ? displayGsnLabel(row.gmfnId) : "Not issued yet"}
                       </span>
                       <span
                         style={{
@@ -12122,7 +12122,7 @@ export default function MarketplacePage() {
                               overflowWrap: "anywhere",
                             }}
                           >
-                            {row.gmfnId ? displayGsnLabel(row.gmfnId) : "ID pending"}
+                            {row.gmfnId ? displayGsnLabel(row.gmfnId) : "Not issued yet"}
                           </span>
                           <span
                             style={{

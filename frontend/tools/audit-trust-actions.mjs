@@ -130,6 +130,60 @@ for (const file of trustDomainFiles) {
   );
 }
 
+assertNotContains(
+  "src/pages/CCIReadingPage.tsx",
+  /classText: "Pending"/,
+  "CCI Reading missing-reading state must not look like a pending identity state."
+);
+
+assertContains(
+  "src/pages/CCIReadingPage.tsx",
+  /classText: "Not shown yet"[\s\S]*?No wider consistency reading yet/,
+  "CCI Reading missing-reading state must say the reading is not shown yet."
+);
+
+assertNotContains(
+  "src/pages/OpenTrustPage.tsx",
+  /classText: "Pending"/,
+  "Open Trust missing-reading states must not look like pending identity states."
+);
+
+assertContains(
+  "src/pages/OpenTrustPage.tsx",
+  /classText: "Not shown yet"[\s\S]*?Select a community to view local trust[\s\S]*?classText: "Not shown yet"[\s\S]*?No local community reading yet/,
+  "Open Trust missing-reading states must say the reading is not shown yet."
+);
+
+assertNotContains(
+  "src/pages/TrustGraphAdminPage.tsx",
+  /GSN ID pending|graph\.gmfn_id \|\| "Pending"/,
+  "Trust Graph admin page must use honest missing-GSN-ID language instead of stale pending placeholders."
+);
+
+assertNotContains(
+  "src/components/TrustGraphAdminPage.tsx",
+  /GSN ID pending|graph\.gmfn_id \|\| "Pending"/,
+  "Trust Graph admin component must use honest missing-GSN-ID language instead of stale pending placeholders."
+);
+
+assertContains(
+  "src/pages/TrustGraphAdminPage.tsx",
+  /me\?\.gmfn_id \|\| "Not issued yet"[\s\S]*?placeholder="Not issued yet"[\s\S]*?graph\.gmfn_id \|\| "Not issued yet"/,
+  "Trust Graph admin page must show not-issued-yet language for missing member IDs."
+);
+
+assertContains(
+  "src/components/TrustGraphAdminPage.tsx",
+  /me\?\.gmfn_id \|\| "Not issued yet"[\s\S]*?graph\.gmfn_id \|\| "Not issued yet"/,
+  "Trust Graph admin component must show not-issued-yet language for missing member IDs."
+);
+
+assertNotContains(
+  "src/components/RequireAuth.tsx",
+  /Number\.isFinite\(rawScore\)[^\n]*"Pending"/,
+  "Continuity protection fallback score must not show a stale Pending placeholder."
+);
+
 assertContains(
   "src/pages/TrustSlipPage.tsx",
   /function trustSlipVerifyFrontendPath\(code: string, fallback = ""\): string \{[\s\S]*?return `\/t\/\$\{encodeURIComponent\(cleanCode\)\}`;[\s\S]*?const oldVerifyMatch = url\.pathname\.match\(\^?\/?[\s\S]*?trust-slips[\s\S]*?verify[\s\S]*?\);[\s\S]*?return `\/t\/\$\{encodeURIComponent\(decodeURIComponent\(oldVerifyMatch\[1\]\)\)\}\$\{url\.search\}\$\{url\.hash\}`;[\s\S]*?const oldRawMatch = rawFallback\.match\(\^?\/?[\s\S]*?trust-slips[\s\S]*?verify[\s\S]*?\);[\s\S]*?return `\/t\/\$\{encodeURIComponent\(decodeURIComponent\(oldRawMatch\[1\]\)\)\}`;[\s\S]*?return rawFallback\.startsWith\("\/t\/"\) \? rawFallback : "";/,
@@ -608,7 +662,13 @@ assertContains(
 assertContains(
   "src/pages/CommunityConfirmationOutcomePage.tsx",
   /TrustDocumentConfidenceRibbon[\s\S]*?outcomeConfidenceRibbonItems[\s\S]*?Outcome status[\s\S]*?Response window[\s\S]*?Response evidence[\s\S]*?Privacy boundary[\s\S]*?Verification path/,
-  "Public Community Confirmation Outcome must expose the Trust Document Language confidence ribbon."
+  "Public Community Confirmation Outcome must retain the Trust Document Language confidence ribbon."
+);
+
+assertContains(
+  "src/pages/CommunityConfirmationOutcomePage.tsx",
+  /TrustDocumentDisclosureSection[\s\S]*?title="Outcome signals"[\s\S]*?TrustDocumentConfidenceRibbon[\s\S]*?data-gsn-community-confirmation-outcome-fast-reading="true"[\s\S]*?Fast outcome reading[\s\S]*?What this shows[\s\S]*?What it does not mean[\s\S]*?Next safe action[\s\S]*?Public actions[\s\S]*?TrustDocumentDisclosureSection[\s\S]*?title="Full outcome reading"[\s\S]*?TrustDocumentDisclosureSection[\s\S]*?title="Decision boundaries"/,
+  "Public Community Confirmation Outcome must show a fast decision reading before collapsed full outcome and decision-boundary details."
 );
 
 assertContains(
@@ -709,8 +769,8 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityVerifyPage.tsx",
-  /Community Verification[\s\S]*?Public community record[\s\S]*?This confirms the community identity in GSN[\s\S]*?does not verify every member, shop, line, or subgroup[\s\S]*?Smart guidance[\s\S]*?Context-aware[\s\S]*?What are you checking\?[\s\S]*?Request scoped confirmation[\s\S]*?Verification snapshot[\s\S]*?Community ID[\s\S]*?Status[\s\S]*?Community type[\s\S]*?Relay[\s\S]*?community-verify\.copy-link[\s\S]*?Copy[\s\S]*?What this shows[\s\S]*?What it does not prove[\s\S]*?Verification details[\s\S]*?Public record[\s\S]*?Public face[\s\S]*?GSN record[\s\S]*?Next evidence[\s\S]*?Private by design/,
-  "CommunityVerifyPage must present an official record card, smart guidance, compact snapshot, collapsed details, and a privacy boundary."
+  /Community Verification[\s\S]*?Registry signals[\s\S]*?Public community record[\s\S]*?This confirms the community identity in GSN[\s\S]*?does not verify every member, shop, line, or subgroup[\s\S]*?data-gsn-community-verify-decision-summary="true"[\s\S]*?Fast reading[\s\S]*?What this shows[\s\S]*?What it does not prove[\s\S]*?Ask for next evidence[\s\S]*?community-verify\.copy-link[\s\S]*?Copy record link[\s\S]*?community-verify\.request-confirmation[\s\S]*?Request scoped confirmation[\s\S]*?Private by design[\s\S]*?Community record security and limits[\s\S]*?What are you checking\?[\s\S]*?Verification snapshot[\s\S]*?Community following[\s\S]*?Verification details[\s\S]*?Share this record/,
+  "CommunityVerifyPage must present an official record card, fast decision summary, collapsed registry/snapshot/details sections, and a privacy boundary."
 );
 
 assertContains(

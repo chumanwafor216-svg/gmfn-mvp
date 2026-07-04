@@ -75,6 +75,16 @@ assertContains(
   "Identity Integrity must preserve TrustSlip identity context so recorded bank, phone, photo, and ID evidence are not thrown away before rendering."
 );
 
+assertNotContains(
+  /classText: "Pending"/g,
+  "Identity Integrity CCI/Open Trust fallbacks must not make uncalculated evidence look like a pending identity state."
+);
+
+assertContains(
+  /classText: "Not shown yet"[\s\S]*?No cross-community consistency reading yet[\s\S]*?classText: "Not shown yet"[\s\S]*?Select a community to view local trust[\s\S]*?classText: "Not shown yet"[\s\S]*?No local community reading yet/,
+  "Identity Integrity CCI/Open Trust missing-reading states must use honest not-shown-yet language."
+);
+
 assertContains(
   /const identityContext = trustSlip\?\.identity_context \|\| \{\};[\s\S]*?trustSlip\?\.bank_details_recorded[\s\S]*?identityContext\?\.bank_details_recorded[\s\S]*?trustSlip\?\.official_id_recorded[\s\S]*?identityContext\?\.official_id_recorded/,
   "Identity Integrity task readiness must read canonical TrustSlip identity evidence, not only /me fields and clan-filtered events."

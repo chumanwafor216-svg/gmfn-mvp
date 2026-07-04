@@ -131,7 +131,7 @@ function extractContinuityBlock(summary: any): ContinuityBlock | null {
 
   return {
     status,
-    score: Number.isFinite(rawScore) ? String(Math.round(rawScore)) : "Pending",
+    score: Number.isFinite(rawScore) ? String(Math.round(rawScore)) : "Not shown yet",
     reason:
       String(continuity?.reason || "").trim() ||
       "Identity continuity changed enough that the app needs to protect the account before sensitive actions continue.",

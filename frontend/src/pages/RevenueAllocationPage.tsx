@@ -494,7 +494,7 @@ function normalizeRevenueAllocation(raw: any, fallbackLoanId?: number): RevenueA
     remainingAmount: moneyText(
       src?.remaining_amount ?? src?.outstanding_amount ?? "0.00"
     ),
-    status: firstTruthy(src?.status, src?.allocation_status, "pending"),
+    status: firstTruthy(src?.status, src?.allocation_status, "Status not recorded yet"),
     createdAt: firstTruthy(src?.created_at, src?.recorded_at),
     settledAt: firstTruthy(src?.settled_at, src?.updated_at),
     raw: src,
@@ -507,7 +507,7 @@ function detailPairs(allocation: RevenueAllocationView | null): Array<[string, s
   return [
     ["Support ID", safeStr(allocation.loanId || "-")],
     ["Community ID", safeStr(allocation.clanId || "-")],
-    ["Status", safeStr(allocation.status || "pending")],
+    ["Status", safeStr(allocation.status || "Status not recorded yet")],
     ["Amount", `${allocation.amount} ${allocation.currency}`],
     ["Service fee", `${allocation.serviceFee} ${allocation.currency}`],
     ["Platform revenue", `${allocation.platformRevenue} ${allocation.currency}`],

@@ -370,6 +370,7 @@ export default function LoanDecisionPage() {
                 safeStr(loan?.purpose) ||
                 `Support item #${loanId || index + 1}`;
               const amountText = `${fmtMoney(loan?.amount ?? 0)} ${safeStr(loan?.currency || "NGN")}`;
+              const loanStatus = safeStr(loan?.status) || "Status not recorded yet";
 
               return (
                 <div key={loanId || index} style={softCard()}>
@@ -392,8 +393,8 @@ export default function LoanDecisionPage() {
                     </div>
 
                     <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-                      <span style={statusStyle(loan?.status || "Pending")}>
-                        {safeStr(loan?.status || "Pending")}
+                      <span style={statusStyle(loanStatus)}>
+                        {loanStatus}
                       </span>
                       <span style={statusStyle("neutral")}>{amountText}</span>
                     </div>

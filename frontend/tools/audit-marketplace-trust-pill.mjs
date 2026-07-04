@@ -45,8 +45,18 @@ assertContains(
 );
 
 assertContains(
-  /function marketplaceCciLabel\([\s\S]*?const cciValue = firstTruthy\([\s\S]*?me\?\.cci_score[\s\S]*?trustSlip\?\.cci_score[\s\S]*?trust\?\.cci_score[\s\S]*?\(row as any\)\?\.cci_score[\s\S]*?\);[\s\S]*?const cciBand = firstTruthy\([\s\S]*?me\?\.cci_class[\s\S]*?trustSlip\?\.cci_class[\s\S]*?trust\?\.cci_band[\s\S]*?\(row as any\)\?\.cci_band[\s\S]*?if \(cciBand && cciValue\) return `\$\{cciBand\} \/ \$\{cciValue\}`;[\s\S]*?return cciBand \|\| cciValue \|\| "Pending";/,
-  "Marketplace CCI stat must read member, TrustSlip, trust, and community fields before falling back to Pending."
+  /function marketplaceCciLabel\([\s\S]*?const cciValue = firstTruthy\([\s\S]*?me\?\.cci_score[\s\S]*?trustSlip\?\.cci_score[\s\S]*?trust\?\.cci_score[\s\S]*?\(row as any\)\?\.cci_score[\s\S]*?\);[\s\S]*?const cciBand = firstTruthy\([\s\S]*?me\?\.cci_class[\s\S]*?trustSlip\?\.cci_class[\s\S]*?trust\?\.cci_band[\s\S]*?\(row as any\)\?\.cci_band[\s\S]*?if \(cciBand && cciValue\) return `\$\{cciBand\} \/ \$\{cciValue\}`;[\s\S]*?return cciBand \|\| cciValue \|\| "Not shown yet";/,
+  "Marketplace CCI stat must read member, TrustSlip, trust, and community fields before falling back to honest not-shown-yet language."
+);
+
+assertNotContains(
+  /return raw \? displayGsnLabel\(raw\) : "Pending"|return cciBand \|\| cciValue \|\| "Pending"|ID pending|publicCommunityWorkspaceLink \? "Ready" : "Pending"/g,
+  "Marketplace evidence fallbacks must not reintroduce stale Pending/ID pending placeholders."
+);
+
+assertContains(
+  /function communityIdentity\([\s\S]*?return raw \? displayGsnLabel\(raw\) : "No community ID yet";/,
+  "Marketplace community identity must use honest missing-community-ID language instead of a vague Pending state."
 );
 
 assertNotContains(

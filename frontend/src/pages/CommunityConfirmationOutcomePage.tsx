@@ -1289,7 +1289,12 @@ export default function CommunityConfirmationOutcomePage() {
               </section>
             ) : outcome ? (
               <>
-                <TrustDocumentConfidenceRibbon items={outcomeConfidenceRibbonItems} />
+                <TrustDocumentDisclosureSection
+                  title="Outcome signals"
+                  summary="Open for the full status, response-window, evidence, privacy, and verification signal checks."
+                >
+                  <TrustDocumentConfidenceRibbon items={outcomeConfidenceRibbonItems} />
+                </TrustDocumentDisclosureSection>
 
                 <TrustDocumentDisclosureSection
                   title="Outcome security and limits"
@@ -1430,6 +1435,63 @@ export default function CommunityConfirmationOutcomePage() {
                 </section>
 
                 <section
+                  data-gsn-community-confirmation-outcome-fast-reading="true"
+                  aria-label="Fast outcome reading"
+                  style={{
+                    ...sectionCard("#FFFFFF"),
+                    display: "grid",
+                    gap: 12,
+                    boxShadow: "0 14px 34px rgba(6,24,39,0.07)",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "42px minmax(0, 1fr)",
+                      gap: 10,
+                      alignItems: "start",
+                    }}
+                  >
+                    {outcomeIconBadge("shield", 38, "blue")}
+                    <div style={{ minWidth: 0, display: "grid", gap: 3 }}>
+                      <h2 style={{ ...sectionTitle(), fontSize: 21 }}>
+                        Fast outcome reading
+                      </h2>
+                      <p style={{ ...helperText(), lineHeight: 1.36 }}>
+                        Use this first. Open the full outcome sections only when you need the
+                        complete proof trail, limits, QR, or return details.
+                      </p>
+                    </div>
+                  </div>
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 190px), 1fr))",
+                      gap: 8,
+                    }}
+                  >
+                    <OutcomeDecisionSummaryCard
+                      tone={responseTone === "good" ? "good" : responseTone === "warn" ? "warn" : "info"}
+                      icon="community"
+                      title="What this shows"
+                      body={simpleReadingText}
+                    />
+                    <OutcomeDecisionSummaryCard
+                      tone="warn"
+                      icon="lock"
+                      title="What it does not mean"
+                      body="It is not a bank guarantee, loan approval, payment proof, legal promise, or permission to release goods, credit, money, or services."
+                    />
+                    <OutcomeDecisionSummaryCard
+                      tone="info"
+                      icon="search"
+                      title="Next safe action"
+                      body={decisionNoteText}
+                    />
+                  </div>
+                </section>
+
+                <section
                   style={{
                     display: "grid",
                     gridTemplateColumns: isCompactPaper ? "1fr" : "repeat(auto-fit, minmax(300px, 1fr))",
@@ -1523,6 +1585,50 @@ export default function CommunityConfirmationOutcomePage() {
                   </div>
                 </section>
 
+                <section style={sectionCard("#FFFFFF")}>
+                  <h2 style={{ ...sectionTitle(), display: "flex", alignItems: "center", gap: 10 }}>
+                    {outcomeIconBadge("spark", 32, "blue")}
+                    Public actions
+                  </h2>
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: isCompactPaper ? "1fr" : "repeat(auto-fit, minmax(190px, 1fr))",
+                      gap: isCompactPaper ? 10 : 12,
+                      marginTop: 14,
+                    }}
+                  >
+                    <PrimaryButton
+                      debugId="community-confirmation-outcome.refresh"
+                      stableHeight={64}
+                      onClick={() => void loadOutcome()}
+                    >
+                      {outcomeIconBadge("refresh", 28, "blue")}
+                      Refresh outcome
+                    </PrimaryButton>
+                    <SecondaryButton
+                      debugId="community-confirmation-outcome.copy-link"
+                      stableHeight={64}
+                      onClick={() => void copyLink()}
+                    >
+                      {outcomeIconBadge("copy", 28, "navy")}
+                      Copy public link
+                    </SecondaryButton>
+                    <SecondaryButton
+                      debugId="community-confirmation-outcome.print"
+                      stableHeight={64}
+                      onClick={printPage}
+                    >
+                      {outcomeIconBadge("document", 28, "navy")}
+                      Print / Save PDF
+                    </SecondaryButton>
+                  </div>
+                </section>
+
+                <TrustDocumentDisclosureSection
+                  title="Full outcome reading"
+                  summary="Open for the simple reading, privacy boundary, decision note, return channel, QR, and screenshot security detail."
+                >
                 <section
                   style={{
                     display: "grid",
@@ -1669,7 +1775,12 @@ export default function CommunityConfirmationOutcomePage() {
                     </div>
                   </div>
                 </section>
+                </TrustDocumentDisclosureSection>
 
+                <TrustDocumentDisclosureSection
+                  title="Decision boundaries"
+                  summary="Open for when this public outcome may help and what it must never be treated as."
+                >
                 <section
                   style={{
                     display: "grid",
@@ -1699,46 +1810,7 @@ export default function CommunityConfirmationOutcomePage() {
                     </ul>
                   </div>
                 </section>
-
-                <section style={sectionCard("#FFFFFF")}>
-                  <h2 style={{ ...sectionTitle(), display: "flex", alignItems: "center", gap: 10 }}>
-                    {outcomeIconBadge("spark", 32, "blue")}
-                    Public actions
-                  </h2>
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: isCompactPaper ? "1fr" : "repeat(auto-fit, minmax(190px, 1fr))",
-                      gap: isCompactPaper ? 10 : 12,
-                      marginTop: 14,
-                    }}
-                  >
-                    <PrimaryButton
-                      debugId="community-confirmation-outcome.refresh"
-                      stableHeight={64}
-                      onClick={() => void loadOutcome()}
-                    >
-                      {outcomeIconBadge("refresh", 28, "blue")}
-                      Refresh outcome
-                    </PrimaryButton>
-                    <SecondaryButton
-                      debugId="community-confirmation-outcome.copy-link"
-                      stableHeight={64}
-                      onClick={() => void copyLink()}
-                    >
-                      {outcomeIconBadge("copy", 28, "navy")}
-                      Copy public link
-                    </SecondaryButton>
-                    <SecondaryButton
-                      debugId="community-confirmation-outcome.print"
-                      stableHeight={64}
-                      onClick={printPage}
-                    >
-                      {outcomeIconBadge("document", 28, "navy")}
-                      Print / Save PDF
-                    </SecondaryButton>
-                  </div>
-                </section>
+                </TrustDocumentDisclosureSection>
 
                 <details style={sectionCard("#F7FAFF")}>
                   <StableDisclosureSummary
@@ -2368,6 +2440,79 @@ function ReadingCard({
       >
         {body}
       </p>
+    </div>
+  );
+}
+
+function OutcomeDecisionSummaryCard({
+  tone,
+  icon,
+  title,
+  body,
+}: {
+  tone: "good" | "warn" | "bad" | "info";
+  icon: GsnIconName;
+  title: string;
+  body: React.ReactNode;
+}) {
+  const styles = {
+    good: {
+      background: "#ECFDF3",
+      border: "rgba(46,155,98,0.18)",
+      title: "#166534",
+    },
+    warn: {
+      background: "#FFF7E6",
+      border: "rgba(245,158,11,0.22)",
+      title: "#92400E",
+    },
+    bad: {
+      background: "#FEF2F2",
+      border: "rgba(200,58,58,0.18)",
+      title: "#991B1B",
+    },
+    info: {
+      background: "#EAF3FF",
+      border: "rgba(11,99,209,0.16)",
+      title: "#073E83",
+    },
+  }[tone];
+
+  return (
+    <div
+      style={{
+        minHeight: 104,
+        borderRadius: 16,
+        background: styles.background,
+        border: `1px solid ${styles.border}`,
+        padding: 11,
+        display: "grid",
+        gridTemplateColumns: "34px minmax(0, 1fr)",
+        gap: 9,
+        alignItems: "start",
+      }}
+    >
+      {outcomeIconBadge(
+        icon,
+        32,
+        tone === "good" ? "green" : tone === "warn" ? "amber" : tone === "bad" ? "red" : "blue"
+      )}
+      <div style={{ minWidth: 0, display: "grid", gap: 4 }}>
+        <span
+          style={{
+            margin: 0,
+            color: styles.title,
+            fontSize: 14,
+            fontWeight: 1000,
+            lineHeight: 1.14,
+          }}
+        >
+          {title}
+        </span>
+        <p style={{ ...helperText(), color: "#1F3145", fontSize: 12.5, lineHeight: 1.35 }}>
+          {body}
+        </p>
+      </div>
     </div>
   );
 }

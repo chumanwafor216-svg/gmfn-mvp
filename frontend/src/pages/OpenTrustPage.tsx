@@ -322,8 +322,8 @@ function getOpenTrustState(
 
   if (!hasSelectedCommunity) {
     return {
-      classText: "Pending",
-      scoreText: "—",
+      classText: "Not shown yet",
+      scoreText: "-",
       tone: "neutral",
       statusText: "Select a community to view local trust",
       whyText:
@@ -332,8 +332,8 @@ function getOpenTrustState(
   }
 
   return {
-    classText: "Pending",
-    scoreText: "—",
+    classText: "Not shown yet",
+    scoreText: "-",
     tone: "neutral",
     statusText: "No local community reading yet",
     whyText:
