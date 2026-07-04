@@ -1425,6 +1425,7 @@ function actionsPanel(open: boolean): React.CSSProperties {
     boxShadow: "0 22px 54px rgba(15,23,42,0.16)",
     transform: open ? "translateY(0)" : "translateY(-12px)",
     opacity: open ? 1 : 0,
+    visibility: open ? "visible" : "hidden",
     pointerEvents: open ? "auto" : "none",
     transition: "none",
     zIndex: 1300,
@@ -1912,6 +1913,14 @@ export default function AppLayout() {
     setIsActionsOpen(false);
   }
 
+  function closeDrawerAfterNavigation() {
+    window.setTimeout(() => setIsDrawerOpen(false), 0);
+  }
+
+  function closeActionsAfterNavigation() {
+    window.setTimeout(() => setIsActionsOpen(false), 0);
+  }
+
   function handleLogout() {
     logout();
     setIsDrawerOpen(false);
@@ -2301,7 +2310,7 @@ export default function AppLayout() {
                       )}
                       kind="soft"
                       disabled={!!item.disabled}
-                      onClick={() => closeDrawer()}
+                      onClick={closeDrawerAfterNavigation}
                       debugId={`app-layout.drawer.${group.title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}.${item.label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
                       style={
                         group.variant === "tools"
@@ -2429,7 +2438,7 @@ export default function AppLayout() {
                   to={contextualizeAppNavTarget(item.to, activeCommunityId)}
                   kind="secondary"
                   disabled={!!item.disabled}
-                  onClick={() => closeActions()}
+                  onClick={closeActionsAfterNavigation}
                   debugId={`app-layout.page-action.${item.label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
                   style={actionsLink(
                     isItemActive(item, location.pathname, location.search),

@@ -225,10 +225,17 @@ function loginRecoveryTarget(
   location: Pick<RouterLocation, "pathname" | "search" | "hash">
 ) {
   const publishTarget = peekPublishRecoveryTarget();
+  const currentTarget = `${location.pathname || ""}${location.search || ""}${location.hash || ""}`;
 
   if (!publishTarget) {
+    const next = new URLSearchParams();
+    next.set("session", "expired");
+    if (currentTarget === "/app" || currentTarget.startsWith("/app/")) {
+      next.set("next", currentTarget);
+    }
+
     return {
-      to: "/login?session=expired",
+      to: `/login?${next.toString()}`,
       state: { from: location },
     };
   }
