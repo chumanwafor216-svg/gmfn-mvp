@@ -15,11 +15,24 @@ GSN now has useful local evidence checks:
 - mocked browser smoke checks for route states, visible boundary language, and
   auth/no-auth request behavior;
 - one local wrapper that runs both layers;
-- local publish-readiness guards that preview future batch scope without
-  staging, committing, pushing, or deploying.
+- local publish-readiness guards that preview future republish or follow-up
+  scope without staging, committing, pushing, or deploying.
 
 Those checks are valuable. They are not the same as proving production evidence
 behavior.
+
+## Latest Publish Fact
+
+The evidence-boundary readiness batch was published to `main` at commit
+`044ddf4bf48c7e7065942aa1d7657a06a75b7bfb` (`044ddf4b`). The manual Render
+workflow run `28752245335` completed successfully and the frontend Render deploy
+hook returned deploy id `dep-d95b0tnaqgkc73etv5s0`. Backend/API deploy was
+skipped with `deploy_api=false`.
+
+This proves only that the target commit was pushed and the frontend deploy
+request was accepted. It does not prove Render deployment completion, live app
+availability, live API authorization, production payload shape, production
+build health, or visual QA.
 
 ## What Local Verification Proves
 
@@ -37,8 +50,8 @@ The local verifier currently proves:
 - visible boundary language for bank approval, payment movement, auto-debit,
   payout, goods release, private Passport, private contacts, and unreleased
   evidence is present in the covered mocked route states.
-- future publish scope for the local evidence-boundary batch can be printed and
-  audited without performing Git or deployment actions.
+- future republish or follow-up scope for the evidence-boundary batch can be
+  printed and audited without performing Git or deployment actions.
 
 ## What Local Verification Does Not Prove
 
@@ -53,7 +66,7 @@ The local verifier does not prove:
 - real confirmation outcome payloads hide every private contact or review note;
 - real Trust Timeline PDFs or evidence ZIPs contain only the intended redacted
   data;
-- Render has deployed the current local changes;
+- Render deployment completion or live availability;
 - full mobile/desktop visual quality;
 - complete app accessibility;
 - legal, bank, government, regulatory, escrow, delivery, payout, or credit
@@ -71,7 +84,7 @@ run or create checks that prove the relevant layer:
 | Combined local proof | `npm --prefix frontend run verify:evidence-display-boundary-local` passes. |
 | Live-readiness local preflight | `npm --prefix frontend run verify:evidence-live-readiness-local` passes, proving only no-secret runbook, dry-run, and fail-closed local harness behavior. |
 | All-local evidence boundary preflight | `npm --prefix frontend run verify:evidence-boundary-local-all` passes, proving only the combined static, mocked browser, no-secret, dry-run, and fail-closed local checks. |
-| Future batch scope preview | `npm --prefix frontend run print:evidence-local-batch-stage-plan` and `npm --prefix frontend run audit:evidence-local-batch-stage-plan` pass, proving only that the future stage list is printable, aligned with the manifest, and non-mutating. |
+| Republish/follow-up scope preview | `npm --prefix frontend run print:evidence-local-batch-stage-plan` and `npm --prefix frontend run audit:evidence-local-batch-stage-plan` pass, proving only that the future scope list is printable, aligned with the manifest, and non-mutating. |
 | Local publish-readiness preflight | `npm --prefix frontend run verify:evidence-publish-readiness-local` passes, proving only the manifest, suite, stage-plan, status-scope, all-local, and whitespace checks. |
 | Production build | `npm --prefix frontend run build` passes. |
 | Live public API boundary | Live public routes are called without bearer auth or selected-community headers, and responses contain only public-safe fields. |

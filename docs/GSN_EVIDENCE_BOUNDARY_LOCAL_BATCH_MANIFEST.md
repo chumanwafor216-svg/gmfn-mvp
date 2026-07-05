@@ -1,18 +1,36 @@
 # GSN Evidence Boundary Local Batch Manifest
 
 Date: 2026-07-05
-Status: Local batch manifest, not published
+Status: Published batch record; local verification boundary remains active
 
 ## Purpose
 
-This manifest records the local evidence-boundary tooling batch that is waiting
-for a future publish decision. It separates in-scope files from unrelated
-untracked workspace folders and keeps the verification commands in one place.
+This manifest records the evidence-boundary tooling batch that was locally
+verified, committed, pushed to `main`, and accepted by the frontend Render
+deploy hook. It separates in-scope files from unrelated untracked workspace
+folders and keeps the verification commands in one place.
 
-It is a local handoff aid. It is not a commit, push, deployment, or production
-verification record.
+It is a scope and truth-boundary record. It proves the listed local checks and
+publish/deploy-request facts only; it is not proof of Render deployment
+completion, live API behavior, production payload shape, build health, or visual
+QA.
 
-## In-Scope Local Files
+## Publish Record
+
+- Commit: `044ddf4bf48c7e7065942aa1d7657a06a75b7bfb`
+  (`044ddf4b`), `Add evidence boundary publish readiness tooling`.
+- Branch pushed: `main` to `origin/main`.
+- GitHub Actions workflow:
+  `https://github.com/chumanwafor216-svg/gmfn-mvp/actions/runs/28752245335`.
+- Frontend Render deploy hook response included deploy id:
+  `dep-d95b0tnaqgkc73etv5s0`.
+- Backend/API deploy was skipped with `deploy_api=false`.
+- Pre-publish verifier:
+  `npm --prefix frontend run verify:evidence-publish-readiness-local` passed.
+- No independent Render completion check, production build, live API fixture
+  run, or visual QA was performed during that publish step.
+
+## In-Scope Batch Files
 
 Documentation:
 
@@ -46,14 +64,48 @@ Frontend evidence-boundary batch tools:
 
 ## Out-of-Scope Workspace Items
 
-These untracked workspace paths were present during local work and are not part
-of this evidence-boundary batch:
+These workspace paths were present during local work and are not part of this
+evidence-boundary batch:
 
 - `docs/external_review/`
 - `frontend/screenshots/`
 - `screenshots/`
 
-Do not stage them for this batch unless the owner explicitly changes scope.
+Separate local PWA shortcut icon batch, also out of scope for this
+evidence-boundary batch:
+
+- `docs/GSN_PWA_ICON_LOCAL_BATCH_MANIFEST.md`
+- `docs/SCREEN_SPECS.md`
+- `frontend/index.html`
+- `frontend/public/manifest.json`
+- `frontend/public/manifest.webmanifest`
+- `frontend/public/sw.js`
+- `frontend/src/components/GsnInstallPrompt.tsx`
+- `frontend/tools/audit-icon-protocol.mjs`
+- `frontend/tools/pwa-icon-local-batch-scope.mjs`
+- `frontend/tools/print-pwa-icon-local-batch-stage-plan.mjs`
+- `frontend/tools/audit-pwa-icon-local-batch-stage-plan.mjs`
+- `frontend/tools/audit-pwa-icon-local-batch-status-scope.mjs`
+- `frontend/tools/verify-pwa-icon-publish-readiness-local.mjs`
+- `frontend/tools/audit-pwa-icon-publish-readiness-nonmutating.mjs`
+- `frontend/public/gsn-app-icon-ios-180-v14.png`
+- `frontend/public/gsn-app-icon-192-v14.png`
+- `frontend/public/gsn-app-icon-512-v14.png`
+
+Combined local publish-planning guard tools, also out of scope for this
+evidence-boundary batch:
+
+- `frontend/tools/combined-local-batch-scope.mjs`
+- `frontend/tools/print-combined-local-batch-stage-plan.mjs`
+- `frontend/tools/audit-combined-local-batch-status-scope.mjs`
+- `frontend/tools/audit-combined-local-batch-stage-plan.mjs`
+- `frontend/tools/verify-combined-local-batch-readiness.mjs`
+- `frontend/tools/audit-combined-local-batch-readiness-nonmutating.mjs`
+- `docs/GSN_COMBINED_LOCAL_BATCH_MANIFEST.md`
+- `frontend/tools/audit-combined-local-batch-manifest.mjs`
+
+Do not stage them for an evidence-only batch unless the owner explicitly
+changes scope or approves a combined publish batch.
 
 ## Registered Commands
 
@@ -63,7 +115,7 @@ Primary broad local verifier:
 npm --prefix frontend run verify:evidence-boundary-local-all
 ```
 
-Future publish-readiness preflight:
+Republish-readiness preflight:
 
 ```powershell
 npm --prefix frontend run verify:evidence-publish-readiness-local
@@ -114,10 +166,10 @@ behavior.
 that changed files are either in this manifest or under the explicitly
 out-of-scope workspace paths. It does not stage, commit, push, or deploy.
 
-`print:evidence-local-batch-stage-plan` prints a read-only future stage plan for
-the owner-choice-`2` path. `audit:evidence-local-batch-stage-plan` checks that
-the printable plan stays aligned with this manifest, the status-scope audit, and
-the package/suite registration, and that the plan remains non-mutating.
+`print:evidence-local-batch-stage-plan` prints a read-only future republish or
+follow-up scope plan. `audit:evidence-local-batch-stage-plan` checks that the
+printable plan stays aligned with this manifest, the status-scope audit, and the
+package/suite registration, and that the plan remains non-mutating.
 `frontend/tools/evidence-local-batch-scope.mjs` is the shared local source for
 the in-scope file list and explicitly out-of-scope workspace prefixes consumed
 by the stage-plan and status-scope tools.
@@ -134,8 +186,8 @@ by the stage-plan and status-scope tools.
 - The live fixture runbook stays template-only and no-secret.
 - The all-local verifier chains display-boundary and live-readiness local
   checks.
-- The future publish scope can be printed without staging, committing, pushing,
-  or deploying.
+- The future republish or follow-up scope can be printed without staging,
+  committing, pushing, or deploying.
 
 ## What This Batch Does Not Prove
 
@@ -149,16 +201,17 @@ This batch does not prove:
 - PDF or ZIP redaction against live data;
 - full mobile or desktop visual quality;
 - production build health;
-- Render deployment;
+- Render deployment completion or live availability;
 - legal, bank, government, regulatory, escrow, delivery, payout, or credit
   approval.
 
 ## Publish Notes
 
-If the owner later chooses `2`, stage only the in-scope files listed above plus
-any intentional follow-up files from the same evidence-boundary batch.
+For any future republish or follow-up batch, stage only the in-scope files
+listed above plus any intentional follow-up files from the same
+evidence-boundary batch.
 
-Before publishing, rerun:
+Before republishing or follow-up publishing, rerun:
 
 ```powershell
 npm --prefix frontend run print:evidence-local-batch-stage-plan
@@ -172,6 +225,7 @@ npm --prefix frontend run verify:evidence-boundary-local-all
 git diff --check
 ```
 
-Do not claim Render deployed unless the GitHub workflow accepted a deploy
-hook/API request, Render auto-deploy is confirmed, or Render returned a deploy
-id.
+Do not claim Render accepted a deploy request unless the GitHub workflow,
+Render auto-deploy, or Render API/hook response proves it. Do not claim the new
+site is live unless Render completion or live app behavior is independently
+verified.

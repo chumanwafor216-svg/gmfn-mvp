@@ -388,94 +388,222 @@ assertContains(
 );
 
 assertContains(
+  "docs/SCREEN_SPECS.md",
+  /Android and other phone home-screen shortcuts should use the same navy tile,[\s\S]*?outer gold ring, and shield\/star composition as the Apple touch icon[\s\S]*?Do not\s+give Android a separate manifest SVG or maskable icon/,
+  "Screen specs must keep Android and iPhone shortcut icon composition aligned."
+);
+
+assertContains(
+  "docs/GSN_PWA_ICON_LOCAL_BATCH_MANIFEST.md",
+  /Status: Local batch, not published[\s\S]*?navy tile, outer gold ring, and shield\/star emblem[\s\S]*?does not prove Render deployment, live-site availability,\s+launcher cache refresh, or that existing installed shortcuts have repainted/,
+  "PWA icon batch manifest must record local-only status, preferred Apple-style composition, and live/cache limits."
+);
+
+assertContains(
+  "docs/GSN_PWA_ICON_LOCAL_BATCH_MANIFEST.md",
+  /In-Scope Icon Batch Files[\s\S]*?docs\/SCREEN_SPECS\.md[\s\S]*?frontend\/index\.html[\s\S]*?frontend\/public\/manifest\.json[\s\S]*?frontend\/public\/manifest\.webmanifest[\s\S]*?frontend\/public\/sw\.js[\s\S]*?frontend\/src\/components\/GsnInstallPrompt\.tsx[\s\S]*?frontend\/public\/gsn-app-icon-ios-180-v14\.png[\s\S]*?frontend\/public\/gsn-app-icon-192-v14\.png[\s\S]*?frontend\/public\/gsn-app-icon-512-v14\.png[\s\S]*?frontend\/tools\/audit-icon-protocol\.mjs/,
+  "PWA icon batch manifest must list the local icon batch docs, metadata, assets, prompt, service worker, and audit tool."
+);
+
+assertContains(
+  "docs/GSN_PWA_ICON_LOCAL_BATCH_MANIFEST.md",
+  /frontend\/tools\/pwa-icon-local-batch-scope\.mjs[\s\S]*?frontend\/tools\/print-pwa-icon-local-batch-stage-plan\.mjs[\s\S]*?frontend\/tools\/audit-pwa-icon-local-batch-stage-plan\.mjs[\s\S]*?frontend\/tools\/audit-pwa-icon-local-batch-status-scope\.mjs[\s\S]*?frontend\/tools\/verify-pwa-icon-publish-readiness-local\.mjs[\s\S]*?frontend\/tools\/audit-pwa-icon-publish-readiness-nonmutating\.mjs[\s\S]*?frontend\/package\.json/,
+  "PWA icon batch manifest must list the scope, print, status-scope, and package-script files."
+);
+
+assertContains(
+  "docs/GSN_PWA_ICON_LOCAL_BATCH_MANIFEST.md",
+  /apple-touch-icon` must point to `\/gsn-app-icon-ios-180-v14\.png`[\s\S]*?Manifest install icons must use `purpose: "any"`[\s\S]*?must not offer `maskable` or `\/gsn-app-icon\.svg`[\s\S]*?service worker cache must use `gsn-pwa-shell-v14`[\s\S]*?install prompt preview must use `\/gsn-app-icon-ios-180-v14\.png`/,
+  "PWA icon batch manifest must cage the v14 metadata, no-maskable/SVG, service-worker, and prompt-preview contracts."
+);
+
+assertContains(
+  "docs/GSN_PWA_ICON_LOCAL_BATCH_MANIFEST.md",
+  /Do not claim the live site is serving v14 icons until[\s\S]*?Render deployment or live app behavior is verified[\s\S]*?Do not claim existing\s+phone shortcuts have changed automatically[\s\S]*?iOS and Android launchers can cache\s+old shortcut artwork/,
+  "PWA icon batch manifest must block live-serving and existing-shortcut repaint overclaims."
+);
+
+assertContains(
+  "frontend/package.json",
+  /"verify:pwa-icon-publish-readiness-local": "node tools\/verify-pwa-icon-publish-readiness-local\.mjs"[\s\S]*?"print:pwa-icon-local-batch-stage-plan": "node tools\/print-pwa-icon-local-batch-stage-plan\.mjs"[\s\S]*?"audit:pwa-icon-local-batch-status-scope": "node tools\/audit-pwa-icon-local-batch-status-scope\.mjs"[\s\S]*?"audit:pwa-icon-local-batch-stage-plan": "node tools\/audit-pwa-icon-local-batch-stage-plan\.mjs"[\s\S]*?"audit:pwa-icon-publish-readiness-nonmutating": "node tools\/audit-pwa-icon-publish-readiness-nonmutating\.mjs"/,
+  "PWA icon batch verifier, print, stage-plan, status-scope, and non-mutating audit commands must stay registered."
+);
+
+assertContains(
+  "frontend/tools/pwa-icon-local-batch-scope.mjs",
+  /inScopePwaIconBatchFiles[\s\S]*?docs\/GSN_PWA_ICON_LOCAL_BATCH_MANIFEST\.md[\s\S]*?docs\/SCREEN_SPECS\.md[\s\S]*?frontend\/index\.html[\s\S]*?frontend\/public\/manifest\.json[\s\S]*?frontend\/public\/manifest\.webmanifest[\s\S]*?frontend\/public\/sw\.js[\s\S]*?frontend\/src\/components\/GsnInstallPrompt\.tsx[\s\S]*?frontend\/public\/gsn-app-icon-ios-180-v14\.png[\s\S]*?frontend\/public\/gsn-app-icon-192-v14\.png[\s\S]*?frontend\/public\/gsn-app-icon-512-v14\.png[\s\S]*?frontend\/tools\/audit-icon-protocol\.mjs[\s\S]*?frontend\/tools\/pwa-icon-local-batch-scope\.mjs[\s\S]*?frontend\/tools\/print-pwa-icon-local-batch-stage-plan\.mjs[\s\S]*?frontend\/tools\/audit-pwa-icon-local-batch-status-scope\.mjs[\s\S]*?frontend\/tools\/audit-pwa-icon-local-batch-stage-plan\.mjs[\s\S]*?frontend\/tools\/verify-pwa-icon-publish-readiness-local\.mjs[\s\S]*?frontend\/tools\/audit-pwa-icon-publish-readiness-nonmutating\.mjs[\s\S]*?frontend\/package\.json/,
+  "PWA icon scope module must define the in-scope icon batch files."
+);
+
+assertContains(
+  "frontend/tools/pwa-icon-local-batch-scope.mjs",
+  /outOfScopePwaIconBatchPrefixes[\s\S]*?docs\/external_review\/[\s\S]*?frontend\/screenshots\/[\s\S]*?screenshots\/[\s\S]*?docs\/GSN_EVIDENCE_LIVE_VERIFICATION_GAP_LOG\.md[\s\S]*?docs\/GSN_EVIDENCE_BOUNDARY_LOCAL_BATCH_MANIFEST\.md[\s\S]*?frontend\/tools\/audit-evidence-live-verification-gap-log\.mjs[\s\S]*?frontend\/tools\/print-evidence-local-batch-stage-plan\.mjs[\s\S]*?frontend\/tools\/evidence-local-batch-scope\.mjs[\s\S]*?frontend\/tools\/audit-evidence-boundary-local-batch-manifest\.mjs[\s\S]*?frontend\/tools\/combined-local-batch-scope\.mjs[\s\S]*?frontend\/tools\/print-combined-local-batch-stage-plan\.mjs[\s\S]*?frontend\/tools\/audit-combined-local-batch-status-scope\.mjs[\s\S]*?frontend\/tools\/audit-combined-local-batch-stage-plan\.mjs[\s\S]*?frontend\/tools\/verify-combined-local-batch-readiness\.mjs[\s\S]*?frontend\/tools\/audit-combined-local-batch-readiness-nonmutating\.mjs[\s\S]*?docs\/GSN_COMBINED_LOCAL_BATCH_MANIFEST\.md[\s\S]*?frontend\/tools\/audit-combined-local-batch-manifest\.mjs/,
+  "PWA icon scope module must explicitly exclude the current evidence-boundary batch paths and combined publish-planning guard paths."
+);
+
+assertContains(
+  "frontend/tools/print-pwa-icon-local-batch-stage-plan.mjs",
+  /from "\.\/pwa-icon-local-batch-scope\.mjs"[\s\S]*?read-only scope preview[\s\S]*?No staging, commit, push, GitHub Actions, or Render deploy is performed[\s\S]*?inScopePwaIconBatchFiles\.map[\s\S]*?outOfScopePwaIconBatchPrefixes\.map[\s\S]*?audit:pwa-icon-local-batch-stage-plan[\s\S]*?audit:pwa-icon-publish-readiness-nonmutating[\s\S]*?verify:pwa-icon-publish-readiness-local[\s\S]*?Unabated truth:[\s\S]*?does not prove Render deploy acceptance, deployment completion, live-site availability, Android WebAPK behavior, or iOS\/Android launcher cache refresh/,
+  "PWA icon stage plan must print shared scope and block publish/live/cache overclaims."
+);
+
+assertNotContains(
+  "frontend/tools/print-pwa-icon-local-batch-stage-plan.mjs",
+  /from "node:child_process"|spawnSync|spawn\(|execSync|execFileSync|writeFileSync|appendFileSync|rmSync|unlinkSync|renameSync|copyFileSync|mkdirSync/,
+  "PWA icon stage plan must not spawn commands or mutate files."
+);
+
+assertContains(
+  "frontend/tools/audit-pwa-icon-local-batch-status-scope.mjs",
+  /from "\.\/pwa-icon-local-batch-scope\.mjs"[\s\S]*?new Set\(inScopePwaIconBatchFiles\)[\s\S]*?git",\s*\["status", "--short", "--untracked-files=normal"\][\s\S]*?outOfScopePwaIconBatchPrefixes\.some[\s\S]*?No staging, commit, push, or deployment action was performed/,
+  "PWA icon status-scope audit must consume shared scope, read git status, and remain non-publishing."
+);
+
+assertContains(
+  "frontend/tools/verify-pwa-icon-publish-readiness-local.mjs",
+  /npmCommand = process\.platform === "win32" \? "npm\.cmd" : "npm"[\s\S]*?audit-icon-protocol\.mjs[\s\S]*?audit-pwa-icon-publish-readiness-nonmutating\.mjs[\s\S]*?audit-pwa-icon-local-batch-stage-plan\.mjs[\s\S]*?print-pwa-icon-local-batch-stage-plan\.mjs[\s\S]*?audit-pwa-icon-local-batch-status-scope\.mjs[\s\S]*?command: npmCommand[\s\S]*?args: \["run", "build"\][\s\S]*?shell: process\.platform === "win32"[\s\S]*?command: "git"[\s\S]*?args: \["diff", "--check"\][\s\S]*?shell: step\.shell \|\| false/,
+  "PWA icon publish-readiness verifier must run icon audit, stage plan, status scope, build, and whitespace check."
+);
+
+assertContains(
+  "frontend/tools/audit-pwa-icon-publish-readiness-nonmutating.mjs",
+  /verify-pwa-icon-publish-readiness-local\.mjs[\s\S]*?audit-icon-protocol[\s\S]*?print-pwa-icon-local-batch-stage-plan[\s\S]*?audit-pwa-icon-local-batch-status-scope[\s\S]*?git diff --check[\s\S]*?must not call gh, curl, npm deploy\/publish, Render hooks, or Render secret variables/,
+  "PWA icon non-mutating audit must cage the verifier command list and publishing exclusions."
+);
+
+assertContains(
+  "frontend/tools/verify-pwa-icon-publish-readiness-local.mjs",
+  /This does not stage, commit, push, trigger GitHub Actions, deploy, prove Render state, prove live-site availability, or refresh existing phone shortcut caches/,
+  "PWA icon publish-readiness verifier must print its non-publishing/live/cache proof limit."
+);
+
+assertNotContains(
+  "frontend/tools/verify-pwa-icon-publish-readiness-local.mjs",
+  /\b(?:git|gh)\s+(?:add|commit|push|checkout|reset|merge|rebase|tag|release|workflow|run)\b|hooks\.render\.com|RENDER_[A-Z_]*(?:HOOK|KEY|TOKEN|SECRET)|command:\s*["']gh["']|command:\s*["']curl["']/,
+  "PWA icon publish-readiness verifier must not embed mutating git/gh/curl or Render hook behavior."
+);
+
+assertContains(
   "frontend/index.html",
-  /<link rel="apple-touch-icon" sizes="180x180" href="\/gsn-app-icon-ios-180-v13\.png" \/>/,
+  /<link rel="apple-touch-icon" sizes="180x180" href="\/gsn-app-icon-ios-180-v14\.png" \/>/,
   "iPhone home-screen installs must use the dedicated 180x180 safe-zone GSN touch icon."
 );
 
 assertContains(
   "frontend/public/manifest.json",
-  /"src": "\/gsn-app-icon-ios-180-v13\.png"[\s\S]*?"sizes": "180x180"[\s\S]*?"src": "\/gsn-app-icon-192-v13\.png"[\s\S]*?"sizes": "192x192"[\s\S]*?"src": "\/gsn-app-icon-512-v13\.png"[\s\S]*?"sizes": "512x512"/,
-  "PWA manifest must expose dedicated 180, 192, and 512 GSN app icons."
+  /"src": "\/gsn-app-icon-ios-180-v14\.png"[\s\S]*?"sizes": "180x180"[\s\S]*?"purpose": "any"[\s\S]*?"src": "\/gsn-app-icon-192-v14\.png"[\s\S]*?"sizes": "192x192"[\s\S]*?"purpose": "any"[\s\S]*?"src": "\/gsn-app-icon-512-v14\.png"[\s\S]*?"sizes": "512x512"[\s\S]*?"purpose": "any"/,
+  "PWA manifest must expose v14 same-composition 180, 192, and 512 PNG icons."
 );
 
 assertContains(
   "frontend/public/manifest.webmanifest",
-  /"src": "\/gsn-app-icon-ios-180-v13\.png"[\s\S]*?"sizes": "180x180"[\s\S]*?"src": "\/gsn-app-icon-192-v13\.png"[\s\S]*?"sizes": "192x192"[\s\S]*?"src": "\/gsn-app-icon-512-v13\.png"[\s\S]*?"sizes": "512x512"/,
-  "Web manifest must expose dedicated 180, 192, and 512 GSN app icons."
+  /"src": "\/gsn-app-icon-ios-180-v14\.png"[\s\S]*?"sizes": "180x180"[\s\S]*?"purpose": "any"[\s\S]*?"src": "\/gsn-app-icon-192-v14\.png"[\s\S]*?"sizes": "192x192"[\s\S]*?"purpose": "any"[\s\S]*?"src": "\/gsn-app-icon-512-v14\.png"[\s\S]*?"sizes": "512x512"[\s\S]*?"purpose": "any"/,
+  "Web manifest must expose v14 same-composition 180, 192, and 512 PNG icons."
+);
+
+assertNotContains(
+  "frontend/public/manifest.json",
+  /maskable|gsn-app-icon\.svg/,
+  "PWA manifest must not offer Android a separate maskable/SVG install icon that can drop the outer gold ring."
+);
+
+assertNotContains(
+  "frontend/public/manifest.webmanifest",
+  /maskable|gsn-app-icon\.svg/,
+  "Web manifest must not offer Android a separate maskable/SVG install icon that can drop the outer gold ring."
+);
+
+assertContains(
+  "frontend/src/components/GsnInstallPrompt.tsx",
+  /src="\/gsn-app-icon-ios-180-v14\.png"/,
+  "Install prompt preview must show the same v14 Apple-style icon used for phone shortcuts."
 );
 
 assertPngDimensions(
-  "frontend/public/gsn-app-icon-ios-180-v13.png",
+  "frontend/public/gsn-app-icon-ios-180-v14.png",
   180,
   180,
   "iPhone touch icon must be a real 180x180 PNG, not a cropped or mislabeled asset."
 );
 
 assertPngDimensions(
-  "frontend/public/gsn-app-icon-192-v13.png",
+  "frontend/public/gsn-app-icon-192-v14.png",
   192,
   192,
   "PWA 192 icon must be a real 192x192 PNG, not a cropped or mislabeled asset."
 );
 
 assertPngDimensions(
-  "frontend/public/gsn-app-icon-512-v13.png",
+  "frontend/public/gsn-app-icon-512-v14.png",
   512,
   512,
   "PWA 512 icon must be a real 512x512 PNG."
 );
 
 assertPngQuietEdge(
-  "frontend/public/gsn-app-icon-ios-180-v13.png",
+  "frontend/public/gsn-app-icon-ios-180-v14.png",
   "iPhone touch icon must keep a quiet navy safe zone so iOS rounding does not crop gold border or shield artwork."
 );
 
 assertPngQuietEdge(
-  "frontend/public/gsn-app-icon-192-v13.png",
+  "frontend/public/gsn-app-icon-192-v14.png",
   "PWA 192 icon must keep a quiet navy safe zone so phone launchers do not crop gold border or shield artwork."
 );
 
 assertPngQuietEdge(
-  "frontend/public/gsn-app-icon-512-v13.png",
+  "frontend/public/gsn-app-icon-512-v14.png",
   "PWA 512 icon must keep a quiet navy safe zone so phone launchers do not crop gold border or shield artwork."
 );
 
 if (existsSync(join(repoRoot, "frontend/dist"))) {
   assertBuiltArtifactContains(
     "frontend/dist/index.html",
-    /<link rel="apple-touch-icon" sizes="180x180" href="\/gsn-app-icon-ios-180-v13\.png" \/>/,
+    /<link rel="apple-touch-icon" sizes="180x180" href="\/gsn-app-icon-ios-180-v14\.png" \/>/,
     "Built deploy artifact must keep the dedicated iPhone Apple touch icon metadata."
   );
 
   assertBuiltArtifactContains(
     "frontend/dist/manifest.json",
-    /"src": "\/gsn-app-icon-ios-180-v13\.png"[\s\S]*?"sizes": "180x180"[\s\S]*?"src": "\/gsn-app-icon-192-v13\.png"[\s\S]*?"sizes": "192x192"[\s\S]*?"src": "\/gsn-app-icon-512-v13\.png"[\s\S]*?"sizes": "512x512"/,
-    "Built deploy manifest must expose the iPhone, 192, and 512 GSN app icons."
+    /"src": "\/gsn-app-icon-ios-180-v14\.png"[\s\S]*?"sizes": "180x180"[\s\S]*?"purpose": "any"[\s\S]*?"src": "\/gsn-app-icon-192-v14\.png"[\s\S]*?"sizes": "192x192"[\s\S]*?"purpose": "any"[\s\S]*?"src": "\/gsn-app-icon-512-v14\.png"[\s\S]*?"sizes": "512x512"[\s\S]*?"purpose": "any"/,
+    "Built deploy manifest must expose the v14 same-composition iPhone, 192, and 512 GSN app icons."
   );
 
   assertBuiltArtifactContains(
     "frontend/dist/manifest.webmanifest",
-    /"src": "\/gsn-app-icon-ios-180-v13\.png"[\s\S]*?"sizes": "180x180"[\s\S]*?"src": "\/gsn-app-icon-192-v13\.png"[\s\S]*?"sizes": "192x192"[\s\S]*?"src": "\/gsn-app-icon-512-v13\.png"[\s\S]*?"sizes": "512x512"/,
-    "Built deploy web manifest must expose the iPhone, 192, and 512 GSN app icons."
+    /"src": "\/gsn-app-icon-ios-180-v14\.png"[\s\S]*?"sizes": "180x180"[\s\S]*?"purpose": "any"[\s\S]*?"src": "\/gsn-app-icon-192-v14\.png"[\s\S]*?"sizes": "192x192"[\s\S]*?"purpose": "any"[\s\S]*?"src": "\/gsn-app-icon-512-v14\.png"[\s\S]*?"sizes": "512x512"[\s\S]*?"purpose": "any"/,
+    "Built deploy web manifest must expose the v14 same-composition iPhone, 192, and 512 GSN app icons."
   );
 
   assertBuiltArtifactContains(
     "frontend/dist/sw.js",
-    /const CACHE_VERSION = "gsn-pwa-shell-v13"[\s\S]*?"\/gsn-app-icon-ios-180-v13\.png"/,
+    /const CACHE_VERSION = "gsn-pwa-shell-v14"[\s\S]*?"\/gsn-app-icon-ios-180-v14\.png"[\s\S]*?"\/gsn-app-icon-192-v14\.png"[\s\S]*?"\/gsn-app-icon-512-v14\.png"/,
     "Built deploy service worker must precache the iPhone-safe app icon."
   );
 
   assertPngDimensions(
-    "frontend/dist/gsn-app-icon-ios-180-v13.png",
+    "frontend/dist/gsn-app-icon-ios-180-v14.png",
     180,
     180,
     "Built iPhone touch icon must be a real 180x180 PNG."
   );
 
   assertPngQuietEdge(
-    "frontend/dist/gsn-app-icon-ios-180-v13.png",
+    "frontend/dist/gsn-app-icon-ios-180-v14.png",
     "Built iPhone touch icon must keep a quiet navy safe zone."
+  );
+
+  assertPngDimensions(
+    "frontend/dist/gsn-app-icon-192-v14.png",
+    192,
+    192,
+    "Built Android/PWA 192 icon must be a real 192x192 PNG."
+  );
+
+  assertPngDimensions(
+    "frontend/dist/gsn-app-icon-512-v14.png",
+    512,
+    512,
+    "Built Android/PWA 512 icon must be a real 512x512 PNG."
   );
 }
 

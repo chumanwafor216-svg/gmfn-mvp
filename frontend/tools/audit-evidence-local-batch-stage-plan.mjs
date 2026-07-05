@@ -100,8 +100,8 @@ assertContains(
 
 assertContains(
   "scope",
-  /outOfScopeEvidenceBatchPrefixes[\s\S]*?docs\/external_review\/[\s\S]*?frontend\/screenshots\/[\s\S]*?screenshots\//,
-  "Shared scope module must define the explicitly out-of-scope prefixes."
+  /outOfScopeEvidenceBatchPrefixes[\s\S]*?docs\/external_review\/[\s\S]*?frontend\/screenshots\/[\s\S]*?screenshots\/[\s\S]*?docs\/GSN_PWA_ICON_LOCAL_BATCH_MANIFEST\.md[\s\S]*?docs\/SCREEN_SPECS\.md[\s\S]*?frontend\/index\.html[\s\S]*?frontend\/public\/manifest\.json[\s\S]*?frontend\/public\/manifest\.webmanifest[\s\S]*?frontend\/public\/sw\.js[\s\S]*?frontend\/src\/components\/GsnInstallPrompt\.tsx[\s\S]*?frontend\/tools\/audit-icon-protocol\.mjs[\s\S]*?frontend\/tools\/pwa-icon-local-batch-scope\.mjs[\s\S]*?frontend\/tools\/print-pwa-icon-local-batch-stage-plan\.mjs[\s\S]*?frontend\/tools\/audit-pwa-icon-local-batch-stage-plan\.mjs[\s\S]*?frontend\/tools\/audit-pwa-icon-local-batch-status-scope\.mjs[\s\S]*?frontend\/tools\/verify-pwa-icon-publish-readiness-local\.mjs[\s\S]*?frontend\/tools\/audit-pwa-icon-publish-readiness-nonmutating\.mjs[\s\S]*?frontend\/public\/gsn-app-icon-ios-180-v14\.png[\s\S]*?frontend\/public\/gsn-app-icon-192-v14\.png[\s\S]*?frontend\/public\/gsn-app-icon-512-v14\.png[\s\S]*?frontend\/tools\/combined-local-batch-scope\.mjs[\s\S]*?frontend\/tools\/print-combined-local-batch-stage-plan\.mjs[\s\S]*?frontend\/tools\/audit-combined-local-batch-status-scope\.mjs[\s\S]*?frontend\/tools\/audit-combined-local-batch-stage-plan\.mjs[\s\S]*?frontend\/tools\/verify-combined-local-batch-readiness\.mjs[\s\S]*?frontend\/tools\/audit-combined-local-batch-readiness-nonmutating\.mjs[\s\S]*?docs\/GSN_COMBINED_LOCAL_BATCH_MANIFEST\.md[\s\S]*?frontend\/tools\/audit-combined-local-batch-manifest\.mjs/,
+  "Shared scope module must define the explicitly out-of-scope prefixes, separate local PWA icon-batch paths, and combined publish-planning guard paths."
 );
 
 assertContains(
@@ -118,13 +118,13 @@ assertContains(
 
 assertContains(
   "stagePlan",
-  /read-only preview[\s\S]*?No staging, commit, push, GitHub Actions, or Render deploy is performed[\s\S]*?owner chooses `2`[\s\S]*?owner choice `1`/,
-  "Stage plan must state it is a read-only future plan and not for owner choice 1 publishing."
+  /read-only scope preview[\s\S]*?No staging, commit, push, GitHub Actions, or Render deploy is performed[\s\S]*?future owner-approved republish or follow-up batch[\s\S]*?owner choice `1`/,
+  "Stage plan must state it is a read-only republish/follow-up plan and not for owner choice 1 publishing."
 );
 
 assertContains(
   "stagePlan",
-  /Unabated truth:[\s\S]*?only prints the intended file scope[\s\S]*?does not prove production payloads, live authorization, build health, visual quality, or deployment state/,
+  /Unabated truth:[\s\S]*?only prints the intended file scope[\s\S]*?does not prove production payloads, live authorization, build health, visual quality, Render deploy acceptance, or deployment completion/,
   "Stage plan must block overclaims about what it proves."
 );
 
@@ -134,9 +134,21 @@ assertNotContains(
   "Stage plan must not spawn commands or mutate files."
 );
 
+assertNotContains(
+  "stagePlan",
+  /read-only future stage plan|owner chooses `2`|owner-choice-`2`|future batch scope|future publish scope|Before publishing/,
+  "Stage plan must not restore stale unpublished-state or pre-publish wording."
+);
+
+assertNotContains(
+  "manifest",
+  /Before publishing, rerun|read-only future stage plan|owner-choice-`2` path|future batch scope|future publish scope/,
+  "Manifest stage-plan section must not restore stale unpublished-state or pre-publish wording."
+);
+
 assertContains(
   "manifest",
-  /print:evidence-local-batch-stage-plan[\s\S]*?audit:evidence-local-batch-stage-plan[\s\S]*?read-only future stage plan/,
+  /print:evidence-local-batch-stage-plan[\s\S]*?audit:evidence-local-batch-stage-plan[\s\S]*?future republish or follow-up/,
   "Manifest must document the stage-plan preview and its audit."
 );
 
@@ -173,5 +185,5 @@ if (findings.length > 0) {
 }
 
 console.log(
-  "Evidence local batch stage-plan audit passed: future staging scope is printable, caged, and non-mutating."
+  "Evidence local batch stage-plan audit passed: republish/follow-up scope is printable, caged, and non-mutating."
 );

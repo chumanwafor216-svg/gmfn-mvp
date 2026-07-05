@@ -59,6 +59,13 @@ function assertContains(key, pattern, message, text) {
   addFinding(key, -1, message, text || pattern.toString());
 }
 
+function assertNotContains(key, pattern, message) {
+  const source = sourceByKey[key];
+  const match = source.match(pattern);
+  if (!match) return;
+  addFinding(key, source.indexOf(match[0]), message, match[0]);
+}
+
 function assertScript(name, command) {
   if (packageJson.scripts?.[name] === command) return;
   findings.push({
@@ -128,21 +135,39 @@ assertScript(
   "node tools/audit-live-evidence-boundary-refusals.mjs"
 );
 
+assertNotContains(
+  "gapLog",
+  /future batch scope|future publish scope|future stage list|waiting for a future publish decision|Render has deployed the current local changes/,
+  "Gap log must not restore stale unpublished-state or deploy-completion wording."
+);
+
+assertNotContains(
+  "stagePlan",
+  /read-only future stage plan|owner chooses `2`|owner-choice-`2`|future batch scope|future publish scope|Before publishing/,
+  "Stage plan must not restore stale unpublished-state or pre-publish wording."
+);
+
 assertContains(
   "gapLog",
-  /What Local Verification Proves[\s\S]*?evidence-boundary source audits[\s\S]*?mocked browser route-state smokes[\s\S]*?public TrustSlip Verify[\s\S]*?public community verification[\s\S]*?signed-in Trust Passport[\s\S]*?visible boundary language[\s\S]*?future publish scope[\s\S]*?without performing Git or deployment actions/,
+  /Latest Publish Fact[\s\S]*?044ddf4bf48c7e7065942aa1d7657a06a75b7bfb[\s\S]*?044ddf4b[\s\S]*?28752245335[\s\S]*?dep-d95b0tnaqgkc73etv5s0[\s\S]*?deploy_api=false[\s\S]*?proves only that the target commit was pushed and the frontend deploy\s+request was accepted[\s\S]*?does not prove Render deployment completion, live app\s+availability, live API authorization, production payload shape, production\s+build health, or visual QA/,
+  "Gap log must record the latest publish/deploy-request fact without overclaiming live proof."
+);
+
+assertContains(
+  "gapLog",
+  /What Local Verification Proves[\s\S]*?evidence-boundary source audits[\s\S]*?mocked browser route-state smokes[\s\S]*?public TrustSlip Verify[\s\S]*?public community verification[\s\S]*?signed-in Trust Passport[\s\S]*?visible boundary language[\s\S]*?future republish or follow-up scope[\s\S]*?without performing Git or deployment actions/,
   "Gap log must say what local verification actually proves."
 );
 
 assertContains(
   "gapLog",
-  /What Local Verification Does Not Prove[\s\S]*?live backend authorization[\s\S]*?production payload shape[\s\S]*?production database records[\s\S]*?Render has deployed[\s\S]*?full mobile\/desktop visual quality[\s\S]*?legal, bank, government, regulatory, escrow, delivery, payout, or credit\s+approval/,
+  /What Local Verification Does Not Prove[\s\S]*?live backend authorization[\s\S]*?production payload shape[\s\S]*?production database records[\s\S]*?Render deployment completion or live availability[\s\S]*?full mobile\/desktop visual quality[\s\S]*?legal, bank, government, regulatory, escrow, delivery, payout, or credit\s+approval/,
   "Gap log must explicitly block local verification from being treated as live production proof."
 );
 
 assertContains(
   "gapLog",
-  /Before Claiming Live Evidence Proof[\s\S]*?audit:evidence-display-boundary-batch[\s\S]*?smoke:evidence-display-boundary-batch[\s\S]*?verify:evidence-display-boundary-local[\s\S]*?verify:evidence-live-readiness-local[\s\S]*?verify:evidence-boundary-local-all[\s\S]*?print:evidence-local-batch-stage-plan[\s\S]*?audit:evidence-local-batch-stage-plan[\s\S]*?verify:evidence-publish-readiness-local[\s\S]*?npm --prefix frontend run build[\s\S]*?Live public API boundary[\s\S]*?Live signed-in API boundary[\s\S]*?Render deployment[\s\S]*?Visual QA/,
+  /Before Claiming Live Evidence Proof[\s\S]*?audit:evidence-display-boundary-batch[\s\S]*?smoke:evidence-display-boundary-batch[\s\S]*?verify:evidence-display-boundary-local[\s\S]*?verify:evidence-live-readiness-local[\s\S]*?verify:evidence-boundary-local-all[\s\S]*?Republish\/follow-up scope preview[\s\S]*?print:evidence-local-batch-stage-plan[\s\S]*?audit:evidence-local-batch-stage-plan[\s\S]*?verify:evidence-publish-readiness-local[\s\S]*?npm --prefix frontend run build[\s\S]*?Live public API boundary[\s\S]*?Live signed-in API boundary[\s\S]*?Render deployment[\s\S]*?Visual QA/,
   "Gap log must list the extra proof layers needed before stronger live claims."
 );
 
@@ -202,13 +227,13 @@ assertContains(
 
 assertContains(
   "stagePlan",
-  /read-only preview[\s\S]*?No staging, commit, push, GitHub Actions, or Render deploy is performed[\s\S]*?Unabated truth:[\s\S]*?does not prove production payloads, live authorization, build health, visual quality, or deployment state/,
+  /read-only scope preview[\s\S]*?No staging, commit, push, GitHub Actions, or Render deploy is performed[\s\S]*?Unabated truth:[\s\S]*?does not prove production payloads, live authorization, build health, visual quality, Render deploy acceptance, or deployment completion/,
   "Stage plan must keep future scope printing separate from live proof."
 );
 
 assertContains(
   "stagePlanAudit",
-  /Shared scope module must define the in-scope evidence batch files[\s\S]*?Status-scope audit must consume the shared evidence batch scope[\s\S]*?Stage plan must not spawn commands or mutate files[\s\S]*?future staging scope is printable, caged, and non-mutating/,
+  /Shared scope module must define the in-scope evidence batch files[\s\S]*?Status-scope audit must consume the shared evidence batch scope[\s\S]*?Stage plan must not spawn commands or mutate files[\s\S]*?republish\/follow-up scope is printable, caged, and non-mutating/,
   "Stage-plan audit must cage printable scope and non-mutating behavior."
 );
 

@@ -105,6 +105,10 @@ Rules:
 - iPhone home-screen installs must use a dedicated `180x180` Apple touch icon
   with a quiet navy safe zone around the gold border and shield/star emblem.
   Do not point `apple-touch-icon` at a cropped or edge-to-edge manifest icon.
+- Android and other phone home-screen shortcuts should use the same navy tile,
+  outer gold ring, and shield/star composition as the Apple touch icon. Do not
+  give Android a separate manifest SVG or maskable icon that can drop the outer
+  ring or make the shortcut look like a different GSN logo.
 - If an existing iPhone home-screen shortcut still shows an old cropped or
   blank icon, the prompt may explain that iOS caches icons and the user should
   remove the old shortcut and add GSN again. When this recurs after a verified
