@@ -75,6 +75,11 @@ export default function LoanDecisionPanel({
   return (
     <div className="rounded-2xl border bg-white p-4 shadow-sm">
       <div className="mb-3 text-lg font-bold">Decision Intelligence</div>
+      <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm leading-6 text-amber-900">
+        Decision intelligence is support evidence for review. It is not loan
+        approval, bank approval, payment movement, auto-debit authority, payout
+        authority, or release authority.
+      </div>
 
       <div className="mb-4 grid grid-cols-1 gap-4 md:grid-cols-4">
         <div className="rounded-xl bg-slate-50 p-3">
@@ -84,7 +89,7 @@ export default function LoanDecisionPanel({
           </div>
         </div>
         <div className="rounded-xl bg-slate-50 p-3">
-          <div className="text-slate-500">Recommendation</div>
+          <div className="text-slate-500">Support reading</div>
           <div className="mt-2">
             <span
               className={`rounded-full px-3 py-1 text-sm font-semibold ${recommendationClass(

@@ -48,6 +48,14 @@ const protectedAudits = [
     script: "audit-community-join-requests-layout.mjs",
   },
   {
+    label: "community confirmation outcome boundary",
+    script: "audit-community-confirmation-outcome-boundary.mjs",
+  },
+  {
+    label: "community verification boundary",
+    script: "audit-community-verification-boundary.mjs",
+  },
+  {
     label: "shop control button and field inventory",
     script: "audit-shop-control-button-inventory.mjs",
   },

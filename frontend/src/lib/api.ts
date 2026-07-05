@@ -71,6 +71,7 @@ export type WelcomeIntent = "invited" | "founder" | "approved" | "existing";
 
 type RequestOptions = {
   header_clan_id?: number | null;
+  includeAuth?: boolean;
   quiet?: boolean;
   timeoutMs?: number;
 };
@@ -451,7 +452,7 @@ async function httpJson(
 ): Promise<any> {
   const headers: Record<string, string> = { Accept: "application/json" };
 
-  const tok = getAccessToken();
+  const tok = options?.includeAuth === false ? null : getAccessToken();
   if (tok) headers["Authorization"] = `Bearer ${tok}`;
 
   const hasExplicitHeaderClanId =
@@ -2108,7 +2109,9 @@ export async function verifyTrustSlip(
     `/trust-slips/verify/${encodeURIComponent(String(code))}${buildQuery({
       level: level || undefined,
     })}`,
-    "GET"
+    "GET",
+    undefined,
+    { includeAuth: false, header_clan_id: null }
   );
 }
 
@@ -2155,7 +2158,9 @@ export async function getPublicCommunityConfirmation(
 ): Promise<any> {
   return httpJson(
     `/community-confirmations/public/${encodeURIComponent(String(publicToken))}`,
-    "GET"
+    "GET",
+    undefined,
+    { includeAuth: false, header_clan_id: null }
   );
 }
 
@@ -2164,7 +2169,9 @@ export async function getPublicCommunityVerification(
 ): Promise<any> {
   return httpJson(
     `/verify/community/${encodeURIComponent(String(communityKey))}`,
-    "GET"
+    "GET",
+    undefined,
+    { includeAuth: false, header_clan_id: null }
   );
 }
 
@@ -2176,7 +2183,9 @@ export async function getPublicCommunityMemberVerification(
     `/verify/community/${encodeURIComponent(String(communityKey))}/member/${encodeURIComponent(
       String(memberKey)
     )}`,
-    "GET"
+    "GET",
+    undefined,
+    { includeAuth: false, header_clan_id: null }
   );
 }
 
