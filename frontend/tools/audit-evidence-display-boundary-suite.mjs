@@ -70,12 +70,48 @@ function assertTool(path) {
 
 [
   [
+    "verify:evidence-boundary-local-all",
+    "node tools/verify-evidence-boundary-local-all.mjs",
+  ],
+  [
+    "verify:evidence-display-boundary-local",
+    "node tools/verify-evidence-display-boundary-local.mjs",
+  ],
+  [
+    "verify:evidence-live-readiness-local",
+    "node tools/verify-evidence-live-readiness-local.mjs",
+  ],
+  [
+    "verify:evidence-publish-readiness-local",
+    "node tools/verify-evidence-publish-readiness-local.mjs",
+  ],
+  [
+    "print:evidence-local-batch-stage-plan",
+    "node tools/print-evidence-local-batch-stage-plan.mjs",
+  ],
+  [
     "audit:evidence-display-boundary-batch",
     "node tools/audit-evidence-display-boundary-batch.mjs",
   ],
   [
     "audit:evidence-display-boundary-suite",
     "node tools/audit-evidence-display-boundary-suite.mjs",
+  ],
+  [
+    "audit:evidence-boundary-local-batch-manifest",
+    "node tools/audit-evidence-boundary-local-batch-manifest.mjs",
+  ],
+  [
+    "audit:evidence-publish-readiness-nonmutating",
+    "node tools/audit-evidence-publish-readiness-nonmutating.mjs",
+  ],
+  [
+    "audit:evidence-local-batch-status-scope",
+    "node tools/audit-evidence-local-batch-status-scope.mjs",
+  ],
+  [
+    "audit:evidence-local-batch-stage-plan",
+    "node tools/audit-evidence-local-batch-stage-plan.mjs",
   ],
   [
     "audit:public-trustslip-verify-boundary",
@@ -114,6 +150,26 @@ function assertTool(path) {
     "node tools/audit-evidence-field-mapping-decision-log.mjs",
   ],
   [
+    "audit:evidence-live-verification-gap-log",
+    "node tools/audit-evidence-live-verification-gap-log.mjs",
+  ],
+  [
+    "audit:evidence-live-fixture-runbook",
+    "node tools/audit-evidence-live-fixture-runbook.mjs",
+  ],
+  [
+    "audit:live-evidence-boundaries",
+    "node tools/audit-live-evidence-boundaries.mjs",
+  ],
+  [
+    "audit:live-evidence-boundary-refusals",
+    "node tools/audit-live-evidence-boundary-refusals.mjs",
+  ],
+  [
+    "smoke:evidence-display-boundary-batch",
+    "node tools/smoke-evidence-display-boundary-batch.mjs",
+  ],
+  [
     "smoke:community-confirmation-outcome-boundary",
     "node tools/smoke-community-confirmation-outcome-boundary.mjs",
   ],
@@ -140,8 +196,18 @@ function assertTool(path) {
 ].forEach(([name, command]) => assertScript(name, command));
 
 [
+  "frontend/tools/verify-evidence-boundary-local-all.mjs",
+  "frontend/tools/verify-evidence-display-boundary-local.mjs",
+  "frontend/tools/verify-evidence-live-readiness-local.mjs",
+  "frontend/tools/verify-evidence-publish-readiness-local.mjs",
+  "frontend/tools/print-evidence-local-batch-stage-plan.mjs",
   "frontend/tools/audit-evidence-display-boundary-suite.mjs",
   "frontend/tools/audit-evidence-display-boundary-batch.mjs",
+  "frontend/tools/audit-evidence-boundary-local-batch-manifest.mjs",
+  "frontend/tools/audit-evidence-publish-readiness-nonmutating.mjs",
+  "frontend/tools/audit-evidence-local-batch-status-scope.mjs",
+  "frontend/tools/audit-evidence-local-batch-stage-plan.mjs",
+  "frontend/tools/evidence-local-batch-scope.mjs",
   "frontend/tools/audit-public-trustslip-verify-boundary.mjs",
   "frontend/tools/audit-community-confirmation-outcome-boundary.mjs",
   "frontend/tools/audit-community-verification-boundary.mjs",
@@ -151,6 +217,11 @@ function assertTool(path) {
   "frontend/tools/audit-marketplace-shop-evidence-boundary.mjs",
   "frontend/tools/audit-community-domain-evidence-readiness-boundary.mjs",
   "frontend/tools/audit-evidence-field-mapping-decision-log.mjs",
+  "frontend/tools/audit-evidence-live-verification-gap-log.mjs",
+  "frontend/tools/audit-evidence-live-fixture-runbook.mjs",
+  "frontend/tools/audit-live-evidence-boundaries.mjs",
+  "frontend/tools/audit-live-evidence-boundary-refusals.mjs",
+  "frontend/tools/smoke-evidence-display-boundary-batch.mjs",
   "frontend/tools/smoke-community-confirmation-outcome-boundary.mjs",
   "frontend/tools/smoke-community-verification-boundary.mjs",
   "frontend/tools/smoke-public-trustslip-verify-states.mjs",
