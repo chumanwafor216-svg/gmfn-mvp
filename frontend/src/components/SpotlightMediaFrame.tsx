@@ -32,6 +32,8 @@ function uniqueMediaValues(values: Array<string | null | undefined>): string[] {
   return [...new Set(values.map((value) => safeStr(value)).filter(Boolean))];
 }
 
+const IMAGE_AUTO_RETRY_LIMIT = 2;
+
 export default function SpotlightMediaFrame(
   props: SpotlightMediaFrameProps
 ) {
@@ -47,6 +49,7 @@ export default function SpotlightMediaFrame(
   const [imageIndex, setImageIndex] = useState(0);
   const [videoFailed, setVideoFailed] = useState(false);
   const [imageFailed, setImageFailed] = useState(false);
+  const [imageRetryCount, setImageRetryCount] = useState(0);
   const [audioUnlocked, setAudioUnlocked] = useState(false);
   const [audioError, setAudioError] = useState("");
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -56,9 +59,65 @@ export default function SpotlightMediaFrame(
     setImageIndex(0);
     setVideoFailed(false);
     setImageFailed(false);
+    setImageRetryCount(0);
     setAudioUnlocked(false);
     setAudioError("");
   }, [imageCandidateKey, props.videoUrl]);
+
+  useEffect(() => {
+    if (
+      !imageFailed ||
+      imageCandidates.length === 0 ||
+      imageRetryCount >= IMAGE_AUTO_RETRY_LIMIT ||
+      typeof window === "undefined"
+    ) {
+      return;
+    }
+
+    const retryDelayMs = 900 * (imageRetryCount + 1);
+    const retryTimer = window.setTimeout(() => {
+      setImageRetryCount((count) => count + 1);
+      setImageIndex(0);
+      setImageFailed(false);
+    }, retryDelayMs);
+
+    return () => window.clearTimeout(retryTimer);
+  }, [imageCandidates.length, imageFailed, imageRetryCount]);
+
+  useEffect(() => {
+    if (
+      imageCandidates.length === 0 ||
+      typeof window === "undefined" ||
+      typeof document === "undefined"
+    ) {
+      return;
+    }
+
+    function retryVisibleMedia() {
+      if (
+        typeof document !== "undefined" &&
+        document.visibilityState &&
+        document.visibilityState !== "visible"
+      ) {
+        return;
+      }
+
+      setImageRetryCount(0);
+      setImageIndex(0);
+      setImageFailed(false);
+      setVideoFailed(false);
+    }
+
+    window.addEventListener("focus", retryVisibleMedia);
+    window.addEventListener("online", retryVisibleMedia);
+    document.addEventListener("visibilitychange", retryVisibleMedia);
+
+    return () => {
+      window.removeEventListener("focus", retryVisibleMedia);
+      window.removeEventListener("online", retryVisibleMedia);
+      document.removeEventListener("visibilitychange", retryVisibleMedia);
+    };
+  }, [imageCandidateKey, imageCandidates.length]);
 
   useEffect(() => {
     const video = videoRef.current;

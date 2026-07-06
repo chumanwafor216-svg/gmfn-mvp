@@ -3298,51 +3298,61 @@ export default function TrustSlipPage() {
                   </span>
                 </div>
 
-                <div style={{ minWidth: 0 }}>
-                  <div
-                    style={{
-                      color: "#AFC4D9",
-                      fontSize: 11,
-                      fontWeight: 1000,
-                      letterSpacing: 1.5,
-                      textTransform: "uppercase",
-                    }}
-                  >
-                    TrustSlip holder
+                <div
+                  data-gsn-trustslip-holder-copy="true"
+                  style={{
+                    minWidth: 0,
+                    display: isCompact ? "contents" : "block",
+                  }}
+                >
+                  <div style={{ minWidth: 0, gridColumn: isCompact ? "2" : undefined }}>
+                    <div
+                      style={{
+                        color: "#AFC4D9",
+                        fontSize: 11,
+                        fontWeight: 1000,
+                        letterSpacing: 1.5,
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      TrustSlip holder
+                    </div>
+                    <div
+                      style={{
+                        color: "#FFFFFF",
+                        fontSize: isCompact ? 24 : 34,
+                        fontWeight: 1000,
+                        lineHeight: 1.04,
+                        marginTop: 4,
+                        overflowWrap: "break-word",
+                      }}
+                    >
+                      {holderName}
+                    </div>
+                    <div
+                      style={{
+                        color: "#DCE8F4",
+                        fontSize: isCompact ? 12 : 15,
+                        fontWeight: 850,
+                        lineHeight: 1.4,
+                        marginTop: 7,
+                      }}
+                    >
+                      Community: {communityName}
+                      <br />
+                      GSN ID: {gmfnId}
+                    </div>
                   </div>
                   <div
-                    style={{
-                      color: "#FFFFFF",
-                      fontSize: isCompact ? 24 : 34,
-                      fontWeight: 1000,
-                      lineHeight: 1.04,
-                      marginTop: 4,
-                      overflowWrap: "break-word",
-                    }}
-                  >
-                    {holderName}
-                  </div>
-                  <div
-                    style={{
-                      color: "#DCE8F4",
-                      fontSize: isCompact ? 12 : 15,
-                      fontWeight: 850,
-                      lineHeight: 1.4,
-                      marginTop: 7,
-                    }}
-                  >
-                    Community: {communityName}
-                    <br />
-                    GSN ID: {gmfnId}
-                  </div>
-                  <div
+                    data-gsn-trustslip-holder-evidence-rows="true"
                     style={{
                       display: "grid",
                       gridTemplateColumns: isCompact
-                        ? "minmax(0, 1fr)"
+                        ? "repeat(2, minmax(0, 1fr))"
                         : "repeat(2, minmax(0, 1fr))",
                       gap: 8,
                       marginTop: 13,
+                      gridColumn: isCompact ? "1 / -1" : undefined,
                     }}
                   >
                     {[

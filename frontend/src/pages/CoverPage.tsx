@@ -1602,8 +1602,6 @@ export default function CoverPage() {
             }}
           >
             <div style={{ ...buttonDockStyle(), display: "grid", gap: 10, justifyItems: "center" }}>
-              {coverIconBadge("shield")}
-
               <PrimaryButton
                 onClick={goNext}
                 busy={busy}

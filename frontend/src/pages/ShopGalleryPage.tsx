@@ -582,9 +582,9 @@ function ReferenceShopSignboardVisual({ compact = false }: { compact?: boolean }
     <div
       aria-hidden="true"
       style={{
-        width: compact ? 64 : 204,
-        height: compact ? 64 : 194,
-        borderRadius: compact ? 18 : 32,
+        width: compact ? 92 : 204,
+        height: compact ? 92 : 194,
+        borderRadius: compact ? 24 : 32,
         position: "relative",
         display: "grid",
         placeItems: "center",
@@ -3010,14 +3010,14 @@ export default function ShopGalleryPage() {
             gridTemplateColumns: "auto minmax(0, 1fr)",
             alignItems: "center",
             gap: isCompact ? 10 : 16,
-            color: "#07172C",
-            padding: isCompact ? "6px 7px" : "10px 12px 12px",
+            color: "#FFFFFF",
+            padding: isCompact ? "8px 10px" : "12px 16px",
             borderRadius: isCompact ? 16 : 22,
             background:
-              "linear-gradient(90deg, rgba(255,255,255,0.94) 0%, rgba(255,252,243,0.88) 58%, rgba(235,244,255,0.92) 100%)",
-            border: "1px solid rgba(214,170,69,0.24)",
+              "linear-gradient(90deg, #061827 0%, #08233A 58%, #0B2D4A 100%)",
+            border: "1px solid rgba(214,170,69,0.44)",
             boxShadow:
-              "0 12px 26px rgba(8,38,67,0.08), inset 0 1px 0 rgba(255,255,255,0.94)",
+              "0 14px 30px rgba(8,38,67,0.16), inset 0 1px 0 rgba(255,255,255,0.12)",
           }}
         >
           <div
@@ -3029,10 +3029,10 @@ export default function ShopGalleryPage() {
               display: "grid",
               placeItems: "center",
               background:
-                "linear-gradient(180deg, #FFFFFF 0%, #F7FAFF 100%)",
-              border: "1px solid rgba(255,232,160,0.34)",
+                "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(247,250,255,0.92) 100%)",
+              border: "1px solid rgba(255,232,160,0.46)",
               boxShadow:
-                "0 12px 24px rgba(8,38,67,0.12), 0 0 18px rgba(214,170,69,0.14), inset 0 1px 0 rgba(255,255,255,0.96)",
+                "0 12px 24px rgba(0,0,0,0.20), 0 0 18px rgba(214,170,69,0.18), inset 0 1px 0 rgba(255,255,255,0.96)",
               overflow: "hidden",
             }}
           >
@@ -3052,7 +3052,7 @@ export default function ShopGalleryPage() {
             <div
               style={{
                 marginTop: 3,
-                color: "#5F7287",
+                color: "rgba(255,255,255,0.78)",
                 fontSize: isCompact ? 10.6 : 14,
                 fontWeight: 760,
                 lineHeight: 1.25,
@@ -3094,7 +3094,7 @@ export default function ShopGalleryPage() {
             position: "relative",
             overflow: "hidden",
             borderRadius: isCompact ? 18 : 30,
-            padding: isCompact ? "8px" : "24px 26px 22px",
+            padding: isCompact ? "10px" : "24px 26px 22px",
             border: "1px solid rgba(214,170,69,0.46)",
             background:
               "radial-gradient(circle at 20% 8%, rgba(246,196,83,0.18) 0%, transparent 28%), radial-gradient(circle at 92% 2%, rgba(47,128,237,0.10) 0%, transparent 32%), linear-gradient(145deg, #FFFFFF 0%, #FFFCF4 54%, #F6FBFF 100%)",
@@ -3128,10 +3128,11 @@ export default function ShopGalleryPage() {
             style={{
               position: "relative",
               display: "grid",
-              gridTemplateColumns: isCompact ? "70px minmax(0, 1fr)" : "220px minmax(0, 1fr)",
+              gridTemplateColumns: isCompact ? "96px minmax(0, 1fr)" : "220px minmax(0, 1fr)",
               alignItems: "center",
               justifyItems: "stretch",
-              gap: isCompact ? 7 : 22,
+              columnGap: isCompact ? 10 : 22,
+              rowGap: isCompact ? 8 : 0,
               minHeight: isCompact ? 0 : undefined,
             }}
           >
@@ -3140,13 +3141,14 @@ export default function ShopGalleryPage() {
               style={{
                 position: "relative",
                 zIndex: 2,
-                width: isCompact ? 64 : 206,
-                height: isCompact ? 64 : 206,
-                borderRadius: isCompact ? 20 : "50%",
+                width: isCompact ? 92 : 206,
+                height: isCompact ? 92 : 206,
+                borderRadius: isCompact ? 24 : "50%",
                 display: "grid",
                 placeItems: "center",
                 justifySelf: "center",
                 alignSelf: isCompact ? "start" : "center",
+                gridRow: isCompact ? "1 / span 3" : undefined,
                 background:
                   "radial-gradient(circle at 36% 30%, rgba(255,255,255,0.95) 0%, rgba(246,196,83,0.18) 46%, rgba(4,24,43,0.92) 100%)",
                 border: "1px solid rgba(214,170,69,0.58)",
@@ -3182,7 +3184,7 @@ export default function ShopGalleryPage() {
             <div
               data-public-shop-signboard-content="true"
               style={{
-                display: "grid",
+                display: isCompact ? "contents" : "grid",
                 gap: isCompact ? 5 : 10,
                 minWidth: 0,
                 width: "100%",
@@ -3192,11 +3194,12 @@ export default function ShopGalleryPage() {
               <h1
                 style={{
                   margin: 0,
+                  gridColumn: isCompact ? "2" : undefined,
                   color: "#061827",
                   fontFamily:
                     "'Inter', 'Segoe UI', 'Arial Black', Arial, sans-serif",
-                  fontSize: isCompact ? 17 : 44,
-                  lineHeight: isCompact ? 1.06 : 1,
+                  fontSize: isCompact ? 22 : 44,
+                  lineHeight: isCompact ? 1.02 : 1,
                   fontWeight: 950,
                   textTransform: "uppercase",
                   letterSpacing: 0,
@@ -3218,6 +3221,7 @@ export default function ShopGalleryPage() {
               <div
                 style={{
                   display: "flex",
+                  gridColumn: isCompact ? "2" : undefined,
                   flexWrap: "wrap",
                   alignItems: "center",
                   gap: isCompact ? 5 : 7,
@@ -3230,14 +3234,14 @@ export default function ShopGalleryPage() {
                     display: "inline-flex",
                     alignItems: "center",
                     gap: isCompact ? 5 : 7,
-                    minHeight: isCompact ? 24 : 34,
-                    padding: isCompact ? "3px 7px" : "7px 12px",
+                    minHeight: isCompact ? 28 : 34,
+                    padding: isCompact ? "4px 8px" : "7px 12px",
                     borderRadius: 999,
                     border: "1px solid rgba(255,255,255,0.28)",
                     background:
                       "linear-gradient(180deg, rgba(248,251,254,0.98) 0%, rgba(234,241,232,0.94) 100%)",
                     color: "#3F4F3F",
-                    fontSize: isCompact ? 9.6 : 13,
+                    fontSize: isCompact ? 11 : 13,
                     fontWeight: 850,
                     overflow: "hidden",
                     boxShadow: "inset 0 1px 0 rgba(255,255,255,0.86)",
@@ -3277,15 +3281,16 @@ export default function ShopGalleryPage() {
                   gridTemplateColumns: isCompact
                     ? "minmax(0, 1fr)"
                     : "minmax(0, 1fr) auto",
+                  gridColumn: isCompact ? "2" : undefined,
                   gap: isCompact ? 5 : 10,
                   alignItems: "center",
-                  minHeight: isCompact ? 34 : 54,
+                  minHeight: isCompact ? 30 : 54,
                 }}
                 aria-label="Shop follow controls"
               >
                 <div
                   style={{
-                    minHeight: isCompact ? 34 : 44,
+                    minHeight: isCompact ? 30 : 44,
                     width: "fit-content",
                     maxWidth: "100%",
                     justifySelf: isCompact ? "start" : "stretch",
@@ -3293,13 +3298,13 @@ export default function ShopGalleryPage() {
                     alignItems: "center",
                     justifyContent: "flex-start",
                     gap: isCompact ? 5 : 8,
-                    padding: isCompact ? "5px 8px" : "8px 12px",
+                    padding: isCompact ? "4px 8px" : "8px 12px",
                     borderRadius: 999,
                     border: "1px solid rgba(214,170,69,0.24)",
                     background:
                       "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(247,250,255,0.94) 100%)",
                     color: "#07172C",
-                    fontSize: isCompact ? 10 : 13,
+                    fontSize: isCompact ? 10.5 : 13,
                     fontWeight: 850,
                     boxShadow:
                       "0 8px 18px rgba(8,38,67,0.08), inset 0 1px 0 rgba(255,255,255,0.94)",
@@ -3312,7 +3317,7 @@ export default function ShopGalleryPage() {
                 {!shopFollowState.isOwner ? (
                   <div
                     style={{
-                      display: "grid",
+                      display: isCompact ? "none" : "grid",
                       gridTemplateColumns:
                         shopFollowState.isFollowing && shopFollowSignedIn
                           ? "minmax(0, 1fr) minmax(0, 1fr)"
@@ -3411,8 +3416,9 @@ export default function ShopGalleryPage() {
                 <div
                   style={{
                     gridColumn: "1 / -1",
+                    display: isCompact ? "none" : "block",
                     color: "#5B6878",
-                    fontSize: isCompact ? 10 : 12,
+                    fontSize: 12,
                     fontWeight: 800,
                     lineHeight: 1.35,
                     maxWidth: "100%",
@@ -3426,17 +3432,18 @@ export default function ShopGalleryPage() {
                 style={{
                   display: "grid",
                   gridTemplateColumns: isCompact
-                    ? "repeat(2, minmax(0, 1fr))"
+                    ? "minmax(0, 1fr)"
                     : "1fr",
+                  gridColumn: isCompact ? "1 / -1" : undefined,
                   gap: 0,
-                  borderRadius: isCompact ? 13 : 18,
+                  borderRadius: isCompact ? 14 : 18,
                   border: "1px solid rgba(214,170,69,0.24)",
                   background:
                     "linear-gradient(180deg, rgba(255,255,255,0.86) 0%, rgba(248,251,254,0.72) 100%)",
                   overflow: "hidden",
                   boxShadow:
                     "0 10px 20px rgba(8,38,67,0.06), inset 0 1px 0 rgba(255,255,255,0.92)",
-                  marginTop: isCompact ? 2 : 0,
+                  marginTop: isCompact ? 0 : 0,
                 }}
               >
                 {[
@@ -3448,20 +3455,17 @@ export default function ShopGalleryPage() {
                     style={{
                       display: "grid",
                       gridTemplateColumns: isCompact
-                        ? "16px minmax(0, 1fr)"
+                        ? "24px minmax(0, 1fr)"
                         : "34px minmax(0, 1fr)",
-                      gap: isCompact ? 3 : 10,
+                      gap: isCompact ? 8 : 10,
                       alignItems: "center",
                       minWidth: 0,
-                      padding: isCompact ? "5px" : "10px 12px",
+                      padding: isCompact ? "8px 10px" : "10px 12px",
                       borderTop:
-                        !isCompact && rowIndex > 0
+                        rowIndex > 0
                           ? "1px solid rgba(214,170,69,0.16)"
                           : "none",
-                      borderLeft:
-                        isCompact && rowIndex > 0
-                          ? "1px solid rgba(214,170,69,0.16)"
-                          : "none",
+                      borderLeft: "none",
                     }}
                   >
                     <span
@@ -3469,9 +3473,9 @@ export default function ShopGalleryPage() {
                       style={{
                         display: "grid",
                         placeItems: "center",
-                        width: isCompact ? 16 : 28,
-                        height: isCompact ? 16 : 28,
-                        borderRadius: isCompact ? 7 : 8,
+                        width: isCompact ? 24 : 28,
+                        height: isCompact ? 24 : 28,
+                        borderRadius: isCompact ? 8 : 8,
                         background: "rgba(246,215,122,0.18)",
                         color: "#8C6829",
                         boxShadow:
@@ -3480,7 +3484,7 @@ export default function ShopGalleryPage() {
                     >
                       <GsnRealisticIcon
                         name={shop3DIconName(row.icon)}
-                        size={isCompact ? 16 : 28}
+                        size={isCompact ? 22 : 28}
                         decorative
                       />
                     </span>
@@ -3492,9 +3496,9 @@ export default function ShopGalleryPage() {
                         alignItems: "baseline",
                         minWidth: 0,
                         color: "#29394A",
-                        fontSize: isCompact ? 8.8 : 13.5,
+                        fontSize: isCompact ? 12.2 : 13.5,
                         fontWeight: 760,
-                        lineHeight: isCompact ? 1.12 : 1.22,
+                        lineHeight: isCompact ? 1.18 : 1.22,
                       }}
                       title={row.value}
                     >

@@ -266,8 +266,28 @@ assertContains(
 );
 
 assertContains(
-  /function ReferenceShopSignboardVisual[\s\S]*?width: compact \? 64 : 204[\s\S]*?height: compact \? 64 : 194[\s\S]*?gridTemplateColumns: isCompact \? "70px minmax\(0, 1fr\)" : "220px minmax\(0, 1fr\)"[\s\S]*?data-public-shop-signboard-icon="true"[\s\S]*?width: isCompact \? 64 : 206[\s\S]*?height: isCompact \? 64 : 206[\s\S]*?borderRadius: isCompact \? 20 : "50%"[\s\S]*?alignSelf: isCompact \? "start" : "center"[\s\S]*?overflow: "hidden"[\s\S]*?data-public-shop-signboard-content="true"/,
-  "Public Shop signboard mobile icon must reserve its own rail and stay clipped inside its tile so it cannot cover follower or warning copy."
+  /function ReferenceShopSignboardVisual[\s\S]*?width: compact \? 92 : 204[\s\S]*?height: compact \? 92 : 194[\s\S]*?borderRadius: compact \? 24 : 32/,
+  "Public Shop compact signboard illustration must stay large enough to avoid dead space inside the hero tile."
+);
+
+assertContains(
+  /gridTemplateColumns: isCompact \? "96px minmax\(0, 1fr\)" : "220px minmax\(0, 1fr\)"[\s\S]*?data-public-shop-signboard-icon="true"[\s\S]*?width: isCompact \? 92 : 206[\s\S]*?height: isCompact \? 92 : 206[\s\S]*?borderRadius: isCompact \? 24 : "50%"[\s\S]*?gridRow: isCompact \? "1 \/ span 3" : undefined[\s\S]*?overflow: "hidden"/,
+  "Public Shop signboard mobile icon must reserve its own rail and stay clipped inside its tile."
+);
+
+assertContains(
+  /data-public-shop-signboard-content="true"[\s\S]*?display: isCompact \? "contents" : "grid"[\s\S]*?gridColumn: isCompact \? "1 \/ -1" : undefined/,
+  "Public Shop compact signboard facts must break out to a full-width row instead of staying cramped beside the hero icon."
+);
+
+assertContains(
+  /shopFollowState\.isOwner[\s\S]*?display: isCompact \? "none" : "grid"[\s\S]*?debugId="shop-gallery\.public-shop\.sign-in-follow"/,
+  "Public Shop compact signboard must not place the follow button between identity and facts on phones."
+);
+
+assertContains(
+  /display: isCompact \? "none" : "block"[\s\S]*?Follow to keep this shop in your GSN updates/,
+  "Public Shop compact signboard must hide repeated follow-helper copy on phones."
 );
 
 assertNotContains(

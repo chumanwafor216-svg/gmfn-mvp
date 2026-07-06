@@ -1292,6 +1292,11 @@ function removeStoredImageValue(key: string | string[], blockedValue: string): v
   }
 }
 
+function isLocalPreviewImageValue(value: string): boolean {
+  const raw = safeStr(value);
+  return raw.startsWith("data:") || raw.startsWith("blob:");
+}
+
 function readFileAsDataUrl(file: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -3203,6 +3208,32 @@ export default function DashboardPage() {
       writeStoredImage(dashboardAvatarStorageKey, nextAvatar);
     }
   }, [dashboardAvatarStorageKey, dashboardAvatarStorageKeys, failedAvatarSrc, me]);
+
+  useEffect(() => {
+    if (!failedAvatarSrc || typeof window === "undefined") return;
+
+    function retryAvatarWhenVisible() {
+      if (
+        typeof document !== "undefined" &&
+        document.visibilityState &&
+        document.visibilityState !== "visible"
+      ) {
+        return;
+      }
+
+      setFailedAvatarSrc("");
+    }
+
+    window.addEventListener("focus", retryAvatarWhenVisible);
+    window.addEventListener("online", retryAvatarWhenVisible);
+    document.addEventListener("visibilitychange", retryAvatarWhenVisible);
+
+    return () => {
+      window.removeEventListener("focus", retryAvatarWhenVisible);
+      window.removeEventListener("online", retryAvatarWhenVisible);
+      document.removeEventListener("visibilitychange", retryAvatarWhenVisible);
+    };
+  }, [failedAvatarSrc]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -5463,7 +5494,9 @@ export default function DashboardPage() {
     if (!failed) return;
 
     setFailedAvatarSrc(failed);
-    removeStoredImageValue(dashboardAvatarStorageKeys, failed);
+    if (isLocalPreviewImageValue(failed)) {
+      removeStoredImageValue(dashboardAvatarStorageKeys, failed);
+    }
     const fallback = readStoredImageExcept(dashboardAvatarStorageKeys, failed);
     setAvatarSrc(fallback);
   }

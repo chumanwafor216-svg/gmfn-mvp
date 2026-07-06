@@ -240,6 +240,12 @@ assertContains(
 
 assertContains(
   "src/pages/TrustSlipPage.tsx",
+  /data-gsn-trustslip-holder-copy="true"[\s\S]*?display: isCompact \? "contents" : "block"[\s\S]*?data-gsn-trustslip-holder-evidence-rows="true"[\s\S]*?gridTemplateColumns: isCompact[\s\S]*?\? "repeat\(2, minmax\(0, 1fr\)\)"[\s\S]*?gridColumn: isCompact \? "1 \/ -1" : undefined/,
+  "TrustSlip mobile holder evidence rows must span under the photo and copy instead of staying trapped in the right column."
+);
+
+assertContains(
+  "src/pages/TrustSlipPage.tsx",
   /Record reference made from the visible TrustSlip fields\. It is not legal proof or payment approval\.[\s\S]*?Record reference for this visible holder-facing TrustSlip\. It helps match this page with its GSN record; it is not legal proof or payment approval\./,
   "Signed-in TrustSlip holder paper must use plain record-reference copy instead of technical fingerprint language."
 );
