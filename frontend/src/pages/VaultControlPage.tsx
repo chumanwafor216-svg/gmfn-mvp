@@ -5,6 +5,7 @@ import {
   StableButton,
   SubtleButton,
 } from "../components/StableButton";
+import PaymentProofSubmissionPanel from "../components/PaymentProofSubmissionPanel";
 import SpotlightMediaFrame from "../components/SpotlightMediaFrame";
 import SocialTagShareButton from "../components/SocialTagShareButton";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
@@ -2033,6 +2034,18 @@ export default function VaultControlPage() {
                 {labelWithIcon("search", "Check payment status")}
               </SubtleButton>
             </div>
+            <PaymentProofSubmissionPanel
+              payment={activeVaultPayment as any}
+              clanId={Number(shop?.clan_id || selectedClanId || (activeVaultPayment as any)?.clan_id || 0)}
+              compact={isCompact}
+              title="Upload proof after transfer"
+              debugIdPrefix="vault-control.payment-proof"
+              onNotice={(tone, text) => showNotice(tone, text)}
+              onUploaded={async (updated) => {
+                setVaultInstruction(updated as ExpectedPaymentRecord);
+                await loadPage();
+              }}
+            />
           </>
         ) : (
           <div style={{ marginTop: 14, ...noticeCard("info") }}>

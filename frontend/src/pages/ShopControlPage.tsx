@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import SpotlightMediaFrame from "../components/SpotlightMediaFrame";
 import PageTopNav from "../components/PageTopNav";
 import GSNBrandMark from "../components/GSNBrandMark";
+import PaymentProofSubmissionPanel from "../components/PaymentProofSubmissionPanel";
 import {
   PrimaryButton,
   SecondaryButton,
@@ -3561,6 +3562,17 @@ export default function ShopControlPage() {
                     )}
                   </span>
                 </div>
+                <PaymentProofSubmissionPanel
+                  payment={latestVaultPayment as any}
+                  clanId={Number(shop?.clan_id || selectedClanId || (latestVaultPayment as any)?.clan_id || 0)}
+                  compact={isCompact}
+                  title="Upload proof after transfer"
+                  debugIdPrefix="shop-control.vault-payment-proof"
+                  onNotice={(tone, text) => showNotice(tone, text)}
+                  onUploaded={async () => {
+                    await loadPage();
+                  }}
+                />
               </div>
             ) : null}
             <div style={{ marginTop: 8, ...controlGrid(isCompact, 160) }}>
@@ -3690,6 +3702,17 @@ export default function ShopControlPage() {
                   <div style={helperText()}>
                     Bank check: {latestMerchantVerifyPayment.matched_bank_event_id ? "Matched" : "Waiting"}
                   </div>
+                  <PaymentProofSubmissionPanel
+                    payment={latestMerchantVerifyPayment as any}
+                    clanId={Number(shop?.clan_id || selectedClanId || (latestMerchantVerifyPayment as any)?.clan_id || 0)}
+                    compact={isCompact}
+                    title="Upload proof after transfer"
+                    debugIdPrefix="shop-control.merchant-verify-payment-proof"
+                    onNotice={(tone, text) => showNotice(tone, text)}
+                    onUploaded={async () => {
+                      await loadPage();
+                    }}
+                  />
                 </>
               ) : null}
             </div>
@@ -3792,6 +3815,17 @@ export default function ShopControlPage() {
                     )}
                   </span>
                 </div>
+                <PaymentProofSubmissionPanel
+                  payment={latestSpotlightPayment as any}
+                  clanId={Number(shop?.clan_id || selectedClanId || (latestSpotlightPayment as any)?.clan_id || 0)}
+                  compact={isCompact}
+                  title="Upload proof after transfer"
+                  debugIdPrefix="shop-control.spotlight-payment-proof"
+                  onNotice={(tone, text) => showNotice(tone, text)}
+                  onUploaded={async () => {
+                    await loadPage();
+                  }}
+                />
               </div>
             ) : null}
             <div
@@ -3918,6 +3952,17 @@ export default function ShopControlPage() {
                     ? `Confirmed ${safeDateTime(latestCommunityPackagePayment.confirmed_at)}`
                     : firstTruthy(latestCommunityPackagePayment.status, "Expected")}
                 </div>
+                <PaymentProofSubmissionPanel
+                  payment={latestCommunityPackagePayment as any}
+                  clanId={Number(shop?.clan_id || selectedClanId || (latestCommunityPackagePayment as any)?.clan_id || 0)}
+                  compact={isCompact}
+                  title="Upload proof after transfer"
+                  debugIdPrefix="shop-control.community-package-payment-proof"
+                  onNotice={(tone, text) => showNotice(tone, text)}
+                  onUploaded={async () => {
+                    await loadPage();
+                  }}
+                />
               </div>
             ) : null}
             <div style={{ marginTop: 12, ...controlGrid(isCompact, 168) }}>

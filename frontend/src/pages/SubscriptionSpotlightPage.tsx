@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { PrimaryButton, SecondaryButton, SubtleButton } from "../components/StableButton";
 import SpotlightMediaFrame from "../components/SpotlightMediaFrame";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
+import PaymentProofSubmissionPanel from "../components/PaymentProofSubmissionPanel";
 import {
   createMarketplaceBroadcast,
   getAccessToken,
@@ -1124,6 +1125,18 @@ export default function SubscriptionSpotlightPage() {
                 {checkingPayment ? "Checking..." : labelWithIcon("search", "Check payment status")}
               </SubtleButton>
             </div>
+            <PaymentProofSubmissionPanel
+              payment={latestPayment as any}
+              clanId={shopClanId || selectedClanId || (latestPayment as any)?.clan_id || 0}
+              compact={isCompact}
+              title="Upload proof after transfer"
+              debugIdPrefix="subscription-spotlight.payment-proof"
+              onNotice={(tone, text) => showNotice(tone, text)}
+              onUploaded={async (updated) => {
+                setCreatedInstruction(updated as ExpectedPaymentRecord);
+                await loadPage(true);
+              }}
+            />
           </>
         ) : (
           <div style={{ marginTop: 14, ...noticeCard("info") }}>
