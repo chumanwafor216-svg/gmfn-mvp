@@ -969,6 +969,7 @@ def my_instruction_config(
             "merchant_verify_subscription",
             "spotlight_subscription",
             "community_package_subscription",
+            "community_domain_subscription",
         ],
         "vault_supported_quantities": [1, 2, 3, 4, 5, 6],
         "vault_config": {

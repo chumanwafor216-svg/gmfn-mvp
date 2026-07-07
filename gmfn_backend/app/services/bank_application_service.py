@@ -358,6 +358,7 @@ def _apply_feature_subscription(
     - merchant_verify_subscription
     - spotlight_subscription
     - community_package_subscription
+    - community_domain_subscription
     """
     if (exp.status or "").lower() != "confirmed":
         return {
@@ -399,6 +400,8 @@ def _apply_feature_subscription(
             feature_code = "merchant_verify"
         elif expected_type == "spotlight_subscription":
             feature_code = "spotlight_priority"
+        elif expected_type == "community_domain_subscription":
+            feature_code = "community_domain"
 
     if not feature_code or not plan_code:
         return {
@@ -464,6 +467,28 @@ def _apply_feature_subscription(
         refresh=False,
     )
 
+    community_domain_activation: Optional[Dict[str, Any]] = None
+    if expected_type == "community_domain_subscription":
+        community_domain_id = _safe_int(meta.get("community_domain_id"), 0)
+        if community_domain_id > 0:
+            from app.db.models import CommunityDomain
+
+            domain = db.get(CommunityDomain, int(community_domain_id))
+            if domain is not None:
+                previous_status = _safe_str(getattr(domain, "status", None), "draft")
+                if previous_status.lower() not in {"closed", "suspended"}:
+                    domain.status = "active"
+                    db.add(domain)
+                community_domain_activation = {
+                    "community_domain_id": int(community_domain_id),
+                    "previous_status": previous_status,
+                    "status": _safe_str(getattr(domain, "status", None), previous_status),
+                    "verification_status": _safe_str(
+                        getattr(domain, "verification_status", None),
+                        "unverified",
+                    ),
+                }
+
     _mark_expected_applied(
         db,
         exp=exp,
@@ -479,6 +504,7 @@ def _apply_feature_subscription(
             "payment_reference": payment_reference,
             "shop_id": int(shop_id) if shop_id is not None else None,
             "vault_activation": vault_activation if expected_type == "vault_subscription" else None,
+            "community_domain_activation": community_domain_activation,
         },
     )
 
@@ -490,6 +516,7 @@ def _apply_feature_subscription(
         "community_member_capacity": "feature.community_member_capacity.activated",
         "rosca_cycle": "feature.rosca_cycle.activated",
         "community_meeting_pack": "feature.community_meeting_pack.activated",
+        "community_domain": "feature.community_domain_subscription.activated",
     }
 
     log_trust_event(
@@ -514,6 +541,7 @@ def _apply_feature_subscription(
             "reference": str(exp.reference_display),
             "shop_id": int(shop_id) if shop_id is not None else None,
             "vault_activation": vault_activation if expected_type == "vault_subscription" else None,
+            "community_domain_activation": community_domain_activation,
             "expires_at": entitlement.expires_at.isoformat()
             if getattr(entitlement, "expires_at", None)
             else None,
@@ -569,6 +597,7 @@ def apply_expected_payment_match(
         "merchant_verify_subscription",
         "spotlight_subscription",
         "community_package_subscription",
+        "community_domain_subscription",
     }:
         return _apply_feature_subscription(db, be=be, exp=exp)
 

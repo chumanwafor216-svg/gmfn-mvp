@@ -1,11 +1,16 @@
 from __future__ import annotations
 
+import hashlib
 import json
+import os
 import re
+import secrets
 from datetime import datetime, timezone
+from decimal import Decimal
+from pathlib import Path
 from typing import Any, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
@@ -28,6 +33,11 @@ from app.db.models import (
     CommunityNodeMembership,
     User,
 )
+from app.services.payment_instruction_service import (
+    ANNUAL_BILLING_CYCLE,
+    create_community_domain_subscription_instruction,
+)
+from app.services.settlement_config_service import get_settlement_config
 
 
 router = APIRouter(prefix="/community-domains", tags=["community-domains"])
@@ -49,6 +59,20 @@ RESERVED_DOMAIN_NAMES = {
     "trust",
 }
 DOMAIN_ADMIN_ROLES = {"owner", "admin", "domain_admin"}
+SETUP_AUTHORITY_EVIDENCE_ACTION_KEY = "domain.setup.authority_evidence"
+COMMUNITY_DOMAIN_EVIDENCE_MAX_BYTES = 10 * 1024 * 1024
+COMMUNITY_DOMAIN_EVIDENCE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".pdf"}
+COMMUNITY_DOMAIN_EVIDENCE_CONTENT_TYPES = {
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+    "application/pdf",
+}
+GENERIC_UPLOAD_CONTENT_TYPES = {
+    "",
+    "application/octet-stream",
+    "binary/octet-stream",
+}
 NODE_ADMIN_ROLES = {
     "node_admin",
     "branch_admin",
@@ -1589,6 +1613,75 @@ def _action_review_evidence_payload(
         "status": row.status,
         "created_at": _iso(row.created_at),
         "updated_at": _iso(row.updated_at),
+    }
+
+
+def _uploads_root() -> Path:
+    raw = str(os.getenv("GMFN_UPLOADS_DIR", "uploads") or "").strip()
+    return Path(raw or "uploads").expanduser()
+
+
+def _community_domain_evidence_dir() -> Path:
+    return _uploads_root() / "community-domain-evidence"
+
+
+def _safe_upload_ext(filename: Optional[str]) -> str:
+    if not filename:
+        return ""
+    return Path(filename).suffix.lower().strip()
+
+
+def _safe_original_filename(filename: Optional[str]) -> str:
+    name = Path(str(filename or "community-domain-evidence")).name.strip()
+    return name[:180] or "community-domain-evidence"
+
+
+def _normalize_upload_content_type(content_type: Optional[str]) -> str:
+    value = str(content_type or "").strip().lower()
+    if ";" in value:
+        value = value.split(";", 1)[0].strip()
+    if value == "image/jpg":
+        return "image/jpeg"
+    return value
+
+
+async def _store_community_domain_evidence_file(file: UploadFile) -> dict[str, Any]:
+    ext = _safe_upload_ext(file.filename)
+    if ext not in COMMUNITY_DOMAIN_EVIDENCE_EXTENSIONS:
+        raise HTTPException(
+            status_code=400,
+            detail="Use a JPG, PNG, WEBP, or PDF evidence file.",
+        )
+
+    content_type = _normalize_upload_content_type(file.content_type)
+    if (
+        content_type not in COMMUNITY_DOMAIN_EVIDENCE_CONTENT_TYPES
+        and content_type not in GENERIC_UPLOAD_CONTENT_TYPES
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail="Use a JPG, PNG, WEBP, or PDF evidence file.",
+        )
+
+    data = await file.read()
+    if not data:
+        raise HTTPException(status_code=400, detail="Evidence file is empty.")
+    if len(data) > COMMUNITY_DOMAIN_EVIDENCE_MAX_BYTES:
+        raise HTTPException(
+            status_code=400,
+            detail="Evidence file is too large. Use a file under 10MB.",
+        )
+
+    upload_dir = _community_domain_evidence_dir()
+    upload_dir.mkdir(parents=True, exist_ok=True)
+    stored_name = f"{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}_{secrets.token_hex(8)}{ext}"
+    storage_key = f"community-domain-evidence/{stored_name}"
+    (upload_dir / stored_name).write_bytes(data)
+    return {
+        "file_name": _safe_original_filename(file.filename),
+        "content_type": content_type or "application/octet-stream",
+        "storage_key": storage_key,
+        "checksum": hashlib.sha256(data).hexdigest(),
     }
 
 
@@ -16923,6 +17016,21 @@ class CommunityDomainDraftIn(BaseModel):
         return _reject_non_text_value(value, info.field_name)
 
 
+class CommunityDomainPaymentInstructionIn(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    clan_id: int = Field(..., ge=1)
+    amount: Decimal = Field(..., gt=Decimal("0"))
+    currency: str = Field(default="GBP", min_length=3, max_length=3)
+    billing_cycle: str = Field(default=ANNUAL_BILLING_CYCLE, min_length=1, max_length=24)
+    quote_note: Optional[str] = Field(default=None, max_length=300)
+
+    @field_validator("currency", "billing_cycle", "quote_note", mode="before")
+    @classmethod
+    def _reject_non_text_payment_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_value(value, info.field_name)
+
+
 class CommunityNodeCreateIn(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
 
@@ -17900,6 +18008,44 @@ def _require_domain_admin_scope(
     )
 
 
+def _require_clan_admin_scope(
+    db: Session,
+    *,
+    clan_id: int,
+    current_user: User,
+) -> ClanMembership:
+    if _clean_role(getattr(current_user, "role", "")) == "admin":
+        membership = (
+            db.query(ClanMembership)
+            .filter(ClanMembership.clan_id == int(clan_id))
+            .filter(ClanMembership.user_id == int(current_user.id))
+            .filter(ClanMembership.left_at.is_(None))
+            .first()
+        )
+        if membership is not None:
+            return membership
+
+    membership = (
+        db.query(ClanMembership)
+        .filter(ClanMembership.clan_id == int(clan_id))
+        .filter(ClanMembership.user_id == int(current_user.id))
+        .filter(ClanMembership.left_at.is_(None))
+        .first()
+    )
+    if membership is None:
+        raise HTTPException(
+            status_code=403,
+            detail="Only a member of the selected community can attach this payment.",
+        )
+
+    if _clean_role(getattr(membership, "role", "")) not in {"admin", "owner", "creator"}:
+        raise HTTPException(
+            status_code=403,
+            detail="Only a community owner or admin can attach this Community Domain payment.",
+        )
+    return membership
+
+
 def _require_domain_member_scope(
     db: Session,
     *,
@@ -18411,6 +18557,56 @@ def _find_root_node(db: Session, community_domain_id: int) -> Optional[Community
     )
 
 
+def _get_or_create_setup_authority_review(
+    db: Session,
+    *,
+    domain: CommunityDomain,
+    current_user: User,
+    request_note: Optional[str],
+) -> CommunityDomainActionReview:
+    target_id = str(int(domain.id))
+    row = (
+        db.query(CommunityDomainActionReview)
+        .filter(CommunityDomainActionReview.community_domain_id == int(domain.id))
+        .filter(CommunityDomainActionReview.action_key == SETUP_AUTHORITY_EVIDENCE_ACTION_KEY)
+        .filter(CommunityDomainActionReview.target_type == "community_domain")
+        .filter(CommunityDomainActionReview.target_id == target_id)
+        .filter(CommunityDomainActionReview.status.in_(REVIEWER_QUEUE_PENDING_STATUSES))
+        .order_by(
+            CommunityDomainActionReview.created_at.desc(),
+            CommunityDomainActionReview.id.desc(),
+        )
+        .first()
+    )
+    if row is not None:
+        return row
+
+    payload = {
+        "purpose": "community_domain_setup_authority_evidence",
+        "verification_boundary": (
+            "Evidence is submitted for private owner/admin review. This record "
+            "does not verify authority or activate the Community Domain by itself."
+        ),
+    }
+    row = CommunityDomainActionReview(
+        community_domain_id=int(domain.id),
+        community_node_id=None,
+        policy_id=None,
+        action_key=SETUP_AUTHORITY_EVIDENCE_ACTION_KEY,
+        requested_by_user_id=int(current_user.id),
+        subject_user_id=None,
+        target_type="community_domain",
+        target_id=target_id,
+        status="pending",
+        request_note=_clean_str(request_note)
+        or "Community Domain setup authority evidence submitted.",
+        payload_json=_json_dump(payload),
+    )
+    db.add(row)
+    db.flush()
+    return row
+
+
 def _matching_policy(
     db: Session,
     *,
@@ -18626,6 +18822,226 @@ def create_community_domain_draft(
     }
 
 
+@router.patch("/{community_domain_id}/profile", response_model=dict[str, Any])
+def update_community_domain_profile(
+    community_domain_id: int,
+    payload: CommunityDomainDraftIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+
+    availability = _domain_available_payload(db, payload.domain_name)
+    normalized_domain_name = availability["normalized_domain_name"]
+    if normalized_domain_name != domain.domain_name and not availability["available"]:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": availability["reason"],
+                "message": "This Community Domain name is not available.",
+                "availability": availability,
+            },
+        )
+
+    domain_type = _clean_template_key(payload.domain_type, domain.domain_type)
+    template_key = _clean_template_key(payload.template_key, domain_type)
+    template = _community_domain_template_for_key_or_none(template_key)
+    if template is None:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "code": "community_domain_template_not_supported",
+                "message": "Choose a supported Community Domain template.",
+                "template_key": template_key,
+                "domain_type": domain_type,
+            },
+        )
+    domain_type_template = _community_domain_template_for_key_or_none(domain_type)
+    if domain_type_template is None or domain_type_template["template_key"] != template["template_key"]:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "code": "community_domain_template_mismatch",
+                "message": "The Community Domain type and template must describe the same approved institutional preset.",
+                "template_key": template_key,
+                "domain_type": domain_type,
+                "expected_template_key": template["template_key"],
+            },
+        )
+
+    domain.domain_name = normalized_domain_name
+    domain.display_name = _clean_str(payload.display_name)
+    domain.domain_type = domain_type
+    domain.template_key = template_key
+    domain.country = _clean_str(payload.country) or None
+    domain.state = _clean_str(payload.state) or None
+    domain.public_profile = _clean_str(payload.public_profile) or None
+
+    root_node = _find_root_node(db, int(domain.id))
+    if root_node is not None:
+        root_node.name = domain.display_name
+
+    try:
+        db.commit()
+    except IntegrityError as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "domain_name_taken",
+                "message": "This Community Domain name is already reserved.",
+            },
+        ) from exc
+
+    db.refresh(domain)
+    if root_node is not None:
+        db.refresh(root_node)
+
+    return {
+        "ok": True,
+        "community_domain": _domain_payload(domain, root_node=root_node),
+        "boundary": (
+            "Profile update only. This does not confirm payment, activate billing, "
+            "verify authority, upload evidence, create members, or launch a public "
+            "Community Domain."
+        ),
+    }
+
+
+@router.get("/{community_domain_id}/setup-evidence", response_model=dict[str, Any])
+def get_community_domain_setup_evidence(
+    community_domain_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+
+    review = (
+        db.query(CommunityDomainActionReview)
+        .filter(CommunityDomainActionReview.community_domain_id == int(domain.id))
+        .filter(
+            CommunityDomainActionReview.action_key
+            == SETUP_AUTHORITY_EVIDENCE_ACTION_KEY
+        )
+        .filter(CommunityDomainActionReview.target_type == "community_domain")
+        .filter(CommunityDomainActionReview.target_id == str(int(domain.id)))
+        .order_by(
+            CommunityDomainActionReview.created_at.desc(),
+            CommunityDomainActionReview.id.desc(),
+        )
+        .first()
+    )
+    evidence_items: list[CommunityDomainActionReviewEvidence] = []
+    if review is not None:
+        evidence_items = (
+            db.query(CommunityDomainActionReviewEvidence)
+            .filter(
+                CommunityDomainActionReviewEvidence.action_review_id
+                == int(review.id)
+            )
+            .filter(CommunityDomainActionReviewEvidence.status == "active")
+            .order_by(
+                CommunityDomainActionReviewEvidence.created_at.desc(),
+                CommunityDomainActionReviewEvidence.id.desc(),
+            )
+            .all()
+        )
+
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "action_review": _action_review_payload(review) if review is not None else None,
+        "items": [_action_review_evidence_payload(item) for item in evidence_items],
+        "total": len(evidence_items),
+        "boundary": (
+            "Setup evidence is private owner/admin evidence for Community Domain "
+            "setup review. This does not verify authority, publish proof, activate "
+            "billing, or activate the Community Domain."
+        ),
+    }
+
+
+@router.post("/{community_domain_id}/setup-evidence", status_code=201, response_model=dict[str, Any])
+async def submit_community_domain_setup_evidence(
+    community_domain_id: int,
+    evidence_type: str = Form(default="authority_document", min_length=1, max_length=48),
+    title: str = Form(..., min_length=2, max_length=160),
+    description: Optional[str] = Form(default=None, max_length=1200),
+    external_reference: Optional[str] = Form(default=None, max_length=512),
+    file: Optional[UploadFile] = File(default=None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+
+    clean_reference = _clean_str(external_reference) or None
+    if file is None and clean_reference is None:
+        raise HTTPException(
+            status_code=400,
+            detail="Add an evidence file or an external evidence reference.",
+        )
+
+    stored: dict[str, Any] = {}
+    if file is not None:
+        stored = await _store_community_domain_evidence_file(file)
+
+    review = _get_or_create_setup_authority_review(
+        db,
+        domain=domain,
+        current_user=current_user,
+        request_note=description,
+    )
+    _ensure_action_review_accepts_append(review)
+
+    evidence = CommunityDomainActionReviewEvidence(
+        action_review_id=int(review.id),
+        community_domain_id=int(domain.id),
+        community_node_id=None,
+        submitted_by_user_id=int(current_user.id),
+        evidence_type=_clean_role(evidence_type, "authority_document"),
+        title=_clean_str(title),
+        description=_clean_str(description) or None,
+        file_name=stored.get("file_name"),
+        content_type=stored.get("content_type"),
+        storage_key=stored.get("storage_key"),
+        external_reference=clean_reference,
+        checksum=stored.get("checksum"),
+        status="active",
+    )
+    db.add(evidence)
+    db.commit()
+    db.refresh(review)
+    db.refresh(evidence)
+
+    evidence_items = (
+        db.query(CommunityDomainActionReviewEvidence)
+        .filter(CommunityDomainActionReviewEvidence.action_review_id == int(review.id))
+        .filter(CommunityDomainActionReviewEvidence.status == "active")
+        .order_by(
+            CommunityDomainActionReviewEvidence.created_at.desc(),
+            CommunityDomainActionReviewEvidence.id.desc(),
+        )
+        .all()
+    )
+
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "action_review": _action_review_payload(review),
+        "evidence": _action_review_evidence_payload(evidence),
+        "items": [_action_review_evidence_payload(item) for item in evidence_items],
+        "total": len(evidence_items),
+        "boundary": (
+            "Setup evidence submitted for private review. This records evidence "
+            "against a setup action review; it does not verify authority, publish "
+            "proof, activate billing, or activate the Community Domain."
+        ),
+    }
+
+
 @router.post("/{community_domain_id}/package-quote", response_model=dict[str, Any])
 def create_community_domain_package_quote(
     community_domain_id: int,
@@ -18644,6 +19060,66 @@ def create_community_domain_package_quote(
             "verify ownership."
         ),
     }
+
+
+@router.post("/{community_domain_id}/payment-instruction", response_model=dict[str, Any])
+def create_community_domain_payment_instruction(
+    community_domain_id: int,
+    payload: CommunityDomainPaymentInstructionIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+    _require_clan_admin_scope(
+        db,
+        clan_id=int(payload.clan_id),
+        current_user=current_user,
+    )
+
+    if domain.clan_id is not None and int(domain.clan_id) != int(payload.clan_id):
+        raise HTTPException(
+            status_code=400,
+            detail="This Community Domain is already attached to another community.",
+        )
+
+    try:
+        out = create_community_domain_subscription_instruction(
+            db,
+            clan_id=int(payload.clan_id),
+            owner_user_id=int(current_user.id),
+            community_domain_id=int(domain.id),
+            domain_name=str(domain.domain_name),
+            display_name=str(domain.display_name),
+            amount=payload.amount,
+            currency=payload.currency,
+            billing_cycle=payload.billing_cycle,
+            quote_note=payload.quote_note,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    if domain.clan_id is None:
+        domain.clan_id = int(payload.clan_id)
+        db.add(domain)
+        db.commit()
+        db.refresh(domain)
+
+    out["settlement"] = get_settlement_config()
+    out["instruction_type"] = "community_domain_subscription"
+    out["community_domain_id"] = int(domain.id)
+    out["community_domain"] = _domain_payload(
+        domain,
+        root_node=_find_root_node(db, community_domain_id=int(domain.id)),
+    )
+    out["quote"] = _community_domain_package_quote_payload(domain)
+    out["boundary"] = (
+        "Payment instruction only. This creates an expected bank-transfer payment "
+        "code for the Community Domain. It does not confirm payment, issue a "
+        "receipt, verify authority, move money, or activate the domain until "
+        "finance or bank reconciliation confirms the matching payment."
+    )
+    return out
 
 
 @router.get("/my", response_model=dict[str, Any])

@@ -10,10 +10,12 @@ import React, {
 import { useParams } from "react-router-dom";
 import PageTopNav from "../components/PageTopNav";
 import { GsnRealisticIcon } from "../components/GsnRealisticIcon";
+import PaymentProofSubmissionPanel from "../components/PaymentProofSubmissionPanel";
 import { StableButton } from "../components/StableButton";
 import {
   applyCommunityDomainActionReview,
   cancelCommunityDomainActionReview,
+  createCommunityDomainPaymentInstruction,
   createCommunityDomainPackageQuote,
   decideCommunityDomainActionReview,
   getAccessToken,
@@ -57,10 +59,13 @@ import {
   getCommunityDomainReviewerQueue,
   getCommunityDomainRolloutPlan,
   getCommunityDomainSetupPlan,
+  getCommunityDomainSetupEvidence,
   getCommunityDomainSocialBridge,
   getCommunityDomainTrustRelayReadiness,
   getCommunityDomainTrustMobility,
   getCommunityDomainSubscriptionLifecycle,
+  getSelectedClanId,
+  listExpectedPayments,
   listCommunityDomainServiceSettings,
   listCommunityDomainActionReviews,
   listCommunityDomainNodeTree,
@@ -68,6 +73,8 @@ import {
   listMyCommunityDomains,
   requestCommunityDomainMembership,
   reviseCommunityDomainActionReview,
+  submitCommunityDomainSetupEvidence,
+  updateCommunityDomainProfile,
 } from "../lib/api";
 import { APP_ROUTES } from "../lib/appRoutes";
 import { humanStatus } from "./communityDomainDashboard/statusLanguage";
@@ -128,6 +135,34 @@ type DomainLane = {
 type StructureDetailKey = "preview" | "foundation" | "boundary" | "activity" | "planning";
 type ServiceDetailKey = "readiness" | "local" | "boundaries" | "trust" | "evidence";
 type MemberDetailKey = "readiness" | "placement";
+type SetupStepKey =
+  | "identity"
+  | "payment"
+  | "evidence"
+  | "structure"
+  | "members"
+  | "governance"
+  | "services"
+  | "launch";
+
+type CommunityDomainSetupDraft = {
+  domain_name: string;
+  display_name: string;
+  domain_type: string;
+  template_key: string;
+  country: string;
+  state: string;
+  public_profile: string;
+  authority_evidence_label: string;
+  authority_evidence_reference: string;
+  authority_evidence_note: string;
+  structure_note: string;
+  members_note: string;
+  governance_note: string;
+  services_note: string;
+  saved_at?: string;
+  expires_at?: string;
+};
 
 const STRUCTURE_DETAIL_OPTIONS: Array<{
   key: StructureDetailKey;
@@ -210,6 +245,53 @@ const MEMBER_DETAIL_OPTIONS: Array<{
   },
 ];
 
+const SETUP_STEP_OPTIONS: Array<{
+  key: SetupStepKey;
+  label: string;
+  note: string;
+}> = [
+  {
+    key: "identity",
+    label: "Identity",
+    note: "Name, type, location, and short public profile.",
+  },
+  {
+    key: "payment",
+    label: "Payment",
+    note: "Generate or review the bank-transfer payment code in Billing.",
+  },
+  {
+    key: "evidence",
+    label: "Evidence",
+    note: "Record authority evidence labels before formal verification.",
+  },
+  {
+    key: "structure",
+    label: "Structure",
+    note: "Capture the first operating-unit notes.",
+  },
+  {
+    key: "members",
+    label: "Members",
+    note: "Capture who should be placed or reviewed first.",
+  },
+  {
+    key: "governance",
+    label: "Governance",
+    note: "Capture decision and reviewer notes.",
+  },
+  {
+    key: "services",
+    label: "Services",
+    note: "Capture which services should be on first.",
+  },
+  {
+    key: "launch",
+    label: "Launch",
+    note: "Check what is still blocking activation or verification.",
+  },
+];
+
 type DashboardPayload = {
   community_domain?: any;
   template?: any;
@@ -276,6 +358,118 @@ type OperatingStateCopy = {
 function cleanText(value: unknown, fallback = ""): string {
   const text = String(value ?? "").trim();
   return text || fallback;
+}
+
+function communityDomainSetupDraftKey(domainId: unknown): string {
+  return `gsn.community-domain.setup-draft.${cleanText(domainId, "unknown")}`;
+}
+
+function setupDraftFromDomain(domain: any): CommunityDomainSetupDraft {
+  return {
+    domain_name: cleanText(domain?.domain_name),
+    display_name: cleanText(domain?.display_name),
+    domain_type: cleanText(domain?.domain_type, "generic_association"),
+    template_key: cleanText(domain?.template_key || domain?.domain_type, "generic_association"),
+    country: cleanText(domain?.country),
+    state: cleanText(domain?.state),
+    public_profile: cleanText(domain?.public_profile),
+    authority_evidence_label: "",
+    authority_evidence_reference: "",
+    authority_evidence_note: "",
+    structure_note: "",
+    members_note: "",
+    governance_note: "",
+    services_note: "",
+  };
+}
+
+function readCommunityDomainSetupDraft(domainId: unknown): CommunityDomainSetupDraft | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(communityDomainSetupDraftKey(domainId));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object"
+      ? (parsed as CommunityDomainSetupDraft)
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeCommunityDomainSetupDraft(
+  domainId: unknown,
+  draft: CommunityDomainSetupDraft
+): CommunityDomainSetupDraft {
+  const now = new Date();
+  const expires = new Date(now.getTime() + 48 * 60 * 60 * 1000);
+  const next = {
+    ...draft,
+    saved_at: now.toISOString(),
+    expires_at: expires.toISOString(),
+  };
+  if (typeof window !== "undefined") {
+    window.localStorage.setItem(
+      communityDomainSetupDraftKey(domainId),
+      JSON.stringify(next)
+    );
+  }
+  return next;
+}
+
+function setupDraftTimeLabel(value: unknown): string {
+  const raw = cleanText(value);
+  if (!raw) return "Not saved yet";
+  const date = new Date(raw);
+  if (!Number.isFinite(date.getTime())) return raw;
+  try {
+    return date.toLocaleString(undefined, {
+      dateStyle: "medium",
+      timeStyle: "short",
+    });
+  } catch {
+    return raw;
+  }
+}
+
+function setupDraftCompletion(
+  draft: CommunityDomainSetupDraft,
+  domainPayment: any,
+  setupEvidenceItems: any[] = []
+): {
+  ready: number;
+  total: number;
+  labels: Array<[string, boolean]>;
+} {
+  const labels: Array<[string, boolean]> = [
+    [
+      "Identity",
+      Boolean(
+        cleanText(draft.display_name) &&
+          cleanText(draft.domain_name) &&
+          cleanText(draft.domain_type)
+      ),
+    ],
+    ["Payment code", Boolean(domainPayment?.id || domainPayment?.reference_display)],
+    [
+      "Authority evidence",
+      Boolean(
+        setupEvidenceItems.length ||
+        cleanText(draft.authority_evidence_label) ||
+          cleanText(draft.authority_evidence_reference) ||
+          cleanText(draft.authority_evidence_note)
+      ),
+    ],
+    ["Structure note", Boolean(cleanText(draft.structure_note))],
+    ["Members note", Boolean(cleanText(draft.members_note))],
+    ["Governance note", Boolean(cleanText(draft.governance_note))],
+    ["Services note", Boolean(cleanText(draft.services_note))],
+  ];
+  return {
+    ready: labels.filter(([, ready]) => ready).length,
+    total: labels.length,
+    labels,
+  };
 }
 
 function numericCount(value: unknown): number | null {
@@ -430,6 +624,21 @@ function helperText(onDark = false): React.CSSProperties {
     color: onDark ? "rgba(248,251,255,0.82)" : "#4F647A",
     fontSize: 14,
     lineHeight: 1.65,
+  };
+}
+
+function billingInputStyle(): React.CSSProperties {
+  return {
+    width: "100%",
+    minHeight: 48,
+    borderRadius: 14,
+    border: "1px solid rgba(9,27,46,0.16)",
+    background: "#FFFFFF",
+    color: "#091B2E",
+    padding: "0 12px",
+    fontSize: 16,
+    fontWeight: 800,
+    boxSizing: "border-box",
   };
 }
 
@@ -731,7 +940,17 @@ export default function CommunityDomainDashboardPage() {
   const [affiliationReadiness, setAffiliationReadiness] = useState<any | null>(null);
   const [subscriptionLifecycle, setSubscriptionLifecycle] = useState<any | null>(null);
   const [quote, setQuote] = useState<any | null>(null);
-  const [activeLane, setActiveLane] = useState("structure");
+  const [domainPayment, setDomainPayment] = useState<any | null>(null);
+  const [setupEvidence, setSetupEvidence] = useState<any | null>(null);
+  const [setupEvidenceFile, setSetupEvidenceFile] = useState<File | null>(null);
+  const [quoteAmount, setQuoteAmount] = useState("");
+  const [quoteCurrency, setQuoteCurrency] = useState("GBP");
+  const [quoteNote, setQuoteNote] = useState("");
+  const [setupDraft, setSetupDraft] = useState<CommunityDomainSetupDraft>(
+    () => setupDraftFromDomain(null)
+  );
+  const [activeSetupStep, setActiveSetupStep] = useState<SetupStepKey>("identity");
+  const [activeLane, setActiveLane] = useState("settings");
   const [activeStructureDetail, setActiveStructureDetail] =
     useState<StructureDetailKey>("preview");
   const [activeServiceDetail, setActiveServiceDetail] =
@@ -746,6 +965,9 @@ export default function CommunityDomainDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [loadingQueue, setLoadingQueue] = useState(false);
   const [busyQuote, setBusyQuote] = useState(false);
+  const [busyDomainPayment, setBusyDomainPayment] = useState(false);
+  const [busyProfileSave, setBusyProfileSave] = useState(false);
+  const [busySetupEvidence, setBusySetupEvidence] = useState(false);
   const [busyMembershipRequest, setBusyMembershipRequest] = useState(false);
   const [busyReviewId, setBusyReviewId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
@@ -858,6 +1080,8 @@ export default function CommunityDomainDashboardPage() {
     setSocialBridge(null);
     setAffiliationReadiness(null);
     setSubscriptionLifecycle(null);
+    setSetupEvidence(null);
+    setSetupEvidenceFile(null);
   }, []);
 
   const loadDashboard = useCallback(async () => {
@@ -1321,8 +1545,21 @@ export default function CommunityDomainDashboardPage() {
   const template = useMemo(() => dashboard?.template || {}, [dashboard?.template]);
   const status = dashboard?.status || {};
   const counts = dashboard?.counts || {};
-  const lanes = Array.isArray(dashboard?.lanes) ? dashboard?.lanes || [] : [];
+  const rawLanes = Array.isArray(dashboard?.lanes) ? dashboard?.lanes || [] : [];
+  const lanes = useMemo(
+    () => [
+      {
+        lane_key: "settings",
+        label: "Settings",
+        status: "Setup",
+        count: 1,
+      },
+      ...rawLanes.filter((lane) => lane?.lane_key !== "settings"),
+    ],
+    [rawLanes]
+  );
   const isAdmin = Boolean(dashboard?.viewer?.can_admin);
+  const selectedDomainClanId = Number(domain?.clan_id || getSelectedClanId() || 0);
   const latestMembershipRequest = latestRelevantMembershipRequest(ownMembershipRequests);
   const latestMembershipRequestId = cleanText(latestMembershipRequest?.id);
   const membershipAccessRequests = sortMembershipAccessRequests(
@@ -1370,6 +1607,215 @@ export default function CommunityDomainDashboardPage() {
       : "";
   const billingIsActive =
     cleanText(status.billing_status || selectedLane?.status).toLowerCase() === "active";
+  const setupDraftDomainId = cleanText(domain?.id || communityDomainId);
+  const setupEvidenceItems = Array.isArray(setupEvidence?.items)
+    ? setupEvidence.items
+    : [];
+  const setupProgress = setupDraftCompletion(
+    setupDraft,
+    domainPayment,
+    setupEvidenceItems
+  );
+  const setupCurrentStep =
+    SETUP_STEP_OPTIONS.find((option) => option.key === activeSetupStep) ||
+    SETUP_STEP_OPTIONS[0];
+
+  useEffect(() => {
+    const domainId = cleanText(domain?.id || communityDomainId);
+    if (!domainId || !dashboard) return;
+    const stored = readCommunityDomainSetupDraft(domainId);
+    setSetupDraft({
+      ...setupDraftFromDomain(domain),
+      ...(stored || {}),
+    });
+  }, [communityDomainId, dashboard, domain?.id]);
+
+  function updateSetupDraftField(
+    key: keyof CommunityDomainSetupDraft,
+    value: string
+  ) {
+    setSetupDraft((current) => ({
+      ...current,
+      [key]: value,
+    }));
+  }
+
+  function saveSetupProgress() {
+    const saved = writeCommunityDomainSetupDraft(setupDraftDomainId, setupDraft);
+    setSetupDraft(saved);
+    setMessage("Community Domain setup progress saved on this device for 48 hours.");
+  }
+
+  async function saveOfficialProfile() {
+    if (!isAdmin) {
+      setMessage("Only a Community Domain owner or domain admin can save official profile settings.");
+      return;
+    }
+    const requestDomainId = cleanText(communityDomainId);
+    if (!requestDomainId) return;
+
+    setBusyProfileSave(true);
+    try {
+      const payload = await updateCommunityDomainProfile(requestDomainId, {
+        domain_name: setupDraft.domain_name,
+        display_name: setupDraft.display_name,
+        domain_type: setupDraft.domain_type,
+        template_key: setupDraft.template_key,
+        country: setupDraft.country,
+        state: setupDraft.state,
+        public_profile: setupDraft.public_profile,
+      });
+      const updatedDomain = payload?.community_domain;
+      if (updatedDomain) {
+        setDashboard((current) =>
+          current
+            ? {
+                ...current,
+                community_domain: updatedDomain,
+              }
+            : current
+        );
+      }
+      const saved = writeCommunityDomainSetupDraft(setupDraftDomainId, {
+        ...setupDraft,
+        ...(updatedDomain ? setupDraftFromDomain(updatedDomain) : {}),
+        authority_evidence_label: setupDraft.authority_evidence_label,
+        authority_evidence_reference: setupDraft.authority_evidence_reference,
+        authority_evidence_note: setupDraft.authority_evidence_note,
+        structure_note: setupDraft.structure_note,
+        members_note: setupDraft.members_note,
+        governance_note: setupDraft.governance_note,
+        services_note: setupDraft.services_note,
+      });
+      setSetupDraft(saved);
+      setMessage("Official Community Domain profile saved. Payment and verification are still separate.");
+    } catch (err: any) {
+      setMessage(errorDetailMessage(err, "GSN could not save the Community Domain profile."));
+    } finally {
+      setBusyProfileSave(false);
+    }
+  }
+
+  async function loadSetupEvidence() {
+    if (!isAdmin) return null;
+    const requestDomainId = cleanText(communityDomainId);
+    if (!requestDomainId) return null;
+    try {
+      const payload = await getCommunityDomainSetupEvidence(requestDomainId);
+      if (isCurrentDomainRequest(requestDomainId)) {
+        setSetupEvidence(payload || null);
+      }
+      return payload;
+    } catch {
+      if (isCurrentDomainRequest(requestDomainId)) {
+        setSetupEvidence(null);
+      }
+      return null;
+    }
+  }
+
+  async function submitSetupEvidence() {
+    if (!isAdmin) {
+      setMessage("Only a Community Domain owner or domain admin can submit setup evidence.");
+      return;
+    }
+    const requestDomainId = cleanText(communityDomainId);
+    if (!requestDomainId) return;
+    const title = cleanText(
+      setupDraft.authority_evidence_label || "Community Domain authority evidence"
+    );
+    const externalReference = cleanText(setupDraft.authority_evidence_reference);
+    if (!setupEvidenceFile && !externalReference) {
+      setMessage("Add an evidence file or a reference before submitting evidence.");
+      return;
+    }
+
+    setBusySetupEvidence(true);
+    try {
+      const payload = await submitCommunityDomainSetupEvidence(requestDomainId, {
+        evidence_type: "authority_document",
+        title,
+        description: setupDraft.authority_evidence_note,
+        external_reference: externalReference,
+        file: setupEvidenceFile,
+      });
+      if (isCurrentDomainRequest(requestDomainId)) {
+        setSetupEvidence(payload || null);
+        setSetupEvidenceFile(null);
+      }
+      saveSetupProgress();
+      setMessage(
+        "Community Domain setup evidence submitted for private review. This does not verify the domain yet."
+      );
+    } catch (err: any) {
+      setMessage(errorDetailMessage(err, "GSN could not submit the setup evidence."));
+    } finally {
+      setBusySetupEvidence(false);
+    }
+  }
+
+  function openSetupPaymentLane() {
+    saveSetupProgress();
+    setActiveLane("billing");
+  }
+
+  function moveSetupStep(direction: 1 | -1) {
+    const index = SETUP_STEP_OPTIONS.findIndex((option) => option.key === activeSetupStep);
+    const nextIndex = Math.min(
+      SETUP_STEP_OPTIONS.length - 1,
+      Math.max(0, (index < 0 ? 0 : index) + direction)
+    );
+    setActiveSetupStep(SETUP_STEP_OPTIONS[nextIndex].key);
+  }
+
+  useEffect(() => {
+    if (activeLane !== "settings" || activeSetupStep !== "evidence" || !isAdmin) {
+      return;
+    }
+    void loadSetupEvidence();
+  }, [activeLane, activeSetupStep, isAdmin, communityDomainId]);
+
+  useEffect(() => {
+    const requestDomainId = cleanText(communityDomainId);
+    const numericDomainId = Number(requestDomainId || 0);
+    const clanId = Number(selectedDomainClanId || 0);
+    let alive = true;
+    if (!["billing", "settings"].includes(activeLane) || !numericDomainId || !clanId) {
+      if (activeLane === "billing") setDomainPayment(null);
+      return () => {
+        alive = false;
+      };
+    }
+
+    listExpectedPayments({
+      clan_id: clanId,
+      expected_type: "community_domain_subscription",
+      limit: 100,
+    })
+      .then((payload) => {
+        if (!alive || !isCurrentDomainRequest(requestDomainId)) return;
+        const items = Array.isArray(payload)
+          ? payload
+          : Array.isArray(payload?.items)
+          ? payload.items
+          : [];
+        const match =
+          items.find((item: any) => {
+            const meta = item?.meta || item?.meta_json || {};
+            return Number(meta?.community_domain_id || 0) === numericDomainId;
+          }) || null;
+        setDomainPayment(match);
+      })
+      .catch(() => {
+        if (alive && isCurrentDomainRequest(requestDomainId)) {
+          setDomainPayment(null);
+        }
+      });
+
+    return () => {
+      alive = false;
+    };
+  }, [activeLane, communityDomainId, isCurrentDomainRequest, selectedDomainClanId]);
 
   useEffect(() => {
     const requestDomainId = cleanText(communityDomainId);
@@ -1504,6 +1950,73 @@ export default function CommunityDomainDashboardPage() {
     } finally {
       if (isCurrentDomainRequest(requestDomainId)) {
         setBusyQuote(false);
+      }
+    }
+  }
+
+  async function generateDomainPaymentInstruction() {
+    const requestDomainId = cleanText(communityDomainId);
+    if (!requestDomainId) return;
+    if (!isAdmin) {
+      setMessage("Only a Community Domain owner or domain admin can generate the payment code.");
+      return;
+    }
+    const clanId = Number((dashboard?.community_domain as any)?.clan_id || getSelectedClanId() || 0);
+    const amount = Number(quoteAmount);
+    if (!clanId) {
+      setMessage("Select the community that owns this Community Domain before generating a payment code.");
+      return;
+    }
+    if (!Number.isFinite(amount) || amount <= 0) {
+      setMessage("Enter the agreed quote amount before generating a payment code.");
+      return;
+    }
+
+    setBusyDomainPayment(true);
+    setMessage("");
+    try {
+      const payload = await createCommunityDomainPaymentInstruction(requestDomainId, {
+        clan_id: clanId,
+        amount: quoteAmount,
+        currency: cleanText(quoteCurrency, "GBP").toUpperCase(),
+        billing_cycle: "annual",
+        quote_note: quoteNote,
+      });
+      if (!isCurrentDomainRequest(requestDomainId)) return;
+      const payment = {
+        id: payload?.expected_payment_id,
+        clan_id: clanId,
+        expected_type: payload?.expected_type || "community_domain_subscription",
+        amount: payload?.amount,
+        currency: payload?.currency,
+        reference_display: payload?.reference_display || payload?.reference,
+        reference_normalized: payload?.reference_normalized,
+        status: "expected",
+        meta: payload?.meta || {},
+        meta_json: payload?.meta || {},
+      };
+      setDomainPayment(payment);
+      if (payload?.community_domain) {
+        setDashboard((prev) =>
+          prev
+            ? {
+                ...prev,
+                community_domain: payload.community_domain,
+              }
+            : prev
+        );
+      }
+      setActiveLane("billing");
+      setMessage("Payment code generated. Use that exact code in the bank transfer, then upload proof here for finance review.");
+    } catch (err: any) {
+      if (isCurrentDomainRequest(requestDomainId)) {
+        setMessage(
+          errorDetailMessage(err, "GSN could not generate the Community Domain payment code.")
+        );
+      }
+    } finally {
+      if (isCurrentDomainRequest(requestDomainId)) {
+        setBusyDomainPayment(false);
       }
     }
   }
@@ -2296,6 +2809,425 @@ export default function CommunityDomainDashboardPage() {
                   </div>
                 ) : null}
 
+                {!isActiveLaneReadinessLoading && activeLane === "settings" ? (
+                  <div style={{ ...softCard(), display: "grid", gap: 12 }}>
+                    <div style={sectionLabel()}>Community Domain settings</div>
+                    <h3 style={{ margin: 0, fontSize: 22, lineHeight: 1.15 }}>
+                      Set up this domain one step at a time.
+                    </h3>
+                    <div style={helperText()}>
+                      Save progress when you stop. Official profile fields save to
+                      the backend; evidence notes here are setup notes only until
+                      formal evidence upload and verification are used.
+                    </div>
+
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 112px), 1fr))",
+                        gap: 8,
+                      }}
+                    >
+                      {SETUP_STEP_OPTIONS.map((option) => {
+                        const selected = option.key === activeSetupStep;
+                        return (
+                          <StableButton
+                            key={option.key}
+                            type="button"
+                            kind={selected ? "primary" : "secondary"}
+                            stableHeight={46}
+                            fullWidth
+                            aria-pressed={selected}
+                            title={option.note}
+                            debugId={`community-domain-dashboard.setup-step.${option.key}`}
+                            onClick={() => setActiveSetupStep(option.key)}
+                            style={{
+                              justifyContent: "center",
+                              fontSize: 12,
+                              textTransform: "none",
+                            }}
+                          >
+                            {option.label}
+                          </StableButton>
+                        );
+                      })}
+                    </div>
+
+                    <div style={{ ...helperText(), fontSize: 13 }}>
+                      Current step: <strong>{setupCurrentStep.label}</strong>.{" "}
+                      {setupCurrentStep.note}
+                    </div>
+
+                    {activeSetupStep === "identity" ? (
+                      <div style={{ display: "grid", gap: 10 }}>
+                        <div
+                          style={{
+                            display: "grid",
+                            gridTemplateColumns:
+                              "repeat(auto-fit, minmax(min(100%, 180px), 1fr))",
+                            gap: 10,
+                          }}
+                        >
+                          <label style={{ display: "grid", gap: 6 }}>
+                            <span style={sectionLabel()}>Community name</span>
+                            <input
+                              value={setupDraft.display_name}
+                              onChange={(event) =>
+                                updateSetupDraftField("display_name", event.target.value)
+                              }
+                              placeholder="AAA School"
+                              style={billingInputStyle()}
+                            />
+                          </label>
+                          <label style={{ display: "grid", gap: 6 }}>
+                            <span style={sectionLabel()}>Domain code</span>
+                            <input
+                              value={setupDraft.domain_name}
+                              onChange={(event) =>
+                                updateSetupDraftField("domain_name", event.target.value)
+                              }
+                              placeholder="aaa-school"
+                              style={billingInputStyle()}
+                            />
+                          </label>
+                          <label style={{ display: "grid", gap: 6 }}>
+                            <span style={sectionLabel()}>Type</span>
+                            <input
+                              value={setupDraft.domain_type}
+                              onChange={(event) =>
+                                updateSetupDraftField("domain_type", event.target.value)
+                              }
+                              placeholder="school"
+                              style={billingInputStyle()}
+                            />
+                          </label>
+                          <label style={{ display: "grid", gap: 6 }}>
+                            <span style={sectionLabel()}>Template</span>
+                            <input
+                              value={setupDraft.template_key}
+                              onChange={(event) =>
+                                updateSetupDraftField("template_key", event.target.value)
+                              }
+                              placeholder="school"
+                              style={billingInputStyle()}
+                            />
+                          </label>
+                          <label style={{ display: "grid", gap: 6 }}>
+                            <span style={sectionLabel()}>Country</span>
+                            <input
+                              value={setupDraft.country}
+                              onChange={(event) =>
+                                updateSetupDraftField("country", event.target.value)
+                              }
+                              placeholder="Nigeria"
+                              style={billingInputStyle()}
+                            />
+                          </label>
+                          <label style={{ display: "grid", gap: 6 }}>
+                            <span style={sectionLabel()}>State / region</span>
+                            <input
+                              value={setupDraft.state}
+                              onChange={(event) =>
+                                updateSetupDraftField("state", event.target.value)
+                              }
+                              placeholder="Anambra"
+                              style={billingInputStyle()}
+                            />
+                          </label>
+                        </div>
+                        <label style={{ display: "grid", gap: 6 }}>
+                          <span style={sectionLabel()}>Public profile</span>
+                          <textarea
+                            value={setupDraft.public_profile}
+                            onChange={(event) =>
+                              updateSetupDraftField("public_profile", event.target.value)
+                            }
+                            placeholder="Short public-safe description of this institution."
+                            style={{
+                              ...billingInputStyle(),
+                              minHeight: 94,
+                              padding: 12,
+                              resize: "vertical",
+                            }}
+                          />
+                        </label>
+                      </div>
+                    ) : null}
+
+                    {activeSetupStep === "payment" ? (
+                      <div style={{ ...softCard(), display: "grid", gap: 10 }}>
+                        <div style={sectionLabel()}>Payment handoff</div>
+                        <div style={helperText()}>
+                          Payment lives in Billing. Generate the code there, use the
+                          exact code for the bank transfer, then upload proof. The
+                          domain becomes active only after finance reconciliation.
+                        </div>
+                        <div style={statusBadge(domainPayment ? "code generated" : "code needed")}>
+                          {domainPayment
+                            ? `Latest code: ${cleanText(
+                                domainPayment.reference_display ||
+                                  domainPayment.reference_normalized,
+                                "available"
+                              )}`
+                            : "No Community Domain payment code loaded yet"}
+                        </div>
+                        <StableButton
+                          type="button"
+                          kind="primary"
+                          fullWidth
+                          debugId="community-domain-dashboard.setup-open-billing"
+                          onClick={openSetupPaymentLane}
+                        >
+                          Open Billing
+                        </StableButton>
+                      </div>
+                    ) : null}
+
+                    {activeSetupStep === "evidence" ? (
+                      <div style={{ display: "grid", gap: 10 }}>
+                        <label style={{ display: "grid", gap: 6 }}>
+                          <span style={sectionLabel()}>Evidence label</span>
+                          <input
+                            value={setupDraft.authority_evidence_label}
+                            onChange={(event) =>
+                              updateSetupDraftField(
+                                "authority_evidence_label",
+                                event.target.value
+                              )
+                            }
+                            placeholder="Registration certificate, proprietor letter, board approval"
+                            style={billingInputStyle()}
+                          />
+                        </label>
+                        <label style={{ display: "grid", gap: 6 }}>
+                          <span style={sectionLabel()}>Reference</span>
+                          <input
+                            value={setupDraft.authority_evidence_reference}
+                            onChange={(event) =>
+                              updateSetupDraftField(
+                                "authority_evidence_reference",
+                                event.target.value
+                              )
+                            }
+                            placeholder="Certificate number, file label, approval date"
+                            style={billingInputStyle()}
+                          />
+                        </label>
+                        <label style={{ display: "grid", gap: 6 }}>
+                          <span style={sectionLabel()}>Evidence note</span>
+                          <textarea
+                            value={setupDraft.authority_evidence_note}
+                            onChange={(event) =>
+                              updateSetupDraftField(
+                                "authority_evidence_note",
+                                event.target.value
+                              )
+                            }
+                            placeholder="What this evidence proves and who should review it."
+                            style={{
+                              ...billingInputStyle(),
+                              minHeight: 112,
+                              padding: 12,
+                              resize: "vertical",
+                            }}
+                          />
+                        </label>
+                        <label style={{ display: "grid", gap: 6 }}>
+                          <span style={sectionLabel()}>Evidence file</span>
+                          <input
+                            type="file"
+                            accept=".jpg,.jpeg,.png,.webp,.pdf,image/jpeg,image/png,image/webp,application/pdf"
+                            onChange={(event) =>
+                              setSetupEvidenceFile(event.target.files?.[0] || null)
+                            }
+                            style={billingInputStyle()}
+                          />
+                        </label>
+                        <div style={{ ...helperText(), fontSize: 13 }}>
+                          Submit a private registration, approval, or authority
+                          document for setup review. This records evidence; it
+                          does not verify the Community Domain by itself.
+                        </div>
+                        <StableButton
+                          type="button"
+                          kind="primary"
+                          fullWidth
+                          debugId="community-domain-dashboard.setup-submit-evidence"
+                          disabled={
+                            !isAdmin ||
+                            busySetupEvidence ||
+                            (!setupEvidenceFile &&
+                              !cleanText(setupDraft.authority_evidence_reference))
+                          }
+                          onClick={submitSetupEvidence}
+                        >
+                          {busySetupEvidence ? "Submitting..." : "Submit evidence"}
+                        </StableButton>
+                        <div style={{ ...softCard(), display: "grid", gap: 8 }}>
+                          <div style={sectionLabel()}>Submitted setup evidence</div>
+                          {setupEvidenceItems.length ? (
+                            setupEvidenceItems.slice(0, 4).map((item: any) => (
+                              <div
+                                key={cleanText(item?.id || item?.storage_key || item?.title)}
+                                style={{
+                                  display: "grid",
+                                  gap: 4,
+                                  borderTop: "1px solid rgba(9,27,46,0.12)",
+                                  paddingTop: 8,
+                                }}
+                              >
+                                <strong>{cleanText(item?.title, "Evidence")}</strong>
+                                <span style={{ ...helperText(), fontSize: 13 }}>
+                                  {cleanText(item?.file_name || item?.external_reference, "Private setup record")}
+                                </span>
+                                <span style={{ ...helperText(), fontSize: 12 }}>
+                                  Status: {compactStatus(item?.status || "submitted")}
+                                </span>
+                              </div>
+                            ))
+                          ) : (
+                            <div style={{ ...helperText(), fontSize: 13 }}>
+                              No setup evidence has been submitted for this domain yet.
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ) : null}
+
+                    {["structure", "members", "governance", "services"].includes(
+                      activeSetupStep
+                    ) ? (
+                      <label style={{ display: "grid", gap: 6 }}>
+                        <span style={sectionLabel()}>
+                          {activeSetupStep === "structure"
+                            ? "Structure note"
+                            : activeSetupStep === "members"
+                            ? "Members note"
+                            : activeSetupStep === "governance"
+                            ? "Governance note"
+                            : "Services note"}
+                        </span>
+                        <textarea
+                          value={
+                            activeSetupStep === "structure"
+                              ? setupDraft.structure_note
+                              : activeSetupStep === "members"
+                              ? setupDraft.members_note
+                              : activeSetupStep === "governance"
+                              ? setupDraft.governance_note
+                              : setupDraft.services_note
+                          }
+                          onChange={(event) =>
+                            updateSetupDraftField(
+                              activeSetupStep === "structure"
+                                ? "structure_note"
+                                : activeSetupStep === "members"
+                                ? "members_note"
+                                : activeSetupStep === "governance"
+                                ? "governance_note"
+                                : "services_note",
+                              event.target.value
+                            )
+                          }
+                          placeholder={
+                            activeSetupStep === "structure"
+                              ? "Example: root school, nursery, primary, secondary, departments, classes."
+                              : activeSetupStep === "members"
+                              ? "Example: owner, principal, bursar, registrar, first admins."
+                              : activeSetupStep === "governance"
+                              ? "Example: who can approve settings, members, evidence, and changes."
+                              : "Example: marketplace, verification, records, analytics, vault, shop."
+                          }
+                          style={{
+                            ...billingInputStyle(),
+                            minHeight: 130,
+                            padding: 12,
+                            resize: "vertical",
+                          }}
+                        />
+                      </label>
+                    ) : null}
+
+                    {activeSetupStep === "launch" ? (
+                      <div style={{ display: "grid", gap: 10 }}>
+                        <div
+                          style={{
+                            display: "grid",
+                            gridTemplateColumns:
+                              "repeat(auto-fit, minmax(min(100%, 150px), 1fr))",
+                            gap: 8,
+                          }}
+                        >
+                          {setupProgress.labels.map(([label, ready]) => (
+                            <div key={label} style={statusBadge(ready ? "ready" : "needed")}>
+                              {label}: {ready ? "ready" : "needed"}
+                            </div>
+                          ))}
+                        </div>
+                        <div style={helperText()}>
+                          Setup progress: <strong>{setupProgress.ready}</strong> of{" "}
+                          <strong>{setupProgress.total}</strong> checks ready.
+                          Activation still requires confirmed payment; verification
+                          still requires authority review.
+                        </div>
+                      </div>
+                    ) : null}
+
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns:
+                          "repeat(auto-fit, minmax(min(100%, 150px), 1fr))",
+                        gap: 8,
+                      }}
+                    >
+                      <StableButton
+                        type="button"
+                        kind="secondary"
+                        debugId="community-domain-dashboard.setup-prev"
+                        disabled={activeSetupStep === SETUP_STEP_OPTIONS[0].key}
+                        onClick={() => moveSetupStep(-1)}
+                      >
+                        Back
+                      </StableButton>
+                      <StableButton
+                        type="button"
+                        kind="secondary"
+                        debugId="community-domain-dashboard.setup-save-progress"
+                        onClick={saveSetupProgress}
+                      >
+                        Save progress
+                      </StableButton>
+                      <StableButton
+                        type="button"
+                        kind="primary"
+                        debugId="community-domain-dashboard.setup-save-profile"
+                        disabled={!isAdmin || busyProfileSave}
+                        onClick={saveOfficialProfile}
+                      >
+                        {busyProfileSave ? "Saving..." : "Save profile"}
+                      </StableButton>
+                      <StableButton
+                        type="button"
+                        kind="secondary"
+                        debugId="community-domain-dashboard.setup-next"
+                        disabled={
+                          activeSetupStep ===
+                          SETUP_STEP_OPTIONS[SETUP_STEP_OPTIONS.length - 1].key
+                        }
+                        onClick={() => moveSetupStep(1)}
+                      >
+                        Next
+                      </StableButton>
+                    </div>
+
+                    <div style={{ ...helperText(), fontSize: 12 }}>
+                      Last saved: {setupDraftTimeLabel(setupDraft.saved_at)}. Draft
+                      window: {setupDraftTimeLabel(setupDraft.expires_at)}.
+                    </div>
+                  </div>
+                ) : null}
+
                 {!isActiveLaneReadinessLoading && activeLane === "identity" ? (
                   <Suspense
                     fallback={
@@ -2348,6 +3280,108 @@ export default function CommunityDomainDashboardPage() {
                     >
                       {packageReviewActionLabel}
                     </StableButton>
+
+                    {isAdmin && !billingIsActive ? (
+                      <div style={{ ...softCard(), marginTop: 12 }}>
+                        <div style={sectionLabel()}>Payment code</div>
+                        <div style={{ ...helperText(), marginTop: 7 }}>
+                          Enter the agreed quote amount, generate the bank-transfer code,
+                          then use that exact code when payment is made. Proof upload is
+                          evidence for finance review; it is not payment confirmation.
+                        </div>
+                        <div
+                          style={{
+                            marginTop: 12,
+                            display: "grid",
+                            gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 150px), 1fr))",
+                            gap: 10,
+                          }}
+                        >
+                          <label style={{ display: "grid", gap: 6 }}>
+                            <span style={sectionLabel()}>Amount</span>
+                            <input
+                              value={quoteAmount}
+                              onChange={(event) => setQuoteAmount(event.target.value)}
+                              inputMode="decimal"
+                              placeholder="Agreed quote"
+                              style={billingInputStyle()}
+                            />
+                          </label>
+                          <label style={{ display: "grid", gap: 6 }}>
+                            <span style={sectionLabel()}>Currency</span>
+                            <input
+                              value={quoteCurrency}
+                              onChange={(event) => setQuoteCurrency(event.target.value.toUpperCase())}
+                              maxLength={3}
+                              placeholder="GBP"
+                              style={billingInputStyle()}
+                            />
+                          </label>
+                        </div>
+                        <label style={{ display: "grid", gap: 6, marginTop: 10 }}>
+                          <span style={sectionLabel()}>Quote note</span>
+                          <input
+                            value={quoteNote}
+                            onChange={(event) => setQuoteNote(event.target.value)}
+                            placeholder="Optional note from the agreed quote"
+                            style={billingInputStyle()}
+                          />
+                        </label>
+                        <StableButton
+                          type="button"
+                          kind="primary"
+                          fullWidth
+                          disabled={busyDomainPayment}
+                          debugId="community-domain-dashboard.generate-payment-code"
+                          onClick={generateDomainPaymentInstruction}
+                          style={{ marginTop: 12 }}
+                        >
+                          {busyDomainPayment ? "Generating code..." : "Generate payment code"}
+                        </StableButton>
+                      </div>
+                    ) : null}
+
+                    {domainPayment ? (
+                      <div style={{ ...softCard(), marginTop: 12 }}>
+                        <div style={sectionLabel()}>Latest payment code</div>
+                        <div style={{ ...helperText(), marginTop: 7, fontWeight: 900 }}>
+                          {cleanText(
+                            domainPayment.reference_display || domainPayment.reference_normalized,
+                            "Payment code not shown"
+                          )}
+                        </div>
+                        <div style={{ ...helperText(), marginTop: 7 }}>
+                          Status:{" "}
+                          <strong style={{ textTransform: "capitalize" }}>
+                            {compactStatus(domainPayment.status || "expected")}
+                          </strong>
+                          . Amount:{" "}
+                          <strong>
+                            {cleanText(domainPayment.amount, "0")}{" "}
+                            {cleanText(domainPayment.currency, quoteCurrency || "GBP")}
+                          </strong>
+                          .
+                        </div>
+                        <PaymentProofSubmissionPanel
+                          payment={domainPayment}
+                          clanId={selectedDomainClanId}
+                          title="Community Domain payment proof"
+                          compact={false}
+                          debugIdPrefix="community-domain-payment-proof"
+                          onUploaded={(updated) => {
+                            setDomainPayment({ ...domainPayment, ...updated });
+                            setMessage(
+                              "Community Domain payment proof uploaded for finance review. Activation still waits for reconciliation."
+                            );
+                          }}
+                          onNotice={(tone, text) => {
+                            if (tone === "success" || tone === "error") {
+                              setMessage(text);
+                            }
+                          }}
+                        />
+                      </div>
+                    ) : null}
                   </div>
                 ) : null}
 
@@ -2746,6 +3780,7 @@ export default function CommunityDomainDashboardPage() {
                 ) : null}
 
                 {!isActiveLaneReadinessLoading &&
+                activeLane !== "settings" &&
                 activeLane !== "billing" &&
                 activeLane !== "modules" ? (
                   <div style={softCard()}>

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from datetime import datetime
 from decimal import Decimal
 from typing import Any, Dict, Optional
@@ -37,7 +38,18 @@ def _iso(dt: Optional[datetime]) -> Optional[str]:
     return dt.isoformat() if dt else None
 
 
+def _safe_meta_json(raw: Optional[str]) -> Dict[str, Any]:
+    if not raw:
+        return {}
+    try:
+        data = json.loads(raw)
+        return data if isinstance(data, dict) else {}
+    except Exception:
+        return {}
+
+
 def _expected_payment_out(row: ExpectedPayment) -> Dict[str, Any]:
+    meta = _safe_meta_json(getattr(row, "meta_json", None))
     return {
         "id": int(row.id),
         "clan_id": int(row.clan_id),
@@ -55,6 +67,8 @@ def _expected_payment_out(row: ExpectedPayment) -> Dict[str, Any]:
         "bank_event_id": getattr(row, "bank_event_id", None),
         "trust_event_id": getattr(row, "trust_event_id", None),
         "created_at": _iso(getattr(row, "created_at", None)),
+        "meta": meta,
+        "meta_json": meta,
     }
 
 
@@ -156,6 +170,8 @@ class ExpectedPaymentOut(BaseModel):
     bank_event_id: Optional[int]
     trust_event_id: Optional[int]
     created_at: Optional[str]
+    meta: Dict[str, Any] = Field(default_factory=dict)
+    meta_json: Dict[str, Any] = Field(default_factory=dict)
 
 
 class ReconcileRunIn(BaseModel):

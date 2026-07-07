@@ -26,6 +26,7 @@ FEATURE_EXTRA_SHOP_BLOCK = "extra_shop_block"
 FEATURE_COMMUNITY_MEMBER_CAPACITY = "community_member_capacity"
 FEATURE_ROSCA_CYCLE = "rosca_cycle"
 FEATURE_COMMUNITY_MEETING_PACK = "community_meeting_pack"
+FEATURE_COMMUNITY_DOMAIN = "community_domain"
 
 PLAN_VAULT_SLOT_1_PERIOD = "vault_slot_1_30d"
 PLAN_VAULT_SLOT_6_PERIOD = "vault_slot_6_30d"
@@ -36,6 +37,7 @@ PLAN_EXTRA_SHOP_BLOCK_PACK = "extra_shop_block_pack"
 PLAN_COMMUNITY_MEMBER_CAPACITY_PACK = "community_member_capacity_pack"
 PLAN_ROSCA_CYCLE_PACK = "rosca_cycle_pack"
 PLAN_COMMUNITY_MEETING_PACK = "community_meeting_pack"
+PLAN_COMMUNITY_DOMAIN_STARTER_YEAR = "community_domain_starter_year"
 
 COMMUNITY_PACKAGE_EXPECTED_TYPE = "community_package_subscription"
 
@@ -233,6 +235,19 @@ def build_community_package_reference(
         f"GMFN-PACK-{package_slug}-U{int(owner_user_id)}-C{int(clan_id)}"
         f"{shop_part}-Q{qty}-{str(cycle_code).strip().upper()}-"
         f"{_timestamp_code()}-{_unique_suffix()}"
+    )
+
+
+def build_community_domain_subscription_reference(
+    *,
+    owner_user_id: int,
+    clan_id: int,
+    community_domain_id: int,
+    cycle_code: str = ANNUAL_BILLING_CYCLE,
+) -> str:
+    return (
+        f"GMFN-CDOM-U{int(owner_user_id)}-C{int(clan_id)}-D{int(community_domain_id)}-"
+        f"{str(cycle_code).strip().upper()}-{_timestamp_code()}-{_unique_suffix()}"
     )
 
 
@@ -678,6 +693,62 @@ def create_community_package_instruction(
                 "payment_context": package["payment_context"],
                 "payment_beneficiary_scope": "platform",
                 "pricing_model": package.get("pricing_model") or "spotlight_bundle_rail",
+            },
+        ),
+    )
+
+
+def create_community_domain_subscription_instruction(
+    db: Session,
+    *,
+    clan_id: int,
+    owner_user_id: int,
+    community_domain_id: int,
+    domain_name: str,
+    display_name: str,
+    amount: Decimal,
+    currency: str = "GBP",
+    billing_cycle: str = ANNUAL_BILLING_CYCLE,
+    due_at: Optional[datetime] = None,
+    quote_note: Optional[str] = None,
+) -> Dict[str, Any]:
+    resolved_amount = _d(amount)
+    if resolved_amount <= Decimal("0.00"):
+        raise ValueError("amount must be > 0")
+
+    reference_display = build_community_domain_subscription_reference(
+        owner_user_id=int(owner_user_id),
+        clan_id=int(clan_id),
+        community_domain_id=int(community_domain_id),
+        cycle_code=billing_cycle,
+    )
+
+    return create_feature_subscription_instruction(
+        db,
+        clan_id=int(clan_id),
+        user_id=int(owner_user_id),
+        expected_type="community_domain_subscription",
+        amount=resolved_amount,
+        currency=currency,
+        reference_display=reference_display,
+        due_at=due_at or _default_due_at(),
+        meta=_feature_subscription_meta(
+            feature_code=FEATURE_COMMUNITY_DOMAIN,
+            plan_code=PLAN_COMMUNITY_DOMAIN_STARTER_YEAR,
+            owner_user_id=int(owner_user_id),
+            quantity_total=1,
+            billing_cycle=billing_cycle,
+            extra={
+                "clan_id": int(clan_id),
+                "community_domain_id": int(community_domain_id),
+                "domain_name": str(domain_name or "").strip(),
+                "display_name": str(display_name or "").strip(),
+                "package_code": "community_domain_starter",
+                "package_title": "Community Domain Starter",
+                "payment_context": "community_domain_starter_activation",
+                "payment_beneficiary_scope": "platform",
+                "pricing_model": "manual_quote",
+                "quote_note": str(quote_note or "").strip()[:300],
             },
         ),
     )

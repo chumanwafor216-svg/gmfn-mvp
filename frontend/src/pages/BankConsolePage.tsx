@@ -41,6 +41,12 @@ type BankConsoleRow = {
   description?: string | null;
   direction?: string | null;
   created_at?: string | null;
+  proof_status?: string | null;
+  proof_status_text?: string | null;
+  proof_filename?: string | null;
+  proof_submitted_at?: string | null;
+  meta?: any;
+  meta_json?: any;
 };
 
 type BankConsoleLoadResult = {
@@ -247,6 +253,11 @@ function normalizeRow(raw: any): BankConsoleRow | null {
   if (!raw) return null;
 
   const src = raw?.item || raw?.event || raw?.payment || raw;
+  const meta = safeMeta(src?.meta ?? src?.meta_json);
+  const latestProof =
+    meta.latest_payment_proof && typeof meta.latest_payment_proof === "object"
+      ? meta.latest_payment_proof
+      : {};
 
   return {
     id: src?.id ?? src?.bank_event_id ?? src?.payment_id,
@@ -265,7 +276,34 @@ function normalizeRow(raw: any): BankConsoleRow | null {
     direction: firstTruthy(src?.direction, src?.flow) || null,
     created_at:
       firstTruthy(src?.created_at, src?.recorded_at, src?.updated_at) || null,
+    proof_status: firstTruthy(src?.proof_status, meta.proof_status) || null,
+    proof_status_text: firstTruthy(src?.proof_status_text, meta.proof_status_text) || null,
+    proof_filename:
+      firstTruthy(
+        src?.proof_filename,
+        latestProof.original_filename,
+        latestProof.stored_filename
+      ) || null,
+    proof_submitted_at:
+      firstTruthy(src?.proof_submitted_at, latestProof.submitted_at, meta.proof_submitted_at) || null,
+    meta,
+    meta_json: meta,
   };
+}
+
+function safeMeta(raw: any): Record<string, any> {
+  if (!raw) return {};
+  if (typeof raw === "string") {
+    try {
+      const parsed = JSON.parse(raw);
+      return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+        ? parsed
+        : {};
+    } catch {
+      return {};
+    }
+  }
+  return raw && typeof raw === "object" && !Array.isArray(raw) ? raw : {};
 }
 
 function buildBankEventReviewPaper(row: BankConsoleRow, displayReference: string): string {
@@ -1280,6 +1318,9 @@ export default function BankConsolePage() {
                   row.bank_txn_id,
                   `Expected ${i + 1}`
                 );
+                const hasProof = Boolean(
+                  safeStr(row.proof_status || row.proof_status_text || row.proof_filename)
+                );
 
                 return (
                   <div
@@ -1337,6 +1378,26 @@ export default function BankConsolePage() {
                       >
                         {safeStr(row.status || "Not stated")}
                       </div>
+
+                      {hasProof ? (
+                        <div
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            padding: "6px 10px",
+                            borderRadius: 999,
+                            background: "rgba(46,155,98,0.12)",
+                            border: "1px solid rgba(46,155,98,0.22)",
+                            color: "#166534",
+                            fontSize: 12,
+                            fontWeight: 1000,
+                            whiteSpace: "normal",
+                            textAlign: "center",
+                          }}
+                        >
+                          Proof submitted
+                        </div>
+                      ) : null}
                     </div>
 
                     <div
@@ -1372,6 +1433,26 @@ export default function BankConsolePage() {
                           }}
                         >
                           {safeDateTime(row.created_at)}
+                        </div>
+                      </div>
+
+                      <div>
+                        <div style={sectionLabel()}>Payment proof</div>
+                        <div
+                          style={{
+                            marginTop: 6,
+                            color: hasProof ? "#166534" : "#64748B",
+                            fontWeight: 900,
+                            lineHeight: 1.45,
+                          }}
+                        >
+                          {safeStr(row.proof_status_text) ||
+                            (safeStr(row.proof_filename)
+                              ? `Submitted: ${safeStr(row.proof_filename)}`
+                              : "No proof uploaded")}
+                          {safeStr(row.proof_submitted_at)
+                            ? ` at ${safeDateTime(row.proof_submitted_at)}`
+                            : ""}
                         </div>
                       </div>
                     </div>

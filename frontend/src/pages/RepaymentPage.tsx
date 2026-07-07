@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import ExplainToggle from "../components/ExplainToggle";
 import PageTopNav from "../components/PageTopNav";
+import PaymentProofSubmissionPanel from "../components/PaymentProofSubmissionPanel";
 import { PrimaryButton, SecondaryButton, StableCtaLink, SubtleButton } from "../components/StableButton";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import {
@@ -1387,61 +1388,88 @@ export default function RepaymentPage() {
                 ) : null}
 
                 {currentExpectedPayment ? (
-                  <div
-                    style={innerCard(
-                      currentExpectedPayment.matched_bank_event_id ? "#F3FBF5" : "#F8FBFF"
-                    )}
-                  >
-                    <div style={sectionLabel()}>Expected payment visibility</div>
-                    <div style={{ marginTop: 8, display: "grid", gap: 6 }}>
-                      <div style={helperText()}>
-                        Status: {safeStr(currentExpectedPayment.status || "expected")}
-                      </div>
-                      <div style={helperText()}>
-                        Reference: {firstTruthy(
-                          currentExpectedPayment.reference_display,
-                          currentExpectedPayment.reference_normalized,
-                          "Awaiting reference"
-                        )}
-                      </div>
-                      <div style={helperText()}>
-                        Amount: {safeStr(currentExpectedPayment.amount || "0.00")}{" "}
-                        {safeStr(currentExpectedPayment.currency || currency)}
-                      </div>
-                      <div style={helperText()}>
-                        Paid so far: {fmtMoney(currentExpectedPayment.paid_amount, safeStr(currentExpectedPayment.currency || currency))}
-                      </div>
-                      <div style={helperText()}>
-                        Still left: {fmtMoney(currentExpectedPayment.remaining_amount, safeStr(currentExpectedPayment.currency || currency))}
-                      </div>
-                      {plannedInstallments.length > 0 ? (
+                  <>
+                    <div
+                      style={innerCard(
+                        currentExpectedPayment.matched_bank_event_id ? "#F3FBF5" : "#F8FBFF"
+                      )}
+                    >
+                      <div style={sectionLabel()}>Expected payment visibility</div>
+                      <div style={{ marginTop: 8, display: "grid", gap: 6 }}>
                         <div style={helperText()}>
-                          Plan: {plannedInstallments.length} step
-                          {plannedInstallments.length === 1 ? "" : "s"}
-                          {nextPlannedInstallment
-                            ? `, next ${fmtMoney(
-                                nextPlannedInstallment.amount,
-                                safeStr(currentExpectedPayment.currency || currency)
-                              )} due ${safeDateTime(nextPlannedInstallment.due_at)}`
-                            : ""}
+                          Status: {safeStr(currentExpectedPayment.status || "expected")}
                         </div>
-                      ) : null}
-                      <div style={helperText()}>
-                        {currentExpectedPaymentBankEventId
-                          ? `Matched bank event visible: ${currentExpectedPaymentBankEventId}`
-                          : currentExpectedPayment.confirmed_at
-                          ? `Confirmed at: ${safeDateTime(currentExpectedPayment.confirmed_at)}`
-                          : currentExpectedPayment.due_at
-                          ? `Due at: ${safeDateTime(currentExpectedPayment.due_at)}`
-                          : "Awaiting reconciliation visibility in Finance"}
-                      </div>
-                      {safeStr(currentExpectedPayment.status_reason) ? (
                         <div style={helperText()}>
-                          Reason: {safeStr(currentExpectedPayment.status_reason)}
+                          Reference: {firstTruthy(
+                            currentExpectedPayment.reference_display,
+                            currentExpectedPayment.reference_normalized,
+                            "Awaiting reference"
+                          )}
                         </div>
-                      ) : null}
+                        <div style={helperText()}>
+                          Amount: {safeStr(currentExpectedPayment.amount || "0.00")}{" "}
+                          {safeStr(currentExpectedPayment.currency || currency)}
+                        </div>
+                        <div style={helperText()}>
+                          Paid so far: {fmtMoney(currentExpectedPayment.paid_amount, safeStr(currentExpectedPayment.currency || currency))}
+                        </div>
+                        <div style={helperText()}>
+                          Still left: {fmtMoney(currentExpectedPayment.remaining_amount, safeStr(currentExpectedPayment.currency || currency))}
+                        </div>
+                        {plannedInstallments.length > 0 ? (
+                          <div style={helperText()}>
+                            Plan: {plannedInstallments.length} step
+                            {plannedInstallments.length === 1 ? "" : "s"}
+                            {nextPlannedInstallment
+                              ? `, next ${fmtMoney(
+                                  nextPlannedInstallment.amount,
+                                  safeStr(currentExpectedPayment.currency || currency)
+                                )} due ${safeDateTime(nextPlannedInstallment.due_at)}`
+                              : ""}
+                          </div>
+                        ) : null}
+                        <div style={helperText()}>
+                          {currentExpectedPaymentBankEventId
+                            ? `Matched bank event visible: ${currentExpectedPaymentBankEventId}`
+                            : currentExpectedPayment.confirmed_at
+                            ? `Confirmed at: ${safeDateTime(currentExpectedPayment.confirmed_at)}`
+                            : currentExpectedPayment.due_at
+                            ? `Due at: ${safeDateTime(currentExpectedPayment.due_at)}`
+                            : "Awaiting reconciliation visibility in Finance"}
+                        </div>
+                        {safeStr(currentExpectedPayment.status_reason) ? (
+                          <div style={helperText()}>
+                            Reason: {safeStr(currentExpectedPayment.status_reason)}
+                          </div>
+                        ) : null}
+                      </div>
                     </div>
-                  </div>
+                    <PaymentProofSubmissionPanel
+                      payment={currentExpectedPayment}
+                      clanId={activeCommunityId}
+                      title="Repayment proof"
+                      compact={isCompact}
+                      debugIdPrefix="repayment-proof"
+                      onUploaded={(updated) => {
+                        setExpectedPayments((prev) =>
+                          prev.map((item) =>
+                            Number(item.id || 0) === Number(updated.id || 0)
+                              ? ({ ...item, ...updated } as ExpectedPaymentRow)
+                              : item
+                          )
+                        );
+                        setNotice({
+                          tone: "success",
+                          text: "Repayment proof uploaded for finance review. Payment still needs reconciliation.",
+                        });
+                      }}
+                      onNotice={(tone, text) => {
+                        if (tone === "success" || tone === "error") {
+                          setNotice({ tone, text });
+                        }
+                      }}
+                    />
+                  </>
                 ) : instruction ? (
                   <div style={innerCard("#F8FBFF")}>
                     <div style={sectionLabel()}>Expected payment visibility</div>

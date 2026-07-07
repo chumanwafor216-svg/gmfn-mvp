@@ -2357,10 +2357,73 @@ export async function createCommunityDomainDraft(
   });
 }
 
+export async function updateCommunityDomainProfile(
+  communityDomainId: number | string,
+  payload: CommunityDomainDraftPayload
+): Promise<any> {
+  return httpJson(communityDomainPath(communityDomainId, "/profile"), "PATCH", {
+    domain_name: payload.domain_name,
+    display_name: payload.display_name,
+    domain_type: payload.domain_type || undefined,
+    template_key: payload.template_key || undefined,
+    country: payload.country || undefined,
+    state: payload.state || undefined,
+    public_profile: payload.public_profile || undefined,
+  });
+}
+
 export async function createCommunityDomainPackageQuote(
   communityDomainId: number | string
 ): Promise<any> {
   return httpJson(communityDomainPath(communityDomainId, "/package-quote"), "POST");
+}
+
+export async function createCommunityDomainPaymentInstruction(
+  communityDomainId: number | string,
+  payload: {
+    clan_id: number;
+    amount: string | number;
+    currency?: string;
+    billing_cycle?: string;
+    quote_note?: string;
+  }
+): Promise<any> {
+  return httpJson(
+    communityDomainPath(communityDomainId, "/payment-instruction"),
+    "POST",
+    payload,
+    { header_clan_id: payload.clan_id }
+  );
+}
+
+export async function getCommunityDomainSetupEvidence(
+  communityDomainId: number | string
+): Promise<any> {
+  return httpJson(communityDomainPath(communityDomainId, "/setup-evidence"), "GET");
+}
+
+export async function submitCommunityDomainSetupEvidence(
+  communityDomainId: number | string,
+  payload: {
+    evidence_type?: string;
+    title: string;
+    description?: string;
+    external_reference?: string;
+    file?: File | null;
+  }
+): Promise<any> {
+  const form = new FormData();
+  form.set("evidence_type", payload.evidence_type || "authority_document");
+  form.set("title", payload.title);
+  if (payload.description) form.set("description", payload.description);
+  if (payload.external_reference) {
+    form.set("external_reference", payload.external_reference);
+  }
+  if (payload.file) form.set("file", payload.file);
+  return httpMultipart(
+    communityDomainPath(communityDomainId, "/setup-evidence"),
+    form
+  );
 }
 
 export async function listMyCommunityDomains(): Promise<any> {
