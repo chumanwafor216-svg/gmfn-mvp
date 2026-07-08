@@ -23,6 +23,7 @@ from app.db.models import (
     TrustEvent,
     TrustSlip,
 )
+from app.db.notification_models import Notification
 from app.main import app
 
 
@@ -252,6 +253,8 @@ def test_community_domain_notice_board_is_member_scoped_and_admin_posted(
         assert posted_data["community_domain_id"] == domain_id
         assert posted_data["notice"]["community_domain_id"] == domain_id
         assert posted_data["notice"]["body"] == "Scholarship deadline Friday."
+        assert posted_data["notification_kind"] == "community_domain.notice.posted"
+        assert posted_data["notifications_created"] == 1
         assert "does not broadcast" in posted_data["boundary"]
 
         app.dependency_overrides[get_current_user] = lambda: member
@@ -285,6 +288,19 @@ def test_community_domain_notice_board_is_member_scoped_and_admin_posted(
             assert meta["comments_enabled"] is False
             assert meta["reactions_enabled"] is False
             assert meta["thread_enabled"] is False
+            notifications = (
+                db.query(Notification)
+                .filter(Notification.kind == "community_domain.notice.posted")
+                .order_by(Notification.id.asc())
+                .all()
+            )
+            assert len(notifications) == 1
+            assert notifications[0].user_id == int(member.id)
+            assert notifications[0].title == "Official notice from Notice Scope Union"
+            assert notifications[0].message == "Scholarship deadline Friday."
+            assert notifications[0].action_url == f"/app/community-domain/{domain_id}"
+            assert notifications[0].action_label == "Open Notice Board"
+            assert notifications[0].is_read is False
     finally:
         app.dependency_overrides.pop(get_current_user, None)
 

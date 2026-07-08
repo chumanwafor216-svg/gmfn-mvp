@@ -38,6 +38,7 @@ from app.services.payment_instruction_service import (
     ANNUAL_BILLING_CYCLE,
     create_community_domain_subscription_instruction,
 )
+from app.services.notification_service import create_notification
 from app.services.settlement_config_service import get_settlement_config
 from app.services.trust_events_services import log_trust_event
 
@@ -1943,6 +1944,62 @@ def _list_community_domain_notice_payloads(
         if len(notices) >= int(limit):
             break
     return notices
+
+
+def _active_community_domain_notice_recipient_ids(
+    db: Session,
+    *,
+    community_domain_id: int,
+    poster_user_id: int,
+) -> list[int]:
+    rows = (
+        db.query(CommunityDomainMembership.user_id)
+        .filter(CommunityDomainMembership.community_domain_id == int(community_domain_id))
+        .filter(CommunityDomainMembership.status == "active")
+        .order_by(CommunityDomainMembership.user_id.asc())
+        .all()
+    )
+    recipient_ids: list[int] = []
+    seen: set[int] = set()
+    for row in rows:
+        user_id = int(row[0])
+        if user_id == int(poster_user_id) or user_id in seen:
+            continue
+        seen.add(user_id)
+        recipient_ids.append(user_id)
+    return recipient_ids
+
+
+def _create_community_domain_notice_notifications(
+    db: Session,
+    *,
+    domain: CommunityDomain,
+    body: str,
+    poster_user_id: int,
+) -> int:
+    recipient_ids = _active_community_domain_notice_recipient_ids(
+        db,
+        community_domain_id=int(domain.id),
+        poster_user_id=int(poster_user_id),
+    )
+    if not recipient_ids:
+        return 0
+
+    domain_label = _clean_str(domain.display_name or domain.domain_name, "Community Domain")
+    for user_id in recipient_ids:
+        create_notification(
+            db,
+            user_id=int(user_id),
+            kind=COMMUNITY_DOMAIN_NOTICE_EVENT,
+            title=f"Official notice from {domain_label}",
+            message=body,
+            action_url=f"/app/community-domain/{int(domain.id)}",
+            action_label="Open Notice Board",
+            commit=False,
+            refresh=False,
+        )
+    db.commit()
+    return len(recipient_ids)
 
 
 def _public_domain_entry_payload(domain: CommunityDomain) -> dict[str, Any]:
@@ -19403,15 +19460,24 @@ def create_community_domain_notice(
             "trust_delta": "0.00",
         },
     )
+    notifications_created = _create_community_domain_notice_notifications(
+        db,
+        domain=domain,
+        body=body,
+        poster_user_id=int(current_user.id),
+    )
     return {
         "ok": True,
         "engine_ready": True,
         "community_domain_id": int(domain.id),
         "notice": _community_domain_notice_payload(event),
+        "notifications_created": int(notifications_created),
+        "notification_kind": COMMUNITY_DOMAIN_NOTICE_EVENT,
         "message": "Official notice posted to this Community Domain board.",
         "boundary": (
             "The notice belongs to this selected Community Domain only. "
-            "It does not broadcast to other domains or communities."
+            "Notifications are created only for active members of this selected "
+            "Community Domain; it does not broadcast to other domains or communities."
         ),
     }
 

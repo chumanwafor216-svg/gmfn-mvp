@@ -28,7 +28,31 @@ const URGENT_CONFIRMATION_OUTCOME_KINDS = new Set([
   "community_confirmation.outcome_updated",
   "community_confirmation.request_expired",
 ]);
-const URGENT_CONFIRMATION_POLL_MS = 15000;
+const PHONE_TRIGGER_NOTIFICATION_KINDS = new Set([
+  ...URGENT_CONFIRMATION_OUTCOME_KINDS,
+  "community_domain.notice.posted",
+]);
+const PHONE_TRIGGER_POLL_MS = 15000;
+
+function notificationKind(row: any): string {
+  return String(row?.kind || "").trim();
+}
+
+function isUnreadNotification(row: any): boolean {
+  return row?.is_read !== true;
+}
+
+function isPhoneTriggerNotification(row: any): boolean {
+  const kind = notificationKind(row);
+  return isUnreadNotification(row) && PHONE_TRIGGER_NOTIFICATION_KINDS.has(kind);
+}
+
+function isUrgentNotification(row: any): boolean {
+  return (
+    isUnreadNotification(row) &&
+    URGENT_CONFIRMATION_OUTCOME_KINDS.has(notificationKind(row))
+  );
+}
 
 function readLocalCompanionSettings(): Partial<CompanionSettings> {
   try {
@@ -330,9 +354,9 @@ export default function CompanionLayer({ snapshot }: CompanionLayerProps) {
   useEffect(() => {
     let alive = true;
 
-    async function pollUrgentConfirmationNotifications(force = false) {
+    async function pollPhoneTriggerNotifications(force = false) {
       const now = Date.now();
-      if (!force && now - lastUrgentPollRef.current < URGENT_CONFIRMATION_POLL_MS - 500) {
+      if (!force && now - lastUrgentPollRef.current < PHONE_TRIGGER_POLL_MS - 500) {
         return;
       }
       lastUrgentPollRef.current = now;
@@ -341,13 +365,11 @@ export default function CompanionLayer({ snapshot }: CompanionLayerProps) {
       if (!alive || !result) return;
 
       const rows = Array.isArray(result?.items) ? result.items : [];
-      const urgent = rows.find(
-        (row: any) =>
-          URGENT_CONFIRMATION_OUTCOME_KINDS.has(String(row?.kind || "").trim()) &&
-          row?.is_read !== true
-      );
+      const urgent = rows.find(isUrgentNotification);
+      const phoneNotice =
+        urgent || rows.find(isPhoneTriggerNotification) || rows.find(isUnreadNotification);
 
-      if (!urgent) return;
+      if (!phoneNotice) return;
 
       const localSettings = readLocalCompanionSettings();
       const merged = normalizeCompanionSettings({
@@ -359,33 +381,48 @@ export default function CompanionLayer({ snapshot }: CompanionLayerProps) {
         setSettings(merged);
       }
 
+      const kind = notificationKind(phoneNotice);
+      const priority = isUrgentNotification(phoneNotice) ? "urgent" : "important";
       await runUrgentCompanionNotificationCycle({
         settings: merged,
+        priority,
+        source:
+          kind === "community_domain.notice.posted"
+            ? "community-domain-notice-board"
+            : "notification-feed",
+        fallbackTitle: "GSN notification",
+        fallbackDetail: "A GSN update is waiting for your attention.",
+        fallbackCtaLabel: "Open",
+        fallbackCtaTo: "/app/notifications",
+        speechText:
+          priority === "urgent"
+            ? "Urgent GSN notification needs your response."
+            : "A GSN notification is waiting.",
         notification: {
-          id: urgent.id,
-          kind: urgent.kind,
-          title: urgent.title || "Community confirmation needs you",
-          message: urgent.message,
-          actionLabel: urgent.action_label,
-          actionUrl: urgent.action_url,
+          id: phoneNotice.id,
+          kind: phoneNotice.kind,
+          title: phoneNotice.title || "GSN notification",
+          message: phoneNotice.message,
+          actionLabel: phoneNotice.action_label,
+          actionUrl: phoneNotice.action_url,
         },
       });
     }
 
-    void pollUrgentConfirmationNotifications(true);
+    void pollPhoneTriggerNotifications(true);
 
     const intervalId = window.setInterval(() => {
-      void pollUrgentConfirmationNotifications();
-    }, URGENT_CONFIRMATION_POLL_MS);
+      void pollPhoneTriggerNotifications();
+    }, PHONE_TRIGGER_POLL_MS);
 
     function handleFocusLikeEvent() {
-      void pollUrgentConfirmationNotifications(true);
+      void pollPhoneTriggerNotifications(true);
     }
 
     function handleVisibilityChange() {
       if (typeof document === "undefined") return;
       if (!document.hidden) {
-        void pollUrgentConfirmationNotifications(true);
+        void pollPhoneTriggerNotifications(true);
       }
     }
 

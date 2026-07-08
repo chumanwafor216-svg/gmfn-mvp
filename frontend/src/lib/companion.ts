@@ -845,51 +845,79 @@ export async function deliverCompanionDecision(
 
 export function buildUrgentCompanionNotificationDecision(
   notification: UrgentCompanionNotificationInput,
-  rawSettings?: Partial<CompanionSettings> | null
+  rawSettings?: Partial<CompanionSettings> | null,
+  options?: {
+    priority?: "important" | "urgent";
+    source?: string;
+    fallbackTitle?: string;
+    fallbackDetail?: string;
+    fallbackCtaLabel?: string;
+    fallbackCtaTo?: string;
+    speechText?: string;
+  }
 ): CompanionDecision {
   const settings = normalizeCompanionSettings(rawSettings);
   const quietHours = isWithinQuietHours(
     settings.quietHoursStart,
     settings.quietHoursEnd
   );
-  const title = safeStr(notification.title || "Community confirmation needs you");
+  const priority = options?.priority || "urgent";
+  const title = safeStr(
+    notification.title ||
+      options?.fallbackTitle ||
+      "Community confirmation needs you"
+  );
   const detail = safeStr(
     notification.detail ||
       notification.message ||
+      options?.fallbackDetail ||
       "A GSN community member needs a quick confirmation response."
   );
   const ctaLabel = safeStr(
-    notification.ctaLabel || notification.actionLabel || "Respond now"
+    notification.ctaLabel ||
+      notification.actionLabel ||
+      options?.fallbackCtaLabel ||
+      "Respond now"
   );
   const ctaTo = safeStr(
-    notification.ctaTo || notification.actionUrl || "/app/community-confirmations"
+    notification.ctaTo ||
+      notification.actionUrl ||
+      options?.fallbackCtaTo ||
+      "/app/community-confirmations"
   );
-  const source = "urgent-community-confirmation";
+  const source = safeStr(options?.source || "urgent-community-confirmation");
   const notificationId = safeStr(notification.id || "");
   const channels: CompanionDecision["channels"] = [];
 
-  if (shouldUseToast("urgent", settings)) {
+  if (shouldUseToast(priority, settings)) {
     channels.push("toast");
   }
 
-  if (shouldUseSound("urgent", settings, quietHours)) {
+  if (shouldUseSound(priority, settings, quietHours)) {
     channels.push("sound");
   }
 
-  if (shouldUseSpeech("urgent", settings, quietHours)) {
+  if (shouldUseSpeech(priority, settings, quietHours)) {
     channels.push("speech");
   }
 
-  if (shouldUseBrowserNotification("urgent", settings)) {
+  if (shouldUseBrowserNotification(priority, settings)) {
     channels.push("browser");
   }
 
+  const speechText = safeStr(
+    options?.speechText ||
+      (source === "urgent-community-confirmation"
+        ? "Urgent GSN community confirmation needs your response."
+        : `${priority === "urgent" ? "Urgent GSN notification" : "GSN notification"}: ${title}.`)
+  );
+
   return {
     shouldNotify: channels.length > 0,
-    priority: "urgent",
+    priority,
     title,
     detail,
-    speechText: "Urgent GSN community confirmation needs your response.",
+    speechText,
     ctaLabel,
     ctaTo,
     source,
@@ -912,13 +940,29 @@ export async function runUrgentCompanionNotificationCycle(params: {
   notification: UrgentCompanionNotificationInput;
   settings?: Partial<CompanionSettings> | null;
   force?: boolean;
+  priority?: "important" | "urgent";
+  source?: string;
+  fallbackTitle?: string;
+  fallbackDetail?: string;
+  fallbackCtaLabel?: string;
+  fallbackCtaTo?: string;
+  speechText?: string;
 }): Promise<CompanionCycleResult> {
   installCompanionInteractionCapture();
 
   const settings = normalizeCompanionSettings(params.settings);
   const decision = buildUrgentCompanionNotificationDecision(
     params.notification,
-    settings
+    settings,
+    {
+      priority: params.priority,
+      source: params.source,
+      fallbackTitle: params.fallbackTitle,
+      fallbackDetail: params.fallbackDetail,
+      fallbackCtaLabel: params.fallbackCtaLabel,
+      fallbackCtaTo: params.fallbackCtaTo,
+      speechText: params.speechText,
+    }
   );
 
   if (!params.force) {
