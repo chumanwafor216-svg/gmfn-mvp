@@ -19,11 +19,11 @@ const actionTargetRoutesSource = readFileSync(
   "utf8"
 );
 const findings = [];
-const expectedStableActionCount = 73;
+const expectedStableActionCount = 76;
 const expectedNativeFieldCount = 37;
 const expectedSourceBreakdown = {
-  front: 10,
-  body: 63,
+  front: 11,
+  body: 65,
 };
 const expectedVisibleIntentActionCount = 5;
 const expectedMobileShellBreakdown = {
@@ -372,6 +372,11 @@ assertContains(
 assertContains(
   /debugId="marketplace\.tile\.members"[\s\S]*?aria-label="Open visible members and public shops"[\s\S]*?openMarketplaceSection\(\s*event,\s*"members",\s*"marketplace-members-shops"\s*\)[\s\S]*?<MarketplaceGlyph name="trade"[\s\S]*?Members & Shops[\s\S]*?Known members and public shops\.[\s\S]*?Public Shops[\s\S]*?Members/,
   "Marketplace Members & Shops grouped card must open the community-bound member/shop directory."
+);
+
+assertContains(
+  /debugId="marketplace\.tile\.official-board"[\s\S]*?aria-label="Open the official community board for this marketplace"[\s\S]*?openMarketplaceSection\(\s*event,\s*"board",\s*"marketplace-official-board"\s*\)[\s\S]*?<MarketplaceGlyph name="notice"[\s\S]*?Official Board[\s\S]*?Notices stay inside this selected marketplace\.[\s\S]*?This marketplace[\s\S]*?Members only[\s\S]*?No broadcast/,
+  "Marketplace Official Board grouped card must open the marketplace-local official notice board."
 );
 
 assertContains(
@@ -800,6 +805,7 @@ const expectedOrder = [
   exactDebugId("marketplace.tile.members"),
   exactDebugId("marketplace.tile.trade-evidence"),
   exactDebugId("marketplace.row.records-links"),
+  exactDebugId("marketplace.tile.official-board"),
   exactDebugId("marketplace.tile.support"),
   exactDebugId("marketplace.tile.spotlight"),
   exactDebugId("marketplace.intent.submit"),
@@ -807,6 +813,8 @@ const expectedOrder = [
     "marketplace.intent.${item.id}",
     /debugId=\{`marketplace\.intent\.\$\{item\.id\}`\}/
   ),
+  exactDebugId("marketplace.board.post"),
+  exactDebugId("marketplace.board.toggle"),
   exactDebugId("marketplace.money.toggle"),
   exactDebugId("marketplace.money.pay-in-account"),
   exactDebugId("marketplace.money.money-out-destination"),

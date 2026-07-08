@@ -56,6 +56,7 @@ while ((emojiMatch = emojiPattern.exec(marketplaceSource))) {
   "trade",
   "support",
   "links",
+  "notice",
   "spark",
   "trust",
   "demand",
@@ -155,6 +156,12 @@ assertNotContains(
     glyph: "links",
     label: "Marketplace Tools",
     tags: ["Verify", "Invite", "Create", "Shop Face", "Helpers"],
+  },
+  {
+    id: "marketplace.tile.official-board",
+    glyph: "notice",
+    label: "Official Board",
+    tags: ["This marketplace", "Members only", "No broadcast"],
   },
   {
     id: "marketplace.tile.support",

@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import CommunityNoticeModal from "../components/CommunityNoticeModal";
 import DomainIntroToggle from "../components/DomainIntroToggle";
 import ExplainToggle from "../components/ExplainToggle";
 import GSNBrandMark from "../components/GSNBrandMark";
@@ -72,8 +73,10 @@ import {
   recordRoscaCyclePayout,
   setSelectedClanId,
   listClanMembers,
+  listCommunityNotices,
   listMyClans,
   listMyLoans,
+  createCommunityNotice,
   safeCopy,
   type ClanInviteRelationshipEvidencePayload,
   type ProtectedTradeRecord,
@@ -422,6 +425,7 @@ type SuggestedSupporter = {
 type NoticeTone = "success" | "error";
 
 type SectionState = {
+  board: boolean;
   money: boolean;
   rosca: boolean;
   tools: boolean;
@@ -449,6 +453,18 @@ type MarketplaceIntentItem = {
   visible?: boolean;
 };
 
+type MarketplaceNoticeItem = {
+  notice_id?: string | number | null;
+  meeting_id?: string | number | null;
+  body?: string | null;
+  title?: string | null;
+  purpose?: string | null;
+  scheduled_at?: string | null;
+  status?: string | null;
+  created_at?: string | null;
+  source?: string | null;
+};
+
 type PersistedWithdrawalTask = {
   amountInput: string;
   noteInput: string;
@@ -459,6 +475,7 @@ type PersistedWithdrawalTask = {
 };
 
 const DEFAULT_SECTION_STATE: SectionState = {
+  board: false,
   money: false,
   rosca: false,
   tools: false,
@@ -469,6 +486,7 @@ const DEFAULT_SECTION_STATE: SectionState = {
 };
 
 const MARKETPLACE_SECTION_ANCHORS: Record<keyof SectionState, string> = {
+  board: "marketplace-official-board",
   money: "marketplace-money-routes",
   rosca: "marketplace-rosca",
   tools: "marketplace-owned-links",
@@ -480,6 +498,7 @@ const MARKETPLACE_SECTION_ANCHORS: Record<keyof SectionState, string> = {
 
 function focusedMarketplaceSectionState(key: keyof SectionState): SectionState {
   return {
+    board: key === "board",
     money: key === "money",
     rosca: key === "rosca",
     tools: key === "tools",
@@ -510,6 +529,7 @@ function normalizeMarketplaceSectionState(
   if (state.rosca) return focusedMarketplaceSectionState("rosca");
   if (state.members) return focusedMarketplaceSectionState("members");
   if (state.tools) return focusedMarketplaceSectionState("tools");
+  if (state.board) return focusedMarketplaceSectionState("board");
   if (state.money) return focusedMarketplaceSectionState("money");
   return DEFAULT_SECTION_STATE;
 }
@@ -696,6 +716,20 @@ function firstTruthy(...values: any[]): string {
     if (text) return text;
   }
   return "";
+}
+
+function wordLimit(text: string, maxWords: number): string {
+  const words = safeStr(text).split(/\s+/).filter(Boolean);
+  if (words.length <= maxWords) return words.join(" ");
+  return `${words.slice(0, maxWords).join(" ")}...`;
+}
+
+function safeDateLabel(value: any): string {
+  const raw = safeStr(value);
+  if (!raw) return "";
+  const date = new Date(raw);
+  if (!Number.isFinite(date.getTime())) return raw;
+  return date.toLocaleString();
 }
 
 function parsedMarketplaceErrorDetail(err: any): Record<string, any> | null {
@@ -3607,6 +3641,7 @@ type MarketplaceGlyphName =
   | "ledger"
   | "links"
   | "members"
+  | "notice"
   | "open"
   | "payment"
   | "pool"
@@ -3640,6 +3675,7 @@ const MARKETPLACE_GLYPH_ICON_MAP = {
   ledger: "evidence",
   links: "qr",
   members: "community",
+  notice: "evidence",
   open: "navigation",
   payment: "repaymentSchedule",
   pool: "financeInstitution",
@@ -4206,6 +4242,10 @@ export default function MarketplacePage() {
   const [poolInfo, setPoolInfo] = useState<any>(null);
   const [marketplaceTrust, setMarketplaceTrust] = useState<any>(null);
   const [trustSlip, setTrustSlip] = useState<any>(null);
+  const [marketplaceNotices, setMarketplaceNotices] = useState<MarketplaceNoticeItem[]>([]);
+  const [marketplaceNoticesLoading, setMarketplaceNoticesLoading] = useState(false);
+  const [marketplaceNoticeModalOpen, setMarketplaceNoticeModalOpen] = useState(false);
+  const [marketplaceNoticePosting, setMarketplaceNoticePosting] = useState(false);
   const [inviteLink, setInviteLink] = useState<string>("");
   const [joinSenderName, setJoinSenderName] = useState("");
   const [joinRecipientName, setJoinRecipientName] = useState("");
@@ -4799,6 +4839,30 @@ export default function MarketplacePage() {
     setNotice({ tone, text });
   }, []);
 
+  const loadMarketplaceNotices = useCallback(async () => {
+    if (!activeCommunityId) {
+      setMarketplaceNotices([]);
+      setMarketplaceNoticesLoading(false);
+      return;
+    }
+
+    setMarketplaceNoticesLoading(true);
+    try {
+      const res = await listCommunityNotices({
+        clan_id: activeCommunityId,
+        limit: 3,
+      }).catch(() => null);
+      const rows = Array.isArray(res?.notices) ? res.notices : [];
+      setMarketplaceNotices(rows);
+    } finally {
+      setMarketplaceNoticesLoading(false);
+    }
+  }, [activeCommunityId]);
+
+  useEffect(() => {
+    void loadMarketplaceNotices();
+  }, [loadMarketplaceNotices]);
+
   function toggleSection(key: keyof SectionState) {
     setSectionsTouched((prev) => touchedMarketplaceSectionState(prev, key));
     setSectionsOpen((prev) =>
@@ -4841,6 +4905,28 @@ export default function MarketplacePage() {
   ) {
     consumeMarketplaceButtonEvent(event);
     action();
+  }
+
+  async function submitMarketplaceNotice(body: string) {
+    if (!activeCommunityId) {
+      showNotice("error", "Select a marketplace before posting a notice.");
+      return;
+    }
+
+    setMarketplaceNoticePosting(true);
+    try {
+      await createCommunityNotice({ clan_id: activeCommunityId, body });
+      await loadMarketplaceNotices();
+      setMarketplaceNoticeModalOpen(false);
+      showNotice("success", "Official marketplace notice posted.");
+    } catch (err: any) {
+      showNotice(
+        "error",
+        marketplaceErrorMessage(err, "Official notice could not be posted.")
+      );
+    } finally {
+      setMarketplaceNoticePosting(false);
+    }
   }
 
   function clearStaleMarketplaceHash(activeSectionId: string) {
@@ -6579,6 +6665,11 @@ export default function MarketplacePage() {
         safeStr(me?.role).toLowerCase() === "admin")
   );
   const moneyRailManagerRoles = ["admin", "owner", "founder", "creator"];
+  const canPostMarketplaceNotice = Boolean(
+    activeCommunityId &&
+      (moneyRailManagerRoles.includes(safeStr(me?.role).toLowerCase()) ||
+        moneyRailManagerRoles.includes(currentMemberRole))
+  );
   const canManagePayInAccount = Boolean(
     activeCommunityId &&
       (moneyRailManagerRoles.includes(safeStr(me?.role).toLowerCase()) ||
@@ -7672,6 +7763,14 @@ export default function MarketplacePage() {
         />
       ) : null}
 
+      <CommunityNoticeModal
+        open={marketplaceNoticeModalOpen}
+        communityName={activeCommunityName}
+        busy={marketplaceNoticePosting}
+        onClose={() => setMarketplaceNoticeModalOpen(false)}
+        onSubmit={submitMarketplaceNotice}
+      />
+
       <section style={marketplaceOsSectionStyle(isCompact)}>
         <div style={marketplaceHeroShellStyle(isCompact)}>
           <div
@@ -8084,6 +8183,48 @@ export default function MarketplacePage() {
 
           <StableButton
             type="button"
+            debugId="marketplace.tile.official-board"
+            aria-label="Open the official community board for this marketplace"
+            onClick={(event) =>
+              openMarketplaceSection(event, "board", "marketplace-official-board")
+            }
+            style={marketplaceFrontLaneCardStyle(isCompact)}
+          >
+            <span
+              aria-hidden="true"
+              style={marketplaceFrontLaneIconStyle(
+                "linear-gradient(180deg, #244969 0%, #061827 100%)",
+                isCompact
+              )}
+            >
+              <MarketplaceGlyph name="notice" size={isCompact ? 26 : 34} />
+            </span>
+            <span style={marketplaceOsRowTextStackStyle()}>
+              <span style={marketplaceOsRowTitleStyle(isCompact)}>
+                Official Board
+              </span>
+              <span style={marketplaceOsRowDetailStyle(isCompact)}>
+                Notices stay inside this selected marketplace.
+              </span>
+              <span style={marketplaceFrontTagRowStyle(isCompact)}>
+                <span style={marketplaceFrontTagStyle("#173750", "#EEF3F7", isCompact)}>
+                  This marketplace
+                </span>
+                <span style={marketplaceFrontTagStyle("#173750", "#EEF3F7", isCompact)}>
+                  Members only
+                </span>
+                <span style={marketplaceFrontTagStyle("#173750", "#EEF3F7", isCompact)}>
+                  No broadcast
+                </span>
+              </span>
+            </span>
+            <span aria-hidden="true" style={marketplaceOsArrowStyle()}>
+              <MarketplaceGlyph name="chevron" size={18} />
+            </span>
+          </StableButton>
+
+          <StableButton
+            type="button"
             debugId="marketplace.tile.support"
             aria-label="Open Support Requests for this marketplace"
             onClick={(event) =>
@@ -8333,6 +8474,211 @@ export default function MarketplacePage() {
             </div>
           ) : null}
       </section>
+
+      {sectionsOpen.board || sectionsTouched.board ? (
+      <section
+        id="marketplace-official-board"
+        style={{
+          ...pageCard("#FFFFFF"),
+          ...marketplaceSectionStyle(),
+          order: 4,
+          padding: isCompact ? 14 : 18,
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 12,
+            alignItems: "center",
+            flexWrap: "wrap",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 14,
+              minWidth: 0,
+            }}
+          >
+            <span
+              aria-hidden="true"
+              style={marketplaceOsIconStyle(
+                "linear-gradient(180deg, #244969 0%, #061827 100%)",
+                true
+              )}
+            >
+              <MarketplaceGlyph name="notice" size={26} />
+            </span>
+            <div style={{ minWidth: 0 }}>
+              <div style={sectionLabel()}>Official Board</div>
+              <div style={{ marginTop: 8, ...helperText() }}>
+                Official notices for this selected marketplace/community only.
+                They are not broadcast to your other marketplaces, other
+                communities, or public visitors.
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <span style={badge(Boolean(activeCommunityId))}>
+              {activeCommunityName || "Select marketplace"}
+            </span>
+            {canPostMarketplaceNotice ? (
+              <StableButton
+                debugId="marketplace.board.post"
+                type="button"
+                onClick={(event) =>
+                  runMarketplaceAction(event, () => setMarketplaceNoticeModalOpen(true))
+                }
+                style={marketplaceActionStyle("secondary")}
+              >
+                Post notice
+              </StableButton>
+            ) : null}
+            <StableButton
+              debugId="marketplace.board.toggle"
+              type="button"
+              onClick={(event) => toggleSectionFromButton(event, "board")}
+              style={marketplaceActionStyle("soft")}
+            >
+              {sectionsOpen.board ? "Collapse" : "Open"}
+            </StableButton>
+          </div>
+        </div>
+
+        {sectionsOpen.board ? (
+          <div
+            {...marketplaceSurfaceTouchProps("marketplace.board.module")}
+            style={{
+              ...marketplaceDepartmentShellStyle("neutral", isCompact),
+              marginTop: 14,
+            }}
+          >
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) auto",
+                gap: 12,
+                alignItems: "start",
+              }}
+            >
+              <div style={{ minWidth: 0 }}>
+                <div style={sectionLabel()}>Community notice board</div>
+                <div style={{ marginTop: 6, ...helperText(), fontSize: 13 }}>
+                  Choose the marketplace first. Newest official announcement
+                  first. Each notice is capped at 50 words and stays limited to
+                  members who can access this marketplace/community.
+                </div>
+              </div>
+              <span style={stableStatusPillStyle(!marketplaceNoticesLoading)}>
+                {marketplaceNoticesLoading
+                  ? "Loading"
+                  : `${marketplaceNotices.length} visible`}
+              </span>
+            </div>
+
+            <div
+              style={{
+                marginTop: 12,
+                display: "grid",
+                gap: 10,
+              }}
+            >
+              {marketplaceNoticesLoading ? (
+                <div style={{ ...helperText(), fontSize: 13 }}>
+                  Loading official marketplace notices.
+                </div>
+              ) : marketplaceNotices.length ? (
+                marketplaceNotices.map((item, index) => {
+                  const title = wordLimit(
+                    firstTruthy(item?.body, item?.title, item?.purpose),
+                    50
+                  );
+                  const when = safeDateLabel(
+                    item?.created_at || item?.scheduled_at
+                  );
+                  const key = firstTruthy(
+                    item?.notice_id,
+                    item?.meeting_id,
+                    item?.created_at,
+                    item?.scheduled_at,
+                    index
+                  );
+
+                  return (
+                    <div
+                      key={key}
+                      style={{
+                        borderRadius: 16,
+                        border: "1px solid rgba(23,55,80,0.12)",
+                        background: "#FFFFFF",
+                        padding: isCompact ? 12 : 14,
+                        boxShadow: "0 10px 22px rgba(10,24,49,0.06)",
+                      }}
+                    >
+                      <div
+                        style={{
+                          color: "#07172C",
+                          fontSize: isCompact ? 14 : 15,
+                          fontWeight: 950,
+                          lineHeight: 1.3,
+                          overflowWrap: "break-word",
+                        }}
+                      >
+                        {title || "Official marketplace notice"}
+                      </div>
+                      <div
+                        style={{
+                          marginTop: 8,
+                          display: "flex",
+                          gap: 8,
+                          flexWrap: "wrap",
+                        }}
+                      >
+                        <span style={marketplaceFrontTagStyle("#173750", "#EEF3F7", isCompact)}>
+                          Newest first
+                        </span>
+                        {when ? (
+                          <span style={marketplaceFrontTagStyle("#617085", "#F3F6FA", isCompact)}>
+                            {when}
+                          </span>
+                        ) : null}
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <div
+                  style={{
+                    borderRadius: 16,
+                    border: "1px solid rgba(23,55,80,0.12)",
+                    background: "#FFFFFF",
+                    padding: isCompact ? 12 : 14,
+                  }}
+                >
+                  <div
+                    style={{
+                      color: "#07172C",
+                      fontSize: 14,
+                      fontWeight: 950,
+                      lineHeight: 1.3,
+                    }}
+                  >
+                    No official notices yet.
+                  </div>
+                  <div style={{ marginTop: 6, ...helperText(), fontSize: 13 }}>
+                    When community officers post for this marketplace, members
+                    of this marketplace see it here.
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        ) : null}
+      </section>
+      ) : null}
 
       {sectionsOpen.money || sectionsTouched.money ? (
       <section

@@ -139,6 +139,7 @@ const surfaceUses = [
 const expectedSurfaceIds = [
   "marketplace.trade.evidence-module",
   "marketplace.members.visible-members-module",
+  "marketplace.board.module",
   "marketplace.demand.module",
   "marketplace.support.selected-module",
   "marketplace.support.financial-support-module",
