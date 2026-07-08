@@ -37,3 +37,17 @@ export function buildWhatsAppChatUrl(
   if (!phone) return "";
   return `https://wa.me/${phone}?text=${encodeURIComponent(cleanText(message))}`;
 }
+
+export function buildPhoneCallUrl(value: unknown): string {
+  const raw = cleanText(value);
+  if (!raw) return "";
+
+  const compact = raw.replace(/[^\d+]/g, "");
+  if (!compact) return "";
+
+  if (compact.startsWith("+")) {
+    return `tel:${compact}`;
+  }
+
+  return `tel:${compact.replace(/\D/g, "")}`;
+}

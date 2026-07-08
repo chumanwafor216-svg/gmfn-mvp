@@ -10,7 +10,7 @@ const appLayoutFile = "src/layout/AppLayout.tsx";
 const source = readFileSync(join(frontendRoot, communityFile), "utf8");
 const appLayoutSource = readFileSync(join(frontendRoot, appLayoutFile), "utf8");
 const findings = [];
-const expectedStableButtonTemplateCount = 19;
+const expectedStableButtonTemplateCount = 22;
 const expectedNativeFieldCount = 0;
 const expectedNextActionGuideItemCount = 12;
 const expectedFrontQuickActionCount = 4;
@@ -157,6 +157,8 @@ const frontToInnerOrder = [
   { label: "community domain summary", pattern: /^community-home\.summary\.community-domain/ },
   { label: "finance summary", pattern: /^community-home\.finance-summary\./ },
   { label: "trust summary", pattern: /^community-home\.trust-summary\./ },
+  { label: "notice board", pattern: /^community-home\.notice\./ },
+  { label: "contact community", pattern: /^community-home\.contact\./ },
   { label: "front next actions", pattern: /^community-home\.next-action\./ },
   { label: "spotlight guided lane", pattern: /^community-home\.spotlight-guided\./ },
   { label: "grouped command lanes", pattern: /^community-home\.lane\./ },
@@ -259,6 +261,11 @@ if (groupedLaneRowCount !== expectedGroupedLaneRowCount) {
 assertContains(
   /const communityNextActionItems = useMemo<NextActionGuideItem\[]>\([\s\S]*?id: "choose-community"[\s\S]*?id: "marketplace"[\s\S]*?id: "create-community"[\s\S]*?id: "join-community"[\s\S]*?id: "circle"[\s\S]*?id: "shop-control"[\s\S]*?id: "community-packages"[\s\S]*?id: "spotlight"[\s\S]*?id: "finance"[\s\S]*?id: "support"[\s\S]*?id: "trust"[\s\S]*?id: "notifications"/,
   "Community Home next-action guide must keep the full inner action manifest."
+);
+
+assertContains(
+  /COMMUNITY NOTICE BOARD[\s\S]*?debugId="community-home\.notice\.post"[\s\S]*?CONTACT COMMUNITY[\s\S]*?debugId="community-home\.contact\.whatsapp-chat"[\s\S]*?debugId="community-home\.contact\.whatsapp-call"/,
+  "Community Home communication protocol block must keep the Notice Board and Contact Community actions."
 );
 
 assertContains(

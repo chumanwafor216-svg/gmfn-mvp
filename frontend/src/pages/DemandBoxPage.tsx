@@ -29,6 +29,7 @@ import {
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 import { buildGsnSnapshotPaper } from "../lib/gsnSnapshotPaper";
 import { revealElementWithoutJump } from "../lib/mobileRevealStability";
+import { buildPhoneCallUrl, buildWhatsAppChatUrl } from "../lib/whatsappLinks";
 
 type DemandRow = {
   id?: number;
@@ -421,6 +422,14 @@ function buildDemandDescription(
   return parts.join("\n\n") || undefined;
 }
 
+function demandContactMessage(row: DemandRow, currentCommunityName: string): string {
+  return [
+    `Hello ${requesterName(row)}.`,
+    `I saw your GSN Demand Box request: ${firstTruthy(row?.title, "Community demand request")}.`,
+    `Community: ${currentCommunityName}.`,
+  ].join("\n");
+}
+
 function requesterName(row: DemandRow): string {
   return (
     firstTruthy(
@@ -618,6 +627,39 @@ export default function DemandBoxPage() {
 
   function showNotice(tone: NoticeTone, text: string) {
     setNotice({ tone, text });
+  }
+
+  function openDemandWhatsAppChat(row: DemandRow) {
+    const chatUrl = buildWhatsAppChatUrl(
+      row?.whatsapp_number,
+      demandContactMessage(row, currentCommunityName)
+    );
+
+    if (!chatUrl || typeof window === "undefined") {
+      showNotice(
+        "error",
+        "This request does not have a ready WhatsApp contact path yet."
+      );
+      return;
+    }
+
+    window.open(chatUrl, "_blank", "noopener,noreferrer");
+    showNotice("success", "WhatsApp chat opened for this Demand Box request.");
+  }
+
+  function openDemandWhatsAppCall(row: DemandRow) {
+    const callUrl = buildPhoneCallUrl(row?.whatsapp_number);
+
+    if (!callUrl || typeof window === "undefined") {
+      showNotice(
+        "error",
+        "This request does not have a ready call contact path yet."
+      );
+      return;
+    }
+
+    window.location.href = callUrl;
+    showNotice("success", "Call path opened for this Demand Box request.");
   }
 
   function buildDemandRequestPaper(
@@ -845,6 +887,28 @@ export default function DemandBoxPage() {
     () => communityName(currentClan, selectedClanId),
     [currentClan, selectedClanId]
   );
+
+  function demandContactActions(row: DemandRow, debugBase: string) {
+    const hasContact = Boolean(safeStr(row?.whatsapp_number));
+    return (
+      <>
+        <SecondaryButton
+          onClick={() => openDemandWhatsAppChat(row)}
+          debugId={`${debugBase}.whatsapp-chat`}
+          style={demandActionStyle(54)}
+        >
+          {demandIconText("phone", "WhatsApp Chat", 20)}
+        </SecondaryButton>
+        <SubtleButton
+          onClick={() => openDemandWhatsAppCall(row)}
+          debugId={`${debugBase}.whatsapp-call`}
+          style={demandActionStyle(54)}
+        >
+          {demandIconText("phone", hasContact ? "WhatsApp Call" : "Call not ready", 20)}
+        </SubtleButton>
+      </>
+    );
+  }
 
   const memberName = useMemo(() => {
     return (
@@ -1427,8 +1491,8 @@ export default function DemandBoxPage() {
               }}
             >
               {isCreateMode
-                ? "Fill in the need, contact, area, and evidence expectation. GSN keeps the community context attached."
-                : "Keep it simple: what you need, where it is needed, how people can reach you, and what evidence or payment should be clear first."}
+                ? "Fill in the need, area, and evidence expectation. GSN keeps the community context attached."
+                : "Keep it simple: what you need, where it is needed, and what evidence or payment should be clear first."}
             </div>
           </div>
         </div>
@@ -1579,11 +1643,11 @@ export default function DemandBoxPage() {
               </div>
 
               <div style={{ gridColumn: isCompact ? "auto" : "1 / span 2" }}>
-                <div style={sectionLabel()}>How should people contact you?</div>
+                <div style={sectionLabel()}>Contact path override</div>
                 <input
                   value={whatsappNumber}
                   onChange={(e) => setWhatsappNumber(e.target.value)}
-                  placeholder="Phone, WhatsApp, or short contact instruction"
+                  placeholder="Optional WhatsApp number if your approved profile contact should not be used"
                   style={{ ...inputStyle(), marginTop: 8 }}
                 />
               </div>
@@ -1893,6 +1957,10 @@ export default function DemandBoxPage() {
                         "owner",
                         `demand-box.request.${row?.id || index}.copy-paper`
                       )}
+                      {demandContactActions(
+                        row,
+                        `demand-box.request.${row?.id || index}.contact`
+                      )}
                     </div>
                   </div>
                 );
@@ -2016,6 +2084,10 @@ export default function DemandBoxPage() {
                               "owner",
                               `demand-box.request.${row?.id || debugIndex}.copy-paper`
                             )}
+                            {demandContactActions(
+                              row,
+                              `demand-box.request.${row?.id || debugIndex}.contact`
+                            )}
                           </div>
                         </div>
                       );
@@ -2138,6 +2210,10 @@ export default function DemandBoxPage() {
                       "community",
                       `demand-box.visible-request.${row?.id || index}.copy-paper`
                     )}
+                    {demandContactActions(
+                      row,
+                      `demand-box.visible-request.${row?.id || index}.contact`
+                    )}
                   </div>
                 </div>
               ))}
@@ -2235,6 +2311,10 @@ export default function DemandBoxPage() {
                               row,
                               "community",
                               `demand-box.visible-request.${row?.id || debugIndex}.copy-paper`
+                            )}
+                            {demandContactActions(
+                              row,
+                              `demand-box.visible-request.${row?.id || debugIndex}.contact`
                             )}
                           </div>
                         </div>

@@ -5,11 +5,13 @@ from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query
 from sqlalchemy import and_, or_
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user
 from app.db.database import get_db
-from app.db.models import Clan, ClanMembership, MarketplaceRequest, User
+from app.db.models import Clan, ClanMembership, MarketplaceRequest, User, UserSettings
+from app.services.community_integrity_service import _user_settings_table_exists
 from app.schemas.marketplace_requests import (
     MarketplaceRequestCreate,
     MarketplaceRequestOut,
@@ -75,6 +77,28 @@ def _community_code(clan: Clan | None) -> str | None:
     if saved:
         return saved
     return f"GMFN-C-{int(clan.id):06d}"
+
+
+def _approved_whatsapp_contact(db: Session, user: User | None) -> str | None:
+    if not user:
+        return None
+    phone = str(getattr(user, "phone_e164", "") or "").strip()
+    if not phone or not getattr(user, "phone_verified_at", None):
+        return None
+    if not _user_settings_table_exists(db):
+        return phone
+    try:
+        settings = (
+            db.query(UserSettings)
+            .filter(UserSettings.user_id == int(user.id))
+            .first()
+        )
+    except OperationalError:
+        db.rollback()
+        return phone
+    if settings is not None and not bool(getattr(settings, "show_whatsapp_public", False)):
+        return None
+    return phone
 
 
 def _active_clan_ids_for_user(db: Session, user_id: int) -> list[int]:
@@ -195,7 +219,7 @@ def _to_out(
     row: MarketplaceRequest,
     user: User | None = None,
 ) -> MarketplaceRequestOut:
-    owner = user or row.user
+    owner = row.user or db.get(User, int(row.user_id)) or user
     clan = db.get(Clan, int(row.clan_id)) if getattr(row, "clan_id", None) else None
     return MarketplaceRequestOut(
         id=row.id,
@@ -209,7 +233,7 @@ def _to_out(
         category=row.category,
         urgency=row.urgency,
         area=row.area,
-        whatsapp_number=row.whatsapp_number,
+        whatsapp_number=row.whatsapp_number or _approved_whatsapp_contact(db, owner),
         payment_mode=row.payment_mode,
         allow_trust_credit=bool(row.allow_trust_credit),
         status=row.status,

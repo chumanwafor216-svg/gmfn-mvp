@@ -13,7 +13,7 @@ from fastapi import APIRouter, Body, Depends, HTTPException, Request, Response
 from fastapi.responses import HTMLResponse
 from pydantic import AliasChoices, BaseModel, ConfigDict, Field, field_validator
 from sqlalchemy import or_
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, OperationalError
 from sqlalchemy.orm import Session
 from app.services.notification_service import create_notification
 from app.core.auth import get_current_user, is_user_activation_pending, oauth2_scheme
@@ -39,6 +39,7 @@ from app.db.models import (
     CommunityMemberVerificationRequest,
     TrustEvent,
     User,
+    UserSettings,
 )
 from app.db.verification_models import IdentityVerificationCheck
 from app.api.routes.entry import (
@@ -51,6 +52,7 @@ from app.services.invites_service import (
 )
 from app.services.global_identity_service import ensure_user_gmfn_id
 from app.services.feature_entitlements_service import get_active_feature_quantity_for_scope
+from app.services.community_integrity_service import _user_settings_table_exists
 from app.services.trust_events_services import log_trust_event
 from app.schemas.invites import ClanInviteRelationshipEvidence
 
@@ -198,6 +200,12 @@ class ClanOut(BaseModel):
     marketplace_name: Optional[str] = None
     marketplace_description: Optional[str] = None
     community_code: Optional[str] = None
+    role: Optional[str] = None
+    member_role: Optional[str] = None
+    membership_role: Optional[str] = None
+    official_whatsapp_number: Optional[str] = None
+    official_whatsapp_label: Optional[str] = None
+    official_contact_ready: bool = False
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -2459,7 +2467,96 @@ def _reject_join_request(
         **rejection,
     }
 
-def _clan_out(clan: Clan) -> dict[str, Any]:
+def _public_whatsapp_contact_for_user(db: Session, user: Optional[User]) -> Optional[str]:
+    if not user:
+        return None
+    phone = _safe_str(getattr(user, "phone_e164", None))
+    if not phone or not getattr(user, "phone_verified_at", None):
+        return None
+    if not _user_settings_table_exists(db):
+        return phone
+    try:
+        settings = (
+            db.query(UserSettings)
+            .filter(UserSettings.user_id == int(user.id))
+            .first()
+        )
+    except OperationalError:
+        db.rollback()
+        return phone
+    if settings is not None and not bool(getattr(settings, "show_whatsapp_public", False)):
+        return None
+    return phone
+
+
+def _official_community_contact(db: Session, clan: Clan) -> dict[str, Any]:
+    admin_rows = (
+        db.query(ClanMembership)
+        .filter(
+            ClanMembership.clan_id == int(clan.id),
+            ClanMembership.left_at.is_(None),
+            ClanMembership.role == "admin",
+        )
+        .order_by(ClanMembership.id.asc())
+        .all()
+    )
+    creator_id = int(getattr(clan, "created_by_user_id", 0) or 0)
+    admin_user_ids = [int(row.user_id) for row in admin_rows]
+    ordered_user_ids = (
+        ([creator_id] if creator_id in admin_user_ids else [])
+        + [user_id for user_id in admin_user_ids if user_id != creator_id]
+    )
+
+    for user_id in ordered_user_ids:
+        user = db.get(User, int(user_id))
+        contact = _public_whatsapp_contact_for_user(db, user)
+        if not contact:
+            continue
+        return {
+            "official_whatsapp_number": contact,
+            "official_whatsapp_label": _member_display(user),
+            "official_contact_ready": True,
+        }
+
+    return {
+        "official_whatsapp_number": None,
+        "official_whatsapp_label": None,
+        "official_contact_ready": False,
+    }
+
+
+def _membership_role_for_user(
+    db: Session | None,
+    *,
+    clan_id: int,
+    user_id: int | None,
+) -> Optional[str]:
+    if db is None or not user_id:
+        return None
+    row = (
+        db.query(ClanMembership)
+        .filter(
+            ClanMembership.clan_id == int(clan_id),
+            ClanMembership.user_id == int(user_id),
+            ClanMembership.left_at.is_(None),
+        )
+        .order_by(ClanMembership.id.desc())
+        .first()
+    )
+    return _safe_str(getattr(row, "role", None)) or None
+
+
+def _clan_out(
+    clan: Clan,
+    db: Session | None = None,
+    current_user_id: int | None = None,
+) -> dict[str, Any]:
+    contact = _official_community_contact(db, clan) if db is not None else {}
+    membership_role = _membership_role_for_user(
+        db,
+        clan_id=int(clan.id),
+        user_id=current_user_id,
+    )
     return {
         "id": int(clan.id),
         "name": clan.name,
@@ -2467,6 +2564,10 @@ def _clan_out(clan: Clan) -> dict[str, Any]:
         "marketplace_name": getattr(clan, "marketplace_name", None),
         "marketplace_description": getattr(clan, "marketplace_description", None),
         "community_code": _community_code(clan.id),
+        "role": membership_role,
+        "member_role": membership_role,
+        "membership_role": membership_role,
+        **contact,
     }
 
 
@@ -2510,7 +2611,7 @@ def create_clan(
 
     ensure_membership(db=db, clan=clan, user=current_user, role="admin")
 
-    return _clan_out(clan)
+    return _clan_out(clan, db, int(current_user.id))
 
 
 @router.get("/me", response_model=MyClansOut)
@@ -2519,7 +2620,7 @@ def list_my_clans(
     current_user: User = Depends(get_current_user),
 ):
     clans = list_visible_user_clans(db=db, user=current_user)
-    items = [_clan_out(clan) for clan in clans]
+    items = [_clan_out(clan, db, int(current_user.id)) for clan in clans]
     return {"items": items, "total": len(items)}
 
 

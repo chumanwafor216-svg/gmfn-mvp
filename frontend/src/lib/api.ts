@@ -1153,6 +1153,39 @@ export async function getCurrentClan(): Promise<any> {
   return fallback;
 }
 
+export async function listCommunityMeetings(params: {
+  clan_id: number;
+  limit?: number;
+}): Promise<any> {
+  return httpJson(
+    `/community-meetings${buildQuery({
+      clan_id: params.clan_id,
+      limit: params.limit ?? 5,
+    })}`,
+    "GET"
+  );
+}
+
+export async function listCommunityNotices(params: {
+  clan_id: number;
+  limit?: number;
+}): Promise<any> {
+  return httpJson(
+    `/community-notices${buildQuery({
+      clan_id: params.clan_id,
+      limit: params.limit ?? 5,
+    })}`,
+    "GET"
+  );
+}
+
+export async function createCommunityNotice(payload: {
+  clan_id: number;
+  body: string;
+}): Promise<any> {
+  return httpJson("/community-notices", "POST", payload);
+}
+
 function normalizeVisibleMyClans(rows: any[]): any[] {
   if (!Array.isArray(rows)) return [];
 

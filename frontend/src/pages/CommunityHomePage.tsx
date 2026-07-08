@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import DomainIntroToggle from "../components/DomainIntroToggle";
+import CommunityNoticeModal from "../components/CommunityNoticeModal";
 import GSNBrandMark from "../components/GSNBrandMark";
 import NextActionGuide, {
   type NextActionGuideItem,
@@ -21,10 +22,13 @@ import {
   getMe,
   getPoolMeSummary,
   getSelectedClanId,
+  createCommunityNotice,
+  listCommunityNotices,
   listMyCommunityDomains,
   listMyClans,
   selectClan,
 } from "../lib/api";
+import { buildPhoneCallUrl, buildWhatsAppChatUrl } from "../lib/whatsappLinks";
 import {
   SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS,
   SPOTLIGHT_PILOT_REFRESH_MS,
@@ -78,6 +82,9 @@ type ClanItem = {
   member_role?: string | null;
   membership_role?: string | null;
   participant_role?: string | null;
+  official_whatsapp_number?: string | null;
+  official_whatsapp_label?: string | null;
+  official_contact_ready?: boolean;
   community?: any;
   profile?: any;
   marketplace?: any;
@@ -111,6 +118,18 @@ type ActiveCommunitySpotlight = {
   sourceProductSlotNumber?: number;
   expiresAt: string;
   createdAt: string;
+};
+
+type CommunityNoticeItem = {
+  notice_id?: string | null;
+  meeting_id?: string | null;
+  body?: string | null;
+  title?: string | null;
+  purpose?: string | null;
+  scheduled_at?: string | null;
+  status?: string | null;
+  created_at?: string | null;
+  source?: string | null;
 };
 
 type CommunityIconMark = GsnIconName;
@@ -894,6 +913,40 @@ function formatSignedGlobalAmount(value: any): string {
   return `${sign}${formatGlobalAmount(Math.abs(amount))}`;
 }
 
+function wordLimit(text: string, maxWords: number): string {
+  const words = safeStr(text).split(/\s+/).filter(Boolean);
+  if (words.length <= maxWords) return words.join(" ");
+  return `${words.slice(0, maxWords).join(" ")}...`;
+}
+
+function safeDateLabel(value: any): string {
+  const raw = safeStr(value);
+  if (!raw) return "";
+  const date = new Date(raw);
+  if (!Number.isFinite(date.getTime())) return raw;
+  return date.toLocaleString();
+}
+
+function communityContactMessage(clan: ClanItem | null | undefined): string {
+  const name = getClanName(clan);
+  const code = firstTruthy(clan?.community_code, clan?.clan_code, clan?.code);
+  return [
+    `Hello ${name}.`,
+    code ? `Community ID: ${code}` : "",
+    "I am contacting the official GSN community contact.",
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
+function isCommunityOfficer(clan: ClanItem | null | undefined, user: any): boolean {
+  const platformRole = safeStr(firstTruthy(user?.role, user?.account_role)).toLowerCase();
+  const communityRole = safeStr(
+    firstTruthy(clan?.membership_role, clan?.member_role, clan?.participant_role, clan?.role)
+  ).toLowerCase();
+  return platformRole === "admin" || communityRole === "admin";
+}
+
 function readLocalJSON<T>(key: string, fallback: T): T {
   try {
     if (typeof window === "undefined") return fallback;
@@ -947,6 +1000,10 @@ export default function CommunityHomePage() {
   const [clans, setClans] = useState<ClanItem[]>([]);
   const [communityDomainCount, setCommunityDomainCount] = useState<number | null>(null);
   const [selectedClan, setSelectedClan] = useState<ClanItem | null>(null);
+  const [communityNotices, setCommunityNotices] = useState<CommunityNoticeItem[]>([]);
+  const [communityNoticesLoading, setCommunityNoticesLoading] = useState(false);
+  const [noticeModalOpen, setNoticeModalOpen] = useState(false);
+  const [noticePosting, setNoticePosting] = useState(false);
   const [poolSummary, setPoolSummary] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [changingClanId, setChangingClanId] = useState<number>(0);
@@ -1163,8 +1220,36 @@ export default function CommunityHomePage() {
     };
   }, [selectedClan]);
 
+  useEffect(() => {
+    let alive = true;
+
+    const clanId = getClanId(selectedClan);
+
+    if (!clanId) {
+      setCommunityNotices([]);
+      setCommunityNoticesLoading(false);
+      return;
+    }
+
+    setCommunityNoticesLoading(true);
+
+    (async () => {
+      const res = await listCommunityNotices({ clan_id: clanId, limit: 3 }).catch(() => null);
+      if (!alive) return;
+
+      const rows = Array.isArray(res?.notices) ? res.notices : [];
+      setCommunityNotices(rows);
+      setCommunityNoticesLoading(false);
+    })();
+
+    return () => {
+      alive = false;
+    };
+  }, [selectedClan]);
+
   const selectedClanName = getClanName(selectedClan);
   const selectedClanId = getClanId(selectedClan);
+  const canPostCommunityNotice = isCommunityOfficer(selectedClan, me);
   const routes = useMemo(
     () => ({
       dashboard: routeTarget(
@@ -1986,6 +2071,65 @@ export default function CommunityHomePage() {
     setNotice({ tone, text });
   }
 
+  function openCommunityWhatsAppContact(event: React.SyntheticEvent<HTMLElement>) {
+    consumeCommunityButtonEvent(event);
+    const contact = firstTruthy(selectedClan?.official_whatsapp_number);
+    const chatUrl = buildWhatsAppChatUrl(contact, communityContactMessage(selectedClan));
+
+    if (!chatUrl || typeof window === "undefined") {
+      showNotice(
+        "error",
+        "This community has not published an official WhatsApp contact yet."
+      );
+      return;
+    }
+
+    window.open(chatUrl, "_blank", "noopener,noreferrer");
+    showNotice("success", "WhatsApp chat opened for this community contact.");
+  }
+
+  function openCommunityCallContact(event: React.SyntheticEvent<HTMLElement>) {
+    consumeCommunityButtonEvent(event);
+    const contact = firstTruthy(selectedClan?.official_whatsapp_number);
+    const callUrl = buildPhoneCallUrl(contact);
+
+    if (!callUrl || typeof window === "undefined") {
+      showNotice(
+        "error",
+        "This community has not published an official call contact yet."
+      );
+      return;
+    }
+
+    window.location.href = callUrl;
+    showNotice("success", "Call path opened for this community contact.");
+  }
+
+  async function submitCommunityNotice(body: string) {
+    const clanId = getClanId(selectedClan);
+    if (!clanId) {
+      showNotice("error", "Choose a community before posting an official notice.");
+      return;
+    }
+
+    setNoticePosting(true);
+    try {
+      await createCommunityNotice({ clan_id: clanId, body });
+      const res = await listCommunityNotices({ clan_id: clanId, limit: 3 }).catch(() => null);
+      const rows = Array.isArray(res?.notices) ? res.notices : [];
+      setCommunityNotices(rows);
+      setNoticeModalOpen(false);
+      showNotice("success", "Official community notice posted.");
+    } catch (error: any) {
+      showNotice(
+        "error",
+        error?.message || "This notice could not be posted. Check officer permissions and length."
+      );
+    } finally {
+      setNoticePosting(false);
+    }
+  }
+
   function toggleSection(key: CollapseKey) {
     setCollapsed((prev) => ({ ...prev, [key]: !prev[key] }));
   }
@@ -2575,6 +2719,13 @@ export default function CommunityHomePage() {
       style={communityShellStyle(isCompact)}
     >
       <CommunityShellLayers isCompact={isCompact} />
+      <CommunityNoticeModal
+        open={noticeModalOpen}
+        communityName={selectedClanName}
+        busy={noticePosting}
+        onClose={() => setNoticeModalOpen(false)}
+        onSubmit={submitCommunityNotice}
+      />
       <div style={communityContentStyle(isCompact)}>
       {!spotlightGuidanceSuspendedView ? (
       <section style={communityHeroStyle(isCompact)}>
@@ -2905,6 +3056,172 @@ export default function CommunityHomePage() {
       ) : null}
 
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
+
+      {!spotlightGuidanceSuspendedView ? (
+        <section style={{ ...communityBlockCard("quiet"), order: 8 }}>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: isCompact
+                ? "1fr"
+                : "minmax(0, 1.1fr) minmax(280px, 0.9fr)",
+              gap: 14,
+              alignItems: "start",
+            }}
+          >
+            <div>
+              <div style={sectionLabel()}>COMMUNITY NOTICE BOARD</div>
+              <div
+                style={{
+                  marginTop: 8,
+                  color: "#07172C",
+                  fontSize: isCompact ? 18 : 21,
+                  fontWeight: 950,
+                  lineHeight: 1.18,
+                }}
+              >
+                Official community notices
+              </div>
+              {canPostCommunityNotice ? (
+                <div style={{ ...collapseButtonRow(), justifyContent: "flex-start" }}>
+                  <StableButton
+                    type="button"
+                    debugId="community-home.notice.post"
+                    onClick={(event) => {
+                      consumeCommunityButtonEvent(event);
+                      setNoticeModalOpen(true);
+                    }}
+                    style={communityActionStyle("secondary")}
+                  >
+                    Post notice
+                  </StableButton>
+                </div>
+              ) : null}
+              <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
+                {communityNoticesLoading ? (
+                  <div style={{ ...innerCard("#F8FBFF"), color: "#617085", fontWeight: 850 }}>
+                    Loading latest notices...
+                  </div>
+                ) : communityNotices.length > 0 ? (
+                  communityNotices.slice(0, 3).map((item, index) => {
+                    const title = wordLimit(
+                      firstTruthy(item?.body, item?.title, item?.purpose, "Community notice"),
+                      50
+                    );
+                    const when = safeDateLabel(
+                      firstTruthy(item?.scheduled_at, item?.created_at)
+                    );
+
+                    return (
+                      <div
+                        key={`${item?.notice_id || item?.meeting_id || index}`}
+                        style={{
+                          ...innerCard(index === 0 ? "#FFFFFF" : "#F8FBFF"),
+                          padding: isCompact ? 12 : 14,
+                        }}
+                      >
+                        <div
+                          style={{
+                            color: "#0B2D4A",
+                            fontWeight: 950,
+                            lineHeight: 1.28,
+                          }}
+                        >
+                          {title}
+                        </div>
+                        <div
+                          style={{
+                            marginTop: 6,
+                            display: "flex",
+                            gap: 8,
+                            flexWrap: "wrap",
+                          }}
+                        >
+                          <span style={badge(index === 0)}>Newest first</span>
+                          {when ? <span style={badge(false)}>{when}</span> : null}
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div style={{ ...innerCard("#F8FBFF"), color: "#617085", fontWeight: 850 }}>
+                    No official notice is visible for this community yet.
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div style={innerCard("#F8FBFF")}>
+              <div style={sectionLabel()}>CONTACT COMMUNITY</div>
+              <div
+                style={{
+                  marginTop: 8,
+                  color: "#07172C",
+                  fontSize: isCompact ? 17 : 19,
+                  fontWeight: 950,
+                  lineHeight: 1.18,
+                }}
+              >
+                WhatsApp remains the conversation channel.
+              </div>
+              <div
+                style={{
+                  marginTop: 8,
+                  color: "#617085",
+                  fontSize: 13,
+                  lineHeight: 1.45,
+                  fontWeight: 750,
+                }}
+              >
+                GSN keeps the community record. Use this only when direct contact is appropriate.
+              </div>
+              <div style={collapseButtonRow()}>
+                <StableButton
+                  type="button"
+                  debugId="community-home.contact.whatsapp-chat"
+                  onClick={openCommunityWhatsAppContact}
+                  style={communityActionStyle(
+                    firstTruthy(selectedClan?.official_whatsapp_number)
+                      ? "primary"
+                      : "secondary",
+                    !firstTruthy(selectedClan?.official_whatsapp_number)
+                  )}
+                >
+                  WhatsApp Chat
+                </StableButton>
+                <StableButton
+                  type="button"
+                  debugId="community-home.contact.whatsapp-call"
+                  onClick={openCommunityCallContact}
+                  style={communityActionStyle(
+                    "secondary",
+                    !firstTruthy(selectedClan?.official_whatsapp_number)
+                  )}
+                >
+                  WhatsApp Call
+                </StableButton>
+              </div>
+              <div
+                style={{
+                  marginTop: 10,
+                  display: "flex",
+                  gap: 8,
+                  flexWrap: "wrap",
+                }}
+              >
+                <span style={badge(Boolean(selectedClan?.official_contact_ready))}>
+                  {selectedClan?.official_contact_ready ? "Official contact ready" : "Contact not published"}
+                </span>
+                {firstTruthy(selectedClan?.official_whatsapp_label) ? (
+                  <span style={badge(false)}>
+                    Officer: {firstTruthy(selectedClan?.official_whatsapp_label)}
+                  </span>
+                ) : null}
+              </div>
+            </div>
+          </div>
+        </section>
+      ) : null}
 
       {!spotlightGuidanceSuspendedView ? (
         <section style={{ ...communityBlockCard("raised"), order: 10 }}>
