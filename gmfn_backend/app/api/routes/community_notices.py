@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 from app.core.auth import get_current_user
 from app.db.database import get_db
 from app.db.models import ClanMembership, TrustEvent, User
+from app.services.notification_service import create_notification
 from app.services.community_meeting_service import list_community_meetings
 from app.services.trust_events_services import log_trust_event
 
@@ -131,6 +132,63 @@ def _event_to_notice(event: TrustEvent) -> dict[str, Any]:
     }
 
 
+def _active_notice_recipient_ids(
+    db: Session,
+    *,
+    clan_id: int,
+    poster_user_id: int,
+) -> list[int]:
+    rows = (
+        db.query(ClanMembership.user_id)
+        .filter(
+            ClanMembership.clan_id == int(clan_id),
+            ClanMembership.left_at.is_(None),
+        )
+        .order_by(ClanMembership.user_id.asc())
+        .all()
+    )
+    recipient_ids: list[int] = []
+    seen: set[int] = set()
+    for row in rows:
+        user_id = int(row[0])
+        if user_id == int(poster_user_id) or user_id in seen:
+            continue
+        seen.add(user_id)
+        recipient_ids.append(user_id)
+    return recipient_ids
+
+
+def _create_notice_notifications(
+    db: Session,
+    *,
+    clan_id: int,
+    body: str,
+    poster_user_id: int,
+) -> int:
+    recipient_ids = _active_notice_recipient_ids(
+        db,
+        clan_id=int(clan_id),
+        poster_user_id=int(poster_user_id),
+    )
+    if not recipient_ids:
+        return 0
+
+    for user_id in recipient_ids:
+        create_notification(
+            db,
+            user_id=int(user_id),
+            kind=COMMUNITY_NOTICE_EVENT,
+            title="Official community notice",
+            message=body,
+            action_url=f"/app/marketplace?clan_id={int(clan_id)}#marketplace-official-board",
+            action_label="Open Official Board",
+            commit=False,
+            refresh=False,
+        )
+    db.commit()
+    return len(recipient_ids)
+
+
 def _meeting_to_notice(row: dict[str, Any]) -> dict[str, Any]:
     body = _safe_str(row.get("title") or row.get("purpose"), "Community meeting")
     return {
@@ -241,10 +299,23 @@ def create_notice(
             "trust_delta": "0.00",
         },
     )
+    notifications_created = _create_notice_notifications(
+        db,
+        clan_id=int(payload.clan_id),
+        body=body,
+        poster_user_id=int(current_user.id),
+    )
     return {
         "ok": True,
         "engine_ready": True,
         "notice": _event_to_notice(event),
+        "notification_kind": COMMUNITY_NOTICE_EVENT,
+        "notifications_created": int(notifications_created),
         "message": "Official notice posted to the Community Notice Board.",
+        "boundary": (
+            "The notice belongs to this selected community or marketplace only. "
+            "Notifications are created only for active members of this selected "
+            "community; it does not broadcast to other marketplaces, communities, "
+            "domains, or public visitors."
+        ),
     }
-

@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 
 from app.db.database import SessionLocal
 from app.db.models import Clan, ClanMembership, User
+from app.db.notification_models import Notification
 
 
 def _seed_notice_community(*, membership_role: str = "admin") -> None:
@@ -32,6 +33,30 @@ def _seed_notice_community(*, membership_role: str = "admin") -> None:
                 personal_pool_balance=0,
             )
         )
+        if membership_role == "admin":
+            member = User(
+                id=2,
+                email="notice-member@example.com",
+                hashed_password="hashed",
+                role="user",
+            )
+            outsider = User(
+                id=3,
+                email="notice-outsider@example.com",
+                hashed_password="hashed",
+                role="user",
+            )
+            db.add_all([member, outsider])
+            db.flush()
+            db.add(
+                ClanMembership(
+                    id=2,
+                    clan_id=1,
+                    user_id=2,
+                    role="member",
+                    personal_pool_balance=0,
+                )
+            )
         db.commit()
 
 
@@ -49,9 +74,13 @@ def test_community_officer_can_post_and_members_can_read_notice(
     )
 
     assert post_res.status_code == 200, post_res.text
-    notice = post_res.json()["notice"]
+    posted_body = post_res.json()
+    notice = posted_body["notice"]
     assert notice["body"] == "Meeting Saturday 4 pm."
     assert notice["word_count"] == 4
+    assert posted_body["notification_kind"] == "community.notice.posted"
+    assert posted_body["notifications_created"] == 1
+    assert "does not broadcast" in posted_body["boundary"]
 
     list_res = client.get("/community-notices", params={"clan_id": 1})
     assert list_res.status_code == 200, list_res.text
@@ -60,6 +89,23 @@ def test_community_officer_can_post_and_members_can_read_notice(
     assert body["reactions_enabled"] is False
     assert body["thread_enabled"] is False
     assert body["notices"][0]["body"] == "Meeting Saturday 4 pm."
+
+    with SessionLocal() as db:
+        notifications = (
+            db.query(Notification)
+            .filter(Notification.kind == "community.notice.posted")
+            .order_by(Notification.id.asc())
+            .all()
+        )
+        assert len(notifications) == 1
+        assert notifications[0].user_id == 2
+        assert notifications[0].title == "Official community notice"
+        assert notifications[0].message == "Meeting Saturday 4 pm."
+        assert notifications[0].action_url == (
+            "/app/marketplace?clan_id=1#marketplace-official-board"
+        )
+        assert notifications[0].action_label == "Open Official Board"
+        assert notifications[0].is_read is False
 
 
 def test_community_notice_rejects_more_than_fifty_words(
@@ -114,4 +160,3 @@ def test_community_notice_rejects_malformed_boundary_controls(
     )
     assert bad_body.status_code == 422, bad_body.text
     assert "body must be text" in bad_body.text
-

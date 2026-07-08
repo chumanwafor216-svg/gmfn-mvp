@@ -30,6 +30,7 @@ const URGENT_CONFIRMATION_OUTCOME_KINDS = new Set([
 ]);
 const PHONE_TRIGGER_NOTIFICATION_KINDS = new Set([
   ...URGENT_CONFIRMATION_OUTCOME_KINDS,
+  "community.notice.posted",
   "community_domain.notice.posted",
 ]);
 const PHONE_TRIGGER_POLL_MS = 15000;
@@ -387,7 +388,9 @@ export default function CompanionLayer({ snapshot }: CompanionLayerProps) {
         settings: merged,
         priority,
         source:
-          kind === "community_domain.notice.posted"
+          kind === "community.notice.posted"
+            ? "community-notice-board"
+            : kind === "community_domain.notice.posted"
             ? "community-domain-notice-board"
             : "notification-feed",
         fallbackTitle: "GSN notification",
