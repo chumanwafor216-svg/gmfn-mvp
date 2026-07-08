@@ -20,6 +20,7 @@ from app.db.models import (
     CommunityNodeMembership,
     CommunityDomainPolicy,
     User,
+    TrustEvent,
     TrustSlip,
 )
 from app.main import app
@@ -209,6 +210,111 @@ def test_public_domain_lookup_rejects_unknown_or_invalid_code(
     assert blank.status_code == 422, blank.text
     assert blank.json()["detail"]["code"] == "domain_name_required"
     assert blank.json()["detail"]["normalized_domain_name"] == ""
+
+
+def test_community_domain_notice_board_is_member_scoped_and_admin_posted(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    member = _seed_user(2, "domain-notice-member@example.com")
+    outsider = _seed_user(3, "domain-notice-outsider@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Notice Scope Union",
+                "display_name": "Notice Scope Union",
+                "domain_type": "union",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain_id = created.json()["community_domain"]["id"]
+
+        with SessionLocal() as db:
+            db.add(
+                CommunityDomainMembership(
+                    community_domain_id=int(domain_id),
+                    user_id=int(member.id),
+                    role="member",
+                    status="active",
+                )
+            )
+            db.commit()
+
+        posted = client.post(
+            f"/community-domains/{domain_id}/notices",
+            json={"body": "Scholarship deadline Friday."},
+        )
+        assert posted.status_code == 200, posted.text
+        posted_data = posted.json()
+        assert posted_data["community_domain_id"] == domain_id
+        assert posted_data["notice"]["community_domain_id"] == domain_id
+        assert posted_data["notice"]["body"] == "Scholarship deadline Friday."
+        assert "does not broadcast" in posted_data["boundary"]
+
+        app.dependency_overrides[get_current_user] = lambda: member
+        visible = client.get(f"/community-domains/{domain_id}/notices")
+        assert visible.status_code == 200, visible.text
+        visible_data = visible.json()
+        assert visible_data["comments_enabled"] is False
+        assert visible_data["reactions_enabled"] is False
+        assert visible_data["thread_enabled"] is False
+        assert visible_data["notices"][0]["body"] == "Scholarship deadline Friday."
+        assert visible_data["notices"][0]["community_domain_id"] == domain_id
+
+        blocked_post = client.post(
+            f"/community-domains/{domain_id}/notices",
+            json={"body": "Members cannot post official notices."},
+        )
+        assert blocked_post.status_code == 403, blocked_post.text
+
+        app.dependency_overrides[get_current_user] = lambda: outsider
+        blocked_read = client.get(f"/community-domains/{domain_id}/notices")
+        assert blocked_read.status_code == 403, blocked_read.text
+
+        with SessionLocal() as db:
+            event = (
+                db.query(TrustEvent)
+                .filter(TrustEvent.event_type == "community_domain.notice.posted")
+                .one()
+            )
+            meta = json.loads(event.meta_json or "{}")
+            assert meta["community_domain_id"] == domain_id
+            assert meta["comments_enabled"] is False
+            assert meta["reactions_enabled"] is False
+            assert meta["thread_enabled"] is False
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+
+def test_community_domain_notice_board_rejects_long_announcements(
+    client: TestClient,
+):
+    owner = _seed_owner()
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Long Notice Union",
+                "display_name": "Long Notice Union",
+                "domain_type": "union",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain_id = created.json()["community_domain"]["id"]
+
+        too_long = " ".join(f"word{i}" for i in range(51))
+        response = client.post(
+            f"/community-domains/{domain_id}/notices",
+            json={"body": too_long},
+        )
+        assert response.status_code == 422, response.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
 
 
 def test_community_domain_templates_are_public_presets_not_activation(

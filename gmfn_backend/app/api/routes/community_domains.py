@@ -31,6 +31,7 @@ from app.db.models import (
     CommunityDomainPolicy,
     CommunityNode,
     CommunityNodeMembership,
+    TrustEvent,
     User,
 )
 from app.services.payment_instruction_service import (
@@ -38,6 +39,7 @@ from app.services.payment_instruction_service import (
     create_community_domain_subscription_instruction,
 )
 from app.services.settlement_config_service import get_settlement_config
+from app.services.trust_events_services import log_trust_event
 
 
 router = APIRouter(prefix="/community-domains", tags=["community-domains"])
@@ -68,6 +70,9 @@ COMMUNITY_DOMAIN_EVIDENCE_CONTENT_TYPES = {
     "image/webp",
     "application/pdf",
 }
+COMMUNITY_DOMAIN_NOTICE_EVENT = "community_domain.notice.posted"
+COMMUNITY_DOMAIN_NOTICE_SOURCE = "community_domain_notice_board"
+COMMUNITY_DOMAIN_NOTICE_MAX_WORDS = 50
 GENERIC_UPLOAD_CONTENT_TYPES = {
     "",
     "application/octet-stream",
@@ -1348,6 +1353,29 @@ def _json_load(value: Optional[str]) -> dict[str, Any]:
         return {}
 
 
+def _word_count(value: str) -> int:
+    return len([word for word in _clean_str(value).split() if word])
+
+
+class CommunityDomainNoticeIn(BaseModel):
+    body: str = Field(..., min_length=2, max_length=500)
+
+    @field_validator("body", mode="before")
+    @classmethod
+    def _reject_non_text_body(cls, value: Any) -> Any:
+        if not isinstance(value, str):
+            raise ValueError("body must be text.")
+        return value
+
+    @field_validator("body")
+    @classmethod
+    def _enforce_notice_word_limit(cls, value: str) -> str:
+        body = _clean_str(value)
+        if _word_count(body) > COMMUNITY_DOMAIN_NOTICE_MAX_WORDS:
+            raise ValueError("Official Community Domain notices must be 50 words or fewer.")
+        return body
+
+
 MEMBER_ACTION_REVIEW_KEYS = {
     "domain_member.upsert",
     "node_member.upsert",
@@ -1864,6 +1892,57 @@ def _domain_payload(
             "verify ownership, or launch a public institutional domain."
         ),
     }
+
+
+def _community_domain_notice_payload(event: TrustEvent) -> dict[str, Any]:
+    meta = _json_load(event.meta_json)
+    body = _clean_str(meta.get("body") or meta.get("title"))
+    raw_domain_id = meta.get("community_domain_id")
+    try:
+        community_domain_id: Optional[int] = int(raw_domain_id)
+    except (TypeError, ValueError):
+        community_domain_id = None
+
+    return {
+        "notice_id": f"TE-{int(event.id)}",
+        "event_id": int(event.id),
+        "source": _clean_str(meta.get("source"), COMMUNITY_DOMAIN_NOTICE_SOURCE),
+        "community_domain_id": community_domain_id,
+        "clan_id": int(event.clan_id) if event.clan_id is not None else None,
+        "body": body,
+        "title": body,
+        "word_count": _word_count(body),
+        "created_at": _iso(event.created_at),
+        "posted_by_user_id": int(event.actor_user_id),
+    }
+
+
+def _list_community_domain_notice_payloads(
+    db: Session,
+    *,
+    community_domain_id: int,
+    limit: int,
+) -> list[dict[str, Any]]:
+    rows = (
+        db.query(TrustEvent)
+        .filter(TrustEvent.event_type == COMMUNITY_DOMAIN_NOTICE_EVENT)
+        .order_by(TrustEvent.id.desc())
+        .limit(max(200, int(limit) * 25))
+        .all()
+    )
+    notices: list[dict[str, Any]] = []
+    for row in rows:
+        meta = _json_load(row.meta_json)
+        try:
+            row_domain_id = int(meta.get("community_domain_id") or 0)
+        except (TypeError, ValueError):
+            row_domain_id = 0
+        if row_domain_id != int(community_domain_id):
+            continue
+        notices.append(_community_domain_notice_payload(row))
+        if len(notices) >= int(limit):
+            break
+    return notices
 
 
 def _public_domain_entry_payload(domain: CommunityDomain) -> dict[str, Any]:
@@ -19261,6 +19340,78 @@ def get_community_domain_dashboard(
             db,
             domain=domain,
             current_user=current_user,
+        ),
+    }
+
+
+@router.get("/{community_domain_id}/notices", response_model=dict[str, Any])
+def list_community_domain_notices(
+    community_domain_id: int,
+    limit: int = Query(default=5, ge=1, le=20),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_member_scope(db, domain=domain, current_user=current_user)
+    notices = _list_community_domain_notice_payloads(
+        db,
+        community_domain_id=int(domain.id),
+        limit=int(limit),
+    )
+    return {
+        "ok": True,
+        "engine_ready": True,
+        "community_domain_id": int(domain.id),
+        "max_words": COMMUNITY_DOMAIN_NOTICE_MAX_WORDS,
+        "comments_enabled": False,
+        "reactions_enabled": False,
+        "thread_enabled": False,
+        "notices": notices,
+        "boundary": (
+            "Official Community Domain notices are limited to active members "
+            "of this selected Community Domain. They are not broadcast to other "
+            "domains, other communities, or public visitors."
+        ),
+    }
+
+
+@router.post("/{community_domain_id}/notices", response_model=dict[str, Any])
+def create_community_domain_notice(
+    community_domain_id: int,
+    payload: CommunityDomainNoticeIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+    body = _clean_str(payload.body)
+    event = log_trust_event(
+        db,
+        event_type=COMMUNITY_DOMAIN_NOTICE_EVENT,
+        clan_id=int(domain.clan_id) if domain.clan_id is not None else None,
+        actor_user_id=int(current_user.id),
+        subject_user_id=int(current_user.id),
+        meta={
+            "source": COMMUNITY_DOMAIN_NOTICE_SOURCE,
+            "reason": "community_domain_notice_posted",
+            "community_domain_id": int(domain.id),
+            "body": body,
+            "word_count": _word_count(body),
+            "comments_enabled": False,
+            "reactions_enabled": False,
+            "thread_enabled": False,
+            "trust_delta": "0.00",
+        },
+    )
+    return {
+        "ok": True,
+        "engine_ready": True,
+        "community_domain_id": int(domain.id),
+        "notice": _community_domain_notice_payload(event),
+        "message": "Official notice posted to this Community Domain board.",
+        "boundary": (
+            "The notice belongs to this selected Community Domain only. "
+            "It does not broadcast to other domains or communities."
         ),
     }
 

@@ -1186,6 +1186,31 @@ export async function createCommunityNotice(payload: {
   return httpJson("/community-notices", "POST", payload);
 }
 
+export async function listCommunityDomainNotices(
+  communityDomainId: number | string,
+  params: { limit?: number } = {}
+): Promise<any> {
+  return httpJson(
+    `/community-domains/${encodeURIComponent(
+      String(communityDomainId)
+    )}/notices${buildQuery({
+      limit: params.limit ?? 5,
+    })}`,
+    "GET"
+  );
+}
+
+export async function createCommunityDomainNotice(
+  communityDomainId: number | string,
+  payload: { body: string }
+): Promise<any> {
+  return httpJson(
+    `/community-domains/${encodeURIComponent(String(communityDomainId))}/notices`,
+    "POST",
+    payload
+  );
+}
+
 function normalizeVisibleMyClans(rows: any[]): any[] {
   if (!Array.isArray(rows)) return [];
 

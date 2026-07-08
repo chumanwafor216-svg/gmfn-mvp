@@ -8,6 +8,7 @@ import React, {
   useState,
 } from "react";
 import { useParams } from "react-router-dom";
+import CommunityNoticeModal from "../components/CommunityNoticeModal";
 import PageTopNav from "../components/PageTopNav";
 import { GsnRealisticIcon } from "../components/GsnRealisticIcon";
 import PaymentProofSubmissionPanel from "../components/PaymentProofSubmissionPanel";
@@ -15,6 +16,7 @@ import { StableButton } from "../components/StableButton";
 import {
   applyCommunityDomainActionReview,
   cancelCommunityDomainActionReview,
+  createCommunityDomainNotice,
   createCommunityDomainPaymentInstruction,
   createCommunityDomainPackageQuote,
   decideCommunityDomainActionReview,
@@ -69,6 +71,7 @@ import {
   listCommunityDomainServiceSettings,
   listCommunityDomainActionReviews,
   listCommunityDomainNodeTree,
+  listCommunityDomainNotices,
   listMyCommunityDomainMembershipRequests,
   listMyCommunityDomains,
   requestCommunityDomainMembership,
@@ -162,6 +165,15 @@ type CommunityDomainSetupDraft = {
   services_note: string;
   saved_at?: string;
   expires_at?: string;
+};
+
+type CommunityDomainNoticeItem = {
+  notice_id?: string | number | null;
+  event_id?: string | number | null;
+  body?: string | null;
+  title?: string | null;
+  created_at?: string | null;
+  posted_by_user_id?: string | number | null;
 };
 
 const STRUCTURE_DETAIL_OPTIONS: Array<{
@@ -430,6 +442,28 @@ function setupDraftTimeLabel(value: unknown): string {
   } catch {
     return raw;
   }
+}
+
+function noticeDateLabel(value: unknown): string {
+  const raw = cleanText(value);
+  if (!raw) return "";
+  const date = new Date(raw);
+  if (!Number.isFinite(date.getTime())) return raw;
+  try {
+    return date.toLocaleDateString(undefined, {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  } catch {
+    return raw;
+  }
+}
+
+function limitWords(value: unknown, maxWords: number): string {
+  const words = cleanText(value).split(/\s+/).filter(Boolean);
+  if (words.length <= maxWords) return words.join(" ");
+  return `${words.slice(0, maxWords).join(" ")}...`;
 }
 
 function setupDraftCompletion(
@@ -971,6 +1005,10 @@ export default function CommunityDomainDashboardPage() {
   const [busyMembershipRequest, setBusyMembershipRequest] = useState(false);
   const [busyReviewId, setBusyReviewId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
+  const [domainNotices, setDomainNotices] = useState<CommunityDomainNoticeItem[]>([]);
+  const [domainNoticesLoading, setDomainNoticesLoading] = useState(false);
+  const [domainNoticeModalOpen, setDomainNoticeModalOpen] = useState(false);
+  const [domainNoticePosting, setDomainNoticePosting] = useState(false);
   const mountedRef = useRef(true);
   const activeCommunityDomainIdRef = useRef(communityDomainId);
   const dashboardLoadSequence = useRef(0);
@@ -1110,6 +1148,10 @@ export default function CommunityDomainDashboardPage() {
       setOwnMembershipRequests([]);
       setMembershipRequestLineage([]);
       setLoadingMembershipRequestLineage(false);
+      setDomainNotices([]);
+      setDomainNoticesLoading(false);
+      setDomainNoticeModalOpen(false);
+      setDomainNoticePosting(false);
       resetOptionalReadinessState();
       try {
         const payload = await listMyCommunityDomains();
@@ -1151,6 +1193,10 @@ export default function CommunityDomainDashboardPage() {
     setOwnMembershipRequests([]);
     setMembershipRequestLineage([]);
     setLoadingMembershipRequestLineage(false);
+    setDomainNotices([]);
+    setDomainNoticesLoading(false);
+    setDomainNoticeModalOpen(false);
+    setDomainNoticePosting(false);
     resetOptionalReadinessState();
     try {
       const payload = await getCommunityDomainDashboard(requestDomainId);
@@ -1211,6 +1257,67 @@ export default function CommunityDomainDashboardPage() {
     resetOptionalReadinessState,
     resetReadinessLoadTracking,
   ]);
+
+  const loadDomainNotices = useCallback(
+    async (domainId = communityDomainId) => {
+      const requestDomainId = cleanText(domainId);
+      if (!requestDomainId || !dashboard) {
+        setDomainNotices([]);
+        setDomainNoticesLoading(false);
+        return;
+      }
+
+      setDomainNoticesLoading(true);
+      try {
+        const payload = await listCommunityDomainNotices(requestDomainId, {
+          limit: 3,
+        }).catch(() => null);
+        if (!isCurrentDomainRequest(requestDomainId)) return;
+        const rows = Array.isArray(payload?.notices) ? payload.notices : [];
+        setDomainNotices(rows);
+      } finally {
+        if (isCurrentDomainRequest(requestDomainId)) {
+          setDomainNoticesLoading(false);
+        }
+      }
+    },
+    [communityDomainId, dashboard, isCurrentDomainRequest]
+  );
+
+  useEffect(() => {
+    if (!dashboard || !communityDomainId) {
+      setDomainNotices([]);
+      setDomainNoticesLoading(false);
+      return;
+    }
+    void loadDomainNotices(communityDomainId);
+  }, [communityDomainId, dashboard, loadDomainNotices]);
+
+  async function submitDomainNotice(body: string) {
+    const requestDomainId = cleanText(domain?.id || communityDomainId);
+    if (!requestDomainId) {
+      setMessage("Open a Community Domain before posting a notice.");
+      return;
+    }
+    if (!isAdmin) {
+      setMessage("Only a Community Domain owner or domain admin can post an official notice.");
+      return;
+    }
+
+    setDomainNoticePosting(true);
+    try {
+      await createCommunityDomainNotice(requestDomainId, { body });
+      await loadDomainNotices(requestDomainId);
+      setDomainNoticeModalOpen(false);
+      setMessage("Official notice posted to this Community Domain only.");
+    } catch (err: any) {
+      setMessage(
+        errorDetailMessage(err, "GSN could not post this Community Domain notice.")
+      );
+    } finally {
+      setDomainNoticePosting(false);
+    }
+  }
 
   const loadReadinessPayloadsForLane = useCallback(
     async (laneKey: string, domainId: string, viewerUserId?: number | string | null) => {
@@ -2384,6 +2491,14 @@ export default function CommunityDomainDashboardPage() {
 
   return (
     <main style={pageShell()}>
+      <CommunityNoticeModal
+        open={domainNoticeModalOpen}
+        communityName={cleanText(domain.display_name, "this Community Domain")}
+        busy={domainNoticePosting}
+        onClose={() => setDomainNoticeModalOpen(false)}
+        onSubmit={submitDomainNotice}
+      />
+
       <PageTopNav
         sectionLabel="Community Domain"
         title="Institutional dashboard"
@@ -2570,6 +2685,96 @@ export default function CommunityDomainDashboardPage() {
                 different guidance here. Payment, renewal, activation, and authority
                 verification remain separate.
               </div>
+            </div>
+          </section>
+
+          <section style={whiteCard()}>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "minmax(0, 1fr) auto",
+                gap: 12,
+                alignItems: "start",
+              }}
+            >
+              <div style={{ minWidth: 0 }}>
+                <div style={sectionLabel()}>Official Board</div>
+                <h2 style={{ margin: "6px 0 0", fontSize: 23, lineHeight: 1.12 }}>
+                  Notices for this Community Domain only.
+                </h2>
+                <div style={{ ...helperText(), marginTop: 8 }}>
+                  Newest official announcement first. Each notice is capped at
+                  50 words, has no comments or reactions, and is limited to
+                  active members of this selected Community Domain.
+                </div>
+              </div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "flex-end" }}>
+                <span style={statusBadge("members only")}>Members only</span>
+                <span style={statusBadge("no broadcast")}>No broadcast</span>
+                {isAdmin ? (
+                  <StableButton
+                    type="button"
+                    kind="secondary"
+                    stableHeight={44}
+                    debugId="community-domain-dashboard.notice.post"
+                    onClick={() => setDomainNoticeModalOpen(true)}
+                  >
+                    Post notice
+                  </StableButton>
+                ) : null}
+              </div>
+            </div>
+
+            <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
+              {domainNoticesLoading ? (
+                <div style={{ ...helperText(), fontSize: 13 }}>
+                  Loading official Community Domain notices.
+                </div>
+              ) : domainNotices.length ? (
+                domainNotices.map((item, index) => {
+                  const body = limitWords(item.body || item.title, 50);
+                  const when = noticeDateLabel(item.created_at);
+                  const key = cleanText(
+                    item.notice_id || item.event_id || item.created_at || index,
+                    String(index)
+                  );
+
+                  return (
+                    <div key={key} style={softCard()}>
+                      <div
+                        style={{
+                          color: "#091B2E",
+                          fontSize: 15,
+                          fontWeight: 950,
+                          lineHeight: 1.35,
+                          overflowWrap: "break-word",
+                        }}
+                      >
+                        {body || "Official Community Domain notice"}
+                      </div>
+                      <div
+                        style={{
+                          marginTop: 8,
+                          display: "flex",
+                          flexWrap: "wrap",
+                          gap: 8,
+                        }}
+                      >
+                        <span style={statusBadge("newest first")}>Newest first</span>
+                        {when ? <span style={statusBadge("active")}>{when}</span> : null}
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <div style={softCard()}>
+                  <div style={{ fontWeight: 950 }}>No official notices yet.</div>
+                  <div style={{ ...helperText(), marginTop: 6, fontSize: 13 }}>
+                    When a domain owner or domain admin posts here, only members
+                    of this Community Domain see the notice.
+                  </div>
+                </div>
+              )}
             </div>
           </section>
 
