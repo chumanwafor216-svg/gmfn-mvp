@@ -3241,6 +3241,8 @@ export default function CommunityDomainDashboardPage() {
                           <span style={sectionLabel()}>Evidence file</span>
                           <input
                             type="file"
+                            data-gmfn-action-root="true"
+                            data-cta-id="community-domain-dashboard.setup-evidence-file"
                             accept=".jpg,.jpeg,.png,.webp,.pdf,image/jpeg,image/png,image/webp,application/pdf"
                             onChange={(event) =>
                               setSetupEvidenceFile(event.target.files?.[0] || null)
