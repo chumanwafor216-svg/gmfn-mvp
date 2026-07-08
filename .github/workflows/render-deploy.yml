@@ -29,6 +29,9 @@ jobs:
       RENDER_FRONTEND_SERVICE_ID: srv-d7h4oe9f9bms739lhh9g
       RENDER_API_SERVICE_ID: ${{ secrets.RENDER_API_SERVICE_ID }}
       RENDER_API_DEPLOY_HOOK_URL: ${{ secrets.RENDER_API_DEPLOY_HOOK_URL }}
+      GSN_WEB_PUSH_PUBLIC_KEY: ${{ secrets.GSN_WEB_PUSH_PUBLIC_KEY }}
+      GSN_WEB_PUSH_PRIVATE_KEY: ${{ secrets.GSN_WEB_PUSH_PRIVATE_KEY }}
+      GSN_WEB_PUSH_SUBJECT: ${{ secrets.GSN_WEB_PUSH_SUBJECT }}
       DEPLOY_API_INPUT: ${{ github.event.inputs.deploy_api || 'false' }}
     steps:
       - name: Checkout commit
@@ -128,6 +131,36 @@ jobs:
         run: |
           echo "::error::RENDER_API_KEY is configured, but the workflow could not resolve the gmfn-api Render service. Set GitHub secret RENDER_API_SERVICE_ID to the gmfn-api service id."
           exit 1
+
+      - name: Sync backend Web Push env vars
+        if: ${{ steps.backend.outputs.should_deploy_api == 'true' && env.RENDER_API_KEY != '' && steps.api_service.outputs.api_service_id != '' && env.GSN_WEB_PUSH_PUBLIC_KEY != '' && env.GSN_WEB_PUSH_PRIVATE_KEY != '' && env.GSN_WEB_PUSH_SUBJECT != '' }}
+        run: |
+          set -euo pipefail
+
+          sync_env_var() {
+            key="$1"
+            value="$2"
+            encoded_key="$(node -e 'process.stdout.write(encodeURIComponent(process.argv[1]))' "$key")"
+            payload="$(ENV_VALUE="$value" node -e 'process.stdout.write(JSON.stringify({ value: process.env.ENV_VALUE || "" }))')"
+            curl -fsS -X PUT "https://api.render.com/v1/services/${API_SERVICE_ID}/env-vars/${encoded_key}" \
+              -H "accept: application/json" \
+              -H "authorization: Bearer ${RENDER_API_KEY}" \
+              -H "content-type: application/json" \
+              --data "$payload" \
+              -o /dev/null
+            echo "Synced ${key} to gmfn-api."
+          }
+
+          sync_env_var "GSN_WEB_PUSH_PUBLIC_KEY" "$GSN_WEB_PUSH_PUBLIC_KEY"
+          sync_env_var "GSN_WEB_PUSH_PRIVATE_KEY" "$GSN_WEB_PUSH_PRIVATE_KEY"
+          sync_env_var "GSN_WEB_PUSH_SUBJECT" "$GSN_WEB_PUSH_SUBJECT"
+        env:
+          API_SERVICE_ID: ${{ steps.api_service.outputs.api_service_id }}
+
+      - name: Note missing Web Push env secrets
+        if: ${{ steps.backend.outputs.should_deploy_api == 'true' && (env.GSN_WEB_PUSH_PUBLIC_KEY == '' || env.GSN_WEB_PUSH_PRIVATE_KEY == '' || env.GSN_WEB_PUSH_SUBJECT == '') }}
+        run: |
+          echo "::warning::GSN Web Push secrets are incomplete. Backend deploy can continue, but /web-push/status will not report configured=true until GSN_WEB_PUSH_PUBLIC_KEY, GSN_WEB_PUSH_PRIVATE_KEY, and GSN_WEB_PUSH_SUBJECT are configured."
 
       - name: Trigger API deploy through Render API
         if: ${{ steps.backend.outputs.should_deploy_api == 'true' && env.RENDER_API_KEY != '' && steps.api_service.outputs.api_service_id != '' }}

@@ -39,6 +39,15 @@ GSN_WEB_PUSH_PRIVATE_KEY=...
 GSN_WEB_PUSH_SUBJECT=mailto:support@globalmutualfundsnetwork.com
 ```
 
+For the active GitHub deploy workflow, store the same values as GitHub Actions
+secrets. When `Trigger Render Deploy` runs with `deploy_api=true`, the workflow
+syncs these three values into the `gmfn-api` Render service through Render's
+per-variable API endpoint before triggering the backend deploy:
+
+- `GSN_WEB_PUSH_PUBLIC_KEY`
+- `GSN_WEB_PUSH_PRIVATE_KEY`
+- `GSN_WEB_PUSH_SUBJECT`
+
 Aliases are also supported:
 
 - `VAPID_PUBLIC_KEY`
