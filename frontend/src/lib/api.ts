@@ -3998,6 +3998,24 @@ export async function getMyUnreadNotificationCount(): Promise<any> {
   return httpJson("/notifications/me/unread-count", "GET");
 }
 
+export async function getWebPushStatus(): Promise<any> {
+  return httpJson("/web-push/status", "GET", undefined, { quiet: true });
+}
+
+export async function registerWebPushSubscription(payload: {
+  endpoint: string;
+  keys: { p256dh: string; auth: string };
+  permission_state?: string;
+}): Promise<any> {
+  return httpJson("/web-push/subscriptions", "POST", payload, { quiet: true });
+}
+
+export async function unregisterWebPushSubscription(payload: {
+  endpoint: string;
+}): Promise<any> {
+  return httpJson("/web-push/subscriptions", "DELETE", payload, { quiet: true });
+}
+
 /* =========================
    SETTINGS
    ========================= */

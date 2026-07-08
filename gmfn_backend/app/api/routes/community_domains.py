@@ -39,6 +39,7 @@ from app.services.payment_instruction_service import (
     create_community_domain_subscription_instruction,
 )
 from app.services.notification_service import create_notification
+from app.services.web_push_service import dispatch_web_push_for_notifications
 from app.services.settlement_config_service import get_settlement_config
 from app.services.trust_events_services import log_trust_event
 
@@ -1986,19 +1987,26 @@ def _create_community_domain_notice_notifications(
         return 0
 
     domain_label = _clean_str(domain.display_name or domain.domain_name, "Community Domain")
+    notification_rows = []
     for user_id in recipient_ids:
-        create_notification(
-            db,
-            user_id=int(user_id),
-            kind=COMMUNITY_DOMAIN_NOTICE_EVENT,
-            title=f"Official notice from {domain_label}",
-            message=body,
-            action_url=f"/app/community-domain/{int(domain.id)}#community-domain-official-board",
-            action_label="Open Notice Board",
-            commit=False,
-            refresh=False,
+        notification_rows.append(
+            create_notification(
+                db,
+                user_id=int(user_id),
+                kind=COMMUNITY_DOMAIN_NOTICE_EVENT,
+                title=f"Official notice from {domain_label}",
+                message=body,
+                action_url=f"/app/community-domain/{int(domain.id)}#community-domain-official-board",
+                action_label="Open Notice Board",
+                commit=False,
+                refresh=False,
+            )
         )
     db.commit()
+    try:
+        dispatch_web_push_for_notifications(db, notification_rows)
+    except Exception:
+        pass
     return len(recipient_ids)
 
 

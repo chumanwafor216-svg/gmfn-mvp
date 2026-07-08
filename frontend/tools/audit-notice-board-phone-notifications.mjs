@@ -22,6 +22,42 @@ const files = {
       "utf8"
     ),
   },
+  webPushRoute: {
+    path: "gmfn_backend/app/api/routes/web_push.py",
+    source: readFileSync(
+      join(repoRoot, "gmfn_backend", "app", "api", "routes", "web_push.py"),
+      "utf8"
+    ),
+  },
+  webPushService: {
+    path: "gmfn_backend/app/services/web_push_service.py",
+    source: readFileSync(
+      join(repoRoot, "gmfn_backend", "app", "services", "web_push_service.py"),
+      "utf8"
+    ),
+  },
+  notificationService: {
+    path: "gmfn_backend/app/services/notification_service.py",
+    source: readFileSync(
+      join(repoRoot, "gmfn_backend", "app", "services", "notification_service.py"),
+      "utf8"
+    ),
+  },
+  serviceWorker: {
+    path: "frontend/public/sw.js",
+    source: readFileSync(join(frontendRoot, "public", "sw.js"), "utf8"),
+  },
+  webPushClient: {
+    path: "frontend/src/lib/webPush.ts",
+    source: readFileSync(join(frontendRoot, "src", "lib", "webPush.ts"), "utf8"),
+  },
+  companionSettingsPanel: {
+    path: "frontend/src/components/CompanionSettingsPanel.tsx",
+    source: readFileSync(
+      join(frontendRoot, "src", "components", "CompanionSettingsPanel.tsx"),
+      "utf8"
+    ),
+  },
   companionLayer: {
     path: "frontend/src/components/CompanionLayer.tsx",
     source: readFileSync(
@@ -95,7 +131,7 @@ function assertDoesNotContain(file, pattern, message) {
 
 assertContains(
   files.communityNotices,
-  /from app\.services\.notification_service import create_notification[\s\S]*?COMMUNITY_NOTICE_EVENT = "community\.notice\.posted"/,
+  /from app\.services\.notification_service import create_notification[\s\S]*?from app\.services\.web_push_service import dispatch_web_push_for_notifications[\s\S]*?COMMUNITY_NOTICE_EVENT = "community\.notice\.posted"/,
   "Marketplace/community official notices must keep using the dedicated community.notice.posted notification kind."
 );
 
@@ -113,6 +149,12 @@ assertContains(
 
 assertContains(
   files.communityNotices,
+  /db\.commit\(\)[\s\S]*?dispatch_web_push_for_notifications\(db, notification_rows\)/,
+  "Marketplace/community notice batches must dispatch Web Push only after the notification rows commit."
+);
+
+assertContains(
+  files.communityNotices,
   /"notification_kind": COMMUNITY_NOTICE_EVENT[\s\S]*?"notifications_created": int\(notifications_created\)/,
   "Marketplace/community notice responses must report notification creation and the no-broadcast boundary."
 );
@@ -125,7 +167,7 @@ assertContains(
 
 assertContains(
   files.communityDomains,
-  /from app\.services\.notification_service import create_notification[\s\S]*?COMMUNITY_DOMAIN_NOTICE_EVENT = "community_domain\.notice\.posted"/,
+  /from app\.services\.notification_service import create_notification[\s\S]*?from app\.services\.web_push_service import dispatch_web_push_for_notifications[\s\S]*?COMMUNITY_DOMAIN_NOTICE_EVENT = "community_domain\.notice\.posted"/,
   "Community Domain official notices must keep using the dedicated community_domain.notice.posted notification kind."
 );
 
@@ -139,6 +181,12 @@ assertContains(
   files.communityDomains,
   /create_notification\([\s\S]*?kind=COMMUNITY_DOMAIN_NOTICE_EVENT[\s\S]*?action_url=f"\/app\/community-domain\/\{int\(domain\.id\)\}#community-domain-official-board"[\s\S]*?action_label="Open Notice Board"[\s\S]*?commit=False/,
   "Community Domain notice notifications must deep-link to the selected domain board."
+);
+
+assertContains(
+  files.communityDomains,
+  /db\.commit\(\)[\s\S]*?dispatch_web_push_for_notifications\(db, notification_rows\)/,
+  "Community Domain notice batches must dispatch Web Push only after the notification rows commit."
 );
 
 assertContains(
@@ -163,6 +211,42 @@ assertContains(
   files.companionLayer,
   /kind === "community\.notice\.posted"[\s\S]*?\? "community-notice-board"[\s\S]*?: kind === "community_domain\.notice\.posted"[\s\S]*?\? "community-domain-notice-board"[\s\S]*?: "notification-feed"/,
   "CompanionLayer must preserve notice-board source labels for phone-facing cycles."
+);
+
+assertContains(
+  files.webPushService,
+  /WEB_PUSH_NOTIFICATION_KINDS = \{[\s\S]*?"community\.notice\.posted"[\s\S]*?"community_domain\.notice\.posted"[\s\S]*?\}[\s\S]*?def dispatch_web_push_for_notification\([\s\S]*?kind not in WEB_PUSH_NOTIFICATION_KINDS[\s\S]*?web_push_runtime_status\(\)[\s\S]*?_send_web_push_payload/,
+  "Web Push delivery must stay limited to official notice-board notification kinds."
+);
+
+assertContains(
+  files.notificationService,
+  /create_notification\([\s\S]*?db\.commit\(\)[\s\S]*?dispatch_web_push_for_notification\(db, row\)[\s\S]*?Push delivery is best-effort; the GSN notification row is the truth\./,
+  "Committed notification creation must attempt best-effort Web Push without making push delivery the source of truth."
+);
+
+assertContains(
+  files.webPushRoute,
+  /APIRouter\(prefix="\/web-push"[\s\S]*?@router\.get\("\/status"\)[\s\S]*?@router\.post\("\/subscriptions"\)[\s\S]*?@router\.delete\("\/subscriptions"\)/,
+  "Web Push API must remain limited to authenticated status/register/unregister endpoints."
+);
+
+assertContains(
+  files.serviceWorker,
+  /self\.addEventListener\("push"[\s\S]*?action_url[\s\S]*?showNotification\(title[\s\S]*?self\.addEventListener\("notificationclick"[\s\S]*?actionUrl[\s\S]*?clients\.openWindow/,
+  "Service worker must display pushed GSN notifications and deep-link clicks."
+);
+
+assertContains(
+  files.webPushClient,
+  /syncGsnWebPushSubscription[\s\S]*?Notification\.permission[\s\S]*?getWebPushStatus\(\)[\s\S]*?registration\.pushManager\.subscribe[\s\S]*?registerWebPushSubscription/,
+  "Frontend Web Push helper must subscribe through the service worker and register the subscription with GSN."
+);
+
+assertContains(
+  files.companionSettingsPanel,
+  /systemPushEnabled[\s\S]*?requestCompanionNotificationPermission\(\)[\s\S]*?syncGsnWebPushSubscription\(\)[\s\S]*?unregisterCurrentWebPushSubscription\(\)/,
+  "Companion settings must keep Web Push registration tied to the user's system-notification opt-in."
 );
 
 assertContains(
@@ -230,5 +314,5 @@ if (findings.length > 0) {
 }
 
 console.log(
-  "Notice-board phone notification audit passed: marketplace/community and Community Domain boards create scoped notification rows that CompanionLayer treats as phone-facing triggers."
+  "Notice-board phone notification audit passed: scoped notice boards create notification rows, trigger Web Push delivery when configured, and still feed Companion phone-facing fallback."
 );

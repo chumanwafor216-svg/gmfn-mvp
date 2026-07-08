@@ -7,6 +7,7 @@ from sqlalchemy import engine_from_config, pool
 from app.db.base import Base
 from app.db import models  # noqa: F401  (ensure core models are registered)
 from app.db import bank_models  # noqa: F401  (ensure bank models are registered)
+from app.db import notification_models  # noqa: F401  (ensure notification models are registered)
 from app.db import verification_models  # noqa: F401  (ensure verification models are registered)
 
 

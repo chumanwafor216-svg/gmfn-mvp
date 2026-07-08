@@ -12,6 +12,7 @@ from app.core.auth import get_current_user
 from app.db.database import get_db
 from app.db.models import ClanMembership, TrustEvent, User
 from app.services.notification_service import create_notification
+from app.services.web_push_service import dispatch_web_push_for_notifications
 from app.services.community_meeting_service import list_community_meetings
 from app.services.trust_events_services import log_trust_event
 
@@ -173,19 +174,26 @@ def _create_notice_notifications(
     if not recipient_ids:
         return 0
 
+    notification_rows = []
     for user_id in recipient_ids:
-        create_notification(
-            db,
-            user_id=int(user_id),
-            kind=COMMUNITY_NOTICE_EVENT,
-            title="Official community notice",
-            message=body,
-            action_url=f"/app/marketplace?clan_id={int(clan_id)}#marketplace-official-board",
-            action_label="Open Official Board",
-            commit=False,
-            refresh=False,
+        notification_rows.append(
+            create_notification(
+                db,
+                user_id=int(user_id),
+                kind=COMMUNITY_NOTICE_EVENT,
+                title="Official community notice",
+                message=body,
+                action_url=f"/app/marketplace?clan_id={int(clan_id)}#marketplace-official-board",
+                action_label="Open Official Board",
+                commit=False,
+                refresh=False,
+            )
         )
     db.commit()
+    try:
+        dispatch_web_push_for_notifications(db, notification_rows)
+    except Exception:
+        pass
     return len(recipient_ids)
 
 

@@ -10,3 +10,4 @@ psycopg[binary]
 email-validator 
 reportlab
 pillow
+pywebpush

@@ -8,6 +8,10 @@ import {
   requestCompanionNotificationPermission,
   type CompanionSettings,
 } from "../lib/companion";
+import {
+  syncGsnWebPushSubscription,
+  unregisterCurrentWebPushSubscription,
+} from "../lib/webPush";
 
 const LOCAL_COMPANION_SETTINGS_KEY = "gmfn_companion_settings_local";
 
@@ -218,6 +222,7 @@ export default function CompanionSettingsPanel() {
     markCompanionUserInteraction();
 
     let nextValue = value;
+    let postPersistStatus: { text: string; tone: typeof statusTone } | null = null;
 
     if (key === "systemPushEnabled" && value === true) {
       const permission = await requestCompanionNotificationPermission();
@@ -233,6 +238,25 @@ export default function CompanionSettingsPanel() {
         setStatusTone("error");
         nextValue = false as CompanionSettings[K];
       }
+
+      if (permission === "granted") {
+        const webPush = await syncGsnWebPushSubscription();
+        if (webPush.status === "not-configured") {
+          postPersistStatus = {
+            text: "Browser notifications are on. Server push is not configured yet.",
+            tone: "info",
+          };
+        } else if (!webPush.ok) {
+          postPersistStatus = {
+            text: "Browser notifications are on. Phone push will sync when supported.",
+            tone: "info",
+          };
+        }
+      }
+    }
+
+    if (key === "systemPushEnabled" && value === false) {
+      void unregisterCurrentWebPushSubscription();
     }
 
     const next = normalizeCompanionSettings({
@@ -241,6 +265,10 @@ export default function CompanionSettingsPanel() {
     });
 
     await persist(next);
+    if (postPersistStatus) {
+      setStatusText(postPersistStatus.text);
+      setStatusTone(postPersistStatus.tone);
+    }
   }
 
   return (

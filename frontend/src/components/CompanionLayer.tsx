@@ -14,6 +14,7 @@ import {
   type CompanionSettings,
   type CompanionToastPayload,
 } from "../lib/companion";
+import { syncGsnWebPushSubscription } from "../lib/webPush";
 
 type CompanionLayerProps = {
   snapshot: GuidanceSnapshot | null;
@@ -317,6 +318,15 @@ export default function CompanionLayer({ snapshot }: CompanionLayerProps) {
       settings,
     });
   }, [snapshot, settings]);
+
+  useEffect(() => {
+    if (!settings.systemPushEnabled) return;
+    if (typeof window === "undefined") return;
+    if (!("Notification" in window)) return;
+    if (Notification.permission !== "granted") return;
+
+    void syncGsnWebPushSubscription().catch(() => undefined);
+  }, [settings.systemPushEnabled]);
 
   useEffect(() => {
     if (!snapshot) return;

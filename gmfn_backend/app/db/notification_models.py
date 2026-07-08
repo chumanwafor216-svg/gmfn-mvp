@@ -40,3 +40,42 @@ class Notification(Base):
     __table_args__ = (
         Index("ix_notifications_user_read_v1", "user_id", "is_read"),
     )
+
+
+class WebPushSubscription(Base):
+    __tablename__ = "web_push_subscriptions"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+
+    user_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
+    endpoint_hash: Mapped[str] = mapped_column(String(64), nullable=False, unique=True)
+    endpoint: Mapped[str] = mapped_column(Text, nullable=False)
+    p256dh: Mapped[str] = mapped_column(Text, nullable=False)
+    auth: Mapped[str] = mapped_column(Text, nullable=False)
+    user_agent: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    permission_state: Mapped[Optional[str]] = mapped_column(String(24), nullable=True)
+
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    failure_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=_now_utc,
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=_now_utc,
+    )
+    last_success_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+    last_failure_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+
+    __table_args__ = (
+        Index("ix_web_push_user_active_v1", "user_id", "is_active"),
+    )

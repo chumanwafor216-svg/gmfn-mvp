@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from app.core.auth import is_user_activation_pending
 from app.db.models import Clan, ClanJoinRequest, ClanMembership, User
 from app.db.notification_models import Notification
+from app.services.web_push_service import dispatch_web_push_for_notification
 
 
 def _now_utc() -> datetime:
@@ -51,6 +52,11 @@ def create_notification(
         db.commit()
         if refresh:
             db.refresh(row)
+        try:
+            dispatch_web_push_for_notification(db, row)
+        except Exception:
+            # Push delivery is best-effort; the GSN notification row is the truth.
+            pass
 
     return row
 
