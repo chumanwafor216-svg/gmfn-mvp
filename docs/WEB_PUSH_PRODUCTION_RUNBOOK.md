@@ -61,6 +61,12 @@ Before calling Web Push live:
 4. `/web-push/status` must return `configured: true`.
 5. A signed-in member must enable GSN system notifications and grant browser permission.
 
+Local readiness audit:
+
+```powershell
+npm --prefix frontend run audit:web-push-production-readiness
+```
+
 ## Verify Status
 
 Authenticated check:
