@@ -46,6 +46,7 @@ Frontend icon assets:
 Verification tooling:
 
 - `frontend/tools/audit-icon-protocol.mjs`
+- `frontend/tools/audit-link-contracts.mjs`
 - `frontend/tools/pwa-icon-local-batch-scope.mjs`
 - `frontend/tools/print-pwa-icon-local-batch-stage-plan.mjs`
 - `frontend/tools/audit-pwa-icon-local-batch-stage-plan.mjs`
@@ -66,6 +67,8 @@ Verification tooling:
 - The service worker cache must use `gsn-pwa-shell-v14` and precache the v14
   icon PNGs.
 - The install prompt preview must use `/gsn-app-icon-ios-180-v14.png`.
+- The link-contract audit must cage the same v14 install metadata, prompt, and
+  service-worker contract instead of the retired v13 shortcut contract.
 
 ## Verification Run Locally
 
@@ -113,6 +116,11 @@ Verification tooling:
   `git diff --check`. It was rerun after the combined guard additions and
   passed with the PWA status-scope count at 19 in-scope paths and 18
   explicitly out-of-scope paths.
+- Follow-up install-readiness cleanup updated
+  `frontend/tools/audit-link-contracts.mjs` from the retired v13 shortcut icon
+  contract to the current v14 PNG/no-maskable contract, then added that audit
+  to the PWA icon batch scope. The active RGU customer-discovery plan document
+  remains explicitly out of scope for this install batch.
 - `git diff --check` passed with only LF-to-CRLF warnings for touched frontend
   source/tool files.
 

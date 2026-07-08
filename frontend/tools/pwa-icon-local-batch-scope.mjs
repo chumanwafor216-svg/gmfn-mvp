@@ -11,6 +11,7 @@ export const inScopePwaIconBatchFiles = [
   "frontend/public/gsn-app-icon-192-v14.png",
   "frontend/public/gsn-app-icon-512-v14.png",
   "frontend/tools/audit-icon-protocol.mjs",
+  "frontend/tools/audit-link-contracts.mjs",
   "frontend/tools/pwa-icon-local-batch-scope.mjs",
   "frontend/tools/print-pwa-icon-local-batch-stage-plan.mjs",
   "frontend/tools/audit-pwa-icon-local-batch-status-scope.mjs",
@@ -21,6 +22,7 @@ export const inScopePwaIconBatchFiles = [
 ];
 
 export const outOfScopePwaIconBatchPrefixes = [
+  "docs/GSN_RGU_COMMUNITY_FIRST_CUSTOMER_DISCOVERY_PLAN_2026-07-06.md",
   "docs/external_review/",
   "frontend/screenshots/",
   "screenshots/",
