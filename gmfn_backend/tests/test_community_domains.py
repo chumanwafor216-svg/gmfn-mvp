@@ -298,7 +298,10 @@ def test_community_domain_notice_board_is_member_scoped_and_admin_posted(
             assert notifications[0].user_id == int(member.id)
             assert notifications[0].title == "Official notice from Notice Scope Union"
             assert notifications[0].message == "Scholarship deadline Friday."
-            assert notifications[0].action_url == f"/app/community-domain/{domain_id}"
+            assert (
+                notifications[0].action_url
+                == f"/app/community-domain/{domain_id}#community-domain-official-board"
+            )
             assert notifications[0].action_label == "Open Notice Board"
             assert notifications[0].is_read is False
     finally:

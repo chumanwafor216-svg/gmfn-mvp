@@ -1993,7 +1993,7 @@ def _create_community_domain_notice_notifications(
             kind=COMMUNITY_DOMAIN_NOTICE_EVENT,
             title=f"Official notice from {domain_label}",
             message=body,
-            action_url=f"/app/community-domain/{int(domain.id)}",
+            action_url=f"/app/community-domain/{int(domain.id)}#community-domain-official-board",
             action_label="Open Notice Board",
             commit=False,
             refresh=False,

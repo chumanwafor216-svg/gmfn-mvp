@@ -2638,7 +2638,7 @@ export default function CommunityDomainDashboardPage() {
             </div>
           </section>
 
-          <section style={whiteCard()}>
+          <section id="community-domain-official-board" style={whiteCard()}>
             <div style={{ display: "grid", gap: 12 }}>
               <div>
                 <div style={sectionLabel()}>Operating state</div>

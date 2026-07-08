@@ -123,6 +123,7 @@
     "audit:protocol-readiness": "node tools/audit-protocol-readiness.mjs",
     "audit:button-stability": "node tools/audit-button-stability.mjs",
     "audit:tap-stability": "node tools/audit-mobile-tap-stability.mjs",
+    "audit:notice-board-phone-notifications": "node tools/audit-notice-board-phone-notifications.mjs",
     "audit:companion-completed-activation": "node tools/audit-companion-completed-activation.mjs",
     "audit:finance-support-identity-fallback": "node tools/audit-finance-support-identity-fallback.mjs",
     "audit:money-in-identity-fallback": "node tools/audit-money-in-identity-fallback.mjs",
