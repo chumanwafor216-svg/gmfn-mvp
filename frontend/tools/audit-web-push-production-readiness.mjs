@@ -41,9 +41,21 @@ assertContains(
 );
 
 assertContains(
+  "frontend/package.json",
+  /"audit:live-web-push-status": "node tools\/audit-live-web-push-status\.mjs"/,
+  "package script must expose the authenticated live Web Push status audit."
+);
+
+assertContains(
   "docs/WEB_PUSH_PRODUCTION_RUNBOOK.md",
-  /Before calling Web Push live:[\s\S]*?\/web-push\/status` must return `configured: true`[\s\S]*?Do not add more notification kinds/,
-  "runbook must keep live-readiness gates and expansion warning."
+  /Before calling Web Push live:[\s\S]*?\/web-push\/status` must return `configured: true`[\s\S]*?audit:live-web-push-status[\s\S]*?Do not add more notification kinds/,
+  "runbook must keep live-readiness gates, authenticated live audit, and expansion warning."
+);
+
+assertContains(
+  "frontend/tools/audit-live-web-push-status.mjs",
+  /GSN_LIVE_AUTH_TOKEN[\s\S]*?Missing required \$\{AUTH_ENV\}\. Refusing to claim live Web Push status proof\.[\s\S]*?configured=false[\s\S]*?allowed_kinds/,
+  "live Web Push status audit must fail closed without auth and verify configured status plus allowed kinds."
 );
 
 assertContains(

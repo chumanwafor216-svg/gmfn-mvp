@@ -89,6 +89,7 @@
     "audit:live-evidence-boundaries": "node tools/audit-live-evidence-boundaries.mjs",
     "audit:live-evidence-boundary-refusals": "node tools/audit-live-evidence-boundary-refusals.mjs",
     "audit:live-api-identity-routes": "node tools/audit-live-api-identity-routes.mjs",
+    "audit:live-web-push-status": "node tools/audit-live-web-push-status.mjs",
     "audit:finance-banking-rails-lane": "node tools/audit-finance-banking-rails-lane.mjs",
     "audit:finance-button-inventory": "node tools/audit-finance-button-inventory.mjs",
     "audit:finance-front-package": "node tools/audit-finance-front-package.mjs",

@@ -84,6 +84,13 @@ Authenticated check:
 GET /web-push/status
 ```
 
+Command-line live audit:
+
+```powershell
+$env:GSN_LIVE_AUTH_TOKEN="paste-a-production-member-token"
+npm --prefix frontend run audit:live-web-push-status
+```
+
 Expected configured response after secrets are present:
 
 ```json
