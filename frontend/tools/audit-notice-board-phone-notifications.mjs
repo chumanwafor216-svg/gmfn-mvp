@@ -36,6 +36,17 @@ const files = {
       "utf8"
     ),
   },
+  backendRequirements: {
+    path: "gmfn_backend/requirements.txt",
+    source: readFileSync(join(repoRoot, "gmfn_backend", "requirements.txt"), "utf8"),
+  },
+  backendProductionEnvExample: {
+    path: "gmfn_backend/.env.production.example",
+    source: readFileSync(
+      join(repoRoot, "gmfn_backend", ".env.production.example"),
+      "utf8"
+    ),
+  },
   notificationService: {
     path: "gmfn_backend/app/services/notification_service.py",
     source: readFileSync(
@@ -217,6 +228,18 @@ assertContains(
   files.webPushService,
   /WEB_PUSH_NOTIFICATION_KINDS = \{[\s\S]*?"community\.notice\.posted"[\s\S]*?"community_domain\.notice\.posted"[\s\S]*?\}[\s\S]*?def dispatch_web_push_for_notification\([\s\S]*?kind not in WEB_PUSH_NOTIFICATION_KINDS[\s\S]*?web_push_runtime_status\(\)[\s\S]*?_send_web_push_payload/,
   "Web Push delivery must stay limited to official notice-board notification kinds."
+);
+
+assertContains(
+  files.backendRequirements,
+  /^pywebpush\s*$/m,
+  "Backend production requirements must install pywebpush for real Web Push delivery."
+);
+
+assertContains(
+  files.backendProductionEnvExample,
+  /GSN_WEB_PUSH_PUBLIC_KEY=[\s\S]*?GSN_WEB_PUSH_PRIVATE_KEY=[\s\S]*?GSN_WEB_PUSH_SUBJECT=mailto:/,
+  "Backend production env example must document the VAPID keys required for live Web Push."
 );
 
 assertContains(

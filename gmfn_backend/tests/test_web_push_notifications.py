@@ -118,6 +118,44 @@ def test_web_push_subscription_status_and_registration(client, monkeypatch):
         app.dependency_overrides.pop(get_current_user, None)
 
 
+def test_web_push_status_reports_not_configured_without_vapid_keys(
+    client,
+    monkeypatch,
+):
+    member = User(
+        id=2,
+        email="push-unconfigured@example.com",
+        hashed_password="hashed",
+        role="user",
+    )
+    with SessionLocal() as db:
+        db.add(member)
+        db.commit()
+
+    current_member = User(
+        id=2,
+        email="push-unconfigured@example.com",
+        hashed_password="hashed",
+        role="user",
+    )
+    monkeypatch.delenv("GSN_WEB_PUSH_PUBLIC_KEY", raising=False)
+    monkeypatch.delenv("GSN_WEB_PUSH_PRIVATE_KEY", raising=False)
+    monkeypatch.delenv("VAPID_PUBLIC_KEY", raising=False)
+    monkeypatch.delenv("VAPID_PRIVATE_KEY", raising=False)
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: current_member
+        res = client.get("/web-push/status")
+        assert res.status_code == 200, res.text
+        body = res.json()
+        assert body["configured"] is False
+        assert body["public_key"] is None
+        assert body["active_subscriptions"] == 0
+        assert "browser" in body["truth"].lower()
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+
 def test_official_notice_dispatches_web_push_to_registered_member(
     client,
     monkeypatch,
