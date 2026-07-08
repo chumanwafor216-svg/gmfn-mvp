@@ -47,6 +47,17 @@ const files = {
       "utf8"
     ),
   },
+  webPushRunbook: {
+    path: "docs/WEB_PUSH_PRODUCTION_RUNBOOK.md",
+    source: readFileSync(join(repoRoot, "docs", "WEB_PUSH_PRODUCTION_RUNBOOK.md"), "utf8"),
+  },
+  vapidGenerator: {
+    path: "gmfn_backend/tools/generate_vapid_keys.py",
+    source: readFileSync(
+      join(repoRoot, "gmfn_backend", "tools", "generate_vapid_keys.py"),
+      "utf8"
+    ),
+  },
   notificationService: {
     path: "gmfn_backend/app/services/notification_service.py",
     source: readFileSync(
@@ -240,6 +251,18 @@ assertContains(
   files.backendProductionEnvExample,
   /GSN_WEB_PUSH_PUBLIC_KEY=[\s\S]*?GSN_WEB_PUSH_PRIVATE_KEY=[\s\S]*?GSN_WEB_PUSH_SUBJECT=mailto:/,
   "Backend production env example must document the VAPID keys required for live Web Push."
+);
+
+assertContains(
+  files.webPushRunbook,
+  /python gmfn_backend\\tools\\generate_vapid_keys\.py[\s\S]*?GET \/web-push\/status[\s\S]*?If `configured` is `false`, do not claim live phone push\.[\s\S]*?Do not add more notification kinds to Web Push without an explicit product/,
+  "Web Push production runbook must document key generation, status verification, and the push expansion boundary."
+);
+
+assertContains(
+  files.vapidGenerator,
+  /ec\.generate_private_key\(ec\.SECP256R1\(\)\)[\s\S]*?GSN_WEB_PUSH_PUBLIC_KEY=[\s\S]*?GSN_WEB_PUSH_PRIVATE_KEY=[\s\S]*?GSN_WEB_PUSH_SUBJECT=/,
+  "Backend VAPID helper must generate P-256 Web Push keys without storing secrets."
 );
 
 assertContains(
