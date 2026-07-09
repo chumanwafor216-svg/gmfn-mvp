@@ -129,6 +129,12 @@ class Clan(Base):
     invite_expires_at = Column(DateTime(timezone=True), nullable=True)
     invite_max_uses = Column(Integer, nullable=True)
     invite_uses = Column(Integer, nullable=False, default=0)
+    notice_posting_policy = Column(
+        String(20),
+        nullable=False,
+        default="members",
+        server_default="members",
+    )
 
     created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
 

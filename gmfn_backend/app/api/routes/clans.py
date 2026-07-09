@@ -206,6 +206,7 @@ class ClanOut(BaseModel):
     official_whatsapp_number: Optional[str] = None
     official_whatsapp_label: Optional[str] = None
     official_contact_ready: bool = False
+    notice_posting_policy: str = "members"
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -2567,6 +2568,7 @@ def _clan_out(
         "role": membership_role,
         "member_role": membership_role,
         "membership_role": membership_role,
+        "notice_posting_policy": getattr(clan, "notice_posting_policy", None) or "members",
         **contact,
     }
 

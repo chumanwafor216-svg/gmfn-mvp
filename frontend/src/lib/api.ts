@@ -1186,6 +1186,17 @@ export async function createCommunityNotice(payload: {
   return httpJson("/community-notices", "POST", payload);
 }
 
+export async function updateCommunityNoticeSettings(
+  clanId: number,
+  payload: { posting_policy: "members" | "admins" }
+): Promise<any> {
+  return httpJson(
+    `/community-notices/settings${buildQuery({ clan_id: clanId })}`,
+    "PATCH",
+    payload
+  );
+}
+
 export async function listCommunityDomainNotices(
   communityDomainId: number | string,
   params: { limit?: number } = {}

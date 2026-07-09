@@ -5,6 +5,7 @@ type Props = {
   open: boolean;
   communityName: string;
   busy?: boolean;
+  postingPolicy?: "members" | "admins" | string;
   onClose: () => void;
   onSubmit: (body: string) => Promise<void> | void;
 };
@@ -17,6 +18,7 @@ export default function CommunityNoticeModal({
   open,
   communityName,
   busy = false,
+  postingPolicy = "members",
   onClose,
   onSubmit,
 }: Props) {
@@ -35,10 +37,11 @@ export default function CommunityNoticeModal({
   return (
     <div style={overlayStyle} role="dialog" aria-modal="true" aria-label="Post community notice">
       <div style={modalStyle}>
-        <div style={eyebrowStyle}>Official notice</div>
+        <div style={eyebrowStyle}>Community announcement</div>
         <h3 style={titleStyle}>Post to {communityName || "this community"}</h3>
         <p style={copyStyle}>
-          Keep it short. GSN records the notice; WhatsApp remains the conversation channel.
+          Keep it short. GSN records who posted it and links your verified public
+          WhatsApp contact when you have chosen to show one.
         </p>
 
         <textarea
@@ -51,6 +54,9 @@ export default function CommunityNoticeModal({
 
         <div style={metaRowStyle}>
           <span style={words > 50 ? warningStyle : chipStyle}>{words}/50 words</span>
+          <span style={chipStyle}>
+            {postingPolicy === "admins" ? "Admin-only board" : "Members can post"}
+          </span>
           <span style={chipStyle}>No comments</span>
           <span style={chipStyle}>No reactions</span>
         </div>

@@ -476,8 +476,8 @@ assertLayoutContains(
 );
 
 assertLayoutContains(
-  /function drawerLink\(active = false, disabled = false\): React\.CSSProperties[\s\S]*?height: 42,[\s\S]*?minHeight: 42,[\s\S]*?maxHeight: 42[\s\S]*?pointerEvents: "auto"[\s\S]*?overflow: "hidden"[\s\S]*?textOverflow: "ellipsis"/,
-  "Shop Control mobile drawer buttons must keep fixed 42px geometry."
+  /function drawerLink\(active = false, disabled = false\): React\.CSSProperties[\s\S]*?height: 56,[\s\S]*?minHeight: 56,[\s\S]*?maxHeight: 56[\s\S]*?pointerEvents: "auto"[\s\S]*?overflow: "hidden"[\s\S]*?textOverflow: "ellipsis"/,
+  "Shop Control mobile drawer buttons must keep fixed 56px geometry."
 );
 
 assertLayoutContains(

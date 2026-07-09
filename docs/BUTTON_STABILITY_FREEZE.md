@@ -89,14 +89,19 @@ physical phone experience is perfect. The product owner has judged Community
 Home, Dashboard, and Shop Control close enough for now, roughly usable enough to
 shield while the team turns to the next unstable page family.
 
-As of 2026-06-25, the authenticated mobile bottom rail is intentionally a
-five-anchor rail: Dashboard, Community, Marketplace, Shop, and Profile. Finance,
-Loans, Trust, Admin, Shop Control, Identity, and related detail tools remain
-reachable through the drawer and route-local task/action surfaces. Do not restore
-the old seven-plus-domain bottom rail unless the product owner explicitly
-reopens the Present-style mobile benchmark decision.
+As of 2026-07-09, the authenticated mobile bottom rail is intentionally a
+five-anchor rail: Dashboard, Community Home, Marketplace, Shops, and Profile.
+Finance, Loans, Trust, Admin, Shop Control, Identity, and related detail tools
+remain reachable through the drawer and route-local task/action surfaces. Do not
+restore the old seven-plus-domain bottom rail unless the product owner
+explicitly reopens the Present-style mobile benchmark decision.
 
 That five-anchor rail is also intentionally fixed-slot and tap-only. It must not
 restore horizontal rail scrolling, scroll snap, or active-item auto-centering,
 because those mechanics can fight vertical phone drags and make the screen feel
 sticky before it releases.
+
+The current polished mobile shell uses 58px bottom-rail action cells with
+approved GSN 3D icons and two-line label room, plus 56px drawer rows. These
+values are caged by the route-local button inventory audits and the protected
+button freeze.

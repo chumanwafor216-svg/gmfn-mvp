@@ -24,6 +24,7 @@ import {
   getSelectedClanId,
   createCommunityNotice,
   listCommunityNotices,
+  updateCommunityNoticeSettings,
   listMyCommunityDomains,
   listMyClans,
   selectClan,
@@ -85,6 +86,7 @@ type ClanItem = {
   official_whatsapp_number?: string | null;
   official_whatsapp_label?: string | null;
   official_contact_ready?: boolean;
+  notice_posting_policy?: string | null;
   community?: any;
   profile?: any;
   marketplace?: any;
@@ -130,6 +132,10 @@ type CommunityNoticeItem = {
   status?: string | null;
   created_at?: string | null;
   source?: string | null;
+  posting_policy?: string | null;
+  sender_whatsapp_number?: string | null;
+  sender_whatsapp_label?: string | null;
+  sender_contact_ready?: boolean;
 };
 
 type CommunityIconMark = GsnIconName;
@@ -947,6 +953,10 @@ function isCommunityOfficer(clan: ClanItem | null | undefined, user: any): boole
   return platformRole === "admin" || communityRole === "admin";
 }
 
+function normalizeNoticePostingPolicy(value: unknown): "members" | "admins" {
+  return safeStr(value).toLowerCase() === "admins" ? "admins" : "members";
+}
+
 function readLocalJSON<T>(key: string, fallback: T): T {
   try {
     if (typeof window === "undefined") return fallback;
@@ -1002,6 +1012,10 @@ export default function CommunityHomePage() {
   const [selectedClan, setSelectedClan] = useState<ClanItem | null>(null);
   const [communityNotices, setCommunityNotices] = useState<CommunityNoticeItem[]>([]);
   const [communityNoticesLoading, setCommunityNoticesLoading] = useState(false);
+  const [communityNoticePostingPolicy, setCommunityNoticePostingPolicy] =
+    useState<"members" | "admins">("members");
+  const [communityNoticeSettingsSaving, setCommunityNoticeSettingsSaving] =
+    useState(false);
   const [noticeModalOpen, setNoticeModalOpen] = useState(false);
   const [noticePosting, setNoticePosting] = useState(false);
   const [poolSummary, setPoolSummary] = useState<any>(null);
@@ -1227,6 +1241,7 @@ export default function CommunityHomePage() {
 
     if (!clanId) {
       setCommunityNotices([]);
+      setCommunityNoticePostingPolicy("members");
       setCommunityNoticesLoading(false);
       return;
     }
@@ -1239,6 +1254,11 @@ export default function CommunityHomePage() {
 
       const rows = Array.isArray(res?.notices) ? res.notices : [];
       setCommunityNotices(rows);
+      setCommunityNoticePostingPolicy(
+        normalizeNoticePostingPolicy(
+          firstTruthy(res?.posting_policy, selectedClan?.notice_posting_policy)
+        )
+      );
       setCommunityNoticesLoading(false);
     })();
 
@@ -1249,7 +1269,17 @@ export default function CommunityHomePage() {
 
   const selectedClanName = getClanName(selectedClan);
   const selectedClanId = getClanId(selectedClan);
-  const canPostCommunityNotice = isCommunityOfficer(selectedClan, me);
+  const isCommunityNoticeOfficer = isCommunityOfficer(selectedClan, me);
+  const activeNoticePostingPolicy = normalizeNoticePostingPolicy(
+    firstTruthy(communityNoticePostingPolicy, selectedClan?.notice_posting_policy)
+  );
+  const canPostCommunityNotice = Boolean(
+    selectedClanId &&
+      (activeNoticePostingPolicy === "members" || isCommunityNoticeOfficer)
+  );
+  const canManageCommunityNoticeSettings = Boolean(
+    selectedClanId && isCommunityNoticeOfficer
+  );
   const routes = useMemo(
     () => ({
       dashboard: routeTarget(
@@ -2088,6 +2118,29 @@ export default function CommunityHomePage() {
     showNotice("success", "WhatsApp chat opened for this community contact.");
   }
 
+  function openNoticeSenderWhatsApp(
+    event: React.SyntheticEvent<HTMLElement>,
+    noticeItem: CommunityNoticeItem
+  ) {
+    consumeCommunityButtonEvent(event);
+    const contact = firstTruthy(noticeItem?.sender_whatsapp_number);
+    const chatUrl = buildWhatsAppChatUrl(
+      contact,
+      `Hi ${firstTruthy(noticeItem?.sender_whatsapp_label, "there")}. I saw your GSN community announcement for ${selectedClanName}.`
+    );
+
+    if (!chatUrl || typeof window === "undefined") {
+      showNotice(
+        "error",
+        "This announcement sender has not published a WhatsApp contact."
+      );
+      return;
+    }
+
+    window.open(chatUrl, "_blank", "noopener,noreferrer");
+    showNotice("success", "WhatsApp opened for this announcement sender.");
+  }
+
   function openCommunityCallContact(event: React.SyntheticEvent<HTMLElement>) {
     consumeCommunityButtonEvent(event);
     const contact = firstTruthy(selectedClan?.official_whatsapp_number);
@@ -2119,14 +2172,65 @@ export default function CommunityHomePage() {
       const rows = Array.isArray(res?.notices) ? res.notices : [];
       setCommunityNotices(rows);
       setNoticeModalOpen(false);
-      showNotice("success", "Official community notice posted.");
+      showNotice("success", "Community announcement posted.");
     } catch (error: any) {
       showNotice(
         "error",
-        error?.message || "This notice could not be posted. Check officer permissions and length."
+        error?.message || "This notice could not be posted. Check posting permission and length."
       );
     } finally {
       setNoticePosting(false);
+    }
+  }
+
+  async function updateCommunityNoticePolicy(
+    event: React.SyntheticEvent<HTMLElement>,
+    postingPolicy: "members" | "admins"
+  ) {
+    consumeCommunityButtonEvent(event);
+    const clanId = getClanId(selectedClan);
+
+    if (!clanId || !canManageCommunityNoticeSettings) {
+      showNotice(
+        "error",
+        "Only a community officer can change who may post announcements."
+      );
+      return;
+    }
+    if (communityNoticeSettingsSaving) {
+      showNotice("success", "Saving this notice board setting now.");
+      return;
+    }
+    if (activeNoticePostingPolicy === postingPolicy) {
+      showNotice(
+        "success",
+        postingPolicy === "members"
+          ? "Notice board is already open to active members."
+          : "Notice board is already admin-only."
+      );
+      return;
+    }
+
+    setCommunityNoticeSettingsSaving(true);
+    try {
+      const res = await updateCommunityNoticeSettings(clanId, {
+        posting_policy: postingPolicy,
+      });
+      const nextPolicy = normalizeNoticePostingPolicy(res?.posting_policy);
+      setCommunityNoticePostingPolicy(nextPolicy);
+      showNotice(
+        "success",
+        nextPolicy === "members"
+          ? "Notice board is open to active members."
+          : "Notice board is admin-only now."
+      );
+    } catch (error: any) {
+      showNotice(
+        "error",
+        error?.message || "This notice board setting could not be saved."
+      );
+    } finally {
+      setCommunityNoticeSettingsSaving(false);
     }
   }
 
@@ -2723,6 +2827,7 @@ export default function CommunityHomePage() {
         open={noticeModalOpen}
         communityName={selectedClanName}
         busy={noticePosting}
+        postingPolicy={activeNoticePostingPolicy}
         onClose={() => setNoticeModalOpen(false)}
         onSubmit={submitCommunityNotice}
       />
@@ -3080,7 +3185,28 @@ export default function CommunityHomePage() {
                   lineHeight: 1.18,
                 }}
               >
-                Official community notices
+                Community announcements
+              </div>
+              <div
+                style={{
+                  marginTop: 8,
+                  color: "#617085",
+                  fontSize: 13,
+                  lineHeight: 1.45,
+                  fontWeight: 760,
+                }}
+              >
+                {activeNoticePostingPolicy === "members"
+                  ? "Open board: active members can post short announcements. GSN links the sender's verified public WhatsApp contact when they have chosen to show one."
+                  : "Admin-only board: only community officers can post new announcements."}
+              </div>
+              <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <span style={badge(activeNoticePostingPolicy === "members")}>
+                  {activeNoticePostingPolicy === "members"
+                    ? "Members can post"
+                    : "Admin-only"}
+                </span>
+                <span style={badge(false)}>50 words</span>
               </div>
               {canPostCommunityNotice ? (
                 <div style={{ ...collapseButtonRow(), justifyContent: "flex-start" }}>
@@ -3093,7 +3219,45 @@ export default function CommunityHomePage() {
                     }}
                     style={communityActionStyle("secondary")}
                   >
-                    Post notice
+                    Post announcement
+                  </StableButton>
+                </div>
+              ) : null}
+              {canManageCommunityNoticeSettings ? (
+                <div style={{ ...collapseButtonRow(), justifyContent: "flex-start" }}>
+                  <StableButton
+                    type="button"
+                    debugId="community-home.notice.policy.members"
+                    onClick={(event) => updateCommunityNoticePolicy(event, "members")}
+                    aria-disabled={
+                      communityNoticeSettingsSaving ||
+                      activeNoticePostingPolicy === "members"
+                        ? true
+                        : undefined
+                    }
+                    style={communityActionStyle(
+                      activeNoticePostingPolicy === "members" ? "primary" : "secondary",
+                      communityNoticeSettingsSaving
+                    )}
+                  >
+                    Open to members
+                  </StableButton>
+                  <StableButton
+                    type="button"
+                    debugId="community-home.notice.policy.admins"
+                    onClick={(event) => updateCommunityNoticePolicy(event, "admins")}
+                    aria-disabled={
+                      communityNoticeSettingsSaving ||
+                      activeNoticePostingPolicy === "admins"
+                        ? true
+                        : undefined
+                    }
+                    style={communityActionStyle(
+                      activeNoticePostingPolicy === "admins" ? "primary" : "secondary",
+                      communityNoticeSettingsSaving
+                    )}
+                  >
+                    Admin only
                   </StableButton>
                 </div>
               ) : null}
@@ -3139,13 +3303,30 @@ export default function CommunityHomePage() {
                         >
                           <span style={badge(index === 0)}>Newest first</span>
                           {when ? <span style={badge(false)}>{when}</span> : null}
+                          {item?.sender_whatsapp_number ? (
+                            <span style={badge(true)}>
+                              WhatsApp: {firstTruthy(item?.sender_whatsapp_label, "sender")}
+                            </span>
+                          ) : null}
                         </div>
+                        {item?.sender_whatsapp_number ? (
+                          <div style={{ marginTop: 8 }}>
+                            <StableButton
+                              type="button"
+                              debugId={`community-home.notice.sender-whatsapp.${item?.notice_id || index}`}
+                              onClick={(event) => openNoticeSenderWhatsApp(event, item)}
+                              style={communityActionStyle("soft")}
+                            >
+                              Message sender
+                            </StableButton>
+                          </div>
+                        ) : null}
                       </div>
                     );
                   })
                 ) : (
                   <div style={{ ...innerCard("#F8FBFF"), color: "#617085", fontWeight: 850 }}>
-                    No official notice is visible for this community yet.
+                    No community announcement is visible yet.
                   </div>
                 )}
               </div>

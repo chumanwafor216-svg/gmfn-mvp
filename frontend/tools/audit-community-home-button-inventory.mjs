@@ -10,7 +10,7 @@ const appLayoutFile = "src/layout/AppLayout.tsx";
 const source = readFileSync(join(frontendRoot, communityFile), "utf8");
 const appLayoutSource = readFileSync(join(frontendRoot, appLayoutFile), "utf8");
 const findings = [];
-const expectedStableButtonTemplateCount = 22;
+const expectedStableButtonTemplateCount = 25;
 const expectedNativeFieldCount = 0;
 const expectedNextActionGuideItemCount = 12;
 const expectedFrontQuickActionCount = 4;
@@ -264,8 +264,8 @@ assertContains(
 );
 
 assertContains(
-  /COMMUNITY NOTICE BOARD[\s\S]*?debugId="community-home\.notice\.post"[\s\S]*?CONTACT COMMUNITY[\s\S]*?debugId="community-home\.contact\.whatsapp-chat"[\s\S]*?debugId="community-home\.contact\.whatsapp-call"/,
-  "Community Home communication protocol block must keep the Notice Board and Contact Community actions."
+  /Community announcements[\s\S]*?debugId="community-home\.notice\.post"[\s\S]*?debugId="community-home\.notice\.policy\.members"[\s\S]*?debugId="community-home\.notice\.policy\.admins"[\s\S]*?CONTACT COMMUNITY[\s\S]*?debugId="community-home\.contact\.whatsapp-chat"[\s\S]*?debugId="community-home\.contact\.whatsapp-call"/,
+  "Community Home communication protocol block must keep the Notice Board policy controls and Contact Community actions."
 );
 
 assertContains(
@@ -445,8 +445,8 @@ assertLayoutContains(
 );
 
 assertLayoutContains(
-  /const mobileBottomItems = useMemo<NavLinkItem\[\]>\(\(\) => \{[\s\S]*?makeDashboardItem\(\)[\s\S]*?label: "Community"[\s\S]*?makeMarketplaceItem\(\)[\s\S]*?makeShopGalleryItem\(myShopGalleryTo, myShopGalleryDisabled\)[\s\S]*?label: "Shop"[\s\S]*?makeProfileItem\(\)[\s\S]*?debugId=\{`app-layout\.bottom-nav\.\$\{item\.label\.toLowerCase\(\)/,
-  "Community Home mobile bottom rail must count the five stable route anchors: Dashboard, Community, Marketplace, Shop, and Profile."
+  /const mobileBottomItems = useMemo<NavLinkItem\[\]>\(\(\) => \{[\s\S]*?makeDashboardItem\(\)[\s\S]*?label: "Community Home"[\s\S]*?makeMarketplaceItem\(\)[\s\S]*?makeShopGalleryItem\(myShopGalleryTo, myShopGalleryDisabled\)[\s\S]*?label: "Shops"[\s\S]*?makeProfileItem\(\)[\s\S]*?debugId=\{`app-layout\.bottom-nav\.\$\{item\.label\.toLowerCase\(\)/,
+  "Community Home mobile bottom rail must count the five stable route anchors: Dashboard, Community Home, Marketplace, Shops, and Profile."
 );
 
 assertLayoutContains(
@@ -455,8 +455,8 @@ assertLayoutContains(
 );
 
 assertLayoutContains(
-  /function drawerLink\(active = false, disabled = false\): React\.CSSProperties[\s\S]*?height: 42,[\s\S]*?minHeight: 42,[\s\S]*?maxHeight: 42[\s\S]*?pointerEvents: "auto"[\s\S]*?overflow: "hidden"[\s\S]*?textOverflow: "ellipsis"/,
-  "Community Home mobile drawer buttons must keep fixed 42px geometry."
+  /function drawerLink\(active = false, disabled = false\): React\.CSSProperties[\s\S]*?height: 56,[\s\S]*?minHeight: 56,[\s\S]*?maxHeight: 56[\s\S]*?pointerEvents: "auto"[\s\S]*?overflow: "hidden"[\s\S]*?textOverflow: "ellipsis"/,
+  "Community Home mobile drawer buttons must keep fixed 56px geometry."
 );
 
 assertLayoutContains(
@@ -465,8 +465,8 @@ assertLayoutContains(
 );
 
 assertLayoutContains(
-  /function bottomNavItem\(active = false, disabled = false\): React\.CSSProperties[\s\S]*?height: 42,[\s\S]*?minHeight: 42,[\s\S]*?maxHeight: 42[\s\S]*?pointerEvents: "auto"[\s\S]*?opacity: disabled \? 0\.7 : 1/,
-  "Community Home mobile bottom navigator buttons must keep fixed 42px geometry and active pointer targets."
+  /function bottomNavItem\(active = false, disabled = false\): React\.CSSProperties[\s\S]*?height: 58,[\s\S]*?minHeight: 58,[\s\S]*?maxHeight: 58[\s\S]*?pointerEvents: "auto"[\s\S]*?opacity: disabled \? 0\.7 : 1/,
+  "Community Home mobile bottom navigator buttons must keep fixed 58px geometry and active pointer targets."
 );
 
 assertLayoutContains(

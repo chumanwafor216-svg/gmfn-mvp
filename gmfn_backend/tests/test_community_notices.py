@@ -7,13 +7,19 @@ from app.db.models import Clan, ClanMembership, User
 from app.db.notification_models import Notification
 
 
-def _seed_notice_community(*, membership_role: str = "admin") -> None:
+def _seed_notice_community(
+    *,
+    membership_role: str = "admin",
+    notice_posting_policy: str = "members",
+) -> None:
     with SessionLocal() as db:
         user = User(
             id=1,
             email="notice-admin@example.com",
             hashed_password="hashed",
             role="admin" if membership_role == "admin" else "user",
+            phone_e164="+447700900123",
+            phone_verified_at=datetime.now(timezone.utc),
         )
         clan = Clan(
             id=1,
@@ -21,6 +27,7 @@ def _seed_notice_community(*, membership_role: str = "admin") -> None:
             invite_code="notice-board-test",
             invite_created_at=datetime.now(timezone.utc),
             created_by_user_id=1,
+            notice_posting_policy=notice_posting_policy,
         )
         db.add_all([user, clan])
         db.flush()
@@ -78,7 +85,11 @@ def test_community_officer_can_post_and_members_can_read_notice(
     notice = posted_body["notice"]
     assert notice["body"] == "Meeting Saturday 4 pm."
     assert notice["word_count"] == 4
+    assert notice["posting_policy"] == "members"
+    assert notice["sender_whatsapp_number"] == "+447700900123"
+    assert notice["sender_whatsapp_label"] == "notice-admin@example.com"
     assert posted_body["notification_kind"] == "community.notice.posted"
+    assert posted_body["posting_policy"] == "members"
     assert posted_body["notifications_created"] == 1
     assert "does not broadcast" in posted_body["boundary"]
 
@@ -88,6 +99,8 @@ def test_community_officer_can_post_and_members_can_read_notice(
     assert body["comments_enabled"] is False
     assert body["reactions_enabled"] is False
     assert body["thread_enabled"] is False
+    assert body["posting_policy"] == "members"
+    assert body["can_post_notice"] is True
     assert body["notices"][0]["body"] == "Meeting Saturday 4 pm."
 
     with SessionLocal() as db:
@@ -126,7 +139,7 @@ def test_community_notice_rejects_more_than_fifty_words(
     assert "50 words or fewer" in res.text
 
 
-def test_non_officer_cannot_post_community_notice(
+def test_member_can_post_when_notice_board_is_open(
     client, override_current_user_user
 ):
     _seed_notice_community(membership_role="member")
@@ -139,8 +152,48 @@ def test_non_officer_cannot_post_community_notice(
         },
     )
 
+    assert res.status_code == 200, res.text
+    body = res.json()
+    assert body["posting_policy"] == "members"
+    assert body["notice"]["body"] == "Welcome dinner this Sunday."
+    assert body["notice"]["sender_whatsapp_number"] == "+447700900123"
+
+
+def test_admin_can_lock_notice_board_to_admin_only(client, override_current_user):
+    _seed_notice_community()
+
+    settings_res = client.patch(
+        "/community-notices/settings",
+        params={"clan_id": 1},
+        json={"posting_policy": "admins"},
+    )
+    assert settings_res.status_code == 200, settings_res.text
+    assert settings_res.json()["posting_policy"] == "admins"
+
+    read_res = client.get("/community-notices/settings", params={"clan_id": 1})
+    assert read_res.status_code == 200, read_res.text
+    assert read_res.json()["posting_policy"] == "admins"
+    assert read_res.json()["can_manage_notice_settings"] is True
+
+
+def test_member_is_blocked_when_notice_board_is_admin_only(
+    client, override_current_user_user
+):
+    _seed_notice_community(
+        membership_role="member",
+        notice_posting_policy="admins",
+    )
+
+    res = client.post(
+        "/community-notices",
+        json={
+            "clan_id": 1,
+            "body": "Welcome dinner this Sunday.",
+        },
+    )
+
     assert res.status_code == 403, res.text
-    assert "community officer" in res.text
+    assert "admin-only" in res.text
 
 
 def test_community_notice_rejects_malformed_boundary_controls(

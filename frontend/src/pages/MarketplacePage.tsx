@@ -77,10 +77,12 @@ import {
   listMyClans,
   listMyLoans,
   createCommunityNotice,
+  updateCommunityNoticeSettings,
   safeCopy,
   type ClanInviteRelationshipEvidencePayload,
   type ProtectedTradeRecord,
 } from "../lib/api";
+import { buildWhatsAppChatUrl } from "../lib/whatsappLinks";
 import {
   communityPayInReady,
   getCommunityMoneySurface,
@@ -140,6 +142,7 @@ type CommunityRow = {
   member_role?: string | null;
   membership_role?: string | null;
   participant_role?: string | null;
+  notice_posting_policy?: string | null;
   community?: any;
   profile?: any;
   marketplace?: any;
@@ -463,7 +466,15 @@ type MarketplaceNoticeItem = {
   status?: string | null;
   created_at?: string | null;
   source?: string | null;
+  posting_policy?: string | null;
+  sender_whatsapp_number?: string | null;
+  sender_whatsapp_label?: string | null;
+  sender_contact_ready?: boolean;
 };
+
+function normalizeNoticePostingPolicy(value: unknown): "members" | "admins" {
+  return safeStr(value).toLowerCase() === "admins" ? "admins" : "members";
+}
 
 type PersistedWithdrawalTask = {
   amountInput: string;
@@ -4244,6 +4255,10 @@ export default function MarketplacePage() {
   const [trustSlip, setTrustSlip] = useState<any>(null);
   const [marketplaceNotices, setMarketplaceNotices] = useState<MarketplaceNoticeItem[]>([]);
   const [marketplaceNoticesLoading, setMarketplaceNoticesLoading] = useState(false);
+  const [marketplaceNoticePostingPolicy, setMarketplaceNoticePostingPolicy] =
+    useState<"members" | "admins">("members");
+  const [marketplaceNoticeSettingsSaving, setMarketplaceNoticeSettingsSaving] =
+    useState(false);
   const [marketplaceNoticeModalOpen, setMarketplaceNoticeModalOpen] = useState(false);
   const [marketplaceNoticePosting, setMarketplaceNoticePosting] = useState(false);
   const [inviteLink, setInviteLink] = useState<string>("");
@@ -4842,6 +4857,7 @@ export default function MarketplacePage() {
   const loadMarketplaceNotices = useCallback(async () => {
     if (!activeCommunityId) {
       setMarketplaceNotices([]);
+      setMarketplaceNoticePostingPolicy("members");
       setMarketplaceNoticesLoading(false);
       return;
     }
@@ -4854,10 +4870,15 @@ export default function MarketplacePage() {
       }).catch(() => null);
       const rows = Array.isArray(res?.notices) ? res.notices : [];
       setMarketplaceNotices(rows);
+      setMarketplaceNoticePostingPolicy(
+        normalizeNoticePostingPolicy(
+          firstTruthy(res?.posting_policy, selectedCommunity?.notice_posting_policy)
+        )
+      );
     } finally {
       setMarketplaceNoticesLoading(false);
     }
-  }, [activeCommunityId]);
+  }, [activeCommunityId, selectedCommunity]);
 
   useEffect(() => {
     void loadMarketplaceNotices();
@@ -4918,7 +4939,7 @@ export default function MarketplacePage() {
       await createCommunityNotice({ clan_id: activeCommunityId, body });
       await loadMarketplaceNotices();
       setMarketplaceNoticeModalOpen(false);
-      showNotice("success", "Official marketplace notice posted.");
+      showNotice("success", "Marketplace announcement posted.");
     } catch (err: any) {
       showNotice(
         "error",
@@ -4927,6 +4948,79 @@ export default function MarketplacePage() {
     } finally {
       setMarketplaceNoticePosting(false);
     }
+  }
+
+  async function updateMarketplaceNoticePolicy(
+    event: React.SyntheticEvent<HTMLElement>,
+    postingPolicy: "members" | "admins"
+  ) {
+    consumeMarketplaceButtonEvent(event);
+
+    if (!activeCommunityId || !canManageMarketplaceNoticeSettings) {
+      showNotice(
+        "error",
+        "Only a community officer can change who may post announcements."
+      );
+      return;
+    }
+    if (marketplaceNoticeSettingsSaving) {
+      showNotice("success", "Saving this notice board setting now.");
+      return;
+    }
+    if (activeNoticePostingPolicy === postingPolicy) {
+      showNotice(
+        "success",
+        postingPolicy === "members"
+          ? "Notice board is already open to active members."
+          : "Notice board is already admin-only."
+      );
+      return;
+    }
+
+    setMarketplaceNoticeSettingsSaving(true);
+    try {
+      const res = await updateCommunityNoticeSettings(activeCommunityId, {
+        posting_policy: postingPolicy,
+      });
+      const nextPolicy = normalizeNoticePostingPolicy(res?.posting_policy);
+      setMarketplaceNoticePostingPolicy(nextPolicy);
+      showNotice(
+        "success",
+        nextPolicy === "members"
+          ? "Notice board is open to active members."
+          : "Notice board is admin-only now."
+      );
+    } catch (err: any) {
+      showNotice(
+        "error",
+        marketplaceErrorMessage(err, "This notice board setting could not be saved.")
+      );
+    } finally {
+      setMarketplaceNoticeSettingsSaving(false);
+    }
+  }
+
+  function openMarketplaceNoticeSenderWhatsApp(
+    event: React.SyntheticEvent<HTMLElement>,
+    noticeItem: MarketplaceNoticeItem
+  ) {
+    consumeMarketplaceButtonEvent(event);
+    const contact = firstTruthy(noticeItem?.sender_whatsapp_number);
+    const chatUrl = buildWhatsAppChatUrl(
+      contact,
+      `Hi ${firstTruthy(noticeItem?.sender_whatsapp_label, "there")}. I saw your GSN marketplace announcement for ${activeCommunityName}.`
+    );
+
+    if (!chatUrl || typeof window === "undefined") {
+      showNotice(
+        "error",
+        "This announcement sender has not published a WhatsApp contact."
+      );
+      return;
+    }
+
+    window.open(chatUrl, "_blank", "noopener,noreferrer");
+    showNotice("success", "WhatsApp opened for this announcement sender.");
   }
 
   function clearStaleMarketplaceHash(activeSectionId: string) {
@@ -6665,10 +6759,19 @@ export default function MarketplacePage() {
         safeStr(me?.role).toLowerCase() === "admin")
   );
   const moneyRailManagerRoles = ["admin", "owner", "founder", "creator"];
+  const isMarketplaceNoticeOfficer = Boolean(
+    moneyRailManagerRoles.includes(safeStr(me?.role).toLowerCase()) ||
+      moneyRailManagerRoles.includes(currentMemberRole)
+  );
+  const activeNoticePostingPolicy = normalizeNoticePostingPolicy(
+    firstTruthy(marketplaceNoticePostingPolicy, selectedCommunity?.notice_posting_policy)
+  );
   const canPostMarketplaceNotice = Boolean(
     activeCommunityId &&
-      (moneyRailManagerRoles.includes(safeStr(me?.role).toLowerCase()) ||
-        moneyRailManagerRoles.includes(currentMemberRole))
+      (activeNoticePostingPolicy === "members" || isMarketplaceNoticeOfficer)
+  );
+  const canManageMarketplaceNoticeSettings = Boolean(
+    activeCommunityId && isMarketplaceNoticeOfficer
   );
   const canManagePayInAccount = Boolean(
     activeCommunityId &&
@@ -7767,6 +7870,7 @@ export default function MarketplacePage() {
         open={marketplaceNoticeModalOpen}
         communityName={activeCommunityName}
         busy={marketplaceNoticePosting}
+        postingPolicy={activeNoticePostingPolicy}
         onClose={() => setMarketplaceNoticeModalOpen(false)}
         onSubmit={submitMarketplaceNotice}
       />
@@ -8534,8 +8638,50 @@ export default function MarketplacePage() {
                 }
                 style={marketplaceActionStyle("secondary")}
               >
-                Post notice
+                Post announcement
               </StableButton>
+            ) : null}
+            {canManageMarketplaceNoticeSettings ? (
+              <>
+                <StableButton
+                  debugId="marketplace.board.policy.members"
+                  type="button"
+                  onClick={(event) =>
+                    updateMarketplaceNoticePolicy(event, "members")
+                  }
+                  aria-disabled={
+                    marketplaceNoticeSettingsSaving ||
+                    activeNoticePostingPolicy === "members"
+                      ? true
+                      : undefined
+                  }
+                  style={marketplaceActionStyle(
+                    activeNoticePostingPolicy === "members" ? "secondary" : "soft",
+                    marketplaceNoticeSettingsSaving
+                  )}
+                >
+                  Open to members
+                </StableButton>
+                <StableButton
+                  debugId="marketplace.board.policy.admins"
+                  type="button"
+                  onClick={(event) =>
+                    updateMarketplaceNoticePolicy(event, "admins")
+                  }
+                  aria-disabled={
+                    marketplaceNoticeSettingsSaving ||
+                    activeNoticePostingPolicy === "admins"
+                      ? true
+                      : undefined
+                  }
+                  style={marketplaceActionStyle(
+                    activeNoticePostingPolicy === "admins" ? "secondary" : "soft",
+                    marketplaceNoticeSettingsSaving
+                  )}
+                >
+                  Admin only
+                </StableButton>
+              </>
             ) : null}
             <StableButton
               debugId="marketplace.board.toggle"
@@ -8567,9 +8713,9 @@ export default function MarketplacePage() {
               <div style={{ minWidth: 0 }}>
                 <div style={sectionLabel()}>Community notice board</div>
                 <div style={{ marginTop: 6, ...helperText(), fontSize: 13 }}>
-                  Choose the marketplace first. Newest official announcement
-                  first. Each notice is capped at 50 words and stays limited to
-                  members who can access this marketplace/community.
+                  {activeNoticePostingPolicy === "members"
+                    ? "Open board: active members can post short announcements. GSN links the sender's verified public WhatsApp contact when they have chosen to show one."
+                    : "Admin-only board: only community officers can post new announcements."}
                 </div>
               </div>
               <span style={stableStatusPillStyle(!marketplaceNoticesLoading)}>
@@ -8645,7 +8791,26 @@ export default function MarketplacePage() {
                             {when}
                           </span>
                         ) : null}
+                        <span style={marketplaceFrontTagStyle("#27435F", "#F3F6FA", isCompact)}>
+                          {item?.sender_whatsapp_number
+                            ? `WhatsApp: ${firstTruthy(item?.sender_whatsapp_label, "sender")}`
+                            : "No sender WhatsApp"}
+                        </span>
                       </div>
+                      {item?.sender_whatsapp_number ? (
+                        <div style={{ marginTop: 8 }}>
+                          <StableButton
+                            debugId={`marketplace.board.sender-whatsapp.${item?.notice_id || index}`}
+                            type="button"
+                            onClick={(event) =>
+                              openMarketplaceNoticeSenderWhatsApp(event, item)
+                            }
+                            style={marketplaceActionStyle("soft")}
+                          >
+                            Message sender
+                          </StableButton>
+                        </div>
+                      ) : null}
                     </div>
                   );
                 })
@@ -8669,8 +8834,8 @@ export default function MarketplacePage() {
                     No official notices yet.
                   </div>
                   <div style={{ marginTop: 6, ...helperText(), fontSize: 13 }}>
-                    When community officers post for this marketplace, members
-                    of this marketplace see it here.
+                    When members or community officers post for this
+                    marketplace, members of this marketplace see it here.
                   </div>
                 </div>
               )}

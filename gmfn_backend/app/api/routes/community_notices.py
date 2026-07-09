@@ -2,15 +2,17 @@ from __future__ import annotations
 
 import json
 from datetime import datetime, timezone
-from typing import Any, Optional
+from typing import Any, Literal, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field, field_validator
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user
 from app.db.database import get_db
-from app.db.models import ClanMembership, TrustEvent, User
+from app.db.models import Clan, ClanMembership, TrustEvent, User, UserSettings
+from app.services.community_integrity_service import _user_settings_table_exists
 from app.services.notification_service import create_notification
 from app.services.web_push_service import dispatch_web_push_for_notifications
 from app.services.community_meeting_service import list_community_meetings
@@ -22,6 +24,12 @@ router = APIRouter(prefix="/community-notices", tags=["community-notices"])
 COMMUNITY_NOTICE_EVENT = "community.notice.posted"
 COMMUNITY_NOTICE_SOURCE = "community_notice_board"
 MAX_NOTICE_WORDS = 50
+NOTICE_POSTING_POLICY_MEMBERS = "members"
+NOTICE_POSTING_POLICY_ADMINS = "admins"
+NOTICE_POSTING_POLICIES = {
+    NOTICE_POSTING_POLICY_MEMBERS,
+    NOTICE_POSTING_POLICY_ADMINS,
+}
 
 
 def _safe_str(value: Any, fallback: str = "") -> str:
@@ -69,6 +77,44 @@ def _reject_non_text_value(value: Any, field_name: str) -> Any:
     return value
 
 
+def _normalize_notice_posting_policy(value: Any) -> str:
+    policy = _safe_str(value, NOTICE_POSTING_POLICY_MEMBERS).lower()
+    return policy if policy in NOTICE_POSTING_POLICIES else NOTICE_POSTING_POLICY_MEMBERS
+
+
+def _notice_posting_policy_for_clan(db: Session, *, clan_id: int) -> str:
+    clan = db.get(Clan, int(clan_id))
+    if not clan:
+        raise HTTPException(status_code=404, detail="Community not found")
+    return _normalize_notice_posting_policy(
+        getattr(clan, "notice_posting_policy", NOTICE_POSTING_POLICY_MEMBERS)
+    )
+
+
+def _set_notice_posting_policy_for_clan(
+    db: Session,
+    *,
+    clan_id: int,
+    posting_policy: str,
+) -> str:
+    clan = db.get(Clan, int(clan_id))
+    if not clan:
+        raise HTTPException(status_code=404, detail="Community not found")
+    policy = _normalize_notice_posting_policy(posting_policy)
+    clan.notice_posting_policy = policy
+    db.commit()
+    db.refresh(clan)
+    return _normalize_notice_posting_policy(
+        getattr(clan, "notice_posting_policy", policy)
+    )
+
+
+def _is_notice_officer(membership: ClanMembership, current_user: User) -> bool:
+    is_platform_admin = str(getattr(current_user, "role", "") or "").lower() == "admin"
+    is_clan_admin = str(getattr(membership, "role", "") or "").lower() == "admin"
+    return bool(is_platform_admin or is_clan_admin)
+
+
 def _require_clan_member(
     db: Session,
     *,
@@ -107,9 +153,7 @@ def _require_notice_officer(
         clan_id=int(clan_id),
         current_user=current_user,
     )
-    is_platform_admin = str(getattr(current_user, "role", "") or "").lower() == "admin"
-    is_clan_admin = str(getattr(membership, "role", "") or "").lower() == "admin"
-    if not is_platform_admin and not is_clan_admin:
+    if not _is_notice_officer(membership, current_user):
         raise HTTPException(
             status_code=403,
             detail="Only a community officer can post an official notice",
@@ -117,9 +161,76 @@ def _require_notice_officer(
     return membership
 
 
+def _require_notice_poster(
+    db: Session,
+    *,
+    clan_id: int,
+    current_user: User,
+) -> tuple[ClanMembership, str]:
+    membership = _require_clan_member(
+        db,
+        clan_id=int(clan_id),
+        current_user=current_user,
+    )
+    posting_policy = _notice_posting_policy_for_clan(db, clan_id=int(clan_id))
+    if (
+        posting_policy == NOTICE_POSTING_POLICY_ADMINS
+        and not _is_notice_officer(membership, current_user)
+    ):
+        raise HTTPException(
+            status_code=403,
+            detail="This community notice board is admin-only right now",
+        )
+    return membership, posting_policy
+
+
+def _public_whatsapp_contact_for_user(db: Session, user: Optional[User]) -> Optional[str]:
+    if not user:
+        return None
+    phone = _safe_str(getattr(user, "phone_e164", None))
+    if not phone or not getattr(user, "phone_verified_at", None):
+        return None
+    if not _user_settings_table_exists(db):
+        return phone
+    try:
+        settings = (
+            db.query(UserSettings)
+            .filter(UserSettings.user_id == int(user.id))
+            .first()
+        )
+    except OperationalError:
+        db.rollback()
+        return phone
+    if settings is not None and not bool(getattr(settings, "show_whatsapp_public", False)):
+        return None
+    return phone
+
+
+def _member_display(user: Optional[User]) -> str:
+    if not user:
+        return "GSN member"
+    return _safe_str(
+        getattr(user, "display_name", None)
+        or getattr(user, "email", None)
+        or getattr(user, "gmfn_id", None),
+        "GSN member",
+    )
+
+
+def _poster_contact_payload(db: Session, current_user: User) -> dict[str, Any]:
+    db_user = db.get(User, int(getattr(current_user, "id", 0) or 0)) or current_user
+    contact = _public_whatsapp_contact_for_user(db, db_user)
+    return {
+        "sender_whatsapp_number": contact,
+        "sender_whatsapp_label": _member_display(db_user) if contact else None,
+        "sender_contact_ready": bool(contact),
+    }
+
+
 def _event_to_notice(event: TrustEvent) -> dict[str, Any]:
     meta = _safe_meta(getattr(event, "meta_json", None))
     body = _safe_str(meta.get("body") or meta.get("title"))
+    sender_contact = _safe_str(meta.get("sender_whatsapp_number"))
     return {
         "notice_id": f"TE-{int(event.id)}",
         "event_id": int(event.id),
@@ -130,6 +241,11 @@ def _event_to_notice(event: TrustEvent) -> dict[str, Any]:
         "word_count": _word_count(body),
         "created_at": _iso(getattr(event, "created_at", None)),
         "posted_by_user_id": int(getattr(event, "actor_user_id", 0) or 0),
+        "posted_by_role": _safe_str(meta.get("posted_by_role")),
+        "posting_policy": _normalize_notice_posting_policy(meta.get("posting_policy")),
+        "sender_whatsapp_number": sender_contact or None,
+        "sender_whatsapp_label": _safe_str(meta.get("sender_whatsapp_label")) if sender_contact else None,
+        "sender_contact_ready": bool(sender_contact),
     }
 
 
@@ -238,6 +354,10 @@ class CommunityNoticeIn(BaseModel):
         return body
 
 
+class CommunityNoticeSettingsIn(BaseModel):
+    posting_policy: Literal["members", "admins"]
+
+
 @router.get("")
 def list_notices(
     clan_id: int = Query(..., ge=1),
@@ -245,7 +365,8 @@ def list_notices(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> dict[str, Any]:
-    _require_clan_member(db, clan_id=int(clan_id), current_user=current_user)
+    membership = _require_clan_member(db, clan_id=int(clan_id), current_user=current_user)
+    posting_policy = _notice_posting_policy_for_clan(db, clan_id=int(clan_id))
     notice_rows = (
         db.query(TrustEvent)
         .filter(
@@ -274,6 +395,9 @@ def list_notices(
         "comments_enabled": False,
         "reactions_enabled": False,
         "thread_enabled": False,
+        "posting_policy": posting_policy,
+        "can_post_notice": posting_policy == NOTICE_POSTING_POLICY_MEMBERS
+        or _is_notice_officer(membership, current_user),
         "notices": notices[: int(limit)],
     }
 
@@ -284,12 +408,13 @@ def create_notice(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> dict[str, Any]:
-    _require_notice_officer(
+    membership, posting_policy = _require_notice_poster(
         db,
         clan_id=int(payload.clan_id),
         current_user=current_user,
     )
     body = _safe_str(payload.body)
+    poster_contact = _poster_contact_payload(db, current_user)
     event = log_trust_event(
         db,
         event_type=COMMUNITY_NOTICE_EVENT,
@@ -301,10 +426,13 @@ def create_notice(
             "reason": "community_notice_posted",
             "body": body,
             "word_count": _word_count(body),
+            "posting_policy": posting_policy,
+            "posted_by_role": _safe_str(getattr(membership, "role", None), "member"),
             "comments_enabled": False,
             "reactions_enabled": False,
             "thread_enabled": False,
             "trust_delta": "0.00",
+            **poster_contact,
         },
     )
     notifications_created = _create_notice_notifications(
@@ -317,13 +445,62 @@ def create_notice(
         "ok": True,
         "engine_ready": True,
         "notice": _event_to_notice(event),
+        "posting_policy": posting_policy,
         "notification_kind": COMMUNITY_NOTICE_EVENT,
         "notifications_created": int(notifications_created),
-        "message": "Official notice posted to the Community Notice Board.",
+        "message": "Community announcement posted to the Community Notice Board.",
         "boundary": (
             "The notice belongs to this selected community or marketplace only. "
             "Notifications are created only for active members of this selected "
             "community; it does not broadcast to other marketplaces, communities, "
             "domains, or public visitors."
+        ),
+    }
+
+
+@router.get("/settings")
+def get_notice_settings(
+    clan_id: int = Query(..., ge=1),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> dict[str, Any]:
+    membership = _require_clan_member(db, clan_id=int(clan_id), current_user=current_user)
+    posting_policy = _notice_posting_policy_for_clan(db, clan_id=int(clan_id))
+    return {
+        "ok": True,
+        "clan_id": int(clan_id),
+        "posting_policy": posting_policy,
+        "can_post_notice": posting_policy == NOTICE_POSTING_POLICY_MEMBERS
+        or _is_notice_officer(membership, current_user),
+        "can_manage_notice_settings": _is_notice_officer(membership, current_user),
+        "boundary": (
+            "Members mode lets active members post short announcements with any "
+            "verified public WhatsApp contact they have chosen to show. Admin-only "
+            "mode limits new posts to community officers."
+        ),
+    }
+
+
+@router.patch("/settings")
+def update_notice_settings(
+    payload: CommunityNoticeSettingsIn,
+    clan_id: int = Query(..., ge=1),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> dict[str, Any]:
+    _require_notice_officer(db, clan_id=int(clan_id), current_user=current_user)
+    posting_policy = _set_notice_posting_policy_for_clan(
+        db,
+        clan_id=int(clan_id),
+        posting_policy=payload.posting_policy,
+    )
+    return {
+        "ok": True,
+        "clan_id": int(clan_id),
+        "posting_policy": posting_policy,
+        "message": (
+            "Community Notice Board is open to active members."
+            if posting_policy == NOTICE_POSTING_POLICY_MEMBERS
+            else "Community Notice Board is admin-only."
         ),
     }

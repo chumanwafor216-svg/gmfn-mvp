@@ -304,8 +304,8 @@ assertLayoutContains(
 );
 
 assertLayoutContains(
-  /const mobileBottomItems = useMemo<NavLinkItem\[\]>\(\(\) => \{[\s\S]*?makeDashboardItem\(\)[\s\S]*?label: "Community"[\s\S]*?makeMarketplaceItem\(\)[\s\S]*?makeShopGalleryItem\(myShopGalleryTo, myShopGalleryDisabled\)[\s\S]*?label: "Shop"[\s\S]*?makeProfileItem\(\)[\s\S]*?debugId=\{`app-layout\.bottom-nav\.\$\{item\.label\.toLowerCase\(\)/,
-  "Dashboard mobile bottom rail must count the five stable route anchors: Dashboard, Community, Marketplace, Shop, and Profile."
+  /const mobileBottomItems = useMemo<NavLinkItem\[\]>\(\(\) => \{[\s\S]*?makeDashboardItem\(\)[\s\S]*?label: "Community Home"[\s\S]*?makeMarketplaceItem\(\)[\s\S]*?makeShopGalleryItem\(myShopGalleryTo, myShopGalleryDisabled\)[\s\S]*?label: "Shops"[\s\S]*?makeProfileItem\(\)[\s\S]*?debugId=\{`app-layout\.bottom-nav\.\$\{item\.label\.toLowerCase\(\)/,
+  "Dashboard mobile bottom rail must count the five stable route anchors: Dashboard, Community Home, Marketplace, Shops, and Profile."
 );
 
 assertLayoutContains(
@@ -319,8 +319,8 @@ assertLayoutContains(
 );
 
 assertLayoutContains(
-  /function drawerLink\(active = false, disabled = false\): React\.CSSProperties[\s\S]*?height: 42,[\s\S]*?minHeight: 42,[\s\S]*?maxHeight: 42[\s\S]*?pointerEvents: "auto"[\s\S]*?overflow: "hidden"[\s\S]*?textOverflow: "ellipsis"/,
-  "Dashboard mobile drawer buttons must keep fixed 42px geometry."
+  /function drawerLink\(active = false, disabled = false\): React\.CSSProperties[\s\S]*?height: 56,[\s\S]*?minHeight: 56,[\s\S]*?maxHeight: 56[\s\S]*?pointerEvents: "auto"[\s\S]*?overflow: "hidden"[\s\S]*?textOverflow: "ellipsis"/,
+  "Dashboard mobile drawer buttons must keep fixed 56px geometry."
 );
 
 assertLayoutContains(
@@ -329,8 +329,8 @@ assertLayoutContains(
 );
 
 assertLayoutContains(
-  /function bottomNavItem\(active = false, disabled = false\): React\.CSSProperties[\s\S]*?height: 42,[\s\S]*?minHeight: 42,[\s\S]*?maxHeight: 42[\s\S]*?pointerEvents: "auto"[\s\S]*?opacity: disabled \? 0\.7 : 1/,
-  "Dashboard mobile bottom navigator buttons must keep fixed 42px geometry and active pointer targets."
+  /function bottomNavItem\(active = false, disabled = false\): React\.CSSProperties[\s\S]*?height: 58,[\s\S]*?minHeight: 58,[\s\S]*?maxHeight: 58[\s\S]*?pointerEvents: "auto"[\s\S]*?opacity: disabled \? 0\.7 : 1/,
+  "Dashboard mobile bottom navigator buttons must keep fixed 58px geometry and active pointer targets."
 );
 
 assertLayoutContains(

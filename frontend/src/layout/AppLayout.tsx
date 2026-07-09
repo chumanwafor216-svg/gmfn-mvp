@@ -1501,16 +1501,18 @@ function bottomNavItem(active = false, disabled = false): React.CSSProperties {
     width: "100%",
     minWidth: 0,
     display: "flex",
+    flexDirection: "column",
     alignItems: "center",
     justifyContent: "center",
-    height: 42,
-    minHeight: 42,
-    maxHeight: 42,
-    padding: "8px 4px",
-    borderRadius: 12,
+    gap: 2,
+    height: 58,
+    minHeight: 58,
+    maxHeight: 58,
+    padding: "5px 3px 6px",
+    borderRadius: 14,
     textDecoration: "none",
     textAlign: "center",
-    fontSize: 10.5,
+    fontSize: 10,
     fontWeight: active ? 900 : 800,
     color: disabled ? "#94A3B8" : active ? "#0A4FB5" : "#27435F",
     background: active
@@ -1519,9 +1521,8 @@ function bottomNavItem(active = false, disabled = false): React.CSSProperties {
     border: active
       ? "1px solid rgba(29,95,212,0.24)"
       : "1px solid rgba(76,111,146,0.18)",
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
     overflow: "hidden",
-    textOverflow: "ellipsis",
     pointerEvents: "auto",
     touchAction: "manipulation",
     cursor: disabled ? "not-allowed" : "pointer",
@@ -1529,6 +1530,42 @@ function bottomNavItem(active = false, disabled = false): React.CSSProperties {
       ? "inset 0 0 0 1px rgba(29,95,212,0.08)"
       : "none",
     opacity: disabled ? 0.7 : 1,
+  };
+}
+
+function bottomNavIcon(active = false, disabled = false): React.CSSProperties {
+  return {
+    width: 25,
+    height: 25,
+    minWidth: 25,
+    minHeight: 25,
+    maxWidth: 25,
+    maxHeight: 25,
+    display: "grid",
+    placeItems: "center",
+    borderRadius: 10,
+    background: active ? "#FFFFFF" : "rgba(255,255,255,0.72)",
+    border: active
+      ? "1px solid rgba(214,170,69,0.48)"
+      : "1px solid rgba(76,111,146,0.13)",
+    boxShadow: active ? "0 5px 12px rgba(10,79,181,0.12)" : "none",
+    opacity: disabled ? 0.62 : 1,
+    overflow: "hidden",
+    flexShrink: 0,
+  };
+}
+
+function bottomNavLabel(): React.CSSProperties {
+  return {
+    width: "100%",
+    minWidth: 0,
+    lineHeight: 1.05,
+    maxHeight: 22,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
+    textAlign: "center",
   };
 }
 
@@ -1973,7 +2010,7 @@ export default function AppLayout() {
     const items: NavLinkItem[] = [
       makeDashboardItem(),
       {
-        label: "Community",
+        label: "Community Home",
         to: "/app/community",
         match: (pathname) =>
           pathname === "/app/community" ||
@@ -1982,12 +2019,12 @@ export default function AppLayout() {
       makeMarketplaceItem(),
       {
         ...makeShopGalleryItem(myShopGalleryTo, myShopGalleryDisabled),
-        label: "Shop",
+        label: "Shops",
       },
       makeProfileItem(),
     ];
 
-    return items.filter((item) => !item.disabled || item.label === "Shop");
+    return items.filter((item) => !item.disabled || item.label === "Shops");
   }, [myShopGalleryDisabled, myShopGalleryTo]);
 
   const mobileDrawerGroups = useMemo<MobileDrawerGroup[]>(() => {
@@ -2513,7 +2550,20 @@ export default function AppLayout() {
                 !!item.disabled
               )}
             >
-              {item.label}
+              <span
+                aria-hidden="true"
+                style={bottomNavIcon(
+                  isItemActive(item, location.pathname, location.search),
+                  !!item.disabled
+                )}
+              >
+                <GsnRealisticIcon
+                  name={navIconForLabel(item.label)}
+                  size={22}
+                  decorative
+                />
+              </span>
+              <span style={bottomNavLabel()}>{item.label}</span>
             </StableCtaLink>
           ))}
         </nav>

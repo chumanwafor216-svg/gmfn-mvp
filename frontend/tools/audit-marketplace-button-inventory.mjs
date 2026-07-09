@@ -19,11 +19,11 @@ const actionTargetRoutesSource = readFileSync(
   "utf8"
 );
 const findings = [];
-const expectedStableActionCount = 76;
+const expectedStableActionCount = 79;
 const expectedNativeFieldCount = 37;
 const expectedSourceBreakdown = {
   front: 11,
-  body: 65,
+  body: 68,
 };
 const expectedVisibleIntentActionCount = 5;
 const expectedMobileShellBreakdown = {
@@ -814,7 +814,13 @@ const expectedOrder = [
     /debugId=\{`marketplace\.intent\.\$\{item\.id\}`\}/
   ),
   exactDebugId("marketplace.board.post"),
+  exactDebugId("marketplace.board.policy.members"),
+  exactDebugId("marketplace.board.policy.admins"),
   exactDebugId("marketplace.board.toggle"),
+  dynamicDebugId(
+    "marketplace.board.sender-whatsapp.*",
+    /debugId=\{`marketplace\.board\.sender-whatsapp\.\$\{item\?\.notice_id \|\| index\}`\}/
+  ),
   exactDebugId("marketplace.money.toggle"),
   exactDebugId("marketplace.money.pay-in-account"),
   exactDebugId("marketplace.money.money-out-destination"),
@@ -982,8 +988,8 @@ assertLayoutContains(
 );
 
 assertLayoutContains(
-  /const mobileBottomItems = useMemo<NavLinkItem\[\]>\(\(\) => \{[\s\S]*?makeDashboardItem\(\)[\s\S]*?label: "Community"[\s\S]*?makeMarketplaceItem\(\)[\s\S]*?makeShopGalleryItem\(myShopGalleryTo, myShopGalleryDisabled\)[\s\S]*?label: "Shop"[\s\S]*?makeProfileItem\(\)[\s\S]*?debugId=\{`app-layout\.bottom-nav\.\$\{item\.label\.toLowerCase\(\)/,
-  "Marketplace mobile bottom rail must count the five stable route anchors: Dashboard, Community, Marketplace, Shop, and Profile."
+  /const mobileBottomItems = useMemo<NavLinkItem\[\]>\(\(\) => \{[\s\S]*?makeDashboardItem\(\)[\s\S]*?label: "Community Home"[\s\S]*?makeMarketplaceItem\(\)[\s\S]*?makeShopGalleryItem\(myShopGalleryTo, myShopGalleryDisabled\)[\s\S]*?label: "Shops"[\s\S]*?makeProfileItem\(\)[\s\S]*?debugId=\{`app-layout\.bottom-nav\.\$\{item\.label\.toLowerCase\(\)/,
+  "Marketplace mobile bottom rail must count the five stable route anchors: Dashboard, Community Home, Marketplace, Shops, and Profile."
 );
 
 assertLayoutContains(
@@ -992,8 +998,8 @@ assertLayoutContains(
 );
 
 assertLayoutContains(
-  /function bottomNavItem\(active = false, disabled = false\): React\.CSSProperties[\s\S]*?height: 42,[\s\S]*?minHeight: 42,[\s\S]*?maxHeight: 42[\s\S]*?pointerEvents: "auto"[\s\S]*?opacity: disabled \? 0\.7 : 1/,
-  "Marketplace mobile bottom navigator buttons must keep fixed 42px geometry and active pointer targets."
+  /function bottomNavItem\(active = false, disabled = false\): React\.CSSProperties[\s\S]*?height: 58,[\s\S]*?minHeight: 58,[\s\S]*?maxHeight: 58[\s\S]*?pointerEvents: "auto"[\s\S]*?opacity: disabled \? 0\.7 : 1/,
+  "Marketplace mobile bottom navigator buttons must keep fixed 58px geometry and active pointer targets."
 );
 
 assertLayoutContains(
