@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import NextActionGuide, {
   type NextActionGuideItem,
 } from "../components/NextActionGuide";
+import CompanionSettingsPanel from "../components/CompanionSettingsPanel";
 import GsnInstallPrompt from "../components/GsnInstallPrompt";
 import PageTopNav from "../components/PageTopNav";
 import {
@@ -350,10 +351,10 @@ function routeTarget(intent: CtaIntent, communityId: number, debugId: string): s
 function publicGuideShell(): React.CSSProperties {
   return {
     minHeight: "100vh",
-    padding: "18px",
+    padding: "14px 12px 18px",
     boxSizing: "border-box",
     background:
-      "radial-gradient(circle at 16% 0%, rgba(201,154,39,0.16) 0%, rgba(201,154,39,0) 28%), radial-gradient(circle at 92% 10%, rgba(83,132,178,0.18) 0%, rgba(83,132,178,0) 30%), linear-gradient(180deg, #07131F 0%, #12304A 42%, #D9E4EF 42.1%, #EEF3F8 100%)",
+      "radial-gradient(circle at 16% 0%, rgba(201,154,39,0.13) 0%, rgba(201,154,39,0) 26%), radial-gradient(circle at 92% 8%, rgba(83,132,178,0.15) 0%, rgba(83,132,178,0) 28%), linear-gradient(180deg, #07131F 0%, #12304A 36%, #D9E4EF 36.1%, #EEF3F8 100%)",
     color: "#F8FBFF",
     fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, sans-serif",
   };
@@ -364,19 +365,19 @@ function publicGuideFrame(): React.CSSProperties {
     width: "min(100%, 1160px)",
     margin: "0 auto",
     display: "grid",
-    gap: 14,
+    gap: 10,
   };
 }
 
 function publicGuideHeader(): React.CSSProperties {
   return {
-    borderRadius: 20,
+    borderRadius: 18,
     border: "1px solid rgba(214,228,242,0.22)",
     background:
       "linear-gradient(180deg, rgba(13,31,50,0.92) 0%, rgba(7,20,35,0.98) 100%)",
     boxShadow:
-      "0 24px 54px rgba(1,9,22,0.34), inset 0 1px 0 rgba(255,255,255,0.08)",
-    padding: "18px",
+      "0 18px 38px rgba(1,9,22,0.28), inset 0 1px 0 rgba(255,255,255,0.08)",
+    padding: "15px",
   };
 }
 
@@ -402,13 +403,13 @@ function publicCapabilityCard(category: string): React.CSSProperties {
     position: "relative",
     overflow: "hidden",
     minHeight: 150,
-    borderRadius: 14,
+    borderRadius: 16,
     border: "1px solid rgba(11,31,51,0.13)",
     background:
-      `linear-gradient(90deg, ${accent} 0%, ${accent} 1.2%, rgba(255,255,255,0) 1.21%), radial-gradient(circle at 14% 12%, rgba(18,49,77,0.055) 0%, rgba(18,49,77,0) 32%), linear-gradient(180deg, rgba(255,255,255,0.995) 0%, rgba(239,245,251,0.985) 100%)`,
+      `linear-gradient(90deg, ${accent} 0%, ${accent} 1%, rgba(255,255,255,0) 1.01%), radial-gradient(circle at 14% 10%, rgba(18,49,77,0.045) 0%, rgba(18,49,77,0) 30%), linear-gradient(180deg, rgba(255,255,255,0.995) 0%, rgba(242,247,252,0.985) 100%)`,
     boxShadow:
-      "0 14px 28px rgba(8,24,42,0.13), inset 0 1px 0 rgba(255,255,255,0.96), inset 0 -1px 0 rgba(8,24,42,0.04)",
-    padding: "16px 16px 15px",
+      "0 12px 24px rgba(8,24,42,0.11), inset 0 1px 0 rgba(255,255,255,0.96), inset 0 -1px 0 rgba(8,24,42,0.04)",
+    padding: "15px",
   };
 }
 
@@ -416,7 +417,7 @@ function publicCapabilityCardIos(category: string): React.CSSProperties {
   return {
     ...publicCapabilityCard(category),
     minHeight: "auto",
-    padding: "14px 14px 13px",
+    padding: "13px",
     borderRadius: 16,
   };
 }
@@ -476,8 +477,8 @@ function publicCapabilityIcon(): React.CSSProperties {
 function publicCapabilityIconIos(): React.CSSProperties {
   return {
     ...publicCapabilityIcon(),
-    width: 48,
-    height: 48,
+    width: 44,
+    height: 44,
     borderRadius: 15,
   };
 }
@@ -849,8 +850,8 @@ function publicCloseButton(primary = false): React.CSSProperties {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    minHeight: primary ? 48 : 40,
-    padding: primary ? "13px 18px" : "10px 14px",
+    minHeight: primary ? 44 : 38,
+    padding: primary ? "11px 16px" : "9px 13px",
     borderRadius: 999,
     border: primary
       ? "1px solid rgba(255,255,255,0.78)"
@@ -859,15 +860,56 @@ function publicCloseButton(primary = false): React.CSSProperties {
       ? "linear-gradient(180deg, #FFFFFF 0%, #EEF4FA 64%, #DCE7F2 100%)"
       : "linear-gradient(180deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.05) 100%)",
     color: primary ? "#10253B" : "#F3D06A",
-    fontSize: primary ? 15 : 13,
+    fontSize: primary ? 14 : 12.5,
     fontWeight: 1000,
     cursor: "pointer",
     textDecoration: "none",
     boxShadow: primary
-      ? "0 16px 28px rgba(1,13,32,0.24), inset 0 1px 0 rgba(255,255,255,0.90)"
-      : "0 12px 24px rgba(1,13,32,0.16), inset 0 1px 0 rgba(255,255,255,0.10)",
+      ? "0 12px 22px rgba(1,13,32,0.21), inset 0 1px 0 rgba(255,255,255,0.90)"
+      : "0 8px 16px rgba(1,13,32,0.13), inset 0 1px 0 rgba(255,255,255,0.10)",
     touchAction: "manipulation",
     WebkitTapHighlightColor: "transparent",
+  };
+}
+
+function publicGuideLightButton(primary = false): React.CSSProperties {
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: primary ? 44 : 38,
+    padding: primary ? "11px 16px" : "9px 13px",
+    borderRadius: 999,
+    border: primary
+      ? "1px solid rgba(214,170,69,0.46)"
+      : "1px solid rgba(18,49,77,0.16)",
+    background: primary
+      ? "linear-gradient(180deg, #F2C766 0%, #D6AA45 100%)"
+      : "linear-gradient(180deg, #FFFFFF 0%, #EEF4FA 100%)",
+    color: primary ? "#07172C" : "#12314D",
+    fontSize: primary ? 14 : 12.5,
+    fontWeight: 1000,
+    cursor: "pointer",
+    textDecoration: "none",
+    boxShadow: primary
+      ? "0 12px 22px rgba(214,170,69,0.20)"
+      : "0 8px 16px rgba(8,24,42,0.08)",
+    touchAction: "manipulation",
+    WebkitTapHighlightColor: "transparent",
+  };
+}
+
+function publicGuideEvidenceCue(): React.CSSProperties {
+  return {
+    justifySelf: "center",
+    width: "min(100%, 342px)",
+    borderRadius: 18,
+    border: "1px solid rgba(18,49,77,0.10)",
+    background:
+      "linear-gradient(180deg, rgba(255,255,255,0.82) 0%, rgba(246,250,254,0.72) 100%)",
+    boxShadow: "0 10px 22px rgba(8,24,42,0.07)",
+    padding: "11px 12px 12px",
+    color: "#12314D",
   };
 }
 
@@ -913,9 +955,9 @@ function PublicCapabilitiesGuidePage({
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
-            gap: 12,
+            gap: 10,
             flexWrap: "wrap",
-            marginBottom: 14,
+            marginBottom: 8,
           }}
         >
           <SecondaryButton
@@ -939,9 +981,9 @@ function PublicCapabilitiesGuidePage({
           <div
             style={{
               color: "#C8A85C",
-              fontSize: 12,
+              fontSize: 11,
               fontWeight: 1000,
-              letterSpacing: 2.8,
+              letterSpacing: 2.2,
               textTransform: "uppercase",
             }}
           >
@@ -950,9 +992,9 @@ function PublicCapabilitiesGuidePage({
 
           <h1
             style={{
-              margin: "10px 0 0",
+              margin: "8px 0 0",
               color: "#F8FBFF",
-              fontSize: useIosSingleColumn ? 28 : compact ? 30 : 42,
+              fontSize: useIosSingleColumn ? 25 : compact ? 29 : 42,
               lineHeight: 1.05,
               fontWeight: 1000,
               letterSpacing: 0,
@@ -963,10 +1005,10 @@ function PublicCapabilitiesGuidePage({
 
           <div
             style={{
-              marginTop: 10,
+              marginTop: 8,
               color: "#D6E3F0",
-              fontSize: useIosSingleColumn ? 13.5 : 14,
-              lineHeight: useIosSingleColumn ? 1.48 : 1.55,
+              fontSize: useIosSingleColumn ? 13 : 14,
+              lineHeight: useIosSingleColumn ? 1.42 : 1.55,
               maxWidth: 760,
             }}
           >
@@ -988,7 +1030,7 @@ function PublicCapabilitiesGuidePage({
           <section
             style={{
               display: "grid",
-              gap: 10,
+              gap: 9,
             }}
           >
             <article
@@ -997,7 +1039,7 @@ function PublicCapabilitiesGuidePage({
                 ...(useIosSingleColumn
                   ? publicCapabilityCardIos(publicSelectedCapability.category)
                   : publicCapabilityCard(publicSelectedCapability.category)),
-                minHeight: useIosSingleColumn ? "auto" : 190,
+                minHeight: useIosSingleColumn ? "auto" : 174,
               }}
             >
               <span
@@ -1014,11 +1056,11 @@ function PublicCapabilitiesGuidePage({
                 style={{
                   display: "grid",
                   gridTemplateColumns: useIosSingleColumn
-                    ? "48px minmax(0, 1fr)"
+                    ? "44px minmax(0, 1fr)"
                     : "68px minmax(0, 1fr)",
-                  gap: useIosSingleColumn ? 10 : 15,
+                  gap: useIosSingleColumn ? 9 : 15,
                   alignItems: "start",
-                  paddingRight: useIosSingleColumn ? 28 : 44,
+                  paddingRight: useIosSingleColumn ? 30 : 44,
                   minWidth: 0,
                 }}
               >
@@ -1032,7 +1074,7 @@ function PublicCapabilitiesGuidePage({
                 >
                   <GsnLegacyIcon
                     name={capabilityIconName(publicSelectedCapability)}
-                    size={useIosSingleColumn ? 36 : 48}
+                    size={useIosSingleColumn ? 33 : 48}
                     decorative
                   />
                 </span>
@@ -1042,8 +1084,8 @@ function PublicCapabilitiesGuidePage({
                     style={{
                       margin: 0,
                       color: "#071D33",
-                      fontSize: useIosSingleColumn ? 16 : 24,
-                      lineHeight: 1.12,
+                      fontSize: useIosSingleColumn ? 15.5 : 24,
+                      lineHeight: useIosSingleColumn ? 1.14 : 1.12,
                       fontWeight: 1000,
                       letterSpacing: 0,
                       paddingTop: 2,
@@ -1059,7 +1101,7 @@ function PublicCapabilitiesGuidePage({
                       marginTop: 8,
                       color: "#32465C",
                       fontSize: useIosSingleColumn ? 12.5 : 15,
-                      lineHeight: useIosSingleColumn ? 1.36 : 1.45,
+                      lineHeight: useIosSingleColumn ? 1.32 : 1.45,
                       fontWeight: 760,
                       overflowWrap: "normal",
                       wordBreak: "normal",
@@ -1070,7 +1112,7 @@ function PublicCapabilitiesGuidePage({
 
                   <div
                     style={{
-                      marginTop: 10,
+                      marginTop: 9,
                       display: "flex",
                       gap: 6,
                       flexWrap: "wrap",
@@ -1093,9 +1135,9 @@ function PublicCapabilitiesGuidePage({
               style={{
                 display: "grid",
                 gridTemplateColumns: useIosSingleColumn
-                  ? "minmax(0, 1fr) minmax(0, 1fr)"
+                  ? "minmax(0, 1fr) auto minmax(0, 1fr)"
                   : "150px minmax(0, 1fr) 150px",
-                gap: 8,
+                gap: useIosSingleColumn ? 7 : 8,
                 alignItems: "center",
               }}
             >
@@ -1104,38 +1146,46 @@ function PublicCapabilitiesGuidePage({
                 debugId="my-gmfn.public.previous-capability"
                 onClick={() => stepPublicCapability(-1)}
                 aria-label="Show previous public GSN capability"
-                style={capabilityPagerButton(false)}
+                style={{
+                  ...capabilityPagerButton(false),
+                  minHeight: useIosSingleColumn ? 40 : 44,
+                  padding: useIosSingleColumn ? "9px 10px" : "10px 13px",
+                }}
               >
                 <span aria-hidden="true">{"<"}</span>
                 Previous
               </SecondaryButton>
-              {!useIosSingleColumn ? (
-                <div
-                  style={{
-                    minHeight: 44,
-                    borderRadius: 999,
-                    border: "1px solid rgba(214,170,69,0.22)",
-                    background: "rgba(255,255,255,0.08)",
-                    color: "#D6E3F0",
-                    display: "inline-flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    padding: "10px 12px",
-                    fontSize: 12,
-                    fontWeight: 950,
-                    lineHeight: 1.2,
-                    textAlign: "center",
-                  }}
-                >
-                  {publicSelectedIndex + 1} of {GMFN_CAPABILITY_COUNT}
-                </div>
-              ) : null}
+              <div
+                style={{
+                  minHeight: useIosSingleColumn ? 36 : 44,
+                  minWidth: useIosSingleColumn ? 48 : 92,
+                  borderRadius: 999,
+                  border: "1px solid rgba(18,49,77,0.12)",
+                  background: "linear-gradient(180deg, #FFFFFF 0%, #EEF4FA 100%)",
+                  color: "#12314D",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: useIosSingleColumn ? "8px 10px" : "10px 12px",
+                  fontSize: useIosSingleColumn ? 11 : 12,
+                  fontWeight: 950,
+                  lineHeight: 1.2,
+                  textAlign: "center",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {publicSelectedIndex + 1}/{GMFN_CAPABILITY_COUNT}
+              </div>
               <SecondaryButton
                 type="button"
                 debugId="my-gmfn.public.next-capability"
                 onClick={() => stepPublicCapability(1)}
                 aria-label="Show next public GSN capability"
-                style={capabilityPagerButton(true)}
+                style={{
+                  ...capabilityPagerButton(true),
+                  minHeight: useIosSingleColumn ? 40 : 44,
+                  padding: useIosSingleColumn ? "9px 10px" : "10px 13px",
+                }}
               >
                 Next
                 <span aria-hidden="true">{">"}</span>
@@ -1146,11 +1196,60 @@ function PublicCapabilitiesGuidePage({
               <SecondaryButton
                 onClick={() => setShowAllPublicCapabilities((value) => !value)}
                 debugId="my-gmfn.public.toggle-all-capabilities"
-                style={publicCloseButton(false)}
+                style={publicGuideLightButton(false)}
               >
-                {showAllPublicCapabilities ? "Hide all" : "Show all"}
+                {showAllPublicCapabilities ? "Hide full list" : "All capabilities"}
               </SecondaryButton>
             </div>
+
+            {!showAllPublicCapabilities ? (
+              <div style={publicGuideEvidenceCue()}>
+                <div
+                  style={{
+                    color: "#32465C",
+                    fontSize: 12.5,
+                    lineHeight: 1.34,
+                    fontWeight: 780,
+                    textAlign: "center",
+                  }}
+                >
+                  Each decision card keeps the question, the risk, and the
+                  evidence boundary together.
+                </div>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+                    gap: 6,
+                    marginTop: 9,
+                  }}
+                >
+                  {["Question", "Risk", "Evidence"].map((label) => (
+                    <span
+                      key={label}
+                      style={{
+                        minHeight: 30,
+                        borderRadius: 999,
+                        border: "1px solid rgba(18,49,77,0.10)",
+                        background: "rgba(255,255,255,0.74)",
+                        color: label === "Evidence" ? "#76591D" : "#12314D",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        padding: "7px 8px",
+                        fontSize: 10.5,
+                        fontWeight: 1000,
+                        lineHeight: 1,
+                        textAlign: "center",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {label}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ) : null}
           </section>
         ) : null}
 
@@ -1270,30 +1369,32 @@ function PublicCapabilitiesGuidePage({
           </section>
         ) : null}
 
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "center",
-            gap: 12,
-            flexWrap: "wrap",
-            marginTop: 18,
-          }}
-        >
-          <SecondaryButton
-            onClick={onClose}
-            debugId="my-gmfn.public.collapse-bottom"
-            style={publicCloseButton(false)}
+        {showAllPublicCapabilities ? (
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              gap: 10,
+              flexWrap: "wrap",
+              marginTop: 8,
+            }}
           >
-            Collapse
-          </SecondaryButton>
-          <PrimaryButton
-            onClick={onClose}
-            debugId="my-gmfn.public.continue-bottom"
-            style={publicCloseButton(true)}
-          >
-            Continue
-          </PrimaryButton>
-        </div>
+            <SecondaryButton
+              onClick={onClose}
+              debugId="my-gmfn.public.collapse-bottom"
+              style={publicGuideLightButton(false)}
+            >
+              Collapse
+            </SecondaryButton>
+            <PrimaryButton
+              onClick={onClose}
+              debugId="my-gmfn.public.continue-bottom"
+              style={publicGuideLightButton(true)}
+            >
+              Continue
+            </PrimaryButton>
+          </div>
+        ) : null}
       </div>
     </main>
   );
@@ -2897,198 +2998,202 @@ export default function MyGMFNAndIPage() {
           </section>
         </>
       ) : (
-        <section style={pageCard()}>
-          <div style={sectionLabel()}>Workspace settings</div>
+        <>
+          <section style={pageCard()}>
+            <div style={sectionLabel()}>Workspace settings</div>
 
-          <div style={{ marginTop: 10, ...helperText(), maxWidth: 860 }}>
-            Keep the app calmer and easier to read without changing the {capabilityCount} core capabilities guide.
-          </div>
+            <div style={{ marginTop: 10, ...helperText(), maxWidth: 860 }}>
+              Keep the app calmer and easier to read without changing the {capabilityCount} core capabilities guide.
+            </div>
 
-          <div
-            style={{
-              marginTop: 16,
-              display: "grid",
-              gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1.05fr) 320px",
-              gap: 16,
-              alignItems: "start",
-            }}
-          >
-            <div style={innerCard()}>
-              <div style={sectionLabel()}>Notification reading mode</div>
+            <div
+              style={{
+                marginTop: 16,
+                display: "grid",
+                gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1.05fr) 320px",
+                gap: 16,
+                alignItems: "start",
+              }}
+            >
+              <div style={innerCard()}>
+                <div style={sectionLabel()}>Notification reading mode</div>
 
-              <div style={{ marginTop: 8, ...helperText() }}>
-                Choose whether the inbox and related pages should feel shorter or fuller.
-              </div>
-
-              <div style={{ marginTop: 12 }}>
-                <select
-                  value={settings.notificationsMode}
-                  onChange={(e) =>
-                    setSettings((prev) => ({
-                      ...prev,
-                      notificationsMode: e.target.value as SettingsState["notificationsMode"],
-                    }))
-                  }
-                  style={selectStyle()}
-                >
-                  <option value="summary">Summary</option>
-                  <option value="detailed">Detailed</option>
-                </select>
-              </div>
-
-              <div style={{ marginTop: 16, display: "grid", gap: 12 }}>
-                <label style={checkboxRow()}>
-                  <input
-                    type="checkbox"
-                    checked={settings.unreadFirst}
-                    onChange={(e) =>
-                      setSettings((prev) => ({
-                        ...prev,
-                        unreadFirst: e.target.checked,
-                      }))
-                    }
-                  />
-                  <span>
-                    Put unread items first so the most unread work rises to the top.
-                  </span>
-                </label>
-
-                <label style={checkboxRow()}>
-                  <input
-                    type="checkbox"
-                    checked={settings.openActionsDirectly}
-                    onChange={(e) =>
-                      setSettings((prev) => ({
-                        ...prev,
-                        openActionsDirectly: e.target.checked,
-                      }))
-                    }
-                  />
-                  <span>
-                    Open the destination page directly from the primary action instead of reviewing it here first.
-                  </span>
-                </label>
-              </div>
-
-              <div style={{ marginTop: 18 }}>
-                <div style={sectionLabel()}>Tone preset</div>
                 <div style={{ marginTop: 8, ...helperText() }}>
-                  Choose how the guidance language should sound.
+                  Choose whether the inbox and related pages should feel shorter or fuller.
                 </div>
 
                 <div style={{ marginTop: 12 }}>
                   <select
-                    value={settings.tonePreset}
+                    value={settings.notificationsMode}
                     onChange={(e) =>
                       setSettings((prev) => ({
                         ...prev,
-                        tonePreset: e.target.value as SettingsState["tonePreset"],
+                        notificationsMode: e.target.value as SettingsState["notificationsMode"],
                       }))
                     }
                     style={selectStyle()}
                   >
-                    <option value="balanced-default">Balanced default</option>
-                    <option value="cooperative-warm">Cooperative warm</option>
-                    <option value="enterprise-green">Enterprise direct</option>
+                    <option value="summary">Summary</option>
+                    <option value="detailed">Detailed</option>
                   </select>
                 </div>
+
+                <div style={{ marginTop: 16, display: "grid", gap: 12 }}>
+                  <label style={checkboxRow()}>
+                    <input
+                      type="checkbox"
+                      checked={settings.unreadFirst}
+                      onChange={(e) =>
+                        setSettings((prev) => ({
+                          ...prev,
+                          unreadFirst: e.target.checked,
+                        }))
+                      }
+                    />
+                    <span>
+                      Put unread items first so the most unread work rises to the top.
+                    </span>
+                  </label>
+
+                  <label style={checkboxRow()}>
+                    <input
+                      type="checkbox"
+                      checked={settings.openActionsDirectly}
+                      onChange={(e) =>
+                        setSettings((prev) => ({
+                          ...prev,
+                          openActionsDirectly: e.target.checked,
+                        }))
+                      }
+                    />
+                    <span>
+                      Open the destination page directly from the primary action instead of reviewing it here first.
+                    </span>
+                  </label>
+                </div>
+
+                <div style={{ marginTop: 18 }}>
+                  <div style={sectionLabel()}>Tone preset</div>
+                  <div style={{ marginTop: 8, ...helperText() }}>
+                    Choose how the guidance language should sound.
+                  </div>
+
+                  <div style={{ marginTop: 12 }}>
+                    <select
+                      value={settings.tonePreset}
+                      onChange={(e) =>
+                        setSettings((prev) => ({
+                          ...prev,
+                          tonePreset: e.target.value as SettingsState["tonePreset"],
+                        }))
+                      }
+                      style={selectStyle()}
+                    >
+                      <option value="balanced-default">Balanced default</option>
+                      <option value="cooperative-warm">Cooperative warm</option>
+                      <option value="enterprise-green">Enterprise direct</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    marginTop: 18,
+                    display: "flex",
+                    gap: 10,
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <PrimaryButton
+                    onClick={() => void saveSettings()}
+                    busy={saving}
+                    busyLabel="Saving..."
+                    debugId="my-gmfn.settings.save"
+                  >
+                    Save Settings
+                  </PrimaryButton>
+
+                  <SecondaryButton
+                    onClick={resetSettings}
+                    debugId="my-gmfn.settings.reset"
+                  >
+                    Reset Defaults
+                  </SecondaryButton>
+                </div>
               </div>
 
-              <div
-                style={{
-                  marginTop: 18,
-                  display: "flex",
-                  gap: 10,
-                  flexWrap: "wrap",
-                }}
-              >
-                <PrimaryButton
-                  onClick={() => void saveSettings()}
-                  busy={saving}
-                  busyLabel="Saving..."
-                  debugId="my-gmfn.settings.save"
-                >
-                  Save Settings
-                </PrimaryButton>
+              <div style={softCard()}>
+                <div style={sectionLabel()}>Current reading</div>
 
-                <SecondaryButton
-                  onClick={resetSettings}
-                  debugId="my-gmfn.settings.reset"
-                >
-                  Reset Defaults
-                </SecondaryButton>
+                <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
+                  <div style={innerCard()}>
+                    <div style={sectionLabel()}>Notification mode</div>
+                    <div
+                      style={{
+                        marginTop: 8,
+                        color: "#F8FBFF",
+                        fontWeight: 900,
+                        fontSize: 16,
+                      }}
+                    >
+                      {settings.notificationsMode === "detailed"
+                        ? "Detailed"
+                        : "Summary"}
+                    </div>
+                  </div>
+
+                  <div style={innerCard()}>
+                    <div style={sectionLabel()}>Unread ordering</div>
+                    <div
+                      style={{
+                        marginTop: 8,
+                        color: "#F8FBFF",
+                        fontWeight: 900,
+                        fontSize: 16,
+                      }}
+                    >
+                      {settings.unreadFirst ? "Unread first" : "Latest first"}
+                    </div>
+                  </div>
+
+                  <div style={innerCard()}>
+                    <div style={sectionLabel()}>Primary action style</div>
+                    <div
+                      style={{
+                        marginTop: 8,
+                        color: "#F8FBFF",
+                        fontWeight: 900,
+                        fontSize: 16,
+                      }}
+                    >
+                      {settings.openActionsDirectly ? "Open directly" : "Review first"}
+                    </div>
+                  </div>
+
+                  <div style={innerCard()}>
+                    <div style={sectionLabel()}>Tone</div>
+                    <div
+                      style={{
+                        marginTop: 8,
+                        color: "#F8FBFF",
+                        fontWeight: 900,
+                        fontSize: 16,
+                      }}
+                    >
+                      {settings.tonePreset === "cooperative-warm"
+                        ? "Cooperative warm"
+                        : settings.tonePreset === "enterprise-green"
+                        ? "Enterprise direct"
+                        : "Balanced default"}
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
+          </section>
 
-            <div style={softCard()}>
-              <div style={sectionLabel()}>Current reading</div>
-
-              <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
-                <div style={innerCard()}>
-                  <div style={sectionLabel()}>Notification mode</div>
-                  <div
-                    style={{
-                      marginTop: 8,
-                      color: "#F8FBFF",
-                      fontWeight: 900,
-                      fontSize: 16,
-                    }}
-                  >
-                    {settings.notificationsMode === "detailed"
-                      ? "Detailed"
-                      : "Summary"}
-                  </div>
-                </div>
-
-                <div style={innerCard()}>
-                  <div style={sectionLabel()}>Unread ordering</div>
-                  <div
-                    style={{
-                      marginTop: 8,
-                      color: "#F8FBFF",
-                      fontWeight: 900,
-                      fontSize: 16,
-                    }}
-                  >
-                    {settings.unreadFirst ? "Unread first" : "Latest first"}
-                  </div>
-                </div>
-
-                <div style={innerCard()}>
-                  <div style={sectionLabel()}>Primary action style</div>
-                  <div
-                    style={{
-                      marginTop: 8,
-                      color: "#F8FBFF",
-                      fontWeight: 900,
-                      fontSize: 16,
-                    }}
-                  >
-                    {settings.openActionsDirectly ? "Open directly" : "Review first"}
-                  </div>
-                </div>
-
-                <div style={innerCard()}>
-                  <div style={sectionLabel()}>Tone</div>
-                  <div
-                    style={{
-                      marginTop: 8,
-                      color: "#F8FBFF",
-                      fontWeight: 900,
-                      fontSize: 16,
-                    }}
-                  >
-                    {settings.tonePreset === "cooperative-warm"
-                      ? "Cooperative warm"
-                      : settings.tonePreset === "enterprise-green"
-                      ? "Enterprise direct"
-                      : "Balanced default"}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
+          <CompanionSettingsPanel />
+        </>
       )}
     </div>
   );

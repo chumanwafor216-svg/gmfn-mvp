@@ -241,14 +241,29 @@ export default function CompanionSettingsPanel() {
 
       if (permission === "granted") {
         const webPush = await syncGsnWebPushSubscription();
-        if (webPush.status === "not-configured") {
+        if (webPush.ok) {
+          postPersistStatus = {
+            text: "Phone notifications are on for this device.",
+            tone: "success",
+          };
+        } else if (webPush.status === "not-configured") {
           postPersistStatus = {
             text: "Browser notifications are on. Server push is not configured yet.",
             tone: "info",
           };
+        } else if (webPush.status === "permission-denied") {
+          postPersistStatus = {
+            text: "Browser notifications are blocked on this device.",
+            tone: "error",
+          };
+        } else if (webPush.status === "unsupported") {
+          postPersistStatus = {
+            text: "This browser cannot register phone notifications.",
+            tone: "error",
+          };
         } else if (!webPush.ok) {
           postPersistStatus = {
-            text: "Browser notifications are on. Phone push will sync when supported.",
+            text: "Browser permission is on, but this phone did not register yet.",
             tone: "info",
           };
         }
