@@ -1,6 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { SecondaryButton } from "./StableButton";
-import { getMySettings, updateMySettings } from "../lib/api";
+import {
+  getMySettings,
+  sendWebPushTestNotification,
+  updateMySettings,
+} from "../lib/api";
 import { emitCompanionSettingsUpdated } from "../lib/workspaceEvents";
 import {
   markCompanionUserInteraction,
@@ -153,6 +157,7 @@ export default function CompanionSettingsPanel() {
   const [statusTone, setStatusTone] = useState<"success" | "error" | "info">(
     "info"
   );
+  const [testingPush, setTestingPush] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -283,6 +288,38 @@ export default function CompanionSettingsPanel() {
     if (postPersistStatus) {
       setStatusText(postPersistStatus.text);
       setStatusTone(postPersistStatus.tone);
+    }
+  }
+
+  async function sendTestNotification() {
+    markCompanionUserInteraction();
+    if (testingPush) return;
+
+    setTestingPush(true);
+    setStatusText("Sending test...");
+    setStatusTone("info");
+
+    try {
+      const result = await sendWebPushTestNotification();
+      const sent = Number(result?.sent || 0);
+      if (result?.ok && sent > 0) {
+        setStatusText("Test sent. Check this phone now.");
+        setStatusTone("success");
+      } else if (result?.skipped === "no_active_subscription") {
+        setStatusText("This phone is not registered yet. Turn System notifications on first.");
+        setStatusTone("error");
+      } else if (result?.skipped === "web_push_not_configured") {
+        setStatusText("Server push is not configured yet.");
+        setStatusTone("error");
+      } else {
+        setStatusText("Test could not be sent yet.");
+        setStatusTone("error");
+      }
+    } catch {
+      setStatusText("Test could not be sent yet.");
+      setStatusTone("error");
+    } finally {
+      setTestingPush(false);
     }
   }
 
@@ -518,6 +555,23 @@ export default function CompanionSettingsPanel() {
               }}
             >
               Use browser notifications when the page is not in the foreground.
+            </div>
+
+            <div style={{ marginTop: 12 }}>
+              <SecondaryButton
+                onClick={() => void sendTestNotification()}
+                disabled={testingPush}
+                stableHeight={48}
+                debugId="companion-settings.push.test"
+                style={{
+                  ...toggleButton(false),
+                  minWidth: 160,
+                  width: "100%",
+                  justifyContent: "center",
+                }}
+              >
+                {testingPush ? "Sending test..." : "Test phone notification"}
+              </SecondaryButton>
             </div>
           </div>
         </div>

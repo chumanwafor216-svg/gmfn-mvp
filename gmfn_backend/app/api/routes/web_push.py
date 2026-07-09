@@ -12,6 +12,7 @@ from app.db.models import User
 from app.services.web_push_service import (
     active_web_push_subscription_count,
     deactivate_web_push_subscription,
+    dispatch_web_push_test_to_user,
     upsert_web_push_subscription,
     web_push_runtime_status,
 )
@@ -125,5 +126,33 @@ def unregister_web_push_subscription(
         "active_subscriptions": active_web_push_subscription_count(
             db,
             user_id=int(current_user.id),
+        ),
+    }
+
+
+@router.post("/test")
+def send_web_push_test(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    result = dispatch_web_push_test_to_user(db, user_id=int(current_user.id))
+    sent = int(result.get("sent") or 0)
+    skipped = _safe_str(result.get("skipped"))
+    return {
+        "ok": sent > 0,
+        **result,
+        "message": (
+            "Test notification sent to this signed-in user's registered device."
+            if sent > 0
+            else "No phone notification was sent yet."
+        ),
+        "next_step": (
+            "Check the phone notification tray."
+            if sent > 0
+            else (
+                "Turn System notifications on from GSN settings and accept the browser prompt."
+                if skipped == "no_active_subscription"
+                else "Check Web Push server configuration."
+            )
         ),
     }

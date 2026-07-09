@@ -273,8 +273,14 @@ assertContains(
 
 assertContains(
   files.webPushRoute,
-  /APIRouter\(prefix="\/web-push"[\s\S]*?@router\.get\("\/status"\)[\s\S]*?@router\.post\("\/subscriptions"\)[\s\S]*?@router\.delete\("\/subscriptions"\)/,
-  "Web Push API must remain limited to authenticated status/register/unregister endpoints."
+  /APIRouter\(prefix="\/web-push"[\s\S]*?@router\.get\("\/status"\)[\s\S]*?@router\.post\("\/subscriptions"\)[\s\S]*?@router\.delete\("\/subscriptions"\)[\s\S]*?@router\.post\("\/test"\)[\s\S]*?dispatch_web_push_test_to_user\(db, user_id=int\(current_user\.id\)\)/,
+  "Web Push API must remain limited to authenticated status/register/unregister plus current-user self-test endpoints."
+);
+
+assertContains(
+  files.webPushService,
+  /def dispatch_web_push_test_to_user\(db: Session, \*, user_id: int\)[\s\S]*?\.filter\(WebPushSubscription\.user_id == int\(user_id\)\)[\s\S]*?\.filter\(WebPushSubscription\.is_active\.is_\(True\)\)[\s\S]*?"kind": "web_push\.test"[\s\S]*?_send_web_push_payload/,
+  "Web Push self-test must send only to the signed-in user's own active subscriptions."
 );
 
 assertContains(
@@ -311,6 +317,18 @@ assertContains(
   files.communityDomainPage,
   /Official Board[\s\S]*?Notices for this Community Domain only\.[\s\S]*?limited to[\s\S]*?active members of this selected Community Domain/,
   "Community Domain dashboard must state that notices stay inside the selected domain."
+);
+
+assertContains(
+  files.api,
+  /export async function sendWebPushTestNotification\(\): Promise<any> \{[\s\S]*?httpJson\("\/web-push\/test", "POST", undefined, \{ quiet: true \}\)/,
+  "Frontend API must expose only the authenticated current-user Web Push self-test call."
+);
+
+assertContains(
+  files.companionSettingsPanel,
+  /sendWebPushTestNotification[\s\S]*?debugId="companion-settings\.push\.test"[\s\S]*?Test phone notification/,
+  "Companion settings must expose a user-triggered test phone notification button."
 );
 
 assertContains(

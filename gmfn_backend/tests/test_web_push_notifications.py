@@ -156,6 +156,108 @@ def test_web_push_status_reports_not_configured_without_vapid_keys(
         app.dependency_overrides.pop(get_current_user, None)
 
 
+def test_web_push_self_test_sends_to_current_users_registered_device(
+    client,
+    monkeypatch,
+):
+    member = User(
+        id=2,
+        email="push-member@example.com",
+        hashed_password="hashed",
+        role="user",
+    )
+    with SessionLocal() as db:
+        db.add(member)
+        db.add(
+            WebPushSubscription(
+                user_id=2,
+                endpoint_hash="test-endpoint-hash",
+                endpoint="https://push.example/subscription/member",
+                p256dh="p256dh-key-material",
+                auth="auth-secret",
+                permission_state="granted",
+                is_active=True,
+            )
+        )
+        db.commit()
+
+    current_member = User(
+        id=2,
+        email="push-member@example.com",
+        hashed_password="hashed",
+        role="user",
+    )
+    sent_payloads: list[dict] = []
+
+    def fake_send(*, subscription_info, payload):
+        sent_payloads.append(
+            {
+                "endpoint": subscription_info["endpoint"],
+                "payload": payload,
+            }
+        )
+
+    monkeypatch.setenv("GSN_WEB_PUSH_PUBLIC_KEY", "BElocalPublicKey")
+    monkeypatch.setenv("GSN_WEB_PUSH_PRIVATE_KEY", "localPrivateKey")
+    monkeypatch.setattr("app.services.web_push_service.webpush", lambda **kwargs: None)
+    monkeypatch.setattr("app.services.web_push_service._send_web_push_payload", fake_send)
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: current_member
+        res = client.post("/web-push/test")
+        assert res.status_code == 200, res.text
+        body = res.json()
+        assert body["ok"] is True
+        assert body["sent"] == 1
+        assert body["attempted"] == 1
+        assert body["next_step"] == "Check the phone notification tray."
+
+        assert len(sent_payloads) == 1
+        assert sent_payloads[0]["endpoint"] == "https://push.example/subscription/member"
+        payload = sent_payloads[0]["payload"]
+        assert payload["kind"] == "web_push.test"
+        assert payload["title"] == "GSN test notification"
+        assert payload["body"] == "Your phone can receive GSN notifications."
+        assert payload["action_url"] == "/app/notifications"
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+
+def test_web_push_self_test_reports_missing_subscription(client, monkeypatch):
+    member = User(
+        id=2,
+        email="push-no-subscription@example.com",
+        hashed_password="hashed",
+        role="user",
+    )
+    with SessionLocal() as db:
+        db.add(member)
+        db.commit()
+
+    current_member = User(
+        id=2,
+        email="push-no-subscription@example.com",
+        hashed_password="hashed",
+        role="user",
+    )
+
+    monkeypatch.setenv("GSN_WEB_PUSH_PUBLIC_KEY", "BElocalPublicKey")
+    monkeypatch.setenv("GSN_WEB_PUSH_PRIVATE_KEY", "localPrivateKey")
+    monkeypatch.setattr("app.services.web_push_service.webpush", lambda **kwargs: None)
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: current_member
+        res = client.post("/web-push/test")
+        assert res.status_code == 200, res.text
+        body = res.json()
+        assert body["ok"] is False
+        assert body["sent"] == 0
+        assert body["skipped"] == "no_active_subscription"
+        assert "System notifications" in body["next_step"]
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+
 def test_official_notice_dispatches_web_push_to_registered_member(
     client,
     monkeypatch,

@@ -4016,6 +4016,10 @@ export async function unregisterWebPushSubscription(payload: {
   return httpJson("/web-push/subscriptions", "DELETE", payload, { quiet: true });
 }
 
+export async function sendWebPushTestNotification(): Promise<any> {
+  return httpJson("/web-push/test", "POST", undefined, { quiet: true });
+}
+
 /* =========================
    SETTINGS
    ========================= */

@@ -261,6 +261,72 @@ def dispatch_web_push_for_notification(
     }
 
 
+def dispatch_web_push_test_to_user(db: Session, *, user_id: int) -> dict[str, Any]:
+    status = web_push_runtime_status()
+    if not status["configured"]:
+        return {
+            "attempted": 0,
+            "sent": 0,
+            "deactivated": 0,
+            "skipped": "web_push_not_configured",
+        }
+
+    rows = (
+        db.query(WebPushSubscription)
+        .filter(WebPushSubscription.user_id == int(user_id))
+        .filter(WebPushSubscription.is_active.is_(True))
+        .order_by(WebPushSubscription.id.asc())
+        .all()
+    )
+    if not rows:
+        return {
+            "attempted": 0,
+            "sent": 0,
+            "deactivated": 0,
+            "skipped": "no_active_subscription",
+        }
+
+    payload = {
+        "source": "gsn-web-push-test",
+        "notification_id": 0,
+        "kind": "web_push.test",
+        "title": "GSN test notification",
+        "body": "Your phone can receive GSN notifications.",
+        "action_url": "/app/notifications",
+        "action_label": "Open GSN",
+    }
+
+    attempted = 0
+    sent = 0
+    deactivated = 0
+    for row in rows:
+        attempted += 1
+        try:
+            _send_web_push_payload(
+                subscription_info=_subscription_payload(row),
+                payload=payload,
+            )
+            row.last_success_at = _now_utc()
+            row.updated_at = _now_utc()
+            row.failure_count = 0
+            sent += 1
+        except Exception as exc:
+            row.last_failure_at = _now_utc()
+            row.updated_at = _now_utc()
+            row.failure_count = int(row.failure_count or 0) + 1
+            status_code = _web_push_exception_status(exc)
+            if status_code in {404, 410} or row.failure_count >= 5:
+                row.is_active = False
+                deactivated += 1
+
+    db.commit()
+    return {
+        "attempted": attempted,
+        "sent": sent,
+        "deactivated": deactivated,
+    }
+
+
 def dispatch_web_push_for_notifications(
     db: Session,
     notifications: list[Notification],
