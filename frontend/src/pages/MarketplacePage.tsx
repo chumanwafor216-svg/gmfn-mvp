@@ -467,6 +467,8 @@ type MarketplaceNoticeItem = {
   created_at?: string | null;
   source?: string | null;
   posting_policy?: string | null;
+  expiry_policy?: string | null;
+  expires_at?: string | null;
   sender_whatsapp_number?: string | null;
   sender_whatsapp_label?: string | null;
   sender_contact_ready?: boolean;
@@ -741,6 +743,12 @@ function safeDateLabel(value: any): string {
   const date = new Date(raw);
   if (!Number.isFinite(date.getTime())) return raw;
   return date.toLocaleString();
+}
+
+function noticeExpiryLabel(item: MarketplaceNoticeItem): string {
+  if (safeStr(item?.expiry_policy).toLowerCase() === "pinned") return "Pinned";
+  const expiresAt = safeDateLabel(item?.expires_at);
+  return expiresAt ? `Visible until ${expiresAt}` : "";
 }
 
 function parsedMarketplaceErrorDetail(err: any): Record<string, any> | null {
@@ -4928,7 +4936,13 @@ export default function MarketplacePage() {
     action();
   }
 
-  async function submitMarketplaceNotice(body: string) {
+  async function submitMarketplaceNotice(
+    body: string,
+    options?: {
+      expiry_policy?: "standard" | "urgent" | "event" | "pinned";
+      expires_at?: string;
+    }
+  ) {
     if (!activeCommunityId) {
       showNotice("error", "Select a marketplace before posting a notice.");
       return;
@@ -4936,7 +4950,7 @@ export default function MarketplacePage() {
 
     setMarketplaceNoticePosting(true);
     try {
-      await createCommunityNotice({ clan_id: activeCommunityId, body });
+      await createCommunityNotice({ clan_id: activeCommunityId, body, ...options });
       await loadMarketplaceNotices();
       setMarketplaceNoticeModalOpen(false);
       showNotice("success", "Marketplace announcement posted.");
@@ -8745,6 +8759,7 @@ export default function MarketplacePage() {
                   const when = safeDateLabel(
                     item?.created_at || item?.scheduled_at
                   );
+                  const expiry = noticeExpiryLabel(item);
                   const key = firstTruthy(
                     item?.notice_id,
                     item?.meeting_id,
@@ -8789,6 +8804,11 @@ export default function MarketplacePage() {
                         {when ? (
                           <span style={marketplaceFrontTagStyle("#617085", "#F3F6FA", isCompact)}>
                             {when}
+                          </span>
+                        ) : null}
+                        {expiry ? (
+                          <span style={marketplaceFrontTagStyle("#617085", "#F3F6FA", isCompact)}>
+                            {expiry}
                           </span>
                         ) : null}
                         <span style={marketplaceFrontTagStyle("#27435F", "#F3F6FA", isCompact)}>

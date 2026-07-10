@@ -5,10 +5,10 @@ import json
 import os
 import re
 import secrets
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Literal, Optional
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -75,6 +75,18 @@ COMMUNITY_DOMAIN_EVIDENCE_CONTENT_TYPES = {
 COMMUNITY_DOMAIN_NOTICE_EVENT = "community_domain.notice.posted"
 COMMUNITY_DOMAIN_NOTICE_SOURCE = "community_domain_notice_board"
 COMMUNITY_DOMAIN_NOTICE_MAX_WORDS = 50
+COMMUNITY_DOMAIN_NOTICE_EXPIRY_STANDARD = "standard"
+COMMUNITY_DOMAIN_NOTICE_EXPIRY_URGENT = "urgent"
+COMMUNITY_DOMAIN_NOTICE_EXPIRY_EVENT = "event"
+COMMUNITY_DOMAIN_NOTICE_EXPIRY_PINNED = "pinned"
+COMMUNITY_DOMAIN_NOTICE_EXPIRY_POLICIES = {
+    COMMUNITY_DOMAIN_NOTICE_EXPIRY_STANDARD,
+    COMMUNITY_DOMAIN_NOTICE_EXPIRY_URGENT,
+    COMMUNITY_DOMAIN_NOTICE_EXPIRY_EVENT,
+    COMMUNITY_DOMAIN_NOTICE_EXPIRY_PINNED,
+}
+COMMUNITY_DOMAIN_NOTICE_STANDARD_VISIBLE_DAYS = 7
+COMMUNITY_DOMAIN_NOTICE_URGENT_VISIBLE_HOURS = 48
 GENERIC_UPLOAD_CONTENT_TYPES = {
     "",
     "application/octet-stream",
@@ -1359,14 +1371,84 @@ def _word_count(value: str) -> int:
     return len([word for word in _clean_str(value).split() if word])
 
 
+def _parse_notice_datetime(value: Any) -> Optional[datetime]:
+    if isinstance(value, datetime):
+        parsed = value
+    else:
+        raw = _clean_str(value)
+        if not raw:
+            return None
+        try:
+            parsed = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+        except ValueError:
+            return None
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
+
+
+def _normalize_community_domain_notice_expiry_policy(value: Any) -> str:
+    policy = _clean_str(
+        value,
+        COMMUNITY_DOMAIN_NOTICE_EXPIRY_STANDARD,
+    ).lower()
+    return (
+        policy
+        if policy in COMMUNITY_DOMAIN_NOTICE_EXPIRY_POLICIES
+        else COMMUNITY_DOMAIN_NOTICE_EXPIRY_STANDARD
+    )
+
+
+def _community_domain_notice_expires_at(
+    policy: str,
+    explicit_expires_at: Any = None,
+) -> Optional[datetime]:
+    now = datetime.now(timezone.utc)
+    if policy == COMMUNITY_DOMAIN_NOTICE_EXPIRY_PINNED:
+        return None
+    if policy == COMMUNITY_DOMAIN_NOTICE_EXPIRY_URGENT:
+        return now + timedelta(hours=COMMUNITY_DOMAIN_NOTICE_URGENT_VISIBLE_HOURS)
+    if policy == COMMUNITY_DOMAIN_NOTICE_EXPIRY_EVENT:
+        parsed = _parse_notice_datetime(explicit_expires_at)
+        if parsed is None:
+            raise ValueError("event notices need an expiry date.")
+        if parsed <= now:
+            raise ValueError("event notice expiry must be in the future.")
+        return parsed
+    return now + timedelta(days=COMMUNITY_DOMAIN_NOTICE_STANDARD_VISIBLE_DAYS)
+
+
+def _community_domain_notice_is_expired(
+    meta: dict[str, Any],
+    *,
+    now: Optional[datetime] = None,
+) -> bool:
+    expires_at = _parse_notice_datetime(meta.get("expires_at"))
+    if expires_at is None:
+        return False
+    current = now or datetime.now(timezone.utc)
+    return expires_at <= current
+
+
 class CommunityDomainNoticeIn(BaseModel):
     body: str = Field(..., min_length=2, max_length=500)
+    expiry_policy: Literal["standard", "urgent", "event", "pinned"] = (
+        COMMUNITY_DOMAIN_NOTICE_EXPIRY_STANDARD
+    )
+    expires_at: Optional[datetime] = None
 
     @field_validator("body", mode="before")
     @classmethod
     def _reject_non_text_body(cls, value: Any) -> Any:
         if not isinstance(value, str):
             raise ValueError("body must be text.")
+        return value
+
+    @field_validator("expiry_policy", mode="before")
+    @classmethod
+    def _reject_non_text_expiry_policy(cls, value: Any) -> Any:
+        if not isinstance(value, str):
+            raise ValueError("expiry_policy must be text.")
         return value
 
     @field_validator("body")
@@ -1376,6 +1458,28 @@ class CommunityDomainNoticeIn(BaseModel):
         if _word_count(body) > COMMUNITY_DOMAIN_NOTICE_MAX_WORDS:
             raise ValueError("Official Community Domain notices must be 50 words or fewer.")
         return body
+
+    @field_validator("expires_at")
+    @classmethod
+    def _enforce_notice_expiry(
+        cls,
+        value: Optional[datetime],
+        info: Any,
+    ) -> Optional[datetime]:
+        policy = _normalize_community_domain_notice_expiry_policy(
+            info.data.get("expiry_policy")
+        )
+        if policy == COMMUNITY_DOMAIN_NOTICE_EXPIRY_EVENT and value is None:
+            raise ValueError("Event notices need an expiry date.")
+        if value is not None:
+            parsed = _parse_notice_datetime(value)
+            if parsed is None:
+                raise ValueError("expires_at must be a valid date.")
+            if parsed <= datetime.now(timezone.utc):
+                raise ValueError("Notice expiry must be in the future.")
+            return parsed
+        return value
+
 
 
 MEMBER_ACTION_REVIEW_KEYS = {
@@ -1899,6 +2003,11 @@ def _domain_payload(
 def _community_domain_notice_payload(event: TrustEvent) -> dict[str, Any]:
     meta = _json_load(event.meta_json)
     body = _clean_str(meta.get("body") or meta.get("title"))
+    expiry_policy = _normalize_community_domain_notice_expiry_policy(
+        meta.get("expiry_policy")
+    )
+    expires_at = _parse_notice_datetime(meta.get("expires_at"))
+    expired = _community_domain_notice_is_expired(meta)
     raw_domain_id = meta.get("community_domain_id")
     try:
         community_domain_id: Optional[int] = int(raw_domain_id)
@@ -1915,6 +2024,10 @@ def _community_domain_notice_payload(event: TrustEvent) -> dict[str, Any]:
         "title": body,
         "word_count": _word_count(body),
         "created_at": _iso(event.created_at),
+        "expires_at": _iso(expires_at),
+        "expiry_policy": expiry_policy,
+        "active_board_status": "archived" if expired else "active",
+        "is_archived": expired,
         "posted_by_user_id": int(event.actor_user_id),
     }
 
@@ -1924,7 +2037,7 @@ def _list_community_domain_notice_payloads(
     *,
     community_domain_id: int,
     limit: int,
-) -> list[dict[str, Any]]:
+) -> tuple[list[dict[str, Any]], int]:
     rows = (
         db.query(TrustEvent)
         .filter(TrustEvent.event_type == COMMUNITY_DOMAIN_NOTICE_EVENT)
@@ -1933,6 +2046,7 @@ def _list_community_domain_notice_payloads(
         .all()
     )
     notices: list[dict[str, Any]] = []
+    archived_notice_count = 0
     for row in rows:
         meta = _json_load(row.meta_json)
         try:
@@ -1941,10 +2055,13 @@ def _list_community_domain_notice_payloads(
             row_domain_id = 0
         if row_domain_id != int(community_domain_id):
             continue
+        if _community_domain_notice_is_expired(meta):
+            archived_notice_count += 1
+            continue
         notices.append(_community_domain_notice_payload(row))
         if len(notices) >= int(limit):
             break
-    return notices
+    return notices, archived_notice_count
 
 
 def _active_community_domain_notice_recipient_ids(
@@ -19418,7 +19535,7 @@ def list_community_domain_notices(
 ):
     domain = _get_domain_or_404(db, community_domain_id)
     _require_domain_member_scope(db, domain=domain, current_user=current_user)
-    notices = _list_community_domain_notice_payloads(
+    notices, archived_notice_count = _list_community_domain_notice_payloads(
         db,
         community_domain_id=int(domain.id),
         limit=int(limit),
@@ -19431,11 +19548,16 @@ def list_community_domain_notices(
         "comments_enabled": False,
         "reactions_enabled": False,
         "thread_enabled": False,
+        "default_expiry_policy": COMMUNITY_DOMAIN_NOTICE_EXPIRY_STANDARD,
+        "default_expires_after_days": COMMUNITY_DOMAIN_NOTICE_STANDARD_VISIBLE_DAYS,
+        "urgent_expires_after_hours": COMMUNITY_DOMAIN_NOTICE_URGENT_VISIBLE_HOURS,
+        "archived_notice_count": int(archived_notice_count),
         "notices": notices,
         "boundary": (
             "Official Community Domain notices are limited to active members "
             "of this selected Community Domain. They are not broadcast to other "
-            "domains, other communities, or public visitors."
+            "domains, other communities, or public visitors. Expired notices leave "
+            "the active board but remain in Community Memory."
         ),
     }
 
@@ -19450,6 +19572,16 @@ def create_community_domain_notice(
     domain = _get_domain_or_404(db, community_domain_id)
     _require_domain_admin_scope(db, domain=domain, current_user=current_user)
     body = _clean_str(payload.body)
+    expiry_policy = _normalize_community_domain_notice_expiry_policy(
+        payload.expiry_policy
+    )
+    try:
+        expires_at = _community_domain_notice_expires_at(
+            expiry_policy,
+            payload.expires_at,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
     event = log_trust_event(
         db,
         event_type=COMMUNITY_DOMAIN_NOTICE_EVENT,
@@ -19462,6 +19594,9 @@ def create_community_domain_notice(
             "community_domain_id": int(domain.id),
             "body": body,
             "word_count": _word_count(body),
+            "expiry_policy": expiry_policy,
+            "expires_at": _iso(expires_at),
+            "active_board_status": "active",
             "comments_enabled": False,
             "reactions_enabled": False,
             "thread_enabled": False,
@@ -19482,10 +19617,13 @@ def create_community_domain_notice(
         "notifications_created": int(notifications_created),
         "notification_kind": COMMUNITY_DOMAIN_NOTICE_EVENT,
         "message": "Official notice posted to this Community Domain board.",
+        "expiry_policy": expiry_policy,
+        "expires_at": _iso(expires_at),
         "boundary": (
             "The notice belongs to this selected Community Domain only. "
             "Notifications are created only for active members of this selected "
-            "Community Domain; it does not broadcast to other domains or communities."
+            "Community Domain; it does not broadcast to other domains or communities. "
+            "Expired notices leave the active board but remain in Community Memory."
         ),
     }
 

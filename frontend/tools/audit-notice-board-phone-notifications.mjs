@@ -87,6 +87,13 @@ const files = {
       "utf8"
     ),
   },
+  communityNoticeModal: {
+    path: "frontend/src/components/CommunityNoticeModal.tsx",
+    source: readFileSync(
+      join(frontendRoot, "src", "components", "CommunityNoticeModal.tsx"),
+      "utf8"
+    ),
+  },
   marketplacePage: {
     path: "frontend/src/pages/MarketplacePage.tsx",
     source: readFileSync(
@@ -185,6 +192,18 @@ assertContains(
   files.communityNotices,
   /"The notice belongs to this selected community or marketplace only\.[\s\S]*?"community; it does not broadcast to other marketplaces, communities,/,
   "Marketplace/community notice responses must state that notices do not broadcast beyond the selected marketplace/community."
+);
+
+assertContains(
+  files.communityNotices,
+  /NOTICE_EXPIRY_STANDARD = "standard"[\s\S]*?NOTICE_EXPIRY_URGENT = "urgent"[\s\S]*?NOTICE_EXPIRY_EVENT = "event"[\s\S]*?NOTICE_EXPIRY_PINNED = "pinned"[\s\S]*?def _notice_is_expired\([\s\S]*?archived_notice_count/,
+  "Marketplace/community notices must keep active-board expiry metadata, active filtering, and Community Memory preservation."
+);
+
+assertContains(
+  files.communityNotices,
+  /Expired notices leave the active board[\s\S]*?remain in Community Memory/,
+  "Marketplace/community notice response must explain that expired notices leave the board without being deleted."
 );
 
 assertContains(
@@ -323,6 +342,24 @@ assertContains(
   files.communityDomainPage,
   /function officialBoardHeaderStyle\(\)[\s\S]*?gridTemplateColumns:\s*"repeat\(auto-fit, minmax\(min\(100%, 260px\), 1fr\)\)"[\s\S]*?<div style=\{officialBoardHeaderStyle\(\)\}>[\s\S]*?Notices for this Community Domain only\./,
   "Community Domain Official Board header must keep the responsive grid that prevents phone text from collapsing into one-word columns."
+);
+
+assertContains(
+  files.communityDomains,
+  /COMMUNITY_DOMAIN_NOTICE_EXPIRY_STANDARD = "standard"[\s\S]*?COMMUNITY_DOMAIN_NOTICE_EXPIRY_URGENT = "urgent"[\s\S]*?COMMUNITY_DOMAIN_NOTICE_EXPIRY_EVENT = "event"[\s\S]*?COMMUNITY_DOMAIN_NOTICE_EXPIRY_PINNED = "pinned"[\s\S]*?def _community_domain_notice_is_expired\([\s\S]*?archived_notice_count/,
+  "Community Domain notices must keep active-board expiry metadata, active filtering, and Community Memory preservation."
+);
+
+assertContains(
+  files.communityDomains,
+  /Expired notices leave the active board[\s\S]*?remain in Community Memory/,
+  "Community Domain notice response must explain that expired notices leave the board without being deleted."
+);
+
+assertContains(
+  files.communityNoticeModal,
+  /Expired notices leave[\s\S]*?Community Memory[\s\S]*?Active board time[\s\S]*?Normal - 7 days[\s\S]*?Urgent - 48 hours[\s\S]*?Until event date[\s\S]*?Pinned until admin changes it/,
+  "Community notice modal must let posters choose a clear active-board lifetime."
 );
 
 assertContains(

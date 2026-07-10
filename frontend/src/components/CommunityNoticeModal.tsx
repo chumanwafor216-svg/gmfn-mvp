@@ -7,8 +7,13 @@ type Props = {
   busy?: boolean;
   postingPolicy?: "members" | "admins" | string;
   onClose: () => void;
-  onSubmit: (body: string) => Promise<void> | void;
+  onSubmit: (
+    body: string,
+    options?: { expiry_policy?: NoticeExpiryPolicy; expires_at?: string }
+  ) => Promise<void> | void;
 };
+
+type NoticeExpiryPolicy = "standard" | "urgent" | "event" | "pinned";
 
 function countWords(value: string): number {
   return value.trim().split(/\s+/).filter(Boolean).length;
@@ -23,15 +28,26 @@ export default function CommunityNoticeModal({
   onSubmit,
 }: Props) {
   const [body, setBody] = useState("");
+  const [expiryPolicy, setExpiryPolicy] = useState<NoticeExpiryPolicy>("standard");
+  const [eventExpiresAt, setEventExpiresAt] = useState("");
   const words = useMemo(() => countWords(body), [body]);
-  const blocked = words > 50 || !body.trim() || busy;
+  const eventExpiryMissing = expiryPolicy === "event" && !eventExpiresAt;
+  const blocked = words > 50 || !body.trim() || eventExpiryMissing || busy;
 
   if (!open) return null;
 
   async function submitNotice() {
     if (blocked) return;
-    await onSubmit(body.trim());
+    await onSubmit(body.trim(), {
+      expiry_policy: expiryPolicy,
+      expires_at:
+        expiryPolicy === "event" && eventExpiresAt
+          ? new Date(eventExpiresAt).toISOString()
+          : undefined,
+    });
     setBody("");
+    setExpiryPolicy("standard");
+    setEventExpiresAt("");
   }
 
   return (
@@ -41,7 +57,8 @@ export default function CommunityNoticeModal({
         <h3 style={titleStyle}>Post to {communityName || "this community"}</h3>
         <p style={copyStyle}>
           Keep it short. GSN records who posted it and links your verified public
-          WhatsApp contact when you have chosen to show one.
+          WhatsApp contact when you have chosen to show one. Expired notices leave
+          the active board but stay in Community Memory.
         </p>
 
         <textarea
@@ -52,10 +69,51 @@ export default function CommunityNoticeModal({
           style={textareaStyle}
         />
 
+        <div style={fieldGroupStyle}>
+          <label style={fieldLabelStyle} htmlFor="community-notice-expiry">
+            Active board time
+          </label>
+          <select
+            id="community-notice-expiry"
+            value={expiryPolicy}
+            onChange={(event) => setExpiryPolicy(event.target.value as NoticeExpiryPolicy)}
+            style={fieldStyle}
+          >
+            <option value="standard">Normal - 7 days</option>
+            <option value="urgent">Urgent - 48 hours</option>
+            <option value="event">Until event date</option>
+            <option value="pinned">Pinned until admin changes it</option>
+          </select>
+        </div>
+
+        {expiryPolicy === "event" ? (
+          <div style={fieldGroupStyle}>
+            <label style={fieldLabelStyle} htmlFor="community-notice-event-expiry">
+              Event ends
+            </label>
+            <input
+              id="community-notice-event-expiry"
+              type="datetime-local"
+              value={eventExpiresAt}
+              onChange={(event) => setEventExpiresAt(event.target.value)}
+              style={fieldStyle}
+            />
+          </div>
+        ) : null}
+
         <div style={metaRowStyle}>
           <span style={words > 50 ? warningStyle : chipStyle}>{words}/50 words</span>
           <span style={chipStyle}>
             {postingPolicy === "admins" ? "Admin-only board" : "Members can post"}
+          </span>
+          <span style={eventExpiryMissing ? warningStyle : chipStyle}>
+            {expiryPolicy === "standard"
+              ? "Visible 7 days"
+              : expiryPolicy === "urgent"
+              ? "Visible 48 hours"
+              : expiryPolicy === "event"
+              ? "Until event date"
+              : "Pinned"}
           </span>
           <span style={chipStyle}>No comments</span>
           <span style={chipStyle}>No reactions</span>
@@ -144,6 +202,32 @@ const textareaStyle: React.CSSProperties = {
   lineHeight: 1.45,
   outline: "none",
   boxSizing: "border-box",
+};
+
+const fieldGroupStyle: React.CSSProperties = {
+  marginTop: 10,
+  display: "grid",
+  gap: 6,
+};
+
+const fieldLabelStyle: React.CSSProperties = {
+  color: "#48657D",
+  fontSize: 12,
+  fontWeight: 900,
+};
+
+const fieldStyle: React.CSSProperties = {
+  width: "100%",
+  minHeight: 46,
+  borderRadius: 14,
+  border: "1px solid rgba(16,37,59,0.16)",
+  background: "#FFFFFF",
+  color: "#07172C",
+  padding: "0 12px",
+  fontSize: 16,
+  fontWeight: 800,
+  boxSizing: "border-box",
+  outline: "none",
 };
 
 const metaRowStyle: React.CSSProperties = {

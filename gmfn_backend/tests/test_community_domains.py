@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime, timedelta, timezone
 
 from fastapi.testclient import TestClient
 
@@ -253,6 +254,10 @@ def test_community_domain_notice_board_is_member_scoped_and_admin_posted(
         assert posted_data["community_domain_id"] == domain_id
         assert posted_data["notice"]["community_domain_id"] == domain_id
         assert posted_data["notice"]["body"] == "Scholarship deadline Friday."
+        assert posted_data["notice"]["expiry_policy"] == "standard"
+        assert posted_data["notice"]["expires_at"]
+        assert posted_data["notice"]["active_board_status"] == "active"
+        assert posted_data["notice"]["is_archived"] is False
         assert posted_data["notification_kind"] == "community_domain.notice.posted"
         assert posted_data["notifications_created"] == 1
         assert "does not broadcast" in posted_data["boundary"]
@@ -264,6 +269,9 @@ def test_community_domain_notice_board_is_member_scoped_and_admin_posted(
         assert visible_data["comments_enabled"] is False
         assert visible_data["reactions_enabled"] is False
         assert visible_data["thread_enabled"] is False
+        assert visible_data["default_expiry_policy"] == "standard"
+        assert visible_data["default_expires_after_days"] == 7
+        assert visible_data["urgent_expires_after_hours"] == 48
         assert visible_data["notices"][0]["body"] == "Scholarship deadline Friday."
         assert visible_data["notices"][0]["community_domain_id"] == domain_id
 
@@ -285,6 +293,8 @@ def test_community_domain_notice_board_is_member_scoped_and_admin_posted(
             )
             meta = json.loads(event.meta_json or "{}")
             assert meta["community_domain_id"] == domain_id
+            assert meta["expiry_policy"] == "standard"
+            assert meta["expires_at"]
             assert meta["comments_enabled"] is False
             assert meta["reactions_enabled"] is False
             assert meta["thread_enabled"] is False
@@ -304,6 +314,95 @@ def test_community_domain_notice_board_is_member_scoped_and_admin_posted(
             )
             assert notifications[0].action_label == "Open Notice Board"
             assert notifications[0].is_read is False
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+
+def test_community_domain_notice_archive_hides_expired_notice_but_keeps_memory(
+    client: TestClient,
+):
+    owner = _seed_owner()
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Archive Notice Union",
+                "display_name": "Archive Notice Union",
+                "domain_type": "union",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain_id = created.json()["community_domain"]["id"]
+
+        with SessionLocal() as db:
+            db.add(
+                TrustEvent(
+                    event_type="community_domain.notice.posted",
+                    clan_id=1,
+                    actor_user_id=1,
+                    subject_user_id=1,
+                    meta_json=json.dumps(
+                        {
+                            "source": "community_domain_notice_board",
+                            "reason": "community_domain_notice_posted",
+                            "community_domain_id": int(domain_id),
+                            "body": "Expired domain notice.",
+                            "word_count": 3,
+                            "expiry_policy": "event",
+                            "expires_at": (
+                                datetime.now(timezone.utc) - timedelta(hours=1)
+                            ).isoformat(),
+                            "comments_enabled": False,
+                            "reactions_enabled": False,
+                            "thread_enabled": False,
+                        }
+                    ),
+                )
+            )
+            db.add(
+                TrustEvent(
+                    event_type="community_domain.notice.posted",
+                    clan_id=1,
+                    actor_user_id=1,
+                    subject_user_id=1,
+                    meta_json=json.dumps(
+                        {
+                            "source": "community_domain_notice_board",
+                            "reason": "community_domain_notice_posted",
+                            "community_domain_id": int(domain_id),
+                            "body": "Pinned domain notice.",
+                            "word_count": 3,
+                            "expiry_policy": "pinned",
+                            "expires_at": None,
+                            "comments_enabled": False,
+                            "reactions_enabled": False,
+                            "thread_enabled": False,
+                        }
+                    ),
+                )
+            )
+            db.commit()
+
+        visible = client.get(f"/community-domains/{domain_id}/notices")
+
+        assert visible.status_code == 200, visible.text
+        payload = visible.json()
+        bodies = [item["body"] for item in payload["notices"]]
+        assert "Pinned domain notice." in bodies
+        assert "Expired domain notice." not in bodies
+        assert payload["archived_notice_count"] == 1
+        assert payload["notices"][0]["expiry_policy"] == "pinned"
+        assert payload["notices"][0]["expires_at"] is None
+
+        with SessionLocal() as db:
+            assert (
+                db.query(TrustEvent)
+                .filter(TrustEvent.event_type == "community_domain.notice.posted")
+                .count()
+                == 2
+            )
     finally:
         app.dependency_overrides.pop(get_current_user, None)
 

@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+import json
+from datetime import datetime, timedelta, timezone
 
 from app.db.database import SessionLocal
-from app.db.models import Clan, ClanMembership, User
+from app.db.models import Clan, ClanMembership, TrustEvent, User
 from app.db.notification_models import Notification
 
 
@@ -86,6 +87,10 @@ def test_community_officer_can_post_and_members_can_read_notice(
     assert notice["body"] == "Meeting Saturday 4 pm."
     assert notice["word_count"] == 4
     assert notice["posting_policy"] == "members"
+    assert notice["expiry_policy"] == "standard"
+    assert notice["expires_at"]
+    assert notice["active_board_status"] == "active"
+    assert notice["is_archived"] is False
     assert notice["sender_whatsapp_number"] == "+447700900123"
     assert notice["sender_whatsapp_label"] == "notice-admin@example.com"
     assert posted_body["notification_kind"] == "community.notice.posted"
@@ -99,6 +104,9 @@ def test_community_officer_can_post_and_members_can_read_notice(
     assert body["comments_enabled"] is False
     assert body["reactions_enabled"] is False
     assert body["thread_enabled"] is False
+    assert body["default_expiry_policy"] == "standard"
+    assert body["default_expires_after_days"] == 7
+    assert body["urgent_expires_after_hours"] == 48
     assert body["posting_policy"] == "members"
     assert body["can_post_notice"] is True
     assert body["notices"][0]["body"] == "Meeting Saturday 4 pm."
@@ -137,6 +145,78 @@ def test_community_notice_rejects_more_than_fifty_words(
 
     assert res.status_code == 422, res.text
     assert "50 words or fewer" in res.text
+
+
+def test_community_notice_archive_hides_expired_notice_but_keeps_memory(
+    client, override_current_user
+):
+    _seed_notice_community()
+
+    with SessionLocal() as db:
+        db.add(
+            TrustEvent(
+                event_type="community.notice.posted",
+                clan_id=1,
+                actor_user_id=1,
+                subject_user_id=1,
+                meta_json=json.dumps(
+                    {
+                        "source": "community_notice_board",
+                        "reason": "community_notice_posted",
+                        "body": "Expired food collection yesterday.",
+                        "word_count": 4,
+                        "expiry_policy": "event",
+                        "expires_at": (
+                            datetime.now(timezone.utc) - timedelta(hours=2)
+                        ).isoformat(),
+                        "comments_enabled": False,
+                        "reactions_enabled": False,
+                        "thread_enabled": False,
+                    }
+                ),
+            )
+        )
+        db.add(
+            TrustEvent(
+                event_type="community.notice.posted",
+                clan_id=1,
+                actor_user_id=1,
+                subject_user_id=1,
+                meta_json=json.dumps(
+                    {
+                        "source": "community_notice_board",
+                        "reason": "community_notice_posted",
+                        "body": "Food collection this Friday.",
+                        "word_count": 4,
+                        "expiry_policy": "standard",
+                        "expires_at": (
+                            datetime.now(timezone.utc) + timedelta(days=7)
+                        ).isoformat(),
+                        "comments_enabled": False,
+                        "reactions_enabled": False,
+                        "thread_enabled": False,
+                    }
+                ),
+            )
+        )
+        db.commit()
+
+    list_res = client.get("/community-notices", params={"clan_id": 1, "limit": 5})
+
+    assert list_res.status_code == 200, list_res.text
+    payload = list_res.json()
+    bodies = [item["body"] for item in payload["notices"]]
+    assert "Food collection this Friday." in bodies
+    assert "Expired food collection yesterday." not in bodies
+    assert payload["archived_notice_count"] == 1
+
+    with SessionLocal() as db:
+        assert (
+            db.query(TrustEvent)
+            .filter(TrustEvent.event_type == "community.notice.posted")
+            .count()
+            == 2
+        )
 
 
 def test_member_can_post_when_notice_board_is_open(

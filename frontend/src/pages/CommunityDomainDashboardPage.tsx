@@ -173,6 +173,10 @@ type CommunityDomainNoticeItem = {
   body?: string | null;
   title?: string | null;
   created_at?: string | null;
+  expires_at?: string | null;
+  expiry_policy?: string | null;
+  active_board_status?: string | null;
+  is_archived?: boolean | null;
   posted_by_user_id?: string | number | null;
 };
 
@@ -458,6 +462,12 @@ function noticeDateLabel(value: unknown): string {
   } catch {
     return raw;
   }
+}
+
+function noticeExpiryLabel(item: CommunityDomainNoticeItem): string {
+  if (cleanText(item?.expiry_policy).toLowerCase() === "pinned") return "Pinned";
+  const expiresAt = noticeDateLabel(item?.expires_at);
+  return expiresAt ? `Visible until ${expiresAt}` : "";
 }
 
 function limitWords(value: unknown, maxWords: number): string {
@@ -1319,7 +1329,13 @@ export default function CommunityDomainDashboardPage() {
     void loadDomainNotices(communityDomainId);
   }, [communityDomainId, dashboard, loadDomainNotices]);
 
-  async function submitDomainNotice(body: string) {
+  async function submitDomainNotice(
+    body: string,
+    options?: {
+      expiry_policy?: "standard" | "urgent" | "event" | "pinned";
+      expires_at?: string;
+    }
+  ) {
     const requestDomainId = cleanText(domain?.id || communityDomainId);
     if (!requestDomainId) {
       setMessage("Open a Community Domain before posting a notice.");
@@ -1332,7 +1348,7 @@ export default function CommunityDomainDashboardPage() {
 
     setDomainNoticePosting(true);
     try {
-      await createCommunityDomainNotice(requestDomainId, { body });
+      await createCommunityDomainNotice(requestDomainId, { body, ...options });
       await loadDomainNotices(requestDomainId);
       setDomainNoticeModalOpen(false);
       setMessage("Official notice posted to this Community Domain only.");
@@ -2760,6 +2776,7 @@ export default function CommunityDomainDashboardPage() {
                 domainNotices.map((item, index) => {
                   const body = limitWords(item.body || item.title, 50);
                   const when = noticeDateLabel(item.created_at);
+                  const expiry = noticeExpiryLabel(item);
                   const key = cleanText(
                     item.notice_id || item.event_id || item.created_at || index,
                     String(index)
@@ -2788,6 +2805,7 @@ export default function CommunityDomainDashboardPage() {
                       >
                         <span style={statusBadge("newest first")}>Newest first</span>
                         {when ? <span style={statusBadge("active")}>{when}</span> : null}
+                        {expiry ? <span style={statusBadge("active")}>{expiry}</span> : null}
                       </div>
                     </div>
                   );

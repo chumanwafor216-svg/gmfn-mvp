@@ -133,6 +133,8 @@ type CommunityNoticeItem = {
   created_at?: string | null;
   source?: string | null;
   posting_policy?: string | null;
+  expiry_policy?: string | null;
+  expires_at?: string | null;
   sender_whatsapp_number?: string | null;
   sender_whatsapp_label?: string | null;
   sender_contact_ready?: boolean;
@@ -931,6 +933,12 @@ function safeDateLabel(value: any): string {
   const date = new Date(raw);
   if (!Number.isFinite(date.getTime())) return raw;
   return date.toLocaleString();
+}
+
+function noticeExpiryLabel(item: CommunityNoticeItem): string {
+  if (safeStr(item?.expiry_policy).toLowerCase() === "pinned") return "Pinned";
+  const expiresAt = safeDateLabel(item?.expires_at);
+  return expiresAt ? `Visible until ${expiresAt}` : "";
 }
 
 function communityContactMessage(clan: ClanItem | null | undefined): string {
@@ -2158,7 +2166,13 @@ export default function CommunityHomePage() {
     showNotice("success", "Call path opened for this community contact.");
   }
 
-  async function submitCommunityNotice(body: string) {
+  async function submitCommunityNotice(
+    body: string,
+    options?: {
+      expiry_policy?: "standard" | "urgent" | "event" | "pinned";
+      expires_at?: string;
+    }
+  ) {
     const clanId = getClanId(selectedClan);
     if (!clanId) {
       showNotice("error", "Choose a community before posting an official notice.");
@@ -2167,7 +2181,7 @@ export default function CommunityHomePage() {
 
     setNoticePosting(true);
     try {
-      await createCommunityNotice({ clan_id: clanId, body });
+      await createCommunityNotice({ clan_id: clanId, body, ...options });
       const res = await listCommunityNotices({ clan_id: clanId, limit: 3 }).catch(() => null);
       const rows = Array.isArray(res?.notices) ? res.notices : [];
       setCommunityNotices(rows);
@@ -3275,6 +3289,7 @@ export default function CommunityHomePage() {
                     const when = safeDateLabel(
                       firstTruthy(item?.scheduled_at, item?.created_at)
                     );
+                    const expiry = noticeExpiryLabel(item);
 
                     return (
                       <div
@@ -3303,6 +3318,7 @@ export default function CommunityHomePage() {
                         >
                           <span style={badge(index === 0)}>Newest first</span>
                           {when ? <span style={badge(false)}>{when}</span> : null}
+                          {expiry ? <span style={badge(false)}>{expiry}</span> : null}
                           {item?.sender_whatsapp_number ? (
                             <span style={badge(true)}>
                               WhatsApp: {firstTruthy(item?.sender_whatsapp_label, "sender")}

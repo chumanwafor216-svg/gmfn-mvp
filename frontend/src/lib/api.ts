@@ -1182,6 +1182,8 @@ export async function listCommunityNotices(params: {
 export async function createCommunityNotice(payload: {
   clan_id: number;
   body: string;
+  expiry_policy?: "standard" | "urgent" | "event" | "pinned";
+  expires_at?: string;
 }): Promise<any> {
   return httpJson("/community-notices", "POST", payload);
 }
@@ -1213,7 +1215,11 @@ export async function listCommunityDomainNotices(
 
 export async function createCommunityDomainNotice(
   communityDomainId: number | string,
-  payload: { body: string }
+  payload: {
+    body: string;
+    expiry_policy?: "standard" | "urgent" | "event" | "pinned";
+    expires_at?: string;
+  }
 ): Promise<any> {
   return httpJson(
     `/community-domains/${encodeURIComponent(String(communityDomainId))}/notices`,
