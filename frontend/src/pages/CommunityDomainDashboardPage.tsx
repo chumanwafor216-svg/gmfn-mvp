@@ -2714,38 +2714,7 @@ export default function CommunityDomainDashboardPage() {
                   {operatingStateCopy.heading}
                 </h2>
                 <div style={{ ...helperText(), marginTop: 8 }}>
-                  Complete setup first. Payment, activation, and verification stay separate.
-                </div>
-              </div>
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fit, minmax(136px, 1fr))",
-                  gap: 8,
-                }}
-              >
-                {[
-                  ["Domain", status.domain_status],
-                  ["Activation", status.activation_status],
-                  ["Billing", status.billing_status],
-                  ["Renewal", renewalState],
-                ].map(([label, value]) => (
-                  <div key={String(label)} style={statusBadge(value)}>
-                    {String(label)}: {compactStatus(value)}
-                  </div>
-                ))}
-              </div>
-              <div
-                style={{
-                  borderRadius: 16,
-                  border: "1px solid rgba(146,94,8,0.18)",
-                  background: "rgba(255,247,226,0.64)",
-                  padding: 12,
-                }}
-              >
-                <div style={{ fontWeight: 950 }}>{operatingStateCopy.nextStep}</div>
-                <div style={{ ...helperText(), marginTop: 5, fontSize: 13 }}>
-                  Save each step. GSN will then move you to the next setup step.
+                  Complete the setup form below. Payment and activation come after.
                 </div>
               </div>
               <StableButton

@@ -322,8 +322,15 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /communityDomainOperatingStateCopy[\s\S]*Domain closed[\s\S]*Domain suspended[\s\S]*Domain expired[\s\S]*Waiting for activation[\s\S]*Active operating domain[\s\S]*Active, not verified[\s\S]*Draft setup[\s\S]*Set up this institution one step at a time[\s\S]*Setup[\s\S]*Complete setup first[\s\S]*Payment, activation, and verification stay separate[\s\S]*community-domain-dashboard\.setup-focus/,
-  "Community Domain dashboard must give state-specific setup guidance first without exposing a long operating-state manual on the primary screen.",
+  /communityDomainOperatingStateCopy[\s\S]*Domain closed[\s\S]*Domain suspended[\s\S]*Domain expired[\s\S]*Waiting for activation[\s\S]*Active operating domain[\s\S]*Active, not verified[\s\S]*Draft setup[\s\S]*Set up this institution one step at a time[\s\S]*Setup[\s\S]*Complete the setup form below[\s\S]*Payment and activation come after[\s\S]*community-domain-dashboard\.setup-focus/,
+  "Community Domain dashboard must give a short setup-first signpost without exposing duplicate status chips or a long operating-state manual on the primary screen.",
+  { frontend: true }
+);
+
+assertNotContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /Domain", status\.domain_status[\s\S]*Activation", status\.activation_status[\s\S]*Billing", status\.billing_status[\s\S]*Renewal", renewalState[\s\S]*operatingStateCopy\.nextStep/,
+  "Community Domain setup signpost must not repeat the hero status grid or expose the long next-step instruction card.",
   { frontend: true }
 );
 
