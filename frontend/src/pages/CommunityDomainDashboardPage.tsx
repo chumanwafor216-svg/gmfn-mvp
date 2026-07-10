@@ -1901,6 +1901,9 @@ export default function CommunityDomainDashboardPage() {
   const setupCurrentStep =
     SETUP_STEP_OPTIONS.find((option) => option.key === activeSetupStep) ||
     SETUP_STEP_OPTIONS[0];
+  const setupEditingLocked = !isAdmin;
+  const setupEditLockMessage =
+    "Only a Community Domain owner or domain admin can edit setup.";
 
   useEffect(() => {
     const domainId = cleanText(domain?.id || communityDomainId);
@@ -1926,6 +1929,10 @@ export default function CommunityDomainDashboardPage() {
     key: keyof CommunityDomainSetupDraft,
     value: string
   ) {
+    if (setupEditingLocked) {
+      setMessage(setupEditLockMessage);
+      return;
+    }
     setSetupCompletionSavedAt("");
     if (key === "domain_name") {
       setSetupDomainNameCheck({
@@ -1940,7 +1947,11 @@ export default function CommunityDomainDashboardPage() {
     }));
   }
 
-  function saveSetupProgress() {
+  function saveSetupProgress(): CommunityDomainSetupDraft | null {
+    if (setupEditingLocked) {
+      setMessage(setupEditLockMessage);
+      return null;
+    }
     const saved = writeCommunityDomainSetupDraft(setupDraftDomainId, setupDraft);
     setSetupDraft(saved);
     setMessage("Community Domain setup progress saved on this device for 48 hours.");
@@ -1948,6 +1959,10 @@ export default function CommunityDomainDashboardPage() {
   }
 
   async function checkSetupDomainName() {
+    if (setupEditingLocked) {
+      setMessage(setupEditLockMessage);
+      return false;
+    }
     const requestedName = cleanText(setupDraft.domain_name);
     if (requestedName.length < 2) {
       setSetupDomainNameCheck({
@@ -2092,7 +2107,8 @@ export default function CommunityDomainDashboardPage() {
         setSetupEvidence(payload || null);
         setSetupEvidenceFile(null);
       }
-      saveSetupProgress();
+      const saved = saveSetupProgress();
+      if (!saved) return;
       setMessage(
         "Community Domain setup evidence submitted for private review. This does not verify the domain yet."
       );
@@ -2104,7 +2120,8 @@ export default function CommunityDomainDashboardPage() {
   }
 
   function openSetupPaymentLane() {
-    saveSetupProgress();
+    const saved = saveSetupProgress();
+    if (!saved) return;
     setShowAdvancedTools(true);
     setActiveLane("billing");
   }
@@ -2118,6 +2135,7 @@ export default function CommunityDomainDashboardPage() {
       return;
     }
     const saved = saveSetupProgress();
+    if (!saved) return;
     setSetupCompletionSavedAt(cleanText(saved.saved_at, new Date().toISOString()));
     setSelectedClanId(clanId);
     navigate(APP_ROUTES.BUILD_FIRST_CIRCLE);
@@ -2133,6 +2151,10 @@ export default function CommunityDomainDashboardPage() {
   }
 
   async function saveSetupStepAndContinue() {
+    if (setupEditingLocked) {
+      setMessage(setupEditLockMessage);
+      return;
+    }
     const isLastStep =
       activeSetupStep === SETUP_STEP_OPTIONS[SETUP_STEP_OPTIONS.length - 1].key;
 
@@ -2153,7 +2175,8 @@ export default function CommunityDomainDashboardPage() {
       const saved = await saveOfficialProfile();
       if (!saved) return;
     } else {
-      saveSetupProgress();
+      const saved = saveSetupProgress();
+      if (!saved) return;
     }
 
     if (!isLastStep) {
@@ -2162,6 +2185,7 @@ export default function CommunityDomainDashboardPage() {
     }
 
     const saved = saveSetupProgress();
+    if (!saved) return;
     setSetupCompletionSavedAt(cleanText(saved.saved_at, new Date().toISOString()));
     setMessage(
       "Setup saved. Payment confirmation, activation, and verification still need their separate admin checks."
@@ -3312,6 +3336,17 @@ export default function CommunityDomainDashboardPage() {
                       Step {setupStepIndex + 1} of {SETUP_STEP_OPTIONS.length}.{" "}
                       {setupCurrentStep.note}
                     </div>
+                    <div style={{ ...softCard(), display: "grid", gap: 8 }}>
+                      <div style={sectionLabel()}>Setup access</div>
+                      <div style={statusBadge(setupEditingLocked ? "read only" : "owner/admin")}>
+                        {setupEditingLocked ? "Read only" : "Owner/admin editing"}
+                      </div>
+                      <div style={{ ...helperText(), fontSize: 13 }}>
+                        {setupEditingLocked
+                          ? "Only the Community Domain owner or a domain admin can change this setup."
+                          : "You can edit this setup. Other members cannot change it without owner/admin authority."}
+                      </div>
+                    </div>
 
                     {activeSetupStep === "identity" ? (
                       <div style={{ display: "grid", gap: 10 }}>
@@ -3327,6 +3362,7 @@ export default function CommunityDomainDashboardPage() {
                             <span style={sectionLabel()}>Community name</span>
                             <input
                               value={setupDraft.display_name}
+                              disabled={setupEditingLocked}
                               onChange={(event) =>
                                 updateSetupDraftField("display_name", event.target.value)
                               }
@@ -3338,6 +3374,7 @@ export default function CommunityDomainDashboardPage() {
                             <span style={sectionLabel()}>Domain code</span>
                             <input
                               value={setupDraft.domain_name}
+                              disabled={setupEditingLocked}
                               onChange={(event) =>
                                 updateSetupDraftField("domain_name", event.target.value)
                               }
@@ -3349,6 +3386,7 @@ export default function CommunityDomainDashboardPage() {
                             <span style={sectionLabel()}>Type</span>
                             <input
                               value={setupDraft.domain_type}
+                              disabled={setupEditingLocked}
                               onChange={(event) =>
                                 updateSetupDraftField("domain_type", event.target.value)
                               }
@@ -3360,6 +3398,7 @@ export default function CommunityDomainDashboardPage() {
                             <span style={sectionLabel()}>Template</span>
                             <input
                               value={setupDraft.template_key}
+                              disabled={setupEditingLocked}
                               onChange={(event) =>
                                 updateSetupDraftField("template_key", event.target.value)
                               }
@@ -3371,6 +3410,7 @@ export default function CommunityDomainDashboardPage() {
                             <span style={sectionLabel()}>Country</span>
                             <input
                               value={setupDraft.country}
+                              disabled={setupEditingLocked}
                               onChange={(event) =>
                                 updateSetupDraftField("country", event.target.value)
                               }
@@ -3382,6 +3422,7 @@ export default function CommunityDomainDashboardPage() {
                             <span style={sectionLabel()}>State / region</span>
                             <input
                               value={setupDraft.state}
+                              disabled={setupEditingLocked}
                               onChange={(event) =>
                                 updateSetupDraftField("state", event.target.value)
                               }
@@ -3400,7 +3441,7 @@ export default function CommunityDomainDashboardPage() {
                             kind="primary"
                             fullWidth
                             debugId="community-domain-dashboard.setup-check-domain-name"
-                            disabled={busySetupDomainCheck || busyProfileSave}
+                            disabled={setupEditingLocked || busySetupDomainCheck || busyProfileSave}
                             onClick={() => {
                               void checkSetupDomainName();
                             }}
@@ -3423,6 +3464,7 @@ export default function CommunityDomainDashboardPage() {
                           <span style={sectionLabel()}>Public profile</span>
                           <textarea
                             value={setupDraft.public_profile}
+                            disabled={setupEditingLocked}
                             onChange={(event) =>
                               updateSetupDraftField("public_profile", event.target.value)
                             }
@@ -3460,6 +3502,7 @@ export default function CommunityDomainDashboardPage() {
                           kind="primary"
                           fullWidth
                           debugId="community-domain-dashboard.setup-open-billing"
+                          disabled={setupEditingLocked}
                           onClick={openSetupPaymentLane}
                         >
                           Open Billing
@@ -3473,6 +3516,7 @@ export default function CommunityDomainDashboardPage() {
                           <span style={sectionLabel()}>Evidence label</span>
                           <input
                             value={setupDraft.authority_evidence_label}
+                            disabled={setupEditingLocked}
                             onChange={(event) =>
                               updateSetupDraftField(
                                 "authority_evidence_label",
@@ -3487,6 +3531,7 @@ export default function CommunityDomainDashboardPage() {
                           <span style={sectionLabel()}>Reference</span>
                           <input
                             value={setupDraft.authority_evidence_reference}
+                            disabled={setupEditingLocked}
                             onChange={(event) =>
                               updateSetupDraftField(
                                 "authority_evidence_reference",
@@ -3501,6 +3546,7 @@ export default function CommunityDomainDashboardPage() {
                           <span style={sectionLabel()}>Evidence note</span>
                           <textarea
                             value={setupDraft.authority_evidence_note}
+                            disabled={setupEditingLocked}
                             onChange={(event) =>
                               updateSetupDraftField(
                                 "authority_evidence_note",
@@ -3523,6 +3569,7 @@ export default function CommunityDomainDashboardPage() {
                             data-gmfn-action-root="true"
                             data-cta-id="community-domain-dashboard.setup-evidence-file"
                             accept=".jpg,.jpeg,.png,.webp,.pdf,image/jpeg,image/png,image/webp,application/pdf"
+                            disabled={setupEditingLocked}
                             onChange={(event) =>
                               setSetupEvidenceFile(event.target.files?.[0] || null)
                             }
@@ -3540,7 +3587,7 @@ export default function CommunityDomainDashboardPage() {
                           fullWidth
                           debugId="community-domain-dashboard.setup-submit-evidence"
                           disabled={
-                            !isAdmin ||
+                            setupEditingLocked ||
                             busySetupEvidence ||
                             (!setupEvidenceFile &&
                               !cleanText(setupDraft.authority_evidence_reference))
@@ -3603,6 +3650,7 @@ export default function CommunityDomainDashboardPage() {
                               ? setupDraft.governance_note
                               : setupDraft.services_note
                           }
+                          disabled={setupEditingLocked}
                           onChange={(event) =>
                             updateSetupDraftField(
                               activeSetupStep === "structure"
@@ -3663,6 +3711,36 @@ export default function CommunityDomainDashboardPage() {
                           </div>
                         ) : null}
                         <div style={{ ...softCard(), display: "grid", gap: 10 }}>
+                          <div style={sectionLabel()}>Edit saved setup</div>
+                          <div style={{ ...helperText(), fontSize: 13 }}>
+                            If a mistake was made, reopen the step, correct it,
+                            then save again.
+                          </div>
+                          <div
+                            style={{
+                              display: "grid",
+                              gridTemplateColumns:
+                                "repeat(auto-fit, minmax(min(100%, 130px), 1fr))",
+                              gap: 8,
+                            }}
+                          >
+                            {SETUP_STEP_OPTIONS.filter((option) => option.key !== "launch").map(
+                              (option) => (
+                                <StableButton
+                                  key={option.key}
+                                  type="button"
+                                  kind="secondary"
+                                  debugId={`community-domain-dashboard.setup-edit-step.${option.key}`}
+                                  disabled={setupEditingLocked}
+                                  onClick={() => setActiveSetupStep(option.key)}
+                                >
+                                  {option.label}
+                                </StableButton>
+                              )
+                            )}
+                          </div>
+                        </div>
+                        <div style={{ ...softCard(), display: "grid", gap: 10 }}>
                           <div style={sectionLabel()}>Invite next</div>
                           <h3 style={{ margin: 0, fontSize: 19, lineHeight: 1.15 }}>
                             Grow the first circle.
@@ -3677,7 +3755,7 @@ export default function CommunityDomainDashboardPage() {
                             type="button"
                             kind="primary"
                             fullWidth
-                            disabled={!selectedDomainClanId}
+                            disabled={setupEditingLocked || !selectedDomainClanId}
                             debugId="community-domain-dashboard.setup-open-first-circle"
                             onClick={openSetupFirstCircle}
                           >
@@ -3714,7 +3792,7 @@ export default function CommunityDomainDashboardPage() {
                         type="button"
                         kind="primary"
                         debugId="community-domain-dashboard.setup-save-and-continue"
-                        disabled={activeSetupStep === "identity" && (!isAdmin || busyProfileSave)}
+                        disabled={setupEditingLocked || busyProfileSave}
                         onClick={() => {
                           void saveSetupStepAndContinue();
                         }}

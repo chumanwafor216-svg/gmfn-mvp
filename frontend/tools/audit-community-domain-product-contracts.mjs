@@ -132,6 +132,27 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
+  /setupEditingLocked = !isAdmin[\s\S]*Only a Community Domain owner or domain admin can edit setup[\s\S]*Setup access[\s\S]*Read only[\s\S]*Owner\/admin editing/,
+  "Community Domain dashboard setup must visibly lock editing to owner/admin authority instead of leaving setup drafts open to every viewer.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /disabled=\{setupEditingLocked[\s\S]*community-domain-dashboard\.setup-save-and-continue[\s\S]*disabled=\{setupEditingLocked \|\| busyProfileSave\}/,
+  "Community Domain dashboard setup save controls must be disabled for non-admin viewers.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /Edit saved setup[\s\S]*community-domain-dashboard\.setup-edit-step\.\$\{option\.key\}[\s\S]*setActiveSetupStep\(option\.key\)/,
+  "Community Domain dashboard setup must provide an owner/admin edit path for correcting saved setup mistakes.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
   /listMyCommunityDomains[\s\S]*errorDetailMessage[\s\S]*could not load your Community Domains[\s\S]*getCommunityDomainDashboard[\s\S]*errorDetailMessage[\s\S]*could not open this Community Domain dashboard[\s\S]*refreshQuote[\s\S]*errorDetailMessage[\s\S]*could not refresh the package quote/,
   "Community Domain dashboard selector, dashboard-load, and package quote failures must parse structured backend detail before falling back to plain recovery copy.",
   { frontend: true }
