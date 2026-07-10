@@ -139,6 +139,13 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
+  /setupJourneyMode[\s\S]*showSetupAccessCard = setupJourneyMode === "edit" \|\| setupEditingLocked[\s\S]*openSetupJourney\(mode: "setup" \| "edit"\)[\s\S]*community-domain-dashboard\.setup-focus[\s\S]*Continue setup[\s\S]*community-domain-dashboard\.edit-setup-focus[\s\S]*Edit setup[\s\S]*setupJourneyMode === "edit"[\s\S]*Edit Community Domain setup/,
+  "Community Domain dashboard hero must expose setup and edit as front-door choices, and the setup-access card must lead only when editing or locked.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
   /delegateCommunityDomainSetupEditor[\s\S]*Authorise setup editor[\s\S]*community-domain-dashboard\.setup-editor-appoint[\s\S]*Authorise editor[\s\S]*community-domain-dashboard\.setup-editor-revoke[\s\S]*Remove editor[\s\S]*community-domain-dashboard\.setup-editor-request[\s\S]*Ask owner to authorise editing/,
   "Community Domain dashboard setup must expose owner/admin setup-editor controls and a non-admin request path.",
   { frontend: true }
@@ -167,8 +174,8 @@ assertContains(
 
 assertContains(
   "src/pages/communityDomainDashboard/DomainSelectorPanel.tsx",
-  /No Community Domains yet[\s\S]*community-domain-dashboard\.empty\.purchase[\s\S]*community-domain-dashboard\.empty\.community-home[\s\S]*Your Community Domains[\s\S]*Draft domains open setup first[\s\S]*Domain: \{compactStatus\(itemDomain\.status\)\}[\s\S]*Verification: \{compactStatus\(itemDomain\.verification_status\)\}[\s\S]*draftDomain \? "Continue setup" : "Open domain"/,
-  "Lazy Community Domain selector panel must expose safe domain and verification status, route draft domains into setup wording, and keep empty-state recovery.",
+  /lookupCommunityDomainByName[\s\S]*Set up \/ edit[\s\S]*community-domain-dashboard\.selector\.setup-new[\s\S]*Set up new domain[\s\S]*community-domain-dashboard\.selector\.edit-existing-focus[\s\S]*Edit existing domain[\s\S]*community-domain-dashboard\.selector\.find-edit-domain[\s\S]*Find domain[\s\S]*community-domain-dashboard\.selector\.open-edit-domain[\s\S]*Open edit path[\s\S]*No owned domains on this account[\s\S]*Your Community Domains[\s\S]*draftDomain \? "Set up \/ edit" : "Open \/ edit"/,
+  "Lazy Community Domain selector panel must front-load setup/edit choice, support public-safe domain lookup for edit, route draft domains into setup/edit wording, and keep empty-state recovery.",
   { frontend: true }
 );
 
@@ -261,8 +268,8 @@ assertNotContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /function laneDisplayLabel[\s\S]*key === "modules"[\s\S]*return "Services"[\s\S]*const primaryActionLaneLabel = laneDisplayLabel\(primaryActionLane, "work"\)[\s\S]*\{laneDisplayLabel\(selectedLane, "Community Domain setup"\)\}/,
-  "Community Domain dashboard parent must show service language for primary and opened modules-lane labels without changing internal lane keys.",
+  /function laneDisplayLabel[\s\S]*key === "modules"[\s\S]*return "Services"[\s\S]*const primaryActionLaneLabel = laneDisplayLabel\(primaryActionLane, "work"\)[\s\S]*Edit Community Domain setup[\s\S]*laneDisplayLabel\(selectedLane, "Community Domain setup"\)/,
+  "Community Domain dashboard parent must show service language for primary and opened modules-lane labels without changing internal lane keys, while allowing the edit setup heading.",
   { frontend: true }
 );
 

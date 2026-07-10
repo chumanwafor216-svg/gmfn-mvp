@@ -1140,6 +1140,9 @@ export default function CommunityDomainDashboardPage() {
   const [activeSetupStep, setActiveSetupStep] = useState<SetupStepKey>("identity");
   const [setupCompletionSavedAt, setSetupCompletionSavedAt] = useState("");
   const [activeLane, setActiveLane] = useState("settings");
+  const [setupJourneyMode, setSetupJourneyMode] = useState<"setup" | "edit">(
+    "setup"
+  );
   const [showAdvancedTools, setShowAdvancedTools] = useState(false);
   const [activeStructureDetail, setActiveStructureDetail] =
     useState<StructureDetailKey>("preview");
@@ -1917,6 +1920,7 @@ export default function CommunityDomainDashboardPage() {
     : isAdmin
     ? "Owner/admin editing"
     : "Setup editor";
+  const showSetupAccessCard = setupJourneyMode === "edit" || setupEditingLocked;
 
   useEffect(() => {
     const domainId = cleanText(domain?.id || communityDomainId);
@@ -2171,6 +2175,21 @@ export default function CommunityDomainDashboardPage() {
     } finally {
       setBusySetupEditorDelegate(false);
     }
+  }
+
+  function openSetupJourney(mode: "setup" | "edit") {
+    setSetupJourneyMode(mode);
+    setActiveLane("settings");
+    setShowAdvancedTools(false);
+    if (mode === "edit") {
+      setMessage(
+        setupEditingLocked
+          ? "This setup is locked. Ask the owner/admin to authorise editing before changing it."
+          : "Edit setup is open. Owner/admin authority, setup-editor authority, and changes are still recorded separately."
+      );
+      return;
+    }
+    setMessage("");
   }
 
   function openSetupPaymentLane() {
@@ -3026,9 +3045,18 @@ export default function CommunityDomainDashboardPage() {
                 kind="primary"
                 fullWidth
                 debugId="community-domain-dashboard.setup-focus"
-                onClick={() => setActiveLane("settings")}
+                onClick={() => openSetupJourney("setup")}
               >
                 Continue setup
+              </StableButton>
+              <StableButton
+                type="button"
+                kind="secondary"
+                fullWidth
+                debugId="community-domain-dashboard.edit-setup-focus"
+                onClick={() => openSetupJourney("edit")}
+              >
+                Edit setup
               </StableButton>
             </div>
           </section>
@@ -3353,10 +3381,16 @@ export default function CommunityDomainDashboardPage() {
             <div style={whiteCard()}>
               <div style={{ display: "grid", gap: 12 }}>
                 <div style={sectionLabel()}>
-                  {showAdvancedTools ? "Opened lane" : "Create / setup"}
+                  {showAdvancedTools
+                    ? "Opened lane"
+                    : setupJourneyMode === "edit"
+                    ? "Edit setup"
+                    : "Create / setup"}
                 </div>
                 <h2 style={{ margin: 0, fontSize: 26, lineHeight: 1.1 }}>
-                  {laneDisplayLabel(selectedLane, "Community Domain setup")}
+                  {setupJourneyMode === "edit" && activeLane === "settings"
+                    ? "Edit Community Domain setup"
+                    : laneDisplayLabel(selectedLane, "Community Domain setup")}
                 </h2>
                 {showAdvancedTools ? (
                   <div style={helperText()}>
@@ -3382,142 +3416,150 @@ export default function CommunityDomainDashboardPage() {
 
                 {!isActiveLaneReadinessLoading && activeLane === "settings" ? (
                   <div style={{ ...softCard(), display: "grid", gap: 12 }}>
-                    <div style={sectionLabel()}>Create Community Domain</div>
+                    <div style={sectionLabel()}>
+                      {setupJourneyMode === "edit"
+                        ? "Edit Community Domain"
+                        : "Create Community Domain"}
+                    </div>
                     <h3 style={{ margin: 0, fontSize: 22, lineHeight: 1.15 }}>
                       {setupCurrentStep.label}
                     </h3>
                     <div style={{ ...helperText(), fontSize: 14 }}>
                       Step {setupStepIndex + 1} of {SETUP_STEP_OPTIONS.length}.{" "}
-                      {setupCurrentStep.note}
+                      {setupJourneyMode === "edit"
+                        ? "Correct saved details only after owner/admin or setup-editor authority is clear."
+                        : setupCurrentStep.note}
                     </div>
-                    <div style={{ ...softCard(), display: "grid", gap: 8 }}>
-                      <div style={sectionLabel()}>Setup access</div>
-                      <div style={statusBadge(setupAccessLabel)}>
-                        {setupAccessLabel}
-                      </div>
-                      <div style={{ ...helperText(), fontSize: 13 }}>
-                        {setupEditingLocked
-                          ? "Ask the owner/admin to authorise setup editing. Members cannot change this setup by themselves."
-                          : isAdmin
-                          ? "You hold final owner/admin authority. You can authorise or remove one trusted setup editor."
-                          : "You can edit setup, profile, and setup evidence only. Owner/admin authority remains above this role."}
-                      </div>
-                      {isAdmin ? (
-                        <div style={{ display: "grid", gap: 8 }}>
-                          <div style={sectionLabel()}>Authorise setup editor</div>
-                          <div style={{ ...helperText(), fontSize: 13 }}>
-                            Appoint a trusted GSN user by email, phone, GSN ID, or
-                            user id. This grants limited setup editing only, and the
-                            owner/admin can revoke or replace it.
+                    {showSetupAccessCard ? (
+                      <div style={{ ...softCard(), display: "grid", gap: 8 }}>
+                        <div style={sectionLabel()}>Setup access</div>
+                        <div style={statusBadge(setupAccessLabel)}>
+                          {setupAccessLabel}
+                        </div>
+                        <div style={{ ...helperText(), fontSize: 13 }}>
+                          {setupEditingLocked
+                            ? "Ask the owner/admin to authorise setup editing. Members cannot change this setup by themselves."
+                            : isAdmin
+                            ? "You hold final owner/admin authority. You can authorise or remove one trusted setup editor."
+                            : "You can edit setup, profile, and setup evidence only. Owner/admin authority remains above this role."}
+                        </div>
+                        {isAdmin ? (
+                          <div style={{ display: "grid", gap: 8 }}>
+                            <div style={sectionLabel()}>Authorise setup editor</div>
+                            <div style={{ ...helperText(), fontSize: 13 }}>
+                              Appoint a trusted GSN user by email, phone, GSN ID, or
+                              user id. This grants limited setup editing only, and the
+                              owner/admin can revoke or replace it.
+                            </div>
+                            <input
+                              value={setupEditorSubject}
+                              disabled={busySetupEditorDelegate}
+                              onChange={(event) => setSetupEditorSubject(event.target.value)}
+                              placeholder="editor@example.com, +447..., GMFN-U-..."
+                              style={billingInputStyle()}
+                            />
+                            <textarea
+                              value={setupEditorNote}
+                              disabled={busySetupEditorDelegate}
+                              onChange={(event) => setSetupEditorNote(event.target.value)}
+                              placeholder="Optional note: who authorised this delegation."
+                              style={{
+                                ...billingInputStyle(),
+                                minHeight: 78,
+                                padding: 12,
+                                resize: "vertical",
+                              }}
+                            />
+                            <div
+                              style={{
+                                display: "grid",
+                                gridTemplateColumns:
+                                  "repeat(auto-fit, minmax(min(100%, 150px), 1fr))",
+                                gap: 8,
+                              }}
+                            >
+                              <StableButton
+                                type="button"
+                                kind="primary"
+                                debugId="community-domain-dashboard.setup-editor-appoint"
+                                disabled={busySetupEditorDelegate}
+                                onClick={() => {
+                                  void delegateSetupEditor("appoint");
+                                }}
+                              >
+                                {busySetupEditorDelegate ? "Updating..." : "Authorise editor"}
+                              </StableButton>
+                              <StableButton
+                                type="button"
+                                kind="secondary"
+                                debugId="community-domain-dashboard.setup-editor-revoke"
+                                disabled={busySetupEditorDelegate}
+                                onClick={() => {
+                                  void delegateSetupEditor("revoke");
+                                }}
+                              >
+                                Remove editor
+                              </StableButton>
+                            </div>
+                            {setupEditorResult?.membership ? (
+                              <div style={statusBadge("authority recorded")}>
+                                {cleanText(
+                                  setupEditorResult.membership.user_display_name ||
+                                    setupEditorResult.membership.user_email,
+                                  "Editor"
+                                )}
+                                : {compactStatus(setupEditorResult.membership.role)}
+                              </div>
+                            ) : null}
                           </div>
-                          <input
-                            value={setupEditorSubject}
-                            disabled={busySetupEditorDelegate}
-                            onChange={(event) => setSetupEditorSubject(event.target.value)}
-                            placeholder="editor@example.com, +447..., GMFN-U-..."
-                            style={billingInputStyle()}
-                          />
-                          <textarea
-                            value={setupEditorNote}
-                            disabled={busySetupEditorDelegate}
-                            onChange={(event) => setSetupEditorNote(event.target.value)}
-                            placeholder="Optional note: who authorised this delegation."
-                            style={{
-                              ...billingInputStyle(),
-                              minHeight: 78,
-                              padding: 12,
-                              resize: "vertical",
-                            }}
-                          />
-                          <div
-                            style={{
-                              display: "grid",
-                              gridTemplateColumns:
-                                "repeat(auto-fit, minmax(min(100%, 150px), 1fr))",
-                              gap: 8,
-                            }}
-                          >
+                        ) : setupEditingLocked ? (
+                          <div style={{ display: "grid", gap: 8 }}>
+                            <div style={sectionLabel()}>Request editing access</div>
+                            <div style={{ ...helperText(), fontSize: 13 }}>
+                              Enter your GSN email, phone, GSN ID, or user id. GSN will
+                              record a request for the owner/admin to approve and apply.
+                            </div>
+                            <input
+                              value={setupEditorSubject}
+                              disabled={busySetupEditorDelegate}
+                              onChange={(event) => setSetupEditorSubject(event.target.value)}
+                              placeholder="your email, phone, GMFN-U-..., or user id"
+                              style={billingInputStyle()}
+                            />
+                            <textarea
+                              value={setupEditorNote}
+                              disabled={busySetupEditorDelegate}
+                              onChange={(event) => setSetupEditorNote(event.target.value)}
+                              placeholder="Optional note: why you need setup access."
+                              style={{
+                                ...billingInputStyle(),
+                                minHeight: 78,
+                                padding: 12,
+                                resize: "vertical",
+                              }}
+                            />
                             <StableButton
                               type="button"
                               kind="primary"
-                              debugId="community-domain-dashboard.setup-editor-appoint"
+                              debugId="community-domain-dashboard.setup-editor-request"
                               disabled={busySetupEditorDelegate}
                               onClick={() => {
-                                void delegateSetupEditor("appoint");
+                                void delegateSetupEditor("request");
                               }}
                             >
-                              {busySetupEditorDelegate ? "Updating..." : "Authorise editor"}
+                              {busySetupEditorDelegate
+                                ? "Sending..."
+                                : "Ask owner to authorise editing"}
                             </StableButton>
-                            <StableButton
-                              type="button"
-                              kind="secondary"
-                              debugId="community-domain-dashboard.setup-editor-revoke"
-                              disabled={busySetupEditorDelegate}
-                              onClick={() => {
-                                void delegateSetupEditor("revoke");
-                              }}
-                            >
-                              Remove editor
-                            </StableButton>
+                            {setupEditorResult?.action_review ? (
+                              <div style={statusBadge("request sent")}>
+                                Request: {compactStatus(setupEditorResult.action_review.status)}
+                              </div>
+                            ) : null}
                           </div>
-                          {setupEditorResult?.membership ? (
-                            <div style={statusBadge("authority recorded")}>
-                              {cleanText(
-                                setupEditorResult.membership.user_display_name ||
-                                  setupEditorResult.membership.user_email,
-                                "Editor"
-                              )}
-                              : {compactStatus(setupEditorResult.membership.role)}
-                            </div>
-                          ) : null}
-                        </div>
-                      ) : setupEditingLocked ? (
-                        <div style={{ display: "grid", gap: 8 }}>
-                          <div style={sectionLabel()}>Request editing access</div>
-                          <div style={{ ...helperText(), fontSize: 13 }}>
-                            Enter your GSN email, phone, GSN ID, or user id. GSN will
-                            record a request for the owner/admin to approve and apply.
-                          </div>
-                          <input
-                            value={setupEditorSubject}
-                            disabled={busySetupEditorDelegate}
-                            onChange={(event) => setSetupEditorSubject(event.target.value)}
-                            placeholder="your email, phone, GMFN-U-..., or user id"
-                            style={billingInputStyle()}
-                          />
-                          <textarea
-                            value={setupEditorNote}
-                            disabled={busySetupEditorDelegate}
-                            onChange={(event) => setSetupEditorNote(event.target.value)}
-                            placeholder="Optional note: why you need setup access."
-                            style={{
-                              ...billingInputStyle(),
-                              minHeight: 78,
-                              padding: 12,
-                              resize: "vertical",
-                            }}
-                          />
-                          <StableButton
-                            type="button"
-                            kind="primary"
-                            debugId="community-domain-dashboard.setup-editor-request"
-                            disabled={busySetupEditorDelegate}
-                            onClick={() => {
-                              void delegateSetupEditor("request");
-                            }}
-                          >
-                            {busySetupEditorDelegate
-                              ? "Sending..."
-                              : "Ask owner to authorise editing"}
-                          </StableButton>
-                          {setupEditorResult?.action_review ? (
-                            <div style={statusBadge("request sent")}>
-                              Request: {compactStatus(setupEditorResult.action_review.status)}
-                            </div>
-                          ) : null}
-                        </div>
-                      ) : null}
-                    </div>
+                        ) : null}
+                      </div>
+                    ) : null}
 
                     {activeSetupStep === "identity" ? (
                       <div style={{ display: "grid", gap: 10 }}>
