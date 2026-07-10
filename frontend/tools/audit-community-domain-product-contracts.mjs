@@ -97,8 +97,22 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainPurchasePage.tsx",
-  /PILLAR_OF_HOPE_DEMO_PROFILE[\s\S]*Saturday community fitness with Snapfit Aberdeen[\s\S]*food support[\s\S]*low-cost household items[\s\S]*health education seminars[\s\S]*setExistingDomainName\(demoDraft\.domainName \|\| ""\)[\s\S]*GSN is checking the domain name[\s\S]*checkCommunityDomainAvailability\(requestedDemoName\)[\s\S]*Pillar of Hope domain name is available[\s\S]*Pillar of Hope profile[\s\S]*\{demoProfile\}/,
+  /PILLAR_OF_HOPE_DEMO_PROFILE[\s\S]*Saturday community fitness with Snapfit Aberdeen[\s\S]*food support[\s\S]*low-cost household items[\s\S]*health education seminars[\s\S]*stateName: "Scotland \/ Aberdeen"[\s\S]*templateKey: "ngo_project_network"[\s\S]*setExistingDomainName\(demoDraft\.domainName \|\| ""\)[\s\S]*GSN is checking the domain name[\s\S]*checkCommunityDomainAvailability\(requestedDemoName\)[\s\S]*Pillar of Hope domain name is available[\s\S]*Pillar of Hope profile[\s\S]*\{demoProfile\}/,
   "Pillar of Hope demo preset must fill the lookup code, auto-check real availability, and visibly show the charity profile, not only hidden draft metadata.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainPurchasePage.tsx",
+  /placeholder="Example: Pillar of Hope"[\s\S]*placeholder="pillar-of-hope"[\s\S]*placeholder="United Kingdom"[\s\S]*placeholder="Scotland \/ Aberdeen"/,
+  "Community Domain purchase placeholders must not make the pilot look like a Dominion Schools/Nigeria draft when the owner is rehearsing Pillar of Hope.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /PILLAR_OF_HOPE_SETUP_PROFILE[\s\S]*Saturday community fitness with Snapfit Aberdeen[\s\S]*isPillarOfHopeDomain[\s\S]*pillar-of-hope-demo[\s\S]*setupDraftBelongsToDomain[\s\S]*normalizePillarOfHopeSetupDraft[\s\S]*domain_type: "ngo_project_network"[\s\S]*template_key: "ngo_project_network"[\s\S]*state: "Scotland \/ Aberdeen"/,
+  "Community Domain dashboard setup must keep the Pillar pilot on the charity template and prevent stale school setup draft values from bleeding into the form.",
   { frontend: true }
 );
 

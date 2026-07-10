@@ -905,7 +905,7 @@ export default function CommunityDomainPurchasePage() {
                       value={organizationName}
                       onChange={(event) => setOrganizationName(event.target.value)}
                       disabled={hasCreatedDraft || busy === "draft"}
-                      placeholder="Dominion Schools Network"
+                      placeholder="Example: Pillar of Hope"
                       style={inputStyle()}
                     />
                   </label>
@@ -916,7 +916,7 @@ export default function CommunityDomainPurchasePage() {
                       value={domainName}
                       onChange={(event) => handleDomainNameChange(event.target.value)}
                       disabled={hasCreatedDraft || busy === "draft"}
-                      placeholder="dominion-schools"
+                      placeholder="pillar-of-hope"
                       style={inputStyle()}
                     />
                   </label>
@@ -951,7 +951,7 @@ export default function CommunityDomainPurchasePage() {
                       value={country}
                       onChange={(event) => setCountry(event.target.value)}
                       disabled={hasCreatedDraft || busy === "draft"}
-                      placeholder="Nigeria"
+                      placeholder="United Kingdom"
                       style={inputStyle()}
                     />
                   </label>
@@ -962,7 +962,7 @@ export default function CommunityDomainPurchasePage() {
                       value={stateName}
                       onChange={(event) => setStateName(event.target.value)}
                       disabled={hasCreatedDraft || busy === "draft"}
-                      placeholder="Lagos"
+                      placeholder="Scotland / Aberdeen"
                       style={inputStyle()}
                     />
                   </label>

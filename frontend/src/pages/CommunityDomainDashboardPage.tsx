@@ -371,9 +371,26 @@ type OperatingStateCopy = {
   risk: string;
 };
 
+const PILLAR_OF_HOPE_SETUP_PROFILE =
+  "Pillar of Hope supports families in Aberdeen through Saturday community fitness with Snapfit Aberdeen, food support for families in need, low-cost household items, and health education seminars for women and families.";
+
 function cleanText(value: unknown, fallback = ""): string {
   const text = String(value ?? "").trim();
   return text || fallback;
+}
+
+function normalizedSetupText(value: unknown): string {
+  return cleanText(value).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+}
+
+function isPillarOfHopeDomain(domain: any, draft?: Partial<CommunityDomainSetupDraft> | null): boolean {
+  const candidates = [
+    domain?.domain_name,
+    domain?.display_name,
+    draft?.domain_name,
+    draft?.display_name,
+  ].map(normalizedSetupText);
+  return candidates.some((value) => value === "pillar-of-hope" || value === "pillar-of-hope-demo");
 }
 
 function communityDomainSetupDraftKey(domainId: unknown): string {
@@ -396,6 +413,38 @@ function setupDraftFromDomain(domain: any): CommunityDomainSetupDraft {
     members_note: "",
     governance_note: "",
     services_note: "",
+  };
+}
+
+function setupDraftBelongsToDomain(
+  draft: CommunityDomainSetupDraft | null,
+  domainDraft: CommunityDomainSetupDraft
+): boolean {
+  if (!draft) return false;
+  const draftDomainName = normalizedSetupText(draft.domain_name);
+  const domainName = normalizedSetupText(domainDraft.domain_name);
+  const draftDisplayName = normalizedSetupText(draft.display_name);
+  const displayName = normalizedSetupText(domainDraft.display_name);
+
+  if (draftDomainName && domainName && draftDomainName !== domainName) return false;
+  if (draftDisplayName && displayName && draftDisplayName !== displayName) return false;
+  return true;
+}
+
+function normalizePillarOfHopeSetupDraft(
+  domain: any,
+  draft: CommunityDomainSetupDraft
+): CommunityDomainSetupDraft {
+  if (!isPillarOfHopeDomain(domain, draft)) return draft;
+  return {
+    ...draft,
+    display_name: cleanText(draft.display_name, "Pillar of Hope"),
+    domain_name: cleanText(draft.domain_name, "pillar-of-hope"),
+    domain_type: "ngo_project_network",
+    template_key: "ngo_project_network",
+    country: "United Kingdom",
+    state: "Scotland / Aberdeen",
+    public_profile: PILLAR_OF_HOPE_SETUP_PROFILE,
   };
 }
 
@@ -1774,11 +1823,15 @@ export default function CommunityDomainDashboardPage() {
   useEffect(() => {
     const domainId = cleanText(domain?.id || communityDomainId);
     if (!domainId || !dashboard) return;
+    const domainDraft = setupDraftFromDomain(domain);
     const stored = readCommunityDomainSetupDraft(domainId);
-    setSetupDraft({
-      ...setupDraftFromDomain(domain),
-      ...(stored || {}),
-    });
+    const safeStored = setupDraftBelongsToDomain(stored, domainDraft) ? stored : null;
+    setSetupDraft(
+      normalizePillarOfHopeSetupDraft(domain, {
+        ...domainDraft,
+        ...(safeStored || {}),
+      })
+    );
   }, [communityDomainId, dashboard, domain?.id]);
 
   function updateSetupDraftField(
