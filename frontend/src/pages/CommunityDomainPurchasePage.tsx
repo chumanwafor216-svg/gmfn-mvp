@@ -77,6 +77,24 @@ const FALLBACK_TEMPLATES: TemplateOption[] = [
     summary: "Market authorities, trade lines, shop clusters, and cooperative records.",
   },
   {
+    template_key: "family_town_union_diaspora",
+    domain_type: "town_union",
+    label: "Family / town union / diaspora",
+    summary: "Town unions, diaspora chapters, family groups, projects, and committees.",
+  },
+  {
+    template_key: "hospital_health_body",
+    domain_type: "health_body",
+    label: "Hospital / health body",
+    summary: "Clinics, health networks, care groups, units, staff, and controlled records.",
+  },
+  {
+    template_key: "ngo_project_network",
+    domain_type: "ngo_project_network",
+    label: "NGO / project network",
+    summary: "Charities, nonprofits, support networks, field offices, programmes, and evidence records.",
+  },
+  {
     template_key: "generic_association",
     domain_type: "generic_association",
     label: "Generic association",

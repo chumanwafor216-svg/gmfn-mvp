@@ -82,6 +82,13 @@ assertContains(
 );
 
 assertContains(
+  "src/pages/CommunityDomainPurchasePage.tsx",
+  /FALLBACK_TEMPLATES[\s\S]*school_multi_branch[\s\S]*church_religious_body[\s\S]*union_professional_body[\s\S]*market_cooperative[\s\S]*family_town_union_diaspora[\s\S]*hospital_health_body[\s\S]*ngo_project_network[\s\S]*generic_association/,
+  "Community Domain purchase fallback templates must include the approved society types, including NGO/project network for charity pilots.",
+  { frontend: true }
+);
+
+assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
   /listMyCommunityDomains[\s\S]*errorDetailMessage[\s\S]*could not load your Community Domains[\s\S]*getCommunityDomainDashboard[\s\S]*errorDetailMessage[\s\S]*could not open this Community Domain dashboard[\s\S]*refreshQuote[\s\S]*errorDetailMessage[\s\S]*could not refresh the package quote/,
   "Community Domain dashboard selector, dashboard-load, and package quote failures must parse structured backend detail before falling back to plain recovery copy.",

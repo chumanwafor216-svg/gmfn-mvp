@@ -457,8 +457,19 @@ def test_community_domain_templates_are_public_presets_not_activation(
         "church_religious_body",
         "union_professional_body",
         "market_cooperative",
+        "ngo_project_network",
         "generic_association",
     }.issubset(template_keys)
+
+    ngo_template = next(
+        item for item in items if item["template_key"] == "ngo_project_network"
+    )
+    assert ngo_template["domain_type"] == "ngo_project_network"
+    assert "spotlight" in ngo_template["default_modules"]
+    assert "verification" in ngo_template["default_modules"]
+    assert "shops" not in ngo_template["default_modules"]
+    assert "marketplace" not in ngo_template["default_modules"]
+    assert ngo_template["marketplace_role"] == "optional"
 
     for item in items:
         assert item["template_key"]
@@ -612,6 +623,47 @@ def test_template_operating_blueprint_distinguishes_school_and_rejects_unknown(
         assert db.query(CommunityDomain).count() == 0
         assert db.query(CommunityNode).count() == 0
         assert db.query(CommunityDomainMembership).count() == 0
+
+
+def test_ngo_template_keeps_charity_commerce_optional_and_evidence_first(
+    client: TestClient,
+):
+    response = client.get(
+        "/community-domains/templates/ngo_project_network/operating-blueprint"
+    )
+
+    assert response.status_code == 200, response.text
+    blueprint = response.json()["operating_blueprint"]
+    template = blueprint["template"]
+    assert template["template_key"] == "ngo_project_network"
+    assert template["marketplace_role"] == "optional"
+    assert "spotlight" in template["default_modules"]
+    assert "verification" in template["default_modules"]
+    assert "shops" not in template["default_modules"]
+    assert "marketplace" not in template["default_modules"]
+
+    module_fit = {item["module_key"]: item for item in blueprint["module_fit"]}
+    assert module_fit["spotlight"]["status"] == "enabled_by_template"
+    assert module_fit["verification"]["status"] == "enabled_by_template"
+    assert module_fit["marketplace"]["status"] == "optional_template"
+    assert "optional unless the institution's real work needs" in (
+        module_fit["marketplace"]["summary"]
+    )
+
+    node_kinds = {item["node_kind"] for item in blueprint["node_presets"]}
+    assert {"ngo_field_office", "ngo_program", "ngo_team"}.issubset(node_kinds)
+    assert "beneficiary evidence" in blueprint["activity_lanes"]
+    assert "donor-ready analytics" in blueprint["activity_lanes"]
+    assert "does not create a Community Domain" in blueprint["boundary"]
+    assert "activate billing" in blueprint["boundary"]
+    assert "move money" in blueprint["boundary"]
+
+    with SessionLocal() as db:
+        assert db.query(CommunityDomain).count() == 0
+        assert db.query(CommunityNode).count() == 0
+        assert db.query(CommunityDomainMembership).count() == 0
+        assert db.query(CommunityDomainPolicy).count() == 0
+        assert db.query(CommunityDomainActionReview).count() == 0
 
 
 def test_all_public_templates_have_specific_operating_blueprints(
