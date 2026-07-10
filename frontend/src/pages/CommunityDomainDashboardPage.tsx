@@ -1367,6 +1367,8 @@ export default function CommunityDomainDashboardPage() {
       message: "Check the domain code before saving a changed name.",
     });
   const [domainNotices, setDomainNotices] = useState<CommunityDomainNoticeItem[]>([]);
+  const [domainNoticeFeatureMode, setDomainNoticeFeatureMode] =
+    useState<DomainFeaturePolicyMode>("admin_only");
   const [domainNoticesLoading, setDomainNoticesLoading] = useState(false);
   const [domainNoticeModalOpen, setDomainNoticeModalOpen] = useState(false);
   const [domainNoticePosting, setDomainNoticePosting] = useState(false);
@@ -1510,6 +1512,7 @@ export default function CommunityDomainDashboardPage() {
       setMembershipRequestLineage([]);
       setLoadingMembershipRequestLineage(false);
       setDomainNotices([]);
+      setDomainNoticeFeatureMode("admin_only");
       setDomainNoticesLoading(false);
       setDomainNoticeModalOpen(false);
       setDomainNoticePosting(false);
@@ -1555,6 +1558,7 @@ export default function CommunityDomainDashboardPage() {
     setMembershipRequestLineage([]);
     setLoadingMembershipRequestLineage(false);
     setDomainNotices([]);
+    setDomainNoticeFeatureMode("admin_only");
     setDomainNoticesLoading(false);
     setDomainNoticeModalOpen(false);
     setDomainNoticePosting(false);
@@ -1637,6 +1641,10 @@ export default function CommunityDomainDashboardPage() {
         if (!isCurrentDomainRequest(requestDomainId)) return;
         const rows = Array.isArray(payload?.notices) ? payload.notices : [];
         setDomainNotices(rows);
+        const mode = cleanText(payload?.feature_policy_mode, "admin_only");
+        setDomainNoticeFeatureMode(
+          isFeaturePolicyMode(mode) ? mode : "admin_only"
+        );
       } finally {
         if (isCurrentDomainRequest(requestDomainId)) {
           setDomainNoticesLoading(false);
@@ -1669,6 +1677,12 @@ export default function CommunityDomainDashboardPage() {
     }
     if (!isAdmin) {
       setMessage("Only a Community Domain owner or domain admin can post an official notice.");
+      return;
+    }
+    if (domainNoticeFeatureMode === "off") {
+      setMessage(
+        "Announcement Board is not used in this domain. Change Domain feature policy before posting notices."
+      );
       return;
     }
 
@@ -3380,22 +3394,42 @@ export default function CommunityDomainDashboardPage() {
               <div style={officialBoardActionsStyle()}>
                 <span style={statusBadge("members only")}>Members only</span>
                 <span style={statusBadge("no broadcast")}>No broadcast</span>
+                <span
+                  style={statusBadge(
+                    domainNoticeFeatureMode === "off"
+                      ? "off"
+                      : featurePolicyModeLabel(domainNoticeFeatureMode)
+                  )}
+                >
+                  {domainNoticeFeatureMode === "off"
+                    ? "Off in settings"
+                    : featurePolicyModeLabel(domainNoticeFeatureMode)}
+                </span>
                 {isAdmin ? (
                   <StableButton
                     type="button"
                     kind="secondary"
                     stableHeight={44}
                     debugId="community-domain-dashboard.notice.post"
+                    disabled={domainNoticeFeatureMode === "off"}
                     onClick={() => setDomainNoticeModalOpen(true)}
                   >
-                    Post notice
+                    {domainNoticeFeatureMode === "off" ? "Not used here" : "Post notice"}
                   </StableButton>
                 ) : null}
               </div>
             </div>
 
             <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
-              {domainNoticesLoading ? (
+              {domainNoticeFeatureMode === "off" ? (
+                <div style={softCard()}>
+                  <div style={{ fontWeight: 950 }}>Announcement Board is off.</div>
+                  <div style={{ ...helperText(), marginTop: 6, fontSize: 13 }}>
+                    This domain has chosen not to use official notices here.
+                    Owner/admin can change this in Domain feature policy.
+                  </div>
+                </div>
+              ) : domainNoticesLoading ? (
                 <div style={{ ...helperText(), fontSize: 13 }}>
                   Loading official Community Domain notices.
                 </div>

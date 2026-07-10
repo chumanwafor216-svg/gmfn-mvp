@@ -159,6 +159,25 @@ assertContains(
 );
 
 assertContains(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  /COMMUNITY_DOMAIN_FEATURE_POLICY_KEY = "domain\.feature_policy"[\s\S]*COMMUNITY_DOMAIN_FEATURE_ANNOUNCEMENT_BOARD = "announcement_board"[\s\S]*def _community_domain_feature_mode[\s\S]*def _require_community_domain_feature_enabled[\s\S]*feature_policy_mode[\s\S]*posting_enabled[\s\S]*def create_community_domain_notice[\s\S]*_require_community_domain_feature_enabled/,
+  "Backend official notices must read the locked Community Domain feature policy and block Announcement Board posting when the domain disables it."
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /domainNoticeFeatureMode[\s\S]*feature_policy_mode[\s\S]*Announcement Board is not used in this domain[\s\S]*Off in settings[\s\S]*Announcement Board is off/,
+  "Community Domain dashboard must show when Announcement Board is disabled by domain feature policy instead of offering a working-looking post action.",
+  { frontend: true }
+);
+
+assertContains(
+  "gmfn_backend/tests/test_community_domains.py",
+  /test_community_domain_notice_board_respects_disabled_feature_policy[\s\S]*"domain\.feature_policy"[\s\S]*"announcement_board": "off"[\s\S]*"posting_enabled"\] is False[\s\S]*community_domain_feature_disabled[\s\S]*TrustEvent[\s\S]*count\(\)[\s\S]*== 0/,
+  "Backend tests must prove disabled Announcement Board policy blocks notice posting without creating TrustEvents or notifications."
+);
+
+assertContains(
   "src/pages/BuildFirstCirclePage.tsx",
   /isCommunityDomainCircleMode[\s\S]*buildCommunityDomainGroupInviteMessage[\s\S]*communityDomainCircleMode[\s\S]*charity_ngo[\s\S]*church_group[\s\S]*school_group[\s\S]*student_group[\s\S]*community_association[\s\S]*Inviter name[\s\S]*No bulk import: every member still enters with their own GSN identity/,
   "Build First Circle must keep a Community Domain group-migration mode with group types, inviter name, short share copy, and no false bulk-import promise.",

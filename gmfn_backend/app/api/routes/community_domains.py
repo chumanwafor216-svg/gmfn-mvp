@@ -92,6 +92,10 @@ COMMUNITY_DOMAIN_NOTICE_EXPIRY_POLICIES = {
 }
 COMMUNITY_DOMAIN_NOTICE_STANDARD_VISIBLE_DAYS = 7
 COMMUNITY_DOMAIN_NOTICE_URGENT_VISIBLE_HOURS = 48
+COMMUNITY_DOMAIN_FEATURE_POLICY_KEY = "domain.feature_policy"
+COMMUNITY_DOMAIN_FEATURE_ANNOUNCEMENT_BOARD = "announcement_board"
+COMMUNITY_DOMAIN_FEATURE_MODE_OFF = "off"
+COMMUNITY_DOMAIN_FEATURE_MODE_ADMIN_ONLY = "admin_only"
 GENERIC_UPLOAD_CONTENT_TYPES = {
     "",
     "application/octet-stream",
@@ -1371,6 +1375,71 @@ def _json_load(value: Optional[str]) -> dict[str, Any]:
         return data if isinstance(data, dict) else {}
     except Exception:
         return {}
+
+
+def _community_domain_feature_policy_config(
+    db: Session,
+    *,
+    community_domain_id: int,
+) -> dict[str, Any]:
+    policy = (
+        db.query(CommunityDomainPolicy)
+        .filter(CommunityDomainPolicy.community_domain_id == int(community_domain_id))
+        .filter(CommunityDomainPolicy.policy_key == COMMUNITY_DOMAIN_FEATURE_POLICY_KEY)
+        .filter(CommunityDomainPolicy.status == "active")
+        .first()
+    )
+    if policy is None:
+        return {}
+    return _json_load(policy.config_json)
+
+
+def _community_domain_feature_mode(
+    db: Session,
+    *,
+    community_domain_id: int,
+    feature_key: str,
+    default: str = COMMUNITY_DOMAIN_FEATURE_MODE_ADMIN_ONLY,
+) -> str:
+    config = _community_domain_feature_policy_config(
+        db,
+        community_domain_id=int(community_domain_id),
+    )
+    features = config.get("features")
+    if not isinstance(features, dict):
+        return default
+    mode = _clean_role(features.get(feature_key), default)
+    return mode or default
+
+
+def _require_community_domain_feature_enabled(
+    db: Session,
+    *,
+    domain: CommunityDomain,
+    feature_key: str,
+    feature_label: str,
+    default: str = COMMUNITY_DOMAIN_FEATURE_MODE_ADMIN_ONLY,
+) -> str:
+    mode = _community_domain_feature_mode(
+        db,
+        community_domain_id=int(domain.id),
+        feature_key=feature_key,
+        default=default,
+    )
+    if mode == COMMUNITY_DOMAIN_FEATURE_MODE_OFF:
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "community_domain_feature_disabled",
+                "feature_key": feature_key,
+                "feature_mode": mode,
+                "message": (
+                    f"{feature_label} is not enabled for this Community Domain. "
+                    "The owner/admin can change this in Domain feature policy."
+                ),
+            },
+        )
+    return mode
 
 
 def _word_count(value: str) -> int:
@@ -19973,6 +20042,12 @@ def list_community_domain_notices(
 ):
     domain = _get_domain_or_404(db, community_domain_id)
     _require_domain_member_scope(db, domain=domain, current_user=current_user)
+    feature_mode = _community_domain_feature_mode(
+        db,
+        community_domain_id=int(domain.id),
+        feature_key=COMMUNITY_DOMAIN_FEATURE_ANNOUNCEMENT_BOARD,
+        default=COMMUNITY_DOMAIN_FEATURE_MODE_ADMIN_ONLY,
+    )
     notices, archived_notice_count = _list_community_domain_notice_payloads(
         db,
         community_domain_id=int(domain.id),
@@ -19986,6 +20061,9 @@ def list_community_domain_notices(
         "comments_enabled": False,
         "reactions_enabled": False,
         "thread_enabled": False,
+        "feature_policy_key": COMMUNITY_DOMAIN_FEATURE_ANNOUNCEMENT_BOARD,
+        "feature_policy_mode": feature_mode,
+        "posting_enabled": feature_mode != COMMUNITY_DOMAIN_FEATURE_MODE_OFF,
         "default_expiry_policy": COMMUNITY_DOMAIN_NOTICE_EXPIRY_STANDARD,
         "default_expires_after_days": COMMUNITY_DOMAIN_NOTICE_STANDARD_VISIBLE_DAYS,
         "urgent_expires_after_hours": COMMUNITY_DOMAIN_NOTICE_URGENT_VISIBLE_HOURS,
@@ -20009,6 +20087,13 @@ def create_community_domain_notice(
 ):
     domain = _get_domain_or_404(db, community_domain_id)
     _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+    _require_community_domain_feature_enabled(
+        db,
+        domain=domain,
+        feature_key=COMMUNITY_DOMAIN_FEATURE_ANNOUNCEMENT_BOARD,
+        feature_label="Announcement Board",
+        default=COMMUNITY_DOMAIN_FEATURE_MODE_ADMIN_ONLY,
+    )
     body = _clean_str(payload.body)
     expiry_policy = _normalize_community_domain_notice_expiry_policy(
         payload.expiry_policy

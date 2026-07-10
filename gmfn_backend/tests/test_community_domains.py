@@ -318,6 +318,90 @@ def test_community_domain_notice_board_is_member_scoped_and_admin_posted(
         app.dependency_overrides.pop(get_current_user, None)
 
 
+def test_community_domain_notice_board_respects_disabled_feature_policy(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    member = _seed_user(2, "domain-notice-off-member@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Notice Off Union",
+                "display_name": "Notice Off Union",
+                "domain_type": "union",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain_id = created.json()["community_domain"]["id"]
+
+        with SessionLocal() as db:
+            db.add(
+                CommunityDomainMembership(
+                    community_domain_id=int(domain_id),
+                    user_id=int(member.id),
+                    role="member",
+                    status="active",
+                )
+            )
+            db.commit()
+
+        policy = client.post(
+            f"/community-domains/{domain_id}/policies",
+            json={
+                "policy_key": "domain.feature_policy",
+                "action_key": "domain.features.configure",
+                "review_mode": "domain_admin_review",
+                "required_role": "domain_admin",
+                "config": {
+                    "version": 1,
+                    "features": {
+                        "announcement_board": "off",
+                        "demand_box": "members_submit_admin_approves",
+                        "spotlight": "admin_only",
+                    },
+                },
+            },
+        )
+        assert policy.status_code == 201, policy.text
+
+        app.dependency_overrides[get_current_user] = lambda: member
+        visible = client.get(f"/community-domains/{domain_id}/notices")
+        assert visible.status_code == 200, visible.text
+        visible_data = visible.json()
+        assert visible_data["feature_policy_key"] == "announcement_board"
+        assert visible_data["feature_policy_mode"] == "off"
+        assert visible_data["posting_enabled"] is False
+        assert visible_data["notices"] == []
+
+        app.dependency_overrides[get_current_user] = lambda: owner
+        blocked = client.post(
+            f"/community-domains/{domain_id}/notices",
+            json={"body": "This should not post."},
+        )
+        assert blocked.status_code == 403, blocked.text
+        assert blocked.json()["detail"]["code"] == "community_domain_feature_disabled"
+        assert blocked.json()["detail"]["feature_key"] == "announcement_board"
+
+        with SessionLocal() as db:
+            assert (
+                db.query(TrustEvent)
+                .filter(TrustEvent.event_type == "community_domain.notice.posted")
+                .count()
+                == 0
+            )
+            assert (
+                db.query(Notification)
+                .filter(Notification.kind == "community_domain.notice.posted")
+                .count()
+                == 0
+            )
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+
 def test_community_domain_notice_archive_hides_expired_notice_but_keeps_memory(
     client: TestClient,
 ):
