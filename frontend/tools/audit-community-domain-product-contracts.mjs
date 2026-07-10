@@ -322,8 +322,15 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /communityDomainOperatingStateCopy[\s\S]*Domain closed[\s\S]*Domain suspended[\s\S]*Domain expired[\s\S]*Waiting for activation[\s\S]*Active operating domain[\s\S]*Active, not verified[\s\S]*Draft setup[\s\S]*Operating state[\s\S]*Draft, waiting, active, expired, suspended, and closed domains get\s+different guidance[\s\S]*Payment, renewal, activation, and authority\s+verification remain separate/,
-  "Community Domain dashboard must give state-specific guidance for draft, waiting, active, expired, suspended, and closed domains without merging payment, renewal, activation, or verification.",
+  /communityDomainOperatingStateCopy[\s\S]*Domain closed[\s\S]*Domain suspended[\s\S]*Domain expired[\s\S]*Waiting for activation[\s\S]*Active operating domain[\s\S]*Active, not verified[\s\S]*Draft setup[\s\S]*Set up this institution one step at a time[\s\S]*Setup[\s\S]*Complete setup first[\s\S]*Payment, activation, and verification stay separate[\s\S]*community-domain-dashboard\.setup-focus/,
+  "Community Domain dashboard must give state-specific setup guidance first without exposing a long operating-state manual on the primary screen.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /showAdvancedTools[\s\S]*setShowAdvancedTools\(false\)[\s\S]*showAdvancedTools \?[\s\S]*Official Board[\s\S]*Community Domain engine[\s\S]*Work lanes[\s\S]*Other domain tools[\s\S]*community-domain-dashboard\.advanced-tools-toggle/,
+  "Community Domain dashboard must keep notices, engine details, and work lanes closed behind Other domain tools so setup remains the first journey.",
   { frontend: true }
 );
 

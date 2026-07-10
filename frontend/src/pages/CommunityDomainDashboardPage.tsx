@@ -1021,6 +1021,7 @@ export default function CommunityDomainDashboardPage() {
   );
   const [activeSetupStep, setActiveSetupStep] = useState<SetupStepKey>("identity");
   const [activeLane, setActiveLane] = useState("settings");
+  const [showAdvancedTools, setShowAdvancedTools] = useState(false);
   const [activeStructureDetail, setActiveStructureDetail] =
     useState<StructureDetailKey>("preview");
   const [activeServiceDetail, setActiveServiceDetail] =
@@ -1241,7 +1242,8 @@ export default function CommunityDomainDashboardPage() {
       setDashboard(nextDashboard);
       setDashboardRouteId(communityDomainId);
       setQuote(nextDashboard?.package_quote || null);
-      setActiveLane(laneForAction(nextDashboard?.primary_next_action?.action_key));
+      setActiveLane("settings");
+      setShowAdvancedTools(false);
       setLoading(false);
       if (nextDashboard?.viewer?.can_admin) {
         const queueRequestId = reviewerQueueLoadSequence.current + 1;
@@ -1795,13 +1797,13 @@ export default function CommunityDomainDashboardPage() {
     setMessage("Community Domain setup progress saved on this device for 48 hours.");
   }
 
-  async function saveOfficialProfile() {
+  async function saveOfficialProfile(): Promise<boolean> {
     if (!isAdmin) {
       setMessage("Only a Community Domain owner or domain admin can save official profile settings.");
-      return;
+      return false;
     }
     const requestDomainId = cleanText(communityDomainId);
-    if (!requestDomainId) return;
+    if (!requestDomainId) return false;
 
     setBusyProfileSave(true);
     try {
@@ -1838,8 +1840,10 @@ export default function CommunityDomainDashboardPage() {
       });
       setSetupDraft(saved);
       setMessage("Official Community Domain profile saved. Payment and verification are still separate.");
+      return true;
     } catch (err: any) {
       setMessage(errorDetailMessage(err, "GSN could not save the Community Domain profile."));
+      return false;
     } finally {
       setBusyProfileSave(false);
     }
@@ -1905,6 +1909,7 @@ export default function CommunityDomainDashboardPage() {
 
   function openSetupPaymentLane() {
     saveSetupProgress();
+    setShowAdvancedTools(true);
     setActiveLane("billing");
   }
 
@@ -1915,6 +1920,27 @@ export default function CommunityDomainDashboardPage() {
       Math.max(0, (index < 0 ? 0 : index) + direction)
     );
     setActiveSetupStep(SETUP_STEP_OPTIONS[nextIndex].key);
+  }
+
+  async function saveSetupStepAndContinue() {
+    const isLastStep =
+      activeSetupStep === SETUP_STEP_OPTIONS[SETUP_STEP_OPTIONS.length - 1].key;
+
+    if (activeSetupStep === "identity") {
+      const saved = await saveOfficialProfile();
+      if (!saved) return;
+    } else {
+      saveSetupProgress();
+    }
+
+    if (!isLastStep) {
+      moveSetupStep(1);
+      return;
+    }
+
+    setMessage(
+      "Setup saved. Payment confirmation, activation, and verification still need their separate admin checks."
+    );
   }
 
   useEffect(() => {
@@ -2544,7 +2570,7 @@ export default function CommunityDomainDashboardPage() {
       <PageTopNav
         sectionLabel="Community Domain"
         title="Institutional dashboard"
-        subtitle="Operate the domain after it exists. Keep setup, payment, and verification separate."
+        subtitle="Set up this institution one step at a time."
         homeTo={APP_ROUTES.DASHBOARD}
         homeLabel="Dashboard"
         backTo={APP_ROUTES.COMMUNITY}
@@ -2683,12 +2709,12 @@ export default function CommunityDomainDashboardPage() {
           <section id="community-domain-official-board" style={whiteCard()}>
             <div style={{ display: "grid", gap: 12 }}>
               <div>
-                <div style={sectionLabel()}>Operating state</div>
+                <div style={sectionLabel()}>Setup</div>
                 <h2 style={{ margin: "6px 0 0", fontSize: 24, lineHeight: 1.12 }}>
                   {operatingStateCopy.heading}
                 </h2>
                 <div style={{ ...helperText(), marginTop: 8 }}>
-                  {operatingStateCopy.detail}
+                  Complete setup first. Payment, activation, and verification stay separate.
                 </div>
               </div>
               <div
@@ -2719,17 +2745,30 @@ export default function CommunityDomainDashboardPage() {
               >
                 <div style={{ fontWeight: 950 }}>{operatingStateCopy.nextStep}</div>
                 <div style={{ ...helperText(), marginTop: 5, fontSize: 13 }}>
-                  {operatingStateCopy.risk}
+                  Save each step. GSN will then move you to the next setup step.
                 </div>
               </div>
-              <div style={{ ...helperText(), fontSize: 13 }}>
-                Draft, waiting, active, expired, suspended, and closed domains get
-                different guidance here. Payment, renewal, activation, and authority
-                verification remain separate.
-              </div>
+              <StableButton
+                type="button"
+                kind="primary"
+                fullWidth
+                debugId="community-domain-dashboard.setup-focus"
+                onClick={() => setActiveLane("settings")}
+              >
+                Continue setup
+              </StableButton>
             </div>
           </section>
 
+          {message ? (
+            <section style={whiteCard()}>
+              <div style={sectionLabel()}>Action response</div>
+              <div style={{ ...helperText(), marginTop: 8 }}>{message}</div>
+            </section>
+          ) : null}
+
+          {showAdvancedTools ? (
+            <>
           <section style={whiteCard()}>
             <div style={officialBoardHeaderStyle()}>
               <div style={{ minWidth: 0 }}>
@@ -3004,37 +3043,45 @@ export default function CommunityDomainDashboardPage() {
               ))}
             </div>
           </section>
+            </>
+          ) : null}
 
           <section
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))",
+              gridTemplateColumns: showAdvancedTools
+                ? "repeat(auto-fit, minmax(min(100%, 320px), 1fr))"
+                : "minmax(0, 1fr)",
               gap: 12,
               alignItems: "start",
             }}
           >
-            <Suspense
-              fallback={
-                <div style={whiteCard()}>
-                  <div style={{ display: "grid", gap: 10 }}>
-                    <div style={sectionLabel()}>Work lanes</div>
-                    <div style={helperText()}>
-                      Loading Community Domain work lanes...
+            {showAdvancedTools ? (
+              <Suspense
+                fallback={
+                  <div style={whiteCard()}>
+                    <div style={{ display: "grid", gap: 10 }}>
+                      <div style={sectionLabel()}>Work lanes</div>
+                      <div style={helperText()}>
+                        Loading Community Domain work lanes...
+                      </div>
                     </div>
                   </div>
-                </div>
-              }
-            >
-              <CommunityDomainLaneSelectorPanel
-                lanes={lanes}
-                activeLane={activeLane}
-                onSelectLane={setActiveLane}
-              />
-            </Suspense>
+                }
+              >
+                <CommunityDomainLaneSelectorPanel
+                  lanes={lanes}
+                  activeLane={activeLane}
+                  onSelectLane={setActiveLane}
+                />
+              </Suspense>
+            ) : null}
 
             <div style={whiteCard()}>
               <div style={{ display: "grid", gap: 12 }}>
-                <div style={sectionLabel()}>Opened lane</div>
+                <div style={sectionLabel()}>
+                  {showAdvancedTools ? "Opened lane" : "Settings"}
+                </div>
                 <h2 style={{ margin: 0, fontSize: 26, lineHeight: 1.1 }}>
                   {laneDisplayLabel(selectedLane, "Community Domain setup")}
                 </h2>
@@ -3062,12 +3109,10 @@ export default function CommunityDomainDashboardPage() {
                   <div style={{ ...softCard(), display: "grid", gap: 12 }}>
                     <div style={sectionLabel()}>Community Domain settings</div>
                     <h3 style={{ margin: 0, fontSize: 22, lineHeight: 1.15 }}>
-                      Set up this domain one step at a time.
+                      Fill this step, then continue.
                     </h3>
                     <div style={helperText()}>
-                      Save progress when you stop. Official profile fields save to
-                      the backend; evidence notes here are setup notes only until
-                      formal evidence upload and verification are used.
+                      GSN saves this setup before moving to the next step.
                     </div>
 
                     <div
@@ -3443,32 +3488,19 @@ export default function CommunityDomainDashboardPage() {
                       </StableButton>
                       <StableButton
                         type="button"
-                        kind="secondary"
-                        debugId="community-domain-dashboard.setup-save-progress"
-                        onClick={saveSetupProgress}
-                      >
-                        Save progress
-                      </StableButton>
-                      <StableButton
-                        type="button"
                         kind="primary"
-                        debugId="community-domain-dashboard.setup-save-profile"
-                        disabled={!isAdmin || busyProfileSave}
-                        onClick={saveOfficialProfile}
+                        debugId="community-domain-dashboard.setup-save-and-continue"
+                        disabled={activeSetupStep === "identity" && (!isAdmin || busyProfileSave)}
+                        onClick={() => {
+                          void saveSetupStepAndContinue();
+                        }}
                       >
-                        {busyProfileSave ? "Saving..." : "Save profile"}
-                      </StableButton>
-                      <StableButton
-                        type="button"
-                        kind="secondary"
-                        debugId="community-domain-dashboard.setup-next"
-                        disabled={
-                          activeSetupStep ===
-                          SETUP_STEP_OPTIONS[SETUP_STEP_OPTIONS.length - 1].key
-                        }
-                        onClick={() => moveSetupStep(1)}
-                      >
-                        Next
+                        {busyProfileSave
+                          ? "Saving..."
+                          : activeSetupStep ===
+                            SETUP_STEP_OPTIONS[SETUP_STEP_OPTIONS.length - 1].key
+                          ? "Save setup"
+                          : "Save and continue"}
                       </StableButton>
                     </div>
 
@@ -4047,7 +4079,28 @@ export default function CommunityDomainDashboardPage() {
             </div>
           </section>
 
-          {isAdmin ? (
+          <section style={whiteCard()}>
+            <div style={{ display: "grid", gap: 10 }}>
+              <div style={sectionLabel()}>Other domain tools</div>
+              <h2 style={{ margin: 0, fontSize: 22, lineHeight: 1.12 }}>
+                Keep setup first.
+              </h2>
+              <div style={helperText()}>
+                Notices, lanes, access reviews, and engine details are available when needed.
+              </div>
+              <StableButton
+                type="button"
+                kind={showAdvancedTools ? "secondary" : "primary"}
+                fullWidth
+                debugId="community-domain-dashboard.advanced-tools-toggle"
+                onClick={() => setShowAdvancedTools((current) => !current)}
+              >
+                {showAdvancedTools ? "Hide other tools" : "Open other tools"}
+              </StableButton>
+            </div>
+          </section>
+
+          {showAdvancedTools && isAdmin ? (
             <Suspense
               fallback={
                 <section style={whiteCard()}>
@@ -4072,13 +4125,7 @@ export default function CommunityDomainDashboardPage() {
             </Suspense>
           ) : null}
 
-          {message ? (
-            <section style={whiteCard()}>
-              <div style={sectionLabel()}>Action response</div>
-              <div style={{ ...helperText(), marginTop: 8 }}>{message}</div>
-            </section>
-          ) : null}
-
+          {showAdvancedTools ? (
           <section style={whiteCard()}>
             <div style={{ display: "grid", gap: 8 }}>
               <div style={sectionLabel()}>Boundary</div>
@@ -4089,6 +4136,7 @@ export default function CommunityDomainDashboardPage() {
               </div>
             </div>
           </section>
+          ) : null}
         </>
       ) : null}
     </main>
