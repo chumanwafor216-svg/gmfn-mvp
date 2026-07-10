@@ -1342,6 +1342,7 @@ export default function CommunityHomePage() {
         { hash: OWNER_SHOP_HASHES.communityPackage }
       ),
       communityDomain: "/app/community-domain",
+      communityDomainPurchase: "/community-domain/purchase",
       freeSpotlight: routeTarget(
         "freeSpotlight",
         selectedClanId,
@@ -2769,7 +2770,7 @@ export default function CommunityHomePage() {
             <div
               style={{
                 marginTop: 12,
-                color: "#F8FBFF",
+                color: "#07172C",
                 fontSize: 28,
                 fontWeight: 900,
                 lineHeight: 1.15,
@@ -2784,10 +2785,10 @@ export default function CommunityHomePage() {
                 marginTop: 12,
                 color: "#5F7287",
                 fontSize: 15,
-              lineHeight: 1.45,
-              maxWidth: 680,
-            }}
-          >
+                lineHeight: 1.45,
+                maxWidth: 680,
+              }}
+            >
               Create or join first. Your marketplace communities will appear here.
             </div>
 
@@ -2806,6 +2807,16 @@ export default function CommunityHomePage() {
                 style={communityActionStyle("primary")}
               >
                 Create marketplace community
+              </StableButton>
+              <StableButton
+                type="button"
+                debugId="community-home.empty.purchase-community-domain"
+                onClick={(event) =>
+                  openCommunityRoute(event, routes.communityDomainPurchase)
+                }
+                style={communityActionStyle("secondary")}
+              >
+                Purchase Community Domain
               </StableButton>
               <StableButton
                 type="button"

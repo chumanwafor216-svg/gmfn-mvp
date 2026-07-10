@@ -10,7 +10,7 @@ const appLayoutFile = "src/layout/AppLayout.tsx";
 const source = readFileSync(join(frontendRoot, communityFile), "utf8");
 const appLayoutSource = readFileSync(join(frontendRoot, appLayoutFile), "utf8");
 const findings = [];
-const expectedStableButtonTemplateCount = 25;
+const expectedStableButtonTemplateCount = 26;
 const expectedNativeFieldCount = 0;
 const expectedNextActionGuideItemCount = 12;
 const expectedFrontQuickActionCount = 4;
@@ -281,6 +281,11 @@ assertContains(
 assertContains(
   /createCommunity:\s*routeTarget\(\s*"clans"[\s\S]*?debugId="community-home\.empty\.create-community"[\s\S]*?openCommunityRoute\(event, routes\.createCommunity\)/,
   "Community Home empty-state Create New Community must open the authenticated existing-member create lane."
+);
+
+assertContains(
+  /communityDomainPurchase:\s*"\/community-domain\/purchase"[\s\S]*?debugId="community-home\.empty\.purchase-community-domain"[\s\S]*?openCommunityRoute\(event, routes\.communityDomainPurchase\)/,
+  "Community Home empty-state must expose the institutional Community Domain purchase path even when no marketplace community exists."
 );
 
 assertContains(

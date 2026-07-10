@@ -427,17 +427,51 @@ export default function CommunityDomainPurchasePage() {
 
   useEffect(() => {
     if (demoDraft?.domainName || demoDraft?.organizationName) {
+      const requestedDemoName = demoDraft.domainName || "";
+      const requestId = availabilityCheckSequence.current + 1;
       setOrganizationName(demoDraft.organizationName || "");
       setDomainName(demoDraft.domainName || "");
       setCountry(demoDraft.country || "");
       setStateName(demoDraft.stateName || "");
       setTemplateKey(demoDraft.templateKey || FALLBACK_TEMPLATES[0].template_key);
+      setExistingDomainName(demoDraft.domainName || "");
       setAvailability(null);
       setDraftResult(null);
       setQuoteResult(null);
       setMessage(
-        "Pillar of Hope demo fields are filled. Check the domain name before creating the draft."
+        "Pillar of Hope demo fields and profile are filled. GSN is checking the domain name."
       );
+
+      if (requestedDemoName.trim().length >= 2) {
+        availabilityCheckSequence.current = requestId;
+        const canApply = () =>
+          mountedRef.current && availabilityCheckSequence.current === requestId;
+
+        setBusyState("availability");
+        void checkCommunityDomainAvailability(requestedDemoName)
+          .then((result) => {
+            if (!canApply()) return;
+            setAvailability(result);
+            setMessage(
+              result?.available
+                ? "Pillar of Hope domain name is available. You can create the draft request next."
+                : availabilityReasonText(result?.reason)
+            );
+          })
+          .catch((err: any) => {
+            if (!canApply()) return;
+            setAvailability(null);
+            setMessage(
+              err?.message ||
+                "GSN could not check the Pillar of Hope domain name right now."
+            );
+          })
+          .finally(() => {
+            if (canApply() && busyRef.current === "availability") {
+              setBusyState(null);
+            }
+          });
+      }
       return;
     }
 
@@ -446,7 +480,7 @@ export default function CommunityDomainPurchasePage() {
         "Your Community Domain draft was restored after sign-in. Check the name before creating the draft."
       );
     }
-  }, [demoDraft, restoredDraft]);
+  }, [demoDraft, restoredDraft, setBusyState]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -497,6 +531,7 @@ export default function CommunityDomainPurchasePage() {
       FALLBACK_TEMPLATES[0],
     [templateKey, templates]
   );
+  const demoProfile = compactOptional(demoDraft?.publicProfile);
 
   const availabilityKind: "ready" | "blocked" | "waiting" = availability
     ? availability.available
@@ -958,6 +993,23 @@ export default function CommunityDomainPurchasePage() {
                       : "Check domain name"}
                   </EntryActionButton>
                 </div>
+
+                {demoProfile ? (
+                  <div
+                    style={{
+                      borderRadius: 18,
+                      border: "1px solid rgba(9,31,51,0.10)",
+                      background:
+                        "linear-gradient(180deg, rgba(236,251,244,0.92) 0%, rgba(247,250,255,0.96) 100%)",
+                      padding: 14,
+                      display: "grid",
+                      gap: 8,
+                    }}
+                  >
+                    <div style={fieldLabel()}>Pillar of Hope profile</div>
+                    <div style={helperText(false)}>{demoProfile}</div>
+                  </div>
+                ) : null}
               </div>
             </form>
 

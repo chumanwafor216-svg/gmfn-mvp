@@ -756,6 +756,18 @@ export default function App() {
         element={<CommunityDomainPurchasePage />}
       />
       <Route
+        path="/poh"
+        element={
+          <PreserveRedirect to="/community-domain/purchase?demo=pillar-of-hope" />
+        }
+      />
+      <Route
+        path="/pillar-of-hope-demo"
+        element={
+          <PreserveRedirect to="/community-domain/purchase?demo=pillar-of-hope" />
+        }
+      />
+      <Route
         path="/purchase-community-domain"
         element={<PreserveRedirect to="/community-domain/purchase" />}
       />

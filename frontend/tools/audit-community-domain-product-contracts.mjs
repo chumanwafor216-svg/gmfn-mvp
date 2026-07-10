@@ -75,6 +75,13 @@ assertContains(
 );
 
 assertContains(
+  "src/App.tsx",
+  /path="\/poh"[\s\S]*\/community-domain\/purchase\?demo=pillar-of-hope[\s\S]*path="\/pillar-of-hope-demo"[\s\S]*\/community-domain\/purchase\?demo=pillar-of-hope/,
+  "App routes must keep short Pillar of Hope demo aliases pointed at the Community Domain purchase preset.",
+  { frontend: true }
+);
+
+assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
   /listMyCommunityDomains[\s\S]*lazy\([\s\S]*import\("\.\/communityDomainDashboard\/DomainSelectorPanel"\)[\s\S]*domainItems[\s\S]*setDomainItems[\s\S]*CommunityDomainSelectorPanel[\s\S]*domainItems=\{domainItems\}/,
   "Community Domain dashboard page must lazy-load a signed-in selector and pass the current user's domain memberships into it.",
@@ -85,6 +92,13 @@ assertContains(
   "src/pages/CommunityDomainPurchasePage.tsx",
   /FALLBACK_TEMPLATES[\s\S]*school_multi_branch[\s\S]*church_religious_body[\s\S]*union_professional_body[\s\S]*market_cooperative[\s\S]*family_town_union_diaspora[\s\S]*hospital_health_body[\s\S]*ngo_project_network[\s\S]*generic_association/,
   "Community Domain purchase fallback templates must include the approved society types, including NGO/project network for charity pilots.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainPurchasePage.tsx",
+  /PILLAR_OF_HOPE_DEMO_PROFILE[\s\S]*Saturday community fitness with Snapfit Aberdeen[\s\S]*food support[\s\S]*low-cost household items[\s\S]*health education seminars[\s\S]*setExistingDomainName\(demoDraft\.domainName \|\| ""\)[\s\S]*GSN is checking the domain name[\s\S]*checkCommunityDomainAvailability\(requestedDemoName\)[\s\S]*Pillar of Hope domain name is available[\s\S]*Pillar of Hope profile[\s\S]*\{demoProfile\}/,
+  "Pillar of Hope demo preset must fill the lookup code, auto-check real availability, and visibly show the charity profile, not only hidden draft metadata.",
   { frontend: true }
 );
 
