@@ -27,6 +27,7 @@ type SocialTagShareButtonProps = {
   fullWidth?: boolean;
   minWidth?: number | string;
   style?: React.CSSProperties;
+  onBeforeOpen?: () => boolean | Promise<boolean>;
   onResult?: (tone: NoticeTone, text: string) => void;
 };
 
@@ -101,6 +102,7 @@ export default function SocialTagShareButton({
   fullWidth,
   minWidth,
   style,
+  onBeforeOpen,
   onResult,
 }: SocialTagShareButtonProps) {
   const [open, setOpen] = useState(false);
@@ -127,6 +129,15 @@ export default function SocialTagShareButton({
   }
 
   const TriggerButton = buttonKind === "primary" ? PrimaryButton : SecondaryButton;
+
+  async function openShareChooser() {
+    if (disabled) return;
+    if (onBeforeOpen) {
+      const ok = await onBeforeOpen();
+      if (!ok) return;
+    }
+    setOpen(true);
+  }
 
   async function copyPreparedText(kind: "copy" | "instagram" | "tiktok" | "linkedin") {
     if (!canShare) {
@@ -228,7 +239,9 @@ export default function SocialTagShareButton({
     <>
       <TriggerButton
         type="button"
-        onClick={() => setOpen(true)}
+        onClick={() => {
+          void openShareChooser();
+        }}
         disabled={disabled}
         debugId={debugId}
         stableHeight={stableHeight}

@@ -34,6 +34,7 @@ type Props = {
   compact?: boolean;
   icon?: TrustPaperIconName;
   maxBodyLines?: number;
+  previewMode?: "full" | "compact";
   style?: React.CSSProperties;
 };
 
@@ -183,7 +184,8 @@ function valueStyle(): React.CSSProperties {
     fontSize: 14,
     fontWeight: 950,
     lineHeight: 1.3,
-    overflowWrap: "anywhere",
+    overflowWrap: "break-word",
+    wordBreak: "normal",
   };
 }
 
@@ -201,9 +203,11 @@ export default function GsnSnapshotPaperCard({
   compact = false,
   icon = "document",
   maxBodyLines,
+  previewMode = "full",
   style,
 }: Props) {
   const paper = useMemo(() => parsePaperText(paperText), [paperText]);
+  const compactPreview = previewMode === "compact";
   const generatedAtText = useMemo(() => {
     const text = paper.generatedAt.trim();
     return !text || isGeneratedPlaceholder(text) ? currentUtcGeneratedText() : text;
@@ -211,6 +215,11 @@ export default function GsnSnapshotPaperCard({
   const visibleDetails = maxBodyLines
     ? paper.details.slice(0, maxBodyLines)
     : paper.details;
+  const visibleContext = compactPreview
+    ? paper.context
+        .filter((fact) => !/^sender gsn id$/i.test(fact.label.trim()))
+        .slice(0, 2)
+    : paper.context;
   const hiddenCount =
     maxBodyLines && paper.details.length > maxBodyLines
       ? paper.details.length - maxBodyLines
@@ -230,7 +239,7 @@ export default function GsnSnapshotPaperCard({
           "linear-gradient(135deg, rgba(255,252,244,0.98) 0%, rgba(248,251,255,0.98) 58%, rgba(238,246,255,0.96) 100%)",
         boxShadow:
           "0 24px 54px rgba(8,17,31,0.16), inset 0 1px 0 rgba(255,255,255,0.88)",
-        padding: compact ? 18 : 22,
+        padding: compactPreview ? 14 : compact ? 18 : 22,
         color: "#07172C",
         ...style,
       }}
@@ -242,21 +251,26 @@ export default function GsnSnapshotPaperCard({
         color="#0B63D1"
         style={{ right: compact ? -28 : -24, bottom: compact ? -18 : -28 }}
       />
-      <TrustPaperWatermarkField
-        names={["shield", "document", "qr", "globe"]}
-        opacity={0.044}
-        color="#0B63D1"
-        style={{
-          padding: compact ? "92px 16px 74px" : "116px 24px 90px",
-          gap: compact ? 26 : 34,
-        }}
-      />
+      {!compactPreview ? (
+        <TrustPaperWatermarkField
+          names={["shield", "document", "qr", "globe"]}
+          opacity={0.044}
+          color="#0B63D1"
+          style={{
+            padding: compact ? "92px 16px 74px" : "116px 24px 90px",
+            gap: compact ? 26 : 34,
+          }}
+        />
+      ) : null}
 
       <header
         style={{
           position: "relative",
           display: "grid",
-          gridTemplateColumns: "auto minmax(0, 1fr) auto",
+          gridTemplateColumns:
+            compactPreview && compact
+              ? "auto minmax(0, 1fr)"
+              : "auto minmax(0, 1fr) auto",
           gap: compact ? 10 : 12,
           alignItems: "center",
         }}
@@ -285,12 +299,13 @@ export default function GsnSnapshotPaperCard({
               fontSize: compact ? 20 : 24,
               fontWeight: 1000,
               lineHeight: 1.1,
-              overflowWrap: "anywhere",
+              overflowWrap: "break-word",
+              wordBreak: "normal",
             }}
           >
             {paper.title}
           </h3>
-          {paper.purpose ? (
+          {paper.purpose && !compactPreview ? (
             <p
               style={{
                 margin: "7px 0 0",
@@ -298,6 +313,8 @@ export default function GsnSnapshotPaperCard({
                 fontSize: compact ? 13 : 14,
                 lineHeight: 1.45,
                 fontWeight: 750,
+                overflowWrap: "break-word",
+                wordBreak: "normal",
               }}
             >
               {paper.purpose}
@@ -305,67 +322,108 @@ export default function GsnSnapshotPaperCard({
           ) : null}
         </div>
 
-        <div
-          aria-hidden="true"
-          style={{
-            width: compact ? 42 : 46,
-            height: compact ? 42 : 46,
-            borderRadius: 16,
-            display: "grid",
-            placeItems: "center",
-            color: "#F6D77A",
-            background: "linear-gradient(180deg, #061827 0%, #0B2D4A 100%)",
-            border: "1px solid rgba(212,175,55,0.38)",
-            boxShadow: "0 12px 26px rgba(8,17,31,0.18)",
-          }}
-        >
-          <TrustPaperIcon name={icon} size={compact ? 22 : 24} strokeWidth={2.35} />
-        </div>
+        {compactPreview && compact ? null : (
+          <div
+            aria-hidden="true"
+            style={{
+              width: compact ? 42 : 46,
+              height: compact ? 42 : 46,
+              borderRadius: 16,
+              display: "grid",
+              placeItems: "center",
+              color: "#F6D77A",
+              background: "linear-gradient(180deg, #061827 0%, #0B2D4A 100%)",
+              border: "1px solid rgba(212,175,55,0.38)",
+              boxShadow: "0 12px 26px rgba(8,17,31,0.18)",
+            }}
+          >
+            <TrustPaperIcon name={icon} size={compact ? 22 : 24} strokeWidth={2.35} />
+          </div>
+        )}
       </header>
 
-      <TrustPaperAuthorityStrip
-        compact={compact}
-        title={paper.title}
-        generatedAt={generatedAtText}
-        reference={paper.reference || "GSN current record"}
-        classification="Screenshot-ready"
-        style={{ marginTop: compact ? 12 : 14 }}
-      />
-
-      <section
-        style={{
-          position: "relative",
-          marginTop: compact ? 14 : 16,
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(135px, 1fr))",
-          gap: 10,
-        }}
-      >
-        <div
+      {compactPreview ? (
+        <section
           style={{
-            borderRadius: 14,
-            padding: "11px 12px",
-            background: "rgba(255,255,255,0.76)",
-            border: "1px solid rgba(123,161,204,0.18)",
+            position: "relative",
+            zIndex: 2,
+            marginTop: 12,
+            display: "flex",
+            flexWrap: "wrap",
+            gap: 7,
           }}
         >
-          <div style={labelStyle()}>Prepared UTC</div>
-          <div style={valueStyle()}>{generatedAtText}</div>
-        </div>
-        <div
+          {["Invite link", "GSN marked", "Approval required"].map((item) => (
+            <span
+              key={item}
+              style={{
+                minHeight: 26,
+                borderRadius: 999,
+                padding: "5px 8px",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 5,
+                color: "#7A5A10",
+                background: "rgba(255,247,220,0.82)",
+                border: "1px solid rgba(214,170,69,0.22)",
+                fontSize: 10.5,
+                fontWeight: 1000,
+                lineHeight: 1.1,
+                whiteSpace: "nowrap",
+              }}
+            >
+              <TrustPaperIcon name={item === "Invite link" ? "navigation" : "lock"} size={13} />
+              {item}
+            </span>
+          ))}
+        </section>
+      ) : (
+        <TrustPaperAuthorityStrip
+          compact={compact}
+          title={paper.title}
+          generatedAt={generatedAtText}
+          reference={paper.reference || "GSN current record"}
+          classification="Screenshot-ready"
+          style={{ marginTop: compact ? 12 : 14 }}
+        />
+      )}
+
+      {!compactPreview ? (
+        <section
           style={{
-            borderRadius: 14,
-            padding: "11px 12px",
-            background: "rgba(255,255,255,0.76)",
-            border: "1px solid rgba(123,161,204,0.18)",
+            position: "relative",
+            marginTop: compact ? 14 : 16,
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(135px, 1fr))",
+            gap: 10,
           }}
         >
-          <div style={labelStyle()}>Record code</div>
-          <div style={valueStyle()}>{paper.reference || "GSN current record"}</div>
-        </div>
-      </section>
+          <div
+            style={{
+              borderRadius: 14,
+              padding: "11px 12px",
+              background: "rgba(255,255,255,0.76)",
+              border: "1px solid rgba(123,161,204,0.18)",
+            }}
+          >
+            <div style={labelStyle()}>Prepared UTC</div>
+            <div style={valueStyle()}>{generatedAtText}</div>
+          </div>
+          <div
+            style={{
+              borderRadius: 14,
+              padding: "11px 12px",
+              background: "rgba(255,255,255,0.76)",
+              border: "1px solid rgba(123,161,204,0.18)",
+            }}
+          >
+            <div style={labelStyle()}>Record code</div>
+            <div style={valueStyle()}>{paper.reference || "GSN current record"}</div>
+          </div>
+        </section>
+      ) : null}
 
-      {paper.context.length ? (
+      {visibleContext.length ? (
         <section
           style={{
             position: "relative",
@@ -375,7 +433,7 @@ export default function GsnSnapshotPaperCard({
             gap: 10,
           }}
         >
-          {paper.context.map((fact) => (
+          {visibleContext.map((fact) => (
             <div
               key={`${fact.label}-${fact.value}`}
               style={{
@@ -428,10 +486,18 @@ export default function GsnSnapshotPaperCard({
                   flex: "0 0 auto",
                 }}
               />
-              <span style={{ minWidth: 0, overflowWrap: "anywhere" }}>{detail}</span>
+              <span
+                style={{
+                  minWidth: 0,
+                  overflowWrap: "break-word",
+                  wordBreak: "normal",
+                }}
+              >
+                {detail}
+              </span>
             </div>
           ))}
-          {hiddenCount ? (
+          {!compactPreview && hiddenCount ? (
             <div
               style={{
                 color: "#8A6A18",
@@ -446,7 +512,7 @@ export default function GsnSnapshotPaperCard({
         </section>
       ) : null}
 
-      {paper.actionLink ? (
+      {paper.actionLink && !compactPreview ? (
         <section
           style={{
             position: "relative",
@@ -462,51 +528,55 @@ export default function GsnSnapshotPaperCard({
         </section>
       ) : null}
 
-      <section style={{ position: "relative", marginTop: 14 }}>
-        <TrustPaperSecurityNote reference={paper.reference} compact={compact} />
-        {paper.securityMarks ? (
-          <div
-            style={{
-              marginTop: 8,
-              color: "#526579",
-              fontSize: 11,
-              fontWeight: 850,
-              lineHeight: 1.4,
-            }}
-          >
-            {paper.securityMarks}
-          </div>
-        ) : null}
-      </section>
+      {!compactPreview ? (
+        <section style={{ position: "relative", marginTop: 14 }}>
+          <TrustPaperSecurityNote reference={paper.reference} compact={compact} />
+          {paper.securityMarks ? (
+            <div
+              style={{
+                marginTop: 8,
+                color: "#526579",
+                fontSize: 11,
+                fontWeight: 850,
+                lineHeight: 1.4,
+              }}
+            >
+              {paper.securityMarks}
+            </div>
+          ) : null}
+        </section>
+      ) : null}
 
-      <section
-        style={{
-          position: "relative",
-          marginTop: 14,
-          display: "grid",
-          gap: 8,
-        }}
-      >
-        {[paper.privacy, paper.limitation].filter(Boolean).map((note) => (
-          <div
-            key={note}
-            style={{
-              borderRadius: 14,
-              border: "1px solid rgba(212,175,55,0.18)",
-              background: "rgba(255,251,235,0.72)",
-              padding: "10px 12px",
-              color: "#624A0F",
-              fontSize: 12,
-              fontWeight: 850,
-              lineHeight: 1.45,
-            }}
-          >
-            {note}
-          </div>
-        ))}
-      </section>
+      {!compactPreview ? (
+        <section
+          style={{
+            position: "relative",
+            marginTop: 14,
+            display: "grid",
+            gap: 8,
+          }}
+        >
+          {[paper.privacy, paper.limitation].filter(Boolean).map((note) => (
+            <div
+              key={note}
+              style={{
+                borderRadius: 14,
+                border: "1px solid rgba(212,175,55,0.18)",
+                background: "rgba(255,251,235,0.72)",
+                padding: "10px 12px",
+                color: "#624A0F",
+                fontSize: 12,
+                fontWeight: 850,
+                lineHeight: 1.45,
+              }}
+            >
+              {note}
+            </div>
+          ))}
+        </section>
+      ) : null}
 
-      <TrustPaperSecurityFooter text={paper.footer} />
+      {!compactPreview ? <TrustPaperSecurityFooter text={paper.footer} /> : null}
     </article>
   );
 }

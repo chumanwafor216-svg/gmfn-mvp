@@ -267,6 +267,25 @@ function compactButtonStyle(primary = false): React.CSSProperties {
   };
 }
 
+function inviteMessageGrid(compact = false): React.CSSProperties {
+  return {
+    display: "grid",
+    gridTemplateColumns: compact ? "minmax(0, 1fr)" : "48px minmax(0, 1fr) auto",
+    gap: compact ? 12 : 14,
+    alignItems: "start",
+  };
+}
+
+function inviteMessageTitleRow(compact = false): React.CSSProperties {
+  return {
+    display: "grid",
+    gridTemplateColumns: compact ? "42px minmax(0, 1fr)" : "minmax(0, 1fr)",
+    gap: compact ? 10 : 0,
+    alignItems: "center",
+    minWidth: 0,
+  };
+}
+
 function firstCircleIconText(
   name: GsnIconName,
   label: React.ReactNode,
@@ -980,11 +999,16 @@ export default function BuildFirstCirclePage() {
 
   const buildJoinInviteMessageForLink = useCallback((link: string): string => {
     if (communityDomainCircleMode) {
-      return buildCommunityDomainGroupInviteMessage({
+      return buildGsnInviteLinkPackage({
+        senderName: inviteSenderName,
+        senderGsnId: gmfnId,
         communityName,
         inviteLink: link,
-        inviterName: inviteSenderName,
-        gmfnId,
+        messageLines: [
+          "Share this with the existing WhatsApp or member group.",
+          "Each person opens the link and requests access with their own GSN identity.",
+          "Owner/admin approval remains required. This is not a bulk import.",
+        ],
       });
     }
 
@@ -1443,6 +1467,12 @@ export default function BuildFirstCirclePage() {
     );
   }
 
+  async function prepareInviteShareMenu(): Promise<boolean> {
+    if (inviteLink) return true;
+    const trustedLink = await prepareTrustedInviteLink();
+    return Boolean(trustedLink);
+  }
+
   async function openWhatsAppInvite() {
     const trustedLink = await prepareTrustedInviteLink();
     if (!trustedLink) return;
@@ -1459,7 +1489,7 @@ export default function BuildFirstCirclePage() {
       return;
     }
     setFocusedAction(null);
-    showNotice("success", "WhatsApp invite opened.");
+    showNotice("success", "WhatsApp opened. Choose a group or contact there.");
   }
 
   async function openEmailInvite() {
@@ -2075,23 +2105,21 @@ export default function BuildFirstCirclePage() {
           </div>
 
           <div style={innerCard("#FFFFFF")}>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "48px minmax(0, 1fr) auto",
-                gap: 14,
-                alignItems: "start",
-              }}
-            >
-              {firstCircleStepIcon("document", "4", "violet")}
+            <div style={inviteMessageGrid(isCompact)}>
+              {!isCompact ? firstCircleStepIcon("document", "4", "violet") : null}
               <div>
-                <div style={{ color: "#FFFFFF", fontSize: 24, fontWeight: 1000 }}>
-                  Invite message
-                </div>
-                <div style={{ marginTop: 6, ...helperText() }}>
-                  {communityDomainCircleMode
-                    ? "Short copy for WhatsApp groups and share menus."
-                    : "A ready message to invite your people."}
+                <div style={inviteMessageTitleRow(isCompact)}>
+                  {isCompact ? firstCircleStepIcon("document", "4", "violet") : null}
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ color: "#FFFFFF", fontSize: 24, fontWeight: 1000 }}>
+                      Invite message
+                    </div>
+                    <div style={{ marginTop: 6, ...helperText() }}>
+                      {communityDomainCircleMode
+                        ? "Short copy for WhatsApp groups and share menus."
+                        : "A ready message to invite your people."}
+                    </div>
+                  </div>
                 </div>
                 <GsnSnapshotPaperCard
                   paperText={
@@ -2103,8 +2131,14 @@ export default function BuildFirstCirclePage() {
                   }
                   compact={isCompact}
                   icon="community"
-                  maxBodyLines={isCompact ? 5 : 8}
-                  style={{ marginTop: 12 }}
+                  maxBodyLines={communityDomainCircleMode && isCompact ? 3 : isCompact ? 5 : 8}
+                  previewMode={communityDomainCircleMode && isCompact ? "compact" : "full"}
+                  style={{
+                    marginTop: 12,
+                    width: "100%",
+                    maxWidth: "100%",
+                    boxSizing: "border-box",
+                  }}
                 />
                 <div style={{ ...actionRow(isCompact), marginTop: 14 }}>
                   <SecondaryButton
@@ -2132,22 +2166,26 @@ export default function BuildFirstCirclePage() {
                   <SocialTagShareButton
                     target={{
                       title: `Join ${communityName} on GSN`,
-                      message: joinInviteMessage,
+                      message: buildCompactInviteMessageForLink(inviteLink),
+                      socialMessage: `Join ${communityName} on GSN. Open the invite link and request access.`,
                       url: inviteLink,
                     }}
                     buttonLabel="Share"
                     stableHeight={48}
                     debugId="build-first-circle.tag-invite"
                     style={compactButtonStyle(false)}
+                    onBeforeOpen={prepareInviteShareMenu}
                     onResult={showNotice}
                   />
                 </div>
               </div>
-              <GsnLegacyIcon
-                name="chevronDown"
-                size={24}
-                style={{ opacity: 0.72 }}
-              />
+              {!isCompact ? (
+                <GsnLegacyIcon
+                  name="chevronDown"
+                  size={24}
+                  style={{ opacity: 0.72 }}
+                />
+              ) : null}
             </div>
           </div>
         </div>

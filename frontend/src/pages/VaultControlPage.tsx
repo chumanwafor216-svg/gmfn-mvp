@@ -1155,12 +1155,23 @@ export default function VaultControlPage() {
   const selectedBlockLinkedAt = firstTruthy(selectedBlockPrimaryLink?.created_at);
   const selectedBlockLinkExpiresAt = firstTruthy(selectedBlockPrimaryLink?.expires_at);
   const shopName = firstTruthy(shop?.name, me?.display_name, me?.gmfn_id, "Your shop");
-  function buildVaultInvitePackage(linkUrl: string): string {
+  function buildVaultInvitePackage(
+    linkUrl: string,
+    link: VaultLinkItem | null | undefined
+  ): string {
+    const linkedProductId = firstTruthy(link?.product_id);
+    const linkedBlockId = firstTruthy(link?.block_id);
+    const linkedProduct =
+      vaultProducts.find((item) => linkedProductId && firstTruthy(item.id) === linkedProductId) ||
+      vaultProducts.find((item) => linkedBlockId && firstTruthy(item.vault_block_id) === linkedBlockId) ||
+      selectedProduct;
+    const linkLabel = firstTruthy(link?.id) ? `Vault link #${firstTruthy(link?.id)}` : `Vault block #${selectedSlot}`;
+
     return buildGsnVaultInviteMessage({
       shopName,
       gsnId: firstTruthy(me?.gmfn_id, shop?.gmfn_id),
-      blockLabel: `Vault block #${selectedSlot}`,
-      blockName: firstTruthy(selectedProduct?.name, `Vault block #${selectedSlot}`),
+      blockLabel: linkLabel,
+      blockName: firstTruthy(linkedProduct?.name, linkedProduct?.description, `Vault block #${selectedSlot}`),
       vaultLink: linkUrl,
     });
   }
@@ -1170,7 +1181,7 @@ export default function VaultControlPage() {
     return {
       title: `${blockLabel} - ${blockName}`,
       message: selectedBlockLinkUrl
-        ? buildVaultInvitePackage(selectedBlockLinkUrl)
+        ? buildVaultInvitePackage(selectedBlockLinkUrl, selectedBlockPrimaryLink)
         : "",
       url: selectedBlockLinkUrl,
     };
@@ -1710,7 +1721,7 @@ export default function VaultControlPage() {
       if (!mountedRef.current) return;
       setVaultLinks((prev) => [link, ...prev]);
       const url = vaultLinkUrl(link);
-      const copied = url ? await safeCopy(buildVaultInvitePackage(url)) : false;
+      const copied = url ? await safeCopy(buildVaultInvitePackage(url, link)) : false;
       if (!mountedRef.current) return;
       showNotice(
         "success",
@@ -1732,7 +1743,7 @@ export default function VaultControlPage() {
       return;
     }
 
-    const copied = await safeCopy(buildVaultInvitePackage(selectedBlockLinkUrl));
+    const copied = await safeCopy(buildVaultInvitePackage(selectedBlockLinkUrl, selectedBlockPrimaryLink));
     showNotice(
       copied ? "success" : "error",
       copied

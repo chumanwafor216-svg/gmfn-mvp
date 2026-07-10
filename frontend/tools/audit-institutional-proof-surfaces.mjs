@@ -1298,7 +1298,7 @@ assertContains(
 );
 assertContains(
   "firstCircle",
-  /buildGsnInviteLinkPackage[\s\S]*?joinInviteMessage[\s\S]*?inviteBundle[\s\S]*?GsnSnapshotPaperCard[\s\S]*?paperText=\{readyContacts\.length > 0 \? inviteBundle : joinInviteMessage\}[\s\S]*?paperText=\{inviteBundle \|\| joinInviteMessage\}/,
+  /buildGsnInviteLinkPackage[\s\S]*?joinInviteMessage[\s\S]*?inviteBundle[\s\S]*?GsnSnapshotPaperCard[\s\S]*?communityDomainCircleMode[\s\S]*?\? joinInviteMessage[\s\S]*?: readyContacts\.length > 0[\s\S]*?\? inviteBundle[\s\S]*?: joinInviteMessage[\s\S]*?paperText=\{inviteBundle \|\| joinInviteMessage\}/,
   "First Circle visible invite preview must keep the formal GSN invite paper."
 );
 assertContains(

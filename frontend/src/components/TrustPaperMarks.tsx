@@ -537,7 +537,8 @@ export function TrustPaperAuthorityStrip({
             fontSize: compact ? 14 : 15,
             fontWeight: 1000,
             lineHeight: 1.16,
-            overflowWrap: "anywhere",
+            overflowWrap: "break-word",
+            wordBreak: "normal",
           }}
         >
           {authorityText(title, "Official GSN paper")}
@@ -548,7 +549,8 @@ export function TrustPaperAuthorityStrip({
             fontSize: compact ? 11.5 : 12,
             fontWeight: 850,
             lineHeight: 1.32,
-            overflowWrap: "anywhere",
+            overflowWrap: "break-word",
+            wordBreak: "normal",
           }}
         >
           Prepared: {generatedAtText} | Record:{" "}
