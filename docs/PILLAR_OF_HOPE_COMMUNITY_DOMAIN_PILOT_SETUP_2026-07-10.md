@@ -7,7 +7,8 @@ without creating a custom charity fork of GSN.
 
 ## Setup Path
 
-1. Open `/community-domain/purchase`.
+1. Open `/community-domain/purchase?demo=pillar-of-hope` for the prefilled
+   local demo, or `/community-domain/purchase` for a blank real setup.
 2. Enter organization name: `Pillar of Hope`.
 3. Enter requested domain name: `pillar-of-hope`.
 4. Choose society type/template: `NGO / project network`.

@@ -47,9 +47,21 @@ type PurchaseDraftSnapshot = {
   country?: string;
   stateName?: string;
   templateKey?: string;
+  publicProfile?: string;
 };
 
 const PURCHASE_DRAFT_STORAGE_KEY = "gsn.communityDomainPurchaseDraft.v1";
+const PILLAR_OF_HOPE_DEMO_PROFILE =
+  "Pillar of Hope supports families in Aberdeen through Saturday community fitness with Snapfit Aberdeen, food support for families in need, low-cost household items, and health education seminars for women and families.";
+
+const PILLAR_OF_HOPE_DEMO_DRAFT: PurchaseDraftSnapshot = {
+  organizationName: "Pillar of Hope Demo",
+  domainName: "pillar-of-hope-demo",
+  country: "United Kingdom",
+  stateName: "Scotland / Aberdeen",
+  templateKey: "ngo_project_network",
+  publicProfile: PILLAR_OF_HOPE_DEMO_PROFILE,
+};
 
 const FALLBACK_TEMPLATES: TemplateOption[] = [
   {
@@ -274,6 +286,7 @@ function readPurchaseDraftSnapshot(): PurchaseDraftSnapshot | null {
       country: compactOptional(parsed?.country),
       stateName: compactOptional(parsed?.stateName),
       templateKey: compactOptional(parsed?.templateKey),
+      publicProfile: compactOptional(parsed?.publicProfile),
     };
   } catch {
     return null;
@@ -288,6 +301,7 @@ function savePurchaseDraftSnapshot(snapshot: PurchaseDraftSnapshot) {
     country: compactOptional(snapshot.country),
     stateName: compactOptional(snapshot.stateName),
     templateKey: compactOptional(snapshot.templateKey),
+    publicProfile: compactOptional(snapshot.publicProfile),
   };
   window.sessionStorage.setItem(PURCHASE_DRAFT_STORAGE_KEY, JSON.stringify(safeSnapshot));
 }
@@ -335,22 +349,43 @@ function normalizeTemplateItems(payload: any): TemplateOption[] {
   return clean.length ? clean : FALLBACK_TEMPLATES;
 }
 
+function purchaseDemoDraftFromSearch(search: string): PurchaseDraftSnapshot | null {
+  const params = new URLSearchParams(search || "");
+  const demoKey = compactValue(
+    params.get("demo") || params.get("example") || params.get("preset"),
+    ""
+  )
+    .toLowerCase()
+    .replace(/[\s_]+/g, "-");
+
+  if (["pillar-of-hope", "pillar-of-hope-demo", "poh"].includes(demoKey)) {
+    return PILLAR_OF_HOPE_DEMO_DRAFT;
+  }
+
+  return null;
+}
+
 export default function CommunityDomainPurchasePage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const demoDraft = useMemo(
+    () => purchaseDemoDraftFromSearch(location.search),
+    [location.search]
+  );
   const restoredDraft = useMemo(() => readPurchaseDraftSnapshot(), []);
+  const initialDraft = demoDraft || restoredDraft;
   const [isCompact, setIsCompact] = useState(() => {
     if (typeof window === "undefined") return false;
     return window.innerWidth <= COMMUNITY_DOMAIN_PURCHASE_COMPACT_WIDTH;
   });
   const [organizationName, setOrganizationName] = useState(
-    restoredDraft?.organizationName || ""
+    initialDraft?.organizationName || ""
   );
-  const [domainName, setDomainName] = useState(restoredDraft?.domainName || "");
-  const [country, setCountry] = useState(restoredDraft?.country || "");
-  const [stateName, setStateName] = useState(restoredDraft?.stateName || "");
+  const [domainName, setDomainName] = useState(initialDraft?.domainName || "");
+  const [country, setCountry] = useState(initialDraft?.country || "");
+  const [stateName, setStateName] = useState(initialDraft?.stateName || "");
   const [templateKey, setTemplateKey] = useState(
-    restoredDraft?.templateKey || FALLBACK_TEMPLATES[0].template_key
+    initialDraft?.templateKey || FALLBACK_TEMPLATES[0].template_key
   );
   const [templates, setTemplates] = useState<TemplateOption[]>(FALLBACK_TEMPLATES);
   const [availability, setAvailability] = useState<AvailabilityResult | null>(null);
@@ -391,12 +426,27 @@ export default function CommunityDomainPurchasePage() {
   }, []);
 
   useEffect(() => {
+    if (demoDraft?.domainName || demoDraft?.organizationName) {
+      setOrganizationName(demoDraft.organizationName || "");
+      setDomainName(demoDraft.domainName || "");
+      setCountry(demoDraft.country || "");
+      setStateName(demoDraft.stateName || "");
+      setTemplateKey(demoDraft.templateKey || FALLBACK_TEMPLATES[0].template_key);
+      setAvailability(null);
+      setDraftResult(null);
+      setQuoteResult(null);
+      setMessage(
+        "Pillar of Hope demo fields are filled. Check the domain name before creating the draft."
+      );
+      return;
+    }
+
     if (restoredDraft?.domainName || restoredDraft?.organizationName) {
       setMessage(
         "Your Community Domain draft was restored after sign-in. Check the name before creating the draft."
       );
     }
-  }, [restoredDraft]);
+  }, [demoDraft, restoredDraft]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -548,6 +598,9 @@ export default function CommunityDomainPurchasePage() {
     const requestedTemplate = selectedTemplate;
     const requestedCountry = country.trim();
     const requestedStateName = stateName.trim();
+    const requestedPublicProfile =
+      compactOptional(demoDraft?.publicProfile) ||
+      `Draft institutional Community Domain request for ${requestedOrganizationName}.`;
     const canApply = () =>
       mountedRef.current && draftCreateSequence.current === requestId;
 
@@ -558,6 +611,7 @@ export default function CommunityDomainPurchasePage() {
         country,
         stateName,
         templateKey,
+        publicProfile: demoDraft?.publicProfile,
       });
       navigate(`/login?force=1&next=${encodeURIComponent(location.pathname + location.search)}`);
       return;
@@ -572,7 +626,7 @@ export default function CommunityDomainPurchasePage() {
         template_key: requestedTemplate.template_key,
         country: requestedCountry || null,
         state: requestedStateName || null,
-        public_profile: `Draft institutional Community Domain request for ${requestedOrganizationName}.`,
+        public_profile: requestedPublicProfile,
       });
 
       if (!canApply()) return;
