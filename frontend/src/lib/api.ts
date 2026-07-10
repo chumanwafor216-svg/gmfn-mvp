@@ -2505,7 +2505,7 @@ export async function delegateCommunityDomainSetupEditor(
   communityDomainId: number | string,
   payload: {
     subject: string;
-    action?: "appoint" | "revoke";
+    action?: "appoint" | "revoke" | "request";
     title?: string;
     note?: string;
   }

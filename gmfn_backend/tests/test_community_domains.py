@@ -913,21 +913,26 @@ def test_community_domain_owner_delegates_setup_editor_with_audit(
         assert delegated.status_code == 200, delegated.text
         delegated_data = delegated.json()
         assert delegated_data["membership"]["user_id"] == editor.id
-        assert delegated_data["membership"]["role"] == "domain_admin"
+        assert delegated_data["membership"]["role"] == "setup_editor"
         assert delegated_data["membership"]["title"] == "Setup editor"
         assert (
             delegated_data["audit_review"]["action_key"]
             == "domain.setup_editor.delegate"
         )
         assert delegated_data["audit_review"]["status"] == "applied"
-        assert "domain_admin role" in delegated_data["audit_review"]["payload"]["warning"]
+        assert (
+            delegated_data["audit_review"]["payload"]["scope"]
+            == "setup_profile_and_evidence_only"
+        )
 
         app.dependency_overrides[get_current_user] = lambda: editor
         dashboard = client.get(f"/community-domains/{domain_id}/dashboard")
         assert dashboard.status_code == 200, dashboard.text
         assert dashboard.json()["dashboard"]["viewer"] == {
             "user_id": editor.id,
-            "can_admin": True,
+            "can_admin": False,
+            "can_setup_edit": True,
+            "setup_authority": "setup_editor",
         }
 
         profile_update = client.patch(
@@ -943,6 +948,15 @@ def test_community_domain_owner_delegates_setup_editor_with_audit(
             },
         )
         assert profile_update.status_code == 200, profile_update.text
+
+        notice_post = client.post(
+            f"/community-domains/{domain_id}/notices",
+            json={
+                "body": "Saturday programme update.",
+                "expiry_policy": "standard",
+            },
+        )
+        assert notice_post.status_code == 403, notice_post.text
     finally:
         app.dependency_overrides.pop(get_current_user, None)
 
@@ -953,7 +967,7 @@ def test_community_domain_owner_delegates_setup_editor_with_audit(
             .order_by(CommunityDomainMembership.user_id.asc())
             .all()
         )
-        assert [row.role for row in memberships] == ["owner", "domain_admin"]
+        assert [row.role for row in memberships] == ["owner", "setup_editor"]
         review = db.query(CommunityDomainActionReview).one()
         assert review.subject_user_id == editor.id
         assert review.applied_by_user_id == owner.id
@@ -1001,6 +1015,81 @@ def test_community_domain_setup_editor_delegation_is_owner_only(
         )
         assert rejected.status_code == 403, rejected.text
         assert "recorded Community Domain owner" in rejected.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+
+def test_community_domain_setup_editor_request_requires_owner_apply(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    member = _seed_user(2, "requesting-secretary@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Owner Applied Setup Editor",
+                "display_name": "Owner Applied Setup Editor",
+                "domain_type": "ngo",
+                "template_key": "ngo_project_network",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain_id = created.json()["community_domain"]["id"]
+
+        with SessionLocal() as db:
+            db.add(
+                CommunityDomainMembership(
+                    community_domain_id=domain_id,
+                    user_id=member.id,
+                    role="member",
+                    status="active",
+                )
+            )
+            db.commit()
+
+        app.dependency_overrides[get_current_user] = lambda: member
+        requested = client.post(
+            f"/community-domains/{domain_id}/setup-editor",
+            json={
+                "subject": member.email,
+                "action": "request",
+                "note": "Secretary needs to finish the setup fields.",
+            },
+        )
+        assert requested.status_code == 200, requested.text
+        requested_data = requested.json()
+        review_id = requested_data["action_review"]["id"]
+        assert requested_data["action_review"]["status"] == "pending"
+
+        blocked_dashboard = client.get(f"/community-domains/{domain_id}/dashboard")
+        assert blocked_dashboard.status_code == 200, blocked_dashboard.text
+        assert blocked_dashboard.json()["dashboard"]["viewer"]["can_setup_edit"] is False
+
+        app.dependency_overrides[get_current_user] = lambda: owner
+        decision = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review_id}/decision",
+            json={"decision": "approve", "decision_note": "Approved by owner."},
+        )
+        assert decision.status_code == 200, decision.text
+        assert decision.json()["action_review"]["status"] == "approved"
+
+        applied = client.post(
+            f"/community-domains/{domain_id}/action-reviews/{review_id}/apply"
+        )
+        assert applied.status_code == 200, applied.text
+        assert applied.json()["applied"]["type"] == "setup_editor"
+        assert applied.json()["applied"]["membership"]["role"] == "setup_editor"
+
+        app.dependency_overrides[get_current_user] = lambda: member
+        authorised_dashboard = client.get(f"/community-domains/{domain_id}/dashboard")
+        assert authorised_dashboard.status_code == 200, authorised_dashboard.text
+        viewer = authorised_dashboard.json()["dashboard"]["viewer"]
+        assert viewer["can_admin"] is False
+        assert viewer["can_setup_edit"] is True
+        assert viewer["setup_authority"] == "setup_editor"
     finally:
         app.dependency_overrides.pop(get_current_user, None)
 
@@ -1442,7 +1531,12 @@ def test_domain_admin_dashboard_summary_guides_next_action_without_activation(
     assert dashboard["community_domain"]["resolved_template"]["template_key"] == (
         "school_multi_branch"
     )
-    assert dashboard["viewer"] == {"user_id": owner.id, "can_admin": True}
+    assert dashboard["viewer"] == {
+        "user_id": owner.id,
+        "can_admin": True,
+        "can_setup_edit": True,
+        "setup_authority": "owner_admin",
+    }
     assert dashboard["template"]["template_key"] == "school_multi_branch"
     assert dashboard["status"] == {
         "domain_status": "draft",
@@ -1524,7 +1618,12 @@ def test_member_dashboard_hides_quote_and_outsider_is_rejected(
         app.dependency_overrides.pop(get_current_user, None)
 
     dashboard = member_dashboard.json()["dashboard"]
-    assert dashboard["viewer"] == {"user_id": member.id, "can_admin": False}
+    assert dashboard["viewer"] == {
+        "user_id": member.id,
+        "can_admin": False,
+        "can_setup_edit": False,
+        "setup_authority": "none",
+    }
     assert "package_quote" not in dashboard
     assert dashboard["primary_next_action"]["action_key"] == "view_structure"
     assert dashboard["primary_next_action"]["requires_admin"] is False

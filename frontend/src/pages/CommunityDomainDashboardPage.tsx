@@ -317,6 +317,8 @@ type DashboardPayload = {
   viewer?: {
     user_id?: number;
     can_admin?: boolean;
+    can_setup_edit?: boolean;
+    setup_authority?: string;
   };
   status?: any;
   counts?: any;
@@ -1838,6 +1840,7 @@ export default function CommunityDomainDashboardPage() {
     [rawLanes]
   );
   const isAdmin = Boolean(dashboard?.viewer?.can_admin);
+  const canSetupEdit = Boolean(dashboard?.viewer?.can_setup_edit || isAdmin);
   const selectedDomainClanId = Number(domain?.clan_id || getSelectedClanId() || 0);
   const latestMembershipRequest = latestRelevantMembershipRequest(ownMembershipRequests);
   const latestMembershipRequestId = cleanText(latestMembershipRequest?.id);
@@ -1906,9 +1909,14 @@ export default function CommunityDomainDashboardPage() {
   const setupCurrentStep =
     SETUP_STEP_OPTIONS.find((option) => option.key === activeSetupStep) ||
     SETUP_STEP_OPTIONS[0];
-  const setupEditingLocked = !isAdmin;
+  const setupEditingLocked = !canSetupEdit;
   const setupEditLockMessage =
-    "Only a Community Domain owner or domain admin can edit setup.";
+    "Only the owner/admin or an authorised setup editor can edit this setup.";
+  const setupAccessLabel = setupEditingLocked
+    ? "Needs owner approval"
+    : isAdmin
+    ? "Owner/admin editing"
+    : "Setup editor";
 
   useEffect(() => {
     const domainId = cleanText(domain?.id || communityDomainId);
@@ -2124,14 +2132,14 @@ export default function CommunityDomainDashboardPage() {
     }
   }
 
-  async function delegateSetupEditor(action: "appoint" | "revoke") {
-    if (setupEditingLocked) {
-      setMessage(setupEditLockMessage);
+  async function delegateSetupEditor(action: "appoint" | "revoke" | "request") {
+    if (action !== "request" && !isAdmin) {
+      setMessage("Only the owner/admin can authorise or remove setup editors.");
       return;
     }
     const subject = cleanText(setupEditorSubject);
     if (subject.length < 2) {
-      setMessage("Enter the editor's GSN email, phone, GSN ID, or user id first.");
+      setMessage("Enter the GSN email, phone, GSN ID, or user id first.");
       return;
     }
     const requestDomainId = cleanText(communityDomainId);
@@ -2151,6 +2159,8 @@ export default function CommunityDomainDashboardPage() {
           payload?.message,
           action === "appoint"
             ? "Setup editor authority delegated."
+            : action === "request"
+            ? "Setup editor request sent for owner/admin approval."
             : "Setup editor authority removed."
         )
       );
@@ -3382,22 +3392,23 @@ export default function CommunityDomainDashboardPage() {
                     </div>
                     <div style={{ ...softCard(), display: "grid", gap: 8 }}>
                       <div style={sectionLabel()}>Setup access</div>
-                      <div style={statusBadge(setupEditingLocked ? "read only" : "owner/admin")}>
-                        {setupEditingLocked ? "Read only" : "Owner/admin editing"}
+                      <div style={statusBadge(setupAccessLabel)}>
+                        {setupAccessLabel}
                       </div>
                       <div style={{ ...helperText(), fontSize: 13 }}>
                         {setupEditingLocked
-                          ? "Only the Community Domain owner or a domain admin can change this setup."
-                          : "You can edit this setup. Other members cannot change it without owner/admin authority."}
+                          ? "Ask the owner/admin to authorise setup editing. Members cannot change this setup by themselves."
+                          : isAdmin
+                          ? "You hold final owner/admin authority. You can authorise or remove one trusted setup editor."
+                          : "You can edit setup, profile, and setup evidence only. Owner/admin authority remains above this role."}
                       </div>
-                      {!setupEditingLocked ? (
+                      {isAdmin ? (
                         <div style={{ display: "grid", gap: 8 }}>
-                          <div style={sectionLabel()}>Delegate editor</div>
+                          <div style={sectionLabel()}>Authorise setup editor</div>
                           <div style={{ ...helperText(), fontSize: 13 }}>
                             Appoint a trusted GSN user by email, phone, GSN ID, or
-                            user id. In this pilot this grants domain-admin setup
-                            authority, so use it only for someone the organisation
-                            can hold responsible.
+                            user id. This grants limited setup editing only, and the
+                            owner/admin can revoke or replace it.
                           </div>
                           <input
                             value={setupEditorSubject}
@@ -3435,7 +3446,7 @@ export default function CommunityDomainDashboardPage() {
                                 void delegateSetupEditor("appoint");
                               }}
                             >
-                              {busySetupEditorDelegate ? "Updating..." : "Appoint editor"}
+                              {busySetupEditorDelegate ? "Updating..." : "Authorise editor"}
                             </StableButton>
                             <StableButton
                               type="button"
@@ -3457,6 +3468,51 @@ export default function CommunityDomainDashboardPage() {
                                 "Editor"
                               )}
                               : {compactStatus(setupEditorResult.membership.role)}
+                            </div>
+                          ) : null}
+                        </div>
+                      ) : setupEditingLocked ? (
+                        <div style={{ display: "grid", gap: 8 }}>
+                          <div style={sectionLabel()}>Request editing access</div>
+                          <div style={{ ...helperText(), fontSize: 13 }}>
+                            Enter your GSN email, phone, GSN ID, or user id. GSN will
+                            record a request for the owner/admin to approve and apply.
+                          </div>
+                          <input
+                            value={setupEditorSubject}
+                            disabled={busySetupEditorDelegate}
+                            onChange={(event) => setSetupEditorSubject(event.target.value)}
+                            placeholder="your email, phone, GMFN-U-..., or user id"
+                            style={billingInputStyle()}
+                          />
+                          <textarea
+                            value={setupEditorNote}
+                            disabled={busySetupEditorDelegate}
+                            onChange={(event) => setSetupEditorNote(event.target.value)}
+                            placeholder="Optional note: why you need setup access."
+                            style={{
+                              ...billingInputStyle(),
+                              minHeight: 78,
+                              padding: 12,
+                              resize: "vertical",
+                            }}
+                          />
+                          <StableButton
+                            type="button"
+                            kind="primary"
+                            debugId="community-domain-dashboard.setup-editor-request"
+                            disabled={busySetupEditorDelegate}
+                            onClick={() => {
+                              void delegateSetupEditor("request");
+                            }}
+                          >
+                            {busySetupEditorDelegate
+                              ? "Sending..."
+                              : "Ask owner to authorise editing"}
+                          </StableButton>
+                          {setupEditorResult?.action_review ? (
+                            <div style={statusBadge("request sent")}>
+                              Request: {compactStatus(setupEditorResult.action_review.status)}
                             </div>
                           ) : null}
                         </div>

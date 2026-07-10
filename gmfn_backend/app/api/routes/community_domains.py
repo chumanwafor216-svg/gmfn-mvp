@@ -63,7 +63,8 @@ RESERVED_DOMAIN_NAMES = {
     "trust",
 }
 DOMAIN_ADMIN_ROLES = {"owner", "admin", "domain_admin"}
-SETUP_EDITOR_ROLE = "domain_admin"
+SETUP_EDITOR_ROLE = "setup_editor"
+SETUP_EDITOR_LEGACY_DOMAIN_ADMIN_ROLE = "domain_admin"
 SETUP_EDITOR_TITLE_DEFAULT = "Setup editor"
 SETUP_EDITOR_DELEGATE_ACTION_KEY = "domain.setup_editor.delegate"
 SETUP_EDITOR_REVOKE_ACTION_KEY = "domain.setup_editor.revoke"
@@ -4209,6 +4210,9 @@ def _community_domain_dashboard_payload(
     current_user: User,
 ) -> dict[str, Any]:
     can_admin = _has_domain_admin_scope(db, domain=domain, current_user=current_user)
+    can_setup_edit = _has_domain_setup_edit_scope(
+        db, domain=domain, current_user=current_user
+    )
     root_node = _find_root_node(db, community_domain_id=int(domain.id))
     template = _community_domain_template_for_key(
         domain.template_key or domain.domain_type
@@ -4320,6 +4324,14 @@ def _community_domain_dashboard_payload(
         "viewer": {
             "user_id": int(current_user.id),
             "can_admin": bool(can_admin),
+            "can_setup_edit": bool(can_setup_edit),
+            "setup_authority": (
+                "owner_admin"
+                if can_admin
+                else "setup_editor"
+                if can_setup_edit
+                else "none"
+            ),
         },
         "status": {
             "domain_status": status,
@@ -17287,7 +17299,7 @@ class CommunityDomainSetupEditorDelegateIn(BaseModel):
     subject: str = Field(..., min_length=2, max_length=255)
     title: Optional[str] = Field(default=None, max_length=120)
     note: Optional[str] = Field(default=None, max_length=1200)
-    action: Literal["appoint", "revoke"] = "appoint"
+    action: Literal["appoint", "revoke", "request"] = "appoint"
 
     @field_validator("subject", "title", "note", "action", mode="before")
     @classmethod
@@ -17653,6 +17665,7 @@ def _setup_editor_audit_payload(
     *,
     action: str,
     subject_query: str,
+    user_id: Optional[int],
     previous_role: Optional[str],
     previous_status: Optional[str],
     new_role: str,
@@ -17663,14 +17676,17 @@ def _setup_editor_audit_payload(
         "authority_type": "community_domain_setup_editor",
         "action": action,
         "subject_query": subject_query,
+        "user_id": int(user_id) if user_id is not None else None,
         "previous_role": previous_role,
         "previous_status": previous_status,
         "new_role": new_role,
         "new_status": new_status,
         "title": title,
+        "scope": "setup_profile_and_evidence_only",
         "warning": (
-            "Setup editor authority is implemented through the domain_admin role "
-            "in this pilot, so it can affect owner/admin Community Domain tools."
+            "Setup editor is a limited setup role. It can edit setup, profile, "
+            "and setup evidence only; it cannot approve members, change billing, "
+            "decide governance, publish notices, or delegate other editors."
         ),
     }
 
@@ -18081,7 +18097,9 @@ def _ensure_member_action_review_target_matches(
     require_payload_user_id: bool = False,
 ) -> None:
     expected_target_type: Optional[str] = None
-    if action_key == "domain_member.upsert":
+    if action_key == SETUP_EDITOR_DELEGATE_ACTION_KEY:
+        expected_target_type = "community_domain_membership"
+    elif action_key == "domain_member.upsert":
         expected_target_type = "domain_member"
     elif action_key in {"node_member.upsert", "node_member.role_change"}:
         expected_target_type = "node_member"
@@ -18355,6 +18373,23 @@ def _has_domain_admin_scope(
     return membership is not None and _clean_role(membership.role) in DOMAIN_ADMIN_ROLES
 
 
+def _has_domain_setup_edit_scope(
+    db: Session,
+    *,
+    domain: CommunityDomain,
+    current_user: User,
+) -> bool:
+    if _has_domain_admin_scope(db, domain=domain, current_user=current_user):
+        return True
+
+    membership = _active_domain_membership_for_user(
+        db,
+        community_domain_id=int(domain.id),
+        user_id=int(current_user.id),
+    )
+    return membership is not None and _clean_role(membership.role) == SETUP_EDITOR_ROLE
+
+
 def _require_domain_admin_scope(
     db: Session,
     *,
@@ -18366,6 +18401,26 @@ def _require_domain_admin_scope(
     raise HTTPException(
         status_code=403,
         detail="Only a Community Domain owner or domain admin can perform this action.",
+    )
+
+
+def _require_domain_setup_edit_scope(
+    db: Session,
+    *,
+    domain: CommunityDomain,
+    current_user: User,
+) -> None:
+    if _has_domain_setup_edit_scope(db, domain=domain, current_user=current_user):
+        return
+    raise HTTPException(
+        status_code=403,
+        detail={
+            "code": "community_domain_setup_edit_forbidden",
+            "message": (
+                "Only the Community Domain owner, a domain admin, or an "
+                "authorised setup editor can edit this setup."
+            ),
+        },
     )
 
 
@@ -19191,7 +19246,7 @@ def update_community_domain_profile(
     current_user: User = Depends(get_current_user),
 ):
     domain = _get_domain_or_404(db, community_domain_id)
-    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+    _require_domain_setup_edit_scope(db, domain=domain, current_user=current_user)
 
     availability = _domain_available_payload(db, payload.domain_name)
     normalized_domain_name = availability["normalized_domain_name"]
@@ -19278,7 +19333,6 @@ def delegate_community_domain_setup_editor(
     current_user: User = Depends(get_current_user),
 ):
     domain = _get_domain_or_404(db, community_domain_id)
-    _require_domain_owner_scope(domain=domain, current_user=current_user)
 
     subject_query = _clean_str(payload.subject)
     subject_user = _find_user_by_setup_delegate_subject(db, subject_query)
@@ -19302,7 +19356,10 @@ def delegate_community_domain_setup_editor(
                 "message": "The recorded owner keeps owner authority on this Community Domain.",
             },
         )
-    if int(subject_user.id) == int(domain.owner_user_id) and payload.action == "appoint":
+    if int(subject_user.id) == int(domain.owner_user_id) and payload.action in {
+        "appoint",
+        "request",
+    }:
         raise HTTPException(
             status_code=409,
             detail={
@@ -19316,6 +19373,88 @@ def delegate_community_domain_setup_editor(
         community_domain_id=int(domain.id),
         user_id=int(subject_user.id),
     )
+    previous_role = _clean_role(getattr(membership, "role", None), "member")
+    previous_status = _clean_role(getattr(membership, "status", None), "inactive")
+    title = _clean_str(payload.title, SETUP_EDITOR_TITLE_DEFAULT)
+    now = datetime.now(timezone.utc)
+
+    if payload.action == "request":
+        _require_domain_member_scope(db, domain=domain, current_user=current_user)
+        if int(subject_user.id) != int(current_user.id):
+            raise HTTPException(
+                status_code=403,
+                detail={
+                    "code": "community_domain_setup_editor_request_self_only",
+                    "message": (
+                        "A setup editor request must be made from the same GSN "
+                        "account that will receive the authority."
+                    ),
+                },
+            )
+        if previous_role == SETUP_EDITOR_ROLE and previous_status == "active":
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "code": "community_domain_setup_editor_already_active",
+                    "message": "This account already has setup editor authority.",
+                },
+            )
+
+        review = CommunityDomainActionReview(
+            community_domain_id=int(domain.id),
+            action_key=SETUP_EDITOR_DELEGATE_ACTION_KEY,
+            requested_by_user_id=int(current_user.id),
+            subject_user_id=int(subject_user.id),
+            target_type="community_domain_membership",
+            target_id=str(int(subject_user.id)),
+            status="pending",
+            request_note=_clean_str(payload.note)
+            or "Setup editor authority requested for owner/admin approval.",
+            payload_json=_json_dump(
+                _setup_editor_audit_payload(
+                    action="appoint",
+                    subject_query=subject_query,
+                    user_id=int(subject_user.id),
+                    previous_role=previous_role,
+                    previous_status=previous_status,
+                    new_role=SETUP_EDITOR_ROLE,
+                    new_status="active",
+                    title=title,
+                )
+            ),
+        )
+        db.add(review)
+        create_notification(
+            db,
+            user_id=int(domain.owner_user_id),
+            kind="community_domain_setup_editor",
+            title="Setup editor approval needed",
+            message=(
+                f"{getattr(subject_user, 'email', 'A GSN user')} requested "
+                f"setup editing authority for {domain.display_name}."
+            ),
+            action_url=f"/app/community-domain/{int(domain.id)}",
+            action_label="Review setup editor request",
+            commit=False,
+            refresh=False,
+        )
+        db.commit()
+        db.refresh(review)
+        return {
+            "ok": True,
+            "created": True,
+            "community_domain_id": int(domain.id),
+            "message": "Setup editor request sent to the owner/admin for approval.",
+            "action_review": _action_review_payload(review),
+            "boundary": (
+                "Request recorded only. It does not unlock editing until an "
+                "owner/admin approves and applies the request. This is not an "
+                "SMS OTP challenge."
+            ),
+        }
+
+    _require_domain_owner_scope(domain=domain, current_user=current_user)
+
     if membership is None and payload.action == "revoke":
         raise HTTPException(
             status_code=404,
@@ -19333,22 +19472,52 @@ def delegate_community_domain_setup_editor(
         db.add(membership)
         db.flush()
 
-    previous_role = _clean_role(getattr(membership, "role", None), "member")
-    previous_status = _clean_role(getattr(membership, "status", None), "inactive")
-    title = _clean_str(payload.title, SETUP_EDITOR_TITLE_DEFAULT)
-    now = datetime.now(timezone.utc)
+    legacy_setup_admin = (
+        previous_role == SETUP_EDITOR_LEGACY_DOMAIN_ADMIN_ROLE
+        and _clean_str(getattr(membership, "title", None), "") == SETUP_EDITOR_TITLE_DEFAULT
+    )
 
     if payload.action == "appoint":
+        if previous_role == SETUP_EDITOR_ROLE and previous_status == "active":
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "code": "community_domain_setup_editor_already_active",
+                    "message": "This account already has setup editor authority.",
+                },
+            )
+        if previous_role in DOMAIN_ADMIN_ROLES and not legacy_setup_admin:
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "code": "community_domain_setup_editor_admin_already_authorised",
+                    "message": (
+                        "This account already has wider Community Domain admin "
+                        "authority. Do not overwrite it with setup-editor authority."
+                    ),
+                },
+            )
         membership.role = SETUP_EDITOR_ROLE
         membership.status = "active"
         membership.title = title
         action_key = SETUP_EDITOR_DELEGATE_ACTION_KEY
-        decision_note = "Setup editor authority delegated by the recorded owner."
+        decision_note = "Limited setup editor authority authorised by the recorded owner."
         result_message = (
-            "Setup editor authority has been delegated. This person can now sign "
-            "in and use owner/admin Community Domain setup tools."
+            "Setup editor authority has been authorised. This person can edit "
+            "setup, profile, and setup evidence only."
         )
     else:
+        if previous_role != SETUP_EDITOR_ROLE and not legacy_setup_admin:
+            raise HTTPException(
+                status_code=404,
+                detail={
+                    "code": "community_domain_setup_editor_not_found",
+                    "message": (
+                        "This person does not currently hold delegated setup "
+                        "editor authority."
+                    ),
+                },
+            )
         membership.role = "member"
         membership.status = "active"
         membership.title = _clean_str(payload.title) or membership.title or None
@@ -19373,6 +19542,7 @@ def delegate_community_domain_setup_editor(
             _setup_editor_audit_payload(
                 action=payload.action,
                 subject_query=subject_query,
+                user_id=int(subject_user.id),
                 previous_role=previous_role,
                 previous_status=previous_status,
                 new_role=membership.role,
@@ -19428,10 +19598,11 @@ def delegate_community_domain_setup_editor(
         "membership": _domain_member_payload(membership),
         "audit_review": _action_review_payload(review),
         "boundary": (
-            "Owner-recorded setup editor delegation only. This does not verify "
-            "the institution, transfer ownership, confirm payment, or create an "
-            "OTP challenge. The delegated person must sign in with their own GSN "
-            "account before the authority can be used."
+            "Owner-recorded setup editor authority only. This does not verify "
+            "the institution, transfer ownership, confirm payment, approve "
+            "members, change billing, decide governance, or create an OTP "
+            "challenge. The delegated person must sign in with their own GSN "
+            "account before the limited setup authority can be used."
         ),
     }
 
@@ -19443,7 +19614,7 @@ def get_community_domain_setup_evidence(
     current_user: User = Depends(get_current_user),
 ):
     domain = _get_domain_or_404(db, community_domain_id)
-    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+    _require_domain_setup_edit_scope(db, domain=domain, current_user=current_user)
 
     review = (
         db.query(CommunityDomainActionReview)
@@ -19502,7 +19673,7 @@ async def submit_community_domain_setup_evidence(
     current_user: User = Depends(get_current_user),
 ):
     domain = _get_domain_or_404(db, community_domain_id)
-    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+    _require_domain_setup_edit_scope(db, domain=domain, current_user=current_user)
 
     clean_reference = _clean_str(external_reference) or None
     if file is None and clean_reference is None:
@@ -23405,7 +23576,94 @@ def apply_community_domain_action_review(
     payload = _json_load(row.payload_json)
     applied: dict[str, Any]
 
-    if action_key == "domain_member.upsert":
+    if action_key == SETUP_EDITOR_DELEGATE_ACTION_KEY:
+        _ensure_member_action_review_target_matches(
+            action_key=action_key,
+            payload=payload,
+            target_type=row.target_type,
+            target_id=row.target_id,
+            subject_user_id=(
+                int(row.subject_user_id) if row.subject_user_id is not None else None
+            ),
+        )
+        user_id = _payload_int(payload, "user_id")
+        subject_user = _get_user_or_404(db, user_id)
+        if int(user_id) == int(domain.owner_user_id):
+            raise HTTPException(
+                status_code=403,
+                detail={
+                    "code": "community_domain_owner_already_has_authority",
+                    "message": "The recorded owner already has Community Domain authority.",
+                },
+            )
+
+        membership = _domain_membership_for_user(
+            db,
+            community_domain_id=int(domain.id),
+            user_id=int(user_id),
+        )
+        created = membership is None
+        previous_role = _clean_role(getattr(membership, "role", None), "member")
+        previous_status = _clean_role(getattr(membership, "status", None), "inactive")
+        if previous_role in DOMAIN_ADMIN_ROLES:
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "code": "community_domain_setup_editor_admin_already_authorised",
+                    "message": (
+                        "This account already has wider Community Domain admin "
+                        "authority. Do not overwrite it with setup-editor authority."
+                    ),
+                },
+            )
+        if membership is None:
+            membership = CommunityDomainMembership(
+                community_domain_id=int(domain.id),
+                user_id=int(user_id),
+            )
+            db.add(membership)
+
+        membership.role = SETUP_EDITOR_ROLE
+        membership.status = "active"
+        membership.title = (
+            _clean_str(str(payload.get("title") or "")) or SETUP_EDITOR_TITLE_DEFAULT
+        )
+        row.status = "applied"
+        row.applied_by_user_id = int(current_user.id)
+        row.applied_at = datetime.now(timezone.utc)
+        row.payload_json = _json_dump(
+            {
+                **payload,
+                "previous_role_at_apply": previous_role,
+                "previous_status_at_apply": previous_status,
+                "applied_role": SETUP_EDITOR_ROLE,
+                "applied_status": "active",
+            }
+        )
+        db.add(row)
+        create_notification(
+            db,
+            user_id=int(subject_user.id),
+            kind="community_domain_setup_editor",
+            title="Setup editor authority approved",
+            message=(
+                f"{domain.display_name} setup editing authority has been "
+                "approved for your GSN account."
+            ),
+            action_url=f"/app/community-domain/{int(domain.id)}",
+            action_label="Open Community Domain",
+            commit=False,
+            refresh=False,
+        )
+        db.commit()
+        db.refresh(membership)
+        db.refresh(row)
+        applied = {
+            "type": "setup_editor",
+            "created": created,
+            "membership": _domain_member_payload(membership),
+        }
+    elif action_key == "domain_member.upsert":
         _ensure_member_action_review_target_matches(
             action_key=action_key,
             payload=payload,

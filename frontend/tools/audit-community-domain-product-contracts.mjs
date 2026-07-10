@@ -132,22 +132,22 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /setupEditingLocked = !isAdmin[\s\S]*Only a Community Domain owner or domain admin can edit setup[\s\S]*Setup access[\s\S]*Read only[\s\S]*Owner\/admin editing/,
-  "Community Domain dashboard setup must visibly lock editing to owner/admin authority instead of leaving setup drafts open to every viewer.",
+  /canSetupEdit[\s\S]*setupEditingLocked = !canSetupEdit[\s\S]*authorised setup editor[\s\S]*Needs owner approval[\s\S]*Owner\/admin editing[\s\S]*Setup editor[\s\S]*Setup access/,
+  "Community Domain dashboard setup must visibly distinguish owner/admin authority from limited setup-editor authority.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /delegateCommunityDomainSetupEditor[\s\S]*Delegate editor[\s\S]*community-domain-dashboard\.setup-editor-appoint[\s\S]*Appoint editor[\s\S]*community-domain-dashboard\.setup-editor-revoke[\s\S]*Remove editor/,
-  "Community Domain dashboard setup must expose owner/admin setup-editor delegation controls.",
+  /delegateCommunityDomainSetupEditor[\s\S]*Authorise setup editor[\s\S]*community-domain-dashboard\.setup-editor-appoint[\s\S]*Authorise editor[\s\S]*community-domain-dashboard\.setup-editor-revoke[\s\S]*Remove editor[\s\S]*community-domain-dashboard\.setup-editor-request[\s\S]*Ask owner to authorise editing/,
+  "Community Domain dashboard setup must expose owner/admin setup-editor controls and a non-admin request path.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
   /disabled=\{setupEditingLocked[\s\S]*community-domain-dashboard\.setup-save-and-continue[\s\S]*disabled=\{setupEditingLocked \|\| busyProfileSave\}/,
-  "Community Domain dashboard setup save controls must be disabled for non-admin viewers.",
+  "Community Domain dashboard setup save controls must be disabled for viewers without owner/admin or setup-editor authority.",
   { frontend: true }
 );
 
@@ -2943,3 +2943,4 @@ if (findings.length > 0) {
 }
 
 console.log("Community Domain product contract audit passed.");
+process.exit(0);
