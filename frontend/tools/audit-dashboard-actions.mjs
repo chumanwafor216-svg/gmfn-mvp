@@ -270,6 +270,11 @@ assertContains(
 );
 
 assertContains(
+  /DASHBOARD_AVATAR_LOCAL_FALLBACK_STORAGE_KEY[\s\S]*?dashboardAvatarLocalFallbackStorageKeysForUser[\s\S]*?dashboardAvatarLocalFallbackStorageKeys[\s\S]*?storedLocalFallbackAvatar[\s\S]*?usableBackendAvatar \|\| storedAvatar \|\| storedLocalFallbackAvatar[\s\S]*?readStoredImageExcept\(\s*\[\.\.\.dashboardAvatarStorageKeys,\s*\.\.\.dashboardAvatarLocalFallbackStorageKeys\][\s\S]*?writeStoredImage\(dashboardAvatarLocalFallbackStorageKeys,\s*localPreview\)/,
+  "Dashboard profile picture must keep a local fallback copy so a Render upload URL failure does not blank the same-phone dashboard."
+);
+
+assertContains(
   /label: "TrustSlip"[\s\S]*?to: trustSlipCode[\s\S]*?DASHBOARD_TARGETS\.TRUST_SLIP_VERIFY[\s\S]*?encodeURIComponent\(trustSlipCode\)[\s\S]*?: DASHBOARD_TARGETS\.TRUST_SLIP_VERIFY/,
   "Dashboard passport TrustSlip surface must route to the TrustSlip Verify decoder, prefilled when a code exists."
 );

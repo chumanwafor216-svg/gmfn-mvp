@@ -306,6 +306,8 @@ type RoscaFocusObligation = {
 
 const DASHBOARD_UI_STORAGE_KEY = "gmfn.dashboard.ui.v8";
 const DASHBOARD_AVATAR_STORAGE_KEY = "gmfn.member.avatar";
+const DASHBOARD_AVATAR_LOCAL_FALLBACK_STORAGE_KEY =
+  "gmfn.member.avatar.localFallback";
 const DASHBOARD_ATTENTION_STORAGE_KEY = "gmfn.dashboard.attention.v2";
 const DASHBOARD_FOCUS_COMMITMENTS_STORAGE_KEY =
   "gmfn.dashboard.focus-commitments.v1";
@@ -1229,6 +1231,24 @@ function dashboardAvatarStorageKeysForUser(user: any): string[] {
 
   return Array.from(new Set(identityKeys)).map((identity) =>
     scopedDashboardStorageKey(DASHBOARD_AVATAR_STORAGE_KEY, identity)
+  );
+}
+
+function dashboardAvatarLocalFallbackStorageKeysForUser(user: any): string[] {
+  const identityKeys = [
+    user?.gmfn_id,
+    user?.id,
+    user?.email,
+    user?.phone_e164,
+    user?.phone_number,
+    user?.phone,
+    "visitor",
+  ]
+    .map((value) => storageIdentitySegment(value))
+    .filter(Boolean);
+
+  return Array.from(new Set(identityKeys)).map((identity) =>
+    scopedDashboardStorageKey(DASHBOARD_AVATAR_LOCAL_FALLBACK_STORAGE_KEY, identity)
   );
 }
 
@@ -3069,6 +3089,24 @@ export default function DashboardPage() {
       ])
     );
   }, [dashboardAvatarStorageKey, me]);
+  const dashboardAvatarLocalFallbackStorageKey = useMemo(
+    () =>
+      scopedDashboardStorageKey(
+        DASHBOARD_AVATAR_LOCAL_FALLBACK_STORAGE_KEY,
+        dashboardStorageIdentity
+      ),
+    [dashboardStorageIdentity]
+  );
+  const dashboardAvatarLocalFallbackStorageKeys = useMemo(() => {
+    const keys = dashboardAvatarLocalFallbackStorageKeysForUser(me);
+    return Array.from(
+      new Set([
+        DASHBOARD_AVATAR_LOCAL_FALLBACK_STORAGE_KEY,
+        dashboardAvatarLocalFallbackStorageKey,
+        ...keys,
+      ])
+    );
+  }, [dashboardAvatarLocalFallbackStorageKey, me]);
   const dashboardAttentionStorageKeyRef = useRef(dashboardAttentionStorageKey);
 
   const [spotlights, setSpotlights] = useState<SpotlightItem[]>([]);
@@ -3197,7 +3235,11 @@ export default function DashboardPage() {
       dashboardAvatarStorageKeys,
       failedAvatarSrc
     );
-    const nextAvatar = usableBackendAvatar || storedAvatar;
+    const storedLocalFallbackAvatar = readStoredImageExcept(
+      dashboardAvatarLocalFallbackStorageKeys,
+      failedAvatarSrc
+    );
+    const nextAvatar = usableBackendAvatar || storedAvatar || storedLocalFallbackAvatar;
     setAvatarSrc(nextAvatar);
 
     if (usableBackendAvatar) {
@@ -3207,7 +3249,20 @@ export default function DashboardPage() {
     if (nextAvatar && !readStoredImage(dashboardAvatarStorageKey)) {
       writeStoredImage(dashboardAvatarStorageKey, nextAvatar);
     }
-  }, [dashboardAvatarStorageKey, dashboardAvatarStorageKeys, failedAvatarSrc, me]);
+    if (
+      isLocalPreviewImageValue(nextAvatar) &&
+      !readStoredImage(dashboardAvatarLocalFallbackStorageKey)
+    ) {
+      writeStoredImage(dashboardAvatarLocalFallbackStorageKey, nextAvatar);
+    }
+  }, [
+    dashboardAvatarLocalFallbackStorageKey,
+    dashboardAvatarLocalFallbackStorageKeys,
+    dashboardAvatarStorageKey,
+    dashboardAvatarStorageKeys,
+    failedAvatarSrc,
+    me,
+  ]);
 
   useEffect(() => {
     if (!failedAvatarSrc || typeof window === "undefined") return;
@@ -5496,8 +5551,12 @@ export default function DashboardPage() {
     setFailedAvatarSrc(failed);
     if (isLocalPreviewImageValue(failed)) {
       removeStoredImageValue(dashboardAvatarStorageKeys, failed);
+      removeStoredImageValue(dashboardAvatarLocalFallbackStorageKeys, failed);
     }
-    const fallback = readStoredImageExcept(dashboardAvatarStorageKeys, failed);
+    const fallback = readStoredImageExcept(
+      [...dashboardAvatarStorageKeys, ...dashboardAvatarLocalFallbackStorageKeys],
+      failed
+    );
     setAvatarSrc(fallback);
   }
 
@@ -5517,7 +5576,10 @@ export default function DashboardPage() {
 
     try {
       const updated = await removeMyProfileImage();
-      for (const key of dashboardAvatarStorageKeys) {
+      for (const key of [
+        ...dashboardAvatarStorageKeys,
+        ...dashboardAvatarLocalFallbackStorageKeys,
+      ]) {
         try {
           localStorage.removeItem(key);
         } catch {
@@ -5564,6 +5626,7 @@ export default function DashboardPage() {
       });
       const localPreview = await readFileAsDataUrl(prepared.file);
       writeStoredImage(dashboardAvatarStorageKeys, localPreview);
+      writeStoredImage(dashboardAvatarLocalFallbackStorageKeys, localPreview);
       setAvatarSrc(localPreview);
 
       const uploaded = await uploadMyProfileImageFile(prepared.file);
@@ -5576,6 +5639,7 @@ export default function DashboardPage() {
       }
 
       writeStoredImage(dashboardAvatarStorageKeys, persistedAvatar);
+      writeStoredImage(dashboardAvatarLocalFallbackStorageKeys, localPreview);
       setAvatarSrc(persistedAvatar);
       setMe((previous: any) => ({ ...(previous || {}), ...(uploaded || {}) }));
       setAvatarStatus({
