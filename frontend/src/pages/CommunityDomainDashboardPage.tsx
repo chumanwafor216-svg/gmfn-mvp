@@ -920,7 +920,53 @@ function laneDisplayLabel(lane: any, fallback = "Lane"): string {
   const key = cleanText(lane?.lane_key).toLowerCase();
   const label = cleanText(lane?.label, fallback);
   if (key === "modules" || label.toLowerCase() === "modules") return "Services";
+  if (key === "settings") return "Create / setup";
   return label;
+}
+
+function isCommunityDomainInSetup(status: any, domain: any): boolean {
+  const domainStatus = compactStatus(status?.domain_status || domain?.status).toLowerCase();
+  const billingStatus = compactStatus(status?.billing_status || domain?.billing_status).toLowerCase();
+  const activationStatus = compactStatus(
+    status?.activation_status || domain?.activation_status
+  ).toLowerCase();
+  return (
+    domainStatus.includes("draft") ||
+    billingStatus.includes("quote") ||
+    activationStatus.includes("not active") ||
+    activationStatus.includes("waiting")
+  );
+}
+
+function setupStepPlaceholder(
+  step: SetupStepKey,
+  domain: any,
+  draft: CommunityDomainSetupDraft
+): string {
+  const pillar = isPillarOfHopeDomain(domain, draft);
+  if (pillar) {
+    if (step === "structure") {
+      return "Example: trustees, family support team, Saturday fitness, food support, household items, health seminars.";
+    }
+    if (step === "members") {
+      return "Example: founder, trustees, volunteers, Snapfit partner contact, food-support coordinators.";
+    }
+    if (step === "governance") {
+      return "Example: who approves members, notices, donations evidence, programme records, and service changes.";
+    }
+    return "Example: fitness, food support, household items, women's health seminars, notices, spotlight, records.";
+  }
+
+  if (step === "structure") {
+    return "Example: main office, branches, departments, teams, programme groups, or service areas.";
+  }
+  if (step === "members") {
+    return "Example: owner, first admins, staff, volunteers, coordinators, trusted community contacts.";
+  }
+  if (step === "governance") {
+    return "Example: who can approve settings, members, evidence, notices, and major changes.";
+  }
+  return "Example: marketplace, notices, verification, records, analytics, vault, shop, spotlight.";
 }
 
 function reviewStatusCounts(items: ActionReviewItem[]): Record<string, number> {
@@ -1809,6 +1855,14 @@ export default function CommunityDomainDashboardPage() {
   const selectedMemberDetail =
     MEMBER_DETAIL_OPTIONS.find((option) => option.key === activeMemberDetail) ||
     MEMBER_DETAIL_OPTIONS[0];
+  const domainInSetup = isCommunityDomainInSetup(status, domain);
+  const pageTitle = domainInSetup
+    ? "Community Domain setup"
+    : "Community Domain dashboard";
+  const setupStepIndex = Math.max(
+    0,
+    SETUP_STEP_OPTIONS.findIndex((option) => option.key === activeSetupStep)
+  );
   const isBaseReadinessLoading = Boolean(loadingReadinessLanes.__base);
   const isActiveLaneReadinessLoading = Boolean(
     loadingReadinessLanes[cleanText(activeLane, "structure")]
@@ -2718,12 +2772,14 @@ export default function CommunityDomainDashboardPage() {
 
       <PageTopNav
         sectionLabel="Community Domain"
-        title="Institutional dashboard"
-        subtitle="Set up this institution one step at a time."
-        homeTo={APP_ROUTES.DASHBOARD}
-        homeLabel="Dashboard"
+        title={pageTitle}
+        subtitle={
+          domainInSetup
+            ? "Create this Community Domain one step at a time."
+            : "Operate this Community Domain without mixing setup, billing, and verification."
+        }
         backTo={APP_ROUTES.COMMUNITY}
-        backLabel="Community Home"
+        backLabel="Back"
       />
 
       {loading ? (
@@ -2838,12 +2894,11 @@ export default function CommunityDomainDashboardPage() {
               }}
             >
               {[
-                ["Owner", cleanText(domain.owner_user_id, "not recorded")],
-                ["Domain status", compactStatus(status.domain_status)],
-                ["Verification", compactStatus(status.verification_status)],
+                ["Access", isAdmin ? "Owner/admin" : "Member"],
+                ["Domain", compactStatus(status.domain_status)],
                 ["Billing", compactStatus(status.billing_status)],
                 ["Activation", compactStatus(status.activation_status)],
-                ["Renewal", compactStatus(renewalState)],
+                ["Verification", compactStatus(status.verification_status)],
               ].map(([label, value]) => (
                 <div key={label} style={factTile()}>
                   <div style={sectionLabel(true)}>{label}</div>
@@ -2858,12 +2913,12 @@ export default function CommunityDomainDashboardPage() {
           <section id="community-domain-official-board" style={whiteCard()}>
             <div style={{ display: "grid", gap: 12 }}>
               <div>
-                <div style={sectionLabel()}>Setup</div>
+                <div style={sectionLabel()}>Create / setup</div>
                 <h2 style={{ margin: "6px 0 0", fontSize: 24, lineHeight: 1.12 }}>
                   {operatingStateCopy.heading}
                 </h2>
                 <div style={{ ...helperText(), marginTop: 8 }}>
-                  Complete the setup form below. Payment and activation come after.
+                  Fill the current setup step, save it, then GSN moves you forward.
                 </div>
               </div>
               <StableButton
@@ -3198,18 +3253,20 @@ export default function CommunityDomainDashboardPage() {
             <div style={whiteCard()}>
               <div style={{ display: "grid", gap: 12 }}>
                 <div style={sectionLabel()}>
-                  {showAdvancedTools ? "Opened lane" : "Settings"}
+                  {showAdvancedTools ? "Opened lane" : "Create / setup"}
                 </div>
                 <h2 style={{ margin: 0, fontSize: 26, lineHeight: 1.1 }}>
                   {laneDisplayLabel(selectedLane, "Community Domain setup")}
                 </h2>
-                <div style={helperText()}>
-                  Current state:{" "}
-                  <strong style={{ textTransform: "capitalize" }}>
-                    {compactStatus(selectedLane?.status)}
-                  </strong>
-                  . Count: <strong>{countValue(selectedLane?.count)}</strong>.
-                </div>
+                {showAdvancedTools ? (
+                  <div style={helperText()}>
+                    Current state:{" "}
+                    <strong style={{ textTransform: "capitalize" }}>
+                      {compactStatus(selectedLane?.status)}
+                    </strong>
+                    . Count: <strong>{countValue(selectedLane?.count)}</strong>.
+                  </div>
+                ) : null}
 
                 {isActiveLaneReadinessLoading ? (
                   <div style={softCard()}>
@@ -3225,48 +3282,12 @@ export default function CommunityDomainDashboardPage() {
 
                 {!isActiveLaneReadinessLoading && activeLane === "settings" ? (
                   <div style={{ ...softCard(), display: "grid", gap: 12 }}>
-                    <div style={sectionLabel()}>Community Domain settings</div>
+                    <div style={sectionLabel()}>Create Community Domain</div>
                     <h3 style={{ margin: 0, fontSize: 22, lineHeight: 1.15 }}>
-                      Fill this step, then continue.
+                      {setupCurrentStep.label}
                     </h3>
-                    <div style={helperText()}>
-                      GSN saves this setup before moving to the next step.
-                    </div>
-
-                    <div
-                      style={{
-                        display: "grid",
-                        gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 112px), 1fr))",
-                        gap: 8,
-                      }}
-                    >
-                      {SETUP_STEP_OPTIONS.map((option) => {
-                        const selected = option.key === activeSetupStep;
-                        return (
-                          <StableButton
-                            key={option.key}
-                            type="button"
-                            kind={selected ? "primary" : "secondary"}
-                            stableHeight={46}
-                            fullWidth
-                            aria-pressed={selected}
-                            title={option.note}
-                            debugId={`community-domain-dashboard.setup-step.${option.key}`}
-                            onClick={() => setActiveSetupStep(option.key)}
-                            style={{
-                              justifyContent: "center",
-                              fontSize: 12,
-                              textTransform: "none",
-                            }}
-                          >
-                            {option.label}
-                          </StableButton>
-                        );
-                      })}
-                    </div>
-
-                    <div style={{ ...helperText(), fontSize: 13 }}>
-                      Current step: <strong>{setupCurrentStep.label}</strong>.{" "}
+                    <div style={{ ...helperText(), fontSize: 14 }}>
+                      Step {setupStepIndex + 1} of {SETUP_STEP_OPTIONS.length}.{" "}
                       {setupCurrentStep.note}
                     </div>
 
@@ -3573,13 +3594,7 @@ export default function CommunityDomainDashboardPage() {
                             )
                           }
                           placeholder={
-                            activeSetupStep === "structure"
-                              ? "Example: root school, nursery, primary, secondary, departments, classes."
-                              : activeSetupStep === "members"
-                              ? "Example: owner, principal, bursar, registrar, first admins."
-                              : activeSetupStep === "governance"
-                              ? "Example: who can approve settings, members, evidence, and changes."
-                              : "Example: marketplace, verification, records, analytics, vault, shop."
+                            setupStepPlaceholder(activeSetupStep, domain, setupDraft)
                           }
                           style={{
                             ...billingInputStyle(),

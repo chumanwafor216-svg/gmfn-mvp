@@ -16,6 +16,18 @@ function compactStatus(value: unknown): string {
   return humanStatus(value);
 }
 
+function isDraftDomain(domain: any): boolean {
+  const status = compactStatus(domain?.status || domain?.domain_status).toLowerCase();
+  const billing = compactStatus(domain?.billing_status).toLowerCase();
+  const activation = compactStatus(domain?.activation_status).toLowerCase();
+  return (
+    status.includes("draft") ||
+    billing.includes("quote") ||
+    activation.includes("not active") ||
+    activation.includes("waiting")
+  );
+}
+
 function softCard(): React.CSSProperties {
   return {
     borderRadius: 18,
@@ -116,12 +128,11 @@ export default function CommunityDomainSelectorPanel({
     <div style={{ display: "grid", gap: 12 }}>
       <div style={sectionLabel()}>Your Community Domains</div>
       <h2 style={{ margin: 0, fontSize: 26, lineHeight: 1.1 }}>
-        Choose a domain to operate.
+        Choose a Community Domain.
       </h2>
       <div style={helperText()}>
-        These are active Community Domain memberships attached to your signed-in
-        account. Opening one keeps payment, activation, and verification boundaries
-        separate.
+        Draft domains open setup first. Active domains open the operating page.
+        Payment, activation, and verification stay separate.
       </div>
       <div
         style={{
@@ -133,6 +144,7 @@ export default function CommunityDomainSelectorPanel({
         {domainItems.map((item) => {
           const itemDomain = item?.community_domain || {};
           const itemMembership = item?.membership || {};
+          const draftDomain = isDraftDomain(itemDomain);
           const path =
             cleanText(item?.dashboard_path) ||
             `/app/community-domain/${encodeURIComponent(String(itemDomain.id))}`;
@@ -170,7 +182,7 @@ export default function CommunityDomainSelectorPanel({
                     "domain"
                   )}`}
                 >
-                  Open dashboard
+                  {draftDomain ? "Continue setup" : "Open domain"}
                 </StableCtaLink>
               </div>
             </div>

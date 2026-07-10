@@ -139,8 +139,8 @@ assertContains(
 
 assertContains(
   "src/pages/communityDomainDashboard/DomainSelectorPanel.tsx",
-  /No Community Domains yet[\s\S]*community-domain-dashboard\.empty\.purchase[\s\S]*community-domain-dashboard\.empty\.community-home[\s\S]*Your Community Domains[\s\S]*Domain: \{compactStatus\(itemDomain\.status\)\}[\s\S]*Verification: \{compactStatus\(itemDomain\.verification_status\)\}[\s\S]*Open dashboard/,
-  "Lazy Community Domain selector panel must expose safe domain and verification status, opening links, and empty-state recovery.",
+  /No Community Domains yet[\s\S]*community-domain-dashboard\.empty\.purchase[\s\S]*community-domain-dashboard\.empty\.community-home[\s\S]*Your Community Domains[\s\S]*Draft domains open setup first[\s\S]*Domain: \{compactStatus\(itemDomain\.status\)\}[\s\S]*Verification: \{compactStatus\(itemDomain\.verification_status\)\}[\s\S]*draftDomain \? "Continue setup" : "Open domain"/,
+  "Lazy Community Domain selector panel must expose safe domain and verification status, route draft domains into setup wording, and keep empty-state recovery.",
   { frontend: true }
 );
 
@@ -343,15 +343,29 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /Owner[\s\S]*cleanText\(domain\.owner_user_id, "not recorded"\)[\s\S]*Domain status[\s\S]*Verification[\s\S]*Billing[\s\S]*Activation[\s\S]*Renewal[\s\S]*compactStatus\(renewalState\)[\s\S]*Community Domain engine[\s\S]*One institutional home for structure, rules, services, and trust[\s\S]*Structure[\s\S]*countValue\(counts\.nodes\)[\s\S]*Governance[\s\S]*countValue\(counts\.active_policies\)[\s\S]*Services[\s\S]*countValue\(moduleKeys\.length\)[\s\S]*Trust relay[\s\S]*compactStatus\(status\.verification_status\)[\s\S]*verification still depends on current status/,
-  "Community Domain dashboard must show owner, domain, verification, billing, activation, and renewal facts, then present the existing domain as an operating engine without overclaiming verification.",
+  /isCommunityDomainInSetup[\s\S]*pageTitle[\s\S]*Community Domain setup[\s\S]*backLabel="Back"[\s\S]*Access", isAdmin \? "Owner\/admin" : "Member"[\s\S]*Domain", compactStatus\(status\.domain_status\)[\s\S]*Billing", compactStatus\(status\.billing_status\)[\s\S]*Activation", compactStatus\(status\.activation_status\)[\s\S]*Verification", compactStatus\(status\.verification_status\)[\s\S]*Community Domain engine[\s\S]*One institutional home for structure, rules, services, and trust[\s\S]*Structure[\s\S]*countValue\(counts\.nodes\)[\s\S]*Governance[\s\S]*countValue\(counts\.active_policies\)[\s\S]*Services[\s\S]*countValue\(moduleKeys\.length\)[\s\S]*Trust relay[\s\S]*compactStatus\(status\.verification_status\)[\s\S]*verification still depends on current status/,
+  "Community Domain dashboard must avoid raw owner ids, use a single Back escape, show setup-aware page naming, and keep operating-engine details behind advanced tools.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /communityDomainOperatingStateCopy[\s\S]*Domain closed[\s\S]*Domain suspended[\s\S]*Domain expired[\s\S]*Waiting for activation[\s\S]*Active operating domain[\s\S]*Active, not verified[\s\S]*Draft setup[\s\S]*Set up this institution one step at a time[\s\S]*Setup[\s\S]*Complete the setup form below[\s\S]*Payment and activation come after[\s\S]*community-domain-dashboard\.setup-focus/,
+  /communityDomainOperatingStateCopy[\s\S]*Domain closed[\s\S]*Domain suspended[\s\S]*Domain expired[\s\S]*Waiting for activation[\s\S]*Active operating domain[\s\S]*Active, not verified[\s\S]*Draft setup[\s\S]*Create \/ setup[\s\S]*Fill the current setup step, save it, then GSN moves you forward[\s\S]*community-domain-dashboard\.setup-focus/,
   "Community Domain dashboard must give a short setup-first signpost without exposing duplicate status chips or a long operating-state manual on the primary screen.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /setupStepPlaceholder[\s\S]*Saturday fitness[\s\S]*Snapfit partner[\s\S]*Create Community Domain[\s\S]*setupStepIndex \+ 1[\s\S]*SETUP_STEP_OPTIONS\.length[\s\S]*setupStepPlaceholder\(activeSetupStep, domain, setupDraft\)/,
+  "Community Domain dashboard setup must show one setup step at a time and use Pillar/charity-aware examples instead of school-only prompts.",
+  { frontend: true }
+);
+
+assertNotContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /community-domain-dashboard\.setup-step\.\$\{option\.key\}|Example: root school|Example: owner, principal/,
+  "Community Domain dashboard setup must not expose all setup step buttons or school-only examples on the primary setup surface.",
   { frontend: true }
 );
 
