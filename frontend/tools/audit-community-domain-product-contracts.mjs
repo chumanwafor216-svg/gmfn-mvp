@@ -178,6 +178,18 @@ assertContains(
 );
 
 assertContains(
+  "gmfn_backend/app/api/routes/clans.py",
+  /COMMUNITY_DOMAIN_FEATURE_POLICY_KEY = "domain\.feature_policy"[\s\S]*COMMUNITY_DOMAIN_FEATURE_MEMBER_INVITES = "member_invites"[\s\S]*def _community_domain_feature_mode_for_clan[\s\S]*def _require_domain_member_invites_enabled[\s\S]*def create_invite[\s\S]*_require_domain_member_invites_enabled[\s\S]*def get_invite_link[\s\S]*_require_domain_member_invites_enabled[\s\S]*def preview_join_invite[\s\S]*_disabled_domain_invite_preview[\s\S]*def create_join_request[\s\S]*_require_domain_member_invites_enabled/,
+  "Clan invite routes must obey linked Community Domain member_invites policy for creating links, preparing reusable links, previewing disabled links, and submitting join requests."
+);
+
+assertContains(
+  "gmfn_backend/tests/test_community_domains.py",
+  /test_community_domain_member_invites_respect_disabled_feature_policy[\s\S]*"member_invites": "off"[\s\S]*\/clans\/\{clan_id\}\/invite[\s\S]*\/clans\/\{clan_id\}\/invite-link[\s\S]*join-invite\/preview[\s\S]*"status"\] == "disabled"[\s\S]*\/clans\/join-requests[\s\S]*ClanJoinRequest[\s\S]*count\(\) == 0/,
+  "Backend tests must prove disabled member_invites policy blocks new invite links, reusable link retrieval, public preview entry, and join-request creation."
+);
+
+assertContains(
   "src/pages/BuildFirstCirclePage.tsx",
   /isCommunityDomainCircleMode[\s\S]*buildCommunityDomainGroupInviteMessage[\s\S]*communityDomainCircleMode[\s\S]*charity_ngo[\s\S]*church_group[\s\S]*school_group[\s\S]*student_group[\s\S]*community_association[\s\S]*Inviter name[\s\S]*No bulk import: every member still enters with their own GSN identity/,
   "Build First Circle must keep a Community Domain group-migration mode with group types, inviter name, short share copy, and no false bulk-import promise.",

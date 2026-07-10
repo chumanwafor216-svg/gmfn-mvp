@@ -34,7 +34,9 @@ from app.db.models import (
     ClanJoinVote,
     ClanMembership,
     CommunityFollower,
+    CommunityDomain,
     CommunityDomainAffiliation,
+    CommunityDomainPolicy,
     CommunityMemberVerification,
     CommunityMemberVerificationRequest,
     TrustEvent,
@@ -62,6 +64,9 @@ JOIN_APPROVAL_RATIO = Decimal("0.40")
 DEFAULT_SHAREABLE_JOIN_INVITE_MAX_USES = 100
 FREE_COMMUNITY_MEMBER_CAPACITY = 15
 FEATURE_COMMUNITY_MEMBER_CAPACITY = "community_member_capacity"
+COMMUNITY_DOMAIN_FEATURE_POLICY_KEY = "domain.feature_policy"
+COMMUNITY_DOMAIN_FEATURE_MEMBER_INVITES = "member_invites"
+COMMUNITY_DOMAIN_FEATURE_MODE_OFF = "off"
 JOIN_INVITATION_NOT_FOUND = (
     "This invitation link is no longer valid or was not copied fully. "
     "Ask the person who invited you to send a fresh GSN invite link."
@@ -560,6 +565,104 @@ def _safe_str(value: Any, default: str = "") -> str:
         return default
     s = str(value).strip()
     return s if s else default
+
+
+def _json_load(value: Optional[str]) -> dict[str, Any]:
+    if not value:
+        return {}
+    try:
+        data = json.loads(value)
+    except Exception:
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def _community_domain_for_clan(db: Session, *, clan_id: int) -> Optional[CommunityDomain]:
+    return (
+        db.query(CommunityDomain)
+        .filter(CommunityDomain.clan_id == int(clan_id))
+        .order_by(CommunityDomain.id.desc())
+        .first()
+    )
+
+
+def _community_domain_feature_mode_for_clan(
+    db: Session,
+    *,
+    clan_id: int,
+    feature_key: str,
+    default: str,
+) -> tuple[str, Optional[CommunityDomain]]:
+    domain = _community_domain_for_clan(db, clan_id=int(clan_id))
+    if domain is None:
+        return default, None
+
+    policy = (
+        db.query(CommunityDomainPolicy)
+        .filter(CommunityDomainPolicy.community_domain_id == int(domain.id))
+        .filter(CommunityDomainPolicy.policy_key == COMMUNITY_DOMAIN_FEATURE_POLICY_KEY)
+        .filter(CommunityDomainPolicy.status == "active")
+        .order_by(CommunityDomainPolicy.updated_at.desc(), CommunityDomainPolicy.id.desc())
+        .first()
+    )
+    config = _json_load(getattr(policy, "config_json", None) if policy is not None else None)
+    features = config.get("features") if isinstance(config.get("features"), dict) else {}
+    mode = _safe_str(features.get(feature_key), default).lower()
+    return mode, domain
+
+
+def _domain_member_invites_disabled(
+    db: Session,
+    *,
+    clan: Clan,
+) -> tuple[bool, Optional[CommunityDomain]]:
+    mode, domain = _community_domain_feature_mode_for_clan(
+        db,
+        clan_id=int(clan.id),
+        feature_key=COMMUNITY_DOMAIN_FEATURE_MEMBER_INVITES,
+        default="admin_only",
+    )
+    return bool(domain is not None and mode == COMMUNITY_DOMAIN_FEATURE_MODE_OFF), domain
+
+
+def _disabled_domain_invite_preview(
+    *,
+    clan: Clan,
+    domain: Optional[CommunityDomain],
+) -> dict[str, Any]:
+    return _invite_preview_payload(
+        valid=False,
+        status="disabled",
+        message=(
+            "This Community Domain is not accepting invite-based entry right now. "
+            "Ask the owner/admin to enable Member Invites in Domain feature policy."
+        ),
+        clan=clan,
+    ) | {
+        "feature_key": COMMUNITY_DOMAIN_FEATURE_MEMBER_INVITES,
+        "feature_policy_mode": COMMUNITY_DOMAIN_FEATURE_MODE_OFF,
+        "community_domain_id": int(domain.id) if domain is not None else None,
+        "community_domain_name": getattr(domain, "display_name", None) if domain is not None else None,
+    }
+
+
+def _require_domain_member_invites_enabled(db: Session, *, clan: Clan) -> None:
+    disabled, domain = _domain_member_invites_disabled(db, clan=clan)
+    if disabled:
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "community_domain_feature_disabled",
+                "feature_key": COMMUNITY_DOMAIN_FEATURE_MEMBER_INVITES,
+                "feature_mode": COMMUNITY_DOMAIN_FEATURE_MODE_OFF,
+                "community_domain_id": int(domain.id),
+                "community_domain_name": getattr(domain, "display_name", None),
+                "message": (
+                    "Member invites are not enabled for this Community Domain. "
+                    "The owner/admin can change this in Domain feature policy."
+                ),
+            },
+        )
 
 
 def _optional_current_user(
@@ -2049,6 +2152,10 @@ def _ready_join_preview_for_clan(
     clan: Clan,
     message: str,
 ) -> Optional[dict[str, Any]]:
+    disabled, domain = _domain_member_invites_disabled(db, clan=clan)
+    if disabled:
+        return _disabled_domain_invite_preview(clan=clan, domain=domain)
+
     latest_invite = _latest_usable_clan_invite(db, clan_id=int(clan.id))
     if latest_invite is not None:
         invited_by_user_id = getattr(latest_invite, "created_by_user_id", None)
@@ -2984,6 +3091,7 @@ def create_invite(
         raise HTTPException(status_code=403, detail="Not allowed")
     if membership is None or getattr(membership, "left_at", None) is not None:
         raise HTTPException(status_code=403, detail="Only community members can create invite links")
+    _require_domain_member_invites_enabled(db, clan=clan)
 
     days_n = _normalize_invite_days(days)
 
@@ -3052,6 +3160,7 @@ def get_invite_link(
     clan, membership, current_user = clan_ctx
     if int(clan.id) != int(clan_id):
         raise HTTPException(status_code=403, detail="Not allowed")
+    _require_domain_member_invites_enabled(db, clan=clan)
 
     can_refresh_invite = True
     max_uses_norm = None
@@ -3157,6 +3266,9 @@ def preview_join_invite(
                 status="not_found",
                 message=JOIN_INVITATION_NOT_FOUND,
             )
+        disabled, domain = _domain_member_invites_disabled(db, clan=clan)
+        if disabled:
+            return _disabled_domain_invite_preview(clan=clan, domain=domain)
 
         if not bool(invite_row.is_active) or invite_row.revoked_at is not None:
             recovered = _ready_join_preview_for_clan(
@@ -3203,6 +3315,10 @@ def preview_join_invite(
 
     legacy_clan = db.query(Clan).filter(Clan.invite_code == invite_code).first()
     if legacy_clan is not None:
+        disabled, domain = _domain_member_invites_disabled(db, clan=legacy_clan)
+        if disabled:
+            return _disabled_domain_invite_preview(clan=legacy_clan, domain=domain)
+
         recovered = _ready_join_preview_for_clan(
             db,
             clan=legacy_clan,
@@ -3230,6 +3346,10 @@ def preview_join_invite(
 
     community_clan = _clan_from_community_code(db, community_code)
     if community_clan is not None:
+        disabled, domain = _domain_member_invites_disabled(db, clan=community_clan)
+        if disabled:
+            return _disabled_domain_invite_preview(clan=community_clan, domain=domain)
+
         recovered = _ready_join_preview_for_clan(
             db,
             clan=community_clan,
@@ -3427,6 +3547,7 @@ def create_join_request(
         clan = db.get(Clan, int(invite_row.clan_id))
         if not clan:
             raise HTTPException(status_code=404, detail=JOIN_INVITATION_NOT_FOUND)
+        _require_domain_member_invites_enabled(db, clan=clan)
 
         if not bool(invite_row.is_active) or invite_row.revoked_at is not None:
             raise HTTPException(status_code=400, detail="Invitation is no longer active")
@@ -3442,6 +3563,7 @@ def create_join_request(
         clan = db.query(Clan).filter(Clan.invite_code == invite_code).first()
         if not clan:
             raise HTTPException(status_code=404, detail=JOIN_INVITATION_NOT_FOUND)
+        _require_domain_member_invites_enabled(db, clan=clan)
 
         clan = _ensure_invite_expiry(db, clan, days=None)
 

@@ -9,6 +9,8 @@ from app.core.auth import get_current_user
 from app.db.database import SessionLocal
 from app.db.models import (
     Clan,
+    ClanInvite,
+    ClanJoinRequest,
     ClanMembership,
     CommunityDomain,
     CommunityDomainAffiliation,
@@ -398,6 +400,126 @@ def test_community_domain_notice_board_respects_disabled_feature_policy(
                 .count()
                 == 0
             )
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+
+def test_community_domain_member_invites_respect_disabled_feature_policy(
+    client: TestClient,
+):
+    owner = _seed_owner()
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Invite Off Union",
+                "display_name": "Invite Off Union",
+                "domain_type": "union",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain_id = created.json()["community_domain"]["id"]
+
+        with SessionLocal() as db:
+            clan = Clan(
+                name="Invite Off Union Community",
+                description="Linked community home for invite policy testing.",
+                marketplace_name="Invite Off Union",
+                created_by_user_id=int(owner.id),
+                community_code="GMFN-C-990001",
+                invite_code="legacy-disabled-domain-invite",
+                invite_created_at=datetime.now(timezone.utc),
+                invite_expires_at=datetime.now(timezone.utc) + timedelta(days=7),
+                invite_uses=0,
+            )
+            db.add(clan)
+            db.flush()
+            clan_id = int(clan.id)
+
+            db.add(
+                ClanMembership(
+                    clan_id=clan_id,
+                    user_id=int(owner.id),
+                    role="admin",
+                )
+            )
+            domain = db.get(CommunityDomain, int(domain_id))
+            assert domain is not None
+            domain.clan_id = clan_id
+            db.add(domain)
+            db.add(
+                ClanInvite(
+                    clan_id=clan_id,
+                    created_by_user_id=int(owner.id),
+                    code="disabled-domain-invite",
+                    is_active=True,
+                    max_uses=100,
+                    uses=0,
+                    created_at=datetime.now(timezone.utc),
+                    expires_at=datetime.now(timezone.utc) + timedelta(days=7),
+                )
+            )
+            db.add(
+                CommunityDomainPolicy(
+                    community_domain_id=int(domain_id),
+                    policy_key="domain.feature_policy",
+                    action_key="domain.features.configure",
+                    review_mode="domain_admin_review",
+                    required_role="domain_admin",
+                    status="active",
+                    config_json=json.dumps(
+                        {
+                            "version": 1,
+                            "features": {
+                                "member_invites": "off",
+                                "announcement_board": "admin_only",
+                            },
+                        }
+                    ),
+                    created_by_user_id=int(owner.id),
+                )
+            )
+            db.commit()
+
+        create_link = client.post(
+            f"/clans/{clan_id}/invite",
+            headers={"X-Clan-Id": str(clan_id)},
+        )
+        assert create_link.status_code == 403, create_link.text
+        assert create_link.json()["detail"]["code"] == "community_domain_feature_disabled"
+        assert create_link.json()["detail"]["feature_key"] == "member_invites"
+
+        reusable_link = client.get(
+            f"/clans/{clan_id}/invite-link",
+            headers={"X-Clan-Id": str(clan_id)},
+        )
+        assert reusable_link.status_code == 403, reusable_link.text
+        assert reusable_link.json()["detail"]["feature_key"] == "member_invites"
+
+        preview = client.get(
+            "/clans/join-invite/preview",
+            params={"code": "disabled-domain-invite"},
+        )
+        assert preview.status_code == 200, preview.text
+        preview_payload = preview.json()
+        assert preview_payload["valid"] is False
+        assert preview_payload["status"] == "disabled"
+        assert preview_payload["feature_key"] == "member_invites"
+        assert preview_payload["feature_policy_mode"] == "off"
+        assert preview_payload["community_domain_id"] == domain_id
+
+        join_request = client.post(
+            "/clans/join-requests",
+            json={"invite_code": "disabled-domain-invite"},
+        )
+        assert join_request.status_code == 403, join_request.text
+        assert join_request.json()["detail"]["feature_key"] == "member_invites"
+
+        with SessionLocal() as db:
+            assert db.query(ClanInvite).filter(ClanInvite.clan_id == clan_id).count() == 1
+            assert db.query(ClanJoinRequest).filter(ClanJoinRequest.clan_id == clan_id).count() == 0
     finally:
         app.dependency_overrides.pop(get_current_user, None)
 
