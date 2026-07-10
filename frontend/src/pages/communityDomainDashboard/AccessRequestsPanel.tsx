@@ -35,6 +35,7 @@ type AccessRequestsPanelProps = {
   onApproveAndApply: (review: ActionReviewItem) => void;
   onApplyApproved: (review: ActionReviewItem) => void;
   onRefresh: () => void;
+  onOpenInvite?: () => void;
 };
 
 function cleanText(value: unknown, fallback = ""): string {
@@ -176,6 +177,7 @@ export default function CommunityDomainAccessRequestsPanel({
   onApproveAndApply,
   onApplyApproved,
   onRefresh,
+  onOpenInvite,
 }: AccessRequestsPanelProps): React.ReactElement {
   const [showAllRequests, setShowAllRequests] = useState(false);
   const [decisionByReviewId, setDecisionByReviewId] = useState<
@@ -367,9 +369,23 @@ export default function CommunityDomainAccessRequestsPanel({
           <div style={softCard()}>
             <div style={sectionLabel()}>No open access requests</div>
             <div style={{ ...helperText(), marginTop: 7 }}>
-              There are no self-service access requests waiting for this account
-              to decide or add.
+              No one has requested access yet. Invite trusted people first;
+              when they use the invite and request to join, their request will
+              appear here for owner/admin decision and apply.
             </div>
+            {onOpenInvite ? (
+              <div style={{ marginTop: 10 }}>
+                <StableButton
+                  type="button"
+                  kind="primary"
+                  fullWidth
+                  debugId="community-domain-dashboard.access-request.open-invite"
+                  onClick={onOpenInvite}
+                >
+                  Invite people
+                </StableButton>
+              </div>
+            ) : null}
           </div>
         )}
 

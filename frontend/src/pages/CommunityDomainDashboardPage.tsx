@@ -7,7 +7,7 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import CommunityNoticeModal from "../components/CommunityNoticeModal";
 import PageTopNav from "../components/PageTopNav";
 import { GsnRealisticIcon } from "../components/GsnRealisticIcon";
@@ -68,6 +68,7 @@ import {
   getCommunityDomainTrustMobility,
   getCommunityDomainSubscriptionLifecycle,
   getSelectedClanId,
+  setSelectedClanId,
   listExpectedPayments,
   listCommunityDomainServiceSettings,
   listCommunityDomainActionReviews,
@@ -1070,6 +1071,7 @@ function sortMembershipAccessRequests(items: ActionReviewItem[]): ActionReviewIt
 
 export default function CommunityDomainDashboardPage() {
   const params = useParams();
+  const navigate = useNavigate();
   const communityDomainId = cleanText(params.communityDomainId || params.id);
   const [dashboard, setDashboard] = useState<DashboardPayload | null>(null);
   const [dashboardRouteId, setDashboardRouteId] = useState("");
@@ -1133,6 +1135,7 @@ export default function CommunityDomainDashboardPage() {
     () => setupDraftFromDomain(null)
   );
   const [activeSetupStep, setActiveSetupStep] = useState<SetupStepKey>("identity");
+  const [setupCompletionSavedAt, setSetupCompletionSavedAt] = useState("");
   const [activeLane, setActiveLane] = useState("settings");
   const [showAdvancedTools, setShowAdvancedTools] = useState(false);
   const [activeStructureDetail, setActiveStructureDetail] =
@@ -1916,12 +1919,14 @@ export default function CommunityDomainDashboardPage() {
       domainName: domainDraft.domain_name,
       message: "Check the domain code before saving identity setup.",
     });
+    setSetupCompletionSavedAt("");
   }, [communityDomainId, dashboard, domain?.id]);
 
   function updateSetupDraftField(
     key: keyof CommunityDomainSetupDraft,
     value: string
   ) {
+    setSetupCompletionSavedAt("");
     if (key === "domain_name") {
       setSetupDomainNameCheck({
         status: "idle",
@@ -1939,6 +1944,7 @@ export default function CommunityDomainDashboardPage() {
     const saved = writeCommunityDomainSetupDraft(setupDraftDomainId, setupDraft);
     setSetupDraft(saved);
     setMessage("Community Domain setup progress saved on this device for 48 hours.");
+    return saved;
   }
 
   async function checkSetupDomainName() {
@@ -2103,6 +2109,20 @@ export default function CommunityDomainDashboardPage() {
     setActiveLane("billing");
   }
 
+  function openSetupFirstCircle() {
+    const clanId = Number(selectedDomainClanId || 0);
+    if (!clanId) {
+      setMessage(
+        "GSN cannot open invites yet because this Community Domain is not linked to a Community Home record."
+      );
+      return;
+    }
+    const saved = saveSetupProgress();
+    setSetupCompletionSavedAt(cleanText(saved.saved_at, new Date().toISOString()));
+    setSelectedClanId(clanId);
+    navigate(APP_ROUTES.BUILD_FIRST_CIRCLE);
+  }
+
   function moveSetupStep(direction: 1 | -1) {
     const index = SETUP_STEP_OPTIONS.findIndex((option) => option.key === activeSetupStep);
     const nextIndex = Math.min(
@@ -2141,6 +2161,8 @@ export default function CommunityDomainDashboardPage() {
       return;
     }
 
+    const saved = saveSetupProgress();
+    setSetupCompletionSavedAt(cleanText(saved.saved_at, new Date().toISOString()));
     setMessage(
       "Setup saved. Payment confirmation, activation, and verification still need their separate admin checks."
     );
@@ -3628,6 +3650,46 @@ export default function CommunityDomainDashboardPage() {
                           Activation still requires confirmed payment; verification
                           still requires authority review.
                         </div>
+                        {setupCompletionSavedAt ? (
+                          <div style={{ ...softCard(), display: "grid", gap: 8 }}>
+                            <div style={sectionLabel()}>Setup saved</div>
+                            <div style={helperText()}>
+                              Your setup record was saved. You can now invite the
+                              first trusted people or continue to payment.
+                            </div>
+                            <div style={statusBadge("saved")}>
+                              Saved: {setupDraftTimeLabel(setupCompletionSavedAt)}
+                            </div>
+                          </div>
+                        ) : null}
+                        <div style={{ ...softCard(), display: "grid", gap: 10 }}>
+                          <div style={sectionLabel()}>Invite next</div>
+                          <h3 style={{ margin: 0, fontSize: 19, lineHeight: 1.15 }}>
+                            Grow the first circle.
+                          </h3>
+                          <div style={helperText()}>
+                            Use the existing invite page to prepare trusted people,
+                            copy an invite message, and let them request access.
+                            Their requests will return to Access requests for
+                            owner/admin decision.
+                          </div>
+                          <StableButton
+                            type="button"
+                            kind="primary"
+                            fullWidth
+                            disabled={!selectedDomainClanId}
+                            debugId="community-domain-dashboard.setup-open-first-circle"
+                            onClick={openSetupFirstCircle}
+                          >
+                            Grow first circle
+                          </StableButton>
+                          {!selectedDomainClanId ? (
+                            <div style={{ ...helperText(), fontSize: 13 }}>
+                              Invite opens after this domain is linked to a Community
+                              Home record.
+                            </div>
+                          ) : null}
+                        </div>
                       </div>
                     ) : null}
 
@@ -3659,6 +3721,10 @@ export default function CommunityDomainDashboardPage() {
                       >
                         {busyProfileSave
                           ? "Saving..."
+                          : activeSetupStep ===
+                              SETUP_STEP_OPTIONS[SETUP_STEP_OPTIONS.length - 1].key &&
+                            setupCompletionSavedAt
+                          ? "Setup saved"
                           : activeSetupStep ===
                             SETUP_STEP_OPTIONS[SETUP_STEP_OPTIONS.length - 1].key
                           ? "Save setup"
@@ -4283,6 +4349,7 @@ export default function CommunityDomainDashboardPage() {
                 onApproveAndApply={(review) => approveAccessRequest(review, true)}
                 onApplyApproved={applyApprovedAccessRequest}
                 onRefresh={refreshReviewerQueue}
+                onOpenInvite={openSetupFirstCircle}
               />
             </Suspense>
           ) : null}
