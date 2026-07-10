@@ -81,6 +81,7 @@ import {
   reviseCommunityDomainActionReview,
   submitCommunityDomainSetupEvidence,
   updateCommunityDomainProfile,
+  upsertCommunityDomainPolicy,
 } from "../lib/api";
 import { APP_ROUTES } from "../lib/appRoutes";
 import { humanStatus } from "./communityDomainDashboard/statusLanguage";
@@ -166,8 +167,36 @@ type CommunityDomainSetupDraft = {
   members_note: string;
   governance_note: string;
   services_note: string;
+  feature_policy_json: string;
   saved_at?: string;
   expires_at?: string;
+};
+
+type DomainFeaturePolicyMode =
+  | "off"
+  | "admin_only"
+  | "delegated_admins"
+  | "members_submit_admin_approves"
+  | "members_direct"
+  | "paid_or_quota";
+
+type DomainFeaturePolicyKey =
+  | "announcement_board"
+  | "demand_box"
+  | "spotlight"
+  | "shop_diary"
+  | "vault"
+  | "marketplace_shops"
+  | "member_invites";
+
+type DomainFeaturePolicyConfig = {
+  version: number;
+  features: Record<DomainFeaturePolicyKey, DomainFeaturePolicyMode>;
+  spotlight: {
+    free_slots: number;
+    paid_after_slots: number;
+    rotation_hours: number;
+  };
 };
 
 type CommunityDomainNoticeItem = {
@@ -311,6 +340,68 @@ const SETUP_STEP_OPTIONS: Array<{
   },
 ];
 
+const FEATURE_POLICY_OPTIONS: Array<{
+  value: DomainFeaturePolicyMode;
+  label: string;
+}> = [
+  { value: "off", label: "Not used here" },
+  { value: "admin_only", label: "Admin only" },
+  { value: "delegated_admins", label: "Admin + delegated editors" },
+  { value: "members_submit_admin_approves", label: "Members submit, admin approves" },
+  { value: "members_direct", label: "Members can post directly" },
+  { value: "paid_or_quota", label: "Quota / paid after free use" },
+];
+
+const DOMAIN_FEATURE_POLICY_ROWS: Array<{
+  key: DomainFeaturePolicyKey;
+  label: string;
+  note: string;
+  defaultMode: DomainFeaturePolicyMode;
+}> = [
+  {
+    key: "announcement_board",
+    label: "Announcement Board",
+    note: "Official notices for this domain.",
+    defaultMode: "admin_only",
+  },
+  {
+    key: "demand_box",
+    label: "Demand Box",
+    note: "Needs, support requests, and community help.",
+    defaultMode: "members_submit_admin_approves",
+  },
+  {
+    key: "spotlight",
+    label: "Spotlight",
+    note: "Rotating showcase inside this domain.",
+    defaultMode: "admin_only",
+  },
+  {
+    key: "shop_diary",
+    label: "Shop Diary",
+    note: "Domain or member shop updates.",
+    defaultMode: "members_submit_admin_approves",
+  },
+  {
+    key: "vault",
+    label: "Vault",
+    note: "Private records and controlled access.",
+    defaultMode: "admin_only",
+  },
+  {
+    key: "marketplace_shops",
+    label: "Marketplace Shops",
+    note: "Buying, selling, and approved vendor visibility.",
+    defaultMode: "members_submit_admin_approves",
+  },
+  {
+    key: "member_invites",
+    label: "Member Invites",
+    note: "Who can bring people into the domain.",
+    defaultMode: "admin_only",
+  },
+];
+
 type DashboardPayload = {
   community_domain?: any;
   template?: any;
@@ -404,6 +495,99 @@ function isPillarOfHopeDomain(domain: any, draft?: Partial<CommunityDomainSetupD
   return candidates.some((value) => value === "pillar-of-hope" || value === "pillar-of-hope-demo");
 }
 
+function defaultDomainFeaturePolicyConfig(): DomainFeaturePolicyConfig {
+  return {
+    version: 1,
+    features: DOMAIN_FEATURE_POLICY_ROWS.reduce(
+      (features, row) => ({
+        ...features,
+        [row.key]: row.defaultMode,
+      }),
+      {} as Record<DomainFeaturePolicyKey, DomainFeaturePolicyMode>
+    ),
+    spotlight: {
+      free_slots: 3,
+      paid_after_slots: 5,
+      rotation_hours: 24,
+    },
+  };
+}
+
+function isFeaturePolicyMode(value: unknown): value is DomainFeaturePolicyMode {
+  return FEATURE_POLICY_OPTIONS.some((option) => option.value === value);
+}
+
+function boundedPositiveInt(value: unknown, fallback: number, max = 100): number {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric) || numeric < 1) return fallback;
+  return Math.min(max, Math.floor(numeric));
+}
+
+function parseDomainFeaturePolicy(value: unknown): DomainFeaturePolicyConfig {
+  const base = defaultDomainFeaturePolicyConfig();
+  let parsed: any = null;
+  if (typeof value === "string" && value.trim()) {
+    try {
+      parsed = JSON.parse(value);
+    } catch {
+      parsed = null;
+    }
+  } else if (value && typeof value === "object") {
+    parsed = value;
+  }
+
+  const incomingFeatures =
+    parsed?.features && typeof parsed.features === "object" ? parsed.features : {};
+  const features = DOMAIN_FEATURE_POLICY_ROWS.reduce((next, row) => {
+    const mode = incomingFeatures[row.key];
+    next[row.key] = isFeaturePolicyMode(mode) ? mode : row.defaultMode;
+    return next;
+  }, {} as Record<DomainFeaturePolicyKey, DomainFeaturePolicyMode>);
+
+  return {
+    version: 1,
+    features,
+    spotlight: {
+      free_slots: boundedPositiveInt(parsed?.spotlight?.free_slots, base.spotlight.free_slots, 20),
+      paid_after_slots: boundedPositiveInt(
+        parsed?.spotlight?.paid_after_slots,
+        base.spotlight.paid_after_slots,
+        50
+      ),
+      rotation_hours: boundedPositiveInt(
+        parsed?.spotlight?.rotation_hours,
+        base.spotlight.rotation_hours,
+        168
+      ),
+    },
+  };
+}
+
+function serializeDomainFeaturePolicy(config: DomainFeaturePolicyConfig): string {
+  return JSON.stringify(config);
+}
+
+function featurePolicyModeLabel(mode: DomainFeaturePolicyMode): string {
+  return FEATURE_POLICY_OPTIONS.find((option) => option.value === mode)?.label || "Not set";
+}
+
+function featurePolicySummary(config: DomainFeaturePolicyConfig): string {
+  const controlled = DOMAIN_FEATURE_POLICY_ROWS.map((row) => {
+    const mode = featurePolicyModeLabel(config.features[row.key]);
+    return `${row.label}: ${mode}`;
+  });
+  return [
+    "Domain feature policy locked from setup.",
+    ...controlled,
+    `Spotlight: ${config.spotlight.free_slots} free slots, paid after ${config.spotlight.paid_after_slots}, ${config.spotlight.rotation_hours}h rotation.`,
+  ].join(" ");
+}
+
+function domainFeaturePolicyIsReady(value: unknown): boolean {
+  const config = parseDomainFeaturePolicy(value);
+  return DOMAIN_FEATURE_POLICY_ROWS.every((row) => isFeaturePolicyMode(config.features[row.key]));
+}
+
 function communityDomainSetupDraftKey(domainId: unknown): string {
   return `gsn.community-domain.setup-draft.${cleanText(domainId, "unknown")}`;
 }
@@ -424,6 +608,7 @@ function setupDraftFromDomain(domain: any): CommunityDomainSetupDraft {
     members_note: "",
     governance_note: "",
     services_note: "",
+    feature_policy_json: serializeDomainFeaturePolicy(defaultDomainFeaturePolicyConfig()),
   };
 }
 
@@ -456,6 +641,10 @@ function normalizePillarOfHopeSetupDraft(
     country: "United Kingdom",
     state: "Scotland / Aberdeen",
     public_profile: PILLAR_OF_HOPE_SETUP_PROFILE,
+    feature_policy_json: cleanText(
+      draft.feature_policy_json,
+      serializeDomainFeaturePolicy(defaultDomainFeaturePolicyConfig())
+    ),
   };
 }
 
@@ -568,6 +757,7 @@ function setupDraftCompletion(
     ["Members note", Boolean(cleanText(draft.members_note))],
     ["Governance note", Boolean(cleanText(draft.governance_note))],
     ["Services note", Boolean(cleanText(draft.services_note))],
+    ["Feature policy", domainFeaturePolicyIsReady(draft.feature_policy_json)],
   ];
   return {
     ready: labels.filter(([, ready]) => ready).length,
@@ -1139,6 +1329,7 @@ export default function CommunityDomainDashboardPage() {
   );
   const [activeSetupStep, setActiveSetupStep] = useState<SetupStepKey>("identity");
   const [setupCompletionSavedAt, setSetupCompletionSavedAt] = useState("");
+  const [featurePolicyLockedAt, setFeaturePolicyLockedAt] = useState("");
   const [activeLane, setActiveLane] = useState("settings");
   const [setupJourneyMode, setSetupJourneyMode] = useState<"setup" | "edit">(
     "setup"
@@ -1909,6 +2100,10 @@ export default function CommunityDomainDashboardPage() {
     domainPayment,
     setupEvidenceItems
   );
+  const featurePolicyDraft = useMemo(
+    () => parseDomainFeaturePolicy(setupDraft.feature_policy_json),
+    [setupDraft.feature_policy_json]
+  );
   const setupCurrentStep =
     SETUP_STEP_OPTIONS.find((option) => option.key === activeSetupStep) ||
     SETUP_STEP_OPTIONS[0];
@@ -1940,6 +2135,7 @@ export default function CommunityDomainDashboardPage() {
       message: "Check the domain code before saving identity setup.",
     });
     setSetupCompletionSavedAt("");
+    setFeaturePolicyLockedAt("");
   }, [communityDomainId, dashboard, domain?.id]);
 
   function updateSetupDraftField(
@@ -1962,6 +2158,46 @@ export default function CommunityDomainDashboardPage() {
       ...current,
       [key]: value,
     }));
+  }
+
+  function updateFeaturePolicy(nextConfig: DomainFeaturePolicyConfig) {
+    if (setupEditingLocked) {
+      setMessage(setupEditLockMessage);
+      return;
+    }
+    setSetupCompletionSavedAt("");
+    setFeaturePolicyLockedAt("");
+    setSetupDraft((current) => ({
+      ...current,
+      feature_policy_json: serializeDomainFeaturePolicy(nextConfig),
+    }));
+  }
+
+  function updateFeaturePolicyMode(
+    featureKey: DomainFeaturePolicyKey,
+    mode: DomainFeaturePolicyMode
+  ) {
+    updateFeaturePolicy({
+      ...featurePolicyDraft,
+      features: {
+        ...featurePolicyDraft.features,
+        [featureKey]: mode,
+      },
+    });
+  }
+
+  function updateSpotlightPolicyNumber(
+    key: keyof DomainFeaturePolicyConfig["spotlight"],
+    value: string
+  ) {
+    const fallback = featurePolicyDraft.spotlight[key];
+    updateFeaturePolicy({
+      ...featurePolicyDraft,
+      spotlight: {
+        ...featurePolicyDraft.spotlight,
+        [key]: boundedPositiveInt(value, fallback, key === "rotation_hours" ? 168 : 50),
+      },
+    });
   }
 
   function saveSetupProgress(): CommunityDomainSetupDraft | null {
@@ -2065,6 +2301,7 @@ export default function CommunityDomainDashboardPage() {
         members_note: setupDraft.members_note,
         governance_note: setupDraft.governance_note,
         services_note: setupDraft.services_note,
+        feature_policy_json: setupDraft.feature_policy_json,
       });
       setSetupDraft(saved);
       setMessage("Official Community Domain profile saved. Payment and verification are still separate.");
@@ -2223,6 +2460,57 @@ export default function CommunityDomainDashboardPage() {
     setActiveSetupStep(SETUP_STEP_OPTIONS[nextIndex].key);
   }
 
+  async function lockDomainFeaturePolicy(
+    savedDraft: CommunityDomainSetupDraft
+  ): Promise<{ locked: boolean; message: string }> {
+    if (!isAdmin) {
+      return {
+        locked: false,
+        message:
+          "Setup saved. Feature choices are still a draft until the owner/admin locks them for this domain.",
+      };
+    }
+    const requestDomainId = cleanText(communityDomainId);
+    if (!requestDomainId) {
+      return {
+        locked: false,
+        message: "Setup saved. GSN could not lock the feature policy because the domain was not resolved.",
+      };
+    }
+
+    const config = parseDomainFeaturePolicy(savedDraft.feature_policy_json);
+    setBusyProfileSave(true);
+    try {
+      await upsertCommunityDomainPolicy(requestDomainId, {
+        policy_key: "domain.feature_policy",
+        action_key: "domain.features.configure",
+        scope_type: "domain",
+        review_mode: "domain_admin_review",
+        required_role: "domain_admin",
+        status: "active",
+        policy_summary: featurePolicySummary(config),
+        config,
+      });
+      const lockedAt = new Date().toISOString();
+      setFeaturePolicyLockedAt(lockedAt);
+      return {
+        locked: true,
+        message:
+          "Setup saved and feature policy locked. Payment activation and verification still need their separate admin checks.",
+      };
+    } catch (err: any) {
+      return {
+        locked: false,
+        message: errorDetailMessage(
+          err,
+          "Setup saved, but GSN could not lock the feature policy. The owner/admin should try again before launch."
+        ),
+      };
+    } finally {
+      setBusyProfileSave(false);
+    }
+  }
+
   async function saveSetupStepAndContinue() {
     if (setupEditingLocked) {
       setMessage(setupEditLockMessage);
@@ -2259,10 +2547,9 @@ export default function CommunityDomainDashboardPage() {
 
     const saved = saveSetupProgress();
     if (!saved) return;
+    const policyResult = await lockDomainFeaturePolicy(saved);
     setSetupCompletionSavedAt(cleanText(saved.saved_at, new Date().toISOString()));
-    setMessage(
-      "Setup saved. Payment confirmation, activation, and verification still need their separate admin checks."
-    );
+    setMessage(policyResult.message);
   }
 
   useEffect(() => {
@@ -3889,6 +4176,132 @@ export default function CommunityDomainDashboardPage() {
                       </label>
                     ) : null}
 
+                    {activeSetupStep === "services" ? (
+                      <div style={{ ...softCard(), display: "grid", gap: 12 }}>
+                        <div>
+                          <div style={sectionLabel()}>Domain feature policy</div>
+                          <h3 style={{ margin: "4px 0 0", fontSize: 19, lineHeight: 1.15 }}>
+                            Choose what this domain allows.
+                          </h3>
+                          <div style={{ ...helperText(), marginTop: 6, fontSize: 13 }}>
+                            All GSN features stay available. This setting decides what
+                            members can use inside this Community Domain after launch.
+                          </div>
+                        </div>
+                        <div style={{ display: "grid", gap: 10 }}>
+                          {DOMAIN_FEATURE_POLICY_ROWS.map((row) => (
+                            <div
+                              key={row.key}
+                              style={{
+                                display: "grid",
+                                gap: 8,
+                                padding: 12,
+                                borderRadius: 18,
+                                border: "1px solid rgba(9,27,46,0.1)",
+                                background: "rgba(255,255,255,0.72)",
+                              }}
+                            >
+                              <div>
+                                <strong>{row.label}</strong>
+                                <div style={{ ...helperText(), fontSize: 13 }}>
+                                  {row.note}
+                                </div>
+                              </div>
+                              <select
+                                value={featurePolicyDraft.features[row.key]}
+                                disabled={setupEditingLocked}
+                                onChange={(event) =>
+                                  updateFeaturePolicyMode(
+                                    row.key,
+                                    event.target.value as DomainFeaturePolicyMode
+                                  )
+                                }
+                                style={billingInputStyle()}
+                              >
+                                {FEATURE_POLICY_OPTIONS.map((option) => (
+                                  <option key={option.value} value={option.value}>
+                                    {option.label}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                          ))}
+                        </div>
+                        <div
+                          style={{
+                            display: "grid",
+                            gap: 10,
+                            padding: 12,
+                            borderRadius: 18,
+                            border: "1px solid rgba(214,170,69,0.34)",
+                            background: "rgba(255,249,225,0.72)",
+                          }}
+                        >
+                          <div>
+                            <strong>Spotlight slots</strong>
+                            <div style={{ ...helperText(), fontSize: 13 }}>
+                              Use this when the domain wants its own Spotlight
+                              rotation before extra paid visibility.
+                            </div>
+                          </div>
+                          <div
+                            style={{
+                              display: "grid",
+                              gridTemplateColumns:
+                                "repeat(auto-fit, minmax(min(100%, 130px), 1fr))",
+                              gap: 8,
+                            }}
+                          >
+                            <label style={{ display: "grid", gap: 5 }}>
+                              <span style={sectionLabel()}>Free slots</span>
+                              <input
+                                type="number"
+                                min="1"
+                                value={featurePolicyDraft.spotlight.free_slots}
+                                disabled={setupEditingLocked}
+                                onChange={(event) =>
+                                  updateSpotlightPolicyNumber("free_slots", event.target.value)
+                                }
+                                style={billingInputStyle()}
+                              />
+                            </label>
+                            <label style={{ display: "grid", gap: 5 }}>
+                              <span style={sectionLabel()}>Paid after</span>
+                              <input
+                                type="number"
+                                min="1"
+                                value={featurePolicyDraft.spotlight.paid_after_slots}
+                                disabled={setupEditingLocked}
+                                onChange={(event) =>
+                                  updateSpotlightPolicyNumber(
+                                    "paid_after_slots",
+                                    event.target.value
+                                  )
+                                }
+                                style={billingInputStyle()}
+                              />
+                            </label>
+                            <label style={{ display: "grid", gap: 5 }}>
+                              <span style={sectionLabel()}>Rotation hours</span>
+                              <input
+                                type="number"
+                                min="1"
+                                value={featurePolicyDraft.spotlight.rotation_hours}
+                                disabled={setupEditingLocked}
+                                onChange={(event) =>
+                                  updateSpotlightPolicyNumber(
+                                    "rotation_hours",
+                                    event.target.value
+                                  )
+                                }
+                                style={billingInputStyle()}
+                              />
+                            </label>
+                          </div>
+                        </div>
+                      </div>
+                    ) : null}
+
                     {activeSetupStep === "launch" ? (
                       <div style={{ display: "grid", gap: 10 }}>
                         <div
@@ -3920,6 +4333,12 @@ export default function CommunityDomainDashboardPage() {
                             </div>
                             <div style={statusBadge("saved")}>
                               Saved: {setupDraftTimeLabel(setupCompletionSavedAt)}
+                            </div>
+                            <div style={statusBadge(featurePolicyLockedAt ? "locked" : "draft")}>
+                              Feature policy:{" "}
+                              {featurePolicyLockedAt
+                                ? `locked ${setupDraftTimeLabel(featurePolicyLockedAt)}`
+                                : "draft until owner/admin lock"}
                             </div>
                           </div>
                         ) : null}

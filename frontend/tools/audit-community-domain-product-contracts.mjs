@@ -152,6 +152,13 @@ assertContains(
 );
 
 assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /upsertCommunityDomainPolicy[\s\S]*DOMAIN_FEATURE_POLICY_ROWS[\s\S]*announcement_board[\s\S]*demand_box[\s\S]*spotlight[\s\S]*shop_diary[\s\S]*vault[\s\S]*marketplace_shops[\s\S]*member_invites[\s\S]*domain\.feature_policy[\s\S]*domain\.features\.configure[\s\S]*Domain feature policy[\s\S]*All GSN features stay available/,
+  "Community Domain setup must keep all platform features available but controlled by a domain feature policy that owner/admin can lock into backend policy records.",
+  { frontend: true }
+);
+
+assertContains(
   "src/pages/BuildFirstCirclePage.tsx",
   /isCommunityDomainCircleMode[\s\S]*buildCommunityDomainGroupInviteMessage[\s\S]*communityDomainCircleMode[\s\S]*charity_ngo[\s\S]*church_group[\s\S]*school_group[\s\S]*student_group[\s\S]*community_association[\s\S]*Inviter name[\s\S]*No bulk import: every member still enters with their own GSN identity/,
   "Build First Circle must keep a Community Domain group-migration mode with group types, inviter name, short share copy, and no false bulk-import promise.",
