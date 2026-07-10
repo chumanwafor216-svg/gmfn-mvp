@@ -16,6 +16,7 @@ import { StableButton } from "../components/StableButton";
 import {
   applyCommunityDomainActionReview,
   cancelCommunityDomainActionReview,
+  checkCommunityDomainAvailability,
   createCommunityDomainNotice,
   createCommunityDomainPaymentInstruction,
   createCommunityDomainPackageQuote,
@@ -371,6 +372,12 @@ type OperatingStateCopy = {
   risk: string;
 };
 
+type SetupDomainNameCheckState = {
+  status: "idle" | "ready" | "blocked";
+  domainName: string;
+  message: string;
+};
+
 const PILLAR_OF_HOPE_SETUP_PROFILE =
   "Pillar of Hope supports families in Aberdeen through Saturday community fitness with Snapfit Aberdeen, food support for families in need, low-cost household items, and health education seminars for women and families.";
 
@@ -625,6 +632,17 @@ function activeMembershipRecoveryMessage(): string {
 
 function compactStatus(value: unknown): string {
   return humanStatus(value);
+}
+
+function setupDomainAvailabilityReasonText(reason: unknown): string {
+  const key = cleanText(reason).toLowerCase();
+  if (key === "domain_name_required") return "Enter the domain code before checking.";
+  if (key === "invalid_domain_name") return "Use letters, numbers, spaces, or hyphens.";
+  if (key === "reserved_domain_name") return "That domain code is reserved by GSN.";
+  if (key === "domain_name_taken") {
+    return "That domain code is already used by another Community Domain.";
+  }
+  return "That domain code is not available.";
 }
 
 function remainingAccessApprovalMessage(review: ActionReviewItem | null | undefined): string {
@@ -1087,10 +1105,17 @@ export default function CommunityDomainDashboardPage() {
   const [busyQuote, setBusyQuote] = useState(false);
   const [busyDomainPayment, setBusyDomainPayment] = useState(false);
   const [busyProfileSave, setBusyProfileSave] = useState(false);
+  const [busySetupDomainCheck, setBusySetupDomainCheck] = useState(false);
   const [busySetupEvidence, setBusySetupEvidence] = useState(false);
   const [busyMembershipRequest, setBusyMembershipRequest] = useState(false);
   const [busyReviewId, setBusyReviewId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
+  const [setupDomainNameCheck, setSetupDomainNameCheck] =
+    useState<SetupDomainNameCheckState>({
+      status: "idle",
+      domainName: "",
+      message: "Check the domain code before saving a changed name.",
+    });
   const [domainNotices, setDomainNotices] = useState<CommunityDomainNoticeItem[]>([]);
   const [domainNoticesLoading, setDomainNoticesLoading] = useState(false);
   const [domainNoticeModalOpen, setDomainNoticeModalOpen] = useState(false);
@@ -1832,12 +1857,24 @@ export default function CommunityDomainDashboardPage() {
         ...(safeStored || {}),
       })
     );
+    setSetupDomainNameCheck({
+      status: "idle",
+      domainName: domainDraft.domain_name,
+      message: "Check the domain code before saving identity setup.",
+    });
   }, [communityDomainId, dashboard, domain?.id]);
 
   function updateSetupDraftField(
     key: keyof CommunityDomainSetupDraft,
     value: string
   ) {
+    if (key === "domain_name") {
+      setSetupDomainNameCheck({
+        status: "idle",
+        domainName: value,
+        message: "Check this domain code before saving it.",
+      });
+    }
     setSetupDraft((current) => ({
       ...current,
       [key]: value,
@@ -1848,6 +1885,52 @@ export default function CommunityDomainDashboardPage() {
     const saved = writeCommunityDomainSetupDraft(setupDraftDomainId, setupDraft);
     setSetupDraft(saved);
     setMessage("Community Domain setup progress saved on this device for 48 hours.");
+  }
+
+  async function checkSetupDomainName() {
+    const requestedName = cleanText(setupDraft.domain_name);
+    if (requestedName.length < 2) {
+      setSetupDomainNameCheck({
+        status: "blocked",
+        domainName: requestedName,
+        message: "Enter the domain code before checking it.",
+      });
+      return false;
+    }
+
+    setBusySetupDomainCheck(true);
+    try {
+      const result = await checkCommunityDomainAvailability(requestedName);
+      const normalizedName = cleanText(result?.normalized_domain_name || requestedName);
+      const isCurrentDomainName =
+        normalizedSetupText(normalizedName) === normalizedSetupText(domain?.domain_name);
+      const ready = Boolean(result?.available || isCurrentDomainName);
+      const messageText = ready
+        ? isCurrentDomainName
+          ? "This domain code already belongs to this draft."
+          : "This domain code is available."
+        : setupDomainAvailabilityReasonText(result?.reason);
+
+      setSetupDomainNameCheck({
+        status: ready ? "ready" : "blocked",
+        domainName: normalizedName,
+        message: messageText,
+      });
+      setMessage(messageText);
+      return ready;
+    } catch (err: any) {
+      const messageText =
+        err?.message || "GSN could not check this domain code right now.";
+      setSetupDomainNameCheck({
+        status: "blocked",
+        domainName: requestedName,
+        message: messageText,
+      });
+      setMessage(messageText);
+      return false;
+    } finally {
+      setBusySetupDomainCheck(false);
+    }
   }
 
   async function saveOfficialProfile(): Promise<boolean> {
@@ -1980,6 +2063,19 @@ export default function CommunityDomainDashboardPage() {
       activeSetupStep === SETUP_STEP_OPTIONS[SETUP_STEP_OPTIONS.length - 1].key;
 
     if (activeSetupStep === "identity") {
+      const checkedName =
+        setupDomainNameCheck.status === "ready" &&
+        normalizedSetupText(setupDomainNameCheck.domainName) ===
+          normalizedSetupText(setupDraft.domain_name);
+      if (!checkedName) {
+        setMessage("Check the domain name before saving this setup step.");
+        setSetupDomainNameCheck({
+          status: "blocked",
+          domainName: setupDraft.domain_name,
+          message: "Check this domain code first, then save and continue.",
+        });
+        return;
+      }
       const saved = await saveOfficialProfile();
       if (!saved) return;
     } else {
@@ -3191,7 +3287,7 @@ export default function CommunityDomainDashboardPage() {
                               onChange={(event) =>
                                 updateSetupDraftField("display_name", event.target.value)
                               }
-                              placeholder="AAA School"
+                              placeholder="Pillar of Hope"
                               style={billingInputStyle()}
                             />
                           </label>
@@ -3202,7 +3298,7 @@ export default function CommunityDomainDashboardPage() {
                               onChange={(event) =>
                                 updateSetupDraftField("domain_name", event.target.value)
                               }
-                              placeholder="aaa-school"
+                              placeholder="pillar-of-hope"
                               style={billingInputStyle()}
                             />
                           </label>
@@ -3213,7 +3309,7 @@ export default function CommunityDomainDashboardPage() {
                               onChange={(event) =>
                                 updateSetupDraftField("domain_type", event.target.value)
                               }
-                              placeholder="school"
+                              placeholder="ngo_project_network"
                               style={billingInputStyle()}
                             />
                           </label>
@@ -3224,7 +3320,7 @@ export default function CommunityDomainDashboardPage() {
                               onChange={(event) =>
                                 updateSetupDraftField("template_key", event.target.value)
                               }
-                              placeholder="school"
+                              placeholder="ngo_project_network"
                               style={billingInputStyle()}
                             />
                           </label>
@@ -3235,7 +3331,7 @@ export default function CommunityDomainDashboardPage() {
                               onChange={(event) =>
                                 updateSetupDraftField("country", event.target.value)
                               }
-                              placeholder="Nigeria"
+                              placeholder="United Kingdom"
                               style={billingInputStyle()}
                             />
                           </label>
@@ -3246,10 +3342,39 @@ export default function CommunityDomainDashboardPage() {
                               onChange={(event) =>
                                 updateSetupDraftField("state", event.target.value)
                               }
-                              placeholder="Anambra"
+                              placeholder="Scotland / Aberdeen"
                               style={billingInputStyle()}
                             />
                           </label>
+                        </div>
+                        <div style={{ ...softCard(), display: "grid", gap: 10 }}>
+                          <div style={sectionLabel()}>Name check</div>
+                          <div style={helperText()}>
+                            Check the domain code before saving identity setup.
+                          </div>
+                          <StableButton
+                            type="button"
+                            kind="primary"
+                            fullWidth
+                            debugId="community-domain-dashboard.setup-check-domain-name"
+                            disabled={busySetupDomainCheck || busyProfileSave}
+                            onClick={() => {
+                              void checkSetupDomainName();
+                            }}
+                          >
+                            {busySetupDomainCheck ? "Checking..." : "Check domain name"}
+                          </StableButton>
+                          <div
+                            style={statusBadge(
+                              setupDomainNameCheck.status === "ready"
+                                ? "available"
+                                : setupDomainNameCheck.status === "blocked"
+                                ? "blocked"
+                                : "waiting"
+                            )}
+                          >
+                            {setupDomainNameCheck.message}
+                          </div>
                         </div>
                         <label style={{ display: "grid", gap: 6 }}>
                           <span style={sectionLabel()}>Public profile</span>

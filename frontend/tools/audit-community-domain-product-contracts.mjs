@@ -118,6 +118,20 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
+  /checkCommunityDomainAvailability[\s\S]*SetupDomainNameCheckState[\s\S]*setupDomainAvailabilityReasonText[\s\S]*checkSetupDomainName[\s\S]*checkCommunityDomainAvailability\(requestedName\)[\s\S]*normalizedSetupText\(domain\?\.domain_name\)[\s\S]*This domain code already belongs to this draft/,
+  "Community Domain dashboard identity setup must check domain-name availability while allowing the current domain's own code.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /Check the domain name before saving this setup step[\s\S]*Check the domain code before saving identity setup[\s\S]*community-domain-dashboard\.setup-check-domain-name[\s\S]*Check domain name[\s\S]*setupDomainNameCheck\.message/,
+  "Community Domain dashboard identity setup must expose a domain-name check before saving, while allowing the current domain's own code.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
   /listMyCommunityDomains[\s\S]*errorDetailMessage[\s\S]*could not load your Community Domains[\s\S]*getCommunityDomainDashboard[\s\S]*errorDetailMessage[\s\S]*could not open this Community Domain dashboard[\s\S]*refreshQuote[\s\S]*errorDetailMessage[\s\S]*could not refresh the package quote/,
   "Community Domain dashboard selector, dashboard-load, and package quote failures must parse structured backend detail before falling back to plain recovery copy.",
   { frontend: true }
