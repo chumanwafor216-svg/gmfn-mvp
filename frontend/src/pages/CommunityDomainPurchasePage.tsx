@@ -51,6 +51,7 @@ type PurchaseDraftSnapshot = {
 };
 
 const PURCHASE_DRAFT_STORAGE_KEY = "gsn.communityDomainPurchaseDraft.v1";
+const DEFAULT_COMMUNITY_DOMAIN_TEMPLATE_KEY = "ngo_project_network";
 const PILLAR_OF_HOPE_DEMO_PROFILE =
   "Pillar of Hope supports families in Aberdeen through Saturday community fitness with Snapfit Aberdeen, food support for families in need, low-cost household items, and health education seminars for women and families.";
 
@@ -103,8 +104,9 @@ const FALLBACK_TEMPLATES: TemplateOption[] = [
   {
     template_key: "ngo_project_network",
     domain_type: "ngo_project_network",
-    label: "NGO / project network",
-    summary: "Charities, nonprofits, support networks, field offices, programmes, and evidence records.",
+    label: "Charity / nonprofit / NGO",
+    summary:
+      "Charities, nonprofits, support networks, food aid, health programmes, volunteers, and evidence records.",
   },
   {
     template_key: "generic_association",
@@ -336,6 +338,16 @@ function normalizeTemplateItems(payload: any): TemplateOption[] {
       const domainType = compactValue(item?.domain_type, templateKey);
       const label = compactValue(item?.label, "");
       if (!templateKey || !label) return null;
+      if (templateKey === "ngo_project_network") {
+        return {
+          template_key: templateKey,
+          domain_type: domainType,
+          label: "Charity / nonprofit / NGO",
+          summary:
+            "Charities, nonprofits, support networks, food aid, health programmes, volunteers, and evidence records.",
+          boundary: compactValue(item?.boundary, ""),
+        };
+      }
       return {
         template_key: templateKey,
         domain_type: domainType,
@@ -385,7 +397,7 @@ export default function CommunityDomainPurchasePage() {
   const [country, setCountry] = useState(initialDraft?.country || "");
   const [stateName, setStateName] = useState(initialDraft?.stateName || "");
   const [templateKey, setTemplateKey] = useState(
-    initialDraft?.templateKey || FALLBACK_TEMPLATES[0].template_key
+    initialDraft?.templateKey || DEFAULT_COMMUNITY_DOMAIN_TEMPLATE_KEY
   );
   const [templates, setTemplates] = useState<TemplateOption[]>(FALLBACK_TEMPLATES);
   const [availability, setAvailability] = useState<AvailabilityResult | null>(null);
@@ -433,7 +445,7 @@ export default function CommunityDomainPurchasePage() {
       setDomainName(demoDraft.domainName || "");
       setCountry(demoDraft.country || "");
       setStateName(demoDraft.stateName || "");
-      setTemplateKey(demoDraft.templateKey || FALLBACK_TEMPLATES[0].template_key);
+      setTemplateKey(demoDraft.templateKey || DEFAULT_COMMUNITY_DOMAIN_TEMPLATE_KEY);
       setExistingDomainName(demoDraft.domainName || "");
       setAvailability(null);
       setDraftResult(null);
@@ -510,7 +522,11 @@ export default function CommunityDomainPurchasePage() {
         setTemplateKey((currentTemplateKey) =>
           nextTemplates.some((item) => item.template_key === currentTemplateKey)
             ? currentTemplateKey
-            : nextTemplates[0]?.template_key || FALLBACK_TEMPLATES[0].template_key
+            : nextTemplates.some(
+                (item) => item.template_key === DEFAULT_COMMUNITY_DOMAIN_TEMPLATE_KEY
+              )
+            ? DEFAULT_COMMUNITY_DOMAIN_TEMPLATE_KEY
+            : nextTemplates[0]?.template_key || DEFAULT_COMMUNITY_DOMAIN_TEMPLATE_KEY
         );
       } catch {
         if (canApply()) {

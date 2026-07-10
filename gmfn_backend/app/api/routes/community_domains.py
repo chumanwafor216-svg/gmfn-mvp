@@ -782,8 +782,8 @@ COMMUNITY_DOMAIN_TEMPLATE_PRESETS: list[dict[str, Any]] = [
     {
         "template_key": "ngo_project_network",
         "domain_type": "ngo_project_network",
-        "label": "NGO / project network",
-        "summary": "A nonprofit, development project, or support network with programs, field offices, teams, and evidence records.",
+        "label": "Charity / nonprofit / NGO",
+        "summary": "A charity, nonprofit, development project, or support network with food aid, health programmes, volunteers, teams, and evidence records.",
         "typical_nodes": ["Head office", "Field offices", "Programs", "Teams", "Project committees"],
         "default_modules": ["governance", "members", "vault", "spotlight", "verification", "analytics"],
         "marketplace_role": "optional",
@@ -813,6 +813,7 @@ COMMUNITY_DOMAIN_TEMPLATE_ALIASES: dict[str, str] = {
     "diaspora": "town_union",
     "hospital": "health_body",
     "healthcare": "health_body",
+    "charity": "ngo_project_network",
     "ngo": "ngo_project_network",
     "nonprofit": "ngo_project_network",
     "association": "generic_association",

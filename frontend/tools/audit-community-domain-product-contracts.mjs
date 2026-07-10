@@ -90,8 +90,8 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainPurchasePage.tsx",
-  /FALLBACK_TEMPLATES[\s\S]*school_multi_branch[\s\S]*church_religious_body[\s\S]*union_professional_body[\s\S]*market_cooperative[\s\S]*family_town_union_diaspora[\s\S]*hospital_health_body[\s\S]*ngo_project_network[\s\S]*generic_association/,
-  "Community Domain purchase fallback templates must include the approved society types, including NGO/project network for charity pilots.",
+  /DEFAULT_COMMUNITY_DOMAIN_TEMPLATE_KEY = "ngo_project_network"[\s\S]*FALLBACK_TEMPLATES[\s\S]*school_multi_branch[\s\S]*church_religious_body[\s\S]*union_professional_body[\s\S]*market_cooperative[\s\S]*family_town_union_diaspora[\s\S]*hospital_health_body[\s\S]*ngo_project_network[\s\S]*Charity \/ nonprofit \/ NGO[\s\S]*food aid[\s\S]*generic_association/,
+  "Community Domain purchase fallback templates must keep the charity/nonprofit option visible and default Pillar-style rehearsal away from School.",
   { frontend: true }
 );
 

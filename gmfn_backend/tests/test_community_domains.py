@@ -465,6 +465,8 @@ def test_community_domain_templates_are_public_presets_not_activation(
         item for item in items if item["template_key"] == "ngo_project_network"
     )
     assert ngo_template["domain_type"] == "ngo_project_network"
+    assert ngo_template["label"] == "Charity / nonprofit / NGO"
+    assert "food aid" in ngo_template["summary"]
     assert "spotlight" in ngo_template["default_modules"]
     assert "verification" in ngo_template["default_modules"]
     assert "shops" not in ngo_template["default_modules"]
