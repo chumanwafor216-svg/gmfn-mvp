@@ -620,6 +620,9 @@ function heroCard(): React.CSSProperties {
 
 function whiteCard(): React.CSSProperties {
   return {
+    minWidth: 0,
+    maxWidth: "100%",
+    boxSizing: "border-box",
     borderRadius: 22,
     background:
       "linear-gradient(180deg, rgba(255,255,255,0.995) 0%, rgba(244,248,252,0.985) 100%)",
@@ -628,6 +631,7 @@ function whiteCard(): React.CSSProperties {
       "0 20px 46px rgba(7,20,36,0.08), inset 0 1px 0 rgba(255,255,255,0.82)",
     padding: 16,
     color: "#091B2E",
+    overflowWrap: "break-word",
   };
 }
 
@@ -658,6 +662,28 @@ function helperText(onDark = false): React.CSSProperties {
     color: onDark ? "rgba(248,251,255,0.82)" : "#4F647A",
     fontSize: 14,
     lineHeight: 1.65,
+    overflowWrap: "break-word",
+  };
+}
+
+function officialBoardHeaderStyle(): React.CSSProperties {
+  return {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 260px), 1fr))",
+    gap: 12,
+    alignItems: "start",
+  };
+}
+
+function officialBoardActionsStyle(): React.CSSProperties {
+  return {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: 8,
+    justifyContent: "flex-end",
+    alignItems: "center",
+    minWidth: 0,
+    maxWidth: "100%",
   };
 }
 
@@ -2689,17 +2715,17 @@ export default function CommunityDomainDashboardPage() {
           </section>
 
           <section style={whiteCard()}>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "minmax(0, 1fr) auto",
-                gap: 12,
-                alignItems: "start",
-              }}
-            >
+            <div style={officialBoardHeaderStyle()}>
               <div style={{ minWidth: 0 }}>
                 <div style={sectionLabel()}>Official Board</div>
-                <h2 style={{ margin: "6px 0 0", fontSize: 23, lineHeight: 1.12 }}>
+                <h2
+                  style={{
+                    margin: "6px 0 0",
+                    fontSize: 23,
+                    lineHeight: 1.12,
+                    overflowWrap: "break-word",
+                  }}
+                >
                   Notices for this Community Domain only.
                 </h2>
                 <div style={{ ...helperText(), marginTop: 8 }}>
@@ -2708,7 +2734,7 @@ export default function CommunityDomainDashboardPage() {
                   active members of this selected Community Domain.
                 </div>
               </div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "flex-end" }}>
+              <div style={officialBoardActionsStyle()}>
                 <span style={statusBadge("members only")}>Members only</span>
                 <span style={statusBadge("no broadcast")}>No broadcast</span>
                 {isAdmin ? (

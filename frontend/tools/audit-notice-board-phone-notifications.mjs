@@ -320,6 +320,12 @@ assertContains(
 );
 
 assertContains(
+  files.communityDomainPage,
+  /function officialBoardHeaderStyle\(\)[\s\S]*?gridTemplateColumns:\s*"repeat\(auto-fit, minmax\(min\(100%, 260px\), 1fr\)\)"[\s\S]*?<div style=\{officialBoardHeaderStyle\(\)\}>[\s\S]*?Notices for this Community Domain only\./,
+  "Community Domain Official Board header must keep the responsive grid that prevents phone text from collapsing into one-word columns."
+);
+
+assertContains(
   files.api,
   /export async function sendWebPushTestNotification\(\): Promise<any> \{[\s\S]*?httpJson\("\/web-push\/test", "POST", undefined, \{ quiet: true \}\)/,
   "Frontend API must expose only the authenticated current-user Web Push self-test call."
