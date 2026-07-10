@@ -88,6 +88,11 @@ const COMMON_RELATIONSHIPS = firstCircle.FIRST_CIRCLE_RELATIONSHIP_OPTIONS.map(
 
 const INVITE_RELATIONSHIP_SOURCE_OPTIONS = [
   { value: "blood_or_family", label: "Blood or family relation" },
+  { value: "existing_whatsapp_or_official_group", label: "Existing WhatsApp or official group" },
+  { value: "charity_or_ngo", label: "Charity / NGO" },
+  { value: "church_or_faith_group", label: "Church or faith group" },
+  { value: "school_or_parent_body", label: "School or parent body" },
+  { value: "union_or_association", label: "Union or association" },
   { value: "school_days", label: "School days" },
   { value: "marketplace_trade", label: "Marketplace or trade" },
   { value: "work_or_colleague", label: "Work or colleague" },
@@ -99,6 +104,7 @@ const INVITE_RELATIONSHIP_SOURCE_OPTIONS = [
 ];
 
 const KNOWN_DURATION_OPTIONS = [
+  { value: "organisation_record", label: "Organisation record" },
   { value: "under_6_months", label: "Under 6 months" },
   { value: "6_to_24_months", label: "6 months to 2 years" },
   { value: "2_to_5_years", label: "2 to 5 years" },
@@ -357,6 +363,10 @@ function firstCircleStepIcon(
 
 function roleIconName(role: string): GsnIconName {
   const value = safeStr(role).toLowerCase();
+  if (value.includes("charity") || value.includes("ngo")) return "community";
+  if (value.includes("church") || value.includes("faith")) return "community";
+  if (value.includes("school") || value.includes("student")) return "community";
+  if (value.includes("association") || value.includes("union")) return "community";
   if (value.includes("service")) return "briefcase";
   if (value.includes("supplier") || value.includes("buyer")) return "shop";
   if (value.includes("dealer") || value.includes("trader")) return "wallet";
@@ -642,16 +652,19 @@ function suggestedRelationships(role: string): string[] {
   return COMMON_RELATIONSHIPS;
 }
 
-function progressForDraft(draft: FirstCircleDraft) {
+function progressForDraft(draft: FirstCircleDraft, communityDomainMode = false) {
   const selectedCount = draft.contacts.filter((item) => item.selected).length;
   const readyCount = draft.contacts.filter(
     (item) => item.selected && contactInviteReady(item)
   ).length;
-  const targetCount = 3;
+  const targetCount = communityDomainMode ? 1 : 3;
   const missingReadyCount = Math.max(targetCount - readyCount, 0);
 
   let nextStepText = "First choose what you mostly do.";
-  if (draft.memberRole && readyCount === 0) {
+  if (communityDomainMode && draft.memberRole) {
+    nextStepText =
+      "Prepare one official group invite link. Members request access; owner/admin approves.";
+  } else if (draft.memberRole && readyCount === 0) {
     nextStepText = "Now add three real people with phone or email.";
   } else if (draft.memberRole && missingReadyCount > 0) {
     nextStepText = `Add ${missingReadyCount} more ready ${
@@ -669,6 +682,40 @@ function progressForDraft(draft: FirstCircleDraft) {
     targetCount,
     nextStepText,
   };
+}
+
+function isCommunityDomainCircleMode(): boolean {
+  if (typeof window === "undefined") return false;
+
+  const params = new URLSearchParams(window.location.search || "");
+  const mode = safeStr(params.get("mode")).toLowerCase();
+  const source = safeStr(params.get("source")).toLowerCase();
+
+  return mode === "community-domain" || source === "community-domain";
+}
+
+function buildCommunityDomainGroupInviteMessage(params: {
+  communityName: string;
+  inviteLink: string;
+  inviterName: string;
+  gmfnId: string;
+}): string {
+  const communityName = safeStr(params.communityName) || "this community";
+  const inviterName = safeStr(params.inviterName);
+  const link =
+    safeStr(params.inviteLink) ||
+    "Link appears after you tap WhatsApp, Share, or Copy.";
+
+  const lines = [
+    `Join ${communityName} on GSN.`,
+    "Open this link, enter your details, and request access.",
+    "An owner/admin will approve members before entry.",
+    link,
+    inviterName ? `Inviter: ${inviterName}` : "",
+    params.gmfnId ? `GSN ID: ${safeStr(params.gmfnId)}` : "",
+  ];
+
+  return lines.filter(Boolean).join("\n");
 }
 
 function inviteBundleText(params: {
@@ -712,6 +759,10 @@ function inviteBundleText(params: {
 
 export default function BuildFirstCirclePage() {
   const selectedClanId = Number(getSelectedClanId() || 0);
+  const communityDomainCircleMode = useMemo(
+    () => isCommunityDomainCircleMode(),
+    []
+  );
 
   const [isCompact, setIsCompact] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
@@ -738,6 +789,7 @@ export default function BuildFirstCirclePage() {
   const [inviteEvidence, setInviteEvidence] = useState<InviteEvidenceFormState>(
     defaultInviteEvidenceForm()
   );
+  const [inviterName, setInviterName] = useState("");
   const [quickRows, setQuickRows] = useState<QuickPersonRow[]>(defaultQuickRows());
   const [pickingContacts, setPickingContacts] = useState(false);
   const [focusedAction, setFocusedAction] = useState<FocusedAction>(null);
@@ -889,11 +941,19 @@ export default function BuildFirstCirclePage() {
     );
   }, [me]);
 
+  useEffect(() => {
+    if (inviterName || !memberName || memberName === "Member") return;
+    setInviterName(memberName);
+  }, [inviterName, memberName]);
+
   const gmfnId = useMemo(() => {
     return firstTruthy(me?.gmfn_id);
   }, [me]);
 
-  const progress = useMemo(() => progressForDraft(draft), [draft]);
+  const progress = useMemo(
+    () => progressForDraft(draft, communityDomainCircleMode),
+    [communityDomainCircleMode, draft]
+  );
   const roleHints = useMemo(
     () => suggestedRelationships(safeStr(draft.memberRole)),
     [draft.memberRole]
@@ -916,7 +976,18 @@ export default function BuildFirstCirclePage() {
     );
   }, [inviteEvidence.relationshipType]);
 
+  const inviteSenderName = firstTruthy(inviterName, memberName);
+
   const buildJoinInviteMessageForLink = useCallback((link: string): string => {
+    if (communityDomainCircleMode) {
+      return buildCommunityDomainGroupInviteMessage({
+        communityName,
+        inviteLink: link,
+        inviterName: inviteSenderName,
+        gmfnId,
+      });
+    }
+
     const lines = [
       "Hi! I am inviting you to join me on GSN.",
       `I am building my trusted first circle for ${communityName}.`,
@@ -927,23 +998,32 @@ export default function BuildFirstCirclePage() {
     ].filter(Boolean);
 
     return buildGsnInviteLinkPackage({
-      senderName: memberName,
+      senderName: inviteSenderName,
       senderGsnId: gmfnId,
       communityName,
       inviteLink: link,
       messageLines: lines,
     });
-  }, [communityName, gmfnId, memberName]);
+  }, [communityDomainCircleMode, communityName, gmfnId, inviteSenderName]);
 
   const buildCompactInviteMessageForLink = useCallback((link: string): string => {
+    if (communityDomainCircleMode) {
+      return buildCommunityDomainGroupInviteMessage({
+        communityName,
+        inviteLink: link,
+        inviterName: inviteSenderName,
+        gmfnId,
+      });
+    }
+
     return buildGsnInviteLinkMessage({
-      senderName: memberName,
+      senderName: inviteSenderName,
       senderGsnId: gmfnId,
       communityName,
       inviteLink: link,
       note: "Open this invite to request access.",
     });
-  }, [communityName, gmfnId, memberName]);
+  }, [communityDomainCircleMode, communityName, gmfnId, inviteSenderName]);
 
   const joinInviteMessage = useMemo(() => {
     return buildJoinInviteMessageForLink(inviteLink);
@@ -958,23 +1038,33 @@ export default function BuildFirstCirclePage() {
     });
 
     return buildGsnInviteLinkPackage({
-      senderName: memberName,
+      senderName: inviteSenderName,
       senderGsnId: gmfnId,
       communityName,
       inviteLink: link,
       messageLines: [rawBundle],
     });
-  }, [communityName, draft, gmfnId, memberName]);
+  }, [communityName, draft, gmfnId, inviteSenderName, memberName]);
 
   const inviteBundle = useMemo(() => {
     return buildInviteBundleForLink(inviteLink);
   }, [buildInviteBundleForLink, inviteLink]);
 
-  const readyCount = Number(progress.readyCount || 0);
-  const targetCount = Number(progress.targetCount || 3);
+  const readyCount = communityDomainCircleMode
+    ? Number(inviteLink ? 1 : 0)
+    : Number(progress.readyCount || 0);
+  const targetCount = communityDomainCircleMode
+    ? 1
+    : Number(progress.targetCount || 3);
   const hasRole = Boolean(safeStr(draft.memberRole));
   const remainingReady = Math.max(targetCount - readyCount, 0);
-  const activeStep = !hasRole ? 1 : remainingReady > 0 ? 2 : 3;
+  const activeStep = !hasRole
+    ? 1
+    : communityDomainCircleMode
+      ? 3
+      : remainingReady > 0
+        ? 2
+        : 3;
   const progressPercent = Math.max(
     0,
     Math.min(100, Math.round((readyCount / Math.max(targetCount, 1)) * 100))
@@ -982,18 +1072,26 @@ export default function BuildFirstCirclePage() {
   const isInviteFocused = focusedAction === "invite";
   const activeStepTitle =
     activeStep === 1
-      ? "Pick your aim"
+      ? communityDomainCircleMode
+        ? "Choose group type"
+        : "Pick your aim"
       : activeStep === 2
       ? "Add trusted people"
-      : "Copy the invite message";
+      : communityDomainCircleMode
+        ? "Share group invite"
+        : "Copy the invite message";
   const activeStepText =
     activeStep === 1
-      ? "Choose what you mostly do. GSN will suggest the right people next."
+      ? communityDomainCircleMode
+        ? "Pick the closest type for this Community Domain."
+        : "Choose what you mostly do. GSN will suggest the right people next."
       : activeStep === 2
       ? `Add ${remainingReady} more ${
           remainingReady === 1 ? "person" : "people"
         } with phone or email.`
-      : "Review the list, then copy the message.";
+      : communityDomainCircleMode
+        ? "Post one link to the existing group. Members request access; admin approves."
+        : "Review the list, then copy the message.";
 
   function showNotice(tone: NoticeTone, text: string) {
     setNotice({ tone, text });
@@ -1208,14 +1306,27 @@ export default function BuildFirstCirclePage() {
   function buildRelationshipEvidencePayload(): ClanInviteRelationshipEvidencePayload {
     const relationshipContext =
       safeStr(inviteEvidence.relationshipContext) ||
+      (communityDomainCircleMode
+        ? "This invite is being shared to an existing organisation group. Members request access individually and owner/admin approval remains required."
+        : "") ||
       safeStr(readyContacts[0]?.note) ||
       "This invite is being shared through my First Circle, with people I already know in real life.";
 
     return {
-      evidence_source: "first_circle",
-      invitation_context: "trusted_community_invite",
-      relationship_type: defaultEvidenceRelationship,
-      known_duration: safeStr(inviteEvidence.knownDuration) || "not_stated",
+      evidence_source: communityDomainCircleMode
+        ? "community_domain_first_circle"
+        : "first_circle",
+      invitation_context: communityDomainCircleMode
+        ? "community_domain_group_migration_invite"
+        : "trusted_community_invite",
+      relationship_type:
+        defaultEvidenceRelationship ||
+        (communityDomainCircleMode
+          ? "existing_whatsapp_or_official_group"
+          : ""),
+      known_duration:
+        safeStr(inviteEvidence.knownDuration) ||
+        (communityDomainCircleMode ? "organisation_record" : "not_stated"),
       confidence_level: safeStr(inviteEvidence.confidenceLevel) || "known_directly",
       relationship_context: relationshipContext,
       first_circle_role: safeStr(draft.memberRole) || null,
@@ -1231,12 +1342,12 @@ export default function BuildFirstCirclePage() {
       return "";
     }
 
-    if (!safeStr(inviteEvidence.relationshipType)) {
+    if (!communityDomainCircleMode && !safeStr(inviteEvidence.relationshipType)) {
       showNotice("error", "Choose how you know the person before creating the invite.");
       return "";
     }
 
-    if (!safeStr(inviteEvidence.knownDuration)) {
+    if (!communityDomainCircleMode && !safeStr(inviteEvidence.knownDuration)) {
       showNotice("error", "Choose how long you have known the person before creating the invite.");
       return "";
     }
@@ -1267,7 +1378,7 @@ export default function BuildFirstCirclePage() {
   }
 
   async function copyInviteBundle() {
-    if (readyContacts.length === 0) {
+    if (!communityDomainCircleMode && readyContacts.length === 0) {
       showNotice("error", "No ready invite message is available yet.");
       return;
     }
@@ -1399,13 +1510,20 @@ export default function BuildFirstCirclePage() {
     dashboard: routeTarget("dashboard", "build-first-circle.route.dashboard"),
     community: routeTarget("communityHome", "build-first-circle.route.community"),
   };
-  const quickRoleOptions = [
-    "supplier",
-    "buyer",
-    "dealer",
-    "trader",
-    "service_provider",
-  ].filter((role) => (ROLE_OPTIONS as string[]).includes(role));
+  const quickRoleOptions = (
+    communityDomainCircleMode
+      ? [
+          "charity_ngo",
+          "church_group",
+          "school_group",
+          "student_group",
+          "community_association",
+        ]
+      : ["supplier", "buyer", "dealer", "trader", "service_provider"]
+  ).filter((role) => (ROLE_OPTIONS as string[]).includes(role));
+  const visibleRoleOptions = communityDomainCircleMode
+    ? quickRoleOptions
+    : ROLE_OPTIONS;
   const showLegacyFirstCirclePanels = false;
 
   if (loading) {
@@ -1506,7 +1624,7 @@ export default function BuildFirstCirclePage() {
                 lineHeight: 0.98,
               }}
             >
-              First Circle
+              {communityDomainCircleMode ? "Group Invite" : "First Circle"}
             </div>
             <div
               style={{
@@ -1516,7 +1634,9 @@ export default function BuildFirstCirclePage() {
                 fontWeight: 800,
               }}
             >
-              Add people you already trust.
+              {communityDomainCircleMode
+                ? "Move an existing group into GSN with one approved join link."
+                : "Add people you already trust."}
             </div>
             <div
               style={{
@@ -1591,7 +1711,7 @@ export default function BuildFirstCirclePage() {
               lineHeight: 1.05,
             }}
           >
-            Add trusted people
+            {communityDomainCircleMode ? "Bring members in" : "Add trusted people"}
           </div>
           <div
             style={{
@@ -1602,7 +1722,9 @@ export default function BuildFirstCirclePage() {
               lineHeight: 1.45,
             }}
           >
-            Start with family, buyers, suppliers, partners.
+            {communityDomainCircleMode
+              ? "Share one official link with the existing WhatsApp or member group."
+              : "Start with family, buyers, suppliers, partners."}
           </div>
 
           <div
@@ -1627,7 +1749,7 @@ export default function BuildFirstCirclePage() {
             }}
           >
             <div style={{ color: "#E6EEF8", fontWeight: 950 }}>
-              People {readyCount}/{targetCount}
+              {communityDomainCircleMode ? "Invite link" : "People"} {readyCount}/{targetCount}
             </div>
             <div
               aria-label={`First circle progress ${progressPercent}%`}
@@ -1663,10 +1785,12 @@ export default function BuildFirstCirclePage() {
               {firstCircleStepIcon("briefcase", "1")}
               <div>
                 <div style={{ color: "#FFFFFF", fontSize: 24, fontWeight: 1000 }}>
-                  Pick your aim
+                  {communityDomainCircleMode ? "Choose group type" : "Pick your aim"}
                 </div>
                 <div style={{ marginTop: 6, ...helperText() }}>
-                  What do you mostly do?
+                  {communityDomainCircleMode
+                    ? "What kind of group is moving into GSN?"
+                    : "What do you mostly do?"}
                 </div>
                 <select
                   value={safeStr(draft.memberRole)}
@@ -1681,14 +1805,14 @@ export default function BuildFirstCirclePage() {
                   }}
                 >
                   <option value="">Choose one</option>
-                  {ROLE_OPTIONS.map((role) => (
+                  {visibleRoleOptions.map((role) => (
                     <option key={role} value={role}>
                       {roleText(role)}
                     </option>
                   ))}
                 </select>
                 <div style={{ marginTop: 14, ...helperText(), fontSize: 13 }}>
-                  Suggested roles
+                  {communityDomainCircleMode ? "Common group types" : "Suggested roles"}
                 </div>
                 <div
                   style={{
@@ -1743,53 +1867,76 @@ export default function BuildFirstCirclePage() {
               {firstCircleStepIcon("join-person-plus", "2")}
               <div>
                 <div style={{ color: "#FFFFFF", fontSize: 24, fontWeight: 1000 }}>
-                  Add 3 people
+                  {communityDomainCircleMode ? "Inviter name" : "Add 3 people"}
                 </div>
                 <div style={{ marginTop: 6, ...helperText() }}>
-                  Phone or email makes invites easy.
+                  {communityDomainCircleMode
+                    ? "Show who is sending this to the existing group."
+                    : "Phone or email makes invites easy."}
                 </div>
-                <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
-                  {quickRows.map((row, index) => (
-                    <label
-                      key={index}
+                {communityDomainCircleMode ? (
+                  <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
+                    <input
+                      value={inviterName}
+                      onChange={(event) => setInviterName(event.target.value)}
+                      placeholder="Inviter name"
+                      aria-label="Inviter name"
                       style={{
-                        display: "grid",
-                        gridTemplateColumns: "minmax(0, 1fr) 34px",
-                        gap: 8,
-                        alignItems: "center",
+                        ...inputStyle(),
+                        minHeight: 50,
+                        background: "rgba(8,22,38,0.72)",
+                        color: "#E6EEF8",
+                        border: "1px solid rgba(203,220,240,0.20)",
                       }}
-                    >
-                      <input
-                        value={row.value}
-                        onChange={(event) => updateQuickRow(index, event.target.value)}
-                        placeholder="Name, phone or email"
-                        aria-label={`Trusted person ${index + 1}`}
+                    />
+                    <div style={{ ...helperText(), fontSize: 13 }}>
+                      WhatsApp and Share will carry this name with the join link.
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
+                    {quickRows.map((row, index) => (
+                      <label
+                        key={index}
                         style={{
-                          ...inputStyle(),
-                          minHeight: 50,
-                          background: "rgba(8,22,38,0.72)",
-                          color: "#E6EEF8",
-                          border: "1px solid rgba(203,220,240,0.20)",
-                        }}
-                      />
-                      <span
-                        aria-hidden="true"
-                        style={{
-                          width: 34,
-                          height: 34,
-                          borderRadius: 999,
                           display: "grid",
-                          placeItems: "center",
-                          background: "rgba(203,220,240,0.12)",
-                          color: "#C8D8EA",
-                          fontWeight: 1000,
+                          gridTemplateColumns: "minmax(0, 1fr) 34px",
+                          gap: 8,
+                          alignItems: "center",
                         }}
                       >
-                        {index + 1}
-                      </span>
-                    </label>
-                  ))}
-                </div>
+                        <input
+                          value={row.value}
+                          onChange={(event) => updateQuickRow(index, event.target.value)}
+                          placeholder="Name, phone or email"
+                          aria-label={`Trusted person ${index + 1}`}
+                          style={{
+                            ...inputStyle(),
+                            minHeight: 50,
+                            background: "rgba(8,22,38,0.72)",
+                            color: "#E6EEF8",
+                            border: "1px solid rgba(203,220,240,0.20)",
+                          }}
+                        />
+                        <span
+                          aria-hidden="true"
+                          style={{
+                            width: 34,
+                            height: 34,
+                            borderRadius: 999,
+                            display: "grid",
+                            placeItems: "center",
+                            background: "rgba(203,220,240,0.12)",
+                            color: "#C8D8EA",
+                            fontWeight: 1000,
+                          }}
+                        >
+                          {index + 1}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                )}
               </div>
               <GsnLegacyIcon
                 name="chevronDown"
@@ -1819,10 +1966,12 @@ export default function BuildFirstCirclePage() {
               >
                 <div>
                   <div style={{ color: "#FFFFFF", fontSize: 24, fontWeight: 1000 }}>
-                    Check people
+                    {communityDomainCircleMode ? "Approval path" : "Check people"}
                   </div>
                   <div style={{ marginTop: 6, ...helperText() }}>
-                    Review your list before inviting.
+                    {communityDomainCircleMode
+                      ? "Members enter with their own GSN identity and wait for owner/admin approval."
+                      : "Review your list before inviting."}
                   </div>
                 </div>
                 <span
@@ -1831,7 +1980,9 @@ export default function BuildFirstCirclePage() {
                     justifyContent: "center",
                   }}
                 >
-                  {readyContacts.length} contacts
+                  {communityDomainCircleMode
+                    ? "Admin approval"
+                    : `${readyContacts.length} contacts`}
                 </span>
                 <SecondaryButton
                   onClick={() => toggleSection("contacts")}
@@ -1938,10 +2089,18 @@ export default function BuildFirstCirclePage() {
                   Invite message
                 </div>
                 <div style={{ marginTop: 6, ...helperText() }}>
-                  A ready message to invite your people.
+                  {communityDomainCircleMode
+                    ? "Short copy for WhatsApp groups and share menus."
+                    : "A ready message to invite your people."}
                 </div>
                 <GsnSnapshotPaperCard
-                  paperText={readyContacts.length > 0 ? inviteBundle : joinInviteMessage}
+                  paperText={
+                    communityDomainCircleMode
+                      ? joinInviteMessage
+                      : readyContacts.length > 0
+                        ? inviteBundle
+                        : joinInviteMessage
+                  }
                   compact={isCompact}
                   icon="community"
                   maxBodyLines={isCompact ? 5 : 8}
@@ -2005,7 +2164,9 @@ export default function BuildFirstCirclePage() {
             textAlign: "center",
           }}
         >
-          Trust is our network. Your circle builds the future.
+          {communityDomainCircleMode
+            ? "No bulk import: every member still enters with their own GSN identity."
+            : "Trust is our network. Your circle builds the future."}
         </div>
       </section>
 

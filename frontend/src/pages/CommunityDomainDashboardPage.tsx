@@ -2211,7 +2211,7 @@ export default function CommunityDomainDashboardPage() {
     if (!saved) return;
     setSetupCompletionSavedAt(cleanText(saved.saved_at, new Date().toISOString()));
     setSelectedClanId(clanId);
-    navigate(APP_ROUTES.BUILD_FIRST_CIRCLE);
+    navigate(`${APP_ROUTES.BUILD_FIRST_CIRCLE}?mode=community-domain`);
   }
 
   function moveSetupStep(direction: 1 | -1) {
@@ -3956,13 +3956,12 @@ export default function CommunityDomainDashboardPage() {
                         <div style={{ ...softCard(), display: "grid", gap: 10 }}>
                           <div style={sectionLabel()}>Invite next</div>
                           <h3 style={{ margin: 0, fontSize: 19, lineHeight: 1.15 }}>
-                            Grow the first circle.
+                            Build your first circle.
                           </h3>
                           <div style={helperText()}>
-                            Use the existing invite page to prepare trusted people,
-                            copy an invite message, and let them request access.
-                            Their requests will return to Access requests for
-                            owner/admin decision.
+                            Share one group invite with the existing WhatsApp or
+                            member group. Each person still enters with their own
+                            GSN identity, then owner/admin approval decides access.
                           </div>
                           <StableButton
                             type="button"
@@ -3972,7 +3971,7 @@ export default function CommunityDomainDashboardPage() {
                             debugId="community-domain-dashboard.setup-open-first-circle"
                             onClick={openSetupFirstCircle}
                           >
-                            Grow first circle
+                            Build first circle
                           </StableButton>
                           {!selectedDomainClanId ? (
                             <div style={{ ...helperText(), fontSize: 13 }}>

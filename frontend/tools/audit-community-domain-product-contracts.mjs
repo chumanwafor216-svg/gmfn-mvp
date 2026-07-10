@@ -146,6 +146,20 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
+  /openSetupFirstCircle[\s\S]*APP_ROUTES\.BUILD_FIRST_CIRCLE\}\?mode=community-domain[\s\S]*Build your first circle[\s\S]*existing WhatsApp or[\s\S]*owner\/admin approval decides access[\s\S]*community-domain-dashboard\.setup-open-first-circle[\s\S]*Build first circle/,
+  "Community Domain setup completion must open Build First Circle in Community Domain group-invite mode, not the ordinary personal three-contact flow.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/BuildFirstCirclePage.tsx",
+  /isCommunityDomainCircleMode[\s\S]*buildCommunityDomainGroupInviteMessage[\s\S]*communityDomainCircleMode[\s\S]*charity_ngo[\s\S]*church_group[\s\S]*school_group[\s\S]*student_group[\s\S]*community_association[\s\S]*Inviter name[\s\S]*No bulk import: every member still enters with their own GSN identity/,
+  "Build First Circle must keep a Community Domain group-migration mode with group types, inviter name, short share copy, and no false bulk-import promise.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
   /delegateCommunityDomainSetupEditor[\s\S]*Authorise setup editor[\s\S]*community-domain-dashboard\.setup-editor-appoint[\s\S]*Authorise editor[\s\S]*community-domain-dashboard\.setup-editor-revoke[\s\S]*Remove editor[\s\S]*community-domain-dashboard\.setup-editor-request[\s\S]*Ask owner to authorise editing/,
   "Community Domain dashboard setup must expose owner/admin setup-editor controls and a non-admin request path.",
   { frontend: true }
@@ -399,8 +413,8 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /useNavigate[\s\S]*setSelectedClanId[\s\S]*setupCompletionSavedAt[\s\S]*openSetupFirstCircle[\s\S]*setSelectedClanId\(clanId\)[\s\S]*navigate\(APP_ROUTES\.BUILD_FIRST_CIRCLE\)[\s\S]*Setup saved[\s\S]*community-domain-dashboard\.setup-open-first-circle[\s\S]*Grow first circle/,
-  "Community Domain setup launch step must visibly respond to Save setup and route owners to the real first-circle invite flow.",
+  /useNavigate[\s\S]*setSelectedClanId[\s\S]*setupCompletionSavedAt[\s\S]*openSetupFirstCircle[\s\S]*setSelectedClanId\(clanId\)[\s\S]*navigate\(`\$\{APP_ROUTES\.BUILD_FIRST_CIRCLE\}\?mode=community-domain`\)[\s\S]*Setup saved[\s\S]*community-domain-dashboard\.setup-open-first-circle[\s\S]*Build first circle/,
+  "Community Domain setup launch step must visibly respond to Save setup and route owners to the real Community Domain group-invite flow.",
   { frontend: true }
 );
 

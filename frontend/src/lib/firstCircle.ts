@@ -4,6 +4,11 @@ export type FirstCircleMemberRole =
   | "dealer"
   | "buyer"
   | "service_provider"
+  | "charity_ngo"
+  | "church_group"
+  | "school_group"
+  | "student_group"
+  | "community_association"
   | "student"
   | "salary_earner"
   | "remittance_sender"
@@ -77,6 +82,11 @@ export const FIRST_CIRCLE_ROLE_OPTIONS: FirstCircleRoleOption[] = [
   { value: "dealer", label: "Dealer" },
   { value: "buyer", label: "Buyer" },
   { value: "service_provider", label: "Service Provider" },
+  { value: "charity_ngo", label: "Charity / NGO" },
+  { value: "church_group", label: "Church / faith group" },
+  { value: "school_group", label: "School / parent community" },
+  { value: "student_group", label: "Student group" },
+  { value: "community_association", label: "Association / union group" },
   { value: "student", label: "Student" },
   { value: "salary_earner", label: "Salary Earner / Civil Servant" },
   { value: "remittance_sender", label: "Remittance Sender" },
@@ -111,6 +121,11 @@ const ROLE_RELATIONSHIP_MAP: Record<
   dealer: ["supplier", "buyer", "customer", "partner"],
   buyer: ["supplier", "dealer", "partner"],
   service_provider: ["customer", "partner", "guarantor_candidate"],
+  charity_ngo: ["group_officer", "association_member", "family_support"],
+  church_group: ["group_officer", "association_member", "family_support"],
+  school_group: ["group_officer", "association_member", "family_support"],
+  student_group: ["group_officer", "association_member", "partner"],
+  community_association: ["group_officer", "association_member", "partner"],
   student: ["family_support", "group_officer", "savings_partner", "partner"],
   salary_earner: [
     "family_support",
