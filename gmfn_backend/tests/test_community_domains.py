@@ -881,6 +881,130 @@ def test_community_domain_draft_defaults_template_to_domain_type(
         assert db.query(Clan).count() == 0
 
 
+def test_community_domain_owner_delegates_setup_editor_with_audit(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    editor = _seed_user(2, "pillar-secretary@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Pillar Setup Editor",
+                "display_name": "Pillar Setup Editor",
+                "domain_type": "ngo",
+                "template_key": "ngo_project_network",
+                "country": "United Kingdom",
+                "state": "Scotland / Aberdeen",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain_id = created.json()["community_domain"]["id"]
+
+        delegated = client.post(
+            f"/community-domains/{domain_id}/setup-editor",
+            json={
+                "subject": editor.email,
+                "note": "Board secretary authorised to finish setup.",
+            },
+        )
+        assert delegated.status_code == 200, delegated.text
+        delegated_data = delegated.json()
+        assert delegated_data["membership"]["user_id"] == editor.id
+        assert delegated_data["membership"]["role"] == "domain_admin"
+        assert delegated_data["membership"]["title"] == "Setup editor"
+        assert (
+            delegated_data["audit_review"]["action_key"]
+            == "domain.setup_editor.delegate"
+        )
+        assert delegated_data["audit_review"]["status"] == "applied"
+        assert "domain_admin role" in delegated_data["audit_review"]["payload"]["warning"]
+
+        app.dependency_overrides[get_current_user] = lambda: editor
+        dashboard = client.get(f"/community-domains/{domain_id}/dashboard")
+        assert dashboard.status_code == 200, dashboard.text
+        assert dashboard.json()["dashboard"]["viewer"] == {
+            "user_id": editor.id,
+            "can_admin": True,
+        }
+
+        profile_update = client.patch(
+            f"/community-domains/{domain_id}/profile",
+            json={
+                "domain_name": "pillar-setup-editor",
+                "display_name": "Pillar Setup Editor",
+                "domain_type": "ngo",
+                "template_key": "ngo_project_network",
+                "country": "United Kingdom",
+                "state": "Scotland / Aberdeen",
+                "public_profile": "Updated by the delegated setup editor.",
+            },
+        )
+        assert profile_update.status_code == 200, profile_update.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    with SessionLocal() as db:
+        memberships = (
+            db.query(CommunityDomainMembership)
+            .filter(CommunityDomainMembership.community_domain_id == domain_id)
+            .order_by(CommunityDomainMembership.user_id.asc())
+            .all()
+        )
+        assert [row.role for row in memberships] == ["owner", "domain_admin"]
+        review = db.query(CommunityDomainActionReview).one()
+        assert review.subject_user_id == editor.id
+        assert review.applied_by_user_id == owner.id
+        assert db.query(Notification).count() == 1
+
+
+def test_community_domain_setup_editor_delegation_is_owner_only(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    secretary = _seed_user(2, "secretary@example.com")
+    other = _seed_user(3, "other-editor@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Owner Only Delegation",
+                "display_name": "Owner Only Delegation",
+                "domain_type": "ngo",
+                "template_key": "ngo_project_network",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain_id = created.json()["community_domain"]["id"]
+
+        missing_revoke = client.post(
+            f"/community-domains/{domain_id}/setup-editor",
+            json={"subject": other.email, "action": "revoke"},
+        )
+        assert missing_revoke.status_code == 404, missing_revoke.text
+        assert "setup editor authority" in missing_revoke.text
+
+        delegated = client.post(
+            f"/community-domains/{domain_id}/setup-editor",
+            json={"subject": secretary.email},
+        )
+        assert delegated.status_code == 200, delegated.text
+
+        app.dependency_overrides[get_current_user] = lambda: secretary
+        rejected = client.post(
+            f"/community-domains/{domain_id}/setup-editor",
+            json={"subject": other.email},
+        )
+        assert rejected.status_code == 403, rejected.text
+        assert "recorded Community Domain owner" in rejected.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+
 def test_community_domain_draft_normalizes_template_type_aliases(
     client: TestClient,
 ):

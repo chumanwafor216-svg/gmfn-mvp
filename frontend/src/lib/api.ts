@@ -2501,6 +2501,23 @@ export async function submitCommunityDomainSetupEvidence(
   );
 }
 
+export async function delegateCommunityDomainSetupEditor(
+  communityDomainId: number | string,
+  payload: {
+    subject: string;
+    action?: "appoint" | "revoke";
+    title?: string;
+    note?: string;
+  }
+): Promise<any> {
+  return httpJson(communityDomainPath(communityDomainId, "/setup-editor"), "POST", {
+    subject: payload.subject,
+    action: payload.action || "appoint",
+    title: payload.title || undefined,
+    note: payload.note || undefined,
+  });
+}
+
 export async function listMyCommunityDomains(): Promise<any> {
   return httpJson("/community-domains/my", "GET");
 }

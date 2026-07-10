@@ -139,6 +139,13 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
+  /delegateCommunityDomainSetupEditor[\s\S]*Delegate editor[\s\S]*community-domain-dashboard\.setup-editor-appoint[\s\S]*Appoint editor[\s\S]*community-domain-dashboard\.setup-editor-revoke[\s\S]*Remove editor/,
+  "Community Domain dashboard setup must expose owner/admin setup-editor delegation controls.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
   /disabled=\{setupEditingLocked[\s\S]*community-domain-dashboard\.setup-save-and-continue[\s\S]*disabled=\{setupEditingLocked \|\| busyProfileSave\}/,
   "Community Domain dashboard setup save controls must be disabled for non-admin viewers.",
   { frontend: true }

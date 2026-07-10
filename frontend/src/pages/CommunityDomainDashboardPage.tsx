@@ -21,6 +21,7 @@ import {
   createCommunityDomainPaymentInstruction,
   createCommunityDomainPackageQuote,
   decideCommunityDomainActionReview,
+  delegateCommunityDomainSetupEditor,
   getAccessToken,
   getCommunityDomainActivityGroupReadiness,
   getCommunityDomainActivityMap,
@@ -1156,6 +1157,10 @@ export default function CommunityDomainDashboardPage() {
   const [busyProfileSave, setBusyProfileSave] = useState(false);
   const [busySetupDomainCheck, setBusySetupDomainCheck] = useState(false);
   const [busySetupEvidence, setBusySetupEvidence] = useState(false);
+  const [busySetupEditorDelegate, setBusySetupEditorDelegate] = useState(false);
+  const [setupEditorSubject, setSetupEditorSubject] = useState("");
+  const [setupEditorNote, setSetupEditorNote] = useState("");
+  const [setupEditorResult, setSetupEditorResult] = useState<any | null>(null);
   const [busyMembershipRequest, setBusyMembershipRequest] = useState(false);
   const [busyReviewId, setBusyReviewId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
@@ -2116,6 +2121,45 @@ export default function CommunityDomainDashboardPage() {
       setMessage(errorDetailMessage(err, "GSN could not submit the setup evidence."));
     } finally {
       setBusySetupEvidence(false);
+    }
+  }
+
+  async function delegateSetupEditor(action: "appoint" | "revoke") {
+    if (setupEditingLocked) {
+      setMessage(setupEditLockMessage);
+      return;
+    }
+    const subject = cleanText(setupEditorSubject);
+    if (subject.length < 2) {
+      setMessage("Enter the editor's GSN email, phone, GSN ID, or user id first.");
+      return;
+    }
+    const requestDomainId = cleanText(communityDomainId);
+    if (!requestDomainId) return;
+
+    setBusySetupEditorDelegate(true);
+    try {
+      const payload = await delegateCommunityDomainSetupEditor(requestDomainId, {
+        subject,
+        action,
+        title: "Setup editor",
+        note: setupEditorNote,
+      });
+      setSetupEditorResult(payload || null);
+      setMessage(
+        cleanText(
+          payload?.message,
+          action === "appoint"
+            ? "Setup editor authority delegated."
+            : "Setup editor authority removed."
+        )
+      );
+      setSetupEditorNote("");
+      await loadDashboard();
+    } catch (err: any) {
+      setMessage(errorDetailMessage(err, "GSN could not update setup editor authority."));
+    } finally {
+      setBusySetupEditorDelegate(false);
     }
   }
 
@@ -3346,6 +3390,77 @@ export default function CommunityDomainDashboardPage() {
                           ? "Only the Community Domain owner or a domain admin can change this setup."
                           : "You can edit this setup. Other members cannot change it without owner/admin authority."}
                       </div>
+                      {!setupEditingLocked ? (
+                        <div style={{ display: "grid", gap: 8 }}>
+                          <div style={sectionLabel()}>Delegate editor</div>
+                          <div style={{ ...helperText(), fontSize: 13 }}>
+                            Appoint a trusted GSN user by email, phone, GSN ID, or
+                            user id. In this pilot this grants domain-admin setup
+                            authority, so use it only for someone the organisation
+                            can hold responsible.
+                          </div>
+                          <input
+                            value={setupEditorSubject}
+                            disabled={busySetupEditorDelegate}
+                            onChange={(event) => setSetupEditorSubject(event.target.value)}
+                            placeholder="editor@example.com, +447..., GMFN-U-..."
+                            style={billingInputStyle()}
+                          />
+                          <textarea
+                            value={setupEditorNote}
+                            disabled={busySetupEditorDelegate}
+                            onChange={(event) => setSetupEditorNote(event.target.value)}
+                            placeholder="Optional note: who authorised this delegation."
+                            style={{
+                              ...billingInputStyle(),
+                              minHeight: 78,
+                              padding: 12,
+                              resize: "vertical",
+                            }}
+                          />
+                          <div
+                            style={{
+                              display: "grid",
+                              gridTemplateColumns:
+                                "repeat(auto-fit, minmax(min(100%, 150px), 1fr))",
+                              gap: 8,
+                            }}
+                          >
+                            <StableButton
+                              type="button"
+                              kind="primary"
+                              debugId="community-domain-dashboard.setup-editor-appoint"
+                              disabled={busySetupEditorDelegate}
+                              onClick={() => {
+                                void delegateSetupEditor("appoint");
+                              }}
+                            >
+                              {busySetupEditorDelegate ? "Updating..." : "Appoint editor"}
+                            </StableButton>
+                            <StableButton
+                              type="button"
+                              kind="secondary"
+                              debugId="community-domain-dashboard.setup-editor-revoke"
+                              disabled={busySetupEditorDelegate}
+                              onClick={() => {
+                                void delegateSetupEditor("revoke");
+                              }}
+                            >
+                              Remove editor
+                            </StableButton>
+                          </div>
+                          {setupEditorResult?.membership ? (
+                            <div style={statusBadge("authority recorded")}>
+                              {cleanText(
+                                setupEditorResult.membership.user_display_name ||
+                                  setupEditorResult.membership.user_email,
+                                "Editor"
+                              )}
+                              : {compactStatus(setupEditorResult.membership.role)}
+                            </div>
+                          ) : null}
+                        </div>
+                      ) : null}
                     </div>
 
                     {activeSetupStep === "identity" ? (
