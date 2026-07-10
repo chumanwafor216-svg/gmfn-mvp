@@ -10,7 +10,7 @@ import React, {
 import { useNavigate, useParams } from "react-router-dom";
 import CommunityNoticeModal from "../components/CommunityNoticeModal";
 import PageTopNav from "../components/PageTopNav";
-import { GsnRealisticIcon } from "../components/GsnRealisticIcon";
+import { GsnRealisticIcon, type Gsn3DIconKey } from "../components/GsnRealisticIcon";
 import PaymentProofSubmissionPanel from "../components/PaymentProofSubmissionPanel";
 import { StableButton } from "../components/StableButton";
 import {
@@ -357,48 +357,56 @@ const DOMAIN_FEATURE_POLICY_ROWS: Array<{
   label: string;
   note: string;
   defaultMode: DomainFeaturePolicyMode;
+  icon: Gsn3DIconKey;
 }> = [
   {
     key: "announcement_board",
     label: "Announcement Board",
     note: "Official notices for this domain.",
     defaultMode: "admin_only",
+    icon: "spotlight-megaphone",
   },
   {
     key: "demand_box",
     label: "Demand Box",
     note: "Needs, support requests, and community help.",
     defaultMode: "members_submit_admin_approves",
+    icon: "phone-contact",
   },
   {
     key: "spotlight",
     label: "Spotlight",
     note: "Rotating showcase inside this domain.",
     defaultMode: "admin_only",
+    icon: "spotlight-megaphone",
   },
   {
     key: "shop_diary",
     label: "Shop Diary",
     note: "Domain or member shop updates.",
     defaultMode: "members_submit_admin_approves",
+    icon: "shop-storefront",
   },
   {
     key: "vault",
     label: "Vault",
     note: "Private records and controlled access.",
     defaultMode: "admin_only",
+    icon: "vault-safe",
   },
   {
     key: "marketplace_shops",
     label: "Marketplace Shops",
     note: "Buying, selling, and approved vendor visibility.",
     defaultMode: "members_submit_admin_approves",
+    icon: "market-stall",
   },
   {
     key: "member_invites",
     label: "Member Invites",
     note: "Who can bring people into the domain.",
     defaultMode: "admin_only",
+    icon: "join-person-plus",
   },
 ];
 
@@ -915,6 +923,32 @@ function softCard(): React.CSSProperties {
     boxShadow: "0 14px 30px rgba(7,20,36,0.055)",
     padding: 14,
     color: "#091B2E",
+  };
+}
+
+function iconFrame(size = 48): React.CSSProperties {
+  return {
+    width: size,
+    height: size,
+    minWidth: size,
+    minHeight: size,
+    borderRadius: Math.max(14, Math.round(size * 0.34)),
+    display: "grid",
+    placeItems: "center",
+    background:
+      "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(238,246,253,0.96) 100%)",
+    border: "1px solid rgba(9,27,46,0.12)",
+    boxShadow:
+      "0 12px 24px rgba(7,20,36,0.08), inset 0 1px 0 rgba(255,255,255,0.88)",
+  };
+}
+
+function iconHeaderStyle(): React.CSSProperties {
+  return {
+    display: "flex",
+    gap: 12,
+    alignItems: "flex-start",
+    minWidth: 0,
   };
 }
 
@@ -3332,13 +3366,18 @@ export default function CommunityDomainDashboardPage() {
 
           <section id="community-domain-official-board" style={whiteCard()}>
             <div style={{ display: "grid", gap: 12 }}>
-              <div>
-                <div style={sectionLabel()}>Create / setup</div>
-                <h2 style={{ margin: "6px 0 0", fontSize: 24, lineHeight: 1.12 }}>
-                  {operatingStateCopy.heading}
-                </h2>
-                <div style={{ ...helperText(), marginTop: 8 }}>
-                  Fill the current setup step, save it, then GSN moves you forward.
+              <div style={iconHeaderStyle()}>
+                <span style={iconFrame(54)}>
+                  <GsnRealisticIcon name="records-folder" size={42} decorative />
+                </span>
+                <div style={{ minWidth: 0 }}>
+                  <div style={sectionLabel()}>Create / setup</div>
+                  <h2 style={{ margin: "6px 0 0", fontSize: 24, lineHeight: 1.12 }}>
+                    {operatingStateCopy.heading}
+                  </h2>
+                  <div style={{ ...helperText(), marginTop: 8 }}>
+                    Fill the current setup step, save it, then GSN moves you forward.
+                  </div>
                 </div>
               </div>
               <StableButton
@@ -3373,22 +3412,27 @@ export default function CommunityDomainDashboardPage() {
             <>
           <section style={whiteCard()}>
             <div style={officialBoardHeaderStyle()}>
-              <div style={{ minWidth: 0 }}>
-                <div style={sectionLabel()}>Official Board</div>
-                <h2
-                  style={{
-                    margin: "6px 0 0",
-                    fontSize: 23,
-                    lineHeight: 1.12,
-                    overflowWrap: "break-word",
-                  }}
-                >
-                  Notices for this Community Domain only.
-                </h2>
-                <div style={{ ...helperText(), marginTop: 8 }}>
-                  Newest official announcement first. Each notice is capped at
-                  50 words, has no comments or reactions, and is limited to
-                  active members of this selected Community Domain.
+              <div style={iconHeaderStyle()}>
+                <span style={iconFrame(54)}>
+                  <GsnRealisticIcon name="spotlight-megaphone" size={42} decorative />
+                </span>
+                <div style={{ minWidth: 0 }}>
+                  <div style={sectionLabel()}>Official Board</div>
+                  <h2
+                    style={{
+                      margin: "6px 0 0",
+                      fontSize: 23,
+                      lineHeight: 1.12,
+                      overflowWrap: "break-word",
+                    }}
+                  >
+                    Notices for this Community Domain only.
+                  </h2>
+                  <div style={{ ...helperText(), marginTop: 8 }}>
+                    Newest official announcement first. Each notice is capped at
+                    50 words, has no comments or reactions, and is limited to
+                    active members of this selected Community Domain.
+                  </div>
                 </div>
               </div>
               <div style={officialBoardActionsStyle()}>
@@ -3503,35 +3547,50 @@ export default function CommunityDomainDashboardPage() {
                     "Structure",
                     `${countValue(counts.nodes)} nodes`,
                     "Branches, departments, classes, zones, or committees belong inside this domain.",
+                    "community-building",
                   ],
                   [
                     "Governance",
                     `${countValue(counts.active_policies)} policies`,
                     "Rules and reviews control who can change members, structure, and evidence.",
+                    "trust-shield",
                   ],
                   [
                     "Services",
                     `${countValue(moduleKeys.length)} services`,
                     "Shops, verification, analytics, vault, and other enabled services stay scoped here.",
+                    "market-stall",
                   ],
                   [
                     "Trust relay",
                     compactStatus(status.verification_status),
                     "Evidence can travel with the domain, but verification still depends on current status.",
+                    "certificate-seal",
                   ],
-                ].map(([label, value, detail]) => (
+                ].map(([label, value, detail, icon]) => (
                   <div key={String(label)} style={softCard()}>
-                    <div style={sectionLabel()}>{String(label)}</div>
-                    <div
-                      style={{
-                        marginTop: 5,
-                        fontSize: 20,
-                        lineHeight: 1.1,
-                        fontWeight: 950,
-                        textTransform: String(label) === "Trust relay" ? "capitalize" : "none",
-                      }}
-                    >
-                      {String(value)}
+                    <div style={iconHeaderStyle()}>
+                      <span style={iconFrame(42)}>
+                        <GsnRealisticIcon
+                          name={icon as Gsn3DIconKey}
+                          size={32}
+                          decorative
+                        />
+                      </span>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={sectionLabel()}>{String(label)}</div>
+                        <div
+                          style={{
+                            marginTop: 5,
+                            fontSize: 20,
+                            lineHeight: 1.1,
+                            fontWeight: 950,
+                            textTransform: String(label) === "Trust relay" ? "capitalize" : "none",
+                          }}
+                        >
+                          {String(value)}
+                        </div>
+                      </div>
                     </div>
                     <div style={{ ...helperText(), marginTop: 7, fontSize: 13 }}>
                       {String(detail)}
@@ -3551,10 +3610,17 @@ export default function CommunityDomainDashboardPage() {
           >
             <div style={whiteCard()}>
               <div style={{ display: "grid", gap: 10 }}>
-                <div style={sectionLabel()}>Next action</div>
-                <h2 style={{ margin: 0, fontSize: 23, lineHeight: 1.12 }}>
-                  Open the {primaryActionLaneLabel} lane
-                </h2>
+                <div style={iconHeaderStyle()}>
+                  <span style={iconFrame(50)}>
+                    <GsnRealisticIcon name="records-folder" size={39} decorative />
+                  </span>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={sectionLabel()}>Next action</div>
+                    <h2 style={{ margin: 0, fontSize: 23, lineHeight: 1.12 }}>
+                      Open the {primaryActionLaneLabel} lane
+                    </h2>
+                  </div>
+                </div>
                 <div style={helperText()}>
                   {cleanText(
                     setupPrimaryAction?.label,
@@ -3582,10 +3648,17 @@ export default function CommunityDomainDashboardPage() {
 
             <div style={whiteCard()}>
               <div style={{ display: "grid", gap: 10 }}>
-                <div style={sectionLabel()}>Template</div>
-                <h2 style={{ margin: 0, fontSize: 23, lineHeight: 1.12 }}>
-                  {cleanText(template.label, "Institution")}
-                </h2>
+                <div style={iconHeaderStyle()}>
+                  <span style={iconFrame(50)}>
+                    <GsnRealisticIcon name="community-building" size={39} decorative />
+                  </span>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={sectionLabel()}>Template</div>
+                    <h2 style={{ margin: 0, fontSize: 23, lineHeight: 1.12 }}>
+                      {cleanText(template.label, "Institution")}
+                    </h2>
+                  </div>
+                </div>
                 <div style={helperText()}>
                   Marketplace role:{" "}
                   <strong style={{ textTransform: "capitalize" }}>
@@ -3701,18 +3774,29 @@ export default function CommunityDomainDashboardPage() {
 
             <div style={whiteCard()}>
               <div style={{ display: "grid", gap: 12 }}>
-                <div style={sectionLabel()}>
-                  {showAdvancedTools
-                    ? "Opened lane"
-                    : setupJourneyMode === "edit"
-                    ? "Edit setup"
-                    : "Create / setup"}
+                <div style={iconHeaderStyle()}>
+                  <span style={iconFrame(54)}>
+                    <GsnRealisticIcon
+                      name={setupJourneyMode === "edit" ? "identity-card" : "records-folder"}
+                      size={42}
+                      decorative
+                    />
+                  </span>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={sectionLabel()}>
+                      {showAdvancedTools
+                        ? "Opened lane"
+                        : setupJourneyMode === "edit"
+                        ? "Edit setup"
+                        : "Create / setup"}
+                    </div>
+                    <h2 style={{ margin: 0, fontSize: 26, lineHeight: 1.1 }}>
+                      {setupJourneyMode === "edit" && activeLane === "settings"
+                        ? "Edit Community Domain setup"
+                        : laneDisplayLabel(selectedLane, "Community Domain setup")}
+                    </h2>
+                  </div>
                 </div>
-                <h2 style={{ margin: 0, fontSize: 26, lineHeight: 1.1 }}>
-                  {setupJourneyMode === "edit" && activeLane === "settings"
-                    ? "Edit Community Domain setup"
-                    : laneDisplayLabel(selectedLane, "Community Domain setup")}
-                </h2>
                 {showAdvancedTools ? (
                   <div style={helperText()}>
                     Current state:{" "}
@@ -3753,9 +3837,16 @@ export default function CommunityDomainDashboardPage() {
                     </div>
                     {showSetupAccessCard ? (
                       <div style={{ ...softCard(), display: "grid", gap: 8 }}>
-                        <div style={sectionLabel()}>Setup access</div>
-                        <div style={statusBadge(setupAccessLabel)}>
-                          {setupAccessLabel}
+                        <div style={iconHeaderStyle()}>
+                          <span style={iconFrame(46)}>
+                            <GsnRealisticIcon name="trust-shield" size={35} decorative />
+                          </span>
+                          <div style={{ minWidth: 0 }}>
+                            <div style={sectionLabel()}>Setup access</div>
+                            <div style={{ ...statusBadge(setupAccessLabel), marginTop: 6 }}>
+                              {setupAccessLabel}
+                            </div>
+                          </div>
                         </div>
                         <div style={{ ...helperText(), fontSize: 13 }}>
                           {setupEditingLocked
@@ -3966,9 +4057,16 @@ export default function CommunityDomainDashboardPage() {
                           </label>
                         </div>
                         <div style={{ ...softCard(), display: "grid", gap: 10 }}>
-                          <div style={sectionLabel()}>Name check</div>
-                          <div style={helperText()}>
-                            Check the domain code before saving identity setup.
+                          <div style={iconHeaderStyle()}>
+                            <span style={iconFrame(46)}>
+                              <GsnRealisticIcon name="identity-card" size={35} decorative />
+                            </span>
+                            <div style={{ minWidth: 0 }}>
+                              <div style={sectionLabel()}>Name check</div>
+                              <div style={helperText()}>
+                                Check the domain code before saving identity setup.
+                              </div>
+                            </div>
                           </div>
                           <StableButton
                             type="button"
@@ -4016,11 +4114,18 @@ export default function CommunityDomainDashboardPage() {
 
                     {activeSetupStep === "payment" ? (
                       <div style={{ ...softCard(), display: "grid", gap: 10 }}>
-                        <div style={sectionLabel()}>Payment handoff</div>
-                        <div style={helperText()}>
-                          Payment lives in Billing. Generate the code there, use the
-                          exact code for the bank transfer, then upload proof. The
-                          domain becomes active only after finance reconciliation.
+                        <div style={iconHeaderStyle()}>
+                          <span style={iconFrame(46)}>
+                            <GsnRealisticIcon name="finance-wallet-card" size={35} decorative />
+                          </span>
+                          <div style={{ minWidth: 0 }}>
+                            <div style={sectionLabel()}>Payment handoff</div>
+                            <div style={helperText()}>
+                              Payment lives in Billing. Generate the code there, use the
+                              exact code for the bank transfer, then upload proof. The
+                              domain becomes active only after finance reconciliation.
+                            </div>
+                          </div>
                         </div>
                         <div style={statusBadge(domainPayment ? "code generated" : "code needed")}>
                           {domainPayment
@@ -4046,6 +4151,19 @@ export default function CommunityDomainDashboardPage() {
 
                     {activeSetupStep === "evidence" ? (
                       <div style={{ display: "grid", gap: 10 }}>
+                        <div style={{ ...softCard(), display: "grid", gap: 8 }}>
+                          <div style={iconHeaderStyle()}>
+                            <span style={iconFrame(46)}>
+                              <GsnRealisticIcon name="certificate-seal" size={35} decorative />
+                            </span>
+                            <div style={{ minWidth: 0 }}>
+                              <div style={sectionLabel()}>Setup evidence</div>
+                              <div style={{ ...helperText(), fontSize: 13 }}>
+                                Attach the authority record that proves who can set up this domain.
+                              </div>
+                            </div>
+                          </div>
+                        </div>
                         <label style={{ display: "grid", gap: 6 }}>
                           <span style={sectionLabel()}>Evidence label</span>
                           <input
@@ -4212,14 +4330,19 @@ export default function CommunityDomainDashboardPage() {
 
                     {activeSetupStep === "services" ? (
                       <div style={{ ...softCard(), display: "grid", gap: 12 }}>
-                        <div>
-                          <div style={sectionLabel()}>Domain feature policy</div>
-                          <h3 style={{ margin: "4px 0 0", fontSize: 19, lineHeight: 1.15 }}>
-                            Choose what this domain allows.
-                          </h3>
-                          <div style={{ ...helperText(), marginTop: 6, fontSize: 13 }}>
-                            All GSN features stay available. This setting decides what
-                            members can use inside this Community Domain after launch.
+                        <div style={iconHeaderStyle()}>
+                          <span style={iconFrame(48)}>
+                            <GsnRealisticIcon name="vault-safe" size={36} decorative />
+                          </span>
+                          <div style={{ minWidth: 0 }}>
+                            <div style={sectionLabel()}>Domain feature policy</div>
+                            <h3 style={{ margin: "4px 0 0", fontSize: 19, lineHeight: 1.15 }}>
+                              Choose what this domain allows.
+                            </h3>
+                            <div style={{ ...helperText(), marginTop: 6, fontSize: 13 }}>
+                              All GSN features stay available. This setting decides what
+                              members can use inside this Community Domain after launch.
+                            </div>
                           </div>
                         </div>
                         <div style={{ display: "grid", gap: 10 }}>
@@ -4235,10 +4358,15 @@ export default function CommunityDomainDashboardPage() {
                                 background: "rgba(255,255,255,0.72)",
                               }}
                             >
-                              <div>
-                                <strong>{row.label}</strong>
-                                <div style={{ ...helperText(), fontSize: 13 }}>
-                                  {row.note}
+                              <div style={iconHeaderStyle()}>
+                                <span style={iconFrame(42)}>
+                                  <GsnRealisticIcon name={row.icon} size={32} decorative />
+                                </span>
+                                <div style={{ minWidth: 0 }}>
+                                  <strong>{row.label}</strong>
+                                  <div style={{ ...helperText(), fontSize: 13 }}>
+                                    {row.note}
+                                  </div>
                                 </div>
                               </div>
                               <select
@@ -4271,11 +4399,16 @@ export default function CommunityDomainDashboardPage() {
                             background: "rgba(255,249,225,0.72)",
                           }}
                         >
-                          <div>
-                            <strong>Spotlight slots</strong>
-                            <div style={{ ...helperText(), fontSize: 13 }}>
-                              Use this when the domain wants its own Spotlight
-                              rotation before extra paid visibility.
+                          <div style={iconHeaderStyle()}>
+                            <span style={iconFrame(42)}>
+                              <GsnRealisticIcon name="spotlight-megaphone" size={32} decorative />
+                            </span>
+                            <div style={{ minWidth: 0 }}>
+                              <strong>Spotlight slots</strong>
+                              <div style={{ ...helperText(), fontSize: 13 }}>
+                                Use this when the domain wants its own Spotlight
+                                rotation before extra paid visibility.
+                              </div>
                             </div>
                           </div>
                           <div
@@ -4360,10 +4493,17 @@ export default function CommunityDomainDashboardPage() {
                         </div>
                         {setupCompletionSavedAt ? (
                           <div style={{ ...softCard(), display: "grid", gap: 8 }}>
-                            <div style={sectionLabel()}>Setup saved</div>
-                            <div style={helperText()}>
-                              Your setup record was saved. You can now invite the
-                              first trusted people or continue to payment.
+                            <div style={iconHeaderStyle()}>
+                              <span style={iconFrame(46)}>
+                                <GsnRealisticIcon name="records-folder" size={35} decorative />
+                              </span>
+                              <div style={{ minWidth: 0 }}>
+                                <div style={sectionLabel()}>Setup saved</div>
+                                <div style={helperText()}>
+                                  Your setup record was saved. You can now invite the
+                                  first trusted people or continue to payment.
+                                </div>
+                              </div>
                             </div>
                             <div style={statusBadge("saved")}>
                               Saved: {setupDraftTimeLabel(setupCompletionSavedAt)}
@@ -4377,10 +4517,17 @@ export default function CommunityDomainDashboardPage() {
                           </div>
                         ) : null}
                         <div style={{ ...softCard(), display: "grid", gap: 10 }}>
-                          <div style={sectionLabel()}>Edit saved setup</div>
-                          <div style={{ ...helperText(), fontSize: 13 }}>
-                            If a mistake was made, reopen the step, correct it,
-                            then save again.
+                          <div style={iconHeaderStyle()}>
+                            <span style={iconFrame(46)}>
+                              <GsnRealisticIcon name="identity-card" size={35} decorative />
+                            </span>
+                            <div style={{ minWidth: 0 }}>
+                              <div style={sectionLabel()}>Edit saved setup</div>
+                              <div style={{ ...helperText(), fontSize: 13 }}>
+                                If a mistake was made, reopen the step, correct it,
+                                then save again.
+                              </div>
+                            </div>
                           </div>
                           <div
                             style={{
@@ -4407,10 +4554,17 @@ export default function CommunityDomainDashboardPage() {
                           </div>
                         </div>
                         <div style={{ ...softCard(), display: "grid", gap: 10 }}>
-                          <div style={sectionLabel()}>Invite next</div>
-                          <h3 style={{ margin: 0, fontSize: 19, lineHeight: 1.15 }}>
-                            Build your first circle.
-                          </h3>
+                          <div style={iconHeaderStyle()}>
+                            <span style={iconFrame(46)}>
+                              <GsnRealisticIcon name="join-person-plus" size={35} decorative />
+                            </span>
+                            <div style={{ minWidth: 0 }}>
+                              <div style={sectionLabel()}>Invite next</div>
+                              <h3 style={{ margin: 0, fontSize: 19, lineHeight: 1.15 }}>
+                                Build your first circle.
+                              </h3>
+                            </div>
+                          </div>
                           <div style={helperText()}>
                             Share one group invite with the existing WhatsApp or
                             member group. Each person still enters with their own
