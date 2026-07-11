@@ -246,6 +246,12 @@ assertContains(
 
 assertContains(
   "src/pages/AdminIdentityRiskPage.tsx",
+  /Private recovery:[\s\S]*?row\?\.private_recovery\?\.status_label[\s\S]*?Recovery first step:[\s\S]*?row\?\.private_recovery\?\.recommended_first_step/,
+  "Admin Identity Risk phone-lineage results must show sanitized recovery status and the support first step."
+);
+
+assertContains(
+  "src/pages/AdminIdentityRiskPage.tsx",
   /postAdminIdentityReconciliation[\s\S]*?owner_confirmed: reconcileOwnerConfirmed[\s\S]*?execute,/,
   "Admin Identity Risk reconciliation must send owner confirmation and execute mode to the backend."
 );
@@ -272,6 +278,12 @@ assertContains(
   "src/lib/api.ts",
   /export async function postAdminIdentityReconciliation[\s\S]*?owner_confirmed\?: boolean;[\s\S]*?execute\?: boolean;[\s\S]*?return httpJson\("\/identity-risk\/admin\/reconcile-duplicate", "POST", payload\);/,
   "Frontend API client must keep the admin duplicate-reconciliation route and owner-confirmation payload fields."
+);
+
+assertRepoContains(
+  "gmfn_backend/app/api/routes/identity_risk.py",
+  /def _identity_recovery_admin_state[\s\S]*?"configured"[\s\S]*?"status_label"[\s\S]*?"recommended_first_step"[\s\S]*?"private_recovery": private_recovery/,
+  "Backend identity-risk phone-lineage rows must expose sanitized recovery status for owner/support review."
 );
 
 assertRepoContains(

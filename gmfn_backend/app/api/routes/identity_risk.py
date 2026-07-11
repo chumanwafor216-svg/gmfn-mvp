@@ -85,6 +85,52 @@ def _join_request_counts(db: Session, user_id: int) -> dict[str, int]:
     return counts
 
 
+def _identity_recovery_admin_state(
+    db: Session,
+    *,
+    user_id: int,
+    activation_pending: bool,
+    phone_verified: bool,
+) -> dict[str, Any]:
+    recovery = get_identity_recovery_summary(db, user_id=int(user_id))
+    configured = bool(recovery.get("configured"))
+    locked = bool(recovery.get("locked"))
+
+    if activation_pending:
+        status_label = "Activation pending"
+        recommended_first_step = (
+            "Complete the original join/create activation path before password recovery."
+        )
+    elif not phone_verified:
+        status_label = "Phone not verified"
+        recommended_first_step = (
+            "Confirm phone ownership before self-service password recovery can continue."
+        )
+    elif not configured:
+        status_label = "Manual review required"
+        recommended_first_step = (
+            "Private recovery is not set. Owner or GSN support must review this account."
+        )
+    elif locked:
+        status_label = "Recovery locked"
+        recommended_first_step = (
+            "Wait for the recovery lock to clear before the member retries recovery."
+        )
+    else:
+        status_label = "Self-service ready"
+        recommended_first_step = "Use password recovery from Sign in to GSN."
+
+    return {
+        "configured": configured,
+        "locked": locked,
+        "failed_attempts": int(recovery.get("failed_attempts") or 0),
+        "last_verified_at": recovery.get("last_verified_at"),
+        "locked_until": recovery.get("locked_until"),
+        "status_label": status_label,
+        "recommended_first_step": recommended_first_step,
+    }
+
+
 def _identity_lineage_row(db: Session, user: User) -> dict[str, Any]:
     user_id = int(user.id)
     active_memberships = (
@@ -113,6 +159,12 @@ def _identity_lineage_row(db: Session, user: User) -> dict[str, Any]:
     )
     activation_pending = is_user_activation_pending(user)
     phone_verified = bool(getattr(user, "phone_e164", None) and getattr(user, "phone_verified_at", None))
+    private_recovery = _identity_recovery_admin_state(
+        db,
+        user_id=user_id,
+        activation_pending=activation_pending,
+        phone_verified=phone_verified,
+    )
     if activation_pending and pending_join_count:
         protection_state = "pending_join_or_create"
         recommended_first_step = "Open the original join/create activation path before moving this phone."
@@ -133,6 +185,7 @@ def _identity_lineage_row(db: Session, user: User) -> dict[str, Any]:
         "phone_verified": phone_verified,
         "phone_verified_at": _iso(getattr(user, "phone_verified_at", None)),
         "activation_pending": activation_pending,
+        "private_recovery": private_recovery,
         "protection_state": protection_state,
         "recommended_first_step": recommended_first_step,
         "active_membership_count": len(active_memberships),

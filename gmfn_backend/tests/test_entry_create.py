@@ -15,6 +15,7 @@ from app.db.models import (
     UserPayoutDestination,
 )
 from app.db.verification_models import IdentityVerificationCheck
+from app.services.identity_service import upsert_identity_recovery_profile
 
 
 def _parse_api_datetime(value: str) -> datetime:
@@ -1349,10 +1350,67 @@ def test_admin_phone_lineage_lookup_identifies_protected_owner(client):
     row = body["matches"][0]
     assert row["gmfn_id"] == "GMFN-U-LINEAGE1"
     assert row["phone_verified"] is True
+    assert row["private_recovery"]["configured"] is False
+    assert row["private_recovery"]["status_label"] == "Manual review required"
+    assert "prompts" not in row["private_recovery"]
+    assert "Owner or GSN support" in row["private_recovery"]["recommended_first_step"]
     assert row["protection_state"] == "active_or_protected"
     assert row["active_membership_count"] == 1
     assert row["created_community_count"] == 1
     assert "Sign in to this GSN ID" in row["recommended_first_step"]
+
+
+def test_admin_phone_lineage_lookup_reports_sanitized_recovery_status(client):
+    os.environ["GMFN_SECRET_KEY"] = "pytest-secret"
+
+    with SessionLocal() as db:
+        admin = User(
+            email="lineage-recovery-admin@example.com",
+            hashed_password=get_password_hash("admin-secret"),
+            role="admin",
+        )
+        owner = User(
+            email="lineage-recovery-owner@example.com",
+            hashed_password=get_password_hash("owner-secret"),
+            role="user",
+            gmfn_id="GMFN-U-RECOVERY-LINE",
+            display_name="Recovery Lineage Owner",
+            phone_e164="+447903165268",
+            phone_verified_at=datetime.now(timezone.utc),
+        )
+        db.add_all([admin, owner])
+        db.commit()
+        upsert_identity_recovery_profile(
+            db,
+            user_id=int(owner.id),
+            prompts_and_answers=[
+                {"prompt": "What answer do you keep for trust recovery?", "answer": "Bridge"},
+                {"prompt": "What first community joined you?", "answer": "Circle"},
+                {"prompt": "Which city did you first join from?", "answer": "Aberdeen"},
+            ],
+        )
+
+    admin_login = client.post(
+        "/auth/login",
+        data={
+            "username": "lineage-recovery-admin@example.com",
+            "password": "admin-secret",
+        },
+    )
+    assert admin_login.status_code == 200, admin_login.text
+    admin_token = admin_login.json()["access_token"]
+
+    res = client.get(
+        "/identity-risk/admin/phone-lineage",
+        params={"phone_e164": "+447903165268"},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert res.status_code == 200, res.text
+    recovery = res.json()["matches"][0]["private_recovery"]
+    assert recovery["configured"] is True
+    assert recovery["status_label"] == "Self-service ready"
+    assert "Sign in to GSN" in recovery["recommended_first_step"]
+    assert "prompts" not in recovery
 
 
 def test_admin_phone_lineage_lookup_reports_pending_join_owner(client):

@@ -209,6 +209,17 @@ function riskStyle(level: "green" | "yellow" | "red"): React.CSSProperties {
   };
 }
 
+function recoveryColor(row: any): { bg: string; color: string } {
+  const recovery = row?.private_recovery || {};
+  if (recovery.locked || recovery.configured === false) {
+    return { bg: "#FEF2F2", color: "#991B1B" };
+  }
+  if (!row?.phone_verified || row?.activation_pending) {
+    return { bg: "#FFF7ED", color: "#9A3412" };
+  }
+  return { bg: "#F0FDF4", color: "#166534" };
+}
+
 function classify(row: any): { level: "green" | "yellow" | "red"; label: string; score: number } {
   const severity = toNum(row?.severity || 0);
   let score = severity * 10;
@@ -539,6 +550,25 @@ export default function AdminIdentityRiskPage() {
                     <div style={{ marginTop: 10, display: "grid", gap: 6, ...helperText() }}>
                       <div>State: {safeStr(row?.protection_state || "unknown")}</div>
                       <div>Phone verified: {row?.phone_verified ? "Yes" : "No"}</div>
+                      <div
+                        style={{
+                          borderRadius: 14,
+                          background: recoveryColor(row).bg,
+                          color: recoveryColor(row).color,
+                          padding: "8px 10px",
+                          fontWeight: 1000,
+                        }}
+                      >
+                        Private recovery:{" "}
+                        {safeStr(row?.private_recovery?.status_label || "Not checked")}
+                      </div>
+                      <div>
+                        Recovery first step:{" "}
+                        {safeStr(
+                          row?.private_recovery?.recommended_first_step ||
+                            "Review manually."
+                        )}
+                      </div>
                       <div>
                         Communities: {safeStr(row?.active_membership_count || 0)} active,{" "}
                         {safeStr(row?.created_community_count || 0)} created,{" "}
