@@ -90,8 +90,14 @@ assertLineNotContains(
 
 assertContains(
   "frontend/src/pages/DashboardPage.tsx",
-  /source_product_category\?:[\s\S]*?function spotlightPriceLine\([\s\S]*?const spotlightProductName = safeStr\([\s\S]*?activeSpotlight\?\.source_product_title[\s\S]*?const spotlightProductPrice =[\s\S]*?Price on request[\s\S]*?const spotlightShopName = safeStr\([\s\S]*?const spotlightMarketplaceName = safeStr\([\s\S]*?\["Price", spotlightProductPrice\][\s\S]*?\["Marketplace", spotlightMarketplaceName\][\s\S]*?\["Shop", spotlightShopName\]/,
-  "Dashboard active Spotlight billboard must keep a concise visible product/service block with product name, price, marketplace, and shop."
+  /source_product_category\?:[\s\S]*?function spotlightPriceLine\([\s\S]*?const spotlightProductName = safeStr\([\s\S]*?activeSpotlight\?\.source_product_title[\s\S]*?const spotlightProductPrice =[\s\S]*?Price on request[\s\S]*?const spotlightPriceIsVisible = Boolean[\s\S]*?spotlightProductPrice !== "Price on request"[\s\S]*?spotlightPriceIsVisible \? \([\s\S]*?\{spotlightProductPrice\}[\s\S]*?debugId="dashboard\.spotlight\.whatsapp"/,
+  "Dashboard active Spotlight billboard must keep the product title, optional sender price chip, and WhatsApp contact without restoring source/status clutter."
+);
+
+assertLineNotContains(
+  "frontend/src/pages/DashboardPage.tsx",
+  /\["Marketplace", spotlightMarketplaceName\]|\["Shop", spotlightShopName\]/,
+  "Dashboard active Spotlight body must not restore visible Marketplace/Shop source fact tiles."
 );
 
 assertContains(

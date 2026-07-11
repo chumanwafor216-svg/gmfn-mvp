@@ -25,10 +25,10 @@ const mediaFrameSource = readFileSync(join(frontendRoot, mediaFrameFile), "utf8"
 const findings = [];
 
 const expectedPageSourceActions = {
-  PrimaryButton: 9,
-  SecondaryButton: 14,
-  StableCtaLink: 5,
-  total: 28,
+  PrimaryButton: 8,
+  SecondaryButton: 13,
+  StableCtaLink: 4,
+  total: 25,
 };
 const expectedNativeFieldCount = 0;
 const expectedSignedInShortcutCount = 7;
@@ -188,9 +188,6 @@ const expectedActionOrder = [
   "shop-gallery.owner-contact.whatsapp-chat",
   "shop-gallery.owner-contact.phone-call",
   "shop-gallery.spotlight.whatsapp-chat",
-  "shop-gallery.spotlight.phone-call",
-  "shop-gallery.spotlight.contact.choose",
-  "shop-gallery.spotlight.view-details",
   "shop-gallery.ask-vault-access",
   "shop-gallery.copy-vault-request-link",
   "shop-gallery.reconnect-owner-shop",
@@ -374,13 +371,13 @@ assertNotContains(
 );
 
 assertContains(
-  /className="public-shop-section public-shop-spotlight"[\s\S]*?debugId="shop-gallery\.spotlight\.whatsapp-chat"[\s\S]*?<span>Chat<\/span>[\s\S]*?debugId="shop-gallery\.spotlight\.phone-call"[\s\S]*?<span>Call<\/span>[\s\S]*?debugId="shop-gallery\.spotlight\.contact\.choose"[\s\S]*?WhatsApp/,
-  "Public Shop Spotlight must use one WhatsApp contact handle that opens Chat/Call for the active Spotlight owner."
+  /className="public-shop-section public-shop-spotlight"[\s\S]*?firstMeaningful\(miniSpotlightView\.priceLabel, "Spotlight"\)[\s\S]*?debugId="shop-gallery\.spotlight\.whatsapp-chat"[\s\S]*?WhatsApp/,
+  "Public Shop Spotlight must keep only the optional price badge and one WhatsApp contact handle for the active Spotlight owner."
 );
 
-assertContains(
-  /className="public-shop-section public-shop-spotlight"[\s\S]*?miniSpotlightView\.priceLabel[\s\S]*?miniSpotlightView\.availabilityLabel[\s\S]*?debugId="shop-gallery\.spotlight\.view-details"[\s\S]*?>\s*View details\s*<\/StableCtaLink>/,
-  "Public Shop Spotlight must show product price/availability facts and expose a full View Details path for the active Spotlight item."
+assertNotContains(
+  /shop-gallery\.spotlight\.phone-call|shop-gallery\.spotlight\.contact\.choose|shop-gallery\.spotlight\.view-details|miniSpotlightView\.availabilityLabel|miniSpotlightView\.ownerLabel|miniSpotlightView\.categoryLabel/,
+  "Public Shop Spotlight must not restore call/details/source/availability clutter on the active Spotlight card."
 );
 
 assertNotContains(
@@ -404,8 +401,8 @@ assertContains(
 );
 
 assertContains(
-  /className="public-shop-section public-shop-spotlight"[\s\S]*?height: isCompact \? "auto" : undefined[\s\S]*?minHeight: isCompact \? 360 : undefined[\s\S]*?gridTemplateColumns: isCompact[\s\S]*?"1fr"[\s\S]*?gridRow: isCompact \? "2" : "1"[\s\S]*?miniSpotlightView\.categoryLabel[\s\S]*?WebkitLineClamp: isCompact \? 3 : 3[\s\S]*?gridTemplateColumns: isCompact \? "repeat\(2, minmax\(0, 1fr\)\)"[\s\S]*?stableHeight=\{isCompact \? 44 : 52\}[\s\S]*?View details[\s\S]*?gridRow: "1"/,
-  "Public Shop Spotlight phone layout must reserve visible room for product title, description, category, owner/community, price/availability, contact, and View details instead of compressing everything into a tiny side rail."
+  /className="public-shop-section public-shop-spotlight"[\s\S]*?height: isCompact \? "auto" : undefined[\s\S]*?minHeight: isCompact \? 360 : undefined[\s\S]*?gridTemplateColumns: isCompact[\s\S]*?"1fr"[\s\S]*?gridRow: isCompact \? "2" : "1"[\s\S]*?WebkitLineClamp: isCompact \? 3 : 3[\s\S]*?debugId="shop-gallery\.spotlight\.whatsapp-chat"[\s\S]*?gridRow: "1"/,
+  "Public Shop Spotlight phone layout must keep a stacked product-information card with a single WhatsApp action instead of restoring source/detail clutter."
 );
 
 assertContains(

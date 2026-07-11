@@ -28,7 +28,6 @@ import {
   PUBLIC_SHOP_VAULT_ANCHOR,
   publicFrontendUrl,
   publicShopPath,
-  publicShopSharePath,
   publicShopShareUrl,
   publicShopSocialPreviewUrl,
   publicShopUrl,
@@ -314,18 +313,6 @@ function moneyText(value: any, currency: any): string {
 
   if (!amount) return "Price on request";
   return `${amount} ${unit}`.trim();
-}
-
-function formatWhen(value?: string | null): string {
-  if (!value) return "";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return cleanText(value);
-  return date.toLocaleString(undefined, {
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
 }
 
 function isCodeLikeProductName(value: string): boolean {
@@ -1461,7 +1448,6 @@ export default function ShopGalleryPage() {
   const [autoRefreshingShop, setAutoRefreshingShop] = useState(false);
   const [shopReconnectRetryKey, setShopReconnectRetryKey] = useState(0);
   const [ownerContactPanelOpen, setOwnerContactPanelOpen] = useState(false);
-  const [spotlightContactPanelOpen, setSpotlightContactPanelOpen] = useState(false);
   const [shopVerificationOpen, setShopVerificationOpen] = useState(false);
   const [shopVerificationQrOpen, setShopVerificationQrOpen] = useState(false);
   const [signedInGmfnId, setSignedInGmfnId] = useState<string>(
@@ -2338,57 +2324,18 @@ export default function ShopGalleryPage() {
   }, [communitySpotlights, miniSpotlightIndex]);
 
   const miniSpotlightView = useMemo(() => {
-    const currentShopGmfnId = firstMeaningful(effectiveShop?.gmfnId).toUpperCase();
     if (!miniSpotlight) {
       return {
         title: "Discover what's new",
         detail: "No live community spotlight is attached to this shop context yet.",
-        tagLabel: "",
-        categoryLabel: "",
         priceLabel: "",
-        availabilityLabel: "",
-        ownerLabel: "",
-        communityName: firstMeaningful(effectiveShop?.communityName),
-        trustBand: "Community spotlight",
         sourceShopWhatsApp: "",
-        createdAt: "",
-        createdLabel: "",
         imageUrl: "",
         videoUrl: "",
-        shopTo: "",
-        communityTo: "",
-        isCurrentShop: true,
-        shopLabel: "Shop",
-        communityLabel: "Community",
-        helperLine:
-          "Live Spotlight appears here only after GSN receives a current community spotlight record.",
       };
     }
 
-    const spotlightShopGmfnId = firstMeaningful(miniSpotlight?.authorGmfnId);
     const messageParts = splitSpotlightMessage(miniSpotlight?.message);
-    const isCurrentShop =
-      Boolean(currentShopGmfnId) &&
-      Boolean(spotlightShopGmfnId) &&
-      currentShopGmfnId === spotlightShopGmfnId.toUpperCase();
-    const spotlightProductId = positiveNumber(miniSpotlight?.sourceProductId);
-    const spotlightProductBlock =
-      positiveNumber(miniSpotlight?.sourceProductBlock) ||
-      positiveNumber(miniSpotlight?.sourceProductSlotNumber);
-    const spotlightClanId = positiveNumber(miniSpotlight?.sourceClanId);
-    const shopTo = spotlightShopGmfnId
-      ? spotlightProductId || spotlightProductBlock || spotlightClanId
-        ? publicShopSharePath({
-            gmfnId: spotlightShopGmfnId,
-            clanId: spotlightClanId || undefined,
-            productId: spotlightProductId || undefined,
-            block: spotlightProductBlock || undefined,
-          })
-        : publicShopPath(spotlightShopGmfnId)
-      : "";
-    const communityTo = spotlightClanId
-      ? `/verify/community/${encodeURIComponent(String(spotlightClanId))}`
-      : "";
 
     return {
       title: firstMeaningful(
@@ -2403,33 +2350,13 @@ export default function ShopGalleryPage() {
         messageParts.summary,
         "Live community promo from the current spotlight source."
       ),
-      tagLabel: messageParts.tagLabel,
-      categoryLabel: firstMeaningful(
-        miniSpotlight?.sourceProductCategory,
-        messageParts.tagLabel,
-        "Spotlight item"
-      ),
       priceLabel: firstMeaningful(
         [miniSpotlight?.sourceProductCurrency, miniSpotlight?.sourceProductPrice]
           .filter(Boolean)
           .join(" "),
         miniSpotlight?.sourceProductPrice
       ),
-      availabilityLabel: firstMeaningful(miniSpotlight?.sourceProductAvailability),
-      ownerLabel: firstMeaningful(
-        miniSpotlight?.spotlightOwner,
-        miniSpotlight?.sourceShopName,
-        miniSpotlight?.authorName
-      ),
-      communityName: firstMeaningful(
-        miniSpotlight?.spotlightCommunity,
-        miniSpotlight?.sourceClanName,
-        effectiveShop?.communityName
-      ),
-      trustBand: firstMeaningful(miniSpotlight?.trustBand, "Public visibility"),
       sourceShopWhatsApp: firstMeaningful(miniSpotlight?.sourceShopWhatsApp),
-      createdAt: firstMeaningful(miniSpotlight?.createdAt),
-      createdLabel: miniSpotlight?.createdAt ? formatWhen(miniSpotlight.createdAt) : "",
       imageUrl: firstMeaningful(
         miniSpotlight?.sourceProductImageUrl,
         miniSpotlight?.imageUrl
@@ -2438,18 +2365,8 @@ export default function ShopGalleryPage() {
         miniSpotlight?.sourceProductVideoUrl,
         miniSpotlight?.videoUrl
       ),
-      shopTo,
-      communityTo,
-      isCurrentShop,
-      shopLabel: "Shop",
-      communityLabel: "Community",
-      helperLine: isCurrentShop
-        ? "This live spotlight currently belongs to the shop you are already viewing."
-        : shopTo
-        ? "This public page keeps visitors inside the current shop view."
-        : "This live spotlight item does not currently expose a linked shop.",
     };
-  }, [miniSpotlight, effectiveShop]);
+  }, [miniSpotlight]);
 
   const publicShopSpotlightActive = Boolean(miniSpotlight);
 
@@ -3041,12 +2958,11 @@ export default function ShopGalleryPage() {
 
     if (chatUrl && typeof window !== "undefined") {
       const opened = window.open(chatUrl, "_blank", "noopener,noreferrer");
-      setSpotlightContactPanelOpen(false);
       setNotice({
         tone: opened ? "success" : "error",
         text: opened
           ? "WhatsApp opened for this Spotlight owner."
-          : "WhatsApp could not open. Use Call for this Spotlight owner.",
+          : "WhatsApp could not open for this Spotlight owner.",
       });
       return;
     }
@@ -3054,24 +2970,6 @@ export default function ShopGalleryPage() {
     setNotice({
       tone: "error",
       text: "This Spotlight does not expose an owner contact path yet.",
-    });
-  }
-
-  function callSpotlightOwnerPhone() {
-    const phoneUrl = buildPhoneCallUrl(miniSpotlightView.sourceShopWhatsApp);
-    if (!phoneUrl || typeof window === "undefined") {
-      setNotice({
-        tone: "error",
-        text: "This Spotlight does not expose an owner call path yet.",
-      });
-      return;
-    }
-
-    window.location.href = phoneUrl;
-    setSpotlightContactPanelOpen(false);
-    setNotice({
-      tone: "success",
-      text: "Call opened for this Spotlight owner.",
     });
   }
 
@@ -4698,7 +4596,7 @@ export default function ShopGalleryPage() {
                 >
                   {inlineShopIcon("spark", "#276E4A", isCompact ? 10 : 13)}
                   {publicShopSpotlightActive
-                    ? miniSpotlightView.categoryLabel
+                    ? firstMeaningful(miniSpotlightView.priceLabel, "Spotlight")
                     : "Spotlight"}
                 </div>
                 <div
@@ -4741,184 +4639,43 @@ export default function ShopGalleryPage() {
                     ? miniSpotlightView.detail
                     : "Fresh items, hot deals, and public shop updates."}
                 </div>
-                {miniSpotlightView.tagLabel ? (
-                  <div
-                    style={{
-                      marginTop: isCompact ? 0 : 10,
-                      color: isCompact ? "#DDEBFF" : "#0B63D1",
-                      fontSize: isCompact ? 11 : 12,
-                      fontWeight: 900,
-                      lineHeight: 1.25,
-                      display: "-webkit-box",
-                      WebkitLineClamp: 1,
-                      WebkitBoxOrient: "vertical" as any,
-                      overflow: "hidden",
-                    }}
-                  >
-                    {miniSpotlightView.tagLabel}
-                  </div>
-                ) : null}
-                {publicShopSpotlightActive ? (
-                  <div
-                    style={{
-                      marginTop: isCompact ? 2 : 10,
-                      display: "grid",
-                      gridTemplateColumns: isCompact ? "1fr 1fr" : "1fr",
-                      gap: isCompact ? 6 : 4,
-                      color: isCompact ? "rgba(255,255,255,0.82)" : "#425E78",
-                      fontSize: isCompact ? 11.5 : 12,
-                      fontWeight: 850,
-                      lineHeight: 1.18,
-                      overflow: "hidden",
-                    }}
-                  >
-                    <div
-                      style={{
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: isCompact ? "normal" : "nowrap",
-                      }}
-                    >
-                      {firstMeaningful(miniSpotlightView.ownerLabel, "Owner")} |{" "}
-                      {firstMeaningful(miniSpotlightView.communityName, "Community")}
-                    </div>
-                    <div
-                      style={{
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: isCompact ? "normal" : "nowrap",
-                      }}
-                    >
-                      {firstMeaningful(miniSpotlightView.priceLabel, "Price on request")} |{" "}
-                      {firstMeaningful(miniSpotlightView.availabilityLabel, "Availability shown by owner")}
-                    </div>
-                  </div>
-                ) : null}
                 <div
                   style={{
-                    display: "grid",
-                    gridTemplateColumns: isCompact ? "repeat(2, minmax(0, 1fr))" : "1fr",
+                    display: "flex",
                     gap: isCompact ? 8 : 10,
                     alignItems: "center",
                     marginTop: isCompact ? 8 : 16,
                     maxWidth: isCompact ? "100%" : "100%",
                   }}
                 >
-                  {spotlightContactPanelOpen && publicShopSpotlightActive ? (
-                    <div
-                      style={{
-                        display: "grid",
-                        gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-                        gap: isCompact ? 4 : 8,
-                      }}
-                    >
-                      <PrimaryButton
-                        onClick={contactSpotlightOwnerByWhatsApp}
-                        minWidth={0}
-                        fullWidth
-                        stableHeight={isCompact ? 44 : 52}
-                        debugId="shop-gallery.spotlight.whatsapp-chat"
-                        style={{
-                          ...primaryBtn(false),
-                          borderRadius: 999,
-                          minHeight: isCompact ? 44 : 52,
-                          width: "100%",
-                          maxWidth: "100%",
-                          padding: isCompact ? "8px 8px" : "10px 12px",
-                          fontSize: isCompact ? 13 : 14,
-                          whiteSpace: "nowrap",
-                          background:
-                            "linear-gradient(180deg, #25D366 0%, #128C4A 100%)",
-                          border: "1px solid rgba(37,211,102,0.38)",
-                        }}
-                      >
-                        <span style={{ display: "inline-flex", alignItems: "center", gap: isCompact ? 3 : 7 }}>
-                          {inlineShopIcon("phone", "#FFFFFF", isCompact ? 13 : 15)}
-                          <span>Chat</span>
-                        </span>
-                      </PrimaryButton>
-                      <SecondaryButton
-                        onClick={callSpotlightOwnerPhone}
-                        minWidth={0}
-                        fullWidth
-                        stableHeight={isCompact ? 44 : 52}
-                        debugId="shop-gallery.spotlight.phone-call"
-                        style={{
-                          ...secondaryBtn(false),
-                          borderRadius: 999,
-                          minHeight: isCompact ? 44 : 52,
-                          width: "100%",
-                          maxWidth: "100%",
-                          padding: isCompact ? "8px 8px" : "10px 12px",
-                          fontSize: isCompact ? 13 : 14,
-                          whiteSpace: "nowrap",
-                          background:
-                            "linear-gradient(180deg, #FFFFFF 0%, #F7FAFF 100%)",
-                          border: "1px solid rgba(255,255,255,0.62)",
-                          color: "#0F6B4D",
-                        }}
-                      >
-                        <span style={{ display: "inline-flex", alignItems: "center", gap: isCompact ? 3 : 7 }}>
-                          {inlineShopIcon("phone", "#0F6B4D", isCompact ? 13 : 15)}
-                          <span>Call</span>
-                        </span>
-                      </SecondaryButton>
-                    </div>
-                  ) : (
-                    <PrimaryButton
-                      onClick={() => setSpotlightContactPanelOpen((open) => !open)}
-                      minWidth={0}
-                      fullWidth={isCompact}
-                      stableHeight={isCompact ? 44 : 52}
-                      debugId="shop-gallery.spotlight.contact.choose"
-                      style={{
-                        ...primaryBtn(!publicShopSpotlightActive),
-                        borderRadius: 999,
-                        minHeight: isCompact ? 44 : 52,
-                        width: isCompact ? "100%" : "fit-content",
-                        maxWidth: "100%",
-                        padding: isCompact ? "8px 10px" : "10px 16px",
-                        fontSize: isCompact ? 13 : 14,
-                        whiteSpace: "nowrap",
-                        background:
-                          "linear-gradient(180deg, #25D366 0%, #128C4A 100%)",
-                        border: "1px solid rgba(37,211,102,0.38)",
-                        boxShadow: isCompact
-                          ? "0 12px 20px rgba(0,0,0,0.24), inset 0 1px 0 rgba(255,255,255,0.18)"
-                          : undefined,
-                      }}
-                    >
-                      <span style={{ display: "inline-flex", alignItems: "center", gap: isCompact ? 4 : 8 }}>
-                        {inlineShopIcon("phone", "#FFFFFF", isCompact ? 13 : 15)}
-                        WhatsApp
-                      </span>
-                    </PrimaryButton>
-                  )}
-                  {publicShopSpotlightActive && miniSpotlightView.shopTo ? (
-                    <StableCtaLink
-                      to={miniSpotlightView.shopTo}
-                      minWidth={0}
-                      fullWidth={isCompact}
-                      stableHeight={isCompact ? 44 : 48}
-                      debugId="shop-gallery.spotlight.view-details"
-                      style={{
-                        ...secondaryBtn(false),
-                        borderRadius: 999,
-                        minHeight: isCompact ? 44 : 48,
-                        width: "100%",
-                        maxWidth: "100%",
-                        padding: isCompact ? "8px 10px" : "9px 14px",
-                        fontSize: isCompact ? 13 : 13,
-                        whiteSpace: "nowrap",
-                        background:
-                          "linear-gradient(180deg, #FFFFFF 0%, #F7FAFF 100%)",
-                        border: "1px solid rgba(255,255,255,0.62)",
-                        color: "#0F3B74",
-                      }}
-                    >
-                      View details
-                    </StableCtaLink>
-                  ) : null}
+                  <PrimaryButton
+                    onClick={contactSpotlightOwnerByWhatsApp}
+                    minWidth={0}
+                    fullWidth={isCompact}
+                    stableHeight={isCompact ? 44 : 52}
+                    debugId="shop-gallery.spotlight.whatsapp-chat"
+                    style={{
+                      ...primaryBtn(!publicShopSpotlightActive),
+                      borderRadius: 999,
+                      minHeight: isCompact ? 44 : 52,
+                      width: isCompact ? "100%" : "fit-content",
+                      maxWidth: "100%",
+                      padding: isCompact ? "8px 10px" : "10px 16px",
+                      fontSize: isCompact ? 13 : 14,
+                      whiteSpace: "nowrap",
+                      background:
+                        "linear-gradient(180deg, #25D366 0%, #128C4A 100%)",
+                      border: "1px solid rgba(37,211,102,0.38)",
+                      boxShadow: isCompact
+                        ? "0 12px 20px rgba(0,0,0,0.24), inset 0 1px 0 rgba(255,255,255,0.18)"
+                        : undefined,
+                    }}
+                  >
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: isCompact ? 4 : 8 }}>
+                      {inlineShopIcon("phone", "#FFFFFF", isCompact ? 13 : 15)}
+                      WhatsApp
+                    </span>
+                  </PrimaryButton>
                 </div>
               </div>
               <div

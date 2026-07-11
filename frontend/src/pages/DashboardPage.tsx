@@ -3962,16 +3962,8 @@ export default function DashboardPage() {
       activeSpotlight?.source_product_price ?? activeSpotlight?.price,
       activeSpotlight?.source_product_currency ?? activeSpotlight?.currency
     ) || "Price on request";
-  const spotlightShopName = safeStr(
-    activeSpotlight?.source_shop_name ||
-      activeSpotlight?.spotlight_owner ||
-      activeSpotlight?.author_name ||
-      "Community seller"
-  );
-  const spotlightMarketplaceName = safeStr(
-    activeSpotlight?.source_clan_name ||
-      activeSpotlight?.spotlight_community ||
-      currentCommunityName(currentClan, selectedClanId)
+  const spotlightPriceIsVisible = Boolean(
+    spotlightProductPrice && spotlightProductPrice !== "Price on request"
   );
 
   const myShopLink = "/app/shop-control";
@@ -9270,16 +9262,6 @@ export default function DashboardPage() {
                       currentCommunityName(currentClan, selectedClanId)
                   )}
                 </div>
-                <div
-                  style={{
-                    marginTop: 8,
-                    fontSize: 13,
-                    fontWeight: 700,
-                    color: spotlightExpiryStatus.urgent ? "#9A3412" : "#1D4ED8",
-                  }}
-                >
-                  {spotlightExpiryStatus.detail}
-                </div>
               </div>
 
               <div
@@ -9431,6 +9413,34 @@ export default function DashboardPage() {
                     pointerEvents: "none",
                   }}
                 >
+                {spotlightPriceIsVisible ? (
+                  <div
+                    style={{
+                      gridColumn: 1,
+                      gridRow: 1,
+                      justifySelf: "start",
+                      alignSelf: "end",
+                      minHeight: isPhone ? 40 : 44,
+                      maxWidth: "100%",
+                      padding: isPhone ? "8px 12px" : "9px 15px",
+                      borderRadius: 999,
+                      background:
+                        "linear-gradient(180deg, rgba(255,248,230,0.98) 0%, rgba(255,255,255,0.96) 100%)",
+                      border: "1px solid rgba(214,170,69,0.66)",
+                      color: "#08233A",
+                      boxShadow:
+                        "0 14px 26px rgba(2,12,27,0.24), inset 0 1px 0 rgba(255,255,255,0.92)",
+                      fontSize: isPhone ? 14 : 15.5,
+                      fontWeight: 950,
+                      lineHeight: 1,
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
+                  >
+                    {spotlightProductPrice}
+                  </div>
+                ) : null}
                 <StableButton
                   debugId="dashboard.spotlight.whatsapp"
                   type="button"
@@ -9661,63 +9671,6 @@ export default function DashboardPage() {
                   </div>
                 ) : null}
 
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: isCompact
-                      ? "repeat(2, minmax(0, 1fr))"
-                      : "repeat(3, minmax(0, 1fr))",
-                    gap: isPhone ? 8 : 10,
-                  }}
-                >
-                  {[
-                    ["Price", spotlightProductPrice],
-                    ["Marketplace", spotlightMarketplaceName],
-                    ["Shop", spotlightShopName],
-                  ].map(([label, value]) => (
-                    <div
-                      key={label}
-                      style={{
-                        minWidth: 0,
-                        borderRadius: isPhone ? 16 : 18,
-                        border: "1px solid rgba(214,170,69,0.24)",
-                        background:
-                          label === "Price"
-                            ? "linear-gradient(180deg, rgba(255,248,230,0.96) 0%, rgba(255,255,255,0.96) 100%)"
-                            : "linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)",
-                        padding: isPhone ? "9px 10px" : "10px 12px",
-                        boxShadow:
-                          "inset 0 1px 0 rgba(255,255,255,0.86), 0 10px 20px rgba(10,24,49,0.05)",
-                      }}
-                    >
-                      <div
-                        style={{
-                          color: "#617085",
-                          fontSize: isPhone ? 10.8 : 11.5,
-                          fontWeight: 900,
-                          lineHeight: 1,
-                          textTransform: "uppercase",
-                        }}
-                      >
-                        {label}
-                      </div>
-                      <div
-                        style={{
-                          marginTop: 5,
-                          color: "#0B1F33",
-                          fontSize: isPhone ? 15.5 : 16,
-                          fontWeight: 950,
-                          lineHeight: 1.16,
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        {value}
-                      </div>
-                    </div>
-                  ))}
-                </div>
               </div>
               <div
                 onPointerDown={consumeDashboardPointerEvent}
