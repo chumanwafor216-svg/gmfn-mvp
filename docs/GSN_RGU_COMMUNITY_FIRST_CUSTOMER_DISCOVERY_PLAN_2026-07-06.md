@@ -3104,6 +3104,8 @@ Smallest product response:
 - keep phone verification first when the phone is not verified;
 - for owner / GSN support review, use admin Identity Risk phone-lineage lookup
   to confirm the protected phone identity and private recovery readiness;
+- support intake should ask for the GSN ID and recorded phone only; never ask
+  the member to share their password or private recovery answers;
 - record recovery setup as a standard pilot procedure, not an optional hidden
   profile chore.
 

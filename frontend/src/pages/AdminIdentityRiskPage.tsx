@@ -472,6 +472,19 @@ export default function AdminIdentityRiskPage() {
           Look up the protected GSN identity that already owns a phone number.
           This is read-only; it does not merge, release, or verify the phone.
         </div>
+        <div
+          style={{
+            marginTop: 12,
+            ...institutionalInnerCard("#FFF7ED"),
+            border: "1px solid rgba(154,52,18,0.16)",
+            color: "#7C2D12",
+            fontWeight: 900,
+          }}
+        >
+          Forgot-password review: enter the member's recorded phone, confirm the
+          GSN ID, then read phone verification and private recovery status before
+          any manual account action.
+        </div>
         <form
           onSubmit={handlePhoneLineageLookup}
           style={{

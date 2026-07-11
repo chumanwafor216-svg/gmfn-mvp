@@ -246,8 +246,8 @@ assertContains(
 
 assertContains(
   "src/pages/AdminIdentityRiskPage.tsx",
-  /Private recovery:[\s\S]*?row\?\.private_recovery\?\.status_label[\s\S]*?Recovery first step:[\s\S]*?row\?\.private_recovery\?\.recommended_first_step/,
-  "Admin Identity Risk phone-lineage results must show sanitized recovery status and the support first step."
+  /Forgot-password review:[\s\S]*?member's recorded phone[\s\S]*?confirm the[\s\S]*?GSN ID[\s\S]*?private recovery status[\s\S]*?Private recovery:[\s\S]*?row\?\.private_recovery\?\.status_label[\s\S]*?Recovery first step:[\s\S]*?row\?\.private_recovery\?\.recommended_first_step/,
+  "Admin Identity Risk phone-lineage results must show the forgot-password review cue, sanitized recovery status, and the support first step."
 );
 
 assertContains(
