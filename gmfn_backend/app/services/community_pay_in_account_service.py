@@ -6,7 +6,7 @@ from typing import Any, Dict, Optional
 from sqlalchemy.orm import Session
 
 from app.db.models import CommunityPayInAccount
-from app.services.settlement_config_service import get_settlement_config
+from app.services.settlement_config_service import COUNTRY_LABELS, get_settlement_config
 
 
 def _clean(value: object) -> str:
@@ -60,6 +60,7 @@ def community_pay_in_to_settlement(row: CommunityPayInAccount) -> Dict[str, Any]
         "mobile_money_provider": "",
         "mobile_money_number": "",
         "country": country,
+        "country_label": COUNTRY_LABELS.get(country, country),
         "currency": currency,
         "region_code": fallback.get("region_code") or "",
         "payment_networks": fallback.get("payment_networks") or [],

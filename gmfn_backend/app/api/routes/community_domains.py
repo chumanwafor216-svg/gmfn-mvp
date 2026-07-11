@@ -40,7 +40,12 @@ from app.services.payment_instruction_service import (
 )
 from app.services.notification_service import create_notification
 from app.services.web_push_service import dispatch_web_push_for_notifications
-from app.services.settlement_config_service import get_settlement_config
+from app.db.bank_models import ExpectedPayment
+from app.services.community_pay_in_account_service import get_community_pay_in_settlement
+from app.services.settlement_config_service import (
+    get_settlement_config,
+    normalize_settlement_country,
+)
 from app.services.trust_events_services import log_trust_event
 
 
@@ -19831,6 +19836,42 @@ def create_community_domain_package_quote(
     }
 
 
+def _community_domain_payment_settlement(
+    db: Session,
+    *,
+    clan_id: int,
+    requested_country: Any,
+) -> dict[str, Any]:
+    selected_country = normalize_settlement_country(requested_country)
+    community_settlement = get_community_pay_in_settlement(db, clan_id=int(clan_id))
+    community_country = normalize_settlement_country(
+        community_settlement.get("country")
+    )
+
+    if (
+        bool(community_settlement.get("configured"))
+        and community_country == selected_country
+    ):
+        out = dict(community_settlement)
+        out["settlement_selection"] = "community_pay_in_account"
+        return out
+
+    out = get_settlement_config(selected_country)
+    out["settlement_selection"] = "platform_country_settlement"
+    if bool(community_settlement.get("configured")):
+        out["community_pay_in_account_available"] = True
+        out["community_pay_in_account_country"] = community_country
+    return out
+
+
+def _safe_expected_payment_meta(row: ExpectedPayment) -> dict[str, Any]:
+    try:
+        parsed = json.loads(row.meta_json or "{}")
+        return parsed if isinstance(parsed, dict) else {}
+    except Exception:
+        return {}
+
+
 @router.post("/{community_domain_id}/payment-instruction", response_model=dict[str, Any])
 def create_community_domain_payment_instruction(
     community_domain_id: int,
@@ -19852,8 +19893,14 @@ def create_community_domain_payment_instruction(
             detail="This Community Domain is already attached to another community.",
         )
 
-    settlement = get_settlement_config(
+    clan = db.get(Clan, int(payload.clan_id))
+    selected_country = normalize_settlement_country(
         payload.settlement_country or getattr(domain, "country", None)
+    )
+    settlement = _community_domain_payment_settlement(
+        db,
+        clan_id=int(payload.clan_id),
+        requested_country=selected_country,
     )
 
     try:
@@ -19879,7 +19926,53 @@ def create_community_domain_payment_instruction(
         db.commit()
         db.refresh(domain)
 
+    payment_intent = {
+        "intent_type": "community_domain_subscription",
+        "expected_payment_id": int(out["expected_payment_id"]),
+        "payment_reference": out.get("reference_display") or out.get("reference"),
+        "payer_user_id": int(current_user.id),
+        "payer_gmfn_id": getattr(current_user, "gmfn_id", None),
+        "payer_display_name": getattr(current_user, "display_name", None),
+        "payer_email": getattr(current_user, "email", None),
+        "clan_id": int(payload.clan_id),
+        "community_name": getattr(clan, "name", None) if clan else None,
+        "community_code": getattr(clan, "community_code", None) if clan else None,
+        "community_domain_id": int(domain.id),
+        "domain_name": str(domain.domain_name),
+        "domain_display_name": str(domain.display_name),
+        "amount": str(out.get("amount") or payload.amount),
+        "currency": str(out.get("currency") or payload.currency).strip().upper(),
+        "settlement_country": selected_country,
+        "settlement_source": settlement.get("source")
+        or settlement.get("settlement_selection")
+        or "platform_country_settlement",
+        "settlement_configured": bool(settlement.get("configured")),
+        "instruction": (
+            "Use only this short payment reference in the bank transfer. "
+            "GSN links the reference internally to this payer, community, "
+            "Community Domain, amount, currency, and payment rail."
+        ),
+    }
+
+    expected_payment = db.get(ExpectedPayment, int(out["expected_payment_id"]))
+    if expected_payment is not None:
+        meta = _safe_expected_payment_meta(expected_payment)
+        meta["payment_intent"] = payment_intent
+        meta["payer_gmfn_id"] = payment_intent["payer_gmfn_id"]
+        meta["payer_display_name"] = payment_intent["payer_display_name"]
+        meta["community_name"] = payment_intent["community_name"]
+        meta["community_code"] = payment_intent["community_code"]
+        meta["settlement"] = settlement
+        meta["settlement_country"] = selected_country
+        meta["settlement_source"] = payment_intent["settlement_source"]
+        expected_payment.meta_json = json.dumps(meta, ensure_ascii=False)
+        db.add(expected_payment)
+        db.commit()
+        db.refresh(expected_payment)
+        out["meta"] = meta
+
     out["settlement"] = settlement
+    out["payment_intent"] = payment_intent
     out["instruction_type"] = "community_domain_subscription"
     out["community_domain_id"] = int(domain.id)
     out["community_domain"] = _domain_payload(

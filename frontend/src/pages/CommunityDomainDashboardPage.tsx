@@ -173,14 +173,24 @@ type CommunityDomainSetupDraft = {
 };
 
 type SettlementCountryOption = {
-  value: "GB" | "NG";
+  value: string;
   label: string;
+  currency: string;
   hint: string;
 };
 
 const SETTLEMENT_COUNTRY_OPTIONS: SettlementCountryOption[] = [
-  { value: "GB", label: "United Kingdom", hint: "UK bank transfer" },
-  { value: "NG", label: "Nigeria", hint: "Nigeria bank transfer" },
+  { value: "GB", label: "United Kingdom", currency: "GBP", hint: "UK bank transfer" },
+  { value: "NG", label: "Nigeria", currency: "NGN", hint: "Nigeria bank transfer" },
+  { value: "US", label: "United States", currency: "USD", hint: "ACH or wire transfer" },
+  { value: "EU", label: "Euro area", currency: "EUR", hint: "SEPA or IBAN transfer" },
+  { value: "GH", label: "Ghana", currency: "GHS", hint: "Ghana bank transfer" },
+  { value: "KE", label: "Kenya", currency: "KES", hint: "Kenya bank or mobile money" },
+  { value: "ZA", label: "South Africa", currency: "ZAR", hint: "South Africa bank transfer" },
+  { value: "CA", label: "Canada", currency: "CAD", hint: "Canadian bank transfer" },
+  { value: "AU", label: "Australia", currency: "AUD", hint: "Australian bank transfer" },
+  { value: "IN", label: "India", currency: "INR", hint: "India bank transfer" },
+  { value: "AE", label: "United Arab Emirates", currency: "AED", hint: "UAE bank transfer" },
 ];
 
 type DomainFeaturePolicyMode =
@@ -631,7 +641,7 @@ function setupDraftFromDomain(domain: any): CommunityDomainSetupDraft {
   };
 }
 
-function normalizeSettlementCountryCode(value: unknown): "GB" | "NG" {
+function normalizeSettlementCountryCode(value: unknown): string {
   const text = cleanText(value).toUpperCase().replace(/[^A-Z0-9]/g, "");
   if (
     text.includes("NIGERIA") ||
@@ -639,6 +649,38 @@ function normalizeSettlementCountryCode(value: unknown): "GB" | "NG" {
     text === "NGN"
   ) {
     return "NG";
+  }
+  if (text.includes("UNITEDSTATES") || text === "USA" || text === "US" || text === "USD") {
+    return "US";
+  }
+  if (text.includes("EURO") || text === "EU" || text === "EUR") {
+    return "EU";
+  }
+  if (text.includes("GHANA") || text === "GH" || text === "GHS") {
+    return "GH";
+  }
+  if (text.includes("KENYA") || text === "KE" || text === "KES") {
+    return "KE";
+  }
+  if (text.includes("SOUTHAFRICA") || text === "ZA" || text === "ZAR") {
+    return "ZA";
+  }
+  if (text.includes("CANADA") || text === "CA" || text === "CAD") {
+    return "CA";
+  }
+  if (text.includes("AUSTRALIA") || text === "AU" || text === "AUD") {
+    return "AU";
+  }
+  if (text.includes("INDIA") || text === "IN" || text === "INR") {
+    return "IN";
+  }
+  if (
+    text.includes("UNITEDARABEMIRATES") ||
+    text.includes("EMIRATES") ||
+    text === "AE" ||
+    text === "AED"
+  ) {
+    return "AE";
   }
   if (
     text.includes("UNITEDKINGDOM") ||
@@ -659,6 +701,11 @@ function normalizeSettlementCountryCode(value: unknown): "GB" | "NG" {
 function settlementCountryLabel(value: unknown): string {
   const code = normalizeSettlementCountryCode(value);
   return SETTLEMENT_COUNTRY_OPTIONS.find((option) => option.value === code)?.label || "United Kingdom";
+}
+
+function settlementCurrencyForCountry(value: unknown): string {
+  const code = normalizeSettlementCountryCode(value);
+  return SETTLEMENT_COUNTRY_OPTIONS.find((option) => option.value === code)?.currency || "GBP";
 }
 
 function settlementValueIsConfigured(value: unknown): boolean {
@@ -1468,8 +1515,7 @@ export default function CommunityDomainDashboardPage() {
   const [quoteAmount, setQuoteAmount] = useState("");
   const [quoteCurrency, setQuoteCurrency] = useState("GBP");
   const [quoteNote, setQuoteNote] = useState("");
-  const [billingSettlementCountry, setBillingSettlementCountry] =
-    useState<"GB" | "NG">("GB");
+  const [billingSettlementCountry, setBillingSettlementCountry] = useState("GB");
   const [setupDraft, setSetupDraft] = useState<CommunityDomainSetupDraft>(
     () => setupDraftFromDomain(null)
   );
@@ -2819,6 +2865,12 @@ export default function CommunityDomainDashboardPage() {
       : domainPayment?.meta_json && typeof domainPayment.meta_json === "object"
       ? domainPayment.meta_json
       : {};
+  const domainPaymentIntent =
+    domainPayment?.payment_intent && typeof domainPayment.payment_intent === "object"
+      ? domainPayment.payment_intent
+      : domainPaymentMeta?.payment_intent && typeof domainPaymentMeta.payment_intent === "object"
+      ? domainPaymentMeta.payment_intent
+      : {};
   const domainPaymentSettlement =
     domainPayment?.settlement && typeof domainPayment.settlement === "object"
       ? domainPayment.settlement
@@ -3049,6 +3101,7 @@ export default function CommunityDomainDashboardPage() {
         reference_normalized: payload?.reference_normalized,
         status: "expected",
         settlement: payload?.settlement || payload?.meta?.settlement || null,
+        payment_intent: payload?.payment_intent || payload?.meta?.payment_intent || null,
         meta: payload?.meta || {},
         meta_json: payload?.meta || {},
       };
@@ -4996,16 +5049,19 @@ export default function CommunityDomainDashboardPage() {
                                   event.target.value
                                 );
                                 setBillingSettlementCountry(nextCountry);
-                                setQuoteCurrency(nextCountry === "NG" ? "NGN" : "GBP");
+                                setQuoteCurrency(settlementCurrencyForCountry(nextCountry));
                               }}
                               style={billingInputStyle()}
                             >
                               {SETTLEMENT_COUNTRY_OPTIONS.map((option) => (
                                 <option key={option.value} value={option.value}>
-                                  {option.label}
+                                  {option.label} - {option.currency}
                                 </option>
                               ))}
                             </select>
+                            <span style={{ ...helperText(), fontSize: 12 }}>
+                              Currency follows the selected area. Bank details appear after code generation.
+                            </span>
                           </label>
                           <label style={{ display: "grid", gap: 6 }}>
                             <span style={sectionLabel()}>Currency</span>
@@ -5075,6 +5131,86 @@ export default function CommunityDomainDashboardPage() {
                             {cleanText(domainPayment.currency, quoteCurrency || "GBP")}
                           </strong>
                           . Finance confirms only after bank/provider reconciliation succeeds.
+                        </div>
+                        <div
+                          style={{
+                            marginTop: 10,
+                            borderRadius: 16,
+                            border: "1px solid rgba(12,79,168,0.18)",
+                            background: "#F1F7FF",
+                            padding: "12px",
+                            display: "grid",
+                            gap: 9,
+                          }}
+                        >
+                          <div style={sectionLabel()}>GSN credit link</div>
+                          <div
+                            style={{
+                              display: "grid",
+                              gridTemplateColumns:
+                                "repeat(auto-fit, minmax(min(100%, 150px), 1fr))",
+                              gap: 8,
+                            }}
+                          >
+                            {[
+                              [
+                                "GSN ID",
+                                cleanText(
+                                  domainPaymentIntent?.payer_gmfn_id,
+                                  "Signed-in owner account"
+                                ),
+                              ],
+                              [
+                                "Community",
+                                cleanText(
+                                  domainPaymentIntent?.community_name,
+                                  `Community ${selectedDomainClanId || ""}`.trim()
+                                ),
+                              ],
+                              [
+                                "Domain",
+                                cleanText(
+                                  domainPaymentIntent?.domain_display_name,
+                                  cleanText((dashboard?.community_domain as any)?.display_name, "Community Domain")
+                                ),
+                              ],
+                              [
+                                "Internal record",
+                                cleanText(
+                                  domainPaymentIntent?.expected_payment_id,
+                                  domainPayment?.id
+                                ),
+                              ],
+                            ].map(([label, value]) => (
+                              <div
+                                key={label}
+                                style={{
+                                  borderRadius: 12,
+                                  background: "rgba(255,255,255,0.82)",
+                                  border: "1px solid rgba(9,27,46,0.10)",
+                                  padding: "8px 10px",
+                                }}
+                              >
+                                <div style={{ ...sectionLabel(), fontSize: 11 }}>{label}</div>
+                                <div
+                                  style={{
+                                    color: "#091B2E",
+                                    fontSize: 13,
+                                    fontWeight: 900,
+                                    marginTop: 3,
+                                    overflowWrap: "anywhere",
+                                  }}
+                                >
+                                  {cleanText(value, "Recorded")}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                          <div style={{ ...helperText(), fontSize: 12.5, fontWeight: 820 }}>
+                            Put only the payment code in the bank reference. GSN
+                            uses this internal link to credit the right account
+                            after finance review.
+                          </div>
                         </div>
                         <div
                           style={{

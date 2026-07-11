@@ -19,6 +19,7 @@ from app.db.models import (
     CommunityDomainActionReviewDecision,
     CommunityDomainActionReviewEvidence,
     CommunityDomainMembership,
+    CommunityPayInAccount,
     CommunityNode,
     CommunityNodeMembership,
     CommunityDomainPolicy,
@@ -26,6 +27,7 @@ from app.db.models import (
     TrustEvent,
     TrustSlip,
 )
+from app.db.bank_models import ExpectedPayment
 from app.db.notification_models import Notification
 from app.main import app
 
@@ -1583,6 +1585,115 @@ def test_community_domain_payment_instruction_uses_selected_settlement_country(
         domain = db.get(CommunityDomain, int(domain_id))
         assert domain is not None
         assert int(domain.clan_id) == clan_id
+
+
+def test_community_domain_payment_instruction_links_payer_and_saved_community_rail(
+    client: TestClient,
+):
+    owner = _seed_owner()
+
+    with SessionLocal() as db:
+        owner_row = db.get(User, int(owner.id))
+        owner_row.gmfn_id = "GMFN-U-PAYER001"
+        owner_row.display_name = "Domain Owner"
+
+        clan = Clan(
+            name="Monsoon Community",
+            description="Linked community home for payment intent testing.",
+            marketplace_name="Monsoon",
+            created_by_user_id=int(owner.id),
+            community_code="GMFN-C-MONSOON",
+            invite_code="legacy-monsoon-payment-domain",
+            invite_created_at=datetime.now(timezone.utc),
+            invite_expires_at=datetime.now(timezone.utc) + timedelta(days=7),
+            invite_uses=0,
+        )
+        db.add(clan)
+        db.flush()
+        clan_id = int(clan.id)
+        db.add(
+            ClanMembership(
+                clan_id=clan_id,
+                user_id=int(owner.id),
+                role="admin",
+            )
+        )
+        db.add(
+            CommunityPayInAccount(
+                clan_id=clan_id,
+                updated_by_user_id=int(owner.id),
+                account_name="Monsoon Community Account",
+                bank_name="Monsoon Pilot Bank",
+                account_number="9988776655",
+                sort_code=None,
+                routing_number=None,
+                iban=None,
+                swift_bic=None,
+                country="NG",
+                currency="NGN",
+                status="recorded",
+                note="Country rail for Monsoon payment instructions",
+            )
+        )
+        db.commit()
+    owner.gmfn_id = "GMFN-U-PAYER001"
+    owner.display_name = "Domain Owner"
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Monsoon Domain",
+                "display_name": "Monsoon Domain",
+                "domain_type": "market_cooperative",
+                "country": "Nigeria",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain_id = created.json()["community_domain"]["id"]
+
+        response = client.post(
+            f"/community-domains/{domain_id}/payment-instruction",
+            json={
+                "clan_id": clan_id,
+                "amount": "25000.00",
+                "currency": "NGN",
+                "settlement_country": "NG",
+            },
+        )
+        assert response.status_code == 200, response.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    payload = response.json()
+    assert payload["settlement"]["source"] == "community_pay_in_account"
+    assert payload["settlement"]["bank_name"] == "Monsoon Pilot Bank"
+    assert payload["settlement"]["account_name"] == "Monsoon Community Account"
+    assert payload["settlement"]["account_number"] == "9988776655"
+    assert payload["settlement"]["country"] == "NG"
+    assert payload["settlement"]["country_label"] == "Nigeria"
+
+    intent = payload["payment_intent"]
+    assert intent["payer_gmfn_id"] == "GMFN-U-PAYER001"
+    assert intent["clan_id"] == clan_id
+    assert intent["community_name"] == "Monsoon Community"
+    assert intent["community_code"] == "GMFN-C-MONSOON"
+    assert intent["domain_display_name"] == "Monsoon Domain"
+    assert intent["payment_reference"] == payload["reference_display"]
+    assert intent["settlement_source"] == "community_pay_in_account"
+
+    with SessionLocal() as db:
+        expected = db.get(ExpectedPayment, int(payload["expected_payment_id"]))
+        assert expected is not None
+        assert int(expected.user_id) == int(owner.id)
+        assert int(expected.clan_id) == clan_id
+        assert expected.reference_display == payload["reference_display"]
+        meta = json.loads(expected.meta_json)
+        assert meta["payment_intent"]["payer_gmfn_id"] == "GMFN-U-PAYER001"
+        assert meta["payment_intent"]["community_name"] == "Monsoon Community"
+        assert meta["payment_intent"]["community_domain_id"] == int(domain_id)
+        assert meta["settlement"]["account_number"] == "9988776655"
 
 
 def test_outsider_cannot_preview_community_domain_package_quote(

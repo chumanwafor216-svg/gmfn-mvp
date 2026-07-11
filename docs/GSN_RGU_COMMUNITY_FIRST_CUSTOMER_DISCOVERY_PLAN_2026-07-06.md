@@ -3122,6 +3122,24 @@ Pilot manual recovery bridge:
 - Future recovery should move toward verified phone OTP plus private recovery,
   so missing recovery does not require manual support.
 
+Pilot Community Domain payment intent bridge:
+
+- The bank reference should stay short and exact. Do not ask the payer to type
+  both GSN ID and payment code into the bank reference because bank apps vary
+  and users will mistype long references.
+- Before payment, GSN must create an internal expected-payment intent that links
+  the payment code to the signed-in payer's GSN ID, user account, selected
+  community, Community Domain, amount, currency, and payment rail shown.
+- If the selected community has a saved pay-in account for the selected area,
+  Community Domain payment instructions should show that community rail. If no
+  saved rail matches the area, GSN may fall back to the configured platform
+  country settlement rail and clearly mark unconfigured areas as not ready.
+- The generated payment code does not confirm payment. It waits for bank/provider
+  reconciliation or manual finance review against the expected amount, currency,
+  and reference.
+- This pilot bridge discourages fraud without claiming full automatic bank rails
+  are complete.
+
 ---
 
 ## 47. Source Notes For Internal Review
