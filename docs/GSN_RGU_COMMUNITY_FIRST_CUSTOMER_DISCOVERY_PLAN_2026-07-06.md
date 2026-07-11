@@ -3155,6 +3155,9 @@ Pilot Community Domain pay-in account rule:
 - The Community Domain Billing lane must let an owner/admin save the official
   community pay-in account for the selected area before the next payment code is
   issued.
+- After the pilot pay-in account is saved, editing is restricted to GSN platform
+  admin only. Community owners/admins and members may see the account details
+  needed to pay, but they must not be able to change the stored bank rail.
 - The selected area should set the expected currency automatically from the
   country/currency list, while still allowing finance to correct the three-letter
   currency code during pilot testing.
@@ -3164,6 +3167,9 @@ Pilot Community Domain pay-in account rule:
 - Proof upload and deeper readiness diagnostics should be available on demand,
   not fully exposed by default, so the mobile Billing lane does not become an
   endless admin dump.
+- The five-step billing sequence and internal credit-link record should also be
+  collapsed by default. The normal view should show only the current code, the
+  account to pay, and the next available action.
 - Saving a bank rail does not confirm payment. Payment still waits for
   bank/provider reconciliation or manual finance review.
 

@@ -17,7 +17,9 @@ from app.services.community_pay_in_account_service import (
 )
 
 router = APIRouter(prefix="/community-pay-in-accounts", tags=["community-pay-in-accounts"])
-COMMUNITY_PAY_IN_MANAGER_ROLES = {"admin", "owner", "founder", "creator"}
+COMMUNITY_PAY_IN_ADMIN_ONLY_EDIT_MESSAGE = (
+    "Only a GSN platform admin can edit this pay-in account during the pilot"
+)
 
 
 class CommunityPayInAccountIn(BaseModel):
@@ -101,28 +103,15 @@ def _require_member_or_platform_admin(
     raise HTTPException(status_code=403, detail="Only community members can read this pay-in account")
 
 
-def _require_clan_admin(
-    db: Session,
+def _require_platform_admin(
     *,
-    clan_id: int,
     current_user: User,
-) -> Optional[ClanMembership]:
-    membership = _require_member_or_platform_admin(
-        db,
-        clan_id=int(clan_id),
-        current_user=current_user,
-    )
+) -> None:
     if _platform_admin(current_user):
-        return membership
-    if (
-        membership
-        and str(getattr(membership, "role", "") or "").lower()
-        in COMMUNITY_PAY_IN_MANAGER_ROLES
-    ):
-        return membership
+        return
     raise HTTPException(
         status_code=403,
-        detail="Only a community manager can save this pay-in account",
+        detail=COMMUNITY_PAY_IN_ADMIN_ONLY_EDIT_MESSAGE,
     )
 
 
@@ -156,11 +145,8 @@ def save_community_pay_in_account_route(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    _require_clan_admin(
-        db,
-        clan_id=int(clan_id),
-        current_user=current_user,
-    )
+    _require_existing_clan(db, clan_id=int(clan_id))
+    _require_platform_admin(current_user=current_user)
     row = upsert_community_pay_in_account(
         db,
         clan_id=int(clan_id),

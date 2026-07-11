@@ -394,33 +394,24 @@ try {
   await page.locator('[data-cta-id="community-domain-dashboard.advanced-tools-toggle"]').first().click();
   await page.locator('[data-cta-id="community-domain-dashboard.lane.billing"]').first().click();
   await page.waitForLoadState("networkidle");
-  await page.getByText("Billing sequence", { exact: true }).waitFor({ timeout: 10000 });
+  await page.getByText("Code, account, proof.", { exact: true }).waitFor({ timeout: 10000 });
   await page.getByText("Latest payment code", { exact: true }).waitFor({ timeout: 10000 });
   await page.waitForTimeout(700);
 
-  const result = await pageAudit(page);
-  const requiredText = [
-    "Billing sequence",
-    "Code first. Confirm later.",
-    "Review quote",
-    "Generate payment code",
-    "Use your bank",
-    "Upload proof",
-    "Finance review",
-    "Separate rails",
-    "Subscription payment uses a code and finance review.",
-    "Bank details show only after a code is generated for the selected area.",
+  const defaultResult = await pageAudit(page);
+  const requiredDefaultText = [
+    "Billing",
+    "Code, account, proof.",
+    "Show steps",
     "Community pay-in account",
-    "Save the account this Community Domain should show after code generation.",
+    "Shown to payers. Locked for editing.",
+    "Use this account with the generated code.",
     "Audit Society Bank",
     "Audit Community Pay-In",
     "Edit account",
     "Latest payment code",
-    "GSN credit link",
-    "GMFN-U-0B5A2953",
-    "Audit Community",
-    "Internal record",
-    "Put only the payment code in the bank reference.",
+    "Show credit link",
+    "Generate another code",
     "Official GSN account for United Kingdom",
     "Pilot UK Bank",
     "GSN UK Pilot Account",
@@ -432,40 +423,76 @@ try {
     "Billing readiness details",
     "Open readiness details",
   ];
+
+  for (const text of requiredDefaultText) {
+    if (!normalizeText(defaultResult.bodyText).includes(normalizeText(text))) {
+      findings.push(`Missing expected Billing text: ${text}`);
+    }
+  }
+
+  if (normalizeText(defaultResult.bodyText).includes("Review quote")) {
+    findings.push("Billing steps are exposed before the user opens them.");
+  }
+
+  if (normalizeText(defaultResult.bodyText).includes("Enter amount, area, and currency.")) {
+    findings.push("Payment-code form is exposed even though a latest code already exists.");
+  }
+
+  if (normalizeText(defaultResult.bodyText).includes("GSN credit link")) {
+    findings.push("Credit-link details are exposed before the user opens them.");
+  }
+
+  if (defaultResult.horizontalOverflow) {
+    findings.push(`Horizontal overflow: scroll width ${defaultResult.scrollW}px on ${defaultResult.viewportW}px viewport`);
+  }
+
+  if (!defaultResult.bottomNavVisible) {
+    findings.push("Bottom navigation is not visible in the mobile viewport after opening Billing.");
+  }
+
+  if (defaultResult.scrollRootH > defaultResult.viewportH * 6.25) {
+    findings.push(
+      `Billing mobile scroll is too long: scroll root ${defaultResult.scrollRootH}px on ${defaultResult.viewportH}px viewport`
+    );
+  }
+
+  await page.locator('[data-cta-id="community-domain-dashboard.billing-sequence-toggle"]').first().click();
+  await page.locator('[data-cta-id="community-domain-dashboard.credit-link-toggle"]').first().click();
+  await page.waitForTimeout(350);
+
+  const detailResult = await pageAudit(page);
+  const requiredDetailText = [
+    "Review quote",
+    "Generate payment code",
+    "Use your bank",
+    "Upload proof",
+    "Finance review",
+    "GSN credit link",
+    "GMFN-U-0B5A2953",
+    "Audit Community",
+    "Record",
+    "Use only the payment code as the bank reference.",
+  ];
   const forbiddenText = [
     "Copy Details",
     "GSN Subscription Rail",
     "official bank rail",
   ];
 
-  for (const text of requiredText) {
-    if (!normalizeText(result.bodyText).includes(normalizeText(text))) {
+  for (const text of requiredDetailText) {
+    if (!normalizeText(detailResult.bodyText).includes(normalizeText(text))) {
       findings.push(`Missing expected Billing text: ${text}`);
     }
   }
 
   for (const text of forbiddenText) {
-    if (normalizeText(result.bodyText).includes(normalizeText(text))) {
+    if (normalizeText(detailResult.bodyText).includes(normalizeText(text))) {
       findings.push(`Forbidden bank-detail text is visible: ${text}`);
     }
   }
 
-  if (result.horizontalOverflow) {
-    findings.push(`Horizontal overflow: scroll width ${result.scrollW}px on ${result.viewportW}px viewport`);
-  }
-
-  if (!result.bottomNavVisible) {
-    findings.push("Bottom navigation is not visible in the mobile viewport after opening Billing.");
-  }
-
-  if (result.scrollRootH > result.viewportH * 7.25) {
-    findings.push(
-      `Billing mobile scroll is too long: scroll root ${result.scrollRootH}px on ${result.viewportH}px viewport`
-    );
-  }
-
   if (findings.length > 0) {
-    findings.push(`Page text: ${normalizeText(result.bodyText).slice(0, 2200)}`);
+    findings.push(`Page text: ${normalizeText(defaultResult.bodyText).slice(0, 2200)}`);
   }
 } catch (error) {
   let debugText = "";

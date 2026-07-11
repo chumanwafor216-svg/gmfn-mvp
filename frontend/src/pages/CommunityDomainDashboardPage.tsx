@@ -786,6 +786,15 @@ function settlementPaymentRows(settlement: any): Array<[string, string]> {
     .filter(([, value]) => Boolean(value));
 }
 
+function storedPlatformAdminRole(): boolean {
+  try {
+    if (typeof window === "undefined") return false;
+    return cleanText(window.localStorage.getItem("gmfn_role")).toLowerCase() === "admin";
+  } catch {
+    return false;
+  }
+}
+
 function emptyCommunityDomainPayInDraft(
   country = "GB",
   currency = "GBP"
@@ -1622,6 +1631,9 @@ export default function CommunityDomainDashboardPage() {
   const [communityPayInEditorOpen, setCommunityPayInEditorOpen] = useState(false);
   const [communityPayInLoading, setCommunityPayInLoading] = useState(false);
   const [communityPayInSaving, setCommunityPayInSaving] = useState(false);
+  const [billingSequenceOpen, setBillingSequenceOpen] = useState(false);
+  const [domainPaymentFormOpen, setDomainPaymentFormOpen] = useState(false);
+  const [domainPaymentCreditOpen, setDomainPaymentCreditOpen] = useState(false);
   const [domainPaymentProofOpen, setDomainPaymentProofOpen] = useState(false);
   const [billingReadinessOpen, setBillingReadinessOpen] = useState(false);
   const [setupDraft, setSetupDraft] = useState<CommunityDomainSetupDraft>(
@@ -2354,6 +2366,7 @@ export default function CommunityDomainDashboardPage() {
     [rawLanes]
   );
   const isAdmin = Boolean(dashboard?.viewer?.can_admin);
+  const canEditPayInAccount = storedPlatformAdminRole();
   const canSetupEdit = Boolean(dashboard?.viewer?.can_setup_edit || isAdmin);
   const selectedDomainClanId = Number(domain?.clan_id || getSelectedClanId() || 0);
   const latestMembershipRequest = latestRelevantMembershipRequest(ownMembershipRequests);
@@ -2988,8 +3001,8 @@ export default function CommunityDomainDashboardPage() {
       setMessage("Select the community that owns this Community Domain before saving a pay-in account.");
       return;
     }
-    if (!isAdmin) {
-      setMessage("Only a Community Domain owner or domain admin can save the official pay-in account.");
+    if (!canEditPayInAccount) {
+      setMessage("Only a GSN platform admin can edit the official pay-in account during the pilot.");
       return;
     }
     if (
@@ -3337,6 +3350,7 @@ export default function CommunityDomainDashboardPage() {
         meta_json: payload?.meta || {},
       };
       setDomainPayment(payment);
+      setDomainPaymentFormOpen(false);
       if (payload?.community_domain) {
         setDashboard((prev) =>
           prev
@@ -5174,66 +5188,62 @@ export default function CommunityDomainDashboardPage() {
                         <GsnRealisticIcon name="finance-bank-building" size={36} decorative />
                       </span>
                       <div style={{ minWidth: 0 }}>
-                        <div style={sectionLabel()}>Billing sequence</div>
+                        <div style={sectionLabel()}>Billing</div>
                         <h3 style={{ margin: "4px 0 0", fontSize: 20, lineHeight: 1.12 }}>
-                          Code first. Confirm later.
+                          Code, account, proof.
                         </h3>
-                        <div style={{ ...helperText(), marginTop: 7 }}>
-                          Billing status:{" "}
-                          <strong style={{ textTransform: "capitalize" }}>
-                            {compactStatus(status.billing_status || selectedLane?.status)}
-                          </strong>
-                          .{" "}
-                          {billingIsActive
-                            ? "Quote is available for reference."
-                            : "Quote required before payment."}
-                        </div>
-                        <div style={{ ...helperText(), marginTop: 7 }}>
-                          Package quote:{" "}
-                          <strong style={{ textTransform: "capitalize" }}>
-                            {compactStatus(quote?.pricing_status || quote?.quote_status)}
-                          </strong>
-                          .
+                        <div style={{ ...helperText(), marginTop: 7, fontSize: 13 }}>
+                          Generate one code, pay the shown account, then upload proof.
                         </div>
                       </div>
                     </div>
                     <div
                       style={{
-                        display: "grid",
-                        gap: 9,
-                        marginTop: 14,
-                      }}
-                    >
-                      {billingSequenceSteps.map((item) =>
-                        billingStepCard(
-                          item.step,
-                          item.title,
-                          item.detail,
-                          item.status,
-                          item.active
-                        )
-                      )}
-                    </div>
-                    <div
-                      style={{
-                        ...softCard(),
+                        display: "flex",
+                        flexWrap: "wrap",
+                        gap: 8,
                         marginTop: 12,
-                        display: "grid",
-                        gap: 9,
-                        border: "1px solid rgba(214,170,69,0.26)",
-                        background:
-                          "linear-gradient(180deg, rgba(255,249,225,0.86), rgba(255,255,255,0.92))",
                       }}
                     >
-                      <div style={sectionLabel()}>Separate rails</div>
-                      <div style={{ ...helperText(), fontSize: 13 }}>
-                        Subscription payment uses a code and finance review.
-                        Community funds stay separate.
-                      </div>
-                      <div style={{ ...helperText(), fontSize: 13, fontWeight: 850 }}>
-                        Bank details show only after a code is generated for the selected area.
-                      </div>
+                      <span style={statusBadge(status.billing_status || selectedLane?.status)}>
+                        Billing: {compactStatus(status.billing_status || selectedLane?.status)}
+                      </span>
+                      <span style={statusBadge(quote?.pricing_status || quote?.quote_status)}>
+                        Quote: {compactStatus(quote?.pricing_status || quote?.quote_status)}
+                      </span>
+                      <span style={statusBadge(domainPaymentReference ? "code ready" : "code needed")}>
+                        {domainPaymentReference ? "Code ready" : "Code needed"}
+                      </span>
                     </div>
+                    <StableButton
+                      type="button"
+                      kind="secondary"
+                      fullWidth
+                      debugId="community-domain-dashboard.billing-sequence-toggle"
+                      onClick={() => setBillingSequenceOpen((open) => !open)}
+                      style={{ marginTop: 12 }}
+                    >
+                      {billingSequenceOpen ? "Hide steps" : "Show steps"}
+                    </StableButton>
+                    {billingSequenceOpen ? (
+                      <div
+                        style={{
+                          display: "grid",
+                          gap: 9,
+                          marginTop: 12,
+                        }}
+                      >
+                        {billingSequenceSteps.map((item) =>
+                          billingStepCard(
+                            item.step,
+                            item.title,
+                            item.detail,
+                            item.status,
+                            item.active
+                          )
+                        )}
+                      </div>
+                    ) : null}
                     <div
                       style={{
                         ...softCard(),
@@ -5254,7 +5264,7 @@ export default function CommunityDomainDashboardPage() {
                         <div style={{ minWidth: 0 }}>
                           <div style={sectionLabel()}>Community pay-in account</div>
                           <h4 style={{ margin: "4px 0 0", fontSize: 16, lineHeight: 1.18 }}>
-                            Save the bank rail before issuing the next code.
+                            Shown to payers. Locked for editing.
                           </h4>
                         </div>
                         <span
@@ -5274,8 +5284,7 @@ export default function CommunityDomainDashboardPage() {
                         </span>
                       </div>
                       <div style={{ ...helperText(), fontSize: 13 }}>
-                        Save the account this Community Domain should show after code generation.
-                        This does not confirm payment.
+                        Use this account with the generated code. Editing is GSN-admin only.
                       </div>
                       {communityPayInIsReady ? (
                         <div
@@ -5333,11 +5342,10 @@ export default function CommunityDomainDashboardPage() {
                         </div>
                       ) : (
                         <div style={{ ...helperText(), fontSize: 13, fontWeight: 820 }}>
-                          No official account is saved for this community yet. Generate payment
-                          codes only after the correct rail is saved or finance has assigned one.
+                          No account is saved yet. Do not pay until GSN assigns one.
                         </div>
                       )}
-                      {isAdmin ? (
+                      {canEditPayInAccount ? (
                         <StableButton
                           type="button"
                           kind="secondary"
@@ -5364,8 +5372,13 @@ export default function CommunityDomainDashboardPage() {
                             ? "Edit account"
                             : "Set account"}
                         </StableButton>
-                      ) : null}
-                      {isAdmin && communityPayInEditorOpen ? (
+                      ) : (
+                        <div style={{ ...helperText(), fontSize: 12.5, fontWeight: 820 }}>
+                          Edit locked. The account can be used for payment, but only GSN platform
+                          admin can change it during the pilot.
+                        </div>
+                      )}
+                      {canEditPayInAccount && communityPayInEditorOpen ? (
                         <div style={{ display: "grid", gap: 10 }}>
                           <div
                             style={{
@@ -5541,12 +5554,24 @@ export default function CommunityDomainDashboardPage() {
                       {packageReviewActionLabel}
                     </StableButton>
 
-                    {isAdmin && !billingIsActive ? (
+                    {isAdmin && !billingIsActive && domainPayment ? (
+                      <StableButton
+                        type="button"
+                        kind="secondary"
+                        fullWidth
+                        debugId="community-domain-dashboard.payment-code-form-toggle"
+                        onClick={() => setDomainPaymentFormOpen((open) => !open)}
+                        style={{ marginTop: 10 }}
+                      >
+                        {domainPaymentFormOpen ? "Hide code form" : "Generate another code"}
+                      </StableButton>
+                    ) : null}
+
+                    {isAdmin && !billingIsActive && (!domainPayment || domainPaymentFormOpen) ? (
                       <div style={{ ...softCard(), marginTop: 12 }}>
                         <div style={sectionLabel()}>Generate payment code</div>
-                        <div style={{ ...helperText(), marginTop: 7 }}>
-                          Enter the agreed amount and generate one payment code. Use
-                          that exact code with the bank. Proof is for finance review.
+                        <div style={{ ...helperText(), marginTop: 7, fontSize: 13 }}>
+                          Enter amount, area, and currency.
                         </div>
                         <div
                           style={{
@@ -5658,86 +5683,96 @@ export default function CommunityDomainDashboardPage() {
                           </strong>
                           . Finance confirms only after bank/provider reconciliation succeeds.
                         </div>
-                        <div
-                          style={{
-                            marginTop: 10,
-                            borderRadius: 16,
-                            border: "1px solid rgba(12,79,168,0.18)",
-                            background: "#F1F7FF",
-                            padding: "12px",
-                            display: "grid",
-                            gap: 9,
-                          }}
+                        <StableButton
+                          type="button"
+                          kind="secondary"
+                          fullWidth
+                          debugId="community-domain-dashboard.credit-link-toggle"
+                          onClick={() => setDomainPaymentCreditOpen((open) => !open)}
+                          style={{ marginTop: 10 }}
                         >
-                          <div style={sectionLabel()}>GSN credit link</div>
+                          {domainPaymentCreditOpen ? "Hide credit link" : "Show credit link"}
+                        </StableButton>
+                        {domainPaymentCreditOpen ? (
                           <div
                             style={{
+                              marginTop: 10,
+                              borderRadius: 16,
+                              border: "1px solid rgba(12,79,168,0.18)",
+                              background: "#F1F7FF",
+                              padding: "12px",
                               display: "grid",
-                              gridTemplateColumns:
-                                "repeat(auto-fit, minmax(min(100%, 150px), 1fr))",
-                              gap: 8,
+                              gap: 9,
                             }}
                           >
-                            {[
-                              [
-                                "GSN ID",
-                                cleanText(
-                                  domainPaymentIntent?.payer_gmfn_id,
-                                  "Signed-in owner account"
-                                ),
-                              ],
-                              [
-                                "Community",
-                                cleanText(
-                                  domainPaymentIntent?.community_name,
-                                  `Community ${selectedDomainClanId || ""}`.trim()
-                                ),
-                              ],
-                              [
-                                "Domain",
-                                cleanText(
-                                  domainPaymentIntent?.domain_display_name,
-                                  cleanText((dashboard?.community_domain as any)?.display_name, "Community Domain")
-                                ),
-                              ],
-                              [
-                                "Internal record",
-                                cleanText(
-                                  domainPaymentIntent?.expected_payment_id,
-                                  domainPayment?.id
-                                ),
-                              ],
-                            ].map(([label, value]) => (
-                              <div
-                                key={label}
-                                style={{
-                                  borderRadius: 12,
-                                  background: "rgba(255,255,255,0.82)",
-                                  border: "1px solid rgba(9,27,46,0.10)",
-                                  padding: "8px 10px",
-                                }}
-                              >
-                                <div style={{ ...sectionLabel(), fontSize: 11 }}>{label}</div>
+                            <div style={sectionLabel()}>GSN credit link</div>
+                            <div
+                              style={{
+                                display: "grid",
+                                gridTemplateColumns:
+                                  "repeat(auto-fit, minmax(min(100%, 150px), 1fr))",
+                                gap: 8,
+                              }}
+                            >
+                              {[
+                                [
+                                  "GSN ID",
+                                  cleanText(
+                                    domainPaymentIntent?.payer_gmfn_id,
+                                    "Signed-in owner account"
+                                  ),
+                                ],
+                                [
+                                  "Community",
+                                  cleanText(
+                                    domainPaymentIntent?.community_name,
+                                    `Community ${selectedDomainClanId || ""}`.trim()
+                                  ),
+                                ],
+                                [
+                                  "Domain",
+                                  cleanText(
+                                    domainPaymentIntent?.domain_display_name,
+                                    cleanText((dashboard?.community_domain as any)?.display_name, "Community Domain")
+                                  ),
+                                ],
+                                [
+                                  "Record",
+                                  cleanText(
+                                    domainPaymentIntent?.expected_payment_id,
+                                    domainPayment?.id
+                                  ),
+                                ],
+                              ].map(([label, value]) => (
                                 <div
+                                  key={label}
                                   style={{
-                                    color: "#091B2E",
-                                    fontSize: 13,
-                                    fontWeight: 900,
-                                    marginTop: 3,
-                                    overflowWrap: "anywhere",
+                                    borderRadius: 12,
+                                    background: "rgba(255,255,255,0.82)",
+                                    border: "1px solid rgba(9,27,46,0.10)",
+                                    padding: "8px 10px",
                                   }}
                                 >
-                                  {cleanText(value, "Recorded")}
+                                  <div style={{ ...sectionLabel(), fontSize: 11 }}>{label}</div>
+                                  <div
+                                    style={{
+                                      color: "#091B2E",
+                                      fontSize: 13,
+                                      fontWeight: 900,
+                                      marginTop: 3,
+                                      overflowWrap: "anywhere",
+                                    }}
+                                  >
+                                    {cleanText(value, "Recorded")}
+                                  </div>
                                 </div>
-                              </div>
-                            ))}
+                              ))}
+                            </div>
+                            <div style={{ ...helperText(), fontSize: 12.5, fontWeight: 820 }}>
+                              Use only the payment code as the bank reference.
+                            </div>
                           </div>
-                          <div style={{ ...helperText(), fontSize: 12.5, fontWeight: 820 }}>
-                            Put only the payment code in the bank reference. GSN
-                            uses this internal link to credit the right account
-                            after finance review.
-                          </div>
-                        </div>
+                        ) : null}
                         <div
                           style={{
                             marginTop: 10,

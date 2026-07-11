@@ -24,7 +24,7 @@ def _payload() -> dict:
     }
 
 
-def test_clan_admin_can_save_and_read_community_pay_in_account(
+def test_platform_admin_can_save_and_read_community_pay_in_account(
     client,
     seed_clan_admin_membership,
     override_current_user,
@@ -54,7 +54,7 @@ def test_normal_member_cannot_save_community_pay_in_account(
     assert res.status_code == 403
 
 
-def test_owner_member_can_save_community_pay_in_account(
+def test_owner_member_cannot_save_community_pay_in_account(
     client,
     seed_clan_member_membership,
     override_current_user_user,
@@ -71,8 +71,8 @@ def test_owner_member_can_save_community_pay_in_account(
         )
 
     res = client.put("/community-pay-in-accounts/1", json=_payload())
-    assert res.status_code == 200
-    assert res.json()["settlement"]["source"] == "community_pay_in_account"
+    assert res.status_code == 403
+    assert "Only a GSN platform admin can edit" in res.json()["detail"]
 
 
 def test_community_pay_in_account_rejects_malformed_text_fields(
