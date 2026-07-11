@@ -90,8 +90,8 @@ assertLineNotContains(
 
 assertContains(
   "frontend/src/pages/DashboardPage.tsx",
-  /source_product_category\?:[\s\S]*?function spotlightPriceLine\([\s\S]*?source_product_category:[\s\S]*?activeSpotlight\.source_product_title[\s\S]*?activeSpotlight\.source_product_description[\s\S]*?Price on request[\s\S]*?Availability shown by owner/,
-  "Dashboard active Spotlight billboard must visibly render structured product/service title, description, price, category, availability, owner, and community."
+  /source_product_category\?:[\s\S]*?function spotlightPriceLine\([\s\S]*?const spotlightProductName = safeStr\([\s\S]*?activeSpotlight\?\.source_product_title[\s\S]*?const spotlightProductPrice =[\s\S]*?Price on request[\s\S]*?const spotlightShopName = safeStr\([\s\S]*?const spotlightMarketplaceName = safeStr\([\s\S]*?\["Price", spotlightProductPrice\][\s\S]*?\["Marketplace", spotlightMarketplaceName\][\s\S]*?\["Shop", spotlightShopName\]/,
+  "Dashboard active Spotlight billboard must keep a concise visible product/service block with product name, price, marketplace, and shop."
 );
 
 assertContains(
