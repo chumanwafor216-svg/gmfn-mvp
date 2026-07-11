@@ -150,8 +150,8 @@ assertContains(
 
 assertContains(
   "src/pages/MemberActivationPage.tsx",
-  /identityPhone:[\s\S]*"cci"[\s\S]*task=phone&mode=complete[\s\S]*buildFirstCircle:\s*routeTarget\([\s\S]*"buildFirstCircle"[\s\S]*const nextRoute = needsPhoneVerification[\s\S]*routes\.identityPhone[\s\S]*routes\.buildFirstCircle[\s\S]*Membership activated\. Verify this phone next[\s\S]*navigate\(nextRoute, \{ replace: true \}\);/,
-  "Successful activation must answer visibly, route unverified joined members to phone verification, and then preserve First Circle as the next growth step once phone is verified."
+  /identityPhone:[\s\S]*"cci"[\s\S]*task=phone&mode=complete[\s\S]*identityRecovery:[\s\S]*"cci"[\s\S]*task=recovery&mode=complete[\s\S]*buildFirstCircle:\s*routeTarget\([\s\S]*"buildFirstCircle"[\s\S]*const nextRoute = needsPhoneVerification[\s\S]*routes\.identityPhone[\s\S]*routes\.identityRecovery[\s\S]*Membership activated\. Verify this phone next[\s\S]*Set private recovery next[\s\S]*navigate\(nextRoute, \{ replace: true \}\);/,
+  "Successful activation must answer visibly, route unverified joined members to phone verification, and route verified members to private recovery setup before First Circle growth."
 );
 
 assertContains(

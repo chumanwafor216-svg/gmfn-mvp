@@ -106,14 +106,14 @@ assertContains(
 
 assertContains(
   "src/pages/MemberActivationPage.tsx",
-  /debugId="member-activation\.about"[\s\S]*?debugId="member-activation\.guide"[\s\S]*?debugId="member-activation\.finish"[\s\S]*?member-activation\.verify-phone[\s\S]*?member-activation\.build-first-circle[\s\S]*?debugId="member-activation\.trust"/,
+  /debugId="member-activation\.about"[\s\S]*?debugId="member-activation\.guide"[\s\S]*?debugId="member-activation\.finish"[\s\S]*?member-activation\.verify-phone[\s\S]*?member-activation\.set-recovery[\s\S]*?member-activation\.build-first-circle[\s\S]*?debugId="member-activation\.trust"/,
   "Member Activation actions must remain traceable."
 );
 
 assertContains(
   "src/pages/MemberActivationPage.tsx",
-  /const nextRoute = needsPhoneVerification[\s\S]*?routes\.identityPhone[\s\S]*?routes\.buildFirstCircle[\s\S]*?Verify this phone next[\s\S]*?navigate\(nextRoute[\s\S]*?Verify phone[\s\S]*?Build first circle/,
-  "Member Activation success must route unverified joined members to phone verification before First Circle, while keeping First Circle as the primary next action once phone is verified."
+  /const nextRoute = needsPhoneVerification[\s\S]*?routes\.identityPhone[\s\S]*?routes\.identityRecovery[\s\S]*?Verify this phone next[\s\S]*?Set private recovery next[\s\S]*?navigate\(nextRoute[\s\S]*?Verify phone[\s\S]*?Set recovery[\s\S]*?Build first circle/,
+  "Member Activation success must route unverified joined members to phone verification, then route verified members to private recovery while keeping First Circle available after recovery setup."
 );
 
 assertContains(

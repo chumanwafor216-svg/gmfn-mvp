@@ -342,7 +342,7 @@ export default function JoinApprovalPage() {
     if (safeStr(data?.message)) return safeStr(data?.message);
 
     if (status === "approved") {
-      return "Your request has been approved. Continue to activation to finish entry into your personal pages.";
+      return "Your request has been approved. Continue to activation to set your password and recovery protection.";
     }
 
     if (status === "pending") {
@@ -806,7 +806,7 @@ export default function JoinApprovalPage() {
 
               <div style={{ marginTop: 10, ...helperText() }}>
                 {status === "approved"
-                  ? "Activation is the correct next step."
+                  ? "Activation is the correct next step. It protects the account before community use continues."
                   : status === "pending"
                   ? "You can return later to check this status again."
                   : status === "rejected"

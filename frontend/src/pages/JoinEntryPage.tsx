@@ -2746,7 +2746,7 @@ export default function JoinEntryPage() {
                     ? "You already belong to this community. Your current GSN identity stays the same."
                     : success?.existing_identity || success?.identity_reused
                     ? "Your request has been sent for community review using your existing GSN identity. Admission is not automatic, and no new GSN ID will be created."
-                    : "Your request has been sent for community review. Admission is not automatic. Once approval is reached, you will be able to proceed to activation with your GSN identity."}
+                    : "Your request has been sent for community review. Admission is not automatic. After approval, activation will set your password, phone check, and private recovery before community growth."}
                 </div>
 
                 <div style={{ marginTop: 12 }}>

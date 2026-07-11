@@ -646,17 +646,21 @@ export default function MemberActivationPage() {
         const separator = identityPath.includes("?") ? "&" : "?";
         return `${identityPath}${separator}task=phone&mode=complete`;
       })(),
+      identityRecovery: (() => {
+        const identityPath = routeTarget(
+          "cci",
+          selectedClanId,
+          "member-activation.route.identity-recovery"
+        );
+        const separator = identityPath.includes("?") ? "&" : "?";
+        return `${identityPath}${separator}task=recovery&mode=complete`;
+      })(),
       buildFirstCircle: routeTarget(
         "buildFirstCircle",
         selectedClanId,
         "member-activation.route.build-first-circle"
       ),
       trust: routeTarget("trust", selectedClanId, "member-activation.route.trust"),
-      notifications: routeTarget(
-        "notifications",
-        selectedClanId,
-        "member-activation.route.notifications"
-      ),
     }),
     [selectedClanId]
   );
@@ -855,10 +859,10 @@ export default function MemberActivationPage() {
           me?.phone_verified_at
       );
       const needsPhoneVerification = !phoneVerified;
-      const nextRoute = needsPhoneVerification ? routes.identityPhone : routes.buildFirstCircle;
+      const nextRoute = needsPhoneVerification ? routes.identityPhone : routes.identityRecovery;
       const nextMessage = needsPhoneVerification
         ? "Membership activated. Verify this phone next so TrustSlip can issue your code and QR."
-        : "Membership activated successfully. Build your First Circle next so your community growth starts with real trusted people.";
+        : "Membership activated. Set private recovery next so this GSN ID can be recovered safely before community growth begins.";
 
       setActivated(true);
       setPhoneVerificationRequired(needsPhoneVerification);
@@ -1252,7 +1256,7 @@ export default function MemberActivationPage() {
                   <ActivationIcon name="shield" size={isCompact ? 20 : 23} />
                 </span>
                 <span style={infoTextStyle("muted", isCompact)}>
-                  Your password protects your account.
+                  Your password starts protection. Private recovery is the next safe setup step.
                 </span>
                 <span style={ghostIconStyle(isCompact)}>
                   <ActivationIcon name="shield" size={34} />
@@ -1297,16 +1301,24 @@ export default function MemberActivationPage() {
         {activated ? (
           <CardActionRow style={postActivationRow(isCompact)} align="center">
             <StableCtaLink
-              to={phoneVerificationRequired ? routes.identityPhone : routes.buildFirstCircle}
+              to={phoneVerificationRequired ? routes.identityPhone : routes.identityRecovery}
               kind="primary"
               debugId={
                 phoneVerificationRequired
                   ? "member-activation.verify-phone"
-                  : "member-activation.build-first-circle"
+                  : "member-activation.set-recovery"
               }
               style={postActivationLink(true)}
             >
-              {phoneVerificationRequired ? "Verify phone" : "Build first circle"}
+              {phoneVerificationRequired ? "Verify phone" : "Set recovery"}
+            </StableCtaLink>
+            <StableCtaLink
+              to={routes.buildFirstCircle}
+              kind="secondary"
+              debugId="member-activation.build-first-circle"
+              style={postActivationLink(false)}
+            >
+              Build first circle
             </StableCtaLink>
             <StableCtaLink
               to={routes.trust}
@@ -1315,14 +1327,6 @@ export default function MemberActivationPage() {
               style={postActivationLink(false)}
             >
               Open Trust Passport
-            </StableCtaLink>
-            <StableCtaLink
-              to={routes.notifications}
-              kind="secondary"
-              debugId="member-activation.notifications"
-              style={postActivationLink(false)}
-            >
-              Open Action Inbox
             </StableCtaLink>
           </CardActionRow>
         ) : null}

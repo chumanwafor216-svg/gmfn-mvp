@@ -3066,6 +3066,47 @@ The honest next proof is outside the document.
 
 ---
 
+## 46.1 Pilot Entry Recovery Rule
+
+Add this to the pilot operating checklist before inviting real members through
+the join line.
+
+```text
+Approval -> activation -> phone check -> private recovery -> community growth
+```
+
+Rationale:
+
+- A member who reaches forgot-password without private recovery is already in a
+  support dead end.
+- Recovery setup should be surfaced while the person is entering or activating
+  a GSN identity, not after they are locked out.
+- The join request itself should stay light. Do not ask unapproved applicants to
+  create recovery prompts before the community has accepted them.
+- After approval, activation should explain that password, phone check, and
+  private recovery are part of safe account setup.
+- If private recovery is missing later, the forgot-password page must send the
+  member to owner / GSN support review instead of pretending automatic recovery
+  can continue.
+
+Devil's advocate:
+
+```text
+This protects future members, but it does not rescue existing accounts that
+already skipped recovery. Those accounts still need owner/support review.
+```
+
+Smallest product response:
+
+- keep the existing private recovery setup on Identity & Integrity;
+- route activated members with verified phones to the Recovery task before First
+  Circle growth;
+- keep phone verification first when the phone is not verified;
+- record recovery setup as a standard pilot procedure, not an optional hidden
+  profile chore.
+
+---
+
 ## 47. Source Notes For Internal Review
 
 - GSN Mission Protocol:

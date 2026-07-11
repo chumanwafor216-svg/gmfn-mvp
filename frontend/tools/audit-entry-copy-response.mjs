@@ -126,8 +126,8 @@ assertContains(
 
 assertContains(
   "src/pages/JoinEntryPage.tsx",
-  /noticeStyle\("error"\)[\s\S]*?noticeStyle\("success"\)[\s\S]*?Join request submitted successfully\.[\s\S]*?debugId=\{pendingCta\.debugId\}/,
-  "Join Entry must show visible submitted/error states and route the user to pending approval."
+  /noticeStyle\("error"\)[\s\S]*?noticeStyle\("success"\)[\s\S]*?Join request submitted successfully\.[\s\S]*?activation will set your password, phone check, and private recovery[\s\S]*?debugId=\{pendingCta\.debugId\}/,
+  "Join Entry must show visible submitted/error states, explain the post-approval recovery procedure, and route the user to pending approval."
 );
 
 assertContains(
@@ -162,8 +162,8 @@ assertContains(
 
 assertContains(
   "src/pages/JoinApprovalPage.tsx",
-  /Your request has been approved[\s\S]*?Continue to activation[\s\S]*?debugId=\{activationCta\.debugId\}[\s\S]*?Open activation[\s\S]*?debugId=\{pendingCta\.debugId\}/,
-  "Join Approval must explain approved and pending states and offer the correct next action."
+  /Your request has been approved[\s\S]*?Continue to activation to set your password and recovery protection[\s\S]*?debugId=\{activationCta\.debugId\}[\s\S]*?Open activation[\s\S]*?debugId=\{pendingCta\.debugId\}/,
+  "Join Approval must explain approved and pending states, name recovery protection, and offer the correct next action."
 );
 
 assertContains(
@@ -186,8 +186,8 @@ assertContains(
 
 assertContains(
   "src/pages/MemberActivationPage.tsx",
-  /Membership activated\. Verify this phone next[\s\S]*?Membership activated successfully\. Build your First Circle next[\s\S]*?debugId="member-activation\.notice-action"[\s\S]*?member-activation\.verify-phone[\s\S]*?member-activation\.build-first-circle/,
-  "Member Activation must answer success visibly, send unverified members to phone verification, and preserve First Circle as the next community-growth step after verification."
+  /Membership activated\. Verify this phone next[\s\S]*?Membership activated\. Set private recovery next[\s\S]*?debugId="member-activation\.notice-action"[\s\S]*?member-activation\.verify-phone[\s\S]*?member-activation\.set-recovery[\s\S]*?member-activation\.build-first-circle/,
+  "Member Activation must answer success visibly, send unverified members to phone verification, and send verified members to private recovery before First Circle growth."
 );
 
 assertContains(
