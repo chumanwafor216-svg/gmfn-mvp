@@ -400,6 +400,8 @@ def test_product_repost_requires_paid_credit_and_creates_target_marketplace_spot
     assert body["broadcast"]["source_product_description"] == "Bag of rice"
     assert body["broadcast"]["source_product_price"] == "25000"
     assert body["broadcast"]["source_product_currency"] == "NGN"
+    assert body["broadcast"]["source_product_category"] == "Shop item"
+    assert body["broadcast"]["source_product_image_url"].endswith("/rice.jpg")
     assert body["broadcast"]["spotlight_owner"] == "Seller Public Shop"
     assert body["broadcast"]["spotlight_contact_available"] is True
     expires_at = datetime.fromisoformat(body["broadcast"]["expires_at"])
@@ -416,6 +418,7 @@ def test_product_repost_requires_paid_credit_and_creates_target_marketplace_spot
     assert feed_body["items"][0]["source_product_block"] == 5
     assert feed_body["items"][0]["spotlight_title"] == "Fresh Rice"
     assert feed_body["items"][0]["spotlight_description"] == "Bag of rice"
+    assert feed_body["items"][0]["source_product_category"] == "Shop item"
 
     with engine.begin() as conn:
         entitlement = conn.execute(
@@ -1635,6 +1638,7 @@ def test_shop_spotlight_publish_targets_all_eligible_owner_communities(
     assert body["item"]["source_product_title"] == "Fresh spotlight"
     assert body["item"]["source_product_description"] == "Available today for delivery"
     assert body["item"]["source_product_price"] == "N90k"
+    assert body["item"]["source_product_category"] == "Spotlight update"
     assert body["item"]["source_product_availability"] == "Available today for delivery"
     assert body["item"]["spotlight_owner"] == "CHUMA INTERNATIONAL SHOP"
     assert body["item"]["spotlight_community"] == "Golden boys Marketplace"

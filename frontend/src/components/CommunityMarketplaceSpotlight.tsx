@@ -28,6 +28,12 @@ type MarketplaceFeedItem = {
   video_url?: string | null;
   source_shop_name?: string | null;
   source_clan_name?: string | null;
+  source_product_title?: string | null;
+  source_product_description?: string | null;
+  source_product_price?: string | number | null;
+  source_product_currency?: string | null;
+  source_product_category?: string | null;
+  source_product_availability?: string | null;
   source_clan_id?: number | string | null;
   source_marketplace_id?: number | string | null;
   clan_id?: number | string | null;
@@ -69,6 +75,18 @@ function formatWhen(value?: string | null): string {
 function positiveNumber(value: unknown): number {
   const n = Number(value || 0);
   return Number.isFinite(n) && n > 0 ? n : 0;
+}
+
+function cleanText(value: unknown): string {
+  return String(value ?? "").trim();
+}
+
+function firstMeaningful(...values: unknown[]): string {
+  for (const value of values) {
+    const text = cleanText(value);
+    if (text) return text;
+  }
+  return "";
 }
 
 function apiOrigin(): string {
@@ -330,6 +348,38 @@ export default function CommunityMarketplaceSpotlight() {
     }
 
     const gmfnId = String(activeItem.feed?.author_gmfn_id || "").trim();
+    const productTitle = firstMeaningful(
+      activeItem.feed?.source_product_title,
+      activeItem.feed?.source_shop_name,
+      "Community Spotlight"
+    );
+    const productDescription = firstMeaningful(
+      activeItem.feed?.source_product_description,
+      activeItem.feed?.message,
+      "No spotlight description was provided."
+    );
+    const priceLine = firstMeaningful(
+      [
+        activeItem.feed?.source_product_currency,
+        activeItem.feed?.source_product_price,
+      ]
+        .filter((item) => cleanText(item))
+        .join(" "),
+      activeItem.feed?.source_product_price
+    );
+    const availabilityLine = firstMeaningful(
+      activeItem.feed?.source_product_availability,
+      activeItem.feed?.expires_at ? "Active until listed expiry" : "Active"
+    );
+    const categoryLine = firstMeaningful(
+      activeItem.feed?.source_product_category,
+      "Spotlight item"
+    );
+    const ownerLine = firstMeaningful(
+      activeItem.feed?.source_shop_name,
+      activeItem.feed?.author_name,
+      "Community seller"
+    );
     const shopTo = spotlightShopPath(activeItem.feed);
     const sourceClanId = positiveNumber(
       activeItem.feed?.source_clan_id ||
@@ -350,16 +400,19 @@ export default function CommunityMarketplaceSpotlight() {
 
     return {
       kind: "broadcast" as const,
-      title: activeItem.feed?.source_shop_name || "Community Spotlight",
-      detail: activeItem.feed?.message || "No spotlight message.",
+      title: productTitle,
+      detail: productDescription,
       heroImageSrc: resolveSpotlightAssetUrl(activeItem.feed?.image_url || ""),
       heroVideoSrc: resolveSpotlightAssetUrl(activeItem.feed?.video_url || ""),
-      heroAlt: activeItem.feed?.source_shop_name || "Marketplace spotlight",
+      heroAlt: productTitle || "Marketplace spotlight",
       kindLabel: activeItem.feed?.video_url ? "Community Video Spotlight" : "Community Spotlight",
       showVisualPriority: false,
-      priceLine: "",
+      priceLine,
       metaLines: [
+        `Owner: ${ownerLine}`,
         `Community: ${activeItem.feed?.source_clan_name || "Current community"}`,
+        `Category: ${categoryLine}`,
+        `Availability: ${availabilityLine}`,
         `Trust: ${activeItem.feed?.trust_band || "Public visibility"}`,
         `Posted: ${formatWhen(activeItem.feed?.created_at)}`,
       ],
@@ -589,6 +642,27 @@ export default function CommunityMarketplaceSpotlight() {
                 <div style={{ marginTop: 8, color: "#64748B", lineHeight: 1.7 }}>
                   {activeItemView.detail}
                 </div>
+
+                {activeItemView.priceLine ? (
+                  <div
+                    style={{
+                      marginTop: 10,
+                      display: "inline-flex",
+                      width: "fit-content",
+                      maxWidth: "100%",
+                      minHeight: 30,
+                      alignItems: "center",
+                      borderRadius: 999,
+                      padding: "5px 10px",
+                      background: "#EEF6FF",
+                      color: "#0F3B74",
+                      fontSize: 13,
+                      fontWeight: 1000,
+                    }}
+                  >
+                    {activeItemView.priceLine}
+                  </div>
+                ) : null}
 
                 {activeItemView.metaLines.map((line, index) => (
                   <div

@@ -474,6 +474,12 @@ assertContains(
   "Community Marketplace Spotlight must bind dynamic live items to shared CTA primitives and shared CTA target resolution."
 );
 
+assertContains(
+  "src/components/CommunityMarketplaceSpotlight.tsx",
+  /source_product_title\?:[\s\S]*?source_product_description\?:[\s\S]*?source_product_price\?:[\s\S]*?source_product_currency\?:[\s\S]*?source_product_category\?:[\s\S]*?source_product_availability\?:[\s\S]*?const productTitle = firstMeaningful\([\s\S]*?activeItem\.feed\?\.source_product_title[\s\S]*?const productDescription = firstMeaningful\([\s\S]*?activeItem\.feed\?\.source_product_description[\s\S]*?const priceLine = firstMeaningful\([\s\S]*?source_product_currency[\s\S]*?source_product_price[\s\S]*?const availabilityLine = firstMeaningful\([\s\S]*?source_product_availability[\s\S]*?Category: \$\{categoryLine\}/,
+  "Community Marketplace Spotlight must render backend product title, description, price, category, and availability instead of falling back to shop name plus raw message only."
+);
+
 assertNotContains(
   "src/components/CommunityMarketplaceSpotlight.tsx",
   /(import OriginLink|function btn\(|function withClanQuery\(|<button|<a\s)/,

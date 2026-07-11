@@ -108,8 +108,8 @@ assertContains(
 
 assertContains(
   "gmfn_backend/tests/test_marketplace_public_shop.py",
-  /test_shop_spotlight_publish_targets_all_eligible_owner_communities[\s\S]*?assert body\["propagated_count"\] == 2[\s\S]*?assert body\["propagated_clan_ids"\] == \[1, 2\][\s\S]*?assert \[int\(row\[0\]\) for row in rows\] == \[1, 2\]/,
-  "Backend tests must lock one-shop Spotlight placement across all eligible owner communities."
+  /test_shop_spotlight_publish_targets_all_eligible_owner_communities[\s\S]*?assert body\["propagated_count"\] == 2[\s\S]*?assert body\["item"\]\["source_product_title"\] == "Fresh spotlight"[\s\S]*?assert body\["item"\]\["source_product_description"\] == "Available today for delivery"[\s\S]*?assert body\["item"\]\["source_product_category"\] == "Spotlight update"[\s\S]*?assert \[int\(row\[0\]\) for row in rows\] == \[1, 2\]/,
+  "Backend tests must lock one-shop Spotlight placement and visible product information across all eligible owner communities."
 );
 
 assertContains(

@@ -379,8 +379,8 @@ assertContains(
 );
 
 assertContains(
-  /className="public-shop-section public-shop-spotlight"[\s\S]*?miniSpotlightView\.priceLabel[\s\S]*?miniSpotlightView\.availabilityLabel[\s\S]*?debugId="shop-gallery\.spotlight\.view-details"[\s\S]*?isCompact \? "View" : "View details"/,
-  "Public Shop Spotlight must show product price/availability facts and expose a compact View Details path for the active Spotlight item."
+  /className="public-shop-section public-shop-spotlight"[\s\S]*?miniSpotlightView\.priceLabel[\s\S]*?miniSpotlightView\.availabilityLabel[\s\S]*?debugId="shop-gallery\.spotlight\.view-details"[\s\S]*?>\s*View details\s*<\/StableCtaLink>/,
+  "Public Shop Spotlight must show product price/availability facts and expose a full View Details path for the active Spotlight item."
 );
 
 assertNotContains(
@@ -404,13 +404,13 @@ assertContains(
 );
 
 assertContains(
-  /className="public-shop-section public-shop-spotlight"[\s\S]*?height: isCompact \? 172 : undefined[\s\S]*?minHeight: isCompact \? 172 : undefined[\s\S]*?gridTemplateColumns: isCompact[\s\S]*?"minmax\(0, 7fr\) minmax\(0, 3fr\)"[\s\S]*?gridColumn: isCompact \? "2" : "1"[\s\S]*?WebkitLineClamp: isCompact \? 3 : 3[\s\S]*?stableHeight=\{isCompact \? 27 : 52\}[\s\S]*?gridColumn: isCompact \? "1" : "2"[\s\S]*?minHeight: isCompact \? 162 : 178/,
-  "Public Shop Spotlight phone layout must keep a short card, media in the dominant 70% left rail, and compact information/actions in the 30% right rail, without covering the media."
+  /className="public-shop-section public-shop-spotlight"[\s\S]*?height: isCompact \? "auto" : undefined[\s\S]*?minHeight: isCompact \? 360 : undefined[\s\S]*?gridTemplateColumns: isCompact[\s\S]*?"1fr"[\s\S]*?gridRow: isCompact \? "2" : "1"[\s\S]*?miniSpotlightView\.categoryLabel[\s\S]*?WebkitLineClamp: isCompact \? 3 : 3[\s\S]*?gridTemplateColumns: isCompact \? "repeat\(2, minmax\(0, 1fr\)\)"[\s\S]*?stableHeight=\{isCompact \? 44 : 52\}[\s\S]*?View details[\s\S]*?gridRow: "1"/,
+  "Public Shop Spotlight phone layout must reserve visible room for product title, description, category, owner/community, price/availability, contact, and View details instead of compressing everything into a tiny side rail."
 );
 
 assertContains(
-  /className="public-shop-section public-shop-spotlight"[\s\S]*?isCompact[\s\S]*?"linear-gradient\(135deg, #061827 0%, #082A4C 100%\)"[\s\S]*?gridTemplateColumns: isCompact[\s\S]*?"minmax\(0, 7fr\) minmax\(0, 3fr\)"/,
-  "Public Shop Spotlight compact card must stay split instead of returning to a full-media text-overlay card."
+  /className="public-shop-section public-shop-spotlight"[\s\S]*?isCompact[\s\S]*?"linear-gradient\(135deg, #061827 0%, #082A4C 100%\)"[\s\S]*?gridTemplateColumns: isCompact[\s\S]*?"1fr"/,
+  "Public Shop Spotlight compact card must keep a stacked product-information layout on phone."
 );
 
 assertContains(

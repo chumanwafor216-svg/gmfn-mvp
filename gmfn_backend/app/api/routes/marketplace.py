@@ -1456,6 +1456,9 @@ def _broadcast_out(db: Session, item: MarketplaceBroadcast) -> Dict[str, Any]:
         if repost_product is not None
         else _stored_media_url(getattr(item, "video_url", None))
     )
+    source_product_category = (
+        "Shop item" if repost_product is not None else "Spotlight update"
+    )
     source_product_availability = _spotlight_availability_label(
         getattr(item, "expires_at", None)
     )
@@ -1495,7 +1498,7 @@ def _broadcast_out(db: Session, item: MarketplaceBroadcast) -> Dict[str, Any]:
         "source_product_description": source_product_description or None,
         "source_product_price": source_product_price or None,
         "source_product_currency": source_product_currency or None,
-        "source_product_category": None,
+        "source_product_category": source_product_category,
         "source_product_availability": source_product_availability,
         "source_product_image_url": source_product_image_url or None,
         "source_product_video_url": source_product_video_url or None,

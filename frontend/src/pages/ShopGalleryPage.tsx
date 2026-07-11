@@ -105,6 +105,8 @@ type ShopBroadcast = {
   sourceProductCurrency: string;
   sourceProductCategory: string;
   sourceProductAvailability: string;
+  sourceProductImageUrl: string;
+  sourceProductVideoUrl: string;
   sourceShopName: string;
   sourceShopWhatsApp: string;
   sourceClanName: string;
@@ -894,8 +896,18 @@ function normalizeBroadcast(raw: any): ShopBroadcast | null {
 
   return {
     id: positiveNumber(src?.id) || undefined,
-    imageUrl: resolveImageSrc(src?.image_url || src?.imageUrl),
-    videoUrl: resolveImageSrc(src?.video_url || src?.videoUrl),
+    imageUrl: resolveImageSrc(
+      src?.source_product_image_url ||
+        src?.sourceProductImageUrl ||
+        src?.image_url ||
+        src?.imageUrl
+    ),
+    videoUrl: resolveImageSrc(
+      src?.source_product_video_url ||
+        src?.sourceProductVideoUrl ||
+        src?.video_url ||
+        src?.videoUrl
+    ),
     message: firstMeaningful(src?.message, src?.content, src?.text),
     spotlightTitle: firstMeaningful(src?.spotlight_title, src?.spotlightTitle),
     spotlightDescription: firstMeaningful(
@@ -932,6 +944,12 @@ function normalizeBroadcast(raw: any): ShopBroadcast | null {
     sourceProductAvailability: firstMeaningful(
       src?.source_product_availability,
       src?.sourceProductAvailability
+    ),
+    sourceProductImageUrl: resolveImageSrc(
+      src?.source_product_image_url || src?.sourceProductImageUrl
+    ),
+    sourceProductVideoUrl: resolveImageSrc(
+      src?.source_product_video_url || src?.sourceProductVideoUrl
     ),
     sourceShopName: firstMeaningful(src?.source_shop_name, src?.sourceShopName),
     sourceShopWhatsApp: firstMeaningful(
@@ -2326,6 +2344,7 @@ export default function ShopGalleryPage() {
         title: "Discover what's new",
         detail: "No live community spotlight is attached to this shop context yet.",
         tagLabel: "",
+        categoryLabel: "",
         priceLabel: "",
         availabilityLabel: "",
         ownerLabel: "",
@@ -2385,6 +2404,11 @@ export default function ShopGalleryPage() {
         "Live community promo from the current spotlight source."
       ),
       tagLabel: messageParts.tagLabel,
+      categoryLabel: firstMeaningful(
+        miniSpotlight?.sourceProductCategory,
+        messageParts.tagLabel,
+        "Spotlight item"
+      ),
       priceLabel: firstMeaningful(
         [miniSpotlight?.sourceProductCurrency, miniSpotlight?.sourceProductPrice]
           .filter(Boolean)
@@ -2406,8 +2430,14 @@ export default function ShopGalleryPage() {
       sourceShopWhatsApp: firstMeaningful(miniSpotlight?.sourceShopWhatsApp),
       createdAt: firstMeaningful(miniSpotlight?.createdAt),
       createdLabel: miniSpotlight?.createdAt ? formatWhen(miniSpotlight.createdAt) : "",
-      imageUrl: firstMeaningful(miniSpotlight?.imageUrl),
-      videoUrl: firstMeaningful(miniSpotlight?.videoUrl),
+      imageUrl: firstMeaningful(
+        miniSpotlight?.sourceProductImageUrl,
+        miniSpotlight?.imageUrl
+      ),
+      videoUrl: firstMeaningful(
+        miniSpotlight?.sourceProductVideoUrl,
+        miniSpotlight?.videoUrl
+      ),
       shopTo,
       communityTo,
       isCurrentShop,
@@ -4605,9 +4635,9 @@ export default function ShopGalleryPage() {
               position: "relative",
               overflow: "hidden",
               borderRadius: isCompact ? 18 : 26,
-              padding: isCompact ? 0 : 22,
-              height: isCompact ? 172 : undefined,
-              minHeight: isCompact ? 172 : undefined,
+              padding: isCompact ? 8 : 22,
+              height: isCompact ? "auto" : undefined,
+              minHeight: isCompact ? 360 : undefined,
               border: "1px solid rgba(255,255,255,0.92)",
               background:
                 isCompact
@@ -4622,27 +4652,27 @@ export default function ShopGalleryPage() {
                 position: "relative",
                 display: "grid",
                 gridTemplateColumns: isCompact
-                  ? "minmax(0, 7fr) minmax(0, 3fr)"
+                  ? "1fr"
                   : "minmax(0, 1fr) 310px",
-                gap: isCompact ? 6 : 18,
+                gap: isCompact ? 8 : 18,
                 alignItems: "stretch",
-                height: isCompact ? "100%" : undefined,
-                minHeight: isCompact ? 172 : undefined,
-                padding: isCompact ? 5 : 0,
+                height: undefined,
+                minHeight: isCompact ? 344 : undefined,
+                padding: 0,
               }}
             >
               <div
                 style={{
                   position: "relative",
                   zIndex: 2,
-                  gridColumn: isCompact ? "2" : "1",
-                  gridRow: "1",
+                  gridColumn: isCompact ? "1" : "1",
+                  gridRow: isCompact ? "2" : "1",
                   minWidth: 0,
                   overflow: "hidden",
                   display: "grid",
-                  alignContent: isCompact ? "center" : "center",
-                  gap: isCompact ? 3 : 0,
-                  padding: isCompact ? "4px 4px 4px 0" : 0,
+                  alignContent: "start",
+                  gap: isCompact ? 6 : 0,
+                  padding: isCompact ? "8px 6px 6px" : 0,
                   maxWidth: isCompact ? "none" : undefined,
                 }}
               >
@@ -4653,35 +4683,37 @@ export default function ShopGalleryPage() {
                     display: "inline-flex",
                     alignItems: "center",
                     gap: isCompact ? 4 : 6,
-                    minHeight: isCompact ? 18 : 32,
-                    padding: isCompact ? "2px 5px" : "6px 11px",
+                    minHeight: isCompact ? 22 : 32,
+                    padding: isCompact ? "3px 7px" : "6px 11px",
                     borderRadius: isCompact ? 8 : 9,
                     background: isCompact
                       ? "rgba(237,245,233,0.94)"
                       : "#EDF5E9",
                     color: "#276E4A",
-                    fontSize: isCompact ? 7.4 : 12,
+                    fontSize: isCompact ? 9.5 : 12,
                     fontWeight: 950,
                     textTransform: "uppercase",
                     letterSpacing: 0,
                   }}
                 >
-                  {inlineShopIcon("spark", "#276E4A", isCompact ? 8 : 13)}
-                  Spotlight
+                  {inlineShopIcon("spark", "#276E4A", isCompact ? 10 : 13)}
+                  {publicShopSpotlightActive
+                    ? miniSpotlightView.categoryLabel
+                    : "Spotlight"}
                 </div>
                 <div
                   style={{
-                    marginTop: isCompact ? 0 : 10,
+                    marginTop: isCompact ? 2 : 10,
                     color: isCompact ? "#FFFFFF" : "#07172C",
-                    fontSize: isCompact ? 10.8 : 34,
+                    fontSize: isCompact ? 24 : 34,
                     fontWeight: 950,
-                    lineHeight: isCompact ? 1.04 : 1.04,
+                    lineHeight: isCompact ? 1.06 : 1.04,
                     textTransform: "uppercase",
                     minWidth: 0,
                     overflow: "hidden",
                     textOverflow: "clip",
                     display: "-webkit-box",
-                    WebkitLineClamp: isCompact ? 3 : 3,
+                    WebkitLineClamp: isCompact ? 2 : 3,
                     WebkitBoxOrient: "vertical" as any,
                     overflowWrap: "normal",
                     wordBreak: "normal",
@@ -4693,15 +4725,15 @@ export default function ShopGalleryPage() {
                 </div>
                 <div
                   style={{
-                    marginTop: isCompact ? 0 : 10,
+                    marginTop: isCompact ? 2 : 10,
                     color: isCompact ? "rgba(255,255,255,0.86)" : "#425E78",
-                    fontSize: isCompact ? 7.9 : 15,
-                    lineHeight: isCompact ? 1.16 : 1.35,
+                    fontSize: isCompact ? 13.5 : 15,
+                    lineHeight: isCompact ? 1.38 : 1.35,
                     fontWeight: isCompact ? 820 : 720,
                     overflow: "hidden",
                     textOverflow: "ellipsis",
                     display: "-webkit-box",
-                    WebkitLineClamp: isCompact ? 1 : 3,
+                    WebkitLineClamp: isCompact ? 3 : 3,
                     WebkitBoxOrient: "vertical" as any,
                   }}
                 >
@@ -4712,9 +4744,9 @@ export default function ShopGalleryPage() {
                 {miniSpotlightView.tagLabel ? (
                   <div
                     style={{
-                      marginTop: isCompact ? 2 : 10,
+                      marginTop: isCompact ? 0 : 10,
                       color: isCompact ? "#DDEBFF" : "#0B63D1",
-                      fontSize: isCompact ? 7.5 : 12,
+                      fontSize: isCompact ? 11 : 12,
                       fontWeight: 900,
                       lineHeight: 1.25,
                       display: "-webkit-box",
@@ -4731,10 +4763,10 @@ export default function ShopGalleryPage() {
                     style={{
                       marginTop: isCompact ? 2 : 10,
                       display: "grid",
-                      gridTemplateColumns: "1fr",
-                      gap: isCompact ? 2 : 4,
+                      gridTemplateColumns: isCompact ? "1fr 1fr" : "1fr",
+                      gap: isCompact ? 6 : 4,
                       color: isCompact ? "rgba(255,255,255,0.82)" : "#425E78",
-                      fontSize: isCompact ? 7.4 : 12,
+                      fontSize: isCompact ? 11.5 : 12,
                       fontWeight: 850,
                       lineHeight: 1.18,
                       overflow: "hidden",
@@ -4744,7 +4776,7 @@ export default function ShopGalleryPage() {
                       style={{
                         overflow: "hidden",
                         textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
+                        whiteSpace: isCompact ? "normal" : "nowrap",
                       }}
                     >
                       {firstMeaningful(miniSpotlightView.ownerLabel, "Owner")} |{" "}
@@ -4754,7 +4786,7 @@ export default function ShopGalleryPage() {
                       style={{
                         overflow: "hidden",
                         textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
+                        whiteSpace: isCompact ? "normal" : "nowrap",
                       }}
                     >
                       {firstMeaningful(miniSpotlightView.priceLabel, "Price on request")} |{" "}
@@ -4765,10 +4797,10 @@ export default function ShopGalleryPage() {
                 <div
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "1fr",
-                    gap: isCompact ? 4 : 10,
+                    gridTemplateColumns: isCompact ? "repeat(2, minmax(0, 1fr))" : "1fr",
+                    gap: isCompact ? 8 : 10,
                     alignItems: "center",
-                    marginTop: isCompact ? 3 : 16,
+                    marginTop: isCompact ? 8 : 16,
                     maxWidth: isCompact ? "100%" : "100%",
                   }}
                 >
@@ -4784,16 +4816,16 @@ export default function ShopGalleryPage() {
                         onClick={contactSpotlightOwnerByWhatsApp}
                         minWidth={0}
                         fullWidth
-                        stableHeight={isCompact ? 27 : 52}
+                        stableHeight={isCompact ? 44 : 52}
                         debugId="shop-gallery.spotlight.whatsapp-chat"
                         style={{
                           ...primaryBtn(false),
                           borderRadius: 999,
-                          minHeight: isCompact ? 27 : 52,
+                          minHeight: isCompact ? 44 : 52,
                           width: "100%",
                           maxWidth: "100%",
-                          padding: isCompact ? "3px 3px" : "10px 12px",
-                          fontSize: isCompact ? 8.1 : 14,
+                          padding: isCompact ? "8px 8px" : "10px 12px",
+                          fontSize: isCompact ? 13 : 14,
                           whiteSpace: "nowrap",
                           background:
                             "linear-gradient(180deg, #25D366 0%, #128C4A 100%)",
@@ -4801,7 +4833,7 @@ export default function ShopGalleryPage() {
                         }}
                       >
                         <span style={{ display: "inline-flex", alignItems: "center", gap: isCompact ? 3 : 7 }}>
-                          {inlineShopIcon("phone", "#FFFFFF", isCompact ? 8 : 15)}
+                          {inlineShopIcon("phone", "#FFFFFF", isCompact ? 13 : 15)}
                           <span>Chat</span>
                         </span>
                       </PrimaryButton>
@@ -4809,16 +4841,16 @@ export default function ShopGalleryPage() {
                         onClick={callSpotlightOwnerPhone}
                         minWidth={0}
                         fullWidth
-                        stableHeight={isCompact ? 27 : 52}
+                        stableHeight={isCompact ? 44 : 52}
                         debugId="shop-gallery.spotlight.phone-call"
                         style={{
                           ...secondaryBtn(false),
                           borderRadius: 999,
-                          minHeight: isCompact ? 27 : 52,
+                          minHeight: isCompact ? 44 : 52,
                           width: "100%",
                           maxWidth: "100%",
-                          padding: isCompact ? "3px 3px" : "10px 12px",
-                          fontSize: isCompact ? 8.1 : 14,
+                          padding: isCompact ? "8px 8px" : "10px 12px",
+                          fontSize: isCompact ? 13 : 14,
                           whiteSpace: "nowrap",
                           background:
                             "linear-gradient(180deg, #FFFFFF 0%, #F7FAFF 100%)",
@@ -4827,7 +4859,7 @@ export default function ShopGalleryPage() {
                         }}
                       >
                         <span style={{ display: "inline-flex", alignItems: "center", gap: isCompact ? 3 : 7 }}>
-                          {inlineShopIcon("phone", "#0F6B4D", isCompact ? 8 : 15)}
+                          {inlineShopIcon("phone", "#0F6B4D", isCompact ? 13 : 15)}
                           <span>Call</span>
                         </span>
                       </SecondaryButton>
@@ -4837,16 +4869,16 @@ export default function ShopGalleryPage() {
                       onClick={() => setSpotlightContactPanelOpen((open) => !open)}
                       minWidth={0}
                       fullWidth={isCompact}
-                      stableHeight={isCompact ? 30 : 52}
+                      stableHeight={isCompact ? 44 : 52}
                       debugId="shop-gallery.spotlight.contact.choose"
                       style={{
                         ...primaryBtn(!publicShopSpotlightActive),
                         borderRadius: 999,
-                        minHeight: isCompact ? 30 : 52,
+                        minHeight: isCompact ? 44 : 52,
                         width: isCompact ? "100%" : "fit-content",
                         maxWidth: "100%",
-                        padding: isCompact ? "3px 4px" : "10px 16px",
-                        fontSize: isCompact ? 8.4 : 14,
+                        padding: isCompact ? "8px 10px" : "10px 16px",
+                        fontSize: isCompact ? 13 : 14,
                         whiteSpace: "nowrap",
                         background:
                           "linear-gradient(180deg, #25D366 0%, #128C4A 100%)",
@@ -4857,7 +4889,7 @@ export default function ShopGalleryPage() {
                       }}
                     >
                       <span style={{ display: "inline-flex", alignItems: "center", gap: isCompact ? 4 : 8 }}>
-                        {inlineShopIcon("phone", "#FFFFFF", isCompact ? 9 : 15)}
+                        {inlineShopIcon("phone", "#FFFFFF", isCompact ? 13 : 15)}
                         WhatsApp
                       </span>
                     </PrimaryButton>
@@ -4867,16 +4899,16 @@ export default function ShopGalleryPage() {
                       to={miniSpotlightView.shopTo}
                       minWidth={0}
                       fullWidth={isCompact}
-                      stableHeight={isCompact ? 27 : 48}
+                      stableHeight={isCompact ? 44 : 48}
                       debugId="shop-gallery.spotlight.view-details"
                       style={{
                         ...secondaryBtn(false),
                         borderRadius: 999,
-                        minHeight: isCompact ? 27 : 48,
+                        minHeight: isCompact ? 44 : 48,
                         width: "100%",
                         maxWidth: "100%",
-                        padding: isCompact ? "3px 4px" : "9px 14px",
-                        fontSize: isCompact ? 8.2 : 13,
+                        padding: isCompact ? "8px 10px" : "9px 14px",
+                        fontSize: isCompact ? 13 : 13,
                         whiteSpace: "nowrap",
                         background:
                           "linear-gradient(180deg, #FFFFFF 0%, #F7FAFF 100%)",
@@ -4884,15 +4916,15 @@ export default function ShopGalleryPage() {
                         color: "#0F3B74",
                       }}
                     >
-                      {isCompact ? "View" : "View details"}
+                      View details
                     </StableCtaLink>
                   ) : null}
                 </div>
               </div>
               <div
                 style={{
-                  minHeight: isCompact ? 162 : 178,
-                  height: isCompact ? "100%" : "auto",
+                  minHeight: isCompact ? 158 : 178,
+                  height: isCompact ? 158 : "auto",
                   borderRadius: isCompact ? 18 : 20,
                   overflow: "hidden",
                   position: "relative",
