@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { EntryGuideLauncher } from "../components/EntryControls";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
-import { CardActionRow, PrimaryButton, SecondaryButton } from "../components/StableButton";
+import { CardActionRow, PrimaryButton, SecondaryButton, SubtleButton } from "../components/StableButton";
 import {
   activateMembership,
   setAccessToken,
@@ -120,6 +120,72 @@ function inputStyle(): React.CSSProperties {
     touchAction: "manipulation",
     WebkitTapHighlightColor: "transparent",
   };
+}
+
+function passwordFieldShellStyle(): React.CSSProperties {
+  return {
+    display: "grid",
+    gridTemplateColumns: "minmax(0, 1fr) 46px",
+    alignItems: "center",
+    gap: 6,
+    marginTop: 8,
+  };
+}
+
+function passwordRevealButtonStyle(): React.CSSProperties {
+  return {
+    width: 42,
+    minWidth: 42,
+    height: 42,
+    minHeight: 42,
+    maxHeight: 42,
+    display: "inline-grid",
+    placeItems: "center",
+    borderRadius: 999,
+    border: "1px solid rgba(28,76,126,0.14)",
+    background:
+      "linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(235,242,250,0.96) 100%)",
+    color: "#10253B",
+    cursor: "pointer",
+    padding: 0,
+    boxSizing: "border-box",
+    boxShadow:
+      "0 6px 14px rgba(10,24,49,0.07), inset 0 1px 0 rgba(255,255,255,0.78)",
+    touchAction: "manipulation",
+    WebkitTapHighlightColor: "transparent",
+  };
+}
+
+function PasswordEyeGlyph({ hidden }: { hidden: boolean }): React.ReactElement {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <circle
+        cx="12"
+        cy="12"
+        r="2.6"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      {hidden ? (
+        <path
+          d="M4 20 20 4"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+        />
+      ) : null}
+    </svg>
+  );
 }
 
 function badgeStyle(): React.CSSProperties {
@@ -252,6 +318,8 @@ export default function ActivateMembershipPage() {
   const [gmfnId, setGmfnId] = useState(initialGmfnId);
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
+  const [passwordVisible, setPasswordVisible] = useState(false);
+  const [confirmVisible, setConfirmVisible] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
@@ -343,6 +411,8 @@ export default function ActivateMembershipPage() {
   function clearForm() {
     setPassword("");
     setConfirm("");
+    setPasswordVisible(false);
+    setConfirmVisible(false);
     setErr(null);
     setMsg(null);
   }
@@ -436,24 +506,58 @@ export default function ActivateMembershipPage() {
 
                     <div>
                       <div style={labelText()}>Password</div>
-                      <input
-                        placeholder="Password"
-                        type="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        style={{ ...inputStyle(), marginTop: 8 }}
-                      />
+                      <div style={passwordFieldShellStyle()}>
+                        <input
+                          placeholder="Password"
+                          type={passwordVisible ? "text" : "password"}
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          aria-label="Password"
+                          autoComplete="new-password"
+                          style={inputStyle()}
+                        />
+                        <SubtleButton
+                          type="button"
+                          onClick={() => setPasswordVisible((current) => !current)}
+                          aria-label={passwordVisible ? "Hide password" : "Show password"}
+                          title={passwordVisible ? "Hide password" : "Show password"}
+                          debugId="activate-membership.password.visibility-toggle"
+                          stableHeight={42}
+                          minWidth={42}
+                          style={passwordRevealButtonStyle()}
+                        >
+                          <PasswordEyeGlyph hidden={!passwordVisible} />
+                        </SubtleButton>
+                      </div>
                     </div>
 
                     <div>
                       <div style={labelText()}>Confirm password</div>
-                      <input
-                        placeholder="Confirm password"
-                        type="password"
-                        value={confirm}
-                        onChange={(e) => setConfirm(e.target.value)}
-                        style={{ ...inputStyle(), marginTop: 8 }}
-                      />
+                      <div style={passwordFieldShellStyle()}>
+                        <input
+                          placeholder="Confirm password"
+                          type={confirmVisible ? "text" : "password"}
+                          value={confirm}
+                          onChange={(e) => setConfirm(e.target.value)}
+                          aria-label="Confirm password"
+                          autoComplete="new-password"
+                          style={inputStyle()}
+                        />
+                        <SubtleButton
+                          type="button"
+                          onClick={() => setConfirmVisible((current) => !current)}
+                          aria-label={
+                            confirmVisible ? "Hide confirm password" : "Show confirm password"
+                          }
+                          title={confirmVisible ? "Hide confirm password" : "Show confirm password"}
+                          debugId="activate-membership.confirm-password.visibility-toggle"
+                          stableHeight={42}
+                          minWidth={42}
+                          style={passwordRevealButtonStyle()}
+                        >
+                          <PasswordEyeGlyph hidden={!confirmVisible} />
+                        </SubtleButton>
+                      </div>
                     </div>
                   </div>
 

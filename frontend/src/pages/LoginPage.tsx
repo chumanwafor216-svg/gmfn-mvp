@@ -181,6 +181,75 @@ function inputIconBadge(): React.CSSProperties {
   };
 }
 
+function passwordRevealButtonStyle(dark = false): React.CSSProperties {
+  return {
+    width: 42,
+    minWidth: 42,
+    height: 42,
+    minHeight: 42,
+    maxHeight: 42,
+    display: "inline-grid",
+    placeItems: "center",
+    borderRadius: 999,
+    border: dark
+      ? "1px solid rgba(243,208,106,0.24)"
+      : "1px solid rgba(28,76,126,0.14)",
+    background: dark
+      ? "rgba(255,255,255,0.06)"
+      : "linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(235,242,250,0.96) 100%)",
+    color: dark ? "#F3D06A" : "#10253B",
+    cursor: "pointer",
+    padding: 0,
+    boxSizing: "border-box",
+    boxShadow: dark
+      ? "inset 0 1px 0 rgba(255,255,255,0.08)"
+      : "0 6px 14px rgba(10,24,49,0.07), inset 0 1px 0 rgba(255,255,255,0.78)",
+    touchAction: "manipulation",
+    WebkitTapHighlightColor: "transparent",
+  };
+}
+
+function passwordFieldShellStyle(): React.CSSProperties {
+  return {
+    display: "grid",
+    gridTemplateColumns: "minmax(0, 1fr) 46px",
+    alignItems: "center",
+    gap: 6,
+  };
+}
+
+function PasswordEyeGlyph({ hidden }: { hidden: boolean }): React.ReactElement {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <circle
+        cx="12"
+        cy="12"
+        r="2.6"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      {hidden ? (
+        <path
+          d="M4 20 20 4"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+        />
+      ) : null}
+    </svg>
+  );
+}
+
 function loginIconText(
   name: GsnIconName,
   label: React.ReactNode,
@@ -439,6 +508,7 @@ export default function LoginPage() {
 
   const [email, setEmail] = useState(founderEmail || inviteGsnId || "");
   const [password, setPassword] = useState("");
+  const [passwordVisible, setPasswordVisible] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
@@ -452,6 +522,8 @@ export default function LoginPage() {
   const [recoveryAnswers, setRecoveryAnswers] = useState(["", "", ""]);
   const [recoveryNewPassword, setRecoveryNewPassword] = useState("");
   const [recoveryConfirmPassword, setRecoveryConfirmPassword] = useState("");
+  const [recoveryNewPasswordVisible, setRecoveryNewPasswordVisible] = useState(false);
+  const [recoveryConfirmPasswordVisible, setRecoveryConfirmPasswordVisible] = useState(false);
   const [recoveryBusy, setRecoveryBusy] = useState(false);
   const [recoveryMessage, setRecoveryMessage] = useState<string | null>(null);
   const [recoveryError, setRecoveryError] = useState<string | null>(null);
@@ -696,6 +768,8 @@ export default function LoginPage() {
       }
 
       setRecoveryMessage("Password reset. Opening your workspace...");
+      setRecoveryNewPasswordVisible(false);
+      setRecoveryConfirmPasswordVisible(false);
       setTimeout(() => {
         nav(publishRecoveryTarget() || redirectTarget, { replace: true });
       }, 500);
@@ -1152,7 +1226,7 @@ export default function LoginPage() {
                 <div
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "42px minmax(0, 1fr)",
+                    gridTemplateColumns: "42px minmax(0, 1fr) 48px",
                     alignItems: "center",
                     borderRadius: 18,
                     border: "1px solid rgba(220,231,243,0.32)",
@@ -1209,7 +1283,7 @@ export default function LoginPage() {
                     {loginIconOnly("lock", 24)}
                   </span>
                   <input
-                    type="password"
+                    type={passwordVisible ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     aria-label="Password"
@@ -1224,6 +1298,18 @@ export default function LoginPage() {
                       minHeight: 52,
                     }}
                   />
+                  <SubtleButton
+                    type="button"
+                    onClick={() => setPasswordVisible((current) => !current)}
+                    aria-label={passwordVisible ? "Hide password" : "Show password"}
+                    title={passwordVisible ? "Hide password" : "Show password"}
+                    debugId="login.password.visibility-toggle"
+                    stableHeight={42}
+                    minWidth={42}
+                    style={passwordRevealButtonStyle(true)}
+                  >
+                    <PasswordEyeGlyph hidden={!passwordVisible} />
+                  </SubtleButton>
                 </div>
               </div>
             </div>
@@ -1386,24 +1472,72 @@ export default function LoginPage() {
                         style={inputStyle()}
                       />
                     ))}
-                    <input
-                      type="password"
-                      value={recoveryNewPassword}
-                      onChange={(event) => setRecoveryNewPassword(event.target.value)}
-                      aria-label="New password"
-                      placeholder="New password"
-                      autoComplete="new-password"
-                      style={inputStyle()}
-                    />
-                    <input
-                      type="password"
-                      value={recoveryConfirmPassword}
-                      onChange={(event) => setRecoveryConfirmPassword(event.target.value)}
-                      aria-label="Confirm new password"
-                      placeholder="Confirm new password"
-                      autoComplete="new-password"
-                      style={inputStyle()}
-                    />
+                    <div style={passwordFieldShellStyle()}>
+                      <input
+                        type={recoveryNewPasswordVisible ? "text" : "password"}
+                        value={recoveryNewPassword}
+                        onChange={(event) => setRecoveryNewPassword(event.target.value)}
+                        aria-label="New password"
+                        placeholder="New password"
+                        autoComplete="new-password"
+                        style={inputStyle()}
+                      />
+                      <SubtleButton
+                        type="button"
+                        onClick={() =>
+                          setRecoveryNewPasswordVisible((current) => !current)
+                        }
+                        aria-label={
+                          recoveryNewPasswordVisible
+                            ? "Hide new password"
+                            : "Show new password"
+                        }
+                        title={
+                          recoveryNewPasswordVisible
+                            ? "Hide new password"
+                            : "Show new password"
+                        }
+                        debugId="login.password-recovery.new-password-toggle"
+                        stableHeight={42}
+                        minWidth={42}
+                        style={passwordRevealButtonStyle(false)}
+                      >
+                        <PasswordEyeGlyph hidden={!recoveryNewPasswordVisible} />
+                      </SubtleButton>
+                    </div>
+                    <div style={passwordFieldShellStyle()}>
+                      <input
+                        type={recoveryConfirmPasswordVisible ? "text" : "password"}
+                        value={recoveryConfirmPassword}
+                        onChange={(event) => setRecoveryConfirmPassword(event.target.value)}
+                        aria-label="Confirm new password"
+                        placeholder="Confirm new password"
+                        autoComplete="new-password"
+                        style={inputStyle()}
+                      />
+                      <SubtleButton
+                        type="button"
+                        onClick={() =>
+                          setRecoveryConfirmPasswordVisible((current) => !current)
+                        }
+                        aria-label={
+                          recoveryConfirmPasswordVisible
+                            ? "Hide confirm new password"
+                            : "Show confirm new password"
+                        }
+                        title={
+                          recoveryConfirmPasswordVisible
+                            ? "Hide confirm new password"
+                            : "Show confirm new password"
+                        }
+                        debugId="login.password-recovery.confirm-password-toggle"
+                        stableHeight={42}
+                        minWidth={42}
+                        style={passwordRevealButtonStyle(false)}
+                      >
+                        <PasswordEyeGlyph hidden={!recoveryConfirmPasswordVisible} />
+                      </SubtleButton>
+                    </div>
                     <PrimaryButton
                       type="button"
                       busy={recoveryBusy}
@@ -1425,6 +1559,8 @@ export default function LoginPage() {
                         setRecoveryStep("claim");
                         setRecoveryPrompts([]);
                         setRecoveryAnswers(["", "", ""]);
+                        setRecoveryNewPasswordVisible(false);
+                        setRecoveryConfirmPasswordVisible(false);
                         setRecoveryMessage(null);
                         setRecoveryError(null);
                         setRecoveryManualReview(null);

@@ -77,6 +77,16 @@ A useful TrustSlip is not a guarantee.
 Community trust must not become a score.
 ```
 
+### Pilot Password And Recovery Rule
+
+Members should be able to reveal the password they are typing during sign-in,
+activation, or self-service reset. This helps them learn and confirm their own
+password without relying blindly on the browser.
+
+GSN must not reveal old saved passwords. Stored passwords remain one-way
+protected. If a member forgets a password, the safe paths are private recovery,
+OTP when the rail exists, or audited owner / GSN support reset during the pilot.
+
 ### The Minimum Useful Outcome
 
 Leave the room with:

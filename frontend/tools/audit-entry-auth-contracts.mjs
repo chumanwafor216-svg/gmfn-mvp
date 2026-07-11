@@ -143,6 +143,12 @@ assertContains(
 );
 
 assertContains(
+  "src/pages/LoginPage.tsx",
+  /passwordVisible[\s\S]*login\.password\.visibility-toggle[\s\S]*recoveryNewPasswordVisible[\s\S]*login\.password-recovery\.new-password-toggle[\s\S]*recoveryConfirmPasswordVisible[\s\S]*login\.password-recovery\.confirm-password-toggle/,
+  "Login and password recovery must let users reveal the password they are typing without exposing any old saved password."
+);
+
+assertContains(
   "src/pages/MemberActivationPage.tsx",
   /if \(requestReady\.gmfn_id\)[\s\S]*activateMembership\([\s\S]*gmfn_id: requestReady\.gmfn_id[\s\S]*else[\s\S]*activateApprovedMember\(/,
   "The public activation page must use canonical membership activation when a GMFN ID is present."
@@ -200,6 +206,12 @@ assertContains(
   "src/lib/api.ts",
   /submitJoinRequest\([\s\S]*options\?: \{ includeAuth\?: boolean \}[\s\S]*options\?\.includeAuth === false \? null : getAccessToken\(\)/,
   "The shared join-request API helper must support public unauthenticated submission for the invite form."
+);
+
+assertContains(
+  "src/pages/ActivateMembershipPage.tsx",
+  /passwordVisible[\s\S]*confirmVisible[\s\S]*setPasswordVisible\(false\)[\s\S]*setConfirmVisible\(false\)[\s\S]*activate-membership\.password\.visibility-toggle[\s\S]*activate-membership\.confirm-password\.visibility-toggle/,
+  "Legacy membership activation must let users reveal typed password fields and hide them again when clearing the form."
 );
 
 if (findings.length > 0) {
