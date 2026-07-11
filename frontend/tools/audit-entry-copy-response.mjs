@@ -100,6 +100,12 @@ assertVisibleStringsDoNotContain(
   "Sign In session recovery copy must not expose builder-facing service language."
 );
 
+assertContains(
+  "src/pages/LoginPage.tsx",
+  /code === "recovery_not_configured"[\s\S]*?nextAction === "manual_review"[\s\S]*?Owner review needed[\s\S]*?Do not keep retrying from this screen[\s\S]*?Check recovery/,
+  "Sign In password recovery must turn missing recovery prompts into a manual-review blocker instead of promising unavailable recovery questions."
+);
+
 assertVisibleStringsDoNotContain(
   "src/pages/JoinByInvitePage.tsx",
   /\bguided public route\b/i,

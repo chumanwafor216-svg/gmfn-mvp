@@ -455,6 +455,11 @@ export default function LoginPage() {
   const [recoveryBusy, setRecoveryBusy] = useState(false);
   const [recoveryMessage, setRecoveryMessage] = useState<string | null>(null);
   const [recoveryError, setRecoveryError] = useState<string | null>(null);
+  const [recoveryManualReview, setRecoveryManualReview] = useState<{
+    title: string;
+    message: string;
+    firstStep: string;
+  } | null>(null);
   const innerRailWidth = "min(100%, 760px)";
 
   useEffect(() => {
@@ -585,6 +590,7 @@ export default function LoginPage() {
     setRecoveryOpen((current) => !current);
     setRecoveryError(null);
     setRecoveryMessage(null);
+    setRecoveryManualReview(null);
     if (!recoveryGsnId && safeStr(email).toUpperCase().includes("-U-")) {
       setRecoveryGsnId(safeStr(email).toUpperCase());
     }
@@ -594,6 +600,7 @@ export default function LoginPage() {
     setRecoveryBusy(true);
     setRecoveryError(null);
     setRecoveryMessage(null);
+    setRecoveryManualReview(null);
     setErr(null);
     setMsg(null);
 
@@ -622,10 +629,26 @@ export default function LoginPage() {
       );
     } catch (error: any) {
       const detail = structuredErrorDetail(error);
-      setRecoveryError(
+      const code = safeStr(detail?.code).toLowerCase();
+      const nextAction = safeStr(detail?.next_action).toLowerCase();
+      const message =
         safeStr(detail?.message || error?.message || error) ||
-          "Password recovery could not start for those details."
-      );
+        "Password recovery could not start for those details.";
+
+      if (
+        code === "recovery_not_configured" ||
+        nextAction === "manual_review"
+      ) {
+        setRecoveryError(null);
+        setRecoveryManualReview({
+          title: "Owner review needed",
+          message,
+          firstStep:
+            "Ask the community owner or GSN support to review this account. Do not keep retrying from this screen.",
+        });
+      } else {
+        setRecoveryError(message);
+      }
     } finally {
       setRecoveryBusy(false);
     }
@@ -635,6 +658,7 @@ export default function LoginPage() {
     setRecoveryBusy(true);
     setRecoveryError(null);
     setRecoveryMessage(null);
+    setRecoveryManualReview(null);
     setErr(null);
     setMsg(null);
 
@@ -1297,6 +1321,17 @@ export default function LoginPage() {
                 {recoveryError ? (
                   <div style={noticeStyle("error")}>{recoveryError}</div>
                 ) : null}
+                {recoveryManualReview ? (
+                  <div style={noticeStyle("warning")}>
+                    <div style={{ fontWeight: 1000, marginBottom: 6 }}>
+                      {recoveryManualReview.title}
+                    </div>
+                    <div>{recoveryManualReview.message}</div>
+                    <div style={{ marginTop: 8 }}>
+                      <strong>First step:</strong> {recoveryManualReview.firstStep}
+                    </div>
+                  </div>
+                ) : null}
                 {recoveryMessage ? (
                   <div style={noticeStyle("success")}>{recoveryMessage}</div>
                 ) : null}
@@ -1329,7 +1364,7 @@ export default function LoginPage() {
                       style={primaryBtn(recoveryBusy)}
                       onClick={beginPasswordRecovery}
                     >
-                      {loginIconText("id", "Open recovery questions", 22)}
+                      {loginIconText("id", "Check recovery", 22)}
                     </PrimaryButton>
                   </div>
                 ) : (
@@ -1392,6 +1427,7 @@ export default function LoginPage() {
                         setRecoveryAnswers(["", "", ""]);
                         setRecoveryMessage(null);
                         setRecoveryError(null);
+                        setRecoveryManualReview(null);
                       }}
                     >
                       {loginIconText("navigation", "Use different details", 22)}
