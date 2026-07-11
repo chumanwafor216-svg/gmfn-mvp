@@ -21,6 +21,11 @@ type Props = {
   requireRole?: "admin" | "adminOrClanAdmin";
 };
 
+type AuthenticatedShellContext = {
+  me: any;
+  currentClan: any;
+};
+
 type ContinuityBlock = {
   status: "reverify_required" | "protected_lock";
   score: string;
@@ -270,6 +275,8 @@ export default function RequireAuth({ children, requireRole }: Props) {
   const [continuityBlock, setContinuityBlock] = useState<ContinuityBlock | null>(
     null
   );
+  const [shellContext, setShellContext] =
+    useState<AuthenticatedShellContext | null>(null);
   const [slowSessionCheck, setSlowSessionCheck] = useState(false);
 
   useEffect(() => {
@@ -281,6 +288,7 @@ export default function RequireAuth({ children, requireRole }: Props) {
       setDeniedForRole(roleDenied);
       if (!nextAllowed) {
         setContinuityBlock(null);
+        setShellContext(null);
       }
       setLoading(false);
     };
@@ -318,11 +326,13 @@ export default function RequireAuth({ children, requireRole }: Props) {
             cachedRoleAllows(requireRole)
           ) {
             setContinuityBlock(null);
+            setShellContext(null);
             finish(true);
             return;
           }
           if (!requireRole && isNetworkSessionError(meError)) {
             setContinuityBlock(null);
+            setShellContext(null);
             finish(true);
             return;
           }
@@ -360,6 +370,7 @@ export default function RequireAuth({ children, requireRole }: Props) {
           setContinuityBlock(null);
         }
 
+        setShellContext({ me, currentClan });
         finish(true);
 
         if (IDENTITY_CONTINUITY_OBSERVATION_ENABLED) {
@@ -670,5 +681,15 @@ export default function RequireAuth({ children, requireRole }: Props) {
     );
   }
 
-  return <>{children}</>;
+  const renderedChildren =
+    shellContext && React.isValidElement(children)
+      ? React.cloneElement(
+          children as React.ReactElement<{
+            initialAuthContext?: AuthenticatedShellContext;
+          }>,
+          { initialAuthContext: shellContext }
+        )
+      : children;
+
+  return <>{renderedChildren}</>;
 }

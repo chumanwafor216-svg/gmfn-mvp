@@ -88,6 +88,30 @@ class HttpStatusError extends Error {
 
 const DEFAULT_JSON_TIMEOUT_MS = 30000;
 const DEFAULT_MULTIPART_TIMEOUT_MS = 60000;
+const STARTUP_READ_CACHE_MS = 2500;
+
+type TimedCache<T> = {
+  key: string;
+  value: T;
+  storedAt: number;
+};
+
+let getMeInFlight: Promise<any> | null = null;
+let getMeCache: TimedCache<any> | null = null;
+let myClansInFlight: Promise<any> | null = null;
+let myClansCache: TimedCache<any> | null = null;
+
+function readTimedCache<T>(cache: TimedCache<T> | null, key: string): T | null {
+  if (!cache || cache.key !== key) return null;
+  return Date.now() - cache.storedAt <= STARTUP_READ_CACHE_MS ? cache.value : null;
+}
+
+function clearStartupReadCache(): void {
+  getMeInFlight = null;
+  getMeCache = null;
+  myClansInFlight = null;
+  myClansCache = null;
+}
 
 async function fetchWithTimeout(
   input: RequestInfo | URL,
@@ -170,6 +194,7 @@ export function getAccessToken(): string | null {
 }
 
 export function setAccessToken(tok: string | null) {
+  clearStartupReadCache();
   writeStorage(ACCESS_TOKEN_KEY, tok);
 }
 
@@ -238,6 +263,7 @@ export function getSelectedClanId(): number | null {
 
 export function setSelectedClanId(clanId: number | null): void {
   try {
+    myClansInFlight = null;
     if (clanId == null) writeStorage(GMFN_SELECTED_CLAN_ID_KEY, null);
     else writeStorage(GMFN_SELECTED_CLAN_ID_KEY, String(clanId));
   } catch {
@@ -648,7 +674,24 @@ export async function resetPasswordWithRecovery(payload: {
 }
 
 export async function getMe() {
-  const out = await httpJson("/auth/me", "GET");
+  const cacheKey = String(getAccessToken() || "");
+  const cached = readTimedCache(getMeCache, cacheKey);
+  if (cached) return cached;
+
+  if (!getMeInFlight) {
+    getMeInFlight = httpJson("/auth/me", "GET")
+      .then((out) => {
+        rememberGmfnIdFrom(out);
+        rememberRoleFrom(out);
+        getMeCache = { key: cacheKey, value: out, storedAt: Date.now() };
+        return out;
+      })
+      .finally(() => {
+        getMeInFlight = null;
+      });
+  }
+
+  const out = await getMeInFlight;
   rememberGmfnIdFrom(out);
   rememberRoleFrom(out);
   return out;
@@ -1154,25 +1197,39 @@ export async function getPendingApprovalStatus(
    ========================= */
 
 export async function listMyClans(): Promise<any> {
-  const res = await httpJson("/clans/me", "GET");
-  const rows = Array.isArray(res) ? res : Array.isArray(res?.items) ? res.items : [];
-  const normalizedRows = normalizeVisibleMyClans(rows);
+  const cacheKey = String(getAccessToken() || "");
+  const cached = readTimedCache(myClansCache, cacheKey);
+  if (cached) return cached;
 
-  if (Array.isArray(res)) {
-    return normalizedRows;
+  if (!myClansInFlight) {
+    myClansInFlight = httpJson("/clans/me", "GET")
+      .then((res) => {
+        const rows = Array.isArray(res) ? res : Array.isArray(res?.items) ? res.items : [];
+        const normalizedRows = normalizeVisibleMyClans(rows);
+
+        const out = Array.isArray(res)
+          ? normalizedRows
+          : {
+              ...(res && typeof res === "object" ? res : {}),
+              items: normalizedRows,
+              total: normalizedRows.length,
+            };
+
+        myClansCache = { key: cacheKey, value: out, storedAt: Date.now() };
+        return out;
+      })
+      .finally(() => {
+        myClansInFlight = null;
+      });
   }
 
-  return {
-    ...(res && typeof res === "object" ? res : {}),
-    items: normalizedRows,
-    total: normalizedRows.length,
-  };
+  return myClansInFlight;
 }
 
 export async function getCurrentClan(): Promise<any> {
   const selectedClanId = getSelectedClanId();
   const res = await listMyClans().catch(() => ({ items: [] }));
-  const rows = Array.isArray(res) ? res : res?.items || [];
+  const rows = Array.isArray(res) ? res : Array.isArray(res?.items) ? res.items : [];
 
   if (!rows.length) return null;
 

@@ -1631,7 +1631,16 @@ function sourceReturnButton(isMobile: boolean): React.CSSProperties {
   };
 }
 
-export default function AppLayout() {
+type AppLayoutInitialAuthContext = {
+  me: any;
+  currentClan: any;
+};
+
+type AppLayoutProps = {
+  initialAuthContext?: AppLayoutInitialAuthContext;
+};
+
+export default function AppLayout({ initialAuthContext }: AppLayoutProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const activeCommunityId = useMemo(
@@ -1677,10 +1686,13 @@ export default function AppLayout() {
         setMyRole(cachedRole);
       }
 
-      const [me, currentClan] = await Promise.all([
-        getMe().catch(() => null),
-        getCurrentClan().catch(() => null),
-      ]);
+      const hasInitialContext = Boolean(initialAuthContext);
+      const [me, currentClan] = hasInitialContext
+        ? [initialAuthContext?.me || null, initialAuthContext?.currentClan || null]
+        : await Promise.all([
+            getMe().catch(() => null),
+            getCurrentClan().catch(() => null),
+          ]);
       if (!shouldApply()) return;
 
       const gmfnId = normalizeShellGmfnId(me?.gmfn_id || getStoredGmfnId());
@@ -1706,7 +1718,7 @@ export default function AppLayout() {
         writeRole(role);
       }
     },
-    []
+    [initialAuthContext]
   );
 
   useEffect(() => {

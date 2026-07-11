@@ -608,6 +608,7 @@ def _ensure_my_trust_slip_payload(
         }
 
     current = get_current_trust_slip_for_user(db, user_id=int(current_user.id))
+    issued_payload: Optional[Dict[str, Any]] = None
     if not current or _trust_slip_needs_refresh(current):
         try:
             issue_result = (
@@ -615,13 +616,19 @@ def _ensure_my_trust_slip_payload(
                     db,
                     user_id=int(current_user.id),
                     reason="expired_trustslip_auto_refresh",
+                    include_payload=True,
                 )
                 if current
-                else issue_trust_slip_for_user(db, user_id=int(current_user.id))
+                else issue_trust_slip_for_user(
+                    db,
+                    user_id=int(current_user.id),
+                    include_payload=True,
+                )
             )
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc))
 
+        issued_payload = issue_result.pop("_holder_payload", None)
         code = issue_result.get("code")
         if bool(issue_result.get("issued", True)):
             log_trust_event(
@@ -644,7 +651,7 @@ def _ensure_my_trust_slip_payload(
             )
             db.commit()
 
-    payload = _payload_with_identity(db, user_id=int(current_user.id))
+    payload = issued_payload or _payload_with_identity(db, user_id=int(current_user.id))
     code = payload.get("code") or payload.get("token")
     merchant_verify_active = _merchant_verify_active_for_holder(
         db,

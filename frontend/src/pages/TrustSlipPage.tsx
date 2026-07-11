@@ -343,6 +343,16 @@ const TRUST_SLIP_UI_STORAGE_KEY = "gmfn.trustSlip.sections.v4";
 const GSN_EXEC_SUMMARY_URL = "/GSN_FINAL_WHITE.pdf";
 const TRUST_SLIP_MOBILE_SCROLL_CLEARANCE = 116;
 const FETCH_FIRST_JSON_TIMEOUT_MS = 30000;
+const TRUST_SLIP_SUMMARY_STARTUP_CACHE_MS = 2500;
+
+type TrustSlipSummaryStartupCache = {
+  key: string;
+  value: any;
+  storedAt: number;
+};
+
+let trustSlipSummaryStartupCache: TrustSlipSummaryStartupCache | null = null;
+let trustSlipSummaryInFlight: { key: string; promise: Promise<any | null> } | null = null;
 
 function safeStr(x: any): string {
   return String(x ?? "").trim();
@@ -1461,19 +1471,70 @@ function cacheBust(path: string): string {
   return `${path}${sep}_ts=${Date.now()}`;
 }
 
+function trustSlipSummaryRequestKey(selectedClanId: number): string {
+  const token =
+    typeof (api as any).getAccessToken === "function"
+      ? String((api as any).getAccessToken() || "")
+      : "";
+  return `${token}:${Number(selectedClanId || 0)}`;
+}
+
+async function fetchCanonicalTrustSlipSummary(
+  selectedClanId: number,
+  clanHeaders: Record<string, string>,
+  canonicalPath: string,
+  options: { forceFresh?: boolean } = {}
+): Promise<any | null> {
+  const key = trustSlipSummaryRequestKey(selectedClanId);
+  const cached = trustSlipSummaryStartupCache;
+
+  if (
+    !options.forceFresh &&
+    cached?.key === key &&
+    Date.now() - cached.storedAt <= TRUST_SLIP_SUMMARY_STARTUP_CACHE_MS
+  ) {
+    return cached.value;
+  }
+
+  if (!options.forceFresh && trustSlipSummaryInFlight?.key === key) {
+    return trustSlipSummaryInFlight.promise;
+  }
+
+  const promise = fetchFirstJson([canonicalPath], clanHeaders)
+    .then((result) => {
+      if (result) {
+        trustSlipSummaryStartupCache = {
+          key,
+          value: result,
+          storedAt: Date.now(),
+        };
+      }
+      return result;
+    })
+    .finally(() => {
+      if (trustSlipSummaryInFlight?.key === key) {
+        trustSlipSummaryInFlight = null;
+      }
+    });
+
+  trustSlipSummaryInFlight = { key, promise };
+  return promise;
+}
+
 async function fetchTrustSlipPageData(
   selectedClanId: number,
-  options: { networkFirst?: boolean } = {}
+  options: { forceFresh?: boolean; networkFirst?: boolean } = {}
 ): Promise<TrustSlipPageData> {
   const clanHeaders: Record<string, string> = {};
   if (selectedClanId) {
     clanHeaders["X-Clan-Id"] = String(selectedClanId);
   }
 
-  const fetchNetworkSummary = () =>
+  const canonicalSummaryPath = cacheBust("/trust-slips/me/summary");
+
+  const fetchLegacySummaryFallback = () =>
     fetchFirstJson(
       [
-        cacheBust("/trust-slips/me/summary"),
         cacheBust("/trust-slips/me"),
         cacheBust("/trust-slips/me-summary"),
         cacheBust("/trust-slips/summary/me"),
@@ -1490,7 +1551,14 @@ async function fetchTrustSlipPageData(
       : Promise.resolve(null),
     (async () => {
       if (options.networkFirst) {
-        const direct = await fetchNetworkSummary();
+        const direct = await fetchCanonicalTrustSlipSummary(
+          selectedClanId,
+          clanHeaders,
+          canonicalSummaryPath,
+          {
+            forceFresh: options.forceFresh,
+          }
+        );
         if (direct) return direct;
       }
 
@@ -1515,7 +1583,7 @@ async function fetchTrustSlipPageData(
 
       if (viaFn) return viaFn;
 
-      return fetchNetworkSummary();
+      return fetchLegacySummaryFallback();
     })(),
   ]);
 
@@ -1847,6 +1915,7 @@ export default function TrustSlipPage() {
         force: true,
       });
       const data = await fetchTrustSlipPageData(selectedClanId, {
+        forceFresh: true,
         networkFirst: true,
       });
       if (

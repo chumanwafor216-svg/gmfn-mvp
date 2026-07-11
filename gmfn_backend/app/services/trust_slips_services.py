@@ -2159,7 +2159,12 @@ def get_trust_slip_payload(db: Session, *, user_id: int) -> Dict[str, Any]:
     return payload
 
 
-def issue_trust_slip_for_user(db: Session, *, user_id: int) -> Dict[str, Any]:
+def issue_trust_slip_for_user(
+    db: Session,
+    *,
+    user_id: int,
+    include_payload: bool = False,
+) -> Dict[str, Any]:
     uid = int(user_id)
     user = db.get(User, uid)
     if not user:
@@ -2181,7 +2186,7 @@ def issue_trust_slip_for_user(db: Session, *, user_id: int) -> Dict[str, Any]:
             user=user,
             full_payload=current_payload,
         )
-        return {
+        result = {
             "ok": True,
             "issued": False,
             "reason": "current_slip_exists",
@@ -2194,6 +2199,9 @@ def issue_trust_slip_for_user(db: Session, *, user_id: int) -> Dict[str, Any]:
             "snapshot_checksum": snapshot.get("snapshot_checksum") or getattr(current, "snapshot_checksum", None),
             "expires_at": current.expires_at.isoformat() if current.expires_at else None,
         }
+        if include_payload:
+            result["_holder_payload"] = current_payload
+        return result
 
     if current and bool(getattr(current, "is_current", False)):
         return {
@@ -2203,6 +2211,7 @@ def issue_trust_slip_for_user(db: Session, *, user_id: int) -> Dict[str, Any]:
                 db,
                 user_id=uid,
                 reason="expired_trustslip_auto_refresh",
+                include_payload=include_payload,
             ),
         }
 
@@ -2242,7 +2251,7 @@ def issue_trust_slip_for_user(db: Session, *, user_id: int) -> Dict[str, Any]:
         visibility_level=_saved_visibility_level(user),
     )
 
-    return {
+    result = {
         "ok": True,
         "issued": True,
         "reason": "issued",
@@ -2255,6 +2264,9 @@ def issue_trust_slip_for_user(db: Session, *, user_id: int) -> Dict[str, Any]:
         "snapshot_checksum": snapshot.get("snapshot_checksum") or getattr(slip, "snapshot_checksum", None),
         "expires_at": slip.expires_at.isoformat() if slip.expires_at else None,
     }
+    if include_payload:
+        result["_holder_payload"] = issued_payload
+    return result
 
 
 def has_material_trustslip_change(
@@ -2330,6 +2342,7 @@ def reissue_trust_slip(
     *,
     user_id: int,
     reason: str,
+    include_payload: bool = False,
 ) -> Dict[str, Any]:
     uid = int(user_id)
     current_slip = get_current_trust_slip_for_user(db, user_id=uid)
@@ -2391,7 +2404,7 @@ def reissue_trust_slip(
         visibility_level=_saved_visibility_level(user),
     )
 
-    return {
+    result = {
         "ok": True,
         "trust_slip_id": int(new_slip.id),
         "old_trust_slip_id": int(current_slip.id) if current_slip else None,
@@ -2404,6 +2417,9 @@ def reissue_trust_slip(
         "expires_at": new_slip.expires_at.isoformat() if new_slip.expires_at else None,
         "is_current": bool(new_slip.is_current),
     }
+    if include_payload:
+        result["_holder_payload"] = new_payload
+    return result
 
 
 def backfill_missing_trustslip_snapshots(
