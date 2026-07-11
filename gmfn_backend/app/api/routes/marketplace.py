@@ -1320,6 +1320,50 @@ def _broadcast_repost_product(db: Session, item: MarketplaceBroadcast) -> Option
     return None
 
 
+def _spotlight_message_parts(message: Any) -> Dict[str, Optional[str]]:
+    raw = _safe_str(message)
+    if not raw:
+        return {
+            "title": None,
+            "description": None,
+            "price_note": None,
+            "availability": None,
+        }
+
+    parts = [part.strip() for part in raw.split(" - ") if part.strip()]
+    title = parts[0] if parts else raw
+    price_note = parts[1] if len(parts) >= 2 else None
+    description = " - ".join(parts[2:]) if len(parts) >= 3 else (parts[1] if len(parts) == 2 else None)
+
+    availability = None
+    for part in parts[1:]:
+        lowered = part.lower()
+        if any(token in lowered for token in ("available", "today", "delivery", "order", "stock")):
+            availability = part
+            break
+
+    return {
+        "title": title or None,
+        "description": description or raw,
+        "price_note": price_note,
+        "availability": availability,
+    }
+
+
+def _spotlight_availability_label(expires_at: Optional[datetime]) -> str:
+    if expires_at is None:
+        return "Active"
+
+    expiry = expires_at
+    now = _now_utc()
+    if expiry.tzinfo is None:
+        expiry = expiry.replace(tzinfo=timezone.utc)
+    if now.tzinfo is None:
+        now = now.replace(tzinfo=timezone.utc)
+
+    return "Active" if expiry > now else "Expired"
+
+
 def _broadcast_out(db: Session, item: MarketplaceBroadcast) -> Dict[str, Any]:
     author = db.query(User).filter(User.id == int(item.author_user_id)).first()
     clan = db.query(Clan).filter(Clan.id == int(item.clan_id)).first()
@@ -1381,6 +1425,42 @@ def _broadcast_out(db: Session, item: MarketplaceBroadcast) -> Dict[str, Any]:
         if repost_product is not None
         else None
     )
+    message_parts = _spotlight_message_parts(getattr(item, "message", None))
+    source_product_title = (
+        _safe_str(getattr(repost_product, "name", None))
+        if repost_product is not None
+        else message_parts["title"]
+    )
+    source_product_description = (
+        _public_product_display_text(getattr(repost_product, "description", None))
+        if repost_product is not None
+        else message_parts["description"]
+    )
+    source_product_price = (
+        _safe_str(getattr(repost_product, "price", None))
+        if repost_product is not None
+        else message_parts["price_note"]
+    )
+    source_product_currency = (
+        _safe_str(getattr(repost_product, "currency", None))
+        if repost_product is not None
+        else None
+    )
+    source_product_image_url = (
+        _stored_media_url(getattr(repost_product, "image_url", None))
+        if repost_product is not None
+        else _stored_media_url(getattr(item, "image_url", None))
+    )
+    source_product_video_url = (
+        _stored_media_url(getattr(repost_product, "video_url", None))
+        if repost_product is not None
+        else _stored_media_url(getattr(item, "video_url", None))
+    )
+    source_product_availability = _spotlight_availability_label(
+        getattr(item, "expires_at", None)
+    )
+    if message_parts["availability"]:
+        source_product_availability = message_parts["availability"]
 
     return {
         "id": int(item.id),
@@ -1411,6 +1491,22 @@ def _broadcast_out(db: Session, item: MarketplaceBroadcast) -> Dict[str, Any]:
         "source_product_id": int(repost_product.id) if repost_product is not None else None,
         "source_product_block": repost_block_number,
         "source_product_slot_number": repost_block_number,
+        "source_product_title": source_product_title or None,
+        "source_product_description": source_product_description or None,
+        "source_product_price": source_product_price or None,
+        "source_product_currency": source_product_currency or None,
+        "source_product_category": None,
+        "source_product_availability": source_product_availability,
+        "source_product_image_url": source_product_image_url or None,
+        "source_product_video_url": source_product_video_url or None,
+        "spotlight_title": source_product_title or shop_display_name or author_name,
+        "spotlight_description": source_product_description or _safe_str(item.message) or None,
+        "spotlight_owner": shop_display_name or author_name,
+        "spotlight_community": clan_display_name,
+        "spotlight_contact_available": bool(
+            canonical_shop and _safe_str(getattr(canonical_shop, "whatsapp_number", None))
+        ),
+        "spotlight_detail_available": bool(author_gmfn_id),
         "trust_band": trust_band,
         "trust_score": trust_score,
     }

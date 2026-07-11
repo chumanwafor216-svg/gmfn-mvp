@@ -41,6 +41,15 @@ def _write_upload(root: Path, relative_path: str, content: bytes = b"ok") -> str
     return f"/uploads/{relative_path.replace(chr(92), '/')}"
 
 
+def test_spotlight_message_parser_keeps_two_part_price_detail():
+    parts = marketplace_routes._spotlight_message_parts("Rice bag - N25k")
+
+    assert parts["title"] == "Rice bag"
+    assert parts["price_note"] == "N25k"
+    assert parts["description"] == "N25k"
+    assert parts["availability"] is None
+
+
 def test_spotlight_capacity_pilot_override_is_active_for_test_week(monkeypatch):
     monkeypatch.setattr(
         marketplace_routes,
@@ -387,6 +396,12 @@ def test_product_repost_requires_paid_credit_and_creates_target_marketplace_spot
     assert body["broadcast"]["priority_mode"] == "paid"
     assert body["broadcast"]["source_product_id"] == 1
     assert body["broadcast"]["source_product_block"] == 5
+    assert body["broadcast"]["source_product_title"] == "Fresh Rice"
+    assert body["broadcast"]["source_product_description"] == "Bag of rice"
+    assert body["broadcast"]["source_product_price"] == "25000"
+    assert body["broadcast"]["source_product_currency"] == "NGN"
+    assert body["broadcast"]["spotlight_owner"] == "Seller Public Shop"
+    assert body["broadcast"]["spotlight_contact_available"] is True
     expires_at = datetime.fromisoformat(body["broadcast"]["expires_at"])
     if expires_at.tzinfo is None:
         expires_at = expires_at.replace(tzinfo=timezone.utc)
@@ -399,6 +414,8 @@ def test_product_repost_requires_paid_credit_and_creates_target_marketplace_spot
     assert feed_body["items"][0]["id"] == body["broadcast"]["id"]
     assert feed_body["items"][0]["source_product_id"] == 1
     assert feed_body["items"][0]["source_product_block"] == 5
+    assert feed_body["items"][0]["spotlight_title"] == "Fresh Rice"
+    assert feed_body["items"][0]["spotlight_description"] == "Bag of rice"
 
     with engine.begin() as conn:
         entitlement = conn.execute(
@@ -1602,7 +1619,7 @@ def test_shop_spotlight_publish_targets_all_eligible_owner_communities(
         json={
             "clan_id": 1,
             "shop_id": 1,
-            "message": "Fresh spotlight",
+            "message": "Fresh spotlight - N90k - Available today for delivery",
             "image_url": "/uploads/marketplace/images/live-spotlight.jpg",
             "priority_mode": "free",
             "visibility_scope": "direct_communities",
@@ -1615,6 +1632,13 @@ def test_shop_spotlight_publish_targets_all_eligible_owner_communities(
     assert body["propagated_count"] == 2
     assert body["propagated_clan_ids"] == [1, 2]
     assert body["skipped_capacity_clan_ids"] == []
+    assert body["item"]["source_product_title"] == "Fresh spotlight"
+    assert body["item"]["source_product_description"] == "Available today for delivery"
+    assert body["item"]["source_product_price"] == "N90k"
+    assert body["item"]["source_product_availability"] == "Available today for delivery"
+    assert body["item"]["spotlight_owner"] == "CHUMA INTERNATIONAL SHOP"
+    assert body["item"]["spotlight_community"] == "Golden boys Marketplace"
+    assert body["item"]["spotlight_contact_available"] is False
 
     with engine.begin() as conn:
         rows = conn.execute(

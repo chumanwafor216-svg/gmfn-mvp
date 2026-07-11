@@ -95,6 +95,16 @@ type ShopBroadcast = {
   imageUrl: string;
   videoUrl: string;
   message: string;
+  spotlightTitle: string;
+  spotlightDescription: string;
+  spotlightOwner: string;
+  spotlightCommunity: string;
+  sourceProductTitle: string;
+  sourceProductDescription: string;
+  sourceProductPrice: string;
+  sourceProductCurrency: string;
+  sourceProductCategory: string;
+  sourceProductAvailability: string;
   sourceShopName: string;
   sourceShopWhatsApp: string;
   sourceClanName: string;
@@ -887,6 +897,42 @@ function normalizeBroadcast(raw: any): ShopBroadcast | null {
     imageUrl: resolveImageSrc(src?.image_url || src?.imageUrl),
     videoUrl: resolveImageSrc(src?.video_url || src?.videoUrl),
     message: firstMeaningful(src?.message, src?.content, src?.text),
+    spotlightTitle: firstMeaningful(src?.spotlight_title, src?.spotlightTitle),
+    spotlightDescription: firstMeaningful(
+      src?.spotlight_description,
+      src?.spotlightDescription
+    ),
+    spotlightOwner: firstMeaningful(src?.spotlight_owner, src?.spotlightOwner),
+    spotlightCommunity: firstMeaningful(
+      src?.spotlight_community,
+      src?.spotlightCommunity
+    ),
+    sourceProductTitle: firstMeaningful(
+      src?.source_product_title,
+      src?.sourceProductTitle
+    ),
+    sourceProductDescription: firstMeaningful(
+      src?.source_product_description,
+      src?.sourceProductDescription
+    ),
+    sourceProductPrice: firstMeaningful(
+      src?.source_product_price,
+      src?.sourceProductPrice,
+      src?.price
+    ),
+    sourceProductCurrency: firstMeaningful(
+      src?.source_product_currency,
+      src?.sourceProductCurrency,
+      src?.currency
+    ),
+    sourceProductCategory: firstMeaningful(
+      src?.source_product_category,
+      src?.sourceProductCategory
+    ),
+    sourceProductAvailability: firstMeaningful(
+      src?.source_product_availability,
+      src?.sourceProductAvailability
+    ),
     sourceShopName: firstMeaningful(src?.source_shop_name, src?.sourceShopName),
     sourceShopWhatsApp: firstMeaningful(
       src?.source_shop_whatsapp_number,
@@ -2280,6 +2326,9 @@ export default function ShopGalleryPage() {
         title: "Discover what's new",
         detail: "No live community spotlight is attached to this shop context yet.",
         tagLabel: "",
+        priceLabel: "",
+        availabilityLabel: "",
+        ownerLabel: "",
         communityName: firstMeaningful(effectiveShop?.communityName),
         trustBand: "Community spotlight",
         sourceShopWhatsApp: "",
@@ -2323,13 +2372,36 @@ export default function ShopGalleryPage() {
       : "";
 
     return {
-      title: firstMeaningful(miniSpotlight?.sourceShopName, "Live Spotlight"),
+      title: firstMeaningful(
+        miniSpotlight?.sourceProductTitle,
+        miniSpotlight?.spotlightTitle,
+        messageParts.summary,
+        "Live Spotlight"
+      ),
       detail: firstMeaningful(
+        miniSpotlight?.sourceProductDescription,
+        miniSpotlight?.spotlightDescription,
         messageParts.summary,
         "Live community promo from the current spotlight source."
       ),
       tagLabel: messageParts.tagLabel,
-      communityName: firstMeaningful(miniSpotlight?.sourceClanName, effectiveShop?.communityName),
+      priceLabel: firstMeaningful(
+        [miniSpotlight?.sourceProductCurrency, miniSpotlight?.sourceProductPrice]
+          .filter(Boolean)
+          .join(" "),
+        miniSpotlight?.sourceProductPrice
+      ),
+      availabilityLabel: firstMeaningful(miniSpotlight?.sourceProductAvailability),
+      ownerLabel: firstMeaningful(
+        miniSpotlight?.spotlightOwner,
+        miniSpotlight?.sourceShopName,
+        miniSpotlight?.authorName
+      ),
+      communityName: firstMeaningful(
+        miniSpotlight?.spotlightCommunity,
+        miniSpotlight?.sourceClanName,
+        effectiveShop?.communityName
+      ),
       trustBand: firstMeaningful(miniSpotlight?.trustBand, "Public visibility"),
       sourceShopWhatsApp: firstMeaningful(miniSpotlight?.sourceShopWhatsApp),
       createdAt: firstMeaningful(miniSpotlight?.createdAt),
@@ -4654,13 +4726,46 @@ export default function ShopGalleryPage() {
                     {miniSpotlightView.tagLabel}
                   </div>
                 ) : null}
+                {publicShopSpotlightActive ? (
+                  <div
+                    style={{
+                      marginTop: isCompact ? 2 : 10,
+                      display: "grid",
+                      gridTemplateColumns: "1fr",
+                      gap: isCompact ? 2 : 4,
+                      color: isCompact ? "rgba(255,255,255,0.82)" : "#425E78",
+                      fontSize: isCompact ? 7.4 : 12,
+                      fontWeight: 850,
+                      lineHeight: 1.18,
+                      overflow: "hidden",
+                    }}
+                  >
+                    <div
+                      style={{
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {firstMeaningful(miniSpotlightView.ownerLabel, "Owner")} |{" "}
+                      {firstMeaningful(miniSpotlightView.communityName, "Community")}
+                    </div>
+                    <div
+                      style={{
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {firstMeaningful(miniSpotlightView.priceLabel, "Price on request")} |{" "}
+                      {firstMeaningful(miniSpotlightView.availabilityLabel, "Availability shown by owner")}
+                    </div>
+                  </div>
+                ) : null}
                 <div
                   style={{
                     display: "grid",
-                    gridTemplateColumns:
-                      isCompact && publicShopSpotlightActive
-                        ? "1fr"
-                        : "max-content",
+                    gridTemplateColumns: "1fr",
                     gap: isCompact ? 4 : 10,
                     alignItems: "center",
                     marginTop: isCompact ? 3 : 16,
@@ -4757,6 +4862,31 @@ export default function ShopGalleryPage() {
                       </span>
                     </PrimaryButton>
                   )}
+                  {publicShopSpotlightActive && miniSpotlightView.shopTo ? (
+                    <StableCtaLink
+                      to={miniSpotlightView.shopTo}
+                      minWidth={0}
+                      fullWidth={isCompact}
+                      stableHeight={isCompact ? 27 : 48}
+                      debugId="shop-gallery.spotlight.view-details"
+                      style={{
+                        ...secondaryBtn(false),
+                        borderRadius: 999,
+                        minHeight: isCompact ? 27 : 48,
+                        width: "100%",
+                        maxWidth: "100%",
+                        padding: isCompact ? "3px 4px" : "9px 14px",
+                        fontSize: isCompact ? 8.2 : 13,
+                        whiteSpace: "nowrap",
+                        background:
+                          "linear-gradient(180deg, #FFFFFF 0%, #F7FAFF 100%)",
+                        border: "1px solid rgba(255,255,255,0.62)",
+                        color: "#0F3B74",
+                      }}
+                    >
+                      {isCompact ? "View" : "View details"}
+                    </StableCtaLink>
+                  ) : null}
                 </div>
               </div>
               <div

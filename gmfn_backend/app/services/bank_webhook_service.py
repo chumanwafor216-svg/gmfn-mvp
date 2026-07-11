@@ -40,6 +40,51 @@ def _safe_dt(x: Any) -> Optional[datetime]:
         return None
 
 
+_FINAL_SUCCESS_SIGNALS = {
+    "success",
+    "successful",
+    "succeeded",
+    "paid",
+    "captured",
+    "completed",
+    "confirmed",
+    "settled",
+    "charge.success",
+    "charge_success",
+    "charge.completed",
+    "charge_completed",
+    "checkout.session.completed",
+    "checkout_session_completed",
+    "payment_intent.succeeded",
+    "payment_intent_succeeded",
+    "successful_transaction",
+    "successfully_processed",
+}
+
+
+def _status_signal(value: Any) -> str:
+    return _safe_str(value).lower().replace("-", "_").replace(" ", "_")
+
+
+def _status_signals(*values: Any) -> list[str]:
+    return [signal for signal in (_status_signal(value) for value in values) if signal]
+
+
+def _is_final_success_signal(signal: str) -> bool:
+    return signal in _FINAL_SUCCESS_SIGNALS
+
+
+def _require_final_success(provider: str, *values: Any) -> None:
+    signals = _status_signals(*values)
+    if any(_is_final_success_signal(signal) for signal in signals):
+        return
+
+    provider_label = _safe_str(provider, "provider")
+    if signals:
+        raise ValueError(f"{provider_label} webhook has not confirmed payment success")
+    raise ValueError(f"{provider_label} webhook must include a final success status")
+
+
 def webhook_secret() -> str:
     return _safe_str(os.getenv("GMFN_WEBHOOK_SECRET"))
 
@@ -108,6 +153,13 @@ def parse_generic_webhook_payload(payload: Dict[str, Any]) -> Dict[str, Any]:
     if clan_id <= 0:
         raise ValueError("clan_id is required")
 
+    generic_status_signals = _status_signals(
+        _pick(payload, "status", "payment_status", "paymentStatus"),
+        _pick(payload, "event", "event_type", "eventType", "type"),
+    )
+    if generic_status_signals and not any(_is_final_success_signal(signal) for signal in generic_status_signals):
+        raise ValueError("webhook has not confirmed payment success")
+
     amount = _safe_decimal(_pick(payload, "amount"))
     if amount <= Decimal("0.00"):
         raise ValueError("amount must be > 0")
@@ -141,6 +193,12 @@ def _parse_paystack(payload: Dict[str, Any]) -> Dict[str, Any]:
     """
     data = payload.get("data") if isinstance(payload.get("data"), dict) else payload
 
+    _require_final_success(
+        "paystack",
+        _pick(payload, "event", "event_type", "type"),
+        _pick(data, "status", "payment_status", "paymentStatus"),
+    )
+
     clan_id = _safe_int(_pick(data, "clan_id"))
     if clan_id <= 0:
         clan_id = _safe_int(_pick(payload, "clan_id"))
@@ -152,6 +210,8 @@ def _parse_paystack(payload: Dict[str, Any]) -> Dict[str, Any]:
     # Paystack often sends minor units
     if amount > Decimal("1000"):
         amount = (amount / Decimal("100")).quantize(Decimal("0.01"))
+    if amount <= Decimal("0.00"):
+        raise ValueError("amount must be > 0")
 
     currency = _safe_str(_pick(data, "currency"), "NGN").upper()
     reference = _safe_str(_pick(data, "reference"), "")
@@ -177,6 +237,12 @@ def _parse_flutterwave(payload: Dict[str, Any]) -> Dict[str, Any]:
     Flutterwave-style mapping.
     """
     data = payload.get("data") if isinstance(payload.get("data"), dict) else payload
+
+    _require_final_success(
+        "flutterwave",
+        _pick(payload, "event", "event_type", "type"),
+        _pick(data, "status", "payment_status", "paymentStatus"),
+    )
 
     clan_id = _safe_int(_pick(data, "clan_id"))
     if clan_id <= 0:
@@ -212,6 +278,12 @@ def _parse_stripe(payload: Dict[str, Any]) -> Dict[str, Any]:
     data = data_outer.get("object") if isinstance(data_outer.get("object"), dict) else payload
     metadata = data.get("metadata") if isinstance(data.get("metadata"), dict) else {}
 
+    _require_final_success(
+        "stripe",
+        _pick(payload, "type", "event", "event_type"),
+        _pick(data, "status", "payment_status", "paymentStatus"),
+    )
+
     clan_id = _safe_int(_pick(metadata, "clan_id"))
     if clan_id <= 0:
         clan_id = _safe_int(_pick(data, "clan_id"))
@@ -222,6 +294,8 @@ def _parse_stripe(payload: Dict[str, Any]) -> Dict[str, Any]:
     amount = _safe_decimal(raw_amount)
     if amount > Decimal("1000"):
         amount = (amount / Decimal("100")).quantize(Decimal("0.01"))
+    if amount <= Decimal("0.00"):
+        raise ValueError("amount must be > 0")
 
     currency = _safe_str(_pick(data, "currency"), "NGN").upper()
     reference = _safe_str(_pick(metadata, "reference", "payment_reference"), "")
@@ -248,6 +322,12 @@ def _parse_monnify(payload: Dict[str, Any]) -> Dict[str, Any]:
     Monnify-style mapping.
     """
     data = payload.get("eventData") if isinstance(payload.get("eventData"), dict) else payload
+
+    _require_final_success(
+        "monnify",
+        _pick(payload, "eventType", "event", "event_type", "type"),
+        _pick(data, "paymentStatus", "payment_status", "status"),
+    )
 
     clan_id = _safe_int(_pick(data, "clan_id"))
     if clan_id <= 0:

@@ -92,6 +92,13 @@ type SpotlightItem = {
   trust_score?: number | string | null;
   price?: string | number | null;
   currency?: string | null;
+  source_product_title?: string | null;
+  source_product_description?: string | null;
+  source_product_price?: string | number | null;
+  source_product_currency?: string | null;
+  source_product_availability?: string | null;
+  spotlight_owner?: string | null;
+  spotlight_community?: string | null;
   source_product_id?: number | string | null;
   source_product_block?: number | string | null;
   source_product_slot_number?: number | string | null;
@@ -1085,9 +1092,24 @@ function normalizeSpotlightItem(raw: any): SpotlightItem | null {
 
   return {
     id: id || undefined,
-    title: safeStr(source.title) || null,
+    title:
+      safeStr(
+        source.spotlight_title ||
+          source.spotlightTitle ||
+          source.source_product_title ||
+          source.sourceProductTitle ||
+          source.title
+      ) || null,
     message: safeStr(source.message || source.content || source.text) || null,
-    body: safeStr(source.body || source.description) || null,
+    body:
+      safeStr(
+        source.spotlight_description ||
+          source.spotlightDescription ||
+          source.source_product_description ||
+          source.sourceProductDescription ||
+          source.body ||
+          source.description
+      ) || null,
     image_url: safeStr(source.image_url || source.imageUrl) || null,
     image: safeStr(source.image || source.image_url || source.imageUrl) || null,
     video_url: safeStr(source.video_url || source.videoUrl) || null,
@@ -1115,6 +1137,20 @@ function normalizeSpotlightItem(raw: any): SpotlightItem | null {
     trust_score: source.trust_score ?? source.trustScore ?? null,
     price: source.price ?? null,
     currency: safeStr(source.currency) || null,
+    source_product_title:
+      safeStr(source.source_product_title || source.sourceProductTitle) || null,
+    source_product_description:
+      safeStr(source.source_product_description || source.sourceProductDescription) || null,
+    source_product_price:
+      source.source_product_price ?? source.sourceProductPrice ?? null,
+    source_product_currency:
+      safeStr(source.source_product_currency || source.sourceProductCurrency) || null,
+    source_product_availability:
+      safeStr(source.source_product_availability || source.sourceProductAvailability) || null,
+    spotlight_owner:
+      safeStr(source.spotlight_owner || source.spotlightOwner) || null,
+    spotlight_community:
+      safeStr(source.spotlight_community || source.spotlightCommunity) || null,
     source_product_id:
       source.source_product_id ?? source.sourceProductId ?? null,
     source_product_block:

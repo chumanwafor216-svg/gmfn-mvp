@@ -97,6 +97,51 @@ def _iso(dt: Optional[datetime]) -> Optional[str]:
     return dt.isoformat() if dt else None
 
 
+def _payment_status_contract(row: Any) -> Dict[str, str]:
+    status = str(getattr(row, "status", "") or "").strip().lower()
+    bank_event_id = getattr(row, "bank_event_id", None)
+
+    if status in {"confirmed", "applied"}:
+        return {
+            "payment_stage": "completed",
+            "payment_status_label": "Completed",
+            "bank_authentication_guidance": "Payment provider or bank confirmation has been matched by GSN.",
+        }
+    if status == "partial":
+        return {
+            "payment_stage": "authorised_partial",
+            "payment_status_label": "Authorised",
+            "bank_authentication_guidance": "GSN has matched part of the payment. Complete any remaining bank transfer or provider authentication before the payment can be completed.",
+        }
+    if status in {"cancelled", "canceled"}:
+        return {
+            "payment_stage": "cancelled",
+            "payment_status_label": "Cancelled",
+            "bank_authentication_guidance": "This payment instruction was cancelled. Do not reuse the old payment code.",
+        }
+    if status in {"failed", "defaulted", "expired"}:
+        return {
+            "payment_stage": "failed",
+            "payment_status_label": "Failed" if status != "expired" else "Expired",
+            "bank_authentication_guidance": "This payment is not complete. Generate or use a valid payment instruction before trying again.",
+        }
+    if bank_event_id:
+        return {
+            "payment_stage": "waiting_for_bank",
+            "payment_status_label": "Waiting for Bank",
+            "bank_authentication_guidance": "GSN has seen a bank/provider event and is waiting for final reconciliation before marking this payment complete.",
+        }
+    return {
+        "payment_stage": "pending_authentication",
+        "payment_status_label": "Pending Authentication",
+        "bank_authentication_guidance": (
+            "Your bank may require app approval, SMS OTP, a one-time code, a code generator, "
+            "or biometric confirmation before the transfer completes. Complete that with your "
+            "banking provider; GSN confirms only after bank/provider reconciliation succeeds."
+        ),
+    }
+
+
 def _expected_payment_out(row: Any) -> Dict[str, Any]:
     meta = _safe_meta_json(getattr(row, "meta_json", None))
     return {
@@ -119,6 +164,7 @@ def _expected_payment_out(row: Any) -> Dict[str, Any]:
         "created_at": _iso(row.created_at),
         "meta": meta,
         "meta_json": meta,
+        **_payment_status_contract(row),
     }
 
 

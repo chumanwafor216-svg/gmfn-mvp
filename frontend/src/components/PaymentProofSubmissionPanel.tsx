@@ -20,6 +20,9 @@ export type PaymentProofExpectedPayment = {
   reference_display?: string | null;
   reference?: string | null;
   status?: string | null;
+  payment_stage?: string | null;
+  payment_status_label?: string | null;
+  bank_authentication_guidance?: string | null;
   confirmed_at?: string | null;
   matched_bank_event_id?: number | string | null;
   bank_event_id?: number | string | null;
@@ -85,6 +88,20 @@ function paymentIsConfirmed(payment?: PaymentProofExpectedPayment | null): boole
   return Boolean(payment?.confirmed_at) || status === "confirmed" || status === "applied";
 }
 
+function paymentStatusLabel(payment?: PaymentProofExpectedPayment | null): string {
+  const direct = firstTruthy(payment?.payment_status_label);
+  if (direct) return direct;
+
+  const status = safeStr(payment?.status).toLowerCase();
+  if (status === "confirmed" || status === "applied") return "Completed";
+  if (status === "partial") return "Partially confirmed";
+  if (status === "failed" || status === "defaulted") return "Failed";
+  if (status === "cancelled" || status === "canceled") return "Cancelled";
+  if (status === "expired") return "Expired";
+  if (status === "expected") return "Pending authentication";
+  return firstTruthy(payment?.status, "Waiting for bank");
+}
+
 export default function PaymentProofSubmissionPanel({
   payment,
   clanId,
@@ -104,6 +121,11 @@ export default function PaymentProofSubmissionPanel({
   const expectedPaymentId = Number(payment?.id || 0);
   const confirmed = paymentIsConfirmed(payment);
   const matched = Boolean(payment?.matched_bank_event_id || payment?.bank_event_id);
+  const statusLabel = paymentStatusLabel(payment);
+  const authGuidance = firstTruthy(
+    payment?.bank_authentication_guidance,
+    "Your bank may require app approval, SMS OTP, a one-time code, a code generator, or biometric confirmation before the transfer completes. Complete that with your banking provider; GSN only confirms this payment after the bank/provider match is received."
+  );
   const latestProof = meta.latest_payment_proof || {};
   const latestProofName = firstTruthy(latestProof.original_filename, latestProof.stored_filename);
   const latestProofAt = safeDateTime(latestProof.submitted_at || meta.proof_submitted_at);
@@ -181,16 +203,34 @@ export default function PaymentProofSubmissionPanel({
     >
       <div style={brandSectionLabel()}>{title}</div>
       <div style={{ marginTop: 8, ...brandHelperText(), fontWeight: 760 }}>
-        After bank transfer, upload the receipt or screenshot here. Finance still has to match or review it before the payment becomes confirmed.
+        After bank transfer, upload the receipt or screenshot here. If your bank asks for extra authentication, complete it in your banking app or provider channel first. Finance still has to match or review the payment before it becomes confirmed.
       </div>
 
       <div style={{ marginTop: 10, display: "flex", flexWrap: "wrap", gap: 8 }}>
-        <span style={brandBadge(confirmed)}>Payment: {confirmed ? "Confirmed" : firstTruthy(payment.status, "Waiting")}</span>
+        <span style={brandBadge(confirmed)}>Payment: {confirmed ? "Completed" : statusLabel}</span>
         <span style={brandBadge(matched)}>Bank match: {matched ? "Found" : "Waiting"}</span>
         <span style={brandBadge(Boolean(latestProofName))}>
           Proof: {latestProofName ? "Submitted" : "Not uploaded"}
         </span>
       </div>
+
+      {!confirmed ? (
+        <div
+          style={{
+            marginTop: 10,
+            borderRadius: 14,
+            border: "1px solid rgba(201,154,39,0.22)",
+            background: "#FFF8E6",
+            color: "#6F4E00",
+            padding: "9px 10px",
+            fontSize: 13,
+            fontWeight: 820,
+            lineHeight: 1.4,
+          }}
+        >
+          {authGuidance}
+        </div>
+      ) : null}
 
       {latestProofName || proofStatusText ? (
         <div

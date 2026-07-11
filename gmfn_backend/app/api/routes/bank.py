@@ -61,6 +61,51 @@ def _safe_meta_json(raw: Optional[str]) -> Dict[str, Any]:
         return {}
 
 
+def _payment_status_contract(row: ExpectedPayment) -> Dict[str, str]:
+    status = str(getattr(row, "status", "") or "").strip().lower()
+    bank_event_id = getattr(row, "bank_event_id", None)
+
+    if status in {"confirmed", "applied"}:
+        return {
+            "payment_stage": "completed",
+            "payment_status_label": "Completed",
+            "bank_authentication_guidance": "Payment provider or bank confirmation has been matched by GSN.",
+        }
+    if status == "partial":
+        return {
+            "payment_stage": "authorised_partial",
+            "payment_status_label": "Authorised",
+            "bank_authentication_guidance": "GSN has matched part of the payment. Complete any remaining bank transfer or provider authentication before the payment can be completed.",
+        }
+    if status in {"cancelled", "canceled"}:
+        return {
+            "payment_stage": "cancelled",
+            "payment_status_label": "Cancelled",
+            "bank_authentication_guidance": "This payment instruction was cancelled. Do not reuse the old payment code.",
+        }
+    if status in {"failed", "defaulted", "expired"}:
+        return {
+            "payment_stage": "failed",
+            "payment_status_label": "Failed" if status != "expired" else "Expired",
+            "bank_authentication_guidance": "This payment is not complete. Generate or use a valid payment instruction before trying again.",
+        }
+    if bank_event_id:
+        return {
+            "payment_stage": "waiting_for_bank",
+            "payment_status_label": "Waiting for Bank",
+            "bank_authentication_guidance": "GSN has seen a bank/provider event and is waiting for final reconciliation before marking this payment complete.",
+        }
+    return {
+        "payment_stage": "pending_authentication",
+        "payment_status_label": "Pending Authentication",
+        "bank_authentication_guidance": (
+            "Your bank may require app approval, SMS OTP, a one-time code, a code generator, "
+            "or biometric confirmation before the transfer completes. Complete that with your "
+            "banking provider; GSN confirms only after bank/provider reconciliation succeeds."
+        ),
+    }
+
+
 def _reject_non_text_value(value: Any, field_name: str) -> Any:
     if value is None:
         return value
@@ -117,6 +162,7 @@ def _expected_out(row: ExpectedPayment) -> Dict[str, Any]:
         "created_at": _iso(row.created_at),
         "meta": meta,
         "meta_json": meta,
+        **_payment_status_contract(row),
     }
 
 
@@ -407,11 +453,16 @@ async def provider_bank_webhook(
 @router.get("/webhook/status")
 def bank_webhook_status():
     """
-    Basic operational visibility for whether HMAC verification is enforced.
+    Basic operational visibility for webhook and payment-confirmation boundaries.
     """
     return {
         "ok": True,
         "signature_verification_enabled": bool(webhook_secret_is_configured()),
+        "payment_provider_mode": "bank_transfer_reconciliation",
+        "provider_success_event_required": True,
+        "delayed_authorisation_supported": True,
+        "success_requires_bank_or_provider_confirmation": True,
+        "bank_authentication_replaced_by_gsn": False,
     }
 
 

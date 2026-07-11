@@ -204,3 +204,26 @@ def test_spotlight_instruction_rejects_malformed_boundary_controls(
             payload,
             f"{field_name} must be text",
         )
+
+
+def test_payment_instruction_exposes_pending_authentication_contract(
+    client,
+    override_current_user,
+):
+    response = client.post(
+        "/payment-instructions/pool",
+        json={
+            "clan_id": 1,
+            "amount": "20.00",
+            "currency": "GBP",
+            "contribution_reason": "Monthly contribution",
+        },
+    )
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["status"] == "expected"
+    assert body["payment_stage"] == "pending_authentication"
+    assert body["payment_status_label"] == "Pending Authentication"
+    assert "bank" in body["bank_authentication_guidance"].lower()
+    assert "provider" in body["bank_authentication_guidance"].lower()

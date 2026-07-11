@@ -27,8 +27,8 @@ const findings = [];
 const expectedPageSourceActions = {
   PrimaryButton: 9,
   SecondaryButton: 14,
-  StableCtaLink: 4,
-  total: 27,
+  StableCtaLink: 5,
+  total: 28,
 };
 const expectedNativeFieldCount = 0;
 const expectedSignedInShortcutCount = 7;
@@ -190,6 +190,7 @@ const expectedActionOrder = [
   "shop-gallery.spotlight.whatsapp-chat",
   "shop-gallery.spotlight.phone-call",
   "shop-gallery.spotlight.contact.choose",
+  "shop-gallery.spotlight.view-details",
   "shop-gallery.ask-vault-access",
   "shop-gallery.copy-vault-request-link",
   "shop-gallery.reconnect-owner-shop",
@@ -375,6 +376,11 @@ assertNotContains(
 assertContains(
   /className="public-shop-section public-shop-spotlight"[\s\S]*?debugId="shop-gallery\.spotlight\.whatsapp-chat"[\s\S]*?<span>Chat<\/span>[\s\S]*?debugId="shop-gallery\.spotlight\.phone-call"[\s\S]*?<span>Call<\/span>[\s\S]*?debugId="shop-gallery\.spotlight\.contact\.choose"[\s\S]*?WhatsApp/,
   "Public Shop Spotlight must use one WhatsApp contact handle that opens Chat/Call for the active Spotlight owner."
+);
+
+assertContains(
+  /className="public-shop-section public-shop-spotlight"[\s\S]*?miniSpotlightView\.priceLabel[\s\S]*?miniSpotlightView\.availabilityLabel[\s\S]*?debugId="shop-gallery\.spotlight\.view-details"[\s\S]*?isCompact \? "View" : "View details"/,
+  "Public Shop Spotlight must show product price/availability facts and expose a compact View Details path for the active Spotlight item."
 );
 
 assertNotContains(

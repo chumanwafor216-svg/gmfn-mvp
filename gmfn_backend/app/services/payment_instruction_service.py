@@ -102,6 +102,64 @@ def _timestamp_code() -> str:
     return _now_utc().strftime("%Y%m%d%H%M%S")
 
 
+def _payment_status_contract(exp: ExpectedPayment) -> Dict[str, Any]:
+    status = str(getattr(exp, "status", "") or "").strip().lower()
+    bank_event_id = getattr(exp, "bank_event_id", None)
+
+    if status in {"confirmed", "applied"}:
+        stage = "completed"
+        label = "Completed"
+        guidance = "Payment provider or bank confirmation has been matched by GSN."
+    elif status == "partial":
+        stage = "authorised_partial"
+        label = "Authorised"
+        guidance = (
+            "GSN has matched part of the payment. Complete any remaining bank "
+            "transfer or provider authentication before the payment can be completed."
+        )
+    elif status in {"cancelled", "canceled"}:
+        stage = "cancelled"
+        label = "Cancelled"
+        guidance = "This payment instruction was cancelled. Do not reuse the old payment code."
+    elif status in {"failed", "defaulted", "expired"}:
+        stage = "failed"
+        label = "Expired" if status == "expired" else "Failed"
+        guidance = (
+            "This payment is not complete. Generate or use a valid payment "
+            "instruction before trying again."
+        )
+    elif bank_event_id:
+        stage = "waiting_for_bank"
+        label = "Waiting for Bank"
+        guidance = (
+            "GSN has seen a bank/provider event and is waiting for final "
+            "reconciliation before marking this payment complete."
+        )
+    else:
+        stage = "pending_authentication"
+        label = "Pending Authentication"
+        guidance = (
+            "Your bank may require app approval, SMS OTP, a one-time code, a code "
+            "generator, or biometric confirmation before the transfer completes. "
+            "Complete that with your banking provider; GSN confirms only after "
+            "bank/provider reconciliation succeeds."
+        )
+
+    return {
+        "id": int(exp.id),
+        "status": getattr(exp, "status", None),
+        "status_reason": getattr(exp, "status_reason", None),
+        "paid_amount": str(getattr(exp, "paid_amount", "0.00")),
+        "remaining_amount": str(getattr(exp, "remaining_amount", "0.00")),
+        "bank_event_id": bank_event_id,
+        "trust_event_id": getattr(exp, "trust_event_id", None),
+        "created_at": exp.created_at.isoformat() if getattr(exp, "created_at", None) else None,
+        "payment_stage": stage,
+        "payment_status_label": label,
+        "bank_authentication_guidance": guidance,
+    }
+
+
 def _positive_int(value: Any, *, name: str) -> int:
     n = int(value or 0)
     if n <= 0:
@@ -344,6 +402,7 @@ def create_pool_deposit_instruction(
         "currency": ccy,
         "contribution_reason": reason,
         "due_at": exp.due_at.isoformat() if exp.due_at else None,
+        **_payment_status_contract(exp),
     }
 
 
@@ -406,6 +465,7 @@ def create_loan_repayment_instruction(
         "expected_remaining_amount": str(exp.remaining_amount),
         "currency": exp.currency,
         "due_at": exp.due_at.isoformat() if exp.due_at else None,
+        **_payment_status_contract(exp),
     }
 
 
@@ -453,6 +513,7 @@ def create_feature_subscription_instruction(
         "currency": exp.currency,
         "due_at": exp.due_at.isoformat() if exp.due_at else None,
         "meta": meta or {},
+        **_payment_status_contract(exp),
     }
 
 
