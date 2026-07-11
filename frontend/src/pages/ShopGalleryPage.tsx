@@ -4535,7 +4535,7 @@ export default function ShopGalleryPage() {
               borderRadius: isCompact ? 18 : 26,
               padding: isCompact ? 8 : 22,
               height: isCompact ? "auto" : undefined,
-              minHeight: isCompact ? 360 : undefined,
+              minHeight: isCompact ? 300 : undefined,
               border: "1px solid rgba(255,255,255,0.92)",
               background:
                 isCompact
@@ -4555,7 +4555,7 @@ export default function ShopGalleryPage() {
                 gap: isCompact ? 8 : 18,
                 alignItems: "stretch",
                 height: undefined,
-                minHeight: isCompact ? 344 : undefined,
+                minHeight: isCompact ? 284 : undefined,
                 padding: 0,
               }}
             >
@@ -4569,7 +4569,7 @@ export default function ShopGalleryPage() {
                   overflow: "hidden",
                   display: "grid",
                   alignContent: "start",
-                  gap: isCompact ? 6 : 0,
+                  gap: isCompact ? 7 : 0,
                   padding: isCompact ? "8px 6px 6px" : 0,
                   maxWidth: isCompact ? "none" : undefined,
                 }}
@@ -4601,7 +4601,7 @@ export default function ShopGalleryPage() {
                 </div>
                 <div
                   style={{
-                    marginTop: isCompact ? 2 : 10,
+                    marginTop: isCompact ? 1 : 10,
                     color: isCompact ? "#FFFFFF" : "#07172C",
                     fontSize: isCompact ? 24 : 34,
                     fontWeight: 950,
@@ -4621,30 +4621,32 @@ export default function ShopGalleryPage() {
                     ? miniSpotlightView.title
                     : "Discover what's new"}
                 </div>
-                <div
-                  style={{
-                    marginTop: isCompact ? 2 : 10,
-                    color: isCompact ? "rgba(255,255,255,0.86)" : "#425E78",
-                    fontSize: isCompact ? 13.5 : 15,
-                    lineHeight: isCompact ? 1.38 : 1.35,
-                    fontWeight: isCompact ? 820 : 720,
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    display: "-webkit-box",
-                    WebkitLineClamp: isCompact ? 3 : 3,
-                    WebkitBoxOrient: "vertical" as any,
-                  }}
-                >
-                  {publicShopSpotlightActive
-                    ? miniSpotlightView.detail
-                    : "Fresh items, hot deals, and public shop updates."}
-                </div>
+                {!isCompact ? (
+                  <div
+                    style={{
+                      marginTop: 10,
+                      color: "#425E78",
+                      fontSize: 15,
+                      lineHeight: 1.35,
+                      fontWeight: 720,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      display: "-webkit-box",
+                      WebkitLineClamp: 3,
+                      WebkitBoxOrient: "vertical" as any,
+                    }}
+                  >
+                    {publicShopSpotlightActive
+                      ? miniSpotlightView.detail
+                      : "Fresh items, hot deals, and public shop updates."}
+                  </div>
+                ) : null}
                 <div
                   style={{
                     display: "flex",
                     gap: isCompact ? 8 : 10,
                     alignItems: "center",
-                    marginTop: isCompact ? 8 : 16,
+                    marginTop: isCompact ? 6 : 16,
                     maxWidth: isCompact ? "100%" : "100%",
                   }}
                 >
@@ -4681,7 +4683,7 @@ export default function ShopGalleryPage() {
               <div
                 style={{
                   minHeight: isCompact ? 158 : 178,
-                  height: isCompact ? 158 : "auto",
+                  height: isCompact ? 166 : "auto",
                   borderRadius: isCompact ? 18 : 20,
                   overflow: "hidden",
                   position: "relative",
@@ -4727,7 +4729,7 @@ export default function ShopGalleryPage() {
                     frameStyle={{
                       width: "100%",
                       height: isCompact ? "100%" : 178,
-                      minHeight: isCompact ? 162 : 178,
+                      minHeight: isCompact ? 166 : 178,
                       borderRadius: isCompact ? 18 : 20,
                     }}
                     mediaStyle={{
@@ -4744,7 +4746,7 @@ export default function ShopGalleryPage() {
                     style={{
                       width: "100%",
                       height: isCompact ? "100%" : 178,
-                      minHeight: isCompact ? 162 : undefined,
+                      minHeight: isCompact ? 166 : undefined,
                       objectFit: "cover",
                       display: "block",
                     }}
@@ -4753,7 +4755,7 @@ export default function ShopGalleryPage() {
                   <div
                     style={{
                       height: isCompact ? "100%" : 178,
-                      minHeight: isCompact ? 162 : undefined,
+                      minHeight: isCompact ? 166 : undefined,
                       display: "grid",
                       placeItems: "center",
                       color: "#D7E3F1",

@@ -1265,8 +1265,9 @@ export default function LoginPage() {
                 <div
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "42px minmax(0, 1fr)",
+                    gridTemplateColumns: "42px minmax(0, 1fr) 48px",
                     alignItems: "center",
+                    columnGap: 2,
                     borderRadius: 18,
                     border: "1px solid rgba(220,231,243,0.32)",
                     background:
@@ -1274,6 +1275,7 @@ export default function LoginPage() {
                     boxShadow:
                       "inset 0 1px 0 rgba(255,255,255,0.09), 0 12px 22px rgba(0,8,18,0.14)",
                     paddingLeft: 4,
+                    paddingRight: 4,
                   }}
                 >
                   <span

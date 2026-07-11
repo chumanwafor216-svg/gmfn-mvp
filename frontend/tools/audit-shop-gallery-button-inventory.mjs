@@ -401,8 +401,8 @@ assertContains(
 );
 
 assertContains(
-  /className="public-shop-section public-shop-spotlight"[\s\S]*?height: isCompact \? "auto" : undefined[\s\S]*?minHeight: isCompact \? 360 : undefined[\s\S]*?gridTemplateColumns: isCompact[\s\S]*?"1fr"[\s\S]*?gridRow: isCompact \? "2" : "1"[\s\S]*?WebkitLineClamp: isCompact \? 3 : 3[\s\S]*?debugId="shop-gallery\.spotlight\.whatsapp-chat"[\s\S]*?gridRow: "1"/,
-  "Public Shop Spotlight phone layout must keep a stacked product-information card with a single WhatsApp action instead of restoring source/detail clutter."
+  /className="public-shop-section public-shop-spotlight"[\s\S]*?height: isCompact \? "auto" : undefined[\s\S]*?minHeight: isCompact \? 300 : undefined[\s\S]*?gridTemplateColumns: isCompact[\s\S]*?"1fr"[\s\S]*?gridRow: isCompact \? "2" : "1"[\s\S]*?!isCompact \? \([\s\S]*?WebkitLineClamp: 3[\s\S]*?: null\}[\s\S]*?debugId="shop-gallery\.spotlight\.whatsapp-chat"[\s\S]*?gridRow: "1"/,
+  "Public Shop Spotlight phone layout must keep a compact stacked product card, hide phone detail copy, and keep one WhatsApp action instead of restoring source/detail clutter."
 );
 
 assertContains(
