@@ -84,6 +84,12 @@ import {
   upsertCommunityDomainPolicy,
 } from "../lib/api";
 import { APP_ROUTES } from "../lib/appRoutes";
+import {
+  communityPayInReady,
+  getCommunityPayInSettlement,
+  saveCommunityPayInSettlement,
+  type CommunityMoneySettlement,
+} from "../lib/communityMoney";
 import { humanStatus } from "./communityDomainDashboard/statusLanguage";
 
 const CommunityDomainNodeProjectionGroups = lazy(
@@ -179,6 +185,19 @@ type SettlementCountryOption = {
   hint: string;
 };
 
+type CommunityDomainPayInDraft = {
+  accountName: string;
+  bankName: string;
+  accountNumber: string;
+  sortCode: string;
+  routingNumber: string;
+  iban: string;
+  swiftBic: string;
+  country: string;
+  currency: string;
+  note: string;
+};
+
 const SETTLEMENT_COUNTRY_OPTIONS: SettlementCountryOption[] = [
   { value: "GB", label: "United Kingdom", currency: "GBP", hint: "UK bank transfer" },
   { value: "NG", label: "Nigeria", currency: "NGN", hint: "Nigeria bank transfer" },
@@ -191,6 +210,32 @@ const SETTLEMENT_COUNTRY_OPTIONS: SettlementCountryOption[] = [
   { value: "AU", label: "Australia", currency: "AUD", hint: "Australian bank transfer" },
   { value: "IN", label: "India", currency: "INR", hint: "India bank transfer" },
   { value: "AE", label: "United Arab Emirates", currency: "AED", hint: "UAE bank transfer" },
+  { value: "UG", label: "Uganda", currency: "UGX", hint: "Uganda bank or mobile money" },
+  { value: "TZ", label: "Tanzania", currency: "TZS", hint: "Tanzania bank or mobile money" },
+  { value: "RW", label: "Rwanda", currency: "RWF", hint: "Rwanda bank transfer" },
+  { value: "CM", label: "Cameroon", currency: "XAF", hint: "Central Africa bank transfer" },
+  { value: "SN", label: "Senegal", currency: "XOF", hint: "West Africa bank transfer" },
+  { value: "CI", label: "Cote d'Ivoire", currency: "XOF", hint: "West Africa bank transfer" },
+  { value: "MA", label: "Morocco", currency: "MAD", hint: "Morocco bank transfer" },
+  { value: "EG", label: "Egypt", currency: "EGP", hint: "Egypt bank transfer" },
+  { value: "ET", label: "Ethiopia", currency: "ETB", hint: "Ethiopia bank transfer" },
+  { value: "PK", label: "Pakistan", currency: "PKR", hint: "Pakistan bank transfer" },
+  { value: "BD", label: "Bangladesh", currency: "BDT", hint: "Bangladesh bank transfer" },
+  { value: "LK", label: "Sri Lanka", currency: "LKR", hint: "Sri Lanka bank transfer" },
+  { value: "NP", label: "Nepal", currency: "NPR", hint: "Nepal bank transfer" },
+  { value: "SG", label: "Singapore", currency: "SGD", hint: "Singapore bank transfer" },
+  { value: "MY", label: "Malaysia", currency: "MYR", hint: "Malaysia bank transfer" },
+  { value: "ID", label: "Indonesia", currency: "IDR", hint: "Indonesia bank transfer" },
+  { value: "TH", label: "Thailand", currency: "THB", hint: "Thailand bank transfer" },
+  { value: "PH", label: "Philippines", currency: "PHP", hint: "Philippines bank transfer" },
+  { value: "VN", label: "Vietnam", currency: "VND", hint: "Vietnam bank transfer" },
+  { value: "CN", label: "China", currency: "CNY", hint: "China bank transfer" },
+  { value: "JP", label: "Japan", currency: "JPY", hint: "Japan bank transfer" },
+  { value: "KR", label: "South Korea", currency: "KRW", hint: "South Korea bank transfer" },
+  { value: "BR", label: "Brazil", currency: "BRL", hint: "Brazil bank transfer" },
+  { value: "MX", label: "Mexico", currency: "MXN", hint: "Mexico bank transfer" },
+  { value: "TR", label: "Turkey", currency: "TRY", hint: "Turkey bank transfer" },
+  { value: "SA", label: "Saudi Arabia", currency: "SAR", hint: "Saudi Arabia bank transfer" },
 ];
 
 type DomainFeaturePolicyMode =
@@ -682,6 +727,13 @@ function normalizeSettlementCountryCode(value: unknown): string {
   ) {
     return "AE";
   }
+  const optionMatch = SETTLEMENT_COUNTRY_OPTIONS.find((option) => {
+    const label = option.label.toUpperCase().replace(/[^A-Z0-9]/g, "");
+    return text === option.value || text === option.currency || text.includes(label);
+  });
+  if (optionMatch) {
+    return optionMatch.value;
+  }
   if (
     text.includes("UNITEDKINGDOM") ||
     text.includes("GREATBRITAIN") ||
@@ -713,20 +765,67 @@ function settlementValueIsConfigured(value: unknown): boolean {
   return Boolean(text) && !["to be assigned", "not configured", "pending"].includes(text);
 }
 
+function settlementField(settlement: any, snakeKey: string, camelKey: string): string {
+  return cleanText(settlement?.[snakeKey] ?? settlement?.[camelKey]);
+}
+
 function settlementPaymentRows(settlement: any): Array<[string, string]> {
   if (!settlement || typeof settlement !== "object") return [];
   return [
-    ["Bank", settlement.bank_name],
-    ["Account name", settlement.account_name],
-    ["Account number", settlement.account_number],
-    ["Sort code", settlement.sort_code],
-    ["Bank code", settlement.bank_code],
-    ["Branch code", settlement.branch_code],
-    ["IBAN", settlement.iban],
-    ["SWIFT / BIC", settlement.swift_bic],
+    ["Bank", settlementField(settlement, "bank_name", "bankName")],
+    ["Account name", settlementField(settlement, "account_name", "accountName")],
+    ["Account number", settlementField(settlement, "account_number", "accountNumber")],
+    ["Sort code", settlementField(settlement, "sort_code", "sortCode")],
+    ["Routing number", settlementField(settlement, "routing_number", "routingNumber")],
+    ["Bank code", settlementField(settlement, "bank_code", "bankCode")],
+    ["Branch code", settlementField(settlement, "branch_code", "branchCode")],
+    ["IBAN", settlementField(settlement, "iban", "iban")],
+    ["SWIFT / BIC", settlementField(settlement, "swift_bic", "swiftBic")],
   ]
     .map(([label, value]) => [label, cleanText(value)] as [string, string])
     .filter(([, value]) => Boolean(value));
+}
+
+function emptyCommunityDomainPayInDraft(
+  country = "GB",
+  currency = "GBP"
+): CommunityDomainPayInDraft {
+  const normalizedCountry = normalizeSettlementCountryCode(country);
+  return {
+    accountName: "",
+    bankName: "",
+    accountNumber: "",
+    sortCode: "",
+    routingNumber: "",
+    iban: "",
+    swiftBic: "",
+    country: normalizedCountry,
+    currency: cleanText(currency, settlementCurrencyForCountry(normalizedCountry)).toUpperCase(),
+    note: "",
+  };
+}
+
+function draftFromCommunityPayInSettlement(
+  settlement: CommunityMoneySettlement | null,
+  fallbackCountry = "GB",
+  fallbackCurrency = "GBP"
+): CommunityDomainPayInDraft {
+  const normalizedCountry = normalizeSettlementCountryCode(settlement?.country || fallbackCountry);
+  return {
+    accountName: cleanText(settlement?.accountName),
+    bankName: cleanText(settlement?.bankName),
+    accountNumber: cleanText(settlement?.accountNumber),
+    sortCode: cleanText(settlement?.sortCode),
+    routingNumber: cleanText(settlement?.routingNumber || settlement?.achRoutingNumber),
+    iban: cleanText(settlement?.iban),
+    swiftBic: cleanText(settlement?.swiftBic),
+    country: normalizedCountry,
+    currency: cleanText(
+      settlement?.currency,
+      fallbackCurrency || settlementCurrencyForCountry(normalizedCountry)
+    ).toUpperCase(),
+    note: cleanText(settlement?.supportNote),
+  };
 }
 
 function setupDraftBelongsToDomain(
@@ -1516,6 +1615,15 @@ export default function CommunityDomainDashboardPage() {
   const [quoteCurrency, setQuoteCurrency] = useState("GBP");
   const [quoteNote, setQuoteNote] = useState("");
   const [billingSettlementCountry, setBillingSettlementCountry] = useState("GB");
+  const [communityPayInSettlement, setCommunityPayInSettlement] =
+    useState<CommunityMoneySettlement | null>(null);
+  const [communityPayInDraft, setCommunityPayInDraft] =
+    useState<CommunityDomainPayInDraft>(() => emptyCommunityDomainPayInDraft("GB", "GBP"));
+  const [communityPayInEditorOpen, setCommunityPayInEditorOpen] = useState(false);
+  const [communityPayInLoading, setCommunityPayInLoading] = useState(false);
+  const [communityPayInSaving, setCommunityPayInSaving] = useState(false);
+  const [domainPaymentProofOpen, setDomainPaymentProofOpen] = useState(false);
+  const [billingReadinessOpen, setBillingReadinessOpen] = useState(false);
   const [setupDraft, setSetupDraft] = useState<CommunityDomainSetupDraft>(
     () => setupDraftFromDomain(null)
   );
@@ -2814,6 +2922,124 @@ export default function CommunityDomainDashboardPage() {
   }, [activeLane, communityDomainId, isCurrentDomainRequest, selectedDomainClanId]);
 
   useEffect(() => {
+    const clanId = Number(selectedDomainClanId || 0);
+    let alive = true;
+    if (activeLane !== "billing" || !clanId || !getAccessToken()) {
+      setCommunityPayInLoading(false);
+      if (!clanId) setCommunityPayInSettlement(null);
+      return () => {
+        alive = false;
+      };
+    }
+
+    setCommunityPayInLoading(true);
+    getCommunityPayInSettlement(clanId)
+      .then((settlement) => {
+        if (!alive) return;
+        setCommunityPayInSettlement(settlement);
+        if (settlement) {
+          const nextCountry = normalizeSettlementCountryCode(settlement.country || billingSettlementCountry);
+          const nextCurrency = cleanText(
+            settlement.currency,
+            settlementCurrencyForCountry(nextCountry)
+          ).toUpperCase();
+          setCommunityPayInDraft(
+            draftFromCommunityPayInSettlement(settlement, nextCountry, nextCurrency)
+          );
+          setBillingSettlementCountry(nextCountry);
+          setQuoteCurrency(nextCurrency);
+        }
+      })
+      .catch(() => {
+        if (alive) setCommunityPayInSettlement(null);
+      })
+      .finally(() => {
+        if (alive) setCommunityPayInLoading(false);
+      });
+
+    return () => {
+      alive = false;
+    };
+  }, [activeLane, billingSettlementCountry, selectedDomainClanId]);
+
+  function updateCommunityPayInDraft(
+    key: keyof CommunityDomainPayInDraft,
+    value: string
+  ) {
+    setCommunityPayInDraft((current) => {
+      if (key === "country") {
+        const nextCountry = normalizeSettlementCountryCode(value);
+        return {
+          ...current,
+          country: nextCountry,
+          currency: settlementCurrencyForCountry(nextCountry),
+        };
+      }
+      return {
+        ...current,
+        [key]: key === "currency" ? value.toUpperCase().slice(0, 3) : value,
+      };
+    });
+  }
+
+  async function saveCommunityDomainPayInAccount() {
+    const clanId = Number(selectedDomainClanId || 0);
+    if (!clanId) {
+      setMessage("Select the community that owns this Community Domain before saving a pay-in account.");
+      return;
+    }
+    if (!isAdmin) {
+      setMessage("Only a Community Domain owner or domain admin can save the official pay-in account.");
+      return;
+    }
+    if (
+      !cleanText(communityPayInDraft.accountName) ||
+      !cleanText(communityPayInDraft.bankName) ||
+      !cleanText(communityPayInDraft.accountNumber)
+    ) {
+      setMessage("Enter account name, bank name, and account number before saving the pay-in account.");
+      return;
+    }
+
+    setCommunityPayInSaving(true);
+    setMessage("");
+    try {
+      const saved = await saveCommunityPayInSettlement({
+        clanId,
+        accountName: communityPayInDraft.accountName,
+        bankName: communityPayInDraft.bankName,
+        accountNumber: communityPayInDraft.accountNumber,
+        sortCode: communityPayInDraft.sortCode,
+        routingNumber: communityPayInDraft.routingNumber,
+        iban: communityPayInDraft.iban,
+        swiftBic: communityPayInDraft.swiftBic,
+        country: communityPayInDraft.country,
+        currency: communityPayInDraft.currency,
+        note: communityPayInDraft.note,
+      });
+      setCommunityPayInSettlement(saved);
+      const nextCountry = normalizeSettlementCountryCode(saved?.country || communityPayInDraft.country);
+      const nextCurrency = cleanText(
+        saved?.currency || communityPayInDraft.currency,
+        settlementCurrencyForCountry(nextCountry)
+      ).toUpperCase();
+      setCommunityPayInDraft(
+        draftFromCommunityPayInSettlement(saved, nextCountry, nextCurrency)
+      );
+      setBillingSettlementCountry(nextCountry);
+      setQuoteCurrency(nextCurrency);
+      setCommunityPayInEditorOpen(false);
+      setMessage(
+        "Community pay-in account saved. Generate the next payment code for this area so the bank details match this account."
+      );
+    } catch (err: any) {
+      setMessage(errorDetailMessage(err, "GSN could not save this Community pay-in account."));
+    } finally {
+      setCommunityPayInSaving(false);
+    }
+  }
+
+  useEffect(() => {
     const requestDomainId = cleanText(communityDomainId);
     const reviewId = latestMembershipRequestId;
     const requestId = membershipRequestLineageLoadSequence.current + 1;
@@ -2889,9 +3115,9 @@ export default function CommunityDomainDashboardPage() {
   const domainPaymentSettlementRows = settlementPaymentRows(domainPaymentSettlement);
   const domainPaymentSettlementReady =
     Boolean(domainPaymentSettlement) &&
-    settlementValueIsConfigured(domainPaymentSettlement?.bank_name) &&
-    settlementValueIsConfigured(domainPaymentSettlement?.account_name) &&
-    settlementValueIsConfigured(domainPaymentSettlement?.account_number);
+    settlementValueIsConfigured(settlementField(domainPaymentSettlement, "bank_name", "bankName")) &&
+    settlementValueIsConfigured(settlementField(domainPaymentSettlement, "account_name", "accountName")) &&
+    settlementValueIsConfigured(settlementField(domainPaymentSettlement, "account_number", "accountNumber"));
   const domainPaymentReference = cleanText(
     domainPayment?.reference_display || domainPayment?.reference_normalized
   );
@@ -2933,6 +3159,11 @@ export default function CommunityDomainDashboardPage() {
           "Not uploaded",
         "Not uploaded"
       );
+  const communityPayInIsReady = communityPayInReady(communityPayInSettlement);
+  const communityPayInRows = settlementPaymentRows(communityPayInSettlement);
+  const communityPayInCountryLabel = settlementCountryLabel(
+    communityPayInSettlement?.country || communityPayInDraft.country || billingSettlementCountry
+  );
   const billingSequenceSteps = [
     {
       step: "1",
@@ -3688,7 +3919,7 @@ export default function CommunityDomainDashboardPage() {
             </section>
           ) : null}
 
-          {showAdvancedTools ? (
+          {showAdvancedTools && activeLane === "settings" ? (
             <>
           <section style={whiteCard()}>
             <div style={officialBoardHeaderStyle()}>
@@ -4087,7 +4318,7 @@ export default function CommunityDomainDashboardPage() {
                   </div>
                 ) : null}
 
-                {isActiveLaneReadinessLoading ? (
+                {isActiveLaneReadinessLoading && activeLane !== "billing" ? (
                   <div style={softCard()}>
                     <div style={sectionLabel()}>Loading setup intelligence</div>
                     <div style={{ ...helperText(), marginTop: 7 }}>
@@ -5003,6 +5234,301 @@ export default function CommunityDomainDashboardPage() {
                         Bank details show only after a code is generated for the selected area.
                       </div>
                     </div>
+                    <div
+                      style={{
+                        ...softCard(),
+                        marginTop: 12,
+                        display: "grid",
+                        gap: 10,
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "flex-start",
+                          gap: 10,
+                          flexWrap: "wrap",
+                        }}
+                      >
+                        <div style={{ minWidth: 0 }}>
+                          <div style={sectionLabel()}>Community pay-in account</div>
+                          <h4 style={{ margin: "4px 0 0", fontSize: 16, lineHeight: 1.18 }}>
+                            Save the bank rail before issuing the next code.
+                          </h4>
+                        </div>
+                        <span
+                          style={statusBadge(
+                            communityPayInLoading
+                              ? "Loading"
+                              : communityPayInIsReady
+                              ? "Ready"
+                              : "Not saved"
+                          )}
+                        >
+                          {communityPayInLoading
+                            ? "Loading"
+                            : communityPayInIsReady
+                            ? "Ready"
+                            : "Not saved"}
+                        </span>
+                      </div>
+                      <div style={{ ...helperText(), fontSize: 13 }}>
+                        Save the account this Community Domain should show after code generation.
+                        This does not confirm payment.
+                      </div>
+                      {communityPayInIsReady ? (
+                        <div
+                          style={{
+                            display: "grid",
+                            gridTemplateColumns:
+                              "repeat(auto-fit, minmax(min(100%, 150px), 1fr))",
+                            gap: 8,
+                          }}
+                        >
+                          <div
+                            style={{
+                              borderRadius: 12,
+                              background: "rgba(255,255,255,0.82)",
+                              border: "1px solid rgba(9,27,46,0.10)",
+                              padding: "8px 10px",
+                            }}
+                          >
+                            <div style={{ ...sectionLabel(), fontSize: 11 }}>Area</div>
+                            <div
+                              style={{
+                                color: "#091B2E",
+                                fontSize: 13,
+                                fontWeight: 900,
+                                marginTop: 3,
+                              }}
+                            >
+                              {communityPayInCountryLabel}
+                            </div>
+                          </div>
+                          {communityPayInRows.slice(0, 5).map(([label, value]) => (
+                            <div
+                              key={label}
+                              style={{
+                                borderRadius: 12,
+                                background: "rgba(255,255,255,0.82)",
+                                border: "1px solid rgba(9,27,46,0.10)",
+                                padding: "8px 10px",
+                              }}
+                            >
+                              <div style={{ ...sectionLabel(), fontSize: 11 }}>{label}</div>
+                              <div
+                                style={{
+                                  color: "#091B2E",
+                                  fontSize: 13,
+                                  fontWeight: 900,
+                                  marginTop: 3,
+                                  overflowWrap: "anywhere",
+                                }}
+                              >
+                                {value}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div style={{ ...helperText(), fontSize: 13, fontWeight: 820 }}>
+                          No official account is saved for this community yet. Generate payment
+                          codes only after the correct rail is saved or finance has assigned one.
+                        </div>
+                      )}
+                      {isAdmin ? (
+                        <StableButton
+                          type="button"
+                          kind="secondary"
+                          fullWidth
+                          debugId="community-domain-dashboard.pay-in-account-toggle"
+                          onClick={() => {
+                            setCommunityPayInEditorOpen((open) => !open);
+                            if (!communityPayInEditorOpen && !communityPayInIsReady) {
+                              const nextCountry = normalizeSettlementCountryCode(
+                                billingSettlementCountry
+                              );
+                              setCommunityPayInDraft(
+                                emptyCommunityDomainPayInDraft(
+                                  nextCountry,
+                                  settlementCurrencyForCountry(nextCountry)
+                                )
+                              );
+                            }
+                          }}
+                        >
+                          {communityPayInEditorOpen
+                            ? "Close account setup"
+                            : communityPayInIsReady
+                            ? "Edit account"
+                            : "Set account"}
+                        </StableButton>
+                      ) : null}
+                      {isAdmin && communityPayInEditorOpen ? (
+                        <div style={{ display: "grid", gap: 10 }}>
+                          <div
+                            style={{
+                              display: "grid",
+                              gridTemplateColumns:
+                                "repeat(auto-fit, minmax(min(100%, 150px), 1fr))",
+                              gap: 10,
+                            }}
+                          >
+                            <label style={{ display: "grid", gap: 6 }}>
+                              <span style={sectionLabel()}>Area</span>
+                              <select
+                                value={communityPayInDraft.country}
+                                onChange={(event) =>
+                                  updateCommunityPayInDraft("country", event.target.value)
+                                }
+                                style={billingInputStyle()}
+                              >
+                                {SETTLEMENT_COUNTRY_OPTIONS.map((option) => (
+                                  <option key={option.value} value={option.value}>
+                                    {option.label} - {option.currency}
+                                  </option>
+                                ))}
+                              </select>
+                            </label>
+                            <label style={{ display: "grid", gap: 6 }}>
+                              <span style={sectionLabel()}>Currency</span>
+                              <input
+                                value={communityPayInDraft.currency}
+                                onChange={(event) =>
+                                  updateCommunityPayInDraft("currency", event.target.value)
+                                }
+                                maxLength={3}
+                                placeholder="GBP"
+                                style={billingInputStyle()}
+                              />
+                            </label>
+                            <label style={{ display: "grid", gap: 6 }}>
+                              <span style={sectionLabel()}>Bank</span>
+                              <input
+                                value={communityPayInDraft.bankName}
+                                onChange={(event) =>
+                                  updateCommunityPayInDraft("bankName", event.target.value)
+                                }
+                                placeholder="Bank name"
+                                style={billingInputStyle()}
+                              />
+                            </label>
+                            <label style={{ display: "grid", gap: 6 }}>
+                              <span style={sectionLabel()}>Account name</span>
+                              <input
+                                value={communityPayInDraft.accountName}
+                                onChange={(event) =>
+                                  updateCommunityPayInDraft("accountName", event.target.value)
+                                }
+                                placeholder="Account holder"
+                                style={billingInputStyle()}
+                              />
+                            </label>
+                            <label style={{ display: "grid", gap: 6 }}>
+                              <span style={sectionLabel()}>Account number</span>
+                              <input
+                                value={communityPayInDraft.accountNumber}
+                                onChange={(event) =>
+                                  updateCommunityPayInDraft("accountNumber", event.target.value)
+                                }
+                                inputMode="numeric"
+                                placeholder="Account number"
+                                style={billingInputStyle()}
+                              />
+                            </label>
+                            <label style={{ display: "grid", gap: 6 }}>
+                              <span style={sectionLabel()}>Sort code</span>
+                              <input
+                                value={communityPayInDraft.sortCode}
+                                onChange={(event) =>
+                                  updateCommunityPayInDraft("sortCode", event.target.value)
+                                }
+                                placeholder="UK sort code"
+                                style={billingInputStyle()}
+                              />
+                            </label>
+                            <label style={{ display: "grid", gap: 6 }}>
+                              <span style={sectionLabel()}>Routing number</span>
+                              <input
+                                value={communityPayInDraft.routingNumber}
+                                onChange={(event) =>
+                                  updateCommunityPayInDraft("routingNumber", event.target.value)
+                                }
+                                placeholder="US/other routing"
+                                style={billingInputStyle()}
+                              />
+                            </label>
+                            <label style={{ display: "grid", gap: 6 }}>
+                              <span style={sectionLabel()}>IBAN</span>
+                              <input
+                                value={communityPayInDraft.iban}
+                                onChange={(event) =>
+                                  updateCommunityPayInDraft("iban", event.target.value)
+                                }
+                                placeholder="IBAN if used"
+                                style={billingInputStyle()}
+                              />
+                            </label>
+                            <label style={{ display: "grid", gap: 6 }}>
+                              <span style={sectionLabel()}>SWIFT / BIC</span>
+                              <input
+                                value={communityPayInDraft.swiftBic}
+                                onChange={(event) =>
+                                  updateCommunityPayInDraft("swiftBic", event.target.value)
+                                }
+                                placeholder="SWIFT/BIC if used"
+                                style={billingInputStyle()}
+                              />
+                            </label>
+                          </div>
+                          <label style={{ display: "grid", gap: 6 }}>
+                            <span style={sectionLabel()}>Finance note</span>
+                            <textarea
+                              value={communityPayInDraft.note}
+                              onChange={(event) =>
+                                updateCommunityPayInDraft("note", event.target.value)
+                              }
+                              placeholder="Instruction shown with this account"
+                              style={{
+                                ...billingInputStyle(),
+                                minHeight: 92,
+                                padding: "12px",
+                                resize: "vertical",
+                              }}
+                            />
+                          </label>
+                          <div
+                            style={{
+                              display: "grid",
+                              gridTemplateColumns:
+                                "repeat(auto-fit, minmax(min(100%, 150px), 1fr))",
+                              gap: 8,
+                            }}
+                          >
+                            <StableButton
+                              type="button"
+                              kind="primary"
+                              fullWidth
+                              disabled={communityPayInSaving}
+                              debugId="community-domain-dashboard.pay-in-account-save"
+                              onClick={saveCommunityDomainPayInAccount}
+                            >
+                              {communityPayInSaving ? "Saving account..." : "Save pay-in account"}
+                            </StableButton>
+                            <StableButton
+                              type="button"
+                              kind="secondary"
+                              fullWidth
+                              debugId="community-domain-dashboard.pay-in-account-close"
+                              onClick={() => setCommunityPayInEditorOpen(false)}
+                            >
+                              Close
+                            </StableButton>
+                          </div>
+                        </div>
+                      ) : null}
+                    </div>
                     <StableButton
                       type="button"
                       kind="secondary"
@@ -5296,42 +5822,80 @@ export default function CommunityDomainDashboardPage() {
                           a one-time code, code generator, or biometric confirmation,
                           complete that with the bank first.
                         </div>
-                        <PaymentProofSubmissionPanel
-                          payment={domainPayment}
-                          clanId={selectedDomainClanId}
-                          title="Community Domain payment proof"
-                          compact={false}
-                          debugIdPrefix="community-domain-payment-proof"
-                          onUploaded={(updated) => {
-                            setDomainPayment({ ...domainPayment, ...updated });
-                            setMessage(
-                              "Community Domain payment proof uploaded for finance review. Activation still waits for reconciliation."
-                            );
-                          }}
-                          onNotice={(tone, text) => {
-                            if (tone === "success" || tone === "error") {
-                              setMessage(text);
-                            }
-                          }}
-                        />
+                        <StableButton
+                          type="button"
+                          kind="secondary"
+                          fullWidth
+                          debugId="community-domain-dashboard.payment-proof-toggle"
+                          onClick={() => setDomainPaymentProofOpen((open) => !open)}
+                          style={{ marginTop: 10 }}
+                        >
+                          {domainPaymentProofOpen ? "Hide proof upload" : "Open proof upload"}
+                        </StableButton>
+                        {domainPaymentProofOpen ? (
+                          <div style={{ marginTop: 10 }}>
+                            <PaymentProofSubmissionPanel
+                              payment={domainPayment}
+                              clanId={selectedDomainClanId}
+                              title="Community Domain payment proof"
+                              compact={false}
+                              debugIdPrefix="community-domain-payment-proof"
+                              onUploaded={(updated) => {
+                                setDomainPayment({ ...domainPayment, ...updated });
+                                setMessage(
+                                  "Community Domain payment proof uploaded for finance review. Activation still waits for reconciliation."
+                                );
+                              }}
+                              onNotice={(tone, text) => {
+                                if (tone === "success" || tone === "error") {
+                                  setMessage(text);
+                                }
+                              }}
+                            />
+                          </div>
+                        ) : null}
                       </div>
                     ) : null}
                   </div>
                 ) : null}
 
-                {!isActiveLaneReadinessLoading && activeLane === "billing" ? (
-                  <Suspense
-                    fallback={
-                      <div style={{ ...helperText(), marginTop: 4 }}>
-                        Loading billing readiness panels...
+                {activeLane === "billing" ? (
+                  <div style={softCard()}>
+                    <div style={sectionLabel()}>Billing readiness details</div>
+                    <div style={{ ...helperText(), marginTop: 7 }}>
+                      Open this only when you need the deeper lifecycle and capacity
+                      diagnostics. The payment-code and account steps above are the
+                      normal owner workflow.
+                    </div>
+                    <StableButton
+                      type="button"
+                      kind="secondary"
+                      fullWidth
+                      debugId="community-domain-dashboard.billing-readiness-toggle"
+                      onClick={() => setBillingReadinessOpen((open) => !open)}
+                      style={{ marginTop: 12 }}
+                    >
+                      {billingReadinessOpen
+                        ? "Hide readiness details"
+                        : "Open readiness details"}
+                    </StableButton>
+                    {billingReadinessOpen ? (
+                      <div style={{ marginTop: 12 }}>
+                        <Suspense
+                          fallback={
+                            <div style={{ ...helperText(), marginTop: 4 }}>
+                              Loading billing readiness panels...
+                            </div>
+                          }
+                        >
+                          <CommunityDomainBillingReadinessPanels
+                            subscriptionLifecycle={subscriptionLifecycle}
+                            capacityPlan={capacityPlan}
+                          />
+                        </Suspense>
                       </div>
-                    }
-                  >
-                    <CommunityDomainBillingReadinessPanels
-                      subscriptionLifecycle={subscriptionLifecycle}
-                      capacityPlan={capacityPlan}
-                    />
-                  </Suspense>
+                    ) : null}
+                  </div>
                 ) : null}
 
                 {!isActiveLaneReadinessLoading && activeLane === "modules" ? (

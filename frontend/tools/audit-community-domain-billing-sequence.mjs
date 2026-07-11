@@ -23,6 +23,7 @@ function isApiRequest(url) {
     "/api/",
     "/auth/",
     "/clans/",
+    "/community-pay-in-accounts/",
     "/community-domains/",
     "/community-domains",
     "/bank/",
@@ -213,6 +214,23 @@ const expectedPaymentsPayload = {
   ],
 };
 
+const communityPayInPayload = {
+  configured: true,
+  settlement: {
+    rail_name: "Community bank transfer",
+    bank_name: "Audit Society Bank",
+    account_name: "Audit Community Pay-In",
+    account_number: "99887766",
+    sort_code: "11-22-33",
+    country: "GB",
+    country_label: "United Kingdom",
+    currency: "GBP",
+    configured: true,
+    source: "community_pay_in_account",
+    support_note: "Use the exact payment code as the transfer reference.",
+  },
+};
+
 const handledApiUrls = [];
 const pageErrors = [];
 
@@ -257,6 +275,11 @@ async function mockApi(route) {
 
   if (pathname.includes("/bank/expected")) {
     await route.fulfill(json(expectedPaymentsPayload));
+    return;
+  }
+
+  if (pathname.includes("/community-pay-in-accounts/1")) {
+    await route.fulfill(json(communityPayInPayload));
     return;
   }
 
@@ -317,11 +340,20 @@ async function pageAudit(page) {
     const viewportW = window.innerWidth;
     const viewportH = window.innerHeight;
     const bodyText = document.body?.textContent || document.body?.innerText || "";
+    const bottomNav = document.querySelector('[data-gmfn-bottom-nav="true"]');
+    const bottomNavRect = bottomNav?.getBoundingClientRect();
+    const scrollRoot = document.querySelector('[data-gmfn-mobile-scroll-root="true"]');
     return {
       viewportW,
       viewportH,
       scrollW: document.documentElement.scrollWidth,
       scrollH: document.documentElement.scrollHeight,
+      scrollRootH: scrollRoot?.scrollHeight || 0,
+      bottomNavVisible:
+        Boolean(bottomNavRect) &&
+        bottomNavRect.top >= 0 &&
+        bottomNavRect.top < viewportH &&
+        bottomNavRect.bottom <= viewportH + 2,
       bodyText,
       horizontalOverflow: document.documentElement.scrollWidth > viewportW + 2,
     };
@@ -378,6 +410,11 @@ try {
     "Separate rails",
     "Subscription payment uses a code and finance review.",
     "Bank details show only after a code is generated for the selected area.",
+    "Community pay-in account",
+    "Save the account this Community Domain should show after code generation.",
+    "Audit Society Bank",
+    "Audit Community Pay-In",
+    "Edit account",
     "Latest payment code",
     "GSN credit link",
     "GMFN-U-0B5A2953",
@@ -391,6 +428,9 @@ try {
     "Sort code",
     "Payment: Pending Authentication",
     "Proof: Not uploaded",
+    "Open proof upload",
+    "Billing readiness details",
+    "Open readiness details",
   ];
   const forbiddenText = [
     "Copy Details",
@@ -412,6 +452,16 @@ try {
 
   if (result.horizontalOverflow) {
     findings.push(`Horizontal overflow: scroll width ${result.scrollW}px on ${result.viewportW}px viewport`);
+  }
+
+  if (!result.bottomNavVisible) {
+    findings.push("Bottom navigation is not visible in the mobile viewport after opening Billing.");
+  }
+
+  if (result.scrollRootH > result.viewportH * 7.25) {
+    findings.push(
+      `Billing mobile scroll is too long: scroll root ${result.scrollRootH}px on ${result.viewportH}px viewport`
+    );
   }
 
   if (findings.length > 0) {

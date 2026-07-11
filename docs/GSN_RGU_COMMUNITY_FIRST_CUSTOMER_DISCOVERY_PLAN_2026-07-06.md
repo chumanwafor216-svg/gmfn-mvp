@@ -3150,6 +3150,23 @@ Pilot Community Domain payment intent bridge:
 - This pilot bridge discourages fraud without claiming full automatic bank rails
   are complete.
 
+Pilot Community Domain pay-in account rule:
+
+- The Community Domain Billing lane must let an owner/admin save the official
+  community pay-in account for the selected area before the next payment code is
+  issued.
+- The selected area should set the expected currency automatically from the
+  country/currency list, while still allowing finance to correct the three-letter
+  currency code during pilot testing.
+- Generated payment-code screens should show both the internal credit link
+  (payer GSN ID, community, domain, expected-payment record) and the official
+  bank rail for the selected area.
+- Proof upload and deeper readiness diagnostics should be available on demand,
+  not fully exposed by default, so the mobile Billing lane does not become an
+  endless admin dump.
+- Saving a bank rail does not confirm payment. Payment still waits for
+  bank/provider reconciliation or manual finance review.
+
 ---
 
 ## 47. Source Notes For Internal Review
