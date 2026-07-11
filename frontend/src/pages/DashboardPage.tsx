@@ -96,6 +96,7 @@ type SpotlightItem = {
   source_product_description?: string | null;
   source_product_price?: string | number | null;
   source_product_currency?: string | null;
+  source_product_category?: string | null;
   source_product_availability?: string | null;
   spotlight_owner?: string | null;
   spotlight_community?: string | null;
@@ -1081,6 +1082,13 @@ function positiveNumber(value: unknown): number {
   return Number.isFinite(n) && n > 0 ? n : 0;
 }
 
+function spotlightPriceLine(price: unknown, currency: unknown): string {
+  const priceText = safeStr(price);
+  const currencyText = safeStr(currency);
+  if (priceText && currencyText) return `${currencyText} ${priceText}`;
+  return priceText || currencyText;
+}
+
 function normalizeSpotlightItem(raw: any): SpotlightItem | null {
   const source = raw?.item || raw?.broadcast || raw;
   if (!source || typeof source !== "object") return null;
@@ -1145,6 +1153,8 @@ function normalizeSpotlightItem(raw: any): SpotlightItem | null {
       source.source_product_price ?? source.sourceProductPrice ?? null,
     source_product_currency:
       safeStr(source.source_product_currency || source.sourceProductCurrency) || null,
+    source_product_category:
+      safeStr(source.source_product_category || source.sourceProductCategory) || null,
     source_product_availability:
       safeStr(source.source_product_availability || source.sourceProductAvailability) || null,
     spotlight_owner:
@@ -9654,6 +9664,105 @@ export default function DashboardPage() {
                     {spotlightExpiryStatus.detail}
                   </div>
 
+                </div>
+              </div>
+              <div
+                style={{
+                  marginTop: isPhone ? 10 : 12,
+                  display: "grid",
+                  gap: isPhone ? 7 : 9,
+                  padding: isPhone ? "2px 2px 0" : "4px 4px 0",
+                }}
+              >
+                <div
+                  style={{
+                    color: "#0B1F33",
+                    fontWeight: 950,
+                    fontSize: dashboardSpotlightTitleSize,
+                    lineHeight: 1.15,
+                  }}
+                >
+                  {safeStr(
+                    activeSpotlight.source_product_title ||
+                      activeSpotlight.title ||
+                      activeSpotlight.message ||
+                      "Your community Spotlight"
+                  )}
+                </div>
+
+                {safeStr(
+                  activeSpotlight.source_product_description ||
+                    activeSpotlight.body ||
+                    activeSpotlight.message ||
+                    ""
+                ) ? (
+                  <div
+                    style={{
+                      color: "#475569",
+                      fontSize: dashboardSpotlightBodyFontSize,
+                      lineHeight: isPhone ? 1.45 : 1.62,
+                      display: "-webkit-box",
+                      WebkitBoxOrient: "vertical",
+                      WebkitLineClamp: isCompact ? 3 : 4,
+                      overflow: "hidden",
+                    }}
+                  >
+                    {safeStr(
+                      activeSpotlight.source_product_description ||
+                        activeSpotlight.body ||
+                        activeSpotlight.message ||
+                        ""
+                    )}
+                  </div>
+                ) : null}
+
+                <div
+                  style={{
+                    display: "flex",
+                    gap: isPhone ? 6 : 8,
+                    flexWrap: "wrap",
+                    alignItems: "center",
+                  }}
+                >
+                  <span style={badge(true)}>
+                    {spotlightPriceLine(
+                      activeSpotlight.source_product_price ?? activeSpotlight.price,
+                      activeSpotlight.source_product_currency ??
+                        activeSpotlight.currency
+                    ) || "Price on request"}
+                  </span>
+                  <span style={badge(false)}>
+                    {safeStr(
+                      activeSpotlight.source_product_availability ||
+                        activeSpotlight.source_product_category ||
+                        "Availability shown by owner"
+                    )}
+                  </span>
+                  <span style={badge(false)}>
+                    {safeStr(
+                      activeSpotlight.source_shop_name ||
+                        activeSpotlight.spotlight_owner ||
+                        activeSpotlight.author_name ||
+                        "Community seller"
+                    )}
+                  </span>
+                  <span style={badge(false)}>
+                    {safeStr(
+                      activeSpotlight.source_clan_name ||
+                        activeSpotlight.spotlight_community ||
+                        currentCommunityName(currentClan, selectedClanId)
+                    )}
+                  </span>
+                </div>
+
+                <div
+                  style={{
+                    color: spotlightExpiryStatus.urgent ? "#9A3412" : "#1D4ED8",
+                    fontSize: isPhone ? 12.5 : 13,
+                    fontWeight: 800,
+                  }}
+                >
+                  {spotlightExpiryStatus.detail}
                 </div>
               </div>
               <div

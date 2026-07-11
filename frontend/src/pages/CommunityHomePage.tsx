@@ -115,6 +115,14 @@ type ActiveCommunitySpotlight = {
   message: string;
   imageUrl: string;
   videoUrl: string;
+  title: string;
+  description: string;
+  price: string;
+  currency: string;
+  category: string;
+  availability: string;
+  ownerName: string;
+  communityName: string;
   sourceProductId?: number;
   sourceProductBlock?: number;
   sourceProductSlotNumber?: number;
@@ -225,6 +233,13 @@ function firstTruthy(...values: any[]): string {
   return "";
 }
 
+function spotlightPriceLine(price: any, currency: any): string {
+  const priceText = safeStr(price);
+  const currencyText = safeStr(currency);
+  if (priceText && currencyText) return `${currencyText} ${priceText}`;
+  return priceText || currencyText;
+}
+
 function normalizeGmfnKey(value: any): string {
   const raw = safeStr(value).toUpperCase();
   if (!raw) return "";
@@ -289,6 +304,45 @@ function normalizeActiveCommunitySpotlight(
     message: safeStr(row?.message || ""),
     imageUrl: toBackendAssetUrl(safeStr(row?.image_url || row?.imageUrl || "")),
     videoUrl: toBackendAssetUrl(safeStr(row?.video_url || row?.videoUrl || "")),
+    title: firstTruthy(
+      row?.source_product_title,
+      row?.sourceProductTitle,
+      row?.spotlight_title,
+      row?.spotlightTitle,
+      row?.message
+    ),
+    description: firstTruthy(
+      row?.source_product_description,
+      row?.sourceProductDescription,
+      row?.spotlight_description,
+      row?.spotlightDescription,
+      row?.message
+    ),
+    price: firstTruthy(row?.source_product_price, row?.sourceProductPrice),
+    currency: firstTruthy(row?.source_product_currency, row?.sourceProductCurrency),
+    category: firstTruthy(
+      row?.source_product_category,
+      row?.sourceProductCategory,
+      "Spotlight item"
+    ),
+    availability: firstTruthy(
+      row?.source_product_availability,
+      row?.sourceProductAvailability
+    ),
+    ownerName: firstTruthy(
+      row?.spotlight_owner,
+      row?.spotlightOwner,
+      row?.source_shop_name,
+      row?.sourceShopName,
+      row?.author_name,
+      row?.authorName
+    ),
+    communityName: firstTruthy(
+      row?.spotlight_community,
+      row?.spotlightCommunity,
+      row?.source_clan_name,
+      row?.sourceClanName
+    ),
     sourceProductId:
       Number(row?.source_product_id || row?.sourceProductId || 0) || undefined,
     sourceProductBlock:
@@ -4794,7 +4848,54 @@ export default function CommunityHomePage() {
                       lineHeight: 1.4,
                     }}
                   >
-                    {activeCommunitySpotlight.message || "Your spotlight is live."}
+                    {activeCommunitySpotlight.title || "Your spotlight is live."}
+                  </div>
+                  {activeCommunitySpotlight.description ? (
+                    <div
+                      style={{
+                        marginTop: 6,
+                        color: "#526579",
+                        fontSize: 13.5,
+                        fontWeight: 760,
+                        lineHeight: 1.45,
+                        display: "-webkit-box",
+                        WebkitBoxOrient: "vertical",
+                        WebkitLineClamp: isCompact ? 3 : 2,
+                        overflow: "hidden",
+                      }}
+                    >
+                      {activeCommunitySpotlight.description}
+                    </div>
+                  ) : null}
+                  <div
+                    style={{
+                      marginTop: 10,
+                      display: "grid",
+                      gridTemplateColumns: isCompact
+                        ? "repeat(2, minmax(0, 1fr))"
+                        : "repeat(4, minmax(0, 1fr))",
+                      gap: 8,
+                    }}
+                  >
+                    <span style={badge(false)}>
+                      {activeCommunitySpotlight.ownerName || "Owner shown by GSN"}
+                    </span>
+                    <span style={badge(false)}>
+                      {activeCommunitySpotlight.communityName ||
+                        selectedClanName ||
+                        "Selected community"}
+                    </span>
+                    <span style={badge(true)}>
+                      {spotlightPriceLine(
+                        activeCommunitySpotlight.price,
+                        activeCommunitySpotlight.currency
+                      ) || "Price on request"}
+                    </span>
+                    <span style={badge(false)}>
+                      {activeCommunitySpotlight.availability ||
+                        activeCommunitySpotlight.category ||
+                        "Availability shown by owner"}
+                    </span>
                   </div>
                   <div
                     style={{
