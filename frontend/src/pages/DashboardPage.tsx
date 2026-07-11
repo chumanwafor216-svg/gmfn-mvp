@@ -3179,7 +3179,6 @@ export default function DashboardPage() {
   );
   const [sellerIdentityDockOpen, setSellerIdentityDockOpen] =
     useState<boolean>(true);
-  const [spotlightGuideOpen, setSpotlightGuideOpen] = useState<boolean>(false);
   const [demandGuideOpen, setDemandGuideOpen] = useState<boolean>(false);
 
   const [avatarSrc, setAvatarSrc] = useState<string>("");
@@ -5342,6 +5341,7 @@ export default function DashboardPage() {
 
   const attentionSurfaceVisible =
     attentionDisplaySignal.active &&
+    !activeSpotlight &&
     (attentionPopupVisible ||
       (!attentionAutoOpenAllowed && !attentionQuietActive) ||
       (attentionDisplaySignal.shouldShow && !attentionQuietActive));
@@ -5532,10 +5532,6 @@ export default function DashboardPage() {
     runDashboardUiMutation(event, () =>
       updateUiState({ spotlightMinimized: false })
     );
-  }
-
-  function toggleSpotlightGuide(event?: React.SyntheticEvent<HTMLElement>) {
-    runDashboardUiMutation(event, () => setSpotlightGuideOpen((open) => !open));
   }
 
   function toggleDemandGuide(event?: React.SyntheticEvent<HTMLElement>) {
@@ -6144,9 +6140,7 @@ export default function DashboardPage() {
   const dashboardSpotlightTopInset = isCompact ? 6 : 8;
   const dashboardSpotlightBottomInset = isCompact ? 6 : 8;
   const dashboardSpotlightScreenHeight = isPhone
-    ? spotlightGuideOpen
-      ? 294
-      : 318
+    ? 318
     : isCompact
     ? 286
     : 340;
@@ -9671,266 +9665,6 @@ export default function DashboardPage() {
                   </div>
                 ) : null}
 
-              </div>
-              <div
-                onPointerDown={consumeDashboardPointerEvent}
-                style={{
-                  marginTop: isPhone ? 10 : 12,
-                  borderRadius: isPhone ? 17 : 18,
-                  border: "1px solid rgba(214,170,69,0.24)",
-                  background: "linear-gradient(180deg, #FFFFFF 0%, #FFFDF8 100%)",
-                  padding: isPhone ? 10 : 12,
-                  color: "#35516B",
-                  fontSize: isPhone ? 11.8 : 13,
-                  lineHeight: isPhone ? 1.38 : 1.55,
-                }}
-              >
-                <StableButton
-                  debugId="dashboard.spotlight.guide.toggle"
-                  type="button"
-                  onClick={toggleSpotlightGuide}
-                  onPointerDown={consumeDashboardPointerEvent}
-                  style={dashboardStableActionFrame({
-                    width: "100%",
-                    minWidth: 0,
-                    minHeight: isPhone ? 68 : 72,
-                    padding: isPhone ? "0 2px" : "0 4px",
-                    border: "0",
-                    borderRadius: isPhone ? 14 : 16,
-                    background: "transparent",
-                    boxShadow: "none",
-                    color: "#35516B",
-                    cursor: "pointer",
-                    display: "grid",
-                    gridTemplateColumns: isPhone
-                      ? "auto minmax(0, 1fr) auto"
-                      : "auto minmax(0, 1fr) 1px auto",
-                    gap: isPhone ? 10 : 14,
-                    alignItems: "center",
-                    justifyContent: "stretch",
-                    textAlign: "left",
-                    letterSpacing: 0,
-                    touchAction: "manipulation",
-                    userSelect: "none",
-                  })}
-                  aria-expanded={spotlightGuideOpen}
-                >
-                  <span
-                    aria-hidden="true"
-                    style={{
-                      width: isPhone ? 48 : 52,
-                      height: isPhone ? 48 : 52,
-                      borderRadius: 999,
-                      display: "grid",
-                      placeItems: "center",
-                      border: "1px solid rgba(214,170,69,0.26)",
-                      background:
-                        "linear-gradient(180deg, #FFFFFF 0%, #FFF6DD 100%)",
-                      boxShadow:
-                        "0 10px 20px rgba(10,24,49,0.07), inset 0 1px 0 rgba(255,255,255,0.92)",
-                    }}
-                  >
-                    <GsnLegacyIcon name="video" size={isPhone ? 31 : 34} />
-                  </span>
-                  <div style={{ minWidth: 0 }}>
-                    <div
-                      style={{
-                        color: "#8A651E",
-                        fontSize: isPhone ? 14 : 16,
-                        fontWeight: 1000,
-                        lineHeight: 1.15,
-                      }}
-                    >
-                      Sharing matters.
-                    </div>
-                    <div
-                      style={{
-                        marginTop: 2,
-                        color: "#475569",
-                        fontSize: isPhone ? 11.8 : 13,
-                        fontWeight: 750,
-                        lineHeight: 1.28,
-                      }}
-                    >
-                      {spotlightQueueTotal || spotlights.length} live or queued.
-                    </div>
-                  </div>
-                  {!isPhone ? (
-                    <span
-                      aria-hidden="true"
-                      style={{
-                        width: 1,
-                        minHeight: 46,
-                        background: "rgba(214,170,69,0.22)",
-                      }}
-                    />
-                  ) : null}
-                  <span
-                    style={dashboardStableActionFrame({
-                      width: "auto",
-                      minWidth: isPhone ? 82 : 112,
-                      minHeight: isPhone ? 42 : 48,
-                      padding: isPhone ? "7px 10px" : "9px 14px",
-                      border: "1px solid rgba(15,59,116,0.12)",
-                      borderRadius: 999,
-                      background:
-                        "linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)",
-                      boxShadow:
-                        "0 10px 20px rgba(10,24,49,0.07), inset 0 1px 0 rgba(255,255,255,0.88)",
-                      cursor: "pointer",
-                      color: "#07172C",
-                      fontWeight: 1000,
-                      fontSize: isPhone ? 12.5 : 14,
-                      letterSpacing: 0,
-                      touchAction: "manipulation",
-                      userSelect: "none",
-                      display: "inline-flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      gap: 8,
-                      whiteSpace: "nowrap",
-                    })}
-                  >
-                    <span>{spotlightGuideOpen ? "Close" : "Open"}</span>
-                    <span aria-hidden="true" style={{ fontSize: isPhone ? 20 : 23 }}>
-                      &gt;
-                    </span>
-                  </span>
-                </StableButton>
-                {spotlightGuideOpen ? (
-                  <div
-                    style={{
-                      marginTop: isPhone ? 10 : 8,
-                      display: "grid",
-                      gap: isPhone ? 8 : 10,
-                      paddingRight: isPhone ? 2 : 0,
-                    }}
-                  >
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: isPhone
-                        ? "1fr"
-                        : "repeat(3, minmax(0, 1fr))",
-                      gap: 8,
-                    }}
-                  >
-                    <div
-                      style={{
-                        borderRadius: 14,
-                        border: "1px solid rgba(214,170,69,0.20)",
-                        background: "rgba(255,248,232,0.72)",
-                        padding: isPhone ? "9px 10px" : "10px 12px",
-                        color: "#8A651E",
-                        fontSize: isPhone ? 11.3 : 12.5,
-                        fontWeight: 950,
-                        lineHeight: 1.25,
-                      }}
-                    >
-                      Community display
-                    </div>
-                    <div
-                      style={{
-                        borderRadius: 14,
-                        border: "1px solid rgba(15,59,116,0.12)",
-                        background: "rgba(248,251,255,0.92)",
-                        padding: isPhone ? "9px 10px" : "10px 12px",
-                        color: spotlightExpiryStatus.urgent ? "#9A3412" : "#0F3B74",
-                        fontSize: isPhone ? 11.3 : 12.5,
-                        fontWeight: 950,
-                        lineHeight: 1.25,
-                      }}
-                    >
-                      {spotlightExpiryStatus.chip}
-                    </div>
-                    <div
-                      style={{
-                        borderRadius: 14,
-                        border: "1px solid rgba(15,59,116,0.12)",
-                        background: "rgba(248,251,255,0.92)",
-                        padding: isPhone ? "9px 10px" : "10px 12px",
-                        color: "#0F3B74",
-                        fontSize: isPhone ? 11.3 : 12.5,
-                        fontWeight: 950,
-                        lineHeight: 1.25,
-                      }}
-                    >
-                      Rotates every {SPOTLIGHT_PILOT_ROTATION_SECONDS_LABEL} seconds.
-                    </div>
-                  </div>
-                  <div
-                    style={
-                      isPhone
-                        ? {
-                            display: "grid",
-                            gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-                            gap: 7,
-                            alignItems: "stretch",
-                          }
-                        : { ...dashboardActionGrid(isCompact ? 118 : 152) }
-                    }
-                  >
-                    <StableButton
-                      debugId="dashboard.spotlight.guide.upload"
-                      type="button"
-                      onClick={openDashboardSpotlightGuide}
-                      onPointerDown={consumeDashboardPointerEvent}
-                      style={spotlightActionButton({
-                        minHeight: isPhone ? 42 : 40,
-                        padding: isPhone ? "8px 10px" : "8px 12px",
-                        borderRadius: isPhone ? 14 : 14,
-                        fontSize: isPhone ? 13 : 13,
-                      })}
-                    >
-                      Upload
-                    </StableButton>
-                    <StableButton
-                      debugId="dashboard.spotlight.guide.market"
-                      type="button"
-                      onClick={openSpotlightMarketplace}
-                      onPointerDown={consumeDashboardPointerEvent}
-                      style={spotlightActionButton({
-                        minHeight: isPhone ? 42 : 40,
-                        padding: isPhone ? "8px 10px" : "8px 12px",
-                        borderRadius: isPhone ? 14 : 14,
-                        fontSize: isPhone ? 13 : 13,
-                      })}
-                    >
-                      Market
-                    </StableButton>
-                    {safeStr(activeSpotlight.author_gmfn_id || "") ? (
-                      <StableButton
-                        debugId="dashboard.spotlight.guide.shop"
-                        type="button"
-                        onClick={openSpotlightShop}
-                        onPointerDown={consumeDashboardPointerEvent}
-                        style={spotlightActionButton({
-                          minHeight: isPhone ? 42 : 40,
-                          padding: isPhone ? "8px 10px" : "8px 12px",
-                          borderRadius: isPhone ? 14 : 14,
-                          fontSize: isPhone ? 13 : 13,
-                        })}
-                      >
-                        Shop
-                      </StableButton>
-                    ) : null}
-                    <StableButton
-                      debugId="dashboard.spotlight.guide.hide"
-                      type="button"
-                      onClick={minimizeSpotlight}
-                      onPointerDown={consumeDashboardPointerEvent}
-                      style={spotlightWhiteButton({
-                        minHeight: isPhone ? 42 : 40,
-                        padding: isPhone ? "8px 10px" : "8px 12px",
-                        borderRadius: isPhone ? 14 : 14,
-                        fontSize: isPhone ? 13 : 13,
-                      })}
-                    >
-                      Hide
-                    </StableButton>
-                  </div>
-                </div>
-                ) : null}
               </div>
             </div>
 

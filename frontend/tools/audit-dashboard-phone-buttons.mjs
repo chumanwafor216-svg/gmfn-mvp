@@ -102,12 +102,6 @@ const requiredDashboardPatterns = [
   },
   {
     pattern:
-      /Your Spotlight[\s\S]*?Live community spotlight[\s\S]*?debugId="dashboard\.spotlight\.guide\.toggle"[\s\S]*?Sharing matters\.[\s\S]*?\{spotlightQueueTotal \|\| spotlights\.length\} live or queued\.[\s\S]*?spotlightGuideOpen \? "Close" : "Open"[\s\S]*?spotlightGuideOpen \? \([\s\S]*?Rotates every \{SPOTLIGHT_PILOT_ROTATION_SECONDS_LABEL\} seconds\./,
-    message:
-      "Dashboard Spotlight must keep the Sharing matters row as the open/close action surface, with live count inside the row and rotation timing inside the opened details.",
-  },
-  {
-    pattern:
       /debugId="dashboard\.apps\.toggle"[\s\S]*?style=\{dashboardAccordionButtonStyle\(/,
     message:
       "Dashboard app launcher toggle must remain a traceable stable accordion action.",
@@ -133,6 +127,16 @@ for (const check of requiredDashboardPatterns) {
     line: 1,
     message: check.message,
     text: "Expected Dashboard phone button stability pattern was not found.",
+  });
+}
+
+if (/dashboard\.spotlight\.guide|Sharing matters|Rotates every/.test(dashboardSource)) {
+  findings.push({
+    file: dashboardFile,
+    line: 1,
+    message:
+      "Dashboard Spotlight must not restore the old guide row, rotation copy, or extra phone actions under the live billboard.",
+    text: "Forbidden Dashboard Spotlight guide pattern was found.",
   });
 }
 

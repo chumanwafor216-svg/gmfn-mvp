@@ -148,7 +148,6 @@ assertDashboardSliceStaysInert(
   "dashboard.spotlight.restore",
   "dashboard.spotlight.restore.empty-card",
   "dashboard.spotlight.whatsapp",
-  "dashboard.spotlight.guide.toggle",
   "dashboard.demand.toggle",
   "dashboard.demand.primary",
   "dashboard.inbox.toggle",

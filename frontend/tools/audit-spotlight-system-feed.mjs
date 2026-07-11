@@ -94,10 +94,22 @@ assertContains(
   "Dashboard active Spotlight billboard must keep the product title, optional sender price chip, and WhatsApp contact without restoring source/status clutter."
 );
 
+assertContains(
+  "frontend/src/pages/DashboardPage.tsx",
+  /const attentionSurfaceVisible =[\s\S]*?attentionDisplaySignal\.active &&[\s\S]*?!activeSpotlight &&/,
+  "Dashboard attention guide must stay hidden while a live Spotlight is showing so it cannot look like a Spotlight Active button."
+);
+
 assertLineNotContains(
   "frontend/src/pages/DashboardPage.tsx",
   /\["Marketplace", spotlightMarketplaceName\]|\["Shop", spotlightShopName\]/,
   "Dashboard active Spotlight body must not restore visible Marketplace/Shop source fact tiles."
+);
+
+assertLineNotContains(
+  "frontend/src/pages/DashboardPage.tsx",
+  /dashboard\.spotlight\.guide|Sharing matters|Community display|Rotates every/,
+  "Dashboard active Spotlight must not restore the exposed guide, schedule, rotation, market, upload, or shop controls under the billboard."
 );
 
 assertContains(
