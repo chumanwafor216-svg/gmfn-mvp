@@ -882,6 +882,197 @@ function noticeCard(tone: NoticeTone): React.CSSProperties {
   };
 }
 
+function announcementBoardShellStyle(): React.CSSProperties {
+  return {
+    ...pageCard("#FFFFFF"),
+    padding: 0,
+    borderRadius: "clamp(22px, 5vw, 28px)",
+    overflow: "hidden",
+    background: "#FFFFFF",
+  };
+}
+
+function announcementBoardHeaderStyle(isCompact: boolean): React.CSSProperties {
+  return {
+    display: "grid",
+    gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) auto",
+    gap: 10,
+    alignItems: "center",
+    padding: isCompact ? "16px 16px" : "18px 22px",
+    background:
+      "linear-gradient(135deg, #0B2D4A 0%, #102F57 52%, #071E36 100%)",
+    color: "#FFFFFF",
+  };
+}
+
+function announcementBoardTitleRowStyle(): React.CSSProperties {
+  return {
+    display: "flex",
+    alignItems: "center",
+    gap: 12,
+    minWidth: 0,
+  };
+}
+
+function announcementBoardIconStyle(): React.CSSProperties {
+  return {
+    width: 46,
+    height: 46,
+    borderRadius: 18,
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    background: "rgba(16,98,181,0.52)",
+    border: "1px solid rgba(255,255,255,0.14)",
+    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.14)",
+    flex: "0 0 auto",
+  };
+}
+
+function announcementBoardPillStyle(): React.CSSProperties {
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 34,
+    borderRadius: 999,
+    padding: "7px 13px",
+    background: "rgba(255,255,255,0.12)",
+    border: "1px solid rgba(255,255,255,0.10)",
+    color: "#EAF3FF",
+    fontSize: 13,
+    fontWeight: 850,
+    whiteSpace: "nowrap",
+  };
+}
+
+function announcementComposerStyle(isCompact: boolean): React.CSSProperties {
+  return {
+    display: "grid",
+    gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) minmax(150px, 194px)",
+    gap: 12,
+    alignItems: "stretch",
+    padding: isCompact ? "14px 16px" : "18px 28px",
+    borderBottom: "1px solid rgba(16,37,59,0.10)",
+    background: "#FFFFFF",
+  };
+}
+
+function announcementComposerPreviewStyle(): React.CSSProperties {
+  return {
+    minHeight: 74,
+    borderRadius: 16,
+    border: "1px solid rgba(16,37,59,0.14)",
+    background: "#FFFFFF",
+    padding: "14px 16px",
+    display: "grid",
+    gridTemplateColumns: "minmax(0, 1fr) auto",
+    gap: 10,
+    alignItems: "end",
+    color: "#6B7A8F",
+    fontSize: 14,
+    fontWeight: 760,
+    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.86)",
+  };
+}
+
+function announcementListPanelStyle(isCompact: boolean): React.CSSProperties {
+  return {
+    padding: isCompact ? "15px 16px 18px" : "20px 28px 24px",
+    background: "linear-gradient(180deg, #FAFCFF 0%, #F5F8FD 100%)",
+  };
+}
+
+function announcementNoticeRowStyle(): React.CSSProperties {
+  return {
+    display: "grid",
+    gridTemplateColumns: "52px minmax(0, 1fr) auto",
+    gap: 12,
+    alignItems: "center",
+    minHeight: 74,
+    padding: "12px 10px",
+    borderBottom: "1px solid rgba(16,37,59,0.08)",
+  };
+}
+
+function announcementNoticeIconStyle(index: number): React.CSSProperties {
+  const backgrounds = ["#DCFCE7", "#DBEAFE", "#FEF3C7", "#F3E8FF"];
+  return {
+    width: 48,
+    height: 48,
+    borderRadius: 18,
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    background: backgrounds[index % backgrounds.length],
+    border: "1px solid rgba(255,255,255,0.74)",
+    boxShadow: "0 8px 16px rgba(10,24,49,0.06)",
+  };
+}
+
+function contactCommunityCardStyle(): React.CSSProperties {
+  return {
+    ...pageCard("#FFFFFF"),
+    borderRadius: "clamp(22px, 5vw, 28px)",
+    background: "#FFFFFF",
+  };
+}
+
+function contactCommunityBodyStyle(isCompact: boolean): React.CSSProperties {
+  return {
+    marginTop: 14,
+    display: "grid",
+    gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) minmax(220px, 320px)",
+    gap: 16,
+    alignItems: "center",
+    paddingTop: 16,
+    borderTop: "1px solid rgba(16,37,59,0.10)",
+  };
+}
+
+function contactIdentityStyle(): React.CSSProperties {
+  return {
+    display: "grid",
+    gridTemplateColumns: "82px minmax(0, 1fr)",
+    gap: 14,
+    alignItems: "center",
+    minWidth: 0,
+  };
+}
+
+function contactAvatarStyle(): React.CSSProperties {
+  return {
+    width: 82,
+    height: 82,
+    borderRadius: 28,
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    background: "linear-gradient(180deg, #EAF3FF 0%, #D8E8FA 100%)",
+    border: "1px solid rgba(13,95,168,0.10)",
+    boxShadow: "0 12px 24px rgba(10,24,49,0.08)",
+  };
+}
+
+function contactVerifiedStripStyle(ready: boolean): React.CSSProperties {
+  return {
+    marginTop: 16,
+    minHeight: 48,
+    borderRadius: 14,
+    display: "flex",
+    alignItems: "center",
+    gap: 10,
+    padding: "10px 14px",
+    background: ready ? "#ECFDF3" : "#F8FBFF",
+    border: ready
+      ? "1px solid rgba(22,163,74,0.14)"
+      : "1px solid rgba(16,37,59,0.10)",
+    color: ready ? "#166534" : "#617085",
+    fontWeight: 850,
+    fontSize: 13,
+  };
+}
+
 function getSummaryTotal(payload: any, key: string, fallback = "0.00"): string {
   return firstTruthy(payload?.totals?.[key], payload?.summary?.totals?.[key], fallback);
 }
@@ -933,6 +1124,23 @@ function safeDateLabel(value: any): string {
   const date = new Date(raw);
   if (!Number.isFinite(date.getTime())) return raw;
   return date.toLocaleString();
+}
+
+function compactDateLabel(value: any): string {
+  const raw = safeStr(value);
+  if (!raw) return "";
+  const date = new Date(raw);
+  if (!Number.isFinite(date.getTime())) return raw;
+  const diffMs = Date.now() - date.getTime();
+  if (diffMs < 0) return date.toLocaleDateString();
+  const minutes = Math.floor(diffMs / 60000);
+  if (minutes < 1) return "just now";
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}d ago`;
+  return date.toLocaleDateString();
 }
 
 function noticeExpiryLabel(item: CommunityNoticeItem): string {
@@ -2858,7 +3066,7 @@ export default function CommunityHomePage() {
       />
       <div style={communityContentStyle(isCompact)}>
       {!spotlightGuidanceSuspendedView ? (
-      <section style={communityHeroStyle(isCompact)}>
+      <section style={{ ...communityHeroStyle(isCompact), order: 8 }}>
         <div
           style={{
             display: "grid",
@@ -3188,244 +3396,441 @@ export default function CommunityHomePage() {
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
 
       {!spotlightGuidanceSuspendedView ? (
-        <section style={{ ...communityBlockCard("quiet"), order: 8 }}>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: isCompact
-                ? "1fr"
-                : "minmax(0, 1.1fr) minmax(280px, 0.9fr)",
-              gap: 14,
-              alignItems: "start",
-            }}
-          >
-            <div>
-              <div style={sectionLabel()}>COMMUNITY NOTICE BOARD</div>
-              <div
-                style={{
-                  marginTop: 8,
-                  color: "#07172C",
-                  fontSize: isCompact ? 18 : 21,
-                  fontWeight: 950,
-                  lineHeight: 1.18,
-                }}
-              >
-                Community announcements
-              </div>
-              <div
-                style={{
-                  marginTop: 8,
-                  color: "#617085",
-                  fontSize: 13,
-                  lineHeight: 1.45,
-                  fontWeight: 760,
-                }}
-              >
-                {activeNoticePostingPolicy === "members"
-                  ? "Open board: active members can post short announcements. GSN links the sender's verified public WhatsApp contact when they have chosen to show one."
-                  : "Admin-only board: only community officers can post new announcements."}
-              </div>
-              <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
-                <span style={badge(activeNoticePostingPolicy === "members")}>
-                  {activeNoticePostingPolicy === "members"
-                    ? "Members can post"
-                    : "Admin-only"}
+        <section
+          style={{
+            order: 2,
+            display: "grid",
+            gap: isCompact ? 14 : 18,
+          }}
+        >
+          <div style={announcementBoardShellStyle()}>
+            <div
+              style={announcementBoardHeaderStyle(isCompact)}
+              aria-label="Community announcements"
+            >
+              <div style={announcementBoardTitleRowStyle()}>
+                <span style={announcementBoardIconStyle()} aria-hidden="true">
+                  <GsnLegacyIcon name="megaphone" size={34} />
                 </span>
-                <span style={badge(false)}>50 words</span>
+                <span
+                  style={{
+                    color: "#FFFFFF",
+                    fontSize: isCompact ? 20 : 24,
+                    fontWeight: 950,
+                    lineHeight: 1.08,
+                    textTransform: "uppercase",
+                  }}
+                >
+                  Community Bulletin
+                </span>
+              </div>
+              <span style={announcementBoardPillStyle()}>
+                Official announcements
+              </span>
+            </div>
+
+            <div style={announcementComposerStyle(isCompact)}>
+              <div style={announcementComposerPreviewStyle()} aria-hidden="true">
+                <span style={{ ...brandClampLines(2), minWidth: 0 }}>
+                  What's happening in the community?
+                </span>
+                <span
+                  style={{
+                    color: "#48657D",
+                    fontSize: 13,
+                    fontWeight: 900,
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  0 / 50 words
+                </span>
               </div>
               {canPostCommunityNotice ? (
-                <div style={{ ...collapseButtonRow(), justifyContent: "flex-start" }}>
-                  <StableButton
-                    type="button"
-                    debugId="community-home.notice.post"
-                    onClick={(event) => {
-                      consumeCommunityButtonEvent(event);
-                      setNoticeModalOpen(true);
-                    }}
-                    style={communityActionStyle("secondary")}
-                  >
-                    Post announcement
-                  </StableButton>
-                </div>
+                <StableButton
+                  type="button"
+                  debugId="community-home.notice.post"
+                  onClick={(event) => {
+                    consumeCommunityButtonEvent(event);
+                    setNoticeModalOpen(true);
+                  }}
+                  style={{
+                    ...communityActionStyle("primary"),
+                    minHeight: 74,
+                    borderRadius: 16,
+                    width: "100%",
+                    gap: 10,
+                    textTransform: "uppercase",
+                    fontSize: 15,
+                    boxShadow:
+                      "0 10px 20px rgba(10,24,49,0.18), inset 0 1px 0 rgba(255,255,255,0.12)",
+                  }}
+                >
+                  <GsnLegacyIcon name="navigation" size={26} />
+                  <span>Post Notice</span>
+                </StableButton>
               ) : null}
-              {canManageCommunityNoticeSettings ? (
-                <div style={{ ...collapseButtonRow(), justifyContent: "flex-start" }}>
-                  <StableButton
-                    type="button"
-                    debugId="community-home.notice.policy.members"
-                    onClick={(event) => updateCommunityNoticePolicy(event, "members")}
-                    aria-disabled={
-                      communityNoticeSettingsSaving ||
-                      activeNoticePostingPolicy === "members"
-                        ? true
-                        : undefined
-                    }
-                    style={communityActionStyle(
-                      activeNoticePostingPolicy === "members" ? "primary" : "secondary",
-                      communityNoticeSettingsSaving
-                    )}
-                  >
-                    Open to members
-                  </StableButton>
-                  <StableButton
-                    type="button"
-                    debugId="community-home.notice.policy.admins"
-                    onClick={(event) => updateCommunityNoticePolicy(event, "admins")}
-                    aria-disabled={
-                      communityNoticeSettingsSaving ||
-                      activeNoticePostingPolicy === "admins"
-                        ? true
-                        : undefined
-                    }
-                    style={communityActionStyle(
-                      activeNoticePostingPolicy === "admins" ? "primary" : "secondary",
-                      communityNoticeSettingsSaving
-                    )}
-                  >
-                    Admin only
-                  </StableButton>
-                </div>
-              ) : null}
-              <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
+            </div>
+
+            {canManageCommunityNoticeSettings ? (
+              <div
+                style={{
+                  display: "flex",
+                  gap: 8,
+                  flexWrap: "wrap",
+                  alignItems: "center",
+                  padding: isCompact ? "0 16px 14px" : "0 28px 18px",
+                  background: "#FFFFFF",
+                }}
+              >
+                <StableButton
+                  type="button"
+                  debugId="community-home.notice.policy.members"
+                  onClick={(event) => updateCommunityNoticePolicy(event, "members")}
+                  aria-disabled={
+                    communityNoticeSettingsSaving ||
+                    activeNoticePostingPolicy === "members"
+                      ? true
+                      : undefined
+                  }
+                  style={communityActionStyle(
+                    activeNoticePostingPolicy === "members" ? "primary" : "soft",
+                    communityNoticeSettingsSaving
+                  )}
+                >
+                  Open to members
+                </StableButton>
+                <StableButton
+                  type="button"
+                  debugId="community-home.notice.policy.admins"
+                  onClick={(event) => updateCommunityNoticePolicy(event, "admins")}
+                  aria-disabled={
+                    communityNoticeSettingsSaving ||
+                    activeNoticePostingPolicy === "admins"
+                      ? true
+                      : undefined
+                  }
+                  style={communityActionStyle(
+                    activeNoticePostingPolicy === "admins" ? "primary" : "soft",
+                    communityNoticeSettingsSaving
+                  )}
+                >
+                  Admin only
+                </StableButton>
+                <span style={badge(false)}>50 words</span>
+              </div>
+            ) : null}
+
+            <div style={announcementListPanelStyle(isCompact)}>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 12,
+                  marginBottom: 8,
+                }}
+              >
+                <span
+                  style={{
+                    color: "#07172C",
+                    fontSize: 14,
+                    fontWeight: 950,
+                    textTransform: "uppercase",
+                  }}
+                >
+                  Latest notices
+                </span>
+                <span
+                  style={{
+                    color: "#0B4F8A",
+                    fontSize: 13,
+                    fontWeight: 900,
+                    whiteSpace: "nowrap",
+                  }}
+                  aria-hidden="true"
+                >
+                  Newest first
+                </span>
+              </div>
+
+              <div
+                style={{
+                  borderRadius: 18,
+                  overflow: "hidden",
+                  background: "#FFFFFF",
+                  border: "1px solid rgba(16,37,59,0.08)",
+                }}
+              >
                 {communityNoticesLoading ? (
-                  <div style={{ ...innerCard("#F8FBFF"), color: "#617085", fontWeight: 850 }}>
+                  <div
+                    style={{
+                      ...announcementNoticeRowStyle(),
+                      gridTemplateColumns: "1fr",
+                      color: "#617085",
+                      fontWeight: 850,
+                    }}
+                  >
                     Loading latest notices...
                   </div>
                 ) : communityNotices.length > 0 ? (
-                  communityNotices.slice(0, 3).map((item, index) => {
+                  communityNotices.slice(0, 4).map((item, index) => {
                     const title = wordLimit(
-                      firstTruthy(item?.body, item?.title, item?.purpose, "Community notice"),
+                      firstTruthy(item?.title, item?.body, item?.purpose, "Community notice"),
                       50
                     );
-                    const when = safeDateLabel(
+                    const when = compactDateLabel(
                       firstTruthy(item?.scheduled_at, item?.created_at)
                     );
                     const expiry = noticeExpiryLabel(item);
+                    const senderLabel = firstTruthy(
+                      item?.sender_whatsapp_label,
+                      item?.source,
+                      "Community"
+                    );
+                    const noticeIcons: GsnIconName[] = [
+                      "calendar",
+                      "home",
+                      "certificate",
+                      "megaphone",
+                    ];
 
                     return (
                       <div
                         key={`${item?.notice_id || item?.meeting_id || index}`}
-                        style={{
-                          ...innerCard(index === 0 ? "#FFFFFF" : "#F8FBFF"),
-                          padding: isCompact ? 12 : 14,
-                        }}
+                        style={announcementNoticeRowStyle()}
                       >
-                        <div
-                          style={{
-                            color: "#0B2D4A",
-                            fontWeight: 950,
-                            lineHeight: 1.28,
-                          }}
-                        >
-                          {title}
-                        </div>
-                        <div
-                          style={{
-                            marginTop: 6,
-                            display: "flex",
-                            gap: 8,
-                            flexWrap: "wrap",
-                          }}
-                        >
-                          <span style={badge(index === 0)}>Newest first</span>
-                          {when ? <span style={badge(false)}>{when}</span> : null}
-                          {expiry ? <span style={badge(false)}>{expiry}</span> : null}
-                          {item?.sender_whatsapp_number ? (
-                            <span style={badge(true)}>
-                              WhatsApp: {firstTruthy(item?.sender_whatsapp_label, "sender")}
-                            </span>
-                          ) : null}
-                        </div>
+                        <span style={announcementNoticeIconStyle(index)} aria-hidden="true">
+                          <GsnLegacyIcon name={noticeIcons[index % noticeIcons.length]} size={30} />
+                        </span>
+                        <span style={{ minWidth: 0 }}>
+                          <span
+                            style={{
+                              ...brandClampLines(2),
+                              color: "#07172C",
+                              fontSize: 15,
+                              fontWeight: 930,
+                              lineHeight: 1.25,
+                            }}
+                          >
+                            {title}
+                          </span>
+                          <span
+                            style={{
+                              ...brandClampLines(1),
+                              marginTop: 4,
+                              color: "#617085",
+                              fontSize: 12.5,
+                              fontWeight: 780,
+                            }}
+                          >
+                            Posted by {senderLabel}
+                            {when ? ` - ${when}` : ""}
+                            {expiry ? ` - ${expiry}` : ""}
+                          </span>
+                        </span>
                         {item?.sender_whatsapp_number ? (
-                          <div style={{ marginTop: 8 }}>
-                            <StableButton
-                              type="button"
-                              debugId={`community-home.notice.sender-whatsapp.${item?.notice_id || index}`}
-                              onClick={(event) => openNoticeSenderWhatsApp(event, item)}
-                              style={communityActionStyle("soft")}
-                            >
-                              Message sender
-                            </StableButton>
-                          </div>
-                        ) : null}
+                          <StableButton
+                            type="button"
+                            aria-label={`Message ${senderLabel}`}
+                            debugId={`community-home.notice.sender-whatsapp.${item?.notice_id || index}`}
+                            onClick={(event) => openNoticeSenderWhatsApp(event, item)}
+                            style={{
+                              ...communityActionStyle("soft"),
+                              minWidth: 44,
+                              minHeight: 44,
+                              width: 44,
+                              height: 44,
+                              padding: 0,
+                              borderRadius: 14,
+                              fontSize: 22,
+                              color: "#48657D",
+                              boxShadow: "none",
+                            }}
+                          >
+                            {">"}
+                          </StableButton>
+                        ) : (
+                          <span aria-hidden="true" style={{ color: "#48657D", fontSize: 24 }}>
+                            {">"}
+                          </span>
+                        )}
                       </div>
                     );
                   })
                 ) : (
-                  <div style={{ ...innerCard("#F8FBFF"), color: "#617085", fontWeight: 850 }}>
+                  <div
+                    style={{
+                      ...announcementNoticeRowStyle(),
+                      gridTemplateColumns: "1fr",
+                      color: "#617085",
+                      fontWeight: 850,
+                    }}
+                  >
                     No community announcement is visible yet.
                   </div>
                 )}
               </div>
             </div>
+          </div>
 
-            <div style={innerCard("#F8FBFF")}>
-              <div style={sectionLabel()}>CONTACT COMMUNITY</div>
-              <div
+          <div style={contactCommunityCardStyle()}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                minWidth: 0,
+              }}
+            >
+              <span
                 style={{
-                  marginTop: 8,
-                  color: "#07172C",
-                  fontSize: isCompact ? 17 : 19,
-                  fontWeight: 950,
-                  lineHeight: 1.18,
+                  width: 44,
+                  height: 44,
+                  borderRadius: 18,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  background: "#DCFCE7",
+                  flex: "0 0 auto",
                 }}
+                aria-hidden="true"
               >
-                WhatsApp remains the conversation channel.
+                <GsnLegacyIcon name="phone" size={30} />
+              </span>
+              <span style={{ minWidth: 0 }}>
+                <span
+                  style={{
+                    ...brandClampLines(1),
+                    color: "#07172C",
+                    fontSize: isCompact ? 18 : 21,
+                    fontWeight: 950,
+                    lineHeight: 1.12,
+                    textTransform: "uppercase",
+                  }}
+                >
+                  CONTACT COMMUNITY
+                </span>
+                <span
+                  style={{
+                    ...brandClampLines(2),
+                    marginTop: 4,
+                    color: "#617085",
+                    fontSize: 13,
+                    fontWeight: 760,
+                    lineHeight: 1.35,
+                  }}
+                >
+                  Connect directly with the official community contact.
+                </span>
+              </span>
+              {selectedClan?.official_contact_ready ? (
+                <span style={{ marginLeft: "auto", flex: "0 0 auto" }} aria-hidden="true">
+                  <GsnLegacyIcon name="shield" size={26} />
+                </span>
+              ) : null}
+            </div>
+
+            <div style={contactCommunityBodyStyle(isCompact)}>
+              <div style={contactIdentityStyle()}>
+                <span style={contactAvatarStyle()} aria-hidden="true">
+                  <GsnLegacyIcon name="user" size={58} />
+                </span>
+                <span style={{ minWidth: 0 }}>
+                  <span
+                    style={{
+                      ...brandClampLines(1),
+                      color: "#617085",
+                      fontSize: 13,
+                      fontWeight: 850,
+                    }}
+                  >
+                    Official Contact
+                  </span>
+                  <span
+                    style={{
+                      ...brandClampLines(1),
+                      marginTop: 3,
+                      color: "#07172C",
+                      fontSize: isCompact ? 22 : 25,
+                      fontWeight: 950,
+                      lineHeight: 1.08,
+                    }}
+                  >
+                    {firstTruthy(selectedClan?.official_whatsapp_label, "Community contact")}
+                  </span>
+                  <span
+                    style={{
+                      ...badge(false),
+                      marginTop: 10,
+                      justifyContent: "flex-start",
+                      background: "#EAF3FF",
+                    }}
+                  >
+                    Community Officer
+                  </span>
+                </span>
               </div>
-              <div
-                style={{
-                  marginTop: 8,
-                  color: "#617085",
-                  fontSize: 13,
-                  lineHeight: 1.45,
-                  fontWeight: 750,
-                }}
-              >
-                GSN keeps the community record. Use this only when direct contact is appropriate.
-              </div>
-              <div style={collapseButtonRow()}>
+
+              <div style={{ display: "grid", gap: 10 }}>
                 <StableButton
                   type="button"
                   debugId="community-home.contact.whatsapp-chat"
                   onClick={openCommunityWhatsAppContact}
-                  style={communityActionStyle(
-                    firstTruthy(selectedClan?.official_whatsapp_number)
-                      ? "primary"
-                      : "secondary",
-                    !firstTruthy(selectedClan?.official_whatsapp_number)
-                  )}
+                  style={{
+                    ...communityActionStyle(
+                      firstTruthy(selectedClan?.official_whatsapp_number)
+                        ? "primary"
+                        : "secondary",
+                      !firstTruthy(selectedClan?.official_whatsapp_number)
+                    ),
+                    width: "100%",
+                    minHeight: 58,
+                    borderRadius: 16,
+                    background: firstTruthy(selectedClan?.official_whatsapp_number)
+                      ? "linear-gradient(180deg, #18B66B 0%, #0E9855 100%)"
+                      : undefined,
+                    color: firstTruthy(selectedClan?.official_whatsapp_number)
+                      ? "#FFFFFF"
+                      : undefined,
+                    fontSize: 16,
+                    gap: 10,
+                  }}
                 >
+                  <GsnLegacyIcon name="phone" size={27} />
                   WhatsApp Chat
                 </StableButton>
                 <StableButton
                   type="button"
                   debugId="community-home.contact.whatsapp-call"
                   onClick={openCommunityCallContact}
-                  style={communityActionStyle(
-                    "secondary",
-                    !firstTruthy(selectedClan?.official_whatsapp_number)
-                  )}
+                  style={{
+                    ...communityActionStyle(
+                      "secondary",
+                      !firstTruthy(selectedClan?.official_whatsapp_number)
+                    ),
+                    width: "100%",
+                    minHeight: 58,
+                    borderRadius: 16,
+                    color: firstTruthy(selectedClan?.official_whatsapp_number)
+                      ? "#0E9855"
+                      : undefined,
+                    fontSize: 16,
+                    gap: 10,
+                  }}
                 >
+                  <GsnLegacyIcon name="phone" size={27} />
                   WhatsApp Call
                 </StableButton>
               </div>
-              <div
-                style={{
-                  marginTop: 10,
-                  display: "flex",
-                  gap: 8,
-                  flexWrap: "wrap",
-                }}
-              >
-                <span style={badge(Boolean(selectedClan?.official_contact_ready))}>
-                  {selectedClan?.official_contact_ready ? "Official contact ready" : "Contact not published"}
-                </span>
-                {firstTruthy(selectedClan?.official_whatsapp_label) ? (
-                  <span style={badge(false)}>
-                    Officer: {firstTruthy(selectedClan?.official_whatsapp_label)}
-                  </span>
-                ) : null}
-              </div>
+            </div>
+
+            <div style={contactVerifiedStripStyle(Boolean(selectedClan?.official_contact_ready))}>
+              <GsnLegacyIcon name="shield" size={28} />
+              <span>
+                {selectedClan?.official_contact_ready
+                  ? "Official contact verified by GSN"
+                  : "Official contact not published yet"}
+              </span>
             </div>
           </div>
         </section>
