@@ -1206,7 +1206,44 @@ export default function LoginPage() {
 
             <div
               style={{
-                marginTop: 20,
+                marginTop: 12,
+                display: "flex",
+                justifyContent: "flex-end",
+                alignItems: "center",
+                minHeight: 36,
+              }}
+            >
+              <SecondaryButton
+                type="button"
+                onClick={openRecoveryLane}
+                disabled={busy || recoveryBusy}
+                stableHeight={36}
+                debugId="login.password-recovery.open"
+                style={{
+                  ...secondaryBtn(),
+                  width: "auto",
+                  minWidth: 0,
+                  minHeight: 36,
+                  height: 36,
+                  maxHeight: 36,
+                  padding: "0 4px",
+                  border: "none",
+                  borderRadius: 10,
+                  background: "transparent",
+                  boxShadow: "none",
+                  color: "#F3D06A",
+                  fontSize: 13.5,
+                  fontWeight: 900,
+                  textAlign: "right",
+                }}
+              >
+                Forgot password?
+              </SecondaryButton>
+            </div>
+
+            <div
+              style={{
+                marginTop: 14,
                 display: "flex",
                 justifyContent: "center",
               }}
@@ -1233,19 +1270,6 @@ export default function LoginPage() {
                 style={supportBtn()}
               >
                 {loginIconText("join-person-plus", "Activate membership", 24)}
-              </SecondaryButton>
-            </div>
-
-            <div style={{ marginTop: 12 }}>
-              <SecondaryButton
-                type="button"
-                onClick={openRecoveryLane}
-                disabled={busy || recoveryBusy}
-                stableHeight={52}
-                debugId="login.password-recovery.open"
-                style={supportBtn()}
-              >
-                {loginIconText("lock", "Recover password", 24)}
               </SecondaryButton>
             </div>
 

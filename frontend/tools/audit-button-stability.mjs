@@ -283,8 +283,8 @@ assertContains(
 
 assertContains(
   "src/pages/LoginPage.tsx",
-  /import \{ GsnLegacyIcon, type GsnIconName \} from "\.\.\/components\/GsnLegacyIcon";[\s\S]*?function loginIconText\([\s\S]*?name: GsnIconName[\s\S]*?<GsnLegacyIcon[\s\S]*?function loginIconOnly\([\s\S]*?<GsnLegacyIcon[\s\S]*?debugId="login\.submit"[\s\S]*?loginIconText\("lock", "Sign in to GSN"[\s\S]*?debugId="login\.activate-approved"[\s\S]*?loginIconText\("join-person-plus", "Activate membership"[\s\S]*?debugId="login\.password-recovery\.open"[\s\S]*?loginIconText\("lock", "Recover password"[\s\S]*?debugId="login\.start-community"[\s\S]*?loginIconText\("community", "Start a new community"/,
-  "Login page must use shared 3D GSN icons for sign-in, activation, recovery, and create-community actions."
+  /import \{ GsnLegacyIcon, type GsnIconName \} from "\.\.\/components\/GsnLegacyIcon";[\s\S]*?function loginIconText\([\s\S]*?name: GsnIconName[\s\S]*?<GsnLegacyIcon[\s\S]*?function loginIconOnly\([\s\S]*?<GsnLegacyIcon[\s\S]*?debugId="login\.password-recovery\.open"[\s\S]*?Forgot password\?[\s\S]*?debugId="login\.submit"[\s\S]*?loginIconText\("lock", "Sign in to GSN"[\s\S]*?debugId="login\.activate-approved"[\s\S]*?loginIconText\("join-person-plus", "Activate membership"[\s\S]*?debugId="login\.start-community"[\s\S]*?loginIconText\("community", "Start a new community"/,
+  "Login page must use shared 3D GSN icons for sign-in, activation, and create-community actions while keeping password recovery as the familiar sign-in-card text action."
 );
 
 [
