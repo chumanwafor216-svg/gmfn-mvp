@@ -247,7 +247,7 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /getCommunityDomainDashboard[\s\S]*setupPrimaryActionHasLane[\s\S]*hasServicesLane[\s\S]*setupPrimaryActionLaneKey === "verification"[\s\S]*\? "modules"[\s\S]*primaryActionFallbackNote[\s\S]*authority verification is shown there as a readiness row[\s\S]*separate owner or admin path[\s\S]*Open the \{primaryActionLaneLabel\} lane[\s\S]*deeper changes still use[\s\S]*owner\/admin tools that check permissions[\s\S]*does not create payment steps[\s\S]*verify ownership/,
+  /getCommunityDomainDashboard[\s\S]*setupPrimaryActionHasLane[\s\S]*hasServicesLane[\s\S]*setupPrimaryActionLaneKey === "verification"[\s\S]*\? "modules"[\s\S]*primaryActionFallbackNote[\s\S]*authority verification is shown there as a readiness row[\s\S]*separate owner or admin path[\s\S]*Open the \{primaryActionLaneLabel\} lane[\s\S]*deeper changes still use[\s\S]*owner\/admin tools that check permissions[\s\S]*Setup view only[\s\S]*verify ownership/,
   "Community Domain dashboard page must use the scoped backend summary, route authority-verification readiness to Services instead of an unrelated lane, and keep payment, activation, and verification boundaries honest.",
   { frontend: true }
 );
@@ -327,7 +327,7 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /Check exchange, privacy, setup, compliance, and appeal boundaries[\s\S]*Renewal period and payment step are not set up here/,
+  /Check exchange, privacy, setup, compliance, and appeal boundaries[\s\S]*Quote required before payment/,
   "Community Domain dashboard visible notes must use setup wording for service boundaries and billing steps.",
   { frontend: true }
 );
@@ -348,7 +348,7 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /billingIsActive[\s\S]*packageReviewActionLabel[\s\S]*Review package details[\s\S]*Billing status:[\s\S]*status\.billing_status \|\| selectedLane\?\.status[\s\S]*Quote details remain available for reference[\s\S]*Package quote:[\s\S]*\{packageReviewActionLabel\}/,
+  /billingIsActive[\s\S]*packageReviewActionLabel[\s\S]*Review package details[\s\S]*Billing status:[\s\S]*status\.billing_status \|\| selectedLane\?\.status[\s\S]*Quote is available for reference[\s\S]*Package quote:[\s\S]*\{packageReviewActionLabel\}/,
   "Community Domain dashboard billing lane must lead with dashboard billing state and keep package quote details as reference when billing is active.",
   { frontend: true }
 );
@@ -423,7 +423,7 @@ assertNotContains(
 
 assertContains(
   "src/pages/communityDomainDashboard/BillingReadinessPanels.tsx",
-  /Package capacity[\s\S]*package_name[\s\S]*limits_source[\s\S]*primary_next_action[\s\S]*Capacity attention[\s\S]*Used:[\s\S]*Limit:[\s\S]*Remaining:[\s\S]*This view only shows package limits[\s\S]*does not raise limits, add\s+units, members, or shops, change pricing or billing, publish pages,\s+move money, or show private evidence/,
+  /Package capacity[\s\S]*package_name[\s\S]*limits_source[\s\S]*primary_next_action[\s\S]*Capacity attention[\s\S]*Used:[\s\S]*Limit:[\s\S]*Remaining:[\s\S]*Limits only[\s\S]*does not add units, members, shops, pricing, billing,\s+pages, money movement, or private evidence/,
   "Community Domain dashboard Billing lane must show read-only package capacity without implying limit increases, writes, billing activation, pricing changes, money movement, publishing, or private evidence access.",
   { frontend: true }
 );
@@ -1039,7 +1039,7 @@ assertNotContains(
 
 assertContains(
   "src/pages/communityDomainDashboard/BillingReadinessPanels.tsx",
-  /Subscription lifecycle[\s\S]*primary_next_action[\s\S]*pricing_status[\s\S]*billing_status[\s\S]*renewal_status[\s\S]*This view only shows package, pricing, billing, and renewal status[\s\S]*does not take payment, issue receipts, activate or renew the domain,\s+move money, or show private records/,
+  /Subscription lifecycle[\s\S]*primary_next_action[\s\S]*pricing_status[\s\S]*billing_status[\s\S]*renewal_status[\s\S]*Status only[\s\S]*Payment, receipts, activation, renewal, money movement,\s+and private records stay separate/,
   "Community Domain dashboard Billing lane must show read-only subscription lifecycle without implying quote acceptance, payment instruction, expected payment, payment records, invoices, receipts, billing activation, Community Domain activation, entitlements, renewal, suspension, reactivation, authority verification, money movement, or private record exposure.",
   { frontend: true }
 );
@@ -1305,7 +1305,7 @@ assertNotContains(
 
 assertContains(
   "src/pages/communityDomainDashboard/AccessRequestsPanel.tsx",
-  /parent_review_id[\s\S]*subject_user_email[\s\S]*required_approvals[\s\S]*approval_count[\s\S]*onRequestChanges[\s\S]*onOpenInvite[\s\S]*numericCount[\s\S]*selectStyle[\s\S]*fontSize: 16[\s\S]*reviewUserLabel[\s\S]*reviewRequesterLabel[\s\S]*approvalProgressText[\s\S]*requiredApprovals[\s\S]*approvalCount[\s\S]*Approvals complete[\s\S]*more needed before this can be added[\s\S]*followUpText[\s\S]*reviewStatus === "approved"[\s\S]*Apply membership from this row[\s\S]*Decide from this row[\s\S]*Follow-up to review[\s\S]*applicant's updated request[\s\S]*earlier request as history[\s\S]*requestLabel[\s\S]*Follow-up request[\s\S]*Membership request[\s\S]*showAllRequests[\s\S]*decisionByReviewId[\s\S]*"approve" \| "needs_changes" \| "reject"[\s\S]*visibleAccessRequests[\s\S]*membershipAccessRequests\.slice\(0, 3\)[\s\S]*hiddenRequestCount[\s\S]*Access requests[\s\S]*Review people asking to enter this domain[\s\S]*still need a decision[\s\S]*approved membership change[\s\S]*Approving records the decision;[\s\S]*visibleAccessRequests\.map[\s\S]*needsChangesBusy[\s\S]*selectedDecision[\s\S]*followUp[\s\S]*recordDecision[\s\S]*onRequestChanges\(review\)[\s\S]*onDecline\(review\)[\s\S]*onApproveOnly\(review\)[\s\S]*approvalProgress[\s\S]*safe update[\s\S]*needs-changes status[\s\S]*general\s+update guidance[\s\S]*Private reviewer notes stay inside the[\s\S]*owner\/admin review record[\s\S]*membership is not added[\s\S]*Ask for changes[\s\S]*Record decision[\s\S]*Add approved member[\s\S]*Approve, add if ready[\s\S]*community-domain-dashboard\.access-request\.toggle-all[\s\S]*Show first 3 requests[\s\S]*Show \$\{hiddenRequestCount\} more request[\s\S]*No open access requests[\s\S]*Invite trusted people first[\s\S]*community-domain-dashboard\.access-request\.open-invite[\s\S]*Invite people[\s\S]*community-domain-dashboard\.access-request\.refresh/,
+  /parent_review_id[\s\S]*subject_user_email[\s\S]*required_approvals[\s\S]*approval_count[\s\S]*onRequestChanges[\s\S]*onOpenInvite[\s\S]*numericCount[\s\S]*selectStyle[\s\S]*fontSize: 16[\s\S]*reviewUserLabel[\s\S]*reviewRequesterLabel[\s\S]*approvalProgressText[\s\S]*requiredApprovals[\s\S]*approvalCount[\s\S]*Approvals complete[\s\S]*more needed[\s\S]*followUpText[\s\S]*reviewStatus === "approved"[\s\S]*Apply membership here[\s\S]*Decide here[\s\S]*Follow-up to[\s\S]*Updated request[\s\S]*requestLabel[\s\S]*Follow-up request[\s\S]*Membership request[\s\S]*showAllRequests[\s\S]*decisionByReviewId[\s\S]*"approve" \| "needs_changes" \| "reject"[\s\S]*visibleAccessRequests[\s\S]*membershipAccessRequests\.slice\(0, 3\)[\s\S]*hiddenRequestCount[\s\S]*Access requests[\s\S]*Review access[\s\S]*Decide who can enter this domain[\s\S]*visibleAccessRequests\.map[\s\S]*needsChangesBusy[\s\S]*selectedDecision[\s\S]*followUp[\s\S]*recordDecision[\s\S]*onRequestChanges\(review\)[\s\S]*onDecline\(review\)[\s\S]*onApproveOnly\(review\)[\s\S]*approvalProgress[\s\S]*Sends the request back[\s\S]*Membership is not added[\s\S]*Ask for changes[\s\S]*Record decision[\s\S]*Add approved member[\s\S]*Approve, add if ready[\s\S]*community-domain-dashboard\.access-request\.toggle-all[\s\S]*Show first 3 requests[\s\S]*Show \$\{hiddenRequestCount\} more request[\s\S]*No open access requests[\s\S]*Invite trusted people[\s\S]*community-domain-dashboard\.access-request\.open-invite[\s\S]*Invite people[\s\S]*community-domain-dashboard\.access-request\.refresh/,
   "Lazy Community Domain access request panel must expose pending and approved-but-unapplied self-service access requests, label follow-up revisions separately from fresh membership requests, show status-aware follow-up revision context from parent_review_id, keep approve/needs-changes/reject decisions separate from apply, explain that ask-for-changes sends applicant-safe update guidance while private reviewer notes stay inside the owner/admin record, show approval progress for multi-approval policies, preserve a visible apply path after approve-only, avoid silently hiding more than three requests, and use truthful empty-state copy.",
   { frontend: true }
 );

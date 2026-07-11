@@ -3,7 +3,7 @@
 import { chromium } from "@playwright/test";
 
 const baseUrl = process.env.GSN_AUDIT_BASE_URL || "http://127.0.0.1:5180";
-const routePath = "/app/community-domain";
+const routePath = "/app/community-domain/13";
 
 function normalizeText(value) {
   return String(value || "").replace(/\s+/g, " ").trim();
@@ -336,9 +336,6 @@ const findings = [];
 
 try {
   await page.goto(`${baseUrl}${routePath}`, { waitUntil: "networkidle", timeout: 15000 });
-  await page.getByText("Set up / edit", { exact: true }).last().click();
-  await page.waitForURL("**/app/community-domain/13", { timeout: 15000 });
-  await page.waitForLoadState("networkidle");
   await page.getByText("Open other tools", { exact: true }).first().click();
   await page.waitForLoadState("networkidle");
   await page.getByText("Billing sequence", { exact: true }).waitFor({ timeout: 10000 });
@@ -355,7 +352,8 @@ try {
     "Upload proof",
     "Finance review",
     "Separate rails",
-    "Community Domain subscriptions use a payment code and finance review.",
+    "Subscription payment uses a code and finance review.",
+    "No bank account details are shown here.",
     "Latest payment code",
     "Payment: Pending Authentication",
     "Proof: Not uploaded",

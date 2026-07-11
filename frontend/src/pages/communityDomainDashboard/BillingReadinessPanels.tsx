@@ -17,12 +17,12 @@ const BILLING_DETAIL_OPTIONS: Array<{
   {
     key: "lifecycle",
     label: "Lifecycle",
-    note: "Review package, pricing, billing, and renewal readiness.",
+    note: "Package, price, billing, renewal.",
   },
   {
     key: "capacity",
     label: "Capacity",
-    note: "Check package limits and capacity pressure.",
+    note: "Limits and remaining room.",
   },
 ];
 
@@ -84,7 +84,7 @@ function helperText(): React.CSSProperties {
   return {
     color: "#4F647A",
     fontSize: 14,
-    lineHeight: 1.55,
+    lineHeight: 1.42,
   };
 }
 
@@ -230,8 +230,7 @@ export default function CommunityDomainBillingReadinessPanels({
       >
         <div style={sectionLabel()}>Billing focus</div>
         <div style={helperText()}>
-          Open one billing packet at a time. Current view:{" "}
-          <strong>{selectedBillingDetail.label}</strong>.
+          Current view: <strong>{selectedBillingDetail.label}</strong>.
         </div>
         <div
           style={{
@@ -277,7 +276,7 @@ export default function CommunityDomainBillingReadinessPanels({
             ? `${cleanText(
                 subscriptionLifecycle.primary_next_action?.label,
                 "Review subscription setup"
-              )}. ${subscriptionReadyTotal} of ${visibleSubscriptionLanes.length} billing checks are ready.`
+              )}. ${subscriptionReadyTotal}/${visibleSubscriptionLanes.length} ready.`
             : "GSN could not load the billing readiness view for this Community Domain."}
         </div>
         {factGrid([
@@ -288,7 +287,7 @@ export default function CommunityDomainBillingReadinessPanels({
         ])}
         {blockedSubscriptionLanes.length ? (
           <div style={{ ...helperText(), marginTop: 9 }}>
-            Billing checks needing attention:{" "}
+            Needs attention:{" "}
             <strong>
               {blockedSubscriptionLanes
                 .slice(0, 3)
@@ -299,8 +298,7 @@ export default function CommunityDomainBillingReadinessPanels({
           </div>
         ) : subscriptionLifecycle ? (
           <div style={{ ...helperText(), marginTop: 9 }}>
-            No billing blocker is visible here. Payment and renewal still happen
-            outside this view.
+            No billing blocker visible here.
           </div>
         ) : null}
         {visibleSubscriptionLanes.length ? (
@@ -313,7 +311,7 @@ export default function CommunityDomainBillingReadinessPanels({
                   lane.next_step,
                   cleanText(
                     lane.summary,
-                    "Keep billing as planning until a real payment path exists."
+                    "Planning only until payment is confirmed."
                   )
                 ),
                 lane.status
@@ -322,9 +320,8 @@ export default function CommunityDomainBillingReadinessPanels({
           </div>
         ) : null}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          This view only shows package, pricing, billing, and renewal status. It
-          does not take payment, issue receipts, activate or renew the domain,
-          move money, or show private records.
+          Status only. Payment, receipts, activation, renewal, money movement,
+          and private records stay separate.
         </div>
       </div>
       ) : null}
@@ -334,12 +331,12 @@ export default function CommunityDomainBillingReadinessPanels({
         <div style={sectionLabel()}>Package capacity</div>
         <div style={{ ...helperText(), marginTop: 7 }}>
           {capacityPlan
-            ? `${cleanText(capacityPlan.package_name, "Community Domain package")} uses ${cleanText(
+            ? `${cleanText(capacityPlan.package_name, "Community Domain package")}: ${cleanText(
                 capacityPlan.limits_source,
                 "recorded package allowance"
               )}. ${cleanText(
                 capacityPlan.primary_next_action?.label,
-                "Review setup before relying on capacity."
+                "Review setup before relying on capacity"
               )}.`
             : "GSN could not load the capacity plan for this view."}
         </div>
@@ -355,7 +352,7 @@ export default function CommunityDomainBillingReadinessPanels({
           </div>
         ) : capacityPlan ? (
           <div style={{ ...helperText(), marginTop: 7, fontSize: 13 }}>
-            No package limit needs attention here.
+            No limit needs attention here.
           </div>
         ) : null}
         {visibleCapacityLanes.length ? (
@@ -375,9 +372,8 @@ export default function CommunityDomainBillingReadinessPanels({
           </div>
         ) : null}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          This view only shows package limits. It does not raise limits, add
-          units, members, or shops, change pricing or billing, publish pages,
-          move money, or show private evidence.
+          Limits only. It does not add units, members, shops, pricing, billing,
+          pages, money movement, or private evidence.
         </div>
       </div>
       ) : null}

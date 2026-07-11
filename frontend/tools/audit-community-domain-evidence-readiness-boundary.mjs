@@ -134,7 +134,7 @@ assertContains(
 
 assertContains(
   "dashboard",
-  /This dashboard does not create payment steps, confirm payment,[\s\S]*?activate billing, activate a Community Domain, verify ownership, show[\s\S]*?private finance records, or show private member evidence/,
+  /Setup view only[\s\S]*?does not confirm payment, activate the domain,[\s\S]*?verify ownership, or expose private records/,
   "Community Domain dashboard boundary must keep dashboard reads separate from activation, verification, payment, and private evidence."
 );
 

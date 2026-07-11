@@ -4808,9 +4808,8 @@ export default function CommunityDomainDashboardPage() {
                           </strong>
                           .{" "}
                           {billingIsActive
-                            ? "Quote details remain available for reference, but this lane is no longer asking for a quote before setup continues."
-                            : "Quote details are still required before a payment step exists."}{" "}
-                          Renewal period and payment step are not set up here.
+                            ? "Quote is available for reference."
+                            : "Quote required before payment."}
                         </div>
                         <div style={{ ...helperText(), marginTop: 7 }}>
                           Package quote:{" "}
@@ -4851,14 +4850,11 @@ export default function CommunityDomainDashboardPage() {
                     >
                       <div style={sectionLabel()}>Separate rails</div>
                       <div style={{ ...helperText(), fontSize: 13 }}>
-                        Community Domain subscriptions use a payment code and finance
-                        review. Community money, welfare pools, ROSCA funds, loans, or
-                        member balances must stay outside this subscription lane.
+                        Subscription payment uses a code and finance review.
+                        Community funds stay separate.
                       </div>
                       <div style={{ ...helperText(), fontSize: 13, fontWeight: 850 }}>
-                        This screen shows only the payment code, proof step, and
-                        finance-review status; it does not display or copy account
-                        details.
+                        No bank account details are shown here.
                       </div>
                     </div>
                     <StableButton
@@ -4877,10 +4873,8 @@ export default function CommunityDomainDashboardPage() {
                       <div style={{ ...softCard(), marginTop: 12 }}>
                         <div style={sectionLabel()}>Generate payment code</div>
                         <div style={{ ...helperText(), marginTop: 7 }}>
-                          Enter the agreed quote amount, generate the reference code, then
-                          use that exact code when payment is made through the banking
-                          provider. Proof upload is evidence for finance review; it is not
-                          payment confirmation.
+                          Enter the agreed amount and generate one payment code. Use
+                          that exact code with the bank. Proof is for finance review.
                         </div>
                         <div
                           style={{
@@ -5411,9 +5405,8 @@ export default function CommunityDomainDashboardPage() {
                   <div style={softCard()}>
                     <div style={sectionLabel()}>Safe next step</div>
                     <div style={{ ...helperText(), marginTop: 7 }}>
-                      Use this lane to review setup state first. Creation, member changes,
-                      policy decisions, payment, and verification remain separate actions
-                      with owner/admin permission checks.
+                      Review this lane first. Changes, payment, and verification stay
+                      permission-checked.
                     </div>
                   </div>
                 ) : null}
@@ -5425,10 +5418,10 @@ export default function CommunityDomainDashboardPage() {
             <div style={{ display: "grid", gap: 10 }}>
               <div style={sectionLabel()}>Other domain tools</div>
               <h2 style={{ margin: 0, fontSize: 22, lineHeight: 1.12 }}>
-                Keep setup first.
+                More tools.
               </h2>
               <div style={helperText()}>
-                Notices, lanes, access reviews, and engine details are available when needed.
+                Open only when you need notices, access, or deeper checks.
               </div>
               <StableButton
                 type="button"
@@ -5481,9 +5474,8 @@ export default function CommunityDomainDashboardPage() {
             <div style={{ display: "grid", gap: 8 }}>
               <div style={sectionLabel()}>Boundary</div>
               <div style={helperText()}>
-                This dashboard does not create payment steps, confirm payment,
-                activate billing, activate a Community Domain, verify ownership, show
-                private finance records, or show private member evidence.
+                Setup view only. It does not confirm payment, activate the domain,
+                verify ownership, or expose private records.
               </div>
             </div>
           </section>

@@ -94,7 +94,7 @@ function helperText(): React.CSSProperties {
   return {
     color: "#4F647A",
     fontSize: 14,
-    lineHeight: 1.65,
+    lineHeight: 1.42,
   };
 }
 
@@ -143,9 +143,9 @@ function approvalProgressText(review: ActionReviewItem): string {
   }
   const remainingApprovals = Math.max(requiredApprovals - approvalCount, 0);
   if (remainingApprovals === 0) {
-    return `Approvals complete: ${approvalCount} of ${requiredApprovals} recorded.`;
+    return `Approvals complete: ${approvalCount}/${requiredApprovals}.`;
   }
-  return `${approvalCount} of ${requiredApprovals} approvals recorded. ${remainingApprovals} more needed before this can be added.`;
+  return `${approvalCount}/${requiredApprovals} approvals. ${remainingApprovals} more needed.`;
 }
 
 function followUpText(review: ActionReviewItem): string {
@@ -156,9 +156,9 @@ function followUpText(review: ActionReviewItem): string {
   const reviewStatus = cleanText(review.status).toLowerCase();
   const nextStep =
     reviewStatus === "approved"
-      ? "Apply membership from this row"
-      : "Decide from this row";
-  return `Follow-up to review ${parentReviewId}. This is the applicant's updated request. ${nextStep} and keep the earlier request as history.`;
+      ? "Apply membership here."
+      : "Decide here.";
+  return `Follow-up to ${parentReviewId}. Updated request. ${nextStep}`;
 }
 
 function requestLabel(review: ActionReviewItem): string {
@@ -197,13 +197,10 @@ export default function CommunityDomainAccessRequestsPanel({
         <div>
           <div style={sectionLabel()}>Access requests</div>
           <h2 style={{ margin: "6px 0 0", fontSize: 24, lineHeight: 1.12 }}>
-            Review people asking to enter this domain.
+            Review access.
           </h2>
           <div style={{ ...helperText(), marginTop: 8 }}>
-            These are membership access requests that still need a decision or
-            an approved membership change. Approving records the decision;
-            approving and adding applies the approved review so membership
-            changes.
+            Decide who can enter this domain.
           </div>
         </div>
 
@@ -272,10 +269,7 @@ export default function CommunityDomainAccessRequestsPanel({
                     {!isApprovedReview &&
                     selectedDecision === "needs_changes" ? (
                       <div style={{ ...helperText(), fontSize: 13 }}>
-                        This sends the request back for a safe update. The
-                        applicant sees the needs-changes status and general
-                        update guidance. Private reviewer notes stay inside the
-                        owner/admin review record, and membership is not added.
+                        Sends the request back. Membership is not added.
                       </div>
                     ) : null}
                     <div
@@ -369,9 +363,7 @@ export default function CommunityDomainAccessRequestsPanel({
           <div style={softCard()}>
             <div style={sectionLabel()}>No open access requests</div>
             <div style={{ ...helperText(), marginTop: 7 }}>
-              No one has requested access yet. Invite trusted people first;
-              when they use the invite and request to join, their request will
-              appear here for owner/admin decision and apply.
+              No requests yet. Invite trusted people; requests appear here.
             </div>
             {onOpenInvite ? (
               <div style={{ marginTop: 10 }}>
