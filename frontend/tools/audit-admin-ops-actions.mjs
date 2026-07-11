@@ -246,8 +246,8 @@ assertContains(
 
 assertContains(
   "src/pages/AdminIdentityRiskPage.tsx",
-  /Forgot-password review:[\s\S]*?member's recorded phone[\s\S]*?confirm the[\s\S]*?GSN ID[\s\S]*?private recovery status[\s\S]*?Private recovery:[\s\S]*?row\?\.private_recovery\?\.status_label[\s\S]*?Recovery first step:[\s\S]*?row\?\.private_recovery\?\.recommended_first_step/,
-  "Admin Identity Risk phone-lineage results must show the forgot-password review cue, sanitized recovery status, and the support first step."
+  /Forgot-password review:[\s\S]*?member's recorded phone[\s\S]*?confirm the[\s\S]*?GSN ID[\s\S]*?private recovery status[\s\S]*?Private recovery:[\s\S]*?row\?\.private_recovery\?\.status_label[\s\S]*?Recovery first step:[\s\S]*?row\?\.private_recovery\?\.recommended_first_step[\s\S]*?Manual recovery reset[\s\S]*?does not reveal the old password[\s\S]*?debugId="admin-identity-risk\.manual-recovery-reset\.issue"[\s\S]*?Temporary password shown once[\s\S]*?debugId="admin-identity-risk\.manual-recovery-reset\.copy"/,
+  "Admin Identity Risk phone-lineage results must show the forgot-password review cue, sanitized recovery status, support first step, and the manual recovery reset boundary."
 );
 
 assertContains(
@@ -280,10 +280,28 @@ assertContains(
   "Frontend API client must keep the admin duplicate-reconciliation route and owner-confirmation payload fields."
 );
 
+assertContains(
+  "src/lib/api.ts",
+  /export async function postAdminManualRecoveryReset[\s\S]*?owner_proof_confirmed: boolean;[\s\S]*?reviewer_note: string;[\s\S]*?return httpJson\("\/identity-risk\/admin\/manual-recovery-reset", "POST", payload\);/,
+  "Frontend API client must keep the admin manual recovery reset route and proof-note payload fields."
+);
+
 assertRepoContains(
   "gmfn_backend/app/api/routes/identity_risk.py",
   /def _identity_recovery_admin_state[\s\S]*?"configured"[\s\S]*?"status_label"[\s\S]*?"recommended_first_step"[\s\S]*?"private_recovery": private_recovery/,
   "Backend identity-risk phone-lineage rows must expose sanitized recovery status for owner/support review."
+);
+
+assertRepoContains(
+  "gmfn_backend/app/api/routes/identity_risk.py",
+  /class AdminManualRecoveryResetIn\(BaseModel\):[\s\S]*?owner_proof_confirmed: bool = False[\s\S]*?reviewer_note: str[\s\S]*?@router\.post\("\/admin\/manual-recovery-reset"\)[\s\S]*?_require_admin\(current_user\)[\s\S]*?owner_proof_confirmed[\s\S]*?get_identity_recovery_summary[\s\S]*?if recovery\.get\("configured"\):[\s\S]*?temporary_password = _temporary_recovery_password\(\)[\s\S]*?get_password_hash\(temporary_password\)[\s\S]*?identity\.manual_recovery_reset[\s\S]*?"temporary_password_shown_once": True/,
+  "Backend manual recovery reset must stay admin-only, proof-confirmed, note-backed, missing-recovery-only, hashed, and audited."
+);
+
+assertRepoContains(
+  "gmfn_backend/tests/test_entry_create.py",
+  /test_admin_manual_recovery_reset_issues_temp_password_for_missing_recovery[\s\S]*?identity\.manual_recovery_reset[\s\S]*?temporary_password[\s\S]*?not in \(event\.meta_json or ""\)[\s\S]*?test_admin_manual_recovery_reset_refuses_self_service_ready_account/,
+  "Manual recovery reset tests must prove temp-password login, audit logging, no password leak in metadata, and refusal when self-service recovery is ready."
 );
 
 assertRepoContains(

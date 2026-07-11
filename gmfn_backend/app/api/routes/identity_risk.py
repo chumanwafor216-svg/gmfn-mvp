@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import secrets
+from datetime import datetime, timezone
 from typing import Any, Dict
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request
@@ -8,6 +10,7 @@ from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user
 from app.core.auth import is_user_activation_pending
+from app.core.security import get_password_hash
 from app.db.database import get_db
 from app.db.models import Clan, ClanJoinRequest, ClanMembership, User
 from app.services.identity_reconciliation_service import reconcile_duplicate_identity
@@ -19,6 +22,7 @@ from app.services.identity_service import (
     upsert_identity_recovery_profile,
     verify_identity_recovery_profile,
 )
+from app.services.trust_events_services import build_trust_meta, log_trust_event
 
 router = APIRouter(prefix="/identity-risk", tags=["identity-risk"])
 
@@ -83,6 +87,19 @@ def _join_request_counts(db: Session, user_id: int) -> dict[str, int]:
         status = str(row[0] or "unknown")
         counts[status] = counts.get(status, 0) + 1
     return counts
+
+
+def _primary_membership_clan_id(db: Session, user_id: int) -> int | None:
+    row = (
+        db.query(ClanMembership)
+        .filter(
+            ClanMembership.user_id == int(user_id),
+            ClanMembership.left_at.is_(None),
+        )
+        .order_by(ClanMembership.id.asc())
+        .first()
+    )
+    return int(row.clan_id) if row else None
 
 
 def _identity_recovery_admin_state(
@@ -269,6 +286,33 @@ class AdminIdentityReconcileIn(BaseModel):
         return _reject_non_bool_value(value, info.field_name)
 
 
+class AdminManualRecoveryResetIn(BaseModel):
+    gmfn_id: str = Field(..., min_length=6, max_length=64)
+    phone_e164: str = Field(..., min_length=6, max_length=40)
+    owner_proof_confirmed: bool = False
+    reviewer_note: str = Field(..., min_length=8, max_length=600)
+
+    @field_validator("gmfn_id", "phone_e164", "reviewer_note", mode="before")
+    @classmethod
+    def _reject_non_text_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_value(value, info.field_name)
+
+    @field_validator("owner_proof_confirmed", mode="before")
+    @classmethod
+    def _reject_non_bool_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_bool_value(value, info.field_name)
+
+
+def _temporary_recovery_password() -> str:
+    alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+    blocks = [
+        "".join(secrets.choice(alphabet) for _ in range(4)),
+        "".join(secrets.choice(alphabet) for _ in range(4)),
+        "".join(secrets.choice(alphabet) for _ in range(4)),
+    ]
+    return "GSN-" + "-".join(blocks)
+
+
 def _resolve_reconcile_user(
     db: Session,
     *,
@@ -296,6 +340,36 @@ def _resolve_reconcile_user(
 
     if user is None:
         raise HTTPException(status_code=404, detail=f"{label} user was not found")
+    return user
+
+
+def _resolve_manual_recovery_user(
+    db: Session,
+    *,
+    gmfn_id: str,
+    phone_e164: str,
+) -> User:
+    raw_gmfn_id = str(gmfn_id or "").strip().upper()
+    candidate_ids = [raw_gmfn_id]
+    if raw_gmfn_id.startswith("GMFN-"):
+        candidate_ids.append(f"GSN-{raw_gmfn_id[5:]}")
+    elif raw_gmfn_id.startswith("GSN-"):
+        candidate_ids.append(f"GMFN-{raw_gmfn_id[4:]}")
+
+    phone_candidates = _phone_query_candidates(phone_e164)
+    user = (
+        db.query(User)
+        .filter(User.gmfn_id.in_(candidate_ids), User.phone_e164.in_(phone_candidates))
+        .with_for_update()
+        .first()
+        if phone_candidates
+        else None
+    )
+    if user is None:
+        raise HTTPException(
+            status_code=404,
+            detail="No active GSN identity matches that GSN ID and recorded phone.",
+        )
     return user
 
 
@@ -417,6 +491,101 @@ def admin_phone_identity_lineage(
         "lineage_note": (
             "Read-only admin diagnostic. This does not release, merge, verify, "
             "or move a phone number."
+        ),
+    }
+
+
+@router.post("/admin/manual-recovery-reset")
+def admin_manual_recovery_reset(
+    payload: AdminManualRecoveryResetIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Dict[str, Any]:
+    _require_admin(current_user)
+
+    if not bool(payload.owner_proof_confirmed):
+        raise HTTPException(
+            status_code=400,
+            detail="Owner proof confirmation is required before manual recovery reset.",
+        )
+
+    reviewer_note = str(payload.reviewer_note or "").strip()
+    if len(reviewer_note) < 8:
+        raise HTTPException(
+            status_code=400,
+            detail="Reviewer note is required before manual recovery reset.",
+        )
+
+    user = _resolve_manual_recovery_user(
+        db,
+        gmfn_id=payload.gmfn_id,
+        phone_e164=payload.phone_e164,
+    )
+
+    if is_user_activation_pending(user):
+        raise HTTPException(
+            status_code=409,
+            detail="Activate this GSN identity before manual password recovery.",
+        )
+
+    if not getattr(user, "phone_verified_at", None):
+        raise HTTPException(
+            status_code=409,
+            detail="Manual recovery reset requires a verified recorded phone.",
+        )
+
+    recovery = get_identity_recovery_summary(db, user_id=int(user.id))
+    if recovery.get("configured"):
+        raise HTTPException(
+            status_code=409,
+            detail="Private recovery is already configured. Use self-service password recovery before manual reset.",
+        )
+
+    issued_at = datetime.now(timezone.utc)
+    temporary_password = _temporary_recovery_password()
+    user.hashed_password = get_password_hash(temporary_password)
+    db.add(user)
+
+    meta = build_trust_meta(
+        reason="manual_recovery_reset",
+        note=reviewer_note,
+        trust_delta="0.00",
+        system=True,
+        extra={
+            "gmfn_id": getattr(user, "gmfn_id", None),
+            "phone_mask": (
+                "***" + "".join(ch for ch in str(getattr(user, "phone_e164", "")) if ch.isdigit())[-4:]
+            ),
+            "owner_proof_confirmed": True,
+            "private_recovery_configured_before_reset": False,
+            "temporary_password_shown_once": True,
+            "issued_at": issued_at.isoformat(),
+            "next_required_step": "Member must sign in with the temporary password and set private recovery.",
+        },
+    )
+    log_trust_event(
+        db,
+        event_type="identity.manual_recovery_reset",
+        clan_id=_primary_membership_clan_id(db, int(user.id)),
+        actor_user_id=int(current_user.id),
+        subject_user_id=int(user.id),
+        meta=meta,
+        commit=False,
+        refresh=False,
+    )
+
+    db.commit()
+
+    return {
+        "ok": True,
+        "gmfn_id": getattr(user, "gmfn_id", None),
+        "display_name": getattr(user, "display_name", None),
+        "temporary_password": temporary_password,
+        "temporary_password_shown_once": True,
+        "issued_at": issued_at.isoformat(),
+        "next_step": (
+            "Give this temporary password to the verified account owner only. "
+            "They must sign in, change the password, and set private recovery."
         ),
     }
 

@@ -4059,6 +4059,15 @@ export async function postAdminIdentityReconciliation(payload: {
   return httpJson("/identity-risk/admin/reconcile-duplicate", "POST", payload);
 }
 
+export async function postAdminManualRecoveryReset(payload: {
+  gmfn_id: string;
+  phone_e164: string;
+  owner_proof_confirmed: boolean;
+  reviewer_note: string;
+}): Promise<any> {
+  return httpJson("/identity-risk/admin/manual-recovery-reset", "POST", payload);
+}
+
 export async function getMyNotifications(
   limit: number = 50,
   unreadOnly: boolean = false

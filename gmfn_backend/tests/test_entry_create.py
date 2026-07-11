@@ -3,7 +3,7 @@ import os
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from app.core.security import get_password_hash
+from app.core.security import get_password_hash, verify_password
 from app.db.database import SessionLocal
 from app.db.models import (
     Clan,
@@ -1411,6 +1411,132 @@ def test_admin_phone_lineage_lookup_reports_sanitized_recovery_status(client):
     assert recovery["status_label"] == "Self-service ready"
     assert "Sign in to GSN" in recovery["recommended_first_step"]
     assert "prompts" not in recovery
+
+
+def test_admin_manual_recovery_reset_issues_temp_password_for_missing_recovery(client):
+    os.environ["GMFN_SECRET_KEY"] = "pytest-secret"
+
+    with SessionLocal() as db:
+        admin = User(
+            email="manual-recovery-admin@example.com",
+            hashed_password=get_password_hash("admin-secret"),
+            role="admin",
+        )
+        owner = User(
+            email="manual-recovery-owner@example.com",
+            hashed_password=get_password_hash("forgotten-secret"),
+            role="user",
+            gmfn_id="GMFN-U-MANUAL-RESET",
+            display_name="Manual Reset Owner",
+            phone_e164="+447903165269",
+            phone_verified_at=datetime.now(timezone.utc),
+        )
+        db.add_all([admin, owner])
+        db.commit()
+
+    admin_login = client.post(
+        "/auth/login",
+        data={
+            "username": "manual-recovery-admin@example.com",
+            "password": "admin-secret",
+        },
+    )
+    assert admin_login.status_code == 200, admin_login.text
+    admin_token = admin_login.json()["access_token"]
+
+    res = client.post(
+        "/identity-risk/admin/manual-recovery-reset",
+        json={
+            "gmfn_id": "GMFN-U-MANUAL-RESET",
+            "phone_e164": "+447903165269",
+            "owner_proof_confirmed": True,
+            "reviewer_note": "Owner confirmed GSN ID and recorded phone during pilot support.",
+        },
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert res.status_code == 200, res.text
+    body = res.json()
+    assert body["temporary_password"].startswith("GSN-")
+    assert body["temporary_password_shown_once"] is True
+    assert "set private recovery" in body["next_step"]
+
+    old_login = client.post(
+        "/auth/login",
+        data={"username": "GMFN-U-MANUAL-RESET", "password": "forgotten-secret"},
+    )
+    assert old_login.status_code == 401, old_login.text
+
+    temp_login = client.post(
+        "/auth/login",
+        data={"username": "GMFN-U-MANUAL-RESET", "password": body["temporary_password"]},
+    )
+    assert temp_login.status_code == 200, temp_login.text
+
+    with SessionLocal() as db:
+        owner = db.query(User).filter(User.gmfn_id == "GMFN-U-MANUAL-RESET").one()
+        assert verify_password(body["temporary_password"], owner.hashed_password)
+        event = (
+            db.query(TrustEvent)
+            .filter(TrustEvent.event_type == "identity.manual_recovery_reset")
+            .one()
+        )
+        assert event.subject_user_id == int(owner.id)
+        assert "manual_recovery_reset" in (event.meta_json or "")
+        assert body["temporary_password"] not in (event.meta_json or "")
+
+
+def test_admin_manual_recovery_reset_refuses_self_service_ready_account(client):
+    os.environ["GMFN_SECRET_KEY"] = "pytest-secret"
+
+    with SessionLocal() as db:
+        admin = User(
+            email="manual-recovery-ready-admin@example.com",
+            hashed_password=get_password_hash("admin-secret"),
+            role="admin",
+        )
+        owner = User(
+            email="manual-recovery-ready-owner@example.com",
+            hashed_password=get_password_hash("owner-secret"),
+            role="user",
+            gmfn_id="GMFN-U-READY-RESET",
+            display_name="Ready Reset Owner",
+            phone_e164="+447903165270",
+            phone_verified_at=datetime.now(timezone.utc),
+        )
+        db.add_all([admin, owner])
+        db.commit()
+        upsert_identity_recovery_profile(
+            db,
+            user_id=int(owner.id),
+            prompts_and_answers=[
+                {"prompt": "What answer do you keep for trust recovery?", "answer": "Bridge"},
+                {"prompt": "What first community joined you?", "answer": "Circle"},
+                {"prompt": "Which city did you first join from?", "answer": "Aberdeen"},
+            ],
+        )
+
+    admin_login = client.post(
+        "/auth/login",
+        data={
+            "username": "manual-recovery-ready-admin@example.com",
+            "password": "admin-secret",
+        },
+    )
+    assert admin_login.status_code == 200, admin_login.text
+    admin_token = admin_login.json()["access_token"]
+
+    res = client.post(
+        "/identity-risk/admin/manual-recovery-reset",
+        json={
+            "gmfn_id": "GMFN-U-READY-RESET",
+            "phone_e164": "+447903165270",
+            "owner_proof_confirmed": True,
+            "reviewer_note": "Owner asked for manual recovery, but recovery is configured.",
+        },
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert res.status_code == 409, res.text
+    assert "Private recovery is already configured" in res.text
 
 
 def test_admin_phone_lineage_lookup_reports_pending_join_owner(client):

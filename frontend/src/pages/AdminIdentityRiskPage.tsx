@@ -11,6 +11,7 @@ import {
   getAdminIdentityRisk,
   getAdminPhoneIdentityLineage,
   postAdminIdentityReconciliation,
+  postAdminManualRecoveryReset,
 } from "../lib/api";
 
 function safeStr(x: any): string {
@@ -239,6 +240,12 @@ export default function AdminIdentityRiskPage() {
   const [phoneLineage, setPhoneLineage] = useState<any>(null);
   const [phoneLineageErr, setPhoneLineageErr] = useState("");
   const [phoneLineageBusy, setPhoneLineageBusy] = useState(false);
+  const [manualRecoveryConfirmed, setManualRecoveryConfirmed] = useState(false);
+  const [manualRecoveryNote, setManualRecoveryNote] = useState("");
+  const [manualRecoveryBusy, setManualRecoveryBusy] = useState("");
+  const [manualRecoveryResult, setManualRecoveryResult] = useState<any>(null);
+  const [manualRecoveryErr, setManualRecoveryErr] = useState("");
+  const [manualRecoveryCopyStatus, setManualRecoveryCopyStatus] = useState("");
   const [canonicalIdentity, setCanonicalIdentity] = useState("");
   const [duplicateIdentity, setDuplicateIdentity] = useState("");
   const [reconcileOwnerConfirmed, setReconcileOwnerConfirmed] = useState(false);
@@ -302,6 +309,7 @@ export default function AdminIdentityRiskPage() {
     setPhoneLineageBusy(true);
     setPhoneLineageErr("");
     setPhoneLineage(null);
+    clearManualRecoveryResult();
 
     try {
       const res = await getAdminPhoneIdentityLineage(phone);
@@ -333,6 +341,65 @@ export default function AdminIdentityRiskPage() {
     setPhoneLookup(value);
     setPhoneLineage(null);
     setPhoneLineageErr("");
+    clearManualRecoveryResult();
+  }
+
+  function clearManualRecoveryResult() {
+    setManualRecoveryConfirmed(false);
+    setManualRecoveryNote("");
+    setManualRecoveryBusy("");
+    setManualRecoveryResult(null);
+    setManualRecoveryErr("");
+    setManualRecoveryCopyStatus("");
+  }
+
+  function canManualRecoveryReset(row: any): boolean {
+    return Boolean(
+      row?.gmfn_id &&
+        row?.phone_e164 &&
+        row?.phone_verified &&
+        !row?.activation_pending &&
+        row?.private_recovery?.configured === false
+    );
+  }
+
+  async function handleManualRecoveryReset(row: any) {
+    if (manualRecoveryBusy || !canManualRecoveryReset(row)) return;
+    const note = safeStr(manualRecoveryNote).trim();
+    if (!manualRecoveryConfirmed || note.length < 8) return;
+
+    const contextKey = `${safeStr(row?.gmfn_id)}\n${safeStr(row?.phone_e164)}\n${note}`;
+    setManualRecoveryBusy(contextKey);
+    setManualRecoveryErr("");
+    setManualRecoveryResult(null);
+    setManualRecoveryCopyStatus("");
+
+    try {
+      const res = await postAdminManualRecoveryReset({
+        gmfn_id: safeStr(row?.gmfn_id),
+        phone_e164: safeStr(row?.phone_e164),
+        owner_proof_confirmed: manualRecoveryConfirmed,
+        reviewer_note: note,
+      });
+      if (manualRecoveryBusy && manualRecoveryBusy !== contextKey) return;
+      setManualRecoveryResult(res || null);
+    } catch (e: any) {
+      if (manualRecoveryBusy && manualRecoveryBusy !== contextKey) return;
+      setManualRecoveryErr(String(e?.message || e || "Unable to issue manual recovery reset."));
+    } finally {
+      setManualRecoveryBusy("");
+    }
+  }
+
+  async function copyTemporaryPassword() {
+    const password = safeStr(manualRecoveryResult?.temporary_password);
+    if (!password) return;
+    try {
+      await navigator.clipboard.writeText(password);
+      setManualRecoveryCopyStatus("Temporary password copied.");
+    } catch {
+      setManualRecoveryCopyStatus("Copy was blocked. Select the temporary password manually.");
+    }
   }
 
   function identityLookupPayload(value: string, prefix: "canonical" | "duplicate") {
@@ -589,6 +656,149 @@ export default function AdminIdentityRiskPage() {
                       </div>
                       <div>First step: {safeStr(row?.recommended_first_step || "Review manually.")}</div>
                     </div>
+                    {canManualRecoveryReset(row) ? (
+                      <div
+                        style={{
+                          marginTop: 14,
+                          ...institutionalInnerCard("#FFF7ED"),
+                          border: "1px solid rgba(154,52,18,0.18)",
+                          display: "grid",
+                          gap: 12,
+                        }}
+                      >
+                        <div style={{ fontWeight: 1000, color: "#7C2D12" }}>
+                          {labelWithIcon("shield", "Manual recovery reset")}
+                        </div>
+                        <div style={{ ...helperText(), color: "#7C2D12", fontWeight: 800 }}>
+                          Use only after the owner proves this GSN ID and recorded
+                          phone belong to them. This issues a temporary password;
+                          it does not reveal the old password.
+                        </div>
+                        <textarea
+                          value={manualRecoveryNote}
+                          onChange={(event) => {
+                            setManualRecoveryNote(event.target.value);
+                            setManualRecoveryErr("");
+                            setManualRecoveryResult(null);
+                            setManualRecoveryCopyStatus("");
+                          }}
+                          placeholder="Reviewer note: what proof was checked?"
+                          style={{
+                            width: "100%",
+                            minHeight: 86,
+                            boxSizing: "border-box",
+                            borderRadius: 16,
+                            border: "1px solid rgba(20,52,83,0.22)",
+                            background: "#FFFFFF",
+                            color: "#0B1F33",
+                            fontSize: 16,
+                            fontWeight: 800,
+                            padding: 14,
+                            resize: "vertical",
+                          }}
+                        />
+                        <label
+                          style={{
+                            display: "flex",
+                            alignItems: "flex-start",
+                            gap: 10,
+                            color: "#0B1F33",
+                            fontWeight: 900,
+                            lineHeight: 1.35,
+                          }}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={manualRecoveryConfirmed}
+                            onChange={(event) => {
+                              setManualRecoveryConfirmed(event.target.checked);
+                              setManualRecoveryErr("");
+                              setManualRecoveryResult(null);
+                              setManualRecoveryCopyStatus("");
+                            }}
+                            style={{ width: 18, height: 18, marginTop: 3, flex: "0 0 auto" }}
+                          />
+                          <span>
+                            Owner proof checked: GSN ID, recorded phone, and
+                            community identity match this person.
+                          </span>
+                        </label>
+                        <PrimaryButton
+                          type="button"
+                          busy={Boolean(manualRecoveryBusy)}
+                          busyLabel="Issuing..."
+                          disabled={
+                            !manualRecoveryConfirmed ||
+                            safeStr(manualRecoveryNote).trim().length < 8 ||
+                            Boolean(manualRecoveryResult?.temporary_password)
+                          }
+                          stableHeight={52}
+                          minWidth={190}
+                          debugId="admin-identity-risk.manual-recovery-reset.issue"
+                          onClick={() => handleManualRecoveryReset(row)}
+                        >
+                          Issue temporary password
+                        </PrimaryButton>
+                        {manualRecoveryErr ? (
+                          <div
+                            style={{
+                              ...institutionalInnerCard("#FEF2F2"),
+                              color: "#991B1B",
+                              fontWeight: 900,
+                            }}
+                          >
+                            {manualRecoveryErr}
+                          </div>
+                        ) : null}
+                        {manualRecoveryResult?.temporary_password ? (
+                          <div
+                            style={{
+                              ...institutionalInnerCard("#F0FDF4"),
+                              border: "1px solid rgba(22,101,52,0.18)",
+                              display: "grid",
+                              gap: 10,
+                            }}
+                          >
+                            <div style={{ color: "#166534", fontWeight: 1000 }}>
+                              Temporary password shown once
+                            </div>
+                            <div
+                              style={{
+                                padding: "12px 14px",
+                                borderRadius: 14,
+                                background: "#FFFFFF",
+                                border: "1px solid rgba(20,52,83,0.16)",
+                                color: "#0B1F33",
+                                fontSize: 18,
+                                fontWeight: 1000,
+                                letterSpacing: 0.4,
+                                overflowWrap: "anywhere",
+                              }}
+                            >
+                              {safeStr(manualRecoveryResult.temporary_password)}
+                            </div>
+                            <div style={{ ...helperText(), color: "#166534", fontWeight: 800 }}>
+                              Give it only to the verified owner. They must sign
+                              in, change password, and set private recovery.
+                            </div>
+                            <PrimaryButton
+                              type="button"
+                              stableHeight={48}
+                              minWidth={160}
+                              debugId="admin-identity-risk.manual-recovery-reset.copy"
+                              onClick={() => void copyTemporaryPassword()}
+                            >
+                              Copy temporary password
+                            </PrimaryButton>
+                            {manualRecoveryCopyStatus ? (
+                              <div style={{ ...helperText(), color: "#166534", fontWeight: 900 }}>
+                                {manualRecoveryCopyStatus}
+                              </div>
+                            ) : null}
+                          </div>
+                        ) : null}
+                      </div>
+                    ) : null}
                   </div>
                 ))
               : null}

@@ -3109,6 +3109,19 @@ Smallest product response:
 - record recovery setup as a standard pilot procedure, not an optional hidden
   profile chore.
 
+Pilot manual recovery bridge:
+
+- If an active member has a verified recorded phone but no private recovery,
+  owner / GSN support may issue a temporary password only after confirming the
+  GSN ID, recorded phone, and community identity.
+- The old password must never be revealed. The system should generate a new
+  temporary password, store only its hash, show it once, and audit the support
+  action.
+- After the member signs in with the temporary password, the next standard
+  procedure is to change password and set private recovery.
+- Future recovery should move toward verified phone OTP plus private recovery,
+  so missing recovery does not require manual support.
+
 ---
 
 ## 47. Source Notes For Internal Review
