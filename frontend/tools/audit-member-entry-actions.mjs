@@ -82,8 +82,8 @@ assertContains(
 
 assertContains(
   "src/pages/LoginPage.tsx",
-  /debugId="login\.open-help"[\s\S]*?debugId="login\.submit"[\s\S]*?debugId="login\.activate-approved"[\s\S]*?debugId="login\.start-community"/,
-  "Login help, submit, activation, and start-community actions must remain traceable."
+  /debugId="login\.open-help"[\s\S]*?debugId="login\.submit"[\s\S]*?debugId="login\.activate-approved"[\s\S]*?debugId="login\.password-recovery\.open"[\s\S]*?debugId="login\.password-recovery\.start"[\s\S]*?debugId="login\.password-recovery\.reset"[\s\S]*?debugId="login\.password-recovery\.back"[\s\S]*?debugId="login\.start-community"/,
+  "Login help, submit, activation, password recovery, and start-community actions must remain traceable."
 );
 
 assertContains(

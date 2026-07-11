@@ -19,6 +19,10 @@ from app.core.security import create_access_token, get_password_hash, verify_pas
 from app.db.database import get_db
 from app.db.models import Clan, ClanInvite, ClanJoinRequest, ClanMembership, TrustEvent, User
 from app.services.global_identity_service import ensure_user_gmfn_id
+from app.services.identity_service import (
+    get_identity_recovery_summary,
+    verify_identity_recovery_profile,
+)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -159,6 +163,19 @@ class ActivateMembershipIn(BaseModel):
     request_id: Optional[str] = None
 
 
+class PasswordRecoveryStartIn(BaseModel):
+    gmfn_id: str = Field(..., min_length=6, max_length=64)
+    phone_e164: str = Field(..., min_length=6, max_length=32)
+
+
+class PasswordRecoveryResetIn(BaseModel):
+    gmfn_id: str = Field(..., min_length=6, max_length=64)
+    phone_e164: str = Field(..., min_length=6, max_length=32)
+    answers: list[str] = Field(..., min_length=3, max_length=3)
+    new_password: str = Field(..., min_length=6)
+    confirm_password: str = Field(..., min_length=6)
+
+
 def authenticate_user(db: Session, email: str, password: str) -> User | None:
     user = db.query(User).filter(User.email == email).first()
     if not user:
@@ -219,6 +236,60 @@ def _find_user_by_identity(db: Session, identity: str) -> User | None:
     if not user:
         user = db.query(User).filter(User.phone_e164.in_(candidates)).first()
     return user
+
+
+def _gsn_id_candidates(value: str) -> list[str]:
+    raw = str(value or "").strip().upper()
+    if not raw:
+        return []
+
+    if raw.startswith("GMFN-U-"):
+        candidates = [raw, f"GSN-U-{raw[7:]}"]
+    elif raw.startswith("GSN-U-"):
+        candidates = [raw, f"GMFN-U-{raw[6:]}"]
+    else:
+        suffix = raw.removeprefix("U-")
+        candidates = [f"GSN-U-{suffix}", f"GMFN-U-{suffix}"]
+
+    out: list[str] = []
+    seen: set[str] = set()
+    for candidate in candidates:
+        if candidate and candidate not in seen:
+            seen.add(candidate)
+            out.append(candidate)
+    return out
+
+
+def _find_user_by_recovery_claim(db: Session, *, gmfn_id: str, phone_e164: str) -> User | None:
+    gsn_candidates = _gsn_id_candidates(gmfn_id)
+    phone_candidates = _identity_candidates(phone_e164)
+    if not gsn_candidates or not phone_candidates:
+        return None
+
+    return (
+        db.query(User)
+        .filter(User.gmfn_id.in_(gsn_candidates), User.phone_e164.in_(phone_candidates))
+        .first()
+    )
+
+
+def _mask_phone(value: object) -> str | None:
+    text = str(value or "").strip()
+    digits = "".join(ch for ch in text if ch.isdigit())
+    if len(digits) < 4:
+        return None
+    return f"***{digits[-4:]}"
+
+
+def _password_recovery_unavailable(detail: str = "Self-service recovery is not available for those details.") -> HTTPException:
+    return HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND,
+        detail={
+            "code": "password_recovery_unavailable",
+            "message": detail,
+            "next_action": "manual_review",
+        },
+    )
 
 
 def authenticate_user_by_identity(db: Session, identity: str, password: str) -> User | None:
@@ -799,6 +870,159 @@ def activate_membership(
         **_activation_phone_status(user),
         "access_token": access_token,
         "token_type": "bearer",
+    }
+
+
+@router.post("/password-recovery/start", response_model=dict[str, Any])
+def start_password_recovery(
+    payload: PasswordRecoveryStartIn,
+    db: Session = Depends(get_db),
+):
+    user = _find_user_by_recovery_claim(
+        db,
+        gmfn_id=payload.gmfn_id,
+        phone_e164=payload.phone_e164,
+    )
+    if not user:
+        raise _password_recovery_unavailable()
+
+    if is_user_activation_pending(user):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={
+                "code": "account_activation_pending",
+                "message": "This GSN ID is not active yet. Activate membership before using password recovery.",
+                "next_action": "activate_membership",
+                "activation_path": f"/activate-membership?gmfn_id={str(user.gmfn_id or '').strip().upper()}",
+            },
+        )
+
+    if not getattr(user, "phone_verified_at", None):
+        raise _password_recovery_unavailable(
+            "Self-service recovery needs a verified phone on this account. Ask the community owner or GSN support to review the account."
+        )
+
+    recovery = get_identity_recovery_summary(db, user_id=int(user.id))
+    if not recovery.get("configured"):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={
+                "code": "recovery_not_configured",
+                "message": "Private recovery questions are not set up for this GSN ID yet. Ask the community owner or GSN support to review the account.",
+                "next_action": "manual_review",
+            },
+        )
+
+    if recovery.get("locked"):
+        raise HTTPException(
+            status_code=status.HTTP_423_LOCKED,
+            detail={
+                "code": "recovery_temporarily_locked",
+                "message": "Password recovery is temporarily locked after repeated wrong answers.",
+                "locked_until": recovery.get("locked_until"),
+                "next_action": "wait_then_retry",
+            },
+        )
+
+    return {
+        "ok": True,
+        "gmfn_id": getattr(user, "gmfn_id", None),
+        "phone_mask": _mask_phone(getattr(user, "phone_e164", None)),
+        "prompts": recovery.get("prompts") or [],
+    }
+
+
+@router.post("/password-recovery/reset", response_model=TokenOut)
+def reset_password_with_recovery(
+    payload: PasswordRecoveryResetIn,
+    db: Session = Depends(get_db),
+):
+    if payload.new_password != payload.confirm_password:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                "code": "password_mismatch",
+                "message": "The new password and confirmation must match.",
+            },
+        )
+
+    user = _find_user_by_recovery_claim(
+        db,
+        gmfn_id=payload.gmfn_id,
+        phone_e164=payload.phone_e164,
+    )
+    if not user:
+        raise _password_recovery_unavailable()
+
+    if is_user_activation_pending(user):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={
+                "code": "account_activation_pending",
+                "message": "This GSN ID is not active yet. Activate membership before using password recovery.",
+                "next_action": "activate_membership",
+                "activation_path": f"/activate-membership?gmfn_id={str(user.gmfn_id or '').strip().upper()}",
+            },
+        )
+
+    if not getattr(user, "phone_verified_at", None):
+        raise _password_recovery_unavailable(
+            "Self-service recovery needs a verified phone on this account. Ask the community owner or GSN support to review the account."
+        )
+
+    try:
+        result = verify_identity_recovery_profile(
+            db,
+            user_id=int(user.id),
+            answers=[str(item or "").strip() for item in payload.answers],
+        )
+    except LookupError:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={
+                "code": "recovery_not_configured",
+                "message": "Private recovery questions are not set up for this GSN ID yet. Ask the community owner or GSN support to review the account.",
+                "next_action": "manual_review",
+            },
+        )
+    except PermissionError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_423_LOCKED,
+            detail={
+                "code": "recovery_temporarily_locked",
+                "message": str(exc),
+                "next_action": "wait_then_retry",
+            },
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"code": "recovery_answers_required", "message": str(exc)},
+        )
+
+    if not result.get("verified"):
+        recovery = result.get("recovery") or {}
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail={
+                "code": "recovery_answers_mismatch",
+                "message": "Those recovery answers did not match this GSN ID.",
+                "failed_attempts": recovery.get("failed_attempts"),
+                "locked_until": recovery.get("locked_until"),
+                "next_action": "check_answers",
+            },
+        )
+
+    user.hashed_password = get_password_hash(payload.new_password)
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+
+    access_token = create_access_token(data={"sub": user.email})
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "gmfn_id": getattr(user, "gmfn_id", None),
     }
 
 

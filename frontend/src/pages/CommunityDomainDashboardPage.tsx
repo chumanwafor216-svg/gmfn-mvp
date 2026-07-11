@@ -306,7 +306,7 @@ const SETUP_STEP_OPTIONS: Array<{
   {
     key: "payment",
     label: "Payment",
-    note: "Generate or review the bank-transfer payment code in Billing.",
+    note: "Generate or review the payment reference code in Billing.",
   },
   {
     key: "evidence",
@@ -1050,6 +1050,54 @@ function statusBadge(status: unknown): React.CSSProperties {
     fontWeight: 900,
     textTransform: "capitalize",
   };
+}
+
+function billingStepCard(
+  step: string,
+  title: string,
+  detail: string,
+  status: string,
+  active = false
+): React.ReactNode {
+  return (
+    <div
+      key={`${step}-${title}`}
+      style={{
+        display: "grid",
+        gridTemplateColumns: "34px minmax(0, 1fr)",
+        gap: 10,
+        alignItems: "start",
+        padding: 12,
+        borderRadius: 16,
+        border: active ? "1px solid rgba(12,79,168,0.22)" : "1px solid rgba(9,27,46,0.10)",
+        background: active ? "rgba(233,243,255,0.76)" : "rgba(255,255,255,0.74)",
+        minWidth: 0,
+      }}
+    >
+      <span
+        aria-hidden="true"
+        style={{
+          width: 34,
+          height: 34,
+          borderRadius: 999,
+          display: "grid",
+          placeItems: "center",
+          background: active ? "#0B63CE" : "#EEF4FB",
+          color: active ? "#FFFFFF" : "#25415F",
+          fontWeight: 950,
+          fontSize: 13,
+          boxShadow: active ? "0 8px 18px rgba(12,79,168,0.18)" : "none",
+        }}
+      >
+        {step}
+      </span>
+      <span style={{ display: "grid", gap: 6, minWidth: 0 }}>
+        <strong style={{ color: "#07172C", fontSize: 15, lineHeight: 1.18 }}>{title}</strong>
+        <span style={{ ...helperText(), fontSize: 12.5, lineHeight: 1.45 }}>{detail}</span>
+        <span style={{ ...statusBadge(status), justifySelf: "start" }}>{status}</span>
+      </span>
+    </div>
+  );
 }
 
 function laneForAction(actionKey: unknown): string {
@@ -2695,6 +2743,90 @@ export default function CommunityDomainDashboardPage() {
     : billingIsActive
     ? "Why package details are owner-only"
     : "Why quote review is owner-only";
+  const domainPaymentMeta =
+    domainPayment?.meta && typeof domainPayment.meta === "object"
+      ? domainPayment.meta
+      : domainPayment?.meta_json && typeof domainPayment.meta_json === "object"
+      ? domainPayment.meta_json
+      : {};
+  const domainPaymentReference = cleanText(
+    domainPayment?.reference_display || domainPayment?.reference_normalized
+  );
+  const domainPaymentStatusRaw = cleanText(domainPayment?.status, "expected").toLowerCase();
+  const domainPaymentStageRaw = cleanText(
+    domainPayment?.payment_stage || domainPaymentMeta?.payment_stage
+  ).toLowerCase();
+  const domainPaymentStatusLabel = cleanText(
+    domainPayment?.payment_status_label ||
+      domainPaymentMeta?.payment_status_label ||
+      compactStatus(domainPaymentStageRaw || domainPaymentStatusRaw || "expected"),
+    "Expected"
+  );
+  const domainPaymentStatusSearch = `${domainPaymentStatusRaw} ${domainPaymentStageRaw} ${domainPaymentStatusLabel}`.toLowerCase();
+  const domainPaymentConfirmed =
+    Boolean(domainPayment?.confirmed_at) ||
+    domainPaymentStatusRaw === "confirmed" ||
+    domainPaymentStatusRaw === "applied" ||
+    domainPaymentStageRaw === "completed";
+  const domainPaymentProofUploaded = Boolean(
+    domainPaymentMeta?.latest_payment_proof ||
+      domainPaymentMeta?.proof_submitted_at ||
+      domainPaymentMeta?.proof_status_text
+  );
+  const domainPaymentBankMatchLabel = domainPaymentConfirmed
+    ? "Matched"
+    : cleanText(
+        domainPayment?.bank_match_status_label ||
+          domainPaymentMeta?.bank_match_status_label ||
+          (domainPaymentReference ? "Waiting" : "Not started"),
+        domainPaymentReference ? "Waiting" : "Not started"
+      );
+  const domainPaymentProofLabel = domainPaymentProofUploaded
+    ? "Uploaded"
+    : cleanText(
+        domainPayment?.proof_status_label ||
+          domainPaymentMeta?.proof_status_label ||
+          domainPaymentMeta?.proof_status_text ||
+          "Not uploaded",
+        "Not uploaded"
+      );
+  const billingSequenceSteps = [
+    {
+      step: "1",
+      title: "Review quote",
+      detail: "Confirm package, amount, currency, billing cycle, and renewal terms before any payment action.",
+      status: compactStatus(quote?.pricing_status || quote?.quote_status || "quote required"),
+      active: !domainPayment,
+    },
+    {
+      step: "2",
+      title: "Generate payment code",
+      detail: "Create one reference code for the agreed Community Domain quote. The code is not bank account details.",
+      status: domainPaymentReference ? "Code generated" : "Code needed",
+      active: !domainPaymentReference,
+    },
+    {
+      step: "3",
+      title: "Use your bank",
+      detail: "Make the transfer through your own bank, app, or provider channel and use the exact code as the reference.",
+      status: domainPaymentReference ? "Waiting for bank" : "Not started",
+      active: Boolean(domainPaymentReference) && domainPaymentStatusSearch.includes("auth"),
+    },
+    {
+      step: "4",
+      title: "Upload proof",
+      detail: "Attach the receipt or screenshot for finance review. Proof is evidence, not confirmation.",
+      status: domainPaymentProofUploaded ? "Proof uploaded" : "Proof needed",
+      active: Boolean(domainPaymentReference) && !domainPaymentProofUploaded && !domainPaymentConfirmed,
+    },
+    {
+      step: "5",
+      title: "Finance review",
+      detail: "GSN confirms only after a real bank/provider match or approved finance review exists.",
+      status: domainPaymentConfirmed ? "Completed" : "Pending review",
+      active: domainPaymentProofUploaded && !domainPaymentConfirmed,
+    },
+  ];
   const operatingStateCopy = communityDomainOperatingStateCopy(status);
   const renewalState = cleanText(quote?.renewal_policy?.status, "not set");
 
@@ -2839,7 +2971,9 @@ export default function CommunityDomainDashboardPage() {
         );
       }
       setActiveLane("billing");
-      setMessage("Payment code generated. Use that exact code in the bank transfer, then upload proof here for finance review.");
+      setMessage(
+        "Payment code generated. Use that exact code as the payment reference, then upload proof here for finance review."
+      );
     } catch (err: any) {
       if (isCurrentDomainRequest(requestDomainId)) {
         setMessage(
@@ -4658,24 +4792,74 @@ export default function CommunityDomainDashboardPage() {
 
                 {!isActiveLaneReadinessLoading && activeLane === "billing" ? (
                   <div style={softCard()}>
-                    <div style={sectionLabel()}>Package and renewal</div>
-                    <div style={{ ...helperText(), marginTop: 7 }}>
-                      Billing status:{" "}
-                      <strong style={{ textTransform: "capitalize" }}>
-                        {compactStatus(status.billing_status || selectedLane?.status)}
-                      </strong>
-                      .{" "}
-                      {billingIsActive
-                        ? "Quote details remain available for reference, but this lane is no longer asking for a quote before setup continues."
-                        : "Quote details are still required before a payment step exists."}{" "}
-                      Renewal period and payment step are not set up here.
+                    <div style={iconHeaderStyle()}>
+                      <span style={iconFrame(48)}>
+                        <GsnRealisticIcon name="finance-bank-building" size={36} decorative />
+                      </span>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={sectionLabel()}>Billing sequence</div>
+                        <h3 style={{ margin: "4px 0 0", fontSize: 20, lineHeight: 1.12 }}>
+                          Code first. Confirm later.
+                        </h3>
+                        <div style={{ ...helperText(), marginTop: 7 }}>
+                          Billing status:{" "}
+                          <strong style={{ textTransform: "capitalize" }}>
+                            {compactStatus(status.billing_status || selectedLane?.status)}
+                          </strong>
+                          .{" "}
+                          {billingIsActive
+                            ? "Quote details remain available for reference, but this lane is no longer asking for a quote before setup continues."
+                            : "Quote details are still required before a payment step exists."}{" "}
+                          Renewal period and payment step are not set up here.
+                        </div>
+                        <div style={{ ...helperText(), marginTop: 7 }}>
+                          Package quote:{" "}
+                          <strong style={{ textTransform: "capitalize" }}>
+                            {compactStatus(quote?.pricing_status || quote?.quote_status)}
+                          </strong>
+                          .
+                        </div>
+                      </div>
                     </div>
-                    <div style={{ ...helperText(), marginTop: 7 }}>
-                      Package quote:{" "}
-                      <strong style={{ textTransform: "capitalize" }}>
-                        {compactStatus(quote?.pricing_status || quote?.quote_status)}
-                      </strong>
-                      .
+                    <div
+                      style={{
+                        display: "grid",
+                        gap: 9,
+                        marginTop: 14,
+                      }}
+                    >
+                      {billingSequenceSteps.map((item) =>
+                        billingStepCard(
+                          item.step,
+                          item.title,
+                          item.detail,
+                          item.status,
+                          item.active
+                        )
+                      )}
+                    </div>
+                    <div
+                      style={{
+                        ...softCard(),
+                        marginTop: 12,
+                        display: "grid",
+                        gap: 9,
+                        border: "1px solid rgba(214,170,69,0.26)",
+                        background:
+                          "linear-gradient(180deg, rgba(255,249,225,0.86), rgba(255,255,255,0.92))",
+                      }}
+                    >
+                      <div style={sectionLabel()}>Separate rails</div>
+                      <div style={{ ...helperText(), fontSize: 13 }}>
+                        Community Domain subscriptions use a payment code and finance
+                        review. Community money, welfare pools, ROSCA funds, loans, or
+                        member balances must stay outside this subscription lane.
+                      </div>
+                      <div style={{ ...helperText(), fontSize: 13, fontWeight: 850 }}>
+                        This screen shows only the payment code, proof step, and
+                        finance-review status; it does not display or copy account
+                        details.
+                      </div>
                     </div>
                     <StableButton
                       type="button"
@@ -4691,11 +4875,12 @@ export default function CommunityDomainDashboardPage() {
 
                     {isAdmin && !billingIsActive ? (
                       <div style={{ ...softCard(), marginTop: 12 }}>
-                        <div style={sectionLabel()}>Payment code</div>
+                        <div style={sectionLabel()}>Generate payment code</div>
                         <div style={{ ...helperText(), marginTop: 7 }}>
-                          Enter the agreed quote amount, generate the bank-transfer code,
-                          then use that exact code when payment is made. Proof upload is
-                          evidence for finance review; it is not payment confirmation.
+                          Enter the agreed quote amount, generate the reference code, then
+                          use that exact code when payment is made through the banking
+                          provider. Proof upload is evidence for finance review; it is not
+                          payment confirmation.
                         </div>
                         <div
                           style={{
@@ -4758,17 +4943,49 @@ export default function CommunityDomainDashboardPage() {
                             "Payment code not shown"
                           )}
                         </div>
-                        <div style={{ ...helperText(), marginTop: 7 }}>
-                          Status:{" "}
-                          <strong style={{ textTransform: "capitalize" }}>
-                            {compactStatus(domainPayment.status || "expected")}
-                          </strong>
-                          . Amount:{" "}
+                        <div
+                          style={{
+                            display: "flex",
+                            flexWrap: "wrap",
+                            gap: 8,
+                            marginTop: 10,
+                          }}
+                        >
+                          <span style={statusBadge(`Payment: ${domainPaymentStatusLabel}`)}>
+                            Payment: {domainPaymentStatusLabel}
+                          </span>
+                          <span style={statusBadge(`Bank match: ${domainPaymentBankMatchLabel}`)}>
+                            Bank match: {domainPaymentBankMatchLabel}
+                          </span>
+                          <span style={statusBadge(`Proof: ${domainPaymentProofLabel}`)}>
+                            Proof: {domainPaymentProofLabel}
+                          </span>
+                        </div>
+                        <div style={{ ...helperText(), marginTop: 9 }}>
+                          Amount:{" "}
                           <strong>
                             {cleanText(domainPayment.amount, "0")}{" "}
                             {cleanText(domainPayment.currency, quoteCurrency || "GBP")}
                           </strong>
-                          .
+                          . Finance confirms only after bank/provider reconciliation succeeds.
+                        </div>
+                        <div
+                          style={{
+                            marginTop: 10,
+                            borderRadius: 16,
+                            border: "1px solid rgba(12,79,168,0.18)",
+                            background: "#F1F7FF",
+                            color: "#25415F",
+                            padding: "10px 12px",
+                            fontSize: 13,
+                            fontWeight: 820,
+                            lineHeight: 1.45,
+                          }}
+                        >
+                          Use this code as the payment reference in your own bank or
+                          provider channel. If the bank asks for app approval, SMS OTP,
+                          a one-time code, code generator, or biometric confirmation,
+                          complete that with the bank first.
                         </div>
                         <PaymentProofSubmissionPanel
                           payment={domainPayment}
@@ -5218,7 +5435,15 @@ export default function CommunityDomainDashboardPage() {
                 kind={showAdvancedTools ? "secondary" : "primary"}
                 fullWidth
                 debugId="community-domain-dashboard.advanced-tools-toggle"
-                onClick={() => setShowAdvancedTools((current) => !current)}
+                onClick={() =>
+                  setShowAdvancedTools((current) => {
+                    const next = !current;
+                    if (next) {
+                      setActiveLane(primaryActionLaneKey);
+                    }
+                    return next;
+                  })
+                }
               >
                 {showAdvancedTools ? "Hide other tools" : "Open other tools"}
               </StableButton>

@@ -106,6 +106,7 @@
     "audit:mobile-visual-sweep": "node tools/audit-mobile-visual-sweep.mjs",
     "audit:entry-flow-polish": "node tools/audit-entry-flow-polish.mjs",
     "audit:entry-copy-response": "node tools/audit-entry-copy-response.mjs",
+    "audit:community-domain-billing-sequence": "node tools/audit-community-domain-billing-sequence.mjs",
     "audit:community-domain-product-contracts": "node tools/audit-community-domain-product-contracts.mjs",
     "audit:community-domain-evidence-readiness-boundary": "node tools/audit-community-domain-evidence-readiness-boundary.mjs",
     "audit:community-confirmation-outcome-boundary": "node tools/audit-community-confirmation-outcome-boundary.mjs",

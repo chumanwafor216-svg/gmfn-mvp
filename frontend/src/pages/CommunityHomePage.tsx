@@ -1234,6 +1234,8 @@ export default function CommunityHomePage() {
     useState(false);
   const [noticeModalOpen, setNoticeModalOpen] = useState(false);
   const [noticePosting, setNoticePosting] = useState(false);
+  const [whatsappContactChoicesOpen, setWhatsappContactChoicesOpen] =
+    useState(false);
   const [poolSummary, setPoolSummary] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [changingClanId, setChangingClanId] = useState<number>(0);
@@ -1496,6 +1498,10 @@ export default function CommunityHomePage() {
   const canManageCommunityNoticeSettings = Boolean(
     selectedClanId && isCommunityNoticeOfficer
   );
+
+  useEffect(() => {
+    setWhatsappContactChoicesOpen(false);
+  }, [selectedClanId]);
   const routes = useMemo(
     () => ({
       dashboard: routeTarget(
@@ -3774,8 +3780,26 @@ export default function CommunityHomePage() {
               <div style={{ display: "grid", gap: 10 }}>
                 <StableButton
                   type="button"
+                  aria-expanded={whatsappContactChoicesOpen}
+                  aria-controls="community-home-contact-whatsapp-actions"
                   debugId="community-home.contact.whatsapp-chat"
-                  onClick={openCommunityWhatsAppContact}
+                  onClick={(event) => {
+                    if (!whatsappContactChoicesOpen) {
+                      consumeCommunityButtonEvent(event);
+                      if (!firstTruthy(selectedClan?.official_whatsapp_number)) {
+                        showNotice(
+                          "error",
+                          "This community has not published an official WhatsApp contact yet."
+                        );
+                        return;
+                      }
+                      setWhatsappContactChoicesOpen(true);
+                      return;
+                    }
+
+                    openCommunityWhatsAppContact(event);
+                    setWhatsappContactChoicesOpen(false);
+                  }}
                   style={{
                     ...communityActionStyle(
                       firstTruthy(selectedClan?.official_whatsapp_number)
@@ -3797,30 +3821,41 @@ export default function CommunityHomePage() {
                   }}
                 >
                   <GsnLegacyIcon name="phone" size={27} />
-                  WhatsApp Chat
+                  {whatsappContactChoicesOpen ? "WhatsApp Chat" : "WhatsApp contact"}
                 </StableButton>
-                <StableButton
-                  type="button"
-                  debugId="community-home.contact.whatsapp-call"
-                  onClick={openCommunityCallContact}
+                <div
+                  id="community-home-contact-whatsapp-actions"
                   style={{
-                    ...communityActionStyle(
-                      "secondary",
-                      !firstTruthy(selectedClan?.official_whatsapp_number)
-                    ),
-                    width: "100%",
-                    minHeight: 58,
-                    borderRadius: 16,
-                    color: firstTruthy(selectedClan?.official_whatsapp_number)
-                      ? "#0E9855"
-                      : undefined,
-                    fontSize: 16,
+                    display: whatsappContactChoicesOpen ? "grid" : "none",
                     gap: 10,
                   }}
                 >
-                  <GsnLegacyIcon name="phone" size={27} />
-                  WhatsApp Call
-                </StableButton>
+                  <StableButton
+                    type="button"
+                    debugId="community-home.contact.whatsapp-call"
+                    onClick={(event) => {
+                      openCommunityCallContact(event);
+                      setWhatsappContactChoicesOpen(false);
+                    }}
+                    style={{
+                      ...communityActionStyle(
+                        "secondary",
+                        !firstTruthy(selectedClan?.official_whatsapp_number)
+                      ),
+                      width: "100%",
+                      minHeight: 58,
+                      borderRadius: 16,
+                      color: firstTruthy(selectedClan?.official_whatsapp_number)
+                        ? "#0E9855"
+                        : undefined,
+                      fontSize: 16,
+                      gap: 10,
+                    }}
+                  >
+                    <GsnLegacyIcon name="phone" size={27} />
+                    WhatsApp Call
+                  </StableButton>
+                </div>
               </div>
             </div>
 

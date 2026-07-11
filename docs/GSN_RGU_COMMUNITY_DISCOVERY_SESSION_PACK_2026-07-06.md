@@ -341,7 +341,53 @@ Recommended next pilot:
 
 ---
 
-## 14. Stop Rule
+## 14. Backup Screenshot Pack
+
+Use these only if the live app is unstable, the room has poor internet, or the
+demo begins consuming the discussion. They support the same narrow chain:
+
+```text
+Community Home -> Trust Events -> Trust Passport -> TrustSlip -> Public check
+```
+
+Local screenshot order:
+
+| Step | Screenshot | What to say |
+| --- | --- | --- |
+| Community Home | `screenshots/community-home-grouped-mobile-clean.png` | "This is the community operating surface. The point is not to show every tool; it is to orient the member inside a real community." |
+| Trust Events | `screenshots/trust-timeline-route-mobile-record.png` | "This is the evidence layer: activity becomes a record with context, not a personality score." |
+| Trust Passport | `screenshots/trust-passport-trust-document-smoke.png` | "This is a generated summary of selected evidence. It should help a human decision, not replace one." |
+| TrustSlip | `screenshots/trustslip-holder-trust-document-mobile.png` | "This is a temporary shareable proof surface. It has boundaries, expiry, and does not expose the whole private history." |
+| Public check | `screenshots/trustslip-verify-trust-document-smoke.png` | "This is what an outsider can check. It must be clear about what GSN confirms and what it does not confirm." |
+| Community verification fallback | `screenshots/community-verify-trust-document-smoke.png` | "Use this only if the TrustSlip public-check image is too long or too hard to discuss in the room." |
+
+Print or preload the screenshots before the session. Do not spend live time
+searching folders while participants are ready to talk.
+
+If using screenshots, say this plainly:
+
+```text
+The screenshots are only here to keep the conversation moving. The real test is
+whether this evidence chain matches decisions your society already needs to
+make.
+```
+
+Do not claim from screenshots alone:
+
+- that the Nigerian Society has adopted GSN;
+- that the app is production-ready for all student use;
+- that TrustSlip proves a person is trustworthy;
+- that public verification replaces society leaders, direct confirmation, or
+  human judgement.
+
+Unabated truth: the current screenshot set is enough for discovery backup. It
+is not enough to prove live-pilot readiness; that still requires the selected
+use case, authority rule, privacy boundary, and a working app walkthrough to be
+tested before the actual session.
+
+---
+
+## 15. Stop Rule
 
 The next proof is outside the document:
 

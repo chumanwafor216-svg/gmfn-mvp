@@ -607,6 +607,46 @@ export async function loginAndStore(username: string, password: string) {
   return out;
 }
 
+export async function startPasswordRecovery(payload: {
+  gmfn_id: string;
+  phone_e164: string;
+}): Promise<{
+  ok: boolean;
+  gmfn_id?: string | null;
+  phone_mask?: string | null;
+  prompts?: string[];
+}> {
+  return httpJson("/auth/password-recovery/start", "POST", {
+    gmfn_id: String(payload?.gmfn_id || "").trim(),
+    phone_e164: String(payload?.phone_e164 || "").trim(),
+  });
+}
+
+export async function resetPasswordWithRecovery(payload: {
+  gmfn_id: string;
+  phone_e164: string;
+  answers: string[];
+  new_password: string;
+  confirm_password: string;
+}): Promise<{ access_token: string; token_type: string; gmfn_id?: string | null }> {
+  const out = await httpJson("/auth/password-recovery/reset", "POST", {
+    gmfn_id: String(payload?.gmfn_id || "").trim(),
+    phone_e164: String(payload?.phone_e164 || "").trim(),
+    answers: Array.isArray(payload?.answers)
+      ? payload.answers.map((item) => String(item || "").trim())
+      : [],
+    new_password: String(payload?.new_password || ""),
+    confirm_password: String(payload?.confirm_password || ""),
+  });
+  if (out?.access_token) {
+    setAccessToken(out.access_token);
+    setStoredGmfnId(null);
+  }
+  rememberGmfnIdFrom(out);
+  rememberRoleFrom(out);
+  return out;
+}
+
 export async function getMe() {
   const out = await httpJson("/auth/me", "GET");
   rememberGmfnIdFrom(out);

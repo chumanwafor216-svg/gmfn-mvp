@@ -5,7 +5,14 @@ import GSNBrandMonument from "../components/GSNBrandMonument";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import GsnInstallPrompt from "../components/GsnInstallPrompt";
 import { PrimaryButton, SecondaryButton, SubtleButton } from "../components/StableButton";
-import { getAccessToken, getMe, getMeWithToken, loginAndStore } from "../lib/api";
+import {
+  getAccessToken,
+  getMe,
+  getMeWithToken,
+  loginAndStore,
+  resetPasswordWithRecovery,
+  startPasswordRecovery,
+} from "../lib/api";
 import {
   peekPublishRecoveryTarget,
   publishRecoveryTarget,
@@ -437,6 +444,17 @@ export default function LoginPage() {
   const [msg, setMsg] = useState<string | null>(null);
   const [activationPath, setActivationPath] = useState<string | null>(null);
   const [guideOpen, setGuideOpen] = useState(false);
+  const [recoveryOpen, setRecoveryOpen] = useState(false);
+  const [recoveryStep, setRecoveryStep] = useState<"claim" | "answers">("claim");
+  const [recoveryGsnId, setRecoveryGsnId] = useState(inviteGsnId || "");
+  const [recoveryPhone, setRecoveryPhone] = useState("");
+  const [recoveryPrompts, setRecoveryPrompts] = useState<string[]>([]);
+  const [recoveryAnswers, setRecoveryAnswers] = useState(["", "", ""]);
+  const [recoveryNewPassword, setRecoveryNewPassword] = useState("");
+  const [recoveryConfirmPassword, setRecoveryConfirmPassword] = useState("");
+  const [recoveryBusy, setRecoveryBusy] = useState(false);
+  const [recoveryMessage, setRecoveryMessage] = useState<string | null>(null);
+  const [recoveryError, setRecoveryError] = useState<string | null>(null);
   const innerRailWidth = "min(100%, 760px)";
 
   useEffect(() => {
@@ -561,6 +579,111 @@ export default function LoginPage() {
 
   function openActivationRoute() {
     nav(activationPath || "/activate-membership");
+  }
+
+  function openRecoveryLane() {
+    setRecoveryOpen((current) => !current);
+    setRecoveryError(null);
+    setRecoveryMessage(null);
+    if (!recoveryGsnId && safeStr(email).toUpperCase().includes("-U-")) {
+      setRecoveryGsnId(safeStr(email).toUpperCase());
+    }
+  }
+
+  async function beginPasswordRecovery() {
+    setRecoveryBusy(true);
+    setRecoveryError(null);
+    setRecoveryMessage(null);
+    setErr(null);
+    setMsg(null);
+
+    try {
+      const gsnId = safeStr(recoveryGsnId).toUpperCase();
+      const phone = safeStr(recoveryPhone);
+      if (!gsnId) throw new Error("Enter the GSN ID for this account.");
+      if (!phone) throw new Error("Enter the phone number recorded on this account.");
+
+      const out = await startPasswordRecovery({
+        gmfn_id: gsnId,
+        phone_e164: phone,
+      });
+      const prompts = Array.isArray(out?.prompts) ? out.prompts.slice(0, 3) : [];
+      if (prompts.length !== 3) {
+        throw new Error(
+          "Private recovery questions are not ready for this account. Ask the community owner or GSN support to review it."
+        );
+      }
+
+      setRecoveryPrompts(prompts);
+      setRecoveryAnswers(["", "", ""]);
+      setRecoveryStep("answers");
+      setRecoveryMessage(
+        `Account found${out?.phone_mask ? ` for phone ending ${out.phone_mask}` : ""}. Answer the private recovery questions to set a new password.`
+      );
+    } catch (error: any) {
+      const detail = structuredErrorDetail(error);
+      setRecoveryError(
+        safeStr(detail?.message || error?.message || error) ||
+          "Password recovery could not start for those details."
+      );
+    } finally {
+      setRecoveryBusy(false);
+    }
+  }
+
+  async function completePasswordRecovery() {
+    setRecoveryBusy(true);
+    setRecoveryError(null);
+    setRecoveryMessage(null);
+    setErr(null);
+    setMsg(null);
+
+    try {
+      const answers = recoveryAnswers.map((item) => safeStr(item));
+      if (answers.some((item) => !item)) {
+        throw new Error("Answer all three private recovery questions.");
+      }
+      if (!recoveryNewPassword || recoveryNewPassword.length < 6) {
+        throw new Error("Choose a new password with at least 6 characters.");
+      }
+      if (recoveryNewPassword !== recoveryConfirmPassword) {
+        throw new Error("The new password and confirmation must match.");
+      }
+
+      const out = await resetPasswordWithRecovery({
+        gmfn_id: safeStr(recoveryGsnId).toUpperCase(),
+        phone_e164: safeStr(recoveryPhone),
+        answers,
+        new_password: recoveryNewPassword,
+        confirm_password: recoveryConfirmPassword,
+      });
+
+      const token = safeStr(out?.access_token);
+      let sessionError: unknown = null;
+      const me = token
+        ? await getMeWithTokenRetry(token).catch((error) => {
+            sessionError = error;
+            return null;
+          })
+        : null;
+
+      if (!me?.id && !isNetworkSessionError(sessionError)) {
+        throw new Error(signInSessionError(sessionError, Boolean(token)));
+      }
+
+      setRecoveryMessage("Password reset. Opening your workspace...");
+      setTimeout(() => {
+        nav(publishRecoveryTarget() || redirectTarget, { replace: true });
+      }, 500);
+    } catch (error: any) {
+      const detail = structuredErrorDetail(error);
+      setRecoveryError(
+        safeStr(detail?.message || error?.message || error) ||
+          "Password recovery could not finish."
+      );
+    } finally {
+      setRecoveryBusy(false);
+    }
   }
 
   return (
@@ -1112,6 +1235,147 @@ export default function LoginPage() {
                 {loginIconText("join-person-plus", "Activate membership", 24)}
               </SecondaryButton>
             </div>
+
+            <div style={{ marginTop: 12 }}>
+              <SecondaryButton
+                type="button"
+                onClick={openRecoveryLane}
+                disabled={busy || recoveryBusy}
+                stableHeight={52}
+                debugId="login.password-recovery.open"
+                style={supportBtn()}
+              >
+                {loginIconText("lock", "Recover password", 24)}
+              </SecondaryButton>
+            </div>
+
+            {recoveryOpen ? (
+              <div
+                style={{
+                  ...softCard("#F8FBFF"),
+                  marginTop: 14,
+                  display: "grid",
+                  gap: 12,
+                  color: "#0B1F33",
+                }}
+              >
+                <div style={{ display: "grid", gap: 5 }}>
+                  <div style={{ fontSize: 18, fontWeight: 1000 }}>
+                    Recover your password
+                  </div>
+                  <div style={{ color: "#526579", fontSize: 13.5, lineHeight: 1.55 }}>
+                    Use your GSN ID, the phone number recorded on the account, and
+                    your private recovery answers. If those are not ready, an owner
+                    or GSN support must review the account.
+                  </div>
+                </div>
+
+                {recoveryError ? (
+                  <div style={noticeStyle("error")}>{recoveryError}</div>
+                ) : null}
+                {recoveryMessage ? (
+                  <div style={noticeStyle("success")}>{recoveryMessage}</div>
+                ) : null}
+
+                {recoveryStep === "claim" ? (
+                  <div style={{ display: "grid", gap: 10 }}>
+                    <input
+                      value={recoveryGsnId}
+                      onChange={(event) => setRecoveryGsnId(event.target.value)}
+                      aria-label="GSN ID for password recovery"
+                      placeholder="GSN ID, for example GSN-U-B7AC7BC0"
+                      autoComplete="username"
+                      style={inputStyle()}
+                    />
+                    <input
+                      value={recoveryPhone}
+                      onChange={(event) => setRecoveryPhone(event.target.value)}
+                      aria-label="Phone number for password recovery"
+                      placeholder="Phone number on the account"
+                      autoComplete="tel"
+                      inputMode="tel"
+                      style={inputStyle()}
+                    />
+                    <PrimaryButton
+                      type="button"
+                      busy={recoveryBusy}
+                      busyLabel="Checking..."
+                      stableHeight={52}
+                      debugId="login.password-recovery.start"
+                      style={primaryBtn(recoveryBusy)}
+                      onClick={beginPasswordRecovery}
+                    >
+                      {loginIconText("id", "Open recovery questions", 22)}
+                    </PrimaryButton>
+                  </div>
+                ) : (
+                  <div style={{ display: "grid", gap: 10 }}>
+                    {recoveryPrompts.map((prompt, index) => (
+                      <input
+                        key={`recovery-answer-${index}`}
+                        value={recoveryAnswers[index] || ""}
+                        onChange={(event) =>
+                          setRecoveryAnswers((current) => {
+                            const next = [...current];
+                            next[index] = event.target.value;
+                            return next;
+                          })
+                        }
+                        aria-label={`Recovery answer ${index + 1}`}
+                        placeholder={prompt || `Recovery answer ${index + 1}`}
+                        autoComplete="off"
+                        style={inputStyle()}
+                      />
+                    ))}
+                    <input
+                      type="password"
+                      value={recoveryNewPassword}
+                      onChange={(event) => setRecoveryNewPassword(event.target.value)}
+                      aria-label="New password"
+                      placeholder="New password"
+                      autoComplete="new-password"
+                      style={inputStyle()}
+                    />
+                    <input
+                      type="password"
+                      value={recoveryConfirmPassword}
+                      onChange={(event) => setRecoveryConfirmPassword(event.target.value)}
+                      aria-label="Confirm new password"
+                      placeholder="Confirm new password"
+                      autoComplete="new-password"
+                      style={inputStyle()}
+                    />
+                    <PrimaryButton
+                      type="button"
+                      busy={recoveryBusy}
+                      busyLabel="Resetting..."
+                      stableHeight={52}
+                      debugId="login.password-recovery.reset"
+                      style={primaryBtn(recoveryBusy)}
+                      onClick={completePasswordRecovery}
+                    >
+                      {loginIconText("lock", "Reset password", 22)}
+                    </PrimaryButton>
+                    <SecondaryButton
+                      type="button"
+                      disabled={recoveryBusy}
+                      stableHeight={50}
+                      debugId="login.password-recovery.back"
+                      style={supportBtn()}
+                      onClick={() => {
+                        setRecoveryStep("claim");
+                        setRecoveryPrompts([]);
+                        setRecoveryAnswers(["", "", ""]);
+                        setRecoveryMessage(null);
+                        setRecoveryError(null);
+                      }}
+                    >
+                      {loginIconText("navigation", "Use different details", 22)}
+                    </SecondaryButton>
+                  </div>
+                )}
+              </div>
+            ) : null}
             </div>
           </form>
 
