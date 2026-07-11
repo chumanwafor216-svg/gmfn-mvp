@@ -17385,8 +17385,9 @@ class CommunityDomainPaymentInstructionIn(BaseModel):
     currency: str = Field(default="GBP", min_length=3, max_length=3)
     billing_cycle: str = Field(default=ANNUAL_BILLING_CYCLE, min_length=1, max_length=24)
     quote_note: Optional[str] = Field(default=None, max_length=300)
+    settlement_country: Optional[str] = Field(default=None, min_length=2, max_length=64)
 
-    @field_validator("currency", "billing_cycle", "quote_note", mode="before")
+    @field_validator("currency", "billing_cycle", "quote_note", "settlement_country", mode="before")
     @classmethod
     def _reject_non_text_payment_controls(cls, value: Any, info: Any) -> Any:
         return _reject_non_text_value(value, info.field_name)
@@ -19851,6 +19852,10 @@ def create_community_domain_payment_instruction(
             detail="This Community Domain is already attached to another community.",
         )
 
+    settlement = get_settlement_config(
+        payload.settlement_country or getattr(domain, "country", None)
+    )
+
     try:
         out = create_community_domain_subscription_instruction(
             db,
@@ -19863,6 +19868,7 @@ def create_community_domain_payment_instruction(
             currency=payload.currency,
             billing_cycle=payload.billing_cycle,
             quote_note=payload.quote_note,
+            settlement=settlement,
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
@@ -19873,7 +19879,7 @@ def create_community_domain_payment_instruction(
         db.commit()
         db.refresh(domain)
 
-    out["settlement"] = get_settlement_config()
+    out["settlement"] = settlement
     out["instruction_type"] = "community_domain_subscription"
     out["community_domain_id"] = int(domain.id)
     out["community_domain"] = _domain_payload(

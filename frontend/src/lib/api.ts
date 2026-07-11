@@ -2501,6 +2501,7 @@ export async function createCommunityDomainPaymentInstruction(
     currency?: string;
     billing_cycle?: string;
     quote_note?: string;
+    settlement_country?: string;
   }
 ): Promise<any> {
   return httpJson(

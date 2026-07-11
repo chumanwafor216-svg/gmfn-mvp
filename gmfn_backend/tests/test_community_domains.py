@@ -1501,6 +1501,90 @@ def test_owner_can_preview_community_domain_package_quote_without_activation(
         assert db.query(Clan).count() == 0
 
 
+def test_community_domain_payment_instruction_uses_selected_settlement_country(
+    client: TestClient,
+    monkeypatch,
+):
+    owner = _seed_owner()
+    monkeypatch.setenv("GMFN_SETTLEMENT_COUNTRY", "NG")
+    monkeypatch.setenv("GMFN_SETTLEMENT_BANK_NAME", "Nigeria Fallback Bank")
+    monkeypatch.setenv("GMFN_SETTLEMENT_ACCOUNT_NAME", "GSN Nigeria")
+    monkeypatch.setenv("GMFN_SETTLEMENT_ACCOUNT_NUMBER", "1111111111")
+    monkeypatch.setenv("GMFN_SETTLEMENT_UK_BANK_NAME", "Pilot UK Bank")
+    monkeypatch.setenv("GMFN_SETTLEMENT_UK_ACCOUNT_NAME", "GSN UK Pilot Account")
+    monkeypatch.setenv("GMFN_SETTLEMENT_UK_ACCOUNT_NUMBER", "12345678")
+    monkeypatch.setenv("GMFN_SETTLEMENT_UK_SORT_CODE", "12-34-56")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "UK Pilot Domain",
+                "display_name": "UK Pilot Domain",
+                "domain_type": "union",
+                "country": "United Kingdom",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain_id = created.json()["community_domain"]["id"]
+
+        with SessionLocal() as db:
+            clan = Clan(
+                name="UK Pilot Community",
+                description="Linked community home for payment instruction testing.",
+                marketplace_name="UK Pilot",
+                created_by_user_id=int(owner.id),
+                community_code="GMFN-C-990002",
+                invite_code="legacy-uk-payment-domain",
+                invite_created_at=datetime.now(timezone.utc),
+                invite_expires_at=datetime.now(timezone.utc) + timedelta(days=7),
+                invite_uses=0,
+            )
+            db.add(clan)
+            db.flush()
+            clan_id = int(clan.id)
+            db.add(
+                ClanMembership(
+                    clan_id=clan_id,
+                    user_id=int(owner.id),
+                    role="admin",
+                )
+            )
+            db.commit()
+
+        response = client.post(
+            f"/community-domains/{domain_id}/payment-instruction",
+            json={
+                "clan_id": clan_id,
+                "amount": "100.00",
+                "currency": "GBP",
+                "settlement_country": "GB",
+            },
+        )
+        assert response.status_code == 200, response.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    payload = response.json()
+    assert payload["instruction_type"] == "community_domain_subscription"
+    assert payload["settlement"]["country"] == "GB"
+    assert payload["settlement"]["country_label"] == "United Kingdom"
+    assert payload["settlement"]["bank_name"] == "Pilot UK Bank"
+    assert payload["settlement"]["account_name"] == "GSN UK Pilot Account"
+    assert payload["settlement"]["account_number"] == "12345678"
+    assert payload["settlement"]["sort_code"] == "12-34-56"
+    assert payload["settlement"]["configured"] is True
+    assert payload["meta"]["payment_method"] == "bank_transfer"
+    assert payload["meta"]["settlement_country"] == "GB"
+    assert payload["meta"]["settlement"]["account_number"] == "12345678"
+
+    with SessionLocal() as db:
+        domain = db.get(CommunityDomain, int(domain_id))
+        assert domain is not None
+        assert int(domain.clan_id) == clan_id
+
+
 def test_outsider_cannot_preview_community_domain_package_quote(
     client: TestClient,
 ):

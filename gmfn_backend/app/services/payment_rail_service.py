@@ -16,7 +16,7 @@ def list_payment_rails() -> List[Dict[str, Any]]:
             "status": "active",
             "supports_inbound": True,
             "supports_outbound": True,
-            "currencies": ["NGN"],
+            "currencies": ["NGN", "GBP"],
             "settlement": settlement,
         },
         {

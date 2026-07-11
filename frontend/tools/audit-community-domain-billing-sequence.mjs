@@ -185,6 +185,18 @@ const expectedPaymentsPayload = {
         "Your bank may require app approval, SMS OTP, a one-time code, a code generator, or biometric confirmation before the transfer completes.",
       meta: {
         community_domain_id: 13,
+        settlement_country: "GB",
+        settlement: {
+          rail_name: "Bank Transfer",
+          bank_name: "Pilot UK Bank",
+          account_name: "GSN UK Pilot Account",
+          account_number: "12345678",
+          sort_code: "12-34-56",
+          country: "GB",
+          country_label: "United Kingdom",
+          configured: true,
+          support_note: "Use the exact payment code as the transfer reference.",
+        },
       },
     },
   ],
@@ -336,7 +348,8 @@ const findings = [];
 
 try {
   await page.goto(`${baseUrl}${routePath}`, { waitUntil: "networkidle", timeout: 15000 });
-  await page.getByText("Open other tools", { exact: true }).first().click();
+  await page.locator('[data-cta-id="community-domain-dashboard.advanced-tools-toggle"]').first().click();
+  await page.locator('[data-cta-id="community-domain-dashboard.lane.billing"]').first().click();
   await page.waitForLoadState("networkidle");
   await page.getByText("Billing sequence", { exact: true }).waitFor({ timeout: 10000 });
   await page.getByText("Latest payment code", { exact: true }).waitFor({ timeout: 10000 });
@@ -353,19 +366,19 @@ try {
     "Finance review",
     "Separate rails",
     "Subscription payment uses a code and finance review.",
-    "No bank account details are shown here.",
+    "Bank details show only after a code is generated for the selected area.",
     "Latest payment code",
+    "Official GSN account for United Kingdom",
+    "Pilot UK Bank",
+    "GSN UK Pilot Account",
+    "Account number",
+    "Sort code",
     "Payment: Pending Authentication",
     "Proof: Not uploaded",
   ];
   const forbiddenText = [
-    "GSN Bank Details",
-    "Account Number",
-    "Sort Code",
-    "IBAN",
     "Copy Details",
     "GSN Subscription Rail",
-    "official bank account",
     "official bank rail",
   ];
 

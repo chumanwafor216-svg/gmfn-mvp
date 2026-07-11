@@ -772,6 +772,7 @@ def create_community_domain_subscription_instruction(
     billing_cycle: str = ANNUAL_BILLING_CYCLE,
     due_at: Optional[datetime] = None,
     quote_note: Optional[str] = None,
+    settlement: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     resolved_amount = _d(amount)
     if resolved_amount <= Decimal("0.00"):
@@ -783,6 +784,8 @@ def create_community_domain_subscription_instruction(
         community_domain_id=int(community_domain_id),
         cycle_code=billing_cycle,
     )
+
+    settlement_payload = settlement if isinstance(settlement, dict) else None
 
     return create_feature_subscription_instruction(
         db,
@@ -808,8 +811,13 @@ def create_community_domain_subscription_instruction(
                 "package_title": "Community Domain Starter",
                 "payment_context": "community_domain_starter_activation",
                 "payment_beneficiary_scope": "platform",
+                "payment_method": "bank_transfer",
                 "pricing_model": "manual_quote",
                 "quote_note": str(quote_note or "").strip()[:300],
+                "settlement_country": str(
+                    (settlement_payload or {}).get("country") or ""
+                ).strip(),
+                "settlement": settlement_payload,
             },
         ),
     )
