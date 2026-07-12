@@ -152,8 +152,20 @@ assertContains(
 
 assertContains(
   "command",
-  /const operatorName = useMemo\(\(\) => \{[\s\S]*?return compactOperatorName\([\s\S]*?me\?\.display_name[\s\S]*?me\?\.username[\s\S]*?me\?\.email[\s\S]*?me\?\.phone/,
-  "Admin Tools operatorName must use compactOperatorName across display name, username, email, and phone sources."
+  /const PROFILE_NAME_STORAGE_KEY = "gmfn_profile_name"/,
+  "Admin Tools must use the same local profile-name key saved by My GSN Identity settings."
+);
+
+assertContains(
+  "command",
+  /function readLocalText\(key: string\): string[\s\S]*?window\.localStorage\.getItem\(key\)/,
+  "Admin Tools must be able to read the locally saved profile name before falling back to account identifiers."
+);
+
+assertContains(
+  "command",
+  /const operatorName = useMemo\(\(\) => \{[\s\S]*?const localProfileName = readLocalText\(PROFILE_NAME_STORAGE_KEY\)[\s\S]*?return compactOperatorName\([\s\S]*?localProfileName[\s\S]*?me\?\.display_name[\s\S]*?me\?\.username[\s\S]*?me\?\.gmfn_id[\s\S]*?me\?\.email[\s\S]*?me\?\.phone/,
+  "Admin Tools operatorName must prefer saved profile names, then safe GSN identifiers, before email and phone sources."
 );
 
 assertNotContains(

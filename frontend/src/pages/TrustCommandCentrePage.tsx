@@ -75,6 +75,7 @@ function defaultExecutiveReading(): ExecutiveReading {
 const COMMAND_CENTER_UI_STORAGE_KEY = "gmfn.commandCenter.sections.v1";
 const COMMAND_CENTER_PILOT_WORKSHEET_STORAGE_KEY =
   "gmfn.commandCenter.pilotWorksheet.v1";
+const PROFILE_NAME_STORAGE_KEY = "gmfn_profile_name";
 
 type PilotWorksheet = {
   pilotName: string;
@@ -156,6 +157,15 @@ function compactOperatorName(...values: any[]): string {
   }
 
   return "Admin";
+}
+
+function readLocalText(key: string): string {
+  try {
+    if (typeof window === "undefined") return "";
+    return safeStr(window.localStorage.getItem(key));
+  } catch {
+    return "";
+  }
 }
 
 function rowsOf<T = any>(input: any): T[] {
@@ -911,12 +921,19 @@ export default function TrustCommandCentrePage() {
   }, [selectedClanId]);
 
   const operatorName = useMemo(() => {
+    const localProfileName = readLocalText(PROFILE_NAME_STORAGE_KEY);
+
     return compactOperatorName(
+      localProfileName,
       me?.display_name,
       me?.nickname,
       me?.name,
       me?.first_name,
       me?.username,
+      me?.gmfn_id,
+      me?.gsn_id,
+      me?.member_code,
+      me?.global_id,
       me?.email,
       me?.phone
     );
