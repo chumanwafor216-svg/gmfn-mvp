@@ -118,6 +118,12 @@ assertContains(
   "Shop Assets live-block counter must use occupied arranged slots, not raw product row count."
 );
 
+assertContains(
+  "src/pages/ShopAssetsPage.tsx",
+  /function productDisplayRank\([\s\S]*?createdMs[\s\S]*?id[\s\S]*?function isNewerProductCandidate\([\s\S]*?candidateRank\.createdMs[\s\S]*?candidateRank\.id > currentRank\.id[\s\S]*?function arrangePublicProductsIntoSlots\([\s\S]*?if \(blockNumber >= 1 && blockNumber <= 12\) \{[\s\S]*?isNewerProductCandidate\(item, slots\[blockNumber - 1\]\)[\s\S]*?slots\[blockNumber - 1\] = item;[\s\S]*?return;[\s\S]*?overflow\.push\(item\);/,
+  "Shop Assets arranged slots must keep the newest product for a numbered block and must not spill duplicate same-block products into another visible slot."
+);
+
 if (/publicProducts\.length/.test(shopAssetsSource)) {
   findings.push({
     file: shopAssetsFile,

@@ -696,14 +696,42 @@ function normalizeProductRecords(items: any[]): ProductRecord[] {
     .filter(Boolean) as ProductRecord[];
 }
 
+function productDisplayRank(item: ProductRecord | null | undefined): {
+  createdMs: number;
+  id: number;
+} {
+  const createdMs = Date.parse(firstTruthy(item?.created_at));
+  return {
+    createdMs: Number.isFinite(createdMs) ? createdMs : 0,
+    id: Number(item?.id || 0),
+  };
+}
+
+function isNewerProductCandidate(
+  candidate: ProductRecord,
+  current: ProductRecord | null | undefined
+): boolean {
+  if (!current) return true;
+
+  const candidateRank = productDisplayRank(candidate);
+  const currentRank = productDisplayRank(current);
+  if (candidateRank.createdMs !== currentRank.createdMs) {
+    return candidateRank.createdMs > currentRank.createdMs;
+  }
+
+  return candidateRank.id > currentRank.id;
+}
+
 function arrangePublicProductsIntoSlots(items: ProductRecord[]): (ProductRecord | null)[] {
   const slots: (ProductRecord | null)[] = Array.from({ length: 12 }, () => null);
   const overflow: ProductRecord[] = [];
 
   items.forEach((item) => {
     const blockNumber = publicBlockNumberForProduct(item);
-    if (blockNumber >= 1 && blockNumber <= 12 && !slots[blockNumber - 1]) {
-      slots[blockNumber - 1] = item;
+    if (blockNumber >= 1 && blockNumber <= 12) {
+      if (isNewerProductCandidate(item, slots[blockNumber - 1])) {
+        slots[blockNumber - 1] = item;
+      }
       return;
     }
 
