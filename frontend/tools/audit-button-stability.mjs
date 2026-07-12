@@ -265,7 +265,7 @@ assertNotContains(
 
 assertContains(
   "src/pages/CoverPage.tsx",
-  /import \{ GsnLegacyIcon, type GsnIconName \} from "\.\.\/components\/GsnLegacyIcon";[\s\S]*?import \{ PrimaryButton, SecondaryButton \} from "\.\.\/components\/StableButton";[\s\S]*?function coverIconText\(name: GsnIconName[\s\S]*?<GsnLegacyIcon name=\{name\}[\s\S]*?function coverIconBadge\(name: GsnIconName\)[\s\S]*?<GsnLegacyIcon name=\{name\}[\s\S]*?debugId="cover\.continue"[\s\S]*?coverIconText\("navigation", "Continue"\)[\s\S]*?debugId="cover\.about-gsn"[\s\S]*?coverIconText\("id", "About GSN & I"/,
+  /import \{ GsnLegacyIcon, type GsnIconName \} from "\.\.\/components\/GsnLegacyIcon";[\s\S]*?import \{ PrimaryButton, SecondaryButton \} from "\.\.\/components\/StableButton";[\s\S]*?function coverIconText\(name: GsnIconName[\s\S]*?<GsnLegacyIcon name=\{name\}[\s\S]*?debugId="cover\.continue"[\s\S]*?coverIconText\("navigation", "Continue"\)[\s\S]*?debugId="cover\.about-gsn"[\s\S]*?coverIconText\("id", "About GSN & I"/,
   "Cover page public entry actions must use shared stable button primitives and shared 3D GSN icon helpers."
 );
 
