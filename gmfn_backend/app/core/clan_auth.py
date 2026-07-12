@@ -115,15 +115,30 @@ def get_current_clan_membership(
 ) -> Tuple[Clan, ClanMembership, User]:
     """
     Gets (clan, membership, current_user).
-    - If X-Clan-Id header is provided, use that clan (must exist).
+    - If X-Clan-Id header is provided, use that clan only when the user is
+      already an active member.
     - Else use the first real active clan the user already belongs to.
     - Do not auto-create or auto-assign a default clan.
     - Only ensure membership for a real chosen clan.
     """
     if x_clan_id is not None:
         clan = db.get(Clan, x_clan_id)
-        if not clan:
+        if not clan or _is_default_clan_name(getattr(clan, "name", None)):
             raise HTTPException(status_code=404, detail="Community not found")
+        existing_membership = (
+            db.query(ClanMembership)
+            .filter(
+                ClanMembership.clan_id == int(clan.id),
+                ClanMembership.user_id == int(current_user.id),
+                ClanMembership.left_at.is_(None),
+            )
+            .first()
+        )
+        if existing_membership is None:
+            raise HTTPException(
+                status_code=403,
+                detail="Join or be approved by this community before selecting it.",
+            )
     else:
         visible_clans = list_visible_user_clans(db=db, user=current_user)
         if not visible_clans:
