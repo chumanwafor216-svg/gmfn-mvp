@@ -194,7 +194,7 @@ assertOrderedSnippets(
 
 assertContains(
   "trust",
-  /7\. Shareable trust tools[\s\S]*?debugId="trust-score\.open-trust-slip"[\s\S]*?Open TrustSlip[\s\S]*?debugId="trust-score\.verify"[\s\S]*?TrustSlip: \{trustSlipStatus \|\| "Pending"\}/,
+  /7\. Shareable trust tools[\s\S]*?debugId="trust-score\.open-trust-slip"[\s\S]*?Open TrustSlip[\s\S]*?debugId="trust-score\.verify"[\s\S]*?TrustSlip: \{trustSlipStatus \|\| "Not issued yet"\}/,
   "Documents / TrustSlip lane must keep TrustSlip status, open, verify, and document readiness controls."
 );
 
