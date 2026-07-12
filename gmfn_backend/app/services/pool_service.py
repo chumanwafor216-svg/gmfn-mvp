@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from decimal import Decimal
 from typing import Dict, List, Optional
 
-from sqlalchemy import func
+from sqlalchemy import func, inspect
 from sqlalchemy.orm import Session
 
 from app.db.models import Loan, PoolEvent
@@ -25,6 +25,15 @@ def _d(x: object) -> Decimal:
 
 def _ccy(currency: str | None) -> str:
     return (currency or "NGN").strip().upper() or "NGN"
+
+
+def _table_has_columns(db: Session, table_name: str, column_names: set[str]) -> bool:
+    try:
+        inspector = inspect(db.get_bind())
+        available = {column["name"] for column in inspector.get_columns(table_name)}
+    except Exception:
+        return False
+    return column_names.issubset(available)
 
 
 def build_reference(clan_id: int, user_id: int) -> str:
@@ -87,17 +96,20 @@ def compute_pool_balances(db: Session, *, clan_id: int, user_id: int, currency: 
     if available < Decimal("0"):
         available = Decimal("0")
 
-    reserved_raw = (
-        db.query(func.coalesce(func.sum(Loan.pool_used), 0))
-        .filter(
-            Loan.clan_id == int(clan_id),
-            Loan.borrower_user_id == int(user_id),
-            Loan.currency == ccy,
-            Loan.status.in_(["pending", "approved"]),
+    if _table_has_columns(db, "loans", {"pool_used"}):
+        reserved_raw = (
+            db.query(func.coalesce(func.sum(Loan.pool_used), 0))
+            .filter(
+                Loan.clan_id == int(clan_id),
+                Loan.borrower_user_id == int(user_id),
+                Loan.currency == ccy,
+                Loan.status.in_(["pending", "approved"]),
+            )
+            .scalar()
         )
-        .scalar()
-    )
-    reserved_pool = _d(reserved_raw)
+        reserved_pool = _d(reserved_raw)
+    else:
+        reserved_pool = Decimal("0")
     if reserved_pool < Decimal("0"):
         reserved_pool = Decimal("0")
 

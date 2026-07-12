@@ -7,6 +7,7 @@ import json
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import inspect, text
 from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user
@@ -46,9 +47,85 @@ from app.services.trust_score_service import loan_policy_for_band, trust_enforce
 
 router = APIRouter(prefix="/loans", tags=["loans"])
 
+_LOAN_MODEL_COLUMNS = {
+    "id",
+    "borrower_user_id",
+    "clan_id",
+    "amount",
+    "currency",
+    "personal_pool_at_request",
+    "pool_used",
+    "guarantee_gap",
+    "guarantors_required",
+    "status",
+    "decision_by_user_id",
+    "decision_at",
+    "service_fee",
+    "net_disbursed_amount",
+    "guarantor_pool",
+    "platform_revenue",
+    "paid_total",
+    "remaining_amount",
+    "repaid_at",
+    "due_at",
+    "created_at",
+}
+
+_LOAN_LIST_COLUMNS = [
+    "id",
+    "borrower_user_id",
+    "clan_id",
+    "amount",
+    "currency",
+    "status",
+    "decision_by_user_id",
+    "decision_at",
+    "service_fee",
+    "net_disbursed_amount",
+    "guarantor_pool",
+    "platform_revenue",
+    "paid_total",
+    "remaining_amount",
+    "repaid_at",
+    "due_at",
+    "personal_pool_at_request",
+    "pool_used",
+    "guarantee_gap",
+    "guarantors_required",
+    "created_at",
+]
+
+_LOAN_DEFAULTS: dict[str, Any] = {
+    "currency": "NGN",
+    "status": "pending",
+    "decision_by_user_id": None,
+    "decision_at": None,
+    "service_fee": Decimal("0"),
+    "net_disbursed_amount": Decimal("0"),
+    "guarantor_pool": Decimal("0"),
+    "platform_revenue": Decimal("0"),
+    "paid_total": Decimal("0"),
+    "remaining_amount": Decimal("0"),
+    "repaid_at": None,
+    "due_at": None,
+    "personal_pool_at_request": Decimal("0"),
+    "pool_used": Decimal("0"),
+    "guarantee_gap": Decimal("0"),
+    "guarantors_required": 0,
+    "created_at": None,
+}
+
 
 def _uid(user: User) -> int:
     return int(user.id)
+
+
+def _loan_table_columns(db: Session) -> set[str]:
+    try:
+        inspector = inspect(db.get_bind())
+        return {column["name"] for column in inspector.get_columns("loans")}
+    except Exception:
+        return set()
 
 
 def _require_clan_admin(membership: ClanMembership) -> None:
@@ -104,6 +181,60 @@ def _loan_out(db: Session, loan: Loan, *, purpose: str | None = None) -> dict[st
     return payload
 
 
+def _loan_row_out(db: Session, row: Any, *, purpose: str | None = None) -> dict[str, Any]:
+    payload = dict(_LOAN_DEFAULTS)
+    payload.update(dict(row))
+    payload["id"] = int(payload["id"])
+    payload["borrower_user_id"] = int(payload["borrower_user_id"])
+    payload["clan_id"] = int(payload["clan_id"])
+    payload["amount"] = Decimal(str(payload["amount"]))
+    payload["currency"] = str(payload.get("currency") or "NGN")
+    payload["status"] = str(payload.get("status") or "pending")
+    payload["guarantors_required"] = int(payload.get("guarantors_required") or 0)
+    payload["purpose"] = (
+        purpose or _loan_purpose_from_events(db, int(payload["id"])) or None
+    )
+    return payload
+
+
+def _list_my_loans_with_available_columns(
+    db: Session,
+    *,
+    clan_id: int,
+    user_id: int,
+    limit: int,
+    columns: set[str],
+) -> list[dict[str, Any]]:
+    selected = [column for column in _LOAN_LIST_COLUMNS if column in columns]
+    minimum = {"id", "borrower_user_id", "clan_id", "amount"}
+    if not minimum.issubset(set(selected)):
+        return []
+
+    sql = text(
+        f"""
+        SELECT {", ".join(selected)}
+        FROM loans
+        WHERE clan_id = :clan_id
+          AND borrower_user_id = :user_id
+        ORDER BY id DESC
+        LIMIT :limit
+        """
+    )
+    rows = (
+        db.execute(
+            sql,
+            {
+                "clan_id": int(clan_id),
+                "user_id": int(user_id),
+                "limit": int(limit),
+            },
+        )
+        .mappings()
+        .all()
+    )
+    return [_loan_row_out(db, row) for row in rows]
+
+
 @router.get("", response_model=LoansListResponse)
 def list_my_loans(
     limit: int = Query(50, ge=1, le=200),
@@ -111,6 +242,17 @@ def list_my_loans(
     clan_ctx: tuple = Depends(get_current_clan_membership),
 ):
     clan, _membership, current_user = clan_ctx
+
+    loan_columns = _loan_table_columns(db)
+    if loan_columns and not _LOAN_MODEL_COLUMNS.issubset(loan_columns):
+        items = _list_my_loans_with_available_columns(
+            db,
+            clan_id=int(clan.id),
+            user_id=_uid(current_user),
+            limit=int(limit),
+            columns=loan_columns,
+        )
+        return {"items": items, "total": len(items)}
 
     items = (
         db.query(Loan)

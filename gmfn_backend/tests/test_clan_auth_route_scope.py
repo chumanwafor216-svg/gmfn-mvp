@@ -1,9 +1,15 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from decimal import Decimal
 
-from app.db.database import SessionLocal
+from sqlalchemy import text
+
+from app.api.routes import loans as loans_route
+from app.api.routes import pool as pool_route
+from app.db.database import SessionLocal, engine
 from app.db.models import Clan, ClanMembership, TrustEvent
+from app.services import pool_service
 
 
 def _add_clan(*, clan_id: int, name: str) -> None:
@@ -107,3 +113,95 @@ def test_trust_score_accepts_explicit_active_member_clan(
     assert payload["scope"]["clan_id"] == 1
     assert payload["user_id"] == 1
     assert payload["counts"]["loan.repaid"] == 1
+
+
+def test_pool_routes_degrade_when_optional_accounting_columns_are_unavailable(
+    client,
+    override_current_user_user,
+    seed_clan_member_membership,
+    monkeypatch,
+):
+    monkeypatch.setattr(
+        pool_service,
+        "_table_has_columns",
+        lambda db, table_name, column_names: False,
+    )
+    monkeypatch.setattr(
+        pool_route,
+        "_table_has_columns",
+        lambda db, table_name, column_names: False,
+    )
+
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO pool_events
+                    (clan_id, user_id, event_type, amount, currency, reference)
+                VALUES
+                    (1, 1, 'deposit.confirmed', 250, 'NGN', 'POOL-DRIFT-1')
+                """
+            )
+        )
+
+    headers = {"X-Clan-Id": "1"}
+    pool_response = client.get("/pool/me?currency=NGN&limit=20", headers=headers)
+    summary_response = client.get("/pool/me/summary?currency=NGN", headers=headers)
+
+    assert pool_response.status_code == 200, pool_response.text
+    pool_payload = pool_response.json()
+    assert Decimal(str(pool_payload["available_balance"])) == Decimal("250.00")
+    assert Decimal(str(pool_payload["reserved_pool"])) == Decimal("0")
+
+    assert summary_response.status_code == 200, summary_response.text
+    summary_payload = summary_response.json()
+    assert summary_payload["communities_count"] == 1
+    assert (
+        Decimal(str(summary_payload["totals"]["guarantee_locked_as_guarantor"]))
+        == Decimal("0")
+    )
+
+
+def test_loans_list_degrades_when_optional_accounting_columns_are_unavailable(
+    client,
+    override_current_user_user,
+    seed_clan_member_membership,
+    monkeypatch,
+):
+    monkeypatch.setattr(
+        loans_route,
+        "_loan_table_columns",
+        lambda db: {
+            "id",
+            "borrower_user_id",
+            "clan_id",
+            "amount",
+            "currency",
+            "status",
+            "guarantors_required",
+            "created_at",
+        },
+    )
+
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO loans
+                    (id, borrower_user_id, clan_id, amount, currency, status, guarantors_required)
+                VALUES
+                    (77, 1, 1, 125, 'NGN', 'pending', 0)
+                """
+            )
+        )
+
+    response = client.get("/loans", headers={"X-Clan-Id": "1"})
+
+    assert response.status_code == 200, response.text
+    payload = response.json()
+    assert payload["total"] == 1
+    item = payload["items"][0]
+    assert item["id"] == 77
+    assert Decimal(str(item["amount"])) == Decimal("125.00")
+    assert Decimal(str(item["pool_used"])) == Decimal("0")
+    assert Decimal(str(item["guarantee_gap"])) == Decimal("0")

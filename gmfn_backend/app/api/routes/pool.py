@@ -5,7 +5,7 @@ from decimal import Decimal
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import func
+from sqlalchemy import func, inspect
 from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user
@@ -42,6 +42,15 @@ def _community_code(clan: Clan | None) -> str | None:
     if saved:
         return saved
     return f"GMFN-C-{int(clan.id):06d}"
+
+
+def _table_has_columns(db: Session, table_name: str, column_names: set[str]) -> bool:
+    try:
+        inspector = inspect(db.get_bind())
+        available = {column["name"] for column in inspector.get_columns(table_name)}
+    except Exception:
+        return False
+    return column_names.issubset(available)
 
 
 @router.get("/me/summary", response_model=dict[str, Any])
@@ -120,20 +129,23 @@ def pool_me_summary(
             }
         )
 
-    locked_guarantees_raw = (
-        db.query(
-            func.coalesce(
-                func.sum(LoanGuarantor.locked_amount - LoanGuarantor.released_amount),
-                0,
+    if _table_has_columns(db, "loan_guarantors", {"locked_amount", "released_amount"}):
+        locked_guarantees_raw = (
+            db.query(
+                func.coalesce(
+                    func.sum(LoanGuarantor.locked_amount - LoanGuarantor.released_amount),
+                    0,
+                )
             )
+            .filter(
+                LoanGuarantor.guarantor_user_id == int(current_user.id),
+                LoanGuarantor.status == "approved",
+            )
+            .scalar()
         )
-        .filter(
-            LoanGuarantor.guarantor_user_id == int(current_user.id),
-            LoanGuarantor.status == "approved",
-        )
-        .scalar()
-    )
-    locked_guarantees = max(Decimal("0"), _money(locked_guarantees_raw))
+        locked_guarantees = max(Decimal("0"), _money(locked_guarantees_raw))
+    else:
+        locked_guarantees = Decimal("0")
 
     return {
         "user_id": int(current_user.id),
