@@ -37,6 +37,7 @@ The immediate next action is not investor outreach. It is the Chris/RGU send, af
 | `GSN_DISCOVERY_INTERVIEW_LOG_TEMPLATE.md` | Internal use | Captures raw notes, exact phrases, refusal reasons, authority concerns, and pilot pull for each interview before synthesis. |
 | `GSN_DISCOVERY_EVIDENCE_MEMO_TEMPLATE.md` | Internal use | Turns interview/session notes into a decision memo with proof, risk, pilot, and investor-readiness ratings. |
 | `GSN_INVESTOR_DILIGENCE_QA_AND_PROOF_ROADMAP.md` | Internal use | Prepares honest answers to investor diligence questions and separates the current thesis from proof still needed. |
+| `GSN_UN_SDG_ALIGNMENT_NOTE.md` | Internal use | Keeps the UN Sustainable Development Goals alignment language honest, measurable, and reusable across white paper, grant, policy, and investor conversations. |
 | `GSN_WHITEPAPER_PACKET_ACTION_PLAN.md` | Internal use | Converts the packet into a 7-day action checklist for Chris/RGU, discovery interviews, synthesis, and investor readiness. |
 
 ## Recommended Order
@@ -64,6 +65,32 @@ Do not send the original source white paper directly without cleaning it first. 
 ## One Sentence
 
 GSN does not create trust; it helps communities preserve and communicate the trust evidence they already recognise, with provenance, consent, and human judgement intact.
+
+## UN SDG Alignment Boundary
+
+The three DOCX white paper copies now include a UN Sustainable Development
+Goals alignment section.
+
+Use the careful claim:
+
+```text
+GSN aligns with and may contribute evidence toward selected UN Sustainable
+Development Goals when real community deployments produce measured outcomes.
+It does not fulfil those goals by assertion.
+```
+
+Strongest current alignment:
+
+- SDG 16: Peace, Justice and Strong Institutions
+- SDG 8: Decent Work and Economic Growth
+- SDG 1: No Poverty
+- SDG 9: Industry, Innovation and Infrastructure
+- SDG 10: Reduced Inequalities
+- SDG 11: Sustainable Cities and Communities
+- SDG 17: Partnerships for the Goals
+
+Secondary or conditional alignment may apply to SDG 4, SDG 5, SDG 12, and
+SDG 13 only when a specific pilot produces matching evidence.
 
 ## Devil's Advocate
 

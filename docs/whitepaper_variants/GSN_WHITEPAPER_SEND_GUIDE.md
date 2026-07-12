@@ -178,6 +178,32 @@ Investor proof still needed:
 GSN does not create trust; it helps communities preserve and communicate the trust evidence they already recognise, with provenance, consent, and human judgement intact.
 ```
 
+## UN SDG Wording For All Audiences
+
+If asked how GSN relates to the United Nations Sustainable Development Goals,
+use careful development-impact language:
+
+```text
+GSN aligns with selected UN Sustainable Development Goals by helping communities
+preserve identity, participation, trust evidence, commerce, governance, and
+opportunity records. It should not be described as fulfilling those goals until
+real deployments produce measured outcomes.
+```
+
+Strongest alignment to mention:
+
+- SDG 16: Peace, Justice and Strong Institutions
+- SDG 8: Decent Work and Economic Growth
+- SDG 1: No Poverty
+- SDG 9: Industry, Innovation and Infrastructure
+- SDG 10: Reduced Inequalities
+- SDG 11: Sustainable Cities and Communities
+- SDG 17: Partnerships for the Goals
+
+Only mention SDG 4, SDG 5, SDG 12, or SDG 13 when the conversation is about a
+specific education, gender inclusion, responsible local production, or
+climate/community resilience use case.
+
 ## Unabated Truth
 
 The academic and customer discovery copies are the priority right now. The investor copy is useful, but it becomes much stronger after one real discovery session produces evidence about the first pilot use case.
