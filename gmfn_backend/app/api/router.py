@@ -30,6 +30,7 @@ from app.api.routes.trust_why import router as trust_why_router
 from app.api.routes.trust_recompute import router as trust_recompute_router
 from app.api.routes.trust_timeline import router as trust_timeline_router
 from app.api.routes.trust_timeline_pdf import router as trust_timeline_pdf_router
+from app.api.routes.trust_score import router as trust_score_router
 from app.api.routes.trust_explainability import router as trust_explainability_router
 from app.api.routes.trust_graph import router as trust_graph_router
 from app.api.routes.community_integrity import router as community_integrity_router
@@ -141,6 +142,7 @@ api_router.include_router(trust_why_router)
 api_router.include_router(trust_recompute_router)
 api_router.include_router(trust_timeline_router)
 api_router.include_router(trust_timeline_pdf_router)
+api_router.include_router(trust_score_router)
 api_router.include_router(trust_explainability_router)
 api_router.include_router(trust_graph_router)
 api_router.include_router(community_integrity_router)

@@ -1107,6 +1107,9 @@ export default function FinancePage() {
       setGuarantorEarnings(null);
 
       try {
+        const scopedClanOptions =
+          selectedClanId > 0 ? { clan_id: selectedClanId } : undefined;
+
         const mePromise =
           typeof (api as any).getMe === "function"
             ? (api as any).getMe().catch(() => null)
@@ -1119,12 +1122,12 @@ export default function FinancePage() {
 
         const loansPromise =
           typeof (api as any).listMyLoans === "function"
-            ? (api as any).listMyLoans({ clan_id: selectedClanId }).catch(() => [])
+            ? (api as any).listMyLoans(scopedClanOptions).catch(() => [])
             : Promise.resolve([]);
 
         const poolPromise =
           typeof (api as any).getPoolMe === "function"
-            ? (api as any).getPoolMe("NGN", 20, { clan_id: selectedClanId }).catch(() => null)
+            ? (api as any).getPoolMe("NGN", 20, scopedClanOptions).catch(() => null)
             : Promise.resolve(null);
 
         const crossPoolPromise =

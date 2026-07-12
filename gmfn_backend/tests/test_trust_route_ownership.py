@@ -65,6 +65,33 @@ def test_trust_evidence_routes_have_single_active_owner():
     ]
 
 
+def test_trust_score_explained_clan_route_is_mounted(
+    client: TestClient,
+    override_clan_ctx_member,
+    seed_clan_member_membership,
+):
+    with SessionLocal() as db:
+        db.add(
+            TrustEvent(
+                event_type="loan.repaid",
+                clan_id=1,
+                actor_user_id=1,
+                subject_user_id=1,
+                meta={"reason": "mounted_route_probe"},
+                created_at=datetime.now(timezone.utc),
+            )
+        )
+        db.commit()
+
+    response = client.get("/trust/score/explained-clan?limit=8")
+
+    assert response.status_code == 200, response.text
+    payload = response.json()
+    assert payload["scope"]["clan_id"] == 1
+    assert payload["user_id"] == 1
+    assert payload["counts"]["loan.repaid"] == 1
+
+
 def test_trust_why_route_serves_pack_checksum_contract(
     client: TestClient,
     override_current_user_user,
