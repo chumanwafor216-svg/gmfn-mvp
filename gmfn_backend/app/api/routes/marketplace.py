@@ -1364,7 +1364,12 @@ def _shop_out(db: Session, shop: MarketplaceShop) -> Dict[str, Any]:
     }
 
 
-def _product_out(db: Session, product: MarketplaceProduct) -> Dict[str, Any]:
+def _product_out(
+    db: Session,
+    product: MarketplaceProduct,
+    *,
+    display_block_number: Optional[int] = None,
+) -> Dict[str, Any]:
     shop = (
         db.query(MarketplaceShop)
         .filter(MarketplaceShop.id == int(product.shop_id))
@@ -1383,6 +1388,12 @@ def _product_out(db: Session, product: MarketplaceProduct) -> Dict[str, Any]:
     public_block_number = _public_product_block_number(
         getattr(product, "description", None)
     )
+    display_block = (
+        int(display_block_number)
+        if display_block_number is not None and int(display_block_number) >= 1
+        else None
+    )
+    output_block_number = public_block_number if public_block_number is not None else display_block
     vault_block = None
     if visibility_mode == VISIBILITY_VAULT:
         vault_block = find_vault_block_for_product(db, product_id=int(product.id))
@@ -1402,8 +1413,10 @@ def _product_out(db: Session, product: MarketplaceProduct) -> Dict[str, Any]:
         "image_url_available": _media_url_available(image_url),
         "video_url_available": _media_url_available(video_url),
         "visibility_mode": visibility_mode,
-        "public_block_number": public_block_number,
-        "slot_number": public_block_number,
+        "public_block_number": output_block_number,
+        "slot_number": output_block_number,
+        "display_block_number": output_block_number,
+        "metadata_block_number": public_block_number,
         "vault_slot_number": (
             int(vault_block.slot_number)
             if vault_block is not None and getattr(vault_block, "slot_number", None) is not None
@@ -1431,6 +1444,36 @@ def _product_out(db: Session, product: MarketplaceProduct) -> Dict[str, Any]:
         "shop_product_slots_extra": max(0, public_slots_total - FREE_COMMUNITY_PRODUCT_SLOTS),
         "shop_product_slots_total": public_slots_total,
     }
+
+
+def _products_out(db: Session, products: list[MarketplaceProduct]) -> list[Dict[str, Any]]:
+    assignments = _display_public_block_assignments(
+        [
+            product
+            for product in products
+            if bool(getattr(product, "is_active", True))
+            and _safe_str(
+                getattr(product, "visibility_mode", None),
+                VISIBILITY_COMMUNITY,
+            )
+            in {VISIBILITY_COMMUNITY, "public", "community"}
+        ]
+    )
+    display_blocks_by_product_id = {
+        int(getattr(product, "id", 0) or 0): int(block_number)
+        for block_number, product in assignments.items()
+    }
+
+    return [
+        _product_out(
+            db,
+            product,
+            display_block_number=display_blocks_by_product_id.get(
+                int(getattr(product, "id", 0) or 0)
+            ),
+        )
+        for product in products
+    ]
 
 
 def _broadcast_repost_product(db: Session, item: MarketplaceBroadcast) -> Optional[MarketplaceProduct]:
@@ -1839,7 +1882,7 @@ def _owner_public_shop_payload(
     return {
         "ok": True,
         "item": _shop_out(db, shop),
-        "products": [_product_out(db, p) for p in product_rows],
+        "products": _products_out(db, product_rows),
         "gmfn_id": _safe_str(getattr(owner, "gmfn_id", None)) or None,
         "clan_id": resolved_clan_id,
     }
@@ -2061,7 +2104,7 @@ def get_public_marketplace_shop_by_gmfn_id(
     return {
         "ok": True,
         "item": _shop_out(db, shop),
-        "products": [_product_out(db, row) for row in product_rows],
+        "products": _products_out(db, product_rows),
         "broadcasts": [_broadcast_out(db, row) for row in broadcast_rows],
         "primary_broadcast": _broadcast_out(db, broadcast_rows[0]) if broadcast_rows else None,
         "spotlight_scope": "community",
@@ -2647,7 +2690,7 @@ def list_marketplace_products(
         items = _dedupe_active_public_block_products(items)[: int(limit)]
 
         return {
-            "items": [_product_out(db, x) for x in items],
+            "items": _products_out(db, items),
             "total": len(items),
             "clan_id": resolved_clan_id,
             "shop_id": int(shop_id),
@@ -2693,7 +2736,7 @@ def list_marketplace_products(
     visible_items = visible_items[: int(limit)]
 
     return {
-        "items": [_product_out(db, x) for x in visible_items],
+        "items": _products_out(db, visible_items),
         "total": len(visible_items),
         "clan_id": resolved_clan_id,
     }

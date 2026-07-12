@@ -1283,6 +1283,18 @@ def test_public_gallery_replacing_overflow_block_hides_legacy_unmarked_product(
             )
         )
 
+    before_res = client.get("/marketplace/products?clan_id=1&shop_id=1")
+    assert before_res.status_code == 200, before_res.text
+    legacy_item = next(
+        item
+        for item in before_res.json()["items"]
+        if item["name"] == "Legacy unmarked block two"
+    )
+    assert legacy_item["public_block_number"] == 2
+    assert legacy_item["slot_number"] == 2
+    assert legacy_item["display_block_number"] == 2
+    assert legacy_item["metadata_block_number"] is None
+
     create_res = client.post(
         "/marketplace/products",
         json={
