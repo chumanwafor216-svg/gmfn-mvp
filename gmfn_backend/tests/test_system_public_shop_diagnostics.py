@@ -96,3 +96,31 @@ def test_public_shop_identity_diagnostics_requires_admin(
 ):
     res = client.get("/system/public-shop-identity/GMFN-U-DIAGSHOP")
     assert res.status_code == 403
+
+
+def test_finance_readiness_diagnostics_reports_schema_probes(
+    client,
+    override_current_user,
+    seed_clan_admin_membership,
+):
+    res = client.get("/system/diagnostics/finance-readiness")
+    assert res.status_code == 200, res.text
+
+    body = res.json()
+    assert body["ok"] is True
+    assert body["diagnostic_version"] == "finance-readiness-2026-07-12"
+    assert body["user_id"] == 1
+    assert "DATABASE_URL" not in res.text
+    assert "GMFN_SECRET_KEY" not in res.text
+    assert "loans" in body["tables"]
+    assert "loan_guarantors" in body["tables"]
+    assert body["probes"]["active_memberships"]["ok"] is True
+    assert body["alembic_version"]["ok"] is True
+
+
+def test_finance_readiness_diagnostics_requires_admin(
+    client,
+    override_current_user_user,
+):
+    res = client.get("/system/diagnostics/finance-readiness")
+    assert res.status_code == 403

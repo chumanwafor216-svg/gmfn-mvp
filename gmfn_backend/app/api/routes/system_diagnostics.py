@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import func
+from sqlalchemy import func, inspect, text
 from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user
@@ -106,6 +106,131 @@ def diagnostics(
         },
         "db": {
             "engine_url_present": present("DATABASE_URL"),
+        },
+    }
+
+
+def _table_columns(db: Session, table_name: str) -> list[str]:
+    try:
+        inspector = inspect(db.get_bind())
+        return sorted(str(column["name"]) for column in inspector.get_columns(table_name))
+    except Exception:
+        return []
+
+
+def _safe_probe(db: Session, sql: str, params: dict[str, Any]) -> dict[str, Any]:
+    try:
+        value = db.execute(text(sql), params).scalar()
+        return {"ok": True, "value": str(value)}
+    except Exception as exc:
+        return {
+            "ok": False,
+            "error_type": type(exc).__name__,
+            "error": str(exc)[:500],
+        }
+
+
+@router.get("/diagnostics/finance-readiness")
+def finance_readiness_diagnostics(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Dict[str, Any]:
+    """
+    Admin-only: schema/probe visibility for finance route readiness.
+
+    This avoids returning row-level finance data. It reports column presence and
+    aggregate probe success so production 500s can be diagnosed without exposing
+    secrets, tokens, or private transaction records.
+    """
+    _require_admin(current_user)
+
+    user_id = int(current_user.id)
+    tables = {
+        "loans": _table_columns(db, "loans"),
+        "loan_guarantors": _table_columns(db, "loan_guarantors"),
+        "pool_events": _table_columns(db, "pool_events"),
+        "clan_memberships": _table_columns(db, "clan_memberships"),
+    }
+
+    alembic_version = _safe_probe(
+        db,
+        "SELECT version_num FROM alembic_version LIMIT 1",
+        {},
+    )
+    active_memberships = _safe_probe(
+        db,
+        """
+        SELECT COUNT(*)
+        FROM clan_memberships
+        WHERE user_id = :user_id
+          AND left_at IS NULL
+        """,
+        {"user_id": user_id},
+    )
+    loan_rows = _safe_probe(
+        db,
+        "SELECT COUNT(*) FROM loans WHERE borrower_user_id = :user_id",
+        {"user_id": user_id},
+    )
+    pool_event_rows = _safe_probe(
+        db,
+        "SELECT COUNT(*) FROM pool_events WHERE user_id = :user_id",
+        {"user_id": user_id},
+    )
+    reserved_pool_probe = _safe_probe(
+        db,
+        """
+        SELECT COALESCE(SUM(pool_used), 0)
+        FROM loans
+        WHERE borrower_user_id = :user_id
+        """,
+        {"user_id": user_id},
+    )
+    locked_guarantee_probe = _safe_probe(
+        db,
+        """
+        SELECT COALESCE(SUM(locked_amount - released_amount), 0)
+        FROM loan_guarantors
+        WHERE guarantor_user_id = :user_id
+          AND status = 'approved'
+        """,
+        {"user_id": user_id},
+    )
+
+    required_columns = {
+        "loans": [
+            "pool_used",
+            "guarantee_gap",
+            "personal_pool_at_request",
+            "paid_total",
+            "remaining_amount",
+        ],
+        "loan_guarantors": ["locked_amount", "released_amount"],
+        "clan_memberships": ["left_at"],
+    }
+    missing_columns = {
+        table_name: [
+            column
+            for column in columns
+            if column not in set(tables.get(table_name, []))
+        ]
+        for table_name, columns in required_columns.items()
+    }
+
+    return {
+        "ok": True,
+        "diagnostic_version": "finance-readiness-2026-07-12",
+        "user_id": user_id,
+        "gmfn_id": getattr(current_user, "gmfn_id", None),
+        "alembic_version": alembic_version,
+        "tables": tables,
+        "missing_columns": missing_columns,
+        "probes": {
+            "active_memberships": active_memberships,
+            "loan_rows": loan_rows,
+            "pool_event_rows": pool_event_rows,
+            "reserved_pool": reserved_pool_probe,
+            "locked_guarantees": locked_guarantee_probe,
         },
     }
 
