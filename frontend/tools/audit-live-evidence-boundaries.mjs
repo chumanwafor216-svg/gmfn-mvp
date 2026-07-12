@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-/* global AbortController, console, fetch, process, setTimeout */
+/* global AbortController, clearTimeout, console, fetch, process, setTimeout */
 
 const REQUIRED_BASE_ENV = "GSN_LIVE_EVIDENCE_BASE_URL";
 const TRUSTSLIP_CODE_ENV = "GSN_LIVE_TRUSTSLIP_CODE";

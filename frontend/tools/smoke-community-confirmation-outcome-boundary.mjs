@@ -1,4 +1,4 @@
-/* global console, process, URL, localStorage */
+/* global console, process, setTimeout, URL, localStorage */
 
 import { chromium, expect } from "@playwright/test";
 import { dirname, join } from "node:path";
@@ -77,7 +77,6 @@ function apiPathFrom(urlText) {
 
 function isApiRequest(urlText) {
   const url = new URL(urlText);
-  const path = apiPathFrom(urlText);
   return (
     url.host === "127.0.0.1:8012" ||
     url.host === "localhost:8012" ||

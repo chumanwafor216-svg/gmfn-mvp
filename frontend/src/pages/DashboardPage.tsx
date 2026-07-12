@@ -68,7 +68,6 @@ import {
   SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS,
   SPOTLIGHT_PILOT_REFRESH_MS,
   SPOTLIGHT_PILOT_ROTATION_MS,
-  SPOTLIGHT_PILOT_ROTATION_SECONDS_LABEL,
 } from "../lib/spotlightPilot";
 
 type SpotlightItem = {
@@ -3158,7 +3157,7 @@ export default function DashboardPage() {
   const [spotlights, setSpotlights] = useState<SpotlightItem[]>([]);
   const [spotlightLoading, setSpotlightLoading] = useState<boolean>(false);
   const [spotlightIndex, setSpotlightIndex] = useState<number>(0);
-  const [spotlightQueueTotal, setSpotlightQueueTotal] = useState<number>(0);
+  const [, setSpotlightQueueTotal] = useState<number>(0);
   const [latestSpotlightSnapshot, setLatestSpotlightSnapshot] =
     useState<SpotlightItem | null>(null);
   const spotlightsRef = useRef<SpotlightItem[]>([]);
@@ -6236,27 +6235,6 @@ export default function DashboardPage() {
         touchAction: "manipulation",
         boxShadow:
           "0 10px 20px rgba(10,24,49,0.06), inset 0 1px 0 rgba(255,255,255,0.86)",
-      },
-      overrides
-    );
-  const spotlightActionButton = (
-    overrides: React.CSSProperties = {}
-  ): React.CSSProperties =>
-    dashboardFillButton(
-      {
-        ...secondaryBtn(false),
-        minHeight: isPhone ? 46 : 40,
-        padding: isPhone ? "10px 12px" : "8px 14px",
-        borderRadius: isPhone ? 15 : 15,
-        background:
-          "linear-gradient(180deg, #FFFFFF 0%, #F4F8FC 100%)",
-        border: "1px solid rgba(11,99,209,0.14)",
-        color: "#123055",
-        fontWeight: 900,
-        userSelect: "none",
-        touchAction: "manipulation",
-        boxShadow:
-          "0 10px 20px rgba(10,24,49,0.08), inset 0 1px 0 rgba(255,255,255,0.86)",
       },
       overrides
     );

@@ -625,31 +625,6 @@ function coverIconText(name: GsnIconName, label: React.ReactNode, size = 26) {
   );
 }
 
-function coverIconBadge(name: GsnIconName) {
-  return (
-    <span
-      aria-hidden="true"
-      style={{
-        width: 48,
-        height: 48,
-        borderRadius: 18,
-        display: "inline-flex",
-        alignItems: "center",
-        justifyContent: "center",
-        background:
-          "linear-gradient(180deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.07) 100%)",
-        border: "1px solid rgba(255,255,255,0.16)",
-        boxShadow:
-          "0 16px 30px rgba(1,9,22,0.30), inset 0 1px 0 rgba(255,255,255,0.14)",
-      }}
-    >
-      <GsnLegacyIcon name={name} size={34} />
-    </span>
-  );
-}
-
-
-
 function GSNSplashArtwork() {
 
   return (

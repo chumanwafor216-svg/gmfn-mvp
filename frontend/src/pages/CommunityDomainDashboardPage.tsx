@@ -2348,13 +2348,16 @@ export default function CommunityDomainDashboardPage() {
     loading,
   ]);
 
-  const domain = dashboard?.community_domain || {};
+  const domain = useMemo(
+    () => dashboard?.community_domain || {},
+    [dashboard?.community_domain]
+  );
   const template = useMemo(() => dashboard?.template || {}, [dashboard?.template]);
   const status = dashboard?.status || {};
   const counts = dashboard?.counts || {};
-  const rawLanes = Array.isArray(dashboard?.lanes) ? dashboard?.lanes || [] : [];
-  const lanes = useMemo(
-    () => [
+  const lanes = useMemo(() => {
+    const rawLanes = Array.isArray(dashboard?.lanes) ? dashboard?.lanes || [] : [];
+    return [
       {
         lane_key: "settings",
         label: "Settings",
@@ -2362,9 +2365,8 @@ export default function CommunityDomainDashboardPage() {
         count: 1,
       },
       ...rawLanes.filter((lane) => lane?.lane_key !== "settings"),
-    ],
-    [rawLanes]
-  );
+    ];
+  }, [dashboard?.lanes]);
   const isAdmin = Boolean(dashboard?.viewer?.can_admin);
   const canEditPayInAccount = storedPlatformAdminRole();
   const canSetupEdit = Boolean(dashboard?.viewer?.can_setup_edit || isAdmin);
@@ -2469,7 +2471,7 @@ export default function CommunityDomainDashboardPage() {
     });
     setSetupCompletionSavedAt("");
     setFeaturePolicyLockedAt("");
-  }, [communityDomainId, dashboard, domain?.id]);
+  }, [communityDomainId, dashboard, domain]);
 
   function updateSetupDraftField(
     key: keyof CommunityDomainSetupDraft,
@@ -2647,7 +2649,7 @@ export default function CommunityDomainDashboardPage() {
     }
   }
 
-  async function loadSetupEvidence() {
+  const loadSetupEvidence = useCallback(async () => {
     if (!isAdmin) return null;
     const requestDomainId = cleanText(communityDomainId);
     if (!requestDomainId) return null;
@@ -2663,7 +2665,7 @@ export default function CommunityDomainDashboardPage() {
       }
       return null;
     }
-  }
+  }, [communityDomainId, isAdmin, isCurrentDomainRequest]);
 
   async function submitSetupEvidence() {
     if (!isAdmin) {
@@ -2890,7 +2892,7 @@ export default function CommunityDomainDashboardPage() {
       return;
     }
     void loadSetupEvidence();
-  }, [activeLane, activeSetupStep, isAdmin, communityDomainId]);
+  }, [activeLane, activeSetupStep, isAdmin, communityDomainId, loadSetupEvidence]);
 
   useEffect(() => {
     const requestDomainId = cleanText(communityDomainId);

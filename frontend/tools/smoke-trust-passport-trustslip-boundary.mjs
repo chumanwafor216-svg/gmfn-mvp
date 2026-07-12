@@ -1,4 +1,4 @@
-/* global console, process, URL, localStorage */
+/* global console, process, setTimeout, URL, localStorage */
 
 import { chromium, expect } from "@playwright/test";
 import { dirname, join } from "node:path";

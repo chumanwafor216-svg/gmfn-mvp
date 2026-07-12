@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-/* global AbortController, console, fetch, process, setTimeout */
+/* global AbortController, clearTimeout, console, fetch, process, setTimeout */
 
 const DEFAULT_API_URL = "https://gmfn-api.onrender.com";
 const BASE_ENV = "GSN_LIVE_WEB_PUSH_BASE_URL";
