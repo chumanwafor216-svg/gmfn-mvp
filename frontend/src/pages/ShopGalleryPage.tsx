@@ -1785,7 +1785,9 @@ export default function ShopGalleryPage() {
       try {
         const cleanedGmfnId = safeStr(gmfnId || "");
         let effectiveGmfnId = cleanedGmfnId;
-        const clanRes = await getCurrentClan().catch(() => null);
+        const clanRes = getAccessToken()
+          ? await getCurrentClan().catch(() => null)
+          : null;
         let publicShopRes: any = null;
         let viewerSpotlightRows: any[] | null = null;
 

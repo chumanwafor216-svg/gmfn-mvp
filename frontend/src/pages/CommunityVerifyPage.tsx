@@ -25,6 +25,7 @@ import {
 } from "../components/TrustDocumentLanguage";
 import {
   followCommunity,
+  getAccessToken,
   getCommunityFollowerCount,
   getCommunityFollowStatus,
   getPublicCommunityVerification,
@@ -499,28 +500,30 @@ export default function CommunityVerifyPage() {
       let statusKnown = false;
       let isFollowing = false;
 
-      try {
-        const statusResult = await getCommunityFollowStatus(communityFollowId);
-        if (
-          followLoadSeqRef.current !== loadSeq ||
-          followLoadContextRef.current !== contextKey
-        ) {
+      if (getAccessToken()) {
+        try {
+          const statusResult = await getCommunityFollowStatus(communityFollowId);
+          if (
+            followLoadSeqRef.current !== loadSeq ||
+            followLoadContextRef.current !== contextKey
+          ) {
+            return;
+          }
+          statusKnown = true;
+          isFollowing = Boolean(statusResult?.is_following);
+          const statusCount = responseFollowerCount(statusResult);
+          setCommunityFollowState((prev) => ({
+            ...prev,
+            loading: false,
+            statusKnown,
+            isFollowing,
+            followerCount: statusCount ?? followerCount ?? 0,
+          }));
           return;
+        } catch {
+          statusKnown = false;
+          isFollowing = false;
         }
-        statusKnown = true;
-        isFollowing = Boolean(statusResult?.is_following);
-        const statusCount = responseFollowerCount(statusResult);
-        setCommunityFollowState((prev) => ({
-          ...prev,
-          loading: false,
-          statusKnown,
-          isFollowing,
-          followerCount: statusCount ?? followerCount ?? 0,
-        }));
-        return;
-      } catch {
-        statusKnown = false;
-        isFollowing = false;
       }
 
       if (
@@ -861,6 +864,14 @@ export default function CommunityVerifyPage() {
       setNotice({
         tone: "error",
         text: "Community following is not ready for this public record yet.",
+      });
+      return;
+    }
+
+    if (!getAccessToken()) {
+      setNotice({
+        tone: "error",
+        text: "Sign in to follow this community. Visitors can still read the public community record.",
       });
       return;
     }
