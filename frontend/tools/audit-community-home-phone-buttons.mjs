@@ -68,6 +68,16 @@ assertContains(
 );
 
 assertContains(
+  /const PROFILE_NAME_STORAGE_KEY = "gmfn_profile_name"/,
+  "Community Home must use the same saved profile-name key as Profile and My GSN Identity settings."
+);
+
+assertContains(
+  /function resolveMemberName\(me: any\): string \{[\s\S]*?readLocalText\(PROFILE_NAME_STORAGE_KEY\)[\s\S]*?me\?\.display_name[\s\S]*?me\?\.gmfn_id[\s\S]*?me\?\.username[\s\S]*?me\?\.email[\s\S]*?me\?\.phone[\s\S]*?looksLikeEmail[\s\S]*?looksLikePhone[\s\S]*?return "Member"/,
+  "Community Home hero identity must prefer saved profile or GSN IDs and reject email/phone-like login fallbacks."
+);
+
+assertContains(
   /function communityActionStyle\([\s\S]*?touchAction: "manipulation"[\s\S]*?WebkitTapHighlightColor: "transparent"[\s\S]*?overflowAnchor: "none"[\s\S]*?transform: "none"[\s\S]*?transition: "none"/,
   "Community Home action styles must keep phone tap and movement locks."
 );

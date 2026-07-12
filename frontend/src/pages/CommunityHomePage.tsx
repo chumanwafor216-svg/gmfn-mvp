@@ -174,6 +174,7 @@ function communityIconGlyph(icon: CommunityIconMark, size = 22): React.ReactNode
 }
 
 const COMMUNITY_HOME_COLLAPSE_KEY = "gmfn.communityHome.sections.v6";
+const PROFILE_NAME_STORAGE_KEY = "gmfn_profile_name";
 const COMMUNITY_BRAND = {
   ink: "#F8FBFF",
   navy: "#081E32",
@@ -231,6 +232,15 @@ function firstTruthy(...values: any[]): string {
     if (text) return text;
   }
   return "";
+}
+
+function readLocalText(key: string): string {
+  try {
+    if (typeof window === "undefined") return "";
+    return safeStr(window.localStorage.getItem(key));
+  } catch {
+    return "";
+  }
 }
 
 function spotlightPriceLine(price: any, currency: any): string {
@@ -383,18 +393,32 @@ function routeTarget(
 }
 
 function resolveMemberName(me: any): string {
-  const direct =
-    safeStr(me?.display_name) ||
-    safeStr(me?.nickname) ||
-    safeStr(me?.name) ||
-    safeStr(me?.first_name);
+  const candidates = [
+    readLocalText(PROFILE_NAME_STORAGE_KEY),
+    me?.display_name,
+    me?.nickname,
+    me?.name,
+    me?.first_name,
+    me?.gmfn_id,
+    me?.gsn_id,
+    me?.member_code,
+    me?.global_id,
+    me?.username,
+    me?.email,
+    me?.phone,
+    me?.phone_e164,
+  ];
 
-  if (direct) return direct;
+  for (const candidate of candidates) {
+    const text = safeStr(candidate);
+    if (!text) continue;
+    const digits = text.replace(/\D/g, "");
+    const looksLikeEmail = text.includes("@");
+    const looksLikePhone = digits.length >= 9 && digits.length >= text.length - 3;
+    if (!looksLikeEmail && !looksLikePhone) return text;
+  }
 
-  const email = safeStr(me?.email);
-  if (email.includes("@")) return email.split("@")[0] || "Member";
-
-  return email || "Member";
+  return "Member";
 }
 
 function communityShellStyle(isCompact: boolean): React.CSSProperties {
