@@ -145,6 +145,19 @@ function firstTruthy(...values: any[]): string {
   return "";
 }
 
+function compactOperatorName(...values: any[]): string {
+  for (const value of values) {
+    const text = safeStr(value);
+    if (!text) continue;
+    const digits = text.replace(/\D/g, "");
+    const looksLikeEmail = text.includes("@");
+    const looksLikePhone = digits.length >= 9 && digits.length >= text.length - 3;
+    if (!looksLikeEmail && !looksLikePhone) return text;
+  }
+
+  return "Admin";
+}
+
 function rowsOf<T = any>(input: any): T[] {
   if (Array.isArray(input)) return input as T[];
   if (Array.isArray(input?.items)) return input.items as T[];
@@ -377,6 +390,9 @@ function badge(primary = false): React.CSSProperties {
     fontSize: 12,
     fontWeight: 900,
     whiteSpace: "normal",
+    minWidth: 0,
+    maxWidth: "100%",
+    overflow: "hidden",
   };
 }
 
@@ -391,7 +407,9 @@ function commandIconBadge(
         name={icon}
         size={15}
       />
-      <span>{children}</span>
+      <span style={{ minWidth: 0, overflowWrap: "anywhere", wordBreak: "break-word" }}>
+        {children}
+      </span>
     </span>
   );
 }
@@ -409,6 +427,9 @@ function sectionLabelWithIcon(
         alignItems: "center",
         gap: 8,
         color: dark ? "#D8E7F6" : "#4E6680",
+        minWidth: 0,
+        maxWidth: "100%",
+        overflow: "hidden",
       }}
     >
       <span
@@ -479,7 +500,9 @@ function labelWithIcon(icon: GsnIconName, label: React.ReactNode) {
       }}
     >
       <GsnLegacyIcon name={icon} size={18} />
-      <span>{label}</span>
+      <span style={{ minWidth: 0, overflowWrap: "anywhere", wordBreak: "break-word" }}>
+        {label}
+      </span>
     </span>
   );
 }
@@ -888,14 +911,14 @@ export default function TrustCommandCentrePage() {
   }, [selectedClanId]);
 
   const operatorName = useMemo(() => {
-    return (
-      firstTruthy(
-        me?.display_name,
-        me?.nickname,
-        me?.name,
-        me?.first_name,
-        me?.email
-      ) || "Operator"
+    return compactOperatorName(
+      me?.display_name,
+      me?.nickname,
+      me?.name,
+      me?.first_name,
+      me?.username,
+      me?.email,
+      me?.phone
     );
   }, [me]);
 
@@ -1447,6 +1470,10 @@ export default function TrustCommandCentrePage() {
                 fontWeight: 900,
                 fontSize: isCompact ? 28 : 34,
                 lineHeight: 1.1,
+                minWidth: 0,
+                maxWidth: "100%",
+                overflowWrap: "anywhere",
+                wordBreak: "break-word",
               }}
             >
               Welcome, {operatorName}

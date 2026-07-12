@@ -189,6 +189,15 @@ function valueStyle(): React.CSSProperties {
   };
 }
 
+function containedTextStyle(): React.CSSProperties {
+  return {
+    minWidth: 0,
+    maxWidth: "100%",
+    overflowWrap: "anywhere",
+    wordBreak: "break-word",
+  };
+}
+
 function isGeneratedPlaceholder(value: string): boolean {
   const normalized = value.trim().toLowerCase();
   return normalized === "current when viewed" || normalized === "current when copied";
@@ -407,7 +416,7 @@ export default function GsnSnapshotPaperCard({
             }}
           >
             <div style={labelStyle()}>Prepared UTC</div>
-            <div style={valueStyle()}>{generatedAtText}</div>
+            <div style={{ ...valueStyle(), ...containedTextStyle() }}>{generatedAtText}</div>
           </div>
           <div
             style={{
@@ -418,7 +427,9 @@ export default function GsnSnapshotPaperCard({
             }}
           >
             <div style={labelStyle()}>Record code</div>
-            <div style={valueStyle()}>{paper.reference || "GSN current record"}</div>
+            <div style={{ ...valueStyle(), ...containedTextStyle() }}>
+              {paper.reference || "GSN current record"}
+            </div>
           </div>
         </section>
       ) : null}
@@ -445,7 +456,7 @@ export default function GsnSnapshotPaperCard({
               }}
             >
               <div style={labelStyle()}>{fact.label}</div>
-              <div style={valueStyle()}>{fact.value}</div>
+              <div style={{ ...valueStyle(), ...containedTextStyle() }}>{fact.value}</div>
             </div>
           ))}
         </section>
@@ -489,8 +500,7 @@ export default function GsnSnapshotPaperCard({
               <span
                 style={{
                   minWidth: 0,
-                  overflowWrap: "break-word",
-                  wordBreak: "normal",
+                  ...containedTextStyle(),
                 }}
               >
                 {detail}
@@ -524,7 +534,15 @@ export default function GsnSnapshotPaperCard({
           }}
         >
           <div style={labelStyle()}>Open this record</div>
-          <div style={{ ...valueStyle(), color: "#0B4AA2" }}>{paper.actionLink}</div>
+          <div
+            style={{
+              ...valueStyle(),
+              ...containedTextStyle(),
+              color: "#0B4AA2",
+            }}
+          >
+            {paper.actionLink}
+          </div>
         </section>
       ) : null}
 
@@ -539,6 +557,7 @@ export default function GsnSnapshotPaperCard({
                 fontSize: 11,
                 fontWeight: 850,
                 lineHeight: 1.4,
+                ...containedTextStyle(),
               }}
             >
               {paper.securityMarks}
@@ -568,6 +587,7 @@ export default function GsnSnapshotPaperCard({
                 fontSize: 12,
                 fontWeight: 850,
                 lineHeight: 1.45,
+                ...containedTextStyle(),
               }}
             >
               {note}

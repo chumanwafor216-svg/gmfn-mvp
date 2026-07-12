@@ -90,6 +90,10 @@ function adminTrustEventActionStyle(kind: "primary" | "secondary" | "soft" = "se
     borderRadius: 14,
     fontWeight: 900,
     fontSize: 14,
+    width: "100%",
+    minWidth: 0,
+    maxWidth: "100%",
+    overflow: "hidden",
   };
 
   if (kind === "primary") {
@@ -142,6 +146,9 @@ function badge(primary = false): React.CSSProperties {
     fontSize: 12,
     fontWeight: 1000,
     whiteSpace: "normal",
+    minWidth: 0,
+    maxWidth: "100%",
+    overflow: "hidden",
   };
 }
 
@@ -154,10 +161,14 @@ function labelWithIcon(icon: GsnIconName, label: React.ReactNode) {
         justifyContent: "center",
         gap: 8,
         minWidth: 0,
+        maxWidth: "100%",
+        overflow: "hidden",
       }}
     >
       <GsnLegacyIcon name={icon} size={18} />
-      <span>{label}</span>
+      <span style={{ minWidth: 0, overflowWrap: "anywhere", wordBreak: "break-word" }}>
+        {label}
+      </span>
     </span>
   );
 }
@@ -173,7 +184,9 @@ function eventIconBadge(
         name={icon}
         size={15}
       />
-      <span>{children}</span>
+      <span style={{ minWidth: 0, overflowWrap: "anywhere", wordBreak: "break-word" }}>
+        {children}
+      </span>
     </span>
   );
 }
@@ -186,6 +199,9 @@ function sectionLabelWithIcon(icon: GsnIconName, label: React.ReactNode) {
         display: "inline-flex",
         alignItems: "center",
         gap: 8,
+        minWidth: 0,
+        maxWidth: "100%",
+        overflow: "hidden",
       }}
     >
       <span
@@ -205,7 +221,9 @@ function sectionLabelWithIcon(icon: GsnIconName, label: React.ReactNode) {
       >
         <GsnLegacyIcon name={icon} size={16} />
       </span>
-      <span>{label}</span>
+      <span style={{ minWidth: 0, overflowWrap: "anywhere", wordBreak: "break-word" }}>
+        {label}
+      </span>
     </span>
   );
 }
@@ -356,7 +374,7 @@ export default function AdminTrustEventsPage() {
         style={{ marginTop: 18 }}
       />
 
-      <div style={{ backgroundImage: `url("${pattern}")`, backgroundRepeat: "no-repeat", backgroundSize: "cover", backgroundPosition: "center top", borderRadius: 28, border: "1px solid rgba(11,31,51,0.06)", overflow: "hidden", backgroundColor: "#F8FBFE" }}>
+      <div style={{ backgroundImage: `url("${pattern}")`, backgroundRepeat: "no-repeat", backgroundSize: "cover", backgroundPosition: "center top", borderRadius: 28, border: "1px solid rgba(11,31,51,0.06)", overflow: "hidden", backgroundColor: "#F8FBFE", minWidth: 0 }}>
         <div style={{ padding: 24 }}>
           <div style={{ fontSize: 34, fontWeight: 1000, color: "#0B1F33" }}>Trust event log</div>
           <div style={{ marginTop: 8, color: "#6B7A88", lineHeight: 1.8 }}>
@@ -431,17 +449,17 @@ export default function AdminTrustEventsPage() {
               const delta = deltaMeta(row?.delta);
               const detailOpen = Boolean(expanded[rowKey]);
               return (
-                <div key={rowKey} style={card()}>
-                  <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-                    <div>
-                      <div style={{ color: "#0B1F33", fontWeight: 1000, fontSize: 18 }}>
+                <div key={rowKey} style={{ ...card(), minWidth: 0, overflow: "hidden" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", minWidth: 0 }}>
+                    <div style={{ minWidth: 0, maxWidth: "100%" }}>
+                      <div style={{ color: "#0B1F33", fontWeight: 1000, fontSize: 18, minWidth: 0, maxWidth: "100%", overflowWrap: "anywhere", wordBreak: "break-word" }}>
                         {labelWithIcon("document", supportDisplayText(row?.event_type || "trust.event"))}
                       </div>
-                      <div style={{ marginTop: 4, color: "#6B7A88", fontSize: 13 }}>
+                      <div style={{ marginTop: 4, color: "#6B7A88", fontSize: 13, minWidth: 0, overflowWrap: "anywhere", wordBreak: "break-word" }}>
                         {labelWithIcon("calendar", fmtWhen(row?.created_at))}
                       </div>
                     </div>
-                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "flex-start" }}>
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "flex-start", minWidth: 0, maxWidth: "100%" }}>
                       <span style={{ ...badge(false), ...eventToneStyle(delta.tone) }}>
                         <GsnLegacyIcon
                           name={deltaIcon(delta.tone)}
@@ -453,18 +471,18 @@ export default function AdminTrustEventsPage() {
                     </div>
                   </div>
 
-                  <div style={{ marginTop: 14, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  <div style={{ marginTop: 14, display: "flex", gap: 8, flexWrap: "wrap", minWidth: 0 }}>
                     {eventIconBadge("user", <>Actor: {safeStr(row?.actor_user_id || "-")}</>)}
                     {eventIconBadge("user", <>Subject: {safeStr(row?.subject_user_id || "-")}</>)}
                     {safeStr(row?.loan_id) ? eventIconBadge("wallet", <>Loan #{safeStr(row?.loan_id)}</>) : null}
                     {safeStr(row?.payment_reference) ? eventIconBadge("card", <>Ref: {safeStr(row?.payment_reference)}</>) : null}
                   </div>
 
-                  <div style={{ marginTop: 14, ...helperText(), color: "#0B1F33" }}>
+                  <div style={{ marginTop: 14, ...helperText(), color: "#0B1F33", minWidth: 0, overflowWrap: "anywhere", wordBreak: "break-word" }}>
                     {supportDisplayText(row?.reason || row?.note || "No short explanation was attached to this event yet.")}
                   </div>
 
-                  <div style={{ marginTop: 14, display: "flex", gap: 10, flexWrap: "wrap" }}>
+                  <div style={{ marginTop: 14, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: 10 }}>
                     <SecondaryButton
                       onClick={() => {
                         void copyEvent(row);
