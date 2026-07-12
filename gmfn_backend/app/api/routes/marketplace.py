@@ -1080,7 +1080,10 @@ def _active_public_products_for_block(
     if exclude_product_id is not None:
         q = q.filter(MarketplaceProduct.id != int(exclude_product_id))
 
-    products = q.all()
+    products = (
+        q.order_by(MarketplaceProduct.created_at.desc(), MarketplaceProduct.id.desc())
+        .all()
+    )
     explicit_matches = [
         product
         for product in products
