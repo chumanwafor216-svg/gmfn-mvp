@@ -1576,7 +1576,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
     if (
       targetVisibility === "community_visible" &&
       !editingAlreadyPublic &&
-      publicProducts.length >= 12
+      occupiedPublicSlotCount >= 12
     ) {
       showProductFormNotice(
         "error",
@@ -1882,7 +1882,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
               }}
             >
               {iconBadge("image", <>Shop picture: {safeStr(shopPreviewUrl) ? "Ready" : "Needed"}</>, true)}
-              {iconBadge("shop", <>Public products: {publicProducts.length} / 12</>, publicProducts.length > 0)}
+              {iconBadge("shop", <>Public products: {occupiedPublicSlotCount} / 12</>, occupiedPublicSlotCount > 0)}
               {iconBadge("lock", <>Vault offers: {vaultProducts.length} / 6</>, vaultProducts.length > 0)}
               {iconBadge("document", <>Hidden: {hiddenProducts.length}</>)}
             </div>
@@ -1956,7 +1956,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                     fontSize: 22,
                   }}
                 >
-                  {publicProducts.length}
+                  {occupiedPublicSlotCount}
                 </div>
                 <div style={{ marginTop: 6, ...helperText(), fontSize: 12 }}>
                   Open gallery items
