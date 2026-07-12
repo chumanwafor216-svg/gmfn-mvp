@@ -1071,6 +1071,17 @@ def _retire_replaced_public_block_products(
     return retired_products, removed_reposts
 
 
+def _product_newest_rank(product: MarketplaceProduct) -> tuple[datetime, int]:
+    created_at = getattr(product, "created_at", None)
+    if isinstance(created_at, datetime):
+        if created_at.tzinfo is None:
+            created_at = created_at.replace(tzinfo=timezone.utc)
+    else:
+        created_at = datetime.min.replace(tzinfo=timezone.utc)
+
+    return (created_at, int(getattr(product, "id", 0) or 0))
+
+
 def _dedupe_active_public_block_products(
     items: list[MarketplaceProduct],
 ) -> list[MarketplaceProduct]:
@@ -1097,15 +1108,7 @@ def _dedupe_active_public_block_products(
                 newest_by_block[key] = product
                 continue
 
-            product_rank = (
-                getattr(product, "created_at", None) or _now_utc(),
-                int(getattr(product, "id", 0) or 0),
-            )
-            current_rank = (
-                getattr(current_best, "created_at", None) or _now_utc(),
-                int(getattr(current_best, "id", 0) or 0),
-            )
-            if product_rank > current_rank:
+            if _product_newest_rank(product) > _product_newest_rank(current_best):
                 newest_by_block[key] = product
 
     for product in items:
