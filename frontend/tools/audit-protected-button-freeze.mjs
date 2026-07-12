@@ -91,6 +91,10 @@ const protectedAudits = [
     label: "route fallthrough recovery",
     script: "audit-route-fallthrough.mjs",
   },
+  {
+    label: "trust/admin mobile overflow",
+    script: "audit-trust-admin-mobile-overflow.mjs",
+  },
 ];
 
 const failures = [];
@@ -118,5 +122,5 @@ if (failures.length > 0) {
 }
 
 console.log(
-  "\nProtected button freeze audit passed: Dashboard, Community Home, Shop Control, Marketplace touch blockers, existing-community invite line, Action Inbox, entry/auth, shared tap guard, and global stable-action hygiene are still caged."
+  "\nProtected button freeze audit passed: Dashboard, Community Home, Shop Control, Marketplace touch blockers, existing-community invite line, Action Inbox, entry/auth, Trust/Admin mobile overflow, shared tap guard, and global stable-action hygiene are still caged."
 );
