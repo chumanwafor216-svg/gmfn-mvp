@@ -39,6 +39,8 @@ frontend/uploads/
 uploads/
 
 # Generated screenshot/PDF smoke artifacts
+# Existing tracked reference screenshots stay tracked; use git add -f for any
+# intentional new screenshot artifact.
 screenshots/
 frontend/screenshots/
 
