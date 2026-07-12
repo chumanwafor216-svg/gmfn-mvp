@@ -1451,10 +1451,9 @@ export default function LoginPage() {
                     Sign-in help
                   </div>
                   <div style={{ ...helperText(), fontSize: 13.5 }}>
-                    Use this if password recovery is blocked, a temporary
-                    password does not work, or the account says it is not
-                    active. Send your GSN ID, phone on the account, community
-                    name, and a screenshot. Do not send any password.
+                    Use this when recovery is blocked or the account says it
+                    is not active. Send your GSN ID, phone, community, and a
+                    screenshot. Do not send any password.
                   </div>
                 </div>
                 <div
