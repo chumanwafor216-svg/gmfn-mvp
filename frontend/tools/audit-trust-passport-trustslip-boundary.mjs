@@ -137,8 +137,8 @@ assertContains(
 
 assertContains(
   "api",
-  /export async function verifyTrustSlip[\s\S]*?`\/trust-slips\/verify\/\$\{encodeURIComponent\(String\(code\)\)\}[\s\S]*?\{ includeAuth: false, header_clan_id: null \}/,
-  "Public TrustSlip verify wrapper must remain unauthenticated and selected-community-free."
+  /export async function verifyTrustSlip[\s\S]*?`\/trust-slips\/verify\/\$\{encodeURIComponent\(String\(code\)\)\}[\s\S]*?\{ includeAuth: false, header_clan_id: null, quiet: true \}/,
+  "Public TrustSlip verify wrapper must remain unauthenticated, selected-community-free, and quiet for expected public not-found states."
 );
 
 assertContains(

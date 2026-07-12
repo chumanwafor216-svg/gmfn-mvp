@@ -2283,7 +2283,7 @@ export async function verifyTrustSlip(
     })}`,
     "GET",
     undefined,
-    { includeAuth: false, header_clan_id: null }
+    { includeAuth: false, header_clan_id: null, quiet: true }
   );
 }
 
@@ -2332,7 +2332,7 @@ export async function getPublicCommunityConfirmation(
     `/community-confirmations/public/${encodeURIComponent(String(publicToken))}`,
     "GET",
     undefined,
-    { includeAuth: false, header_clan_id: null }
+    { includeAuth: false, header_clan_id: null, quiet: true }
   );
 }
 
@@ -2343,7 +2343,7 @@ export async function getPublicCommunityVerification(
     `/verify/community/${encodeURIComponent(String(communityKey))}`,
     "GET",
     undefined,
-    { includeAuth: false, header_clan_id: null }
+    { includeAuth: false, header_clan_id: null, quiet: true }
   );
 }
 
@@ -2357,7 +2357,7 @@ export async function getPublicCommunityMemberVerification(
     )}`,
     "GET",
     undefined,
-    { includeAuth: false, header_clan_id: null }
+    { includeAuth: false, header_clan_id: null, quiet: true }
   );
 }
 

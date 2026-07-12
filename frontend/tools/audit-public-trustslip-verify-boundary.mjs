@@ -136,8 +136,8 @@ assertContains(
 
 assertContains(
   "api",
-  /export async function verifyTrustSlip\([\s\S]*?return httpJson\([\s\S]*?`\/trust-slips\/verify\/\$\{encodeURIComponent\(String\(code\)\)\}\$\{buildQuery\([\s\S]*?\)[\s\S]*?"GET",[\s\S]*?undefined,[\s\S]*?\{ includeAuth: false, header_clan_id: null \}/,
-  "Public TrustSlip verify API calls must not inherit viewer auth or selected-community headers."
+  /export async function verifyTrustSlip\([\s\S]*?return httpJson\([\s\S]*?`\/trust-slips\/verify\/\$\{encodeURIComponent\(String\(code\)\)\}\$\{buildQuery\([\s\S]*?\)[\s\S]*?"GET",[\s\S]*?undefined,[\s\S]*?\{ includeAuth: false, header_clan_id: null, quiet: true \}/,
+  "Public TrustSlip verify API calls must not inherit viewer auth or selected-community headers, and expected public not-found states should stay quiet."
 );
 
 assertCount(

@@ -60,20 +60,20 @@ assertContains(
 
 assertContains(
   "api",
-  /export async function getPublicCommunityConfirmation\([\s\S]*?return httpJson\([\s\S]*?`\/community-confirmations\/public\/\$\{encodeURIComponent\(String\(publicToken\)\)\}`,[\s\S]*?"GET",[\s\S]*?undefined,[\s\S]*?\{ includeAuth: false, header_clan_id: null \}/,
-  "Public Community Confirmation Outcome GET must not inherit viewer auth or selected-community headers."
+  /export async function getPublicCommunityConfirmation\([\s\S]*?return httpJson\([\s\S]*?`\/community-confirmations\/public\/\$\{encodeURIComponent\(String\(publicToken\)\)\}`,[\s\S]*?"GET",[\s\S]*?undefined,[\s\S]*?\{ includeAuth: false, header_clan_id: null, quiet: true \}/,
+  "Public Community Confirmation Outcome GET must not inherit viewer auth or selected-community headers, and expected public not-found states should stay quiet."
 );
 
 assertContains(
   "api",
-  /export async function getPublicCommunityVerification\([\s\S]*?return httpJson\([\s\S]*?`\/verify\/community\/\$\{encodeURIComponent\(String\(communityKey\)\)\}`,[\s\S]*?"GET",[\s\S]*?undefined,[\s\S]*?\{ includeAuth: false, header_clan_id: null \}/,
-  "Public Community Verification GET must not inherit viewer auth or selected-community headers."
+  /export async function getPublicCommunityVerification\([\s\S]*?return httpJson\([\s\S]*?`\/verify\/community\/\$\{encodeURIComponent\(String\(communityKey\)\)\}`,[\s\S]*?"GET",[\s\S]*?undefined,[\s\S]*?\{ includeAuth: false, header_clan_id: null, quiet: true \}/,
+  "Public Community Verification GET must not inherit viewer auth or selected-community headers, and expected public not-found states should stay quiet."
 );
 
 assertContains(
   "api",
-  /export async function getPublicCommunityMemberVerification\([\s\S]*?return httpJson\([\s\S]*?`\/verify\/community\/\$\{encodeURIComponent\(String\(communityKey\)\)\}\/member\/\$\{encodeURIComponent\([\s\S]*?String\(memberKey\)[\s\S]*?\)\}`,[\s\S]*?"GET",[\s\S]*?undefined,[\s\S]*?\{ includeAuth: false, header_clan_id: null \}/,
-  "Public Community Member Credential GET must not inherit viewer auth or selected-community headers."
+  /export async function getPublicCommunityMemberVerification\([\s\S]*?return httpJson\([\s\S]*?`\/verify\/community\/\$\{encodeURIComponent\(String\(communityKey\)\)\}\/member\/\$\{encodeURIComponent\([\s\S]*?String\(memberKey\)[\s\S]*?\)\}`,[\s\S]*?"GET",[\s\S]*?undefined,[\s\S]*?\{ includeAuth: false, header_clan_id: null, quiet: true \}/,
+  "Public Community Member Credential GET must not inherit viewer auth or selected-community headers, and expected public not-found states should stay quiet."
 );
 
 assertContains(
