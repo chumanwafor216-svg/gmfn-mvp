@@ -96,6 +96,12 @@ Then read the public API endpoint:
 
 `https://gmfn-api.onrender.com/marketplace/public/shop/GMFN-U-63655DE6?product_limit=300`
 
+Command helper:
+
+```powershell
+npm --prefix frontend run check:public-shop-blocks -- --gmfn-id GMFN-U-63655DE6 --block 6 --expect-title "NEW TITLE HERE" --absent-title "OLD TITLE HERE"
+```
+
 Pass:
 - `products.length` is `12`;
 - the selected block appears once;
