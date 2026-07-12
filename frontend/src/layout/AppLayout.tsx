@@ -2031,12 +2031,12 @@ export default function AppLayout({ initialAuthContext }: AppLayoutProps) {
       makeMarketplaceItem(),
       {
         ...makeShopGalleryItem(myShopGalleryTo, myShopGalleryDisabled),
-        label: "Shops",
+        label: "Shop",
       },
       makeProfileItem(),
     ];
 
-    return items.filter((item) => !item.disabled || item.label === "Shops");
+    return items.filter((item) => !item.disabled || item.label === "Shop");
   }, [myShopGalleryDisabled, myShopGalleryTo]);
 
   const mobileDrawerGroups = useMemo<MobileDrawerGroup[]>(() => {

@@ -2,7 +2,8 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { EntryGuideLauncher } from "../components/EntryControls";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
-import { CardActionRow, PrimaryButton, SecondaryButton, SubtleButton } from "../components/StableButton";
+import { CardActionRow, PrimaryButton, SecondaryButton } from "../components/StableButton";
+import { SubtleButton } from "../components/StableButton";
 import {
   activateMembership,
   setAccessToken,
@@ -158,33 +159,12 @@ function passwordRevealButtonStyle(): React.CSSProperties {
 
 function PasswordEyeGlyph({ hidden }: { hidden: boolean }): React.ReactElement {
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
-      <path
-        d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <circle
-        cx="12"
-        cy="12"
-        r="2.6"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-      />
-      {hidden ? (
-        <path
-          d="M4 20 20 4"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-        />
-      ) : null}
-    </svg>
+    <GsnLegacyIcon
+      name={hidden ? "lock" : "eye"}
+      size={24}
+      decorative
+      style={{ display: "inline-grid" }}
+    />
   );
 }
 

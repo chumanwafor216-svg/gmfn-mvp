@@ -8663,12 +8663,6 @@ export default function MarketplacePage() {
                   onClick={(event) =>
                     updateMarketplaceNoticePolicy(event, "members")
                   }
-                  aria-disabled={
-                    marketplaceNoticeSettingsSaving ||
-                    activeNoticePostingPolicy === "members"
-                      ? true
-                      : undefined
-                  }
                   style={marketplaceActionStyle(
                     activeNoticePostingPolicy === "members" ? "secondary" : "soft",
                     marketplaceNoticeSettingsSaving
@@ -8681,12 +8675,6 @@ export default function MarketplacePage() {
                   type="button"
                   onClick={(event) =>
                     updateMarketplaceNoticePolicy(event, "admins")
-                  }
-                  aria-disabled={
-                    marketplaceNoticeSettingsSaving ||
-                    activeNoticePostingPolicy === "admins"
-                      ? true
-                      : undefined
                   }
                   style={marketplaceActionStyle(
                     activeNoticePostingPolicy === "admins" ? "secondary" : "soft",
