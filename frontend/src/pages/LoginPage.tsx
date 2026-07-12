@@ -4,7 +4,12 @@ import { EntryBackLink } from "../components/EntryControls";
 import GSNBrandMonument from "../components/GSNBrandMonument";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import GsnInstallPrompt from "../components/GsnInstallPrompt";
-import { PrimaryButton, SecondaryButton, SubtleButton } from "../components/StableButton";
+import {
+  PrimaryButton,
+  SecondaryButton,
+  StableCtaLink,
+  SubtleButton,
+} from "../components/StableButton";
 import {
   getAccessToken,
   getMe,
@@ -370,6 +375,20 @@ function helperText(): React.CSSProperties {
   };
 }
 
+const GSN_SUPPORT_WHATSAPP_NUMBER = "447903165266";
+const GSN_SUPPORT_WHATSAPP_DISPLAY = "+44 7903 165266";
+const GSN_SUPPORT_EMAIL = "support_gsn@GMFN-GSN.uk.co";
+const GSN_SUPPORT_MESSAGE =
+  "Hello GSN support. I need help signing in. My GSN ID is: . Phone on account: . Community: . Error shown: .";
+const GSN_SUPPORT_WHATSAPP_URL = `https://wa.me/${GSN_SUPPORT_WHATSAPP_NUMBER}?text=${encodeURIComponent(
+  GSN_SUPPORT_MESSAGE
+)}`;
+const GSN_SUPPORT_EMAIL_URL = `mailto:${GSN_SUPPORT_EMAIL}?subject=${encodeURIComponent(
+  "GSN sign-in help"
+)}&body=${encodeURIComponent(
+  `${GSN_SUPPORT_MESSAGE}\n\nPlease do not include your password in this message.`
+)}`;
+
 function safeStr(x: any): string {
   return String(x ?? "").trim();
 }
@@ -514,6 +533,7 @@ export default function LoginPage() {
   const [msg, setMsg] = useState<string | null>(null);
   const [activationPath, setActivationPath] = useState<string | null>(null);
   const [guideOpen, setGuideOpen] = useState(false);
+  const [supportOpen, setSupportOpen] = useState(false);
   const [recoveryOpen, setRecoveryOpen] = useState(false);
   const [recoveryStep, setRecoveryStep] = useState<"claim" | "answers">("claim");
   const [recoveryGsnId, setRecoveryGsnId] = useState(inviteGsnId || "");
@@ -632,6 +652,7 @@ export default function LoginPage() {
           safeStr(detail?.message) ||
             "This identity exists, but membership activation is not finished yet. Activate membership first, then sign in."
         );
+        setSupportOpen(true);
         return;
       }
 
@@ -642,6 +663,7 @@ export default function LoginPage() {
         setErr(
           "Those details did not match an active account. If this is your first time on the live system, use Activate Membership or start through Create Community first."
         );
+        setSupportOpen(true);
       } else {
         setErr(raw);
       }
@@ -718,6 +740,7 @@ export default function LoginPage() {
           firstStep:
             "Ask the community owner or GSN support to review this account. Do not keep retrying from this screen.",
         });
+        setSupportOpen(true);
       } else {
         setRecoveryError(message);
       }
@@ -1319,12 +1342,40 @@ export default function LoginPage() {
             <div
               style={{
                 marginTop: 12,
-                display: "flex",
-                justifyContent: "flex-end",
+                display: "grid",
+                gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)",
+                gap: 8,
+                justifyContent: "stretch",
                 alignItems: "center",
                 minHeight: 36,
               }}
             >
+              <SecondaryButton
+                type="button"
+                onClick={() => setSupportOpen((current) => !current)}
+                disabled={busy || recoveryBusy}
+                stableHeight={36}
+                debugId="login.support.open"
+                style={{
+                  ...secondaryBtn(),
+                  width: "100%",
+                  minWidth: 0,
+                  minHeight: 36,
+                  height: 36,
+                  maxHeight: 36,
+                  padding: "0 4px",
+                  border: "none",
+                  borderRadius: 10,
+                  background: "transparent",
+                  boxShadow: "none",
+                  color: "#E5E7EB",
+                  fontSize: 13.5,
+                  fontWeight: 900,
+                  textAlign: "left",
+                }}
+              >
+                Need sign-in help?
+              </SecondaryButton>
               <SecondaryButton
                 type="button"
                 onClick={openRecoveryLane}
@@ -1384,6 +1435,81 @@ export default function LoginPage() {
                 {loginIconText("join-person-plus", "Activate membership", 24)}
               </SecondaryButton>
             </div>
+
+            {supportOpen ? (
+              <div
+                style={{
+                  ...softCard("#F8FBFF"),
+                  marginTop: 14,
+                  display: "grid",
+                  gap: 12,
+                  color: "#0B1F33",
+                }}
+              >
+                <div style={{ display: "grid", gap: 5 }}>
+                  <div style={{ fontSize: 18, fontWeight: 1000 }}>
+                    Sign-in help
+                  </div>
+                  <div style={{ ...helperText(), fontSize: 13.5 }}>
+                    Use this if password recovery is blocked, a temporary
+                    password does not work, or the account says it is not
+                    active. Send your GSN ID, phone on the account, community
+                    name, and a screenshot. Do not send any password.
+                  </div>
+                </div>
+                <div
+                  style={{
+                    display: "grid",
+                    gap: 10,
+                    gridTemplateColumns: isCompact
+                      ? "1fr"
+                      : "repeat(2, minmax(0, 1fr))",
+                  }}
+                >
+                  <StableCtaLink
+                    to={GSN_SUPPORT_WHATSAPP_URL}
+                    target="_blank"
+                    rel="noreferrer"
+                    stableHeight={50}
+                    debugId="login.support.whatsapp"
+                    style={{
+                      ...supportBtn(),
+                      background:
+                        "linear-gradient(180deg, #ECFDF5 0%, #D1FAE5 100%)",
+                      border: "1px solid rgba(22,101,52,0.20)",
+                      color: "#065F46",
+                    }}
+                  >
+                    {loginIconText("community", "WhatsApp support", 22)}
+                  </StableCtaLink>
+                  <StableCtaLink
+                    to={GSN_SUPPORT_EMAIL_URL}
+                    stableHeight={50}
+                    debugId="login.support.email"
+                    style={{
+                      ...supportBtn(),
+                      background:
+                        "linear-gradient(180deg, #FFFFFF 0%, #EAF3FF 100%)",
+                      border: "1px solid rgba(28,76,126,0.16)",
+                      color: "#123055",
+                    }}
+                  >
+                    {loginIconText("document", "Email support", 22)}
+                  </StableCtaLink>
+                </div>
+                <div
+                  style={{
+                    ...helperText(),
+                    fontSize: 12.5,
+                    color: "#526579",
+                    lineHeight: 1.55,
+                  }}
+                >
+                  WhatsApp: {GSN_SUPPORT_WHATSAPP_DISPLAY}. Email:{" "}
+                  {GSN_SUPPORT_EMAIL}.
+                </div>
+              </div>
+            ) : null}
 
             {recoveryOpen ? (
               <div
