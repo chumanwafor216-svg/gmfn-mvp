@@ -1279,6 +1279,42 @@ def test_activate_membership_cannot_reset_already_activated_account(client):
     assert new_login_res.status_code == 401, new_login_res.text
 
 
+def test_auth_me_allows_non_email_identity_after_gmfn_login(client, monkeypatch):
+    monkeypatch.setenv("GMFN_SECRET_KEY", "pytest-secret")
+
+    with SessionLocal() as db:
+        user = User(
+            email="GMFN-U-NONEMAILQA",
+            hashed_password=get_password_hash("qa-secret"),
+            role="user",
+            gmfn_id="GMFN-U-NONEMAILQA",
+            phone_e164="+2348011112233",
+            display_name="Non Email QA",
+        )
+        db.add(user)
+        db.commit()
+
+    login_res = client.post(
+        "/auth/login",
+        data={
+            "username": "GMFN-U-NONEMAILQA",
+            "password": "qa-secret",
+        },
+    )
+    assert login_res.status_code == 200, login_res.text
+    token = login_res.json()["access_token"]
+
+    me_res = client.get(
+        "/auth/me",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert me_res.status_code == 200, me_res.text
+    me_body = me_res.json()
+    assert me_body["email"] == "GMFN-U-NONEMAILQA"
+    assert me_body["gmfn_id"] == "GMFN-U-NONEMAILQA"
+    assert me_body["display_name"] == "Non Email QA"
+
+
 def test_admin_phone_lineage_lookup_identifies_protected_owner(client):
     os.environ["GMFN_SECRET_KEY"] = "pytest-secret"
 

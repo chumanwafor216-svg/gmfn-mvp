@@ -47,7 +47,7 @@ class UserCreate(BaseModel):
 
 class UserOut(BaseModel):
     id: int
-    email: EmailStr
+    email: str
     role: str
     gmfn_id: Optional[str] = None
     phone_e164: Optional[str] = None
