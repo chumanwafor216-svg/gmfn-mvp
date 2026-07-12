@@ -1306,6 +1306,15 @@ def test_public_gallery_reads_hide_older_duplicate_active_numbered_blocks(
         "Newest block six"
     ]
 
+    old_deep_link_res = client.get(
+        "/marketplace/public/shop/GMFN-U-BLOCKDEDUP?clan_id=1&product_id=6&product_limit=1"
+    )
+    assert old_deep_link_res.status_code == 200, old_deep_link_res.text
+    old_deep_link_products = old_deep_link_res.json()["products"]
+    assert [item["name"] for item in old_deep_link_products] == [
+        "Newest block six"
+    ]
+
 
 def test_public_gallery_extra_shop_block_entitlement_expands_slot_limit(
     client,

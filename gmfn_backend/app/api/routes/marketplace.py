@@ -1074,7 +1074,7 @@ def _retire_replaced_public_block_products(
 def _dedupe_active_public_block_products(
     items: list[MarketplaceProduct],
 ) -> list[MarketplaceProduct]:
-    seen_blocks: set[tuple[int, int]] = set()
+    newest_by_block: dict[tuple[int, int], MarketplaceProduct] = {}
     visible: list[MarketplaceProduct] = []
 
     for product in items:
@@ -1092,9 +1092,40 @@ def _dedupe_active_public_block_products(
         )
         if is_public_block:
             key = (int(getattr(product, "shop_id", 0) or 0), int(block_number))
-            if key in seen_blocks:
+            current_best = newest_by_block.get(key)
+            if current_best is None:
+                newest_by_block[key] = product
                 continue
-            seen_blocks.add(key)
+
+            product_rank = (
+                getattr(product, "created_at", None) or _now_utc(),
+                int(getattr(product, "id", 0) or 0),
+            )
+            current_rank = (
+                getattr(current_best, "created_at", None) or _now_utc(),
+                int(getattr(current_best, "id", 0) or 0),
+            )
+            if product_rank > current_rank:
+                newest_by_block[key] = product
+
+    for product in items:
+        visibility_mode = _safe_str(
+            getattr(product, "visibility_mode", None),
+            VISIBILITY_COMMUNITY,
+        )
+        block_number = _public_product_block_number(
+            getattr(product, "description", None)
+        )
+        is_public_block = (
+            bool(getattr(product, "is_active", True))
+            and visibility_mode in {VISIBILITY_COMMUNITY, "public", "community"}
+            and block_number is not None
+        )
+        if is_public_block:
+            key = (int(getattr(product, "shop_id", 0) or 0), int(block_number))
+            chosen = newest_by_block.get(key)
+            if chosen is None or int(getattr(chosen, "id", 0) or 0) != int(product.id):
+                continue
 
         visible.append(product)
 
