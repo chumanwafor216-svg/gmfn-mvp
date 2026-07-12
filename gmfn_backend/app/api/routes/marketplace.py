@@ -1021,6 +1021,56 @@ def _count_active_products_for_shop(
     return q.count()
 
 
+def _active_public_products_for_block(
+    db: Session,
+    *,
+    shop_id: int,
+    block_number: int,
+    exclude_product_id: Optional[int] = None,
+) -> list[MarketplaceProduct]:
+    if int(block_number or 0) < 1:
+        return []
+
+    q = (
+        db.query(MarketplaceProduct)
+        .filter(MarketplaceProduct.shop_id == int(shop_id))
+        .filter(MarketplaceProduct.is_active.is_(True))
+        .filter(MarketplaceProduct.visibility_mode.in_([VISIBILITY_COMMUNITY, "public", "community"]))
+    )
+
+    if exclude_product_id is not None:
+        q = q.filter(MarketplaceProduct.id != int(exclude_product_id))
+
+    return [
+        product
+        for product in q.all()
+        if _public_product_block_number(getattr(product, "description", None)) == int(block_number)
+    ]
+
+
+def _retire_replaced_public_block_products(
+    db: Session,
+    *,
+    shop_id: int,
+    block_number: int,
+    keep_product_id: int,
+) -> tuple[int, int]:
+    retired_products = 0
+    removed_reposts = 0
+    for product in _active_public_products_for_block(
+        db,
+        shop_id=int(shop_id),
+        block_number=int(block_number),
+        exclude_product_id=int(keep_product_id),
+    ):
+        product.is_active = False
+        db.add(product)
+        retired_products += 1
+        removed_reposts += _remove_product_reposts(db, product_id=int(product.id))
+
+    return retired_products, removed_reposts
+
+
 def _shop_public_product_slots_total(
     db: Session,
     *,
@@ -2587,15 +2637,25 @@ def create_marketplace_product(
         raise HTTPException(status_code=400, detail="Product image is required")
 
     visibility_mode = _resolve_visibility_mode(payload.visibility_mode)
+    public_block_number = _public_product_block_number(payload.description)
 
     if visibility_mode == VISIBILITY_COMMUNITY:
         public_product_slots_total = _shop_public_product_slots_total(db, shop=shop)
+        replaceable_products = (
+            _active_public_products_for_block(
+                db,
+                shop_id=int(shop.id),
+                block_number=int(public_block_number),
+            )
+            if public_block_number is not None
+            else []
+        )
         active_product_count = _count_active_products_for_shop(
             db,
             shop_id=int(shop.id),
             visibility_mode=VISIBILITY_COMMUNITY,
         )
-        if active_product_count >= public_product_slots_total:
+        if active_product_count - len(replaceable_products) >= public_product_slots_total:
             raise HTTPException(
                 status_code=400,
                 detail=_public_product_capacity_detail(public_product_slots_total),
@@ -2657,6 +2717,18 @@ def create_marketplace_product(
     try:
         db.add(product)
         db.flush()
+        replaced_public_block_products = 0
+        replaced_public_block_reposts = 0
+        if visibility_mode == VISIBILITY_COMMUNITY and public_block_number is not None:
+            (
+                replaced_public_block_products,
+                replaced_public_block_reposts,
+            ) = _retire_replaced_public_block_products(
+                db,
+                shop_id=int(shop.id),
+                block_number=int(public_block_number),
+                keep_product_id=int(product.id),
+            )
         if visibility_mode == VISIBILITY_VAULT:
             attach_product_to_vault_block(
                 db,
@@ -2695,6 +2767,8 @@ def create_marketplace_product(
                 product_id=int(product.id),
             ),
             "shop_product_slots_total": _shop_public_product_slots_total(db, shop=shop),
+            "replaced_public_block_products": replaced_public_block_products,
+            "replaced_public_block_reposts": replaced_public_block_reposts,
             "reason": "marketplace_product_created",
         },
         commit=False,
@@ -2718,7 +2792,12 @@ def create_marketplace_product(
         )
     db.commit()
 
-    return {"ok": True, "item": _product_out(db, product)}
+    return {
+        "ok": True,
+        "item": _product_out(db, product),
+        "replaced_public_block_products": replaced_public_block_products,
+        "replaced_public_block_reposts": replaced_public_block_reposts,
+    }
 
 
 @router.put("/products/{product_id}")
@@ -2848,6 +2927,13 @@ def update_marketplace_product(
         )
     )
     target_active = False if soft_remove_requested else True if restore_requested else current_active
+    target_public_block_number = (
+        _public_product_block_number(getattr(product, "description", None))
+        if target_visibility == VISIBILITY_COMMUNITY
+        else None
+    )
+    replaced_public_block_products = 0
+    replaced_public_block_reposts = 0
 
     if target_active and target_visibility == VISIBILITY_COMMUNITY:
         target_shop = (
@@ -2856,13 +2942,23 @@ def update_marketplace_product(
             .first()
         )
         public_product_slots_total = _shop_public_product_slots_total(db, shop=target_shop)
+        replaceable_products = (
+            _active_public_products_for_block(
+                db,
+                shop_id=int(target_shop_id),
+                block_number=int(target_public_block_number),
+                exclude_product_id=int(product.id),
+            )
+            if target_public_block_number is not None
+            else []
+        )
         active_product_count = _count_active_products_for_shop(
             db,
             shop_id=int(target_shop_id),
             visibility_mode=VISIBILITY_COMMUNITY,
             exclude_product_id=int(product.id),
         )
-        if active_product_count >= public_product_slots_total:
+        if active_product_count - len(replaceable_products) >= public_product_slots_total:
             raise HTTPException(
                 status_code=400,
                 detail=_public_product_capacity_detail(public_product_slots_total),
@@ -2948,6 +3044,21 @@ def update_marketplace_product(
                 )
             elif current_visibility == VISIBILITY_VAULT or target_visibility == VISIBILITY_VAULT:
                 archive_vault_offer_for_product(db, product_id=int(product.id))
+            if (
+                target_visibility == VISIBILITY_COMMUNITY
+                and target_public_block_number is not None
+                and bool(getattr(product, "is_active", True))
+            ):
+                (
+                    replaced_public_block_products,
+                    replaced_public_block_reposts,
+                ) = _retire_replaced_public_block_products(
+                    db,
+                    shop_id=int(target_shop_id),
+                    block_number=int(target_public_block_number),
+                    keep_product_id=int(product.id),
+                )
+                removed_reposts += replaced_public_block_reposts
 
             event_type = "marketplace.product.updated"
             reason = "marketplace_product_updated"
@@ -2971,6 +3082,8 @@ def update_marketplace_product(
                     "shop_id": int(product.shop_id),
                     "visibility_mode": _safe_str(getattr(product, "visibility_mode", None), VISIBILITY_COMMUNITY),
                     "removed_reposts": removed_reposts,
+                    "replaced_public_block_products": replaced_public_block_products,
+                    "replaced_public_block_reposts": replaced_public_block_reposts,
                     "image_url": getattr(product, "image_url", None),
                     "reason": reason,
                 },
@@ -3024,6 +3137,8 @@ def update_marketplace_product(
         "ok": True,
         "item": _product_out(db, product),
         "removed_reposts": removed_reposts,
+        "replaced_public_block_products": replaced_public_block_products,
+        "replaced_public_block_reposts": replaced_public_block_reposts,
         "detail": (
             "Product restored to visible blocks."
             if restore_requested

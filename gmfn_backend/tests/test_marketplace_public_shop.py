@@ -1080,6 +1080,128 @@ def test_public_gallery_slot_limit_counts_legacy_public_visibility_aliases(
     assert "Maximum of 12 community-visible products" in create_res.json()["detail"]
 
 
+def test_public_gallery_replacing_numbered_block_hides_previous_live_product(
+    client,
+    override_current_user_user,
+):
+    _ensure_marketplace_tables()
+
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO users (
+                    id, email, hashed_password, display_name, role, gmfn_id
+                ) VALUES (
+                    1, 'seller@example.com', 'hashed', 'Block Owner', 'user', 'GMFN-U-BLOCKREPLACE'
+                )
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO clans (id, name, marketplace_name, invite_code)
+                VALUES (1, 'Homeland ISA', 'Homeland ISA Marketplace', 'BLOCKREPLACE1')
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO clan_memberships (id, clan_id, user_id, role, personal_pool_balance)
+                VALUES (1, 1, 1, 'member', 0)
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_shops (
+                    id, clan_id, owner_user_id, shop_name, description, is_active
+                ) VALUES (
+                    1, 1, 1, 'Block Replace Shop', 'Replace slot test', 1
+                )
+                """
+            )
+        )
+        for slot in range(1, 13):
+            conn.execute(
+                text(
+                    """
+                    INSERT INTO marketplace_products (
+                        id, clan_id, shop_id, seller_user_id, title, description,
+                        price, currency, image_url, visibility_mode, is_active
+                    ) VALUES (
+                        :id, 1, 1, 1, :title, :description,
+                        '1000', 'NGN', :image_url, 'community_visible', 1
+                    )
+                    """
+                ),
+                {
+                    "id": slot,
+                    "title": f"Original block {slot}",
+                    "description": f"[BLOCK:{slot}] Original public block",
+                    "image_url": f"/uploads/marketplace/images/original-{slot}.jpg",
+                },
+            )
+
+    create_res = client.post(
+        "/marketplace/products",
+        json={
+            "clan_id": 1,
+            "shop_id": 1,
+            "name": "Replacement block six",
+            "description": "[BLOCK:6] New block six product",
+            "price": "2000",
+            "currency": "NGN",
+            "image_url": "/uploads/marketplace/images/replacement-6.jpg",
+            "visibility_mode": "community_visible",
+        },
+    )
+    assert create_res.status_code == 200, create_res.text
+    body = create_res.json()
+    assert body["item"]["public_block_number"] == 6
+    assert body["replaced_public_block_products"] == 1
+
+    with engine.begin() as conn:
+        rows = conn.execute(
+            text(
+                """
+                SELECT id, title, is_active
+                FROM marketplace_products
+                WHERE shop_id = 1 AND description LIKE '[BLOCK:6]%'
+                ORDER BY id ASC
+                """
+            )
+        ).fetchall()
+        active_count = conn.execute(
+            text(
+                """
+                SELECT COUNT(*)
+                FROM marketplace_products
+                WHERE shop_id = 1 AND is_active = 1
+                """
+            )
+        ).scalar()
+
+    assert [(row.id, row.title, row.is_active) for row in rows] == [
+        (6, "Original block 6", False),
+        (13, "Replacement block six", True),
+    ]
+    assert active_count == 12
+
+    products_res = client.get("/marketplace/products?clan_id=1&shop_id=1")
+    assert products_res.status_code == 200, products_res.text
+    active_items = products_res.json()["items"]
+    block_six_items = [
+        item for item in active_items if item["public_block_number"] == 6
+    ]
+    assert len(active_items) == 12
+    assert len(block_six_items) == 1
+    assert block_six_items[0]["name"] == "Replacement block six"
+
+
 def test_public_gallery_extra_shop_block_entitlement_expands_slot_limit(
     client,
     override_current_user_user,
