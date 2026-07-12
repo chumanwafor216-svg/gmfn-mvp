@@ -336,8 +336,8 @@ assertVaultContains(
 );
 
 assertVaultContains(
-  /import SocialTagShareButton from "\.\.\/components\/SocialTagShareButton";[\s\S]*?function buildVaultInvitePackage\(linkUrl: string\): string[\s\S]*?buildGsnVaultInviteMessage[\s\S]*?function buildVaultSocialShareTarget\(\)[\s\S]*?buildVaultInvitePackage\(selectedBlockLinkUrl\)[\s\S]*?<SocialTagShareButton[\s\S]*?target=\{buildVaultSocialShareTarget\(\)\}[\s\S]*?disabled=\{!selectedBlockLinkUrl\}[\s\S]*?buttonLabel="Share block"[\s\S]*?debugId="vault-control\.link\.social-share"/,
-  "Vault Control private block social sharing must stay owner-issued, disabled until a private link exists, and use the shared Vault invite package."
+  /import SocialTagShareButton from "\.\.\/components\/SocialTagShareButton";[\s\S]*?function buildVaultInvitePackage\([\s\S]*?linkUrl: string,[\s\S]*?link: VaultLinkItem \| null \| undefined[\s\S]*?\): string[\s\S]*?buildGsnVaultInviteMessage[\s\S]*?function buildVaultSocialShareTarget\(\)[\s\S]*?buildVaultInvitePackage\(selectedBlockLinkUrl, selectedBlockPrimaryLink\)[\s\S]*?<SocialTagShareButton[\s\S]*?target=\{buildVaultSocialShareTarget\(\)\}[\s\S]*?disabled=\{!selectedBlockLinkUrl\}[\s\S]*?buttonLabel="Share block"[\s\S]*?debugId="vault-control\.link\.social-share"/,
+  "Vault Control private block social sharing must stay owner-issued, disabled until a private link exists, and use the shared Vault invite package with the selected link context."
 );
 
 assertVaultContains(

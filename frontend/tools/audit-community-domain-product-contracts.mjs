@@ -327,7 +327,7 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /Check exchange, privacy, setup, compliance, and appeal boundaries[\s\S]*Quote required before payment/,
+  /Check exchange, privacy, setup, compliance, and appeal boundaries[\s\S]*status: compactStatus\(quote\?\.pricing_status \|\| quote\?\.quote_status \|\| "quote required"\)/,
   "Community Domain dashboard visible notes must use setup wording for service boundaries and billing steps.",
   { frontend: true }
 );
@@ -348,7 +348,7 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /billingIsActive[\s\S]*packageReviewActionLabel[\s\S]*Review package details[\s\S]*Billing status:[\s\S]*status\.billing_status \|\| selectedLane\?\.status[\s\S]*Quote is available for reference[\s\S]*Package quote:[\s\S]*\{packageReviewActionLabel\}/,
+  /billingIsActive[\s\S]*packageReviewActionLabel[\s\S]*Review package details[\s\S]*Billing:[\s\S]*status\.billing_status \|\| selectedLane\?\.status[\s\S]*Quote:[\s\S]*quote\?\.pricing_status \|\| quote\?\.quote_status[\s\S]*\{packageReviewActionLabel\}/,
   "Community Domain dashboard billing lane must lead with dashboard billing state and keep package quote details as reference when billing is active.",
   { frontend: true }
 );
@@ -472,7 +472,7 @@ assertNotContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /showAdvancedTools[\s\S]*setShowAdvancedTools\(false\)[\s\S]*showAdvancedTools \?[\s\S]*Official Board[\s\S]*Community Domain engine[\s\S]*Work lanes[\s\S]*Other domain tools[\s\S]*community-domain-dashboard\.advanced-tools-toggle/,
+  /showAdvancedTools[\s\S]*setShowAdvancedTools\(false\)[\s\S]*showAdvancedTools && activeLane === "settings"[\s\S]*Official Board[\s\S]*Community Domain engine[\s\S]*showAdvancedTools \?[\s\S]*Work lanes[\s\S]*Other domain tools[\s\S]*community-domain-dashboard\.advanced-tools-toggle/,
   "Community Domain dashboard must keep notices, engine details, and work lanes closed behind Other domain tools so setup remains the first journey.",
   { frontend: true }
 );
