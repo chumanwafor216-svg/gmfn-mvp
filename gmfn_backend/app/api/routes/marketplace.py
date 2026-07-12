@@ -1021,6 +1021,45 @@ def _count_active_products_for_shop(
     return q.count()
 
 
+def _product_newest_rank(product: MarketplaceProduct) -> tuple[datetime, int]:
+    created_at = getattr(product, "created_at", None)
+    if isinstance(created_at, datetime):
+        if created_at.tzinfo is None:
+            created_at = created_at.replace(tzinfo=timezone.utc)
+    else:
+        created_at = datetime.min.replace(tzinfo=timezone.utc)
+
+    return (created_at, int(getattr(product, "id", 0) or 0))
+
+
+def _display_public_block_assignments(
+    items: list[MarketplaceProduct],
+) -> dict[int, MarketplaceProduct]:
+    explicit: dict[int, MarketplaceProduct] = {}
+    overflow: list[MarketplaceProduct] = []
+
+    for product in items:
+        block_number = _public_product_block_number(
+            getattr(product, "description", None)
+        )
+        if block_number is not None:
+            current = explicit.get(int(block_number))
+            if current is None or _product_newest_rank(product) > _product_newest_rank(current):
+                explicit[int(block_number)] = product
+            continue
+
+        overflow.append(product)
+
+    assignments = dict(explicit)
+    for product in sorted(overflow, key=_product_newest_rank, reverse=True):
+        for block_number in range(1, FREE_COMMUNITY_PRODUCT_SLOTS + 1):
+            if block_number not in assignments:
+                assignments[block_number] = product
+                break
+
+    return assignments
+
+
 def _active_public_products_for_block(
     db: Session,
     *,
@@ -1041,11 +1080,21 @@ def _active_public_products_for_block(
     if exclude_product_id is not None:
         q = q.filter(MarketplaceProduct.id != int(exclude_product_id))
 
-    return [
+    products = q.all()
+    explicit_matches = [
         product
-        for product in q.all()
+        for product in products
         if _public_product_block_number(getattr(product, "description", None)) == int(block_number)
     ]
+    assigned_product = _display_public_block_assignments(products).get(int(block_number))
+    if assigned_product is None:
+        return explicit_matches
+
+    assigned_id = int(getattr(assigned_product, "id", 0) or 0)
+    if any(int(getattr(product, "id", 0) or 0) == assigned_id for product in explicit_matches):
+        return explicit_matches
+
+    return [*explicit_matches, assigned_product]
 
 
 def _retire_replaced_public_block_products(
@@ -1069,17 +1118,6 @@ def _retire_replaced_public_block_products(
         removed_reposts += _remove_product_reposts(db, product_id=int(product.id))
 
     return retired_products, removed_reposts
-
-
-def _product_newest_rank(product: MarketplaceProduct) -> tuple[datetime, int]:
-    created_at = getattr(product, "created_at", None)
-    if isinstance(created_at, datetime):
-        if created_at.tzinfo is None:
-            created_at = created_at.replace(tzinfo=timezone.utc)
-    else:
-        created_at = datetime.min.replace(tzinfo=timezone.utc)
-
-    return (created_at, int(getattr(product, "id", 0) or 0))
 
 
 def _dedupe_active_public_block_products(

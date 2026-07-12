@@ -1202,6 +1202,141 @@ def test_public_gallery_replacing_numbered_block_hides_previous_live_product(
     assert block_six_items[0]["name"] == "Replacement block six"
 
 
+def test_public_gallery_replacing_overflow_block_hides_legacy_unmarked_product(
+    client,
+    override_current_user_user,
+):
+    _ensure_marketplace_tables()
+
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO users (
+                    id, email, hashed_password, display_name, role, gmfn_id
+                ) VALUES (
+                    1, 'seller@example.com', 'hashed', 'Block Owner', 'user', 'GMFN-U-BLOCKOVERFLOW'
+                )
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO clans (id, name, marketplace_name, invite_code)
+                VALUES (1, 'Homeland ISA', 'Homeland ISA Marketplace', 'BLOCKOVERFLOW1')
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO clan_memberships (id, clan_id, user_id, role, personal_pool_balance)
+                VALUES (1, 1, 1, 'member', 0)
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_shops (
+                    id, clan_id, owner_user_id, shop_name, description, is_active
+                ) VALUES (
+                    1, 1, 1, 'Block Overflow Shop', 'Legacy overflow slot test', 1
+                )
+                """
+            )
+        )
+        for slot in [1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]:
+            conn.execute(
+                text(
+                    """
+                    INSERT INTO marketplace_products (
+                        id, clan_id, shop_id, seller_user_id, title, description,
+                        price, currency, image_url, visibility_mode, is_active
+                    ) VALUES (
+                        :id, 1, 1, 1, :title, :description,
+                        '1000', 'NGN', :image_url, 'community_visible', 1
+                    )
+                    """
+                ),
+                {
+                    "id": slot,
+                    "title": f"Original block {slot}",
+                    "description": f"[BLOCK:{slot}] Original public block",
+                    "image_url": f"/uploads/marketplace/images/original-{slot}.jpg",
+                },
+            )
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_products (
+                    id, clan_id, shop_id, seller_user_id, title, description,
+                    price, currency, image_url, visibility_mode, is_active
+                ) VALUES (
+                    20, 1, 1, 1, 'Legacy unmarked block two',
+                    'Legacy product without block metadata',
+                    '1500', 'NGN', '/uploads/marketplace/images/legacy-2.jpg',
+                    'community_visible', 1
+                )
+                """
+            )
+        )
+
+    create_res = client.post(
+        "/marketplace/products",
+        json={
+            "clan_id": 1,
+            "shop_id": 1,
+            "name": "Replacement block two",
+            "description": "[BLOCK:2] New explicit block two",
+            "price": "2500",
+            "currency": "NGN",
+            "image_url": "/uploads/marketplace/images/replacement-2.jpg",
+            "visibility_mode": "community_visible",
+        },
+    )
+    assert create_res.status_code == 200, create_res.text
+    body = create_res.json()
+    assert body["item"]["public_block_number"] == 2
+    assert body["replaced_public_block_products"] == 1
+
+    with engine.begin() as conn:
+        rows = conn.execute(
+            text(
+                """
+                SELECT id, title, is_active
+                FROM marketplace_products
+                WHERE id IN (20, 21)
+                ORDER BY id ASC
+                """
+            )
+        ).fetchall()
+        active_count = conn.execute(
+            text(
+                """
+                SELECT COUNT(*)
+                FROM marketplace_products
+                WHERE shop_id = 1 AND is_active = 1
+                """
+            )
+        ).scalar()
+
+    assert [(row.id, row.title, row.is_active) for row in rows] == [
+        (20, "Legacy unmarked block two", False),
+        (21, "Replacement block two", True),
+    ]
+    assert active_count == 12
+
+    products_res = client.get("/marketplace/products?clan_id=1&shop_id=1")
+    assert products_res.status_code == 200, products_res.text
+    active_items = products_res.json()["items"]
+    assert len(active_items) == 12
+    assert [item["name"] for item in active_items if item["public_block_number"] == 2] == [
+        "Replacement block two"
+    ]
+
+
 def test_public_gallery_update_to_numbered_block_hides_previous_live_product(
     client,
     override_current_user_user,
