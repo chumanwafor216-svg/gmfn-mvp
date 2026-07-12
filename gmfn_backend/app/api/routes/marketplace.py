@@ -1446,11 +1446,16 @@ def _product_out(
     }
 
 
-def _products_out(db: Session, products: list[MarketplaceProduct]) -> list[Dict[str, Any]]:
+def _products_out(
+    db: Session,
+    products: list[MarketplaceProduct],
+    *,
+    assignment_products: Optional[list[MarketplaceProduct]] = None,
+) -> list[Dict[str, Any]]:
     assignments = _display_public_block_assignments(
         [
             product
-            for product in products
+            for product in (assignment_products or products)
             if bool(getattr(product, "is_active", True))
             and _safe_str(
                 getattr(product, "visibility_mode", None),
@@ -1863,7 +1868,7 @@ def _owner_public_shop_payload(
             detail="Shop is not visible in the selected community",
         )
 
-    product_rows = (
+    product_query = (
         db.query(MarketplaceProduct)
         .filter(MarketplaceProduct.shop_id.in_(active_owner_shop_ids))
         .filter(MarketplaceProduct.seller_user_id == int(owner.id))
@@ -1874,15 +1879,18 @@ def _owner_public_shop_payload(
             )
         )
         .order_by(MarketplaceProduct.created_at.desc(), MarketplaceProduct.id.desc())
-        .limit(int(product_limit))
-        .all()
     )
-    product_rows = _dedupe_active_public_block_products(product_rows)[: int(product_limit)]
+    product_context_rows = product_query.limit(300).all()
+    product_rows = _dedupe_active_public_block_products(product_context_rows)[: int(product_limit)]
 
     return {
         "ok": True,
         "item": _shop_out(db, shop),
-        "products": _products_out(db, product_rows),
+        "products": _products_out(
+            db,
+            product_rows,
+            assignment_products=product_context_rows,
+        ),
         "gmfn_id": _safe_str(getattr(owner, "gmfn_id", None)) or None,
         "clan_id": resolved_clan_id,
     }
@@ -2056,14 +2064,15 @@ def get_public_marketplace_shop_by_gmfn_id(
         )
     )
 
-    product_rows = (
+    product_context_rows = (
         product_query.order_by(
             MarketplaceProduct.created_at.desc(),
             MarketplaceProduct.id.desc(),
         )
-        .limit(int(product_limit))
+        .limit(300)
         .all()
     )
+    product_rows = product_context_rows[: int(product_limit)]
 
     if requested_product is None and requested_product_id > 0 and all(
         int(getattr(row, "id", 0) or 0) != requested_product_id
@@ -2104,7 +2113,11 @@ def get_public_marketplace_shop_by_gmfn_id(
     return {
         "ok": True,
         "item": _shop_out(db, shop),
-        "products": _products_out(db, product_rows),
+        "products": _products_out(
+            db,
+            product_rows,
+            assignment_products=product_context_rows,
+        ),
         "broadcasts": [_broadcast_out(db, row) for row in broadcast_rows],
         "primary_broadcast": _broadcast_out(db, broadcast_rows[0]) if broadcast_rows else None,
         "spotlight_scope": "community",
@@ -2682,15 +2695,19 @@ def list_marketplace_products(
         if only_active:
             q = q.filter(MarketplaceProduct.is_active.is_(True))
 
-        items = (
+        context_items = (
             q.order_by(MarketplaceProduct.created_at.desc(), MarketplaceProduct.id.desc())
-            .limit(int(limit))
+            .limit(300)
             .all()
         )
-        items = _dedupe_active_public_block_products(items)[: int(limit)]
+        items = _dedupe_active_public_block_products(context_items)[: int(limit)]
 
         return {
-            "items": _products_out(db, items),
+            "items": _products_out(
+                db,
+                items,
+                assignment_products=context_items,
+            ),
             "total": len(items),
             "clan_id": resolved_clan_id,
             "shop_id": int(shop_id),
@@ -2732,11 +2749,15 @@ def list_marketplace_products(
         ),
         reverse=True,
     )
-    visible_items = _dedupe_active_public_block_products(visible_items)
-    visible_items = visible_items[: int(limit)]
+    visible_context_items = _dedupe_active_public_block_products(visible_items)
+    visible_items = visible_context_items[: int(limit)]
 
     return {
-        "items": _products_out(db, visible_items),
+        "items": _products_out(
+            db,
+            visible_items,
+            assignment_products=visible_context_items,
+        ),
         "total": len(visible_items),
         "clan_id": resolved_clan_id,
     }

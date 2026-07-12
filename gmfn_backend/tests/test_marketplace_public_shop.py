@@ -1294,6 +1294,26 @@ def test_public_gallery_replacing_overflow_block_hides_legacy_unmarked_product(
     assert legacy_item["slot_number"] == 2
     assert legacy_item["display_block_number"] == 2
     assert legacy_item["metadata_block_number"] is None
+    limited_res = client.get("/marketplace/products?clan_id=1&shop_id=1&limit=1")
+    assert limited_res.status_code == 200, limited_res.text
+    limited_item = limited_res.json()["items"][0]
+    assert limited_item["name"] == "Legacy unmarked block two"
+    assert limited_item["public_block_number"] == 2
+    assert limited_item["display_block_number"] == 2
+    owner_limited_res = client.get("/marketplace/shops/me?clan_id=1&product_limit=1")
+    assert owner_limited_res.status_code == 200, owner_limited_res.text
+    owner_limited_item = owner_limited_res.json()["products"][0]
+    assert owner_limited_item["name"] == "Legacy unmarked block two"
+    assert owner_limited_item["public_block_number"] == 2
+    assert owner_limited_item["display_block_number"] == 2
+    public_deep_link_res = client.get(
+        "/marketplace/public/shop/GMFN-U-BLOCKOVERFLOW?clan_id=1&product_id=20&product_limit=1"
+    )
+    assert public_deep_link_res.status_code == 200, public_deep_link_res.text
+    public_deep_link_item = public_deep_link_res.json()["products"][0]
+    assert public_deep_link_item["name"] == "Legacy unmarked block two"
+    assert public_deep_link_item["public_block_number"] == 2
+    assert public_deep_link_item["display_block_number"] == 2
 
     create_res = client.post(
         "/marketplace/products",
