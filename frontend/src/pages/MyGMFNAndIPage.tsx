@@ -16,7 +16,13 @@ import {
   GsnLegacyIcon,
   type GsnIconName,
 } from "../components/GsnLegacyIcon";
-import { getCurrentClan, getMe, getMySettings, getSelectedClanId } from "../lib/api";
+import {
+  getCurrentClan,
+  getMe,
+  getMySettings,
+  getSelectedClanId,
+  updateMyProfile,
+} from "../lib/api";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 import {
   brandHelperText,
@@ -1493,6 +1499,7 @@ export default function MyGMFNAndIPage() {
   const [loading, setLoading] = useState(true);
   const [slowLoad, setSlowLoad] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [profileSaving, setProfileSaving] = useState(false);
   const [notice, setNotice] = useState<{
     tone: NoticeTone;
     text: string;
@@ -1509,6 +1516,7 @@ export default function MyGMFNAndIPage() {
   const [settings, setSettings] = useState<SettingsState>(() =>
     readLocalJSON(SETTINGS_STORAGE_KEY, DEFAULT_SETTINGS)
   );
+  const [profileDisplayName, setProfileDisplayName] = useState("");
 
   const activeTab = useMemo(() => {
     if (!isAppRoute) return "guide";
@@ -1591,6 +1599,14 @@ export default function MyGMFNAndIPage() {
         const localSettings = readLocalJSON(SETTINGS_STORAGE_KEY, DEFAULT_SETTINGS);
 
         setMe(meRes || null);
+        setProfileDisplayName(
+          firstTruthy(
+            meRes?.display_name,
+            meRes?.nickname,
+            meRes?.name,
+            meRes?.first_name
+          )
+        );
         setCurrentClan(clanRes || null);
         setTrustSlipSummary(normalizeIdentityTrustSlip(trustSlipRes));
         setSettings(
@@ -2153,6 +2169,37 @@ export default function MyGMFNAndIPage() {
       );
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function saveProfileName() {
+    const cleanName = profileDisplayName.trim();
+    if (cleanName.length < 2) {
+      showNotice("error", "Enter the name or street name people know you by.");
+      return;
+    }
+
+    setProfileSaving(true);
+
+    try {
+      const updated = await updateMyProfile({ display_name: cleanName });
+      const savedName = firstTruthy(updated?.display_name, cleanName);
+      setMe(updated || me);
+      setProfileDisplayName(savedName);
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem("gmfn_profile_name", savedName);
+      }
+      showNotice(
+        "success",
+        "Display name saved. Admin Tools and trust pages can now use it."
+      );
+    } catch (err: any) {
+      showNotice(
+        "error",
+        safeStr(err?.message) || "GSN could not save this name right now."
+      );
+    } finally {
+      setProfileSaving(false);
     }
   }
 
@@ -3015,110 +3062,143 @@ export default function MyGMFNAndIPage() {
                 alignItems: "start",
               }}
             >
-              <div style={innerCard()}>
-                <div style={sectionLabel()}>Notification reading mode</div>
+              <div style={{ display: "grid", gap: 14 }}>
+                <div style={innerCard()}>
+                  <div style={sectionLabel()}>Profile display name</div>
 
-                <div style={{ marginTop: 8, ...helperText() }}>
-                  Choose whether the inbox and related pages should feel shorter or fuller.
-                </div>
-
-                <div style={{ marginTop: 12 }}>
-                  <select
-                    value={settings.notificationsMode}
-                    onChange={(e) =>
-                      setSettings((prev) => ({
-                        ...prev,
-                        notificationsMode: e.target.value as SettingsState["notificationsMode"],
-                      }))
-                    }
-                    style={selectStyle()}
-                  >
-                    <option value="summary">Summary</option>
-                    <option value="detailed">Detailed</option>
-                  </select>
-                </div>
-
-                <div style={{ marginTop: 16, display: "grid", gap: 12 }}>
-                  <label style={checkboxRow()}>
-                    <input
-                      type="checkbox"
-                      checked={settings.unreadFirst}
-                      onChange={(e) =>
-                        setSettings((prev) => ({
-                          ...prev,
-                          unreadFirst: e.target.checked,
-                        }))
-                      }
-                    />
-                    <span>
-                      Put unread items first so the most unread work rises to the top.
-                    </span>
-                  </label>
-
-                  <label style={checkboxRow()}>
-                    <input
-                      type="checkbox"
-                      checked={settings.openActionsDirectly}
-                      onChange={(e) =>
-                        setSettings((prev) => ({
-                          ...prev,
-                          openActionsDirectly: e.target.checked,
-                        }))
-                      }
-                    />
-                    <span>
-                      Open the destination page directly from the primary action instead of reviewing it here first.
-                    </span>
-                  </label>
-                </div>
-
-                <div style={{ marginTop: 18 }}>
-                  <div style={sectionLabel()}>Tone preset</div>
                   <div style={{ marginTop: 8, ...helperText() }}>
-                    Choose how the guidance language should sound.
+                    This is the name GSN should show on account, Admin Tools,
+                    TrustSlip, and profile surfaces instead of your login
+                    identifier.
+                  </div>
+
+                  <div style={{ marginTop: 12 }}>
+                    <input
+                      value={profileDisplayName}
+                      onChange={(e) => setProfileDisplayName(e.target.value)}
+                      placeholder="Name or street name people know you by"
+                      style={selectStyle()}
+                    />
+                  </div>
+
+                  <div style={{ marginTop: 12 }}>
+                    <PrimaryButton
+                      onClick={() => void saveProfileName()}
+                      busy={profileSaving}
+                      busyLabel="Saving..."
+                      disabled={profileSaving}
+                      debugId="my-gmfn.profile-name.save"
+                    >
+                      Save Display Name
+                    </PrimaryButton>
+                  </div>
+                </div>
+
+                <div style={innerCard()}>
+                  <div style={sectionLabel()}>Notification reading mode</div>
+
+                  <div style={{ marginTop: 8, ...helperText() }}>
+                    Choose whether the inbox and related pages should feel shorter or fuller.
                   </div>
 
                   <div style={{ marginTop: 12 }}>
                     <select
-                      value={settings.tonePreset}
+                      value={settings.notificationsMode}
                       onChange={(e) =>
                         setSettings((prev) => ({
                           ...prev,
-                          tonePreset: e.target.value as SettingsState["tonePreset"],
+                          notificationsMode: e.target.value as SettingsState["notificationsMode"],
                         }))
                       }
                       style={selectStyle()}
                     >
-                      <option value="balanced-default">Balanced default</option>
-                      <option value="cooperative-warm">Cooperative warm</option>
-                      <option value="enterprise-green">Enterprise direct</option>
+                      <option value="summary">Summary</option>
+                      <option value="detailed">Detailed</option>
                     </select>
                   </div>
-                </div>
 
-                <div
-                  style={{
-                    marginTop: 18,
-                    display: "flex",
-                    gap: 10,
-                    flexWrap: "wrap",
-                  }}
-                >
-                  <PrimaryButton
-                    onClick={() => void saveSettings()}
-                    busy={saving}
-                    busyLabel="Saving..."
-                    debugId="my-gmfn.settings.save"
-                  >
-                    Save Settings
-                  </PrimaryButton>
+                  <div style={{ marginTop: 16, display: "grid", gap: 12 }}>
+                    <label style={checkboxRow()}>
+                      <input
+                        type="checkbox"
+                        checked={settings.unreadFirst}
+                        onChange={(e) =>
+                          setSettings((prev) => ({
+                            ...prev,
+                            unreadFirst: e.target.checked,
+                          }))
+                        }
+                      />
+                      <span>
+                        Put unread items first so the most unread work rises to the top.
+                      </span>
+                    </label>
 
-                  <SecondaryButton
-                    onClick={resetSettings}
-                    debugId="my-gmfn.settings.reset"
+                    <label style={checkboxRow()}>
+                      <input
+                        type="checkbox"
+                        checked={settings.openActionsDirectly}
+                        onChange={(e) =>
+                          setSettings((prev) => ({
+                            ...prev,
+                            openActionsDirectly: e.target.checked,
+                          }))
+                        }
+                      />
+                      <span>
+                        Open the destination page directly from the primary action instead of reviewing it here first.
+                      </span>
+                    </label>
+                  </div>
+
+                  <div style={{ marginTop: 18 }}>
+                    <div style={sectionLabel()}>Tone preset</div>
+                    <div style={{ marginTop: 8, ...helperText() }}>
+                      Choose how the guidance language should sound.
+                    </div>
+
+                    <div style={{ marginTop: 12 }}>
+                      <select
+                        value={settings.tonePreset}
+                        onChange={(e) =>
+                          setSettings((prev) => ({
+                            ...prev,
+                            tonePreset: e.target.value as SettingsState["tonePreset"],
+                          }))
+                        }
+                        style={selectStyle()}
+                      >
+                        <option value="balanced-default">Balanced default</option>
+                        <option value="cooperative-warm">Cooperative warm</option>
+                        <option value="enterprise-green">Enterprise direct</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div
+                    style={{
+                      marginTop: 18,
+                      display: "flex",
+                      gap: 10,
+                      flexWrap: "wrap",
+                    }}
                   >
-                    Reset Defaults
-                  </SecondaryButton>
+                    <PrimaryButton
+                      onClick={() => void saveSettings()}
+                      busy={saving}
+                      busyLabel="Saving..."
+                      debugId="my-gmfn.settings.save"
+                    >
+                      Save Settings
+                    </PrimaryButton>
+
+                    <SecondaryButton
+                      onClick={resetSettings}
+                      debugId="my-gmfn.settings.reset"
+                    >
+                      Reset Defaults
+                    </SecondaryButton>
+                  </div>
                 </div>
               </div>
 
