@@ -1489,7 +1489,7 @@ export default function BuildFirstCirclePage() {
       return;
     }
     setFocusedAction(null);
-    showNotice("success", "WhatsApp opened. Choose a group or contact there.");
+    showNotice("success", "WhatsApp invite opened. Choose a group or contact there.");
   }
 
   async function openEmailInvite() {
