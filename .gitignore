@@ -38,6 +38,10 @@ frontend/dist/
 frontend/uploads/
 uploads/
 
+# Generated screenshot/PDF smoke artifacts
+screenshots/
+frontend/screenshots/
+
 # Local upload artifacts
 gmfn_backend/uploads/
 test_uploads/
