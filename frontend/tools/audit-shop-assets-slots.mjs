@@ -113,6 +113,18 @@ assertContains(
 );
 
 assertContains(
+  "src/pages/ShopControlPage.tsx",
+  /function publicBlockNumberForProduct\([\s\S]*?public_block_number[\s\S]*?source_product_slot_number[\s\S]*?block_number[\s\S]*?extractPublicBlockNumber[\s\S]*?function arrangePublicProductsIntoSlots\([\s\S]*?isNewerProductCandidate\(item, slots\[blockNumber - 1\]\)[\s\S]*?overflow\.push\(item\)/,
+  "Shop Control summary must arrange public products by visible block and keep newest duplicate blocks, matching the embedded gallery."
+);
+
+assertContains(
+  "src/pages/ShopControlPage.tsx",
+  /const publicProductSlots = useMemo\([\s\S]*?arrangePublicProductsIntoSlots\(publicProducts, publicProductSlotsTotal\)[\s\S]*?const occupiedPublicProductSlotCount = useMemo\([\s\S]*?publicProductSlots\.filter\(Boolean\)\.length[\s\S]*?\{occupiedPublicProductSlotCount\} \/ \{publicProductSlotsTotal\}/,
+  "Shop Control summary Public items stat must count visible occupied public slots, not raw public product rows."
+);
+
+assertContains(
   "src/pages/ShopAssetsPage.tsx",
   /const publicGallerySlots = useMemo\([\s\S]*?arrangePublicProductsIntoSlots\(publicProducts\)[\s\S]*?const occupiedPublicSlotCount = useMemo\([\s\S]*?publicGallerySlots\.filter\(Boolean\)\.length[\s\S]*?\{occupiedPublicSlotCount\} \/ 12 live blocks/,
   "Shop Assets live-block counter must use occupied arranged slots, not raw product row count."

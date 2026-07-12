@@ -83,6 +83,12 @@ type ProductRecord = {
   currency?: string | null;
   image_url?: string | null;
   visibility_mode?: string | null;
+  public_block_number?: number | string | null;
+  slot_number?: number | string | null;
+  source_product_slot_number?: number | string | null;
+  sourceProductSlotNumber?: number | string | null;
+  block?: number | string | null;
+  block_number?: number | string | null;
   is_active?: boolean;
   created_at?: string | null;
   shop_product_slots_free?: number | null;
@@ -307,6 +313,87 @@ function firstTruthy(...values: unknown[]): string {
     if (text) return text;
   }
   return "";
+}
+
+function extractPublicBlockNumber(description: string): number {
+  const match = safeStr(description).match(/^\[BLOCK:(\d{1,2})\]\s*/i);
+  const value = Number(match?.[1] || 0);
+  return value >= 1 ? value : 0;
+}
+
+function publicBlockNumberForProduct(item: ProductRecord | null | undefined): number {
+  const explicitBlock = Number(
+    firstTruthy(
+      item?.public_block_number,
+      item?.slot_number,
+      item?.source_product_slot_number,
+      item?.sourceProductSlotNumber,
+      item?.block,
+      item?.block_number
+    )
+  );
+  if (explicitBlock >= 1) return explicitBlock;
+
+  return extractPublicBlockNumber(firstTruthy(item?.description));
+}
+
+function productDisplayRank(item: ProductRecord | null | undefined): {
+  createdMs: number;
+  id: number;
+} {
+  const createdMs = Date.parse(firstTruthy(item?.created_at));
+  return {
+    createdMs: Number.isFinite(createdMs) ? createdMs : 0,
+    id: Number(item?.id || 0),
+  };
+}
+
+function isNewerProductCandidate(
+  candidate: ProductRecord,
+  current: ProductRecord | null | undefined
+): boolean {
+  if (!current) return true;
+
+  const candidateRank = productDisplayRank(candidate);
+  const currentRank = productDisplayRank(current);
+  if (candidateRank.createdMs !== currentRank.createdMs) {
+    return candidateRank.createdMs > currentRank.createdMs;
+  }
+
+  return candidateRank.id > currentRank.id;
+}
+
+function arrangePublicProductsIntoSlots(
+  items: ProductRecord[],
+  slotCount: number
+): (ProductRecord | null)[] {
+  const safeSlotCount = Math.max(1, Math.floor(slotCount || 12));
+  const slots: (ProductRecord | null)[] = Array.from(
+    { length: safeSlotCount },
+    () => null
+  );
+  const overflow: ProductRecord[] = [];
+
+  items.forEach((item) => {
+    const blockNumber = publicBlockNumberForProduct(item);
+    if (blockNumber >= 1 && blockNumber <= safeSlotCount) {
+      if (isNewerProductCandidate(item, slots[blockNumber - 1])) {
+        slots[blockNumber - 1] = item;
+      }
+      return;
+    }
+
+    overflow.push(item);
+  });
+
+  overflow.forEach((item) => {
+    const emptyIndex = slots.findIndex((slot) => slot === null);
+    if (emptyIndex >= 0) {
+      slots[emptyIndex] = item;
+    }
+  });
+
+  return slots;
 }
 
 function formatFileSize(bytes: number): string {
@@ -1441,6 +1528,15 @@ export default function ShopControlPage() {
       .filter((value) => value > 0);
     return Math.max(12, ...fromProducts);
   }, [products, shop]);
+
+  const publicProductSlots = useMemo(
+    () => arrangePublicProductsIntoSlots(publicProducts, publicProductSlotsTotal),
+    [publicProductSlotsTotal, publicProducts]
+  );
+  const occupiedPublicProductSlotCount = useMemo(
+    () => publicProductSlots.filter(Boolean).length,
+    [publicProductSlots]
+  );
 
   const vaultProducts = useMemo(
     () =>
@@ -4452,7 +4548,7 @@ export default function ShopControlPage() {
                 fontWeight: 900,
               }}
             >
-              {publicProducts.length} / {publicProductSlotsTotal}
+              {occupiedPublicProductSlotCount} / {publicProductSlotsTotal}
             </div>
           </div>
 
