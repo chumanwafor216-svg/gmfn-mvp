@@ -22,6 +22,12 @@ import {
   peekPublishRecoveryTarget,
   publishRecoveryTarget,
 } from "../lib/publishRecovery";
+import {
+  GSN_SIGN_IN_SUPPORT_EMAIL,
+  GSN_SIGN_IN_SUPPORT_WHATSAPP_NUMBER,
+  signInSupportEmailUrl,
+  signInSupportWhatsAppUrl,
+} from "../lib/gsnSupportContacts";
 import { structuredErrorDetail } from "../lib/structuredErrors";
 
 function pageShell(compact = false): React.CSSProperties {
@@ -374,20 +380,6 @@ function helperText(): React.CSSProperties {
     fontSize: 14,
   };
 }
-
-const GSN_SUPPORT_WHATSAPP_NUMBER = "447903165266";
-const GSN_SUPPORT_WHATSAPP_DISPLAY = "+44 7903 165266";
-const GSN_SUPPORT_EMAIL = "support_gsn@GMFN-GSN.uk.co";
-const GSN_SUPPORT_MESSAGE =
-  "Hello GSN support. I need help signing in. My GSN ID is: . Phone on account: . Community: . Error shown: .";
-const GSN_SUPPORT_WHATSAPP_URL = `https://wa.me/${GSN_SUPPORT_WHATSAPP_NUMBER}?text=${encodeURIComponent(
-  GSN_SUPPORT_MESSAGE
-)}`;
-const GSN_SUPPORT_EMAIL_URL = `mailto:${GSN_SUPPORT_EMAIL}?subject=${encodeURIComponent(
-  "GSN sign-in help"
-)}&body=${encodeURIComponent(
-  `${GSN_SUPPORT_MESSAGE}\n\nPlease do not include your password in this message.`
-)}`;
 
 function safeStr(x: any): string {
   return String(x ?? "").trim();
@@ -1466,7 +1458,7 @@ export default function LoginPage() {
                   }}
                 >
                   <StableCtaLink
-                    to={GSN_SUPPORT_WHATSAPP_URL}
+                    to={signInSupportWhatsAppUrl()}
                     target="_blank"
                     rel="noreferrer"
                     stableHeight={50}
@@ -1482,7 +1474,7 @@ export default function LoginPage() {
                     {loginIconText("community", "WhatsApp support", 22)}
                   </StableCtaLink>
                   <StableCtaLink
-                    to={GSN_SUPPORT_EMAIL_URL}
+                    to={signInSupportEmailUrl()}
                     stableHeight={50}
                     debugId="login.support.email"
                     style={{
@@ -1504,8 +1496,8 @@ export default function LoginPage() {
                     lineHeight: 1.55,
                   }}
                 >
-                  WhatsApp: {GSN_SUPPORT_WHATSAPP_DISPLAY}. Email:{" "}
-                  {GSN_SUPPORT_EMAIL}.
+                  WhatsApp: {GSN_SIGN_IN_SUPPORT_WHATSAPP_NUMBER}. Email:{" "}
+                  {GSN_SIGN_IN_SUPPORT_EMAIL}.
                 </div>
               </div>
             ) : null}

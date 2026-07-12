@@ -150,8 +150,14 @@ assertContains(
 
 assertContains(
   "src/pages/LoginPage.tsx",
-  /GSN_SUPPORT_WHATSAPP_NUMBER = "447903165266"[\s\S]*GSN_SUPPORT_EMAIL = "support_gsn@GMFN-GSN\.uk\.co"[\s\S]*setSupportOpen\(true\)[\s\S]*login\.support\.open[\s\S]*Need sign-in help\?[\s\S]*Do not send any password[\s\S]*login\.support\.whatsapp[\s\S]*login\.support\.email/,
+  /GSN_SIGN_IN_SUPPORT_EMAIL[\s\S]*GSN_SIGN_IN_SUPPORT_WHATSAPP_NUMBER[\s\S]*signInSupportEmailUrl[\s\S]*signInSupportWhatsAppUrl[\s\S]*setSupportOpen\(true\)[\s\S]*login\.support\.open[\s\S]*Need sign-in help\?[\s\S]*Do not send any password[\s\S]*login\.support\.whatsapp[\s\S]*login\.support\.email/,
   "Login must keep the pre-auth sign-in support bridge with WhatsApp, email, no-password warning, and blocked-state visibility."
+);
+
+assertContains(
+  "src/lib/gsnSupportContacts.ts",
+  /GSN_SIGN_IN_SUPPORT_WHATSAPP_NUMBER = "\+44 7903 165266"[\s\S]*GSN_SIGN_IN_SUPPORT_EMAIL = "support_gsn@GMFN-GSN\.uk\.co"[\s\S]*buildWhatsAppChatUrl[\s\S]*signInSupportEmailUrl/,
+  "The pre-auth sign-in support contact values must stay centralized in the shared support contact helper."
 );
 
 assertContains(
