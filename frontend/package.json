@@ -134,6 +134,7 @@
     "audit:money-in-identity-fallback": "node tools/audit-money-in-identity-fallback.mjs",
     "audit:payment-instruction-phone-rows": "node tools/audit-payment-instruction-phone-rows.mjs",
     "smoke:marketplace-boundaries": "node tools/smoke-marketplace-boundaries.mjs",
+    "smoke:shop-assets-slot-replacement": "node tools/smoke-shop-assets-slot-replacement.mjs",
     "smoke:evidence-display-boundary-batch": "node tools/smoke-evidence-display-boundary-batch.mjs",
     "smoke:community-confirmation-outcome-boundary": "node tools/smoke-community-confirmation-outcome-boundary.mjs",
     "smoke:community-verification-boundary": "node tools/smoke-community-verification-boundary.mjs",
