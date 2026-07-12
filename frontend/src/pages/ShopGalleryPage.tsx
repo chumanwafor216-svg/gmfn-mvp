@@ -1111,6 +1111,32 @@ function normalizeProduct(raw: any, slotNumber: number): ShopProduct | null {
   };
 }
 
+function productDisplayRank(item: ShopProduct | null | undefined): {
+  createdMs: number;
+  id: number;
+} {
+  const createdMs = Date.parse(firstMeaningful(item?.createdAt));
+  return {
+    createdMs: Number.isFinite(createdMs) ? createdMs : 0,
+    id: positiveNumber(item?.id),
+  };
+}
+
+function isNewerProductCandidate(
+  candidate: ShopProduct,
+  current: ShopProduct | null | undefined
+): boolean {
+  if (!current) return true;
+
+  const candidateRank = productDisplayRank(candidate);
+  const currentRank = productDisplayRank(current);
+  if (candidateRank.createdMs !== currentRank.createdMs) {
+    return candidateRank.createdMs > currentRank.createdMs;
+  }
+
+  return candidateRank.id > currentRank.id;
+}
+
 function arrangeProductsByPublicBlock(items: ShopProduct[]): ShopProduct[] {
   const slots: (ShopProduct | null)[] = Array.from(
     { length: GALLERY_SLOTS_TOTAL },
@@ -1120,12 +1146,10 @@ function arrangeProductsByPublicBlock(items: ShopProduct[]): ShopProduct[] {
 
   items.forEach((item) => {
     const slotNumber = positiveNumber(item?.slotNumber);
-    if (
-      slotNumber >= 1 &&
-      slotNumber <= GALLERY_SLOTS_TOTAL &&
-      !slots[slotNumber - 1]
-    ) {
-      slots[slotNumber - 1] = item;
+    if (slotNumber >= 1 && slotNumber <= GALLERY_SLOTS_TOTAL) {
+      if (isNewerProductCandidate(item, slots[slotNumber - 1])) {
+        slots[slotNumber - 1] = item;
+      }
       return;
     }
 

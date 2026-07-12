@@ -420,6 +420,11 @@ assertContains(
   "Public Shop diary cards must keep white product-frame borders instead of heavy dark outlines."
 );
 
+assertContains(
+  /function productDisplayRank\([\s\S]*?createdMs[\s\S]*?id[\s\S]*?function isNewerProductCandidate\([\s\S]*?candidateRank\.createdMs[\s\S]*?candidateRank\.id > currentRank\.id[\s\S]*?function arrangeProductsByPublicBlock\([\s\S]*?if \(slotNumber >= 1 && slotNumber <= GALLERY_SLOTS_TOTAL\) \{[\s\S]*?isNewerProductCandidate\(item, slots\[slotNumber - 1\]\)[\s\S]*?slots\[slotNumber - 1\] = item;[\s\S]*?return;[\s\S]*?overflow\.push\(item\);/,
+  "Public Shop arranged diary blocks must keep the newest product for a numbered block and must not spill duplicate same-block products into another visible card."
+);
+
 const rawActionPattern =
   /<(button|a|summary)\b|role="button"|data-gmfn-action-root|data-cta-id/g;
 while ((match = rawActionPattern.exec(shopGallerySource))) {
