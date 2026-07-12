@@ -705,6 +705,8 @@ export async function updateMyProfile(payload: {
   });
   rememberGmfnIdFrom(out);
   rememberRoleFrom(out);
+  getMeInFlight = null;
+  getMeCache = { key: String(getAccessToken() || ""), value: out, storedAt: Date.now() };
   return out;
 }
 
