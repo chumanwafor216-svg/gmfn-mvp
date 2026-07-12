@@ -1202,6 +1202,111 @@ def test_public_gallery_replacing_numbered_block_hides_previous_live_product(
     assert block_six_items[0]["name"] == "Replacement block six"
 
 
+def test_public_gallery_reads_hide_older_duplicate_active_numbered_blocks(
+    client,
+    override_current_user_user,
+):
+    _ensure_marketplace_tables()
+
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO users (
+                    id, email, hashed_password, display_name, role, gmfn_id
+                ) VALUES (
+                    1, 'seller@example.com', 'hashed', 'Block Owner', 'user', 'GMFN-U-BLOCKDEDUP'
+                )
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO clans (id, name, marketplace_name, invite_code)
+                VALUES (1, 'Homeland ISA', 'Homeland ISA Marketplace', 'BLOCKDEDUP1')
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO clan_memberships (id, clan_id, user_id, role, personal_pool_balance)
+                VALUES (1, 1, 1, 'member', 0)
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_shops (
+                    id, clan_id, owner_user_id, shop_name, description, is_active
+                ) VALUES (
+                    1, 1, 1, 'Block Dedup Shop', 'Duplicate slot test', 1
+                )
+                """
+            )
+        )
+        for slot in range(1, 13):
+            conn.execute(
+                text(
+                    """
+                    INSERT INTO marketplace_products (
+                        id, clan_id, shop_id, seller_user_id, title, description,
+                        price, currency, image_url, visibility_mode, is_active
+                    ) VALUES (
+                        :id, 1, 1, 1, :title, :description,
+                        '1000', 'NGN', :image_url, 'community_visible', 1
+                    )
+                    """
+                ),
+                {
+                    "id": slot,
+                    "title": f"Original block {slot}",
+                    "description": f"[BLOCK:{slot}] Original public block",
+                    "image_url": f"/uploads/marketplace/images/original-{slot}.jpg",
+                },
+            )
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_products (
+                    id, clan_id, shop_id, seller_user_id, title, description,
+                    price, currency, image_url, visibility_mode, is_active
+                ) VALUES (
+                    13, 1, 1, 1, 'Newest block six', '[BLOCK:6] Newer duplicate block',
+                    '2000', 'NGN', '/uploads/marketplace/images/newest-6.jpg',
+                    'community_visible', 1
+                )
+                """
+            )
+        )
+
+    products_res = client.get("/marketplace/products?clan_id=1&shop_id=1")
+    assert products_res.status_code == 200, products_res.text
+    product_items = products_res.json()["items"]
+    assert len(product_items) == 12
+    assert [item["name"] for item in product_items if item["public_block_number"] == 6] == [
+        "Newest block six"
+    ]
+
+    owner_res = client.get("/marketplace/shops/me?clan_id=1")
+    assert owner_res.status_code == 200, owner_res.text
+    owner_products = owner_res.json()["products"]
+    assert len(owner_products) == 12
+    assert [item["name"] for item in owner_products if item["public_block_number"] == 6] == [
+        "Newest block six"
+    ]
+
+    public_res = client.get("/marketplace/public/shop/GMFN-U-BLOCKDEDUP?clan_id=1")
+    assert public_res.status_code == 200, public_res.text
+    public_products = public_res.json()["products"]
+    assert len(public_products) == 12
+    assert [item["name"] for item in public_products if item["public_block_number"] == 6] == [
+        "Newest block six"
+    ]
+
+
 def test_public_gallery_extra_shop_block_entitlement_expands_slot_limit(
     client,
     override_current_user_user,

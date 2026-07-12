@@ -1071,6 +1071,36 @@ def _retire_replaced_public_block_products(
     return retired_products, removed_reposts
 
 
+def _dedupe_active_public_block_products(
+    items: list[MarketplaceProduct],
+) -> list[MarketplaceProduct]:
+    seen_blocks: set[tuple[int, int]] = set()
+    visible: list[MarketplaceProduct] = []
+
+    for product in items:
+        visibility_mode = _safe_str(
+            getattr(product, "visibility_mode", None),
+            VISIBILITY_COMMUNITY,
+        )
+        block_number = _public_product_block_number(
+            getattr(product, "description", None)
+        )
+        is_public_block = (
+            bool(getattr(product, "is_active", True))
+            and visibility_mode in {VISIBILITY_COMMUNITY, "public", "community"}
+            and block_number is not None
+        )
+        if is_public_block:
+            key = (int(getattr(product, "shop_id", 0) or 0), int(block_number))
+            if key in seen_blocks:
+                continue
+            seen_blocks.add(key)
+
+        visible.append(product)
+
+    return visible
+
+
 def _shop_public_product_slots_total(
     db: Session,
     *,
@@ -1732,6 +1762,7 @@ def _owner_public_shop_payload(
         .limit(int(product_limit))
         .all()
     )
+    product_rows = _dedupe_active_public_block_products(product_rows)[: int(product_limit)]
 
     return {
         "ok": True,
@@ -1942,6 +1973,7 @@ def get_public_marketplace_shop_by_gmfn_id(
         for row in product_rows
     ):
         product_rows = [requested_product, *product_rows]
+    product_rows = _dedupe_active_public_block_products(product_rows)[: int(product_limit)]
 
     spotlight_clan_ids = (
         [int(effective_clan_id)]
@@ -2540,6 +2572,7 @@ def list_marketplace_products(
             .limit(int(limit))
             .all()
         )
+        items = _dedupe_active_public_block_products(items)[: int(limit)]
 
         return {
             "items": [_product_out(db, x) for x in items],
@@ -2584,6 +2617,7 @@ def list_marketplace_products(
         ),
         reverse=True,
     )
+    visible_items = _dedupe_active_public_block_products(visible_items)
     visible_items = visible_items[: int(limit)]
 
     return {
