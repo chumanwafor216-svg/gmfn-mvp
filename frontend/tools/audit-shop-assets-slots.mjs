@@ -118,6 +118,34 @@ assertContains(
   "Shop Assets live-block counter must use occupied arranged slots, not raw product row count."
 );
 
+if (/publicProducts\.length/.test(shopAssetsSource)) {
+  findings.push({
+    file: shopAssetsFile,
+    line: lineAt(shopAssetsSource, shopAssetsSource.search(/publicProducts\.length/)),
+    message:
+      "Shop Assets must not count raw public product rows for public gallery capacity or status; use occupiedPublicSlotCount from the arranged 12-slot gallery.",
+    text: shopAssetsSource.match(/publicProducts\.length[^,\n)]*/)?.[0] || "",
+  });
+}
+
+assertContains(
+  "src/pages/ShopAssetsPage.tsx",
+  /targetVisibility === "community_visible"[\s\S]*?!editingAlreadyPublic[\s\S]*?occupiedPublicSlotCount >= 12[\s\S]*?The public shop gallery already has 12 live blocks/,
+  "Shop Assets add guard must use visible occupied slots, not raw public product rows."
+);
+
+assertContains(
+  "src/pages/ShopAssetsPage.tsx",
+  /Public products: \{occupiedPublicSlotCount\} \/ 12[\s\S]*?occupiedPublicSlotCount > 0/,
+  "Shop Assets header public-products badge must report visible occupied slots."
+);
+
+assertContains(
+  "src/pages/ShopAssetsPage.tsx",
+  /<div style=\{sectionLabel\(\)\}>\{labelWithIcon\("shop", "Public"\)\}<\/div>[\s\S]*?\{occupiedPublicSlotCount\}[\s\S]*?Open gallery items/,
+  "Shop Assets readiness Public stat must report visible occupied slots."
+);
+
 assertContains(
   "src/pages/ShopAssetsPage.tsx",
   /stableHeight=\{isCompact \? 126 : 118\}[\s\S]*?gridTemplateRows: "18px 48px minmax\(0, 1fr\)"[\s\S]*?debugId=\{`shop-assets\.public-slot\.\$\{slotNumber\}\.select`\}/,
