@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from decimal import Decimal
 from typing import Dict, List, Optional
 
-from sqlalchemy import func, inspect
+from sqlalchemy import String, cast, func, inspect
 from sqlalchemy.orm import Session
 
 from app.db.models import Loan, PoolEvent
@@ -47,7 +47,7 @@ def compute_pool_balances(db: Session, *, clan_id: int, user_id: int, currency: 
         db.query(func.coalesce(func.sum(PoolEvent.amount), 0))
         .filter(
             PoolEvent.clan_id == int(clan_id),
-            PoolEvent.user_id == int(user_id),
+            cast(PoolEvent.user_id, String) == str(int(user_id)),
             PoolEvent.currency == ccy,
             PoolEvent.event_type == "deposit.confirmed",
         )
@@ -58,7 +58,7 @@ def compute_pool_balances(db: Session, *, clan_id: int, user_id: int, currency: 
         db.query(func.coalesce(func.sum(PoolEvent.amount), 0))
         .filter(
             PoolEvent.clan_id == int(clan_id),
-            PoolEvent.user_id == int(user_id),
+            cast(PoolEvent.user_id, String) == str(int(user_id)),
             PoolEvent.currency == ccy,
             PoolEvent.event_type == "withdrawal.confirmed",
         )
@@ -69,7 +69,7 @@ def compute_pool_balances(db: Session, *, clan_id: int, user_id: int, currency: 
         db.query(func.coalesce(func.sum(PoolEvent.amount), 0))
         .filter(
             PoolEvent.clan_id == int(clan_id),
-            PoolEvent.user_id == int(user_id),
+            cast(PoolEvent.user_id, String) == str(int(user_id)),
             PoolEvent.currency == ccy,
             PoolEvent.event_type == "deposit.requested",
         )
@@ -80,7 +80,7 @@ def compute_pool_balances(db: Session, *, clan_id: int, user_id: int, currency: 
         db.query(func.coalesce(func.sum(PoolEvent.amount), 0))
         .filter(
             PoolEvent.clan_id == int(clan_id),
-            PoolEvent.user_id == int(user_id),
+            cast(PoolEvent.user_id, String) == str(int(user_id)),
             PoolEvent.currency == ccy,
             PoolEvent.event_type == "withdrawal.requested",
         )
@@ -101,7 +101,7 @@ def compute_pool_balances(db: Session, *, clan_id: int, user_id: int, currency: 
             db.query(func.coalesce(func.sum(Loan.pool_used), 0))
             .filter(
                 Loan.clan_id == int(clan_id),
-                Loan.borrower_user_id == int(user_id),
+                cast(Loan.borrower_user_id, String) == str(int(user_id)),
                 Loan.currency == ccy,
                 Loan.status.in_(["pending", "approved"]),
             )

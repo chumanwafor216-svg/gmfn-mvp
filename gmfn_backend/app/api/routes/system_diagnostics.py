@@ -123,6 +123,10 @@ def _safe_probe(db: Session, sql: str, params: dict[str, Any]) -> dict[str, Any]
         value = db.execute(text(sql), params).scalar()
         return {"ok": True, "value": str(value)}
     except Exception as exc:
+        try:
+            db.rollback()
+        except Exception:
+            pass
         return {
             "ok": False,
             "error_type": type(exc).__name__,
@@ -162,39 +166,39 @@ def finance_readiness_diagnostics(
         """
         SELECT COUNT(*)
         FROM clan_memberships
-        WHERE user_id = :user_id
+        WHERE CAST(user_id AS TEXT) = :user_id
           AND left_at IS NULL
         """,
-        {"user_id": user_id},
+        {"user_id": str(user_id)},
     )
     loan_rows = _safe_probe(
         db,
-        "SELECT COUNT(*) FROM loans WHERE borrower_user_id = :user_id",
-        {"user_id": user_id},
+        "SELECT COUNT(*) FROM loans WHERE CAST(borrower_user_id AS TEXT) = :user_id",
+        {"user_id": str(user_id)},
     )
     pool_event_rows = _safe_probe(
         db,
-        "SELECT COUNT(*) FROM pool_events WHERE user_id = :user_id",
-        {"user_id": user_id},
+        "SELECT COUNT(*) FROM pool_events WHERE CAST(user_id AS TEXT) = :user_id",
+        {"user_id": str(user_id)},
     )
     reserved_pool_probe = _safe_probe(
         db,
         """
         SELECT COALESCE(SUM(pool_used), 0)
         FROM loans
-        WHERE borrower_user_id = :user_id
+        WHERE CAST(borrower_user_id AS TEXT) = :user_id
         """,
-        {"user_id": user_id},
+        {"user_id": str(user_id)},
     )
     locked_guarantee_probe = _safe_probe(
         db,
         """
         SELECT COALESCE(SUM(locked_amount - released_amount), 0)
         FROM loan_guarantors
-        WHERE guarantor_user_id = :user_id
+        WHERE CAST(guarantor_user_id AS TEXT) = :user_id
           AND status = 'approved'
         """,
-        {"user_id": user_id},
+        {"user_id": str(user_id)},
     )
 
     required_columns = {

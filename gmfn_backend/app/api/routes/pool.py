@@ -5,7 +5,7 @@ from decimal import Decimal
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import func, inspect
+from sqlalchemy import String, cast, func, inspect
 from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user
@@ -138,7 +138,8 @@ def pool_me_summary(
                 )
             )
             .filter(
-                LoanGuarantor.guarantor_user_id == int(current_user.id),
+                cast(LoanGuarantor.guarantor_user_id, String)
+                == str(int(current_user.id)),
                 LoanGuarantor.status == "approved",
             )
             .scalar()
@@ -186,7 +187,7 @@ def pool_me(
         db.query(PoolEvent)
         .filter(
             PoolEvent.clan_id == cid,
-            PoolEvent.user_id == uid,
+            cast(PoolEvent.user_id, String) == str(uid),
             PoolEvent.currency == currency,
         )
         .order_by(PoolEvent.id.desc())

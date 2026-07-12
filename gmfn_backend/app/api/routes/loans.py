@@ -7,7 +7,7 @@ import json
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import inspect, text
+from sqlalchemy import String, cast, inspect, text
 from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user
@@ -215,7 +215,7 @@ def _list_my_loans_with_available_columns(
         SELECT {", ".join(selected)}
         FROM loans
         WHERE clan_id = :clan_id
-          AND borrower_user_id = :user_id
+          AND CAST(borrower_user_id AS TEXT) = :user_id
         ORDER BY id DESC
         LIMIT :limit
         """
@@ -225,7 +225,7 @@ def _list_my_loans_with_available_columns(
             sql,
             {
                 "clan_id": int(clan_id),
-                "user_id": int(user_id),
+                "user_id": str(int(user_id)),
                 "limit": int(limit),
             },
         )
@@ -257,7 +257,7 @@ def list_my_loans(
     items = (
         db.query(Loan)
         .filter(Loan.clan_id == int(clan.id))
-        .filter(Loan.borrower_user_id == _uid(current_user))
+        .filter(cast(Loan.borrower_user_id, String) == str(_uid(current_user)))
         .order_by(Loan.id.desc())
         .limit(int(limit))
         .all()
