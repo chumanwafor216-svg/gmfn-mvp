@@ -1,6 +1,7 @@
 # app/api/routes/admin_bank_debug.py
 from __future__ import annotations
 
+import json
 from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -12,6 +13,16 @@ from app.db.models import User
 from app.db.bank_models import BankEvent, ExpectedPayment
 
 router = APIRouter(prefix="/admin/bank", tags=["admin"])
+
+
+def _safe_meta_json(raw: Optional[str]) -> dict[str, Any]:
+    if not raw:
+        return {}
+    try:
+        parsed = json.loads(raw)
+        return parsed if isinstance(parsed, dict) else {}
+    except Exception:
+        return {}
 
 
 def _admin_only(current_user: User) -> None:
@@ -69,21 +80,35 @@ def admin_expected_payments_recent(
         q = q.filter(ExpectedPayment.status == status)
 
     rows = q.order_by(ExpectedPayment.id.desc()).limit(int(limit)).all()
-    items = [
-        {
-            "id": r.id,
-            "clan_id": r.clan_id,
-            "user_id": r.user_id,
-            "expected_type": r.expected_type,
-            "amount": str(r.amount),
-            "currency": r.currency,
-            "reference_display": r.reference_display,
-            "reference_normalized": r.reference_normalized,
-            "status": r.status,
-            "status_reason": r.status_reason,
-            "bank_event_id": r.bank_event_id,
-            "created_at": r.created_at,
-        }
-        for r in rows
-    ]
+    items = []
+    for r in rows:
+        meta = _safe_meta_json(getattr(r, "meta_json", None))
+        latest_proof = meta.get("latest_payment_proof")
+        if not isinstance(latest_proof, dict):
+            latest_proof = {}
+
+        items.append(
+            {
+                "id": r.id,
+                "clan_id": r.clan_id,
+                "user_id": r.user_id,
+                "expected_type": r.expected_type,
+                "amount": str(r.amount),
+                "currency": r.currency,
+                "reference_display": r.reference_display,
+                "reference_normalized": r.reference_normalized,
+                "status": r.status,
+                "status_reason": r.status_reason,
+                "bank_event_id": r.bank_event_id,
+                "created_at": r.created_at,
+                "meta": meta,
+                "meta_json": meta,
+                "proof_status": meta.get("proof_status"),
+                "proof_status_text": meta.get("proof_status_text"),
+                "proof_filename": latest_proof.get("original_filename")
+                or latest_proof.get("stored_filename"),
+                "proof_submitted_at": latest_proof.get("submitted_at")
+                or meta.get("proof_submitted_at"),
+            }
+        )
     return {"items": items, "total": len(items)}
