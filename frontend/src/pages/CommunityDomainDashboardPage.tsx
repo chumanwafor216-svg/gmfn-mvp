@@ -1095,6 +1095,7 @@ function pageShell(): React.CSSProperties {
     width: "100%",
     display: "grid",
     gap: 16,
+    alignContent: "start",
     padding: "0 0 28px",
     boxSizing: "border-box",
   };
@@ -1428,6 +1429,33 @@ function isCommunityDomainInSetup(status: any, domain: any): boolean {
     billingStatus.includes("quote") ||
     activationStatus.includes("not active") ||
     activationStatus.includes("waiting")
+  );
+}
+
+function isCommunityDomainOperational(status: any, domain: any): boolean {
+  const domainStatus = compactStatus(status?.domain_status || domain?.status).toLowerCase();
+  const billingStatus = compactStatus(status?.billing_status || domain?.billing_status).toLowerCase();
+  const activationStatus = compactStatus(
+    status?.activation_status || domain?.activation_status
+  ).toLowerCase();
+  return (
+    domainStatus.includes("active") &&
+    billingStatus.includes("active") &&
+    activationStatus.includes("active")
+  );
+}
+
+function firstAvailableOperationalLaneKey(lanes: any[], status: any): string {
+  const verificationStatus = compactStatus(status?.verification_status).toLowerCase();
+  const preferredKeys =
+    verificationStatus === "verified"
+      ? ["members", "structure", "modules", "governance", "billing"]
+      : ["modules", "members", "structure", "governance", "billing"];
+  const laneKeys = lanes.map((lane) => cleanText(lane?.lane_key)).filter(Boolean);
+  return (
+    preferredKeys.find((key) => laneKeys.includes(key)) ||
+    laneKeys.find((key) => key !== "settings") ||
+    "settings"
   );
 }
 
@@ -2396,6 +2424,7 @@ export default function CommunityDomainDashboardPage() {
     MEMBER_DETAIL_OPTIONS.find((option) => option.key === activeMemberDetail) ||
     MEMBER_DETAIL_OPTIONS[0];
   const domainInSetup = isCommunityDomainInSetup(status, domain);
+  const domainOperational = isCommunityDomainOperational(status, domain);
   const pageTitle = domainInSetup
     ? "Community Domain setup"
     : "Community Domain dashboard";
@@ -2420,6 +2449,12 @@ export default function CommunityDomainDashboardPage() {
   const primaryActionLane =
     lanes.find((lane) => lane.lane_key === primaryActionLaneKey) || selectedLane;
   const primaryActionLaneLabel = laneDisplayLabel(primaryActionLane, "work");
+  const operationalLaneKey = firstAvailableOperationalLaneKey(lanes, status);
+  const operationalLane =
+    lanes.find((lane) => lane.lane_key === operationalLaneKey) || primaryActionLane;
+  const operationalLaneLabel = laneDisplayLabel(operationalLane, "work");
+  const showDomainWorkSurface =
+    !domainOperational || showAdvancedTools || setupJourneyMode === "edit";
   const primaryActionFallbackNote =
     !setupPrimaryActionHasLane && setupPrimaryActionLaneKey === "verification" && hasServicesLane
       ? "GSN opens Services because authority verification is shown there as a readiness row. Actual authority verification still needs its separate owner or admin path."
@@ -3751,17 +3786,19 @@ export default function CommunityDomainDashboardPage() {
         onSubmit={submitDomainNotice}
       />
 
-      <PageTopNav
-        sectionLabel="Community Domain"
-        title={pageTitle}
-        subtitle={
-          domainInSetup
-            ? "Create this Community Domain one step at a time."
-            : "Operate this Community Domain without mixing setup, billing, and verification."
-        }
-        backTo={APP_ROUTES.COMMUNITY}
-        backLabel="Back"
-      />
+      {!domainOperational ? (
+        <PageTopNav
+          sectionLabel="Community Domain"
+          title={pageTitle}
+          subtitle={
+            domainInSetup
+              ? "Create this Community Domain one step at a time."
+              : "Operate this Community Domain without mixing setup, billing, and verification."
+          }
+          backTo={APP_ROUTES.COMMUNITY}
+          backLabel="Back"
+        />
+      ) : null}
 
       {loading ? (
         <section style={whiteCard()}>
@@ -3898,24 +3935,45 @@ export default function CommunityDomainDashboardPage() {
                   <GsnRealisticIcon name="records-folder" size={42} decorative />
                 </span>
                 <div style={{ minWidth: 0 }}>
-                  <div style={sectionLabel()}>Create / setup</div>
+                  <div style={sectionLabel()}>
+                    {domainOperational ? "Live domain" : "Create / setup"}
+                  </div>
                   <h2 style={{ margin: "6px 0 0", fontSize: 24, lineHeight: 1.12 }}>
                     {operatingStateCopy.heading}
                   </h2>
                   <div style={{ ...helperText(), marginTop: 8 }}>
-                    Fill the current setup step, save it, then GSN moves you forward.
+                    {domainOperational
+                      ? "This domain is active. Use the operating lanes now; setup remains available only when details or verification evidence need attention."
+                      : "Fill the current setup step, save it, then GSN moves you forward."}
                   </div>
                 </div>
               </div>
-              <StableButton
-                type="button"
-                kind="primary"
-                fullWidth
-                debugId="community-domain-dashboard.setup-focus"
-                onClick={() => openSetupJourney("setup")}
-              >
-                Continue setup
-              </StableButton>
+              {domainOperational ? (
+                <StableButton
+                  type="button"
+                  kind="primary"
+                  fullWidth
+                  debugId="community-domain-dashboard.operational-focus"
+                  onClick={() => {
+                    setSetupJourneyMode("setup");
+                    setShowAdvancedTools(true);
+                    setActiveLane(operationalLaneKey);
+                    setMessage("");
+                  }}
+                >
+                  Open live actions
+                </StableButton>
+              ) : (
+                <StableButton
+                  type="button"
+                  kind="primary"
+                  fullWidth
+                  debugId="community-domain-dashboard.setup-focus"
+                  onClick={() => openSetupJourney("setup")}
+                >
+                  Continue setup
+                </StableButton>
+              )}
               <StableButton
                 type="button"
                 kind="secondary"
@@ -3923,7 +3981,7 @@ export default function CommunityDomainDashboardPage() {
                 debugId="community-domain-dashboard.edit-setup-focus"
                 onClick={() => openSetupJourney("edit")}
               >
-                Edit setup
+                {domainOperational ? "Edit setup details" : "Edit setup"}
               </StableButton>
             </div>
           </section>
@@ -4268,6 +4326,7 @@ export default function CommunityDomainDashboardPage() {
             </>
           ) : null}
 
+          {showDomainWorkSurface ? (
           <section
             style={{
               display: "grid",
@@ -6329,6 +6388,7 @@ export default function CommunityDomainDashboardPage() {
               </div>
             </div>
           </section>
+          ) : null}
 
           <section style={whiteCard()}>
             <div style={{ display: "grid", gap: 10 }}>
@@ -6348,7 +6408,7 @@ export default function CommunityDomainDashboardPage() {
                   setShowAdvancedTools((current) => {
                     const next = !current;
                     if (next) {
-                      setActiveLane(primaryActionLaneKey);
+                      setActiveLane(domainOperational ? operationalLaneKey : primaryActionLaneKey);
                     }
                     return next;
                   })

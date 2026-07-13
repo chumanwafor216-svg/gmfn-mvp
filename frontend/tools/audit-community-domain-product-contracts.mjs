@@ -444,6 +444,13 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
+  /function pageShell\(\)[\s\S]*display: "grid"[\s\S]*alignContent: "start"[\s\S]*isCommunityDomainOperational[\s\S]*firstAvailableOperationalLaneKey[\s\S]*domainOperational[\s\S]*operationalLaneKey[\s\S]*showDomainWorkSurface[\s\S]*!\{domainOperational\} \? \(|!domainOperational \? \([\s\S]*PageTopNav[\s\S]*Live domain[\s\S]*This domain is active\. Use the operating lanes now[\s\S]*community-domain-dashboard\.operational-focus[\s\S]*Open live actions[\s\S]*Edit setup details[\s\S]*setActiveLane\(domainOperational \? operationalLaneKey : primaryActionLaneKey\)/,
+  "Active Community Domains must hand off to live operating lanes by default, keeping setup/edit available without trapping active domains in the setup tunnel.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
   /setupStepPlaceholder[\s\S]*Saturday fitness[\s\S]*Snapfit partner[\s\S]*Create Community Domain[\s\S]*setupStepIndex \+ 1[\s\S]*SETUP_STEP_OPTIONS\.length[\s\S]*setupStepPlaceholder\(activeSetupStep, domain, setupDraft\)/,
   "Community Domain dashboard setup must show one setup step at a time and use Pillar/charity-aware examples instead of school-only prompts.",
   { frontend: true }
