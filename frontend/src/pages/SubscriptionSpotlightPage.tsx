@@ -10,10 +10,16 @@ import {
   getMe,
   getMyIdentityRisk,
   getSelectedClanId,
+  listMyCommunityDomains,
   safeCopy,
   uploadMarketplaceImageFile,
   uploadMarketplaceVideoFile,
 } from "../lib/api";
+import {
+  communityDomainFeatureIsOff,
+  communityDomainFeatureModeFromPayload,
+  communityDomainFeatureOffMessage,
+} from "../lib/communityDomainFeaturePolicy";
 import { buildGsnPaymentInstructionPackage } from "../lib/gsnSnapshotPaper";
 import {
   SPOTLIGHT_MAX_IMAGE_BYTES,
@@ -443,6 +449,7 @@ export default function SubscriptionSpotlightPage() {
   const [expectedPayments, setExpectedPayments] = useState<ExpectedPaymentRecord[]>([]);
   const [spotlights, setSpotlights] = useState<BroadcastRecord[]>([]);
   const [spotlightStatus, setSpotlightStatus] = useState<SpotlightStatusRecord | null>(null);
+  const [communityDomainPolicyPayload, setCommunityDomainPolicyPayload] = useState<any>(null);
   const [createdInstruction, setCreatedInstruction] = useState<ExpectedPaymentRecord | null>(null);
   const [selectedCredits, setSelectedCredits] = useState(1);
   const [confirmedQuoteKey, setConfirmedQuoteKey] = useState("");
@@ -528,15 +535,18 @@ export default function SubscriptionSpotlightPage() {
       setExpectedPayments([]);
       setSpotlights([]);
       setSpotlightStatus(null);
+      setCommunityDomainPolicyPayload(null);
     }
     try {
-      const [meRes, riskRes, instructionConfigRes] = await Promise.all([
+      const [meRes, riskRes, instructionConfigRes, domainsRes] = await Promise.all([
         getMe().catch(() => null),
         getMyIdentityRisk().catch(() => null),
         apiJson<any>("/api/payment-instructions/my").catch(() => null),
+        listMyCommunityDomains().catch(() => null),
       ]);
       if (!canApplyLoad(loadSeq)) return;
       setMe(meRes || null);
+      setCommunityDomainPolicyPayload(domainsRes || null);
       setSettlement((instructionConfigRes?.settlement || null) as SettlementRecord | null);
       setSpotlightConfig((instructionConfigRes?.spotlight_config || null) as SpotlightConfigRecord | null);
 
@@ -652,6 +662,22 @@ export default function SubscriptionSpotlightPage() {
   const shopName = firstTruthy(shop?.name, me?.display_name, me?.gmfn_id, "Your shop");
   const shopHeroImage = resolveAssetSrc(shop?.image_url);
   const shopClanId = Number(shop?.clan_id || selectedClanId || 0);
+  const spotlightDomainFeatureMatch = useMemo(
+    () =>
+      communityDomainFeatureModeFromPayload(
+        communityDomainPolicyPayload,
+        shopClanId || selectedClanId,
+        "spotlight"
+      ),
+    [communityDomainPolicyPayload, selectedClanId, shopClanId]
+  );
+  const spotlightFeatureOff = communityDomainFeatureIsOff(
+    spotlightDomainFeatureMatch
+  );
+  const spotlightFeatureOffText = communityDomainFeatureOffMessage(
+    "Spotlight",
+    spotlightDomainFeatureMatch?.domainName || shopName
+  );
   const activePaymentReference = firstTruthy(latestPayment?.reference_display, (latestPayment as any)?.reference);
   const activePaymentAmount = firstTruthy(latestPayment?.amount);
   const activePaymentCurrency = firstTruthy(latestPayment?.currency, "GBP");
@@ -721,6 +747,10 @@ export default function SubscriptionSpotlightPage() {
     }
     if (!quoteConfirmed) {
       showNotice("info", `Confirm this quote first: ${agreementText}.`);
+      return;
+    }
+    if (spotlightFeatureOff) {
+      showNotice("error", spotlightFeatureOffText);
       return;
     }
     setCreatingInstruction(true);
@@ -862,6 +892,10 @@ export default function SubscriptionSpotlightPage() {
 
     if (identityBlocked) {
       showNotice("error", "Identity review is blocking paid spotlight publishing. Complete identity review first, then return here.");
+      return;
+    }
+    if (spotlightFeatureOff) {
+      showNotice("error", spotlightFeatureOffText);
       return;
     }
     if (!canPublishPaid) {
@@ -1062,15 +1096,32 @@ export default function SubscriptionSpotlightPage() {
             <SecondaryButton
               type="button"
               onClick={() => void createPaymentInstruction()}
-              disabled={creatingInstruction || !shop?.id}
+              disabled={creatingInstruction || !shop?.id || spotlightFeatureOff}
               busy={creatingInstruction}
               busyLabel="Generating payment code..."
               stableHeight={54}
               debugId="subscription-spotlight.generate-payment-code"
-              style={{ ...brandActionButton("secondary", creatingInstruction || !shop?.id), marginTop: 10, minHeight: 54, width: "100%" }}
+              style={{ ...brandActionButton("secondary", creatingInstruction || !shop?.id || spotlightFeatureOff), marginTop: 10, minHeight: 54, width: "100%" }}
             >
               {creatingInstruction ? "Generating payment code..." : "Generate payment code"}
             </SecondaryButton>
+            {spotlightFeatureOff ? (
+              <div
+                style={{
+                  marginTop: 12,
+                  borderRadius: 16,
+                  border: "1px solid rgba(245,158,11,0.24)",
+                  background: "linear-gradient(180deg, #FFF8E7 0%, #FFFDF6 100%)",
+                  color: "#8A5A00",
+                  padding: "12px 14px",
+                  fontSize: 14,
+                  fontWeight: 850,
+                  lineHeight: 1.45,
+                }}
+              >
+                {spotlightFeatureOffText}
+              </div>
+            ) : null}
             <div style={{ marginTop: 14, ...brandHelperText(), fontWeight: 820 }}>
               Payment instructions expire {paymentDueDays} days after generation. Payment goes to the GSN platform account, not the community.
             </div>
@@ -1169,6 +1220,23 @@ export default function SubscriptionSpotlightPage() {
             </div>
           </div>
         ) : null}
+        {spotlightFeatureOff ? (
+          <div
+            style={{
+              marginTop: 14,
+              borderRadius: 16,
+              border: "1px solid rgba(245,158,11,0.24)",
+              background: "linear-gradient(180deg, #FFF8E7 0%, #FFFDF6 100%)",
+              color: "#8A5A00",
+              padding: "12px 14px",
+              fontSize: 14,
+              fontWeight: 850,
+              lineHeight: 1.45,
+            }}
+          >
+            {spotlightFeatureOffText}
+          </div>
+        ) : null}
 
         <div style={{ marginTop: 14, display: "grid", gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) 340px", gap: 14 }}>
           <div style={{ ...brandInnerCard(), display: "grid", gap: 12 }}>
@@ -1203,12 +1271,12 @@ export default function SubscriptionSpotlightPage() {
             <PrimaryButton
               type="button"
               onClick={() => void publishSpotlight()}
-              disabled={publishing}
+              disabled={publishing || spotlightFeatureOff}
               busy={publishing}
               busyLabel="Publishing..."
               stableHeight={58}
               debugId="subscription-spotlight.publish"
-              style={{ ...brandActionButton("primary", publishing), minHeight: 58 }}
+              style={{ ...brandActionButton("primary", publishing || spotlightFeatureOff), minHeight: 58 }}
             >
               {publishing ? "Publishing..." : "Publish Subscription Spotlight"}
             </PrimaryButton>

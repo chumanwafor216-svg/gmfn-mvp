@@ -1054,6 +1054,36 @@ export default function ShopControlPage() {
     "Spotlight",
     spotlightDomainFeatureMatch?.domainName || shopControlDomainFallbackName
   );
+  const vaultDomainFeatureMatch = useMemo(
+    () =>
+      communityDomainFeatureModeFromPayload(
+        communityDomainPolicyPayload,
+        shopControlPolicyCommunityId,
+        "vault"
+      ),
+    [communityDomainPolicyPayload, shopControlPolicyCommunityId]
+  );
+  const vaultFeatureOff = communityDomainFeatureIsOff(vaultDomainFeatureMatch);
+  const vaultFeatureOffText = communityDomainFeatureOffMessage(
+    "Vault",
+    vaultDomainFeatureMatch?.domainName || shopControlDomainFallbackName
+  );
+  const roscaCyclesDomainFeatureMatch = useMemo(
+    () =>
+      communityDomainFeatureModeFromPayload(
+        communityDomainPolicyPayload,
+        shopControlPolicyCommunityId,
+        "rosca_cycles"
+      ),
+    [communityDomainPolicyPayload, shopControlPolicyCommunityId]
+  );
+  const roscaCyclesFeatureOff = communityDomainFeatureIsOff(
+    roscaCyclesDomainFeatureMatch
+  );
+  const roscaCyclesFeatureOffText = communityDomainFeatureOffMessage(
+    "ROSCA Cycles",
+    roscaCyclesDomainFeatureMatch?.domainName || shopControlDomainFallbackName
+  );
   const routes = useMemo(
     () => ({
       dashboard: routeTarget(
@@ -2068,6 +2098,10 @@ export default function ShopControlPage() {
       showNotice("error", "Shop record is not available.");
       return;
     }
+    if (vaultFeatureOff) {
+      showNotice("error", vaultFeatureOffText);
+      return;
+    }
 
     setCreatingVaultInstruction(true);
     try {
@@ -2102,6 +2136,10 @@ export default function ShopControlPage() {
   async function createMerchantVerifyInstruction() {
     if (!shop?.id) {
       showNotice("error", "Shop record is not available.");
+      return;
+    }
+    if (marketplaceShopsFeatureOff) {
+      showNotice("error", marketplaceShopsFeatureOffText);
       return;
     }
 
@@ -2150,6 +2188,14 @@ export default function ShopControlPage() {
     }
     if (options.needsShop && !shop?.id) {
       showNotice("error", "Shop record is not available.");
+      return;
+    }
+    if (packageCode === "extra_shop_blocks" && marketplaceShopsFeatureOff) {
+      showNotice("error", marketplaceShopsFeatureOffText);
+      return;
+    }
+    if (packageCode === "rosca_cycle" && roscaCyclesFeatureOff) {
+      showNotice("error", roscaCyclesFeatureOffText);
       return;
     }
 
@@ -3772,10 +3818,31 @@ export default function ShopControlPage() {
                 />
               </div>
             ) : null}
+            {vaultFeatureOff ? (
+              <div
+                style={{
+                  marginTop: 10,
+                  borderRadius: 14,
+                  border: "1px solid rgba(245,158,11,0.24)",
+                  background: "linear-gradient(180deg, #FFF8E7 0%, #FFFDF6 100%)",
+                  color: "#8A5A00",
+                  padding: "10px 12px",
+                  fontSize: 13,
+                  fontWeight: 850,
+                  lineHeight: 1.45,
+                }}
+              >
+                {vaultFeatureOffText}
+              </div>
+            ) : null}
             <div style={{ marginTop: 8, ...controlGrid(isCompact, 160) }}>
               <PrimaryButton
                 onClick={() => createVaultInstruction(1)}
-                disabled={shopActionsLocked || creatingVaultInstruction}
+                disabled={
+                  shopActionsLocked ||
+                  creatingVaultInstruction ||
+                  vaultFeatureOff
+                }
                 busy={creatingVaultInstruction}
                 busyLabel="Preparing..."
                 fullWidth
@@ -3790,7 +3857,11 @@ export default function ShopControlPage() {
               </PrimaryButton>
               <SecondaryButton
                 onClick={() => createVaultInstruction(6)}
-                disabled={shopActionsLocked || creatingVaultInstruction}
+                disabled={
+                  shopActionsLocked ||
+                  creatingVaultInstruction ||
+                  vaultFeatureOff
+                }
                 busy={creatingVaultInstruction}
                 busyLabel="Preparing..."
                 fullWidth
@@ -3915,10 +3986,31 @@ export default function ShopControlPage() {
             </div>
             <div style={{ marginTop: 10, ...helperText() }}>{merchantVerifyEvidenceText}</div>
             <div style={{ marginTop: 12, ...helperText() }}>Start or renew verification</div>
+            {marketplaceShopsFeatureOff ? (
+              <div
+                style={{
+                  marginTop: 10,
+                  borderRadius: 14,
+                  border: "1px solid rgba(245,158,11,0.24)",
+                  background: "linear-gradient(180deg, #FFF8E7 0%, #FFFDF6 100%)",
+                  color: "#8A5A00",
+                  padding: "10px 12px",
+                  fontSize: 13,
+                  fontWeight: 850,
+                  lineHeight: 1.45,
+                }}
+              >
+                {marketplaceShopsFeatureOffText}
+              </div>
+            ) : null}
             <div style={{ marginTop: 8, ...controlGrid(isCompact, 160) }}>
               <PrimaryButton
                 onClick={() => createMerchantVerifyInstruction()}
-                disabled={shopActionsLocked || creatingMerchantVerifyInstruction}
+                disabled={
+                  shopActionsLocked ||
+                  creatingMerchantVerifyInstruction ||
+                  marketplaceShopsFeatureOff
+                }
                 busy={creatingMerchantVerifyInstruction}
                 busyLabel="Preparing..."
                 fullWidth
@@ -4162,6 +4254,48 @@ export default function ShopControlPage() {
                 />
               </div>
             ) : null}
+            {marketplaceShopsFeatureOff || roscaCyclesFeatureOff ? (
+              <div
+                style={{
+                  marginTop: 10,
+                  display: "grid",
+                  gap: 8,
+                }}
+              >
+                {marketplaceShopsFeatureOff ? (
+                  <div
+                    style={{
+                      borderRadius: 14,
+                      border: "1px solid rgba(245,158,11,0.24)",
+                      background: "linear-gradient(180deg, #FFF8E7 0%, #FFFDF6 100%)",
+                      color: "#8A5A00",
+                      padding: "10px 12px",
+                      fontSize: 13,
+                      fontWeight: 850,
+                      lineHeight: 1.45,
+                    }}
+                  >
+                    {marketplaceShopsFeatureOffText}
+                  </div>
+                ) : null}
+                {roscaCyclesFeatureOff ? (
+                  <div
+                    style={{
+                      borderRadius: 14,
+                      border: "1px solid rgba(245,158,11,0.24)",
+                      background: "linear-gradient(180deg, #FFF8E7 0%, #FFFDF6 100%)",
+                      color: "#8A5A00",
+                      padding: "10px 12px",
+                      fontSize: 13,
+                      fontWeight: 850,
+                      lineHeight: 1.45,
+                    }}
+                  >
+                    {roscaCyclesFeatureOffText}
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
             <div style={{ marginTop: 12, ...controlGrid(isCompact, 168) }}>
               <PrimaryButton
                 onClick={() =>
@@ -4169,7 +4303,11 @@ export default function ShopControlPage() {
                     needsShop: true,
                   })
                 }
-                disabled={shopActionsLocked || Boolean(creatingCommunityPackageCode)}
+                disabled={
+                  shopActionsLocked ||
+                  Boolean(creatingCommunityPackageCode) ||
+                  marketplaceShopsFeatureOff
+                }
                 busy={creatingCommunityPackageCode === "extra_shop_blocks"}
                 busyLabel="Preparing..."
                 fullWidth
@@ -4193,7 +4331,11 @@ export default function ShopControlPage() {
                 onClick={() =>
                   createCommunityPackageInstruction("rosca_cycle", "ROSCA cycle")
                 }
-                disabled={shopActionsLocked || Boolean(creatingCommunityPackageCode)}
+                disabled={
+                  shopActionsLocked ||
+                  Boolean(creatingCommunityPackageCode) ||
+                  roscaCyclesFeatureOff
+                }
                 busy={creatingCommunityPackageCode === "rosca_cycle"}
                 busyLabel="Preparing..."
                 fullWidth

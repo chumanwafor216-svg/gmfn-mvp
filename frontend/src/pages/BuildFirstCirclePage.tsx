@@ -1563,6 +1563,10 @@ export default function BuildFirstCirclePage() {
   const buildJoinInviteMessageForLink = useCallback((link: string): string => {
     if (communityDomainCircleMode) {
       return buildGsnInviteLinkPackage({
+        title: "GSN Community Domain Invite",
+        purpose:
+          "Open this invite to request entry into the named GSN Community Domain.",
+        communityLabel: "Community Domain",
         senderName: inviteSenderName,
         senderGsnId: gmfnId,
         communityName,

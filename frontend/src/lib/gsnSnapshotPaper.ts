@@ -250,18 +250,23 @@ export function buildGsnInviteLinkPackage(params: {
   senderName?: string;
   senderGsnId?: string;
   communityName?: string;
+  title?: string;
+  purpose?: string;
+  communityLabel?: string;
   inviteLink: string;
   messageLines?: Array<string | null | undefined | false>;
 }): string {
   return buildGsnSnapshotPaper({
-    title: "GSN Community Invite",
-    purpose: "Open this invite to request entry into the named GSN community.",
+    title: safeText(params.title) || "GSN Community Invite",
+    purpose:
+      safeText(params.purpose) ||
+      "Open this invite to request entry into the named GSN community.",
     reference: safeText(params.senderGsnId),
     link: params.inviteLink,
     context: [
       { label: "Sender", value: params.senderName },
       { label: "Sender GSN ID", value: params.senderGsnId },
-      { label: "Community", value: params.communityName },
+      { label: safeText(params.communityLabel) || "Community", value: params.communityName },
     ],
     bodyLines: cleanLines(params.messageLines),
     privacyNote:

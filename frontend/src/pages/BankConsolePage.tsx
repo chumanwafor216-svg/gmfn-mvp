@@ -1413,6 +1413,36 @@ export default function BankConsolePage() {
             </span>
           </div>
 
+          <div
+            style={{
+              marginTop: 14,
+              borderRadius: 16,
+              border: "1px solid rgba(12,79,168,0.18)",
+              background:
+                "linear-gradient(180deg, #F1F7FF 0%, #F8FBFF 100%)",
+              padding: "12px 14px",
+              display: "grid",
+              gap: 8,
+            }}
+          >
+            <div style={sectionLabel()}>Manual proof decision</div>
+            <div
+              style={{
+                color: "#25415F",
+                fontSize: 13,
+                lineHeight: 1.5,
+                fontWeight: 820,
+              }}
+            >
+              For Community Domain subscription rows with submitted proof, open
+              the matching row and use Approve after check or Reject proof.
+              Approve only after bank, receipt, or finance review. Other
+              expected payments may be listed here, but this panel does not
+              manually activate donations, event fees, ROSCA, Spotlight, Shop
+              Diary, or ordinary marketplace payments.
+            </div>
+          </div>
+
           <div style={{ marginTop: 16, display: "grid", gap: 10 }}>
             {expected.length > 0 ? (
               expected.map((row: BankConsoleRow, i: number) => {

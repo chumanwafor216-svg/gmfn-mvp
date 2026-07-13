@@ -3506,6 +3506,17 @@ export default function CommunityDomainDashboardPage() {
       packageBillingBoundary?.plain_language,
       "Current pilot package allowance only. Extra member bands, paid feature tariffs, and per-domain pricing are not automated here yet; use Billing capacity review before selling or promising upgraded limits."
     );
+  const packageBillingStatusFacts = [
+    ["Pricing", packageBillingBoundary?.pricing_model_status],
+    ["Paid upgrades", packageBillingBoundary?.paid_upgrade_status],
+    ["Member bands", packageBillingBoundary?.member_band_status],
+    ["Feature tariffs", packageBillingBoundary?.feature_tariff_status],
+    ["Domain tariffs", packageBillingBoundary?.domain_tariff_status],
+  ].map(([label, value]) => [label, cleanText(value, "not automated")]);
+  const packageBillingAdminAction = cleanText(
+    packageBillingBoundary?.admin_action_required,
+    "Use manual finance and capacity review before promising upgraded limits."
+  );
 
   async function loadAccessReviewItems(showLoading = false) {
     const requestDomainId = cleanText(communityDomainId);
@@ -4624,9 +4635,13 @@ export default function CommunityDomainDashboardPage() {
                   <div style={{ minWidth: 0 }}>
                     <div style={sectionLabel()}>
                       {showAdvancedTools
-                        ? "Opened lane"
+                        ? domainOperational
+                          ? "Live lane"
+                          : "Opened lane"
                         : setupJourneyMode === "edit"
                         ? "Edit setup"
+                        : domainOperational
+                        ? "Live domain actions"
                         : "Create / setup"}
                     </div>
                     <h2 style={{ margin: 0, fontSize: 26, lineHeight: 1.1 }}>
@@ -6469,6 +6484,23 @@ export default function CommunityDomainDashboardPage() {
                       <div style={{ ...helperText(), fontSize: 13 }}>
                         {packageTariffBoundaryText}
                       </div>
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns:
+                            "repeat(auto-fit, minmax(min(100%, 150px), 1fr))",
+                          gap: 8,
+                        }}
+                      >
+                        {packageBillingStatusFacts.map(([label, value]) => (
+                          <div key={label} style={statusBadge("manual review")}>
+                            {label}: {value}
+                          </div>
+                        ))}
+                      </div>
+                      <div style={{ ...helperText(), fontSize: 13 }}>
+                        {packageBillingAdminAction}
+                      </div>
                       <div style={{ ...helperText(), fontSize: 13 }}>
                         Feature policy decides whether members, admins, or only
                         the institution may use Spotlight, Demand Box, shops,
@@ -6826,10 +6858,12 @@ export default function CommunityDomainDashboardPage() {
             <div style={{ display: "grid", gap: 10 }}>
               <div style={sectionLabel()}>Other domain tools</div>
               <h2 style={{ margin: 0, fontSize: 22, lineHeight: 1.12 }}>
-                More tools.
+                {domainOperational ? "More operating tools." : "More tools."}
               </h2>
               <div style={helperText()}>
-                Open only when you need notices, access, or deeper checks.
+                {domainOperational
+                  ? "Open only when you need another live lane, notices, access, or deeper checks."
+                  : "Open only when you need notices, access, or deeper checks."}
               </div>
               <StableButton
                 type="button"
@@ -6846,7 +6880,11 @@ export default function CommunityDomainDashboardPage() {
                   })
                 }
               >
-                {showAdvancedTools ? "Hide other tools" : "Open other tools"}
+                {showAdvancedTools
+                  ? "Hide other tools"
+                  : domainOperational
+                  ? "Open operating tools"
+                  : "Open other tools"}
               </StableButton>
             </div>
           </section>
@@ -6882,8 +6920,9 @@ export default function CommunityDomainDashboardPage() {
             <div style={{ display: "grid", gap: 8 }}>
               <div style={sectionLabel()}>Boundary</div>
               <div style={helperText()}>
-                Setup view only. It does not confirm payment, activate the domain,
-                verify ownership, or expose private records.
+                {domainOperational
+                  ? "Operating view only. It does not verify ownership, confirm new payments, grant paid features, or expose private records."
+                  : "Setup view only. It does not confirm payment, activate the domain, verify ownership, or expose private records."}
               </div>
             </div>
           </section>

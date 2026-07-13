@@ -312,6 +312,13 @@ assertContains(
 );
 
 assertContains(
+  "src/pages/SubscriptionSpotlightPage.tsx",
+  /listMyCommunityDomains[\s\S]*communityDomainFeatureModeFromPayload[\s\S]*"spotlight"[\s\S]*spotlightFeatureOff[\s\S]*spotlightFeatureOffText[\s\S]*async function createPaymentInstruction[\s\S]*spotlightFeatureOffText[\s\S]*\/api\/payment-instructions\/spotlight[\s\S]*async function publishSpotlight[\s\S]*spotlightFeatureOffText[\s\S]*createMarketplaceBroadcast[\s\S]*debugId="subscription-spotlight\.generate-payment-code"[\s\S]*spotlightFeatureOff[\s\S]*debugId="subscription-spotlight\.publish"[\s\S]*spotlightFeatureOff/,
+  "Subscription Spotlight page must read Community Domain Spotlight policy and explain/disable payment-code generation and paid publishing before backend rejection.",
+  { frontend: true }
+);
+
+assertContains(
   "src/pages/ShopAssetsPage.tsx",
   /listMyCommunityDomains[\s\S]*communityDomainFeatureModeFromPayload[\s\S]*"marketplace_shops"[\s\S]*marketplaceShopsFeatureOff[\s\S]*communityDomainFeatureModeFromPayload[\s\S]*"shop_diary"[\s\S]*shopDiaryFeatureOff[\s\S]*async function saveShopSignboard[\s\S]*marketplaceShopsFeatureOffText[\s\S]*async function ensureShopRecordForProduct[\s\S]*marketplaceShopsFeatureOffText[\s\S]*function openAddForPublicSlot[\s\S]*shopDiaryFeatureOffText[\s\S]*async function submitProduct[\s\S]*shopDiaryFeatureOffText[\s\S]*\/api\/marketplace\/products/,
   "Shop Assets page must explain disabled Marketplace Shops and Shop Diary Community Domain policies before calling shop/product write routes.",
@@ -320,8 +327,36 @@ assertContains(
 
 assertContains(
   "src/pages/ShopControlPage.tsx",
-  /listMyCommunityDomains[\s\S]*communityDomainFeatureModeFromPayload[\s\S]*"marketplace_shops"[\s\S]*marketplaceShopsFeatureOff[\s\S]*communityDomainFeatureModeFromPayload[\s\S]*"spotlight"[\s\S]*spotlightFeatureOff[\s\S]*async function saveShopDetails[\s\S]*marketplaceShopsFeatureOffText[\s\S]*async function ensureSpotlightShopRecord[\s\S]*marketplaceShopsFeatureOffText[\s\S]*async function handleCreateSpotlight[\s\S]*spotlightFeatureOffText[\s\S]*createMarketplaceBroadcast/,
-  "Shop Control page must explain disabled Marketplace Shops and Spotlight Community Domain policies before calling shop or Spotlight write routes.",
+  /listMyCommunityDomains[\s\S]*communityDomainFeatureModeFromPayload[\s\S]*"marketplace_shops"[\s\S]*marketplaceShopsFeatureOff[\s\S]*communityDomainFeatureModeFromPayload[\s\S]*"spotlight"[\s\S]*spotlightFeatureOff[\s\S]*communityDomainFeatureModeFromPayload[\s\S]*"vault"[\s\S]*vaultFeatureOff[\s\S]*communityDomainFeatureModeFromPayload[\s\S]*"rosca_cycles"[\s\S]*roscaCyclesFeatureOff/,
+  "Shop Control page must read Marketplace Shops, Spotlight, Vault, and ROSCA Community Domain feature policy.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/ShopControlPage.tsx",
+  /async function createVaultInstruction[\s\S]*vaultFeatureOff[\s\S]*vaultFeatureOffText[\s\S]*\/api\/payment-instructions\/vault/,
+  "Shop Control Vault payment-code handler must explain disabled Vault before calling the payment route.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/ShopControlPage.tsx",
+  /async function createMerchantVerifyInstruction[\s\S]*marketplaceShopsFeatureOff[\s\S]*marketplaceShopsFeatureOffText[\s\S]*\/api\/payment-instructions\/merchant-verify/,
+  "Shop Control Merchant Verify payment-code handler must explain disabled Marketplace Shops before calling the payment route.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/ShopControlPage.tsx",
+  /async function createCommunityPackageInstruction[\s\S]*extra_shop_blocks[\s\S]*marketplaceShopsFeatureOff[\s\S]*marketplaceShopsFeatureOffText[\s\S]*rosca_cycle[\s\S]*roscaCyclesFeatureOff[\s\S]*roscaCyclesFeatureOffText[\s\S]*\/api\/payment-instructions\/community-package/,
+  "Shop Control package payment-code handler must explain disabled extra shop block and ROSCA policies before calling the package payment route.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/ShopControlPage.tsx",
+  /vaultFeatureOffText[\s\S]*disabled=\{[\s\S]*vaultFeatureOff[\s\S]*debugId="shop-control\.vault\.pay-1-slot"[\s\S]*marketplaceShopsFeatureOffText[\s\S]*disabled=\{[\s\S]*marketplaceShopsFeatureOff[\s\S]*debugId="shop-control\.verify\.pay"[\s\S]*roscaCyclesFeatureOffText[\s\S]*disabled=\{[\s\S]*marketplaceShopsFeatureOff[\s\S]*debugId="shop-control\.package\.extra-shop-block"[\s\S]*disabled=\{[\s\S]*roscaCyclesFeatureOff[\s\S]*debugId="shop-control\.package\.rosca-cycle"/,
+  "Shop Control paid-service buttons must show policy warnings and disable blocked Vault, Merchant Verify, extra shop block, and ROSCA actions.",
   { frontend: true }
 );
 
@@ -405,6 +440,20 @@ assertContains(
 );
 
 assertContains(
+  "src/pages/PaymentInstructionsPage.tsx",
+  /listMyCommunityDomains[\s\S]*communityDomainFeatureModeFromPayload[\s\S]*"payments_contributions"[\s\S]*paymentsContributionsFeatureOff[\s\S]*paymentsContributionsFeatureOffText[\s\S]*Money In is paused for this domain[\s\S]*handleGenerateInstruction[\s\S]*paymentsContributionsFeatureOffText[\s\S]*disabled=\{[\s\S]*paymentsContributionsFeatureOff[\s\S]*debugId="money-in\.generate-instruction"/,
+  "Money In must read Community Domain payments_contributions policy and explain/disable payment-reference generation before users hit backend 403s.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/BankConsolePage.tsx",
+  /Manual proof decision[\s\S]*Community Domain subscription rows with submitted proof[\s\S]*Approve after check[\s\S]*Reject proof[\s\S]*Approve only after bank, receipt, or finance review[\s\S]*does not\s+manually activate donations, event fees, ROSCA, Spotlight, Shop\s+Diary, or ordinary marketplace payments[\s\S]*debugId=\{`bank-console\.expected\.\$\{safeStr\(row\.id\)\}\.approve-proof`\}[\s\S]*debugId=\{`bank-console\.expected\.\$\{safeStr\(row\.id\)\}\.reject-proof`\}/,
+  "Bank Console expected-payment area must explain where manual Community Domain subscription proof approval/rejection happens and what it does not activate.",
+  { frontend: true }
+);
+
+assertContains(
   "src/pages/MarketplacePage.tsx",
   /listMyCommunityDomains[\s\S]*communityDomainFeatureModeFromPayload[\s\S]*"rosca_cycles"[\s\S]*roscaCyclesFeatureOff[\s\S]*createRoscaYearlyInstruction[\s\S]*roscaCyclesFeatureOffText[\s\S]*createCommunityPackagePaymentInstruction[\s\S]*startMarketplaceRoscaCycle[\s\S]*roscaCyclesFeatureOffText[\s\S]*createRoscaCycle[\s\S]*debugId="marketplace\.rosca\.activate-yearly"[\s\S]*disabled=\{creatingRoscaPackage \|\| roscaCyclesFeatureOff\}[\s\S]*debugId="marketplace\.rosca\.start-cycle"[\s\S]*disabled=\{/,
   "Marketplace ROSCA controls must read Community Domain feature policy and explain/disable disabled ROSCA before payment or cycle creation.",
@@ -413,8 +462,29 @@ assertContains(
 
 assertContains(
   "src/pages/VaultControlPage.tsx",
-  /listMyCommunityDomains[\s\S]*communityDomainFeatureModeFromPayload[\s\S]*"vault"[\s\S]*vaultFeatureOff[\s\S]*createVaultInstruction[\s\S]*vaultFeatureOffText[\s\S]*\/api\/payment-instructions\/vault[\s\S]*disabled=\{vaultFeatureOff \|\| creatingPayment \|\| !shop\?\.id\}[\s\S]*debugId="vault-control\.generate-payment-code"/,
-  "Vault Control must read Community Domain feature policy and explain/disable disabled Vault before creating a payment instruction.",
+  /listMyCommunityDomains[\s\S]*communityDomainFeatureModeFromPayload[\s\S]*"vault"[\s\S]*vaultFeatureOff[\s\S]*vaultFeatureOffText/,
+  "Vault Control must read Community Domain Vault feature policy.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/VaultControlPage.tsx",
+  /function startAdd[\s\S]*vaultFeatureOff[\s\S]*vaultFeatureOffText[\s\S]*function startEdit[\s\S]*vaultFeatureOff[\s\S]*vaultFeatureOffText[\s\S]*async function submitProduct[\s\S]*vaultFeatureOff[\s\S]*vaultFeatureOffText[\s\S]*\/api\/marketplace\/products[\s\S]*async function createViewingLink[\s\S]*vaultFeatureOff[\s\S]*vaultFeatureOffText[\s\S]*createVaultShopAccessLink[\s\S]*async function extendLink[\s\S]*vaultFeatureOff[\s\S]*vaultFeatureOffText[\s\S]*extendVaultShopAccessLink/,
+  "Vault Control must block disabled Vault before private content writes, private link creation, or link extension.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/VaultControlPage.tsx",
+  /createVaultInstruction[\s\S]*vaultFeatureOffText[\s\S]*\/api\/payment-instructions\/vault[\s\S]*disabled=\{vaultFeatureOff \|\| creatingPayment \|\| !shop\?\.id\}[\s\S]*debugId="vault-control\.generate-payment-code"/,
+  "Vault Control must explain/disable disabled Vault before creating a Vault payment instruction.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/VaultControlPage.tsx",
+  /disabled=\{vaultFeatureOff\}[\s\S]*debugId="vault-control\.selected-block\.edit"[\s\S]*disabled=\{vaultFeatureOff\}[\s\S]*debugId="vault-control\.selected-block\.add"[\s\S]*disabled=\{vaultFeatureOff \|\| creatingLink\}[\s\S]*debugId="vault-control\.link\.create-or-replace"[\s\S]*disabled=\{vaultFeatureOff \|\| Boolean\(selectedBlockPrimaryLink && busyLinkId === firstTruthy\(selectedBlockPrimaryLink\.id\)\)\}[\s\S]*debugId="vault-control\.link\.extend"[\s\S]*disabled=\{vaultFeatureOff \|\| savingProduct\}[\s\S]*debugId="vault-control\.editor\.save"/,
+  "Vault Control must visibly disable add/edit, new private link, link extension, and editor save controls when Vault is off.",
   { frontend: true }
 );
 
@@ -429,6 +499,13 @@ assertContains(
   "src/pages/BuildFirstCirclePage.tsx",
   /getCommunityDomainInviteTemplate[\s\S]*updateCommunityDomainInviteTemplate[\s\S]*COMMUNITY_DOMAIN_ROLE_OPTIONS[\s\S]*communityDomainInvitePreset[\s\S]*Charity \/ NGO message[\s\S]*Church \/ faith message[\s\S]*School \/ parent message[\s\S]*Student group message[\s\S]*Association \/ union message[\s\S]*buildCommunityDomainGroupInviteMessage[\s\S]*finalCommunityDomainInviteMessage[\s\S]*No bulk import: every member joins for themselves[\s\S]*COMMUNITY_DOMAIN_ROLE_OPTIONS\.includes[\s\S]*contacts: \[\][\s\S]*getCommunityDomainInviteTemplate\(communityDomainInviteTemplateId\)[\s\S]*saveCommunityDomainInviteMessage[\s\S]*updateCommunityDomainInviteTemplate[\s\S]*device only[\s\S]*Save message[\s\S]*Use template[\s\S]*Editable invite text[\s\S]*domain-branded text[\s\S]*Saved wording is read from the Community Domain record[\s\S]*Live message preview[\s\S]*Unsaved edit[\s\S]*No bulk import: every member still enters with their own GSN identity/,
   "Build First Circle must keep programme-aware Community Domain invite presets, owner-editable invite copy with explicit save and live preview, inviter identity, share-channel text, and no false bulk-import promise.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/BuildFirstCirclePage.tsx",
+  /communityDomainCircleMode[\s\S]*buildGsnInviteLinkPackage\(\{[\s\S]*title: "GSN Community Domain Invite"[\s\S]*Open this invite to request entry into the named GSN Community Domain[\s\S]*communityLabel: "Community Domain"/,
+  "Build First Circle Community Domain invite papers must identify themselves as Community Domain invites instead of generic marketplace/community invites.",
   { frontend: true }
 );
 
@@ -701,6 +778,13 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
+  /domainOperational[\s\S]*"Live lane"[\s\S]*"Live domain actions"[\s\S]*"More operating tools\."[\s\S]*"Open operating tools"[\s\S]*"Operating view only\. It does not verify ownership, confirm new payments, grant paid features, or expose private records\."/,
+  "Active Community Domain dashboard tools must use live operating language after activation while keeping setup/edit language scoped to setup work.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
   /setupStepPlaceholder[\s\S]*Saturday fitness[\s\S]*Snapfit partner[\s\S]*Create Community Domain[\s\S]*setupStepIndex \+ 1[\s\S]*SETUP_STEP_OPTIONS\.length[\s\S]*setupStepPlaceholder\(activeSetupStep, domain, setupDraft\)/,
   "Community Domain dashboard setup must show one setup step at a time and use Pillar/charity-aware examples instead of school-only prompts.",
   { frontend: true }
@@ -827,7 +911,7 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /packageCapacityFacts[\s\S]*included_members[\s\S]*included_nodes[\s\S]*included_admins[\s\S]*included_shops[\s\S]*included_storage_gb[\s\S]*packageTariffBoundaryText[\s\S]*Current pilot package allowance only[\s\S]*Extra member bands, paid feature tariffs, and per-domain pricing are not automated here yet[\s\S]*Package and tariff boundary[\s\S]*Allowance is separate from feature permission[\s\S]*Feature policy decides whether members, admins, or only\s+the institution may use Spotlight, Demand Box, shops,\s+Shop Diary, Vault, ROSCA, invitations, and contribution\s+tools inside this domain/,
+  /packageCapacityFacts[\s\S]*included_members[\s\S]*included_nodes[\s\S]*included_admins[\s\S]*included_shops[\s\S]*included_storage_gb[\s\S]*packageTariffBoundaryText[\s\S]*Current pilot package allowance only[\s\S]*packageBillingStatusFacts[\s\S]*pricing_model_status[\s\S]*paid_upgrade_status[\s\S]*member_band_status[\s\S]*feature_tariff_status[\s\S]*domain_tariff_status[\s\S]*packageBillingAdminAction[\s\S]*manual finance and capacity review[\s\S]*Package and tariff boundary[\s\S]*Allowance is separate from feature permission[\s\S]*manual review[\s\S]*Feature policy decides whether members, admins, or only\s+the institution may use Spotlight, Demand Box, shops,\s+Shop Diary, Vault, ROSCA, invitations, and contribution\s+tools inside this domain/,
   "Community Domain Services lane must separate package allowance, feature permission, and future tariff automation without pretending member bands or paid feature pricing are live.",
   { frontend: true }
 );

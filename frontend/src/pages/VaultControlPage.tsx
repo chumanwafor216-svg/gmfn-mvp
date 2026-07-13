@@ -1458,12 +1458,20 @@ export default function VaultControlPage() {
   }
 
   function startAdd(slotNumber: number) {
+    if (vaultFeatureOff) {
+      showNotice("error", vaultFeatureOffText);
+      return;
+    }
     setSelectedSlot(slotNumber);
     resetProductForm();
     setEditorOpen(true);
   }
 
   function startEdit(item: ProductRecord, slotNumber: number) {
+    if (vaultFeatureOff) {
+      showNotice("error", vaultFeatureOffText);
+      return;
+    }
     setSelectedSlot(slotNumber);
     setEditingProductId(Number(item.id));
     setProductName(firstTruthy(item.name));
@@ -1629,6 +1637,11 @@ export default function VaultControlPage() {
       setFormNotice({ tone: "error", text: "Shop record is not ready." });
       return;
     }
+    if (vaultFeatureOff) {
+      setFormNotice({ tone: "error", text: vaultFeatureOffText });
+      showNotice("error", vaultFeatureOffText);
+      return;
+    }
     if (!confirmedVaultSlots) {
       setFormNotice({ tone: "error", text: "Activate at least one paid Vault slot before adding block content." });
       return;
@@ -1756,6 +1769,10 @@ export default function VaultControlPage() {
       showNotice("error", "Add content to this Vault block before creating its private link.");
       return;
     }
+    if (vaultFeatureOff) {
+      showNotice("error", vaultFeatureOffText);
+      return;
+    }
     setCreatingLink(true);
     try {
       const link = await createVaultShopAccessLink({
@@ -1817,6 +1834,10 @@ export default function VaultControlPage() {
   async function extendLink(link: VaultLinkItem) {
     const id = firstTruthy(link.id);
     if (!id) return;
+    if (vaultFeatureOff) {
+      showNotice("error", vaultFeatureOffText);
+      return;
+    }
     setBusyLinkId(id);
     try {
       const updated = await extendVaultShopAccessLink(id, vaultDefaultExpiry(vaultLinkDefaultHours));
@@ -2227,7 +2248,8 @@ export default function VaultControlPage() {
               <div style={actionGrid(isCompact, 160)}>
                 <PrimaryButton
                   onClick={() => startEdit(selectedProduct, selectedSlot)}
-                  style={brandActionButton("primary")}
+                  disabled={vaultFeatureOff}
+                  style={brandActionButton("primary", vaultFeatureOff)}
                   debugId="vault-control.selected-block.edit"
                 >
                   Edit block #{selectedSlot}
@@ -2246,7 +2268,8 @@ export default function VaultControlPage() {
             ) : (
               <PrimaryButton
                 onClick={() => startAdd(selectedSlot)}
-                style={{ ...brandActionButton("primary"), width: "100%" }}
+                disabled={vaultFeatureOff}
+                style={{ ...brandActionButton("primary", vaultFeatureOff), width: "100%" }}
                 debugId="vault-control.selected-block.add"
               >
                 Add private offer
@@ -2270,6 +2293,11 @@ export default function VaultControlPage() {
         <div style={{ marginTop: 10, ...helperText() }}>
           Share Block #{selectedSlot} only. The viewer sees this offer, your shop identity, and the link expiry. No other Vault block opens from this link.
         </div>
+        {vaultFeatureOff ? (
+          <div style={{ marginTop: 12, ...noticeCard("error") }}>
+            {vaultFeatureOffText}
+          </div>
+        ) : null}
         <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
           <span style={badge(Boolean(selectedBlockPrimaryLink))}>{selectedBlockPrimaryLink ? selectedBlockLinkStatus : "No link"}</span>
           <span style={badge(Boolean(selectedProduct))}>{selectedProduct ? `Offer #${selectedProduct.id}` : "No offer yet"}</span>
@@ -2287,6 +2315,10 @@ export default function VaultControlPage() {
                 showNotice("info", "Complete identity review before sharing private Vault links.");
                 return;
               }
+              if (vaultFeatureOff) {
+                showNotice("error", vaultFeatureOffText);
+                return;
+              }
               if (!selectedSeatIsActive) {
                 showNotice("info", `Vault block #${selectedSlot} is locked. Activate it before creating a private link.`);
                 return;
@@ -2297,7 +2329,8 @@ export default function VaultControlPage() {
               }
               void createViewingLink();
             }}
-            style={{ ...brandActionButton("primary", creatingLink), gridColumn: isCompact ? "auto" : "1 / -1" }}
+            disabled={vaultFeatureOff || creatingLink}
+            style={{ ...brandActionButton("primary", vaultFeatureOff || creatingLink), gridColumn: isCompact ? "auto" : "1 / -1" }}
             busy={creatingLink}
             busyLabel="Creating link..."
             debugId="vault-control.link.create-or-replace"
@@ -2329,10 +2362,10 @@ export default function VaultControlPage() {
           </SecondaryButton>
           <SecondaryButton
             onClick={() => selectedBlockPrimaryLink ? void extendLink(selectedBlockPrimaryLink) : showNotice("info", "Create this block link before extending it.")}
-            disabled={Boolean(selectedBlockPrimaryLink && busyLinkId === firstTruthy(selectedBlockPrimaryLink.id))}
+            disabled={vaultFeatureOff || Boolean(selectedBlockPrimaryLink && busyLinkId === firstTruthy(selectedBlockPrimaryLink.id))}
             busy={Boolean(selectedBlockPrimaryLink && busyLinkId === firstTruthy(selectedBlockPrimaryLink.id))}
             busyLabel="Extending..."
-            style={brandActionButton("secondary", Boolean(selectedBlockPrimaryLink && busyLinkId === firstTruthy(selectedBlockPrimaryLink.id)))}
+            style={brandActionButton("secondary", vaultFeatureOff || Boolean(selectedBlockPrimaryLink && busyLinkId === firstTruthy(selectedBlockPrimaryLink.id)))}
             debugId="vault-control.link.extend"
           >
             Extend link
@@ -2387,6 +2420,7 @@ export default function VaultControlPage() {
           <div style={{ marginTop: 8, ...helperText() }}>
             Add one private offer at a time. Picture or video is accepted; oversized media is prepared before upload.
           </div>
+          {vaultFeatureOff ? <div style={{ marginTop: 12, ...noticeCard("error") }}>{vaultFeatureOffText}</div> : null}
           {formNotice ? <div style={{ marginTop: 12, ...noticeCard(formNotice.tone) }}>{formNotice.text}</div> : null}
           <div style={{ marginTop: 14, display: "grid", gridTemplateColumns: isCompact ? "1fr" : "minmax(0,1fr) 320px", gap: 14 }}>
             <div style={{ ...innerCard("linear-gradient(180deg, #FFFFFF 0%, #F1F7FD 100%)"), border: "1px solid rgba(23,58,92,0.14)" }}>
@@ -2416,10 +2450,10 @@ export default function VaultControlPage() {
                 <div style={actionGrid(isCompact, 160)}>
                   <PrimaryButton
                     onClick={() => void submitProduct()}
-                    disabled={savingProduct}
+                    disabled={vaultFeatureOff || savingProduct}
                     busy={preparingImage || preparingVideo || savingProduct}
                     busyLabel={preparingImage || preparingVideo ? "Preparing media..." : "Saving..."}
-                    style={brandActionButton("primary", savingProduct)}
+                    style={brandActionButton("primary", vaultFeatureOff || savingProduct)}
                     debugId="vault-control.editor.save"
                   >
                     {preparingImage || preparingVideo ? "Preparing media..." : savingProduct ? "Saving..." : "Save Vault block"}

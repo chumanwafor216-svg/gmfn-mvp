@@ -6,6 +6,7 @@ import PageTopNav from "../components/PageTopNav";
 import { PrimaryButton, SecondaryButton, StableCtaLink, SubtleButton } from "../components/StableButton";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import * as api from "../lib/api";
+import { listMyCommunityDomains } from "../lib/api";
 import { communityIdFromSearch } from "../lib/communityRouteContext";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 import { buildGsnPaymentInstructionPackage } from "../lib/gsnSnapshotPaper";
@@ -18,6 +19,11 @@ import {
   type CommunityMoneySettlement,
   type CommunityMoneySurface,
 } from "../lib/communityMoney";
+import {
+  communityDomainFeatureIsOff,
+  communityDomainFeatureModeFromPayload,
+  communityDomainFeatureOffMessage,
+} from "../lib/communityDomainFeaturePolicy";
 
 type NoticeTone = "success" | "error";
 
@@ -800,6 +806,8 @@ export default function PaymentInstructionsPage() {
   const [depositRoute, setDepositRoute] = useState<CommunityMoneyRoute | null>(
     null
   );
+  const [communityDomainPolicyPayload, setCommunityDomainPolicyPayload] =
+    useState<any>(null);
   const [amountInput, setAmountInput] = useState<string>("");
   const [contributionReason, setContributionReason] = useState<string>("");
   const [selectedCurrency, setSelectedCurrency] =
@@ -900,6 +908,7 @@ export default function PaymentInstructionsPage() {
       setCurrentClan(null);
       setMoneySurface(null);
       setDepositRoute(null);
+      setCommunityDomainPolicyPayload(null);
       setInstruction(null);
       setPaymentConfirmed(false);
       setPaymentConfirmedAt(null);
@@ -908,19 +917,21 @@ export default function PaymentInstructionsPage() {
       setProofUploaded(false);
 
       try {
-        const [meRes, clanRes] = await Promise.all([
+        const [meRes, clanRes, domainsRes] = await Promise.all([
           typeof (api as any).getMe === "function"
             ? (api as any).getMe().catch(() => null)
             : Promise.resolve(null),
           typeof (api as any).getCurrentClan === "function"
             ? (api as any).getCurrentClan().catch(() => null)
             : Promise.resolve(null),
+          listMyCommunityDomains().catch(() => null),
         ]);
 
         if (!isCurrentMoneyInLoad()) return;
 
         setMe(meRes || null);
         setCurrentClan(clanRes || null);
+        setCommunityDomainPolicyPayload(domainsRes || null);
 
         const gmfnId = resolveMoneyInMemberGmfnId(meRes, clanRes);
 
@@ -1025,6 +1036,23 @@ export default function PaymentInstructionsPage() {
     return getCommunityName(currentClan, selectedClanId);
   }, [currentClan, selectedClanId]);
 
+  const paymentsContributionsDomainFeatureMatch = useMemo(
+    () =>
+      communityDomainFeatureModeFromPayload(
+        communityDomainPolicyPayload,
+        selectedClanId,
+        "payments_contributions"
+      ),
+    [communityDomainPolicyPayload, selectedClanId]
+  );
+  const paymentsContributionsFeatureOff = communityDomainFeatureIsOff(
+    paymentsContributionsDomainFeatureMatch
+  );
+  const paymentsContributionsFeatureOffText = communityDomainFeatureOffMessage(
+    "Payments and Contributions",
+    paymentsContributionsDomainFeatureMatch?.domainName || communityLabel
+  );
+
   const publicCommunityCode = useMemo(() => {
     return getCommunityPublicId(currentClan);
   }, [currentClan]);
@@ -1113,6 +1141,15 @@ export default function PaymentInstructionsPage() {
       };
     }
 
+    if (paymentsContributionsFeatureOff) {
+      return {
+        tone: "gold" as const,
+        step: "Domain policy",
+        title: "Money In is paused for this domain.",
+        detail: paymentsContributionsFeatureOffText,
+      };
+    }
+
     if (!instruction) {
       return {
         tone: "blue" as const,
@@ -1167,6 +1204,8 @@ export default function PaymentInstructionsPage() {
     currentGmfnId,
     identityBlockerText,
     instruction,
+    paymentsContributionsFeatureOff,
+    paymentsContributionsFeatureOffText,
     paymentConfirmed,
     matchedEvent,
     proofFileName,
@@ -1251,6 +1290,14 @@ export default function PaymentInstructionsPage() {
       setNotice({
         tone: "error",
         text: blocker,
+      });
+      return;
+    }
+
+    if (paymentsContributionsFeatureOff) {
+      setNotice({
+        tone: "error",
+        text: paymentsContributionsFeatureOffText,
       });
       return;
     }
@@ -1884,6 +1931,22 @@ export default function PaymentInstructionsPage() {
               {identityBlockerText}
             </div>
           ) : null}
+          {paymentsContributionsFeatureOff ? (
+            <div
+              style={{
+                borderRadius: 16,
+                border: "1px solid rgba(245,158,11,0.22)",
+                background: "linear-gradient(180deg, #FFF8E7 0%, #FFFDF6 100%)",
+                color: "#8A5A00",
+                padding: "12px 14px",
+                fontSize: 14,
+                fontWeight: 850,
+                lineHeight: 1.5,
+              }}
+            >
+              {paymentsContributionsFeatureOffText}
+            </div>
+          ) : null}
         </div>
 
         <div style={moneyInInputShell()}>
@@ -2010,14 +2073,20 @@ export default function PaymentInstructionsPage() {
         >
           <PrimaryButton
             onClick={() => void handleGenerateInstruction()}
-            disabled={generatingInstruction || !moneyInIdentityReady}
+            disabled={
+              generatingInstruction ||
+              !moneyInIdentityReady ||
+              paymentsContributionsFeatureOff
+            }
             debugId="money-in.generate-instruction"
             stableHeight={52}
             fullWidth
             style={{
               ...moneyInActionButtonStyle(
                 "primary",
-                generatingInstruction || !moneyInIdentityReady
+                generatingInstruction ||
+                  !moneyInIdentityReady ||
+                  paymentsContributionsFeatureOff
               ),
               gridColumn: isCompact ? "1 / -1" : undefined,
             }}
