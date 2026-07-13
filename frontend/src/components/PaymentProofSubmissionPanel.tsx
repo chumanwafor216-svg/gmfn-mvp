@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { PrimaryButton, SecondaryButton } from "./StableButton";
-import { uploadPaymentInstructionProofFile } from "../lib/api";
+import { PrimaryButton, SecondaryButton, StableCtaLink } from "./StableButton";
+import { getAccessToken, uploadPaymentInstructionProofFile } from "../lib/api";
+import { buildWhatsAppChatUrl } from "../lib/whatsappLinks";
 import {
   brandActionButton,
   brandBadge,
@@ -39,6 +40,8 @@ type Props = {
   onUploaded?: (payment: PaymentProofExpectedPayment) => void | Promise<void>;
   onNotice?: (tone: NoticeTone, message: string) => void;
 };
+
+const DEFAULT_SUPPORT_WHATSAPP = "+447903165266";
 
 function safeStr(value: unknown): string {
   return String(value ?? "").trim();
@@ -102,6 +105,25 @@ function paymentStatusLabel(payment?: PaymentProofExpectedPayment | null): strin
   return firstTruthy(payment?.status, "Waiting for bank");
 }
 
+function supportWhatsAppNumber(): string {
+  const env =
+    (import.meta as unknown as { env?: Record<string, string | undefined> }).env ||
+    {};
+  return firstTruthy(
+    env.VITE_GSN_SUPPORT_WHATSAPP,
+    env.VITE_SUPPORT_WHATSAPP,
+    DEFAULT_SUPPORT_WHATSAPP
+  );
+}
+
+function shortFileName(value: unknown): string {
+  const raw = safeStr(value);
+  if (raw.length <= 48) return raw;
+  const dot = raw.lastIndexOf(".");
+  const ext = dot > 0 && raw.length - dot <= 8 ? raw.slice(dot) : "";
+  return `${raw.slice(0, 26)}...${raw.slice(Math.max(26, raw.length - 14 - ext.length))}`;
+}
+
 export default function PaymentProofSubmissionPanel({
   payment,
   clanId,
@@ -142,6 +164,17 @@ export default function PaymentProofSubmissionPanel({
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
   const [localMessage, setLocalMessage] = useState<{ tone: NoticeTone; text: string } | null>(null);
+  const whatsAppUrl = useMemo(() => {
+    const message = [
+      "Hello GSN Support, I am submitting payment proof for finance review.",
+      `Payment code: ${reference || initialReference || "not stated"}`,
+      `Expected payment id: ${expectedPaymentId || "not stated"}`,
+      `Community id: ${resolvedClanId || "not stated"}`,
+      "I will attach the receipt/screenshot in WhatsApp.",
+      "I understand GSN still confirms only after finance review and bank reconciliation.",
+    ].join("\n");
+    return buildWhatsAppChatUrl(supportWhatsAppNumber(), message);
+  }, [expectedPaymentId, initialReference, reference, resolvedClanId]);
 
   useEffect(() => {
     setReference(initialReference);
@@ -165,6 +198,13 @@ export default function PaymentProofSubmissionPanel({
       show("error", "Choose a JPG, PNG, WEBP, or PDF proof first.");
       return;
     }
+    if (!getAccessToken()) {
+      show(
+        "error",
+        "Your sign-in session is not active, so GSN cannot attach this proof to the payment record. Sign in again, then submit here, or send the receipt by WhatsApp with the payment code."
+      );
+      return;
+    }
     const submittedReference = safeStr(reference);
     if (!submittedReference) {
       show("error", "Enter the payment code used in the bank transfer.");
@@ -183,9 +223,12 @@ export default function PaymentProofSubmissionPanel({
       show("success", "Proof uploaded for finance review. This does not confirm payment yet.");
       await onUploaded?.(updated as PaymentProofExpectedPayment);
     } catch (err: any) {
+      const status = Number(err?.status || 0);
       show(
         "error",
-        safeStr(err?.message) ||
+        status === 401
+          ? "Your sign-in session was rejected. Sign in again, then submit the proof here, or send the receipt by WhatsApp with the payment code."
+          : safeStr(err?.message) ||
           "Proof upload failed. The payment still needs finance review or a bank match."
       );
     } finally {
@@ -197,7 +240,7 @@ export default function PaymentProofSubmissionPanel({
     const selectedFile = event.target.files?.[0] || null;
     setFile(selectedFile);
     if (selectedFile) {
-      show("info", `Proof selected: ${selectedFile.name}. Tap Submit proof for finance review.`);
+      show("info", `Proof selected: ${shortFileName(selectedFile.name)}. Tap Submit proof for finance review.`);
     }
   }
 
@@ -311,9 +354,23 @@ export default function PaymentProofSubmissionPanel({
               alignItems: "center",
               justifyContent: "center",
               cursor: busy ? "not-allowed" : "pointer",
+              overflow: "hidden",
+              whiteSpace: "nowrap",
+              textOverflow: "ellipsis",
             }}
+            title={file ? file.name : "Choose proof file"}
           >
-            {file ? file.name : "Choose proof file"}
+            <span
+              style={{
+                display: "block",
+                maxWidth: "100%",
+                overflow: "hidden",
+                whiteSpace: "nowrap",
+                textOverflow: "ellipsis",
+              }}
+            >
+              {file ? shortFileName(file.name) : "Choose proof file"}
+            </span>
           </label>
           <input
             id={fileInputId}
@@ -349,6 +406,24 @@ export default function PaymentProofSubmissionPanel({
           >
             {busy ? "Uploading proof..." : "Submit proof for finance review"}
           </PrimaryButton>
+
+          {whatsAppUrl ? (
+            <StableCtaLink
+              to={whatsAppUrl}
+              debugId={`${debugIdPrefix}.whatsapp-proof`}
+              fullWidth
+              stableHeight={48}
+              style={{
+                ...brandActionButton("secondary", false),
+                gridColumn: compact ? "1" : "1 / -1",
+                background: "linear-gradient(180deg, #1DB954 0%, #149447 100%)",
+                border: "1px solid rgba(20,148,71,0.26)",
+                color: "#FFFFFF",
+              }}
+            >
+              Send proof by WhatsApp
+            </StableCtaLink>
+          ) : null}
         </div>
       ) : (
         <SecondaryButton
@@ -390,6 +465,8 @@ export default function PaymentProofSubmissionPanel({
             fontSize: 13,
             fontWeight: 850,
             lineHeight: 1.4,
+            overflowWrap: "anywhere",
+            wordBreak: "break-word",
           }}
         >
           {localMessage.text}
