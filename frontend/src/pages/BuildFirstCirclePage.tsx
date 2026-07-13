@@ -76,6 +76,8 @@ type FocusedAction = "invite" | null;
 
 const UI_STORAGE_KEY = "gmfn.buildFirstCircle.sections.v2";
 const DRAFT_FALLBACK_KEY = "gmfn.firstCircle.fallback.v1";
+const COMMUNITY_DOMAIN_INVITE_MESSAGE_KEY =
+  "gmfn.buildFirstCircle.communityDomainInviteMessage.v1";
 const SLOW_FIRST_CIRCLE_LOAD_MS = 8000;
 
 const ROLE_OPTIONS = firstCircle.FIRST_CIRCLE_ROLE_OPTIONS.map(
@@ -713,28 +715,146 @@ function isCommunityDomainCircleMode(): boolean {
   return mode === "community-domain" || source === "community-domain";
 }
 
+function communityDomainInvitePreset(role: string): {
+  label: string;
+  audience: string;
+  opening: (communityName: string) => string;
+  purpose: string;
+} {
+  const value = safeStr(role).toLowerCase();
+
+  if (value === "charity_ngo") {
+    return {
+      label: "Charity / NGO message",
+      audience: "supporters, volunteers, trustees, and community partners",
+      opening: (communityName) =>
+        `${communityName} is inviting its supporters, volunteers, trustees, and community partners to join its GSN Community Domain.`,
+      purpose:
+        "Use this link to request access so the NGO team can confirm who belongs in the official circle.",
+    };
+  }
+
+  if (value === "church_group") {
+    return {
+      label: "Church / faith message",
+      audience: "members, ministers, workers, and trusted helpers",
+      opening: (communityName) =>
+        `${communityName} is inviting members, ministers, workers, and trusted helpers to join its GSN Community Domain.`,
+      purpose:
+        "Use this link to request access so the church or faith leadership can confirm the right members.",
+    };
+  }
+
+  if (value === "school_group") {
+    return {
+      label: "School / parent message",
+      audience: "parents, staff, governors, and school community members",
+      opening: (communityName) =>
+        `${communityName} is inviting parents, staff, governors, and school community members to join its GSN Community Domain.`,
+      purpose:
+        "Use this link to request access so the school group can confirm your role before entry.",
+    };
+  }
+
+  if (value === "student_group") {
+    return {
+      label: "Student group message",
+      audience: "students, officers, mentors, and approved supporters",
+      opening: (communityName) =>
+        `${communityName} is inviting students, officers, mentors, and approved supporters to join its GSN Community Domain.`,
+      purpose:
+        "Use this link to request access so the group admins can confirm the right student circle.",
+    };
+  }
+
+  if (value === "community_association") {
+    return {
+      label: "Association / union message",
+      audience: "members, officers, organisers, and approved partners",
+      opening: (communityName) =>
+        `${communityName} is inviting members, officers, organisers, and approved partners to join its GSN Community Domain.`,
+      purpose:
+        "Use this link to request access so the association admins can confirm membership before entry.",
+    };
+  }
+
+  return {
+    label: "General community message",
+    audience: "members and trusted group participants",
+    opening: (communityName) =>
+      `${communityName} is inviting members and trusted group participants to join its GSN Community Domain.`,
+    purpose:
+      "Use this link to request access so the owner/admin can confirm who belongs in this community.",
+  };
+}
+
 function buildCommunityDomainGroupInviteMessage(params: {
   communityName: string;
   inviteLink: string;
   inviterName: string;
   gmfnId: string;
+  groupType?: string;
 }): string {
   const communityName = safeStr(params.communityName) || "this community";
   const inviterName = safeStr(params.inviterName);
+  const preset = communityDomainInvitePreset(params.groupType || "");
   const link =
     safeStr(params.inviteLink) ||
     "Link appears after you tap WhatsApp, Share, or Copy.";
 
   const lines = [
-    `Join ${communityName} on GSN.`,
-    "Open this link, enter your details, and request access.",
-    "An owner/admin will approve members before entry.",
+    preset.opening(communityName),
+    preset.purpose,
+    "Open the link, enter your own details, and request access with your own GSN identity.",
+    "Owner/admin approval remains required before entry.",
+    "No bulk import: every member joins for themselves.",
     link,
     inviterName ? `Inviter: ${inviterName}` : "",
     params.gmfnId ? `GSN ID: ${safeStr(params.gmfnId)}` : "",
   ];
 
   return lines.filter(Boolean).join("\n");
+}
+
+function finalCommunityDomainInviteMessage(params: {
+  baseMessage: string;
+  inviteLink: string;
+  inviterName: string;
+  gmfnId: string;
+}): string {
+  const link =
+    safeStr(params.inviteLink) ||
+    "Link appears after you tap WhatsApp, Share, or Copy.";
+  const fallbackLink = "Link appears after you tap WhatsApp, Share, or Copy.";
+  let message = safeStr(params.baseMessage).replace(fallbackLink, link);
+
+  if (!message) {
+    message = link;
+  } else if (link && !message.includes(link)) {
+    message = `${message}\n${link}`;
+  }
+
+  const lower = message.toLowerCase();
+  const boundaryLines = [
+    lower.includes("own gsn identity")
+      ? ""
+      : "Each person must request access with their own GSN identity.",
+    lower.includes("approval") ? "" : "Owner/admin approval remains required before entry.",
+    lower.includes("bulk import")
+      ? ""
+      : "No bulk import: every member joins for themselves.",
+  ].filter(Boolean);
+
+  const identityLines = [
+    safeStr(params.inviterName) && !lower.includes("inviter:")
+      ? `Inviter: ${safeStr(params.inviterName)}`
+      : "",
+    safeStr(params.gmfnId) && !lower.includes("gsn id:")
+      ? `GSN ID: ${safeStr(params.gmfnId)}`
+      : "",
+  ].filter(Boolean);
+
+  return [message, ...boundaryLines, ...identityLines].filter(Boolean).join("\n");
 }
 
 function inviteBundleText(params: {
@@ -809,6 +929,8 @@ export default function BuildFirstCirclePage() {
     defaultInviteEvidenceForm()
   );
   const [inviterName, setInviterName] = useState("");
+  const [customInviteMessage, setCustomInviteMessage] = useState("");
+  const [inviteMessageEdited, setInviteMessageEdited] = useState(false);
   const [quickRows, setQuickRows] = useState<QuickPersonRow[]>(defaultQuickRows());
   const [pickingContacts, setPickingContacts] = useState(false);
   const [focusedAction, setFocusedAction] = useState<FocusedAction>(null);
@@ -996,6 +1118,81 @@ export default function BuildFirstCirclePage() {
   }, [inviteEvidence.relationshipType]);
 
   const inviteSenderName = firstTruthy(inviterName, memberName);
+  const selectedGroupType = safeStr(draft.memberRole);
+  const inviteMessagePreset = useMemo(
+    () => communityDomainInvitePreset(selectedGroupType),
+    [selectedGroupType]
+  );
+  const inviteMessageStorageKey = useMemo(() => {
+    const communityKey = safeStr(
+      firstTruthy(currentClan?.id, currentClan?.clan_id, selectedClanId)
+    ) || "default";
+    return `${COMMUNITY_DOMAIN_INVITE_MESSAGE_KEY}.${communityKey}.${selectedGroupType || "general"}`;
+  }, [currentClan, selectedClanId, selectedGroupType]);
+  const defaultCommunityDomainInviteMessage = useMemo(
+    () =>
+      buildCommunityDomainGroupInviteMessage({
+        communityName,
+        inviteLink,
+        inviterName: inviteSenderName,
+        gmfnId,
+        groupType: selectedGroupType,
+      }),
+    [communityName, gmfnId, inviteLink, inviteSenderName, selectedGroupType]
+  );
+  const communityDomainInviteMessage = useMemo(() => {
+    if (!communityDomainCircleMode) return "";
+    return finalCommunityDomainInviteMessage({
+      baseMessage: inviteMessageEdited
+        ? customInviteMessage
+        : defaultCommunityDomainInviteMessage,
+      inviteLink,
+      inviterName: inviteSenderName,
+      gmfnId,
+    });
+  }, [
+    communityDomainCircleMode,
+    customInviteMessage,
+    defaultCommunityDomainInviteMessage,
+    gmfnId,
+    inviteLink,
+    inviteMessageEdited,
+    inviteSenderName,
+  ]);
+
+  useEffect(() => {
+    if (!communityDomainCircleMode) return;
+
+    const saved = readLocalJSON<{ message?: string }>(inviteMessageStorageKey, {});
+    const savedMessage = safeStr(saved?.message);
+    if (savedMessage) {
+      setCustomInviteMessage(savedMessage);
+      setInviteMessageEdited(true);
+      return;
+    }
+
+    setCustomInviteMessage(defaultCommunityDomainInviteMessage);
+    setInviteMessageEdited(false);
+  }, [communityDomainCircleMode, inviteMessageStorageKey]);
+
+  useEffect(() => {
+    if (!communityDomainCircleMode || inviteMessageEdited) return;
+    setCustomInviteMessage(defaultCommunityDomainInviteMessage);
+  }, [
+    communityDomainCircleMode,
+    defaultCommunityDomainInviteMessage,
+    inviteMessageEdited,
+  ]);
+
+  useEffect(() => {
+    if (!communityDomainCircleMode || !inviteMessageEdited) return;
+    writeLocalJSON(inviteMessageStorageKey, { message: customInviteMessage });
+  }, [
+    communityDomainCircleMode,
+    customInviteMessage,
+    inviteMessageEdited,
+    inviteMessageStorageKey,
+  ]);
 
   const buildJoinInviteMessageForLink = useCallback((link: string): string => {
     if (communityDomainCircleMode) {
@@ -1004,11 +1201,7 @@ export default function BuildFirstCirclePage() {
         senderGsnId: gmfnId,
         communityName,
         inviteLink: link,
-        messageLines: [
-          "Share this with the existing WhatsApp or member group.",
-          "Each person opens the link and requests access with their own GSN identity.",
-          "Owner/admin approval remains required. This is not a bulk import.",
-        ],
+        messageLines: [communityDomainInviteMessage],
       });
     }
 
@@ -1028,12 +1221,26 @@ export default function BuildFirstCirclePage() {
       inviteLink: link,
       messageLines: lines,
     });
-  }, [communityDomainCircleMode, communityName, gmfnId, inviteSenderName]);
+  }, [
+    communityDomainCircleMode,
+    communityDomainInviteMessage,
+    communityName,
+    gmfnId,
+    inviteSenderName,
+  ]);
 
   const buildCompactInviteMessageForLink = useCallback((link: string): string => {
     if (communityDomainCircleMode) {
-      return buildCommunityDomainGroupInviteMessage({
-        communityName,
+      return finalCommunityDomainInviteMessage({
+        baseMessage: inviteMessageEdited
+          ? customInviteMessage
+          : buildCommunityDomainGroupInviteMessage({
+              communityName,
+              inviteLink: link,
+              inviterName: inviteSenderName,
+              gmfnId,
+              groupType: selectedGroupType,
+            }),
         inviteLink: link,
         inviterName: inviteSenderName,
         gmfnId,
@@ -1047,7 +1254,15 @@ export default function BuildFirstCirclePage() {
       inviteLink: link,
       note: "Open this invite to request access.",
     });
-  }, [communityDomainCircleMode, communityName, gmfnId, inviteSenderName]);
+  }, [
+    communityDomainCircleMode,
+    communityName,
+    customInviteMessage,
+    gmfnId,
+    inviteMessageEdited,
+    inviteSenderName,
+    selectedGroupType,
+  ]);
 
   const joinInviteMessage = useMemo(() => {
     return buildJoinInviteMessageForLink(inviteLink);
@@ -2121,6 +2336,85 @@ export default function BuildFirstCirclePage() {
                     </div>
                   </div>
                 </div>
+                {communityDomainCircleMode ? (
+                  <div
+                    style={{
+                      marginTop: 12,
+                      display: "grid",
+                      gap: 10,
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: isCompact
+                          ? "1fr"
+                          : "minmax(0, 1fr) auto",
+                        gap: 10,
+                        alignItems: "center",
+                      }}
+                    >
+                      <div>
+                        <div style={sectionLabel()}>Message template</div>
+                        <div style={{ marginTop: 4, ...helperText(), fontSize: 13 }}>
+                          {inviteMessagePreset.label} for{" "}
+                          {inviteMessagePreset.audience}.
+                        </div>
+                      </div>
+                      <SubtleButton
+                        onClick={() => {
+                          try {
+                            window.localStorage.removeItem(inviteMessageStorageKey);
+                          } catch {
+                            // Storage can fail in private browsing; resetting state still helps.
+                          }
+                          setInviteMessageEdited(false);
+                          setCustomInviteMessage(defaultCommunityDomainInviteMessage);
+                          showNotice("success", "Invite message reset to the selected programme.");
+                        }}
+                        stableHeight={44}
+                        debugId="build-first-circle.reset-programme-message"
+                        style={{
+                          ...compactButtonStyle(false),
+                          minHeight: 44,
+                          height: 44,
+                          maxHeight: 44,
+                        }}
+                      >
+                        {firstCircleIconText("refresh", "Use template", 18)}
+                      </SubtleButton>
+                    </div>
+                    <label style={{ display: "grid", gap: 8 }}>
+                      <span style={sectionLabel()}>Editable invite text</span>
+                      <textarea
+                        value={
+                          inviteMessageEdited
+                            ? customInviteMessage
+                            : defaultCommunityDomainInviteMessage
+                        }
+                        onChange={(event) => {
+                          setInviteMessageEdited(true);
+                          setCustomInviteMessage(event.target.value);
+                        }}
+                        aria-label="Editable invite text"
+                        style={{
+                          ...textAreaStyle(),
+                          minHeight: isCompact ? 150 : 132,
+                          resize: "none",
+                          background: "rgba(8,22,38,0.72)",
+                          color: "#E6EEF8",
+                          border: "1px solid rgba(203,220,240,0.20)",
+                          fontSize: 16,
+                        }}
+                      />
+                    </label>
+                    <div style={{ ...helperText(), fontSize: 13 }}>
+                      Copy, WhatsApp, and Share use this text. GSN keeps the
+                      identity, approval, and no-bulk-import lines on the final
+                      invite.
+                    </div>
+                  </div>
+                ) : null}
                 <GsnSnapshotPaperCard
                   paperText={
                     communityDomainCircleMode

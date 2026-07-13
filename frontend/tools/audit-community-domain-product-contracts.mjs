@@ -191,8 +191,8 @@ assertContains(
 
 assertContains(
   "src/pages/BuildFirstCirclePage.tsx",
-  /isCommunityDomainCircleMode[\s\S]*buildCommunityDomainGroupInviteMessage[\s\S]*communityDomainCircleMode[\s\S]*charity_ngo[\s\S]*church_group[\s\S]*school_group[\s\S]*student_group[\s\S]*community_association[\s\S]*Inviter name[\s\S]*No bulk import: every member still enters with their own GSN identity/,
-  "Build First Circle must keep a Community Domain group-migration mode with group types, inviter name, short share copy, and no false bulk-import promise.",
+  /isCommunityDomainCircleMode[\s\S]*communityDomainInvitePreset[\s\S]*Charity \/ NGO message[\s\S]*Church \/ faith message[\s\S]*School \/ parent message[\s\S]*Student group message[\s\S]*Association \/ union message[\s\S]*buildCommunityDomainGroupInviteMessage[\s\S]*finalCommunityDomainInviteMessage[\s\S]*No bulk import: every member joins for themselves[\s\S]*Editable invite text[\s\S]*Copy, WhatsApp, and Share use this text[\s\S]*No bulk import: every member still enters with their own GSN identity/,
+  "Build First Circle must keep programme-aware Community Domain invite presets, owner-editable invite copy, inviter identity, share-channel text, and no false bulk-import promise.",
   { frontend: true }
 );
 
