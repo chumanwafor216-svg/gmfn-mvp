@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from app.core.auth import get_current_user
 from app.db.database import get_db
 from app.db.models import MarketplaceShop, User, VaultAccessLink
+from app.services.community_domain_feature_policy import require_domain_vault_enabled
 from app.services.vault_access_service import (
     create_vault_access_link,
     extend_vault_access_link,
@@ -161,6 +162,8 @@ def create_shop_vault_access_link(
     current_user: User = Depends(get_current_user),
 ) -> Dict[str, Any]:
     shop = _require_shop_manager(db=db, shop_id=int(shop_id), current_user=current_user)
+    if getattr(shop, "clan_id", None) is not None:
+        require_domain_vault_enabled(db, clan_id=int(shop.clan_id))
     try:
         link = create_vault_access_link(
             db,
@@ -226,7 +229,9 @@ def extend_shop_vault_access_link(
     current_user: User = Depends(get_current_user),
 ) -> Dict[str, Any]:
     link = _link_or_404(db, int(link_id))
-    _require_shop_manager(db=db, shop_id=int(link.shop_id), current_user=current_user)
+    shop = _require_shop_manager(db=db, shop_id=int(link.shop_id), current_user=current_user)
+    if getattr(shop, "clan_id", None) is not None:
+        require_domain_vault_enabled(db, clan_id=int(shop.clan_id))
     try:
         updated = extend_vault_access_link(
             db,

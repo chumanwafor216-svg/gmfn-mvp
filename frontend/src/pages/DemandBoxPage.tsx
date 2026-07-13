@@ -20,6 +20,7 @@ import {
   getMe,
   getSelectedClanId,
   listMyClans,
+  listMyCommunityDomains,
   listMarketplaceRequests,
   selectClan,
   setSelectedClanId as persistSelectedClanId,
@@ -28,6 +29,11 @@ import {
 } from "../lib/api";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 import { buildGsnSnapshotPaper } from "../lib/gsnSnapshotPaper";
+import {
+  communityDomainFeatureIsOff,
+  communityDomainFeatureModeFromPayload,
+  communityDomainFeatureOffMessage,
+} from "../lib/communityDomainFeaturePolicy";
 import { revealElementWithoutJump } from "../lib/mobileRevealStability";
 import { buildPhoneCallUrl, buildWhatsAppChatUrl } from "../lib/whatsappLinks";
 
@@ -505,6 +511,8 @@ export default function DemandBoxPage() {
   const [me, setMe] = useState<any>(null);
   const [currentClan, setCurrentClan] = useState<any>(null);
   const [communities, setCommunities] = useState<any[]>([]);
+  const [communityDomainPolicyPayload, setCommunityDomainPolicyPayload] =
+    useState<any>(null);
   const [myOpenRows, setMyOpenRows] = useState<DemandRow[]>([]);
   const [visibleRows, setVisibleRows] = useState<DemandRow[]>([]);
 
@@ -575,14 +583,23 @@ export default function DemandBoxPage() {
 
     setLoading(true);
     setCurrentClan(null);
+    setCommunityDomainPolicyPayload(null);
     setMyOpenRows([]);
     setVisibleRows([]);
 
     try {
-      const [meRes, currentClanRes, clansRes, myRes, visibleRes] = await Promise.all([
+      const [
+        meRes,
+        currentClanRes,
+        clansRes,
+        domainsRes,
+        myRes,
+        visibleRes,
+      ] = await Promise.all([
         getMe().catch(() => null),
         getCurrentClan().catch(() => null),
         listMyClans().catch(() => []),
+        listMyCommunityDomains().catch(() => null),
         listMarketplaceRequests({
           clan_id: effectiveClanId || undefined,
           mine_only: true,
@@ -614,6 +631,7 @@ export default function DemandBoxPage() {
       setMe(meRes || null);
       setCurrentClan(selectedCommunity);
       setCommunities(communityRows);
+      setCommunityDomainPolicyPayload(domainsRes);
       setMyOpenRows(myRows);
       setVisibleRows(filteredVisible);
     } finally {
@@ -808,6 +826,11 @@ export default function DemandBoxPage() {
       return;
     }
 
+    if (demandBoxFeatureOff) {
+      showNotice("error", demandBoxFeatureOffText);
+      return;
+    }
+
     if (!safeStr(title)) {
       showNotice("error", "Add what you need first.");
       return;
@@ -886,6 +909,22 @@ export default function DemandBoxPage() {
   const currentCommunityName = useMemo(
     () => communityName(currentClan, selectedClanId),
     [currentClan, selectedClanId]
+  );
+  const demandBoxDomainFeatureMatch = useMemo(
+    () =>
+      communityDomainFeatureModeFromPayload(
+        communityDomainPolicyPayload,
+        selectedClanId,
+        "demand_box"
+      ),
+    [communityDomainPolicyPayload, selectedClanId]
+  );
+  const demandBoxFeatureOff = communityDomainFeatureIsOff(
+    demandBoxDomainFeatureMatch
+  );
+  const demandBoxFeatureOffText = communityDomainFeatureOffMessage(
+    "Demand Box",
+    demandBoxDomainFeatureMatch?.domainName || currentCommunityName
   );
 
   function demandContactActions(row: DemandRow, debugBase: string) {
@@ -1603,6 +1642,18 @@ export default function DemandBoxPage() {
           <span style={badge(false)}>Payment terms optional</span>
         </div>
 
+        {demandBoxFeatureOff ? (
+          <div
+            style={{
+              marginTop: 12,
+              ...noticeCard("error"),
+            }}
+          >
+            {demandBoxFeatureOffText} Existing Demand Box requests can still be
+            reviewed or closed; new requests are paused by this domain policy.
+          </div>
+        ) : null}
+
         <div
           style={{
             marginTop: 16,
@@ -1738,7 +1789,7 @@ export default function DemandBoxPage() {
             <div style={demandActionRowStyle(isCompact, 54, 180, 14)}>
               <PrimaryButton
                 onClick={() => handleCreateDemand()}
-                disabled={creating}
+                disabled={creating || demandBoxFeatureOff}
                 busy={creating}
                 busyLabel="Posting..."
                 fullWidth

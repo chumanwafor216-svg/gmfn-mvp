@@ -1,3 +1,5 @@
+import json
+
 import pytest
 from fastapi import HTTPException
 from sqlalchemy import text
@@ -115,6 +117,93 @@ def _add_second_clan_for_user() -> None:
         )
 
 
+def _seed_community_domain_feature_policy(
+    *,
+    feature_key: str,
+    mode: str = "off",
+    domain_id: int = 980,
+    policy_id: int = 981,
+) -> None:
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO community_domains (
+                    id,
+                    domain_name,
+                    display_name,
+                    domain_type,
+                    template_key,
+                    owner_user_id,
+                    clan_id,
+                    status,
+                    verification_status,
+                    created_at,
+                    updated_at
+                )
+                VALUES (
+                    :domain_id,
+                    :domain_name,
+                    'Demand Feature Policy Domain',
+                    'ngo_project_network',
+                    'ngo_project_network',
+                    1,
+                    1,
+                    'active',
+                    'unverified',
+                    CURRENT_TIMESTAMP,
+                    CURRENT_TIMESTAMP
+                )
+                """
+            ),
+            {
+                "domain_id": domain_id,
+                "domain_name": f"demand-feature-policy-{feature_key}",
+            },
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO community_domain_policies (
+                    id,
+                    community_domain_id,
+                    policy_key,
+                    action_key,
+                    scope_type,
+                    review_mode,
+                    required_role,
+                    status,
+                    policy_summary,
+                    config_json,
+                    created_by_user_id,
+                    created_at,
+                    updated_at
+                )
+                VALUES (
+                    :policy_id,
+                    :domain_id,
+                    'domain.feature_policy',
+                    'domain.features.configure',
+                    'domain',
+                    'domain_admin_review',
+                    'owner_admin',
+                    'active',
+                    'Demand Box route feature policy test',
+                    :config_json,
+                    1,
+                    CURRENT_TIMESTAMP,
+                    CURRENT_TIMESTAMP
+                )
+                """
+            ),
+            {
+                "policy_id": policy_id,
+                "domain_id": domain_id,
+                "config_json": json.dumps({"features": {feature_key: mode}}),
+            },
+        )
+
+
 def _marketplace_request_counts() -> tuple[int, int]:
     with engine.begin() as conn:
         request_count = conn.execute(
@@ -158,6 +247,33 @@ def test_marketplace_request_stores_selected_community():
     assert data["clan_name"] == "Test Clan"
     assert len(rows) == 1
     assert rows[0].clan_id == 1
+
+
+def test_marketplace_request_create_respects_disabled_community_domain_demand_box_policy(
+    client,
+    override_current_user,
+):
+    _seed_primary_clan()
+    _seed_community_domain_feature_policy(feature_key="demand_box")
+
+    response = client.post(
+        "/marketplace/requests",
+        json={
+            "clan_id": 1,
+            "title": "Need community hall chairs",
+            "description": "Saturday event needs extra chairs.",
+            "category": "event support",
+            "urgency": "medium",
+            "expires_in_hours": 48,
+        },
+    )
+
+    assert response.status_code == 403, response.text
+    detail = response.json()["detail"]
+    assert detail["code"] == "community_domain_feature_disabled"
+    assert detail["feature_key"] == "demand_box"
+    assert "post new Demand Box requests" in detail["message"]
+    assert _marketplace_request_counts() == (0, 0)
 
 
 def test_marketplace_request_create_rejects_malformed_boundary_controls(

@@ -35,6 +35,8 @@ from app.services.feature_entitlements_service import (
 from app.services.community_domain_feature_policy import (
     require_domain_marketplace_shops_enabled,
     require_domain_shop_diary_enabled,
+    require_domain_spotlight_enabled,
+    require_domain_vault_enabled,
 )
 from app.services.notification_service import create_notification
 from app.services.trust_events_services import log_trust_event
@@ -2817,6 +2819,9 @@ def create_marketplace_product(
         raise HTTPException(status_code=400, detail="Product image is required")
 
     visibility_mode = _resolve_visibility_mode(payload.visibility_mode)
+    if visibility_mode == VISIBILITY_VAULT:
+        require_domain_vault_enabled(db, clan_id=resolved_clan_id)
+
     public_block_number = _public_product_block_number(payload.description)
 
     if visibility_mode == VISIBILITY_COMMUNITY:
@@ -3145,6 +3150,7 @@ def update_marketplace_product(
                 detail=_public_product_capacity_detail(public_product_slots_total),
             )
     elif target_active:
+        require_domain_vault_enabled(db, clan_id=resolved_clan_id)
         sync_legacy_entitlements_to_blocks(
             db,
             shop_id=int(target_shop_id),
@@ -3657,6 +3663,7 @@ def repost_marketplace_product(
     target_clan_id = int(target_clan.id)
     target_community_code = _clan_public_code(target_clan)
     origin_clan_id = int(product.clan_id)
+    require_domain_spotlight_enabled(db, clan_id=target_clan_id)
 
     if target_clan_id == origin_clan_id:
         raise HTTPException(
@@ -4045,6 +4052,9 @@ def create_marketplace_broadcast(
         )
     if not target_clan_ids:
         raise HTTPException(status_code=400, detail="No active community memberships found")
+
+    for target_clan_id in target_clan_ids:
+        require_domain_spotlight_enabled(db, clan_id=int(target_clan_id))
 
     current_time = _now_utc()
     skipped_capacity_clan_ids: list[int] = []

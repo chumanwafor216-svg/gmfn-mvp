@@ -15,6 +15,7 @@ COMMUNITY_DOMAIN_FEATURE_PAYMENTS_CONTRIBUTIONS = "payments_contributions"
 COMMUNITY_DOMAIN_FEATURE_ROSCA_CYCLES = "rosca_cycles"
 COMMUNITY_DOMAIN_FEATURE_SHOP_DIARY = "shop_diary"
 COMMUNITY_DOMAIN_FEATURE_SPOTLIGHT = "spotlight"
+COMMUNITY_DOMAIN_FEATURE_DEMAND_BOX = "demand_box"
 COMMUNITY_DOMAIN_FEATURE_VAULT = "vault"
 
 
@@ -125,6 +126,61 @@ def require_domain_shop_diary_enabled(
         boundary_message=(
             "This controls product, public gallery block, and shop content "
             "updates inside the domain."
+        ),
+    )
+
+
+def require_domain_spotlight_enabled(
+    db: Session,
+    *,
+    clan_id: int,
+) -> None:
+    require_community_domain_feature_enabled(
+        db,
+        clan_id=int(clan_id),
+        feature_key=COMMUNITY_DOMAIN_FEATURE_SPOTLIGHT,
+        feature_label="Spotlight",
+        boundary_message=(
+            "This controls whether free or paid Spotlight broadcasts may run "
+            "inside the domain. Paid Spotlight credits and visibility "
+            "entitlements stay on their separate service rail."
+        ),
+    )
+
+
+def require_domain_demand_box_enabled(
+    db: Session,
+    *,
+    clan_id: int,
+) -> None:
+    require_community_domain_feature_enabled(
+        db,
+        clan_id=int(clan_id),
+        feature_key=COMMUNITY_DOMAIN_FEATURE_DEMAND_BOX,
+        feature_label="Demand Box",
+        boundary_message=(
+            "This controls whether members may post new Demand Box requests "
+            "inside the domain. Existing requests can still be read or closed "
+            "so old demand rows do not get stuck open."
+        ),
+    )
+
+
+def require_domain_vault_enabled(
+    db: Session,
+    *,
+    clan_id: int,
+) -> None:
+    require_community_domain_feature_enabled(
+        db,
+        clan_id=int(clan_id),
+        feature_key=COMMUNITY_DOMAIN_FEATURE_VAULT,
+        feature_label="Vault",
+        boundary_message=(
+            "This controls whether private Vault content and active Vault "
+            "access links may be created or extended inside the domain. Paid "
+            "Vault slot entitlement, link expiry, and privacy restrictions "
+            "remain on their separate service rails."
         ),
     )
 

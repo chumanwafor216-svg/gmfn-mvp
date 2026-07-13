@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+import json
 from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import text
 
 from app.db.database import engine
 from app.db.models import (
+    CommunityDomain,
+    CommunityDomainPolicy,
     FeatureEntitlement,
     MarketplaceProduct,
     MarketplaceShop,
@@ -22,6 +25,8 @@ def _future(days: int = 30) -> datetime:
 
 
 def _ensure_vault_tables() -> None:
+    CommunityDomain.__table__.create(bind=engine, checkfirst=True)
+    CommunityDomainPolicy.__table__.create(bind=engine, checkfirst=True)
     MarketplaceShop.__table__.create(bind=engine, checkfirst=True)
     MarketplaceProduct.__table__.create(bind=engine, checkfirst=True)
     FeatureEntitlement.__table__.create(bind=engine, checkfirst=True)
@@ -92,6 +97,79 @@ def _seed_vault_owner(*, entitlement_quantity: int = 2) -> None:
                 "starts_at": datetime.now(timezone.utc),
                 "expires_at": _future(),
             },
+        )
+
+
+def _seed_community_domain_vault_policy(*, mode: str = "off") -> None:
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO community_domains (
+                    id,
+                    domain_name,
+                    display_name,
+                    domain_type,
+                    template_key,
+                    owner_user_id,
+                    clan_id,
+                    status,
+                    verification_status,
+                    created_at,
+                    updated_at
+                )
+                VALUES (
+                    1,
+                    'vault-feature-policy-domain',
+                    'Vault Feature Policy Domain',
+                    'ngo_project_network',
+                    'ngo_project_network',
+                    1,
+                    1,
+                    'active',
+                    'unverified',
+                    CURRENT_TIMESTAMP,
+                    CURRENT_TIMESTAMP
+                )
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO community_domain_policies (
+                    id,
+                    community_domain_id,
+                    policy_key,
+                    action_key,
+                    scope_type,
+                    review_mode,
+                    required_role,
+                    status,
+                    policy_summary,
+                    config_json,
+                    created_by_user_id,
+                    created_at,
+                    updated_at
+                )
+                VALUES (
+                    1,
+                    1,
+                    'domain.feature_policy',
+                    'domain.features.configure',
+                    'domain',
+                    'domain_admin_review',
+                    'owner_admin',
+                    'active',
+                    'Vault route feature policy test',
+                    :config_json,
+                    1,
+                    CURRENT_TIMESTAMP,
+                    CURRENT_TIMESTAMP
+                )
+                """
+            ),
+            {"config_json": json.dumps({"features": {"vault": mode}})},
         )
 
 
@@ -209,6 +287,57 @@ def test_vault_access_link_requires_and_returns_one_active_block_scope(
     assert opened.status_code == 200, opened.text
     assert opened.json()["views_used"] == 1
 
+    with engine.begin() as conn:
+        log_count = conn.execute(text("SELECT COUNT(*) FROM vault_access_logs")).scalar_one()
+    assert log_count == 1
+
+
+def test_vault_access_link_create_respects_disabled_community_domain_vault_policy(
+    client,
+    override_current_user_user,
+):
+    _seed_vault_owner(entitlement_quantity=1)
+    _seed_private_vault_product()
+    _seed_community_domain_vault_policy(mode="off")
+
+    response = client.post(
+        "/marketplace/shops/1/vault-access-links",
+        json={"product_id": 1},
+    )
+
+    assert response.status_code == 403, response.text
+    detail = response.json()["detail"]
+    assert detail["code"] == "community_domain_feature_disabled"
+    assert detail["feature_key"] == "vault"
+    assert "private Vault content" in detail["message"]
+    with engine.begin() as conn:
+        link_count = conn.execute(text("SELECT COUNT(*) FROM vault_access_links")).scalar_one()
+    assert link_count == 0
+
+
+def test_vault_access_view_stops_when_community_domain_vault_policy_is_disabled(
+    client,
+    override_current_user_user,
+):
+    _seed_vault_owner(entitlement_quantity=1)
+    _seed_private_vault_product()
+
+    created = client.post(
+        "/marketplace/shops/1/vault-access-links",
+        json={"product_id": 1, "max_views": 2},
+    )
+    assert created.status_code == 200, created.text
+    token = created.json()["item"]["token"]
+
+    _seed_community_domain_vault_policy(mode="off")
+
+    viewed = client.get(f"/marketplace/vault-access/{token}")
+
+    assert viewed.status_code == 200, viewed.text
+    body = viewed.json()
+    assert body["ok"] is False
+    assert body["status"] == "domain_vault_disabled"
+    assert body["detail"] == "Vault is not enabled for this Community Domain."
     with engine.begin() as conn:
         log_count = conn.execute(text("SELECT COUNT(*) FROM vault_access_logs")).scalar_one()
     assert log_count == 1

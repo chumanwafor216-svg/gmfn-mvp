@@ -709,15 +709,33 @@ function domainFeatureIsOff(
 
 function domainFeatureRouteEffect(featureKey: DomainFeaturePolicyKey): string {
   if (featureKey === "announcement_board") {
-    return "Route effect: Official Board posting is blocked when this is off.";
+    return "Live route effect: Official Board posting is blocked when this is off.";
   }
   if (featureKey === "member_invites") {
-    return "Route effect: First Circle and member invite entry are blocked when this is off.";
+    return "Live route effect: First Circle and member invite entry are blocked when this is off.";
+  }
+  if (featureKey === "marketplace_shops") {
+    return "Live route effect: shop identity create/edit actions are blocked when this is off.";
+  }
+  if (featureKey === "shop_diary") {
+    return "Live route effect: product, public gallery block, and shop content writes are blocked when this is off.";
   }
   if (featureKey === "payments_contributions") {
-    return "Route effect: domain subscription billing stays available; donations, registrations, event fees, and seminar fees follow this rule as those engines connect.";
+    return "Live route effect: linked payment-instruction and money-in routes are blocked when this is off; Community Domain subscription billing stays separate.";
   }
-  return "Route effect: recorded as the domain rule while this feature engine is connected.";
+  if (featureKey === "rosca_cycles") {
+    return "Live route effect: ROSCA cycle routes are blocked when this is off; paid ROSCA service access remains separate.";
+  }
+  if (featureKey === "spotlight") {
+    return "Live route effect: Spotlight broadcast and paid Spotlight payment routes are blocked when this is off; paid credit pricing stays separate.";
+  }
+  if (featureKey === "demand_box") {
+    return "Live route effect: new Demand Box requests are blocked when this is off; existing requests can still be read or closed.";
+  }
+  if (featureKey === "vault") {
+    return "Live route effect: private Vault content and active Vault access-link creation are blocked when this is off; paid slot entitlement, expiry, and privacy rules stay separate.";
+  }
+  return "Planning rule only: recorded as the domain rule while this feature engine is connected.";
 }
 
 function communityDomainSetupDraftKey(domainId: unknown): string {
@@ -1139,6 +1157,17 @@ function countValue(value: unknown): string {
   return Number.isFinite(numberValue) ? String(numberValue) : "0";
 }
 
+function limitValue(value: unknown, fallback = "not set"): string {
+  if (value === null || value === undefined || value === "") return fallback;
+  const numberValue = Number(value);
+  return Number.isFinite(numberValue) ? String(numberValue) : cleanText(value, fallback);
+}
+
+function capacityLaneByKey(capacityPlan: any, laneKey: string): any | null {
+  const lanes = Array.isArray(capacityPlan?.lanes) ? capacityPlan.lanes : [];
+  return lanes.find((lane: any) => cleanText(lane?.lane_key) === laneKey) || null;
+}
+
 async function readOptional<T>(loader: () => Promise<T>): Promise<T | null> {
   try {
     return await loader();
@@ -1454,7 +1483,7 @@ function communityDomainOperatingStateCopy(status: {
       heading: "Active, not verified",
       detail:
         "The domain can be operated by authorized members, but it must not be presented as a verified institution yet.",
-      nextStep: "Continue setup while keeping authority verification separate from billing and activation.",
+      nextStep: "Run live domain work from the operating lanes. Use setup only to correct details or add verification evidence.",
       risk: "Do not let active billing or active setup language become a verification claim.",
     };
   }
@@ -2573,10 +2602,19 @@ export default function CommunityDomainDashboardPage() {
   const primaryActionLane =
     lanes.find((lane) => lane.lane_key === primaryActionLaneKey) || selectedLane;
   const primaryActionLaneLabel = laneDisplayLabel(primaryActionLane, "work");
+  const operatingStateCopy = communityDomainOperatingStateCopy(status);
   const operationalLaneKey = firstAvailableOperationalLaneKey(lanes, status);
   const operationalLane =
     lanes.find((lane) => lane.lane_key === operationalLaneKey) || primaryActionLane;
   const operationalLaneLabel = laneDisplayLabel(operationalLane, "work");
+  const mainActionLaneKey = domainOperational ? operationalLaneKey : primaryActionLaneKey;
+  const mainActionLaneLabel = domainOperational ? operationalLaneLabel : primaryActionLaneLabel;
+  const mainActionCopy = domainOperational
+    ? operatingStateCopy.nextStep
+    : cleanText(
+        setupPrimaryAction?.label,
+        "Review the current Community Domain setup state."
+      );
   const showDomainWorkSurface =
     !domainOperational || showAdvancedTools || setupJourneyMode === "edit";
   const primaryActionFallbackNote =
@@ -3420,7 +3458,6 @@ export default function CommunityDomainDashboardPage() {
       active: domainPaymentProofUploaded && !domainPaymentConfirmed,
     },
   ];
-  const operatingStateCopy = communityDomainOperatingStateCopy(status);
   const renewalState = cleanText(quote?.renewal_policy?.status, "not set");
 
   const moduleKeys = useMemo(() => {
@@ -3430,6 +3467,45 @@ export default function CommunityDomainDashboardPage() {
       : [];
     return Array.from(new Set([...included, ...templateModules])).slice(0, 8);
   }, [quote, template]);
+  const quoteLimits =
+    quote?.limits && typeof quote.limits === "object" ? quote.limits : {};
+  const packageBillingBoundary =
+    quote?.billing_boundary && typeof quote.billing_boundary === "object"
+      ? quote.billing_boundary
+      : capacityPlan?.billing_boundary && typeof capacityPlan.billing_boundary === "object"
+      ? capacityPlan.billing_boundary
+      : null;
+  const packageCapacityFacts = [
+    [
+      "Members",
+      limitValue(
+        quoteLimits.included_members ?? capacityLaneByKey(capacityPlan, "members")?.limit
+      ),
+    ],
+    [
+      "Units",
+      limitValue(quoteLimits.included_nodes ?? capacityLaneByKey(capacityPlan, "nodes")?.limit),
+    ],
+    [
+      "Admins",
+      limitValue(quoteLimits.included_admins ?? capacityLaneByKey(capacityPlan, "admins")?.limit),
+    ],
+    [
+      "Shops",
+      limitValue(quoteLimits.included_shops ?? capacityLaneByKey(capacityPlan, "shops")?.limit),
+    ],
+    [
+      "Storage",
+      `${limitValue(
+        quoteLimits.included_storage_gb ?? capacityLaneByKey(capacityPlan, "storage")?.limit
+      )} GB`,
+    ],
+  ];
+  const packageTariffBoundaryText =
+    cleanText(
+      packageBillingBoundary?.plain_language,
+      "Current pilot package allowance only. Extra member bands, paid feature tariffs, and per-domain pricing are not automated here yet; use Billing capacity review before selling or promising upgraded limits."
+    );
 
   async function loadAccessReviewItems(showLoading = false) {
     const requestDomainId = cleanText(communityDomainId);
@@ -4366,22 +4442,24 @@ export default function CommunityDomainDashboardPage() {
               <div style={{ display: "grid", gap: 10 }}>
                 <div style={iconHeaderStyle()}>
                   <span style={iconFrame(50)}>
-                    <GsnRealisticIcon name="records-folder" size={39} decorative />
+                    <GsnRealisticIcon
+                      name={domainOperational ? "market-stall" : "records-folder"}
+                      size={39}
+                      decorative
+                    />
                   </span>
                   <div style={{ minWidth: 0 }}>
-                    <div style={sectionLabel()}>Next action</div>
+                    <div style={sectionLabel()}>
+                      {domainOperational ? "Live next action" : "Next action"}
+                    </div>
                     <h2 style={{ margin: 0, fontSize: 23, lineHeight: 1.12 }}>
-                      Open the {primaryActionLaneLabel} lane
+                      Open the {mainActionLaneLabel} lane
                     </h2>
                   </div>
                 </div>
                 <div style={helperText()}>
-                  {cleanText(
-                    setupPrimaryAction?.label,
-                    "Review the current Community Domain setup state."
-                  )}{" "}
-                  GSN opens the matching lane here first; deeper changes still use
-                  owner/admin tools that check permissions.
+                  {mainActionCopy} GSN opens the matching lane here first; deeper
+                  changes still use owner/admin tools that check permissions.
                 </div>
                 {primaryActionFallbackNote ? (
                   <div style={{ ...helperText(), fontSize: 13 }}>
@@ -4393,9 +4471,15 @@ export default function CommunityDomainDashboardPage() {
                   kind="primary"
                   fullWidth
                   debugId="community-domain-dashboard.continue-setup"
-                  onClick={() => setActiveLane(primaryActionLaneKey)}
+                  onClick={() => {
+                    setActiveLane(mainActionLaneKey);
+                    if (domainOperational) {
+                      setShowAdvancedTools(true);
+                      setSetupJourneyMode("setup");
+                    }
+                  }}
                 >
-                  Open {primaryActionLaneLabel}
+                  Open {mainActionLaneLabel}
                 </StableButton>
               </div>
             </div>
@@ -5130,12 +5214,13 @@ export default function CommunityDomainDashboardPage() {
                         >
                           <div style={sectionLabel()}>Enforcement boundary</div>
                           <div style={{ ...helperText(), marginTop: 5, fontSize: 13 }}>
-                            Notices and member invites already obey the off/on
-                            policy, including the First Circle invite action.
-                            Payments, ROSCA, Spotlight, Shop Diary, Demand Box,
-                            Vault, and marketplace visibility are recorded here
-                            as the domain rule while each engine is connected to
-                            this policy safely.
+                            Live enforcement exists for notices, member invites,
+                            marketplace shops, Shop Diary writes, payments and
+                            contributions, ROSCA cycle routes, Spotlight
+                            broadcast/payment routes, Demand Box posting, and
+                            private Vault publishing/link creation. Paid Vault
+                            slot entitlement, link expiry, and privacy controls
+                            stay on their separate service rails.
                           </div>
                         </div>
                         <div
@@ -5230,8 +5315,10 @@ export default function CommunityDomainDashboardPage() {
                             <div style={{ minWidth: 0 }}>
                               <strong>Spotlight slots</strong>
                               <div style={{ ...helperText(), fontSize: 13 }}>
-                                Use this when the domain wants its own Spotlight
-                                rotation before extra paid visibility.
+                                Planning numbers for the domain's own Spotlight
+                                rotation. Broadcast/payment routes obey the
+                                feature switch; paid credit pricing stays
+                                separate.
                               </div>
                             </div>
                           </div>
@@ -6342,6 +6429,51 @@ export default function CommunityDomainDashboardPage() {
                       </div>
                       <div style={{ ...helperText(), fontSize: 13 }}>
                         {selectedServiceDetail.note}
+                      </div>
+                    </div>
+
+                    <div
+                      style={{
+                        ...softCard(),
+                        display: "grid",
+                        gap: 10,
+                        border: "1px solid rgba(214,170,69,0.34)",
+                        background: "rgba(255,249,225,0.72)",
+                      }}
+                    >
+                      <div style={iconHeaderStyle()}>
+                        <span style={iconFrame(46)}>
+                          <GsnRealisticIcon name="finance-bank-building" size={35} decorative />
+                        </span>
+                        <div style={{ minWidth: 0 }}>
+                          <div style={sectionLabel()}>Package and tariff boundary</div>
+                          <h3 style={{ margin: "4px 0 0", fontSize: 19, lineHeight: 1.15 }}>
+                            Allowance is separate from feature permission.
+                          </h3>
+                        </div>
+                      </div>
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns:
+                            "repeat(auto-fit, minmax(min(100%, 120px), 1fr))",
+                          gap: 8,
+                        }}
+                      >
+                        {packageCapacityFacts.map(([label, value]) => (
+                          <div key={label} style={statusBadge("allowance")}>
+                            {label}: {value}
+                          </div>
+                        ))}
+                      </div>
+                      <div style={{ ...helperText(), fontSize: 13 }}>
+                        {packageTariffBoundaryText}
+                      </div>
+                      <div style={{ ...helperText(), fontSize: 13 }}>
+                        Feature policy decides whether members, admins, or only
+                        the institution may use Spotlight, Demand Box, shops,
+                        Shop Diary, Vault, ROSCA, invitations, and contribution
+                        tools inside this domain.
                       </div>
                     </div>
 

@@ -1577,6 +1577,14 @@ def test_owner_can_preview_community_domain_package_quote_without_activation(
     assert "members" in quote["included_modules"]
     assert quote["limits"]["included_nodes"] == 50
     assert quote["limits"]["included_members"] == 500
+    assert quote["billing_boundary"]["pricing_model_status"] == (
+        "manual_pilot_quote_only"
+    )
+    assert quote["billing_boundary"]["paid_upgrade_status"] == "not_automated"
+    assert quote["billing_boundary"]["member_band_status"] == "not_automated"
+    assert quote["billing_boundary"]["feature_tariff_status"] == "not_automated"
+    assert quote["billing_boundary"]["domain_tariff_status"] == "not_automated"
+    assert "current pilot allowance only" in quote["billing_boundary"]["plain_language"]
     assert quote["renewal_policy"]["status"] == "not_configured"
     assert "does not create a payment instruction" in quote["boundary"]
     assert "activate billing" in quote["boundary"]
@@ -2955,6 +2963,13 @@ def test_capacity_plan_projects_package_usage_without_writes(
     assert capacity_plan["template"]["template_key"] == "market_cooperative"
     assert capacity_plan["package_code"] == "community_domain_starter"
     assert capacity_plan["limits_source"] == "pilot_package_quote_defaults"
+    assert capacity_plan["billing_boundary"]["pricing_model_status"] == (
+        "manual_pilot_quote_only"
+    )
+    assert capacity_plan["billing_boundary"]["paid_upgrade_status"] == "not_automated"
+    assert capacity_plan["billing_boundary"]["member_band_status"] == "not_automated"
+    assert capacity_plan["billing_boundary"]["feature_tariff_status"] == "not_automated"
+    assert "current pilot allowance only" in capacity_plan["billing_boundary"]["plain_language"]
     assert capacity_plan["counts"] == {
         "nodes": 40,
         "active_members": 3,
@@ -10263,6 +10278,18 @@ def test_subscription_lifecycle_projects_billing_plan_without_payment_writes(
     assert subscription["package"]["pricing_status"] == "pilot_quote_required"
     assert subscription["package"]["billing_cycle"] == "manual_quote"
     assert subscription["package"]["price_amount"] is None
+    assert subscription["package"]["billing_boundary"]["pricing_model_status"] == (
+        "manual_pilot_quote_only"
+    )
+    assert subscription["package"]["billing_boundary"]["paid_upgrade_status"] == (
+        "not_automated"
+    )
+    assert subscription["package"]["billing_boundary"]["member_band_status"] == (
+        "not_automated"
+    )
+    assert subscription["package"]["billing_boundary"]["feature_tariff_status"] == (
+        "not_automated"
+    )
     assert subscription["summary"] == {
         "domain_status": "draft",
         "verification_status": "unverified",

@@ -7,6 +7,11 @@ from typing import Any, Dict, List, Optional
 from sqlalchemy.orm import Session
 
 from app.db.models import MarketplaceProduct, MarketplaceShop, VaultAccessLink, VaultBlock
+from app.services.community_domain_feature_policy import (
+    COMMUNITY_DOMAIN_FEATURE_MODE_OFF,
+    COMMUNITY_DOMAIN_FEATURE_VAULT,
+    community_domain_feature_mode_for_clan,
+)
 from app.services.feature_entitlements_service import has_active_feature
 from app.services.vault_domain_service import (
     find_vault_block_for_product,
@@ -103,6 +108,17 @@ def _link_status(
 
     if not shop_row or not bool(getattr(shop_row, "is_active", True)):
         return "shop_inactive"
+
+    clan_id = getattr(shop_row, "clan_id", None)
+    if clan_id is not None:
+        feature_mode, domain = community_domain_feature_mode_for_clan(
+            db,
+            clan_id=int(clan_id),
+            feature_key=COMMUNITY_DOMAIN_FEATURE_VAULT,
+            default="admin_only",
+        )
+        if domain is not None and feature_mode == COMMUNITY_DOMAIN_FEATURE_MODE_OFF:
+            return "domain_vault_disabled"
 
     product_id = getattr(link, "product_id", None)
     block_id = getattr(link, "block_id", None)
@@ -430,6 +446,7 @@ def resolve_vault_access_view(
                 "expired": "This Vault access link has expired.",
                 "exhausted": "This Vault access link has reached its view limit.",
                 "subscription_inactive": "Vault subscription is inactive for this shop.",
+                "domain_vault_disabled": "Vault is not enabled for this Community Domain.",
                 "shop_inactive": "This shop is not currently active.",
                 "block_inactive": "This private Vault block is no longer active.",
                 "product_inactive": "This private Vault block is no longer available.",

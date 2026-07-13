@@ -12,6 +12,7 @@ import {
 } from "../components/StableButton";
 import {
   createClanInvite,
+  getCommunityDomain,
   getClanInviteLink,
   getCurrentClan,
   getMe,
@@ -875,6 +876,20 @@ function writeSavedCommunityDomainInviteContext(
   writeLocalJSON(COMMUNITY_DOMAIN_INVITE_CONTEXT_KEY, context);
 }
 
+function communityDomainInviteName(context: CommunityDomainInviteContext): string {
+  const explicitName = firstTruthy(context.domainName);
+  if (explicitName) return explicitName;
+
+  const code = safeStr(context.domainCode);
+  if (!code) return "this Community Domain";
+
+  return code
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
 function communityDomainInvitePreset(role: string): {
   label: string;
   audience: string;
@@ -1183,9 +1198,23 @@ export default function BuildFirstCirclePage() {
 
     let alive = true;
 
-    listMyCommunityDomains()
-      .then((payload) => {
+    Promise.all([
+      routeDomainId ? getCommunityDomain(routeDomainId).catch(() => null) : null,
+      listMyCommunityDomains().catch(() => null),
+    ])
+      .then(([routeDomainPayload, payload]) => {
         if (!alive) return;
+        const routeContext =
+          routeDomainPayload && normalizeCommunityDomainInviteContext(routeDomainPayload);
+        if (
+          routeContext &&
+          communityDomainInviteContextHasIdentity(routeContext)
+        ) {
+          setLinkedCommunityDomainInviteContext(routeContext);
+          writeSavedCommunityDomainInviteContext(routeContext);
+          return;
+        }
+
         const rows = Array.isArray(payload)
           ? payload
           : Array.isArray(payload?.items)
@@ -1332,9 +1361,12 @@ export default function BuildFirstCirclePage() {
   }, [currentClan, selectedClanId]);
 
   const communityName = useMemo(() => {
+    if (communityDomainCircleMode) {
+      return communityDomainInviteName(communityDomainInviteContext);
+    }
+
     return (
       firstTruthy(
-        communityDomainCircleMode ? communityDomainInviteContext.domainName : "",
         currentClan?.marketplace_name,
         currentClan?.name,
         currentClan?.display_name,
@@ -1343,6 +1375,7 @@ export default function BuildFirstCirclePage() {
     );
   }, [
     communityDomainCircleMode,
+    communityDomainInviteContext,
     communityDomainInviteContext.domainName,
     currentClan,
     selectedClanId,

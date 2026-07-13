@@ -671,6 +671,24 @@ COMMUNITY_DOMAIN_PACKAGE_LIMITS = {
     "included_shops": 100,
     "included_storage_gb": 5,
 }
+COMMUNITY_DOMAIN_PACKAGE_BILLING_BOUNDARY = {
+    "pricing_model_status": "manual_pilot_quote_only",
+    "current_allowance_status": "pilot_package_allowance",
+    "paid_upgrade_status": "not_automated",
+    "member_band_status": "not_automated",
+    "feature_tariff_status": "not_automated",
+    "domain_tariff_status": "not_automated",
+    "metering_status": "partial_read_only_capacity_projection",
+    "admin_action_required": (
+        "Use manual finance and capacity review before promising extra member "
+        "bands, paid feature tariffs, or per-domain pricing."
+    ),
+    "plain_language": (
+        "This is the current pilot allowance only. Extra member bands, paid "
+        "feature tariffs, per-domain pricing, renewal, and suspension are not "
+        "automated yet."
+    ),
+}
 COMMUNITY_DOMAIN_MODULE_PRESETS: dict[str, dict[str, str]] = {
     "governance": {
         "label": "Governance",
@@ -2447,6 +2465,7 @@ def _community_domain_package_quote_payload(
         "included_modules": included_modules,
         "optional_modules": optional_modules,
         "limits": COMMUNITY_DOMAIN_PACKAGE_LIMITS,
+        "billing_boundary": dict(COMMUNITY_DOMAIN_PACKAGE_BILLING_BOUNDARY),
         "renewal_policy": {
             "status": "not_configured",
             "message": "Renewal period and price must be confirmed before payment instruction.",
@@ -5543,6 +5562,7 @@ def _community_domain_capacity_plan_payload(
         "package_code": "community_domain_starter",
         "package_name": "Community Domain Starter",
         "limits_source": "pilot_package_quote_defaults",
+        "billing_boundary": dict(COMMUNITY_DOMAIN_PACKAGE_BILLING_BOUNDARY),
         "lanes": lanes,
         "counts": {
             "nodes": int(node_count),
@@ -13429,6 +13449,7 @@ def _community_domain_subscription_lifecycle_payload(
             "price_amount": quote["price_amount"],
             "currency": quote["currency"],
             "limits": quote["limits"],
+            "billing_boundary": dict(COMMUNITY_DOMAIN_PACKAGE_BILLING_BOUNDARY),
         },
         "summary": {
             "domain_status": domain_status,

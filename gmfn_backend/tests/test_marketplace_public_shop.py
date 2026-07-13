@@ -233,6 +233,127 @@ def test_marketplace_product_creation_respects_disabled_community_domain_shop_di
     )
 
 
+def test_marketplace_spotlight_broadcast_respects_disabled_community_domain_spotlight_policy(
+    client,
+    override_current_user_user,
+    seed_clan_member_membership,
+):
+    _ensure_marketplace_tables()
+    _seed_community_domain_feature_policy(feature_key="spotlight")
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_shops (
+                    id,
+                    clan_id,
+                    owner_user_id,
+                    shop_name,
+                    description,
+                    is_active,
+                    created_at
+                )
+                VALUES (
+                    982,
+                    1,
+                    1,
+                    'Spotlight Policy Shop',
+                    'A governed domain shop.',
+                    1,
+                    CURRENT_TIMESTAMP
+                )
+                """
+            )
+        )
+
+    response = client.post(
+        "/marketplace/broadcasts",
+        json={
+            "clan_id": 1,
+            "shop_id": 982,
+            "message": "This should not publish while Spotlight is off.",
+            "priority_mode": "free",
+            "visibility_scope": "direct_communities",
+        },
+    )
+
+    assert response.status_code == 403, response.text
+    detail = response.json()["detail"]
+    assert detail["code"] == "community_domain_feature_disabled"
+    assert detail["feature_key"] == "spotlight"
+    assert "Spotlight broadcasts" in detail["message"]
+    assert _scalar("SELECT COUNT(*) FROM marketplace_broadcasts") == 0
+    assert (
+        _scalar(
+            "SELECT COUNT(*) FROM trust_events "
+            "WHERE event_type = 'marketplace.broadcast.created'"
+        )
+        == 0
+    )
+
+
+def test_marketplace_vault_private_product_respects_disabled_community_domain_vault_policy(
+    client,
+    override_current_user_user,
+    seed_clan_member_membership,
+):
+    _ensure_marketplace_tables()
+    _seed_community_domain_feature_policy(feature_key="vault")
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_shops (
+                    id,
+                    clan_id,
+                    owner_user_id,
+                    shop_name,
+                    description,
+                    is_active,
+                    created_at
+                )
+                VALUES (
+                    983,
+                    1,
+                    1,
+                    'Vault Policy Shop',
+                    'A governed private-offer shop.',
+                    1,
+                    CURRENT_TIMESTAMP
+                )
+                """
+            )
+        )
+
+    response = client.post(
+        "/marketplace/products",
+        json={
+            "clan_id": 1,
+            "shop_id": 983,
+            "name": "Private domain file",
+            "description": "This should not become Vault-private while Vault is off.",
+            "price": "100",
+            "currency": "GBP",
+            "image_url": "/uploads/test/private-vault.jpg",
+            "visibility_mode": "vault_private",
+        },
+    )
+
+    assert response.status_code == 403, response.text
+    detail = response.json()["detail"]
+    assert detail["code"] == "community_domain_feature_disabled"
+    assert detail["feature_key"] == "vault"
+    assert "private Vault content" in detail["message"]
+    assert _scalar("SELECT COUNT(*) FROM marketplace_products") == 0
+    assert (
+        _scalar(
+            "SELECT COUNT(*) FROM trust_events "
+            "WHERE event_type = 'marketplace.product.created'"
+        )
+        == 0
+    )
+
+
 def test_spotlight_capacity_pilot_override_is_active_for_test_week(monkeypatch):
     monkeypatch.setattr(
         marketplace_routes,

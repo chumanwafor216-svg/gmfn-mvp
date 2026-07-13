@@ -12,6 +12,7 @@ from app.core.auth import get_current_user
 from app.db.database import get_db
 from app.db.models import Clan, ClanMembership, MarketplaceRequest, User, UserSettings
 from app.services.community_integrity_service import _user_settings_table_exists
+from app.services.community_domain_feature_policy import require_domain_demand_box_enabled
 from app.schemas.marketplace_requests import (
     MarketplaceRequestCreate,
     MarketplaceRequestOut,
@@ -276,6 +277,7 @@ def create_marketplace_request(
         current_user_id=int(current_user.id),
         requested_clan_id=payload.clan_id,
     )
+    require_domain_demand_box_enabled(db, clan_id=request_clan_id)
 
     row = MarketplaceRequest(
         clan_id=request_clan_id,
