@@ -134,6 +134,7 @@ const CONFIDENCE_OPTIONS = [
 
 type CommunityDomainInviteContext = {
   domainId: string;
+  clanId: string;
   domainName: string;
   domainCode: string;
   domainType: string;
@@ -762,6 +763,7 @@ function communityDomainInviteContextFromSearch(): CommunityDomainInviteContext 
   if (typeof window === "undefined") {
     return {
       domainId: "",
+      clanId: "",
       domainName: "",
       domainCode: "",
       domainType: "",
@@ -783,6 +785,7 @@ function communityDomainInviteContextFromSearch(): CommunityDomainInviteContext 
 
   return {
     domainId: firstTruthy(params.get("community_domain_id"), params.get("domain_id")),
+    clanId: firstTruthy(params.get("community_domain_clan_id"), params.get("clan_id")),
     domainName: firstTruthy(
       params.get("community_domain_name"),
       params.get("domain_display_name"),
@@ -818,6 +821,12 @@ function normalizeCommunityDomainInviteContext(
 
   return {
     domainId: firstTruthy(domain?.id, value?.domainId, value?.domain_id),
+    clanId: firstTruthy(
+      domain?.clan_id,
+      domain?.root_clan_id,
+      value?.clanId,
+      value?.clan_id
+    ),
     domainName: firstTruthy(
       domain?.display_name,
       domain?.name,
@@ -855,12 +864,23 @@ function mergeCommunityDomainInviteContext(
 ): CommunityDomainInviteContext {
   return {
     domainId: firstTruthy(primary.domainId, secondary.domainId),
+    clanId: firstTruthy(primary.clanId, secondary.clanId),
     domainName: firstTruthy(primary.domainName, secondary.domainName),
     domainCode: firstTruthy(primary.domainCode, secondary.domainCode),
     domainType: firstTruthy(primary.domainType, secondary.domainType),
     templateKey: firstTruthy(primary.templateKey, secondary.templateKey),
     groupType: firstTruthy(primary.groupType, secondary.groupType),
   };
+}
+
+function savedCommunityDomainContextBelongsHere(
+  context: CommunityDomainInviteContext,
+  selectedClanId: number
+): boolean {
+  if (!communityDomainInviteContextHasIdentity(context)) return false;
+  if (!selectedClanId) return true;
+  const contextClanId = Number(context.clanId || 0);
+  return Boolean(contextClanId && contextClanId === selectedClanId);
 }
 
 function readSavedCommunityDomainInviteContext(): CommunityDomainInviteContext {
@@ -1088,6 +1108,7 @@ export default function BuildFirstCirclePage() {
   const [linkedCommunityDomainInviteContext, setLinkedCommunityDomainInviteContext] =
     useState<CommunityDomainInviteContext>({
       domainId: "",
+      clanId: "",
       domainName: "",
       domainCode: "",
       domainType: "",
@@ -1111,7 +1132,11 @@ export default function BuildFirstCirclePage() {
   );
   const communityDomainCircleMode =
     routeCommunityDomainCircleMode ||
-    communityDomainInviteContextHasIdentity(linkedCommunityDomainInviteContext);
+    communityDomainInviteContextHasIdentity(linkedCommunityDomainInviteContext) ||
+    savedCommunityDomainContextBelongsHere(
+      savedCommunityDomainInviteContext,
+      selectedClanId
+    );
 
   const [isCompact, setIsCompact] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
@@ -1380,6 +1405,16 @@ export default function BuildFirstCirclePage() {
     currentClan,
     selectedClanId,
   ]);
+  const communityDomainIdentityReady =
+    communityDomainCircleMode &&
+    communityDomainInviteContextHasIdentity(communityDomainInviteContext);
+  const communityDomainIdentityBadge = communityDomainCircleMode
+    ? communityDomainIdentityReady
+      ? `Community Domain: ${communityName}`
+      : "Community Domain identity: loading"
+    : `Community: ${communityName}`;
+  const communityDomainInviteActionsDisabled =
+    communityDomainCircleMode && !communityDomainIdentityReady;
 
   const memberName = useMemo(() => {
     return (
@@ -1706,6 +1741,15 @@ export default function BuildFirstCirclePage() {
     setNotice({ tone, text });
   }
 
+  function blockCommunityDomainInviteUntilIdentityReady(): boolean {
+    if (!communityDomainInviteActionsDisabled) return false;
+    showNotice(
+      "error",
+      "Wait for the registered Community Domain name before sharing this invite."
+    );
+    return true;
+  }
+
   async function saveCommunityDomainInviteMessage() {
     if (!communityDomainCircleMode) return;
 
@@ -2001,6 +2045,8 @@ export default function BuildFirstCirclePage() {
   }
 
   async function prepareTrustedInviteLink(): Promise<string> {
+    if (blockCommunityDomainInviteUntilIdentityReady()) return "";
+
     const clanId = activeClanId();
     if (!clanId) {
       showNotice("error", "Select a community before creating an invite.");
@@ -2109,6 +2155,7 @@ export default function BuildFirstCirclePage() {
   }
 
   async function prepareInviteShareMenu(): Promise<boolean> {
+    if (blockCommunityDomainInviteUntilIdentityReady()) return false;
     if (inviteLink) return true;
     const trustedLink = await prepareTrustedInviteLink();
     return Boolean(trustedLink);
@@ -2400,9 +2447,23 @@ export default function BuildFirstCirclePage() {
               gap: 12,
             }}
           >
-            <span style={badge(true)}>Community: {communityName}</span>
+            <span style={badge(true)}>{communityDomainIdentityBadge}</span>
             <span style={badge(false)}>GSN ID: {gmfnId || "Not issued yet"}</span>
           </div>
+          {communityDomainCircleMode && !communityDomainIdentityReady ? (
+            <div
+              style={{
+                marginTop: 10,
+                ...helperText(),
+                color: "#FFE8A3",
+                fontSize: 13,
+                fontWeight: 850,
+              }}
+            >
+              Waiting for the registered Community Domain identity. Do not share
+              this invite until the domain name is visible here.
+            </div>
+          ) : null}
 
           <div
             style={{
@@ -2928,6 +2989,7 @@ export default function BuildFirstCirclePage() {
                     onClick={() => {
                       void copyInviteBundle();
                     }}
+                    disabled={communityDomainInviteActionsDisabled}
                     stableHeight={48}
                     debugId="build-first-circle.copy-invite"
                     style={compactButtonStyle(false)}
@@ -2936,6 +2998,7 @@ export default function BuildFirstCirclePage() {
                   </SecondaryButton>
                   <PrimaryButton
                     onClick={openWhatsAppInvite}
+                    disabled={communityDomainInviteActionsDisabled}
                     stableHeight={48}
                     debugId="build-first-circle.share-whatsapp"
                     style={{
@@ -2953,6 +3016,7 @@ export default function BuildFirstCirclePage() {
                       socialMessage: `Join ${communityName} on GSN. Open the invite link and request access.`,
                       url: inviteLink,
                     }}
+                    disabled={communityDomainInviteActionsDisabled}
                     buttonLabel="Share"
                     stableHeight={48}
                     debugId="build-first-circle.tag-invite"
@@ -3032,7 +3096,7 @@ export default function BuildFirstCirclePage() {
                 flexWrap: "wrap",
               }}
             >
-              <span style={badge(true)}>Community: {communityName}</span>
+              <span style={badge(true)}>{communityDomainIdentityBadge}</span>
               <span style={badge(false)}>
                 Role: {roleText(draft.memberRole)}
               </span>
@@ -3293,6 +3357,7 @@ export default function BuildFirstCirclePage() {
             onClick={() => {
               void openWhatsAppInvite();
             }}
+            disabled={communityDomainInviteActionsDisabled}
             stableHeight={48}
             debugId="build-first-circle.quick.whatsapp"
             style={compactButtonStyle(false)}
@@ -3303,6 +3368,7 @@ export default function BuildFirstCirclePage() {
             onClick={() => {
               void openEmailInvite();
             }}
+            disabled={communityDomainInviteActionsDisabled}
             stableHeight={48}
             debugId="build-first-circle.quick.email"
             style={compactButtonStyle(false)}
@@ -3313,6 +3379,7 @@ export default function BuildFirstCirclePage() {
             onClick={() => {
               void openFacebookInvite();
             }}
+            disabled={communityDomainInviteActionsDisabled}
             stableHeight={48}
             debugId="build-first-circle.quick.facebook"
             style={compactButtonStyle(false)}
@@ -3323,6 +3390,7 @@ export default function BuildFirstCirclePage() {
             onClick={() => {
               void shareJoinInvite();
             }}
+            disabled={communityDomainInviteActionsDisabled}
             stableHeight={48}
             debugId="build-first-circle.quick.share"
             style={compactButtonStyle(false)}
@@ -3333,6 +3401,7 @@ export default function BuildFirstCirclePage() {
             onClick={() => {
               void copyJoinInvite();
             }}
+            disabled={communityDomainInviteActionsDisabled}
             stableHeight={48}
             debugId="build-first-circle.quick.copy"
             style={compactButtonStyle(false)}
@@ -3849,6 +3918,7 @@ export default function BuildFirstCirclePage() {
                       onClick={() => {
                         void copyInviteBundle();
                       }}
+                      disabled={communityDomainInviteActionsDisabled}
                       stableHeight={48}
                       debugId="build-first-circle.copy-invite-bundle"
                       style={compactButtonStyle(true)}

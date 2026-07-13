@@ -158,8 +158,36 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /openSetupFirstCircle[\s\S]*new URLSearchParams\(\{[\s\S]*mode: "community-domain"[\s\S]*community_domain_id[\s\S]*community_domain_name[\s\S]*community_domain_code[\s\S]*domain_type[\s\S]*template_key[\s\S]*APP_ROUTES\.BUILD_FIRST_CIRCLE[\s\S]*Build your first circle[\s\S]*existing WhatsApp or[\s\S]*owner\/admin approval decides access[\s\S]*community-domain-dashboard\.setup-open-first-circle[\s\S]*Build first circle/,
+  /showActiveDomainSettingsSummary[\s\S]*domainOperational && activeLane === "settings" && setupJourneyMode !== "edit"[\s\S]*Operating summary[\s\S]*This domain is active\. Use live lanes first[\s\S]*should not fall back into a\s+setup-first flow after activation[\s\S]*Use setup only when you\s+need to correct saved details, add authority evidence, or\s+prepare verification[\s\S]*active does not mean verified[\s\S]*community-domain-dashboard\.settings-open-live-lane[\s\S]*community-domain-dashboard\.settings-edit-setup-details[\s\S]*Edit setup details/,
+  "Active Community Domains must show an operating summary on the settings lane and keep setup editing behind an explicit edit action.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /openSetupFirstCircle[\s\S]*new URLSearchParams\(\{[\s\S]*mode: "community-domain"[\s\S]*community_domain_id[\s\S]*community_domain_clan_id[\s\S]*community_domain_name[\s\S]*community_domain_code[\s\S]*domain_type[\s\S]*template_key[\s\S]*APP_ROUTES\.BUILD_FIRST_CIRCLE[\s\S]*Build your first circle[\s\S]*existing WhatsApp or[\s\S]*owner\/admin approval decides access[\s\S]*community-domain-dashboard\.setup-open-first-circle[\s\S]*Build first circle/,
   "Community Domain setup completion must open Build First Circle with domain identity, not the ordinary personal three-contact flow or a marketplace-name guess.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/BuildFirstCirclePage.tsx",
+  /type CommunityDomainInviteContext = \{[\s\S]*domainId: string;[\s\S]*clanId: string;[\s\S]*function savedCommunityDomainContextBelongsHere[\s\S]*communityDomainInviteContextHasIdentity\(context\)[\s\S]*contextClanId === selectedClanId[\s\S]*communityDomainCircleMode[\s\S]*routeCommunityDomainCircleMode[\s\S]*communityDomainInviteContextHasIdentity\(linkedCommunityDomainInviteContext\)[\s\S]*savedCommunityDomainContextBelongsHere\([\s\S]*savedCommunityDomainInviteContext,[\s\S]*selectedClanId[\s\S]*\)/,
+  "Build First Circle must only reuse saved Community Domain invite identity when it belongs to the selected clan, so stale ordinary marketplace names do not replace the registered domain.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/BuildFirstCirclePage.tsx",
+  /communityDomainIdentityReady[\s\S]*communityDomainInviteContextHasIdentity\(communityDomainInviteContext\)[\s\S]*communityDomainIdentityBadge[\s\S]*Community Domain: \$\{communityName\}[\s\S]*Community Domain identity: loading[\s\S]*Do not share\s+this invite until the domain name is visible here[\s\S]*\{communityDomainIdentityBadge\}/,
+  "Build First Circle must label Community Domain invites as Community Domain and warn when registered domain identity is not loaded.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/BuildFirstCirclePage.tsx",
+  /communityDomainInviteActionsDisabled[\s\S]*communityDomainCircleMode && !communityDomainIdentityReady[\s\S]*blockCommunityDomainInviteUntilIdentityReady[\s\S]*Wait for the registered Community Domain name before sharing this invite[\s\S]*prepareTrustedInviteLink[\s\S]*blockCommunityDomainInviteUntilIdentityReady\(\)[\s\S]*prepareInviteShareMenu[\s\S]*blockCommunityDomainInviteUntilIdentityReady\(\)[\s\S]*disabled=\{communityDomainInviteActionsDisabled\}[\s\S]*debugId="build-first-circle\.copy-invite"[\s\S]*disabled=\{communityDomainInviteActionsDisabled\}[\s\S]*debugId="build-first-circle\.share-whatsapp"[\s\S]*disabled=\{communityDomainInviteActionsDisabled\}[\s\S]*debugId="build-first-circle\.tag-invite"[\s\S]*disabled=\{communityDomainInviteActionsDisabled\}[\s\S]*debugId="build-first-circle\.quick\.whatsapp"[\s\S]*disabled=\{communityDomainInviteActionsDisabled\}[\s\S]*debugId="build-first-circle\.quick\.email"[\s\S]*disabled=\{communityDomainInviteActionsDisabled\}[\s\S]*debugId="build-first-circle\.quick\.facebook"[\s\S]*disabled=\{communityDomainInviteActionsDisabled\}[\s\S]*debugId="build-first-circle\.quick\.share"[\s\S]*disabled=\{communityDomainInviteActionsDisabled\}[\s\S]*debugId="build-first-circle\.quick\.copy"[\s\S]*disabled=\{communityDomainInviteActionsDisabled\}[\s\S]*debugId="build-first-circle\.copy-invite-bundle"/,
+  "Build First Circle must block every Community Domain invite/share action until the registered domain identity is loaded.",
   { frontend: true }
 );
 
@@ -167,6 +195,13 @@ assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
   /upsertCommunityDomainPolicy[\s\S]*DOMAIN_FEATURE_POLICY_ROWS[\s\S]*announcement_board[\s\S]*demand_box[\s\S]*spotlight[\s\S]*shop_diary[\s\S]*vault[\s\S]*marketplace_shops[\s\S]*member_invites[\s\S]*payments_contributions[\s\S]*rosca_cycles[\s\S]*domain\.feature_policy[\s\S]*domain\.features\.configure[\s\S]*Domain feature policy[\s\S]*governed marketplace[\s\S]*Enforcement boundary[\s\S]*Live enforcement exists for notices, member invites,[\s\S]*marketplace shops, Shop Diary writes, payments and[\s\S]*contributions, ROSCA cycle routes, Spotlight[\s\S]*broadcast\/payment routes, Demand Box posting, and[\s\S]*private Vault publishing\/link creation[\s\S]*Paid Vault[\s\S]*separate service rails/,
   "Community Domain setup must keep marketplace/community feature families available under domain policy while clearly stating current route-enforcement boundaries.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /function featurePolicySummary[\s\S]*Domain feature policy locked from setup[\s\S]*Community Domain is the governed professional marketplace form[\s\S]*ordinary marketplace behaviours stay available only as this domain permits them[\s\S]*does not remove member identity in other communities or automate tariffs, upgrades, member bands, paid slots, or outside publishing[\s\S]*Spotlight:/,
+  "Community Domain locked feature-policy summaries must preserve the governed professional marketplace boundary, not only a switch list.",
   { frontend: true }
 );
 
@@ -916,6 +951,13 @@ assertContains(
   { frontend: true }
 );
 
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /professionalMarketplaceFacts[\s\S]*Governed professional marketplace[\s\S]*Domain owner\/admin decides what works here[\s\S]*Members use the normal marketplace tools this domain permits[\s\S]*Member identity and activity in other communities stay separate[\s\S]*Extra bands and paid features still need manual capacity review[\s\S]*Professional marketplace rule[\s\S]*Community Domain is not a reduced product[\s\S]*ordinary marketplace behaviours available under domain\s+governance[\s\S]*owner\/admin chooses what works inside\s+this registered domain[\s\S]*Rule boundary only[\s\S]*does not create tariffs, sell\s+upgrades, add members, override feature switches, or\s+publish activity outside the domain/,
+  "Community Domain Services lane must state the professional-marketplace rule without implying automated tariff, upgrade, membership, feature-switch, or cross-domain publishing behavior.",
+  { frontend: true }
+);
+
 assertNotContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
   /serviceReadinessRows|ServiceReadinessItem|ServiceReadinessRow|SERVICE_READINESS_KEYS|serviceReadinessStatus|serviceFallbackDetail|moduleLabel|visibleServiceSettingsItems|enabledServiceSettingsItems|optionalServiceSettingsItems|visibleEconomicParticipationLanes|blockedEconomicParticipationLanes|economicParticipationReadyTotal|economicParticipationTemplate|economicParticipationCounts|visibleNetworkPresenceLanes|blockedNetworkPresenceLanes|networkPresenceReadyTotal|networkPresenceIdentity|networkPresenceStatus/,
@@ -1277,6 +1319,13 @@ assertContains(
   "src/pages/communityDomainDashboard/TrustEvidenceReadinessPanels.tsx",
   /function readinessLanes[\s\S]*function blockedLanes[\s\S]*function readyTotal[\s\S]*function evidenceRecordTypes[\s\S]*function blockedEvidenceRecords[\s\S]*function computeEvidenceRecordReadyTotal[\s\S]*evidenceRecordReadiness\?\.summary[\s\S]*evidenceRecordTypes\(evidenceRecordReadiness\)[\s\S]*evidenceReleaseReadiness\?\.summary[\s\S]*readinessLanes\(evidenceReleaseReadiness\)[\s\S]*trustRelayReadiness\?\.summary[\s\S]*readinessLanes\(trustRelayReadiness\)[\s\S]*notificationScopeReadiness\?\.summary[\s\S]*readinessLanes\(notificationScopeReadiness\)[\s\S]*trustMobility\?\.summary[\s\S]*readinessLanes\(trustMobility\)/,
   "Lazy Community Domain Trust/evidence readiness component must derive summaries, record types, lanes, blocked rows, and ready totals from raw readiness maps.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/communityDomainDashboard/TrustEvidenceReadinessPanels.tsx",
+  /Evidence and impact boundary[\s\S]*Attendance, payment, contribution, photograph, video, notice, and\s+report records can show that activity happened[\s\S]*They do not, by\s+themselves, prove what changed in a participant's life[\s\S]*Outcome and impact\s+claims still need review, participant\/community confirmation, time\s+context, and appropriate privacy protection[\s\S]*APP_ROUTES\.COMMUNITY_CONFIRMATION_POLICY[\s\S]*Configure confirmation policy[\s\S]*APP_ROUTES\.COMMUNITY_CONFIRMATION_INBOX[\s\S]*Open confirmation inbox[\s\S]*These links only open the confirmation surfaces[\s\S]*do not create a\s+confirmation request, choose responders, expose private records, or\s+publish an outcome claim/,
+  "Community Domain Trust/Evidence readiness must distinguish activity evidence from outcome or life-change proof.",
   { frontend: true }
 );
 

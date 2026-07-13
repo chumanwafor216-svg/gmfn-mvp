@@ -1,4 +1,6 @@
 import React from "react";
+import { Link } from "react-router-dom";
+import { APP_ROUTES } from "../../lib/appRoutes";
 import { humanStatus } from "./statusLanguage";
 
 type TrustEvidenceReadinessPanelsProps = {
@@ -145,6 +147,24 @@ function factGrid(items: Array<[string, unknown]>): React.ReactNode {
   );
 }
 
+function actionLinkStyle(): React.CSSProperties {
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 44,
+    borderRadius: 14,
+    padding: "10px 12px",
+    fontWeight: 900,
+    textDecoration: "none",
+    color: "#07172C",
+    background: "#FFFFFF",
+    border: "1px solid rgba(9,27,46,0.12)",
+    boxShadow: "0 8px 18px rgba(9,27,46,0.08)",
+    textAlign: "center",
+  };
+}
+
 function statusRow(
   key: string,
   title: string,
@@ -224,6 +244,46 @@ export default function CommunityDomainTrustEvidenceReadinessPanels({
 
   return (
     <>
+      <div
+        style={{
+          ...softCard(),
+          border: "1px solid rgba(214,170,69,0.30)",
+          background: "rgba(255,249,225,0.72)",
+        }}
+      >
+        <div style={sectionLabel()}>Evidence and impact boundary</div>
+        <div style={{ ...helperText(), marginTop: 7 }}>
+          Attendance, payment, contribution, photograph, video, notice, and
+          report records can show that activity happened. They do not, by
+          themselves, prove what changed in a participant's life.
+        </div>
+        <div style={{ ...helperText(), marginTop: 7, fontSize: 13 }}>
+          Use this lane to preserve organised evidence first. Outcome and impact
+          claims still need review, participant/community confirmation, time
+          context, and appropriate privacy protection before they are relied on.
+        </div>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 160px), 1fr))",
+            gap: 8,
+            marginTop: 12,
+          }}
+        >
+          <Link to={APP_ROUTES.COMMUNITY_CONFIRMATION_POLICY} style={actionLinkStyle()}>
+            Configure confirmation policy
+          </Link>
+          <Link to={APP_ROUTES.COMMUNITY_CONFIRMATION_INBOX} style={actionLinkStyle()}>
+            Open confirmation inbox
+          </Link>
+        </div>
+        <div style={{ ...helperText(), marginTop: 8, fontSize: 12.5 }}>
+          These links only open the confirmation surfaces. They do not create a
+          confirmation request, choose responders, expose private records, or
+          publish an outcome claim.
+        </div>
+      </div>
+
       <div style={softCard()}>
         <div style={sectionLabel()}>Evidence record readiness</div>
         <div style={{ ...helperText(), marginTop: 7 }}>

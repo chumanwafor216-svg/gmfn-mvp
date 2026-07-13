@@ -690,6 +690,8 @@ function featurePolicySummary(config: DomainFeaturePolicyConfig): string {
   });
   return [
     "Domain feature policy locked from setup.",
+    "Community Domain is the governed professional marketplace form: ordinary marketplace behaviours stay available only as this domain permits them.",
+    "This policy controls behaviour inside this registered domain; it does not remove member identity in other communities or automate tariffs, upgrades, member bands, paid slots, or outside publishing.",
     ...controlled,
     `Spotlight: ${config.spotlight.free_slots} free slots, paid after ${config.spotlight.paid_after_slots}, ${config.spotlight.rotation_hours}h rotation.`,
   ].join(" ");
@@ -2663,6 +2665,8 @@ export default function CommunityDomainDashboardPage() {
     ? "Owner/admin editing"
     : "Setup editor";
   const showSetupAccessCard = setupJourneyMode === "edit" || setupEditingLocked;
+  const showActiveDomainSettingsSummary =
+    domainOperational && activeLane === "settings" && setupJourneyMode !== "edit";
 
   useEffect(() => {
     const domainId = cleanText(domain?.id || communityDomainId);
@@ -3006,6 +3010,7 @@ export default function CommunityDomainDashboardPage() {
         "gmfn.buildFirstCircle.communityDomainInviteContext.v1",
         JSON.stringify({
           domainId: cleanText(domain?.id || communityDomainId),
+          clanId: cleanText(clanId),
           domainName: cleanText(domain?.display_name, "Community Domain"),
           domainCode: cleanText(domain?.domain_name),
           domainType: cleanText(domain?.domain_type),
@@ -3018,6 +3023,7 @@ export default function CommunityDomainDashboardPage() {
     const inviteParams = new URLSearchParams({
       mode: "community-domain",
       community_domain_id: cleanText(domain?.id || communityDomainId),
+      community_domain_clan_id: cleanText(clanId),
       community_domain_name: cleanText(domain?.display_name, "Community Domain"),
       community_domain_code: cleanText(domain?.domain_name),
       domain_type: cleanText(domain?.domain_type),
@@ -3517,6 +3523,13 @@ export default function CommunityDomainDashboardPage() {
     packageBillingBoundary?.admin_action_required,
     "Use manual finance and capacity review before promising upgraded limits."
   );
+  const professionalMarketplaceFacts = [
+    ["Model", "Governed professional marketplace"],
+    ["Feature control", "Domain owner/admin decides what works here"],
+    ["Member use", "Members use the normal marketplace tools this domain permits"],
+    ["Outside domains", "Member identity and activity in other communities stay separate"],
+    ["Expansion", "Extra bands and paid features still need manual capacity review"],
+  ];
 
   async function loadAccessReviewItems(showLoading = false) {
     const requestDomainId = cleanText(communityDomainId);
@@ -4673,7 +4686,80 @@ export default function CommunityDomainDashboardPage() {
                   </div>
                 ) : null}
 
-                {!isActiveLaneReadinessLoading && activeLane === "settings" ? (
+                {!isActiveLaneReadinessLoading && showActiveDomainSettingsSummary ? (
+                  <div style={{ ...softCard(), display: "grid", gap: 12 }}>
+                    <div style={sectionLabel()}>Operating summary</div>
+                    <h3 style={{ margin: 0, fontSize: 22, lineHeight: 1.15 }}>
+                      This domain is active. Use live lanes first.
+                    </h3>
+                    <div style={{ ...helperText(), fontSize: 14 }}>
+                      Pillar-style Community Domains should not fall back into a
+                      setup-first flow after activation. Use setup only when you
+                      need to correct saved details, add authority evidence, or
+                      prepare verification.
+                    </div>
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns:
+                          "repeat(auto-fit, minmax(min(100%, 150px), 1fr))",
+                        gap: 8,
+                      }}
+                    >
+                      <div style={statusBadge(status.domain_status)}>
+                        Domain: {compactStatus(status.domain_status)}
+                      </div>
+                      <div style={statusBadge(status.billing_status)}>
+                        Billing: {compactStatus(status.billing_status)}
+                      </div>
+                      <div style={statusBadge(status.activation_status)}>
+                        Activation: {compactStatus(status.activation_status)}
+                      </div>
+                      <div style={statusBadge(status.verification_status)}>
+                        Verification: {compactStatus(status.verification_status)}
+                      </div>
+                    </div>
+                    <div style={{ ...helperText(), fontSize: 13 }}>
+                      Boundary: active does not mean verified. Verification still
+                      needs authority evidence and review; tariff upgrades,
+                      member bands, and paid feature changes still need manual
+                      capacity/finance handling.
+                    </div>
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns:
+                          "repeat(auto-fit, minmax(min(100%, 170px), 1fr))",
+                        gap: 8,
+                      }}
+                    >
+                      <StableButton
+                        type="button"
+                        kind="primary"
+                        debugId="community-domain-dashboard.settings-open-live-lane"
+                        onClick={() => {
+                          setShowAdvancedTools(true);
+                          setActiveLane(operationalLaneKey);
+                          setSetupJourneyMode("setup");
+                        }}
+                      >
+                        Open {operationalLaneLabel}
+                      </StableButton>
+                      <StableButton
+                        type="button"
+                        kind="secondary"
+                        debugId="community-domain-dashboard.settings-edit-setup-details"
+                        onClick={() => openSetupJourney("edit")}
+                      >
+                        Edit setup details
+                      </StableButton>
+                    </div>
+                  </div>
+                ) : null}
+
+                {!isActiveLaneReadinessLoading &&
+                activeLane === "settings" &&
+                !showActiveDomainSettingsSummary ? (
                   <div style={{ ...softCard(), display: "grid", gap: 12 }}>
                     <div style={sectionLabel()}>
                       {setupJourneyMode === "edit"
@@ -6465,6 +6551,44 @@ export default function CommunityDomainDashboardPage() {
                           <h3 style={{ margin: "4px 0 0", fontSize: 19, lineHeight: 1.15 }}>
                             Allowance is separate from feature permission.
                           </h3>
+                        </div>
+                      </div>
+                      <div
+                        style={{
+                          display: "grid",
+                          gap: 8,
+                          padding: 12,
+                          borderRadius: 18,
+                          border: "1px solid rgba(9,27,46,0.1)",
+                          background: "rgba(255,255,255,0.7)",
+                        }}
+                      >
+                        <div style={sectionLabel()}>Professional marketplace rule</div>
+                        <div style={{ ...helperText(), fontSize: 13 }}>
+                          Community Domain is not a reduced product. It keeps
+                          ordinary marketplace behaviours available under domain
+                          governance: the owner/admin chooses what works inside
+                          this registered domain, while members keep their wider
+                          GSN identity outside this domain.
+                        </div>
+                        <div
+                          style={{
+                            display: "grid",
+                            gridTemplateColumns:
+                              "repeat(auto-fit, minmax(min(100%, 150px), 1fr))",
+                            gap: 8,
+                          }}
+                        >
+                          {professionalMarketplaceFacts.map(([label, value]) => (
+                            <div key={label} style={statusBadge("domain rule")}>
+                              {label}: {value}
+                            </div>
+                          ))}
+                        </div>
+                        <div style={{ ...helperText(), fontSize: 13 }}>
+                          Rule boundary only. It does not create tariffs, sell
+                          upgrades, add members, override feature switches, or
+                          publish activity outside the domain.
                         </div>
                       </div>
                       <div
