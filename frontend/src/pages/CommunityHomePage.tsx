@@ -12,6 +12,7 @@ import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import { StableButton } from "../components/StableButton";
 import SpotlightMediaFrame from "../components/SpotlightMediaFrame";
 import { brandClampLines, brandSingleLine } from "../styles/gmfnBrand";
+import { APP_ROUTES } from "../lib/appRoutes";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 import { navigateWithOrigin } from "../lib/nav";
 import { revealElementWithoutJump } from "../lib/mobileRevealStability";
@@ -392,6 +393,34 @@ function routeTarget(
   }).to as string;
 }
 
+function identityTextShape(value: unknown) {
+  const text = safeStr(value);
+  const digits = text.replace(/\D/g, "");
+
+  return {
+    text,
+    looksLikeEmail: text.includes("@"),
+    looksLikePhone: digits.length >= 9 && digits.length >= text.length - 3,
+    looksLikeGsnId: /^(?:GMFN|GMFM|GSN)-[A-Z0-9]+-/i.test(text),
+  };
+}
+
+function isHumanMemberName(value: unknown): boolean {
+  const shape = identityTextShape(value);
+  if (!shape.text || shape.text.toLowerCase() === "member") return false;
+  return !shape.looksLikeEmail && !shape.looksLikePhone && !shape.looksLikeGsnId;
+}
+
+function hasHumanMemberName(me: any): boolean {
+  return [
+    readLocalText(PROFILE_NAME_STORAGE_KEY),
+    me?.display_name,
+    me?.nickname,
+    me?.name,
+    me?.first_name,
+  ].some(isHumanMemberName);
+}
+
 function resolveMemberName(me: any): string {
   const candidates = [
     readLocalText(PROFILE_NAME_STORAGE_KEY),
@@ -410,15 +439,32 @@ function resolveMemberName(me: any): string {
   ];
 
   for (const candidate of candidates) {
-    const text = safeStr(candidate);
-    if (!text) continue;
-    const digits = text.replace(/\D/g, "");
-    const looksLikeEmail = text.includes("@");
-    const looksLikePhone = digits.length >= 9 && digits.length >= text.length - 3;
-    if (!looksLikeEmail && !looksLikePhone) return text;
+    const shape = identityTextShape(candidate);
+    if (!shape.text) continue;
+    if (!shape.looksLikeEmail && !shape.looksLikePhone) return shape.text;
   }
 
   return "Member";
+}
+
+function identityNamePromptStyle(isCompact: boolean): React.CSSProperties {
+  return {
+    marginTop: isCompact ? 6 : 9,
+    display: "inline-flex",
+    alignItems: "center",
+    minHeight: isCompact ? 30 : 34,
+    padding: isCompact ? "6px 10px" : "7px 12px",
+    borderRadius: 999,
+    border: "1px solid rgba(226,192,106,0.35)",
+    background: "rgba(255,255,255,0.08)",
+    color: "#F8E7B2",
+    fontSize: isCompact ? 11 : 12,
+    fontWeight: 850,
+    lineHeight: 1.1,
+    letterSpacing: 0,
+    cursor: "pointer",
+    touchAction: "manipulation",
+  };
 }
 
 function communityShellStyle(isCompact: boolean): React.CSSProperties {
@@ -1679,6 +1725,7 @@ export default function CommunityHomePage() {
         selectedClanId,
         "community-home.route.notifications"
       ),
+      profileSettings: APP_ROUTES.SETTINGS,
     }),
     [selectedClanId]
   );
@@ -1750,6 +1797,7 @@ export default function CommunityHomePage() {
       ? `${formatGlobalAmount(Math.abs(netMoneyPosition))} visible obligation`
       : `${formatSignedGlobalAmount(netMoneyPosition)} net visible record`;
   const communityHomeOwnerName = resolveMemberName(me);
+  const communityHomeNeedsDisplayName = !hasHumanMemberName(me);
   const communityCountFromSummary = Number(poolSummary?.communities_count || clans.length || 0);
 
   const sortedClans = useMemo(() => {
@@ -3201,6 +3249,16 @@ export default function CommunityHomePage() {
                 >
                   {communityHomeOwnerName}
                 </div>
+                {communityHomeNeedsDisplayName ? (
+                  <StableButton
+                    type="button"
+                    debugId="community-home.identity.add-display-name.compact"
+                    onClick={(event) => openCommunityRoute(event, routes.profileSettings)}
+                    style={identityNamePromptStyle(true)}
+                  >
+                    Add display name
+                  </StableButton>
+                ) : null}
               </div>
             ) : null}
           </div>
@@ -3223,6 +3281,16 @@ export default function CommunityHomePage() {
                 >
                   {communityHomeOwnerName}
                 </div>
+                {communityHomeNeedsDisplayName ? (
+                  <StableButton
+                    type="button"
+                    debugId="community-home.identity.add-display-name"
+                    onClick={(event) => openCommunityRoute(event, routes.profileSettings)}
+                    style={identityNamePromptStyle(false)}
+                  >
+                    Add display name
+                  </StableButton>
+                ) : null}
               </>
             ) : null}
 

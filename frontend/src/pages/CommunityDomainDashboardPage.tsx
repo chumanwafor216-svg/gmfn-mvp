@@ -5875,7 +5875,7 @@ export default function CommunityDomainDashboardPage() {
                               payment={domainPayment}
                               clanId={selectedDomainClanId}
                               title="Community Domain payment proof"
-                              compact={false}
+                              compact
                               debugIdPrefix="community-domain-payment-proof"
                               onUploaded={(updated) => {
                                 setDomainPayment({ ...domainPayment, ...updated });

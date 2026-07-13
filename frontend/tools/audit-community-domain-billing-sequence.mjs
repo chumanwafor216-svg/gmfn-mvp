@@ -1,9 +1,21 @@
 /* global console, document, localStorage, process, URL, window */
 
 import { chromium } from "@playwright/test";
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 
 const baseUrl = process.env.GSN_AUDIT_BASE_URL || "http://127.0.0.1:5180";
 const routePath = "/app/community-domain/13";
+const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
+const paymentProofSource = readFileSync(
+  join(frontendRoot, "src", "components", "PaymentProofSubmissionPanel.tsx"),
+  "utf8"
+);
+const dashboardSource = readFileSync(
+  join(frontendRoot, "src", "pages", "CommunityDomainDashboardPage.tsx"),
+  "utf8"
+);
 
 function normalizeText(value) {
   return String(value || "").replace(/\s+/g, " ").trim();
@@ -354,6 +366,7 @@ async function pageAudit(page) {
         bottomNavRect.top >= 0 &&
         bottomNavRect.top < viewportH &&
         bottomNavRect.bottom <= viewportH + 2,
+      bottomNavGap: bottomNavRect ? viewportH - bottomNavRect.bottom : null,
       bodyText,
       horizontalOverflow: document.documentElement.scrollWidth > viewportW + 2,
     };
@@ -388,6 +401,36 @@ await page.addInitScript(() => {
 });
 
 const findings = [];
+
+if (
+  !/const fileInputId = `\$\{debugIdPrefix\}-file`;[\s\S]*?data-gmfn-file-input-id=\{fileInputId\}[\s\S]*?onChange=\{handleProofFileChange\}/.test(
+    paymentProofSource
+  )
+) {
+  findings.push(
+    "Payment proof file picker must keep an explicit label-to-file-input association and a visible file-selection handler for mobile camera/file pickers."
+  );
+}
+
+if (
+  !/const visibleAuthGuidance = compact[\s\S]*?Complete any bank app, OTP, or biometric approval first[\s\S]*?\{visibleAuthGuidance\}/.test(
+    paymentProofSource
+  )
+) {
+  findings.push(
+    "Payment proof panel must keep compact bank-auth guidance for phone billing lanes."
+  );
+}
+
+if (
+  !/title="Community Domain payment proof"[\s\S]*?compact[\s\S]*?debugIdPrefix="community-domain-payment-proof"/.test(
+    dashboardSource
+  )
+) {
+  findings.push(
+    "Community Domain payment proof must render PaymentProofSubmissionPanel in compact mode on the phone billing lane."
+  );
+}
 
 try {
   await page.goto(`${baseUrl}${routePath}`, { waitUntil: "networkidle", timeout: 15000 });
@@ -450,7 +493,16 @@ try {
     findings.push("Bottom navigation is not visible in the mobile viewport after opening Billing.");
   }
 
-  if (defaultResult.scrollRootH > defaultResult.viewportH * 6.25) {
+  if (
+    typeof defaultResult.bottomNavGap === "number" &&
+    defaultResult.bottomNavGap > 12
+  ) {
+    findings.push(
+      `Bottom navigation is floating above blank space: ${defaultResult.bottomNavGap}px gap below rail`
+    );
+  }
+
+  if (defaultResult.scrollRootH > defaultResult.viewportH * 5.9) {
     findings.push(
       `Billing mobile scroll is too long: scroll root ${defaultResult.scrollRootH}px on ${defaultResult.viewportH}px viewport`
     );

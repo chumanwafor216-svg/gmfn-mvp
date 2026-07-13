@@ -78,6 +78,21 @@ assertContains(
 );
 
 assertContains(
+  /function hasHumanMemberName\(me: any\): boolean \{[\s\S]*?readLocalText\(PROFILE_NAME_STORAGE_KEY\)[\s\S]*?me\?\.display_name[\s\S]*?me\?\.nickname[\s\S]*?me\?\.first_name[\s\S]*?\.some\(isHumanMemberName\)/,
+  "Community Home must separately detect whether a real human display name exists before suppressing profile-name guidance."
+);
+
+assertContains(
+  /function identityNamePromptStyle\(isCompact: boolean\): React\.CSSProperties \{[\s\S]*?minHeight: isCompact \? 30 : 34[\s\S]*?touchAction: "manipulation"/,
+  "Community Home display-name prompt must keep compact, stable phone tap geometry."
+);
+
+assertContains(
+  /profileSettings: APP_ROUTES\.SETTINGS[\s\S]*?communityHomeNeedsDisplayName = !hasHumanMemberName\(me\)[\s\S]*?openCommunityRoute\(event, routes\.profileSettings\)[\s\S]*?Add display name/,
+  "Community Home must route missing-name users to My GSN Identity settings instead of leaving them with a phone/id label."
+);
+
+assertContains(
   /function communityActionStyle\([\s\S]*?touchAction: "manipulation"[\s\S]*?WebkitTapHighlightColor: "transparent"[\s\S]*?overflowAnchor: "none"[\s\S]*?transform: "none"[\s\S]*?transition: "none"/,
   "Community Home action styles must keep phone tap and movement locks."
 );

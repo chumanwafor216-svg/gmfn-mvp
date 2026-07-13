@@ -126,6 +126,9 @@ export default function PaymentProofSubmissionPanel({
     payment?.bank_authentication_guidance,
     "Your bank may require app approval, SMS OTP, a one-time code, a code generator, or biometric confirmation before the transfer completes. Complete that with your banking provider; GSN only confirms this payment after the bank/provider match is received."
   );
+  const visibleAuthGuidance = compact
+    ? "Complete any bank app, OTP, or biometric approval first. GSN confirms only after bank match or finance review."
+    : authGuidance;
   const latestProof = meta.latest_payment_proof || {};
   const latestProofName = firstTruthy(latestProof.original_filename, latestProof.stored_filename);
   const latestProofAt = safeDateTime(latestProof.submitted_at || meta.proof_submitted_at);
@@ -133,6 +136,7 @@ export default function PaymentProofSubmissionPanel({
     meta.proof_status_text,
     latestProofName ? "Submitted for finance review" : ""
   );
+  const fileInputId = `${debugIdPrefix}-file`;
 
   const [reference, setReference] = useState(initialReference);
   const [file, setFile] = useState<File | null>(null);
@@ -189,6 +193,14 @@ export default function PaymentProofSubmissionPanel({
     }
   }
 
+  function handleProofFileChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const selectedFile = event.target.files?.[0] || null;
+    setFile(selectedFile);
+    if (selectedFile) {
+      show("info", `Proof selected: ${selectedFile.name}. Tap Submit proof for finance review.`);
+    }
+  }
+
   if (!payment) return null;
 
   const messageTone = localMessage?.tone === "error" ? "error" : localMessage?.tone === "success" ? "success" : "info";
@@ -228,7 +240,7 @@ export default function PaymentProofSubmissionPanel({
             lineHeight: 1.4,
           }}
         >
-          {authGuidance}
+          {visibleAuthGuidance}
         </div>
       ) : null}
 
@@ -284,10 +296,12 @@ export default function PaymentProofSubmissionPanel({
             />
           </label>
 
+          <div style={{ position: "relative", minWidth: 0 }}>
           <label
-            htmlFor={`${debugIdPrefix}-file`}
+            htmlFor={fileInputId}
             data-gmfn-action-root="true"
             data-cta-id={`${debugIdPrefix}.choose-file`}
+            data-gmfn-file-input-id={fileInputId}
             className="gmfn-stable-action"
             style={{
               ...brandActionButton("secondary", busy),
@@ -302,13 +316,13 @@ export default function PaymentProofSubmissionPanel({
             {file ? file.name : "Choose proof file"}
           </label>
           <input
-            id={`${debugIdPrefix}-file`}
+            id={fileInputId}
             type="file"
             accept="image/*,.pdf"
             disabled={busy}
             data-gmfn-field="true"
             data-cta-id={`${debugIdPrefix}.file-input`}
-            onChange={(event) => setFile(event.target.files?.[0] || null)}
+            onChange={handleProofFileChange}
             style={{
               position: "absolute",
               width: 1,
@@ -317,6 +331,7 @@ export default function PaymentProofSubmissionPanel({
               pointerEvents: "none",
             }}
           />
+          </div>
 
           <PrimaryButton
             type="button"
