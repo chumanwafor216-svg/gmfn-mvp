@@ -322,6 +322,95 @@ def test_community_domain_notice_board_is_member_scoped_and_admin_posted(
         app.dependency_overrides.pop(get_current_user, None)
 
 
+def test_community_domain_invite_template_is_domain_scoped_and_member_readable(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    member = _seed_user(2, "domain-invite-template-member@example.com")
+    outsider = _seed_user(3, "domain-invite-template-outsider@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Pillar Invite Template",
+                "display_name": "Pillar Invite Template",
+                "domain_type": "ngo",
+                "template_key": "ngo_project_network",
+                "country": "United Kingdom",
+                "state": "Scotland / Aberdeen",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain_id = created.json()["community_domain"]["id"]
+
+        with SessionLocal() as db:
+            db.add(
+                CommunityDomainMembership(
+                    community_domain_id=int(domain_id),
+                    user_id=int(member.id),
+                    role="member",
+                    status="active",
+                )
+            )
+            db.commit()
+
+        saved = client.patch(
+            f"/community-domains/{domain_id}/invite-template",
+            json={
+                "message": "Pillar of Hope official invite wording.",
+                "group_type": "charity_ngo",
+                "inviter_name": "Nwafor Chuma",
+            },
+        )
+        assert saved.status_code == 200, saved.text
+        saved_data = saved.json()
+        assert saved_data["invite_template"]["message"] == (
+            "Pillar of Hope official invite wording."
+        )
+        assert saved_data["invite_template"]["group_type"] == "charity_ngo"
+        assert saved_data["invite_template"]["inviter_name"] == "Nwafor Chuma"
+        assert "approval remains required" in saved_data["boundary"]
+
+        app.dependency_overrides[get_current_user] = lambda: member
+        readable = client.get(f"/community-domains/{domain_id}/invite-template")
+        assert readable.status_code == 200, readable.text
+        assert readable.json()["invite_template"]["message"] == (
+            "Pillar of Hope official invite wording."
+        )
+
+        blocked_member_write = client.patch(
+            f"/community-domains/{domain_id}/invite-template",
+            json={"message": "Member cannot rewrite the official invite."},
+        )
+        assert blocked_member_write.status_code == 403, blocked_member_write.text
+
+        app.dependency_overrides[get_current_user] = lambda: outsider
+        blocked_read = client.get(f"/community-domains/{domain_id}/invite-template")
+        assert blocked_read.status_code == 403, blocked_read.text
+
+        blocked_write = client.patch(
+            f"/community-domains/{domain_id}/invite-template",
+            json={"message": "Outsider cannot rewrite the official invite."},
+        )
+        assert blocked_write.status_code == 403, blocked_write.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    with SessionLocal() as db:
+        event = (
+            db.query(TrustEvent)
+            .filter(TrustEvent.event_type == "community_domain.invite.template")
+            .one()
+        )
+        meta = json.loads(event.meta_json or "{}")
+        assert meta["community_domain_id"] == domain_id
+        assert meta["message"] == "Pillar of Hope official invite wording."
+        assert meta["group_type"] == "charity_ngo"
+        assert meta["inviter_name"] == "Nwafor Chuma"
+
+
 def test_community_domain_notice_board_respects_disabled_feature_policy(
     client: TestClient,
 ):

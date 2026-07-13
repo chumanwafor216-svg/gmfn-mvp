@@ -1496,10 +1496,33 @@ function isCommunityDomainOperational(status: any, domain: any): boolean {
   const activationStatus = compactStatus(
     status?.activation_status || domain?.activation_status
   ).toLowerCase();
+  const blockedDomain =
+    domainStatus.includes("closed") ||
+    domainStatus.includes("suspended") ||
+    domainStatus.includes("expired");
+  const billingReady =
+    !billingStatus ||
+    billingStatus.includes("active") ||
+    billingStatus.includes("paid") ||
+    billingStatus.includes("confirmed") ||
+    billingStatus.includes("current");
+  const activationReady =
+    !activationStatus ||
+    activationStatus.includes("active") ||
+    activationStatus.includes("approved") ||
+    activationStatus.includes("confirmed") ||
+    activationStatus.includes("launched");
+  const activationBlocked =
+    activationStatus.includes("not active") ||
+    activationStatus.includes("waiting") ||
+    activationStatus.includes("pending");
+
   return (
+    !blockedDomain &&
     domainStatus.includes("active") &&
-    billingStatus.includes("active") &&
-    activationStatus.includes("active")
+    billingReady &&
+    activationReady &&
+    !activationBlocked
   );
 }
 
@@ -2940,6 +2963,20 @@ export default function CommunityDomainDashboardPage() {
     if (!saved) return;
     setSetupCompletionSavedAt(cleanText(saved.saved_at, new Date().toISOString()));
     setSelectedClanId(clanId);
+    try {
+      window.localStorage.setItem(
+        "gmfn.buildFirstCircle.communityDomainInviteContext.v1",
+        JSON.stringify({
+          domainId: cleanText(domain?.id || communityDomainId),
+          domainName: cleanText(domain?.display_name, "Community Domain"),
+          domainCode: cleanText(domain?.domain_name),
+          domainType: cleanText(domain?.domain_type),
+          templateKey: cleanText(domain?.template_key || domain?.domain_type),
+        })
+      );
+    } catch {
+      // Storage is only a navigation fallback; route params remain authoritative.
+    }
     const inviteParams = new URLSearchParams({
       mode: "community-domain",
       community_domain_id: cleanText(domain?.id || communityDomainId),

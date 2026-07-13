@@ -22,6 +22,7 @@ import {
   getMyMarketplaceShop,
   getMyIdentityRisk,
   getSelectedClanId,
+  listMyCommunityDomains,
   createVaultShopAccessLink,
   extendVaultShopAccessLink,
   listVaultShopAccessLinks,
@@ -30,6 +31,11 @@ import {
   uploadMarketplaceImageFile,
   uploadMarketplaceVideoFile,
 } from "../lib/api";
+import {
+  communityDomainFeatureIsOff,
+  communityDomainFeatureModeFromPayload,
+  communityDomainFeatureOffMessage,
+} from "../lib/communityDomainFeaturePolicy";
 import {
   prepareSpotlightImageFile,
   prepareSpotlightVideoFile,
@@ -999,6 +1005,8 @@ export default function ShopControlPage() {
   const controlRevealTargetRef = useRef("");
   const spotlightIdleTimerRef = useRef<number | null>(null);
   const spotlightSuccessTimerRef = useRef<number | null>(null);
+  const [communityDomainPolicyPayload, setCommunityDomainPolicyPayload] =
+    useState<any>(null);
 
   const selectedClanId = Number(getSelectedClanId() || 0);
   const shopActionsLocked = Boolean(continuityReview.blocked);
@@ -1009,6 +1017,43 @@ export default function ShopControlPage() {
       )
     : "";
   const effectiveShopClanId = Number(shop?.clan_id || selectedClanId || 0);
+  const shopControlPolicyCommunityId = Number(effectiveShopClanId || selectedClanId || 0);
+  const shopControlDomainFallbackName = useMemo(
+    () => firstTruthy(shop?.marketplace_name, "this Community Domain"),
+    [shop?.marketplace_name]
+  );
+  const marketplaceShopsDomainFeatureMatch = useMemo(
+    () =>
+      communityDomainFeatureModeFromPayload(
+        communityDomainPolicyPayload,
+        shopControlPolicyCommunityId,
+        "marketplace_shops"
+      ),
+    [communityDomainPolicyPayload, shopControlPolicyCommunityId]
+  );
+  const marketplaceShopsFeatureOff = communityDomainFeatureIsOff(
+    marketplaceShopsDomainFeatureMatch
+  );
+  const marketplaceShopsFeatureOffText = communityDomainFeatureOffMessage(
+    "Marketplace Shops",
+    marketplaceShopsDomainFeatureMatch?.domainName || shopControlDomainFallbackName
+  );
+  const spotlightDomainFeatureMatch = useMemo(
+    () =>
+      communityDomainFeatureModeFromPayload(
+        communityDomainPolicyPayload,
+        shopControlPolicyCommunityId,
+        "spotlight"
+      ),
+    [communityDomainPolicyPayload, shopControlPolicyCommunityId]
+  );
+  const spotlightFeatureOff = communityDomainFeatureIsOff(
+    spotlightDomainFeatureMatch
+  );
+  const spotlightFeatureOffText = communityDomainFeatureOffMessage(
+    "Spotlight",
+    spotlightDomainFeatureMatch?.domainName || shopControlDomainFallbackName
+  );
   const routes = useMemo(
     () => ({
       dashboard: routeTarget(
@@ -1080,6 +1125,29 @@ export default function ShopControlPage() {
     }),
     [effectiveShopClanId]
   );
+
+  useEffect(() => {
+    let alive = true;
+
+    if (!shopControlPolicyCommunityId) {
+      setCommunityDomainPolicyPayload(null);
+      return () => {
+        alive = false;
+      };
+    }
+
+    listMyCommunityDomains()
+      .then((payload) => {
+        if (alive) setCommunityDomainPolicyPayload(payload);
+      })
+      .catch(() => {
+        if (alive) setCommunityDomainPolicyPayload(null);
+      });
+
+    return () => {
+      alive = false;
+    };
+  }, [shopControlPolicyCommunityId]);
   const shopHeroShortcuts: Array<{
     label: string;
     icon: GsnIconName;
@@ -2294,6 +2362,11 @@ export default function ShopControlPage() {
   }
 
   async function saveShopDetails(extra?: Partial<ShopRecord> & { clear_image?: boolean }) {
+    if (marketplaceShopsFeatureOff) {
+      showNotice("error", marketplaceShopsFeatureOffText);
+      return;
+    }
+
     setSavingShop(true);
 
     try {
@@ -2338,6 +2411,15 @@ export default function ShopControlPage() {
     if (shop?.id) {
       setSpotlightFlowStep("upload");
       return shop;
+    }
+
+    if (marketplaceShopsFeatureOff) {
+      setSpotlightPublishFeedback({
+        tone: "error",
+        text: marketplaceShopsFeatureOffText,
+      });
+      showNotice("error", marketplaceShopsFeatureOffText);
+      return null;
     }
 
     const clanId = Number(selectedClanId || 0);
@@ -2552,6 +2634,15 @@ export default function ShopControlPage() {
         tone: "info",
         text: "Spotlight publish is already running. Wait for it to finish.",
       });
+      return;
+    }
+
+    if (spotlightFeatureOff) {
+      setSpotlightPublishFeedback({
+        tone: "error",
+        text: spotlightFeatureOffText,
+      });
+      showNotice("error", spotlightFeatureOffText);
       return;
     }
 
@@ -2827,6 +2918,16 @@ export default function ShopControlPage() {
         ))}
         <span style={badge(false)}>Community: {communityName}</span>
       </div>
+
+      {spotlightFeatureOff ? (
+        <div style={{ marginTop: 14, ...noticeCard("error") }}>
+          {spotlightFeatureOffText}
+        </div>
+      ) : marketplaceShopsFeatureOff && !shop?.id ? (
+        <div style={{ marginTop: 14, ...noticeCard("error") }}>
+          {marketplaceShopsFeatureOffText}
+        </div>
+      ) : null}
 
       {currentActiveSpotlight ? (
         <div
@@ -4500,7 +4601,7 @@ export default function ShopControlPage() {
         <div style={{ marginTop: 16, ...controlGrid(isCompact, 150) }}>
           <PrimaryButton
             onClick={() => saveShopDetails()}
-            disabled={shopActionsLocked || savingShop}
+            disabled={shopActionsLocked || savingShop || marketplaceShopsFeatureOff}
             busy={savingShop}
             busyLabel="Saving..."
             fullWidth

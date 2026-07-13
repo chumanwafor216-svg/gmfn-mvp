@@ -16,7 +16,10 @@ import {
   getCurrentClan,
   getMe,
   getSelectedClanId,
+  getCommunityDomainInviteTemplate,
+  listMyCommunityDomains,
   safeCopy,
+  updateCommunityDomainInviteTemplate,
   type ClanInviteRelationshipEvidencePayload,
 } from "../lib/api";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
@@ -78,11 +81,20 @@ const UI_STORAGE_KEY = "gmfn.buildFirstCircle.sections.v2";
 const DRAFT_FALLBACK_KEY = "gmfn.firstCircle.fallback.v1";
 const COMMUNITY_DOMAIN_INVITE_MESSAGE_KEY =
   "gmfn.buildFirstCircle.communityDomainInviteMessage.v1";
+const COMMUNITY_DOMAIN_INVITE_CONTEXT_KEY =
+  "gmfn.buildFirstCircle.communityDomainInviteContext.v1";
 const SLOW_FIRST_CIRCLE_LOAD_MS = 8000;
 
 const ROLE_OPTIONS = firstCircle.FIRST_CIRCLE_ROLE_OPTIONS.map(
   (option) => option.value
 );
+const COMMUNITY_DOMAIN_ROLE_OPTIONS = [
+  "charity_ngo",
+  "church_group",
+  "school_group",
+  "student_group",
+  "community_association",
+];
 
 const COMMON_RELATIONSHIPS = firstCircle.FIRST_CIRCLE_RELATIONSHIP_OPTIONS.map(
   (option) => option.value
@@ -785,6 +797,84 @@ function communityDomainInviteContextFromSearch(): CommunityDomainInviteContext 
   };
 }
 
+function normalizeCommunityDomainInviteContext(
+  value: any
+): CommunityDomainInviteContext {
+  const domain = value?.community_domain || value?.domain || value || {};
+  const resolvedTemplate = domain?.resolved_template || {};
+  const domainType = firstTruthy(
+    domain?.domain_type,
+    value?.domain_type,
+    resolvedTemplate?.domain_type
+  );
+  const templateKey = firstTruthy(
+    domain?.template_key,
+    value?.template_key,
+    resolvedTemplate?.template_key,
+    domainType
+  );
+  const explicitGroupType = firstTruthy(value?.groupType, value?.group_type);
+
+  return {
+    domainId: firstTruthy(domain?.id, value?.domainId, value?.domain_id),
+    domainName: firstTruthy(
+      domain?.display_name,
+      domain?.name,
+      value?.domainName,
+      value?.domain_name
+    ),
+    domainCode: firstTruthy(
+      domain?.domain_name,
+      domain?.domain_code,
+      value?.domainCode,
+      value?.domain_code
+    ),
+    domainType,
+    templateKey,
+    groupType:
+      domainInviteGroupType(explicitGroupType) ||
+      domainInviteGroupType(domainType) ||
+      domainInviteGroupType(templateKey),
+  };
+}
+
+function communityDomainInviteContextHasIdentity(
+  context: CommunityDomainInviteContext
+): boolean {
+  return Boolean(
+    safeStr(context.domainId) ||
+      safeStr(context.domainName) ||
+      safeStr(context.domainCode)
+  );
+}
+
+function mergeCommunityDomainInviteContext(
+  primary: CommunityDomainInviteContext,
+  secondary: CommunityDomainInviteContext
+): CommunityDomainInviteContext {
+  return {
+    domainId: firstTruthy(primary.domainId, secondary.domainId),
+    domainName: firstTruthy(primary.domainName, secondary.domainName),
+    domainCode: firstTruthy(primary.domainCode, secondary.domainCode),
+    domainType: firstTruthy(primary.domainType, secondary.domainType),
+    templateKey: firstTruthy(primary.templateKey, secondary.templateKey),
+    groupType: firstTruthy(primary.groupType, secondary.groupType),
+  };
+}
+
+function readSavedCommunityDomainInviteContext(): CommunityDomainInviteContext {
+  return normalizeCommunityDomainInviteContext(
+    readLocalJSON(COMMUNITY_DOMAIN_INVITE_CONTEXT_KEY, {})
+  );
+}
+
+function writeSavedCommunityDomainInviteContext(
+  context: CommunityDomainInviteContext
+) {
+  if (!communityDomainInviteContextHasIdentity(context)) return;
+  writeLocalJSON(COMMUNITY_DOMAIN_INVITE_CONTEXT_KEY, context);
+}
+
 function communityDomainInvitePreset(role: string): {
   label: string;
   audience: string;
@@ -968,14 +1058,45 @@ function inviteBundleText(params: {
 
 export default function BuildFirstCirclePage() {
   const selectedClanId = Number(getSelectedClanId() || 0);
-  const communityDomainCircleMode = useMemo(
+  const routeCommunityDomainCircleMode = useMemo(
     () => isCommunityDomainCircleMode(),
     []
   );
-  const communityDomainInviteContext = useMemo(
+  const routeCommunityDomainInviteContext = useMemo(
     () => communityDomainInviteContextFromSearch(),
     []
   );
+  const savedCommunityDomainInviteContext = useMemo(
+    () => readSavedCommunityDomainInviteContext(),
+    []
+  );
+  const [linkedCommunityDomainInviteContext, setLinkedCommunityDomainInviteContext] =
+    useState<CommunityDomainInviteContext>({
+      domainId: "",
+      domainName: "",
+      domainCode: "",
+      domainType: "",
+      templateKey: "",
+      groupType: "",
+    });
+  const communityDomainInviteContext = useMemo(
+    () =>
+      mergeCommunityDomainInviteContext(
+        mergeCommunityDomainInviteContext(
+          routeCommunityDomainInviteContext,
+          linkedCommunityDomainInviteContext
+        ),
+        savedCommunityDomainInviteContext
+      ),
+    [
+      linkedCommunityDomainInviteContext,
+      routeCommunityDomainInviteContext,
+      savedCommunityDomainInviteContext,
+    ]
+  );
+  const communityDomainCircleMode =
+    routeCommunityDomainCircleMode ||
+    communityDomainInviteContextHasIdentity(linkedCommunityDomainInviteContext);
 
   const [isCompact, setIsCompact] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
@@ -1006,6 +1127,9 @@ export default function BuildFirstCirclePage() {
   const [customInviteMessage, setCustomInviteMessage] = useState("");
   const [savedInviteMessage, setSavedInviteMessage] = useState("");
   const [inviteMessageEdited, setInviteMessageEdited] = useState(false);
+  const [inviteTemplateSaving, setInviteTemplateSaving] = useState(false);
+  const [inviteTemplateLoadedFromDomain, setInviteTemplateLoadedFromDomain] =
+    useState(false);
   const [quickRows, setQuickRows] = useState<QuickPersonRow[]>(defaultQuickRows());
   const [pickingContacts, setPickingContacts] = useState(false);
   const [focusedAction, setFocusedAction] = useState<FocusedAction>(null);
@@ -1049,6 +1173,52 @@ export default function BuildFirstCirclePage() {
 
     return () => window.clearTimeout(timer);
   }, [loading]);
+
+  useEffect(() => {
+    const clanId = Number(
+      firstTruthy(currentClan?.id, currentClan?.clan_id, selectedClanId)
+    );
+    const routeDomainId = safeStr(routeCommunityDomainInviteContext.domainId);
+    if (!routeCommunityDomainCircleMode && !clanId && !routeDomainId) return;
+
+    let alive = true;
+
+    listMyCommunityDomains()
+      .then((payload) => {
+        if (!alive) return;
+        const rows = Array.isArray(payload)
+          ? payload
+          : Array.isArray(payload?.items)
+            ? payload.items
+            : [];
+        const match =
+          rows.find((row: any) => {
+            const domain = row?.community_domain || row?.domain || row || {};
+            const domainId = safeStr(domain?.id);
+            const linkedClanId = Number(domain?.clan_id || 0);
+            return (
+              (routeDomainId && domainId === routeDomainId) ||
+              (clanId > 0 && linkedClanId === clanId)
+            );
+          }) || null;
+        const nextContext = normalizeCommunityDomainInviteContext(match);
+        if (!communityDomainInviteContextHasIdentity(nextContext)) return;
+        setLinkedCommunityDomainInviteContext(nextContext);
+        writeSavedCommunityDomainInviteContext(nextContext);
+      })
+      .catch(() => {
+        // Best effort only; route params and saved context still keep the page usable.
+      });
+
+    return () => {
+      alive = false;
+    };
+  }, [
+    currentClan,
+    routeCommunityDomainCircleMode,
+    routeCommunityDomainInviteContext.domainId,
+    selectedClanId,
+  ]);
 
   useEffect(() => {
     let alive = true;
@@ -1106,6 +1276,33 @@ export default function BuildFirstCirclePage() {
   useEffect(() => {
     saveDraft(draft);
   }, [draft]);
+
+  useEffect(() => {
+    if (!communityDomainCircleMode) return;
+    const currentRole = safeStr(draft.memberRole);
+    if (
+      currentRole &&
+      COMMUNITY_DOMAIN_ROLE_OPTIONS.includes(currentRole)
+    ) {
+      return;
+    }
+
+    const fallbackRole = COMMUNITY_DOMAIN_ROLE_OPTIONS.includes(
+      communityDomainInviteContext.groupType
+    )
+      ? communityDomainInviteContext.groupType
+      : "community_association";
+
+    setDraft({
+      memberRole: fallbackRole,
+      contacts: [],
+    });
+    setQuickRows(defaultQuickRows());
+  }, [
+    communityDomainCircleMode,
+    communityDomainInviteContext.groupType,
+    draft.memberRole,
+  ]);
 
   useEffect(() => {
     const clanId = Number(
@@ -1226,6 +1423,10 @@ export default function BuildFirstCirclePage() {
     selectedClanId,
     selectedGroupType,
   ]);
+  const communityDomainInviteTemplateId = useMemo(
+    () => safeStr(communityDomainInviteContext.domainId),
+    [communityDomainInviteContext.domainId]
+  );
   const defaultCommunityDomainInviteMessage = useMemo(
     () =>
       buildCommunityDomainGroupInviteMessage({
@@ -1273,6 +1474,43 @@ export default function BuildFirstCirclePage() {
     setSavedInviteMessage(defaultCommunityDomainInviteMessage);
     setInviteMessageEdited(false);
   }, [communityDomainCircleMode, inviteMessageStorageKey]);
+
+  useEffect(() => {
+    if (!communityDomainCircleMode || !communityDomainInviteTemplateId) {
+      setInviteTemplateLoadedFromDomain(false);
+      return;
+    }
+
+    let alive = true;
+    setInviteTemplateLoadedFromDomain(false);
+
+    getCommunityDomainInviteTemplate(communityDomainInviteTemplateId)
+      .then((payload) => {
+        if (!alive) return;
+        const template = payload?.invite_template || {};
+        const message = safeStr(template?.message);
+        if (!message) {
+          setInviteTemplateLoadedFromDomain(true);
+          return;
+        }
+        setCustomInviteMessage(message);
+        setSavedInviteMessage(message);
+        setInviteMessageEdited(true);
+        setInviteTemplateLoadedFromDomain(true);
+        writeLocalJSON(inviteMessageStorageKey, { message });
+      })
+      .catch(() => {
+        if (alive) setInviteTemplateLoadedFromDomain(false);
+      });
+
+    return () => {
+      alive = false;
+    };
+  }, [
+    communityDomainCircleMode,
+    communityDomainInviteTemplateId,
+    inviteMessageStorageKey,
+  ]);
 
   useEffect(() => {
     if (!communityDomainCircleMode || inviteMessageEdited) return;
@@ -1431,7 +1669,7 @@ export default function BuildFirstCirclePage() {
     setNotice({ tone, text });
   }
 
-  function saveCommunityDomainInviteMessage() {
+  async function saveCommunityDomainInviteMessage() {
     if (!communityDomainCircleMode) return;
 
     const nextMessage = safeStr(customInviteMessage);
@@ -1441,10 +1679,50 @@ export default function BuildFirstCirclePage() {
     }
 
     writeLocalJSON(inviteMessageStorageKey, { message: nextMessage });
+    if (communityDomainInviteTemplateId) {
+      setInviteTemplateSaving(true);
+      try {
+        const payload = await updateCommunityDomainInviteTemplate(
+          communityDomainInviteTemplateId,
+          {
+            message: nextMessage,
+            group_type: selectedGroupType,
+            inviter_name: inviteSenderName,
+          }
+        );
+        const remoteMessage = safeStr(payload?.invite_template?.message) || nextMessage;
+        setCustomInviteMessage(remoteMessage);
+        setSavedInviteMessage(remoteMessage);
+        setInviteMessageEdited(true);
+        setInviteTemplateLoadedFromDomain(true);
+        writeLocalJSON(inviteMessageStorageKey, { message: remoteMessage });
+        showNotice(
+          "success",
+          "Invite message saved to this Community Domain. Copy, WhatsApp, and Share now use it."
+        );
+        return;
+      } catch (err: any) {
+        setCustomInviteMessage(nextMessage);
+        setSavedInviteMessage(nextMessage);
+        setInviteMessageEdited(true);
+        showNotice(
+          "error",
+          safeStr(err?.message) ||
+            "GSN could not save this to the Community Domain. A local copy was kept on this device only."
+        );
+        return;
+      } finally {
+        setInviteTemplateSaving(false);
+      }
+    }
+
     setCustomInviteMessage(nextMessage);
     setSavedInviteMessage(nextMessage);
     setInviteMessageEdited(true);
-    showNotice("success", "Invite message saved. Copy, WhatsApp, and Share now use it.");
+    showNotice(
+      "success",
+      "Invite message saved on this device. It will save to the domain once the domain ID is available."
+    );
   }
 
   function openInviteFocus() {
@@ -1868,13 +2146,7 @@ export default function BuildFirstCirclePage() {
   };
   const quickRoleOptions = (
     communityDomainCircleMode
-      ? [
-          "charity_ngo",
-          "church_group",
-          "school_group",
-          "student_group",
-          "community_association",
-        ]
+      ? COMMUNITY_DOMAIN_ROLE_OPTIONS
       : ["supplier", "buyer", "dealer", "trader", "service_provider"]
   ).filter((role) => (ROLE_OPTIONS as string[]).includes(role));
   const visibleRoleOptions = communityDomainCircleMode
@@ -2473,8 +2745,12 @@ export default function BuildFirstCirclePage() {
                         </div>
                       </div>
                       <PrimaryButton
-                        onClick={saveCommunityDomainInviteMessage}
-                        disabled={!inviteMessageDirty}
+                        onClick={() => {
+                          void saveCommunityDomainInviteMessage();
+                        }}
+                        disabled={!inviteMessageDirty || inviteTemplateSaving}
+                        busy={inviteTemplateSaving}
+                        busyLabel="Saving..."
                         stableHeight={44}
                         debugId="build-first-circle.save-programme-message"
                         style={{
@@ -2536,8 +2812,12 @@ export default function BuildFirstCirclePage() {
                     </label>
                     <div style={{ ...helperText(), fontSize: 13 }}>
                       Copy, WhatsApp, and Share use this domain-branded text. GSN
-                      keeps identity, approval, and no-bulk-import lines on the
-                      final invite.
+                      keeps identity, approval, and no-bulk-import lines on the final
+                      invite. {communityDomainInviteTemplateId
+                        ? inviteTemplateLoadedFromDomain
+                          ? "Saved wording is read from the Community Domain record."
+                          : "If a saved domain message exists, GSN will load it here."
+                        : "No domain ID is available yet, so saving is device-only."}
                     </div>
                     <div
                       style={{

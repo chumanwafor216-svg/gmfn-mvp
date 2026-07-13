@@ -764,7 +764,7 @@ const marketplaceActionSystemChecks = [
     label:
       "Public shop face actions must use one lock flag and one in-flight ref, while locked taps still reach the page-level explanation",
     pattern:
-      /publicShopPrepareInFlightRef = useRef\(false\)[\s\S]*?const publicShopActionsLocked =[\s\S]*?!currentGmfnId \|\| !activeCommunityId \|\| preparingPublicShopLink[\s\S]*?async function preparePublicShopLink[\s\S]*?publicShopPrepareInFlightRef\.current[\s\S]*?publicShopPrepareInFlightRef\.current = true[\s\S]*?publicShopPrepareInFlightRef\.current = false[\s\S]*?debugId="marketplace\.public-shop\.refresh"[\s\S]*?if \(publicShopActionsLocked\) \{[\s\S]*?publicShopActionUnavailableMessage[\s\S]*?debugId="marketplace\.public-shop\.copy"[\s\S]*?debugId="marketplace\.public-shop\.email"[\s\S]*?debugId="marketplace\.public-shop\.open"/,
+      /publicShopPrepareInFlightRef = useRef\(false\)[\s\S]*?const publicShopActionsLocked =[\s\S]*?!currentGmfnId[\s\S]*?!activeCommunityId[\s\S]*?preparingPublicShopLink[\s\S]*?marketplaceShopsFeatureOff[\s\S]*?const publicShopUnavailableText[\s\S]*?marketplaceShopsFeatureOffText[\s\S]*?async function preparePublicShopLink[\s\S]*?publicShopPrepareInFlightRef\.current[\s\S]*?publicShopPrepareInFlightRef\.current = true[\s\S]*?publicShopPrepareInFlightRef\.current = false[\s\S]*?debugId="marketplace\.public-shop\.refresh"[\s\S]*?if \(publicShopActionsLocked\) \{[\s\S]*?publicShopActionUnavailableMessage[\s\S]*?debugId="marketplace\.public-shop\.copy"[\s\S]*?debugId="marketplace\.public-shop\.email"[\s\S]*?debugId="marketplace\.public-shop\.open"/,
   },
   {
     label:

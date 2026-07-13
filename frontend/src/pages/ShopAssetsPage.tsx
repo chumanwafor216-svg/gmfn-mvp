@@ -26,10 +26,16 @@ import {
   getMyMarketplaceShop,
   getPublicMarketplaceShopByGmfnId,
   getSelectedClanId,
+  listMyCommunityDomains,
   safeCopy,
   uploadMarketplaceImageFile as uploadMarketplaceImageFileApi,
   uploadMarketplaceVideoFile as uploadMarketplaceVideoFileApi,
 } from "../lib/api";
+import {
+  communityDomainFeatureIsOff,
+  communityDomainFeatureModeFromPayload,
+  communityDomainFeatureOffMessage,
+} from "../lib/communityDomainFeaturePolicy";
 import {
   publicShopShareUrl,
 } from "../lib/publicLinks";
@@ -895,6 +901,8 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
   const [savingProduct, setSavingProduct] = useState(false);
   const [deletingProductId, setDeletingProductId] = useState<number | null>(null);
   const [restoringProductId, setRestoringProductId] = useState<number | null>(null);
+  const [communityDomainPolicyPayload, setCommunityDomainPolicyPayload] =
+    useState<any>(null);
 
   const selectedClanId = Number(props.preferredClanId || getSelectedClanId() || 0);
   const routes = useMemo(
@@ -903,6 +911,48 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
       shop: routeTarget("shop", selectedClanId, "shop-assets.route.shop-control"),
     }),
     [selectedClanId]
+  );
+  const domainPolicyFallbackName = useMemo(
+    () =>
+      firstTruthy(
+        shop?.marketplace_name,
+        shop?.community_name,
+        shop?.clan_name,
+        "this Community Domain"
+      ),
+    [shop?.clan_name, shop?.community_name, shop?.marketplace_name]
+  );
+  const marketplaceShopsDomainFeatureMatch = useMemo(
+    () =>
+      communityDomainFeatureModeFromPayload(
+        communityDomainPolicyPayload,
+        selectedClanId,
+        "marketplace_shops"
+      ),
+    [communityDomainPolicyPayload, selectedClanId]
+  );
+  const marketplaceShopsFeatureOff = communityDomainFeatureIsOff(
+    marketplaceShopsDomainFeatureMatch
+  );
+  const marketplaceShopsFeatureOffText = communityDomainFeatureOffMessage(
+    "Marketplace Shops",
+    marketplaceShopsDomainFeatureMatch?.domainName || domainPolicyFallbackName
+  );
+  const shopDiaryDomainFeatureMatch = useMemo(
+    () =>
+      communityDomainFeatureModeFromPayload(
+        communityDomainPolicyPayload,
+        selectedClanId,
+        "shop_diary"
+      ),
+    [communityDomainPolicyPayload, selectedClanId]
+  );
+  const shopDiaryFeatureOff = communityDomainFeatureIsOff(
+    shopDiaryDomainFeatureMatch
+  );
+  const shopDiaryFeatureOffText = communityDomainFeatureOffMessage(
+    "Shop Diary",
+    shopDiaryDomainFeatureMatch?.domainName || domainPolicyFallbackName
   );
 
   useEffect(() => {
@@ -914,6 +964,29 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
       productVideoPrepJobRef.current += 1;
     };
   }, []);
+
+  useEffect(() => {
+    let alive = true;
+
+    if (!selectedClanId) {
+      setCommunityDomainPolicyPayload(null);
+      return () => {
+        alive = false;
+      };
+    }
+
+    listMyCommunityDomains()
+      .then((payload) => {
+        if (alive) setCommunityDomainPolicyPayload(payload);
+      })
+      .catch(() => {
+        if (alive) setCommunityDomainPolicyPayload(null);
+      });
+
+    return () => {
+      alive = false;
+    };
+  }, [selectedClanId]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -1410,6 +1483,11 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
   }
 
   async function saveShopSignboard(extra?: { clear_image?: boolean; image_url?: string | null }) {
+    if (marketplaceShopsFeatureOff) {
+      showNotice("error", marketplaceShopsFeatureOffText);
+      return;
+    }
+
     setSavingShop(true);
 
     try {
@@ -1469,6 +1547,12 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
 
   async function ensureShopRecordForProduct(): Promise<ShopRecord | null> {
     if (shop?.id) return shop;
+
+    if (marketplaceShopsFeatureOff) {
+      showProductFormNotice("error", marketplaceShopsFeatureOffText);
+      showGalleryActionNotice("error", marketplaceShopsFeatureOffText);
+      return null;
+    }
 
     const body = {
       clan_id: Number(selectedClanId || 0) || null,
@@ -1550,6 +1634,12 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
   }
 
   function openAddForPublicSlot(slotNumber: number) {
+    if (shopDiaryFeatureOff) {
+      setSelectedPublicSlot(slotNumber);
+      showGalleryActionNotice("error", shopDiaryFeatureOffText, slotNumber);
+      return;
+    }
+
     setSelectedPublicSlot(slotNumber);
     setGalleryActionNotice(null);
     resetProductForm();
@@ -1560,6 +1650,12 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
   }
 
   function openEditForPublicSlot(item: ProductRecord, slotNumber: number) {
+    if (shopDiaryFeatureOff) {
+      setSelectedPublicSlot(slotNumber);
+      showGalleryActionNotice("error", shopDiaryFeatureOffText, slotNumber);
+      return;
+    }
+
     setSelectedPublicSlot(slotNumber);
     setGalleryActionNotice(null);
     startEditProduct(item);
@@ -1574,6 +1670,12 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
   }
 
   async function submitProduct() {
+    if (shopDiaryFeatureOff) {
+      showProductFormNotice("error", shopDiaryFeatureOffText);
+      showGalleryActionNotice("error", shopDiaryFeatureOffText, selectedPublicSlot);
+      return;
+    }
+
     if (preparingProductImage || preparingProductVideo) {
       showProductFormNotice(
         "info",
@@ -1755,6 +1857,12 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
   }
 
   async function deleteProduct(productId: number) {
+    if (shopDiaryFeatureOff) {
+      showNotice("error", shopDiaryFeatureOffText);
+      showGalleryActionNotice("error", shopDiaryFeatureOffText, selectedPublicSlot);
+      return;
+    }
+
     setDeletingProductId(productId);
 
     try {
@@ -1777,6 +1885,11 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
   }
 
   async function restoreProduct(productId: number) {
+    if (shopDiaryFeatureOff) {
+      showNotice("error", shopDiaryFeatureOffText);
+      return;
+    }
+
     setRestoringProductId(productId);
 
     try {
@@ -2213,6 +2326,12 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                 picture.
               </div>
 
+              {marketplaceShopsFeatureOff ? (
+                <div style={{ marginTop: 12, ...noticeCard("error") }}>
+                  {marketplaceShopsFeatureOffText}
+                </div>
+              ) : null}
+
               <div style={{ marginTop: 14, display: "grid", gap: 12 }}>
                 <input
                   type="file"
@@ -2286,7 +2405,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                 <div style={ownerActionGrid(isCompact)}>
                   <PrimaryButton
                     onClick={() => void saveShopSignboard()}
-                    disabled={savingShop || uploadingShopImage}
+                    disabled={savingShop || uploadingShopImage || marketplaceShopsFeatureOff}
                     busy={savingShop || uploadingShopImage}
                     busyLabel={savingShop ? "Saving..." : "Uploading..."}
                     fullWidth
@@ -2319,7 +2438,12 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                         image_url: null,
                       })
                     }
-                    disabled={savingShop || uploadingShopImage || !safeStr(shopPreviewUrl)}
+                    disabled={
+                      savingShop ||
+                      uploadingShopImage ||
+                      marketplaceShopsFeatureOff ||
+                      !safeStr(shopPreviewUrl)
+                    }
                     busy={savingShop || uploadingShopImage}
                     busyLabel={savingShop ? "Saving..." : "Uploading..."}
                     fullWidth
@@ -2361,6 +2485,12 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
               occupiedPublicSlotCount > 0
             )}
           </div>
+
+          {shopDiaryFeatureOff ? (
+            <div style={{ marginTop: 14, ...noticeCard("error") }}>
+              {shopDiaryFeatureOffText}
+            </div>
+          ) : null}
 
           <div
             style={{
@@ -2632,7 +2762,10 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
 
                     <SecondaryButton
                       onClick={() => void deleteProduct(Number(selectedPublicProduct.id))}
-                      disabled={deletingProductId === Number(selectedPublicProduct.id)}
+                      disabled={
+                        shopDiaryFeatureOff ||
+                        deletingProductId === Number(selectedPublicProduct.id)
+                      }
                       busy={deletingProductId === Number(selectedPublicProduct.id)}
                       busyLabel="Hiding..."
                       fullWidth
@@ -2789,6 +2922,10 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
               <div style={{ marginTop: 12, ...noticeCard(productFormNotice.tone) }}>
                 {productFormNotice.text}
               </div>
+            ) : shopDiaryFeatureOff ? (
+              <div style={{ marginTop: 12, ...noticeCard("error") }}>
+                {shopDiaryFeatureOffText}
+              </div>
             ) : null}
 
             <div style={{ marginTop: 14, display: "grid", gap: 12 }}>
@@ -2921,7 +3058,12 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
               >
                 <PrimaryButton
                   onClick={() => void submitProduct()}
-                  disabled={savingProduct || preparingProductImage || preparingProductVideo}
+                  disabled={
+                    shopDiaryFeatureOff ||
+                    savingProduct ||
+                    preparingProductImage ||
+                    preparingProductVideo
+                  }
                   busy={savingProduct || preparingProductImage || preparingProductVideo}
                   busyLabel={
                     preparingProductImage || preparingProductVideo

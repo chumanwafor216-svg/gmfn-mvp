@@ -262,6 +262,20 @@ assertContains(
 );
 
 assertContains(
+  "src/pages/ShopAssetsPage.tsx",
+  /listMyCommunityDomains[\s\S]*communityDomainFeatureModeFromPayload[\s\S]*"marketplace_shops"[\s\S]*marketplaceShopsFeatureOff[\s\S]*communityDomainFeatureModeFromPayload[\s\S]*"shop_diary"[\s\S]*shopDiaryFeatureOff[\s\S]*async function saveShopSignboard[\s\S]*marketplaceShopsFeatureOffText[\s\S]*async function ensureShopRecordForProduct[\s\S]*marketplaceShopsFeatureOffText[\s\S]*function openAddForPublicSlot[\s\S]*shopDiaryFeatureOffText[\s\S]*async function submitProduct[\s\S]*shopDiaryFeatureOffText[\s\S]*\/api\/marketplace\/products/,
+  "Shop Assets page must explain disabled Marketplace Shops and Shop Diary Community Domain policies before calling shop/product write routes.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/ShopControlPage.tsx",
+  /listMyCommunityDomains[\s\S]*communityDomainFeatureModeFromPayload[\s\S]*"marketplace_shops"[\s\S]*marketplaceShopsFeatureOff[\s\S]*communityDomainFeatureModeFromPayload[\s\S]*"spotlight"[\s\S]*spotlightFeatureOff[\s\S]*async function saveShopDetails[\s\S]*marketplaceShopsFeatureOffText[\s\S]*async function ensureSpotlightShopRecord[\s\S]*marketplaceShopsFeatureOffText[\s\S]*async function handleCreateSpotlight[\s\S]*spotlightFeatureOffText[\s\S]*createMarketplaceBroadcast/,
+  "Shop Control page must explain disabled Marketplace Shops and Spotlight Community Domain policies before calling shop or Spotlight write routes.",
+  { frontend: true }
+);
+
+assertContains(
   "gmfn_backend/app/api/routes/payment_instructions.py",
   /require_domain_payments_contributions_enabled[\s\S]*def create_pool_instruction[\s\S]*require_domain_payments_contributions_enabled[\s\S]*create_pool_deposit_instruction/,
   "Pool contribution payment instructions must obey linked Community Domain payments_contributions policy."
@@ -356,14 +370,14 @@ assertContains(
 
 assertContains(
   "src/pages/BuildFirstCirclePage.tsx",
-  /domainInviteGroupType[\s\S]*communityDomainInviteContextFromSearch[\s\S]*domain_type[\s\S]*template_key[\s\S]*community_domain_name[\s\S]*community_domain_code[\s\S]*communityDomainCircleMode \? communityDomainInviteContext\.domainName[\s\S]*communityDomainCircleMode \? communityDomainInviteContext\.domainId[\s\S]*communityDomainCircleMode \? communityDomainInviteContext\.domainCode/,
-  "Build First Circle must prefer Community Domain identity from route params before falling back to marketplace/community records.",
+  /listMyCommunityDomains[\s\S]*COMMUNITY_DOMAIN_INVITE_CONTEXT_KEY[\s\S]*communityDomainInviteContextFromSearch[\s\S]*normalizeCommunityDomainInviteContext[\s\S]*readSavedCommunityDomainInviteContext[\s\S]*routeCommunityDomainCircleMode[\s\S]*linkedCommunityDomainInviteContext[\s\S]*communityDomainInviteContextHasIdentity\(linkedCommunityDomainInviteContext\)[\s\S]*listMyCommunityDomains\(\)[\s\S]*domain\?\.clan_id[\s\S]*writeSavedCommunityDomainInviteContext[\s\S]*communityDomainCircleMode \? communityDomainInviteContext\.domainName[\s\S]*communityDomainCircleMode \? communityDomainInviteContext\.domainId[\s\S]*communityDomainCircleMode \? communityDomainInviteContext\.domainCode/,
+  "Build First Circle must recover Community Domain identity from route params, active domain membership, and saved handoff context before falling back to marketplace/community records.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/BuildFirstCirclePage.tsx",
-  /communityDomainInvitePreset[\s\S]*Charity \/ NGO message[\s\S]*Church \/ faith message[\s\S]*School \/ parent message[\s\S]*Student group message[\s\S]*Association \/ union message[\s\S]*buildCommunityDomainGroupInviteMessage[\s\S]*finalCommunityDomainInviteMessage[\s\S]*No bulk import: every member joins for themselves[\s\S]*saveCommunityDomainInviteMessage[\s\S]*Save message[\s\S]*Use template[\s\S]*Editable invite text[\s\S]*domain-branded text[\s\S]*Live message preview[\s\S]*Unsaved edit[\s\S]*No bulk import: every member still enters with their own GSN identity/,
+  /getCommunityDomainInviteTemplate[\s\S]*updateCommunityDomainInviteTemplate[\s\S]*COMMUNITY_DOMAIN_ROLE_OPTIONS[\s\S]*communityDomainInvitePreset[\s\S]*Charity \/ NGO message[\s\S]*Church \/ faith message[\s\S]*School \/ parent message[\s\S]*Student group message[\s\S]*Association \/ union message[\s\S]*buildCommunityDomainGroupInviteMessage[\s\S]*finalCommunityDomainInviteMessage[\s\S]*No bulk import: every member joins for themselves[\s\S]*COMMUNITY_DOMAIN_ROLE_OPTIONS\.includes[\s\S]*contacts: \[\][\s\S]*getCommunityDomainInviteTemplate\(communityDomainInviteTemplateId\)[\s\S]*saveCommunityDomainInviteMessage[\s\S]*updateCommunityDomainInviteTemplate[\s\S]*device only[\s\S]*Save message[\s\S]*Use template[\s\S]*Editable invite text[\s\S]*domain-branded text[\s\S]*Saved wording is read from the Community Domain record[\s\S]*Live message preview[\s\S]*Unsaved edit[\s\S]*No bulk import: every member still enters with their own GSN identity/,
   "Build First Circle must keep programme-aware Community Domain invite presets, owner-editable invite copy with explicit save and live preview, inviter identity, share-channel text, and no false bulk-import promise.",
   { frontend: true }
 );
@@ -616,7 +630,7 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /function pageShell\(\)[\s\S]*display: "grid"[\s\S]*alignContent: "start"[\s\S]*isCommunityDomainOperational[\s\S]*firstAvailableOperationalLaneKey[\s\S]*domainOperational[\s\S]*operationalLaneKey[\s\S]*showDomainWorkSurface[\s\S]*!\{domainOperational\} \? \(|!domainOperational \? \([\s\S]*PageTopNav[\s\S]*Live domain[\s\S]*This domain is active\. Use the operating lanes now[\s\S]*community-domain-dashboard\.operational-focus[\s\S]*Open live actions[\s\S]*Edit setup details[\s\S]*setActiveLane\(domainOperational \? operationalLaneKey : primaryActionLaneKey\)/,
+  /function pageShell\(\)[\s\S]*display: "grid"[\s\S]*alignContent: "start"[\s\S]*isCommunityDomainOperational[\s\S]*blockedDomain[\s\S]*billingReady[\s\S]*includes\("paid"\)[\s\S]*includes\("confirmed"\)[\s\S]*activationReady[\s\S]*activationBlocked[\s\S]*firstAvailableOperationalLaneKey[\s\S]*domainOperational[\s\S]*operationalLaneKey[\s\S]*showDomainWorkSurface[\s\S]*!\{domainOperational\} \? \(|!domainOperational \? \([\s\S]*PageTopNav[\s\S]*Live domain[\s\S]*This domain is active\. Use the operating lanes now[\s\S]*community-domain-dashboard\.operational-focus[\s\S]*Open live actions[\s\S]*Edit setup details[\s\S]*setActiveLane\(domainOperational \? operationalLaneKey : primaryActionLaneKey\)/,
   "Active Community Domains must hand off to live operating lanes by default, keeping setup/edit available without trapping active domains in the setup tunnel.",
   { frontend: true }
 );
@@ -630,7 +644,7 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /useNavigate[\s\S]*setSelectedClanId[\s\S]*setupCompletionSavedAt[\s\S]*openSetupFirstCircle[\s\S]*setSelectedClanId\(clanId\)[\s\S]*new URLSearchParams\(\{[\s\S]*community_domain_name[\s\S]*domain_type[\s\S]*template_key[\s\S]*navigate\(`\$\{APP_ROUTES\.BUILD_FIRST_CIRCLE\}\?\$\{inviteParams\.toString\(\)\}`\)[\s\S]*Setup saved[\s\S]*community-domain-dashboard\.setup-open-first-circle[\s\S]*Build first circle/,
+  /useNavigate[\s\S]*setSelectedClanId[\s\S]*setupCompletionSavedAt[\s\S]*openSetupFirstCircle[\s\S]*setSelectedClanId\(clanId\)[\s\S]*gmfn\.buildFirstCircle\.communityDomainInviteContext\.v1[\s\S]*domainName[\s\S]*templateKey[\s\S]*new URLSearchParams\(\{[\s\S]*community_domain_name[\s\S]*domain_type[\s\S]*template_key[\s\S]*navigate\(`\$\{APP_ROUTES\.BUILD_FIRST_CIRCLE\}\?\$\{inviteParams\.toString\(\)\}`\)[\s\S]*Setup saved[\s\S]*community-domain-dashboard\.setup-open-first-circle[\s\S]*Build first circle/,
   "Community Domain setup launch step must visibly respond to Save setup and route owners to the real domain-identified Community Domain group-invite flow.",
   { frontend: true }
 );
@@ -1503,9 +1517,34 @@ assertContains(
 );
 
 assertContains(
+  "src/lib/api.ts",
+  /getCommunityDomainInviteTemplate[\s\S]*\/invite-template[\s\S]*updateCommunityDomainInviteTemplate[\s\S]*"PATCH"[\s\S]*message[\s\S]*group_type[\s\S]*inviter_name/,
+  "Frontend API layer must expose Community Domain invite-template GET/PATCH so First Circle wording is not only device-local.",
+  { frontend: true }
+);
+
+assertContains(
   "gmfn_backend/app/api/routes/community_domains.py",
   /@router\.get\("\/my"[\s\S]*def list_my_community_domains[\s\S]*CommunityDomainMembership\.user_id == int\(current_user\.id\)[\s\S]*CommunityDomainMembership\.status == "active"[\s\S]*private member lists[\s\S]*payment instructions[\s\S]*verification authority[\s\S]*@router\.get\("\/\{community_domain_id\}"/,
   "Backend route must list only the current user's active Community Domain memberships before the single-domain route."
+);
+
+assertContains(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  /COMMUNITY_DOMAIN_INVITE_TEMPLATE_EVENT[\s\S]*COMMUNITY_DOMAIN_INVITE_TEMPLATE_MAX_CHARS[\s\S]*_community_domain_invite_template_payload[\s\S]*_latest_community_domain_invite_template_event[\s\S]*CommunityDomainInviteTemplateIn[\s\S]*@router\.get\("\/\{community_domain_id\}\/invite-template"[\s\S]*_require_domain_member_scope[\s\S]*@router\.patch\("\/\{community_domain_id\}\/invite-template"[\s\S]*_require_domain_setup_edit_scope[\s\S]*log_trust_event/,
+  "Backend must persist Community Domain invite templates as domain-scoped records with member-read/setup-editor-write boundaries, without bypassing real join-link approval.",
+);
+
+assertContains(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  /Domain invite template only[\s\S]*does not create members[\s\S]*approve[\s\S]*bypass the canonical join invite link[\s\S]*Saved invite wording only[\s\S]*owner\/admin approval remains required/,
+  "Community Domain invite template boundaries must say saved wording does not create members, approve members, or bypass the canonical join invite link.",
+);
+
+assertContains(
+  "gmfn_backend/tests/test_community_domains.py",
+  /test_community_domain_invite_template_is_domain_scoped_and_member_readable[\s\S]*\/community-domains\/\{domain_id\}\/invite-template[\s\S]*Pillar of Hope official invite wording[\s\S]*blocked_member_write[\s\S]*blocked_read[\s\S]*community_domain\.invite\.template/,
+  "Backend tests must prove Community Domain invite wording is saved to domain-scoped memory, member-readable, and not outsider/member writable.",
 );
 
 assertContains(

@@ -85,6 +85,8 @@ COMMUNITY_DOMAIN_EVIDENCE_CONTENT_TYPES = {
 COMMUNITY_DOMAIN_NOTICE_EVENT = "community_domain.notice.posted"
 COMMUNITY_DOMAIN_NOTICE_SOURCE = "community_domain_notice_board"
 COMMUNITY_DOMAIN_NOTICE_MAX_WORDS = 50
+COMMUNITY_DOMAIN_INVITE_TEMPLATE_EVENT = "community_domain.invite.template"
+COMMUNITY_DOMAIN_INVITE_TEMPLATE_MAX_CHARS = 1800
 COMMUNITY_DOMAIN_NOTICE_EXPIRY_STANDARD = "standard"
 COMMUNITY_DOMAIN_NOTICE_EXPIRY_URGENT = "urgent"
 COMMUNITY_DOMAIN_NOTICE_EXPIRY_EVENT = "event"
@@ -2139,6 +2141,52 @@ def _community_domain_notice_payload(event: TrustEvent) -> dict[str, Any]:
         "is_archived": expired,
         "posted_by_user_id": int(event.actor_user_id),
     }
+
+
+def _community_domain_invite_template_payload(
+    event: Optional[TrustEvent],
+    *,
+    community_domain_id: int,
+) -> dict[str, Any]:
+    meta = _json_load(event.meta_json) if event is not None else {}
+    return {
+        "event_id": int(event.id) if event is not None else None,
+        "community_domain_id": int(community_domain_id),
+        "message": _clean_str(meta.get("message")),
+        "group_type": _clean_str(meta.get("group_type")),
+        "inviter_name": _clean_str(meta.get("inviter_name")),
+        "updated_at": _iso(event.created_at) if event is not None else None,
+        "updated_by_user_id": int(event.actor_user_id) if event is not None else None,
+        "source": _clean_str(meta.get("source"), "community_domain_first_circle"),
+        "boundary": (
+            "Domain invite template only. This stores reusable invite wording "
+            "for the Community Domain. It does not create members, approve "
+            "membership, verify authority, or bypass the canonical join invite link."
+        ),
+    }
+
+
+def _latest_community_domain_invite_template_event(
+    db: Session,
+    *,
+    community_domain_id: int,
+) -> Optional[TrustEvent]:
+    rows = (
+        db.query(TrustEvent)
+        .filter(TrustEvent.event_type == COMMUNITY_DOMAIN_INVITE_TEMPLATE_EVENT)
+        .order_by(TrustEvent.id.desc())
+        .limit(80)
+        .all()
+    )
+    for row in rows:
+        meta = _json_load(row.meta_json)
+        try:
+            row_domain_id = int(meta.get("community_domain_id") or 0)
+        except (TypeError, ValueError):
+            row_domain_id = 0
+        if row_domain_id == int(community_domain_id):
+            return row
+    return None
 
 
 def _list_community_domain_notice_payloads(
@@ -17411,6 +17459,19 @@ class CommunityDomainSetupEditorDelegateIn(BaseModel):
         return _reject_non_text_value(value, info.field_name)
 
 
+class CommunityDomainInviteTemplateIn(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    message: str = Field(..., min_length=1, max_length=COMMUNITY_DOMAIN_INVITE_TEMPLATE_MAX_CHARS)
+    group_type: Optional[str] = Field(default=None, max_length=64)
+    inviter_name: Optional[str] = Field(default=None, max_length=120)
+
+    @field_validator("message", "group_type", "inviter_name", mode="before")
+    @classmethod
+    def _reject_non_text_invite_template_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_value(value, info.field_name)
+
+
 class CommunityDomainPaymentInstructionIn(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
 
@@ -19426,6 +19487,77 @@ def update_community_domain_profile(
             "Profile update only. This does not confirm payment, activate billing, "
             "verify authority, upload evidence, create members, or launch a public "
             "Community Domain."
+        ),
+    }
+
+
+@router.get("/{community_domain_id}/invite-template", response_model=dict[str, Any])
+def get_community_domain_invite_template(
+    community_domain_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_member_scope(db, domain=domain, current_user=current_user)
+    event = _latest_community_domain_invite_template_event(
+        db,
+        community_domain_id=int(domain.id),
+    )
+    return {
+        "ok": True,
+        "invite_template": _community_domain_invite_template_payload(
+            event,
+            community_domain_id=int(domain.id),
+        ),
+    }
+
+
+@router.patch("/{community_domain_id}/invite-template", response_model=dict[str, Any])
+def update_community_domain_invite_template(
+    community_domain_id: int,
+    payload: CommunityDomainInviteTemplateIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_setup_edit_scope(db, domain=domain, current_user=current_user)
+    message = _clean_str(payload.message)
+    if not message:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "code": "community_domain_invite_template_message_required",
+                "message": "Write the invite message before saving it.",
+            },
+        )
+
+    event = log_trust_event(
+        db,
+        event_type=COMMUNITY_DOMAIN_INVITE_TEMPLATE_EVENT,
+        clan_id=int(domain.clan_id) if domain.clan_id is not None else None,
+        actor_user_id=int(current_user.id),
+        subject_user_id=int(current_user.id),
+        meta={
+            "source": "community_domain_first_circle",
+            "community_domain_id": int(domain.id),
+            "domain_name": domain.domain_name,
+            "display_name": domain.display_name,
+            "message": message,
+            "group_type": _clean_template_key(payload.group_type, ""),
+            "inviter_name": _clean_str(payload.inviter_name),
+        },
+        commit=True,
+        refresh=True,
+    )
+    return {
+        "ok": True,
+        "invite_template": _community_domain_invite_template_payload(
+            event,
+            community_domain_id=int(domain.id),
+        ),
+        "boundary": (
+            "Saved invite wording only. Members still enter through the real "
+            "join invite link and owner/admin approval remains required."
         ),
     }
 

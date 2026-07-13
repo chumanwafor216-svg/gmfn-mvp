@@ -2546,6 +2546,31 @@ export async function updateCommunityDomainProfile(
   });
 }
 
+export async function getCommunityDomainInviteTemplate(
+  communityDomainId: number | string
+): Promise<any> {
+  return httpJson(communityDomainPath(communityDomainId, "/invite-template"), "GET");
+}
+
+export async function updateCommunityDomainInviteTemplate(
+  communityDomainId: number | string,
+  payload: {
+    message: string;
+    group_type?: string | null;
+    inviter_name?: string | null;
+  }
+): Promise<any> {
+  return httpJson(
+    communityDomainPath(communityDomainId, "/invite-template"),
+    "PATCH",
+    {
+      message: payload.message,
+      group_type: payload.group_type || undefined,
+      inviter_name: payload.inviter_name || undefined,
+    }
+  );
+}
+
 export async function createCommunityDomainPackageQuote(
   communityDomainId: number | string
 ): Promise<any> {
