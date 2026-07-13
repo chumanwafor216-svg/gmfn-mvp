@@ -313,6 +313,55 @@ function safeMeta(raw: any): Record<string, any> {
   return raw && typeof raw === "object" && !Array.isArray(raw) ? raw : {};
 }
 
+function isCommunityDomainSubscription(row: BankConsoleRow): boolean {
+  return safeStr(row.expected_type).toLowerCase() === "community_domain_subscription";
+}
+
+function expectedPaymentTypeLabel(row: BankConsoleRow): string {
+  const expectedType = safeStr(row.expected_type).toLowerCase();
+  if (expectedType === "community_domain_subscription") {
+    return "Community Domain subscription";
+  }
+  if (expectedType === "community_package_subscription") {
+    return "Community package";
+  }
+  if (!expectedType) return "Expected payment";
+  return expectedType
+    .split("_")
+    .filter(Boolean)
+    .map((part) => `${part.charAt(0).toUpperCase()}${part.slice(1)}`)
+    .join(" ");
+}
+
+function communityDomainPaymentInfo(row: BankConsoleRow): {
+  domainName: string;
+  domainCode: string;
+  communityName: string;
+  payer: string;
+  settlementCountry: string;
+} {
+  const meta = safeMeta(row.meta ?? row.meta_json);
+  const intent = safeMeta(meta.payment_intent);
+  return {
+    domainName: firstTruthy(
+      intent.domain_display_name,
+      meta.domain_display_name,
+      meta.display_name
+    ),
+    domainCode: firstTruthy(intent.domain_name, meta.domain_name),
+    communityName: firstTruthy(intent.community_name, meta.community_name),
+    payer: firstTruthy(
+      intent.payer_display_name,
+      meta.payer_display_name,
+      intent.payer_gmfn_id,
+      meta.payer_gmfn_id,
+      intent.payer_email,
+      meta.payer_email
+    ),
+    settlementCountry: firstTruthy(intent.settlement_country, meta.settlement_country),
+  };
+}
+
 function buildBankEventReviewPaper(row: BankConsoleRow, displayReference: string): string {
   return buildGsnSnapshotPaper({
     title: "GSN Bank Console Event Review",
@@ -1380,9 +1429,10 @@ export default function BankConsolePage() {
                 const isConfirmed = ["confirmed", "applied"].includes(
                   safeStr(row.status).toLowerCase()
                 );
-                const isCommunityDomainPayment =
-                  safeStr(row.expected_type).toLowerCase() ===
-                  "community_domain_subscription";
+                const isCommunityDomainPayment = isCommunityDomainSubscription(row);
+                const domainPaymentInfo = isCommunityDomainPayment
+                  ? communityDomainPaymentInfo(row)
+                  : null;
                 const canReviewProof = hasProof && !isConfirmed && isCommunityDomainPayment;
                 const approveBusy =
                   busyReviewKey === `${Number(row.id || 0)}:approve`;
@@ -1425,6 +1475,24 @@ export default function BankConsolePage() {
                             {safeStr(row.description)}
                           </div>
                         ) : null}
+
+                        <div
+                          style={{
+                            marginTop: 8,
+                            display: "flex",
+                            gap: 8,
+                            flexWrap: "wrap",
+                          }}
+                        >
+                          <span style={badge(isCommunityDomainPayment)}>
+                            {expectedPaymentTypeLabel(row)}
+                          </span>
+                          {domainPaymentInfo?.domainName ? (
+                            <span style={badge(false)}>
+                              {domainPaymentInfo.domainName}
+                            </span>
+                          ) : null}
+                        </div>
                       </div>
 
                       <div
@@ -1520,8 +1588,80 @@ export default function BankConsolePage() {
                             ? ` at ${safeDateTime(row.proof_submitted_at)}`
                             : ""}
                         </div>
+                        </div>
                       </div>
-                    </div>
+
+                      {isCommunityDomainPayment ? (
+                        <div
+                          style={{
+                            marginTop: 12,
+                            borderRadius: 16,
+                            border: "1px solid rgba(12,79,168,0.18)",
+                            background: "#F1F7FF",
+                            padding: "12px",
+                            display: "grid",
+                            gap: 10,
+                          }}
+                        >
+                          <div style={sectionLabel()}>Community Domain finance handoff</div>
+                          <div
+                            style={{
+                              color: "#25415F",
+                              fontSize: 13,
+                              lineHeight: 1.45,
+                              fontWeight: 820,
+                            }}
+                          >
+                            This row is the Community Domain subscription activation
+                            payment. Approve only after manual finance or bank review.
+                            Approval can activate the domain subscription; it does not
+                            approve donations, registrations, event fees, ROSCA,
+                            Spotlight, Shop Diary, or other domain activity payments.
+                          </div>
+                          <div
+                            style={{
+                              display: "grid",
+                              gridTemplateColumns:
+                                "repeat(auto-fit, minmax(150px, 1fr))",
+                              gap: 8,
+                            }}
+                          >
+                            {[
+                              ["Domain", domainPaymentInfo?.domainName],
+                              ["Domain code", domainPaymentInfo?.domainCode],
+                              ["Community", domainPaymentInfo?.communityName],
+                              ["Payer", domainPaymentInfo?.payer],
+                              ["Settlement area", domainPaymentInfo?.settlementCountry],
+                            ].map(([label, value]) => (
+                              <div
+                                key={label}
+                                style={{
+                                  borderRadius: 12,
+                                  background: "rgba(255,255,255,0.82)",
+                                  border: "1px solid rgba(9,27,46,0.10)",
+                                  padding: "8px 10px",
+                                  minWidth: 0,
+                                }}
+                              >
+                                <div style={{ ...sectionLabel(), fontSize: 11 }}>
+                                  {label}
+                                </div>
+                                <div
+                                  style={{
+                                    color: "#0B1F33",
+                                    fontSize: 13,
+                                    fontWeight: 900,
+                                    marginTop: 3,
+                                    overflowWrap: "anywhere",
+                                  }}
+                                >
+                                  {safeStr(value) || "Not stated"}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ) : null}
 
                     {canReviewProof ? (
                       <div

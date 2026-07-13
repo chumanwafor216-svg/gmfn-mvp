@@ -148,6 +148,23 @@ foundational protocol. If older Community Domain implementation notes conflict
 with that protocol, the philosophy protocol wins for Community Domain work until
 the older notes are reconciled.
 
+Current owner clarification:
+
+- A Community Domain is the governed/professional marketplace form of GSN, not a
+  non-marketplace side product.
+- It inherits the ordinary GSN marketplace/community behaviours such as money
+  in/out, contributions, Demand Box, Spotlight, Shop Diary, marketplace/shop
+  visibility, ROSCA/rotating contributions, invites, QR/share links, evidence,
+  and trust events.
+- The difference is domain governance: the registered organization owns the
+  name, tariff, package, feature permissions, visibility rules, approval rules,
+  and public/cross-community exposure under its domain identity.
+- Ordinary lightweight Committees adapt to GSN defaults. Community Domains keep
+  the shared engines but configure which behaviours are allowed, admin-only,
+  member-submitted, admin-approved, internal, public, or turned off.
+- Do not strip marketplace behaviours out of Community Domains. Add the domain
+  governance layer over the shared engines instead.
+
 For CDOS first principles, community-created trust, governance ownership,
 evidence-before-trust, permanent history, one platform/many Community Domains,
 nearest-responsible-leader authority, membership/identity/verification/

@@ -20,6 +20,9 @@ from app.services.bank_webhook_service import (
     verify_webhook_signature,
     webhook_secret_is_configured,
 )
+from app.services.community_domain_feature_policy import (
+    require_domain_payments_contributions_enabled,
+)
 from app.services.expected_payments_service import (
     build_loan_repayment_reference,
     ensure_loan_repayment_expected_payment,
@@ -595,6 +598,10 @@ def create_expected_pool_deposit(
     clan_ctx: tuple = Depends(get_current_clan_membership),
 ):
     clan, _membership, current_user = clan_ctx
+    require_domain_payments_contributions_enabled(
+        db,
+        clan_id=int(clan.id),
+    )
 
     reference_display = (
         payload.reference_display.strip()

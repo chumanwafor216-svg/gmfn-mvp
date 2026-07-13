@@ -1,3 +1,4 @@
+import json
 from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import text
@@ -147,6 +148,135 @@ def test_rosca_cycle_creation_uses_yearly_service_without_consuming_entitlement(
     assert len(obligations) == 2
     assert obligations[0]["source"] == "rosca.cycle"
     assert obligations[0]["writes_commitment_trust_event"] is False
+
+
+def test_rosca_cycle_creation_respects_disabled_community_domain_rosca_policy(
+    client,
+    override_current_user,
+    seed_user2_member_membership,
+):
+    _seed_rosca_yearly_service()
+
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO community_domains (
+                    id,
+                    domain_name,
+                    display_name,
+                    domain_type,
+                    template_key,
+                    owner_user_id,
+                    clan_id,
+                    status,
+                    verification_status,
+                    created_at,
+                    updated_at
+                )
+                VALUES (
+                    704,
+                    'rosca-policy-test-domain',
+                    'ROSCA Policy Test Domain',
+                    'ngo_project_network',
+                    'ngo_project_network',
+                    1,
+                    1,
+                    'active',
+                    'unverified',
+                    CURRENT_TIMESTAMP,
+                    CURRENT_TIMESTAMP
+                )
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO community_domain_policies (
+                    id,
+                    community_domain_id,
+                    policy_key,
+                    action_key,
+                    scope_type,
+                    review_mode,
+                    required_role,
+                    status,
+                    policy_summary,
+                    config_json,
+                    created_by_user_id,
+                    created_at,
+                    updated_at
+                )
+                VALUES (
+                    705,
+                    704,
+                    'domain.feature_policy',
+                    'domain.features.configure',
+                    'domain',
+                    'domain_admin_review',
+                    'owner_admin',
+                    'active',
+                    'ROSCA disabled for Community Domain route test',
+                    :config_json,
+                    1,
+                    CURRENT_TIMESTAMP,
+                    CURRENT_TIMESTAMP
+                )
+                """
+            ),
+            {
+                "config_json": json.dumps(
+                    {
+                        "features": {
+                            "rosca_cycles": "off",
+                            "payments_contributions": "admin_only",
+                        }
+                    }
+                )
+            },
+        )
+
+    res = client.post(
+        "/rosca/cycles",
+        json={
+            "clan_id": 1,
+            "title": "Blocked domain ROSCA",
+            "contribution_amount": "25.00",
+            "currency": "GBP",
+            "interval_days": 14,
+        },
+    )
+
+    assert res.status_code == 403, res.text
+    detail = res.json()["detail"]
+    assert detail["code"] == "community_domain_feature_disabled"
+    assert detail["feature_key"] == "rosca_cycles"
+    assert "paid ROSCA yearly service" in detail["message"]
+
+    with engine.begin() as conn:
+        expected_count = conn.execute(
+            text(
+                """
+                SELECT COUNT(*)
+                FROM expected_payments
+                WHERE expected_type = 'contribution'
+                  AND meta_json LIKE '%"source": "rosca.cycle"%'
+                """
+            )
+        ).scalar_one()
+        started_count = conn.execute(
+            text(
+                """
+                SELECT COUNT(*)
+                FROM trust_events
+                WHERE event_type = 'rosca.cycle.started'
+                """
+            )
+        ).scalar_one()
+
+    assert expected_count == 0
+    assert started_count == 0
 
 
 def test_rosca_cycle_creation_rejects_malformed_boundary_controls(

@@ -1763,6 +1763,32 @@ def test_user_can_list_own_active_community_domains_without_private_records(
         assert market.status_code == 201, market.text
         market_id = market.json()["community_domain"]["id"]
 
+        feature_policy = client.post(
+            f"/community-domains/{market_id}/policies",
+            json={
+                "policy_key": "domain.feature_policy",
+                "action_key": "domain.features.configure",
+                "review_mode": "domain_admin_review",
+                "required_role": "domain_admin",
+                "config": {
+                    "version": 1,
+                    "features": {
+                        "announcement_board": "admin_only",
+                        "demand_box": "members_submit_admin_approves",
+                        "spotlight": "admin_only",
+                        "shop_diary": "members_submit_admin_approves",
+                        "vault": "off",
+                        "marketplace_shops": "members_submit_admin_approves",
+                        "member_invites": "admin_only",
+                        "payments_contributions": "admin_only",
+                        "rosca_cycles": "off",
+                    },
+                },
+                "policy_summary": "Marketplace features are governed by the domain.",
+            },
+        )
+        assert feature_policy.status_code == 201, feature_policy.text
+
         added_member = client.post(
             f"/community-domains/{market_id}/members",
             json={"user_id": member.id, "role": "member", "title": "Market member"},
@@ -1787,6 +1813,15 @@ def test_user_can_list_own_active_community_domains_without_private_records(
     }
     assert owner_domain_ids == {school_id, market_id}
     assert all(item["viewer"]["can_admin"] is True for item in owner_payload["items"])
+    owner_market_item = next(
+        item
+        for item in owner_payload["items"]
+        if item["community_domain"]["id"] == market_id
+    )
+    assert owner_market_item["feature_policy"]["policy_key"] == "domain.feature_policy"
+    assert owner_market_item["feature_policy"]["features"]["vault"] == "off"
+    assert owner_market_item["feature_policy"]["features"]["rosca_cycles"] == "off"
+    assert "payment instructions" in owner_market_item["feature_policy"]["boundary"]
     assert all(
         item["dashboard_path"] == f"/app/community-domain/{item['community_domain']['id']}"
         for item in owner_payload["items"]
@@ -1799,6 +1834,11 @@ def test_user_can_list_own_active_community_domains_without_private_records(
     assert member_payload["total"] == 1
     assert member_payload["items"][0]["community_domain"]["id"] == market_id
     assert member_payload["items"][0]["membership"]["role"] == "member"
+    assert member_payload["items"][0]["feature_policy"]["features"]["vault"] == "off"
+    assert (
+        member_payload["items"][0]["feature_policy"]["features"]["rosca_cycles"]
+        == "off"
+    )
     assert member_payload["items"][0]["viewer"] == {
         "user_id": member.id,
         "can_admin": False,

@@ -18,6 +18,7 @@ import {
   getMyIdentityRisk,
   getSelectedClanId,
   getVaultShopStatus,
+  listMyCommunityDomains,
   listVaultShopAccessLinks,
   revokeVaultShopAccessLink,
   safeCopy,
@@ -26,6 +27,11 @@ import {
   type VaultLinkItem,
   type VaultShopStatus,
 } from "../lib/api";
+import {
+  communityDomainFeatureIsOff,
+  communityDomainFeatureModeFromPayload,
+  communityDomainFeatureOffMessage,
+} from "../lib/communityDomainFeaturePolicy";
 import {
   buildGsnPaymentInstructionPackage,
   buildGsnVaultInviteMessage,
@@ -936,6 +942,8 @@ export default function VaultControlPage() {
   const [products, setProducts] = useState<ProductRecord[]>([]);
   const [vaultLinks, setVaultLinks] = useState<VaultLinkItem[]>([]);
   const [expectedPayments, setExpectedPayments] = useState<ExpectedPaymentRecord[]>([]);
+  const [communityDomainPolicyPayload, setCommunityDomainPolicyPayload] =
+    useState<any>(null);
   const [vaultInstruction, setVaultInstruction] = useState<ExpectedPaymentRecord | null>(null);
   const [vaultSettlement, setVaultSettlement] = useState<SettlementRecord | null>(null);
   const [vaultConfig, setVaultConfig] = useState<VaultConfigRecord | null>(null);
@@ -1004,6 +1012,41 @@ export default function VaultControlPage() {
   function showNotice(tone: NoticeTone, text: string) {
     setNotice({ tone, text });
   }
+
+  const vaultFeatureCommunityId = Number(shop?.clan_id || selectedClanId || 0);
+  const vaultDomainFeatureMatch = useMemo(
+    () =>
+      communityDomainFeatureModeFromPayload(
+        communityDomainPolicyPayload,
+        vaultFeatureCommunityId,
+        "vault"
+      ),
+    [communityDomainPolicyPayload, vaultFeatureCommunityId]
+  );
+  const vaultFeatureOff = communityDomainFeatureIsOff(vaultDomainFeatureMatch);
+  const vaultFeatureOffText = communityDomainFeatureOffMessage(
+    "Private Vault",
+    vaultDomainFeatureMatch?.domainName || "this Community Domain"
+  );
+
+  useEffect(() => {
+    let alive = true;
+    if (!vaultFeatureCommunityId) {
+      setCommunityDomainPolicyPayload(null);
+      return () => {
+        alive = false;
+      };
+    }
+
+    (async () => {
+      const payload = await listMyCommunityDomains().catch(() => null);
+      if (alive) setCommunityDomainPolicyPayload(payload);
+    })();
+
+    return () => {
+      alive = false;
+    };
+  }, [vaultFeatureCommunityId]);
 
   function canApplyLoad(seq: number): boolean {
     return mountedRef.current && loadSeqRef.current === seq;
@@ -1527,6 +1570,10 @@ export default function VaultControlPage() {
       showNotice("error", "Shop record is not ready.");
       return;
     }
+    if (vaultFeatureOff) {
+      showNotice("error", vaultFeatureOffText);
+      return;
+    }
     const safeQuantity = Math.min(VAULT_SLOT_LIMIT, Math.max(1, Number(quantityTotal || 1)));
     const quoteKey = vaultPaymentQuoteKey(safeQuantity);
     if (confirmedPaymentQuoteKey !== quoteKey) {
@@ -1972,17 +2019,34 @@ export default function VaultControlPage() {
             <div style={{ marginTop: 14, ...helperText() }}>
               Agree to this quote first. GSN will generate the payment code against this exact slot count and amount, then bank or finance reconciliation must confirm the payment before Vault blocks become available.
             </div>
+            {vaultFeatureOff ? (
+              <div style={{ marginTop: 14, ...noticeCard("error") }}>
+                {vaultFeatureOffText}
+              </div>
+            ) : null}
             {!activeVaultPayment ? (
               <SecondaryButton
                 onClick={() => {
+                  if (vaultFeatureOff) {
+                    showNotice("error", vaultFeatureOffText);
+                    return;
+                  }
                   if (!paymentQuoteConfirmed) {
                     showNotice("info", `Agree to this Vault quote first: ${selectedVaultAgreementText}.`);
                     return;
                   }
                   void createVaultInstruction(paymentSlots);
                 }}
-                disabled={creatingPayment || !shop?.id}
-                style={{ ...brandActionButton("secondary", creatingPayment || !shop?.id), marginTop: 10, minHeight: 54, width: "100%" }}
+                disabled={vaultFeatureOff || creatingPayment || !shop?.id}
+                style={{
+                  ...brandActionButton(
+                    "secondary",
+                    vaultFeatureOff || creatingPayment || !shop?.id
+                  ),
+                  marginTop: 10,
+                  minHeight: 54,
+                  width: "100%",
+                }}
                 busy={creatingPayment}
                 busyLabel="Generating payment code..."
                 debugId="vault-control.generate-payment-code"

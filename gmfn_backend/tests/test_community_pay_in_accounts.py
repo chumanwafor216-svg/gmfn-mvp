@@ -130,6 +130,98 @@ def test_pool_instruction_uses_saved_community_pay_in_account(
     assert body["settlement"]["configured"] is True
 
 
+def test_pool_instruction_respects_disabled_community_domain_payments_policy(
+    client,
+    seed_clan_admin_membership,
+    override_current_user,
+):
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO community_domains (
+                    id,
+                    domain_name,
+                    display_name,
+                    domain_type,
+                    template_key,
+                    owner_user_id,
+                    clan_id,
+                    status,
+                    verification_status
+                )
+                VALUES (
+                    501,
+                    'pay-in-off-domain',
+                    'Pay In Off Domain',
+                    'ngo_project_network',
+                    'ngo_project_network',
+                    1,
+                    1,
+                    'active',
+                    'unverified'
+                )
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO community_domain_policies (
+                    community_domain_id,
+                    policy_key,
+                    action_key,
+                    review_mode,
+                    required_role,
+                    status,
+                    config_json,
+                    created_by_user_id
+                )
+                VALUES (
+                    501,
+                    'domain.feature_policy',
+                    'domain.features.configure',
+                    'domain_admin_review',
+                    'domain_admin',
+                    'active',
+                    :config_json,
+                    1
+                )
+                """
+            ),
+            {
+                "config_json": json.dumps(
+                    {
+                        "version": 1,
+                        "features": {
+                            "payments_contributions": "off",
+                            "member_invites": "admin_only",
+                        },
+                    }
+                )
+            },
+        )
+
+    res = client.post(
+        "/payment-instructions/pool",
+        json={
+            "clan_id": 1,
+            "amount": "20.00",
+            "currency": "GBP",
+            "contribution_reason": "Yearly contribution",
+        },
+    )
+    assert res.status_code == 403, res.text
+    body = res.json()
+    assert body["detail"]["code"] == "community_domain_feature_disabled"
+    assert body["detail"]["feature_key"] == "payments_contributions"
+    assert "subscription activation" in body["detail"]["message"]
+
+    with engine.begin() as conn:
+        created = conn.execute(text("SELECT COUNT(*) FROM expected_payments")).scalar_one()
+        assert created == 0
+
+
 def test_pool_instruction_rejects_malformed_boundary_controls(
     client,
     seed_clan_admin_membership,

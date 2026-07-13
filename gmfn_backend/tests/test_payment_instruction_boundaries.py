@@ -1,10 +1,116 @@
 from __future__ import annotations
 
+import json
+
+from sqlalchemy import text
+
+from app.db.database import engine
+
 
 def _assert_rejected(client, path: str, payload: dict, expected_text: str) -> None:
     response = client.post(path, json=payload)
     assert response.status_code == 422, response.text
     assert expected_text in response.text
+
+
+def _seed_shop_domain_feature_policy(feature_key: str, mode: str = "off") -> int:
+    shop_id = 908
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_shops (
+                    id,
+                    clan_id,
+                    owner_user_id,
+                    shop_name,
+                    description,
+                    is_active,
+                    created_at
+                )
+                VALUES (
+                    :shop_id,
+                    1,
+                    1,
+                    'Payment Policy Test Shop',
+                    'Shop for payment instruction policy tests',
+                    1,
+                    CURRENT_TIMESTAMP
+                )
+                """
+            ),
+            {"shop_id": shop_id},
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO community_domains (
+                    id,
+                    domain_name,
+                    display_name,
+                    domain_type,
+                    template_key,
+                    owner_user_id,
+                    clan_id,
+                    status,
+                    verification_status,
+                    created_at,
+                    updated_at
+                )
+                VALUES (
+                    906,
+                    'shop-service-policy-test-domain',
+                    'Shop Service Policy Test Domain',
+                    'ngo_project_network',
+                    'ngo_project_network',
+                    1,
+                    1,
+                    'active',
+                    'unverified',
+                    CURRENT_TIMESTAMP,
+                    CURRENT_TIMESTAMP
+                )
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO community_domain_policies (
+                    id,
+                    community_domain_id,
+                    policy_key,
+                    action_key,
+                    scope_type,
+                    review_mode,
+                    required_role,
+                    status,
+                    policy_summary,
+                    config_json,
+                    created_by_user_id,
+                    created_at,
+                    updated_at
+                )
+                VALUES (
+                    907,
+                    906,
+                    'domain.feature_policy',
+                    'domain.features.configure',
+                    'domain',
+                    'domain_admin_review',
+                    'owner_admin',
+                    'active',
+                    'Shop service payment route feature policy test',
+                    :config_json,
+                    1,
+                    CURRENT_TIMESTAMP,
+                    CURRENT_TIMESTAMP
+                )
+                """
+            ),
+            {"config_json": json.dumps({"features": {feature_key: mode}})},
+        )
+    return shop_id
 
 
 def test_loan_instruction_rejects_malformed_boundary_controls(
@@ -204,6 +310,42 @@ def test_spotlight_instruction_rejects_malformed_boundary_controls(
             payload,
             f"{field_name} must be text",
         )
+
+
+def test_spotlight_instruction_respects_disabled_community_domain_spotlight_policy(
+    client,
+    override_current_user,
+):
+    shop_id = _seed_shop_domain_feature_policy("spotlight", "off")
+
+    response = client.post(
+        "/payment-instructions/spotlight",
+        json={
+            "clan_id": 1,
+            "shop_id": shop_id,
+            "quantity_total": 1,
+            "currency": "GBP",
+            "visibility_scope": "direct_communities",
+        },
+    )
+
+    assert response.status_code == 403, response.text
+    detail = response.json()["detail"]
+    assert detail["code"] == "community_domain_feature_disabled"
+    assert detail["feature_key"] == "spotlight"
+    assert "paid Spotlight payments" in detail["message"]
+
+    with engine.begin() as conn:
+        created = conn.execute(
+            text(
+                """
+                SELECT COUNT(*)
+                FROM expected_payments
+                WHERE expected_type = 'spotlight_subscription'
+                """
+            )
+        ).scalar_one()
+    assert created == 0
 
 
 def test_payment_instruction_exposes_pending_authentication_contract(

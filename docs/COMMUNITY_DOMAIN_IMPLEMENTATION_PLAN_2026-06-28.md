@@ -111,8 +111,27 @@ space.
 
 ### Type 2 - Community Domain
 
-A `Community Domain` is the paid institutional operating space for real-world
-organized bodies.
+A `Community Domain` is the governed/professional marketplace form of GSN for
+real-world organized bodies. It is not a separate product engine and it must not
+be treated as a stripped-down institution page. It inherits the normal GSN
+marketplace/community behaviours, then scopes them under a registered domain
+name, institutional tariff, and owner/admin governance policy.
+
+The distinction is governance and branding, not feature availability:
+
+- an ordinary Committee/lightweight marketplace adapts itself to the shared GSN
+  defaults;
+- a Community Domain keeps the shared GSN engines but lets the organization
+  decide which behaviours are allowed, admin-only, member-submitted,
+  admin-approved, internal, public, or cross-community visible.
+
+Everything that a normal marketplace/community can do should be available to a
+Community Domain unless the domain owner/admin turns it off or limits it by
+policy. This includes money in/out, donations, registrations, event fees,
+member contributions, Demand Box, Spotlight, Shop Diary, marketplace/shop
+visibility, ROSCA/rotating contribution cycles, invites, QR/share links,
+TrustEvents, evidence records, and member participation signals. The domain
+does not lose marketplace behaviour; it gains institutional control over it.
 
 It supports:
 
@@ -122,6 +141,8 @@ It supports:
 - branches, departments, classes, committees, zones, or sections;
 - recurring subscription or package activation;
 - module settings for GSN services;
+- domain feature permissions for normal GSN marketplace/community behaviours;
+- community tariff and capacity rules instead of individual-user pricing;
 - member approval and role assignment;
 - evidence, verification, analytics, and trust propagation.
 
@@ -878,8 +899,11 @@ Module behavior:
 
 ### Economic Activity Inside Institutional Domains
 
-Community Domain is not marketplace-first, but economic activity is part of
-real community life.
+Community Domain is not commerce-only, but it is marketplace-capable by
+default. Economic activity is part of real community life, so a Community Domain
+must be allowed to use the same marketplace rails as a lightweight community
+while applying stronger domain governance, branding, tariff, and visibility
+rules.
 
 The framework should support:
 
@@ -887,14 +911,24 @@ The framework should support:
 - approved vendors serving the institution;
 - ROSCA/contribution groups inside departments/branches;
 - welfare funds and support activities;
+- registrations, donations, event fees, seminar fees, picnic fees, and other
+  money-in/money-out records that can become participation evidence;
 - trusted procurement;
 - paid spotlight or external reach;
 - demand/request matching inside the domain;
 - trust evidence travelling outward when a member trades outside the domain.
 
-This lets a school, union, market, or church use GSN for community activity
-first, while still using marketplace/trust/economic rails where those rails
-match real life.
+This lets an NGO, school, union, market, church, association, or cooperative use
+GSN without changing its culture. The domain can permit only the organization to
+broadcast Spotlight, require admin approval for member Demand Box requests, keep
+Shop Diary internal, open selected activity to linked communities, or disable a
+feature completely. Ordinary lightweight marketplaces do not need this level of
+institutional feature control; Community Domains do.
+
+Payments and contributions are evidence of activity, registration, participation,
+or engagement. They are not automatic proof of life-change impact. Impact still
+requires programme context, beneficiary/member evidence, follow-up, testimony,
+or domain-admin/evaluator confirmation.
 
 ### GSN Carries Existing Trust
 

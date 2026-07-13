@@ -119,6 +119,15 @@ const CONFIDENCE_OPTIONS = [
   { value: "known_through_trade", label: "Known through trade or service" },
 ];
 
+type CommunityDomainInviteContext = {
+  domainId: string;
+  domainName: string;
+  domainCode: string;
+  domainType: string;
+  templateKey: string;
+  groupType: string;
+};
+
 function safeStr(x: any): string {
   return String(x ?? "").trim();
 }
@@ -715,6 +724,67 @@ function isCommunityDomainCircleMode(): boolean {
   return mode === "community-domain" || source === "community-domain";
 }
 
+function domainInviteGroupType(value: unknown): string {
+  const text = safeStr(value).toLowerCase().replace(/[^a-z0-9]+/g, "_");
+  if (!text) return "";
+  if (/(charity|ngo|nonprofit|non_profit|project_network|health|hospital)/.test(text)) {
+    return "charity_ngo";
+  }
+  if (/(church|faith|religious|ministry)/.test(text)) {
+    return "church_group";
+  }
+  if (/(school|parent|academy|education)/.test(text)) {
+    return "school_group";
+  }
+  if (/(student|campus|university)/.test(text)) {
+    return "student_group";
+  }
+  if (/(union|association|cooperative|coop|diaspora|market|professional|town)/.test(text)) {
+    return "community_association";
+  }
+  return "";
+}
+
+function communityDomainInviteContextFromSearch(): CommunityDomainInviteContext {
+  if (typeof window === "undefined") {
+    return {
+      domainId: "",
+      domainName: "",
+      domainCode: "",
+      domainType: "",
+      templateKey: "",
+      groupType: "",
+    };
+  }
+
+  const params = new URLSearchParams(window.location.search || "");
+  const domainType = firstTruthy(
+    params.get("domain_type"),
+    params.get("community_domain_type")
+  );
+  const templateKey = firstTruthy(
+    params.get("template_key"),
+    params.get("community_domain_template")
+  );
+  const explicitGroupType = firstTruthy(params.get("group_type"));
+
+  return {
+    domainId: firstTruthy(params.get("community_domain_id"), params.get("domain_id")),
+    domainName: firstTruthy(
+      params.get("community_domain_name"),
+      params.get("domain_display_name"),
+      params.get("domain_name")
+    ),
+    domainCode: firstTruthy(params.get("community_domain_code"), params.get("domain_code")),
+    domainType,
+    templateKey,
+    groupType:
+      domainInviteGroupType(explicitGroupType) ||
+      domainInviteGroupType(domainType) ||
+      domainInviteGroupType(templateKey),
+  };
+}
+
 function communityDomainInvitePreset(role: string): {
   label: string;
   audience: string;
@@ -902,6 +972,10 @@ export default function BuildFirstCirclePage() {
     () => isCommunityDomainCircleMode(),
     []
   );
+  const communityDomainInviteContext = useMemo(
+    () => communityDomainInviteContextFromSearch(),
+    []
+  );
 
   const [isCompact, setIsCompact] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
@@ -930,6 +1004,7 @@ export default function BuildFirstCirclePage() {
   );
   const [inviterName, setInviterName] = useState("");
   const [customInviteMessage, setCustomInviteMessage] = useState("");
+  const [savedInviteMessage, setSavedInviteMessage] = useState("");
   const [inviteMessageEdited, setInviteMessageEdited] = useState(false);
   const [quickRows, setQuickRows] = useState<QuickPersonRow[]>(defaultQuickRows());
   const [pickingContacts, setPickingContacts] = useState(false);
@@ -1062,13 +1137,19 @@ export default function BuildFirstCirclePage() {
   const communityName = useMemo(() => {
     return (
       firstTruthy(
+        communityDomainCircleMode ? communityDomainInviteContext.domainName : "",
         currentClan?.marketplace_name,
         currentClan?.name,
         currentClan?.display_name,
         currentClan?.title
       ) || (selectedClanId ? `Community ${selectedClanId}` : "your community")
     );
-  }, [currentClan, selectedClanId]);
+  }, [
+    communityDomainCircleMode,
+    communityDomainInviteContext.domainName,
+    currentClan,
+    selectedClanId,
+  ]);
 
   const memberName = useMemo(() => {
     return (
@@ -1118,17 +1199,33 @@ export default function BuildFirstCirclePage() {
   }, [inviteEvidence.relationshipType]);
 
   const inviteSenderName = firstTruthy(inviterName, memberName);
-  const selectedGroupType = safeStr(draft.memberRole);
+  const selectedGroupType = safeStr(
+    draft.memberRole ||
+      (communityDomainCircleMode ? communityDomainInviteContext.groupType : "")
+  );
   const inviteMessagePreset = useMemo(
     () => communityDomainInvitePreset(selectedGroupType),
     [selectedGroupType]
   );
   const inviteMessageStorageKey = useMemo(() => {
     const communityKey = safeStr(
-      firstTruthy(currentClan?.id, currentClan?.clan_id, selectedClanId)
+      firstTruthy(
+        communityDomainCircleMode ? communityDomainInviteContext.domainId : "",
+        communityDomainCircleMode ? communityDomainInviteContext.domainCode : "",
+        currentClan?.id,
+        currentClan?.clan_id,
+        selectedClanId
+      )
     ) || "default";
     return `${COMMUNITY_DOMAIN_INVITE_MESSAGE_KEY}.${communityKey}.${selectedGroupType || "general"}`;
-  }, [currentClan, selectedClanId, selectedGroupType]);
+  }, [
+    communityDomainCircleMode,
+    communityDomainInviteContext.domainCode,
+    communityDomainInviteContext.domainId,
+    currentClan,
+    selectedClanId,
+    selectedGroupType,
+  ]);
   const defaultCommunityDomainInviteMessage = useMemo(
     () =>
       buildCommunityDomainGroupInviteMessage({
@@ -1167,32 +1264,30 @@ export default function BuildFirstCirclePage() {
     const savedMessage = safeStr(saved?.message);
     if (savedMessage) {
       setCustomInviteMessage(savedMessage);
+      setSavedInviteMessage(savedMessage);
       setInviteMessageEdited(true);
       return;
     }
 
     setCustomInviteMessage(defaultCommunityDomainInviteMessage);
+    setSavedInviteMessage(defaultCommunityDomainInviteMessage);
     setInviteMessageEdited(false);
   }, [communityDomainCircleMode, inviteMessageStorageKey]);
 
   useEffect(() => {
     if (!communityDomainCircleMode || inviteMessageEdited) return;
     setCustomInviteMessage(defaultCommunityDomainInviteMessage);
+    setSavedInviteMessage(defaultCommunityDomainInviteMessage);
   }, [
     communityDomainCircleMode,
     defaultCommunityDomainInviteMessage,
     inviteMessageEdited,
   ]);
 
-  useEffect(() => {
-    if (!communityDomainCircleMode || !inviteMessageEdited) return;
-    writeLocalJSON(inviteMessageStorageKey, { message: customInviteMessage });
-  }, [
-    communityDomainCircleMode,
-    customInviteMessage,
-    inviteMessageEdited,
-    inviteMessageStorageKey,
-  ]);
+  const inviteMessageDirty =
+    communityDomainCircleMode &&
+    inviteMessageEdited &&
+    safeStr(customInviteMessage) !== safeStr(savedInviteMessage);
 
   const buildJoinInviteMessageForLink = useCallback((link: string): string => {
     if (communityDomainCircleMode) {
@@ -1295,7 +1390,7 @@ export default function BuildFirstCirclePage() {
   const targetCount = communityDomainCircleMode
     ? 1
     : Number(progress.targetCount || 3);
-  const hasRole = Boolean(safeStr(draft.memberRole));
+  const hasRole = Boolean(safeStr(selectedGroupType));
   const remainingReady = Math.max(targetCount - readyCount, 0);
   const activeStep = !hasRole
     ? 1
@@ -1334,6 +1429,22 @@ export default function BuildFirstCirclePage() {
 
   function showNotice(tone: NoticeTone, text: string) {
     setNotice({ tone, text });
+  }
+
+  function saveCommunityDomainInviteMessage() {
+    if (!communityDomainCircleMode) return;
+
+    const nextMessage = safeStr(customInviteMessage);
+    if (!nextMessage) {
+      showNotice("error", "Write the invite message before saving.");
+      return;
+    }
+
+    writeLocalJSON(inviteMessageStorageKey, { message: nextMessage });
+    setCustomInviteMessage(nextMessage);
+    setSavedInviteMessage(nextMessage);
+    setInviteMessageEdited(true);
+    showNotice("success", "Invite message saved. Copy, WhatsApp, and Share now use it.");
   }
 
   function openInviteFocus() {
@@ -2349,18 +2460,32 @@ export default function BuildFirstCirclePage() {
                         display: "grid",
                         gridTemplateColumns: isCompact
                           ? "1fr"
-                          : "minmax(0, 1fr) auto",
+                          : "minmax(0, 1fr) auto auto",
                         gap: 10,
                         alignItems: "center",
                       }}
                     >
                       <div>
-                        <div style={sectionLabel()}>Message template</div>
+                        <div style={sectionLabel()}>Domain invite template</div>
                         <div style={{ marginTop: 4, ...helperText(), fontSize: 13 }}>
-                          {inviteMessagePreset.label} for{" "}
+                          {communityName} uses the {inviteMessagePreset.label} for{" "}
                           {inviteMessagePreset.audience}.
                         </div>
                       </div>
+                      <PrimaryButton
+                        onClick={saveCommunityDomainInviteMessage}
+                        disabled={!inviteMessageDirty}
+                        stableHeight={44}
+                        debugId="build-first-circle.save-programme-message"
+                        style={{
+                          ...compactButtonStyle(true),
+                          minHeight: 44,
+                          height: 44,
+                          maxHeight: 44,
+                        }}
+                      >
+                        {firstCircleIconText("check", "Save message", 18)}
+                      </PrimaryButton>
                       <SubtleButton
                         onClick={() => {
                           try {
@@ -2370,6 +2495,7 @@ export default function BuildFirstCirclePage() {
                           }
                           setInviteMessageEdited(false);
                           setCustomInviteMessage(defaultCommunityDomainInviteMessage);
+                          setSavedInviteMessage(defaultCommunityDomainInviteMessage);
                           showNotice("success", "Invite message reset to the selected programme.");
                         }}
                         stableHeight={44}
@@ -2409,9 +2535,55 @@ export default function BuildFirstCirclePage() {
                       />
                     </label>
                     <div style={{ ...helperText(), fontSize: 13 }}>
-                      Copy, WhatsApp, and Share use this text. GSN keeps the
-                      identity, approval, and no-bulk-import lines on the final
-                      invite.
+                      Copy, WhatsApp, and Share use this domain-branded text. GSN
+                      keeps identity, approval, and no-bulk-import lines on the
+                      final invite.
+                    </div>
+                    <div
+                      style={{
+                        borderRadius: 14,
+                        border: "1px solid rgba(203,220,240,0.18)",
+                        background: "rgba(8,22,38,0.62)",
+                        padding: 12,
+                        display: "grid",
+                        gap: 8,
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          gap: 10,
+                          alignItems: "center",
+                          flexWrap: "wrap",
+                        }}
+                      >
+                        <span style={sectionLabel()}>Live message preview</span>
+                        <span
+                          style={{
+                            ...badge(!inviteMessageDirty),
+                            minHeight: 26,
+                            padding: "4px 9px",
+                            fontSize: 11,
+                          }}
+                        >
+                          {inviteMessageDirty ? "Unsaved edit" : "Saved"}
+                        </span>
+                      </div>
+                      <pre
+                        aria-label="Live outgoing invite message preview"
+                        style={{
+                          margin: 0,
+                          whiteSpace: "pre-wrap",
+                          overflowWrap: "anywhere",
+                          fontFamily: "inherit",
+                          color: "#E6EEF8",
+                          fontSize: 13,
+                          lineHeight: 1.55,
+                        }}
+                      >
+                        {communityDomainInviteMessage}
+                      </pre>
                     </div>
                   </div>
                 ) : null}

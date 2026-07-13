@@ -32,6 +32,10 @@ from app.services.feature_entitlements_service import (
     get_active_feature_quantity,
     has_active_feature,
 )
+from app.services.community_domain_feature_policy import (
+    require_domain_marketplace_shops_enabled,
+    require_domain_shop_diary_enabled,
+)
 from app.services.notification_service import create_notification
 from app.services.trust_events_services import log_trust_event
 from app.services.vault_domain_service import (
@@ -2161,6 +2165,7 @@ def create_marketplace_shop(
         user_id=int(current_user.id),
         clan_id=resolved_clan_id,
     )
+    require_domain_marketplace_shops_enabled(db, clan_id=resolved_clan_id)
 
     existing_shop = _get_public_shop_identity_by_owner(
         db,
@@ -2363,6 +2368,7 @@ def update_marketplace_shop(
         user_id=int(current_user.id),
         clan_id=resolved_clan_id,
     )
+    require_domain_marketplace_shops_enabled(db, clan_id=resolved_clan_id)
 
     provided = _provided_model_fields(payload)
     changed = False
@@ -2799,6 +2805,7 @@ def create_marketplace_product(
         user_id=int(current_user.id),
         clan_id=resolved_clan_id,
     )
+    require_domain_shop_diary_enabled(db, clan_id=resolved_clan_id)
 
     if not _safe_str(payload.name):
         raise HTTPException(status_code=400, detail="Product name is required")
@@ -3005,6 +3012,7 @@ def update_marketplace_product(
         user_id=int(current_user.id),
         clan_id=int(product.clan_id),
     )
+    require_domain_shop_diary_enabled(db, clan_id=resolved_clan_id)
 
     provided = _provided_model_fields(payload)
     changed = False
@@ -3354,6 +3362,7 @@ def delete_marketplace_product(
         user_id=int(current_user.id),
         clan_id=int(product.clan_id),
     )
+    require_domain_shop_diary_enabled(db, clan_id=resolved_clan_id)
 
     removed_reposts = _remove_product_reposts(db, product_id=int(product.id))
     snapshot = _product_out(db, product)

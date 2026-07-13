@@ -1,8 +1,82 @@
+import json
 from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import text
 
 from app.db.database import engine
+
+
+def _seed_domain_feature_policy(feature_key: str, mode: str = "off") -> None:
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO community_domains (
+                    id,
+                    domain_name,
+                    display_name,
+                    domain_type,
+                    template_key,
+                    owner_user_id,
+                    clan_id,
+                    status,
+                    verification_status,
+                    created_at,
+                    updated_at
+                )
+                VALUES (
+                    806,
+                    'package-policy-test-domain',
+                    'Package Policy Test Domain',
+                    'ngo_project_network',
+                    'ngo_project_network',
+                    1,
+                    1,
+                    'active',
+                    'unverified',
+                    CURRENT_TIMESTAMP,
+                    CURRENT_TIMESTAMP
+                )
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO community_domain_policies (
+                    id,
+                    community_domain_id,
+                    policy_key,
+                    action_key,
+                    scope_type,
+                    review_mode,
+                    required_role,
+                    status,
+                    policy_summary,
+                    config_json,
+                    created_by_user_id,
+                    created_at,
+                    updated_at
+                )
+                VALUES (
+                    807,
+                    806,
+                    'domain.feature_policy',
+                    'domain.features.configure',
+                    'domain',
+                    'domain_admin_review',
+                    'owner_admin',
+                    'active',
+                    'Package route feature policy test',
+                    :config_json,
+                    1,
+                    CURRENT_TIMESTAMP,
+                    CURRENT_TIMESTAMP
+                )
+                """
+            ),
+            {"config_json": json.dumps({"features": {feature_key: mode}})},
+        )
 
 
 def _seed_rosca_entitlement() -> None:
@@ -142,6 +216,40 @@ def test_rosca_package_instruction_is_sixty_pounds_yearly(
     assert body["package_code"] == "rosca_cycle"
     assert body["meta"]["billing_cycle"] == "annual"
     assert body["meta"]["pricing_model"] == "annual_service"
+
+
+def test_rosca_package_instruction_respects_disabled_community_domain_rosca_policy(
+    client, override_current_user, seed_clan_admin_membership
+):
+    _seed_domain_feature_policy("rosca_cycles", "off")
+
+    res = client.post(
+        "/payment-instructions/community-package",
+        json={
+            "clan_id": 1,
+            "package_code": "rosca_cycle",
+            "quantity_total": 1,
+            "currency": "GBP",
+        },
+    )
+
+    assert res.status_code == 403, res.text
+    detail = res.json()["detail"]
+    assert detail["code"] == "community_domain_feature_disabled"
+    assert detail["feature_key"] == "rosca_cycles"
+    assert "Do not create a ROSCA yearly service payment" in detail["message"]
+
+    with engine.begin() as conn:
+        created = conn.execute(
+            text(
+                """
+                SELECT COUNT(*)
+                FROM expected_payments
+                WHERE expected_type = 'community_package_subscription'
+                """
+            )
+        ).scalar_one()
+    assert created == 0
 
 
 def test_rosca_package_instruction_rejects_old_one_pound_amount(

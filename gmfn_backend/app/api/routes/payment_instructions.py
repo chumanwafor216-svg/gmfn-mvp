@@ -14,7 +14,19 @@ from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user
 from app.db.database import get_db
-from app.db.models import ClanMembership, MarketplaceShop, User
+from app.db.models import (
+    ClanMembership,
+    MarketplaceShop,
+    User,
+)
+from app.services.community_domain_feature_policy import (
+    COMMUNITY_DOMAIN_FEATURE_MARKETPLACE_SHOPS,
+    COMMUNITY_DOMAIN_FEATURE_ROSCA_CYCLES,
+    COMMUNITY_DOMAIN_FEATURE_SPOTLIGHT,
+    COMMUNITY_DOMAIN_FEATURE_VAULT,
+    require_community_domain_feature_enabled,
+    require_domain_payments_contributions_enabled,
+)
 from app.services.payment_instruction_service import (
     COMMUNITY_PACKAGE_CATALOG,
     PAYMENT_DUE_WINDOW_DAYS,
@@ -58,8 +70,6 @@ PAYMENT_PROOF_CONTENT_TYPES = {
     "application/pdf",
 }
 GENERIC_UPLOAD_CONTENT_TYPES = {"", "application/octet-stream", "binary/octet-stream"}
-
-
 def _safe_int(value: Any, default: int = 0) -> int:
     try:
         return int(value)
@@ -495,6 +505,10 @@ def create_pool_instruction(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> Dict[str, Any]:
+    require_domain_payments_contributions_enabled(
+        db,
+        clan_id=int(payload.clan_id),
+    )
     out = create_pool_deposit_instruction(
         db,
         clan_id=int(payload.clan_id),
@@ -602,6 +616,16 @@ def create_vault_instruction(
         shop_id=int(payload.shop_id),
         current_user=current_user,
     )
+    _require_domain_shop_service_enabled(
+        db,
+        clan_id=int(payload.clan_id),
+        feature_key=COMMUNITY_DOMAIN_FEATURE_VAULT,
+        feature_label="Vault",
+        boundary_message=(
+            "Do not create Vault slot payments until the Community Domain "
+            "owner/admin enables Vault."
+        ),
+    )
 
     quantity_total = _safe_int(payload.quantity_total, 0)
     if quantity_total < 1 or quantity_total > 6:
@@ -655,6 +679,16 @@ def create_merchant_verify_payment_instruction(
         shop_id=int(payload.shop_id),
         current_user=current_user,
     )
+    _require_domain_shop_service_enabled(
+        db,
+        clan_id=int(payload.clan_id),
+        feature_key=COMMUNITY_DOMAIN_FEATURE_MARKETPLACE_SHOPS,
+        feature_label="Marketplace Shops",
+        boundary_message=(
+            "Do not create merchant verification payments until the Community "
+            "Domain owner/admin enables Marketplace Shops."
+        ),
+    )
 
     out = create_merchant_verify_instruction(
         db,
@@ -679,6 +713,16 @@ def create_spotlight_payment_instruction(
         db,
         shop_id=int(payload.shop_id),
         current_user=current_user,
+    )
+    _require_domain_shop_service_enabled(
+        db,
+        clan_id=int(payload.clan_id),
+        feature_key=COMMUNITY_DOMAIN_FEATURE_SPOTLIGHT,
+        feature_label="Spotlight",
+        boundary_message=(
+            "Do not create paid Spotlight payments until the Community Domain "
+            "owner/admin enables Spotlight."
+        ),
     )
 
     try:
@@ -775,6 +819,54 @@ def _package_engine_status(package_code: str) -> Dict[str, Any]:
     return {"consumer": "unknown", "engine_ready": False, "message": "Package status is unknown."}
 
 
+def _require_domain_package_feature_enabled(
+    db: Session,
+    *,
+    clan_id: int,
+    package_code: str,
+) -> None:
+    package_key = str(package_code or "").strip().lower()
+    if package_key == "rosca_cycle":
+        require_community_domain_feature_enabled(
+            db,
+            clan_id=int(clan_id),
+            feature_key=COMMUNITY_DOMAIN_FEATURE_ROSCA_CYCLES,
+            feature_label="ROSCA Cycles",
+            boundary_message=(
+                "Do not create a ROSCA yearly service payment until the "
+                "Community Domain owner/admin enables ROSCA Cycles."
+            ),
+        )
+    elif package_key == "extra_shop_blocks":
+        require_community_domain_feature_enabled(
+            db,
+            clan_id=int(clan_id),
+            feature_key=COMMUNITY_DOMAIN_FEATURE_MARKETPLACE_SHOPS,
+            feature_label="Marketplace Shops",
+            boundary_message=(
+                "Do not create extra public shop block payments until the "
+                "Community Domain owner/admin enables Marketplace Shops."
+            ),
+        )
+
+
+def _require_domain_shop_service_enabled(
+    db: Session,
+    *,
+    clan_id: int,
+    feature_key: str,
+    feature_label: str,
+    boundary_message: str,
+) -> None:
+    require_community_domain_feature_enabled(
+        db,
+        clan_id=int(clan_id),
+        feature_key=feature_key,
+        feature_label=feature_label,
+        boundary_message=boundary_message,
+    )
+
+
 @router.get("/community-package/status")
 def community_package_status(
     clan_id: int = Query(..., ge=1),
@@ -862,6 +954,11 @@ def use_community_package_unit(
             )
     else:
         _require_clan_admin(db, clan_id=int(payload.clan_id), current_user=current_user)
+    _require_domain_package_feature_enabled(
+        db,
+        clan_id=int(payload.clan_id),
+        package_code=package_code,
+    )
 
     scope = _package_scope(
         package_code=package_code,
@@ -957,6 +1054,11 @@ def create_community_package_payment_instruction(
             clan_id=int(payload.clan_id),
             current_user=current_user,
         )
+    _require_domain_package_feature_enabled(
+        db,
+        clan_id=int(payload.clan_id),
+        package_code=package_code,
+    )
 
     try:
         out = create_community_package_instruction(

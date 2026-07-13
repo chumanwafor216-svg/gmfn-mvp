@@ -305,6 +305,18 @@ assertContains(
 
 assertContains(
   "src/pages/BankConsolePage.tsx",
+  /function expectedPaymentTypeLabel[\s\S]*?Community Domain subscription[\s\S]*?function communityDomainPaymentInfo[\s\S]*?payment_intent/,
+  "Bank Console must preserve readable Community Domain subscription metadata for finance review rows."
+);
+
+assertContains(
+  "src/pages/BankConsolePage.tsx",
+  /Community Domain finance handoff[\s\S]*?subscription activation[\s\S]*?Approval can activate[\s\S]*?does not[\s\S]*?donations, registrations, event fees, ROSCA[\s\S]*?Spotlight, Shop Diary/,
+  "Bank Console Community Domain payment rows must explain activation scope and must not imply uploaded proof approves domain activity payments."
+);
+
+assertContains(
+  "src/pages/BankConsolePage.tsx",
   /paper is evidence[\s\S]*?not automatic[\s\S]*?proof[\s\S]*?money movement/,
   "Bank Console proof-review copy must state that uploaded paper is review evidence, not automatic proof that money moved."
 );

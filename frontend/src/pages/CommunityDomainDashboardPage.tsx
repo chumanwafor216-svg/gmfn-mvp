@@ -71,6 +71,7 @@ import {
   getSelectedClanId,
   setSelectedClanId,
   listExpectedPayments,
+  listCommunityDomainPolicies,
   listCommunityDomainServiceSettings,
   listCommunityDomainActionReviews,
   listCommunityDomainNodeTree,
@@ -253,7 +254,9 @@ type DomainFeaturePolicyKey =
   | "shop_diary"
   | "vault"
   | "marketplace_shops"
-  | "member_invites";
+  | "member_invites"
+  | "payments_contributions"
+  | "rosca_cycles";
 
 type DomainFeaturePolicyConfig = {
   version: number;
@@ -474,6 +477,20 @@ const DOMAIN_FEATURE_POLICY_ROWS: Array<{
     defaultMode: "admin_only",
     icon: "join-person-plus",
   },
+  {
+    key: "payments_contributions",
+    label: "Payments and Contributions",
+    note: "Registrations, donations, event fees, seminar fees, and other money-in activity.",
+    defaultMode: "admin_only",
+    icon: "finance-wallet-card",
+  },
+  {
+    key: "rosca_cycles",
+    label: "ROSCA / Rotating Contributions",
+    note: "Rotating contribution cycles and member contribution discipline.",
+    defaultMode: "members_submit_admin_approves",
+    icon: "repayment-schedule",
+  },
 ];
 
 type DashboardPayload = {
@@ -637,6 +654,27 @@ function parseDomainFeaturePolicy(value: unknown): DomainFeaturePolicyConfig {
   };
 }
 
+function lockedDomainFeaturePolicyFromPayload(
+  payload: any
+): { config: DomainFeaturePolicyConfig; loadedAt: string } | null {
+  const rows = Array.isArray(payload?.items)
+    ? payload.items
+    : Array.isArray(payload?.policies)
+    ? payload.policies
+    : [];
+  const lockedRow = rows.find((row: any) => {
+    return (
+      cleanText(row?.policy_key) === "domain.feature_policy" &&
+      cleanText(row?.status, "active") === "active"
+    );
+  });
+  if (!lockedRow) return null;
+  return {
+    config: parseDomainFeaturePolicy(lockedRow.config),
+    loadedAt: cleanText(lockedRow.updated_at || lockedRow.created_at),
+  };
+}
+
 function serializeDomainFeaturePolicy(config: DomainFeaturePolicyConfig): string {
   return JSON.stringify(config);
 }
@@ -660,6 +698,26 @@ function featurePolicySummary(config: DomainFeaturePolicyConfig): string {
 function domainFeaturePolicyIsReady(value: unknown): boolean {
   const config = parseDomainFeaturePolicy(value);
   return DOMAIN_FEATURE_POLICY_ROWS.every((row) => isFeaturePolicyMode(config.features[row.key]));
+}
+
+function domainFeatureIsOff(
+  config: DomainFeaturePolicyConfig,
+  featureKey: DomainFeaturePolicyKey
+): boolean {
+  return config.features[featureKey] === "off";
+}
+
+function domainFeatureRouteEffect(featureKey: DomainFeaturePolicyKey): string {
+  if (featureKey === "announcement_board") {
+    return "Route effect: Official Board posting is blocked when this is off.";
+  }
+  if (featureKey === "member_invites") {
+    return "Route effect: First Circle and member invite entry are blocked when this is off.";
+  }
+  if (featureKey === "payments_contributions") {
+    return "Route effect: domain subscription billing stays available; donations, registrations, event fees, and seminar fees follow this rule as those engines connect.";
+  }
+  return "Route effect: recorded as the domain rule while this feature engine is connected.";
 }
 
 function communityDomainSetupDraftKey(domainId: unknown): string {
@@ -1670,6 +1728,9 @@ export default function CommunityDomainDashboardPage() {
   const [activeSetupStep, setActiveSetupStep] = useState<SetupStepKey>("identity");
   const [setupCompletionSavedAt, setSetupCompletionSavedAt] = useState("");
   const [featurePolicyLockedAt, setFeaturePolicyLockedAt] = useState("");
+  const [lockedFeaturePolicy, setLockedFeaturePolicy] =
+    useState<DomainFeaturePolicyConfig | null>(null);
+  const [lockedFeaturePolicyLoadedAt, setLockedFeaturePolicyLoadedAt] = useState("");
   const [activeLane, setActiveLane] = useState("settings");
   const [setupJourneyMode, setSetupJourneyMode] = useState<"setup" | "edit">(
     "setup"
@@ -1740,6 +1801,38 @@ export default function CommunityDomainDashboardPage() {
       cleanText(activeCommunityDomainIdRef.current) === cleanText(domainId)
     );
   }, []);
+
+  const loadLockedFeaturePolicy = useCallback(
+    async (domainId = communityDomainId) => {
+      const requestDomainId = cleanText(domainId);
+      if (!requestDomainId || !getAccessToken()) {
+        if (isCurrentDomainRequest(requestDomainId)) {
+          setLockedFeaturePolicy(null);
+          setLockedFeaturePolicyLoadedAt("");
+          setFeaturePolicyLockedAt("");
+        }
+        return null;
+      }
+
+      try {
+        const payload = await listCommunityDomainPolicies(requestDomainId);
+        if (!isCurrentDomainRequest(requestDomainId)) return null;
+        const locked = lockedDomainFeaturePolicyFromPayload(payload);
+        setLockedFeaturePolicy(locked?.config || null);
+        setLockedFeaturePolicyLoadedAt(locked?.loadedAt || "");
+        setFeaturePolicyLockedAt(locked?.loadedAt || "");
+        return locked;
+      } catch {
+        if (isCurrentDomainRequest(requestDomainId)) {
+          setLockedFeaturePolicy(null);
+          setLockedFeaturePolicyLoadedAt("");
+          setFeaturePolicyLockedAt("");
+        }
+        return null;
+      }
+    },
+    [communityDomainId, isCurrentDomainRequest]
+  );
 
   const loadOwnMembershipRequests = useCallback(async (domainId = communityDomainId) => {
     const requestDomainId = cleanText(domainId);
@@ -1857,6 +1950,9 @@ export default function CommunityDomainDashboardPage() {
       setDomainNoticesLoading(false);
       setDomainNoticeModalOpen(false);
       setDomainNoticePosting(false);
+      setLockedFeaturePolicy(null);
+      setLockedFeaturePolicyLoadedAt("");
+      setFeaturePolicyLockedAt("");
       resetOptionalReadinessState();
       try {
         const payload = await listMyCommunityDomains();
@@ -1903,6 +1999,9 @@ export default function CommunityDomainDashboardPage() {
     setDomainNoticesLoading(false);
     setDomainNoticeModalOpen(false);
     setDomainNoticePosting(false);
+    setLockedFeaturePolicy(null);
+    setLockedFeaturePolicyLoadedAt("");
+    setFeaturePolicyLockedAt("");
     resetOptionalReadinessState();
     try {
       const payload = await getCommunityDomainDashboard(requestDomainId);
@@ -1919,6 +2018,7 @@ export default function CommunityDomainDashboardPage() {
       setActiveLane("settings");
       setShowAdvancedTools(false);
       setLoading(false);
+      void loadLockedFeaturePolicy(requestDomainId);
       if (nextDashboard?.viewer?.can_admin) {
         const queueRequestId = reviewerQueueLoadSequence.current + 1;
         reviewerQueueLoadSequence.current = queueRequestId;
@@ -1966,6 +2066,7 @@ export default function CommunityDomainDashboardPage() {
     communityDomainId,
     isCurrentDomainRequest,
     loadOwnMembershipRequests,
+    loadLockedFeaturePolicy,
     resetOptionalReadinessState,
     resetReadinessLoadTracking,
   ]);
@@ -2474,6 +2575,21 @@ export default function CommunityDomainDashboardPage() {
     () => parseDomainFeaturePolicy(setupDraft.feature_policy_json),
     [setupDraft.feature_policy_json]
   );
+  const effectiveFeaturePolicy = lockedFeaturePolicy || featurePolicyDraft;
+  const featurePolicySourceLabel = lockedFeaturePolicy
+    ? "Locked domain policy"
+    : "Setup draft";
+  const featurePolicySourceDetail = lockedFeaturePolicy
+    ? "Actions use the active policy saved for this Community Domain. Edit the draft, then save and lock again to change live behaviour."
+    : "Actions use this setup draft until the owner/admin locks a domain feature policy.";
+  const memberInvitesPolicyMode = effectiveFeaturePolicy.features.member_invites;
+  const memberInvitesOff = domainFeatureIsOff(effectiveFeaturePolicy, "member_invites");
+  const paymentsContributionsPolicyMode =
+    effectiveFeaturePolicy.features.payments_contributions;
+  const paymentsContributionsOff = domainFeatureIsOff(
+    effectiveFeaturePolicy,
+    "payments_contributions"
+  );
   const setupCurrentStep =
     SETUP_STEP_OPTIONS.find((option) => option.key === activeSetupStep) ||
     SETUP_STEP_OPTIONS[0];
@@ -2807,6 +2923,12 @@ export default function CommunityDomainDashboardPage() {
   }
 
   function openSetupFirstCircle() {
+    if (memberInvitesOff) {
+      setMessage(
+        "Member Invites are off in this Community Domain policy. Turn Member Invites back on in Services before opening First Circle."
+      );
+      return;
+    }
     const clanId = Number(selectedDomainClanId || 0);
     if (!clanId) {
       setMessage(
@@ -2818,7 +2940,15 @@ export default function CommunityDomainDashboardPage() {
     if (!saved) return;
     setSetupCompletionSavedAt(cleanText(saved.saved_at, new Date().toISOString()));
     setSelectedClanId(clanId);
-    navigate(`${APP_ROUTES.BUILD_FIRST_CIRCLE}?mode=community-domain`);
+    const inviteParams = new URLSearchParams({
+      mode: "community-domain",
+      community_domain_id: cleanText(domain?.id || communityDomainId),
+      community_domain_name: cleanText(domain?.display_name, "Community Domain"),
+      community_domain_code: cleanText(domain?.domain_name),
+      domain_type: cleanText(domain?.domain_type),
+      template_key: cleanText(domain?.template_key || domain?.domain_type),
+    });
+    navigate(`${APP_ROUTES.BUILD_FIRST_CIRCLE}?${inviteParams.toString()}`);
   }
 
   function moveSetupStep(direction: 1 | -1) {
@@ -2862,6 +2992,8 @@ export default function CommunityDomainDashboardPage() {
         config,
       });
       const lockedAt = new Date().toISOString();
+      setLockedFeaturePolicy(config);
+      setLockedFeaturePolicyLoadedAt(lockedAt);
       setFeaturePolicyLockedAt(lockedAt);
       return {
         locked: true,
@@ -4722,6 +4854,25 @@ export default function CommunityDomainDashboardPage() {
                               )}`
                             : "No Community Domain payment code loaded yet"}
                         </div>
+                        <div
+                          style={statusBadge(
+                            paymentsContributionsOff
+                              ? "Domain payments off"
+                              : featurePolicyModeLabel(paymentsContributionsPolicyMode)
+                          )}
+                        >
+                          Payments and Contributions:{" "}
+                          {paymentsContributionsOff
+                            ? "off for domain activity"
+                            : featurePolicyModeLabel(paymentsContributionsPolicyMode)}
+                        </div>
+                        <div style={{ ...helperText(), fontSize: 13 }}>
+                          This setup payment is the Community Domain subscription
+                          and remains available even when domain activity
+                          payments are off. Registrations, donations, event fees,
+                          seminar fees, and other member money-in activity must
+                          follow the Payments and Contributions policy.
+                        </div>
                         <StableButton
                           type="button"
                           kind="primary"
@@ -4926,10 +5077,57 @@ export default function CommunityDomainDashboardPage() {
                               Choose what this domain allows.
                             </h3>
                             <div style={{ ...helperText(), marginTop: 6, fontSize: 13 }}>
-                              All GSN features stay available. This setting decides what
-                              members can use inside this Community Domain after launch.
+                              Normal marketplace behaviours stay available to the
+                              domain. These settings record what the owner/admin
+                              allows inside this governed marketplace.
                             </div>
                           </div>
+                        </div>
+                        <div
+                          style={{
+                            borderRadius: 16,
+                            border: "1px solid rgba(214,170,69,0.30)",
+                            background: "rgba(255,249,225,0.72)",
+                            padding: 12,
+                          }}
+                        >
+                          <div style={sectionLabel()}>Enforcement boundary</div>
+                          <div style={{ ...helperText(), marginTop: 5, fontSize: 13 }}>
+                            Notices and member invites already obey the off/on
+                            policy, including the First Circle invite action.
+                            Payments, ROSCA, Spotlight, Shop Diary, Demand Box,
+                            Vault, and marketplace visibility are recorded here
+                            as the domain rule while each engine is connected to
+                            this policy safely.
+                          </div>
+                        </div>
+                        <div
+                          style={{
+                            borderRadius: 16,
+                            border: "1px solid rgba(9,27,46,0.10)",
+                            background: "rgba(234,243,255,0.72)",
+                            padding: 12,
+                          }}
+                        >
+                          <div style={sectionLabel()}>Feature rule used</div>
+                          <div style={{ marginTop: 4, fontWeight: 900, color: "#07172C" }}>
+                            {featurePolicySourceLabel}
+                          </div>
+                          <div style={{ ...helperText(), marginTop: 5, fontSize: 13 }}>
+                            {featurePolicySourceDetail}
+                          </div>
+                          {lockedFeaturePolicyLoadedAt ? (
+                            <div
+                              style={{
+                                ...helperText(),
+                                marginTop: 6,
+                                fontSize: 12.5,
+                                fontWeight: 820,
+                              }}
+                            >
+                              Last locked: {setupDraftTimeLabel(lockedFeaturePolicyLoadedAt)}
+                            </div>
+                          ) : null}
                         </div>
                         <div style={{ display: "grid", gap: 10 }}>
                           {DOMAIN_FEATURE_POLICY_ROWS.map((row) => (
@@ -4972,6 +5170,9 @@ export default function CommunityDomainDashboardPage() {
                                   </option>
                                 ))}
                               </select>
+                              <div style={{ ...helperText(), fontSize: 12.5, fontWeight: 820 }}>
+                                {domainFeatureRouteEffect(row.key)}
+                              </div>
                             </div>
                           ))}
                         </div>
@@ -5156,15 +5357,36 @@ export default function CommunityDomainDashboardPage() {
                             member group. Each person still enters with their own
                             GSN identity, then owner/admin approval decides access.
                           </div>
+                          <div
+                            style={statusBadge(
+                              memberInvitesOff
+                                ? "Member Invites off"
+                                : featurePolicyModeLabel(memberInvitesPolicyMode)
+                            )}
+                          >
+                            Member Invites:{" "}
+                            {memberInvitesOff
+                              ? "off in policy"
+                              : featurePolicyModeLabel(memberInvitesPolicyMode)}
+                          </div>
+                          {memberInvitesOff ? (
+                            <div style={{ ...helperText(), fontSize: 13 }}>
+                              First Circle is blocked by this domain policy. Open
+                              Services and change Member Invites before sending
+                              group invites.
+                            </div>
+                          ) : null}
                           <StableButton
                             type="button"
                             kind="primary"
                             fullWidth
-                            disabled={setupEditingLocked || !selectedDomainClanId}
+                            disabled={
+                              setupEditingLocked || !selectedDomainClanId || memberInvitesOff
+                            }
                             debugId="community-domain-dashboard.setup-open-first-circle"
                             onClick={openSetupFirstCircle}
                           >
-                            Build first circle
+                            {memberInvitesOff ? "Member Invites off" : "Build first circle"}
                           </StableButton>
                           {!selectedDomainClanId ? (
                             <div style={{ ...helperText(), fontSize: 13 }}>
@@ -5614,6 +5836,47 @@ export default function CommunityDomainDashboardPage() {
                     >
                       {packageReviewActionLabel}
                     </StableButton>
+
+                    <div
+                      style={{
+                        ...softCard(),
+                        marginTop: 12,
+                        display: "grid",
+                        gap: 8,
+                      }}
+                    >
+                      <div style={sectionLabel()}>Payment policy boundary</div>
+                      <div
+                        style={{
+                          display: "flex",
+                          flexWrap: "wrap",
+                          gap: 8,
+                        }}
+                      >
+                        <span style={statusBadge("Subscription billing")}>
+                          Subscription billing: required
+                        </span>
+                        <span
+                          style={statusBadge(
+                            paymentsContributionsOff
+                              ? "Domain payments off"
+                              : featurePolicyModeLabel(paymentsContributionsPolicyMode)
+                          )}
+                        >
+                          Payments and Contributions:{" "}
+                          {paymentsContributionsOff
+                            ? "off for domain activity"
+                            : featurePolicyModeLabel(paymentsContributionsPolicyMode)}
+                        </span>
+                      </div>
+                      <div style={{ ...helperText(), fontSize: 13 }}>
+                        The code below is for Community Domain subscription
+                        activation. Do not use the Payments and Contributions
+                        setting to block this setup payment. Use that setting for
+                        registrations, donations, event fees, seminar fees, and
+                        other money-in activity inside the domain.
+                      </div>
+                    </div>
 
                     {isAdmin && !billingIsActive && domainPayment ? (
                       <StableButton

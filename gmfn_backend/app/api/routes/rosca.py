@@ -11,6 +11,9 @@ from sqlalchemy.orm import Session
 from app.core.auth import get_current_user
 from app.db.database import get_db
 from app.db.models import ClanMembership, User
+from app.services.community_domain_feature_policy import (
+    require_domain_rosca_cycles_enabled,
+)
 from app.services.rosca_service import (
     create_rosca_cycle,
     get_rosca_cycle,
@@ -229,6 +232,10 @@ def create_cycle(
         db,
         clan_id=int(payload.clan_id),
         current_user=current_user,
+    )
+    require_domain_rosca_cycles_enabled(
+        db,
+        clan_id=int(payload.clan_id),
     )
     try:
         cycle = create_rosca_cycle(

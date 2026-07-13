@@ -56,6 +56,18 @@ assertContains(
 );
 
 assertContains(
+  "docs/PROJECT_PROTOCOL.md",
+  /Community Domain is the governed\/professional marketplace form of GSN[\s\S]*inherits the ordinary GSN marketplace\/community behaviours[\s\S]*difference is domain governance[\s\S]*Do not strip marketplace behaviours out of Community Domains/,
+  "Project protocol must keep the owner-corrected rule that Community Domains inherit marketplace behaviours and add governance."
+);
+
+assertContains(
+  "docs/COMMUNITY_DOMAIN_IMPLEMENTATION_PLAN_2026-06-28.md",
+  /Community Domain` is the governed\/professional marketplace form of GSN[\s\S]*Everything that a normal marketplace\/community can do should be available to a[\s\S]*Community Domain unless the domain owner\/admin turns it off[\s\S]*Payments and contributions are evidence of activity[\s\S]*not automatic proof of life-change impact/,
+  "Community Domain implementation plan must preserve the governed professional marketplace contract and the honest evidence-vs-impact boundary."
+);
+
+assertContains(
   "docs/CANONICAL_SYSTEM_SKELETON_2026-04-19.md",
   /Create Committee[\s\S]*?Purchase Community Domain[\s\S]*?Existing `Create Community` compatibility surfaces[\s\S]*?free\/self-created committee path must stay separate from[\s\S]*?institutional Community Domain SaaS path/,
   "Canonical skeleton must keep the lightweight committee path separate from the institutional Community Domain path."
@@ -146,15 +158,15 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /openSetupFirstCircle[\s\S]*APP_ROUTES\.BUILD_FIRST_CIRCLE\}\?mode=community-domain[\s\S]*Build your first circle[\s\S]*existing WhatsApp or[\s\S]*owner\/admin approval decides access[\s\S]*community-domain-dashboard\.setup-open-first-circle[\s\S]*Build first circle/,
-  "Community Domain setup completion must open Build First Circle in Community Domain group-invite mode, not the ordinary personal three-contact flow.",
+  /openSetupFirstCircle[\s\S]*new URLSearchParams\(\{[\s\S]*mode: "community-domain"[\s\S]*community_domain_id[\s\S]*community_domain_name[\s\S]*community_domain_code[\s\S]*domain_type[\s\S]*template_key[\s\S]*APP_ROUTES\.BUILD_FIRST_CIRCLE[\s\S]*Build your first circle[\s\S]*existing WhatsApp or[\s\S]*owner\/admin approval decides access[\s\S]*community-domain-dashboard\.setup-open-first-circle[\s\S]*Build first circle/,
+  "Community Domain setup completion must open Build First Circle with domain identity, not the ordinary personal three-contact flow or a marketplace-name guess.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /upsertCommunityDomainPolicy[\s\S]*DOMAIN_FEATURE_POLICY_ROWS[\s\S]*announcement_board[\s\S]*demand_box[\s\S]*spotlight[\s\S]*shop_diary[\s\S]*vault[\s\S]*marketplace_shops[\s\S]*member_invites[\s\S]*domain\.feature_policy[\s\S]*domain\.features\.configure[\s\S]*Domain feature policy[\s\S]*All GSN features stay available/,
-  "Community Domain setup must keep all platform features available but controlled by a domain feature policy that owner/admin can lock into backend policy records.",
+  /upsertCommunityDomainPolicy[\s\S]*DOMAIN_FEATURE_POLICY_ROWS[\s\S]*announcement_board[\s\S]*demand_box[\s\S]*spotlight[\s\S]*shop_diary[\s\S]*vault[\s\S]*marketplace_shops[\s\S]*member_invites[\s\S]*payments_contributions[\s\S]*rosca_cycles[\s\S]*domain\.feature_policy[\s\S]*domain\.features\.configure[\s\S]*Domain feature policy[\s\S]*governed marketplace[\s\S]*Enforcement boundary[\s\S]*Notices and member invites already obey the off\/on[\s\S]*First Circle invite action[\s\S]*recorded here[\s\S]*domain rule/,
+  "Community Domain setup must keep marketplace/community feature families available under domain policy while clearly stating current route-enforcement boundaries.",
   { frontend: true }
 );
 
@@ -168,6 +180,41 @@ assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
   /domainNoticeFeatureMode[\s\S]*feature_policy_mode[\s\S]*Announcement Board is not used in this domain[\s\S]*Off in settings[\s\S]*Announcement Board is off/,
   "Community Domain dashboard must show when Announcement Board is disabled by domain feature policy instead of offering a working-looking post action.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /domainFeatureIsOff[\s\S]*domainFeatureRouteEffect[\s\S]*First Circle and member invite entry are blocked when this is off[\s\S]*domain subscription billing stays available[\s\S]*donations, registrations, event fees, and seminar fees follow this rule[\s\S]*memberInvitesOff[\s\S]*Member Invites are off in this Community Domain policy[\s\S]*First Circle is blocked by this domain policy[\s\S]*Member Invites off/,
+  "Community Domain dashboard must block the First Circle invite action when Member Invites are disabled instead of letting the owner enter a dead invite path.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /listCommunityDomainPolicies[\s\S]*lockedDomainFeaturePolicyFromPayload[\s\S]*policy_key[\s\S]*domain\.feature_policy[\s\S]*setLockedFeaturePolicy/,
+  "Community Domain dashboard must load the active locked feature policy row from the backend policy list.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /effectiveFeaturePolicy = lockedFeaturePolicy \|\| featurePolicyDraft[\s\S]*memberInvitesPolicyMode =[\s\S]*effectiveFeaturePolicy\.features\.member_invites[\s\S]*paymentsContributionsPolicyMode =[\s\S]*effectiveFeaturePolicy\.features\.payments_contributions/,
+  "Community Domain dashboard action decisions must prefer the locked active feature policy over the local setup draft.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /setLockedFeaturePolicy\(config\)[\s\S]*setLockedFeaturePolicyLoadedAt\(lockedAt\)[\s\S]*Feature rule used[\s\S]*featurePolicySourceLabel[\s\S]*lockedFeaturePolicyLoadedAt/,
+  "Community Domain dashboard must refresh the locked policy after saving and explain whether live actions use locked policy or draft policy.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /paymentsContributionsPolicyMode[\s\S]*paymentsContributionsOff[\s\S]*This setup payment is the Community Domain subscription[\s\S]*remains available even when domain activity[\s\S]*[Rr]egistrations, donations, event fees,[\s\S]*Payment policy boundary[\s\S]*Subscription billing: required[\s\S]*Do not use the Payments and Contributions[\s\S]*to block this setup payment/,
+  "Community Domain dashboard must distinguish required subscription billing from the domain Payments and Contributions service policy.",
   { frontend: true }
 );
 
@@ -190,9 +237,134 @@ assertContains(
 );
 
 assertContains(
+  "gmfn_backend/app/services/community_domain_feature_policy.py",
+  /COMMUNITY_DOMAIN_FEATURE_POLICY_KEY = "domain\.feature_policy"[\s\S]*COMMUNITY_DOMAIN_FEATURE_MARKETPLACE_SHOPS = "marketplace_shops"[\s\S]*COMMUNITY_DOMAIN_FEATURE_PAYMENTS_CONTRIBUTIONS = "payments_contributions"[\s\S]*COMMUNITY_DOMAIN_FEATURE_ROSCA_CYCLES = "rosca_cycles"[\s\S]*COMMUNITY_DOMAIN_FEATURE_SHOP_DIARY = "shop_diary"[\s\S]*COMMUNITY_DOMAIN_FEATURE_SPOTLIGHT = "spotlight"[\s\S]*COMMUNITY_DOMAIN_FEATURE_VAULT = "vault"[\s\S]*def community_domain_feature_mode_for_clan[\s\S]*CommunityDomainPolicy\.policy_key == COMMUNITY_DOMAIN_FEATURE_POLICY_KEY[\s\S]*def require_domain_payments_contributions_enabled[\s\S]*Community Domain subscription[\s\S]*separate setup[\s\S]*payment route[\s\S]*def require_domain_rosca_cycles_enabled[\s\S]*paid ROSCA yearly service[\s\S]*feature switch controls whether ROSCA cycles may[\s\S]*def require_domain_marketplace_shops_enabled[\s\S]*create or edit shop identities[\s\S]*def require_domain_shop_diary_enabled[\s\S]*product, public gallery block, and shop content/,
+  "Shared Community Domain feature policy service must expose payments_contributions, rosca_cycles, shop_diary, spotlight, marketplace_shops, and vault feature keys while preserving separate subscription/service boundaries."
+);
+
+assertContains(
+  "gmfn_backend/app/api/routes/marketplace.py",
+  /require_domain_marketplace_shops_enabled[\s\S]*require_domain_shop_diary_enabled[\s\S]*def create_marketplace_shop[\s\S]*require_domain_marketplace_shops_enabled[\s\S]*def update_marketplace_shop[\s\S]*require_domain_marketplace_shops_enabled[\s\S]*def create_marketplace_product[\s\S]*require_domain_shop_diary_enabled[\s\S]*def update_marketplace_product[\s\S]*require_domain_shop_diary_enabled[\s\S]*def delete_marketplace_product[\s\S]*require_domain_shop_diary_enabled/,
+  "Marketplace shop identity writes and shop diary product writes must obey linked Community Domain feature policy before writing rows, trust events, or follower notifications."
+);
+
+assertContains(
+  "gmfn_backend/tests/test_marketplace_public_shop.py",
+  /test_marketplace_shop_creation_respects_disabled_community_domain_shop_policy[\s\S]*feature_key="marketplace_shops"[\s\S]*\/marketplace\/shops[\s\S]*status_code == 403[\s\S]*"feature_key"\] == "marketplace_shops"[\s\S]*SELECT COUNT\(\*\) FROM marketplace_shops[\s\S]*test_marketplace_product_creation_respects_disabled_community_domain_shop_diary_policy[\s\S]*feature_key="shop_diary"[\s\S]*\/marketplace\/products[\s\S]*status_code == 403[\s\S]*"feature_key"\] == "shop_diary"[\s\S]*SELECT COUNT\(\*\) FROM marketplace_products/,
+  "Marketplace tests must prove disabled marketplace_shops and shop_diary policies block route writes before shop/product rows or trust events are created."
+);
+
+assertContains(
+  "src/pages/MarketplacePage.tsx",
+  /marketplaceShopsDomainFeatureMatch[\s\S]*communityDomainFeatureModeFromPayload[\s\S]*"marketplace_shops"[\s\S]*marketplaceShopsFeatureOff[\s\S]*spotlightDomainFeatureMatch[\s\S]*communityDomainFeatureModeFromPayload[\s\S]*"spotlight"[\s\S]*spotlightFeatureOff[\s\S]*publicShopActionsLocked[\s\S]*marketplaceShopsFeatureOff[\s\S]*preparePublicShopLink[\s\S]*marketplaceShopsFeatureOffText[\s\S]*createMarketplaceRepostPaymentInstruction[\s\S]*spotlightFeatureOffText/,
+  "Marketplace page must explain disabled Marketplace Shops and Spotlight Community Domain policies before calling shop or Spotlight payment routes.",
+  { frontend: true }
+);
+
+assertContains(
+  "gmfn_backend/app/api/routes/payment_instructions.py",
+  /require_domain_payments_contributions_enabled[\s\S]*def create_pool_instruction[\s\S]*require_domain_payments_contributions_enabled[\s\S]*create_pool_deposit_instruction/,
+  "Pool contribution payment instructions must obey linked Community Domain payments_contributions policy."
+);
+
+assertContains(
+  "gmfn_backend/tests/test_community_pay_in_accounts.py",
+  /test_pool_instruction_respects_disabled_community_domain_payments_policy[\s\S]*"payments_contributions": "off"[\s\S]*\/payment-instructions\/pool[\s\S]*status_code == 403[\s\S]*"feature_key"\] == "payments_contributions"[\s\S]*SELECT COUNT\(\*\) FROM expected_payments[\s\S]*assert created == 0/,
+  "Backend tests must prove disabled payments_contributions policy blocks pool payment instructions before expected-payment creation."
+);
+
+assertContains(
+  "gmfn_backend/app/api/routes/bank.py",
+  /require_domain_payments_contributions_enabled[\s\S]*def create_expected_pool_deposit[\s\S]*require_domain_payments_contributions_enabled[\s\S]*ensure_pool_deposit_expected_payment/,
+  "Direct bank expected pool-deposit creation must also obey linked Community Domain payments_contributions policy."
+);
+
+assertContains(
+  "gmfn_backend/tests/test_bank_expected_payment_boundaries.py",
+  /test_expected_pool_deposit_respects_disabled_community_domain_payments_policy[\s\S]*"payments_contributions": "off"[\s\S]*\/bank\/expected\/pool-deposit[\s\S]*status_code == 403[\s\S]*"feature_key"\] == "payments_contributions"[\s\S]*_expected_payment_count\(\) == 0/,
+  "Bank expected-payment tests must prove disabled payments_contributions policy blocks direct expected pool deposits before expected-payment creation."
+);
+
+assertContains(
+  "gmfn_backend/app/api/routes/rosca.py",
+  /require_domain_rosca_cycles_enabled[\s\S]*def create_cycle[\s\S]*_require_clan_admin[\s\S]*require_domain_rosca_cycles_enabled[\s\S]*create_rosca_cycle/,
+  "ROSCA cycle creation must obey linked Community Domain rosca_cycles policy before the engine writes contribution rows."
+);
+
+assertContains(
+  "gmfn_backend/tests/test_rosca_engine.py",
+  /test_rosca_cycle_creation_respects_disabled_community_domain_rosca_policy[\s\S]*_seed_rosca_yearly_service\(\)[\s\S]*"rosca_cycles": "off"[\s\S]*\/rosca\/cycles[\s\S]*status_code == 403[\s\S]*"feature_key"\] == "rosca_cycles"[\s\S]*paid ROSCA yearly service[\s\S]*expected_count == 0[\s\S]*started_count == 0/,
+  "ROSCA tests must prove disabled rosca_cycles policy blocks cycle creation before expected-payment or trust-event writes, even with the yearly service active."
+);
+
+assertContains(
+  "gmfn_backend/app/api/routes/payment_instructions.py",
+  /def _require_domain_package_feature_enabled[\s\S]*package_key == "rosca_cycle"[\s\S]*COMMUNITY_DOMAIN_FEATURE_ROSCA_CYCLES[\s\S]*Do not create a ROSCA yearly service payment[\s\S]*package_key == "extra_shop_blocks"[\s\S]*COMMUNITY_DOMAIN_FEATURE_MARKETPLACE_SHOPS[\s\S]*Do not create extra public shop block payments[\s\S]*def _require_domain_shop_service_enabled[\s\S]*require_community_domain_feature_enabled/,
+  "Payment instruction helpers must map package/shop service payments to Community Domain feature switches."
+);
+
+assertContains(
+  "gmfn_backend/app/api/routes/payment_instructions.py",
+  /def create_vault_instruction[\s\S]*COMMUNITY_DOMAIN_FEATURE_VAULT[\s\S]*def create_merchant_verify_payment_instruction[\s\S]*COMMUNITY_DOMAIN_FEATURE_MARKETPLACE_SHOPS[\s\S]*def create_spotlight_payment_instruction[\s\S]*COMMUNITY_DOMAIN_FEATURE_SPOTLIGHT[\s\S]*def use_community_package_unit[\s\S]*_require_domain_package_feature_enabled[\s\S]*def create_community_package_payment_instruction[\s\S]*_require_domain_package_feature_enabled/,
+  "Payment instruction routes must block disabled Community Domain package/shop service payments before expected-payment creation."
+);
+
+assertContains(
+  "gmfn_backend/tests/test_community_package_usage.py",
+  /test_rosca_package_instruction_respects_disabled_community_domain_rosca_policy[\s\S]*"rosca_cycles"[\s\S]*\/payment-instructions\/community-package[\s\S]*status_code == 403[\s\S]*"feature_key"\] == "rosca_cycles"[\s\S]*Do not create a ROSCA yearly service payment[\s\S]*expected_type = 'community_package_subscription'[\s\S]*assert created == 0/,
+  "Community package tests must prove disabled rosca_cycles policy blocks ROSCA package payment creation."
+);
+
+assertContains(
+  "gmfn_backend/tests/test_payment_instruction_boundaries.py",
+  /test_spotlight_instruction_respects_disabled_community_domain_spotlight_policy[\s\S]*"spotlight"[\s\S]*\/payment-instructions\/spotlight[\s\S]*status_code == 403[\s\S]*"feature_key"\] == "spotlight"[\s\S]*paid Spotlight payments[\s\S]*expected_type = 'spotlight_subscription'[\s\S]*assert created == 0/,
+  "Payment instruction tests must prove disabled spotlight policy blocks paid Spotlight payment creation."
+);
+
+assertContains(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  /def _community_domain_feature_policy_summary[\s\S]*"features"[\s\S]*Feature modes only[\s\S]*def list_my_community_domains[\s\S]*"feature_policy": _community_domain_feature_policy_summary/,
+  "My Community Domains must expose a public-safe feature-policy summary so signed-in screens can explain disabled Community Domain tools before users hit backend 403s."
+);
+
+assertContains(
+  "gmfn_backend/tests/test_community_domains.py",
+  /test_user_can_list_own_active_community_domains_without_private_records[\s\S]*"domain\.feature_policy"[\s\S]*"vault": "off"[\s\S]*"rosca_cycles": "off"[\s\S]*owner_market_item\["feature_policy"\]\["features"\]\["vault"\] == "off"[\s\S]*member_payload\["items"\]\[0\]\["feature_policy"\]\["features"\]\["rosca_cycles"\]/,
+  "My Community Domains tests must prove active members can see safe feature modes without exposing private records."
+);
+
+assertContains(
+  "src/lib/communityDomainFeaturePolicy.ts",
+  /CommunityDomainFeatureKey[\s\S]*"vault"[\s\S]*"rosca_cycles"[\s\S]*communityDomainFeatureModeFromPayload[\s\S]*communityDomainFeatureIsOff[\s\S]*communityDomainFeatureOffMessage/,
+  "Frontend must keep a shared parser for Community Domain feature modes instead of page-local JSON guesses.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/MarketplacePage.tsx",
+  /listMyCommunityDomains[\s\S]*communityDomainFeatureModeFromPayload[\s\S]*"rosca_cycles"[\s\S]*roscaCyclesFeatureOff[\s\S]*createRoscaYearlyInstruction[\s\S]*roscaCyclesFeatureOffText[\s\S]*createCommunityPackagePaymentInstruction[\s\S]*startMarketplaceRoscaCycle[\s\S]*roscaCyclesFeatureOffText[\s\S]*createRoscaCycle[\s\S]*debugId="marketplace\.rosca\.activate-yearly"[\s\S]*disabled=\{creatingRoscaPackage \|\| roscaCyclesFeatureOff\}[\s\S]*debugId="marketplace\.rosca\.start-cycle"[\s\S]*disabled=\{/,
+  "Marketplace ROSCA controls must read Community Domain feature policy and explain/disable disabled ROSCA before payment or cycle creation.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/VaultControlPage.tsx",
+  /listMyCommunityDomains[\s\S]*communityDomainFeatureModeFromPayload[\s\S]*"vault"[\s\S]*vaultFeatureOff[\s\S]*createVaultInstruction[\s\S]*vaultFeatureOffText[\s\S]*\/api\/payment-instructions\/vault[\s\S]*disabled=\{vaultFeatureOff \|\| creatingPayment \|\| !shop\?\.id\}[\s\S]*debugId="vault-control\.generate-payment-code"/,
+  "Vault Control must read Community Domain feature policy and explain/disable disabled Vault before creating a payment instruction.",
+  { frontend: true }
+);
+
+assertContains(
   "src/pages/BuildFirstCirclePage.tsx",
-  /isCommunityDomainCircleMode[\s\S]*communityDomainInvitePreset[\s\S]*Charity \/ NGO message[\s\S]*Church \/ faith message[\s\S]*School \/ parent message[\s\S]*Student group message[\s\S]*Association \/ union message[\s\S]*buildCommunityDomainGroupInviteMessage[\s\S]*finalCommunityDomainInviteMessage[\s\S]*No bulk import: every member joins for themselves[\s\S]*Editable invite text[\s\S]*Copy, WhatsApp, and Share use this text[\s\S]*No bulk import: every member still enters with their own GSN identity/,
-  "Build First Circle must keep programme-aware Community Domain invite presets, owner-editable invite copy, inviter identity, share-channel text, and no false bulk-import promise.",
+  /domainInviteGroupType[\s\S]*communityDomainInviteContextFromSearch[\s\S]*domain_type[\s\S]*template_key[\s\S]*community_domain_name[\s\S]*community_domain_code[\s\S]*communityDomainCircleMode \? communityDomainInviteContext\.domainName[\s\S]*communityDomainCircleMode \? communityDomainInviteContext\.domainId[\s\S]*communityDomainCircleMode \? communityDomainInviteContext\.domainCode/,
+  "Build First Circle must prefer Community Domain identity from route params before falling back to marketplace/community records.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/BuildFirstCirclePage.tsx",
+  /communityDomainInvitePreset[\s\S]*Charity \/ NGO message[\s\S]*Church \/ faith message[\s\S]*School \/ parent message[\s\S]*Student group message[\s\S]*Association \/ union message[\s\S]*buildCommunityDomainGroupInviteMessage[\s\S]*finalCommunityDomainInviteMessage[\s\S]*No bulk import: every member joins for themselves[\s\S]*saveCommunityDomainInviteMessage[\s\S]*Save message[\s\S]*Use template[\s\S]*Editable invite text[\s\S]*domain-branded text[\s\S]*Live message preview[\s\S]*Unsaved edit[\s\S]*No bulk import: every member still enters with their own GSN identity/,
+  "Build First Circle must keep programme-aware Community Domain invite presets, owner-editable invite copy with explicit save and live preview, inviter identity, share-channel text, and no false bulk-import promise.",
   { frontend: true }
 );
 
@@ -458,8 +630,8 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /useNavigate[\s\S]*setSelectedClanId[\s\S]*setupCompletionSavedAt[\s\S]*openSetupFirstCircle[\s\S]*setSelectedClanId\(clanId\)[\s\S]*navigate\(`\$\{APP_ROUTES\.BUILD_FIRST_CIRCLE\}\?mode=community-domain`\)[\s\S]*Setup saved[\s\S]*community-domain-dashboard\.setup-open-first-circle[\s\S]*Build first circle/,
-  "Community Domain setup launch step must visibly respond to Save setup and route owners to the real Community Domain group-invite flow.",
+  /useNavigate[\s\S]*setSelectedClanId[\s\S]*setupCompletionSavedAt[\s\S]*openSetupFirstCircle[\s\S]*setSelectedClanId\(clanId\)[\s\S]*new URLSearchParams\(\{[\s\S]*community_domain_name[\s\S]*domain_type[\s\S]*template_key[\s\S]*navigate\(`\$\{APP_ROUTES\.BUILD_FIRST_CIRCLE\}\?\$\{inviteParams\.toString\(\)\}`\)[\s\S]*Setup saved[\s\S]*community-domain-dashboard\.setup-open-first-circle[\s\S]*Build first circle/,
+  "Community Domain setup launch step must visibly respond to Save setup and route owners to the real domain-identified Community Domain group-invite flow.",
   { frontend: true }
 );
 

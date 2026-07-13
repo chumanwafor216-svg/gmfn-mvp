@@ -75,6 +75,7 @@ import {
   listClanMembers,
   listCommunityNotices,
   listMyClans,
+  listMyCommunityDomains,
   listMyLoans,
   createCommunityNotice,
   updateCommunityNoticeSettings,
@@ -90,6 +91,11 @@ import {
   type CommunityMoneySettlement,
   type CommunityMoneySurface,
 } from "../lib/communityMoney";
+import {
+  communityDomainFeatureIsOff,
+  communityDomainFeatureModeFromPayload,
+  communityDomainFeatureOffMessage,
+} from "../lib/communityDomainFeaturePolicy";
 import {
   marketplaceSectionStyle,
   scrollElementToMarketplaceLanding,
@@ -4358,6 +4364,8 @@ export default function MarketplacePage() {
   const [moneySurface, setMoneySurface] = useState<CommunityMoneySurface | null>(
     null
   );
+  const [communityDomainPolicyPayload, setCommunityDomainPolicyPayload] =
+    useState<any>(null);
   const [payInEditorOpen, setPayInEditorOpen] = useState(false);
   const [savingPayInAccount, setSavingPayInAccount] = useState(false);
   const [payInAccountDraft, setPayInAccountDraft] = useState<PayInAccountDraft>({
@@ -4465,6 +4473,25 @@ export default function MarketplacePage() {
     );
   }, [selectedCommunity, selectedClanId]);
 
+  useEffect(() => {
+    let alive = true;
+    if (!activeCommunityId) {
+      setCommunityDomainPolicyPayload(null);
+      return () => {
+        alive = false;
+      };
+    }
+
+    (async () => {
+      const payload = await listMyCommunityDomains().catch(() => null);
+      if (alive) setCommunityDomainPolicyPayload(payload);
+    })();
+
+    return () => {
+      alive = false;
+    };
+  }, [activeCommunityId]);
+
   const marketplaceMoneyOutTo = useMemo(
     () => {
       const target = resolveCtaTarget("moneyOut", {
@@ -4514,11 +4541,50 @@ export default function MarketplacePage() {
     if (!publicShopOwnerId || !publicShopRecord) return "";
     return publicShopShareUrl({ gmfnId: publicShopOwnerId });
   }, [publicShopOwnerId, publicShopRecord]);
+  const marketplaceShopsDomainFeatureMatch = useMemo(
+    () =>
+      communityDomainFeatureModeFromPayload(
+        communityDomainPolicyPayload,
+        activeCommunityId,
+        "marketplace_shops"
+      ),
+    [activeCommunityId, communityDomainPolicyPayload]
+  );
+  const marketplaceShopsFeatureOff = communityDomainFeatureIsOff(
+    marketplaceShopsDomainFeatureMatch
+  );
+  const marketplaceShopsFeatureOffText = communityDomainFeatureOffMessage(
+    "Marketplace Shops",
+    marketplaceShopsDomainFeatureMatch?.domainName ||
+      communityName(selectedCommunity) ||
+      "this Community Domain"
+  );
+  const spotlightDomainFeatureMatch = useMemo(
+    () =>
+      communityDomainFeatureModeFromPayload(
+        communityDomainPolicyPayload,
+        activeCommunityId,
+        "spotlight"
+      ),
+    [activeCommunityId, communityDomainPolicyPayload]
+  );
+  const spotlightFeatureOff = communityDomainFeatureIsOff(spotlightDomainFeatureMatch);
+  const spotlightFeatureOffText = communityDomainFeatureOffMessage(
+    "Spotlight",
+    spotlightDomainFeatureMatch?.domainName ||
+      communityName(selectedCommunity) ||
+      "this Community Domain"
+  );
   const publicShopActionsLocked =
-    !currentGmfnId || !activeCommunityId || preparingPublicShopLink;
+    !currentGmfnId ||
+    !activeCommunityId ||
+    preparingPublicShopLink ||
+    marketplaceShopsFeatureOff;
 
   const publicShopUnavailableText = !currentGmfnId
     ? "Your GSN ID is not ready yet."
+    : marketplaceShopsFeatureOff
+    ? marketplaceShopsFeatureOffText
     : "Prepare your public shop link first so it is connected to an active shop before you send it.";
 
   const sourceRepostShopId = positiveNumber(
@@ -5500,6 +5566,14 @@ export default function MarketplacePage() {
       return "";
     }
 
+    if (marketplaceShopsFeatureOff) {
+      setNotice({
+        tone: "error",
+        text: marketplaceShopsFeatureOffText,
+      });
+      return "";
+    }
+
     publicShopPrepareInFlightRef.current = true;
     setPreparingPublicShopLink(true);
     try {
@@ -5644,6 +5718,11 @@ export default function MarketplacePage() {
 
     if (!selectedRepostProduct?.id) {
       showNotice("error", "Choose one public block before generating the payment code.");
+      return;
+    }
+
+    if (spotlightFeatureOff) {
+      showNotice("error", spotlightFeatureOffText);
       return;
     }
 
@@ -6055,6 +6134,20 @@ export default function MarketplacePage() {
   const activeCommunityName = useMemo(() => {
     return communityName(selectedCommunity);
   }, [selectedCommunity]);
+  const roscaDomainFeatureMatch = useMemo(
+    () =>
+      communityDomainFeatureModeFromPayload(
+        communityDomainPolicyPayload,
+        activeCommunityId,
+        "rosca_cycles"
+      ),
+    [activeCommunityId, communityDomainPolicyPayload]
+  );
+  const roscaCyclesFeatureOff = communityDomainFeatureIsOff(roscaDomainFeatureMatch);
+  const roscaCyclesFeatureOffText = communityDomainFeatureOffMessage(
+    "ROSCA / rotating contributions",
+    roscaDomainFeatureMatch?.domainName || activeCommunityName || "this Community Domain"
+  );
 
   const marketplaceHeroImageSrc = useMemo(() => {
     return resolveRepostAssetSrc(
@@ -6924,6 +7017,10 @@ export default function MarketplacePage() {
       showNotice("error", "Select a community first.");
       return;
     }
+    if (roscaCyclesFeatureOff) {
+      showNotice("error", roscaCyclesFeatureOffText);
+      return;
+    }
     if (creatingRoscaPackage) {
       showNotice("error", "ROSCA yearly payment request is already running.");
       return;
@@ -6968,6 +7065,10 @@ export default function MarketplacePage() {
     const interval = Number(roscaIntervalDays || 30);
     if (!activeCommunityId) {
       showNotice("error", "Select a community first.");
+      return;
+    }
+    if (roscaCyclesFeatureOff) {
+      showNotice("error", roscaCyclesFeatureOffText);
       return;
     }
     if (!Number.isFinite(amount) || amount <= 0) {
@@ -9321,8 +9422,12 @@ export default function MarketplacePage() {
           </div>
 
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <span style={badge(roscaYearlyActive)}>
-              {roscaYearlyActive ? "Yearly active" : "GBP 60 yearly"}
+            <span style={badge(roscaYearlyActive && !roscaCyclesFeatureOff)}>
+              {roscaCyclesFeatureOff
+                ? "Turned off"
+                : roscaYearlyActive
+                ? "Yearly active"
+                : "GBP 60 yearly"}
             </span>
             <StableButton
               debugId="marketplace.rosca.toggle"
@@ -9343,6 +9448,25 @@ export default function MarketplacePage() {
           tone="light"
           style={{ marginTop: 12 }}
         />
+
+        {roscaCyclesFeatureOff ? (
+          <div
+            style={{
+              marginTop: 12,
+              borderRadius: 16,
+              border: "1px solid rgba(143,51,51,0.18)",
+              background:
+                "linear-gradient(180deg, rgba(254,242,242,0.98) 0%, rgba(255,247,247,0.96) 100%)",
+              color: "#8A1F1F",
+              padding: isCompact ? 12 : 14,
+              fontSize: isCompact ? 13 : 14,
+              fontWeight: 850,
+              lineHeight: 1.35,
+            }}
+          >
+            {roscaCyclesFeatureOffText}
+          </div>
+        ) : null}
 
         <div
           style={{
@@ -9645,14 +9769,19 @@ export default function MarketplacePage() {
                 type="button"
                 onClick={(event) => {
                   runMarketplaceAction(event, () => {
+                    if (roscaCyclesFeatureOff) {
+                      showNotice("error", roscaCyclesFeatureOffText);
+                      return;
+                    }
                     if (creatingRoscaPackage) return;
                     void createRoscaYearlyInstruction();
                   });
                 }}
+                disabled={creatingRoscaPackage || roscaCyclesFeatureOff}
                 stableHeight={58}
                 style={marketplaceInlineActionStyle(
                   roscaYearlyActive ? "secondary" : "primary",
-                  creatingRoscaPackage,
+                  creatingRoscaPackage || roscaCyclesFeatureOff,
                   isCompact
                 )}
               >
@@ -9663,6 +9792,10 @@ export default function MarketplacePage() {
                 type="button"
                 onClick={(event) => {
                   runMarketplaceAction(event, () => {
+                    if (roscaCyclesFeatureOff) {
+                      showNotice("error", roscaCyclesFeatureOffText);
+                      return;
+                    }
                     if (startingRoscaCycle) return;
                     if (!roscaYearlyActive) {
                       showNotice(
@@ -9674,10 +9807,17 @@ export default function MarketplacePage() {
                     void startMarketplaceRoscaCycle();
                   });
                 }}
+                disabled={
+                  roscaCyclesFeatureOff ||
+                  startingRoscaCycle ||
+                  !roscaYearlyActive ||
+                  selectedRoscaMemberIds.length < 2
+                }
                 stableHeight={58}
                 style={marketplaceInlineActionStyle(
                   "primary",
-                  startingRoscaCycle ||
+                  roscaCyclesFeatureOff ||
+                    startingRoscaCycle ||
                     !roscaYearlyActive ||
                     selectedRoscaMemberIds.length < 2,
                   isCompact

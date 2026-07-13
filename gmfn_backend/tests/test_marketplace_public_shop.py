@@ -41,6 +41,98 @@ def _write_upload(root: Path, relative_path: str, content: bytes = b"ok") -> str
     return f"/uploads/{relative_path.replace(chr(92), '/')}"
 
 
+def _seed_community_domain_feature_policy(
+    *,
+    feature_key: str,
+    mode: str = "off",
+    domain_id: int = 970,
+    policy_id: int = 971,
+) -> None:
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO community_domains (
+                    id,
+                    domain_name,
+                    display_name,
+                    domain_type,
+                    template_key,
+                    owner_user_id,
+                    clan_id,
+                    status,
+                    verification_status,
+                    created_at,
+                    updated_at
+                )
+                VALUES (
+                    :domain_id,
+                    :domain_name,
+                    'Shop Feature Policy Domain',
+                    'ngo_project_network',
+                    'ngo_project_network',
+                    1,
+                    1,
+                    'active',
+                    'unverified',
+                    CURRENT_TIMESTAMP,
+                    CURRENT_TIMESTAMP
+                )
+                """
+            ),
+            {
+                "domain_id": domain_id,
+                "domain_name": f"shop-feature-policy-{feature_key}",
+            },
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO community_domain_policies (
+                    id,
+                    community_domain_id,
+                    policy_key,
+                    action_key,
+                    scope_type,
+                    review_mode,
+                    required_role,
+                    status,
+                    policy_summary,
+                    config_json,
+                    created_by_user_id,
+                    created_at,
+                    updated_at
+                )
+                VALUES (
+                    :policy_id,
+                    :domain_id,
+                    'domain.feature_policy',
+                    'domain.features.configure',
+                    'domain',
+                    'domain_admin_review',
+                    'owner_admin',
+                    'active',
+                    'Marketplace write route feature policy test',
+                    :config_json,
+                    1,
+                    CURRENT_TIMESTAMP,
+                    CURRENT_TIMESTAMP
+                )
+                """
+            ),
+            {
+                "policy_id": policy_id,
+                "domain_id": domain_id,
+                "config_json": json.dumps({"features": {feature_key: mode}}),
+            },
+        )
+
+
+def _scalar(sql: str) -> int:
+    with engine.begin() as conn:
+        return int(conn.execute(text(sql)).scalar() or 0)
+
+
 def test_spotlight_message_parser_keeps_two_part_price_detail():
     parts = marketplace_routes._spotlight_message_parts("Rice bag - N25k")
 
@@ -48,6 +140,97 @@ def test_spotlight_message_parser_keeps_two_part_price_detail():
     assert parts["price_note"] == "N25k"
     assert parts["description"] == "N25k"
     assert parts["availability"] is None
+
+
+def test_marketplace_shop_creation_respects_disabled_community_domain_shop_policy(
+    client,
+    override_current_user_user,
+    seed_clan_member_membership,
+):
+    _ensure_marketplace_tables()
+    _seed_community_domain_feature_policy(feature_key="marketplace_shops")
+
+    response = client.post(
+        "/marketplace/shops",
+        json={
+            "clan_id": 1,
+            "name": "Pillar Community Shop",
+            "description": "A governed domain shop.",
+        },
+    )
+
+    assert response.status_code == 403, response.text
+    detail = response.json()["detail"]
+    assert detail["code"] == "community_domain_feature_disabled"
+    assert detail["feature_key"] == "marketplace_shops"
+    assert _scalar("SELECT COUNT(*) FROM marketplace_shops") == 0
+    assert (
+        _scalar(
+            "SELECT COUNT(*) FROM trust_events "
+            "WHERE event_type = 'marketplace.shop.created'"
+        )
+        == 0
+    )
+
+
+def test_marketplace_product_creation_respects_disabled_community_domain_shop_diary_policy(
+    client,
+    override_current_user_user,
+    seed_clan_member_membership,
+):
+    _ensure_marketplace_tables()
+    _seed_community_domain_feature_policy(feature_key="shop_diary")
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_shops (
+                    id,
+                    clan_id,
+                    owner_user_id,
+                    shop_name,
+                    description,
+                    is_active,
+                    created_at
+                )
+                VALUES (
+                    981,
+                    1,
+                    1,
+                    'Pillar Existing Shop',
+                    'Shop exists before diary is disabled',
+                    1,
+                    CURRENT_TIMESTAMP
+                )
+                """
+            )
+        )
+
+    response = client.post(
+        "/marketplace/products",
+        json={
+            "clan_id": 1,
+            "shop_id": 981,
+            "name": "Community block update",
+            "description": "Block #1",
+            "price": "100",
+            "currency": "GBP",
+            "image_url": "/uploads/test/product.jpg",
+        },
+    )
+
+    assert response.status_code == 403, response.text
+    detail = response.json()["detail"]
+    assert detail["code"] == "community_domain_feature_disabled"
+    assert detail["feature_key"] == "shop_diary"
+    assert _scalar("SELECT COUNT(*) FROM marketplace_products") == 0
+    assert (
+        _scalar(
+            "SELECT COUNT(*) FROM trust_events "
+            "WHERE event_type = 'marketplace.product.created'"
+        )
+        == 0
+    )
 
 
 def test_spotlight_capacity_pilot_override_is_active_for_test_week(monkeypatch):

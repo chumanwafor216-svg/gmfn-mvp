@@ -1399,6 +1399,35 @@ def _community_domain_feature_policy_config(
     return _json_load(policy.config_json)
 
 
+def _community_domain_feature_policy_summary(
+    db: Session,
+    *,
+    community_domain_id: int,
+) -> Optional[dict[str, Any]]:
+    policy = (
+        db.query(CommunityDomainPolicy)
+        .filter(CommunityDomainPolicy.community_domain_id == int(community_domain_id))
+        .filter(CommunityDomainPolicy.policy_key == COMMUNITY_DOMAIN_FEATURE_POLICY_KEY)
+        .filter(CommunityDomainPolicy.status == "active")
+        .first()
+    )
+    if policy is None:
+        return None
+    config = _json_load(policy.config_json)
+    features = config.get("features")
+    return {
+        "policy_key": COMMUNITY_DOMAIN_FEATURE_POLICY_KEY,
+        "status": "active",
+        "features": features if isinstance(features, dict) else {},
+        "updated_at": _iso(policy.updated_at or policy.created_at),
+        "boundary": (
+            "Feature modes only for this active Community Domain membership. "
+            "This does not expose private member lists, finance records, "
+            "payment instructions, evidence attachments, or review authority."
+        ),
+    }
+
+
 def _community_domain_feature_mode(
     db: Session,
     *,
@@ -20028,6 +20057,10 @@ def list_my_community_domains(
             {
                 "community_domain": _domain_payload(domain, root_node=root_node),
                 "membership": _domain_member_payload(membership),
+                "feature_policy": _community_domain_feature_policy_summary(
+                    db,
+                    community_domain_id=domain_id,
+                ),
                 "viewer": {
                     "user_id": int(current_user.id),
                     "can_admin": bool(can_admin),
