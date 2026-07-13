@@ -4674,6 +4674,25 @@ export async function listExpectedPayments(payload?: {
   );
 }
 
+export async function reviewExpectedPaymentProof(payload: {
+  expected_payment_id: number;
+  clan_id?: number | null;
+  decision: "approve" | "reject";
+  note?: string | null;
+}): Promise<any> {
+  return httpJson(
+    `/admin/bank/expected-payments/${encodeURIComponent(
+      String(payload.expected_payment_id)
+    )}/finance-review`,
+    "POST",
+    {
+      decision: payload.decision,
+      note: payload.note ?? null,
+    },
+    payload.clan_id ? { header_clan_id: payload.clan_id } : undefined
+  );
+}
+
 export async function recordFocusCommitmentTrustEvent(payload: {
   clan_id?: number;
   local_commitment_id: string;

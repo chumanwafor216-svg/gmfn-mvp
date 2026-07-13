@@ -285,6 +285,30 @@ assertContains(
   "Bank Console guidance must frame matching as visible matched-record review."
 );
 
+assertContains(
+  "src/lib/api.ts",
+  /export async function reviewExpectedPaymentProof[\s\S]*?\/admin\/bank\/expected-payments\/\$\{encodeURIComponent[\s\S]*?\/finance-review[\s\S]*?decision: payload\.decision/,
+  "Bank Console must keep a dedicated expected-payment finance review API client."
+);
+
+assertContains(
+  "src/pages/BankConsolePage.tsx",
+  /async function reviewExpectedProof[\s\S]*?reviewExpectedPaymentProof\(\{[\s\S]*?expected_payment_id: expectedPaymentId[\s\S]*?decision/,
+  "Bank Console must send proof review decisions through the dedicated finance review handler."
+);
+
+assertContains(
+  "src/pages/BankConsolePage.tsx",
+  /canReviewProof = hasProof && !isConfirmed && isCommunityDomainPayment[\s\S]*?debugId=\{`bank-console\.expected\.\$\{safeStr\(row\.id\)\}\.approve-proof`\}[\s\S]*?Approve after check[\s\S]*?debugId=\{`bank-console\.expected\.\$\{safeStr\(row\.id\)\}\.reject-proof`\}[\s\S]*?Reject proof/,
+  "Bank Console must keep proof review actions scoped to submitted, unconfirmed Community Domain expected payments."
+);
+
+assertContains(
+  "src/pages/BankConsolePage.tsx",
+  /paper is evidence[\s\S]*?not automatic[\s\S]*?proof[\s\S]*?money movement/,
+  "Bank Console proof-review copy must state that uploaded paper is review evidence, not automatic proof that money moved."
+);
+
 assertNotContains(
   "src/pages/BankConsolePage.tsx",
   /Reconciliation complete|treating the rail as settled|`confirmed \$\{confirmed\}`|confirm matches|settlement easier to defend|check whether it matched/,

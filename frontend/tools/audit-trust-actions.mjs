@@ -1841,6 +1841,12 @@ assertContains(
   "Bank Console guidance must keep matched-record review language."
 );
 
+assertContains(
+  "src/pages/BankConsolePage.tsx",
+  /Approve after check[\s\S]*?Reject proof[\s\S]*?paper is evidence[\s\S]*?not automatic[\s\S]*?money movement/,
+  "Bank Console manual proof review must keep approve/reject controls and avoid presenting paper as automatic proof of money movement."
+);
+
 assertNotContains(
   "src/pages/BankConsolePage.tsx",
   /Reconciliation complete|treating the rail as settled|`confirmed \$\{confirmed\}`|confirm matches|settlement easier to defend|check whether it matched/,

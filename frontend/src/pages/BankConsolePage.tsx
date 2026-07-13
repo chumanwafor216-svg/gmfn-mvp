@@ -17,6 +17,7 @@ import {
   listExpectedPayments,
   listRecentBankEvents,
   listUnmatchedBankEvents,
+  reviewExpectedPaymentProof,
   runBankReconciliation,
   safeCopy,
 } from "../lib/api";
@@ -37,7 +38,10 @@ type BankConsoleRow = {
   bank_txn_id?: string | null;
   amount?: string | number | null;
   currency?: string | null;
+  expected_type?: string | null;
   status?: string | null;
+  status_reason?: string | null;
+  bank_event_id?: number | string | null;
   description?: string | null;
   direction?: string | null;
   created_at?: string | null;
@@ -271,7 +275,10 @@ function normalizeRow(raw: any): BankConsoleRow | null {
     bank_txn_id: firstTruthy(src?.bank_txn_id, src?.transaction_id) || null,
     amount: src?.amount ?? src?.expected_amount ?? null,
     currency: firstTruthy(src?.currency, src?.currency_code) || null,
+    expected_type: firstTruthy(src?.expected_type, meta.expected_type) || null,
     status: firstTruthy(src?.status, src?.state, "Not stated") || null,
+    status_reason: firstTruthy(src?.status_reason, meta.status_reason) || null,
+    bank_event_id: src?.bank_event_id ?? meta.bank_event_id ?? null,
     description: firstTruthy(src?.description, src?.detail, src?.note) || null,
     direction: firstTruthy(src?.direction, src?.flow) || null,
     created_at:
@@ -464,6 +471,7 @@ export default function BankConsolePage() {
   const [loading, setLoading] = useState(true);
   const [busyIngest, setBusyIngest] = useState(false);
   const [busyReconcile, setBusyReconcile] = useState(false);
+  const [busyReviewKey, setBusyReviewKey] = useState("");
   const [err, setErr] = useState("");
   const [msg, setMsg] = useState("");
 
@@ -687,6 +695,54 @@ export default function BankConsolePage() {
       setErr(String(e?.message || e || "Unable to run reconciliation."));
     } finally {
       setBusyReconcile(false);
+    }
+  }
+
+  async function reviewExpectedProof(row: BankConsoleRow, decision: "approve" | "reject") {
+    const operationContextKey =
+      bankConsoleContextRef.current || `${selectedClanId || 0}:${safeStr(currency || "NGN")}`;
+    const expectedPaymentId = Number(row.id || 0);
+    const reviewKey = `${expectedPaymentId}:${decision}`;
+    setErr("");
+    setMsg("");
+    setBusyReviewKey(reviewKey);
+
+    try {
+      const clanId = selectedClanId;
+      if (!clanId) throw new Error("Select a community first.");
+      if (!expectedPaymentId) {
+        throw new Error("This expected payment is missing its record id.");
+      }
+
+      const res = await reviewExpectedPaymentProof({
+        expected_payment_id: expectedPaymentId,
+        clan_id: clanId,
+        decision,
+        note:
+          decision === "approve"
+            ? "Admin manually checked submitted proof against bank or receipt evidence."
+            : "Admin rejected submitted proof; payment not confirmed.",
+      });
+
+      if (bankConsoleContextRef.current !== operationContextKey) return;
+
+      const updated = res?.expected_payment || {};
+      const status = firstTruthy(updated?.status, row.status, "not stated");
+      const reason = firstTruthy(updated?.status_reason, res?.bank_event_status_reason);
+      setMsg(
+        decision === "approve"
+          ? `Finance review approved. Expected payment is now ${status}${
+              reason ? ` (${reason})` : ""
+            }. If this was a Community Domain subscription, the normal activation path has now run.`
+          : "Proof rejected. The expected payment remains unconfirmed and no Community Domain activation was triggered."
+      );
+      await loadAll();
+    } catch (e: any) {
+      if (bankConsoleContextRef.current !== operationContextKey) return;
+
+      setErr(String(e?.message || e || "Unable to record finance review."));
+    } finally {
+      setBusyReviewKey("");
     }
   }
 
@@ -1321,6 +1377,16 @@ export default function BankConsolePage() {
                 const hasProof = Boolean(
                   safeStr(row.proof_status || row.proof_status_text || row.proof_filename)
                 );
+                const isConfirmed = ["confirmed", "applied"].includes(
+                  safeStr(row.status).toLowerCase()
+                );
+                const isCommunityDomainPayment =
+                  safeStr(row.expected_type).toLowerCase() ===
+                  "community_domain_subscription";
+                const canReviewProof = hasProof && !isConfirmed && isCommunityDomainPayment;
+                const approveBusy =
+                  busyReviewKey === `${Number(row.id || 0)}:approve`;
+                const rejectBusy = busyReviewKey === `${Number(row.id || 0)}:reject`;
 
                 return (
                   <div
@@ -1456,6 +1522,66 @@ export default function BankConsolePage() {
                         </div>
                       </div>
                     </div>
+
+                    {canReviewProof ? (
+                      <div
+                        style={{
+                          marginTop: 12,
+                          display: "grid",
+                          gridTemplateColumns: isCompact
+                            ? "1fr"
+                            : "repeat(2, minmax(170px, max-content))",
+                          gap: 10,
+                          alignItems: "center",
+                        }}
+                      >
+                        <PrimaryButton
+                          onClick={() => void reviewExpectedProof(row, "approve")}
+                          disabled={Boolean(busyReviewKey)}
+                          fullWidth={isCompact}
+                          minWidth={isCompact ? undefined : 170}
+                          stableHeight={52}
+                          debugId={`bank-console.expected.${safeStr(row.id)}.approve-proof`}
+                          style={bankConsolePrimaryButtonStyle(Boolean(busyReviewKey))}
+                        >
+                          {actionText(
+                            "shield",
+                            approveBusy ? "Approving" : "Approve after check"
+                          )}
+                        </PrimaryButton>
+
+                        <SecondaryButton
+                          onClick={() => void reviewExpectedProof(row, "reject")}
+                          disabled={Boolean(busyReviewKey)}
+                          fullWidth={isCompact}
+                          minWidth={isCompact ? undefined : 170}
+                          stableHeight={52}
+                          debugId={`bank-console.expected.${safeStr(row.id)}.reject-proof`}
+                          style={bankConsoleSecondaryButtonStyle(Boolean(busyReviewKey))}
+                        >
+                          {actionText(
+                            "document",
+                            rejectBusy ? "Rejecting" : "Reject proof"
+                          )}
+                        </SecondaryButton>
+                      </div>
+                    ) : null}
+
+                    {hasProof && isCommunityDomainPayment && !canReviewProof ? (
+                      <div
+                        style={{
+                          marginTop: 12,
+                          color: "#475569",
+                          fontSize: 13,
+                          lineHeight: 1.45,
+                          fontWeight: 800,
+                        }}
+                      >
+                        Finance review action is hidden once the payment is
+                        already confirmed/applied. Submitted paper is evidence
+                        for review, not automatic proof of money movement.
+                      </div>
+                    ) : null}
                   </div>
                 );
               })
