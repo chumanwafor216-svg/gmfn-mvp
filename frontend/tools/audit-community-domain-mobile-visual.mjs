@@ -780,6 +780,12 @@ try {
   if (!normalized(audit.bodyText).includes("Run one live lane at a time")) {
     findings.push("Domain command does not show the focused live-lane guidance.");
   }
+  if (!normalized(audit.bodyText).includes("Do first")) {
+    findings.push("Domain command does not show the first action guidance.");
+  }
+  if (!normalized(audit.bodyText).includes("Boundary")) {
+    findings.push("Domain command does not show the operating boundary warning.");
+  }
   if (normalized(audit.bodyText).includes("Safe next step")) {
     findings.push("Generic Safe next step card is visible on initial Community Domain surface.");
   }

@@ -1299,6 +1299,29 @@ function officialBoardActionsStyle(): React.CSSProperties {
   };
 }
 
+function commandGuidanceGrid(): React.CSSProperties {
+  return {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 190px), 1fr))",
+    gap: 10,
+  };
+}
+
+function commandGuidanceTile(kind: "next" | "risk"): React.CSSProperties {
+  const risk = kind === "risk";
+  return {
+    borderRadius: 18,
+    border: risk ? "1px solid rgba(146,94,8,0.20)" : "1px solid rgba(9,27,46,0.11)",
+    background: risk
+      ? "linear-gradient(180deg, rgba(255,249,225,0.82) 0%, rgba(248,251,255,0.94) 100%)"
+      : "linear-gradient(180deg, rgba(239,247,255,0.96) 0%, rgba(248,251,255,0.98) 100%)",
+    padding: 12,
+    display: "grid",
+    gap: 6,
+    minWidth: 0,
+  };
+}
+
 function billingInputStyle(): React.CSSProperties {
   return {
     width: "100%",
@@ -4228,6 +4251,20 @@ export default function CommunityDomainDashboardPage() {
                     {domainOperational
                       ? "Run one live lane at a time. Setup stays quiet unless details or evidence need attention."
                       : "Complete the next setup step. Billing, activation, and verification stay separate."}
+                  </div>
+                </div>
+              </div>
+              <div style={commandGuidanceGrid()}>
+                <div style={commandGuidanceTile("next")}>
+                  <div style={sectionLabel()}>Do first</div>
+                  <div style={{ ...helperText(), fontSize: 13, lineHeight: 1.5 }}>
+                    {operatingStateCopy.nextStep}
+                  </div>
+                </div>
+                <div style={commandGuidanceTile("risk")}>
+                  <div style={sectionLabel()}>Boundary</div>
+                  <div style={{ ...helperText(), fontSize: 13, lineHeight: 1.5 }}>
+                    {operatingStateCopy.risk}
                   </div>
                 </div>
               </div>
