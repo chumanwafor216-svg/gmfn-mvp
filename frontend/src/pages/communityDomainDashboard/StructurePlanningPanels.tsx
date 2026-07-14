@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useState } from "react";
+import { StableButton } from "../../components/StableButton";
 import { humanStatus } from "./statusLanguage";
 
 type StructurePlanningPanelsProps = {
@@ -6,6 +7,30 @@ type StructurePlanningPanelsProps = {
   activityMap?: any;
   activityGroupReadiness?: any;
 };
+
+type StructurePlanningFocusKey = "rollout" | "activity" | "groups";
+
+const STRUCTURE_PLANNING_FOCUS_OPTIONS: Array<{
+  key: StructurePlanningFocusKey;
+  label: string;
+  note: string;
+}> = [
+  {
+    key: "rollout",
+    label: "Rollout",
+    note: "First units, pilot readiness, and launch attention before wider opening.",
+  },
+  {
+    key: "activity",
+    label: "Activity",
+    note: "Activity, schedule, paid activity, and marketplace boundaries.",
+  },
+  {
+    key: "groups",
+    label: "Groups",
+    note: "Group-like unit readiness before any real group or ROSCA setup exists.",
+  },
+];
 
 function cleanText(value: unknown, fallback = ""): string {
   const text = String(value ?? "").trim();
@@ -209,9 +234,63 @@ export default function CommunityDomainStructurePlanningPanels({
   const activityGroupReadyTotal = visibleActivityGroups.filter(
     (group) => group.ready_for_activity_group_planning
   ).length;
+  const [activeStructurePlanningFocus, setActiveStructurePlanningFocus] =
+    useState<StructurePlanningFocusKey>("rollout");
+  const selectedStructurePlanningFocus =
+    STRUCTURE_PLANNING_FOCUS_OPTIONS.find(
+      (option) => option.key === activeStructurePlanningFocus
+    ) || STRUCTURE_PLANNING_FOCUS_OPTIONS[0];
 
   return (
     <>
+      <div
+        style={{
+          ...softCard(),
+          display: "grid",
+          gap: 10,
+        }}
+      >
+        <div style={sectionLabel()}>Planning packet</div>
+        <div style={helperText()}>
+          Current view: <strong>{selectedStructurePlanningFocus.label}</strong>.
+        </div>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 132px), 1fr))",
+            gap: 8,
+          }}
+        >
+          {STRUCTURE_PLANNING_FOCUS_OPTIONS.map((option) => {
+            const selected = option.key === activeStructurePlanningFocus;
+            return (
+              <StableButton
+                key={option.key}
+                type="button"
+                kind={selected ? "primary" : "secondary"}
+                stableHeight={48}
+                fullWidth
+                aria-pressed={selected}
+                title={option.note}
+                debugId={`community-domain.structure-planning.focus.${option.key}`}
+                onClick={() => setActiveStructurePlanningFocus(option.key)}
+                style={{
+                  justifyContent: "center",
+                  fontSize: 13,
+                  textTransform: "none",
+                }}
+              >
+                {option.label}
+              </StableButton>
+            );
+          })}
+        </div>
+        <div style={{ ...helperText(), fontSize: 13 }}>
+          {selectedStructurePlanningFocus.note}
+        </div>
+      </div>
+
+      {activeStructurePlanningFocus === "rollout" ? (
       <div style={softCard()}>
         <div style={sectionLabel()}>Rollout plan</div>
         <div style={{ ...helperText(), marginTop: 7 }}>
@@ -275,7 +354,9 @@ export default function CommunityDomainStructurePlanningPanels({
           activity, money, or private evidence.
         </div>
       </div>
+      ) : null}
 
+      {activeStructurePlanningFocus === "activity" ? (
       <div style={softCard()}>
         <div style={sectionLabel()}>Activity map</div>
         <div style={{ ...helperText(), marginTop: 7 }}>
@@ -346,7 +427,9 @@ export default function CommunityDomainStructurePlanningPanels({
           money movement, or private member records.
         </div>
       </div>
+      ) : null}
 
+      {activeStructurePlanningFocus === "groups" ? (
       <div style={softCard()}>
         <div style={sectionLabel()}>Group readiness</div>
         <div style={{ ...helperText(), marginTop: 7 }}>
@@ -440,6 +523,7 @@ export default function CommunityDomainStructurePlanningPanels({
           trust records, or private member records.
         </div>
       </div>
+      ) : null}
     </>
   );
 }

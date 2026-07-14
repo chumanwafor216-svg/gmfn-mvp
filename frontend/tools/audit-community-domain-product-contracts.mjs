@@ -1518,6 +1518,13 @@ assertContains(
   { frontend: true }
 );
 
+assertContains(
+  "src/pages/communityDomainDashboard/StructurePlanningPanels.tsx",
+  /STRUCTURE_PLANNING_FOCUS_OPTIONS[\s\S]*key: "rollout"[\s\S]*key: "activity"[\s\S]*key: "groups"[\s\S]*activeStructurePlanningFocus[\s\S]*community-domain\.structure-planning\.focus\.\$\{option\.key\}[\s\S]*activeStructurePlanningFocus === "rollout"[\s\S]*Rollout plan[\s\S]*activeStructurePlanningFocus === "activity"[\s\S]*Activity map[\s\S]*activeStructurePlanningFocus === "groups"[\s\S]*Group readiness/,
+  "Community Domain Structure planning packet must expose one focused sub-view at a time instead of stacking rollout, activity, and group readiness together.",
+  { frontend: true }
+);
+
 assertNotContains(
   "src/pages/communityDomainDashboard/StructurePlanningPanels.tsx",
   /statusBadge\("not_created_in_this_slice"\)|gridTemplateColumns: "minmax\(0, 1fr\) auto"/,
