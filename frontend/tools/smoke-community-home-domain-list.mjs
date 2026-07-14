@@ -68,6 +68,10 @@ async function installApiMocks(page) {
     if (path === "/community-domains/my") {
       return route.fulfill(json({ items: domains }));
     }
+    const clanSelectMatch = path.match(/^\/clans\/(\d+)\/select\/?$/);
+    if (clanSelectMatch) {
+      return route.fulfill(json({ selected_clan_id: Number(clanSelectMatch[1]) }));
+    }
     if (path === "/clans/select" || path === "/clans/select/") {
       return route.fulfill(json({ selected_clan_id: 8 }));
     }
@@ -181,8 +185,7 @@ async function run() {
         "Pillar of Hope",
         "Community Domain marketplace workspace",
         "Marketplace ready",
-        "Subscription / renewal",
-        "Domain settings",
+        "Create Community Domain",
         "Setup Domain",
         "Setup needed",
       ];
@@ -199,6 +202,12 @@ async function run() {
       const presentForbiddenCtas = forbiddenCtas.filter((id) =>
         document.querySelector(`[data-cta-id="${id}"]`)
       );
+      if (document.querySelector('[data-cta-id^="community-home.domain."][data-cta-id$=".billing"]')) {
+        presentForbiddenCtas.push("community-home.domain.*.billing");
+      }
+      if (document.querySelector('[data-cta-id^="community-home.domain."][data-cta-id$=".settings"]')) {
+        presentForbiddenCtas.push("community-home.domain.*.settings");
+      }
       const overflow = Array.from(document.querySelectorAll("main *"))
         .filter((element) => {
           if (element.closest('[aria-hidden="true"]')) return false;
@@ -228,6 +237,11 @@ async function run() {
       console.error("Community Home domain list smoke failed:", result);
       process.exit(1);
     }
+
+    await page.locator('[data-cta-id="community-home.domain.13.open"]').click();
+    await page.waitForURL(/\/app\/marketplace\?community=13/, {
+      timeout: 30000,
+    });
 
     console.log(
       "Community Home domain list smoke passed: screenshot saved to screenshots/community-home-domain-list-390x844.png"

@@ -493,8 +493,6 @@ type MarketplaceCommunityDomainRow = {
   clanId: number;
   marketplaceReady: boolean;
   dashboardPath: string;
-  billingPath: string;
-  settingsPath: string;
   marketplacePath: string;
 };
 
@@ -1119,16 +1117,6 @@ function communityDomainNeedsSetup(domain: any): boolean {
     status.includes("closed") ||
     status.includes("expired")
   );
-}
-
-function communityDomainLanePath(path: string, lane: "billing" | "settings"): string {
-  const target = safeStr(path) || "/app/community-domain";
-  const [baseWithQuery, hash = ""] = target.split("#");
-  const [pathname, search = ""] = baseWithQuery.split("?");
-  const query = new URLSearchParams(search);
-  query.set("lane", lane);
-  const nextSearch = query.toString();
-  return `${pathname}${nextSearch ? `?${nextSearch}` : ""}${hash ? `#${hash}` : ""}`;
 }
 
 function baseCommunityName(row: CommunityRow | null | undefined): string {
@@ -4606,8 +4594,6 @@ export default function MarketplacePage() {
           clanId,
           marketplaceReady,
           dashboardPath,
-          billingPath: communityDomainLanePath(dashboardPath, "billing"),
-          settingsPath: communityDomainLanePath(dashboardPath, "settings"),
           marketplacePath: clanId
             ? routeWithCommunity(APP_ROUTES.MARKETPLACE, clanId)
             : dashboardPath,
@@ -4615,15 +4601,6 @@ export default function MarketplacePage() {
       })
       .filter((row): row is MarketplaceCommunityDomainRow => Boolean(row));
   }, [communityDomainPolicyPayload]);
-  const currentMarketplaceCommunityDomainRow = useMemo(() => {
-    if (!activeCommunityId) return null;
-    return (
-      marketplaceCommunityDomainRows.find(
-        (row) => positiveNumber(row.clanId) === activeCommunityId
-      ) || null
-    );
-  }, [activeCommunityId, marketplaceCommunityDomainRows]);
-
   const publicShopViewLink = useMemo(() => {
     if (!publicShopOwnerId || !publicShopRecord) return "";
     return publicShopUrl(publicShopOwnerId);
@@ -12729,7 +12706,7 @@ export default function MarketplacePage() {
                 </div>
                 <div style={marketplaceLinkRowSubStyle(isCompact)}>
                   They sit with community members and shops. Setup stays in
-                  Community Home.
+                  the Community Domain dashboard.
                 </div>
               </div>
               <span
@@ -12796,75 +12773,6 @@ export default function MarketplacePage() {
                 </StableButton>
               ))}
             </div>
-            {currentMarketplaceCommunityDomainRow ? (
-              <div
-                {...marketplaceSurfaceTouchProps("marketplace.domain.controls")}
-                style={{
-                  ...marketplaceDepartmentShellStyle("neutral", isCompact),
-                  marginTop: 12,
-                }}
-              >
-                <div style={marketplaceDepartmentHeaderStyle(isCompact)}>
-                  <div style={{ minWidth: 0 }}>
-                    <div style={sectionLabel()}>Domain controls</div>
-                    <div style={{ ...helperText(), marginTop: 6 }}>
-                      Open the official subscription and settings rails for{" "}
-                      {currentMarketplaceCommunityDomainRow.name}. Marketplace
-                      stays focused on this selected community.
-                    </div>
-                  </div>
-                  <span style={stableStatusPillStyle(true)}>
-                    Official domain
-                  </span>
-                </div>
-                <div style={marketplaceInlineActionsStyle(isCompact)}>
-                  <StableButton
-                    type="button"
-                    debugId="marketplace.domain.subscription-renewal"
-                    onClick={(event) =>
-                      runMarketplaceAction(event, () => {
-                        if (currentMarketplaceCommunityDomainRow.clanId) {
-                          setSelectedClanId(currentMarketplaceCommunityDomainRow.clanId);
-                        }
-                        navigateWithOrigin(
-                          navigate,
-                          currentMarketplaceCommunityDomainRow.billingPath,
-                          location
-                        );
-                      })
-                    }
-                    style={marketplaceInlineActionStyle("secondary", false, isCompact)}
-                  >
-                    <span aria-hidden="true" style={marketplaceLinkMiniIconStyle()}>
-                      <MarketplaceGlyph name="payment" size={18} />
-                    </span>
-                    Subscription / renewal
-                  </StableButton>
-                  <StableButton
-                    type="button"
-                    debugId="marketplace.domain.settings"
-                    onClick={(event) =>
-                      runMarketplaceAction(event, () => {
-                        if (currentMarketplaceCommunityDomainRow.clanId) {
-                          setSelectedClanId(currentMarketplaceCommunityDomainRow.clanId);
-                        }
-                        navigateWithOrigin(
-                          navigate,
-                          currentMarketplaceCommunityDomainRow.settingsPath,
-                          location
-                        );
-                      })
-                    }
-                    style={marketplaceInlineActionStyle("secondary", false, isCompact)}
-                  >
-                    <span aria-hidden="true" style={marketplaceLinkMiniIconStyle()}>
-                      <MarketplaceGlyph name="links" size={18} />
-                    </span>
-                    Domain settings
-                  </StableButton>
-                </div>
-              </div>
-            ) : null}
           </div>
         ) : null}
 

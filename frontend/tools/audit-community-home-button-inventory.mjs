@@ -10,12 +10,12 @@ const appLayoutFile = "src/layout/AppLayout.tsx";
 const source = readFileSync(join(frontendRoot, communityFile), "utf8");
 const appLayoutSource = readFileSync(join(frontendRoot, appLayoutFile), "utf8");
 const findings = [];
-const expectedStableButtonTemplateCount = 30;
+const expectedStableButtonTemplateCount = 28;
 const expectedNativeFieldCount = 0;
 const expectedNextActionGuideItemCount = 12;
 const expectedFrontQuickActionCount = 4;
 const expectedSpotlightGuidedActionCount = 5;
-const expectedGroupedLaneRowCount = 21;
+const expectedGroupedLaneRowCount = 22;
 const expectedExpandedRouteLocalActionTemplates = 40;
 const expectedMobileShellBreakdown = {
   top: 2,
@@ -309,8 +309,8 @@ assertContains(
 );
 
 assertContains(
-  /debugId="community-home\.communities\.header-toggle"[\s\S]*?Marketplace Communities \/ Community Domains[\s\S]*?\{sortedClans\.length\} marketplace[\s\S]*?combinedCommunityDomainCount[\s\S]*?domain" : "domains"[\s\S]*?Marketplace workspace for this community[\s\S]*?Open Marketplace[\s\S]*?sortedCommunityDomainRows\.map[\s\S]*?Community Domain marketplace workspace[\s\S]*?Marketplace ready[\s\S]*?Setup needed[\s\S]*?openCommunityDomainDestination\([\s\S]*?row\.marketplaceReady \? row\.marketplacePath : row\.dashboardPath[\s\S]*?community-home\.domain\.\$\{row\.id \|\| row\.key\}\.billing[\s\S]*?row\.billingPath[\s\S]*?Subscription \/ renewal[\s\S]*?community-home\.domain\.\$\{row\.id \|\| row\.key\}\.settings[\s\S]*?row\.settingsPath[\s\S]*?Domain settings/,
-  "Community Home opened list must show ordinary marketplace communities and Community Domains together, with active domains opening Marketplace and explicit domain billing/settings rails."
+  /debugId="community-home\.communities\.header-toggle"[\s\S]*?Marketplace Communities \/ Community Domains[\s\S]*?\{sortedClans\.length\} marketplace[\s\S]*?combinedCommunityDomainCount[\s\S]*?domain" : "domains"[\s\S]*?Marketplace workspace for this community[\s\S]*?Open Marketplace[\s\S]*?sortedCommunityDomainRows\.map[\s\S]*?Community Domain marketplace workspace[\s\S]*?Marketplace ready[\s\S]*?Setup needed[\s\S]*?debugId=\{`community-home\.domain\.\$\{row\.id \|\| row\.key\}\.open`\}[\s\S]*?openCommunityDomainMarketplace\(event, row\)[\s\S]*?\{row\.marketplaceReady \? "Open Marketplace" : "Open Setup"\}/,
+  "Community Home opened list must show ordinary marketplace communities and Community Domains together, with active domains using the strict Marketplace selection handoff and no per-row billing/settings controls."
 );
 
 assertContains(
@@ -319,8 +319,8 @@ assertContains(
 );
 
 assertContains(
-  /id: "communities"[\s\S]*?lane: "communities"[\s\S]*?title: "Marketplaces"[\s\S]*?Marketplace communities[\s\S]*?title: "Choose marketplace"[\s\S]*?title: "Create marketplace"[\s\S]*?title: "Join marketplace"/,
-  "Community Home grouped lane must show marketplace-community wording instead of generic Communities copy."
+  /id: "communities"[\s\S]*?lane: "communities"[\s\S]*?title: "Marketplaces"[\s\S]*?Marketplace communities[\s\S]*?title: "Choose marketplace"[\s\S]*?title: "Create marketplace"[\s\S]*?title: "Create Community Domain"[\s\S]*?routes\.communityDomainPurchase[\s\S]*?title: "Join marketplace"/,
+  "Community Home grouped lane must show marketplace-community wording and keep Create Community Domain beside the create/join marketplace choices."
 );
 
 assertContains(
@@ -334,8 +334,8 @@ assertContains(
 );
 
 assertContains(
-  /Payments, subscriptions and renewals[\s\S]*?id: "payments-renewals"[\s\S]*?title: "Payment rails and renewals"[\s\S]*?Money In, Money Out, payment records, and renewal checks\.[\s\S]*?openCommunityRoute\(event, routes\.finance\)/,
-  "Community Home payment rail row must clearly expose payment rails and renewals from the subscription group."
+  /Payments, subscriptions and renewals[\s\S]*?id: "payments-renewals"[\s\S]*?title: "Market Domain subscriptions"[\s\S]*?primaryCommunityDomainRow[\s\S]*?subscription, renewal, and billing status[\s\S]*?primaryCommunityDomainRow\.billingPath[\s\S]*?routes\.communityDomainPurchase/,
+  "Community Home subscriptions row must open the official Community Domain billing lane, or the purchase path when no domain exists."
 );
 
 assertContains(

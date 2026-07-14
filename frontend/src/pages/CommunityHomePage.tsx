@@ -104,7 +104,6 @@ type CommunityDomainListRow = {
   marketplaceReady: boolean;
   dashboardPath: string;
   billingPath: string;
-  settingsPath: string;
   marketplacePath: string;
 };
 
@@ -268,7 +267,7 @@ function communityDomainNeedsSetup(domain: any): boolean {
   );
 }
 
-function communityDomainLanePath(path: string, lane: "billing" | "settings"): string {
+function communityDomainLanePath(path: string, lane: "billing"): string {
   const target = safeStr(path) || "/app/community-domain";
   const [baseWithQuery, hash = ""] = target.split("#");
   const [pathname, search = ""] = baseWithQuery.split("?");
@@ -303,7 +302,6 @@ function normalizeCommunityDomainListRow(item: any): CommunityDomainListRow | nu
     marketplaceReady: !communityDomainNeedsSetup({ ...domain, clan_id: clanId }),
     dashboardPath,
     billingPath: communityDomainLanePath(dashboardPath, "billing"),
-    settingsPath: communityDomainLanePath(dashboardPath, "settings"),
     marketplacePath: clanId
       ? routeWithCommunity(APP_ROUTES.MARKETPLACE, clanId)
       : dashboardPath,
@@ -1893,6 +1891,16 @@ export default function CommunityHomePage() {
   const sortedCommunityDomainRows = useMemo(() => {
     return [...communityDomainRows].sort((a, b) => a.name.localeCompare(b.name));
   }, [communityDomainRows]);
+  const selectedCommunityDomainRow = useMemo(() => {
+    if (!selectedClanId) return null;
+    return (
+      sortedCommunityDomainRows.find(
+        (row) => positiveNumber(row.clanId) === positiveNumber(selectedClanId)
+      ) || null
+    );
+  }, [selectedClanId, sortedCommunityDomainRows]);
+  const primaryCommunityDomainRow =
+    selectedCommunityDomainRow || sortedCommunityDomainRows[0] || null;
 
   const communityNextActionItems = useMemo<NextActionGuideItem[]>(
     () => [
@@ -2870,6 +2878,41 @@ export default function CommunityHomePage() {
       }
     }
     navigateWithOrigin(navigate, to, location);
+  }
+
+  async function openCommunityDomainMarketplace(
+    event: React.SyntheticEvent<HTMLElement> | undefined,
+    row: CommunityDomainListRow
+  ) {
+    consumeCommunityButtonEvent(event);
+
+    if (!row.marketplaceReady) {
+      navigateWithOrigin(navigate, row.dashboardPath, location);
+      return;
+    }
+
+    if (!row.clanId) {
+      showNotice(
+        "error",
+        "This Community Domain is active, but its marketplace community is not linked yet."
+      );
+      navigateWithOrigin(navigate, row.dashboardPath, location);
+      return;
+    }
+
+    setChangingClanId(row.clanId);
+    try {
+      await selectClan(row.clanId);
+      navigateWithOrigin(navigate, row.marketplacePath, location);
+    } catch (err: any) {
+      showNotice(
+        "error",
+        safeStr(err?.message) ||
+          "This Community Domain marketplace could not be selected right now."
+      );
+    } finally {
+      setChangingClanId(0);
+    }
   }
 
   function handleCommunityNextAction(
@@ -4387,6 +4430,15 @@ export default function CommunityHomePage() {
                         openCommunityNextAction(event, "create-community"),
                     },
                     {
+                      icon: "financeInstitution",
+                      id: "create-community-domain",
+                      title: "Create Community Domain",
+                      detail:
+                        "Start the paid institutional domain path for a school, church, union, market, or association.",
+                      onClick: (event: React.SyntheticEvent<HTMLElement>) =>
+                        openCommunityRoute(event, routes.communityDomainPurchase),
+                    },
+                    {
                       icon: "join-person-plus",
                       id: "join-community",
                       title: "Join marketplace",
@@ -4676,10 +4728,18 @@ export default function CommunityHomePage() {
                     {
                       icon: "finance-wallet-card",
                       id: "payments-renewals",
-                      title: "Payment rails and renewals",
-                      detail: "Open Finance for Money In, Money Out, payment records, and renewal checks.",
+                      title: "Market Domain subscriptions",
+                      detail: primaryCommunityDomainRow
+                        ? `Open ${primaryCommunityDomainRow.name} subscription, renewal, and billing status.`
+                        : "Create or select a Community Domain before opening domain subscriptions.",
                       onClick: (event: React.SyntheticEvent<HTMLElement>) =>
-                        openCommunityRoute(event, routes.finance),
+                        primaryCommunityDomainRow
+                          ? openCommunityDomainDestination(
+                              event,
+                              primaryCommunityDomainRow,
+                              primaryCommunityDomainRow.billingPath
+                            )
+                          : openCommunityRoute(event, routes.communityDomainPurchase),
                     },
                   ].map((item, index) => (
                     <StableButton
@@ -5454,13 +5514,7 @@ export default function CommunityHomePage() {
                       <StableButton
                         type="button"
                         debugId={`community-home.domain.${row.id || row.key}.open`}
-                        onClick={(event) =>
-                          openCommunityDomainDestination(
-                            event,
-                            row,
-                            row.marketplaceReady ? row.marketplacePath : row.dashboardPath
-                          )
-                        }
+                        onClick={(event) => openCommunityDomainMarketplace(event, row)}
                         style={{
                           ...communityActionStyle(
                             row.marketplaceReady ? "primary" : "secondary"
@@ -5469,32 +5523,6 @@ export default function CommunityHomePage() {
                         }}
                       >
                         {row.marketplaceReady ? "Open Marketplace" : "Open Setup"}
-                      </StableButton>
-                      <StableButton
-                        type="button"
-                        debugId={`community-home.domain.${row.id || row.key}.billing`}
-                        onClick={(event) =>
-                          openCommunityDomainDestination(event, row, row.billingPath)
-                        }
-                        style={{
-                          ...communityActionStyle("secondary"),
-                          width: isCompact ? "100%" : undefined,
-                        }}
-                      >
-                        Subscription / renewal
-                      </StableButton>
-                      <StableButton
-                        type="button"
-                        debugId={`community-home.domain.${row.id || row.key}.settings`}
-                        onClick={(event) =>
-                          openCommunityDomainDestination(event, row, row.settingsPath)
-                        }
-                        style={{
-                          ...communityActionStyle("secondary"),
-                          width: isCompact ? "100%" : undefined,
-                        }}
-                      >
-                        Domain settings
                       </StableButton>
                     </div>
                   </div>
