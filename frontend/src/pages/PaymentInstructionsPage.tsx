@@ -3009,7 +3009,7 @@ export default function PaymentInstructionsPage() {
                 fullWidth
                 style={moneyInActionButtonStyle("secondary")}
               >
-                {moneyInActionText("community", "Loans")}
+                {moneyInActionText("community", "Loan Support")}
               </StableCtaLink>
 
               <StableCtaLink

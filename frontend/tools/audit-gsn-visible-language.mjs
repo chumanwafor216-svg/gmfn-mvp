@@ -119,10 +119,12 @@ const forbidden = [
   "Clan liquidity index",
   "Dev Clan",
   "Task focus is active",
-  "Loans & Support task",
+  "Loan Support task",
   "This task is in focus",
   "main routes stay cleaner",
   "The main routes stay simple",
+  "Finance, Loans,",
+  "Loans, Trust",
   "decision on a pledge",
   "Available Capacity",
 ];

@@ -44,13 +44,13 @@ assertContains(
 );
 
 assertContains(
-  /debugId="marketplace\.tile\.support"[\s\S]*?Support[\s\S]*?Start Request[\s\S]*?Supporters[\s\S]*?Repayment[\s\S]*?Separate ROSCA desk[\s\S]*?debugId="marketplace\.support\.open-rosca"[\s\S]*?openMarketplaceSection\(event, "rosca", "marketplace-rosca"\)[\s\S]*?Open ROSCA/,
-  "ROSCA must stay reachable from the support lane as a clearly separate desk, not as the same Support front-door choice."
+  /debugId="marketplace\.tile\.support"[\s\S]*?Support[\s\S]*?Start Request[\s\S]*?Supporters[\s\S]*?Repayment[\s\S]*?marketplace\.support\.path-chooser[\s\S]*?Loan Support[\s\S]*?ROSCA[\s\S]*?debugId="marketplace\.support\.open-rosca"[\s\S]*?openMarketplaceSection\(event, "rosca", "marketplace-rosca"\)[\s\S]*?Open ROSCA/,
+  "ROSCA must stay reachable from the Support doorway as a separate path, not as the same Loan Support surface."
 );
 
 assertContains(
-  /Financial support requests[\s\S]*?ROSCA savings[\s\S]*?circles have their own desk and do not share this form[\s\S]*?gridTemplateColumns: isCompact[\s\S]*?\? "1fr"[\s\S]*?: "minmax\(0, 1fr\) minmax\(142px, 160px\)"[\s\S]*?Separate ROSCA desk[\s\S]*?It is not a support request/,
-  "Marketplace Support gateway must keep Financial Support first and present ROSCA as a separate full-width desk handoff."
+  /marketplace\.support\.path-chooser[\s\S]*?Loan Support[\s\S]*?Use this path for one request that needs backing[\s\S]*?ROSCA[\s\S]*?Use this path for a selected-member savings circle[\s\S]*?It is not[\s\S]*?a loan or support request[\s\S]*?Loan Support requests[\s\S]*?ROSCA opens through its own[\s\S]*?path and does not share this request form/,
+  "Marketplace Support gateway must open as a chooser and keep the loan-support form separate from the ROSCA path."
 );
 
 assertContains(

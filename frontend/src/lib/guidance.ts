@@ -778,7 +778,7 @@ function normalizeNoticeCtaLabel(ctaTo: string, rawLabel: any): string {
   }
 
   if (targetPath === GUIDANCE_TARGETS.LOANS && (genericLabel || /finance/i.test(direct))) {
-    return "Open Loans & Support";
+    return "Open Loan Support";
   }
 
   if (targetPath === GUIDANCE_TARGETS.FINANCE && (genericLabel || /finance/i.test(direct))) {
@@ -1593,7 +1593,7 @@ function buildRecoveryPath(params: {
         status
       ),
       detail: `Your current support path is still active with status '${status}'.`,
-      ctaLabel: "Open Loans & Support",
+      ctaLabel: "Open Loan Support",
       ctaTo: GUIDANCE_TARGETS.LOANS,
       severity: "important",
       todayText: pickVariant(
@@ -1824,7 +1824,7 @@ function buildNextBestStep(params: {
       ),
       detail:
         "Your support path is still active. Review the next valid step and keep it moving cleanly.",
-      ctaLabel: "Open Loans & Support",
+      ctaLabel: "Open Loan Support",
       ctaTo: GUIDANCE_TARGETS.LOANS,
       severity: "important",
       todayText: pickVariant(
@@ -2288,7 +2288,7 @@ function buildWeeklyFocus(params: {
         "weekly-loan-detail",
         params.voice
       ),
-      ctaLabel: "Open Loans & Support",
+      ctaLabel: "Open Loan Support",
       ctaTo: GUIDANCE_TARGETS.LOANS,
     };
   }

@@ -444,6 +444,8 @@ type SectionState = {
   support: boolean;
 };
 
+type SupportDeskMode = "choices" | "loan";
+
 type LinkCenterTool =
   | "join"
   | "verify"
@@ -4431,6 +4433,8 @@ export default function MarketplacePage() {
     useState<SectionState>(DEFAULT_SECTION_STATE);
   const [sectionsTouched, setSectionsTouched] =
     useState<SectionState>(DEFAULT_SECTION_STATE);
+  const [supportDeskMode, setSupportDeskMode] =
+    useState<SupportDeskMode>("choices");
   const [intentQuery, setIntentQuery] = useState("");
   const [intentGuideOpen] = useState(false);
 
@@ -5043,6 +5047,9 @@ export default function MarketplacePage() {
     consumeMarketplaceButtonEvent(event);
     clearMarketplaceHash();
     const willOpen = !sectionsOpen[key];
+    if (key === "support" && willOpen) {
+      setSupportDeskMode("choices");
+    }
     toggleSection(key);
     if (willOpen) {
       scheduleMarketplaceSectionScroll(MARKETPLACE_SECTION_ANCHORS[key]);
@@ -5364,6 +5371,7 @@ export default function MarketplacePage() {
     if (item.id === "support") {
       setSectionsTouched((prev) => touchedMarketplaceSectionState(prev, "support"));
       setSectionsOpen(focusedMarketplaceSectionState("support"));
+      setSupportDeskMode("choices");
       clearStaleMarketplaceHash("marketplace-loans-support");
       scheduleMarketplaceSectionScroll("marketplace-loans-support");
       return;
@@ -5995,6 +6003,7 @@ export default function MarketplacePage() {
     if (!loanDraftId) return;
     setSectionsTouched((prev) => touchedMarketplaceSectionState(prev, "support"));
     setSectionsOpen(focusedMarketplaceSectionState("support"));
+    setSupportDeskMode("loan");
   }, [loanDraftId]);
 
   useEffect(() => {
@@ -6033,6 +6042,7 @@ export default function MarketplacePage() {
 
     setSectionsTouched((prev) => touchedMarketplaceSectionState(prev, "support"));
     setSectionsOpen(focusedMarketplaceSectionState("support"));
+    setSupportDeskMode("loan");
 
     if (activeCommunityId && currentGmfnId) {
       const token = `${activeCommunityId}:${currentGmfnId}:${landingTarget}`;
@@ -7074,6 +7084,9 @@ export default function MarketplacePage() {
     consumeMarketplaceButtonEvent(event);
     setSectionsTouched((prev) => touchedMarketplaceSectionState(prev, key));
     setSectionsOpen(focusedMarketplaceSectionState(key));
+    if (key === "support") {
+      setSupportDeskMode("choices");
+    }
     clearStaleMarketplaceHash(sectionId);
     scheduleMarketplaceSectionScroll(sectionId);
   }
@@ -7634,6 +7647,7 @@ export default function MarketplacePage() {
 
       setSectionsTouched((prev) => touchedMarketplaceSectionState(prev, "support"));
       setSectionsOpen(focusedMarketplaceSectionState("support"));
+      setSupportDeskMode("loan");
 
       showNotice(
         "success",
@@ -7843,6 +7857,9 @@ export default function MarketplacePage() {
       : loanDraftId
       ? "Support is open. Keep the draft, suggestions, selected supporters, and next response together here."
       : "Start one support request first. After it starts, GSN will show the next required response in this same lane.";
+  const supportLoanDeskOpen =
+    sectionsOpen.support &&
+    (supportDeskMode === "loan" || hasMoneyOutSupportTask || Boolean(loanDraftId));
 
   const visibleSelectedSupporters = useMemo(
     () =>
@@ -13299,6 +13316,87 @@ export default function MarketplacePage() {
 
         {sectionsOpen.support ? (
           <div
+            {...marketplaceSurfaceTouchProps("marketplace.support.path-chooser")}
+            style={{
+              marginTop: 12,
+              display: "grid",
+              gridTemplateColumns: isCompact ? "1fr" : "repeat(2, minmax(0, 1fr))",
+              gap: 12,
+            }}
+          >
+            <div
+              style={{
+                ...marketplaceDepartmentShellStyle("support", isCompact),
+                display: "grid",
+                gap: 12,
+                alignContent: "space-between",
+              }}
+            >
+              <div>
+                <div style={sectionLabel()}>Loan Support</div>
+                <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
+                  Use this path for one request that needs backing, supporter
+                  checks, repayment terms, and finance follow-up.
+                </div>
+              </div>
+              <StableButton
+                debugId="marketplace.support.open-loan-support"
+                type="button"
+                onClick={(event) => {
+                  runMarketplaceAction(event, () => {
+                    setSupportDeskMode("loan");
+                    scheduleMarketplaceSectionScroll("marketplace-loans-support", {
+                      force: true,
+                    });
+                  });
+                }}
+                style={{
+                  ...marketplaceActionStyle(
+                    supportLoanDeskOpen ? "primary" : "secondary"
+                  ),
+                  width: "100%",
+                  justifySelf: "stretch",
+                }}
+              >
+                {supportLoanDeskOpen ? "Loan Support Open" : "Open Loan Support"}
+              </StableButton>
+            </div>
+
+            <div
+              style={{
+                ...marketplaceDepartmentShellStyle("rosca", isCompact),
+                display: "grid",
+                gap: 12,
+                alignContent: "space-between",
+              }}
+            >
+              <div>
+                <div style={sectionLabel()}>ROSCA</div>
+                <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
+                  Use this path for a selected-member savings circle. It is not
+                  a loan or support request.
+                </div>
+              </div>
+              <StableButton
+                debugId="marketplace.support.open-rosca"
+                type="button"
+                onClick={(event) =>
+                  openMarketplaceSection(event, "rosca", "marketplace-rosca")
+                }
+                style={{
+                  ...marketplaceActionStyle("secondary"),
+                  width: "100%",
+                  justifySelf: "stretch",
+                }}
+              >
+                Open ROSCA
+              </StableButton>
+            </div>
+          </div>
+        ) : null}
+
+        {supportLoanDeskOpen ? (
+          <div
             {...marketplaceSurfaceTouchProps(
               "marketplace.support.financial-support-module"
             )}
@@ -13306,70 +13404,15 @@ export default function MarketplacePage() {
               ...marketplaceDepartmentShellStyle("support", isCompact),
             }}
           >
-            <div style={sectionLabel()}>Financial support requests</div>
+            <div style={sectionLabel()}>Loan Support requests</div>
             <div style={{ marginTop: 8, ...helperText(), maxWidth: 760 }}>
-              Use this area for one marketplace support request. ROSCA savings
-              circles have their own desk and do not share this form.
+              This is the loan-support path only. ROSCA opens through its own
+              path and does not share this request form.
             </div>
           </div>
         ) : null}
 
-        {sectionsOpen.support ? (
-          <div
-            {...marketplaceSurfaceTouchProps("marketplace.support.rosca-module")}
-            style={{
-              ...marketplaceDepartmentShellStyle("rosca", isCompact),
-              display: "grid",
-              gridTemplateColumns: isCompact
-                ? "1fr"
-                : "minmax(0, 1fr) minmax(142px, 160px)",
-              gap: 12,
-              alignItems: "center",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 12,
-                minWidth: 0,
-              }}
-            >
-              <span
-                aria-hidden="true"
-                style={marketplaceOsIconStyle(
-                  "linear-gradient(180deg, #B8871E 0%, #513A0B 100%)",
-                  true
-                )}
-              >
-                <MarketplaceGlyph name="rosca" size={24} />
-              </span>
-              <div style={{ minWidth: 0 }}>
-                <div style={sectionLabel()}>Separate ROSCA desk</div>
-                <div style={{ marginTop: 6, ...helperText(), fontSize: 13 }}>
-                  Open ROSCA only when you want a selected-member contribution
-                  cycle. It is not a support request.
-                </div>
-              </div>
-            </div>
-            <StableButton
-              debugId="marketplace.support.open-rosca"
-              type="button"
-              onClick={(event) =>
-                openMarketplaceSection(event, "rosca", "marketplace-rosca")
-              }
-              style={{
-                ...marketplaceActionStyle("secondary"),
-                width: "100%",
-                justifySelf: "stretch",
-              }}
-            >
-              Open ROSCA
-            </StableButton>
-          </div>
-        ) : null}
-
-        {sectionsOpen.support ? (
+        {supportLoanDeskOpen ? (
           <div
             style={{
               marginTop: 12,
@@ -13434,7 +13477,7 @@ export default function MarketplacePage() {
           </div>
         ) : null}
 
-        {sectionsOpen.support ? (
+        {supportLoanDeskOpen ? (
           <div
             style={{
               marginTop: 16,

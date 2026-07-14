@@ -53,7 +53,7 @@ assertContains(
 );
 
 assertContains(
-  /function actionText\(name: GsnIconName, label: string\)[\s\S]*?whiteSpace: "nowrap"[\s\S]*?<GsnLegacyIcon name=\{name\} size=\{26\} \/>[\s\S]*?debugId="payout-details\.save"[\s\S]*?stableHeight=\{52\}[\s\S]*?\{actionText\("check", "Save details"\)\}[\s\S]*?debugId="payout-details\.copy-summary"[\s\S]*?stableHeight=\{52\}[\s\S]*?\{actionText\("copy", "Copy summary"\)\}[\s\S]*?debugId="payout-details\.clear-local"[\s\S]*?stableHeight=\{52\}[\s\S]*?\{actionText\("refresh", "Clear local"\)\}[\s\S]*?debugId="payout-details\.open-money-out"[\s\S]*?stableHeight=\{52\}[\s\S]*?\{actionText\("wallet", "Money Out"\)\}[\s\S]*?debugId="payout-details\.open-loans"[\s\S]*?stableHeight=\{52\}[\s\S]*?\{actionText\("briefcase", "Loans & Support"\)\}/,
+  /function actionText\(name: GsnIconName, label: string\)[\s\S]*?whiteSpace: "nowrap"[\s\S]*?<GsnLegacyIcon name=\{name\} size=\{26\} \/>[\s\S]*?debugId="payout-details\.save"[\s\S]*?stableHeight=\{52\}[\s\S]*?\{actionText\("check", "Save details"\)\}[\s\S]*?debugId="payout-details\.copy-summary"[\s\S]*?stableHeight=\{52\}[\s\S]*?\{actionText\("copy", "Copy summary"\)\}[\s\S]*?debugId="payout-details\.clear-local"[\s\S]*?stableHeight=\{52\}[\s\S]*?\{actionText\("refresh", "Clear local"\)\}[\s\S]*?debugId="payout-details\.open-money-out"[\s\S]*?stableHeight=\{52\}[\s\S]*?\{actionText\("wallet", "Money Out"\)\}[\s\S]*?debugId="payout-details\.open-loans"[\s\S]*?stableHeight=\{52\}[\s\S]*?\{actionText\("briefcase", "Loan Support"\)\}/,
   "Payout Details action rows must keep compact 3D icon-led no-wrap labels and stable heights for phone testing."
 );
 
@@ -88,7 +88,7 @@ assertNotContains(
 );
 
 assertNotContains(
-  /Save Payout Details|Clear Local Details|Open Withdrawal Instructions|Return to Loans & Support/,
+  /Save Payout Details|Clear Local Details|Open Withdrawal Instructions|Return to Loan Support/,
   "Payout Details must not restore long action labels that wrap on phone."
 );
 

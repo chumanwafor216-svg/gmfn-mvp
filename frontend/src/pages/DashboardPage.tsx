@@ -2521,8 +2521,8 @@ function buildMostUsedAppFallback(params: {
     },
     support: {
       key: "support",
-      label: "Loans & Support",
-      detail: "Loans, readiness, suggestions, workbench, and support paths.",
+      label: "Loan Support",
+      detail: "Loan support, readiness, suggestions, workbench, and support paths.",
       to: DASHBOARD_TARGETS.LOANS,
       count: 0,
       lastOpenedAt: "",

@@ -757,7 +757,7 @@ export default function GuarantorEarningsPage() {
         today: "Review the active support items and keep the pending work moving.",
         tomorrow:
           "Closed-support records create clearer earnings and stronger visible contribution.",
-        ctaLabel: "Return to Loans & Support",
+        ctaLabel: "Return to Loan Support",
         ctaTo: routes.loans,
       };
     }
@@ -782,7 +782,7 @@ export default function GuarantorEarningsPage() {
       today: "Continue using the guided support flow rather than forcing the earnings question too early.",
       tomorrow:
         "Visible earnings usually come after responsible support behaviour has had time to settle.",
-      ctaLabel: "Return to Loans & Support",
+      ctaLabel: "Return to Loan Support",
       ctaTo: routes.loans,
     };
   }, [routes.community, routes.loans, selectedClanId, totals.pendingCount, totals.total]);
@@ -865,7 +865,7 @@ export default function GuarantorEarningsPage() {
         homeTo={routes.dashboard}
         homeLabel="Dashboard"
         backTo={routes.loans}
-        backLabel="Loans & Support"
+        backLabel="Loan Support"
       />
 
       <ExplainToggle

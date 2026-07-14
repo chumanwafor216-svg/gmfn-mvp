@@ -203,14 +203,14 @@ export default function BorrowerPreflightPage() {
         homeTo={routes.dashboard}
         homeLabel="Dashboard"
         backTo={routes.loans}
-        backLabel="Loans & Support"
+        backLabel="Loan Support"
       />
 
       <ExplainToggle
         label="What this screen does"
         what="This page helps you check your visible support signals before you ask for help."
         why="It does not approve or reject you. It helps you avoid walking into a weak request too early. Finance later records what really happened with money, but this screen helps you judge your position before the request begins."
-        next="Read the ready signals first, strengthen the weak ones, then move into Support Readiness or Loans & Support."
+        next="Read the ready signals first, strengthen the weak ones, then move into Support Readiness or Loan Support."
         tone="blue"
       />
 
@@ -289,7 +289,7 @@ export default function BorrowerPreflightPage() {
         >
           <div style={innerCard()}>
             <div style={{ fontWeight: 1000, color: "#0B1F33" }}>
-              {labelWithIcon("wallet", "Open Loans & Support")}
+              {labelWithIcon("wallet", "Open Loan Support")}
             </div>
             <div style={{ marginTop: 8, ...helperText() }}>
               Return to the main support doors after this quick support check.
@@ -321,7 +321,7 @@ export default function BorrowerPreflightPage() {
             debugId="borrower-preflight.open-loans"
             style={actionLink(false)}
           >
-            {labelWithIcon("wallet", "Open Loans & Support")}
+            {labelWithIcon("wallet", "Open Loan Support")}
           </StableCtaLink>
           <StableCtaLink
             to={routes.readiness}

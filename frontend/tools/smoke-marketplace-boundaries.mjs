@@ -385,17 +385,109 @@ async function run() {
   });
   await waitForDebugSelector(
     page,
-    '[data-gmfn-debug-id="marketplace.support.financial-support-module"]',
+    '[data-gmfn-debug-id="marketplace.support.path-chooser"]',
     "support"
   );
   await page.screenshot({
-    path: join(screenshotDir, "marketplace-support-boundaries-390x844.png"),
+    path: join(screenshotDir, "marketplace-support-chooser-390x844.png"),
     fullPage: false,
   });
 
-  const supportFacts = await page.evaluate(() => {
+  const supportChooserFacts = await page.evaluate(() => {
     const selected = document.querySelector(
       '[data-gmfn-debug-id="marketplace.support.selected-module"]'
+    );
+    const chooser = document.querySelector(
+      '[data-gmfn-debug-id="marketplace.support.path-chooser"]'
+    );
+    const loanButton = document.querySelector(
+      '[data-cta-id="marketplace.support.open-loan-support"]'
+    );
+    const roscaButton = document.querySelector(
+      '[data-cta-id="marketplace.support.open-rosca"]'
+    );
+    const support = document.querySelector(
+      '[data-gmfn-debug-id="marketplace.support.financial-support-module"]'
+    );
+    const rosca = document.querySelector(
+      '[data-gmfn-debug-id="marketplace.support.rosca-module"]'
+    );
+    const overflow = Array.from(document.querySelectorAll("body *"))
+      .filter((element) => {
+        const rect = element.getBoundingClientRect();
+        return (
+          rect.width > 0 &&
+          (rect.left < -2 || rect.right > window.innerWidth + 2)
+        );
+      })
+      .slice(0, 8)
+      .map((element) => {
+        const rect = element.getBoundingClientRect();
+        return {
+          tag: element.tagName,
+          id: element.id,
+          debug: element.getAttribute("data-gmfn-debug-id"),
+          cta: element.getAttribute("data-cta-id"),
+          text: (element.textContent || "").trim().slice(0, 80),
+          rect: {
+            left: Math.round(rect.left),
+            right: Math.round(rect.right),
+            width: Math.round(rect.width),
+          },
+        };
+    });
+    return {
+      selectedExists: Boolean(selected),
+      chooserExists: Boolean(chooser),
+      loanButtonExists: Boolean(loanButton),
+      roscaButtonExists: Boolean(roscaButton),
+      loanFormAlreadyOpen: Boolean(support),
+      embeddedRoscaExists: Boolean(rosca),
+      selectedChooserGap:
+        selected && chooser
+          ? Math.round(
+              chooser.getBoundingClientRect().top -
+                selected.getBoundingClientRect().bottom
+            )
+          : null,
+      chooserHasLoan: chooser?.textContent?.includes("Loan Support") || false,
+      chooserHasRosca: chooser?.textContent?.includes("ROSCA") || false,
+      embeddedRoscaTitle:
+        rosca?.textContent?.includes("Separate ROSCA desk") || false,
+      overflow,
+    };
+  });
+
+  if (
+    !supportChooserFacts.selectedExists ||
+    !supportChooserFacts.chooserExists ||
+    !supportChooserFacts.loanButtonExists ||
+    !supportChooserFacts.roscaButtonExists ||
+    supportChooserFacts.loanFormAlreadyOpen ||
+    supportChooserFacts.embeddedRoscaExists ||
+    !supportChooserFacts.chooserHasLoan ||
+    !supportChooserFacts.chooserHasRosca
+  ) {
+    console.error("Marketplace Support chooser smoke failed:", supportChooserFacts);
+    process.exit(1);
+  }
+
+  await page.locator('[data-cta-id="marketplace.support.open-loan-support"]').click({
+    timeout: 30000,
+  });
+  await waitForDebugSelector(
+    page,
+    '[data-gmfn-debug-id="marketplace.support.financial-support-module"]',
+    "support-loan"
+  );
+  await page.screenshot({
+    path: join(screenshotDir, "marketplace-support-loan-boundaries-390x844.png"),
+    fullPage: false,
+  });
+
+  const supportLoanFacts = await page.evaluate(() => {
+    const chooser = document.querySelector(
+      '[data-gmfn-debug-id="marketplace.support.path-chooser"]'
     );
     const support = document.querySelector(
       '[data-gmfn-debug-id="marketplace.support.financial-support-module"]'
@@ -428,29 +520,27 @@ async function run() {
         };
       });
     return {
-      selectedExists: Boolean(selected),
+      chooserExists: Boolean(chooser),
       supportExists: Boolean(support),
-      roscaExists: Boolean(rosca),
-      selectedSupportGap:
-        selected && support
-          ? Math.round(
-              support.getBoundingClientRect().top -
-                selected.getBoundingClientRect().bottom
-            )
-          : null,
-      supportRoscaGap:
-        support && rosca
-          ? Math.round(
-              rosca.getBoundingClientRect().top -
-                support.getBoundingClientRect().bottom
-            )
-          : null,
+      embeddedRoscaExists: Boolean(rosca),
       supportTitle:
-        support?.textContent?.includes("Financial support requests") || false,
-      roscaTitle: rosca?.textContent?.includes("Separate ROSCA desk") || false,
+        support?.textContent?.includes("Loan Support requests") || false,
+      supportExplainsRoscaSeparate:
+        support?.textContent?.includes("ROSCA opens through its own") || false,
       overflow,
     };
   });
+
+  if (
+    !supportLoanFacts.chooserExists ||
+    !supportLoanFacts.supportExists ||
+    supportLoanFacts.embeddedRoscaExists ||
+    !supportLoanFacts.supportTitle ||
+    !supportLoanFacts.supportExplainsRoscaSeparate
+  ) {
+    console.error("Marketplace Loan Support smoke failed:", supportLoanFacts);
+    process.exit(1);
+  }
 
   console.log(
     JSON.stringify(
@@ -459,12 +549,14 @@ async function run() {
           "frontend/screenshots/marketplace-marketing-tools-390x844.png",
           "frontend/screenshots/marketplace-trade-boundaries-390x844.png",
           "frontend/screenshots/marketplace-members-boundaries-390x844.png",
-          "frontend/screenshots/marketplace-support-boundaries-390x844.png",
+          "frontend/screenshots/marketplace-support-chooser-390x844.png",
+          "frontend/screenshots/marketplace-support-loan-boundaries-390x844.png",
         ],
         marketingFacts,
         tradeFacts,
         memberFacts,
-        supportFacts,
+        supportChooserFacts,
+        supportLoanFacts,
       },
       null,
       2

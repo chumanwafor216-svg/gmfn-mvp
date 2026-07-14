@@ -290,11 +290,11 @@ export default function GuarantorLeaderboardPage() {
   return (
     <div style={pageShell()}>
       <PageTopNav
-        sectionLabel="Loans & Support"
+        sectionLabel="Loan Support"
         title="Supporter Record"
         subtitle="A compact view of who has stood for people, how often support was approved, and where the next action lives."
         homeTo={routes.loans}
-        homeLabel="Loans & Support"
+        homeLabel="Loan Support"
         backTo={routes.inbox}
         backLabel="Incoming Requests"
       />

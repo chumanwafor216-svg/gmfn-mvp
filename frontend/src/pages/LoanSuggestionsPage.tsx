@@ -1919,7 +1919,7 @@ export default function LoanSuggestionsPage() {
             </div>
             <div style={{ marginTop: 8, ...helperText() }}>
               {suggestionsSupportActive
-                ? "Stay inside Loans & Support and move only to the next step that matches this support item."
+                ? "Stay inside Loan Support and move only to the next step that matches this support item."
                 : "Move into the next page you need."}
             </div>
           </div>
@@ -2016,7 +2016,7 @@ export default function LoanSuggestionsPage() {
                 style={routeTileStyle(false)}
               >
                 <div style={routeTileTitleStyle()}>
-                  {loanSuggestionsRouteHeading("community", "Loans & Support")}
+                  {loanSuggestionsRouteHeading("community", "Loan Support")}
                 </div>
                 <div style={routeTileDetailStyle()}>
                   Return to the broader support overview only after the current fit-reading stage is complete.

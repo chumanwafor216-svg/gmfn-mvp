@@ -172,8 +172,20 @@ assertContains(
 
 assertContains(
   "src/pages/MyGMFNAndIPage.tsx",
-  /label: "Marketplace"[\s\S]*?debugId: "my-gmfn\.route\.marketplace"[\s\S]*?label: "Finance"[\s\S]*?detail: "Money records and payment evidence\."[\s\S]*?icon: "financeInstitution"[\s\S]*?to: routes\.finance[\s\S]*?debugId: "my-gmfn\.route\.finance"[\s\S]*?label: "Loans & Support"/,
-  "My GSN and I route list must keep Finance visible between Marketplace and Loans & Support."
+  /label: "Marketplace"[\s\S]*?debugId: "my-gmfn\.route\.marketplace"[\s\S]*?label: "Finance"[\s\S]*?detail: "Money records and payment evidence\."[\s\S]*?icon: "financeInstitution"[\s\S]*?to: routes\.finance[\s\S]*?debugId: "my-gmfn\.route\.finance"[\s\S]*?label: "Loan Support"/,
+  "My GSN and I route list must keep Finance visible between Marketplace and Loan Support."
+);
+
+assertContains(
+  "src/pages/MyGMFNAndIPage.tsx",
+  /tools: "ROSCA Desk -> Contribution Cycle -> Payout Record -> Member Evidence\."[\s\S]*?where: "Marketplace -> ROSCA; Finance -> Community Money\."/,
+  "My GSN and I ROSCA capability must show ROSCA as its own Marketplace path, not under Loan Support."
+);
+
+assertNotContains(
+  "src/pages/MyGMFNAndIPage.tsx",
+  /Loan Support -> ROSCA|Marketplace -> Loan Support -> ROSCA|Loans ->/,
+  "My GSN and I visible capability paths must not put ROSCA under Loan Support or use the old Loans label."
 );
 
 assertContains(

@@ -1103,7 +1103,7 @@ export default function LoanReadinessPage() {
         detail:
           "Existing support responsibility should remain visible before another support load is added.",
         ctaTo: routes.loans,
-        ctaLabel: "Open Loans & Support",
+        ctaLabel: "Open Loan Support",
       };
     }
 
@@ -1229,7 +1229,7 @@ export default function LoanReadinessPage() {
 
       <ExplainToggle
         label="What this screen does"
-        what="This page is one step inside Loans & Support. It tests whether the current community support item is calm enough to move forward right now."
+        what="This page is one step inside Loan Support. It tests whether the current community support item is calm enough to move forward right now."
         why="Finance records the wider money story. Readiness helps you decide whether this one support path should continue, pause, or clear another pressure first."
         next="Support Readiness is decision support only; it does not approve support, choose a supporter, or authorize release of goods, credit, or money."
         tone="blue"
@@ -1927,7 +1927,7 @@ export default function LoanReadinessPage() {
             </div>
             <div style={{ marginTop: 8, ...helperText() }}>
               {readinessSupportActive
-                ? "Stay inside Loans & Support and move only to the next step that matches this support item."
+                ? "Stay inside Loan Support and move only to the next step that matches this support item."
                 : "Move from readiness reading into the next page you need."}
             </div>
           </div>

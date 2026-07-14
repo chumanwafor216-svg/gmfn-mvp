@@ -186,8 +186,8 @@ export function getDashboardAppUsageEntryFromLocation(
   ) {
     return {
       key: "support",
-      label: "Loans & Support",
-      detail: "Loans, readiness, suggestions, workbench, and support paths.",
+      label: "Loan Support",
+      detail: "Loan support, readiness, suggestions, workbench, and support paths.",
       to: "/app/loans",
     };
   }

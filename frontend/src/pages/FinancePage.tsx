@@ -2812,9 +2812,9 @@ export default function FinancePage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Loans and support effect</div>
+            <div style={sectionLabel()}>Loan Support effect</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Finance shows the money effect. Loans & Support is where requests and decisions happen.
+              Finance shows the money effect. Loan Support is where requests and decisions happen.
             </div>
           </div>
 
@@ -3056,7 +3056,7 @@ export default function FinancePage() {
                 stableHeight={isCompact ? 48 : 52}
                 style={financeDarkButtonStyle()}
               >
-                Loans & Support
+                Loan Support
               </StableCtaLink>
             </div>
           </div>

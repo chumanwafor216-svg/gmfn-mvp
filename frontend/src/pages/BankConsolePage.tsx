@@ -192,7 +192,7 @@ function nextStepActionText(step: NextStepState): React.ReactNode {
     return actionText("community", "Community Home");
   }
 
-  return actionText("briefcase", "Loans & Support");
+  return actionText("briefcase", "Loan Support");
 }
 
 function inputStyle(): React.CSSProperties {
@@ -839,7 +839,7 @@ export default function BankConsolePage() {
       today: "Check recent events before adding anything manually.",
       tomorrow:
         "Fewer manual entries keeps the money record cleaner.",
-      ctaLabel: "Return to Loans & Support",
+      ctaLabel: "Return to Loan Support",
       ctaTo: routes.loans,
     };
   }, [routes.bankConsole, routes.community, routes.loans, selectedClanId, unmatched.length]);
@@ -1038,7 +1038,7 @@ export default function BankConsolePage() {
         backLabel="Command Center"
         nextLinks={[
           { label: "Community Home", to: routes.community },
-          { label: "Loans & Support", to: routes.loans },
+          { label: "Loan Support", to: routes.loans },
           { label: "Payment Rails", to: routes.paymentRails },
         ]}
         utilityLinks={[

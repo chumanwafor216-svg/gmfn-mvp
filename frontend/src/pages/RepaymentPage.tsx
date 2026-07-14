@@ -877,7 +877,7 @@ export default function RepaymentPage() {
           homeTo={routes.dashboard}
           homeLabel="Dashboard"
           backTo={routes.loans}
-          backLabel="Loans & Support"
+          backLabel="Loan Support"
         />
         <section style={pageCard("#FFFFFF")}>
           <div style={{ color: "rgba(230,238,248,0.76)", lineHeight: 1.45 }}>Loading repayment page...</div>
@@ -896,7 +896,7 @@ export default function RepaymentPage() {
           homeTo={routes.dashboard}
           homeLabel="Dashboard"
           backTo={routes.loans}
-          backLabel="Loans & Support"
+          backLabel="Loan Support"
         />
         <section style={pageCard("#FEF2F2")}>
           <div style={{ color: "#991B1B", fontWeight: 900 }}>Support repayment could not be opened.</div>
@@ -1589,7 +1589,7 @@ export default function RepaymentPage() {
                 fullWidth
                 debugId="repayment.route.loans"
               >
-                {actionText("community", "Loans & Support")}
+                {actionText("community", "Loan Support")}
               </StableCtaLink>
             </div>
           )

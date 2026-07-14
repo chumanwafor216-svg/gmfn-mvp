@@ -290,13 +290,13 @@ export default function LoanDecisionPage() {
         homeTo={routes.dashboard}
         homeLabel="Dashboard"
         backTo={routes.loans}
-        backLabel="Loans & Support"
+        backLabel="Loan Support"
       />
 
       <ExplainToggle
         label="What this screen does"
         what="This page gives you a calmer reading view for live support decisions before you act."
-        why="Loans and Support is still the main working door, and Finance still keeps the wider money file across communities. This screen helps you read one support position without mixing it with every other money record."
+        why="Loan Support is still the main working door, and Finance still keeps the wider money file across communities. This screen helps you read one support position without mixing it with every other money record."
         next="Read the current support item first, then move into Support Summary or the Workbench only when you are ready to act."
         tone="blue"
       />
@@ -479,7 +479,7 @@ export default function LoanDecisionPage() {
             debugId="loan-decision.route.loans"
             style={actionLink(false)}
           >
-            {loanDecisionActionText("community", "Loans", 20)}
+            {loanDecisionActionText("community", "Loan Support", 20)}
           </StableCtaLink>
           <StableCtaLink
             to={routes.finance}

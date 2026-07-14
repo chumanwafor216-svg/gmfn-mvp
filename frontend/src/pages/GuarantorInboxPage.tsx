@@ -757,7 +757,7 @@ export default function GuarantorInboxPage() {
         title: "Recorded support responses are visible.",
         detail:
           "The next move is usually to continue the broader support flow rather than staying only in the queue.",
-        ctaLabel: "Return to Loans & Support",
+        ctaLabel: "Return to Loan Support",
         ctaTo: routes.loans,
       };
     }
@@ -766,7 +766,7 @@ export default function GuarantorInboxPage() {
       title: "No pending support request is currently shown.",
       detail:
         "That means nothing is directly waiting on your support response inside this current queue view.",
-      ctaLabel: "Open Loans & Support",
+      ctaLabel: "Open Loan Support",
       ctaTo: routes.loans,
     };
   }, [counts.approved, counts.pending, routes.community, routes.loans, routes.workbench, selectedClanId]);
@@ -891,7 +891,7 @@ export default function GuarantorInboxPage() {
         homeTo={routes.dashboard}
         homeLabel="Dashboard"
         backTo={routes.loans}
-        backLabel="Loans & Support"
+        backLabel="Loan Support"
       />
 
       <ExplainToggle
@@ -1646,7 +1646,7 @@ export default function GuarantorInboxPage() {
                   lineHeight: 1.3,
                 }}
               >
-                {guarantorInboxRouteHeading("community", "Loans & Support")}
+                {guarantorInboxRouteHeading("community", "Loan Support")}
               </div>
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Return to the broader support overview.

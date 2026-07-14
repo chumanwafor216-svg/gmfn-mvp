@@ -102,7 +102,7 @@ assertNotContains(
 assertContains(
   "src/pages/FinancePage.tsx",
   /to=\{routes\.loans\}[\s\S]*?debugId="finance\.open-loans"/,
-  "Finance Loans & Support action must stay routed to the Loans surface."
+  "Finance Loan Support action must stay routed to the Loans surface."
 );
 
 assertContains(
@@ -161,7 +161,7 @@ assertContains(
 
 assertContains(
   "src/pages/PaymentInstructionsPage.tsx",
-  /function moneyInIdentityBlocker[\s\S]*?Your member GSN ID is not visible here yet\. Sign in again or finish member activation, then return to Money In\.[\s\S]*?identityBlockerText[\s\S]*?moneyInIdentityReady[\s\S]*?disabled=\{generatingInstruction \|\| !moneyInIdentityReady\}/,
+  /function moneyInIdentityBlocker[\s\S]*?Your member GSN ID is not visible here yet\. Sign in again or finish member activation, then return to Money In\.[\s\S]*?identityBlockerText[\s\S]*?moneyInIdentityReady[\s\S]*?disabled=\{[\s\S]*?generatingInstruction[\s\S]*?!moneyInIdentityReady[\s\S]*?paymentsContributionsFeatureOff[\s\S]*?\}/,
   "Money In must clearly block reference generation until the signed-in member has a visible member GSN ID."
 );
 

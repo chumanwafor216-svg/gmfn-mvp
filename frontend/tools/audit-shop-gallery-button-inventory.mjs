@@ -244,8 +244,8 @@ if (memberSurfaceLinkCount !== expectedSignedInShortcutCount) {
 }
 
 assertContains(
-  /const memberSurfaceLinks = useMemo\([\s\S]*?label: "Dashboard"[\s\S]*?debugId: "shop-gallery\.member-nav\.dashboard"[\s\S]*?label: "Community Home"[\s\S]*?debugId: "shop-gallery\.member-nav\.community"[\s\S]*?label: "Marketplace"[\s\S]*?debugId: "shop-gallery\.member-nav\.marketplace"[\s\S]*?label: "Public Shop"[\s\S]*?debugId: "shop-gallery\.member-nav\.public-shop"[\s\S]*?label: "Finance"[\s\S]*?debugId: "shop-gallery\.member-nav\.finance"[\s\S]*?label: "Loans"[\s\S]*?debugId: "shop-gallery\.member-nav\.loans"[\s\S]*?label: "Trust"[\s\S]*?debugId: "shop-gallery\.member-nav\.trust"/,
-  "Public Shop owner shortcut strip must keep Dashboard, Community Home, Marketplace, Public Shop, Finance, Loans, and Trust in the audited order."
+  /const memberSurfaceLinks = useMemo\([\s\S]*?label: "Dashboard"[\s\S]*?debugId: "shop-gallery\.member-nav\.dashboard"[\s\S]*?label: "Community Home"[\s\S]*?debugId: "shop-gallery\.member-nav\.community"[\s\S]*?label: "Marketplace"[\s\S]*?debugId: "shop-gallery\.member-nav\.marketplace"[\s\S]*?label: "Public Shop"[\s\S]*?debugId: "shop-gallery\.member-nav\.public-shop"[\s\S]*?label: "Finance"[\s\S]*?debugId: "shop-gallery\.member-nav\.finance"[\s\S]*?label: "Loan Support"[\s\S]*?debugId: "shop-gallery\.member-nav\.loans"[\s\S]*?label: "Trust"[\s\S]*?debugId: "shop-gallery\.member-nav\.trust"/,
+  "Public Shop owner shortcut strip must keep Dashboard, Community Home, Marketplace, Public Shop, Finance, Loan Support, and Trust in the audited order."
 );
 
 assertContains(

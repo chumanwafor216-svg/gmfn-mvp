@@ -798,7 +798,7 @@ export default function LoansPage() {
       >
         <PageTopNav
           sectionLabel="Focused Task"
-          title="Loans & Support"
+          title="Loan Support"
           subtitle="Loading the support page..."
           homeTo={routes.dashboard}
           homeLabel="Dashboard"
@@ -807,7 +807,7 @@ export default function LoansPage() {
 
         <section style={pageCard("#FFFFFF")}>
           <div style={{ ...helperText(), lineHeight: 1.8 }}>
-            Loading loans and support...
+            Loading loan support...
           </div>
         </section>
       </div>
@@ -826,7 +826,7 @@ export default function LoansPage() {
     >
       <PageTopNav
         sectionLabel="Focused Task"
-        title="Loans & Support"
+        title="Loan Support"
         homeTo={routes.dashboard}
         homeLabel="Dashboard"
         backTo={routes.dashboard}
@@ -855,7 +855,7 @@ export default function LoansPage() {
                 lineHeight: 1.1,
               }}
             >
-              {hasWithdrawalSupportHandoff ? "Withdrawal support" : "Loans & Support"}
+              {hasWithdrawalSupportHandoff ? "Withdrawal support" : "Loan Support"}
             </div>
 
             <div
@@ -1476,7 +1476,7 @@ export default function LoansPage() {
       ) : null}
 
       <GsnSupportContact
-        context="Loans and Support"
+        context="Loan Support"
         subject="GSN support request help"
         style={{ marginTop: 16 }}
       />

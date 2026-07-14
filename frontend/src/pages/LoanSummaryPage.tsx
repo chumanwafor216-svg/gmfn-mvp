@@ -1369,7 +1369,7 @@ export default function LoanSummaryPage() {
           homeTo={routes.dashboard}
           homeLabel="Dashboard"
           backTo={routes.loans}
-          backLabel="Loans & Support"
+          backLabel="Loan Support"
         />
 
         <section style={pageCard("#FFFFFF")}>
@@ -1399,7 +1399,7 @@ export default function LoanSummaryPage() {
           homeTo={routes.dashboard}
           homeLabel="Dashboard"
           backTo={routes.loans}
-          backLabel="Loans & Support"
+          backLabel="Loan Support"
         />
 
         {feedback ? <div style={feedbackCard(feedback.tone)}>{feedback.text}</div> : null}
@@ -1430,7 +1430,7 @@ export default function LoanSummaryPage() {
         homeTo={routes.dashboard}
         homeLabel="Dashboard"
         backTo={routes.loans}
-        backLabel="Loans & Support"
+        backLabel="Loan Support"
       />
 
       <ExplainToggle
@@ -2654,7 +2654,7 @@ export default function LoanSummaryPage() {
                 fullWidth
                 style={routeTileStyle(false)}
               >
-                {routeHeading("community", "Loans & Support")}
+                {routeHeading("community", "Loan Support")}
                 <div style={routeTileDetailStyle()}>
                   Return to the broader support overview.
                 </div>

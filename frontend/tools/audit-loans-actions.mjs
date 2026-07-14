@@ -99,7 +99,7 @@ assertContains(
 assertContains(
   "src/layout/AppLayout.tsx",
   /function buildLoansItems\(\): NavLinkItem\[\] \{[\s\S]*?return \[makeLoansItem\(\)\];[\s\S]*?\}[\s\S]*?Open the guided support workspace first\. Deeper tools stay inside the support flow\./,
-  "Global Tools menu must keep Loans & Support as one guided entry instead of exposing readiness, suggestions, workbench, or earnings as first-level choices."
+  "Global Tools menu must keep Loan Support as one guided entry instead of exposing readiness, suggestions, workbench, or earnings as first-level choices."
 );
 
 assertContains(
@@ -159,24 +159,24 @@ assertContains(
 assertContains(
   "src/pages/LoansPage.tsx",
   /import \{[\s\S]*GsnLegacyIcon[\s\S]*GsnIconName[\s\S]*\} from "\.\.\/components\/GsnLegacyIcon";[\s\S]*function routeIcon\([\s\S]*<GsnLegacyIcon[\s\S]*debugId="loans\.route\.money-out"/,
-  "Loans & Support must use 3D GSN icons for visible lane/action icons, including Money Out."
+  "Loan Support must use 3D GSN icons for visible lane/action icons, including Money Out."
 );
 
 assertContains(
   "src/pages/LoansPage.tsx",
   /routeIconCircle\(primary = false[\s\S]*?linear-gradient\(180deg, rgba\(255,255,255,0\.98\)[\s\S]*?<GsnLegacyIcon name="financeInstitution" size=\{64\}[\s\S]*?iconLabel\("repaymentSchedule", "Active support"\)[\s\S]*?iconLabel\("financeInstitution", "Pool"\)[\s\S]*?routeIcon\("evidence"\)/,
-  "Loans & Support must use light icon tiles plus repayment, certificate/evidence, and finance-institution 3D meanings for the visible support summary."
+  "Loan Support must use light icon tiles plus repayment, certificate/evidence, and finance-institution 3D meanings for the visible support summary."
 );
 
 assertAsciiOnly(
   "src/pages/LoansPage.tsx",
-  "Loans & Support source must not reintroduce emoji/mojibake display glyphs for core icons."
+  "Loan Support source must not reintroduce emoji/mojibake display glyphs for core icons."
 );
 
 assertContains(
   "src/pages/WithdrawalInstructionsPage.tsx",
   /GsnLegacyIcon[\s\S]*UK sort code[\s\S]*value=\{destination\.sortCode\}[\s\S]*debugId="money-out\.save-destination"[\s\S]*destinationNotice/,
-  "Loans & Support Money Out must keep 3D GSN icons, expose UK sort code beside the payout save action, and show the save response locally."
+  "Loan Support Money Out must keep 3D GSN icons, expose UK sort code beside the payout save action, and show the save response locally."
 );
 
 assertAsciiOnly(

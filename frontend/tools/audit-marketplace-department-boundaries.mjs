@@ -78,12 +78,7 @@ const expectedModules = [
   {
     id: "marketplace.support.financial-support-module",
     tone: "support",
-    label: "Financial support requests",
-  },
-  {
-    id: "marketplace.support.rosca-module",
-    tone: "rosca",
-    label: "Separate ROSCA desk",
+    label: "Loan Support requests",
   },
 ];
 
@@ -97,6 +92,21 @@ for (const module of expectedModules) {
     `${module.label} must live inside the shared ${module.tone} department shell.`
   );
 }
+
+assertContains(
+  /marketplace\.support\.path-chooser[\s\S]*?marketplaceDepartmentShellStyle\("support", isCompact\)[\s\S]*?Loan Support[\s\S]*?debugId="marketplace\.support\.open-loan-support"[\s\S]*?Open Loan Support/,
+  "Support must open first as a path chooser with Loan Support as its own focused support department."
+);
+
+assertContains(
+  /marketplace\.support\.path-chooser[\s\S]*?marketplaceDepartmentShellStyle\("rosca", isCompact\)[\s\S]*?ROSCA[\s\S]*?debugId="marketplace\.support\.open-rosca"[\s\S]*?Open ROSCA/,
+  "Support must offer ROSCA as a separate ROSCA department path instead of embedding it in loan support."
+);
+
+assertNotContains(
+  /marketplace\.support\.rosca-module|Separate ROSCA desk/,
+  "ROSCA must not be sandwiched inside the Support page as an embedded support module."
+);
 
 const supportSelectedModule = sectionBetween(
   /marketplace\.support\.selected-module/,

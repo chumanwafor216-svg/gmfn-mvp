@@ -121,7 +121,7 @@ CAPABILITY_EXPLANATIONS = {
         "support, or working capital before formal finance will listen. Risk: "
         "unclear amount, purpose, duration, and backing turn support into blind "
         "lending or pressure. GSN changes the decision by making the request "
-        "reviewable. Tools: loans and support, support draft, fit check, "
+        "reviewable. Tools: loan support, support draft, fit check, "
         "supporter list, and guarantor request. Evidence left: amount, purpose, "
         "duration, repayment plan, fit signal, supporters, and request record."
     ),

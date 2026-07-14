@@ -2526,7 +2526,7 @@ export default function ShopGalleryPage() {
         debugId: "shop-gallery.member-nav.finance",
       },
       {
-        label: "Loans",
+        label: "Loan Support",
         to: routeWithCommunity(APP_ROUTES.LOANS, ownerSurfaceCommunityId),
         debugId: "shop-gallery.member-nav.loans",
       },

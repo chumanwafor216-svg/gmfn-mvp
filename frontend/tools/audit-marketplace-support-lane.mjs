@@ -116,6 +116,11 @@ assertContains(
   "Approved support copy must explain the finance/admin withdrawal-instruction step before money moves."
 );
 
+assertContains(
+  /const supportLoanDeskOpen =[\s\S]*?supportDeskMode === "loan"[\s\S]*?hasMoneyOutSupportTask[\s\S]*?Boolean\(loanDraftId\)/,
+  "Support must keep a separate loan-desk open state so the first Support screen can remain a path chooser."
+);
+
 const supportSection = sectionBetween(
   /id="marketplace-loans-support"/,
   /<\/MarketplaceShell>/
@@ -129,6 +134,7 @@ if (!supportSection.text) {
   ].map((match) => match[1]);
   const expectedStaticActionIds = [
     "marketplace.support.toggle",
+    "marketplace.support.open-loan-support",
     "marketplace.support.open-rosca",
     "marketplace.support.start-request",
     "marketplace.support.refresh-fit",
@@ -159,9 +165,10 @@ if (!supportSection.text) {
     /ask the selected marketplace for support/,
     /Selected marketplace[\s\S]*?ID: \{activeCommunityId \|\| "not ready"\}[\s\S]*?GSN ID: \{currentGmfnId \|\| "not ready"\}/,
     /From Money Out/,
-    /Financial support requests[\s\S]*?Use this area for one marketplace support request[\s\S]*?ROSCA savings[\s\S]*?circles have their own desk and do not share this form/,
-    /Separate ROSCA desk[\s\S]*?Open ROSCA only when you want a selected-member contribution[\s\S]*?It is not a support request[\s\S]*?debugId="marketplace\.support\.open-rosca"[\s\S]*?openMarketplaceSection\(event, "rosca", "marketplace-rosca"\)[\s\S]*?Open ROSCA/,
-    /gridTemplateColumns: isCompact[\s\S]*?\? "1fr"[\s\S]*?: "minmax\(0, 1fr\) minmax\(142px, 160px\)"[\s\S]*?Separate ROSCA desk/,
+    /marketplace\.support\.path-chooser/,
+    /Loan Support[\s\S]*?Use this path for one request that needs backing[\s\S]*?debugId="marketplace\.support\.open-loan-support"[\s\S]*?setSupportDeskMode\("loan"\)[\s\S]*?Open Loan Support/,
+    /ROSCA[\s\S]*?Use this path for a selected-member savings circle[\s\S]*?It is not[\s\S]*?a loan or support request[\s\S]*?debugId="marketplace\.support\.open-rosca"[\s\S]*?openMarketplaceSection\(event, "rosca", "marketplace-rosca"\)[\s\S]*?Open ROSCA/,
+    /Loan Support requests[\s\S]*?This is the loan-support path only[\s\S]*?ROSCA opens through its own[\s\S]*?path and does not share this request form/,
     /This withdrawal needs support here[\s\S]*?Requested:[\s\S]*?Support needed:/,
     /Step \{step\}/,
     /Start request[\s\S]*?Amount, duration, repayment, purpose/,
@@ -201,11 +208,19 @@ if (!supportSection.text) {
     }
   });
 
+  if (/marketplace\.support\.rosca-module|Separate ROSCA desk/.test(supportSection.text)) {
+    addFinding(
+      supportSection.start,
+      "Support must not sandwich the ROSCA desk inside the loan-support surface.",
+      "ROSCA should be a sibling path opened through the chooser."
+    );
+  }
+
   if (/(Owner Shop|Trade Evidence|Trust Passport|TrustSlip|CCI|Money Pool)/.test(supportSection.text)) {
     addFinding(
       supportSection.start,
       "Support detail section must not expose other major lane responsibilities.",
-      "Support may link to Finance, Loans, and the grouped ROSCA desk, but must not expose shop, trade, trust, or Money Pool lane content."
+      "Support may link to Finance, Loan Support, and the separate ROSCA path, but must not expose shop, trade, trust, or Money Pool lane content."
     );
   }
 

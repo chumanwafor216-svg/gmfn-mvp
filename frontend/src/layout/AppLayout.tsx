@@ -213,7 +213,7 @@ function makeFinanceItem(): NavLinkItem {
   };
 }
 
-function makeLoansItem(label = "Loans & Support"): NavLinkItem {
+function makeLoansItem(label = "Loan Support"): NavLinkItem {
   return {
     label,
     to: "/app/loans",
@@ -493,7 +493,7 @@ function getTaskModeMeta(pathname: string): TaskModeMeta | null {
     pathname.startsWith("/app/payment/loans/")
   ) {
     return {
-      title: "Loans & Support",
+      title: "Loan Support",
       hint:
         "Finish this money or support step first, or leave it intentionally before moving on.",
       actions: [
@@ -843,7 +843,7 @@ function getPageActions(
       makeDashboardItem(),
       makeMarketplaceItem(),
       makeCommunityItem(),
-      { label: "Loans & Support", to: "/app/loans" },
+      { label: "Loan Support", to: "/app/loans" },
       { label: "Demand Box", to: "/app/demand-box" },
     ]);
   }
@@ -901,7 +901,7 @@ function getPageActions(
     makeCommunityItem(),
     makeMarketplaceItem(),
     { label: "Notifications", to: "/app/notifications" },
-    { label: "Loans & Support", to: "/app/loans" },
+    { label: "Loan Support", to: "/app/loans" },
   ]);
 }
 
@@ -1788,8 +1788,8 @@ export default function AppLayout({ initialAuthContext }: AppLayoutProps) {
         label: "Main movement",
         hint:
           canUseAdminTools
-            ? "The main pages stay simple: Dashboard, Community Home, Marketplace, Public Shop, Shop Control, Finance, Loans, Trust, and Admin."
-            : "The main pages stay simple: Dashboard, Community Home, Marketplace, Public Shop, Shop Control, Finance, Loans, and Trust.",
+            ? "The main pages stay simple: Dashboard, Community Home, Marketplace, Public Shop, Shop Control, Finance, Loan Support, Trust, and Admin."
+            : "The main pages stay simple: Dashboard, Community Home, Marketplace, Public Shop, Shop Control, Finance, Loan Support, and Trust.",
         items: primaryItems,
       },
       {
@@ -1822,7 +1822,7 @@ export default function AppLayout({ initialAuthContext }: AppLayoutProps) {
       },
       {
         key: "support",
-        label: "Loans & Support",
+        label: "Loan Support",
         hint:
           "Open the guided support workspace first. Deeper tools stay inside the support flow.",
         items: loansItems,

@@ -770,7 +770,7 @@ export default function MarketplaceWorkspacePage() {
       [
         ["Money In", "moneyIn"],
         ["Money Out", "moneyOut"],
-        ["Loans", "loans"],
+        ["Loan Support", "loans"],
         ["Readiness", "loanReadiness"],
         ["Workbench", "loanWorkbench"],
         ["Earnings", "guarantorEarnings"],

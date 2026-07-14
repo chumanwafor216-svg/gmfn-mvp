@@ -1222,7 +1222,7 @@ export default function PayoutDetailsPage() {
             stableHeight={52}
             style={payoutSecondaryButtonStyle(false)}
           >
-            {actionText("briefcase", "Loans & Support")}
+            {actionText("briefcase", "Loan Support")}
           </StableCtaLink>
         </div>
       </section>

@@ -19,11 +19,11 @@ const actionTargetRoutesSource = readFileSync(
   "utf8"
 );
 const findings = [];
-const expectedStableActionCount = 81;
+const expectedStableActionCount = 82;
 const expectedNativeFieldCount = 37;
 const expectedSourceBreakdown = {
   front: 10,
-  body: 71,
+  body: 72,
 };
 const expectedVisibleIntentActionCount = 5;
 const expectedMobileShellBreakdown = {
@@ -703,6 +703,7 @@ if (!supportSection) {
 } else {
   const requiredSupportIds = [
     "marketplace.support.toggle",
+    "marketplace.support.open-loan-support",
     "marketplace.support.start-request",
     "marketplace.support.refresh-fit",
     "marketplace.support.cancel-draft",
@@ -886,6 +887,7 @@ const expectedOrder = [
   exactDebugId("marketplace.demand.toggle"),
   exactDebugId("marketplace.demand.open"),
   exactDebugId("marketplace.support.toggle"),
+  exactDebugId("marketplace.support.open-loan-support"),
   exactDebugId("marketplace.support.open-rosca"),
   exactDebugId("marketplace.support.start-request"),
   exactDebugId("marketplace.support.refresh-fit"),

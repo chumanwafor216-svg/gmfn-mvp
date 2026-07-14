@@ -410,7 +410,7 @@ function normalizeNotificationCtaLabel(
   }
 
   if (targetPath === NOTIFICATION_TARGETS.LOANS && (genericLabel || /finance/i.test(direct))) {
-    return "Open Loans & Support";
+    return "Open Loan Support";
   }
 
   if (targetPath === NOTIFICATION_TARGETS.FINANCE && (genericLabel || /finance/i.test(direct))) {

@@ -4742,7 +4742,7 @@ export default function CommunityHomePage() {
                     {
                       icon: "repaymentSchedule",
                       id: "support",
-                      title: "Loans and support",
+                      title: "Loan Support",
                       detail: "Open borrowing, support, and guarantor work for the selected community.",
                       onClick: (event: React.SyntheticEvent<HTMLElement>) =>
                         openCommunityNextAction(event, "support"),

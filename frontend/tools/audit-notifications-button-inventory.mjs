@@ -277,8 +277,8 @@ assertContains(
 );
 
 assertLayoutContains(
-  /if \(pathname\.startsWith\("\/app\/notifications"\)\) \{[\s\S]*?makeDashboardItem\(\)[\s\S]*?makeMarketplaceItem\(\)[\s\S]*?makeCommunityItem\(\)[\s\S]*?\{ label: "Loans & Support", to: "\/app\/loans" \}[\s\S]*?\{ label: "Demand Box", to: "\/app\/demand-box" \}/,
-  "Notifications page tools must keep Dashboard, Marketplace, Community, Loans & Support, and Demand Box."
+  /if \(pathname\.startsWith\("\/app\/notifications"\)\) \{[\s\S]*?makeDashboardItem\(\)[\s\S]*?makeMarketplaceItem\(\)[\s\S]*?makeCommunityItem\(\)[\s\S]*?\{ label: "Loan Support", to: "\/app\/loans" \}[\s\S]*?\{ label: "Demand Box", to: "\/app\/demand-box" \}/,
+  "Notifications page tools must keep Dashboard, Marketplace, Community, Loan Support, and Demand Box."
 );
 
 assertLayoutContains(

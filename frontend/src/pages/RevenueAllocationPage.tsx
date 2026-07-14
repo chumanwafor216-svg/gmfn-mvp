@@ -1443,7 +1443,7 @@ export default function RevenueAllocationPage() {
               debugId="revenue-allocation.route.loans"
               style={routeTile(false)}
             >
-              {routeHeading("community", "Loans & Support")}
+              {routeHeading("community", "Loan Support")}
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Return to the broader support overview.
               </div>

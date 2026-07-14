@@ -1208,7 +1208,7 @@ export default function LoanWorkbenchPage() {
       detail:
         "No active support item is visible for this workbench right now.",
       ctaTo: routes.loans,
-      ctaLabel: "Loans & Support",
+      ctaLabel: "Loan Support",
     };
   }, [
     selectedClanId,
@@ -2339,7 +2339,7 @@ export default function LoanWorkbenchPage() {
             </div>
             <div style={{ marginTop: 8, ...helperText() }}>
               {workbenchSupportActive
-                ? "Stay inside Loans & Support and move only to the next step that matches this current support item."
+                ? "Stay inside Loan Support and move only to the next step that matches this current support item."
                 : "Move into the next page you need."}
             </div>
           </div>
@@ -2483,7 +2483,7 @@ export default function LoanWorkbenchPage() {
                 fullWidth
                 style={routeTileStyle(false)}
               >
-                {routeHeading("community", "Loans & Support")}
+                {routeHeading("community", "Loan Support")}
                 <div style={routeTileDetailStyle()}>
                   Return to support overview.
                 </div>

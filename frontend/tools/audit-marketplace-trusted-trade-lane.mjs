@@ -298,12 +298,12 @@ const supportSection = sectionBetween(
 if (supportSection.text) {
   [
     /marketplace\.support\.selected-module/,
+    /marketplace\.support\.path-chooser/,
     /marketplace\.support\.financial-support-module/,
     /marketplaceDepartmentShellStyle\("support", isCompact\)/,
-    /marketplace\.support\.rosca-module/,
     /marketplaceDepartmentShellStyle\("rosca", isCompact\)/,
-    /Financial support requests/,
-    /Separate ROSCA desk/,
+    /Loan Support requests/,
+    /Open ROSCA/,
   ].forEach((pattern) => {
     if (!pattern.test(supportSection.text)) {
       addFinding(
