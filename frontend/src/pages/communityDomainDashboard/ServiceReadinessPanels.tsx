@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useState } from "react";
+import { StableButton } from "../../components/StableButton";
 import { humanStatus } from "./statusLanguage";
 
 type ServiceReadinessPanelsProps = {
@@ -30,6 +31,38 @@ type ServiceReadinessRow = {
   status: string;
   detail: string;
 };
+
+type ServiceFocusKey = "services" | "settings" | "economy" | "presence";
+
+const SERVICE_FOCUS_OPTIONS: Array<{
+  key: ServiceFocusKey;
+  label: string;
+  note: string;
+}> = [
+  {
+    key: "services",
+    label: "Services",
+    note: "Shops, Spotlight, Vault, Verification, Trust Centre, Analytics, Billing, Settings.",
+  },
+  {
+    key: "settings",
+    label: "Settings",
+    note: "Included and optional service choices from the domain template.",
+  },
+  {
+    key: "economy",
+    label: "Economy",
+    note: "Marketplace, shop, listing, finance, and member activity readiness.",
+  },
+  {
+    key: "presence",
+    label: "Presence",
+    note: "Public profile, URL, social bridge, and outward visibility checks.",
+  },
+];
+
+const SERVICE_SCOPE_NOTE =
+  "Scope: readiness guidance only; no service activation, settings save, billing activation, permission grant, shop creation, Spotlight publish, vault link, public page, URL finalization, money movement, TrustSlip, Trust Passport, or private record exposure.";
 
 const MODULE_LABELS: Record<string, string> = {
   governance: "Governance",
@@ -338,14 +371,69 @@ export default function CommunityDomainServiceReadinessPanels({
     networkPresence,
     visibleNetworkPresenceLanes
   );
+  const [activeServiceFocus, setActiveServiceFocus] =
+    useState<ServiceFocusKey>("services");
+  const selectedServiceFocus =
+    SERVICE_FOCUS_OPTIONS.find((option) => option.key === activeServiceFocus) ||
+    SERVICE_FOCUS_OPTIONS[0];
 
   return (
     <>
+      <div
+        style={{
+          ...softCard(),
+          display: "grid",
+          gap: 10,
+        }}
+      >
+        <div style={sectionLabel()}>Readiness packet</div>
+        <div style={helperText()}>
+          Current view: <strong>{selectedServiceFocus.label}</strong>.
+        </div>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 132px), 1fr))",
+            gap: 8,
+          }}
+        >
+          {SERVICE_FOCUS_OPTIONS.map((option) => {
+            const selected = option.key === activeServiceFocus;
+            return (
+              <StableButton
+                key={option.key}
+                type="button"
+                kind={selected ? "primary" : "secondary"}
+                stableHeight={48}
+                fullWidth
+                aria-pressed={selected}
+                title={option.note}
+                debugId={`community-domain-service-readiness.focus.${option.key}`}
+                onClick={() => setActiveServiceFocus(option.key)}
+                style={{
+                  justifyContent: "center",
+                  fontSize: 13,
+                  textTransform: "none",
+                }}
+              >
+                {option.label}
+              </StableButton>
+            );
+          })}
+        </div>
+        <div style={{ ...helperText(), fontSize: 13 }}>
+          {selectedServiceFocus.note}
+        </div>
+        <div style={{ ...helperText(), fontSize: 13 }}>
+          {SERVICE_SCOPE_NOTE}
+        </div>
+      </div>
+
+      {activeServiceFocus === "services" ? (
       <div style={softCard()}>
         <div style={sectionLabel()}>Service readiness</div>
         <div style={{ ...helperText(), marginTop: 7 }}>
-          Shops, Spotlight, Vault, Verification, Trust Centre, Analytics, Billing,
-          and Settings are shown as scoped planning rows for this Community Domain.
+          Service rows for this Community Domain.
         </div>
         {moduleScopeReadiness?.primary_next_action?.label ? (
           <div style={{ ...helperText(), marginTop: 7 }}>
@@ -358,13 +446,10 @@ export default function CommunityDomainServiceReadinessPanels({
             statusRow(row.key, row.label, row.detail, row.status)
           )}
         </div>
-        <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          This view only shows service readiness. It does not turn on services,
-          activate billing, grant permissions, publish Spotlight, create shops,
-          open vault links, or show private member records.
-        </div>
       </div>
+      ) : null}
 
+      {activeServiceFocus === "settings" ? (
       <div style={softCard()}>
         <div style={sectionLabel()}>Service settings view</div>
         <div style={{ ...helperText(), marginTop: 7 }}>
@@ -396,16 +481,12 @@ export default function CommunityDomainServiceReadinessPanels({
               )}
           </div>
         ) : null}
-        <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          This view only shows service template guidance. It does not save
-          settings, turn on services, activate billing, grant permissions,
-          create shops, publish Spotlight, open vault links, or show private
-          records.
-        </div>
       </div>
+      ) : null}
 
-      {children}
+      {activeServiceFocus === "services" ? children : null}
 
+      {activeServiceFocus === "economy" ? (
       <div style={softCard()}>
         <div style={sectionLabel()}>Economic participation</div>
         <div style={{ ...helperText(), marginTop: 7 }}>
@@ -459,13 +540,10 @@ export default function CommunityDomainServiceReadinessPanels({
             )}
           </div>
         ) : null}
-        <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          This view only shows economic readiness. It does not create shops,
-          listings, demand, Spotlight, vault links, payment steps, finance
-          records, billing changes, community links, or private member records.
-        </div>
       </div>
+      ) : null}
 
+      {activeServiceFocus === "presence" ? (
       <div style={softCard()}>
         <div style={sectionLabel()}>Network presence</div>
         <div style={{ ...helperText(), marginTop: 7 }}>
@@ -521,13 +599,8 @@ export default function CommunityDomainServiceReadinessPanels({
             )}
           </div>
         ) : null}
-        <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          This view only shows public-presence readiness. It does not publish a
-          public page, finalize the domain link, create outward links, verify the
-          domain, create marketplace or Spotlight exposure, activate billing, or
-          show private member records.
-        </div>
       </div>
+      ) : null}
     </>
   );
 }

@@ -890,15 +890,15 @@ assertNotContains(
 
 assertContains(
   "src/pages/communityDomainDashboard/SetupIntelligenceCards.tsx",
-  /function setupReadinessItems[\s\S]*function setupPlanSteps[\s\S]*blockedSetupReadinessItems[\s\S]*visibleSetupPlanSteps[\s\S]*openSetupPlanSteps[\s\S]*Setup readiness[\s\S]*checks ready[\s\S]*setup checks still need attention[\s\S]*This checklist only shows setup gaps[\s\S]*does not change membership,\s+billing, authority, payments, or private evidence/,
-  "Lazy Community Domain setup intelligence component must derive setup readiness blockers from raw setup readiness and keep read-only boundary language.",
+  /function setupReadinessItems[\s\S]*function setupPlanSteps[\s\S]*SETUP_SCOPE_NOTE[\s\S]*no membership, billing, authority, payment, public page, money, or private evidence changes[\s\S]*blockedSetupReadinessItems[\s\S]*visibleSetupPlanSteps[\s\S]*openSetupPlanSteps[\s\S]*Setup readiness[\s\S]*checks ready[\s\S]*setup checks still need attention/,
+  "Lazy Community Domain setup intelligence component must derive setup readiness blockers from raw setup readiness and keep one concise setup scope boundary.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/communityDomainDashboard/SetupIntelligenceCards.tsx",
-  /Setup plan[\s\S]*steps complete[\s\S]*Current phase:[\s\S]*primary_next_action[\s\S]*missing item[\s\S]*admin guided[\s\S]*planning only[\s\S]*Planning only[\s\S]*This plan only shows next setup steps[\s\S]*does not change structure,\s+policy, billing, public pages, money, or private evidence/,
-  "Lazy Community Domain setup intelligence component must derive setup plan steps from raw setup plan and avoid implying setup writes, authority verification, publishing, money movement, or private evidence access.",
+  /Setup plan[\s\S]*steps complete[\s\S]*Current phase:[\s\S]*primary_next_action[\s\S]*missing item[\s\S]*admin guided[\s\S]*planning only[\s\S]*Planning only[\s\S]*SETUP_SCOPE_NOTE/,
+  "Lazy Community Domain setup intelligence component must derive setup plan steps from raw setup plan and reuse the concise setup scope boundary.",
   { frontend: true }
 );
 
@@ -946,14 +946,14 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /packageCapacityFacts[\s\S]*included_members[\s\S]*included_nodes[\s\S]*included_admins[\s\S]*included_shops[\s\S]*included_storage_gb[\s\S]*packageTariffBoundaryText[\s\S]*Current pilot package allowance only[\s\S]*packageBillingStatusFacts[\s\S]*pricing_model_status[\s\S]*paid_upgrade_status[\s\S]*member_band_status[\s\S]*feature_tariff_status[\s\S]*domain_tariff_status[\s\S]*packageBillingAdminAction[\s\S]*manual finance and capacity review[\s\S]*Package and tariff boundary[\s\S]*Allowance is separate from feature permission[\s\S]*manual review[\s\S]*Feature policy decides whether members, admins, or only\s+the institution may use Spotlight, Demand Box, shops,\s+Shop Diary, Vault, ROSCA, invitations, and contribution\s+tools inside this domain/,
+  /packageCapacityFacts[\s\S]*included_members[\s\S]*included_nodes[\s\S]*included_admins[\s\S]*included_shops[\s\S]*included_storage_gb[\s\S]*packageTariffBoundaryText[\s\S]*Current pilot package allowance only[\s\S]*packageBillingStatusFacts[\s\S]*pricing_model_status[\s\S]*paid_upgrade_status[\s\S]*member_band_status[\s\S]*feature_tariff_status[\s\S]*domain_tariff_status[\s\S]*packageBillingAdminAction[\s\S]*manual finance and capacity review[\s\S]*Domain rule[\s\S]*Shared services, governed here[\s\S]*manual review[\s\S]*Feature policy controls who\s+can use Spotlight, Demand Box, shops, Shop Diary, Vault,\s+ROSCA, invites, and contribution tools here/,
   "Community Domain Services lane must separate package allowance, feature permission, and future tariff automation without pretending member bands or paid feature pricing are live.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /professionalMarketplaceFacts[\s\S]*Governed professional marketplace[\s\S]*Domain owner\/admin decides what works here[\s\S]*Members use the normal marketplace tools this domain permits[\s\S]*Member identity and activity in other communities stay separate[\s\S]*Extra bands and paid features still need manual capacity review[\s\S]*Professional marketplace rule[\s\S]*Community Domain is not a reduced product[\s\S]*ordinary marketplace behaviours available under domain\s+governance[\s\S]*owner\/admin chooses what works inside\s+this registered domain[\s\S]*Rule boundary only[\s\S]*does not create tariffs, sell\s+upgrades, add members, override feature switches, or\s+publish activity outside the domain/,
+  /professionalMarketplaceFacts[\s\S]*Governed professional marketplace[\s\S]*Domain owner\/admin decides what works here[\s\S]*Members use the normal marketplace tools this domain permits[\s\S]*Member identity and activity in other communities stay separate[\s\S]*Extra bands and paid features still need manual capacity review[\s\S]*Professional marketplace rule[\s\S]*Ordinary GSN marketplace behaviours stay available, but\s+this domain decides who may use each one here/,
   "Community Domain Services lane must state the professional-marketplace rule without implying automated tariff, upgrade, membership, feature-switch, or cross-domain publishing behavior.",
   { frontend: true }
 );
@@ -967,15 +967,15 @@ assertNotContains(
 
 assertContains(
   "src/pages/communityDomainDashboard/ServiceReadinessPanels.tsx",
-  /SERVICE_READINESS_KEYS[\s\S]*"shops"[\s\S]*"spotlight"[\s\S]*"vault"[\s\S]*"verification"[\s\S]*"trust_centre"[\s\S]*"analytics"[\s\S]*function projectionItems[\s\S]*function readinessLanes[\s\S]*function blockedLanes[\s\S]*function readyTotal[\s\S]*function serviceReadinessRows[\s\S]*moduleScopeReadiness\?\.modules[\s\S]*moduleKeys[\s\S]*billingStatus[\s\S]*quote[\s\S]*visibleServiceReadinessRows[\s\S]*projectionItems\(serviceSettingsProjection\)[\s\S]*economicParticipation\?\.counts[\s\S]*economicParticipation\?\.template[\s\S]*readinessLanes\(economicParticipation\)[\s\S]*networkPresence\?\.identity[\s\S]*networkPresence\?\.status[\s\S]*readinessLanes\(networkPresence\)/,
+  /SERVICE_FOCUS_OPTIONS[\s\S]*key: "services"[\s\S]*key: "settings"[\s\S]*key: "economy"[\s\S]*key: "presence"[\s\S]*SERVICE_SCOPE_NOTE[\s\S]*no service activation, settings save, billing activation, permission grant, shop creation, Spotlight publish, vault link, public page, URL finalization, money movement, TrustSlip, Trust Passport, or private record exposure[\s\S]*SERVICE_READINESS_KEYS[\s\S]*"shops"[\s\S]*"spotlight"[\s\S]*"vault"[\s\S]*"verification"[\s\S]*"trust_centre"[\s\S]*"analytics"[\s\S]*function projectionItems[\s\S]*function readinessLanes[\s\S]*function blockedLanes[\s\S]*function readyTotal[\s\S]*function serviceReadinessRows[\s\S]*moduleScopeReadiness\?\.modules[\s\S]*moduleKeys[\s\S]*billingStatus[\s\S]*quote[\s\S]*visibleServiceReadinessRows[\s\S]*projectionItems\(serviceSettingsProjection\)[\s\S]*economicParticipation\?\.counts[\s\S]*economicParticipation\?\.template[\s\S]*readinessLanes\(economicParticipation\)[\s\S]*networkPresence\?\.identity[\s\S]*networkPresence\?\.status[\s\S]*readinessLanes\(networkPresence\)/,
   "Lazy Community Domain service readiness component must derive service readiness rows, service-setting splits, economic participation readiness, and network presence readiness from raw maps.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/communityDomainDashboard/ServiceReadinessPanels.tsx",
-  /Service readiness[\s\S]*Billing[\s\S]*Settings[\s\S]*This view only shows service readiness[\s\S]*does not turn on services,\s+activate billing, grant permissions, publish Spotlight, create shops,\s+open vault links, or show private member records/,
-  "Community Domain dashboard Services lane must use read-only module-scope readiness rows for core services, billing, and settings without implying activation or private-record writes.",
+  /rows\.push\(\{[\s\S]*label: "Billing"[\s\S]*rows\.push\(\{[\s\S]*label: "Settings"[\s\S]*activeServiceFocus[\s\S]*community-domain-service-readiness\.focus\.\$\{option\.key\}[\s\S]*activeServiceFocus === "services"[\s\S]*Service readiness/,
+  "Community Domain dashboard Services lane must expose module-scope readiness as one focused sub-view instead of stacking every readiness packet.",
   { frontend: true }
 );
 
@@ -1058,8 +1058,8 @@ assertNotContains(
 
 assertContains(
   "src/pages/communityDomainDashboard/ServiceReadinessPanels.tsx",
-  /visibleServiceSettingsItems[\s\S]*enabledServiceSettingsItems[\s\S]*optionalServiceSettingsItems[\s\S]*Service settings view[\s\S]*serviceSettingsProjection\?\.enabled_total[\s\S]*serviceSettingsProjection\?\.optional_total[\s\S]*This view only shows service template guidance[\s\S]*does not save\s+settings, turn on services, activate billing, grant permissions,\s+create shops, publish Spotlight, open vault links, or show private\s+records/,
-  "Community Domain dashboard Services lane must show read-only service settings projection without implying persisted settings, module enablement/disablement, billing/domain activation, permission grants, shops, Spotlight, vault links, TrustSlips, Trust Passport writes, or private-record exposure.",
+  /visibleServiceSettingsItems[\s\S]*enabledServiceSettingsItems[\s\S]*optionalServiceSettingsItems[\s\S]*activeServiceFocus === "settings"[\s\S]*Service settings view[\s\S]*serviceSettingsProjection\?\.enabled_total[\s\S]*serviceSettingsProjection\?\.optional_total/,
+  "Community Domain dashboard Services lane must show service settings projection inside the Settings sub-view without stacking it with every other readiness packet.",
   { frontend: true }
 );
 
@@ -1093,15 +1093,15 @@ assertContains(
 
 assertContains(
   "src/pages/communityDomainDashboard/ServiceReadinessPanels.tsx",
-  /Economic participation[\s\S]*primary_next_action[\s\S]*economicParticipationTemplate\.marketplace_role[\s\S]*Units[\s\S]*economicParticipationCounts\.nodes[\s\S]*economicParticipationCounts\.finance_records[\s\S]*This view only shows economic readiness[\s\S]*does not create shops,\s+listings, demand, Spotlight, vault links, payment steps, finance\s+records, billing changes, community links, or private member records/,
-  "Community Domain dashboard Services lane must show read-only economic participation without implying marketplace/shop/listing/demand/Spotlight/vault creation, money movement, payment instructions, finance records, trust verification, billing/domain activation, social Community creation, or private activity exposure.",
+  /activeServiceFocus === "economy"[\s\S]*Economic participation[\s\S]*primary_next_action[\s\S]*economicParticipationTemplate\.marketplace_role[\s\S]*Units[\s\S]*economicParticipationCounts\.nodes[\s\S]*economicParticipationCounts\.finance_records/,
+  "Community Domain dashboard Services lane must show economic participation inside the Economy sub-view without stacking it with every other readiness packet.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/communityDomainDashboard/ServiceReadinessPanels.tsx",
-  /Network presence[\s\S]*primary_next_action[\s\S]*networkPresenceStatus\.public_url_status[\s\S]*networkPresenceStatus\.social_community_bridge_status[\s\S]*This view only shows public-presence readiness[\s\S]*does not publish a\s+public page, finalize the domain link, create outward links, verify the\s+domain, create marketplace or Spotlight exposure, activate billing, or\s+show private member records/,
-  "Community Domain dashboard Services lane must show read-only network presence without implying public publishing, URL finalization, outward links, domain verification, marketplace exposure, Spotlight placement, vault links, social Community bridge creation, billing/domain activation, or private activity exposure.",
+  /activeServiceFocus === "presence"[\s\S]*Network presence[\s\S]*primary_next_action[\s\S]*networkPresenceStatus\.public_url_status[\s\S]*networkPresenceStatus\.social_community_bridge_status/,
+  "Community Domain dashboard Services lane must show network presence inside the Presence sub-view without stacking it with every other readiness packet.",
   { frontend: true }
 );
 

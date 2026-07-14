@@ -6634,9 +6634,9 @@ export default function CommunityDomainDashboardPage() {
                           <GsnRealisticIcon name="finance-bank-building" size={35} decorative />
                         </span>
                         <div style={{ minWidth: 0 }}>
-                          <div style={sectionLabel()}>Package and tariff boundary</div>
+                          <div style={sectionLabel()}>Domain rule</div>
                           <h3 style={{ margin: "4px 0 0", fontSize: 19, lineHeight: 1.15 }}>
-                            Allowance is separate from feature permission.
+                            Shared services, governed here.
                           </h3>
                         </div>
                       </div>
@@ -6652,11 +6652,8 @@ export default function CommunityDomainDashboardPage() {
                       >
                         <div style={sectionLabel()}>Professional marketplace rule</div>
                         <div style={{ ...helperText(), fontSize: 13 }}>
-                          Community Domain is not a reduced product. It keeps
-                          ordinary marketplace behaviours available under domain
-                          governance: the owner/admin chooses what works inside
-                          this registered domain, while members keep their wider
-                          GSN identity outside this domain.
+                          Ordinary GSN marketplace behaviours stay available, but
+                          this domain decides who may use each one here.
                         </div>
                         <div
                           style={{
@@ -6671,11 +6668,6 @@ export default function CommunityDomainDashboardPage() {
                               {label}: {value}
                             </div>
                           ))}
-                        </div>
-                        <div style={{ ...helperText(), fontSize: 13 }}>
-                          Rule boundary only. It does not create tariffs, sell
-                          upgrades, add members, override feature switches, or
-                          publish activity outside the domain.
                         </div>
                       </div>
                       <div
@@ -6710,13 +6702,9 @@ export default function CommunityDomainDashboardPage() {
                         ))}
                       </div>
                       <div style={{ ...helperText(), fontSize: 13 }}>
-                        {packageBillingAdminAction}
-                      </div>
-                      <div style={{ ...helperText(), fontSize: 13 }}>
-                        Feature policy decides whether members, admins, or only
-                        the institution may use Spotlight, Demand Box, shops,
-                        Shop Diary, Vault, ROSCA, invitations, and contribution
-                        tools inside this domain.
+                        {packageBillingAdminAction} Feature policy controls who
+                        can use Spotlight, Demand Box, shops, Shop Diary, Vault,
+                        ROSCA, invites, and contribution tools here.
                       </div>
                     </div>
 

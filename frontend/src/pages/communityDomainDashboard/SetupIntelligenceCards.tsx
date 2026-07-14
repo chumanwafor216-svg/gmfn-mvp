@@ -46,7 +46,7 @@ function helperText(): React.CSSProperties {
   return {
     color: "#4F647A",
     fontSize: 14,
-    lineHeight: 1.65,
+    lineHeight: 1.45,
   };
 }
 
@@ -88,6 +88,9 @@ function setupReadinessItems(setupReadiness: any): any[] {
 function setupPlanSteps(setupPlan: any): any[] {
   return Array.isArray(setupPlan?.steps) ? setupPlan.steps : [];
 }
+
+const SETUP_SCOPE_NOTE =
+  "Scope: setup guidance only; no membership, billing, authority, payment, public page, money, or private evidence changes happen here.";
 
 export default function CommunityDomainSetupIntelligenceCards({
   isBaseReadinessLoading = false,
@@ -164,10 +167,7 @@ export default function CommunityDomainSetupIntelligenceCards({
               No setup blocker is visible in this readiness checklist.
             </div>
           ) : null}
-          <div style={{ ...helperText(), fontSize: 13 }}>
-            This checklist only shows setup gaps. It does not change membership,
-            billing, authority, payments, or private evidence.
-          </div>
+          <div style={{ ...helperText(), fontSize: 13 }}>{SETUP_SCOPE_NOTE}</div>
         </div>
       </div>
 
@@ -245,10 +245,7 @@ export default function CommunityDomainSetupIntelligenceCards({
               No open setup step is visible in this setup plan.
             </div>
           ) : null}
-          <div style={{ ...helperText(), fontSize: 13 }}>
-            This plan only shows next setup steps. It does not change structure,
-            policy, billing, public pages, money, or private evidence.
-          </div>
+          <div style={{ ...helperText(), fontSize: 13 }}>{SETUP_SCOPE_NOTE}</div>
         </div>
       </div>
     </>
