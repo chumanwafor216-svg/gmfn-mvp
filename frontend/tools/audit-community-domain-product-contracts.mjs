@@ -1002,6 +1002,13 @@ assertContains(
 
 assertContains(
   "src/pages/communityDomainDashboard/ServiceBoundaryPanels.tsx",
+  /BOUNDARY_FOCUS_OPTIONS[\s\S]*key: "exchange"[\s\S]*key: "privacy"[\s\S]*key: "setup"[\s\S]*key: "compliance"[\s\S]*key: "appeals"[\s\S]*activeBoundaryFocus[\s\S]*community-domain-service-boundary\.focus\.\$\{option\.key\}[\s\S]*activeBoundaryFocus === "exchange"[\s\S]*Network exchange readiness[\s\S]*activeBoundaryFocus === "privacy"[\s\S]*Record privacy readiness[\s\S]*activeBoundaryFocus === "setup"[\s\S]*Setup map[\s\S]*activeBoundaryFocus === "compliance"[\s\S]*Compliance map[\s\S]*activeBoundaryFocus === "appeals"[\s\S]*Appeal readiness/,
+  "Community Domain Services boundary packet must expose one focused boundary sub-view at a time instead of stacking exchange, privacy, setup, compliance, and appeal readiness together.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/communityDomainDashboard/ServiceBoundaryPanels.tsx",
   /Network exchange readiness[\s\S]*primary_next_action[\s\S]*domain_exchange_status[\s\S]*cross_domain_discovery_status[\s\S]*active_affiliations[\s\S]*external_finance_status[\s\S]*outside-network planning only[\s\S]*does not open exchange,\s+discovery, finance, loans, money movement, or private records/,
   "Community Domain dashboard Services lane must keep outside-network planning copy concise while preserving exchange, finance, loan, money, and private-record boundaries.",
   { frontend: true }

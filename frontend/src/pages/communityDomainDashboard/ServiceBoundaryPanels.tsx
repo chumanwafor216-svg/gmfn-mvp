@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useState } from "react";
+import { StableButton } from "../../components/StableButton";
 import { humanStatus } from "./statusLanguage";
 
 type ServiceBoundaryPanelsProps = {
@@ -8,6 +9,40 @@ type ServiceBoundaryPanelsProps = {
   complianceMap?: any;
   appealReadiness?: any;
 };
+
+type BoundaryFocusKey = "exchange" | "privacy" | "setup" | "compliance" | "appeals";
+
+const BOUNDARY_FOCUS_OPTIONS: Array<{
+  key: BoundaryFocusKey;
+  label: string;
+  note: string;
+}> = [
+  {
+    key: "exchange",
+    label: "Exchange",
+    note: "Outside-network exchange, discovery, social bridge, and finance boundaries.",
+  },
+  {
+    key: "privacy",
+    label: "Privacy",
+    note: "Public profile, records, roster, review, and evidence visibility.",
+  },
+  {
+    key: "setup",
+    label: "Setup",
+    note: "Special build, billing, service, tenant, and access-rule setup.",
+  },
+  {
+    key: "compliance",
+    label: "Compliance",
+    note: "Legal, payment, record-sharing, and certificate boundaries.",
+  },
+  {
+    key: "appeals",
+    label: "Appeals",
+    note: "Fairness, mediator, decision, and dispute-readiness boundaries.",
+  },
+];
 
 function cleanText(value: unknown, fallback = ""): string {
   return typeof value === "string" && value.trim() ? value.trim() : fallback;
@@ -222,9 +257,62 @@ export default function CommunityDomainServiceBoundaryPanels({
   const visibleAppealReadinessLanes = readinessLanes(appealReadiness);
   const blockedAppealReadinessLanes = blockedLanes(visibleAppealReadinessLanes);
   const appealReadinessSignalTotal = signalTotal(visibleAppealReadinessLanes);
+  const [activeBoundaryFocus, setActiveBoundaryFocus] =
+    useState<BoundaryFocusKey>("exchange");
+  const selectedBoundaryFocus =
+    BOUNDARY_FOCUS_OPTIONS.find((option) => option.key === activeBoundaryFocus) ||
+    BOUNDARY_FOCUS_OPTIONS[0];
 
   return (
     <>
+      <div
+        style={{
+          ...softCard(),
+          display: "grid",
+          gap: 10,
+        }}
+      >
+        <div style={sectionLabel()}>Boundary packet</div>
+        <div style={helperText()}>
+          Current view: <strong>{selectedBoundaryFocus.label}</strong>.
+        </div>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 132px), 1fr))",
+            gap: 8,
+          }}
+        >
+          {BOUNDARY_FOCUS_OPTIONS.map((option) => {
+            const selected = option.key === activeBoundaryFocus;
+            return (
+              <StableButton
+                key={option.key}
+                type="button"
+                kind={selected ? "primary" : "secondary"}
+                stableHeight={48}
+                fullWidth
+                aria-pressed={selected}
+                title={option.note}
+                debugId={`community-domain-service-boundary.focus.${option.key}`}
+                onClick={() => setActiveBoundaryFocus(option.key)}
+                style={{
+                  justifyContent: "center",
+                  fontSize: 13,
+                  textTransform: "none",
+                }}
+              >
+                {option.label}
+              </StableButton>
+            );
+          })}
+        </div>
+        <div style={{ ...helperText(), fontSize: 13 }}>
+          {selectedBoundaryFocus.note}
+        </div>
+      </div>
+
+      {activeBoundaryFocus === "exchange" ? (
       <div style={softCard()}>
         <div style={sectionLabel()}>Network exchange readiness</div>
         <div style={{ ...helperText(), marginTop: 7 }}>
@@ -302,7 +390,9 @@ export default function CommunityDomainServiceBoundaryPanels({
           discovery, finance, loans, money movement, or private records.
         </div>
       </div>
+      ) : null}
 
+      {activeBoundaryFocus === "privacy" ? (
       <div style={softCard()}>
         <div style={sectionLabel()}>Record privacy readiness</div>
         <div style={{ ...helperText(), marginTop: 7 }}>
@@ -381,7 +471,9 @@ export default function CommunityDomainServiceBoundaryPanels({
           rosters or proof, share private records, or move money.
         </div>
       </div>
+      ) : null}
 
+      {activeBoundaryFocus === "setup" ? (
       <div style={softCard()}>
         <div style={sectionLabel()}>Setup map</div>
         <div style={{ ...helperText(), marginTop: 7 }}>
@@ -455,7 +547,9 @@ export default function CommunityDomainServiceBoundaryPanels({
           service settings, payments, records, or private data.
         </div>
       </div>
+      ) : null}
 
+      {activeBoundaryFocus === "compliance" ? (
       <div style={softCard()}>
         <div style={sectionLabel()}>Compliance map</div>
         <div style={{ ...helperText(), marginTop: 7 }}>
@@ -533,7 +627,9 @@ export default function CommunityDomainServiceBoundaryPanels({
           private records.
         </div>
       </div>
+      ) : null}
 
+      {activeBoundaryFocus === "appeals" ? (
       <div style={softCard()}>
         <div style={sectionLabel()}>Appeal readiness</div>
         <div style={{ ...helperText(), marginTop: 7 }}>
@@ -600,6 +696,7 @@ export default function CommunityDomainServiceBoundaryPanels({
           disputes, reverse payments, move money, or show private records.
         </div>
       </div>
+      ) : null}
     </>
   );
 }
