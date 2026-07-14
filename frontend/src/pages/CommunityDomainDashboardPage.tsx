@@ -1342,8 +1342,8 @@ function factTile(): React.CSSProperties {
     borderRadius: 16,
     background: "rgba(255,255,255,0.10)",
     border: "1px solid rgba(214,228,242,0.16)",
-    padding: 12,
-    minHeight: 74,
+    padding: 10,
+    minHeight: 62,
     display: "grid",
     alignContent: "center",
     gap: 5,
@@ -2649,6 +2649,8 @@ export default function CommunityDomainDashboardPage() {
         primaryActionLaneKey;
   const showDomainWorkSurface =
     setupWorkspaceOpen || showAdvancedTools || setupJourneyMode === "edit";
+  const showOtherDomainToolsEntry =
+    domainOperational || setupWorkspaceOpen || setupJourneyMode === "edit";
   const primaryActionFallbackNote =
     !setupPrimaryActionHasLane && setupPrimaryActionLaneKey === "verification" && hasServicesLane
       ? "GSN opens Services because authority verification is shown there as a readiness row. Actual authority verification still needs its separate owner or admin path."
@@ -7078,42 +7080,44 @@ export default function CommunityDomainDashboardPage() {
           </section>
           ) : null}
 
-          <section style={whiteCard()}>
-            <div style={{ display: "grid", gap: 10 }}>
-              <div style={sectionLabel()}>Other domain tools</div>
-              <h2 style={{ margin: 0, fontSize: 22, lineHeight: 1.12 }}>
-                {domainOperational ? "More operating tools." : "More tools."}
-              </h2>
-              <div style={helperText()}>
-                {domainOperational
-                  ? "Open only when you need another live lane, notices, access, or deeper checks."
-                  : "Open only when you need notices, access, or deeper checks."}
+          {showOtherDomainToolsEntry ? (
+            <section style={whiteCard()}>
+              <div style={{ display: "grid", gap: 10 }}>
+                <div style={sectionLabel()}>Other domain tools</div>
+                <h2 style={{ margin: 0, fontSize: 22, lineHeight: 1.12 }}>
+                  {domainOperational ? "More operating tools." : "More tools."}
+                </h2>
+                <div style={helperText()}>
+                  {domainOperational
+                    ? "Open only when you need another live lane, notices, access, or deeper checks."
+                    : "Open only when you need notices, access, or deeper checks."}
+                </div>
+                <StableButton
+                  type="button"
+                  kind={showAdvancedTools ? "secondary" : "primary"}
+                  fullWidth
+                  debugId="community-domain-dashboard.advanced-tools-toggle"
+                  onClick={() =>
+                    setShowAdvancedTools((current) => {
+                      const next = !current;
+                      if (next) {
+                        setSetupWorkspaceOpen(false);
+                        setSetupJourneyMode("setup");
+                        setActiveLane(cleanText(otherToolsLaneKey, primaryActionLaneKey));
+                      }
+                      return next;
+                    })
+                  }
+                >
+                  {showAdvancedTools
+                    ? "Hide lanes"
+                    : domainOperational
+                      ? "Open lanes"
+                      : "Open service lanes"}
+                </StableButton>
               </div>
-              <StableButton
-                type="button"
-                kind={showAdvancedTools ? "secondary" : "primary"}
-                fullWidth
-                debugId="community-domain-dashboard.advanced-tools-toggle"
-                onClick={() =>
-                  setShowAdvancedTools((current) => {
-                    const next = !current;
-                    if (next) {
-                      setSetupWorkspaceOpen(false);
-                      setSetupJourneyMode("setup");
-                      setActiveLane(cleanText(otherToolsLaneKey, primaryActionLaneKey));
-                    }
-                    return next;
-                  })
-                }
-              >
-                {showAdvancedTools
-                  ? "Hide lanes"
-                  : domainOperational
-                  ? "Open lanes"
-                  : "Open service lanes"}
-              </StableButton>
-            </div>
-          </section>
+            </section>
+          ) : null}
 
           {showAdvancedTools && isAdmin ? (
             <Suspense

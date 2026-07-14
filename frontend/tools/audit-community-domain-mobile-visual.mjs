@@ -7,6 +7,7 @@ const routePath = "/app/community-domain/13";
 const purchaseRoutePath = "/community-domain/purchase?demo=pillar-of-hope";
 const handledApiPaths = [];
 let domainListScenario = "owned";
+let dashboardScenario = "active";
 
 function json(data, status = 200) {
   return {
@@ -209,6 +210,32 @@ const dashboardPayload = {
   },
 };
 
+function currentDashboardPayload() {
+  const payload = JSON.parse(JSON.stringify(dashboardPayload));
+  if (dashboardScenario === "draft") {
+    payload.community_domain.status = "draft";
+    payload.community_domain.verification_status = "not_verified";
+    payload.community_domain.billing_status = "quote_pending";
+    payload.community_domain.activation_status = "not_active";
+    payload.status.domain_status = "draft";
+    payload.status.verification_status = "not_verified";
+    payload.status.billing_status = "quote_pending";
+    payload.status.activation_status = "not_active";
+    payload.package_quote.quote_status = "draft";
+    payload.package_quote.pricing_status = "quote_pending";
+    payload.primary_next_action = {
+      label: "Continue setup",
+      action_key: "setup.continue",
+    };
+    payload.lanes = payload.lanes.map((lane) =>
+      lane.lane_key === "settings"
+        ? { ...lane, status: "draft", summary: "Setup is still being prepared." }
+        : { ...lane, status: "waiting", count: 0 }
+    );
+  }
+  return payload;
+}
+
 const moduleScopeReadiness = {
   module_scope_readiness: {
     ...readinessMap("Services"),
@@ -329,6 +356,8 @@ const placementSummary = {
 };
 
 function pathPayload(pathname) {
+  const dashboard = currentDashboardPayload();
+
   if (pathname.endsWith("/auth/me") || pathname.endsWith("/users/me")) {
     return {
       id: 1,
@@ -340,7 +369,7 @@ function pathPayload(pathname) {
   }
 
   if (pathname.includes("/community-domains/13/dashboard")) {
-    return { dashboard: dashboardPayload };
+    return { dashboard };
   }
   if (pathname.includes("/community-domains/13/readiness")) {
     return { readiness: readinessMap("Community Domain readiness") };
@@ -475,7 +504,7 @@ function pathPayload(pathname) {
   }
   if (pathname.includes("/community-domains/13/notices")) return { items: [] };
   if (pathname.includes("/community-domains/13/package-quote")) {
-    return { quote: dashboardPayload.package_quote };
+    return { quote: dashboard.package_quote };
   }
   if (pathname.includes("/community-domains/13/")) return {};
   if (pathname.includes("/community-domains/my")) {
@@ -485,7 +514,7 @@ function pathPayload(pathname) {
     return {
       items: [
         {
-          community_domain: dashboardPayload.community_domain,
+          community_domain: dashboard.community_domain,
           membership: { role: "owner", status: "active" },
           viewer: { can_admin: true },
           dashboard_path: routePath,
@@ -812,6 +841,37 @@ try {
     findings.push("Community Domain selector keeps edit lookup visible after returning to choices.");
   }
 
+  dashboardScenario = "draft";
+  domainListScenario = "owned";
+  await page.goto(`${baseUrl}${routePath}`, { waitUntil: "networkidle", timeout: 15000 });
+  await page.getByText("Domain command", { exact: true }).waitFor({ timeout: 10000 });
+  audit = await page.evaluate(pageAudit);
+  if (!normalized(audit.bodyText).includes("Complete the next setup step")) {
+    findings.push("Draft Community Domain command does not show setup-first guidance.");
+  }
+  if (!normalized(audit.bodyText).includes("Do first")) {
+    findings.push("Draft Community Domain command does not show first action guidance.");
+  }
+  if (!normalized(audit.bodyText).includes("Boundary")) {
+    findings.push("Draft Community Domain command does not show boundary warning.");
+  }
+  const draftFirstAction = await firstViewportActionFinding(
+    page,
+    "community-domain-dashboard.setup-focus",
+    "Draft Community Domain dashboard"
+  );
+  if (draftFirstAction) findings.push(draftFirstAction);
+  if (await isDebugVisible(page, "community-domain-dashboard.advanced-tools-toggle")) {
+    findings.push("Draft Community Domain dashboard exposes Other domain tools before setup is opened.");
+  }
+  if (await isDebugVisible(page, "community-domain-dashboard.lane.modules")) {
+    findings.push("Draft Community Domain dashboard exposes work lanes before setup is opened.");
+  }
+  if (audit.horizontalOverflow || audit.overflow.length) {
+    findings.push(`Draft Community Domain dashboard mobile overflow: ${JSON.stringify(audit.overflow)}`);
+  }
+
+  dashboardScenario = "active";
   domainListScenario = "owned";
   await page.goto(`${baseUrl}${routePath}`, { waitUntil: "networkidle", timeout: 15000 });
   await page.getByText("Domain command", { exact: true }).waitFor({ timeout: 10000 });

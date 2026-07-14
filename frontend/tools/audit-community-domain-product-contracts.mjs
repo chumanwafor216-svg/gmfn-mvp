@@ -827,7 +827,14 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /communityDomainOperatingStateCopy[\s\S]*Domain closed[\s\S]*Domain suspended[\s\S]*Domain expired[\s\S]*Waiting for activation[\s\S]*Active operating domain[\s\S]*Active, not verified[\s\S]*Run live domain work from the operating lanes[\s\S]*Draft setup[\s\S]*setupWorkspaceOpen[\s\S]*showDomainWorkSurface[\s\S]*setupWorkspaceOpen \|\| showAdvancedTools \|\| setupJourneyMode === "edit"[\s\S]*Domain command[\s\S]*Complete the next setup step\. Billing, activation, and verification stay separate[\s\S]*community-domain-dashboard\.setup-focus[\s\S]*Do first[\s\S]*operatingStateCopy\.nextStep[\s\S]*Boundary[\s\S]*operatingStateCopy\.risk/,
+  /function factTile\(\)[\s\S]*padding: 10[\s\S]*minHeight: 62/,
+  "Community Domain dashboard hero fact tiles must stay compact enough for mobile first-viewport action visibility.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /communityDomainOperatingStateCopy[\s\S]*Domain closed[\s\S]*Domain suspended[\s\S]*Domain expired[\s\S]*Waiting for activation[\s\S]*Active operating domain[\s\S]*Active, not verified[\s\S]*Run live domain work from the operating lanes[\s\S]*Draft setup[\s\S]*setupWorkspaceOpen[\s\S]*showDomainWorkSurface[\s\S]*setupWorkspaceOpen \|\| showAdvancedTools \|\| setupJourneyMode === "edit"[\s\S]*showOtherDomainToolsEntry[\s\S]*domainOperational \|\| setupWorkspaceOpen \|\| setupJourneyMode === "edit"[\s\S]*Domain command[\s\S]*Complete the next setup step\. Billing, activation, and verification stay separate[\s\S]*community-domain-dashboard\.setup-focus[\s\S]*Do first[\s\S]*operatingStateCopy\.nextStep[\s\S]*Boundary[\s\S]*operatingStateCopy\.risk/,
   "Community Domain dashboard must land on a compact command centre and keep the setup workbench closed until the owner opens it.",
   { frontend: true }
 );
@@ -876,7 +883,7 @@ assertNotContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /showAdvancedTools[\s\S]*setShowAdvancedTools\(false\)[\s\S]*showAdvancedTools && activeLane === "settings"[\s\S]*Official Board[\s\S]*Community Domain engine[\s\S]*showAdvancedTools \?[\s\S]*Work lanes[\s\S]*Other domain tools[\s\S]*community-domain-dashboard\.advanced-tools-toggle/,
+  /showAdvancedTools[\s\S]*setShowAdvancedTools\(false\)[\s\S]*showAdvancedTools && activeLane === "settings"[\s\S]*Official Board[\s\S]*Community Domain engine[\s\S]*showAdvancedTools \?[\s\S]*Work lanes[\s\S]*showOtherDomainToolsEntry \? \([\s\S]*Other domain tools[\s\S]*community-domain-dashboard\.advanced-tools-toggle/,
   "Community Domain dashboard must keep notices, engine details, and work lanes closed behind Other domain tools so setup remains the first journey.",
   { frontend: true }
 );
@@ -918,7 +925,7 @@ assertContains(
 
 assertContains(
   "tools/audit-community-domain-mobile-visual.mjs",
-  /const routePath = "\/app\/community-domain\/13"[\s\S]*const purchaseRoutePath = "\/community-domain\/purchase\?demo=pillar-of-hope"[\s\S]*let domainListScenario = "owned"[\s\S]*firstViewportActionFinding[\s\S]*community-domain-purchase\.check-domain[\s\S]*Purchase page mobile hero still exposes the four engine explanation cards[\s\S]*community-domain-purchase\.other-paths[\s\S]*domainListScenario = "empty"[\s\S]*community-domain-dashboard\.selector\.setup-new[\s\S]*community-domain-dashboard\.selector\.find-edit-domain[\s\S]*community-domain-dashboard\.selector\.back-to-choice[\s\S]*community-domain-dashboard\.operational-focus[\s\S]*community-domain-dashboard\.advanced-tools-toggle[\s\S]*community-domain-dashboard\.service-detail\.boundaries[\s\S]*community-domain-service-boundary\.focus\.privacy[\s\S]*community-domain-dashboard\.service-detail\.evidence[\s\S]*community-domain\.trust-evidence\.focus\.release[\s\S]*community-domain-dashboard\.structure-detail\.planning[\s\S]*community-domain\.structure-planning\.focus\.groups[\s\S]*Safe next step[\s\S]*horizontalOverflow[\s\S]*lowContrast/,
+  /const routePath = "\/app\/community-domain\/13"[\s\S]*const purchaseRoutePath = "\/community-domain\/purchase\?demo=pillar-of-hope"[\s\S]*let domainListScenario = "owned"[\s\S]*let dashboardScenario = "active"[\s\S]*dashboardScenario === "draft"[\s\S]*firstViewportActionFinding[\s\S]*community-domain-purchase\.check-domain[\s\S]*Purchase page mobile hero still exposes the four engine explanation cards[\s\S]*community-domain-purchase\.other-paths[\s\S]*domainListScenario = "empty"[\s\S]*community-domain-dashboard\.selector\.setup-new[\s\S]*community-domain-dashboard\.selector\.find-edit-domain[\s\S]*community-domain-dashboard\.selector\.back-to-choice[\s\S]*dashboardScenario = "draft"[\s\S]*community-domain-dashboard\.setup-focus[\s\S]*Draft Community Domain dashboard exposes Other domain tools before setup is opened[\s\S]*dashboardScenario = "active"[\s\S]*community-domain-dashboard\.operational-focus[\s\S]*community-domain-dashboard\.advanced-tools-toggle[\s\S]*community-domain-dashboard\.service-detail\.boundaries[\s\S]*community-domain-service-boundary\.focus\.privacy[\s\S]*community-domain-dashboard\.service-detail\.evidence[\s\S]*community-domain\.trust-evidence\.focus\.release[\s\S]*community-domain-dashboard\.structure-detail\.planning[\s\S]*community-domain\.structure-planning\.focus\.groups[\s\S]*Safe next step[\s\S]*horizontalOverflow[\s\S]*lowContrast/,
   "Community Domain mobile visual audit must exercise purchase first-job compaction, selector one-path state, active-domain lanes, focused service/structure packets, dead-block regression, overflow, and contrast checks.",
   { frontend: true }
 );
