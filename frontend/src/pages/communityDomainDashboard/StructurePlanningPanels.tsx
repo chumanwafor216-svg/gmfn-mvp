@@ -349,9 +349,8 @@ export default function CommunityDomainStructurePlanningPanels({
           </div>
         ) : null}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          This view only shows rollout steps and units needing attention. It does not
-          change structure, membership, authority, billing, public pages, marketplace
-          activity, money, or private evidence.
+          Boundary: rollout planning only; no structure, membership, authority,
+          billing, public-page, marketplace, money, or private-evidence changes.
         </div>
       </div>
       ) : null}
@@ -368,7 +367,7 @@ export default function CommunityDomainStructurePlanningPanels({
             : "GSN could not load the activity map for this Community Domain."}
         </div>
         {factGrid([
-          ["Template lanes", activityMapSummary.activity_lane_count],
+          ["Template areas", activityMapSummary.activity_lane_count],
           ["Operating units", activityMapSummary.active_operating_unit_count],
           ["Members", activityMapSummary.active_member_count],
           [
@@ -402,7 +401,7 @@ export default function CommunityDomainStructurePlanningPanels({
           </div>
         ) : activityMap ? (
           <div style={{ ...helperText(), marginTop: 9 }}>
-            No blocked activity lane is visible, but paid activity, scheduled activity, and
+            No blocked activity check is visible, but paid activity, scheduled activity, and
             trust records are still handled elsewhere.
           </div>
         ) : null}
@@ -422,9 +421,9 @@ export default function CommunityDomainStructurePlanningPanels({
           </div>
         ) : null}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          This view only shows activity planning. It does not create activities,
-          payments, marketplace records, notifications, trust records, public proof,
-          money movement, or private member records.
+          Boundary: activity planning only; no activities, payments,
+          marketplace records, notifications, trust records, proof, money, or
+          private member records.
         </div>
       </div>
       ) : null}
@@ -518,9 +517,9 @@ export default function CommunityDomainStructurePlanningPanels({
           </div>
         ) : null}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          This view only shows group planning. It does not create groups, ROSCA
-          cycles, attendance, payment records, marketplace records, notifications,
-          trust records, or private member records.
+          Boundary: group planning only; no groups, ROSCA cycles, attendance,
+          payment records, marketplace records, notifications, trust records, or
+          private member records.
         </div>
       </div>
       ) : null}

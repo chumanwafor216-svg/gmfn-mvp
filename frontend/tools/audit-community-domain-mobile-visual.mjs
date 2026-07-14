@@ -844,7 +844,7 @@ try {
     waitUntil: "networkidle",
     timeout: 15000,
   });
-  await page.getByText("No owned domains on this account.", { exact: true }).waitFor({
+  await page.getByText("No domains yet.", { exact: true }).waitFor({
     timeout: 10000,
   });
   audit = await page.evaluate(pageAudit);
@@ -899,7 +899,7 @@ try {
     findings.push("Draft Community Domain dashboard exposes Other domain tools before setup is opened.");
   }
   if (await isDebugVisible(page, "community-domain-dashboard.lane.modules")) {
-    findings.push("Draft Community Domain dashboard exposes work lanes before setup is opened.");
+    findings.push("Draft Community Domain dashboard exposes operating areas before setup is opened.");
   }
   if (audit.horizontalOverflow || audit.overflow.length) {
     findings.push(`Draft Community Domain dashboard mobile overflow: ${JSON.stringify(audit.overflow)}`);
@@ -936,7 +936,8 @@ try {
   if (
     draftSetupText.includes("Official Board") ||
     draftSetupText.includes("Community Domain engine") ||
-    draftSetupText.includes("Work lanes")
+    draftSetupText.includes("Work lanes") ||
+    draftSetupText.includes("Operating areas")
   ) {
     findings.push("Draft Community Domain setup workbench exposes advanced dashboard blocks during setup.");
   }
@@ -950,8 +951,8 @@ try {
   await page.getByText("Domain command", { exact: true }).waitFor({ timeout: 10000 });
 
   audit = await page.evaluate(pageAudit);
-  if (!normalized(audit.bodyText).includes("Run one live lane at a time")) {
-    findings.push("Domain command does not show the focused live-lane guidance.");
+  if (!normalized(audit.bodyText).includes("Run one operating area at a time")) {
+    findings.push("Domain command does not show the focused operating-area guidance.");
   }
   if (!normalized(audit.bodyText).includes("Do first")) {
     findings.push("Domain command does not show the first action guidance.");
@@ -968,14 +969,14 @@ try {
   if (!normalized(audit.bodyText).includes("Open Marketplace")) {
     findings.push("Active Community Domain dashboard does not expose Marketplace as the primary handoff.");
   }
-  if (!normalized(audit.bodyText).includes("Open governance lanes")) {
-    findings.push("Active Community Domain dashboard does not keep governance lanes as the secondary handoff.");
+  if (!normalized(audit.bodyText).includes("Open operating areas")) {
+    findings.push("Active Community Domain dashboard does not keep operating areas as the secondary handoff.");
   }
   if (normalized(audit.bodyText).includes("Edit setup details")) {
     findings.push("Active Community Domain dashboard exposes setup editing on the first command surface.");
   }
   if (normalized(audit.bodyText).includes("Other domain tools")) {
-    findings.push("Active Community Domain dashboard exposes Other domain tools before governance lanes are opened.");
+    findings.push("Active Community Domain dashboard exposes Other domain tools before operating areas are opened.");
   }
   if (normalized(audit.bodyText).includes("Safe next step")) {
     findings.push("Generic Safe next step card is visible on initial Community Domain surface.");
@@ -989,7 +990,7 @@ try {
   });
 
   await clickByDebugId(page, "community-domain-dashboard.operational-focus");
-  await page.getByText("Work lanes", { exact: true }).waitFor({ timeout: 10000 });
+  await page.getByText("Operating areas", { exact: true }).waitFor({ timeout: 10000 });
 
   await clickByDebugId(page, "community-domain-dashboard.lane.modules");
   await page.getByText("Services focus", { exact: true }).waitFor({ timeout: 10000 });

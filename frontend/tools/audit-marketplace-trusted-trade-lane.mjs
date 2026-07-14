@@ -67,8 +67,8 @@ assertContains(
 );
 
 assertContains(
-  /debugId="marketplace\.tile\.members"[\s\S]*?aria-label="Open visible members and public shops"[\s\S]*?openMarketplaceSection\(\s*event,\s*"members",\s*"marketplace-members-shops"\s*\)[\s\S]*?<MarketplaceGlyph name="trade"[\s\S]*?Members & Shops[\s\S]*?Known members and public shops\.[\s\S]*?Public Shops[\s\S]*?Members/,
-  "Members & Shops grouped card must open only the community-bound directory."
+  /debugId="marketplace\.tile\.members"[\s\S]*?aria-label="Open visible members and public shops"[\s\S]*?openMarketplaceSection\(\s*event,\s*"members",\s*"marketplace-members-shops"\s*\)[\s\S]*?<MarketplaceGlyph name="trade"[\s\S]*?Community Members & Shops[\s\S]*?Domains, known members, and public shops\.[\s\S]*?Domains[\s\S]*?Public Shops[\s\S]*?Members/,
+  "Community Members & Shops grouped card must open the community-bound domain/member/shop directory."
 );
 
 assertContains(
@@ -233,12 +233,14 @@ if (!memberShopSection.text) {
   addFinding(-1, "Members & Shops detail section must exist before Demand Box.");
 } else {
   [
-    /Members & Shops/,
+    /Community Members & Shops/,
     /See known members and visible shops inside this selected/,
     /Open a shop record for current evidence before you[\s\S]*?act/,
     /\{memberRows\.length\} visible member/,
     /\{visibleTradeShopCount\} public shop/,
     /Community-bound directory/,
+    /Community Domains[\s\S]*?Professional marketplace communities[\s\S]*?They sit with community members and shops\. Setup stays in[\s\S]*?Community Home\./,
+    /debugId=\{`marketplace\.domain\.\$\{row\.id \|\| row\.key\}\.open`\}/,
     /Visible members/,
     /marketplace\.members\.visible-members-module/,
     /marketplaceDepartmentShellStyle\("members", isCompact\)/,

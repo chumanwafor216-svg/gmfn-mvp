@@ -62,7 +62,7 @@ const SERVICE_FOCUS_OPTIONS: Array<{
 ];
 
 const SERVICE_SCOPE_NOTE =
-  "Scope: readiness guidance only; no service activation, settings save, billing activation, permission grant, shop creation, Spotlight publish, vault link, public page, URL finalization, money movement, TrustSlip, Trust Passport, or private record exposure.";
+  "Readiness only: no service activation, billing, permissions, publishing, money movement, proof, or private records.";
 
 const MODULE_LABELS: Record<string, string> = {
   governance: "Governance",
@@ -491,10 +491,10 @@ export default function CommunityDomainServiceReadinessPanels({
         <div style={sectionLabel()}>Economic participation</div>
         <div style={{ ...helperText(), marginTop: 7 }}>
           {economicParticipation
-            ? `${cleanText(
+              ? `${cleanText(
                 economicParticipation.primary_next_action?.label,
                 "Review economic participation"
-              )}. ${economicParticipationReadyTotal} of ${visibleEconomicParticipationLanes.length} economic lanes are ready as template guidance.`
+              )}. ${economicParticipationReadyTotal} of ${visibleEconomicParticipationLanes.length} economic checks are ready as template guidance.`
             : "GSN could not load the economic participation view for this Community Domain."}
         </div>
         {factGrid([
@@ -507,18 +507,18 @@ export default function CommunityDomainServiceReadinessPanels({
         ])}
         {blockedEconomicParticipationLanes.length ? (
           <div style={{ ...helperText(), marginTop: 9 }}>
-            Economic lanes still not connected:{" "}
+            Economic checks still not connected:{" "}
             <strong>
               {blockedEconomicParticipationLanes
                 .slice(0, 3)
-                .map((lane) => cleanText(lane.label, lane.lane_key || "economic lane"))
+                .map((lane) => cleanText(lane.label, lane.lane_key || "economic check"))
                 .join(", ")}
             </strong>
             .
           </div>
         ) : economicParticipation ? (
           <div style={{ ...helperText(), marginTop: 9 }}>
-            No blocked economic lane is visible, but no marketplace or finance
+            No blocked economic check is visible, but no marketplace or finance
             records are created here.
           </div>
         ) : null}
@@ -527,12 +527,12 @@ export default function CommunityDomainServiceReadinessPanels({
             {visibleEconomicParticipationLanes.slice(0, 4).map((lane) =>
               statusRow(
                 cleanText(lane.lane_key, cleanText(lane.label, "economic participation")),
-                cleanText(lane.label, "Economic lane"),
+                cleanText(lane.label, "Economic check"),
                 cleanText(
                   lane.next_step,
                   cleanText(
                     lane.summary,
-                    "Keep this as economic readiness until the real lane exists."
+                    "Keep this as economic readiness until the real operating area exists."
                   )
                 ),
                 lane.status

@@ -245,15 +245,15 @@ export default function CommunityDomainMemberReadinessPanels({
             </div>
           ) : null}
           <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-            This view only shows your placement. Admins still control placement,
-            role changes, and review decisions.
+            Boundary: placement view only; admins still control placement, roles,
+            and review decisions.
           </div>
         </div>
       ) : (
         <div style={softCard()}>
           <div style={sectionLabel()}>Member and role summary</div>
           <div style={{ ...helperText(), marginTop: 7 }}>
-            GSN could not load this viewer's placement view, so this lane
+            GSN could not load this viewer's placement view, so this panel
             is showing only safe domain-level counts from the dashboard summary.
           </div>
           <div
@@ -282,8 +282,8 @@ export default function CommunityDomainMemberReadinessPanels({
             Community Domain admin to review member placement.
           </div>
           <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-            This fallback does not show private member lists, assign roles,
-            place members, decide reviews, or grant permissions.
+            Boundary: no private lists, role assignment, placement, review
+            decisions, or permission grants.
           </div>
         </div>
       )}
@@ -347,7 +347,7 @@ export default function CommunityDomainMemberReadinessPanels({
           </div>
         ) : memberVerificationMap ? (
           <div style={{ ...helperText(), marginTop: 9 }}>
-            No blocked member-readiness lane is visible, but formal identity
+            No blocked member-readiness check is visible, but formal identity
             checks, credential issuing, and trust records are still handled
             elsewhere.
           </div>
@@ -368,9 +368,9 @@ export default function CommunityDomainMemberReadinessPanels({
           </div>
         ) : null}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          This view only shows member readiness. It does not verify identity,
-          issue credentials, change members or roles, decide reviews, publish
-          proof, create trust records, move money, or show private member records.
+          Boundary: readiness only; no identity verification, credentials,
+          member or role changes, review decisions, proof, trust records, money,
+          or private member records.
         </div>
       </div>
     </>

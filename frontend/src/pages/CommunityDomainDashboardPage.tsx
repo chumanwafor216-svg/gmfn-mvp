@@ -1504,7 +1504,7 @@ function communityDomainOperatingStateCopy(status: {
         heading: "Active operating domain",
         detail:
           "The domain is active and authority verification is recorded. Keep structure, members, governance, services, renewal, and evidence current.",
-        nextStep: "Use the readiness and work lanes to keep the operating system healthy.",
+        nextStep: "Use readiness checks and operating areas to keep the system healthy.",
         risk: "Active still does not mean every service, payment, Trust Event, or evidence release is enabled.",
       };
     }
@@ -4293,7 +4293,7 @@ export default function CommunityDomainDashboardPage() {
                   </h2>
                   <div style={{ ...helperText(), marginTop: 8 }}>
                     {domainOperational
-                      ? "Run one live lane at a time. Setup stays quiet unless details or evidence need attention."
+                      ? "Run one operating area at a time. Setup stays quiet unless details or evidence need attention."
                       : "Complete the next setup step. Billing, activation, and verification stay separate."}
                   </div>
                 </div>
@@ -4324,7 +4324,7 @@ export default function CommunityDomainDashboardPage() {
                     setMessage("");
                   }}
                 >
-                  Open governance lanes
+                  Open operating areas
                 </StableButton>
               ) : (
                 <StableButton
@@ -4576,12 +4576,12 @@ export default function CommunityDomainDashboardPage() {
                       {domainOperational ? "Live next action" : "Next action"}
                     </div>
                     <h2 style={{ margin: 0, fontSize: 23, lineHeight: 1.12 }}>
-                      Open the {mainActionLaneLabel} lane
+                      Open the {mainActionLaneLabel} area
                     </h2>
                   </div>
                 </div>
                 <div style={helperText()}>
-                  {mainActionCopy} GSN opens the matching lane here first; deeper
+                  {mainActionCopy} GSN opens the matching area here first; deeper
                   changes still use owner/admin tools that check permissions.
                 </div>
                 {primaryActionFallbackNote ? (
@@ -4725,9 +4725,9 @@ export default function CommunityDomainDashboardPage() {
                 fallback={
                   <div style={whiteCard()}>
                     <div style={{ display: "grid", gap: 10 }}>
-                      <div style={sectionLabel()}>Work lanes</div>
+                      <div style={sectionLabel()}>Operating areas</div>
                       <div style={helperText()}>
-                        Loading Community Domain work lanes...
+                        Loading Community Domain operating areas...
                       </div>
                     </div>
                   </div>
@@ -4755,8 +4755,8 @@ export default function CommunityDomainDashboardPage() {
                     <div style={sectionLabel()}>
                       {showAdvancedTools
                         ? domainOperational
-                          ? "Live lane"
-                          : "Opened lane"
+                          ? "Live area"
+                          : "Opened area"
                         : setupJourneyMode === "edit"
                         ? "Setup workbench"
                         : domainOperational
@@ -4768,7 +4768,7 @@ export default function CommunityDomainDashboardPage() {
                         ? "Edit Community Domain"
                         : !showAdvancedTools && activeLane === "settings" && !domainOperational
                         ? "Create Community Domain"
-                        : laneDisplayLabel(selectedLane, "Community Domain setup")}
+                        : laneDisplayLabel(selectedLane, "Community Domain area")}
                     </h2>
                   </div>
                 </div>
@@ -4786,7 +4786,7 @@ export default function CommunityDomainDashboardPage() {
                   <div style={softCard()}>
                     <div style={sectionLabel()}>Loading setup intelligence</div>
                     <div style={{ ...helperText(), marginTop: 7 }}>
-                      GSN is loading the maps, readiness checks, and lane
+                      GSN is loading the maps, readiness checks, and area
                       details for this Community Domain. The primary dashboard is
                       already available; write actions remain separate and permission
                       checked.
@@ -4798,7 +4798,7 @@ export default function CommunityDomainDashboardPage() {
                   <div style={{ ...softCard(), display: "grid", gap: 12 }}>
                     <div style={sectionLabel()}>Operating summary</div>
                     <h3 style={{ margin: 0, fontSize: 22, lineHeight: 1.15 }}>
-                      This domain is active. Use live lanes first.
+                      This domain is active. Use live operating areas first.
                     </h3>
                     <div style={{ ...helperText(), fontSize: 14 }}>
                       Pillar-style Community Domains should not fall back into a
@@ -7135,7 +7135,7 @@ export default function CommunityDomainDashboardPage() {
                 </h2>
                 <div style={helperText()}>
                   {domainOperational
-                    ? "Open only when you need another live lane, notices, access, or deeper checks."
+                    ? "Open only when you need another operating area, notices, access, or deeper checks."
                     : "Open only when you need notices, access, or deeper checks."}
                 </div>
                 <StableButton
@@ -7157,10 +7157,10 @@ export default function CommunityDomainDashboardPage() {
                   }
                 >
                   {showAdvancedTools
-                    ? "Hide lanes"
+                    ? "Hide areas"
                     : domainOperational
-                      ? "Open lanes"
-                      : "Open service lanes"}
+                      ? "Open operating areas"
+                      : "Open service areas"}
                 </StableButton>
               </div>
             </section>

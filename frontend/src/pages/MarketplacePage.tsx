@@ -8265,13 +8265,16 @@ export default function MarketplacePage() {
             </span>
             <span style={marketplaceOsRowTextStackStyle()}>
               <span style={marketplaceOsRowTitleStyle(isCompact)}>
-                Members & Shops
+                Community Members & Shops
               </span>
               <span style={marketplaceOsRowDetailStyle(isCompact)}>
-                Known members and public shops.
+                Domains, known members, and public shops.
               </span>
               {!isCompact ? (
               <span style={marketplaceFrontTagRowStyle(isCompact)}>
+                <span style={marketplaceFrontTagStyle("#805A0F", "#F7EED8", isCompact)}>
+                  Domains
+                </span>
                 <span style={marketplaceFrontTagStyle("#805A0F", "#F7EED8", isCompact)}>
                   Public Shops
                 </span>
@@ -8309,7 +8312,7 @@ export default function MarketplacePage() {
                 Marketplace Tools
               </span>
               <span style={marketplaceOsRowDetailStyle(isCompact)}>
-                Access, public links, domain entries, and helper tools.
+                Access, public links, and helper tools.
               </span>
               {!isCompact ? (
               <span style={marketplaceFrontTagRowStyle(isCompact)}>
@@ -8324,9 +8327,6 @@ export default function MarketplacePage() {
                 </span>
                 <span style={marketplaceFrontTagStyle("#075064", "#E3F5F8", isCompact)}>
                   Shop Face
-                </span>
-                <span style={marketplaceFrontTagStyle("#173750", "#EEF3F7", isCompact)}>
-                  Domains
                 </span>
               </span>
               ) : null}
@@ -10071,96 +10071,6 @@ export default function MarketplacePage() {
 
         {sectionsOpen.tools ? (
           <>
-            {marketplaceCommunityDomainRows.length ? (
-              <div
-                style={{
-                  ...marketplaceLinkRowStyle(isCompact, true),
-                  marginBottom: 12,
-                }}
-              >
-                <div style={marketplaceLinkRowHeaderStyle(isCompact)}>
-                  <span
-                    aria-hidden="true"
-                    style={marketplaceLinkRowIconStyle("navy", isCompact)}
-                  >
-                    <MarketplaceGlyph name="shop" size={isCompact ? 25 : 30} />
-                  </span>
-                  <div style={{ minWidth: 0 }}>
-                    <div style={sectionLabel()}>Community Domains</div>
-                    <div style={marketplaceLinkRowTitleStyle(isCompact)}>
-                      Domain marketplaces
-                    </div>
-                    <div style={marketplaceLinkRowSubStyle(isCompact)}>
-                      Setup stays in Community Home. Ready domains open here.
-                    </div>
-                  </div>
-                  <span
-                    style={marketplaceLinkRowStatusStyle(
-                      marketplaceCommunityDomainRows.some((row) => row.marketplaceReady)
-                        ? "ready"
-                        : "idle",
-                      isCompact
-                    )}
-                  >
-                    {marketplaceCommunityDomainRows.length} linked
-                  </span>
-                </div>
-                <div
-                  style={{
-                    marginTop: 10,
-                    display: "grid",
-                    gridTemplateColumns: isCompact
-                      ? "1fr"
-                      : "repeat(auto-fit, minmax(220px, 1fr))",
-                    gap: 10,
-                  }}
-                >
-                  {marketplaceCommunityDomainRows.slice(0, 4).map((row) => (
-                    <StableButton
-                      key={row.key}
-                      debugId={`marketplace.domain.${row.id || row.key}.open`}
-                      type="button"
-                      stableHeight={isCompact ? 76 : 86}
-                      onClick={(event) =>
-                        runMarketplaceAction(event, () => {
-                          if (row.marketplaceReady) {
-                            navigateWithOrigin(navigate, row.marketplacePath, location);
-                            return;
-                          }
-                          showNotice(
-                            "error",
-                            "This Community Domain still needs setup or activation before it can open as a marketplace."
-                          );
-                          navigateWithOrigin(navigate, row.dashboardPath, location);
-                        })
-                      }
-                      style={marketplaceLinkChooserButtonStyle(isCompact)}
-                    >
-                      <span
-                        aria-hidden="true"
-                        style={marketplaceLinkRowIconStyle(
-                          row.marketplaceReady ? "gold" : "navy",
-                          isCompact
-                        )}
-                      >
-                        <MarketplaceGlyph name="shop" size={isCompact ? 24 : 28} />
-                      </span>
-                      <span style={marketplaceLinkChooserTextStyle()}>
-                        <span style={marketplaceLinkChooserTitleStyle(isCompact)}>
-                          {row.name}
-                        </span>
-                        <span style={marketplaceLinkChooserDetailStyle(isCompact)}>
-                          {row.marketplaceReady
-                            ? `Open marketplace | ${row.code}`
-                            : `Finish setup | ${row.code}`}
-                        </span>
-                      </span>
-                    </StableButton>
-                  ))}
-                </div>
-              </div>
-            ) : null}
-
             {!activeLinkCenterTool ? (
               <div style={marketplaceLinkChooserGridStyle(isCompact)}>
                 <StableButton
@@ -12704,7 +12614,7 @@ export default function MarketplacePage() {
               <MarketplaceGlyph name="members" size={26} />
             </span>
             <div style={{ minWidth: 0 }}>
-              <div style={sectionLabel()}>Members & Shops</div>
+              <div style={sectionLabel()}>Community Members & Shops</div>
               <div style={{ marginTop: 8, ...helperText() }}>
                 See known members and visible shops inside this selected
                 marketplace. Open a shop record for current evidence before you
@@ -12741,6 +12651,98 @@ export default function MarketplacePage() {
             Community-bound directory
           </span>
         </div>
+
+        {marketplaceCommunityDomainRows.length ? (
+          <div
+            style={{
+              ...marketplaceLinkRowStyle(isCompact, true),
+              marginTop: 12,
+              marginBottom: 12,
+            }}
+          >
+            <div style={marketplaceLinkRowHeaderStyle(isCompact)}>
+              <span
+                aria-hidden="true"
+                style={marketplaceLinkRowIconStyle("gold", isCompact)}
+              >
+                <MarketplaceGlyph name="shop" size={isCompact ? 25 : 30} />
+              </span>
+              <div style={{ minWidth: 0 }}>
+                <div style={sectionLabel()}>Community Domains</div>
+                <div style={marketplaceLinkRowTitleStyle(isCompact)}>
+                  Professional marketplace communities
+                </div>
+                <div style={marketplaceLinkRowSubStyle(isCompact)}>
+                  They sit with community members and shops. Setup stays in
+                  Community Home.
+                </div>
+              </div>
+              <span
+                style={marketplaceLinkRowStatusStyle(
+                  marketplaceCommunityDomainRows.some((row) => row.marketplaceReady)
+                    ? "ready"
+                    : "idle",
+                  isCompact
+                )}
+              >
+                {marketplaceCommunityDomainRows.length} linked
+              </span>
+            </div>
+            <div
+              style={{
+                marginTop: 10,
+                display: "grid",
+                gridTemplateColumns: isCompact
+                  ? "1fr"
+                  : "repeat(auto-fit, minmax(220px, 1fr))",
+                gap: 10,
+              }}
+            >
+              {marketplaceCommunityDomainRows.slice(0, 4).map((row) => (
+                <StableButton
+                  key={row.key}
+                  debugId={`marketplace.domain.${row.id || row.key}.open`}
+                  type="button"
+                  stableHeight={isCompact ? 76 : 86}
+                  onClick={(event) =>
+                    runMarketplaceAction(event, () => {
+                      if (row.marketplaceReady) {
+                        navigateWithOrigin(navigate, row.marketplacePath, location);
+                        return;
+                      }
+                      showNotice(
+                        "error",
+                        "This Community Domain still needs setup or activation before it can open as a marketplace."
+                      );
+                      navigateWithOrigin(navigate, row.dashboardPath, location);
+                    })
+                  }
+                  style={marketplaceLinkChooserButtonStyle(isCompact)}
+                >
+                  <span
+                    aria-hidden="true"
+                    style={marketplaceLinkRowIconStyle(
+                      row.marketplaceReady ? "gold" : "navy",
+                      isCompact
+                    )}
+                  >
+                    <MarketplaceGlyph name="shop" size={isCompact ? 24 : 28} />
+                  </span>
+                  <span style={marketplaceLinkChooserTextStyle()}>
+                    <span style={marketplaceLinkChooserTitleStyle(isCompact)}>
+                      {row.name}
+                    </span>
+                    <span style={marketplaceLinkChooserDetailStyle(isCompact)}>
+                      {row.marketplaceReady
+                        ? `Open marketplace | ${row.code}`
+                        : `Finish setup | ${row.code}`}
+                    </span>
+                  </span>
+                </StableButton>
+              ))}
+            </div>
+          </div>
+        ) : null}
 
           <div
             {...marketplaceSurfaceTouchProps(

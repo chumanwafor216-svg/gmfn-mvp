@@ -78,8 +78,8 @@ if (visibleIds.join("|") !== expectedVisibleIds.join("|")) {
 });
 
 assertContains(
-  /debugId="marketplace\.row\.records-links"[\s\S]*?Marketplace Tools[\s\S]*?Access, public links, domain entries, and helper tools\.[\s\S]*?Domains/,
-  "Marketplace Tools front card must absorb the old More helper entry and Community Domain entry so secondary helpers stay grouped instead of exposed as separate front buttons."
+  /debugId="marketplace\.row\.records-links"[\s\S]*?Marketplace Tools[\s\S]*?Access, public links, and helper tools\.[\s\S]*?Verify[\s\S]*?Invite[\s\S]*?Create[\s\S]*?Shop Face/,
+  "Marketplace Tools front card must absorb the old More helper entry while Community Domains stay with Community Members & Shops."
 );
 
 assertContains(

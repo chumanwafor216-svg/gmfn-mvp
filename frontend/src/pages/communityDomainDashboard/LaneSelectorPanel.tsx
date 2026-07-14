@@ -99,7 +99,7 @@ export default function CommunityDomainLaneSelectorPanel({
   return (
     <div style={whiteCard()}>
       <div style={{ display: "grid", gap: 10 }}>
-        <div style={sectionLabel()}>Work lanes</div>
+        <div style={sectionLabel()}>Operating areas</div>
         {lanes.map((lane) => {
           const laneKey = cleanText(lane.lane_key);
           const selected = laneKey === activeLane;

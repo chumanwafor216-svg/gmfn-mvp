@@ -71,6 +71,24 @@ async function installApiMocks(page, baseURL) {
       visibility: "public",
     },
   ];
+  const domains = [
+    {
+      id: 13,
+      domain_name: "pillar-of-hope",
+      display_name: "Pillar of Hope",
+      status: "active",
+      verification_status: "unverified",
+      clan_id: 13,
+    },
+    {
+      id: 14,
+      domain_name: "setup-domain",
+      display_name: "Setup Domain",
+      status: "draft",
+      verification_status: "unverified",
+      clan_id: null,
+    },
+  ];
 
   await page.route("**/api/**", async (route) => {
     const url = new URL(route.request().url());
@@ -78,6 +96,9 @@ async function installApiMocks(page, baseURL) {
 
     if (path === "/auth/me") return route.fulfill(json(me));
     if (path === "/clans/me") return route.fulfill(json([clan]));
+    if (path === "/community-domains/my") {
+      return route.fulfill(json({ items: domains }));
+    }
     if (/^\/clans\/8\/members/.test(path)) return route.fulfill(json(members));
     if (/^\/clans\/8\/invite-link/.test(path)) {
       return route.fulfill(
@@ -166,11 +187,7 @@ async function run() {
     await page.waitForSelector('[data-cta-id="marketplace.tile.marketing-tools"]', {
       timeout: 30000,
     });
-    await page.waitForFunction(
-      () => (document.body.textContent || "").includes("Homeland isa Marketplace"),
-      null,
-      { timeout: 30000 }
-    );
+    await page.waitForLoadState("networkidle", { timeout: 30000 }).catch(() => {});
     await page.screenshot({
       path: join(screenshotDir, "marketplace-hero-390x844.png"),
       fullPage: false,
@@ -185,7 +202,7 @@ async function run() {
         "Trust",
         "CCI",
         "Money & Trust",
-        "Members & Shops",
+        "Community Members & Shops",
         "Marketplace Tools",
         "Support Requests",
         "Marketing Tools",
@@ -215,8 +232,42 @@ async function run() {
       process.exit(1);
     }
 
+    await page.locator('[data-cta-id="marketplace.tile.members"]').click();
+    await page.waitForFunction(
+      () => (document.body.textContent || "").includes("Pillar of Hope"),
+      null,
+      { timeout: 30000 }
+    );
+
+    const memberDomainResult = await page.evaluate(() => {
+      const membersSection =
+        document.getElementById("marketplace-members-shops")?.textContent || "";
+      const toolsSection =
+        document.getElementById("marketplace-owned-links")?.textContent || "";
+      const required = [
+        "Community Members & Shops",
+        "Community Domains",
+        "Professional marketplace communities",
+        "Pillar of Hope",
+        "Open marketplace | pillar-of-hope",
+        "Setup Domain",
+        "Finish setup | setup-domain",
+      ];
+      const missing = required.filter((item) => !membersSection.includes(item));
+      const toolsLeak = ["Pillar of Hope", "Setup Domain", "Domain marketplaces"].filter(
+        (item) => toolsSection.includes(item)
+      );
+
+      return { missing, toolsLeak };
+    });
+
+    if (memberDomainResult.missing.length || memberDomainResult.toolsLeak.length) {
+      console.error("Marketplace domain placement smoke failed:", memberDomainResult);
+      process.exit(1);
+    }
+
     console.log(
-      "Marketplace hero smoke passed: screenshot saved to screenshots/marketplace-hero-390x844.png"
+      "Marketplace hero smoke passed: front and domain placement verified; screenshot saved to screenshots/marketplace-hero-390x844.png"
     );
   } finally {
     if (browser) await browser.close();

@@ -142,14 +142,14 @@ assertNotContains(
   {
     id: "marketplace.tile.members",
     glyph: "trade",
-    label: "Members & Shops",
-    tags: ["Public Shops", "Members"],
+    label: "Community Members & Shops",
+    tags: ["Domains", "Public Shops", "Members"],
   },
   {
     id: "marketplace.row.records-links",
     glyph: "links",
     label: "Marketplace Tools",
-    tags: ["Verify", "Invite", "Create", "Shop Face", "Domains"],
+    tags: ["Verify", "Invite", "Create", "Shop Face"],
   },
   {
     id: "marketplace.tile.official-board",
@@ -202,8 +202,8 @@ if (compactHiddenFrontTagRows < 6) {
 assertContains(
   marketplaceFile,
   marketplaceSource,
-  /debugId="marketplace\.tile\.members"[\s\S]*?openMarketplaceSection\(event, "members", "marketplace-members-shops"\)[\s\S]*?Members & Shops[\s\S]*?Known members and public shops\.[\s\S]*?Public Shops[\s\S]*?Members/,
-  "Members & Shops must open only the visible members and shop directory lane."
+  /debugId="marketplace\.tile\.members"[\s\S]*?openMarketplaceSection\(event, "members", "marketplace-members-shops"\)[\s\S]*?Community Members & Shops[\s\S]*?Domains, known members, and public shops\.[\s\S]*?Domains[\s\S]*?Public Shops[\s\S]*?Members/,
+  "Community Members & Shops must open the domain, visible member, and shop directory lane."
 );
 
 assertNotContains(
@@ -230,8 +230,8 @@ assertContains(
 assertContains(
   marketplaceFile,
   marketplaceSource,
-  /id="marketplace-members-shops"[\s\S]*?Members & Shops[\s\S]*?visible member[\s\S]*?public shop[\s\S]*?marketplace\.members\.visible-members-module[\s\S]*?Visible members/,
-  "Members & Shops must render as a separate visible member and shop directory lane."
+  /id="marketplace-members-shops"[\s\S]*?Community Members & Shops[\s\S]*?visible member[\s\S]*?public shop[\s\S]*?Community Domains[\s\S]*?Professional marketplace communities[\s\S]*?marketplace\.members\.visible-members-module[\s\S]*?Visible members/,
+  "Community Members & Shops must render as a separate domain, visible member, and shop directory lane."
 );
 
 assertNotContains(

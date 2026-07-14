@@ -334,8 +334,8 @@ export default function CommunityDomainGovernanceReadinessPanels({
           </div>
         )}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          This view only shows governance review pressure. It does not decide reviews,
-          apply membership, assign roles, show private evidence, or bypass reviewer policy.
+          Boundary: review pressure only; no decisions, membership changes,
+          role changes, private evidence, or policy bypass.
         </div>
       </div>
       ) : null}
@@ -402,7 +402,7 @@ export default function CommunityDomainGovernanceReadinessPanels({
           </div>
         ) : delegationMap ? (
           <div style={{ ...helperText(), marginTop: 9 }}>
-            No blocked delegation lane is visible. Authority verification and role
+            No blocked delegation check is visible. Authority verification and role
             assignment remain separate.
           </div>
         ) : null}
@@ -422,10 +422,9 @@ export default function CommunityDomainGovernanceReadinessPanels({
           </div>
         ) : null}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          This view only shows authority planning. It does not assign roles, create
-          memberships or policies, decide or apply reviews, change inheritance,
-          verify authority, activate billing, publish public proof, create marketplace
-          activity, move money, or show private member records.
+          Boundary: authority planning only; no roles, memberships, policies,
+          review decisions, billing, proof, marketplace activity, money, or
+          private member records.
         </div>
       </div>
       ) : null}
@@ -483,10 +482,9 @@ export default function CommunityDomainGovernanceReadinessPanels({
           </div>
         ) : null}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          This view only shows governance coverage. It does not create policy,
-          assign roles, decide or apply reviews, verify authority, move money,
-          activate billing, publish a public page, create marketplace activity,
-          or show private review records.
+          Boundary: coverage only; no policy creation, role changes, review
+          decisions, authority verification, money, billing, public pages,
+          marketplace activity, or private review records.
         </div>
       </div>
       ) : null}

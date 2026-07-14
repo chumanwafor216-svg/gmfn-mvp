@@ -158,13 +158,13 @@ export default function CommunityDomainSelectorPanel({
 
   const startPanel = (
     <div style={{ ...softCard(), display: "grid", gap: 12 }}>
-      <div style={sectionLabel()}>Set up / edit</div>
+      <div style={sectionLabel()}>Community Domain home</div>
       <h2 style={{ margin: 0, fontSize: 25, lineHeight: 1.1 }}>
-        Choose the path first.
+        Set up or find a domain.
       </h2>
       <div style={helperText()}>
-        Start a new institutional domain, or find an existing one before asking
-        for owner-approved edit access.
+        Start a new institutional domain, or find an existing domain code before
+        asking for owner-approved edit access.
       </div>
       <div
         style={{
@@ -304,14 +304,13 @@ export default function CommunityDomainSelectorPanel({
     return (
       <div style={{ display: "grid", gap: 12 }}>
         {selectorMode === "edit" ? editPanel : startPanel}
-        <div style={sectionLabel()}>No Community Domains yet</div>
+        <div style={sectionLabel()}>Your Community Domains</div>
         <h2 style={{ margin: 0, fontSize: 26, lineHeight: 1.1 }}>
-          No owned domains on this account.
+          No domains yet.
         </h2>
         <div style={helperText()}>
-          This account has no active Community Domain membership to open here.
-          You can set up a new domain, find an existing domain, or return to
-          Community Home.
+          This account has no Community Domain membership to open here. Set one
+          up, find an existing domain code, or return to Community Home.
         </div>
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
           <StableCtaLink
@@ -341,8 +340,8 @@ export default function CommunityDomainSelectorPanel({
         Choose a Community Domain.
       </h2>
       <div style={helperText()}>
-        Draft domains open setup first. Existing domains can be opened for
-        owner-approved setup edits or normal operation.
+        Drafts continue setup. Active domains open their institutional operating
+        home, then hand off to Marketplace when the domain is ready.
       </div>
       <div
         style={{
@@ -392,7 +391,7 @@ export default function CommunityDomainSelectorPanel({
                     "domain"
                   )}`}
                 >
-                  {draftDomain ? "Set up / edit" : "Open / edit"}
+                  {draftDomain ? "Continue setup" : "Open domain"}
                 </StableCtaLink>
               </div>
             </div>
@@ -402,8 +401,8 @@ export default function CommunityDomainSelectorPanel({
       <div style={{ ...softCard(), display: "grid", gap: 10 }}>
         <div style={sectionLabel()}>Other paths</div>
         <div style={helperText()}>
-          Set up a new institutional domain or find an existing domain code only
-          when that is the next task.
+          Use these only when you are adding a new institutional domain or
+          looking up a known domain code.
         </div>
         {quickPathRow}
       </div>

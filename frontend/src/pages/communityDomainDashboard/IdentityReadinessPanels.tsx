@@ -421,8 +421,8 @@ export default function CommunityDomainIdentityReadinessPanels({
           </div>
         ) : institutionalProfile ? (
           <div style={{ ...helperText(), marginTop: 9 }}>
-            No blocked institutional lane is visible, but verification, publication,
-            billing, and advanced profile setup are still separate.
+            No blocked institutional check is visible, but verification,
+            publication, billing, and advanced profile setup are still separate.
           </div>
         ) : null}
         {visibleInstitutionalProfileLanes.length ? (
@@ -444,10 +444,10 @@ export default function CommunityDomainIdentityReadinessPanels({
           </div>
         ) : null}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          This view only shows institutional profile readiness. It does not create
-          structures, members, policies, reviews, evidence, billing packages,
-          shops, payments, finance records, community links, verification,
-          activation, public pages, or private records.
+          Boundary: profile readiness only; no structures, members, policies,
+          reviews, evidence, billing, shops, payments, finance records,
+          community links, verification, activation, public pages, or private
+          records.
         </div>
       </div>
       ) : null}
@@ -487,8 +487,8 @@ export default function CommunityDomainIdentityReadinessPanels({
           </div>
         ) : socialBridge ? (
           <div style={{ ...helperText(), marginTop: 9 }}>
-            No blocked community bridge lane is visible, but Community upgrade and
-            member movement are still not connected here.
+            No blocked community bridge check is visible, but Community upgrade
+            and member movement are still not connected here.
           </div>
         ) : null}
         {visibleSocialBridgeLanes.length ? (
@@ -507,11 +507,10 @@ export default function CommunityDomainIdentityReadinessPanels({
           </div>
         ) : null}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          This view only shows community bridge readiness. It does not create or
-          upgrade an ordinary community, connect private records, decide
-          affiliations, copy or invite members, move marketplace activity,
-          activate billing, verify authority, merge records, or show private
-          member records.
+          Boundary: bridge readiness only; no community creation or upgrade,
+          private-record connection, affiliation decisions, member copy or invite,
+          marketplace movement, billing, authority verification, record merging,
+          or private member records.
         </div>
       </div>
       ) : null}
@@ -561,8 +560,8 @@ export default function CommunityDomainIdentityReadinessPanels({
           </div>
         ) : affiliationReadiness ? (
           <div style={{ ...helperText(), marginTop: 9 }}>
-            No blocked affiliation lane is visible, but domain-to-domain affiliation
-            is still not connected here.
+            No blocked affiliation check is visible, but domain-to-domain
+            affiliation is still not connected here.
           </div>
         ) : null}
         {visibleAffiliationLanes.length ? (
@@ -581,11 +580,10 @@ export default function CommunityDomainIdentityReadinessPanels({
           </div>
         ) : null}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          This view only shows affiliation readiness. It does not create parent
-          or child Community Domain links, approve requests, set community links,
-          copy or transfer members, inherit policy, activate billing, verify
-          authority, publish public links, create marketplace activity, move
-          money, create trust records, or show private records.
+          Boundary: affiliation readiness only; no parent or child links,
+          approvals, community links, member copy or transfer, inherited policy,
+          billing, authority verification, public links, marketplace activity,
+          money, trust records, or private records.
         </div>
       </div>
       ) : null}

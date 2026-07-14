@@ -372,8 +372,8 @@ assertContains(
 );
 
 assertContains(
-  /debugId="marketplace\.tile\.members"[\s\S]*?aria-label="Open visible members and public shops"[\s\S]*?openMarketplaceSection\(\s*event,\s*"members",\s*"marketplace-members-shops"\s*\)[\s\S]*?<MarketplaceGlyph name="trade"[\s\S]*?Members & Shops[\s\S]*?Known members and public shops\.[\s\S]*?Public Shops[\s\S]*?Members/,
-  "Marketplace Members & Shops grouped card must open the community-bound member/shop directory."
+  /debugId="marketplace\.tile\.members"[\s\S]*?aria-label="Open visible members and public shops"[\s\S]*?openMarketplaceSection\(\s*event,\s*"members",\s*"marketplace-members-shops"\s*\)[\s\S]*?<MarketplaceGlyph name="trade"[\s\S]*?Community Members & Shops[\s\S]*?Domains, known members, and public shops\.[\s\S]*?Domains[\s\S]*?Public Shops[\s\S]*?Members/,
+  "Marketplace Community Members & Shops grouped card must open the community-bound domain/member/shop directory."
 );
 
 assertContains(
@@ -392,8 +392,8 @@ assertContains(
 );
 
 assertContains(
-  /debugId="marketplace\.row\.records-links"[\s\S]*?aria-label="Open marketplace tools, access and public links"[\s\S]*?openMarketplaceSection\(event, "tools", "marketplace-owned-links"\)[\s\S]*?<MarketplaceGlyph name="links"[\s\S]*?Marketplace Tools[\s\S]*?Access, public links, domain entries, and helper tools\.[\s\S]*?Verify[\s\S]*?Invite[\s\S]*?Create[\s\S]*?Shop Face[\s\S]*?Domains/,
-  "Marketplace Tools grouped card must open marketplace-owned links and advertise verify, invite, create, shop sharing, Community Domains, and helper tools."
+  /debugId="marketplace\.row\.records-links"[\s\S]*?aria-label="Open marketplace tools, access and public links"[\s\S]*?openMarketplaceSection\(event, "tools", "marketplace-owned-links"\)[\s\S]*?<MarketplaceGlyph name="links"[\s\S]*?Marketplace Tools[\s\S]*?Access, public links, and helper tools\.[\s\S]*?Verify[\s\S]*?Invite[\s\S]*?Create[\s\S]*?Shop Face/,
+  "Marketplace Tools grouped card must open marketplace-owned links and advertise verify, invite, create, shop sharing, and helper tools without Community Domain entries."
 );
 
 assertContains(
@@ -604,16 +604,18 @@ if (!memberShopSection) {
   findings.push({
     file: marketplaceFile,
     line: 1,
-    message: "Marketplace Members & Shops section was not found for scoped button auditing.",
+    message: "Marketplace Community Members & Shops section was not found for scoped button auditing.",
     text: "Expected id=\"marketplace-members-shops\" before id=\"marketplace-demand-box\".",
   });
 } else {
   [
-    /Members & Shops/,
+    /Community Members & Shops/,
     /See known members and visible shops inside this selected/,
     /\{memberRows\.length\} visible member/,
     /\{visibleTradeShopCount\} public shop/,
     /Community-bound directory/,
+    /Community Domains[\s\S]*?Professional marketplace communities[\s\S]*?They sit with community members and shops\. Setup stays in[\s\S]*?Community Home\./,
+    /debugId=\{`marketplace\.domain\.\$\{row\.id \|\| row\.key\}\.open`\}/,
     /Visible members/,
     /more tucked away/,
     /debugId="marketplace\.members\.more-visible\.summary"[\s\S]*?More visible members/,
@@ -625,7 +627,7 @@ if (!memberShopSection) {
       findings.push({
         file: marketplaceFile,
         line: lineAt(source.indexOf(memberShopSection)),
-        message: "Marketplace Members & Shops lane must keep the guided member/shop directory structure.",
+        message: "Marketplace Community Members & Shops lane must keep the guided domain/member/shop directory structure.",
         text: pattern.toString(),
       });
     }
@@ -635,8 +637,8 @@ if (!memberShopSection) {
     findings.push({
       file: marketplaceFile,
       line: lineAt(source.indexOf(memberShopSection)),
-      message: "Marketplace Members & Shops lane must not expose support or guarantor actions.",
-      text: "Members & Shops should stay directory focused; Support Requests owns guarantor selection.",
+      message: "Marketplace Community Members & Shops lane must not expose support or guarantor actions.",
+      text: "Community Members & Shops should stay directory focused; Support Requests owns guarantor selection.",
     });
   }
 }
@@ -834,10 +836,6 @@ const expectedOrder = [
   exactDebugId("marketplace.rosca.start-cycle"),
   exactDebugId("marketplace.rosca.record-payout"),
   exactDebugId("marketplace.links.toggle"),
-  dynamicDebugId(
-    "marketplace.domain.*.open",
-    /debugId=\{`marketplace\.domain\.\$\{row\.id \|\| row\.key\}\.open`\}/
-  ),
   exactDebugId("marketplace.links.choose.verify"),
   exactDebugId("marketplace.links.choose.join"),
   exactDebugId("marketplace.links.choose.create-community"),
@@ -876,6 +874,10 @@ const expectedOrder = [
   exactDebugId("marketplace.protected-trade.record-update"),
   exactDebugId("marketplace.protected-trade.copy-paper"),
   exactDebugId("marketplace.members.toggle"),
+  dynamicDebugId(
+    "marketplace.domain.*.open",
+    /debugId=\{`marketplace\.domain\.\$\{row\.id \|\| row\.key\}\.open`\}/
+  ),
   dynamicDebugId(
     "marketplace.member.*.shop",
     /debugId=\{`marketplace\.member\.\$\{row\.gmfnId[\s\S]{0,140}\}\.shop`\}/
@@ -975,8 +977,8 @@ assertNotContains(
 );
 
 assertLayoutContains(
-  /if \(pathname === "\/app\/marketplace"\) \{[\s\S]*?return uniqueNavItems\(\[[\s\S]*?makeShopGalleryItem\(myShopGalleryTo, myShopGalleryDisabled\)[\s\S]*?Loans & Support[\s\S]*?makeShopControlItem\(\)[\s\S]*?Marketplace Rails[\s\S]*?marketplace-money-routes[\s\S]*?Notifications[\s\S]*?\]\);/,
-  "Marketplace page tools must keep the route-local navigator actions: Public Shop, Loans & Support, Shop Control, Marketplace Rails, and Notifications."
+  /if \(pathname === "\/app\/marketplace"\) \{[\s\S]*?return uniqueNavItems\(\[[\s\S]*?makeShopGalleryItem\(myShopGalleryTo, myShopGalleryDisabled\)[\s\S]*?Support Requests[\s\S]*?makeShopControlItem\(\)[\s\S]*?Marketplace Rails[\s\S]*?marketplace-money-routes[\s\S]*?Notifications[\s\S]*?\]\);/,
+  "Marketplace page tools must keep the route-local navigator actions: Public Shop, Support Requests, Shop Control, Marketplace Rails, and Notifications."
 );
 
 assertLayoutContains(

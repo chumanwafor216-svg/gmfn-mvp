@@ -12,7 +12,7 @@ import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import { StableButton } from "../components/StableButton";
 import SpotlightMediaFrame from "../components/SpotlightMediaFrame";
 import { brandClampLines, brandSingleLine } from "../styles/gmfnBrand";
-import { APP_ROUTES } from "../lib/appRoutes";
+import { APP_ROUTES, routeWithCommunity } from "../lib/appRoutes";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 import { navigateWithOrigin } from "../lib/nav";
 import { revealElementWithoutJump } from "../lib/mobileRevealStability";
@@ -92,6 +92,18 @@ type ClanItem = {
   profile?: any;
   marketplace?: any;
   clan?: any;
+};
+
+type CommunityDomainListRow = {
+  key: string;
+  id: number;
+  name: string;
+  code: string;
+  status: string;
+  clanId: number;
+  marketplaceReady: boolean;
+  dashboardPath: string;
+  marketplacePath: string;
 };
 
 type NoticeTone = "success" | "error";
@@ -233,6 +245,55 @@ function firstTruthy(...values: any[]): string {
     if (text) return text;
   }
   return "";
+}
+
+function positiveNumber(value: any): number {
+  const numberValue = Number(value || 0);
+  return Number.isFinite(numberValue) && numberValue > 0 ? numberValue : 0;
+}
+
+function communityDomainNeedsSetup(domain: any): boolean {
+  const status = safeStr(domain?.status).toLowerCase();
+  if (!positiveNumber(domain?.clan_id)) return true;
+  return (
+    status.includes("draft") ||
+    status.includes("quote") ||
+    status.includes("pending") ||
+    status.includes("waiting") ||
+    status.includes("suspended") ||
+    status.includes("closed") ||
+    status.includes("expired")
+  );
+}
+
+function normalizeCommunityDomainListRow(item: any): CommunityDomainListRow | null {
+  const domain = item?.community_domain || item?.domain || item || {};
+  const domainId = positiveNumber(domain?.id || item?.community_domain_id);
+  const clanId = positiveNumber(
+    domain?.clan_id || domain?.community_id || item?.clan_id || item?.community_id
+  );
+  const dashboardPath =
+    firstTruthy(item?.dashboard_path, domain?.dashboard_path) ||
+    (domainId ? `/app/community-domain/${domainId}` : "/app/community-domain");
+  const name = firstTruthy(domain?.display_name, domain?.domain_name, "Community Domain");
+
+  if (!domainId && !firstTruthy(domain?.domain_name, domain?.display_name)) {
+    return null;
+  }
+
+  return {
+    key: firstTruthy(domainId, domain?.domain_name, dashboardPath),
+    id: domainId,
+    name,
+    code: firstTruthy(domain?.domain_name, "domain code pending"),
+    status: firstTruthy(domain?.status, "status pending"),
+    clanId,
+    marketplaceReady: !communityDomainNeedsSetup({ ...domain, clan_id: clanId }),
+    dashboardPath,
+    marketplacePath: clanId
+      ? routeWithCommunity(APP_ROUTES.MARKETPLACE, clanId)
+      : dashboardPath,
+  };
 }
 
 function readLocalText(key: string): string {
@@ -1349,6 +1410,7 @@ export default function CommunityHomePage() {
   const [me, setMe] = useState<any>(null);
   const [clans, setClans] = useState<ClanItem[]>([]);
   const [communityDomainCount, setCommunityDomainCount] = useState<number | null>(null);
+  const [communityDomainRows, setCommunityDomainRows] = useState<CommunityDomainListRow[]>([]);
   const [selectedClan, setSelectedClan] = useState<ClanItem | null>(null);
   const [communityNotices, setCommunityNotices] = useState<CommunityNoticeItem[]>([]);
   const [communityNoticesLoading, setCommunityNoticesLoading] = useState(false);
@@ -1533,7 +1595,14 @@ export default function CommunityHomePage() {
 
         setMe(meRes || null);
         setClans(rows);
-        setCommunityDomainCount(Array.isArray(domainRows) ? domainRows.length : null);
+        const normalizedDomainRows = Array.isArray(domainRows)
+          ? domainRows
+              .map(normalizeCommunityDomainListRow)
+              .filter((row): row is CommunityDomainListRow => Boolean(row))
+          : [];
+
+        setCommunityDomainRows(normalizedDomainRows);
+        setCommunityDomainCount(Array.isArray(domainRows) ? normalizedDomainRows.length : null);
         setSelectedClan(current);
       } finally {
         if (alive) {
@@ -1799,10 +1868,18 @@ export default function CommunityHomePage() {
   const communityHomeOwnerName = resolveMemberName(me);
   const communityHomeNeedsDisplayName = !hasHumanMemberName(me);
   const communityCountFromSummary = Number(poolSummary?.communities_count || clans.length || 0);
+  const combinedCommunityDomainCount =
+    communityDomainCount === null ? communityDomainRows.length : communityDomainCount;
+  const combinedCommunityListCount =
+    communityCountFromSummary + combinedCommunityDomainCount;
 
   const sortedClans = useMemo(() => {
     return [...clans].sort((a, b) => getClanName(a).localeCompare(getClanName(b)));
   }, [clans]);
+
+  const sortedCommunityDomainRows = useMemo(() => {
+    return [...communityDomainRows].sort((a, b) => a.name.localeCompare(b.name));
+  }, [communityDomainRows]);
 
   const communityNextActionItems = useMemo<NextActionGuideItem[]>(
     () => [
@@ -3385,7 +3462,8 @@ export default function CommunityHomePage() {
                         lineHeight: 1.2,
                       }}
                     >
-                      {communityCountFromSummary} community {communityCountFromSummary === 1 ? "marketplace" : "marketplaces"}
+                      {combinedCommunityListCount} marketplace{" "}
+                      {combinedCommunityListCount === 1 ? "community/domain" : "communities/domains"}
                     </span>
                     <span
                       style={{
@@ -3397,50 +3475,7 @@ export default function CommunityHomePage() {
                         lineHeight: 1.35,
                       }}
                     >
-                      Self-created or joined marketplace communities for local work.
-                    </span>
-                  </span>
-                  <span aria-hidden="true" style={{ color: "#0B2D4A", fontSize: 24 }}>
-                    {">"}
-                  </span>
-                </StableButton>
-
-                <StableButton
-                  type="button"
-                  debugId="community-home.summary.community-domain"
-                  onClick={(event) => openCommunityRoute(event, routes.communityDomain)}
-                  style={communityToolRowStyle()}
-                >
-                  <span style={communityActionIcon(false)}>
-                    {communityIconGlyph("financeInstitution", 34)}
-                  </span>
-                  <span style={{ minWidth: 0 }}>
-                    <span
-                      style={{
-                        ...brandClampLines(1),
-                        color: "#07172C",
-                        fontSize: isCompact ? 14.5 : 16,
-                        fontWeight: 950,
-                        lineHeight: 1.2,
-                      }}
-                    >
-                      {communityDomainCount === null
-                        ? "Community Domains"
-                        : `${communityDomainCount} community ${
-                            communityDomainCount === 1 ? "domain" : "domains"
-                          }`}
-                    </span>
-                    <span
-                      style={{
-                        ...brandClampLines(2),
-                        marginTop: 4,
-                        color: "#617085",
-                        fontSize: isCompact ? 12 : 13,
-                        fontWeight: 720,
-                        lineHeight: 1.35,
-                      }}
-                    >
-                      Set up domain rules, access, and governance; active work opens in Marketplace.
+                      Marketplace communities and Community Domains together. Setup and governance stay here; active work opens in Marketplace.
                     </span>
                   </span>
                   <span aria-hidden="true" style={{ color: "#0B2D4A", fontSize: 24 }}>
@@ -5129,7 +5164,7 @@ export default function CommunityHomePage() {
                 lineHeight: 1.18,
               }}
             >
-              Your Community Marketplaces
+              Marketplace Communities / Community Domains
             </span>
             <span
               style={{
@@ -5141,7 +5176,12 @@ export default function CommunityHomePage() {
                 lineHeight: 1.35,
               }}
             >
-              {sortedClans.length} {sortedClans.length === 1 ? "marketplace" : "marketplaces"}
+              {sortedClans.length} marketplace {sortedClans.length === 1 ? "community" : "communities"}
+              {combinedCommunityDomainCount
+                ? ` / ${combinedCommunityDomainCount} community ${
+                    combinedCommunityDomainCount === 1 ? "domain" : "domains"
+                  }`
+                : ""}
             </span>
           </span>
           <span aria-hidden="true" style={{ color: "#1E5D91", fontSize: 24 }}>
@@ -5261,6 +5301,136 @@ export default function CommunityHomePage() {
                         }}
                       >
                         {working ? "Opening..." : "Open Marketplace"}
+                      </StableButton>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+
+            {sortedCommunityDomainRows.map((row, index) => {
+              const displayIndex = sortedClans.length + index + 1;
+
+              return (
+                <div
+                  key={`domain-${row.key}`}
+                  style={{
+                    ...innerCard(
+                      row.marketplaceReady
+                        ? "linear-gradient(180deg, #FFFFFF 0%, #FFFDF7 58%, #F8EECF 100%)"
+                        : "linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 62%, #EFF7FF 100%)"
+                    ),
+                    border: row.marketplaceReady
+                      ? "1px solid rgba(215,162,45,0.26)"
+                      : "1px solid rgba(13,95,168,0.13)",
+                    boxShadow: row.marketplaceReady
+                      ? "0 14px 30px rgba(128,90,15,0.10), inset 0 1px 0 rgba(255,255,255,0.88), inset 0 -2px 0 rgba(8,40,72,0.04)"
+                      : "0 12px 26px rgba(7,24,39,0.07), inset 0 1px 0 rgba(255,255,255,0.86), inset 0 -2px 0 rgba(8,40,72,0.04)",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: isCompact
+                        ? "1fr"
+                        : "42px minmax(0, 1fr) auto",
+                      gap: isCompact ? 8 : 12,
+                      alignItems: "center",
+                    }}
+                  >
+                    {!isCompact ? (
+                      <div
+                        style={{
+                          width: 38,
+                          height: 38,
+                          borderRadius: 999,
+                          display: "inline-flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          background: row.marketplaceReady
+                            ? "linear-gradient(180deg, #D7A22D 0%, #805A0F 100%)"
+                            : "#EEF6FF",
+                          color: row.marketplaceReady ? "#FFFFFF" : "#0B1F33",
+                          fontWeight: 950,
+                          boxShadow: row.marketplaceReady
+                            ? "0 8px 18px rgba(128,90,15,0.18)"
+                            : "none",
+                        }}
+                      >
+                        {displayIndex}
+                      </div>
+                    ) : null}
+
+                    <div style={{ gridColumn: isCompact ? "1 / -1" : "auto" }}>
+                      <div
+                        style={{
+                          color: "#07172C",
+                          fontSize: isCompact ? 15 : 17,
+                          fontWeight: 900,
+                          lineHeight: 1.35,
+                        }}
+                      >
+                        {isCompact ? `${displayIndex}. ` : ""}
+                        {row.name}
+                      </div>
+
+                      <div
+                        style={{
+                          marginTop: 8,
+                          color: "#5F7287",
+                          fontSize: isCompact ? 12.5 : 14,
+                          lineHeight: isCompact ? 1.45 : 1.75,
+                        }}
+                      >
+                        Community Domain marketplace workspace.{" "}
+                        {row.marketplaceReady
+                          ? "Active work opens in Marketplace."
+                          : "Finish setup, rules, and activation first."}
+                      </div>
+
+                      <div
+                        style={{
+                          marginTop: 8,
+                          display: "flex",
+                          flexWrap: "wrap",
+                          gap: 6,
+                        }}
+                      >
+                        <span style={badge(row.marketplaceReady)}>
+                          {row.marketplaceReady ? "Marketplace ready" : "Setup needed"}
+                        </span>
+                        <span style={badge(Boolean(row.code))}>
+                          {row.code}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "1fr",
+                        justifyContent: isCompact ? "stretch" : "flex-end",
+                        gridColumn: isCompact ? "1 / -1" : "auto",
+                        marginTop: isCompact ? 2 : 0,
+                      }}
+                    >
+                      <StableButton
+                        type="button"
+                        debugId={`community-home.domain.${row.id || row.key}.open`}
+                        onClick={(event) =>
+                          openCommunityRoute(
+                            event,
+                            row.marketplaceReady ? row.marketplacePath : row.dashboardPath
+                          )
+                        }
+                        style={{
+                          ...communityActionStyle(
+                            row.marketplaceReady ? "primary" : "secondary"
+                          ),
+                          width: isCompact ? "100%" : undefined,
+                        }}
+                      >
+                        {row.marketplaceReady ? "Open Marketplace" : "Open Setup"}
                       </StableButton>
                     </div>
                   </div>

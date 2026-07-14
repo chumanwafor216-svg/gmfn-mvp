@@ -344,14 +344,12 @@ Must show:
 - Create marketplace community
 - Join marketplace community
 - Grow circle
-- Your Community Marketplaces compact row
+- Marketplace Communities / Community Domains compact row
   - row title
-  - marketplace count
-  - opens to a simple marketplace-community list
-  - each opened community item shows community name, marketplace workspace context, and Open Marketplace
-- Community Domains summary row
-  - clearly separated from community marketplaces
-  - opens the institutional Community Domain dashboard
+  - marketplace-community and Community Domain counts
+  - opens to one simple list for ordinary marketplace communities and institutional Community Domains
+  - each opened ordinary community item shows community name, marketplace workspace context, and Open Marketplace
+  - each opened Community Domain item shows domain name, setup/marketplace readiness, and opens Marketplace when active or setup/dashboard when not active
 - compact rows:
   - Owner Actions
   - Owner Shop Control
@@ -426,7 +424,7 @@ Must show:
 - compact structure preview showing root node and first branches/departments
 - compact member and role summary
 - compact governance/action-review summary
-- compact module status rows for Shops, Spotlight, Vault, Verification,
+- compact operating-area status rows for Shops, Spotlight, Vault, Verification,
   Trust Centre, Analytics, Billing, and Settings
 - clear route back to Dashboard or Community Home
 - empty states for draft, pending activation, active, expired, suspended, and
@@ -435,9 +433,9 @@ Must show:
 Rules:
 - This page is the institutional operating surface. It must not replace
   CommunityHomePage, which remains the lightweight selected-community home.
-- The first screen must not expose every lane at once. Follow the guided
-  work-surface rule: one identity hero, one main action, compact status rows,
-  and one opened lane at a time.
+- The first screen must not expose every operating area at once. Follow the
+  guided work-surface rule: one identity hero, one main action, compact status
+  rows, and one opened operating area at a time.
 - A branch, campus, parish, line, class, committee, ROSCA circle, or welfare
   group should normally be represented as a `CommunityNode` or activity group,
   not a separate domain, unless it needs separate billing, public identity, or

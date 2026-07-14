@@ -39,8 +39,8 @@ function sectionBetween(startPattern, endPattern) {
 }
 
 assertContains(
-  /debugId="marketplace\.row\.records-links"[\s\S]*?aria-label="Open marketplace tools, access and public links"[\s\S]*?openMarketplaceSection\(event, "tools", "marketplace-owned-links"\)[\s\S]*?<MarketplaceGlyph name="links"[\s\S]*?Marketplace Tools[\s\S]*?Access, public links, domain entries, and helper tools\.[\s\S]*?Verify[\s\S]*?Invite[\s\S]*?Create[\s\S]*?Shop Face[\s\S]*?Domains/,
-  "Marketplace Tools grouped card must open marketplace-owned links and advertise verify, invite, create, shop sharing, Community Domains, and helper tools."
+  /debugId="marketplace\.row\.records-links"[\s\S]*?aria-label="Open marketplace tools, access and public links"[\s\S]*?openMarketplaceSection\(event, "tools", "marketplace-owned-links"\)[\s\S]*?<MarketplaceGlyph name="links"[\s\S]*?Marketplace Tools[\s\S]*?Access, public links, and helper tools\.[\s\S]*?Verify[\s\S]*?Invite[\s\S]*?Create[\s\S]*?Shop Face/,
+  "Marketplace Tools grouped card must open marketplace-owned links and advertise verify, invite, create, shop sharing, and helper tools without Community Domain entries."
 );
 
 assertContains(
@@ -66,7 +66,6 @@ if (!recordsLinksSection.text) {
   ].map((match) => match[1] || match[2]);
   const expectedActionIds = [
     "marketplace.links.toggle",
-    "marketplace.domain.",
     "marketplace.links.choose.join",
     "marketplace.links.choose.verify",
     "marketplace.links.choose.create-community",
@@ -114,8 +113,6 @@ if (!recordsLinksSection.text) {
     /Access & public links/,
     /Access & Public Links/,
     /Verify the community, invite someone, start your own community,[\s\S]*?or share the public shop\./,
-    /Community Domains[\s\S]*?Domain marketplaces[\s\S]*?Setup stays in Community Home\. Ready domains open here\./,
-    /debugId=\{`marketplace\.domain\.\$\{row\.id \|\| row\.key\}\.open`\}/,
     /4 link jobs/,
     /1 active/,
     /Fast links/,
@@ -183,6 +180,14 @@ if (!recordsLinksSection.text) {
       recordsLinksSection.start,
       "Link Center phone surface must not expose raw join URLs or the old tall join-link reserve box.",
       "Use masked link summaries and action buttons instead."
+    );
+  }
+
+  if (/Community Domains|Domain marketplaces|marketplace\.domain\./.test(recordsLinksSection.text)) {
+    addFinding(
+      recordsLinksSection.start,
+      "Public Links must not contain Community Domain entries.",
+      "Community Domains belong under Community Members & Shops, not Marketplace Tools."
     );
   }
 }

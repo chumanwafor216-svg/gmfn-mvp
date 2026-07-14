@@ -158,7 +158,7 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /activeDomainPermissionFacts = DOMAIN_FEATURE_POLICY_ROWS\.map[\s\S]*showActiveDomainSettingsSummary[\s\S]*domainOperational && activeLane === "settings" && setupJourneyMode !== "edit"[\s\S]*Operating summary[\s\S]*This domain is active\. Use live lanes first[\s\S]*should not fall back into a\s+setup-first flow after activation[\s\S]*Use setup only when you\s+need to correct saved details, add authority evidence, or\s+prepare verification[\s\S]*Package allowance[\s\S]*packageCapacityFacts\.map[\s\S]*packageTariffBoundaryText[\s\S]*Summary only[\s\S]*does not add members, sell extra\s+bands, grant paid features, confirm payment, or verify\s+the organisation[\s\S]*Domain permissions[\s\S]*activeDomainPermissionFacts\.map[\s\S]*Source: \{featurePolicySourceLabel\}[\s\S]*summary only\s+explains the current policy[\s\S]*change live behaviour\s+through Edit setup details[\s\S]*active does not mean verified[\s\S]*community-domain-dashboard\.settings-open-live-lane[\s\S]*community-domain-dashboard\.settings-edit-setup-details[\s\S]*Edit setup details/,
+  /activeDomainPermissionFacts = DOMAIN_FEATURE_POLICY_ROWS\.map[\s\S]*showActiveDomainSettingsSummary[\s\S]*domainOperational && activeLane === "settings" && setupJourneyMode !== "edit"[\s\S]*Operating summary[\s\S]*This domain is active\. Use live operating areas first[\s\S]*should not fall back into a\s+setup-first flow after activation[\s\S]*Use setup only when you\s+need to correct saved details, add authority evidence, or\s+prepare verification[\s\S]*Package allowance[\s\S]*packageCapacityFacts\.map[\s\S]*packageTariffBoundaryText[\s\S]*Summary only[\s\S]*does not add members, sell extra\s+bands, grant paid features, confirm payment, or verify\s+the organisation[\s\S]*Domain permissions[\s\S]*activeDomainPermissionFacts\.map[\s\S]*Source: \{featurePolicySourceLabel\}[\s\S]*summary only\s+explains the current policy[\s\S]*change live behaviour\s+through Edit setup details[\s\S]*active does not mean verified[\s\S]*community-domain-dashboard\.settings-open-live-lane[\s\S]*community-domain-dashboard\.settings-edit-setup-details[\s\S]*Edit setup details/,
   "Active Community Domains must show an operating summary with package allowance and all domain permission boundaries on the settings lane, and keep setup editing behind an explicit edit action.",
   { frontend: true }
 );
@@ -588,7 +588,7 @@ assertContains(
 
 assertContains(
   "src/pages/communityDomainDashboard/DomainSelectorPanel.tsx",
-  /No owned domains on this account[\s\S]*community-domain-dashboard\.empty\.community-home[\s\S]*Your Community Domains[\s\S]*draftDomain \? "Set up \/ edit" : "Open \/ edit"/,
+  /No domains yet[\s\S]*community-domain-dashboard\.empty\.community-home[\s\S]*Your Community Domains[\s\S]*draftDomain \? "Continue setup" : "Open domain"/,
   "Lazy Community Domain selector panel must keep empty-state recovery, draft setup wording, and owned-domain opening.",
   { frontend: true }
 );
@@ -630,7 +630,7 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /primaryActionFallbackNote[\s\S]*authority verification is shown there as a readiness row[\s\S]*separate owner or admin path[\s\S]*Open the \{mainActionLaneLabel\} lane[\s\S]*deeper[\s\S]*owner\/admin tools that check permissions/,
+  /primaryActionFallbackNote[\s\S]*authority verification is shown there as a readiness row[\s\S]*separate owner or admin path[\s\S]*Open the \{mainActionLaneLabel\} area[\s\S]*deeper[\s\S]*owner\/admin tools that check permissions/,
   "Community Domain dashboard authority-verification fallback must explain why Services opens without pretending verification is complete.",
   { frontend: true }
 );
@@ -710,7 +710,7 @@ assertNotContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /function laneDisplayLabel[\s\S]*key === "modules"[\s\S]*return "Services"[\s\S]*key === "settings"\) return "Setup"[\s\S]*const primaryActionLaneLabel = laneDisplayLabel\(primaryActionLane, "work"\)[\s\S]*Edit Community Domain[\s\S]*laneDisplayLabel\(selectedLane, "Community Domain setup"\)/,
+  /function laneDisplayLabel[\s\S]*key === "modules"[\s\S]*return "Services"[\s\S]*key === "settings"\) return "Setup"[\s\S]*const primaryActionLaneLabel = laneDisplayLabel\(primaryActionLane, "work"\)[\s\S]*Edit Community Domain[\s\S]*laneDisplayLabel\(selectedLane, "Community Domain area"\)/,
   "Community Domain dashboard parent must show service language for primary and opened modules-lane labels without changing internal lane keys, while allowing the edit setup heading.",
   { frontend: true }
 );
@@ -855,14 +855,14 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /function pageShell\(\)[\s\S]*display: "grid"[\s\S]*alignContent: "start"[\s\S]*isCommunityDomainOperational[\s\S]*blockedDomain[\s\S]*billingReady[\s\S]*includes\("paid"\)[\s\S]*includes\("confirmed"\)[\s\S]*activationReady[\s\S]*activationBlocked[\s\S]*firstAvailableOperationalLaneKey[\s\S]*domainOperational[\s\S]*operationalLaneKey[\s\S]*mainActionLaneKey[\s\S]*domainOperational \? operationalLaneKey : primaryActionLaneKey[\s\S]*mainActionCopy[\s\S]*operatingStateCopy\.nextStep[\s\S]*otherToolsLaneKey[\s\S]*showDomainWorkSurface[\s\S]*setupWorkspaceOpen \|\| showAdvancedTools \|\| setupJourneyMode === "edit"[\s\S]*openDomainMarketplace[\s\S]*routeWithCommunity\(APP_ROUTES\.MARKETPLACE, clanId\)[\s\S]*!domainOperational \? \([\s\S]*PageTopNav[\s\S]*Domain command[\s\S]*Run one live lane at a time[\s\S]*community-domain-dashboard\.open-marketplace[\s\S]*Open Marketplace[\s\S]*community-domain-dashboard\.operational-focus[\s\S]*setSetupWorkspaceOpen\(false\)[\s\S]*Open governance lanes[\s\S]*commandGuidanceGrid[\s\S]*commandGuidanceTile\("next"\)[\s\S]*commandGuidanceTile\("risk"\)[\s\S]*Open the \{mainActionLaneLabel\} lane[\s\S]*setActiveLane\(mainActionLaneKey\)[\s\S]*setSetupWorkspaceOpen\(true\)/,
-  "Active Community Domains must hand off to Marketplace first and keep governance lanes secondary, while draft domains keep setup behind an explicit focused workbench.",
+  /function pageShell\(\)[\s\S]*display: "grid"[\s\S]*alignContent: "start"[\s\S]*isCommunityDomainOperational[\s\S]*blockedDomain[\s\S]*billingReady[\s\S]*includes\("paid"\)[\s\S]*includes\("confirmed"\)[\s\S]*activationReady[\s\S]*activationBlocked[\s\S]*firstAvailableOperationalLaneKey[\s\S]*domainOperational[\s\S]*operationalLaneKey[\s\S]*mainActionLaneKey[\s\S]*domainOperational \? operationalLaneKey : primaryActionLaneKey[\s\S]*mainActionCopy[\s\S]*operatingStateCopy\.nextStep[\s\S]*otherToolsLaneKey[\s\S]*showDomainWorkSurface[\s\S]*setupWorkspaceOpen \|\| showAdvancedTools \|\| setupJourneyMode === "edit"[\s\S]*openDomainMarketplace[\s\S]*routeWithCommunity\(APP_ROUTES\.MARKETPLACE, clanId\)[\s\S]*!domainOperational \? \([\s\S]*PageTopNav[\s\S]*Domain command[\s\S]*Run one operating area at a time[\s\S]*community-domain-dashboard\.open-marketplace[\s\S]*Open Marketplace[\s\S]*community-domain-dashboard\.operational-focus[\s\S]*setSetupWorkspaceOpen\(false\)[\s\S]*Open operating areas[\s\S]*commandGuidanceGrid[\s\S]*commandGuidanceTile\("next"\)[\s\S]*commandGuidanceTile\("risk"\)[\s\S]*Open the \{mainActionLaneLabel\} area[\s\S]*setActiveLane\(mainActionLaneKey\)[\s\S]*setSetupWorkspaceOpen\(true\)/,
+  "Active Community Domains must hand off to Marketplace first and keep operating areas secondary, while draft domains keep setup behind an explicit focused workbench.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /domainOperational[\s\S]*"Live lane"[\s\S]*"Live domain actions"[\s\S]*"More operating tools\."[\s\S]*"Open lanes"[\s\S]*"Operating view only\. It does not verify ownership, confirm new payments, grant paid features, or expose private records\."/,
+  /domainOperational[\s\S]*"Live area"[\s\S]*"Live domain actions"[\s\S]*"More operating tools\."[\s\S]*"Open operating areas"[\s\S]*"Operating view only\. It does not verify ownership, confirm new payments, grant paid features, or expose private records\."/,
   "Active Community Domain dashboard tools must use live operating language after activation while keeping setup/edit language scoped to setup work.",
   { frontend: true }
 );
@@ -918,8 +918,8 @@ assertNotContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /showAdvancedTools[\s\S]*setShowAdvancedTools\(false\)[\s\S]*showAdvancedTools && activeLane === "settings"[\s\S]*Official Board[\s\S]*Community Domain engine[\s\S]*showAdvancedTools \?[\s\S]*Work lanes[\s\S]*showOtherDomainToolsEntry \? \([\s\S]*Other domain tools[\s\S]*community-domain-dashboard\.advanced-tools-toggle/,
-  "Community Domain dashboard must keep notices, engine details, and work lanes closed until the owner opens governance lanes or edit mode.",
+  /showAdvancedTools[\s\S]*setShowAdvancedTools\(false\)[\s\S]*showAdvancedTools && activeLane === "settings"[\s\S]*Official Board[\s\S]*Community Domain engine[\s\S]*showAdvancedTools \?[\s\S]*Operating areas[\s\S]*showOtherDomainToolsEntry \? \([\s\S]*Other domain tools[\s\S]*community-domain-dashboard\.advanced-tools-toggle/,
+  "Community Domain dashboard must keep notices, engine details, and operating areas closed until the owner opens the secondary operating surface or edit mode.",
   { frontend: true }
 );
 
@@ -933,7 +933,7 @@ assertNotContains(
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
   /lazy\([\s\S]*import\("\.\/communityDomainDashboard\/LaneSelectorPanel"\)[\s\S]*activeLane[\s\S]*setActiveLane[\s\S]*selectedLane[\s\S]*CommunityDomainLaneSelectorPanel[\s\S]*lanes=\{lanes\}[\s\S]*activeLane=\{activeLane\}[\s\S]*onSelectLane=\{setActiveLane\}/,
-  "Community Domain dashboard must keep lane state in the parent route while lazy-loading the Work lanes selector.",
+  "Community Domain dashboard must keep lane state in the parent route while lazy-loading the operating-area selector.",
   { frontend: true }
 );
 
@@ -967,7 +967,7 @@ assertContains(
 
 assertContains(
   "tools/audit-community-domain-mobile-visual.mjs",
-  /const routePath = "\/app\/community-domain\/13"[\s\S]*const purchaseRoutePath = "\/community-domain\/purchase\?demo=pillar-of-hope"[\s\S]*let domainListScenario = "owned"[\s\S]*let dashboardScenario = "active"[\s\S]*dashboardScenario === "draft"[\s\S]*firstViewportActionFinding[\s\S]*viewportElementFinding[\s\S]*community-domain-purchase\.check-domain[\s\S]*Purchase page mobile hero still exposes the four engine explanation cards[\s\S]*community-domain-purchase\.other-paths[\s\S]*domainListScenario = "empty"[\s\S]*community-domain-dashboard\.selector\.setup-new[\s\S]*community-domain-dashboard\.selector\.find-edit-domain[\s\S]*community-domain-dashboard\.selector\.back-to-choice[\s\S]*dashboardScenario = "draft"[\s\S]*community-domain-dashboard\.setup-focus[\s\S]*Draft Community Domain dashboard exposes Other domain tools before setup is opened[\s\S]*community-domain-dashboard\.work-surface[\s\S]*Draft Community Domain setup workbench exposes Other domain tools during the primary setup journey[\s\S]*Draft Community Domain setup workbench exposes advanced dashboard blocks during setup[\s\S]*dashboardScenario = "active"[\s\S]*community-domain-dashboard\.open-marketplace[\s\S]*Open Marketplace[\s\S]*Open governance lanes[\s\S]*Active Community Domain dashboard exposes setup editing on the first command surface[\s\S]*Active Community Domain dashboard exposes Other domain tools before governance lanes are opened[\s\S]*community-domain-dashboard\.operational-focus[\s\S]*community-domain-dashboard\.service-detail\.boundaries[\s\S]*community-domain-service-boundary\.focus\.privacy[\s\S]*community-domain-dashboard\.service-detail\.evidence[\s\S]*community-domain\.trust-evidence\.focus\.release[\s\S]*community-domain-dashboard\.structure-detail\.planning[\s\S]*community-domain\.structure-planning\.focus\.groups[\s\S]*Safe next step[\s\S]*horizontalOverflow[\s\S]*lowContrast/,
+  /const routePath = "\/app\/community-domain\/13"[\s\S]*const purchaseRoutePath = "\/community-domain\/purchase\?demo=pillar-of-hope"[\s\S]*let domainListScenario = "owned"[\s\S]*let dashboardScenario = "active"[\s\S]*dashboardScenario === "draft"[\s\S]*firstViewportActionFinding[\s\S]*viewportElementFinding[\s\S]*community-domain-purchase\.check-domain[\s\S]*Purchase page mobile hero still exposes the four engine explanation cards[\s\S]*community-domain-purchase\.other-paths[\s\S]*domainListScenario = "empty"[\s\S]*community-domain-dashboard\.selector\.setup-new[\s\S]*community-domain-dashboard\.selector\.find-edit-domain[\s\S]*community-domain-dashboard\.selector\.back-to-choice[\s\S]*dashboardScenario = "draft"[\s\S]*community-domain-dashboard\.setup-focus[\s\S]*Draft Community Domain dashboard exposes Other domain tools before setup is opened[\s\S]*community-domain-dashboard\.work-surface[\s\S]*Draft Community Domain setup workbench exposes Other domain tools during the primary setup journey[\s\S]*Draft Community Domain setup workbench exposes advanced dashboard blocks during setup[\s\S]*dashboardScenario = "active"[\s\S]*community-domain-dashboard\.open-marketplace[\s\S]*Open Marketplace[\s\S]*Open operating areas[\s\S]*Active Community Domain dashboard exposes setup editing on the first command surface[\s\S]*Active Community Domain dashboard exposes Other domain tools before operating areas are opened[\s\S]*community-domain-dashboard\.operational-focus[\s\S]*community-domain-dashboard\.service-detail\.boundaries[\s\S]*community-domain-service-boundary\.focus\.privacy[\s\S]*community-domain-dashboard\.service-detail\.evidence[\s\S]*community-domain\.trust-evidence\.focus\.release[\s\S]*community-domain-dashboard\.structure-detail\.planning[\s\S]*community-domain\.structure-planning\.focus\.groups[\s\S]*Safe next step[\s\S]*horizontalOverflow[\s\S]*lowContrast/,
   "Community Domain mobile visual audit must exercise purchase first-job compaction, selector one-path state, active-domain lanes, focused service/structure packets, dead-block regression, overflow, and contrast checks.",
   { frontend: true }
 );
@@ -988,7 +988,7 @@ assertNotContains(
 
 assertContains(
   "src/pages/communityDomainDashboard/LaneSelectorPanel.tsx",
-  /function laneDisplayLabel[\s\S]*key === "modules"[\s\S]*return "Services"[\s\S]*Work lanes[\s\S]*lanes\.map[\s\S]*onSelectLane\(laneKey\)[\s\S]*debugId=\{`community-domain-dashboard\.lane\.\$\{laneKey\}`\}[\s\S]*stableHeight=\{58\}[\s\S]*compactStatus\(lane\.status\)[\s\S]*countValue\(lane\.count\)/,
+  /function laneDisplayLabel[\s\S]*key === "modules"[\s\S]*return "Services"[\s\S]*Operating areas[\s\S]*lanes\.map[\s\S]*onSelectLane\(laneKey\)[\s\S]*debugId=\{`community-domain-dashboard\.lane\.\$\{laneKey\}`\}[\s\S]*stableHeight=\{58\}[\s\S]*compactStatus\(lane\.status\)[\s\S]*countValue\(lane\.count\)/,
   "Lazy Community Domain lane selector must preserve service-lane wording, stable lane debug ids, selected-lane switching, status text, and count badges.",
   { frontend: true }
 );
@@ -1009,7 +1009,7 @@ assertNotContains(
 
 assertContains(
   "src/pages/communityDomainDashboard/SetupIntelligenceCards.tsx",
-  /function setupReadinessItems[\s\S]*function setupPlanSteps[\s\S]*SETUP_SCOPE_NOTE[\s\S]*no membership, billing, authority, payment, public page, money, or private evidence changes[\s\S]*blockedSetupReadinessItems[\s\S]*visibleSetupPlanSteps[\s\S]*openSetupPlanSteps[\s\S]*Setup readiness[\s\S]*checks ready[\s\S]*setup checks still need attention/,
+  /function setupReadinessItems[\s\S]*function setupPlanSteps[\s\S]*SETUP_SCOPE_NOTE[\s\S]*Setup guidance only:[\s\S]*no membership, billing, authority, payment, public-page, money, or private-evidence changes[\s\S]*blockedSetupReadinessItems[\s\S]*visibleSetupPlanSteps[\s\S]*openSetupPlanSteps[\s\S]*Setup readiness[\s\S]*checks ready[\s\S]*setup checks still need attention/,
   "Lazy Community Domain setup intelligence component must derive setup readiness blockers from raw setup readiness and keep one concise setup scope boundary.",
   { frontend: true }
 );
@@ -1086,7 +1086,7 @@ assertNotContains(
 
 assertContains(
   "src/pages/communityDomainDashboard/ServiceReadinessPanels.tsx",
-  /SERVICE_FOCUS_OPTIONS[\s\S]*key: "services"[\s\S]*key: "settings"[\s\S]*key: "economy"[\s\S]*key: "presence"[\s\S]*SERVICE_SCOPE_NOTE[\s\S]*no service activation, settings save, billing activation, permission grant, shop creation, Spotlight publish, vault link, public page, URL finalization, money movement, TrustSlip, Trust Passport, or private record exposure[\s\S]*SERVICE_READINESS_KEYS[\s\S]*"shops"[\s\S]*"spotlight"[\s\S]*"vault"[\s\S]*"verification"[\s\S]*"trust_centre"[\s\S]*"analytics"[\s\S]*function projectionItems[\s\S]*function readinessLanes[\s\S]*function blockedLanes[\s\S]*function readyTotal[\s\S]*function serviceReadinessRows[\s\S]*moduleScopeReadiness\?\.modules[\s\S]*moduleKeys[\s\S]*billingStatus[\s\S]*quote[\s\S]*visibleServiceReadinessRows[\s\S]*projectionItems\(serviceSettingsProjection\)[\s\S]*economicParticipation\?\.counts[\s\S]*economicParticipation\?\.template[\s\S]*readinessLanes\(economicParticipation\)[\s\S]*networkPresence\?\.identity[\s\S]*networkPresence\?\.status[\s\S]*readinessLanes\(networkPresence\)/,
+  /SERVICE_FOCUS_OPTIONS[\s\S]*key: "services"[\s\S]*key: "settings"[\s\S]*key: "economy"[\s\S]*key: "presence"[\s\S]*SERVICE_SCOPE_NOTE[\s\S]*Readiness only:[\s\S]*no service activation, billing, permissions, publishing, money movement, proof, or private records[\s\S]*SERVICE_READINESS_KEYS[\s\S]*"shops"[\s\S]*"spotlight"[\s\S]*"vault"[\s\S]*"verification"[\s\S]*"trust_centre"[\s\S]*"analytics"[\s\S]*function projectionItems[\s\S]*function readinessLanes[\s\S]*function blockedLanes[\s\S]*function readyTotal[\s\S]*function serviceReadinessRows[\s\S]*moduleScopeReadiness\?\.modules[\s\S]*moduleKeys[\s\S]*billingStatus[\s\S]*quote[\s\S]*visibleServiceReadinessRows[\s\S]*projectionItems\(serviceSettingsProjection\)[\s\S]*economicParticipation\?\.counts[\s\S]*economicParticipation\?\.template[\s\S]*readinessLanes\(economicParticipation\)[\s\S]*networkPresence\?\.identity[\s\S]*networkPresence\?\.status[\s\S]*readinessLanes\(networkPresence\)/,
   "Lazy Community Domain service readiness component must derive service readiness rows, service-setting splits, economic participation readiness, and network presence readiness from raw maps.",
   { frontend: true }
 );
@@ -1128,21 +1128,21 @@ assertContains(
 
 assertContains(
   "src/pages/communityDomainDashboard/ServiceBoundaryPanels.tsx",
-  /Network exchange readiness[\s\S]*primary_next_action[\s\S]*domain_exchange_status[\s\S]*cross_domain_discovery_status[\s\S]*active_affiliations[\s\S]*external_finance_status[\s\S]*outside-network planning only[\s\S]*does not open exchange,\s+discovery, finance, loans, money movement, or private records/,
+  /Network exchange readiness[\s\S]*primary_next_action[\s\S]*domain_exchange_status[\s\S]*cross_domain_discovery_status[\s\S]*active_affiliations[\s\S]*external_finance_status[\s\S]*Boundary: outside-network planning only[\s\S]*no exchange, discovery,[\s\S]*finance, loans, money movement, or private records/,
   "Community Domain dashboard Services lane must keep outside-network planning copy concise while preserving exchange, finance, loan, money, and private-record boundaries.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/communityDomainDashboard/ServiceBoundaryPanels.tsx",
-  /Record privacy readiness[\s\S]*primary_next_action[\s\S]*public_url_status[\s\S]*marketplace_private_record_status[\s\S]*finance_private_record_status[\s\S]*cross_domain_record_sharing_status[\s\S]*privacy planning only[\s\S]*does not change access, publish\s+rosters or proof, share private records, or move money/,
+  /Record privacy readiness[\s\S]*primary_next_action[\s\S]*public_url_status[\s\S]*marketplace_private_record_status[\s\S]*finance_private_record_status[\s\S]*cross_domain_record_sharing_status[\s\S]*Boundary: privacy planning only[\s\S]*no access changes, rosters, proof,[\s\S]*private-record sharing, or money movement/,
   "Community Domain dashboard Services lane must keep record privacy copy concise while preserving access, roster, proof, private-record, and money boundaries.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/communityDomainDashboard/ServiceBoundaryPanels.tsx",
-  /Setup map[\s\S]*primary_next_action[\s\S]*configuration_mode[\s\S]*Special data model[\s\S]*custom_schema_status[\s\S]*Special billing[\s\S]*custom_billing_status[\s\S]*Services[\s\S]*default_modules[\s\S]*Dedicated setup[\s\S]*custom_tenant_status[\s\S]*Access rules[\s\S]*custom_permission_status[\s\S]*setup planning only[\s\S]*does not create special builds,\s+service settings, payments, records, or private data/,
+  /Setup map[\s\S]*primary_next_action[\s\S]*configuration_mode[\s\S]*Special data model[\s\S]*custom_schema_status[\s\S]*Special billing[\s\S]*custom_billing_status[\s\S]*Services[\s\S]*default_modules[\s\S]*Dedicated setup[\s\S]*custom_tenant_status[\s\S]*Access rules[\s\S]*custom_permission_status[\s\S]*Boundary: setup planning only[\s\S]*no special builds, service settings,[\s\S]*payments, records, or private data/,
   "Community Domain dashboard Services lane must keep setup map copy concise while preserving special-build, service-setting, payment, record, and privacy boundaries.",
   { frontend: true }
 );
@@ -1156,14 +1156,14 @@ assertNotContains(
 
 assertContains(
   "src/pages/communityDomainDashboard/ServiceBoundaryPanels.tsx",
-  /Compliance map[\s\S]*primary_next_action[\s\S]*compliance_engine_status[\s\S]*legal_advice_status[\s\S]*payment_compliance_status[\s\S]*cross_domain_record_sharing_status[\s\S]*compliance planning only[\s\S]*not legal advice or a\s+certificate[\s\S]*does not certify compliance, move money, or show\s+private records/,
+  /Compliance map[\s\S]*primary_next_action[\s\S]*compliance_engine_status[\s\S]*legal_advice_status[\s\S]*payment_compliance_status[\s\S]*cross_domain_record_sharing_status[\s\S]*Boundary: compliance planning only[\s\S]*not legal advice or certification,[\s\S]*and no compliance certification, money movement, or private records/,
   "Community Domain dashboard Services lane must keep compliance copy concise while preserving legal-advice, certification, money, and private-record boundaries.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/communityDomainDashboard/ServiceBoundaryPanels.tsx",
-  /Appeal readiness[\s\S]*primary_next_action[\s\S]*appeal_engine_status[\s\S]*appeal_records_created[\s\S]*mediator_assignment_status[\s\S]*appeal_decision_status[\s\S]*fairness planning only[\s\S]*does not create appeals, decide\s+disputes, reverse payments, move money, or show private records/,
+  /Appeal readiness[\s\S]*primary_next_action[\s\S]*appeal_engine_status[\s\S]*appeal_records_created[\s\S]*mediator_assignment_status[\s\S]*appeal_decision_status[\s\S]*Boundary: fairness planning only[\s\S]*no appeals, dispute decisions,[\s\S]*payment reversals, money movement, or private records/,
   "Community Domain dashboard Services lane must keep appeal readiness copy concise while preserving appeal, dispute, payment-reversal, money, and private-record boundaries.",
   { frontend: true }
 );
@@ -1464,35 +1464,35 @@ assertContains(
 
 assertContains(
   "src/pages/communityDomainDashboard/TrustEvidenceReadinessPanels.tsx",
-  /Evidence record readiness[\s\S]*primary_next_action[\s\S]*evidence_record_engine_status[\s\S]*record_type_count[\s\S]*evidence_records_created[\s\S]*review_evidence_metadata_count[\s\S]*This view only shows evidence-record readiness\. It does not create\s+records, upload files, issue credentials, publish proof, verify authority,\s+score trust, move money, or show private evidence/,
+  /Evidence record readiness[\s\S]*primary_next_action[\s\S]*evidence_record_engine_status[\s\S]*record_type_count[\s\S]*evidence_records_created[\s\S]*review_evidence_metadata_count[\s\S]*Boundary: readiness only[\s\S]*no records, uploads, credentials, proof,[\s\S]*authority verification, trust scoring, money, or private evidence/,
   "Community Domain dashboard Services lane must show read-only evidence record readiness without implying durable evidence writes, file upload, storage-key exposure, validity calculation, visibility-policy persistence, credentials, TrustSlips, Trust Passport writes, public proof, legal verification, money movement, billing activation, marketplace activity, social Community creation, private evidence exposure, or trust scoring.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/communityDomainDashboard/TrustEvidenceReadinessPanels.tsx",
-  /Evidence release readiness[\s\S]*primary_next_action[\s\S]*evidence_release_engine_status[\s\S]*evidence_releases_created[\s\S]*public_proofs_published[\s\S]*release_evidence_count[\s\S]*This view only shows public-release readiness\. It does not release\s+evidence, publish proof, create public links or QR codes, issue\s+credentials, share records, change permissions, score trust, move money,\s+or show private evidence/,
+  /Evidence release readiness[\s\S]*primary_next_action[\s\S]*evidence_release_engine_status[\s\S]*evidence_releases_created[\s\S]*public_proofs_published[\s\S]*release_evidence_count[\s\S]*Boundary: release readiness only[\s\S]*no evidence release, proof, public[\s\S]*links, QR codes, credentials, sharing, permission changes, trust[\s\S]*scoring, money, or private evidence/,
   "Community Domain dashboard Services lane must show read-only evidence release readiness without implying evidence release, file or storage-key exposure, public proof publishing, public URL or QR creation, credentials, TrustSlips, Trust Passport writes, cross-domain sharing, trust relay paths, legal verification, money movement, billing activation, marketplace activity, social Community creation, permission changes, private evidence exposure, or trust scoring.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/communityDomainDashboard/TrustEvidenceReadinessPanels.tsx",
-  /Trust relay readiness[\s\S]*primary_next_action[\s\S]*trust_relay_engine_status[\s\S]*relay_paths_created[\s\S]*bridge_member_candidates[\s\S]*open_relay_review_count[\s\S]*This view only shows relay readiness\. It does not create relay paths,\s+publish proof, repost Spotlight, create discovery or affiliations, share\s+private records, issue credentials, create marketplace activity, activate\s+billing, or move money/,
+  /Trust relay readiness[\s\S]*primary_next_action[\s\S]*trust_relay_engine_status[\s\S]*relay_paths_created[\s\S]*bridge_member_candidates[\s\S]*open_relay_review_count[\s\S]*Boundary: relay readiness only[\s\S]*no relay paths, proof, reposts,[\s\S]*discovery, affiliations, private records, credentials, marketplace[\s\S]*activity, billing, or money/,
   "Community Domain dashboard Services lane must show read-only trust relay readiness without implying relay path creation, Spotlight reposting, proof publishing, cross-domain discovery, private evidence access, TrustSlip issuing, Trust Passport writes, credentials, marketplace activity, affiliations, billing activation, or money movement.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/communityDomainDashboard/TrustEvidenceReadinessPanels.tsx",
-  /Notification scope readiness[\s\S]*primary_next_action[\s\S]*notification_scope_engine_status[\s\S]*notification_policy_count[\s\S]*notifications_sent[\s\S]*This view only shows audience readiness\. It does not send messages,\s+create delivery jobs or audience lists, publish announcements, show\s+member lists, create marketplace records, move money, create trust\s+records, or show private records/,
+  /Notification scope readiness[\s\S]*primary_next_action[\s\S]*notification_scope_engine_status[\s\S]*notification_policy_count[\s\S]*notifications_sent[\s\S]*Boundary: audience readiness only[\s\S]*no messages, delivery jobs,[\s\S]*audience lists, announcements, member lists, marketplace records,[\s\S]*money, trust records, or private records/,
   "Community Domain dashboard Services lane must show read-only notification scope readiness without implying notification delivery, jobs, email/SMS/WhatsApp/push sending, audience-list creation, public announcements, cross-domain broadcasts, member-list exposure, marketplace records, money movement, TrustSlips, Trust Passport writes, or private record exposure.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/communityDomainDashboard/TrustEvidenceReadinessPanels.tsx",
-  /Trust mobility readiness[\s\S]*primary_next_action[\s\S]*verification_status[\s\S]*review_evidence_records[\s\S]*relay_paths[\s\S]*This view only shows trust-mobility readiness\. It does not create trust\s+records, credentials, relay paths, public proof, outward links,\s+marketplace activity, separate communities, move money, or show\s+private records/,
+  /Trust mobility readiness[\s\S]*primary_next_action[\s\S]*verification_status[\s\S]*review_evidence_records[\s\S]*relay_paths[\s\S]*Boundary: mobility readiness only[\s\S]*no trust records, credentials,[\s\S]*relay paths, proof, outward links, marketplace activity, separate[\s\S]*communities, money, or private records/,
   "Community Domain dashboard Services lane must show read-only trust mobility readiness without implying TrustSlips, Trust Passport writes, credentials, relay paths, evidence release, file or storage-key exposure, legal verification, proof publishing, outward links, money movement, billing, activation, marketplace activity, social Community creation, or private record exposure.",
   { frontend: true }
 );
@@ -1541,22 +1541,29 @@ assertContains(
 
 assertContains(
   "src/pages/communityDomainDashboard/IdentityReadinessPanels.tsx",
-  /Affiliation readiness[\s\S]*primary_next_action[\s\S]*bridge_status[\s\S]*domain_affiliation_engine_status[\s\S]*approved_affiliations[\s\S]*pending_affiliations[\s\S]*This view only shows affiliation readiness[\s\S]*does not create parent\s+or child Community Domain links, approve requests, set community links,\s+copy or transfer members, inherit policy, activate billing, verify\s+authority, publish public links, create marketplace activity, move\s+money, create trust records, or show private records/,
-  "Community Domain dashboard Identity lane must show read-only affiliation readiness without implying domain-domain affiliation creation, parent/child domain creation, affiliation decisions, social Community linking, member transfer, inherited policy, billing, verification, public URLs, marketplace activity, money movement, TrustSlips, Trust Passport writes, or private record exposure.",
+  /Affiliation readiness[\s\S]*primary_next_action[\s\S]*bridge_status[\s\S]*domain_affiliation_engine_status[\s\S]*approved_affiliations[\s\S]*pending_affiliations[\s\S]*Boundary: affiliation readiness only[\s\S]*no parent or child links,[\s\S]*approvals, community links, member copy or transfer, inherited policy,[\s\S]*billing, authority verification, public links, marketplace activity,[\s\S]*money, trust records, or private records/,
+  "Community Domain dashboard Identity area must show concise affiliation readiness without implying domain-domain affiliation creation, parent/child domain creation, affiliation decisions, social Community linking, member transfer, inherited policy, billing, verification, public URLs, marketplace activity, money movement, TrustSlips, Trust Passport writes, or private record exposure.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/communityDomainDashboard/IdentityReadinessPanels.tsx",
-  /Community bridge readiness[\s\S]*primary_next_action[\s\S]*bridge_status[\s\S]*upgrade_path_status[\s\S]*linked_member_count[\s\S]*This view only shows community bridge readiness[\s\S]*does not create or\s+upgrade an ordinary community, connect private records, decide\s+affiliations, copy or invite members, move marketplace activity,\s+activate billing, verify authority, merge records, or show private\s+member records/,
-  "Community Domain dashboard Identity lane must show read-only social bridge readiness without implying social Community creation, Community upgrade, clan_id linking, affiliation writes or decisions, member copying/invites, marketplace movement, billing activation, authority verification, record merging, or private member exposure.",
+  /Community bridge readiness[\s\S]*primary_next_action[\s\S]*bridge_status[\s\S]*upgrade_path_status[\s\S]*linked_member_count[\s\S]*Boundary: bridge readiness only[\s\S]*no community creation or upgrade,[\s\S]*private-record connection, affiliation decisions, member copy or invite,[\s\S]*marketplace movement, billing, authority verification, record merging,[\s\S]*or private member records/,
+  "Community Domain dashboard Identity area must show concise social bridge readiness without implying social Community creation, Community upgrade, clan_id linking, affiliation writes or decisions, member copying/invites, marketplace movement, billing activation, authority verification, record merging, or private member exposure.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/communityDomainDashboard/IdentityReadinessPanels.tsx",
-  /Institutional profile[\s\S]*primary_next_action[\s\S]*template_label[\s\S]*marketplace_role[\s\S]*active_member_count[\s\S]*active_policy_count[\s\S]*This view only shows institutional profile readiness[\s\S]*does not create\s+structures, members, policies, reviews, evidence, billing packages,\s+shops, payments, finance records, community links, verification,\s+activation, public pages, or private records/,
-  "Community Domain dashboard Identity lane must show read-only institutional profile classification without implying custom schema, tenant, billing package, node/member/policy/review/evidence writes, marketplace/shop/payment/finance records, social Community links, verification, activation, publication, or private record exposure.",
+  /Institutional profile[\s\S]*primary_next_action[\s\S]*template_label[\s\S]*marketplace_role[\s\S]*active_member_count[\s\S]*active_policy_count[\s\S]*Boundary: profile readiness only[\s\S]*no structures, members, policies,[\s\S]*reviews, evidence, billing, shops, payments, finance records,[\s\S]*community links, verification, activation, public pages, or private[\s\S]*records/,
+  "Community Domain dashboard Identity area must show concise institutional profile classification without implying custom schema, tenant, billing package, node/member/policy/review/evidence writes, marketplace/shop/payment/finance records, social Community links, verification, activation, publication, or private record exposure.",
+  { frontend: true }
+);
+
+assertNotContains(
+  "src/pages/communityDomainDashboard/IdentityReadinessPanels.tsx",
+  /This view only shows (institutional profile|community bridge|affiliation readiness)|No blocked (institutional|community bridge|affiliation) lane/,
+  "Community Domain Identity notes must stay concise and avoid user-facing lane language.",
   { frontend: true }
 );
 
@@ -1653,28 +1660,28 @@ assertNotContains(
 
 assertContains(
   "src/pages/communityDomainDashboard/StructurePlanningPanels.tsx",
-  /Rollout plan[\s\S]*primary_next_action[\s\S]*Current phase:[\s\S]*First units[\s\S]*rolloutPlanCounts\.first_level_units[\s\S]*Ready units[\s\S]*rolloutPlanCounts\.ready_units[\s\S]*Units needing attention[\s\S]*This view only shows rollout steps and units needing attention[\s\S]*does not\s+change structure, membership, authority, billing, public pages, marketplace\s+activity, money, or private evidence/,
+  /Rollout plan[\s\S]*primary_next_action[\s\S]*Current phase:[\s\S]*First units[\s\S]*rolloutPlanCounts\.first_level_units[\s\S]*Ready units[\s\S]*rolloutPlanCounts\.ready_units[\s\S]*Units needing attention[\s\S]*Boundary: rollout planning only[\s\S]*no structure, membership, authority,[\s\S]*billing, public-page, marketplace, money, or private-evidence changes/,
   "Community Domain dashboard Structure lane must show the backend rollout plan as read-only institutional onboarding guidance without implying structure writes, invitations, placements, policy creation, billing, publishing, marketplace activity, social Community creation, money movement, or private evidence access.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/communityDomainDashboard/StructurePlanningPanels.tsx",
-  /Activity map[\s\S]*primary_next_action[\s\S]*activity_lane_count[\s\S]*active_operating_unit_count[\s\S]*active_policy_count[\s\S]*paid_activity_status[\s\S]*scheduled_activity_status[\s\S]*This view only shows activity planning[\s\S]*does not create activities,\s+payments, marketplace records, notifications, trust records, public proof,\s+money movement, or private member records/,
+  /Activity map[\s\S]*primary_next_action[\s\S]*activity_lane_count[\s\S]*active_operating_unit_count[\s\S]*active_policy_count[\s\S]*paid_activity_status[\s\S]*scheduled_activity_status[\s\S]*Boundary: activity planning only[\s\S]*no activities, payments,[\s\S]*marketplace records, notifications, trust records, proof, money, or[\s\S]*private member records/,
   "Community Domain dashboard Structure lane must show read-only activity map planning without implying activity/event/attendance/dues/payment/marketplace/notification/TrustSlip/Trust Passport/public proof/private-record writes.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/communityDomainDashboard/StructurePlanningPanels.tsx",
-  /Group readiness[\s\S]*primary_next_action[\s\S]*activity_group_candidate_count[\s\S]*Units[\s\S]*activityGroupSummary\.node_count[\s\S]*Unit members[\s\S]*active_node_memberships[\s\S]*active_policies[\s\S]*review_records[\s\S]*activity_group_engine_status[\s\S]*activity_group_records_created[\s\S]*rosca_cycles_created[\s\S]*This view only shows group planning[\s\S]*does not create groups, ROSCA\s+cycles, attendance, payment records, marketplace records, notifications,\s+trust records, or private member records/,
+  /Group readiness[\s\S]*primary_next_action[\s\S]*activity_group_candidate_count[\s\S]*Units[\s\S]*activityGroupSummary\.node_count[\s\S]*Unit members[\s\S]*active_node_memberships[\s\S]*active_policies[\s\S]*review_records[\s\S]*activity_group_engine_status[\s\S]*activity_group_records_created[\s\S]*rosca_cycles_created[\s\S]*Boundary: group planning only[\s\S]*no groups, ROSCA cycles, attendance,[\s\S]*payment records, marketplace records, notifications, trust records, or[\s\S]*private member records/,
   "Community Domain dashboard Structure lane must show read-only activity-group readiness without implying group/ROSCA/attendance/payment/marketplace/notification/TrustSlip/Trust Passport/private-member writes.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/communityDomainDashboard/MemberReadinessPanels.tsx",
-  /Member verification readiness[\s\S]*primary_next_action[\s\S]*active_member_count[\s\S]*members_with_gsn_id[\s\S]*members_without_unit_placement[\s\S]*open_member_review_count[\s\S]*credential_issuance_status[\s\S]*This view only shows member readiness[\s\S]*does not verify identity,\s+issue credentials, change members or roles, decide reviews, publish\s+proof, create trust records, move money, or show private member records/,
+  /Member verification readiness[\s\S]*primary_next_action[\s\S]*active_member_count[\s\S]*members_with_gsn_id[\s\S]*members_without_unit_placement[\s\S]*open_member_review_count[\s\S]*credential_issuance_status[\s\S]*Boundary: readiness only[\s\S]*no identity verification, credentials,[\s\S]*member or role changes, review decisions, proof, trust records, money,[\s\S]*or private member records/,
   "Community Domain dashboard Members lane must show read-only member verification readiness without implying KYC/credential/member/role/review/evidence/TrustSlip/Trust Passport writes or private record exposure.",
   { frontend: true }
 );
@@ -1709,35 +1716,35 @@ assertContains(
 
 assertContains(
   "src/pages/communityDomainDashboard/GovernanceReadinessPanels.tsx",
-  /reviewPulseRows[\s\S]*Needs review[\s\S]*Ready to apply[\s\S]*Access requests[\s\S]*Governance review pulse[\s\S]*Your open decisions show what you can handle now[\s\S]*This view only shows governance review pressure[\s\S]*does not decide reviews,\s+apply membership, assign roles, show private evidence, or bypass reviewer policy/,
+  /reviewPulseRows[\s\S]*Needs review[\s\S]*Ready to apply[\s\S]*Access requests[\s\S]*Governance review pulse[\s\S]*Your open decisions show what you can handle now[\s\S]*Boundary: review pressure only[\s\S]*no decisions, membership changes,[\s\S]*role changes, private evidence, or policy bypass/,
   "Community Domain dashboard Governance lane must show a compact review pulse without deciding reviews, applying membership, or exposing private review evidence.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/communityDomainDashboard/GovernanceReadinessPanels.tsx",
-  /Governance coverage[\s\S]*primary_next_action[\s\S]*local admins and policy coverage[\s\S]*Domain policies[\s\S]*governanceCoverageCounts\.domain_policies[\s\S]*Needs admin[\s\S]*governanceCoverageCounts\.needs_local_admin[\s\S]*Needs policy[\s\S]*governanceCoverageCounts\.needs_policy[\s\S]*This view only shows governance coverage[\s\S]*does not create policy,\s+assign roles, decide or apply reviews, verify authority, move money,\s+activate billing, publish a public page, create marketplace activity,\s+or show private review records/,
+  /Governance coverage[\s\S]*primary_next_action[\s\S]*local admins and policy coverage[\s\S]*Domain policies[\s\S]*governanceCoverageCounts\.domain_policies[\s\S]*Needs admin[\s\S]*governanceCoverageCounts\.needs_local_admin[\s\S]*Needs policy[\s\S]*governanceCoverageCounts\.needs_policy[\s\S]*Boundary: coverage only[\s\S]*no policy creation, role changes, review[\s\S]*decisions, authority verification, money, billing, public pages,[\s\S]*marketplace activity, or private review records/,
   "Community Domain dashboard Governance lane must show read-only governance coverage without implying policy creation, role assignment, review decisions, authority verification, billing, publishing, marketplace activity, social Community creation, or private review access.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/communityDomainDashboard/GovernanceReadinessPanels.tsx",
-  /Delegation map[\s\S]*primary_next_action[\s\S]*central_authority_count[\s\S]*operating_units_with_local_admin[\s\S]*active_policy_count[\s\S]*open_review_count[\s\S]*This view only shows authority planning[\s\S]*does not assign roles, create\s+memberships or policies, decide or apply reviews, change inheritance,\s+verify authority, activate billing, publish public proof, create marketplace\s+activity, move money, or show private member records/,
+  /Delegation map[\s\S]*primary_next_action[\s\S]*central_authority_count[\s\S]*operating_units_with_local_admin[\s\S]*active_policy_count[\s\S]*open_review_count[\s\S]*Boundary: authority planning only[\s\S]*no roles, memberships, policies,[\s\S]*review decisions, billing, proof, marketplace activity, money, or[\s\S]*private member records/,
   "Community Domain dashboard Governance lane must show read-only delegation authority without implying role assignment, node memberships, policy/review writes, inheritance changes, authority verification, billing, marketplace activity, social Community creation, proof publication, or private record exposure.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/communityDomainDashboard/MemberReadinessPanels.tsx",
-  /Your placement[\s\S]*Active operating-unit placements[\s\S]*This view only shows your placement[\s\S]*Admins still control placement,\s+role changes, and review decisions/,
+  /Your placement[\s\S]*Active operating-unit placements[\s\S]*Boundary: placement view only[\s\S]*admins still control placement, roles,[\s\S]*and review decisions/,
   "Community Domain dashboard Members lane must show the current viewer's read-only placement summary without implying self-service placement or role changes.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/communityDomainDashboard/MemberReadinessPanels.tsx",
-  /Member and role summary[\s\S]*safe domain-level counts[\s\S]*Active members[\s\S]*counts\.active_members[\s\S]*Role placements[\s\S]*counts\.active_node_memberships[\s\S]*Open reviews[\s\S]*counts\.open_reviews[\s\S]*refresh the dashboard[\s\S]*does not show private member lists, assign roles,\s+place members, decide reviews, or grant permissions/,
+  /Member and role summary[\s\S]*safe domain-level counts[\s\S]*Active members[\s\S]*counts\.active_members[\s\S]*Role placements[\s\S]*counts\.active_node_memberships[\s\S]*Open reviews[\s\S]*counts\.open_reviews[\s\S]*refresh the dashboard[\s\S]*Boundary: no private lists[\s\S]*role assignment[\s\S]*placement[\s\S]*review[\s\S]*permission grants/,
   "Community Domain dashboard Members lane must show a safe count-only fallback when the viewer placement view is not available.",
   { frontend: true }
 );
@@ -2030,7 +2037,7 @@ assertContains(
 
 assertContains(
   "docs/SCREEN_SPECS.md",
-  /## CommunityDomainDashboardPage[\s\S]*institutional operating surface[\s\S]*one opened lane at a time[\s\S]*Payment, package quote, and renewal status must not be shown as verification/,
+  /## CommunityDomainDashboardPage[\s\S]*institutional operating surface[\s\S]*one opened operating area at a time[\s\S]*Payment, package quote, and renewal status must not be shown as verification/,
   "Community Domain dashboard contract must preserve guided operation and verification boundaries."
 );
 

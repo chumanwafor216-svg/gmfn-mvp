@@ -386,8 +386,8 @@ export default function CommunityDomainServiceBoundaryPanels({
           </div>
         ) : null}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          Use this as outside-network planning only. It does not open exchange,
-          discovery, finance, loans, money movement, or private records.
+          Boundary: outside-network planning only; no exchange, discovery,
+          finance, loans, money movement, or private records.
         </div>
       </div>
       ) : null}
@@ -467,8 +467,8 @@ export default function CommunityDomainServiceBoundaryPanels({
           </div>
         ) : null}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          Use this as privacy planning only. It does not change access, publish
-          rosters or proof, share private records, or move money.
+          Boundary: privacy planning only; no access changes, rosters, proof,
+          private-record sharing, or money movement.
         </div>
       </div>
       ) : null}
@@ -543,8 +543,8 @@ export default function CommunityDomainServiceBoundaryPanels({
           </div>
         ) : null}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          Use this as setup planning only. It does not create special builds,
-          service settings, payments, records, or private data.
+          Boundary: setup planning only; no special builds, service settings,
+          payments, records, or private data.
         </div>
       </div>
       ) : null}
@@ -622,9 +622,8 @@ export default function CommunityDomainServiceBoundaryPanels({
           </div>
         ) : null}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          Use this as compliance planning only. It is not legal advice or a
-          certificate, and it does not certify compliance, move money, or show
-          private records.
+          Boundary: compliance planning only; not legal advice or certification,
+          and no compliance certification, money movement, or private records.
         </div>
       </div>
       ) : null}
@@ -692,8 +691,8 @@ export default function CommunityDomainServiceBoundaryPanels({
           </div>
         ) : null}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          Use this as fairness planning only. It does not create appeals, decide
-          disputes, reverse payments, move money, or show private records.
+          Boundary: fairness planning only; no appeals, dispute decisions,
+          payment reversals, money movement, or private records.
         </div>
       </div>
       ) : null}

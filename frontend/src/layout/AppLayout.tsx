@@ -798,7 +798,7 @@ function getPageActions(
   if (pathname === "/app/marketplace") {
     return uniqueNavItems([
       makeShopGalleryItem(myShopGalleryTo, myShopGalleryDisabled),
-      { label: "Loans & Support", to: "/app/loans" },
+      { label: "Support Requests", to: "/app/loans" },
       makeShopControlItem(),
       {
         label: "Marketplace Rails",

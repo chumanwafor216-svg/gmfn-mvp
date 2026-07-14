@@ -154,7 +154,6 @@ for (const action of actions) {
 const frontToInnerOrder = [
   { label: "empty state", pattern: /^community-home\.empty\./ },
   { label: "visible marketplace summary", pattern: /^community-home\.summary\.visible-communities/ },
-  { label: "community domain summary", pattern: /^community-home\.summary\.community-domain/ },
   { label: "finance summary", pattern: /^community-home\.finance-summary\./ },
   { label: "trust summary", pattern: /^community-home\.trust-summary\./ },
   { label: "notice board", pattern: /^community-home\.notice\./ },
@@ -164,6 +163,7 @@ const frontToInnerOrder = [
   { label: "grouped command lanes", pattern: /^community-home\.lane\./ },
   { label: "spotlight status", pattern: /^community-home\.spotlight-status\./ },
   { label: "community rows", pattern: /^community-home\.communities\./ },
+  { label: "community domain rows", pattern: /^community-home\.domain\./ },
 ];
 let previousSection = null;
 
@@ -304,13 +304,13 @@ assertContains(
 );
 
 assertContains(
-  /listMyCommunityDomains[\s\S]*?const \[communityDomainCount, setCommunityDomainCount\] = useState<number \| null>\(null\)[\s\S]*?listMyCommunityDomains\(\)\.catch\(\(\) => \(\{ items: null \}\)\)[\s\S]*?setCommunityDomainCount\(Array\.isArray\(domainRows\) \? domainRows\.length : null\)[\s\S]*?Marketplaces and Community Domains[\s\S]*?debugId="community-home\.summary\.visible-communities"[\s\S]*?\{communityCountFromSummary\} community \{communityCountFromSummary === 1 \? "marketplace" : "marketplaces"\}[\s\S]*?Self-created or joined marketplace communities for local work\.[\s\S]*?debugId="community-home\.summary\.community-domain"[\s\S]*?communityDomainCount === null[\s\S]*?"Community Domains"[\s\S]*?`\$\{communityDomainCount\} community \$\{[\s\S]*?communityDomainCount === 1 \? "domain" : "domains"[\s\S]*?Set up domain rules, access, and governance; active work opens in Marketplace\.[\s\S]*?openCommunityRoute\(event, routes\.communityDomain\)/,
-  "Community Home summary must distinguish community marketplaces from institutional Community Domains, show the signed-in domain count, and say setup/governance lives here while active work opens in Marketplace."
+  /listMyCommunityDomains[\s\S]*?const \[communityDomainCount, setCommunityDomainCount\] = useState<number \| null>\(null\)[\s\S]*?const \[communityDomainRows, setCommunityDomainRows\] = useState<CommunityDomainListRow\[\]>\(\[\]\)[\s\S]*?normalizeCommunityDomainListRow[\s\S]*?setCommunityDomainRows\(normalizedDomainRows\)[\s\S]*?setCommunityDomainCount\(Array\.isArray\(domainRows\) \? normalizedDomainRows\.length : null\)[\s\S]*?Marketplaces and Community Domains[\s\S]*?debugId="community-home\.summary\.visible-communities"[\s\S]*?\{combinedCommunityListCount\} marketplace[\s\S]*?communities\/domains[\s\S]*?Marketplace communities and Community Domains together\. Setup and governance stay here; active work opens in Marketplace\./,
+  "Community Home summary must place ordinary marketplace communities and Community Domains in one room, while preserving the setup/governance versus Marketplace boundary."
 );
 
 assertContains(
-  /debugId="community-home\.communities\.header-toggle"[\s\S]*?Your Community Marketplaces[\s\S]*?\{sortedClans\.length\} \{sortedClans\.length === 1 \? "marketplace" : "marketplaces"\}[\s\S]*?Marketplace workspace for this community[\s\S]*?Open Marketplace/,
-  "Community Home opened list must label ordinary clan workspaces as Community Marketplaces, not generic Communities."
+  /debugId="community-home\.communities\.header-toggle"[\s\S]*?Marketplace Communities \/ Community Domains[\s\S]*?\{sortedClans\.length\} marketplace[\s\S]*?combinedCommunityDomainCount[\s\S]*?domain" : "domains"[\s\S]*?Marketplace workspace for this community[\s\S]*?Open Marketplace[\s\S]*?sortedCommunityDomainRows\.map[\s\S]*?Community Domain marketplace workspace[\s\S]*?Marketplace ready[\s\S]*?Setup needed[\s\S]*?row\.marketplaceReady \? "Open Marketplace" : "Open Setup"/,
+  "Community Home opened list must show ordinary marketplace communities and Community Domains together, with active domains opening Marketplace and setup-stage domains opening setup."
 );
 
 assertContains(

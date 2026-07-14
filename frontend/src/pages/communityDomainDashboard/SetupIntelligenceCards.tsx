@@ -90,7 +90,7 @@ function setupPlanSteps(setupPlan: any): any[] {
 }
 
 const SETUP_SCOPE_NOTE =
-  "Scope: setup guidance only; no membership, billing, authority, payment, public page, money, or private evidence changes happen here.";
+  "Setup guidance only: no membership, billing, authority, payment, public-page, money, or private-evidence changes.";
 
 export default function CommunityDomainSetupIntelligenceCards({
   isBaseReadinessLoading = false,

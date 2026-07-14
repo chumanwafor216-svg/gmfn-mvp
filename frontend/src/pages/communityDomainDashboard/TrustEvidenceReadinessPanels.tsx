@@ -303,7 +303,7 @@ export default function CommunityDomainTrustEvidenceReadinessPanels({
           themselves, prove what changed in a participant's life.
         </div>
         <div style={{ ...helperText(), marginTop: 7, fontSize: 13 }}>
-          Use this lane to preserve organised evidence first. Outcome and impact
+          Use this area to preserve organised evidence first. Outcome and impact
           claims still need review, participant/community confirmation, time
           context, and appropriate privacy protection before they are relied on.
         </div>
@@ -447,9 +447,8 @@ export default function CommunityDomainTrustEvidenceReadinessPanels({
           </div>
         ) : null}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          This view only shows evidence-record readiness. It does not create
-          records, upload files, issue credentials, publish proof, verify authority,
-          score trust, move money, or show private evidence.
+          Boundary: readiness only; no records, uploads, credentials, proof,
+          authority verification, trust scoring, money, or private evidence.
         </div>
       </div>
       ) : null}
@@ -498,7 +497,7 @@ export default function CommunityDomainTrustEvidenceReadinessPanels({
           </div>
         ) : evidenceReleaseReadiness ? (
           <div style={{ ...helperText(), marginTop: 9 }}>
-            No blocked evidence release lane is visible, but public proof is still
+            No blocked evidence release check is visible, but public proof is still
             not being released here.
           </div>
         ) : null}
@@ -518,10 +517,9 @@ export default function CommunityDomainTrustEvidenceReadinessPanels({
           </div>
         ) : null}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          This view only shows public-release readiness. It does not release
-          evidence, publish proof, create public links or QR codes, issue
-          credentials, share records, change permissions, score trust, move money,
-          or show private evidence.
+          Boundary: release readiness only; no evidence release, proof, public
+          links, QR codes, credentials, sharing, permission changes, trust
+          scoring, money, or private evidence.
         </div>
       </div>
       ) : null}
@@ -556,7 +554,7 @@ export default function CommunityDomainTrustEvidenceReadinessPanels({
           </div>
         ) : trustRelayReadiness ? (
           <div style={{ ...helperText(), marginTop: 9 }}>
-            No blocked relay readiness lane is visible, but relay publishing is still
+            No blocked relay readiness check is visible, but relay publishing is still
             not connected here.
           </div>
         ) : null}
@@ -576,10 +574,9 @@ export default function CommunityDomainTrustEvidenceReadinessPanels({
           </div>
         ) : null}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          This view only shows relay readiness. It does not create relay paths,
-          publish proof, repost Spotlight, create discovery or affiliations, share
-          private records, issue credentials, create marketplace activity, activate
-          billing, or move money.
+          Boundary: relay readiness only; no relay paths, proof, reposts,
+          discovery, affiliations, private records, credentials, marketplace
+          activity, billing, or money.
         </div>
       </div>
       ) : null}
@@ -627,7 +624,7 @@ export default function CommunityDomainTrustEvidenceReadinessPanels({
           </div>
         ) : notificationScopeReadiness ? (
           <div style={{ ...helperText(), marginTop: 9 }}>
-            No blocked notification scope lane is visible, but notification delivery
+            No blocked notification scope check is visible, but notification delivery
             is still not connected here.
           </div>
         ) : null}
@@ -647,10 +644,9 @@ export default function CommunityDomainTrustEvidenceReadinessPanels({
           </div>
         ) : null}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          This view only shows audience readiness. It does not send messages,
-          create delivery jobs or audience lists, publish announcements, show
-          member lists, create marketplace records, move money, create trust
-          records, or show private records.
+          Boundary: audience readiness only; no messages, delivery jobs,
+          audience lists, announcements, member lists, marketplace records,
+          money, trust records, or private records.
         </div>
       </div>
       ) : null}
@@ -685,7 +681,7 @@ export default function CommunityDomainTrustEvidenceReadinessPanels({
           </div>
         ) : trustMobility ? (
           <div style={{ ...helperText(), marginTop: 9 }}>
-            No blocked trust mobility lane is visible, but portability bridges are
+            No blocked trust mobility check is visible, but portability bridges are
             still not connected here.
           </div>
         ) : null}
@@ -708,10 +704,9 @@ export default function CommunityDomainTrustEvidenceReadinessPanels({
           </div>
         ) : null}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          This view only shows trust-mobility readiness. It does not create trust
-          records, credentials, relay paths, public proof, outward links,
-          marketplace activity, separate communities, move money, or show
-          private records.
+          Boundary: mobility readiness only; no trust records, credentials,
+          relay paths, proof, outward links, marketplace activity, separate
+          communities, money, or private records.
         </div>
       </div>
       ) : null}
