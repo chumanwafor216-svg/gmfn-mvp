@@ -729,6 +729,34 @@ async function firstViewportActionFinding(page, debugId, label) {
   );
 }
 
+async function viewportElementFinding(page, selector, label) {
+  return page.evaluate(
+    ({ targetSelector, targetLabel }) => {
+      const element = document.querySelector(targetSelector);
+      if (!element) {
+        return `${targetLabel} is missing.`;
+      }
+      const rect = element.getBoundingClientRect();
+      const visible =
+        rect.width > 0 &&
+        rect.height > 0 &&
+        rect.bottom > 0 &&
+        rect.top < window.innerHeight;
+
+      if (!visible) {
+        return `${targetLabel} is not visible after the action.`;
+      }
+      if (rect.top < -2 || rect.top > Math.min(160, window.innerHeight * 0.24)) {
+        return `${targetLabel} did not receive focus after the action: top ${Math.round(
+          rect.top
+        )}, viewport ${window.innerHeight}.`;
+      }
+      return "";
+    },
+    { targetSelector: selector, targetLabel: label }
+  );
+}
+
 function normalized(value) {
   return String(value || "").replace(/\s+/g, " ").trim();
 }
@@ -869,6 +897,35 @@ try {
   }
   if (audit.horizontalOverflow || audit.overflow.length) {
     findings.push(`Draft Community Domain dashboard mobile overflow: ${JSON.stringify(audit.overflow)}`);
+  }
+  await clickByDebugId(page, "community-domain-dashboard.setup-focus");
+  await page.getByRole("heading", { name: "Create / setup" }).waitFor({ timeout: 10000 });
+  const draftSetupSurfaceFinding = await viewportElementFinding(
+    page,
+    '[data-testid="community-domain-dashboard.work-surface"]',
+    "Draft Community Domain setup workbench"
+  );
+  if (draftSetupSurfaceFinding) findings.push(draftSetupSurfaceFinding);
+  audit = await page.evaluate(pageAudit);
+  const draftSetupText = normalized(audit.bodyText);
+  if (!draftSetupText.includes("Step 1 of")) {
+    findings.push("Draft Community Domain setup workbench does not show one setup step at a time.");
+  }
+  if (!(await isDebugVisible(page, "community-domain-dashboard.setup-check-domain-name"))) {
+    findings.push("Draft Community Domain setup workbench does not show the first setup task.");
+  }
+  if (draftSetupText.includes("Other domain tools")) {
+    findings.push("Draft Community Domain setup workbench exposes Other domain tools during the primary setup journey.");
+  }
+  if (
+    draftSetupText.includes("Official Board") ||
+    draftSetupText.includes("Community Domain engine") ||
+    draftSetupText.includes("Work lanes")
+  ) {
+    findings.push("Draft Community Domain setup workbench exposes advanced dashboard blocks during setup.");
+  }
+  if (audit.horizontalOverflow || audit.overflow.length) {
+    findings.push(`Draft Community Domain setup workbench mobile overflow: ${JSON.stringify(audit.overflow)}`);
   }
 
   dashboardScenario = "active";

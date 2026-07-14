@@ -1853,6 +1853,8 @@ export default function CommunityDomainDashboardPage() {
   const [domainNoticePosting, setDomainNoticePosting] = useState(false);
   const mountedRef = useRef(true);
   const activeCommunityDomainIdRef = useRef(communityDomainId);
+  const workSurfaceRef = useRef<HTMLElement | null>(null);
+  const focusWorkSurfaceAfterOpenRef = useRef(false);
   const dashboardLoadSequence = useRef(0);
   const reviewerQueueLoadSequence = useRef(0);
   const membershipRequestLoadSequence = useRef(0);
@@ -2650,7 +2652,16 @@ export default function CommunityDomainDashboardPage() {
   const showDomainWorkSurface =
     setupWorkspaceOpen || showAdvancedTools || setupJourneyMode === "edit";
   const showOtherDomainToolsEntry =
-    domainOperational || setupWorkspaceOpen || setupJourneyMode === "edit";
+    domainOperational || showAdvancedTools || setupJourneyMode === "edit";
+  useEffect(() => {
+    if (!showDomainWorkSurface || !focusWorkSurfaceAfterOpenRef.current) {
+      return;
+    }
+    focusWorkSurfaceAfterOpenRef.current = false;
+    window.requestAnimationFrame(() => {
+      workSurfaceRef.current?.scrollIntoView({ block: "start", behavior: "auto" });
+    });
+  }, [activeLane, setupWorkspaceOpen, showAdvancedTools, showDomainWorkSurface]);
   const primaryActionFallbackNote =
     !setupPrimaryActionHasLane && setupPrimaryActionLaneKey === "verification" && hasServicesLane
       ? "GSN opens Services because authority verification is shown there as a readiness row. Actual authority verification still needs its separate owner or admin path."
@@ -3002,6 +3013,7 @@ export default function CommunityDomainDashboardPage() {
   }
 
   function openSetupJourney(mode: "setup" | "edit") {
+    focusWorkSurfaceAfterOpenRef.current = true;
     setSetupJourneyMode(mode);
     setActiveLane("settings");
     setSetupWorkspaceOpen(true);
@@ -4263,6 +4275,7 @@ export default function CommunityDomainDashboardPage() {
                   fullWidth
                   debugId="community-domain-dashboard.operational-focus"
                   onClick={() => {
+                    focusWorkSurfaceAfterOpenRef.current = true;
                     setSetupJourneyMode("setup");
                     setSetupWorkspaceOpen(false);
                     setShowAdvancedTools(true);
@@ -4552,6 +4565,7 @@ export default function CommunityDomainDashboardPage() {
                   fullWidth
                   debugId="community-domain-dashboard.continue-setup"
                   onClick={() => {
+                    focusWorkSurfaceAfterOpenRef.current = true;
                     setActiveLane(mainActionLaneKey);
                     if (domainOperational) {
                       setSetupWorkspaceOpen(false);
@@ -4665,6 +4679,8 @@ export default function CommunityDomainDashboardPage() {
 
           {showDomainWorkSurface ? (
           <section
+            ref={workSurfaceRef}
+            data-testid="community-domain-dashboard.work-surface"
             style={{
               display: "grid",
               gridTemplateColumns: showAdvancedTools
@@ -4863,6 +4879,7 @@ export default function CommunityDomainDashboardPage() {
                         kind="primary"
                         debugId="community-domain-dashboard.settings-open-live-lane"
                         onClick={() => {
+                          focusWorkSurfaceAfterOpenRef.current = true;
                           setShowAdvancedTools(true);
                           setSetupWorkspaceOpen(false);
                           setActiveLane(operationalLaneKey);
@@ -7101,6 +7118,7 @@ export default function CommunityDomainDashboardPage() {
                     setShowAdvancedTools((current) => {
                       const next = !current;
                       if (next) {
+                        focusWorkSurfaceAfterOpenRef.current = true;
                         setSetupWorkspaceOpen(false);
                         setSetupJourneyMode("setup");
                         setActiveLane(cleanText(otherToolsLaneKey, primaryActionLaneKey));
