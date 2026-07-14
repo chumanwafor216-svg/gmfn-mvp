@@ -91,7 +91,7 @@ function mockData(baseURL) {
 
 async function installApiMocks(page, baseURL) {
   const data = mockData(baseURL);
-  await page.route("**/api/**", async (route) => {
+  await page.route("**/*", async (route) => {
     const url = new URL(route.request().url());
     const path = url.pathname.replace(/^\/api/, "");
 
@@ -142,7 +142,14 @@ async function installApiMocks(page, baseURL) {
       return route.fulfill(json({ items: [], targets: [], credits: 0 }));
     }
 
-    return route.fulfill(json({ items: [], results: [], status: "ok" }));
+    if (
+      url.pathname.startsWith("/api/") ||
+      url.origin === "http://127.0.0.1:8012"
+    ) {
+      return route.fulfill(json({ items: [], results: [], status: "ok" }));
+    }
+
+    return route.continue();
   });
 }
 
@@ -196,6 +203,51 @@ async function run() {
   await page.locator('[data-cta-id="marketplace.tile.marketing-tools"]').click({
     timeout: 30000,
   });
+  await waitForDebugSelector(
+    page,
+    '[data-gmfn-debug-id="marketplace.network-repost.surface"]',
+    "marketing tools"
+  );
+  await page.screenshot({
+    path: join(screenshotDir, "marketplace-marketing-tools-390x844.png"),
+    fullPage: false,
+  });
+
+  const marketingFacts = await page.evaluate(() => {
+    const tools = document.getElementById("marketplace-owned-links");
+    const text = tools?.textContent || "";
+    const required = [
+      "Marketing Tools",
+      "Selected Marketing Tool",
+      "Back to Marketing Tools",
+      "4 marketing jobs",
+      "Repost selected",
+      "Marketplace-safe",
+      "Free Spotlight",
+      "Subscription Spotlight",
+      "Trade Evidence",
+    ];
+    const forbidden = [
+      "Access & Public Links",
+      "Selected Link Center tool",
+      "Back to Link Center",
+    ];
+    return {
+      toolsExists: Boolean(tools),
+      missing: required.filter((item) => !text.includes(item)),
+      presentForbidden: forbidden.filter((item) => text.includes(item)),
+    };
+  });
+
+  if (
+    !marketingFacts.toolsExists ||
+    marketingFacts.missing.length ||
+    marketingFacts.presentForbidden.length
+  ) {
+    console.error("Marketplace Marketing Tools smoke failed:", marketingFacts);
+    process.exit(1);
+  }
+
   await page.locator('[data-cta-id="marketplace.marketing.trade-evidence"]').click({
     timeout: 30000,
   });
@@ -404,10 +456,12 @@ async function run() {
     JSON.stringify(
       {
         screenshots: [
+          "frontend/screenshots/marketplace-marketing-tools-390x844.png",
           "frontend/screenshots/marketplace-trade-boundaries-390x844.png",
           "frontend/screenshots/marketplace-members-boundaries-390x844.png",
           "frontend/screenshots/marketplace-support-boundaries-390x844.png",
         ],
+        marketingFacts,
         tradeFacts,
         memberFacts,
         supportFacts,

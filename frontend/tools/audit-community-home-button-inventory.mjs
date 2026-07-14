@@ -15,7 +15,7 @@ const expectedNativeFieldCount = 0;
 const expectedNextActionGuideItemCount = 12;
 const expectedFrontQuickActionCount = 4;
 const expectedSpotlightGuidedActionCount = 5;
-const expectedGroupedLaneRowCount = 22;
+const expectedGroupedLaneRowCount = 21;
 const expectedExpandedRouteLocalActionTemplates = 40;
 const expectedMobileShellBreakdown = {
   top: 2,
@@ -304,7 +304,7 @@ assertContains(
 );
 
 assertContains(
-  /listMyCommunityDomains[\s\S]*?const \[communityDomainCount, setCommunityDomainCount\] = useState<number \| null>\(null\)[\s\S]*?const \[communityDomainRows, setCommunityDomainRows\] = useState<CommunityDomainListRow\[\]>\(\[\]\)[\s\S]*?normalizeCommunityDomainListRow[\s\S]*?setCommunityDomainRows\(normalizedDomainRows\)[\s\S]*?setCommunityDomainCount\(Array\.isArray\(domainRows\) \? normalizedDomainRows\.length : null\)[\s\S]*?Marketplaces and Community Domains[\s\S]*?debugId="community-home\.summary\.visible-communities"[\s\S]*?\{combinedCommunityListCount\} marketplace[\s\S]*?communities\/domains[\s\S]*?Marketplace communities and Community Domains together\. Setup and governance stay here; active work opens in Marketplace\./,
+  /listMyCommunityDomains[\s\S]*?const \[communityDomainCount, setCommunityDomainCount\] = useState<number \| null>\(null\)[\s\S]*?const \[communityDomainRows, setCommunityDomainRows\] = useState<CommunityDomainListRow\[\]>\(\[\]\)[\s\S]*?normalizeCommunityDomainListRow[\s\S]*?setCommunityDomainRows\(normalizedDomainRows\)[\s\S]*?setCommunityDomainCount\(Array\.isArray\(domainRows\) \? normalizedDomainRows\.length : null\)[\s\S]*?Marketplace Communities \/ Community Domains[\s\S]*?debugId="community-home\.summary\.visible-communities"[\s\S]*?\{combinedCommunityListCount\} marketplace[\s\S]*?communities\/domains[\s\S]*?Marketplace communities and Community Domains together\. Setup and governance stay here; active work opens in Marketplace\./,
   "Community Home summary must place ordinary marketplace communities and Community Domains in one room, while preserving the setup/governance versus Marketplace boundary."
 );
 
@@ -331,6 +331,11 @@ assertContains(
 assertContains(
   /id: "community-packages"[\s\S]*?label: "Marketplace capacity"[\s\S]*?Choose one marketplace first, then open its capacity tools\.[\s\S]*?technical: "Marketplace capacity"[\s\S]*?routes\.communityPackages[\s\S]*?Choose a marketplace first, then open marketplace capacity\.[\s\S]*?title: "Marketplace capacity"[\s\S]*?Member places, shop blocks, ROSCA, meeting packs, and capacity upgrades\.[\s\S]*?capacity payments, and renewal checks/,
   "Community Home capacity lane must not expose ordinary marketplace capacity with old package wording."
+);
+
+assertContains(
+  /id: "support"[\s\S]*?label: "Open Support"[\s\S]*?Open Support for \$\{selectedClanName \|\| "the selected community"\}[\s\S]*?Select a community first, then open its support path\.[\s\S]*?technical: "Support"[\s\S]*?title: "Choose the community before Support"[\s\S]*?Support belongs to one community at a time[\s\S]*?title: "Support is ready"[\s\S]*?firstStep: "Open Support\."[\s\S]*?continueLabel: "Open Support"[\s\S]*?Choose a community first, then open Support\./,
+  "Community Home support entry must use Support wording while preserving the selected-community route guard."
 );
 
 if (/<div\s+style=\{communityToolRowStyle\(\)\}/.test(source)) {
@@ -376,10 +381,20 @@ assertContains(
   "Community Home trusted-circle row must stay under Communities and use the guided First Circle route."
 );
 
-assertContains(
-  /communityDomain:\s*"\/app\/community-domain"[\s\S]*?!collapsed\.subscriptions[\s\S]*?id: "community-domain"[\s\S]*?title: "Community Domain"[\s\S]*?detail: "Set up identity, rules, governance, and access requests\."[\s\S]*?openCommunityRoute\(event, routes\.communityDomain\)[\s\S]*?debugId=\{`community-home\.lane\.subscriptions\.\$\{item\.id\}`\}/,
-  "Community Home Community Domain row must live under Subscriptions and open the authenticated setup/governance dashboard."
-);
+if (
+  /!collapsed\.subscriptions[\s\S]*?id: "community-domain"[\s\S]*?title: "Community Domain"[\s\S]*?debugId=\{`community-home\.lane\.subscriptions\.\$\{item\.id\}`\}/.test(
+    source
+  )
+) {
+  findings.push({
+    file: communityFile,
+    line: lineAt(source.search(/id: "community-domain"/)),
+    message:
+      "Community Domain must not live as a Subscriptions row; it belongs in the Marketplace Communities / Community Domains room.",
+    text:
+      "Keep setup/governance discoverable from the combined community/domain list, not as a separate Community Home tool.",
+  });
+}
 
 [
   ["vault-control", "vaultControl"],

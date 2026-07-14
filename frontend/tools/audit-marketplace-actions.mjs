@@ -126,7 +126,7 @@ assertContains(
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
-  /id: "rosca"[\s\S]*?to: "#marketplace-rosca"[\s\S]*?debugId="marketplace\.tile\.support"[\s\S]*?Support Requests[\s\S]*?id="marketplace-rosca"[\s\S]*?debugId="marketplace\.rosca\.activate-yearly"[\s\S]*?debugId="marketplace\.rosca\.start-cycle"[\s\S]*?debugId="marketplace\.rosca\.record-payout"[\s\S]*?Separate ROSCA desk[\s\S]*?debugId="marketplace\.support\.open-rosca"[\s\S]*?openMarketplaceSection\(event, "rosca", "marketplace-rosca"\)/,
+  /id: "rosca"[\s\S]*?to: "#marketplace-rosca"[\s\S]*?debugId="marketplace\.tile\.support"[\s\S]*?Support[\s\S]*?id="marketplace-rosca"[\s\S]*?debugId="marketplace\.rosca\.activate-yearly"[\s\S]*?debugId="marketplace\.rosca\.start-cycle"[\s\S]*?debugId="marketplace\.rosca\.record-payout"[\s\S]*?Separate ROSCA desk[\s\S]*?debugId="marketplace\.support\.open-rosca"[\s\S]*?openMarketplaceSection\(event, "rosca", "marketplace-rosca"\)/,
   "Marketplace ROSCA must stay reachable as its own desk, keep the ROSCA intent anchor, and keep stable yearly/start/payout controls."
 );
 

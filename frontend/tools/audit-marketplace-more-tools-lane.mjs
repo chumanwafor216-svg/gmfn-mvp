@@ -52,7 +52,7 @@ const expectedVisibleIds = [
 if (visibleIds.join("|") !== expectedVisibleIds.join("|")) {
   addFinding(
     source.indexOf(intentItemsBlock),
-    "More / Community Tools must expose only secondary helper buttons; major lanes stay searchable but hidden from the expanded button grid.",
+    "Marketplace Tools helper must expose only secondary helper buttons; major lanes stay searchable but hidden from the expanded button grid.",
     `visible=${visibleIds.join(", ") || "none"}`
   );
 }
@@ -71,7 +71,7 @@ if (visibleIds.join("|") !== expectedVisibleIds.join("|")) {
   if (!itemPattern.test(intentItemsBlock)) {
     addFinding(
       source.indexOf(intentItemsBlock),
-      "More / Community Tools must hide major/front-card routes from its visible button grid while keeping search matching intact.",
+      "Marketplace Tools helper must hide major/front-card routes from its visible button grid while keeping search matching intact.",
       id
     );
   }
@@ -98,7 +98,7 @@ assertContains(
 );
 
 if (findings.length > 0) {
-  console.error("Marketplace More / Community Tools lane audit failed:");
+  console.error("Marketplace Tools helper lane audit failed:");
   for (const finding of findings) {
     console.error(
       `- ${finding.file}:${finding.line} ${finding.message}\n  ${finding.text}`
@@ -107,4 +107,4 @@ if (findings.length > 0) {
   process.exit(1);
 }
 
-console.log("Marketplace More / Community Tools lane audit passed.");
+console.log("Marketplace Tools helper lane audit passed.");

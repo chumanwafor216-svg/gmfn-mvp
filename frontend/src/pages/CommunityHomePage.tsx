@@ -1748,7 +1748,6 @@ export default function CommunityHomePage() {
         "community-home.route.community-packages",
         { hash: OWNER_SHOP_HASHES.communityPackage }
       ),
-      communityDomain: "/app/community-domain",
       communityDomainPurchase: "/community-domain/purchase",
       freeSpotlight: routeTarget(
         "freeSpotlight",
@@ -1957,11 +1956,11 @@ export default function CommunityHomePage() {
       },
       {
         id: "support",
-        label: "Open loans and support",
+        label: "Open Support",
         detail: selectedClanId
-          ? `Open loans and support for ${selectedClanName || "the selected community"}.`
-          : "Select a community first, then open its loans and support path.",
-        technical: "Loans and support",
+          ? `Open Support for ${selectedClanName || "the selected community"}.`
+          : "Select a community first, then open its support path.",
+        technical: "Support",
         keywords: ["loan", "borrow", "lend", "support", "guarantor"],
       },
       {
@@ -2355,9 +2354,9 @@ export default function CommunityHomePage() {
       case "support":
         if (!selectedClanId || !selectedClan) {
           return {
-            title: "Choose the community before loans and support",
+            title: "Choose the community before Support",
             detail:
-              "Loans and support belong to one community at a time. First pick the community, then GSN will open that local support path.",
+              "Support belongs to one community at a time. First pick the community, then GSN will open that local support path.",
             firstStep: "Choose the community first.",
             continueLabel: "Choose marketplace",
             continueTone: "primary",
@@ -2366,10 +2365,10 @@ export default function CommunityHomePage() {
         }
 
         return {
-          title: "Loans and support are ready",
-          detail: `GSN will open the loans and support path for ${selectedClanName || "the selected community"}.`,
-          firstStep: "Open Loans and Support.",
-          continueLabel: "Open loans and support",
+          title: "Support is ready",
+          detail: `GSN will open the support path for ${selectedClanName || "the selected community"}.`,
+          firstStep: "Open Support.",
+          continueLabel: "Open Support",
           continueTone: "primary",
         };
       case "trust":
@@ -3043,7 +3042,7 @@ export default function CommunityHomePage() {
         openSelectedCommunityRoute(
           event,
           routes.loans,
-          "Choose a community first, then open Loans and Support."
+          "Choose a community first, then open Support."
         );
         break;
       case "trust":
@@ -3418,7 +3417,7 @@ export default function CommunityHomePage() {
                       lineHeight: 1.18,
                     }}
                   >
-                    Marketplaces and Community Domains
+                    Marketplace Communities / Community Domains
                   </div>
                 </div>
                 <span
@@ -4641,14 +4640,6 @@ export default function CommunityHomePage() {
                         openCommunityNextAction(event, "community-packages"),
                     },
                     {
-                      icon: "financeInstitution",
-                      id: "community-domain",
-                      title: "Community Domain",
-                      detail: "Set up identity, rules, governance, and access requests.",
-                      onClick: (event: React.SyntheticEvent<HTMLElement>) =>
-                        openCommunityRoute(event, routes.communityDomain),
-                    },
-                    {
                       icon: "finance-wallet-card",
                       id: "payments-renewals",
                       title: "Payments and renewals",
@@ -5157,7 +5148,7 @@ export default function CommunityHomePage() {
           <span style={{ minWidth: 0 }}>
             <span
               style={{
-                ...brandSingleLine(),
+                ...(isCompact ? brandClampLines(2) : brandSingleLine()),
                 color: "#07172C",
                 fontSize: isCompact ? 15 : 16,
                 fontWeight: 940,
@@ -5168,7 +5159,7 @@ export default function CommunityHomePage() {
             </span>
             <span
               style={{
-                ...brandSingleLine(),
+                ...(isCompact ? brandClampLines(2) : brandSingleLine()),
                 marginTop: 4,
                 color: "#617085",
                 fontSize: isCompact ? 12.2 : 13,
@@ -5176,12 +5167,23 @@ export default function CommunityHomePage() {
                 lineHeight: 1.35,
               }}
             >
-              {sortedClans.length} marketplace {sortedClans.length === 1 ? "community" : "communities"}
-              {combinedCommunityDomainCount
-                ? ` / ${combinedCommunityDomainCount} community ${
-                    combinedCommunityDomainCount === 1 ? "domain" : "domains"
+              {isCompact
+                ? `${sortedClans.length} marketplace${
+                    combinedCommunityDomainCount
+                      ? ` / ${combinedCommunityDomainCount} ${
+                          combinedCommunityDomainCount === 1 ? "domain" : "domains"
+                        }`
+                      : ""
                   }`
-                : ""}
+                : `${sortedClans.length} marketplace ${
+                    sortedClans.length === 1 ? "community" : "communities"
+                  }${
+                    combinedCommunityDomainCount
+                      ? ` / ${combinedCommunityDomainCount} community ${
+                          combinedCommunityDomainCount === 1 ? "domain" : "domains"
+                        }`
+                      : ""
+                  }`}
             </span>
           </span>
           <span aria-hidden="true" style={{ color: "#1E5D91", fontSize: 24 }}>

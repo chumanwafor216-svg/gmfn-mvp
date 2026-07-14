@@ -231,8 +231,8 @@ assertContains(
 );
 
 assertContains(
-  /debugId="marketplace\.links\.back-to-center"[\s\S]*?setActiveLinkCenterTool\(null\)[\s\S]*?activeLinkCenterTool === "join"[\s\S]*?activeLinkCenterTool === "verify"[\s\S]*?activeLinkCenterTool === "shopFace"[\s\S]*?activeLinkCenterTool === "repost"/,
-  "Marketplace Link Center must show one selected tool at a time with a stable Back to Link Center action."
+  /debugId="marketplace\.links\.back-to-center"[\s\S]*?setActiveLinkCenterTool\(null\)[\s\S]*?activeLinkCenterTool === "repost"[\s\S]*?\? "Back to Marketing Tools"[\s\S]*?: "Back to Link Center"[\s\S]*?activeLinkCenterTool === "join"[\s\S]*?activeLinkCenterTool === "verify"[\s\S]*?activeLinkCenterTool === "shopFace"[\s\S]*?activeLinkCenterTool === "repost"/,
+  "Marketplace shared tools surface must show one selected tool at a time with a stable context-sensitive back action."
 );
 
 assertNotContains(
@@ -362,8 +362,8 @@ assertContains(
 );
 
 assertContains(
-  /debugId="marketplace\.tile\.support"[\s\S]*?aria-label="Open Support Requests for this marketplace"[\s\S]*?openMarketplaceSection\(\s*event,\s*"support",\s*"marketplace-loans-support"\s*\)[\s\S]*?<MarketplaceGlyph name="support"[\s\S]*?Support Requests[\s\S]*?Ask for backing when balance is not enough\.[\s\S]*?Start Request[\s\S]*?Supporters[\s\S]*?Repayment/,
-  "Marketplace Support Requests card must open support directly while ROSCA stays a separate desk handoff inside the support lane."
+  /debugId="marketplace\.tile\.support"[\s\S]*?aria-label="Open Support for this marketplace"[\s\S]*?openMarketplaceSection\(\s*event,\s*"support",\s*"marketplace-loans-support"\s*\)[\s\S]*?<MarketplaceGlyph name="support"[\s\S]*?Support[\s\S]*?Ask for backing when balance is not enough\.[\s\S]*?Start Request[\s\S]*?Supporters[\s\S]*?Repayment/,
+  "Marketplace Support card must open support directly while ROSCA stays a separate desk handoff inside the support lane."
 );
 
 assertContains(
@@ -372,7 +372,7 @@ assertContains(
 );
 
 assertContains(
-  /debugId="marketplace\.tile\.members"[\s\S]*?aria-label="Open visible members and public shops"[\s\S]*?openMarketplaceSection\(\s*event,\s*"members",\s*"marketplace-members-shops"\s*\)[\s\S]*?<MarketplaceGlyph name="trade"[\s\S]*?Community Members & Shops[\s\S]*?Domains, known members, and public shops\.[\s\S]*?Domains[\s\S]*?Public Shops[\s\S]*?Members/,
+  /debugId="marketplace\.tile\.members"[\s\S]*?aria-label="Open community domains, members, and shops"[\s\S]*?openMarketplaceSection\(\s*event,\s*"members",\s*"marketplace-members-shops"\s*\)[\s\S]*?<MarketplaceGlyph name="trade"[\s\S]*?Community Members & Shops[\s\S]*?Domains, known members, and public shops\.[\s\S]*?Domains[\s\S]*?Public Shops[\s\S]*?Members/,
   "Marketplace Community Members & Shops grouped card must open the community-bound domain/member/shop directory."
 );
 
@@ -398,7 +398,7 @@ assertContains(
 
 assertContains(
   /function focusedMarketplaceSectionState\(key: keyof SectionState\): SectionState \{[\s\S]*?money: key === "money"[\s\S]*?rosca: key === "rosca"[\s\S]*?tools: key === "tools"[\s\S]*?members: key === "members"[\s\S]*?trade: key === "trade"[\s\S]*?demand: key === "demand"[\s\S]*?support: key === "support"[\s\S]*?function touchedMarketplaceSectionState[\s\S]*?\[key\]: true/,
-  "Marketplace Support Requests must no longer open Members visually; each major lane must focus one open body."
+  "Marketplace Support must no longer open Members visually; each major lane must focus one open body."
 );
 
 assertContains(
@@ -572,7 +572,7 @@ if (!tradeEvidenceSection) {
       file: marketplaceFile,
       line: lineAt(source.indexOf(tradeEvidenceSection)),
       message: "Marketplace Trade Evidence lane must not expose support or guarantor actions.",
-      text: "Trade Evidence should stay member/shop focused; Support Requests owns guarantor selection.",
+      text: "Trade Evidence should stay member/shop focused; Support owns guarantor selection.",
     });
   }
 
@@ -610,9 +610,10 @@ if (!memberShopSection) {
 } else {
   [
     /Community Members & Shops/,
-    /See known members and visible shops inside this selected/,
+    /See Community Domains, known members, and visible shops inside[\s\S]*?this selected/,
     /\{memberRows\.length\} visible member/,
     /\{visibleTradeShopCount\} public shop/,
+    /\{marketplaceCommunityDomainRows\.length\} domain/,
     /Community-bound directory/,
     /Community Domains[\s\S]*?Professional marketplace communities[\s\S]*?They sit with community members and shops\. Setup stays in[\s\S]*?Community Home\./,
     /debugId=\{`marketplace\.domain\.\$\{row\.id \|\| row\.key\}\.open`\}/,
@@ -638,7 +639,7 @@ if (!memberShopSection) {
       file: marketplaceFile,
       line: lineAt(source.indexOf(memberShopSection)),
       message: "Marketplace Community Members & Shops lane must not expose support or guarantor actions.",
-      text: "Community Members & Shops should stay directory focused; Support Requests owns guarantor selection.",
+      text: "Community Members & Shops should stay directory focused; Support owns guarantor selection.",
     });
   }
 }
@@ -696,7 +697,7 @@ if (!supportSection) {
   findings.push({
     file: marketplaceFile,
     line: 1,
-    message: "Marketplace Support Requests section was not found for scoped button auditing.",
+    message: "Marketplace Support section was not found for scoped button auditing.",
     text: "Expected id=\"marketplace-loans-support\" before the Marketplace shell closes.",
   });
 } else {
@@ -719,14 +720,14 @@ if (!supportSection) {
       findings.push({
         file: marketplaceFile,
         line: lineAt(source.indexOf(supportSection)),
-        message: "Marketplace Support Requests section is missing an expected support action.",
+        message: "Marketplace Support section is missing an expected support action.",
         text: debugId,
       });
     }
   }
 
   [
-    /Support Requests[\s\S]*?Ask this marketplace for support when your withdrawal needs[\s\S]*?backing/,
+    /Support[\s\S]*?Ask this marketplace for support when your withdrawal needs[\s\S]*?backing/,
     /What this support area does[\s\S]*?ask the selected marketplace for support/,
     /Selected marketplace[\s\S]*?ID: \{activeCommunityId \|\| "not ready"\}/,
     /From Money Out/,
@@ -744,7 +745,7 @@ if (!supportSection) {
       findings.push({
         file: marketplaceFile,
         line: lineAt(source.indexOf(supportSection)),
-        message: "Marketplace Support Requests lane must keep the guided three-step support structure.",
+        message: "Marketplace Support lane must keep the guided three-step support structure.",
         text: pattern.toString(),
       });
     }
@@ -977,8 +978,8 @@ assertNotContains(
 );
 
 assertLayoutContains(
-  /if \(pathname === "\/app\/marketplace"\) \{[\s\S]*?return uniqueNavItems\(\[[\s\S]*?makeShopGalleryItem\(myShopGalleryTo, myShopGalleryDisabled\)[\s\S]*?Support Requests[\s\S]*?makeShopControlItem\(\)[\s\S]*?Marketplace Rails[\s\S]*?marketplace-money-routes[\s\S]*?Notifications[\s\S]*?\]\);/,
-  "Marketplace page tools must keep the route-local navigator actions: Public Shop, Support Requests, Shop Control, Marketplace Rails, and Notifications."
+  /if \(pathname === "\/app\/marketplace"\) \{[\s\S]*?return uniqueNavItems\(\[[\s\S]*?makeShopGalleryItem\(myShopGalleryTo, myShopGalleryDisabled\)[\s\S]*?Support[\s\S]*?makeShopControlItem\(\)[\s\S]*?Marketplace Rails[\s\S]*?marketplace-money-routes[\s\S]*?Notifications[\s\S]*?\]\);/,
+  "Marketplace page tools must keep the route-local navigator actions: Public Shop, Support, Shop Control, Marketplace Rails, and Notifications."
 );
 
 assertLayoutContains(

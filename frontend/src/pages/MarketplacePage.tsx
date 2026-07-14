@@ -8248,7 +8248,7 @@ export default function MarketplacePage() {
           <StableButton
             type="button"
             debugId="marketplace.tile.members"
-            aria-label="Open visible members and public shops"
+            aria-label="Open community domains, members, and shops"
             onClick={(event) =>
               openMarketplaceSection(event, "members", "marketplace-members-shops")
             }
@@ -8383,7 +8383,7 @@ export default function MarketplacePage() {
           <StableButton
             type="button"
             debugId="marketplace.tile.support"
-            aria-label="Open Support Requests for this marketplace"
+            aria-label="Open Support for this marketplace"
             onClick={(event) =>
               openMarketplaceSection(event, "support", "marketplace-loans-support")
             }
@@ -8400,7 +8400,7 @@ export default function MarketplacePage() {
             </span>
             <span style={marketplaceOsRowTextStackStyle()}>
               <span style={marketplaceOsRowTitleStyle(isCompact)}>
-                Support Requests
+                Support
               </span>
               <span style={marketplaceOsRowDetailStyle(isCompact)}>
                 Ask for backing when balance is not enough.
@@ -8459,7 +8459,7 @@ export default function MarketplacePage() {
                   Free Spotlight
                 </span>
                 <span style={marketplaceFrontTagStyle("#805A0F", "#F7EED8", isCompact)}>
-                  Paid Spotlight
+                  Subscription Spotlight
                 </span>
                 <span style={marketplaceFrontTagStyle("#173750", "#EEF3F7", isCompact)}>
                   Evidence
@@ -10014,7 +10014,9 @@ export default function MarketplacePage() {
             flexWrap: "wrap",
           }}
         >
-          <div style={sectionLabel()}>Access & public links</div>
+          <div style={sectionLabel()}>
+            {activeLinkCenterTool === "repost" ? "Marketing tools" : "Access & public links"}
+          </div>
           <StableButton
             debugId="marketplace.links.toggle"
             type="button"
@@ -10040,30 +10042,34 @@ export default function MarketplacePage() {
 
         <div style={marketplaceLinkHeroStyle(isCompact)}>
           <div aria-hidden="true" style={marketplaceLinkHeroIconStyle(isCompact)}>
-            <MarketplaceGlyph name="links" size={isCompact ? 42 : 52} />
+            <MarketplaceGlyph
+              name={activeLinkCenterTool === "repost" ? "repost" : "links"}
+              size={isCompact ? 42 : 52}
+            />
           </div>
           <div style={marketplaceLinkHeroBodyStyle(isCompact)}>
             <div>
               <div style={marketplaceLinkHeroTitleStyle(isCompact)}>
-                Access & Public Links
+                {activeLinkCenterTool === "repost" ? "Marketing Tools" : "Access & Public Links"}
               </div>
               <div style={marketplaceLinkHeroSubtitleStyle(isCompact)}>
-                Verify the community, invite someone, start your own community,
-                or share the public shop.
+                {activeLinkCenterTool === "repost"
+                  ? "Place a shop block into another Spotlight lane, open Spotlight, or record trade evidence."
+                  : "Verify the community, invite someone, start your own community, or share the public shop."}
               </div>
             </div>
             <div style={marketplaceLinkHeroPillRowStyle()}>
               <span style={marketplaceLinkHeroPillStyle()}>
                 <MarketplaceGlyph name="links" size={16} />
-                4 link jobs
+                {activeLinkCenterTool === "repost" ? "4 marketing jobs" : "4 link jobs"}
               </span>
               <span style={marketplaceLinkHeroPillStyle()}>
                 <MarketplaceGlyph name="spark" size={16} />
-                1 active
+                {activeLinkCenterTool === "repost" ? "Repost selected" : "1 active"}
               </span>
               <span style={marketplaceLinkHeroPillStyle()}>
                 <MarketplaceGlyph name="verify" size={16} />
-                Fast links
+                {activeLinkCenterTool === "repost" ? "Marketplace-safe" : "Fast links"}
               </span>
             </div>
           </div>
@@ -10176,7 +10182,11 @@ export default function MarketplacePage() {
               <>
                 <div style={marketplaceLinkToolHeaderStyle(isCompact)}>
                   <div style={{ minWidth: 0 }}>
-                    <div style={sectionLabel()}>Selected Link Center tool</div>
+                    <div style={sectionLabel()}>
+                      {activeLinkCenterTool === "repost"
+                        ? "Selected Marketing Tool"
+                        : "Selected Link Center tool"}
+                    </div>
                     <div style={marketplaceLinkHeroSubtitleStyle(isCompact)}>
                       {activeLinkCenterTool === "join"
                         ? "Join Invite"
@@ -10207,7 +10217,9 @@ export default function MarketplacePage() {
                     <span aria-hidden="true" style={marketplaceLinkMiniIconStyle()}>
                       <MarketplaceGlyph name="chevron" size={18} />
                     </span>
-                    Back to Link Center
+                    {activeLinkCenterTool === "repost"
+                      ? "Back to Marketing Tools"
+                      : "Back to Link Center"}
                   </StableButton>
                 </div>
                 <div style={marketplaceLinkActiveToolStackStyle()}>
@@ -12616,9 +12628,9 @@ export default function MarketplacePage() {
             <div style={{ minWidth: 0 }}>
               <div style={sectionLabel()}>Community Members & Shops</div>
               <div style={{ marginTop: 8, ...helperText() }}>
-                See known members and visible shops inside this selected
-                marketplace. Open a shop record for current evidence before you
-                act.
+                See Community Domains, known members, and visible shops inside
+                this selected marketplace. Open a shop record for current
+                evidence before you act.
               </div>
             </div>
           </div>
@@ -12646,6 +12658,10 @@ export default function MarketplacePage() {
           </span>
           <span style={stableStatusPillStyle(visibleTradeShopCount > 0)}>
             {visibleTradeShopCount} public shop{visibleTradeShopCount === 1 ? "" : "s"}
+          </span>
+          <span style={stableStatusPillStyle(marketplaceCommunityDomainRows.length > 0)}>
+            {marketplaceCommunityDomainRows.length} domain
+            {marketplaceCommunityDomainRows.length === 1 ? "" : "s"}
           </span>
           <span style={stableStatusPillStyle(true)}>
             Community-bound directory
@@ -13086,7 +13102,7 @@ export default function MarketplacePage() {
               </div>
               <div style={{ marginTop: 6, ...helperText() }}>
                 Local needs and offers, separate from ROSCA savings and Support
-                Requests.
+                requests.
               </div>
             </div>
           </div>
@@ -13193,7 +13209,7 @@ export default function MarketplacePage() {
               <MarketplaceGlyph name="support" size={26} />
             </span>
             <div style={{ minWidth: 0 }}>
-              <div style={sectionLabel()}>Support Requests</div>
+              <div style={sectionLabel()}>Support</div>
               <div style={{ marginTop: 8, ...helperText() }}>
                 Ask this marketplace for support when your withdrawal needs
                 backing.

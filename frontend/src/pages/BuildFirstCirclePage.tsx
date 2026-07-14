@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import PageTopNav from "../components/PageTopNav";
 import GsnSnapshotPaperCard from "../components/GsnSnapshotPaperCard";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
@@ -1401,7 +1401,6 @@ export default function BuildFirstCirclePage() {
   }, [
     communityDomainCircleMode,
     communityDomainInviteContext,
-    communityDomainInviteContext.domainName,
     currentClan,
     selectedClanId,
   ]);
@@ -1506,6 +1505,15 @@ export default function BuildFirstCirclePage() {
       }),
     [communityName, gmfnId, inviteLink, inviteSenderName, selectedGroupType]
   );
+  const defaultCommunityDomainInviteMessageRef = useRef(
+    defaultCommunityDomainInviteMessage
+  );
+
+  useEffect(() => {
+    defaultCommunityDomainInviteMessageRef.current =
+      defaultCommunityDomainInviteMessage;
+  }, [defaultCommunityDomainInviteMessage]);
+
   const communityDomainInviteMessage = useMemo(() => {
     if (!communityDomainCircleMode) return "";
     return finalCommunityDomainInviteMessage({
@@ -1538,8 +1546,9 @@ export default function BuildFirstCirclePage() {
       return;
     }
 
-    setCustomInviteMessage(defaultCommunityDomainInviteMessage);
-    setSavedInviteMessage(defaultCommunityDomainInviteMessage);
+    const initialMessage = defaultCommunityDomainInviteMessageRef.current;
+    setCustomInviteMessage(initialMessage);
+    setSavedInviteMessage(initialMessage);
     setInviteMessageEdited(false);
   }, [communityDomainCircleMode, inviteMessageStorageKey]);
 

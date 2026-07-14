@@ -53,17 +53,17 @@ function sectionBetween(startPattern, endPattern) {
 
 assertContains(
   /case "support":[\s\S]*?<path d="M5\.5 13\.5h3\.3l2\.3 2\.2[\s\S]*?<path d="M8\.2 6\.9c0-1\.4/,
-  "Support Requests must use the stable guided-help pictogram, not the old generic people mark."
+  "Support must use the stable guided-help pictogram, not the old generic people mark."
 );
 
 assertContains(
-  /debugId="marketplace\.tile\.support"[\s\S]*?aria-label="Open Support Requests for this marketplace"[\s\S]*?openMarketplaceSection\(\s*event,\s*"support",\s*"marketplace-loans-support"\s*\)[\s\S]*?<MarketplaceGlyph name="support"[\s\S]*?Support Requests[\s\S]*?Ask for backing when balance is not enough[\s\S]*?Start Request[\s\S]*?Supporters[\s\S]*?Repayment/,
-  "Support Requests front card must open support directly instead of presenting ROSCA as the same public choice."
+  /debugId="marketplace\.tile\.support"[\s\S]*?aria-label="Open Support for this marketplace"[\s\S]*?openMarketplaceSection\(\s*event,\s*"support",\s*"marketplace-loans-support"\s*\)[\s\S]*?<MarketplaceGlyph name="support"[\s\S]*?Support[\s\S]*?Ask for backing when balance is not enough[\s\S]*?Start Request[\s\S]*?Supporters[\s\S]*?Repayment/,
+  "Support front card must open support directly instead of presenting ROSCA as the same public choice."
 );
 
 assertContains(
   /const MARKETPLACE_SECTION_ANCHORS:[\s\S]*?support: "marketplace-loans-support"/,
-  "Support Requests section anchor must remain marketplace-loans-support."
+  "Support section anchor must remain marketplace-loans-support."
 );
 
 assertContains(
@@ -83,17 +83,17 @@ assertNotContains(
 
 assertContains(
   /function focusedMarketplaceSectionState\(key: keyof SectionState\): SectionState \{[\s\S]*?money: key === "money"[\s\S]*?rosca: key === "rosca"[\s\S]*?tools: key === "tools"[\s\S]*?members: key === "members"[\s\S]*?demand: key === "demand"[\s\S]*?support: key === "support"[\s\S]*?function touchedMarketplaceSectionState[\s\S]*?\[key\]: true/,
-  "Opening Support Requests must focus only the support lane, not visually open Members too."
+  "Opening Support must focus only the support lane, not visually open Members too."
 );
 
 assertContains(
   /const isMoneyOutSupportFlow =[\s\S]*?routeSupportFlow === "money-out" && routeFocus === "support"[\s\S]*?if \(hash !== "marketplace-loans-support" && !isMoneyOutSupportFlow\) return[\s\S]*?setSectionsOpen\(focusedMarketplaceSectionState\("support"\)\)[\s\S]*?scheduleMarketplaceSectionScroll\("marketplace-loans-support", \{[\s\S]*?force: true[\s\S]*?\}\)/,
-  "Money Out over-balance handoff must land inside the Support Requests lane, not leave the user on the general marketplace surface."
+  "Money Out over-balance handoff must land inside the Support lane, not leave the user on the general marketplace surface."
 );
 
 assertContains(
   /const WITHDRAWAL_TASK_STORAGE_KEY_PREFIXES = \[[\s\S]*?"gmfn\.withdrawal\.task\.v5"[\s\S]*?"gmfn\.withdrawal\.task\.v4"[\s\S]*?\][\s\S]*?function readWithdrawalTask[\s\S]*?for \(const prefix of WITHDRAWAL_TASK_STORAGE_KEY_PREFIXES\)[\s\S]*?const storedWithdrawalTask = readWithdrawalTask\([\s\S]*?activeCommunityId,[\s\S]*?currentGmfnId[\s\S]*?\)[\s\S]*?const storedAmount = safeStr\(storedWithdrawalTask\?\.amountInput\)[\s\S]*?const defaultPurpose = storedAmount \? "Withdrawal support" : ""[\s\S]*?setLoanAmount\([\s\S]*?storedAmount[\s\S]*?setLoanPurpose\([\s\S]*?storedNote \|\| defaultPurpose/,
-  "Money Out support handoff must read the current v5 task first, fall back to v4, and prefill Support Requests amount and purpose."
+  "Money Out support handoff must read the current v5 task first, fall back to v4, and prefill Support amount and purpose."
 );
 
 assertContains(
@@ -108,7 +108,7 @@ assertNotContains(
 
 assertContains(
   /function handleStartLoanDraft\(\)[\s\S]*?if \(!safeStr\(loanRepaymentCadence\)\)[\s\S]*?Choose how you plan to repay[\s\S]*?if \(!safeStr\(loanPurpose\)\)[\s\S]*?State what the support is for\./,
-  "Support Requests must require a purpose before creating a backend support draft."
+  "Support must require a purpose before creating a backend support draft."
 );
 
 assertContains(
@@ -122,7 +122,7 @@ const supportSection = sectionBetween(
 );
 
 if (!supportSection.text) {
-  addFinding(-1, "Support Requests detail section must exist before the shell closes.");
+  addFinding(-1, "Support detail section must exist before the shell closes.");
 } else {
   const actionIds = [
     ...supportSection.text.matchAll(/debugId="(marketplace\.support\.[^"]+)"/g),
@@ -146,14 +146,14 @@ if (!supportSection.text) {
     if (!actionIds.includes(debugId)) {
       addFinding(
         supportSection.start,
-        "Support Requests detail section is missing an expected action.",
+        "Support detail section is missing an expected action.",
         debugId
       );
     }
   }
 
   [
-    /Support Requests/,
+    /Support/,
     /Ask this marketplace for support when your withdrawal needs[\s\S]*?backing/,
     /What this support area does/,
     /ask the selected marketplace for support/,
@@ -195,7 +195,7 @@ if (!supportSection.text) {
     if (!pattern.test(supportSection.text)) {
       addFinding(
         supportSection.start,
-        "Support Requests detail section is missing an expected guided support element.",
+        "Support detail section is missing an expected guided support element.",
         pattern.toString()
       );
     }
@@ -204,7 +204,7 @@ if (!supportSection.text) {
   if (/(Owner Shop|Trade Evidence|Trust Passport|TrustSlip|CCI|Money Pool)/.test(supportSection.text)) {
     addFinding(
       supportSection.start,
-      "Support Requests detail section must not expose other major lane responsibilities.",
+      "Support detail section must not expose other major lane responsibilities.",
       "Support may link to Finance, Loans, and the grouped ROSCA desk, but must not expose shop, trade, trust, or Money Pool lane content."
     );
   }
@@ -212,14 +212,14 @@ if (!supportSection.text) {
   if (/(Loan and support item|No visible loan or support item|Borrower:|Guarantor:)/.test(supportSection.text)) {
     addFinding(
       supportSection.start,
-      "Support Requests visible item cards must use simple support wording, not borrower/guarantor labels.",
+      "Support visible item cards must use simple support wording, not borrower/guarantor labels.",
       "Use Support item, Requested by, and Supporter."
     );
   }
 }
 
 if (findings.length > 0) {
-  console.error("Marketplace Support Requests lane audit failed:");
+  console.error("Marketplace Support lane audit failed:");
   for (const finding of findings) {
     console.error(
       `- ${finding.file}:${finding.line} ${finding.message}\n  ${finding.text}`
@@ -228,4 +228,4 @@ if (findings.length > 0) {
   process.exit(1);
 }
 
-console.log("Marketplace Support Requests lane audit passed.");
+console.log("Marketplace Support lane audit passed.");

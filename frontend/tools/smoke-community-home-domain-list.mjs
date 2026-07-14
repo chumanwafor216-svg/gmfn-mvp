@@ -59,7 +59,7 @@ async function installApiMocks(page) {
     },
   ];
 
-  await page.route("**/api/**", async (route) => {
+  await page.route("**/*", async (route) => {
     const url = new URL(route.request().url());
     const path = url.pathname.replace(/^\/api/, "");
 
@@ -98,7 +98,14 @@ async function installApiMocks(page) {
       return route.fulfill(json({ score: 76, grade: "B", events: 24 }));
     }
 
-    return route.fulfill(json({ items: [], results: [], status: "ok" }));
+    if (
+      url.pathname.startsWith("/api/") ||
+      url.origin === "http://127.0.0.1:8012"
+    ) {
+      return route.fulfill(json({ items: [], results: [], status: "ok" }));
+    }
+
+    return route.continue();
   });
 }
 
@@ -154,6 +161,12 @@ async function run() {
       null,
       { timeout: 30000 }
     );
+    await page
+      .locator('[aria-label="Dismiss companion message"]')
+      .first()
+      .click({ timeout: 5000 })
+      .catch(() => {});
+    await page.waitForTimeout(250);
     await page.screenshot({
       path: join(screenshotDir, "community-home-domain-list-390x844.png"),
       fullPage: false,
@@ -174,16 +187,24 @@ async function run() {
       const forbidden = [
         "Your Community Marketplaces",
         "community-home.summary.community-domain",
+        "Strengthen your identity evidence",
       ];
       const missing = required.filter((item) => !text.includes(item));
       const presentForbidden = forbidden.filter((item) => text.includes(item));
+      const forbiddenCtas = [
+        "community-home.lane.subscriptions.community-domain",
+      ];
+      const presentForbiddenCtas = forbiddenCtas.filter((id) =>
+        document.querySelector(`[data-cta-id="${id}"]`)
+      );
       const overflow = Array.from(document.querySelectorAll("main *"))
         .filter((element) => {
           if (element.closest('[aria-hidden="true"]')) return false;
           const rect = element.getBoundingClientRect();
           return (
             rect.width > 0 &&
-            (rect.left < -2 || rect.right > window.innerWidth + 2)
+            (rect.left < -2 ||
+              rect.right > document.documentElement.clientWidth + 2)
           );
         })
         .slice(0, 6)
@@ -193,12 +214,13 @@ async function run() {
           right: Math.round(element.getBoundingClientRect().right),
         }));
 
-      return { missing, presentForbidden, overflow };
+      return { missing, presentForbidden, presentForbiddenCtas, overflow };
     });
 
     if (
       result.missing.length ||
       result.presentForbidden.length ||
+      result.presentForbiddenCtas.length ||
       result.overflow.length
     ) {
       console.error("Community Home domain list smoke failed:", result);

@@ -140,31 +140,31 @@ assertContains(
 
 assertContains(
   "trustEvidencePanels",
-  /Evidence record readiness[\s\S]*?ready for future evidence records[\s\S]*?This view only shows evidence-record readiness\. It does not create[\s\S]*?records, upload files, issue credentials, publish proof, verify authority,[\s\S]*?score trust, move money, or show private evidence/,
+  /Evidence record readiness[\s\S]*?ready for future evidence records[\s\S]*?Boundary: readiness only; no records, uploads, credentials, proof,[\s\S]*?authority verification, trust scoring, money, or private evidence/,
   "Evidence record panel must say readiness only and block records, credentials, proof, authority verification, trust scoring, money, and private evidence."
 );
 
 assertContains(
   "trustEvidencePanels",
-  /Evidence release readiness[\s\S]*?release checks are ready[\s\S]*?This view only shows public-release readiness\. It does not release[\s\S]*?evidence, publish proof, create public links or QR codes, issue[\s\S]*?credentials, share records, change permissions, score trust, move money,[\s\S]*?or show private evidence/,
+  /Evidence release readiness[\s\S]*?release checks are ready[\s\S]*?Boundary: release readiness only; no evidence release, proof, public\s+links, QR codes, credentials, sharing, permission changes, trust\s+scoring, money, or private evidence/,
   "Evidence release panel must say public-release readiness only and block actual release/proof/links/QR/permission changes."
 );
 
 assertContains(
   "trustEvidencePanels",
-  /Trust relay readiness[\s\S]*?relay checks are ready[\s\S]*?This view only shows relay readiness\. It does not create relay paths,[\s\S]*?publish proof, repost Spotlight, create discovery or affiliations, share[\s\S]*?private records, issue credentials, create marketplace activity, activate[\s\S]*?billing, or move money/,
+  /Trust relay readiness[\s\S]*?relay checks are ready[\s\S]*?Boundary: relay readiness only; no relay paths, proof, reposts,\s+discovery, affiliations, private records, credentials, marketplace\s+activity, billing, or money/,
   "Trust relay panel must keep relay readiness separate from relay creation, proof, discovery, affiliation, marketplace, billing, and money movement."
 );
 
 assertContains(
   "trustEvidencePanels",
-  /Notification scope readiness[\s\S]*?audience checks are ready[\s\S]*?This view only shows audience readiness\. It does not send messages,[\s\S]*?create delivery jobs or audience lists, publish announcements, show[\s\S]*?member lists, create marketplace records, move money, create trust[\s\S]*?records, or show private records/,
+  /Notification scope readiness[\s\S]*?audience checks are ready[\s\S]*?Boundary: audience readiness only; no messages, delivery jobs,[\s\S]*?audience lists, announcements, member lists, marketplace records,[\s\S]*?money, trust records, or private records/,
   "Notification scope panel must keep audience readiness separate from delivery, audience lists, announcements, trust records, money, and private records."
 );
 
 assertContains(
   "trustEvidencePanels",
-  /Trust mobility readiness[\s\S]*?portability checks are ready[\s\S]*?This view only shows trust-mobility readiness\. It does not create trust[\s\S]*?records, credentials, relay paths, public proof, outward links,[\s\S]*?marketplace activity, separate communities, move money, or show[\s\S]*?private records/,
+  /Trust mobility readiness[\s\S]*?portability checks are ready[\s\S]*?Boundary: mobility readiness only; no trust records, credentials,\s+relay paths, proof, outward links, marketplace activity, separate\s+communities, money, or private records/,
   "Trust mobility panel must keep portability readiness separate from trust records, credentials, proof, links, marketplace activity, communities, money, and private records."
 );
 

@@ -90,7 +90,7 @@ async function installApiMocks(page, baseURL) {
     },
   ];
 
-  await page.route("**/api/**", async (route) => {
+  await page.route("**/*", async (route) => {
     const url = new URL(route.request().url());
     const path = url.pathname.replace(/^\/api/, "");
 
@@ -137,7 +137,14 @@ async function installApiMocks(page, baseURL) {
       );
     }
 
-    return route.fulfill(json({ items: [], results: [], status: "ok" }));
+    if (
+      url.pathname.startsWith("/api/") ||
+      url.origin === "http://127.0.0.1:8012"
+    ) {
+      return route.fulfill(json({ items: [], results: [], status: "ok" }));
+    }
+
+    return route.continue();
   });
 }
 
@@ -204,7 +211,7 @@ async function run() {
         "Money & Trust",
         "Community Members & Shops",
         "Marketplace Tools",
-        "Support Requests",
+        "Support",
         "Marketing Tools",
         "Spotlight",
       ];

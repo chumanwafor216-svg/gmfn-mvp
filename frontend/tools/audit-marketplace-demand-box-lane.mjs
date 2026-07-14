@@ -63,7 +63,7 @@ const moreVisibleBlock =
   )?.[0] || "";
 
 if (!moreVisibleBlock) {
-  addFinding(-1, "More / Community Tools must still filter hidden intent items.");
+  addFinding(-1, "Marketplace Tools helper must still filter hidden intent items.");
 }
 
 const trustedTradeSection = sectionBetween(
@@ -87,14 +87,14 @@ const demandSection = sectionBetween(
 );
 
 if (!demandSection.text) {
-  addFinding(-1, "Demand Box section must exist before Support Requests.");
+  addFinding(-1, "Demand Box section must exist before Support.");
 } else {
   [
     /id: "demand"[\s\S]*?intent: "demandBox"[\s\S]*?visible: false/,
     /demand: "marketplace"/,
     /id="marketplace-demand-box"/,
     /<MarketplaceGlyph name="demand" size=\{26\} \/>/,
-    /Demand Box[\s\S]*?Local needs and offers, separate from ROSCA savings and Support[\s\S]*?Requests[\s\S]*?Standalone lane/,
+    /Demand Box[\s\S]*?Local needs and offers, separate from ROSCA savings and Support[\s\S]*?requests[\s\S]*?Standalone lane/,
     /Local needs and offers[\s\S]*?what is needed, wanted,[\s\S]*?available, or being sourced/,
     /debugId="marketplace\.demand\.toggle"/,
     /debugId="marketplace\.demand\.open"[\s\S]*?openMarketplaceCta\(event, "demandBox"\)[\s\S]*?Open Demand Box/,

@@ -160,14 +160,14 @@ assertNotContains(
   {
     id: "marketplace.tile.support",
     glyph: "support",
-    label: "Support Requests",
+    label: "Support",
     tags: ["Start Request", "Supporters", "Repayment"],
   },
   {
     id: "marketplace.tile.marketing-tools",
     glyph: "repost",
     label: "Marketing Tools",
-    tags: ["Repost", "Free Spotlight", "Paid Spotlight", "Evidence"],
+    tags: ["Repost", "Free Spotlight", "Subscription Spotlight", "Evidence"],
   },
 ].forEach((card) => {
   const pattern = new RegExp(
@@ -202,7 +202,7 @@ if (compactHiddenFrontTagRows < 6) {
 assertContains(
   marketplaceFile,
   marketplaceSource,
-  /debugId="marketplace\.tile\.members"[\s\S]*?openMarketplaceSection\(event, "members", "marketplace-members-shops"\)[\s\S]*?Community Members & Shops[\s\S]*?Domains, known members, and public shops\.[\s\S]*?Domains[\s\S]*?Public Shops[\s\S]*?Members/,
+  /debugId="marketplace\.tile\.members"[\s\S]*?aria-label="Open community domains, members, and shops"[\s\S]*?openMarketplaceSection\(event, "members", "marketplace-members-shops"\)[\s\S]*?Community Members & Shops[\s\S]*?Domains, known members, and public shops\.[\s\S]*?Domains[\s\S]*?Public Shops[\s\S]*?Members/,
   "Community Members & Shops must open the domain, visible member, and shop directory lane."
 );
 
@@ -251,7 +251,7 @@ assertContains(
 assertContains(
   marketplaceFile,
   marketplaceSource,
-  /id="marketplace-demand-box"[\s\S]*?Local needs and offers, separate from ROSCA savings and Support\s+Requests\.[\s\S]*?marketplace\.demand\.module[\s\S]*?marketplaceDepartmentShellStyle\("demand", isCompact\)[\s\S]*?Local needs and offers[\s\S]*?debugId="marketplace\.demand\.open"[\s\S]*?openMarketplaceCta\(event, "demandBox"\)[\s\S]*?Open Demand Box/,
+  /id="marketplace-demand-box"[\s\S]*?Local needs and offers, separate from ROSCA savings and Support\s+requests\.[\s\S]*?marketplace\.demand\.module[\s\S]*?marketplaceDepartmentShellStyle\("demand", isCompact\)[\s\S]*?Local needs and offers[\s\S]*?debugId="marketplace\.demand\.open"[\s\S]*?openMarketplaceCta\(event, "demandBox"\)[\s\S]*?Open Demand Box/,
   "Demand Box must remain a separate marketplace-local department without appearing as a hero/front tile."
 );
 

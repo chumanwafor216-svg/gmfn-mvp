@@ -44,8 +44,8 @@ assertContains(
 );
 
 assertContains(
-  /debugId="marketplace\.tile\.support"[\s\S]*?Support Requests[\s\S]*?Start Request[\s\S]*?Supporters[\s\S]*?Repayment[\s\S]*?Separate ROSCA desk[\s\S]*?debugId="marketplace\.support\.open-rosca"[\s\S]*?openMarketplaceSection\(event, "rosca", "marketplace-rosca"\)[\s\S]*?Open ROSCA/,
-  "ROSCA must stay reachable from the support lane as a clearly separate desk, not as the same Support Requests front-door choice."
+  /debugId="marketplace\.tile\.support"[\s\S]*?Support[\s\S]*?Start Request[\s\S]*?Supporters[\s\S]*?Repayment[\s\S]*?Separate ROSCA desk[\s\S]*?debugId="marketplace\.support\.open-rosca"[\s\S]*?openMarketplaceSection\(event, "rosca", "marketplace-rosca"\)[\s\S]*?Open ROSCA/,
+  "ROSCA must stay reachable from the support lane as a clearly separate desk, not as the same Support front-door choice."
 );
 
 assertContains(

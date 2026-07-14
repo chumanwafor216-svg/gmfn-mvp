@@ -277,8 +277,8 @@ assertNotContains(
 
 assertContains(
   "src/pages/LoginPage.tsx",
-  /import \{ PrimaryButton, SecondaryButton, SubtleButton \} from "\.\.\/components\/StableButton";/,
-  "Login page must import shared stable button primitives for guide, submit, create, and activation actions."
+  /import \{[\s\S]*?PrimaryButton,[\s\S]*?SecondaryButton,[\s\S]*?StableCtaLink,[\s\S]*?SubtleButton,[\s\S]*?\} from "\.\.\/components\/StableButton";/,
+  "Login page must import shared stable button primitives for guide, submit, support links, create, and activation actions."
 );
 
 assertContains(

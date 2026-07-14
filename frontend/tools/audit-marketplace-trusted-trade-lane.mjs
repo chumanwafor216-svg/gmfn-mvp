@@ -67,7 +67,7 @@ assertContains(
 );
 
 assertContains(
-  /debugId="marketplace\.tile\.members"[\s\S]*?aria-label="Open visible members and public shops"[\s\S]*?openMarketplaceSection\(\s*event,\s*"members",\s*"marketplace-members-shops"\s*\)[\s\S]*?<MarketplaceGlyph name="trade"[\s\S]*?Community Members & Shops[\s\S]*?Domains, known members, and public shops\.[\s\S]*?Domains[\s\S]*?Public Shops[\s\S]*?Members/,
+  /debugId="marketplace\.tile\.members"[\s\S]*?aria-label="Open community domains, members, and shops"[\s\S]*?openMarketplaceSection\(\s*event,\s*"members",\s*"marketplace-members-shops"\s*\)[\s\S]*?<MarketplaceGlyph name="trade"[\s\S]*?Community Members & Shops[\s\S]*?Domains, known members, and public shops\.[\s\S]*?Domains[\s\S]*?Public Shops[\s\S]*?Members/,
   "Community Members & Shops grouped card must open the community-bound domain/member/shop directory."
 );
 
@@ -187,7 +187,7 @@ if (!tradeEvidenceSection.text) {
     addFinding(
       tradeEvidenceSection.start,
       "Trade Evidence detail section must not expose other major lane responsibilities.",
-      "Trade Evidence should stay member/shop focused; Support Requests owns guarantor selection."
+      "Trade Evidence should stay member/shop focused; Support owns guarantor selection."
     );
   }
 
@@ -195,7 +195,7 @@ if (!tradeEvidenceSection.text) {
     addFinding(
       tradeEvidenceSection.start,
       "Trade Evidence detail section must not embed Demand Box.",
-      "Demand Box owns its own marketplace-local lane between Trade & Shops and Support Requests."
+      "Demand Box owns its own marketplace-local lane between Trade & Shops and Support."
     );
   }
 
@@ -234,10 +234,11 @@ if (!memberShopSection.text) {
 } else {
   [
     /Community Members & Shops/,
-    /See known members and visible shops inside this selected/,
-    /Open a shop record for current evidence before you[\s\S]*?act/,
+    /See Community Domains, known members, and visible shops inside[\s\S]*?this selected/,
+    /Open a shop record for current[\s\S]*?evidence before you[\s\S]*?act/,
     /\{memberRows\.length\} visible member/,
     /\{visibleTradeShopCount\} public shop/,
+    /\{marketplaceCommunityDomainRows\.length\} domain/,
     /Community-bound directory/,
     /Community Domains[\s\S]*?Professional marketplace communities[\s\S]*?They sit with community members and shops\. Setup stays in[\s\S]*?Community Home\./,
     /debugId=\{`marketplace\.domain\.\$\{row\.id \|\| row\.key\}\.open`\}/,
@@ -265,7 +266,7 @@ if (!memberShopSection.text) {
     addFinding(
       memberShopSection.start,
       "Members & Shops detail section must not expose other major lane responsibilities.",
-      "Members & Shops should stay directory focused; Support Requests owns guarantor selection and Trade Evidence owns records."
+      "Members & Shops should stay directory focused; Support owns guarantor selection and Trade Evidence owns records."
     );
   }
 }
