@@ -1,5 +1,5 @@
-import React from "react";
-import { StableCtaLink } from "../../components/StableButton";
+import React, { useState } from "react";
+import { StableButton, StableCtaLink } from "../../components/StableButton";
 import { APP_ROUTES } from "../../lib/appRoutes";
 import { humanStatus } from "./statusLanguage";
 
@@ -10,6 +10,45 @@ type TrustEvidenceReadinessPanelsProps = {
   notificationScopeReadiness?: any;
   trustMobility?: any;
 };
+
+type TrustEvidenceFocusKey =
+  | "records"
+  | "release"
+  | "relay"
+  | "notification"
+  | "mobility";
+
+const TRUST_EVIDENCE_FOCUS_OPTIONS: Array<{
+  key: TrustEvidenceFocusKey;
+  label: string;
+  note: string;
+}> = [
+  {
+    key: "records",
+    label: "Records",
+    note: "Organised activity records before public proof or impact claims.",
+  },
+  {
+    key: "release",
+    label: "Release",
+    note: "Public-safe proof checks before anything leaves the community context.",
+  },
+  {
+    key: "relay",
+    label: "Relay",
+    note: "Bridge readiness for trust signals that may travel beyond one group.",
+  },
+  {
+    key: "notification",
+    label: "Notify",
+    note: "Audience scope checks before messages or announcements are sent.",
+  },
+  {
+    key: "mobility",
+    label: "Mobility",
+    note: "Portability checks for trust context without exposing private records.",
+  },
+];
 
 function cleanText(value: unknown, fallback = ""): string {
   return typeof value === "string" && value.trim() ? value.trim() : fallback;
@@ -241,6 +280,12 @@ export default function CommunityDomainTrustEvidenceReadinessPanels({
   const visibleTrustMobilityLanes = readinessLanes(trustMobility);
   const blockedTrustMobilityLanes = blockedLanes(visibleTrustMobilityLanes);
   const trustMobilityReadyTotal = readyTotal(trustMobility, visibleTrustMobilityLanes);
+  const [activeTrustEvidenceFocus, setActiveTrustEvidenceFocus] =
+    useState<TrustEvidenceFocusKey>("records");
+  const selectedTrustEvidenceFocus =
+    TRUST_EVIDENCE_FOCUS_OPTIONS.find(
+      (option) => option.key === activeTrustEvidenceFocus
+    ) || TRUST_EVIDENCE_FOCUS_OPTIONS[0];
 
   return (
     <>
@@ -292,6 +337,54 @@ export default function CommunityDomainTrustEvidenceReadinessPanels({
         </div>
       </div>
 
+      <div
+        style={{
+          ...softCard(),
+          display: "grid",
+          gap: 10,
+        }}
+      >
+        <div style={sectionLabel()}>Trust and evidence packet</div>
+        <div style={helperText()}>
+          Current view: <strong>{selectedTrustEvidenceFocus.label}</strong>.
+        </div>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 132px), 1fr))",
+            gap: 8,
+          }}
+        >
+          {TRUST_EVIDENCE_FOCUS_OPTIONS.map((option) => {
+            const selected = option.key === activeTrustEvidenceFocus;
+            return (
+              <StableButton
+                key={option.key}
+                type="button"
+                kind={selected ? "primary" : "secondary"}
+                stableHeight={48}
+                fullWidth
+                aria-pressed={selected}
+                title={option.note}
+                debugId={`community-domain.trust-evidence.focus.${option.key}`}
+                onClick={() => setActiveTrustEvidenceFocus(option.key)}
+                style={{
+                  justifyContent: "center",
+                  fontSize: 13,
+                  textTransform: "none",
+                }}
+              >
+                {option.label}
+              </StableButton>
+            );
+          })}
+        </div>
+        <div style={{ ...helperText(), fontSize: 13 }}>
+          {selectedTrustEvidenceFocus.note}
+        </div>
+      </div>
+
+      {activeTrustEvidenceFocus === "records" ? (
       <div style={softCard()}>
         <div style={sectionLabel()}>Evidence record readiness</div>
         <div style={{ ...helperText(), marginTop: 7 }}>
@@ -359,7 +452,9 @@ export default function CommunityDomainTrustEvidenceReadinessPanels({
           score trust, move money, or show private evidence.
         </div>
       </div>
+      ) : null}
 
+      {activeTrustEvidenceFocus === "release" ? (
       <div style={softCard()}>
         <div style={sectionLabel()}>Evidence release readiness</div>
         <div style={{ ...helperText(), marginTop: 7 }}>
@@ -429,7 +524,9 @@ export default function CommunityDomainTrustEvidenceReadinessPanels({
           or show private evidence.
         </div>
       </div>
+      ) : null}
 
+      {activeTrustEvidenceFocus === "relay" ? (
       <div style={softCard()}>
         <div style={sectionLabel()}>Trust relay readiness</div>
         <div style={{ ...helperText(), marginTop: 7 }}>
@@ -485,7 +582,9 @@ export default function CommunityDomainTrustEvidenceReadinessPanels({
           billing, or move money.
         </div>
       </div>
+      ) : null}
 
+      {activeTrustEvidenceFocus === "notification" ? (
       <div style={softCard()}>
         <div style={sectionLabel()}>Notification scope readiness</div>
         <div style={{ ...helperText(), marginTop: 7 }}>
@@ -554,7 +653,9 @@ export default function CommunityDomainTrustEvidenceReadinessPanels({
           records, or show private records.
         </div>
       </div>
+      ) : null}
 
+      {activeTrustEvidenceFocus === "mobility" ? (
       <div style={softCard()}>
         <div style={sectionLabel()}>Trust mobility readiness</div>
         <div style={{ ...helperText(), marginTop: 7 }}>
@@ -613,6 +714,7 @@ export default function CommunityDomainTrustEvidenceReadinessPanels({
           private records.
         </div>
       </div>
+      ) : null}
     </>
   );
 }

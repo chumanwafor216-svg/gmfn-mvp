@@ -1338,6 +1338,13 @@ assertContains(
 
 assertContains(
   "src/pages/communityDomainDashboard/TrustEvidenceReadinessPanels.tsx",
+  /TRUST_EVIDENCE_FOCUS_OPTIONS[\s\S]*key: "records"[\s\S]*key: "release"[\s\S]*key: "relay"[\s\S]*key: "notification"[\s\S]*key: "mobility"[\s\S]*activeTrustEvidenceFocus[\s\S]*community-domain\.trust-evidence\.focus\.\$\{option\.key\}[\s\S]*activeTrustEvidenceFocus === "records"[\s\S]*Evidence record readiness[\s\S]*activeTrustEvidenceFocus === "release"[\s\S]*Evidence release readiness[\s\S]*activeTrustEvidenceFocus === "relay"[\s\S]*Trust relay readiness[\s\S]*activeTrustEvidenceFocus === "notification"[\s\S]*Notification scope readiness[\s\S]*activeTrustEvidenceFocus === "mobility"[\s\S]*Trust mobility readiness/,
+  "Community Domain Trust/Evidence packet must expose one focused sub-view at a time instead of stacking records, release, relay, notification, and mobility readiness together.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/communityDomainDashboard/TrustEvidenceReadinessPanels.tsx",
   /Evidence record readiness[\s\S]*primary_next_action[\s\S]*evidence_record_engine_status[\s\S]*record_type_count[\s\S]*evidence_records_created[\s\S]*review_evidence_metadata_count[\s\S]*This view only shows evidence-record readiness\. It does not create\s+records, upload files, issue credentials, publish proof, verify authority,\s+score trust, move money, or show private evidence/,
   "Community Domain dashboard Services lane must show read-only evidence record readiness without implying durable evidence writes, file upload, storage-key exposure, validity calculation, visibility-policy persistence, credentials, TrustSlips, Trust Passport writes, public proof, legal verification, money movement, billing activation, marketplace activity, social Community creation, private evidence exposure, or trust scoring.",
   { frontend: true }
