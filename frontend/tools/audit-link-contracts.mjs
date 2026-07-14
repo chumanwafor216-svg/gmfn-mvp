@@ -755,8 +755,8 @@ assertContains(
 
 assertContains(
   "../gmfn_backend/app/api/routes/marketplace.py",
-  /def _owner_public_shop_payload\([\s\S]*?active_owner_shops = \([\s\S]*?active_owner_shop_ids[\s\S]*?MarketplaceProduct\.shop_id\.in_\(active_owner_shop_ids\)[\s\S]*?MarketplaceProduct\.seller_user_id == int\(owner\.id\)[\s\S]*?MarketplaceProduct\.visibility_mode\.in_\([\s\S]*?VISIBILITY_COMMUNITY[\s\S]*?"public"[\s\S]*?"community"[\s\S]*?"products": \[_product_out\(db, p\) for p in product_rows\][\s\S]*?@router\.get\("\/shops\/me"\)[\s\S]*?def get_my_marketplace_shop\([\s\S]*?_owner_public_shop_payload\(/,
-  "Authenticated shop lookup must use the shared owner public-block product scope and visibility aliases that the public shop can display."
+  /def _owner_public_shop_payload\([\s\S]*?active_owner_shops = \([\s\S]*?active_owner_shop_ids[\s\S]*?MarketplaceProduct\.shop_id\.in_\(active_owner_shop_ids\)[\s\S]*?MarketplaceProduct\.seller_user_id == int\(owner\.id\)[\s\S]*?MarketplaceProduct\.visibility_mode\.in_\([\s\S]*?VISIBILITY_COMMUNITY[\s\S]*?"public"[\s\S]*?"community"[\s\S]*?product_context_rows = product_query\.limit\(300\)\.all\(\)[\s\S]*?product_rows = _dedupe_active_public_block_products\(product_context_rows\)\[: int\(product_limit\)\][\s\S]*?"products": _products_out\([\s\S]*?db,[\s\S]*?product_rows,[\s\S]*?assignment_products=product_context_rows,[\s\S]*?\)[\s\S]*?@router\.get\("\/shops\/me"\)[\s\S]*?def get_my_marketplace_shop\([\s\S]*?_owner_public_shop_payload\(/,
+  "Authenticated shop lookup must use the shared owner public-block product scope, assignment context, and visibility aliases that the public shop can display."
 );
 
 assertNotContains(
