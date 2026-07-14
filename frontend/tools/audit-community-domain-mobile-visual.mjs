@@ -6,6 +6,7 @@ const baseUrl = process.env.GSN_AUDIT_BASE_URL || "http://127.0.0.1:5180";
 const routePath = "/app/community-domain/13";
 const purchaseRoutePath = "/community-domain/purchase?demo=pillar-of-hope";
 const handledApiPaths = [];
+let domainListScenario = "owned";
 
 function json(data, status = 200) {
   return {
@@ -478,6 +479,9 @@ function pathPayload(pathname) {
   }
   if (pathname.includes("/community-domains/13/")) return {};
   if (pathname.includes("/community-domains/my")) {
+    if (domainListScenario === "empty") {
+      return { items: [] };
+    }
     return {
       items: [
         {
@@ -738,6 +742,37 @@ try {
     findings.push("Purchase page Other paths drawer does not reveal existing-domain lookup.");
   }
 
+  domainListScenario = "empty";
+  await page.goto(`${baseUrl}/app/community-domain`, {
+    waitUntil: "networkidle",
+    timeout: 15000,
+  });
+  await page.getByText("No owned domains on this account.", { exact: true }).waitFor({
+    timeout: 10000,
+  });
+  audit = await page.evaluate(pageAudit);
+  if (!(await isDebugVisible(page, "community-domain-dashboard.selector.setup-new"))) {
+    findings.push("Community Domain selector empty state does not show the setup path first.");
+  }
+  if (await isDebugVisible(page, "community-domain-dashboard.selector.find-edit-domain")) {
+    findings.push("Community Domain selector exposes edit lookup before the user chooses edit.");
+  }
+  if (await isDebugVisible(page, "community-domain-dashboard.empty.purchase")) {
+    findings.push("Community Domain selector empty state repeats a second purchase action.");
+  }
+  if (audit.horizontalOverflow || audit.overflow.length) {
+    findings.push(`Community Domain selector mobile overflow: ${JSON.stringify(audit.overflow)}`);
+  }
+  await clickByDebugId(page, "community-domain-dashboard.selector.edit-existing-focus");
+  if (!(await isDebugVisible(page, "community-domain-dashboard.selector.find-edit-domain"))) {
+    findings.push("Community Domain selector edit path does not reveal the domain lookup.");
+  }
+  await clickByDebugId(page, "community-domain-dashboard.selector.back-to-choice");
+  if (await isDebugVisible(page, "community-domain-dashboard.selector.find-edit-domain")) {
+    findings.push("Community Domain selector keeps edit lookup visible after returning to choices.");
+  }
+
+  domainListScenario = "owned";
   await page.goto(`${baseUrl}${routePath}`, { waitUntil: "networkidle", timeout: 15000 });
   await page.getByText("Domain command", { exact: true }).waitFor({ timeout: 10000 });
 

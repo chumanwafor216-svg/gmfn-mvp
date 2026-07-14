@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { StableButton, StableCtaLink } from "../../components/StableButton";
 import { APP_ROUTES } from "../../lib/appRoutes";
@@ -8,6 +8,8 @@ import { humanStatus } from "./statusLanguage";
 type DomainSelectorPanelProps = {
   domainItems?: any[];
 };
+
+type SelectorMode = "owned" | "start" | "edit";
 
 function cleanText(value: unknown, fallback = ""): string {
   const text = String(value ?? "").trim();
@@ -96,10 +98,21 @@ export default function CommunityDomainSelectorPanel({
   domainItems = [],
 }: DomainSelectorPanelProps): React.ReactElement {
   const navigate = useNavigate();
+  const [selectorMode, setSelectorMode] = useState<SelectorMode>(
+    domainItems.length ? "owned" : "start"
+  );
   const [editDomainName, setEditDomainName] = useState("");
   const [editLookup, setEditLookup] = useState<any | null>(null);
   const [editLookupMessage, setEditLookupMessage] = useState("");
   const [editLookupBusy, setEditLookupBusy] = useState(false);
+
+  useEffect(() => {
+    setSelectorMode((current) => {
+      if (domainItems.length && current === "start") return "owned";
+      if (!domainItems.length && current === "owned") return "start";
+      return current;
+    });
+  }, [domainItems.length]);
 
   async function findDomainForEdit() {
     const requestedName = cleanText(editDomainName);
@@ -172,6 +185,7 @@ export default function CommunityDomainSelectorPanel({
           kind="secondary"
           debugId="community-domain-dashboard.selector.edit-existing-focus"
           onClick={() => {
+            setSelectorMode("edit");
             setEditLookupMessage(
               "Enter the Community Domain code below, then tap Find domain."
             );
@@ -240,14 +254,56 @@ export default function CommunityDomainSelectorPanel({
           Open edit path
         </StableButton>
       ) : null}
+      <StableButton
+        type="button"
+        kind="secondary"
+        debugId="community-domain-dashboard.selector.back-to-choice"
+        onClick={() => {
+          setSelectorMode(domainItems.length ? "owned" : "start");
+          setEditLookupMessage("");
+          setEditLookup(null);
+        }}
+      >
+        Back to choices
+      </StableButton>
+    </div>
+  );
+
+  const quickPathRow = (
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 180px), 1fr))",
+        gap: 10,
+      }}
+    >
+      <StableCtaLink
+        to="/community-domain/purchase"
+        kind="secondary"
+        debugId="community-domain-dashboard.selector.setup-new-compact"
+      >
+        Set up new domain
+      </StableCtaLink>
+      <StableButton
+        type="button"
+        kind="secondary"
+        debugId="community-domain-dashboard.selector.edit-existing-compact"
+        onClick={() => {
+          setSelectorMode("edit");
+          setEditLookupMessage(
+            "Enter the Community Domain code below, then tap Find domain."
+          );
+        }}
+      >
+        Find existing domain
+      </StableButton>
     </div>
   );
 
   if (!domainItems.length) {
     return (
       <div style={{ display: "grid", gap: 12 }}>
-        {startPanel}
-        {editPanel}
+        {selectorMode === "edit" ? editPanel : startPanel}
         <div style={sectionLabel()}>No Community Domains yet</div>
         <h2 style={{ margin: 0, fontSize: 26, lineHeight: 1.1 }}>
           No owned domains on this account.
@@ -258,13 +314,6 @@ export default function CommunityDomainSelectorPanel({
           Community Home.
         </div>
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-          <StableCtaLink
-            to="/community-domain/purchase"
-            kind="primary"
-            debugId="community-domain-dashboard.empty.purchase"
-          >
-            Check domain name
-          </StableCtaLink>
           <StableCtaLink
             to={APP_ROUTES.COMMUNITY}
             kind="secondary"
@@ -277,10 +326,16 @@ export default function CommunityDomainSelectorPanel({
     );
   }
 
+  if (selectorMode === "start") {
+    return <div style={{ display: "grid", gap: 12 }}>{startPanel}</div>;
+  }
+
+  if (selectorMode === "edit") {
+    return <div style={{ display: "grid", gap: 12 }}>{editPanel}</div>;
+  }
+
   return (
     <div style={{ display: "grid", gap: 12 }}>
-      {startPanel}
-      {editPanel}
       <div style={sectionLabel()}>Your Community Domains</div>
       <h2 style={{ margin: 0, fontSize: 26, lineHeight: 1.1 }}>
         Choose a Community Domain.
@@ -343,6 +398,14 @@ export default function CommunityDomainSelectorPanel({
             </div>
           );
         })}
+      </div>
+      <div style={{ ...softCard(), display: "grid", gap: 10 }}>
+        <div style={sectionLabel()}>Other paths</div>
+        <div style={helperText()}>
+          Set up a new institutional domain or find an existing domain code only
+          when that is the next task.
+        </div>
+        {quickPathRow}
       </div>
     </div>
   );

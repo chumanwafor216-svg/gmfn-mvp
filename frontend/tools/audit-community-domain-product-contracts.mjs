@@ -574,8 +574,36 @@ assertContains(
 
 assertContains(
   "src/pages/communityDomainDashboard/DomainSelectorPanel.tsx",
-  /lookupCommunityDomainByName[\s\S]*Set up \/ edit[\s\S]*community-domain-dashboard\.selector\.setup-new[\s\S]*Set up new domain[\s\S]*community-domain-dashboard\.selector\.edit-existing-focus[\s\S]*Edit existing domain[\s\S]*community-domain-dashboard\.selector\.find-edit-domain[\s\S]*Find domain[\s\S]*community-domain-dashboard\.selector\.open-edit-domain[\s\S]*Open edit path[\s\S]*No owned domains on this account[\s\S]*Your Community Domains[\s\S]*draftDomain \? "Set up \/ edit" : "Open \/ edit"/,
-  "Lazy Community Domain selector panel must front-load setup/edit choice, support public-safe domain lookup for edit, route draft domains into setup/edit wording, and keep empty-state recovery.",
+  /type SelectorMode = "owned" \| "start" \| "edit"[\s\S]*domainItems\.length \? "owned" : "start"[\s\S]*selectorMode === "edit" \? editPanel : startPanel[\s\S]*if \(selectorMode === "start"\)[\s\S]*if \(selectorMode === "edit"\)/,
+  "Lazy Community Domain selector panel must keep setup, edit, and owned-domain list states separated so only one selector path is open at a time.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/communityDomainDashboard/DomainSelectorPanel.tsx",
+  /lookupCommunityDomainByName[\s\S]*community-domain-dashboard\.selector\.edit-existing-focus[\s\S]*setSelectorMode\("edit"\)[\s\S]*community-domain-dashboard\.selector\.find-edit-domain[\s\S]*Find domain[\s\S]*community-domain-dashboard\.selector\.open-edit-domain[\s\S]*Open edit path[\s\S]*community-domain-dashboard\.selector\.back-to-choice/,
+  "Lazy Community Domain selector panel must support public-safe domain lookup for edit only after the user chooses the edit path.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/communityDomainDashboard/DomainSelectorPanel.tsx",
+  /No owned domains on this account[\s\S]*community-domain-dashboard\.empty\.community-home[\s\S]*Your Community Domains[\s\S]*draftDomain \? "Set up \/ edit" : "Open \/ edit"/,
+  "Lazy Community Domain selector panel must keep empty-state recovery, draft setup wording, and owned-domain opening.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/communityDomainDashboard/DomainSelectorPanel.tsx",
+  /const quickPathRow[\s\S]*community-domain-dashboard\.selector\.setup-new-compact[\s\S]*Set up new domain[\s\S]*community-domain-dashboard\.selector\.edit-existing-compact[\s\S]*Find existing domain/,
+  "Lazy Community Domain selector panel must keep compact alternate paths behind the owned-domain list instead of opening setup and edit panels by default.",
+  { frontend: true }
+);
+
+assertNotContains(
+  "src/pages/communityDomainDashboard/DomainSelectorPanel.tsx",
+  /community-domain-dashboard\.empty\.purchase/,
+  "Community Domain selector empty state must not repeat a second purchase action under the setup choice.",
   { frontend: true }
 );
 
@@ -890,8 +918,8 @@ assertContains(
 
 assertContains(
   "tools/audit-community-domain-mobile-visual.mjs",
-  /const routePath = "\/app\/community-domain\/13"[\s\S]*const purchaseRoutePath = "\/community-domain\/purchase\?demo=pillar-of-hope"[\s\S]*community-domain-purchase\.check-domain[\s\S]*Purchase page mobile hero still exposes the four engine explanation cards[\s\S]*community-domain-purchase\.other-paths[\s\S]*community-domain-purchase\.open-create-community[\s\S]*community-domain-dashboard\.advanced-tools-toggle[\s\S]*community-domain-dashboard\.service-detail\.boundaries[\s\S]*community-domain-service-boundary\.focus\.privacy[\s\S]*community-domain-dashboard\.service-detail\.evidence[\s\S]*community-domain\.trust-evidence\.focus\.release[\s\S]*community-domain-dashboard\.structure-detail\.planning[\s\S]*community-domain\.structure-planning\.focus\.groups[\s\S]*Safe next step[\s\S]*horizontalOverflow[\s\S]*lowContrast/,
-  "Community Domain mobile visual audit must exercise purchase first-job compaction, active-domain lanes, focused service/structure packets, dead-block regression, overflow, and contrast checks.",
+  /const routePath = "\/app\/community-domain\/13"[\s\S]*const purchaseRoutePath = "\/community-domain\/purchase\?demo=pillar-of-hope"[\s\S]*let domainListScenario = "owned"[\s\S]*community-domain-purchase\.check-domain[\s\S]*Purchase page mobile hero still exposes the four engine explanation cards[\s\S]*community-domain-purchase\.other-paths[\s\S]*domainListScenario = "empty"[\s\S]*community-domain-dashboard\.selector\.setup-new[\s\S]*community-domain-dashboard\.selector\.find-edit-domain[\s\S]*community-domain-dashboard\.selector\.back-to-choice[\s\S]*community-domain-dashboard\.advanced-tools-toggle[\s\S]*community-domain-dashboard\.service-detail\.boundaries[\s\S]*community-domain-service-boundary\.focus\.privacy[\s\S]*community-domain-dashboard\.service-detail\.evidence[\s\S]*community-domain\.trust-evidence\.focus\.release[\s\S]*community-domain-dashboard\.structure-detail\.planning[\s\S]*community-domain\.structure-planning\.focus\.groups[\s\S]*Safe next step[\s\S]*horizontalOverflow[\s\S]*lowContrast/,
+  "Community Domain mobile visual audit must exercise purchase first-job compaction, selector one-path state, active-domain lanes, focused service/structure packets, dead-block regression, overflow, and contrast checks.",
   { frontend: true }
 );
 
