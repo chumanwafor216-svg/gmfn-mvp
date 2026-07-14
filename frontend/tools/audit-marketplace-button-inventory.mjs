@@ -19,11 +19,11 @@ const actionTargetRoutesSource = readFileSync(
   "utf8"
 );
 const findings = [];
-const expectedStableActionCount = 82;
+const expectedStableActionCount = 84;
 const expectedNativeFieldCount = 37;
 const expectedSourceBreakdown = {
   front: 10,
-  body: 72,
+  body: 74,
 };
 const expectedVisibleIntentActionCount = 5;
 const expectedMobileShellBreakdown = {
@@ -617,6 +617,7 @@ if (!memberShopSection) {
     /Community-bound directory/,
     /Community Domains[\s\S]*?Professional marketplace communities[\s\S]*?They sit with community members and shops\. Setup stays in[\s\S]*?Community Home\./,
     /debugId=\{`marketplace\.domain\.\$\{row\.id \|\| row\.key\}\.open`\}/,
+    /currentMarketplaceCommunityDomainRow[\s\S]*?marketplace\.domain\.controls[\s\S]*?Domain controls[\s\S]*?official subscription and settings rails[\s\S]*?marketplace\.domain\.subscription-renewal[\s\S]*?billingPath[\s\S]*?Subscription \/ renewal[\s\S]*?marketplace\.domain\.settings[\s\S]*?settingsPath[\s\S]*?Domain settings/,
     /Visible members/,
     /more tucked away/,
     /debugId="marketplace\.members\.more-visible\.summary"[\s\S]*?More visible members/,
@@ -880,6 +881,8 @@ const expectedOrder = [
     "marketplace.domain.*.open",
     /debugId=\{`marketplace\.domain\.\$\{row\.id \|\| row\.key\}\.open`\}/
   ),
+  exactDebugId("marketplace.domain.subscription-renewal"),
+  exactDebugId("marketplace.domain.settings"),
   dynamicDebugId(
     "marketplace.member.*.shop",
     /debugId=\{`marketplace\.member\.\$\{row\.gmfnId[\s\S]{0,140}\}\.shop`\}/

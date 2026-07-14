@@ -10,7 +10,7 @@ const appLayoutFile = "src/layout/AppLayout.tsx";
 const source = readFileSync(join(frontendRoot, communityFile), "utf8");
 const appLayoutSource = readFileSync(join(frontendRoot, appLayoutFile), "utf8");
 const findings = [];
-const expectedStableButtonTemplateCount = 28;
+const expectedStableButtonTemplateCount = 30;
 const expectedNativeFieldCount = 0;
 const expectedNextActionGuideItemCount = 12;
 const expectedFrontQuickActionCount = 4;
@@ -309,8 +309,8 @@ assertContains(
 );
 
 assertContains(
-  /debugId="community-home\.communities\.header-toggle"[\s\S]*?Marketplace Communities \/ Community Domains[\s\S]*?\{sortedClans\.length\} marketplace[\s\S]*?combinedCommunityDomainCount[\s\S]*?domain" : "domains"[\s\S]*?Marketplace workspace for this community[\s\S]*?Open Marketplace[\s\S]*?sortedCommunityDomainRows\.map[\s\S]*?Community Domain marketplace workspace[\s\S]*?Marketplace ready[\s\S]*?Setup needed[\s\S]*?row\.marketplaceReady \? "Open Marketplace" : "Open Setup"/,
-  "Community Home opened list must show ordinary marketplace communities and Community Domains together, with active domains opening Marketplace and setup-stage domains opening setup."
+  /debugId="community-home\.communities\.header-toggle"[\s\S]*?Marketplace Communities \/ Community Domains[\s\S]*?\{sortedClans\.length\} marketplace[\s\S]*?combinedCommunityDomainCount[\s\S]*?domain" : "domains"[\s\S]*?Marketplace workspace for this community[\s\S]*?Open Marketplace[\s\S]*?sortedCommunityDomainRows\.map[\s\S]*?Community Domain marketplace workspace[\s\S]*?Marketplace ready[\s\S]*?Setup needed[\s\S]*?openCommunityDomainDestination\([\s\S]*?row\.marketplaceReady \? row\.marketplacePath : row\.dashboardPath[\s\S]*?community-home\.domain\.\$\{row\.id \|\| row\.key\}\.billing[\s\S]*?row\.billingPath[\s\S]*?Subscription \/ renewal[\s\S]*?community-home\.domain\.\$\{row\.id \|\| row\.key\}\.settings[\s\S]*?row\.settingsPath[\s\S]*?Domain settings/,
+  "Community Home opened list must show ordinary marketplace communities and Community Domains together, with active domains opening Marketplace and explicit domain billing/settings rails."
 );
 
 assertContains(
@@ -329,8 +329,13 @@ assertContains(
 );
 
 assertContains(
-  /id: "community-packages"[\s\S]*?label: "Marketplace capacity"[\s\S]*?Choose one marketplace first, then open its capacity tools\.[\s\S]*?technical: "Marketplace capacity"[\s\S]*?routes\.communityPackages[\s\S]*?Choose a marketplace first, then open marketplace capacity\.[\s\S]*?title: "Marketplace capacity"[\s\S]*?Member places, shop blocks, ROSCA, meeting packs, and capacity upgrades\.[\s\S]*?capacity payments, and renewal checks/,
+  /id: "community-packages"[\s\S]*?label: "Marketplace capacity"[\s\S]*?Choose one marketplace first, then open its capacity tools\.[\s\S]*?technical: "Marketplace capacity"[\s\S]*?routes\.communityPackages[\s\S]*?Choose a marketplace first, then open marketplace capacity\.[\s\S]*?title: "Marketplace capacity"[\s\S]*?Member places, shop blocks, ROSCA, meeting packs, and capacity upgrades\./,
   "Community Home capacity lane must not expose ordinary marketplace capacity with old package wording."
+);
+
+assertContains(
+  /Payments, subscriptions and renewals[\s\S]*?id: "payments-renewals"[\s\S]*?title: "Payment rails and renewals"[\s\S]*?Money In, Money Out, payment records, and renewal checks\.[\s\S]*?openCommunityRoute\(event, routes\.finance\)/,
+  "Community Home payment rail row must clearly expose payment rails and renewals from the subscription group."
 );
 
 assertContains(
@@ -405,7 +410,7 @@ if (
     new RegExp(
       `id: ownerShopHandle\\("${id}"\\)\\.id[\\s\\S]*?openSelectedCommunityRoute\\([\\s\\S]*?routes\\.${route}`
     ),
-    `Community Home subscription row ${id} must stay grouped under Subscriptions and use the selected-community route guard.`
+    `Community Home subscription row ${id} must stay grouped under payments/subscriptions and use the selected-community route guard.`
   );
 });
 

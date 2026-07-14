@@ -87,6 +87,13 @@ assertContains(
 );
 
 assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /useLocation[\s\S]*const location = useLocation\(\)[\s\S]*const requestedLane = useMemo\([\s\S]*new URLSearchParams\(location\.search\)[\s\S]*params\.get\("lane"\)[\s\S]*params\.get\("area"\)[\s\S]*params\.get\("focus"\)[\s\S]*allowedLane[\s\S]*setActiveLane[\s\S]*setSetupWorkspaceOpen\(true\)[\s\S]*setShowAdvancedTools\(requestedLane !== "settings"\)/,
+  "Community Domain dashboard must honor lane deep links from Community Home for billing and settings.",
+  { frontend: true }
+);
+
+assertContains(
   "src/App.tsx",
   /path="\/poh"[\s\S]*\/community-domain\/purchase\?demo=pillar-of-hope[\s\S]*path="\/pillar-of-hope-demo"[\s\S]*\/community-domain\/purchase\?demo=pillar-of-hope/,
   "App routes must keep short Pillar of Hope demo aliases pointed at the Community Domain purchase preset.",

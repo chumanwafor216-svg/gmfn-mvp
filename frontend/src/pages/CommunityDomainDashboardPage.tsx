@@ -7,7 +7,7 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import CommunityNoticeModal from "../components/CommunityNoticeModal";
 import PageTopNav from "../components/PageTopNav";
 import { GsnRealisticIcon, type Gsn3DIconKey } from "../components/GsnRealisticIcon";
@@ -1741,6 +1741,7 @@ function sortMembershipAccessRequests(items: ActionReviewItem[]): ActionReviewIt
 
 export default function CommunityDomainDashboardPage() {
   const params = useParams();
+  const location = useLocation();
   const navigate = useNavigate();
   const communityDomainId = cleanText(params.communityDomainId || params.id);
   const [dashboard, setDashboard] = useState<DashboardPayload | null>(null);
@@ -2596,6 +2597,25 @@ export default function CommunityDomainDashboardPage() {
   const canEditPayInAccount = storedPlatformAdminRole();
   const canSetupEdit = Boolean(dashboard?.viewer?.can_setup_edit || isAdmin);
   const selectedDomainClanId = Number(domain?.clan_id || getSelectedClanId() || 0);
+  const requestedLane = useMemo(() => {
+    const params = new URLSearchParams(location.search);
+    return cleanText(
+      params.get("lane") ||
+        params.get("area") ||
+        params.get("focus")
+    ).toLowerCase();
+  }, [location.search]);
+  useEffect(() => {
+    if (!requestedLane) return;
+    const allowedLane = lanes.some((lane) => lane.lane_key === requestedLane);
+    if (!allowedLane) return;
+
+    setActiveLane((current) => (current === requestedLane ? current : requestedLane));
+    setSetupWorkspaceOpen(true);
+    setSetupJourneyMode("setup");
+    setShowAdvancedTools(requestedLane !== "settings");
+    focusWorkSurfaceAfterOpenRef.current = true;
+  }, [lanes, requestedLane]);
   const latestMembershipRequest = latestRelevantMembershipRequest(ownMembershipRequests);
   const latestMembershipRequestId = cleanText(latestMembershipRequest?.id);
   const membershipAccessRequests = sortMembershipAccessRequests(
