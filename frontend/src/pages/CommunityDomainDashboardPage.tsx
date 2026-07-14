@@ -2653,6 +2653,10 @@ export default function CommunityDomainDashboardPage() {
     effectiveFeaturePolicy,
     "payments_contributions"
   );
+  const activeDomainPermissionFacts = DOMAIN_FEATURE_POLICY_ROWS.map((row) => [
+    row.label,
+    featurePolicyModeLabel(effectiveFeaturePolicy.features[row.key]),
+  ]);
   const setupCurrentStep =
     SETUP_STEP_OPTIONS.find((option) => option.key === activeSetupStep) ||
     SETUP_STEP_OPTIONS[0];
@@ -4717,6 +4721,71 @@ export default function CommunityDomainDashboardPage() {
                       </div>
                       <div style={statusBadge(status.verification_status)}>
                         Verification: {compactStatus(status.verification_status)}
+                      </div>
+                    </div>
+                    <div
+                      style={{
+                        display: "grid",
+                        gap: 8,
+                        padding: 12,
+                        borderRadius: 18,
+                        border: "1px solid rgba(214,170,69,0.28)",
+                        background: "rgba(255,249,225,0.68)",
+                      }}
+                    >
+                      <div style={sectionLabel()}>Package allowance</div>
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns:
+                            "repeat(auto-fit, minmax(min(100%, 118px), 1fr))",
+                          gap: 8,
+                        }}
+                      >
+                        {packageCapacityFacts.map(([label, value]) => (
+                          <div key={label} style={statusBadge("included")}>
+                            {label}: {value}
+                          </div>
+                        ))}
+                      </div>
+                      <div style={{ ...helperText(), fontSize: 13 }}>
+                        {packageTariffBoundaryText}
+                      </div>
+                      <div style={{ ...helperText(), fontSize: 12.5 }}>
+                        Summary only. This does not add members, sell extra
+                        bands, grant paid features, confirm payment, or verify
+                        the organisation.
+                      </div>
+                    </div>
+                    <div
+                      style={{
+                        display: "grid",
+                        gap: 8,
+                        padding: 12,
+                        borderRadius: 18,
+                        border: "1px solid rgba(9,27,46,0.10)",
+                        background: "rgba(255,255,255,0.72)",
+                      }}
+                    >
+                      <div style={sectionLabel()}>Domain permissions</div>
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns:
+                            "repeat(auto-fit, minmax(min(100%, 118px), 1fr))",
+                          gap: 8,
+                        }}
+                      >
+                        {activeDomainPermissionFacts.map(([label, value]) => (
+                          <div key={label} style={statusBadge("feature policy")}>
+                            {label}: {value}
+                          </div>
+                        ))}
+                      </div>
+                      <div style={{ ...helperText(), fontSize: 12.5 }}>
+                        Source: {featurePolicySourceLabel}. This summary only
+                        explains the current policy; change live behaviour
+                        through Edit setup details.
                       </div>
                     </div>
                     <div style={{ ...helperText(), fontSize: 13 }}>

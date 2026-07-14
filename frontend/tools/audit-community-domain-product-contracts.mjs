@@ -158,8 +158,8 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /showActiveDomainSettingsSummary[\s\S]*domainOperational && activeLane === "settings" && setupJourneyMode !== "edit"[\s\S]*Operating summary[\s\S]*This domain is active\. Use live lanes first[\s\S]*should not fall back into a\s+setup-first flow after activation[\s\S]*Use setup only when you\s+need to correct saved details, add authority evidence, or\s+prepare verification[\s\S]*active does not mean verified[\s\S]*community-domain-dashboard\.settings-open-live-lane[\s\S]*community-domain-dashboard\.settings-edit-setup-details[\s\S]*Edit setup details/,
-  "Active Community Domains must show an operating summary on the settings lane and keep setup editing behind an explicit edit action.",
+  /activeDomainPermissionFacts = DOMAIN_FEATURE_POLICY_ROWS\.map[\s\S]*showActiveDomainSettingsSummary[\s\S]*domainOperational && activeLane === "settings" && setupJourneyMode !== "edit"[\s\S]*Operating summary[\s\S]*This domain is active\. Use live lanes first[\s\S]*should not fall back into a\s+setup-first flow after activation[\s\S]*Use setup only when you\s+need to correct saved details, add authority evidence, or\s+prepare verification[\s\S]*Package allowance[\s\S]*packageCapacityFacts\.map[\s\S]*packageTariffBoundaryText[\s\S]*Summary only[\s\S]*does not add members, sell extra\s+bands, grant paid features, confirm payment, or verify\s+the organisation[\s\S]*Domain permissions[\s\S]*activeDomainPermissionFacts\.map[\s\S]*Source: \{featurePolicySourceLabel\}[\s\S]*summary only\s+explains the current policy[\s\S]*change live behaviour\s+through Edit setup details[\s\S]*active does not mean verified[\s\S]*community-domain-dashboard\.settings-open-live-lane[\s\S]*community-domain-dashboard\.settings-edit-setup-details[\s\S]*Edit setup details/,
+  "Active Community Domains must show an operating summary with package allowance and all domain permission boundaries on the settings lane, and keep setup editing behind an explicit edit action.",
   { frontend: true }
 );
 
