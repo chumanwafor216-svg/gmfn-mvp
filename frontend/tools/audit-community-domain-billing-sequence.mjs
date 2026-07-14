@@ -16,6 +16,10 @@ const dashboardSource = readFileSync(
   join(frontendRoot, "src", "pages", "CommunityDomainDashboardPage.tsx"),
   "utf8"
 );
+const billingPanelsSource = readFileSync(
+  join(frontendRoot, "src", "pages", "communityDomainDashboard", "BillingReadinessPanels.tsx"),
+  "utf8"
+);
 
 function normalizeText(value) {
   return String(value || "").replace(/\s+/g, " ").trim();
@@ -432,6 +436,39 @@ if (
   );
 }
 
+if (
+  !/function softCard\(\)[\s\S]*?minWidth:\s*0[\s\S]*?maxWidth:\s*"100%"[\s\S]*?boxSizing:\s*"border-box"/.test(
+    dashboardSource
+  )
+) {
+  findings.push(
+    "Community Domain dashboard cards must keep minWidth 0 and border-box sizing so Billing cannot expand wider than the phone viewport."
+  );
+}
+
+if (
+  !/latestProofName \|\| proofStatusText[\s\S]*?overflowWrap:\s*"anywhere"[\s\S]*?wordBreak:\s*"break-word"/.test(
+    paymentProofSource
+  )
+) {
+  findings.push(
+    "Payment proof status must safely wrap long receipt filenames on phone billing lanes."
+  );
+}
+
+if (
+  !/function softCard\(\)[\s\S]*?minWidth:\s*0[\s\S]*?maxWidth:\s*"100%"[\s\S]*?boxSizing:\s*"border-box"/.test(
+    billingPanelsSource
+  ) ||
+  !/gridTemplateColumns:\s*"repeat\(auto-fit, minmax\(min\(100%, 118px\), 1fr\)\)"/.test(
+    billingPanelsSource
+  )
+) {
+  findings.push(
+    "Billing readiness detail cards must use phone-safe width constraints and mini-card columns."
+  );
+}
+
 try {
   await page.goto(`${baseUrl}${routePath}`, { waitUntil: "networkidle", timeout: 15000 });
   await page.locator('[data-cta-id="community-domain-dashboard.setup-focus"]').first().click();
@@ -541,6 +578,41 @@ try {
     if (normalizeText(detailResult.bodyText).includes(normalizeText(text))) {
       findings.push(`Forbidden bank-detail text is visible: ${text}`);
     }
+  }
+
+  if (detailResult.horizontalOverflow) {
+    findings.push(
+      `Expanded billing detail horizontal overflow: scroll width ${detailResult.scrollW}px on ${detailResult.viewportW}px viewport`
+    );
+  }
+
+  await page.locator('[data-cta-id="community-domain-dashboard.payment-proof-toggle"]').first().click();
+  await page.getByText("Community Domain payment proof", { exact: true }).waitFor({ timeout: 10000 });
+  await page.locator('[data-cta-id="community-domain-dashboard.billing-readiness-toggle"]').first().click();
+  await page.getByText("Subscription lifecycle", { exact: true }).waitFor({ timeout: 10000 });
+  await page.waitForTimeout(350);
+
+  const expandedResult = await pageAudit(page);
+  const requiredExpandedText = [
+    "Community Domain payment proof",
+    "Payment code used",
+    "Choose proof file",
+    "Billing readiness details",
+    "Subscription lifecycle",
+    "Package",
+    "Pricing",
+  ];
+
+  for (const text of requiredExpandedText) {
+    if (!normalizeText(expandedResult.bodyText).includes(normalizeText(text))) {
+      findings.push(`Missing expanded Billing text: ${text}`);
+    }
+  }
+
+  if (expandedResult.horizontalOverflow) {
+    findings.push(
+      `Expanded proof/readiness horizontal overflow: scroll width ${expandedResult.scrollW}px on ${expandedResult.viewportW}px viewport`
+    );
   }
 
   if (findings.length > 0) {

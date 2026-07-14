@@ -4565,6 +4565,7 @@ export default function MarketplacePage() {
     );
   }, [activeCommunityId]);
   const marketplaceCommunityDomainRows = useMemo<MarketplaceCommunityDomainRow[]>(() => {
+    const selectedId = positiveNumber(activeCommunityId);
     return rowsOf<any>(communityDomainPolicyPayload)
       .map((item) => {
         const domain = item?.community_domain || item?.domain || item || {};
@@ -4600,8 +4601,9 @@ export default function MarketplacePage() {
             : dashboardPath,
         };
       })
-      .filter((row): row is MarketplaceCommunityDomainRow => Boolean(row));
-  }, [communityDomainPolicyPayload]);
+      .filter((row): row is MarketplaceCommunityDomainRow => Boolean(row))
+      .filter((row) => row.clanId > 0 && (!selectedId || row.clanId === selectedId));
+  }, [activeCommunityId, communityDomainPolicyPayload]);
   const publicShopViewLink = useMemo(() => {
     if (!publicShopOwnerId || !publicShopRecord) return "";
     return publicShopUrl(publicShopOwnerId);

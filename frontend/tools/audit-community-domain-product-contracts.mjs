@@ -560,6 +560,20 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
+  /createClan[\s\S]*listMyClans[\s\S]*selectClan[\s\S]*linkedDomainClanId = Number\(domain\?\.clan_id \|\| 0\)[\s\S]*paymentClanIdDraft[\s\S]*const clanId = Number\(\(dashboard\?\.community_domain as any\)\?\.clan_id \|\| paymentClanIdDraft \|\| 0\)[\s\S]*last selected marketplace automatically[\s\S]*debugId="community-domain-dashboard\.create-linked-marketplace"/,
+  "Community Domain billing must use an explicit linked marketplace community and must not silently fall back to the last selected marketplace.",
+  { frontend: true }
+);
+
+assertNotContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /community_domain as any\)\?\.clan_id \|\| getSelectedClanId\(\)/,
+  "Community Domain payment generation must not silently attach an unlinked domain to getSelectedClanId().",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
   /disabled=\{setupEditingLocked[\s\S]*community-domain-dashboard\.setup-save-and-continue[\s\S]*disabled=\{setupEditingLocked \|\| busyProfileSave\}/,
   "Community Domain dashboard setup save controls must be disabled for viewers without owner/admin or setup-editor authority.",
   { frontend: true }

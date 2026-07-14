@@ -44,7 +44,23 @@ async function installApiMocks(page, baseURL) {
     marketplace_image_url:
       "https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=320&h=320&fit=crop",
   };
-  const members = [
+  const pillarClan = {
+    id: 13,
+    clan_id: 13,
+    name: "Pillar of Hope",
+    display_name: "Pillar of Hope",
+    community_name: "Pillar of Hope",
+    marketplace_name: "Pillar of Hope Marketplace",
+    description: "Community Domain marketplace for Pillar of Hope members.",
+    marketplace_description: "Community Domain marketplace for Pillar of Hope members.",
+    community_code: "GMFN-C-000013",
+    clan_code: "GMFN-C-000013",
+    gmfn_id: "GMFN-C-000013",
+    member_count: 1,
+    public_shop_count: 0,
+  };
+  const membersByClan = {
+    8: [
     {
       id: 216,
       user_id: 216,
@@ -59,8 +75,19 @@ async function installApiMocks(page, baseURL) {
       gmfn_id: "GMFN-U-22222222",
       role: "Supporter",
     },
-  ];
-  const shops = [
+    ],
+    13: [
+      {
+        id: 216,
+        user_id: 216,
+        display_name: "Nwafor Chuma",
+        gmfn_id: "GMFN-U-63655DE6",
+        role: "Owner",
+      },
+    ],
+  };
+  const shopsByClan = {
+    8: [
     {
       id: 55,
       shop_id: 55,
@@ -70,7 +97,9 @@ async function installApiMocks(page, baseURL) {
       name: "Ardent Ebony Uplift LTD",
       visibility: "public",
     },
-  ];
+    ],
+    13: [],
+  };
   const domains = [
     {
       id: 13,
@@ -95,20 +124,32 @@ async function installApiMocks(page, baseURL) {
     const path = url.pathname.replace(/^\/api/, "");
 
     if (path === "/auth/me") return route.fulfill(json(me));
-    if (path === "/clans/me") return route.fulfill(json([clan]));
+    if (path === "/clans/me") return route.fulfill(json([clan, pillarClan]));
     if (path === "/community-domains/my") {
       return route.fulfill(json({ items: domains }));
     }
-    if (/^\/clans\/8\/members/.test(path)) return route.fulfill(json(members));
-    if (/^\/clans\/8\/invite-link/.test(path)) {
+    const membersMatch = path.match(/^\/clans\/(\d+)\/members/);
+    if (membersMatch) {
+      return route.fulfill(json(membersByClan[Number(membersMatch[1])] || []));
+    }
+    const inviteMatch = path.match(/^\/clans\/(\d+)\/invite-link/);
+    if (inviteMatch) {
+      const clanId = Number(inviteMatch[1]);
       return route.fulfill(
-        json({ invite_url: `${baseURL}/join/HOMELAND8`, code: "HOMELAND8" })
+        json({
+          invite_url: `${baseURL}/join/${clanId === 13 ? "PILLAR13" : "HOMELAND8"}`,
+          code: clanId === 13 ? "PILLAR13" : "HOMELAND8",
+        })
       );
     }
     if (/^\/marketplace\/shops\/mine/.test(path)) {
-      return route.fulfill(json({ shop: shops[0], products: [] }));
+      const clanId = Number(url.searchParams.get("clan_id") || 8);
+      const shops = shopsByClan[clanId] || [];
+      return route.fulfill(json({ shop: shops[0] || null, products: [] }));
     }
     if (/^\/marketplace\/shops/.test(path)) {
+      const clanId = Number(url.searchParams.get("clan_id") || 8);
+      const shops = shopsByClan[clanId] || [];
       return route.fulfill(json({ items: shops, shops }));
     }
     if (/^\/marketplace\/products/.test(path)) {
@@ -241,7 +282,10 @@ async function run() {
 
     await page.locator('[data-cta-id="marketplace.tile.members"]').click();
     await page.waitForFunction(
-      () => (document.body.textContent || "").includes("Pillar of Hope"),
+      () =>
+        (document.getElementById("marketplace-members-shops")?.textContent || "").includes(
+          "Visible members"
+        ),
       null,
       { timeout: 30000 }
     );
@@ -253,28 +297,70 @@ async function run() {
         document.getElementById("marketplace-owned-links")?.textContent || "";
       const required = [
         "Community Members & Shops",
-        "Community Domains",
-        "Professional marketplace communities",
-        "Pillar of Hope",
-        "Open marketplace | pillar-of-hope",
-        "Setup Domain",
-        "Finish setup | setup-domain",
+        "Visible members",
+        "Ardent Ebony Uplift LTD",
       ];
       const missing = required.filter((item) => !membersSection.includes(item));
+      const scopedLeak = ["Pillar of Hope", "Setup Domain"].filter((item) =>
+        membersSection.includes(item)
+      );
       const toolsLeak = ["Pillar of Hope", "Setup Domain", "Domain marketplaces"].filter(
         (item) => toolsSection.includes(item)
       );
 
-      return { missing, toolsLeak };
+      return { missing, scopedLeak, toolsLeak };
     });
 
-    if (memberDomainResult.missing.length || memberDomainResult.toolsLeak.length) {
-      console.error("Marketplace domain placement smoke failed:", memberDomainResult);
+    if (
+      memberDomainResult.missing.length ||
+      memberDomainResult.scopedLeak.length ||
+      memberDomainResult.toolsLeak.length
+    ) {
+      console.error("Marketplace selected-community scope smoke failed:", memberDomainResult);
+      process.exit(1);
+    }
+
+    await page.goto(`${baseURL}/app/marketplace?community=13`, {
+      waitUntil: "networkidle",
+      timeout: 60000,
+    });
+    await page.waitForSelector('[data-cta-id="marketplace.tile.members"]', {
+      timeout: 30000,
+    });
+    await page.locator('[data-cta-id="marketplace.tile.members"]').click();
+    await page.waitForFunction(
+      () =>
+        (document.getElementById("marketplace-members-shops")?.textContent || "").includes(
+          "Pillar of Hope"
+        ),
+      null,
+      { timeout: 30000 }
+    );
+
+    const pillarResult = await page.evaluate(() => {
+      const membersSection =
+        document.getElementById("marketplace-members-shops")?.textContent || "";
+      const required = [
+        "Community Domains",
+        "Professional marketplace communities",
+        "Pillar of Hope",
+        "Open marketplace | pillar-of-hope",
+        "Nwafor Chuma",
+      ];
+      const forbidden = ["Ardent Ebony Uplift LTD", "Setup Domain"];
+      return {
+        missing: required.filter((item) => !membersSection.includes(item)),
+        forbiddenPresent: forbidden.filter((item) => membersSection.includes(item)),
+      };
+    });
+
+    if (pillarResult.missing.length || pillarResult.forbiddenPresent.length) {
+      console.error("Pillar marketplace scope smoke failed:", pillarResult);
       process.exit(1);
     }
 
     console.log(
-      "Marketplace hero smoke passed: front and domain placement verified; screenshot saved to screenshots/marketplace-hero-390x844.png"
+      "Marketplace hero smoke passed: selected marketplace/domain scope verified; screenshot saved to screenshots/marketplace-hero-390x844.png"
     );
   } finally {
     if (browser) await browser.close();

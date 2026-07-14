@@ -251,6 +251,10 @@ export default function PaymentProofSubmissionPanel({
   return (
     <div
       style={{
+        minWidth: 0,
+        maxWidth: "100%",
+        boxSizing: "border-box",
+        overflowWrap: "break-word",
         marginTop: 12,
         ...brandInnerCard("linear-gradient(180deg, #FFFFFF 0%, #F7FBFF 100%)"),
         border: `1px solid ${confirmed ? "rgba(46,155,98,0.22)" : "rgba(201,154,39,0.22)"}`,
@@ -281,6 +285,7 @@ export default function PaymentProofSubmissionPanel({
             fontSize: 13,
             fontWeight: 820,
             lineHeight: 1.4,
+            overflowWrap: "break-word",
           }}
         >
           {visibleAuthGuidance}
@@ -299,6 +304,8 @@ export default function PaymentProofSubmissionPanel({
             fontSize: 13,
             fontWeight: 850,
             lineHeight: 1.4,
+            overflowWrap: "anywhere",
+            wordBreak: "break-word",
           }}
         >
           {proofStatusText || "Submitted for finance review"}

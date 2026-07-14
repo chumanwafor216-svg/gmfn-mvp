@@ -17,6 +17,7 @@ import {
   applyCommunityDomainActionReview,
   cancelCommunityDomainActionReview,
   checkCommunityDomainAvailability,
+  createClan,
   createCommunityDomainNotice,
   createCommunityDomainPaymentInstruction,
   createCommunityDomainPackageQuote,
@@ -68,7 +69,6 @@ import {
   getCommunityDomainTrustRelayReadiness,
   getCommunityDomainTrustMobility,
   getCommunityDomainSubscriptionLifecycle,
-  getSelectedClanId,
   setSelectedClanId,
   listExpectedPayments,
   listCommunityDomainPolicies,
@@ -76,10 +76,12 @@ import {
   listCommunityDomainActionReviews,
   listCommunityDomainNodeTree,
   listCommunityDomainNotices,
+  listMyClans,
   listMyCommunityDomainMembershipRequests,
   listMyCommunityDomains,
   requestCommunityDomainMembership,
   reviseCommunityDomainActionReview,
+  selectClan,
   submitCommunityDomainSetupEvidence,
   updateCommunityDomainProfile,
   upsertCommunityDomainPolicy,
@@ -515,6 +517,14 @@ type DashboardPayload = {
   boundary?: string;
 };
 
+type CommunityLinkClanRow = {
+  id: number;
+  name: string;
+  marketplaceName: string;
+  description: string;
+  communityCode: string;
+};
+
 type ActionReviewItem = {
   id?: number | string;
   parent_review_id?: number | string | null;
@@ -570,6 +580,42 @@ const PILLAR_OF_HOPE_SETUP_PROFILE =
 function cleanText(value: unknown, fallback = ""): string {
   const text = String(value ?? "").trim();
   return text || fallback;
+}
+
+function communityLinkClanId(row: any): number {
+  return Number(row?.id || row?.clan_id || row?.community_id || 0);
+}
+
+function normalizeCommunityLinkClanRow(row: any): CommunityLinkClanRow | null {
+  const id = communityLinkClanId(row);
+  if (!id) return null;
+  const name = cleanText(row?.name || row?.display_name || row?.clan_name, `Community ${id}`);
+  return {
+    id,
+    name,
+    marketplaceName: cleanText(row?.marketplace_name, `${name} Marketplace`),
+    description: cleanText(row?.description || row?.marketplace_description),
+    communityCode: cleanText(row?.community_code || row?.gmfn_id || row?.clan_code),
+  };
+}
+
+function normalizeCommunityLinkClanRows(payload: any): CommunityLinkClanRow[] {
+  const raw: any[] = Array.isArray(payload?.items)
+    ? payload.items
+    : Array.isArray(payload)
+    ? payload
+    : [];
+  const seen = new Set<number>();
+  return raw
+    .map(normalizeCommunityLinkClanRow)
+    .filter((row: CommunityLinkClanRow | null): row is CommunityLinkClanRow =>
+      Boolean(row)
+    )
+    .filter((row: CommunityLinkClanRow) => {
+      if (seen.has(row.id)) return false;
+      seen.add(row.id);
+      return true;
+    });
 }
 
 function normalizedSetupText(value: unknown): string {
@@ -1223,6 +1269,9 @@ function whiteCard(): React.CSSProperties {
 
 function softCard(): React.CSSProperties {
   return {
+    minWidth: 0,
+    maxWidth: "100%",
+    boxSizing: "border-box",
     borderRadius: 18,
     background:
       "linear-gradient(180deg, rgba(248,251,255,0.995) 0%, rgba(236,243,250,0.985) 100%)",
@@ -1230,6 +1279,7 @@ function softCard(): React.CSSProperties {
     boxShadow: "0 14px 30px rgba(7,20,36,0.055)",
     padding: 14,
     color: "#091B2E",
+    overflowWrap: "break-word",
   };
 }
 
@@ -1372,6 +1422,8 @@ function statusBadge(status: unknown): React.CSSProperties {
   return {
     display: "inline-flex",
     alignItems: "center",
+    maxWidth: "100%",
+    boxSizing: "border-box",
     minHeight: 30,
     borderRadius: 999,
     padding: "6px 10px",
@@ -1381,6 +1433,9 @@ function statusBadge(status: unknown): React.CSSProperties {
     fontSize: 12,
     fontWeight: 900,
     textTransform: "capitalize",
+    whiteSpace: "normal",
+    overflowWrap: "anywhere",
+    lineHeight: 1.2,
   };
 }
 
@@ -1799,6 +1854,9 @@ export default function CommunityDomainDashboardPage() {
   const [domainPayment, setDomainPayment] = useState<any | null>(null);
   const [setupEvidence, setSetupEvidence] = useState<any | null>(null);
   const [setupEvidenceFile, setSetupEvidenceFile] = useState<File | null>(null);
+  const [communityLinkClanRows, setCommunityLinkClanRows] = useState<CommunityLinkClanRow[]>([]);
+  const [paymentClanIdDraft, setPaymentClanIdDraft] = useState("");
+  const [creatingDomainMarketplace, setCreatingDomainMarketplace] = useState(false);
   const [quoteAmount, setQuoteAmount] = useState("");
   const [quoteCurrency, setQuoteCurrency] = useState("GBP");
   const [quoteNote, setQuoteNote] = useState("");
@@ -2596,7 +2654,13 @@ export default function CommunityDomainDashboardPage() {
   const isAdmin = Boolean(dashboard?.viewer?.can_admin);
   const canEditPayInAccount = storedPlatformAdminRole();
   const canSetupEdit = Boolean(dashboard?.viewer?.can_setup_edit || isAdmin);
-  const selectedDomainClanId = Number(domain?.clan_id || getSelectedClanId() || 0);
+  const linkedDomainClanId = Number(domain?.clan_id || 0);
+  const selectedDomainClanId = linkedDomainClanId;
+  const paymentClanId = linkedDomainClanId || Number(paymentClanIdDraft || 0);
+  const linkedDomainClanRow =
+    communityLinkClanRows.find((row) => row.id === linkedDomainClanId) || null;
+  const paymentClanRow =
+    communityLinkClanRows.find((row) => row.id === paymentClanId) || null;
   const requestedLane = useMemo(() => {
     const params = new URLSearchParams(location.search);
     return cleanText(
@@ -2605,6 +2669,31 @@ export default function CommunityDomainDashboardPage() {
         params.get("focus")
     ).toLowerCase();
   }, [location.search]);
+  useEffect(() => {
+    setPaymentClanIdDraft(linkedDomainClanId ? String(linkedDomainClanId) : "");
+  }, [communityDomainId, linkedDomainClanId]);
+  useEffect(() => {
+    let alive = true;
+    if (!getAccessToken()) {
+      setCommunityLinkClanRows([]);
+      return () => {
+        alive = false;
+      };
+    }
+
+    listMyClans()
+      .then((payload) => {
+        if (!alive) return;
+        setCommunityLinkClanRows(normalizeCommunityLinkClanRows(payload));
+      })
+      .catch(() => {
+        if (alive) setCommunityLinkClanRows([]);
+      });
+
+    return () => {
+      alive = false;
+    };
+  }, [communityDomainId, linkedDomainClanId]);
   useEffect(() => {
     if (!requestedLane) return;
     const allowedLane = lanes.some((lane) => lane.lane_key === requestedLane);
@@ -3077,6 +3166,65 @@ export default function CommunityDomainDashboardPage() {
     }
     setSelectedClanId(clanId);
     navigate(routeWithCommunity(APP_ROUTES.MARKETPLACE, clanId));
+  }
+
+  async function createDedicatedDomainMarketplace() {
+    if (!isAdmin) {
+      setMessage("Only a Community Domain owner or domain admin can create the linked marketplace community.");
+      return;
+    }
+
+    if (linkedDomainClanId) {
+      setMessage("This Community Domain already has a linked marketplace community.");
+      return;
+    }
+
+    const name = cleanText(domain?.display_name, cleanText(domain?.domain_name, "Community Domain"));
+    if (!name) {
+      setMessage("Save the Community Domain identity before creating its linked marketplace community.");
+      return;
+    }
+
+    setCreatingDomainMarketplace(true);
+    setMessage("");
+    try {
+      const created = await createClan({
+        name,
+        description:
+          cleanText(domain?.public_profile) ||
+          `Marketplace community for the ${name} Community Domain.`,
+        marketplace_name: `${name} Marketplace`,
+        marketplace_description: `Marketplace for ${name} Community Domain members.`,
+      });
+      const createdRow = normalizeCommunityLinkClanRow(created);
+      if (!createdRow) {
+        setMessage("GSN created the marketplace community, but could not read its id yet. Refresh this dashboard before generating the code.");
+        return;
+      }
+
+      setCommunityLinkClanRows((current) => {
+        const rest = current.filter((row) => row.id !== createdRow.id);
+        return [createdRow, ...rest];
+      });
+      setPaymentClanIdDraft(String(createdRow.id));
+      try {
+        await selectClan(createdRow.id);
+      } catch {
+        setSelectedClanId(createdRow.id);
+      }
+      setMessage(
+        `${createdRow.name} marketplace community is ready. Generate the payment code to link this Community Domain to that marketplace.`
+      );
+    } catch (err: any) {
+      setMessage(
+        errorDetailMessage(
+          err,
+          "GSN could not create the dedicated marketplace community. If it already exists, choose it from the list before generating the code."
+        )
+      );
+    } finally {
+      setCreatingDomainMarketplace(false);
+    }
   }
 
   function openSetupPaymentLane() {
@@ -3719,10 +3867,12 @@ export default function CommunityDomainDashboardPage() {
       setMessage("Only a Community Domain owner or domain admin can generate the payment code.");
       return;
     }
-    const clanId = Number((dashboard?.community_domain as any)?.clan_id || getSelectedClanId() || 0);
+    const clanId = Number((dashboard?.community_domain as any)?.clan_id || paymentClanIdDraft || 0);
     const amount = Number(quoteAmount);
     if (!clanId) {
-      setMessage("Select the community that owns this Community Domain before generating a payment code.");
+      setMessage(
+        "Choose or create the dedicated marketplace community for this Community Domain before generating a payment code. GSN will not use the last selected marketplace automatically."
+      );
       return;
     }
     if (!Number.isFinite(amount) || amount <= 0) {
@@ -3757,6 +3907,7 @@ export default function CommunityDomainDashboardPage() {
         meta_json: payload?.meta || {},
       };
       setDomainPayment(payment);
+      setPaymentClanIdDraft(String(clanId));
       setDomainPaymentFormOpen(false);
       if (payload?.community_domain) {
         setDashboard((prev) =>
@@ -6313,6 +6464,72 @@ export default function CommunityDomainDashboardPage() {
                         <div style={sectionLabel()}>Generate payment code</div>
                         <div style={{ ...helperText(), marginTop: 7, fontSize: 13 }}>
                           Enter amount, area, and currency.
+                        </div>
+                        <div style={{ marginTop: 12, display: "grid", gap: 8 }}>
+                          <div style={sectionLabel()}>Linked marketplace community</div>
+                          {linkedDomainClanId ? (
+                            <div style={{ ...helperText(), fontSize: 13, fontWeight: 820 }}>
+                              Locked to{" "}
+                              <strong>
+                                {cleanText(
+                                  linkedDomainClanRow?.name || paymentClanRow?.name,
+                                  `Community ${linkedDomainClanId}`
+                                )}
+                              </strong>
+                              . Marketplace, invite, shop, and member lists use this
+                              linked community only.
+                            </div>
+                          ) : (
+                            <>
+                              <select
+                                value={paymentClanIdDraft}
+                                onChange={(event) =>
+                                  setPaymentClanIdDraft(event.target.value)
+                                }
+                                style={billingInputStyle()}
+                              >
+                                <option value="">
+                                  Choose the dedicated marketplace community
+                                </option>
+                                {communityLinkClanRows.map((row) => (
+                                  <option key={row.id} value={String(row.id)}>
+                                    {row.name}
+                                    {row.communityCode ? ` - ${row.communityCode}` : ""}
+                                  </option>
+                                ))}
+                              </select>
+                              <div style={{ ...helperText(), fontSize: 12.5 }}>
+                                Choose only the Community Home record that belongs to
+                                this Community Domain. This step no longer borrows
+                                the last marketplace selected on your phone.
+                              </div>
+                              {paymentClanRow ? (
+                                <div
+                                  style={{
+                                    ...helperText(),
+                                    fontSize: 12.5,
+                                    fontWeight: 860,
+                                  }}
+                                >
+                                  Payment code will link{" "}
+                                  {cleanText(domain?.display_name, "this Community Domain")}{" "}
+                                  to {paymentClanRow.name}.
+                                </div>
+                              ) : null}
+                              <StableButton
+                                type="button"
+                                kind="secondary"
+                                fullWidth
+                                disabled={creatingDomainMarketplace}
+                                debugId="community-domain-dashboard.create-linked-marketplace"
+                                onClick={createDedicatedDomainMarketplace}
+                              >
+                                {creatingDomainMarketplace
+                                  ? "Creating marketplace..."
+                                  : "Create dedicated marketplace"}
+                              </StableButton>
+                            </>
+                          )}
                         </div>
                         <div
                           style={{

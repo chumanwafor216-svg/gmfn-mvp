@@ -785,6 +785,11 @@ assertContains(
 );
 
 assertContains(
+  /const marketplaceCommunityDomainRows = useMemo<MarketplaceCommunityDomainRow\[\]>\(\(\) => \{[\s\S]*?const selectedId = positiveNumber\(activeCommunityId\);[\s\S]*?\.filter\(\(row\) => row\.clanId > 0 && \(!selectedId \|\| row\.clanId === selectedId\)\)/,
+  "Marketplace Community Domain rows must be scoped to the selected marketplace community."
+);
+
+assertContains(
   /debugId="marketplace\.money\.money-in"[\s\S]{0,260}onClick=\{\(event\) => openMarketplaceCta\(event, "moneyIn"\)\}/,
   "Marketplace Money In detail button must route through the shared moneyIn CTA target."
 );

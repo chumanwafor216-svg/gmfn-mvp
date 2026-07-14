@@ -62,11 +62,15 @@ function attentionCapacityLanes(lanes: any[]): any[] {
 
 function softCard(): React.CSSProperties {
   return {
+    minWidth: 0,
+    maxWidth: "100%",
+    boxSizing: "border-box",
     borderRadius: 18,
     border: "1px solid rgba(9,27,46,0.10)",
     background: "linear-gradient(180deg, rgba(255,255,255,0.95), rgba(247,250,255,0.92))",
     padding: 16,
     boxShadow: "0 12px 26px rgba(9,27,46,0.08)",
+    overflowWrap: "break-word",
   };
 }
 
@@ -121,7 +125,8 @@ function statusBadge(status: unknown): React.CSSProperties {
     textTransform: "capitalize",
     maxWidth: "100%",
     whiteSpace: "normal",
-    overflowWrap: "normal",
+    boxSizing: "border-box",
+    overflowWrap: "anywhere",
     textAlign: "center",
   };
 }
@@ -131,7 +136,7 @@ function factGrid(items: Array<[string, unknown]>): React.ReactNode {
     <div
       style={{
         display: "grid",
-        gridTemplateColumns: "repeat(auto-fit, minmax(118px, 1fr))",
+        gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 118px), 1fr))",
         gap: 8,
         marginTop: 10,
       }}
@@ -148,7 +153,15 @@ function factGrid(items: Array<[string, unknown]>): React.ReactNode {
           }}
         >
           <div style={{ color: "#617085", fontSize: 12, fontWeight: 850 }}>{label}</div>
-          <div style={{ color: "#07172C", fontWeight: 950, marginTop: 4 }}>
+          <div
+            style={{
+              color: "#07172C",
+              fontWeight: 950,
+              marginTop: 4,
+              minWidth: 0,
+              overflowWrap: "anywhere",
+            }}
+          >
             {String(value ?? "")}
           </div>
         </div>
@@ -179,7 +192,16 @@ function statusRow(
       }}
     >
       <span style={{ minWidth: 0 }}>
-        <span style={{ display: "block", fontWeight: 950, fontSize: 15, lineHeight: 1.18 }}>
+        <span
+          style={{
+            display: "block",
+            fontWeight: 950,
+            fontSize: 15,
+            lineHeight: 1.18,
+            minWidth: 0,
+            overflowWrap: "break-word",
+          }}
+        >
           {title}
         </span>
         <span
@@ -189,6 +211,8 @@ function statusRow(
             fontSize: 12.5,
             lineHeight: 1.45,
             marginTop: 3,
+            minWidth: 0,
+            overflowWrap: "break-word",
           }}
         >
           {detail}
