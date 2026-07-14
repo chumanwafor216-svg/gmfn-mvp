@@ -617,6 +617,7 @@ if (!memberShopSection) {
     /Community-bound directory/,
     /Community Domains[\s\S]*?Professional marketplace communities[\s\S]*?They sit with community members and shops\. Setup stays in[\s\S]*?the Community Domain dashboard\./,
     /debugId=\{`marketplace\.domain\.\$\{row\.id \|\| row\.key\}\.open`\}/,
+    /debugId=\{`marketplace\.domain\.\$\{row\.id \|\| row\.key\}\.open`\}[\s\S]*?openMarketplaceCommunityDomain\(event, row\)/,
     /Visible members/,
     /more tucked away/,
     /debugId="marketplace\.members\.more-visible\.summary"[\s\S]*?More visible members/,
@@ -772,6 +773,16 @@ if (!supportSection) {
     }
   });
 }
+
+assertContains(
+  /import \{[\s\S]*?selectClan,[\s\S]*?\} from "\.\.\/lib\/api"/,
+  "Marketplace must import selectClan for strict Community Domain marketplace handoff."
+);
+
+assertContains(
+  /async function openMarketplaceCommunityDomain[\s\S]*?await selectClan\(row\.clanId\)[\s\S]*?navigateWithOrigin\(navigate, row\.marketplacePath, location\)/,
+  "Marketplace Community Domain rows must select the linked marketplace community before navigation."
+);
 
 assertContains(
   /debugId="marketplace\.money\.money-in"[\s\S]{0,260}onClick=\{\(event\) => openMarketplaceCta\(event, "moneyIn"\)\}/,

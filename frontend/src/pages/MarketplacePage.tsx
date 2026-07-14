@@ -71,6 +71,7 @@ import {
   listMyPaymentInstructionExpectedPayments,
   listProtectedTrades,
   recordRoscaCyclePayout,
+  selectClan,
   setSelectedClanId,
   listClanMembers,
   listCommunityNotices,
@@ -5207,6 +5208,44 @@ export default function MarketplacePage() {
       ? routeWithCommunity(to, activeCommunityId)
       : to;
     navigateWithOrigin(navigate, target, location);
+  }
+
+  async function openMarketplaceCommunityDomain(
+    event: React.SyntheticEvent<HTMLElement> | undefined,
+    row: MarketplaceCommunityDomainRow
+  ) {
+    consumeMarketplaceButtonEvent(event);
+
+    if (!row.marketplaceReady) {
+      showNotice(
+        "error",
+        "This Community Domain still needs setup or activation before it can open as a marketplace."
+      );
+      navigateWithOrigin(navigate, row.dashboardPath, location);
+      return;
+    }
+
+    if (!row.clanId) {
+      showNotice(
+        "error",
+        "This Community Domain is active, but its marketplace community is not linked yet."
+      );
+      navigateWithOrigin(navigate, row.dashboardPath, location);
+      return;
+    }
+
+    try {
+      await selectClan(row.clanId);
+      navigateWithOrigin(navigate, row.marketplacePath, location);
+    } catch (err: any) {
+      showNotice(
+        "error",
+        marketplaceErrorMessage(
+          err,
+          "This Community Domain marketplace could not be selected right now."
+        )
+      );
+    }
   }
 
   function openMarketplaceCta(
@@ -12736,19 +12775,9 @@ export default function MarketplacePage() {
                   debugId={`marketplace.domain.${row.id || row.key}.open`}
                   type="button"
                   stableHeight={isCompact ? 76 : 86}
-                  onClick={(event) =>
-                    runMarketplaceAction(event, () => {
-                      if (row.marketplaceReady) {
-                        navigateWithOrigin(navigate, row.marketplacePath, location);
-                        return;
-                      }
-                      showNotice(
-                        "error",
-                        "This Community Domain still needs setup or activation before it can open as a marketplace."
-                      );
-                      navigateWithOrigin(navigate, row.dashboardPath, location);
-                    })
-                  }
+                  onClick={(event) => {
+                    void openMarketplaceCommunityDomain(event, row);
+                  }}
                   style={marketplaceLinkChooserButtonStyle(isCompact)}
                 >
                   <span

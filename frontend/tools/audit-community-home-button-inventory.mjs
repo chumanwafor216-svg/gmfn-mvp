@@ -10,7 +10,7 @@ const appLayoutFile = "src/layout/AppLayout.tsx";
 const source = readFileSync(join(frontendRoot, communityFile), "utf8");
 const appLayoutSource = readFileSync(join(frontendRoot, appLayoutFile), "utf8");
 const findings = [];
-const expectedStableButtonTemplateCount = 28;
+const expectedStableButtonTemplateCount = 27;
 const expectedNativeFieldCount = 0;
 const expectedNextActionGuideItemCount = 12;
 const expectedFrontQuickActionCount = 4;
@@ -264,8 +264,8 @@ assertContains(
 );
 
 assertContains(
-  /Community announcements[\s\S]*?debugId="community-home\.notice\.post"[\s\S]*?debugId="community-home\.notice\.policy\.members"[\s\S]*?debugId="community-home\.notice\.policy\.admins"[\s\S]*?CONTACT COMMUNITY[\s\S]*?debugId="community-home\.contact\.whatsapp-chat"[\s\S]*?debugId="community-home\.contact\.whatsapp-call"/,
-  "Community Home communication protocol block must keep the Notice Board policy controls and Contact Community actions."
+  /Community Bulletin[\s\S]*?debugId="community-home\.notice\.post"[\s\S]*?debugId="community-home\.notice\.policy\.members"[\s\S]*?debugId="community-home\.notice\.policy\.admins"[\s\S]*?contactCommunityRowStyle\(isCompact\)[\s\S]*?Contact community[\s\S]*?debugId="community-home\.contact\.whatsapp-chat"[\s\S]*?>\s*WhatsApp\s*<\/StableButton>/,
+  "Community Home communication block must keep the Notice Board controls and a compact single-button community WhatsApp contact row."
 );
 
 assertContains(

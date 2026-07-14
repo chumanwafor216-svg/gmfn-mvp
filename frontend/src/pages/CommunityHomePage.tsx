@@ -30,7 +30,7 @@ import {
   listMyClans,
   selectClan,
 } from "../lib/api";
-import { buildPhoneCallUrl, buildWhatsAppChatUrl } from "../lib/whatsappLinks";
+import { buildWhatsAppChatUrl } from "../lib/whatsappLinks";
 import {
   SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS,
   SPOTLIGHT_PILOT_REFRESH_MS,
@@ -1209,64 +1209,47 @@ function announcementNoticeIconStyle(index: number): React.CSSProperties {
 
 function contactCommunityCardStyle(): React.CSSProperties {
   return {
-    ...pageCard("#FFFFFF"),
-    borderRadius: "clamp(22px, 5vw, 28px)",
-    background: "#FFFFFF",
+    borderRadius: 18,
+    background: "linear-gradient(180deg, #FFFFFF 0%, #F7FBFF 100%)",
+    border: "1px solid rgba(16,37,59,0.08)",
+    boxShadow: "0 10px 20px rgba(10,24,49,0.06)",
+    padding: "10px 12px",
   };
 }
 
-function contactCommunityBodyStyle(isCompact: boolean): React.CSSProperties {
-  return {
-    marginTop: 14,
-    display: "grid",
-    gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) minmax(220px, 320px)",
-    gap: 16,
-    alignItems: "center",
-    paddingTop: 16,
-    borderTop: "1px solid rgba(16,37,59,0.10)",
-  };
-}
-
-function contactIdentityStyle(): React.CSSProperties {
+function contactCommunityRowStyle(isCompact: boolean): React.CSSProperties {
   return {
     display: "grid",
-    gridTemplateColumns: "82px minmax(0, 1fr)",
-    gap: 14,
+    gridTemplateColumns: isCompact ? "36px minmax(0, 1fr) auto" : "40px minmax(0, 1fr) auto",
+    gap: isCompact ? 8 : 10,
     alignItems: "center",
-    minWidth: 0,
   };
 }
 
-function contactAvatarStyle(): React.CSSProperties {
+function contactCommunityIconStyle(isCompact: boolean): React.CSSProperties {
   return {
-    width: 82,
-    height: 82,
-    borderRadius: 28,
+    width: isCompact ? 36 : 40,
+    height: isCompact ? 36 : 40,
+    borderRadius: 14,
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    background: "linear-gradient(180deg, #EAF3FF 0%, #D8E8FA 100%)",
-    border: "1px solid rgba(13,95,168,0.10)",
-    boxShadow: "0 12px 24px rgba(10,24,49,0.08)",
+    background: "#DCFCE7",
+    border: "1px solid rgba(22,163,74,0.12)",
+    flex: "0 0 auto",
   };
 }
 
-function contactVerifiedStripStyle(ready: boolean): React.CSSProperties {
+function contactCommunityButtonStyle(isCompact: boolean, ready: boolean): React.CSSProperties {
   return {
-    marginTop: 16,
-    minHeight: 48,
+    ...communityActionStyle(ready ? "primary" : "secondary", !ready),
+    minWidth: isCompact ? 82 : 118,
+    minHeight: isCompact ? 40 : 44,
     borderRadius: 14,
-    display: "flex",
-    alignItems: "center",
-    gap: 10,
-    padding: "10px 14px",
-    background: ready ? "#ECFDF3" : "#F8FBFF",
-    border: ready
-      ? "1px solid rgba(22,163,74,0.14)"
-      : "1px solid rgba(16,37,59,0.10)",
-    color: ready ? "#166534" : "#617085",
-    fontWeight: 850,
-    fontSize: 13,
+    padding: isCompact ? "0 12px" : "0 16px",
+    background: ready ? "linear-gradient(180deg, #18B66B 0%, #0E9855 100%)" : undefined,
+    color: ready ? "#FFFFFF" : undefined,
+    fontSize: isCompact ? 13 : 14,
   };
 }
 
@@ -1432,8 +1415,6 @@ export default function CommunityHomePage() {
     useState(false);
   const [noticeModalOpen, setNoticeModalOpen] = useState(false);
   const [noticePosting, setNoticePosting] = useState(false);
-  const [whatsappContactChoicesOpen, setWhatsappContactChoicesOpen] =
-    useState(false);
   const [poolSummary, setPoolSummary] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [changingClanId, setChangingClanId] = useState<number>(0);
@@ -1704,9 +1685,6 @@ export default function CommunityHomePage() {
     selectedClanId && isCommunityNoticeOfficer
   );
 
-  useEffect(() => {
-    setWhatsappContactChoicesOpen(false);
-  }, [selectedClanId]);
   const routes = useMemo(
     () => ({
       dashboard: routeTarget(
@@ -2586,23 +2564,6 @@ export default function CommunityHomePage() {
 
     window.open(chatUrl, "_blank", "noopener,noreferrer");
     showNotice("success", "WhatsApp opened for this announcement sender.");
-  }
-
-  function openCommunityCallContact(event: React.SyntheticEvent<HTMLElement>) {
-    consumeCommunityButtonEvent(event);
-    const contact = firstTruthy(selectedClan?.official_whatsapp_number);
-    const callUrl = buildPhoneCallUrl(contact);
-
-    if (!callUrl || typeof window === "undefined") {
-      showNotice(
-        "error",
-        "This community has not published an official call contact yet."
-      );
-      return;
-    }
-
-    window.location.href = callUrl;
-    showNotice("success", "Call path opened for this community contact.");
   }
 
   async function submitCommunityNotice(
@@ -3937,192 +3898,50 @@ export default function CommunityHomePage() {
           </div>
 
           <div style={contactCommunityCardStyle()}>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 10,
-                minWidth: 0,
-              }}
-            >
-              <span
-                style={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: 18,
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  background: "#DCFCE7",
-                  flex: "0 0 auto",
-                }}
-                aria-hidden="true"
-              >
-                <GsnLegacyIcon name="phone" size={30} />
+            <div style={contactCommunityRowStyle(isCompact)}>
+              <span style={contactCommunityIconStyle(isCompact)} aria-hidden="true">
+                <GsnLegacyIcon name="phone" size={isCompact ? 23 : 25} />
               </span>
               <span style={{ minWidth: 0 }}>
                 <span
                   style={{
                     ...brandClampLines(1),
                     color: "#07172C",
-                    fontSize: isCompact ? 18 : 21,
+                    fontSize: isCompact ? 14 : 15,
                     fontWeight: 950,
-                    lineHeight: 1.12,
-                    textTransform: "uppercase",
+                    lineHeight: 1.15,
                   }}
                 >
-                  CONTACT COMMUNITY
+                  {firstTruthy(selectedClan?.official_whatsapp_label, "Community contact")}
                 </span>
                 <span
                   style={{
-                    ...brandClampLines(2),
-                    marginTop: 4,
+                    ...brandClampLines(1),
+                    marginTop: 3,
                     color: "#617085",
-                    fontSize: 13,
-                    fontWeight: 760,
-                    lineHeight: 1.35,
+                    fontSize: isCompact ? 12 : 12.5,
+                    fontWeight: 780,
+                    lineHeight: 1.2,
                   }}
                 >
-                  Connect directly with the official community contact.
+                  Contact community
+                  {firstTruthy(selectedClan?.official_whatsapp_number)
+                    ? ` - ${firstTruthy(selectedClan?.official_whatsapp_number)}`
+                    : " - WhatsApp not published"}
                 </span>
               </span>
-              {selectedClan?.official_contact_ready ? (
-                <span style={{ marginLeft: "auto", flex: "0 0 auto" }} aria-hidden="true">
-                  <GsnLegacyIcon name="shield" size={26} />
-                </span>
-              ) : null}
-            </div>
-
-            <div style={contactCommunityBodyStyle(isCompact)}>
-              <div style={contactIdentityStyle()}>
-                <span style={contactAvatarStyle()} aria-hidden="true">
-                  <GsnLegacyIcon name="user" size={58} />
-                </span>
-                <span style={{ minWidth: 0 }}>
-                  <span
-                    style={{
-                      ...brandClampLines(1),
-                      color: "#617085",
-                      fontSize: 13,
-                      fontWeight: 850,
-                    }}
-                  >
-                    Official Contact
-                  </span>
-                  <span
-                    style={{
-                      ...brandClampLines(1),
-                      marginTop: 3,
-                      color: "#07172C",
-                      fontSize: isCompact ? 22 : 25,
-                      fontWeight: 950,
-                      lineHeight: 1.08,
-                    }}
-                  >
-                    {firstTruthy(selectedClan?.official_whatsapp_label, "Community contact")}
-                  </span>
-                  <span
-                    style={{
-                      ...badge(false),
-                      marginTop: 10,
-                      justifyContent: "flex-start",
-                      background: "#EAF3FF",
-                    }}
-                  >
-                    Community Officer
-                  </span>
-                </span>
-              </div>
-
-              <div style={{ display: "grid", gap: 10 }}>
-                <StableButton
-                  type="button"
-                  aria-expanded={whatsappContactChoicesOpen}
-                  aria-controls="community-home-contact-whatsapp-actions"
-                  debugId="community-home.contact.whatsapp-chat"
-                  onClick={(event) => {
-                    if (!whatsappContactChoicesOpen) {
-                      consumeCommunityButtonEvent(event);
-                      if (!firstTruthy(selectedClan?.official_whatsapp_number)) {
-                        showNotice(
-                          "error",
-                          "This community has not published an official WhatsApp contact yet."
-                        );
-                        return;
-                      }
-                      setWhatsappContactChoicesOpen(true);
-                      return;
-                    }
-
-                    openCommunityWhatsAppContact(event);
-                    setWhatsappContactChoicesOpen(false);
-                  }}
-                  style={{
-                    ...communityActionStyle(
-                      firstTruthy(selectedClan?.official_whatsapp_number)
-                        ? "primary"
-                        : "secondary",
-                      !firstTruthy(selectedClan?.official_whatsapp_number)
-                    ),
-                    width: "100%",
-                    minHeight: 58,
-                    borderRadius: 16,
-                    background: firstTruthy(selectedClan?.official_whatsapp_number)
-                      ? "linear-gradient(180deg, #18B66B 0%, #0E9855 100%)"
-                      : undefined,
-                    color: firstTruthy(selectedClan?.official_whatsapp_number)
-                      ? "#FFFFFF"
-                      : undefined,
-                    fontSize: 16,
-                    gap: 10,
-                  }}
-                >
-                  <GsnLegacyIcon name="phone" size={27} />
-                  {whatsappContactChoicesOpen ? "WhatsApp Chat" : "WhatsApp contact"}
-                </StableButton>
-                <div
-                  id="community-home-contact-whatsapp-actions"
-                  style={{
-                    display: whatsappContactChoicesOpen ? "grid" : "none",
-                    gap: 10,
-                  }}
-                >
-                  <StableButton
-                    type="button"
-                    debugId="community-home.contact.whatsapp-call"
-                    onClick={(event) => {
-                      openCommunityCallContact(event);
-                      setWhatsappContactChoicesOpen(false);
-                    }}
-                    style={{
-                      ...communityActionStyle(
-                        "secondary",
-                        !firstTruthy(selectedClan?.official_whatsapp_number)
-                      ),
-                      width: "100%",
-                      minHeight: 58,
-                      borderRadius: 16,
-                      color: firstTruthy(selectedClan?.official_whatsapp_number)
-                        ? "#0E9855"
-                        : undefined,
-                      fontSize: 16,
-                      gap: 10,
-                    }}
-                  >
-                    <GsnLegacyIcon name="phone" size={27} />
-                    WhatsApp Call
-                  </StableButton>
-                </div>
-              </div>
-            </div>
-
-            <div style={contactVerifiedStripStyle(Boolean(selectedClan?.official_contact_ready))}>
-              <GsnLegacyIcon name="shield" size={28} />
-              <span>
-                {selectedClan?.official_contact_ready
-                  ? "Official contact verified by GSN"
-                  : "Official contact not published yet"}
-              </span>
+              <StableButton
+                type="button"
+                aria-label="Message the official community contact on WhatsApp"
+                debugId="community-home.contact.whatsapp-chat"
+                onClick={openCommunityWhatsAppContact}
+                style={contactCommunityButtonStyle(
+                  isCompact,
+                  Boolean(firstTruthy(selectedClan?.official_whatsapp_number))
+                )}
+              >
+                WhatsApp
+              </StableButton>
             </div>
           </div>
         </section>
