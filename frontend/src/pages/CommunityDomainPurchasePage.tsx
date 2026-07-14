@@ -135,6 +135,12 @@ const DOMAIN_ENGINE_POINTS = [
   },
 ];
 
+const DOMAIN_PURCHASE_MOBILE_FACTS = [
+  "Name check first",
+  "Draft only",
+  "Payment later",
+];
+
 const COMMUNITY_DOMAIN_PURCHASE_COMPACT_WIDTH = 980;
 
 function pageShell(): React.CSSProperties {
@@ -821,7 +827,7 @@ export default function CommunityDomainPurchasePage() {
                 style={{
                   display: "grid",
                   gridTemplateColumns: isCompact
-                    ? "1fr"
+                    ? "repeat(3, minmax(0, 1fr))"
                     : "repeat(4, minmax(0, 1fr))",
                   gap: 10,
                   width: "100%",
@@ -829,35 +835,57 @@ export default function CommunityDomainPurchasePage() {
                   marginTop: 4,
                 }}
               >
-                {DOMAIN_ENGINE_POINTS.map((point) => (
-                  <div
-                    key={point.label}
-                    style={{
-                      borderRadius: 16,
-                      border: "1px solid rgba(220,231,243,0.16)",
-                      background:
-                        "linear-gradient(180deg, rgba(255,255,255,0.095) 0%, rgba(255,255,255,0.045) 100%)",
-                      padding: "11px 12px",
-                      minHeight: 92,
-                      display: "grid",
-                      alignContent: "start",
-                      gap: 6,
-                    }}
-                  >
-                    <div style={labelText()}>
-                      {point.label}
-                    </div>
-                    <div
-                      style={{
-                        color: "rgba(255,255,255,0.82)",
-                        fontSize: 13,
-                        lineHeight: 1.45,
-                      }}
-                    >
-                      {point.text}
-                    </div>
-                  </div>
-                ))}
+                {isCompact
+                  ? DOMAIN_PURCHASE_MOBILE_FACTS.map((label) => (
+                      <div
+                        key={label}
+                        style={{
+                          minHeight: 42,
+                          borderRadius: 14,
+                          border: "1px solid rgba(220,231,243,0.16)",
+                          background: "rgba(255,255,255,0.075)",
+                          display: "grid",
+                          placeItems: "center",
+                          padding: "8px 6px",
+                          color: "rgba(255,255,255,0.88)",
+                          fontSize: 12,
+                          fontWeight: 900,
+                          textAlign: "center",
+                          lineHeight: 1.2,
+                        }}
+                      >
+                        {label}
+                      </div>
+                    ))
+                  : DOMAIN_ENGINE_POINTS.map((point) => (
+                      <div
+                        key={point.label}
+                        style={{
+                          borderRadius: 16,
+                          border: "1px solid rgba(220,231,243,0.16)",
+                          background:
+                            "linear-gradient(180deg, rgba(255,255,255,0.095) 0%, rgba(255,255,255,0.045) 100%)",
+                          padding: "11px 12px",
+                          minHeight: 92,
+                          display: "grid",
+                          alignContent: "start",
+                          gap: 6,
+                        }}
+                      >
+                        <div style={labelText()}>
+                          {point.label}
+                        </div>
+                        <div
+                          style={{
+                            color: "rgba(255,255,255,0.82)",
+                            fontSize: 13,
+                            lineHeight: 1.45,
+                          }}
+                        >
+                          {point.text}
+                        </div>
+                      </div>
+                    ))}
               </div>
             </div>
             {isCompact ? null : <div />}
@@ -1211,14 +1239,162 @@ export default function CommunityDomainPurchasePage() {
             </div>
           ) : null}
 
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: isCompact ? "1fr" : "repeat(2, minmax(0, 1fr))",
-              gap: 12,
-            }}
-          >
-            <div style={darkPanel()}>
+          {isCompact ? (
+            <details style={darkPanel()}>
+              <StableDisclosureSummary
+                debugId="community-domain-purchase.other-paths"
+                style={{
+                  cursor: "pointer",
+                  color: "#F8FBFF",
+                  fontWeight: 950,
+                  fontSize: 15,
+                }}
+              >
+                Other paths
+              </StableDisclosureSummary>
+              <div style={{ display: "grid", gap: 14, marginTop: 12 }}>
+                <div
+                  style={{
+                    display: "grid",
+                    gap: 8,
+                    paddingTop: 12,
+                    borderTop: "1px solid rgba(220,231,243,0.14)",
+                  }}
+                >
+                  <div style={{ display: "grid", gap: 8 }}>
+                    <div style={labelText()}>Committee path</div>
+                    <div style={{ fontSize: 21, fontWeight: 950, lineHeight: 1.12 }}>
+                      Create a free Committee
+                    </div>
+                    <div style={helperText()}>
+                      Use this for a lightweight group created by members. It stays separate
+                      from paid institutional Community Domains.
+                    </div>
+                    <EntryActionButton
+                      type="button"
+                      variant="secondary"
+                      onClick={() => navigate("/create")}
+                      debugId="community-domain-purchase.open-create-community"
+                      style={{ width: "100%" }}
+                    >
+                      Create free Committee
+                    </EntryActionButton>
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    display: "grid",
+                    gap: 8,
+                    paddingTop: 14,
+                    borderTop: "1px solid rgba(220,231,243,0.14)",
+                  }}
+                >
+                  <div style={{ display: "grid", gap: 8 }}>
+                    <div style={labelText()}>Existing domain</div>
+                    <div style={{ fontSize: 21, fontWeight: 950, lineHeight: 1.12 }}>
+                      Find an institution domain
+                    </div>
+                    <div style={helperText()}>
+                      Enter the domain code your organization gave you, or open the
+                      Community Domains already linked to your account.
+                    </div>
+                    <label>
+                      <div
+                        style={{
+                          color: "rgba(255,255,255,0.88)",
+                          fontSize: 13,
+                          fontWeight: 900,
+                          marginBottom: 6,
+                        }}
+                      >
+                        Existing domain code
+                      </div>
+                      <input
+                        value={existingDomainName}
+                        onChange={(event) => handleExistingDomainNameChange(event.target.value)}
+                        placeholder="dominion-schools"
+                        style={inputStyle()}
+                      />
+                    </label>
+                    {domainLookup ? (
+                      <div
+                        style={{
+                          borderRadius: 16,
+                          border: "1px solid rgba(220,231,243,0.18)",
+                          background: "rgba(255,255,255,0.08)",
+                          padding: 12,
+                          display: "grid",
+                          gap: 6,
+                        }}
+                      >
+                        <div style={{ color: "#F8FBFF", fontWeight: 950 }}>
+                          {compactValue(domainLookup.display_name, "Community Domain")}
+                        </div>
+                        <div style={{ ...helperText(), fontSize: 13 }}>
+                          Code: <strong>{compactValue(domainLookup.domain_name)}</strong>
+                          <br />
+                          Status:{" "}
+                          <strong>{compactValue(domainLookup.status, "not recorded")}</strong>
+                          {" / "}
+                          Verification:{" "}
+                          <strong>
+                            {compactValue(domainLookup.verification_status, "not recorded")}
+                          </strong>
+                        </div>
+                      </div>
+                    ) : null}
+                    <EntryActionButton
+                      type="button"
+                      variant="secondary"
+                      onClick={handleFindExistingDomain}
+                      disabled={busy === "lookup"}
+                      debugId="community-domain-purchase.lookup-existing-domain"
+                      style={{ width: "100%" }}
+                    >
+                      {busy === "lookup" ? "Finding domain..." : "Find domain"}
+                    </EntryActionButton>
+                    {domainLookup ? (
+                      <EntryActionButton
+                        type="button"
+                        variant="secondary"
+                        onClick={openFoundDomain}
+                        debugId="community-domain-purchase.open-found-domain"
+                        style={{ width: "100%" }}
+                      >
+                        {isSignedIn ? "Open or request access" : "Sign in to request access"}
+                      </EntryActionButton>
+                    ) : null}
+                    <EntryActionButton
+                      type="button"
+                      variant="secondary"
+                      onClick={() =>
+                        isSignedIn
+                          ? navigate("/app/community-domain")
+                          : navigate(
+                              `/login?force=1&next=${encodeURIComponent(
+                                "/app/community-domain"
+                              )}`
+                            )
+                      }
+                      debugId="community-domain-purchase.open-my-domains"
+                      style={{ width: "100%" }}
+                    >
+                      {isSignedIn ? "Open my Community Domains" : "Sign in to open domains"}
+                    </EntryActionButton>
+                  </div>
+                </div>
+              </div>
+            </details>
+          ) : (
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                gap: 12,
+              }}
+            >
+              <div style={darkPanel()}>
               <div style={{ display: "grid", gap: 8 }}>
                 <div style={labelText()}>Committee path</div>
                 <div style={{ fontSize: 21, fontWeight: 950, lineHeight: 1.12 }}>
@@ -1335,7 +1511,8 @@ export default function CommunityDomainPurchasePage() {
                 </EntryActionButton>
               </div>
             </div>
-          </div>
+            </div>
+          )}
 
           <details style={darkPanel()}>
             <StableDisclosureSummary

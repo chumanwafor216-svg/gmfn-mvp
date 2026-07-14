@@ -4,6 +4,7 @@ import { chromium } from "@playwright/test";
 
 const baseUrl = process.env.GSN_AUDIT_BASE_URL || "http://127.0.0.1:5180";
 const routePath = "/app/community-domain/13";
+const purchaseRoutePath = "/community-domain/purchase?demo=pillar-of-hope";
 const handledApiPaths = [];
 
 function json(data, status = 200) {
@@ -663,6 +664,10 @@ async function clickByDebugId(page, debugId) {
   await page.waitForTimeout(250);
 }
 
+async function isDebugVisible(page, debugId) {
+  return page.locator(`[data-cta-id="${debugId}"]`).first().isVisible().catch(() => false);
+}
+
 function normalized(value) {
   return String(value || "").replace(/\s+/g, " ").trim();
 }
@@ -695,10 +700,48 @@ await page.addInitScript(() => {
 });
 
 try {
+  await page.goto(`${baseUrl}${purchaseRoutePath}`, { waitUntil: "networkidle", timeout: 15000 });
+  await page.getByText("Purchase Community Domain", { exact: true }).waitFor({ timeout: 10000 });
+
+  let audit = await page.evaluate(pageAudit);
+  if (!(await isDebugVisible(page, "community-domain-purchase.check-domain"))) {
+    findings.push("Purchase page mobile first job does not show the Check domain name action.");
+  }
+  const exposedEngineCards = await Promise.all(
+    ["Governance", "Trust record", "Network reach", "Opportunity"].map((label) =>
+      page.getByText(label, { exact: true }).first().isVisible().catch(() => false)
+    )
+  );
+  if (exposedEngineCards.some(Boolean)) {
+    findings.push("Purchase page mobile hero still exposes the four engine explanation cards.");
+  }
+  if (await isDebugVisible(page, "community-domain-purchase.open-create-community")) {
+    findings.push("Purchase page mobile exposes the Committee alternative before opening Other paths.");
+  }
+  if (await isDebugVisible(page, "community-domain-purchase.lookup-existing-domain")) {
+    findings.push("Purchase page mobile exposes the existing-domain lookup before opening Other paths.");
+  }
+  if (!(await isDebugVisible(page, "community-domain-purchase.other-paths"))) {
+    findings.push("Purchase page mobile does not expose the collapsed Other paths drawer.");
+  }
+  if (audit.horizontalOverflow || audit.overflow.length) {
+    findings.push(`Purchase page mobile overflow: ${JSON.stringify(audit.overflow)}`);
+  }
+  if (audit.lowContrast.length) {
+    findings.push(`Purchase page possible low contrast: ${JSON.stringify(audit.lowContrast)}`);
+  }
+  await clickByDebugId(page, "community-domain-purchase.other-paths");
+  if (!(await isDebugVisible(page, "community-domain-purchase.open-create-community"))) {
+    findings.push("Purchase page Other paths drawer does not reveal the free Committee path.");
+  }
+  if (!(await isDebugVisible(page, "community-domain-purchase.lookup-existing-domain"))) {
+    findings.push("Purchase page Other paths drawer does not reveal existing-domain lookup.");
+  }
+
   await page.goto(`${baseUrl}${routePath}`, { waitUntil: "networkidle", timeout: 15000 });
   await page.getByText("Domain command", { exact: true }).waitFor({ timeout: 10000 });
 
-  let audit = await page.evaluate(pageAudit);
+  audit = await page.evaluate(pageAudit);
   if (!normalized(audit.bodyText).includes("Run one live lane at a time")) {
     findings.push("Domain command does not show the focused live-lane guidance.");
   }

@@ -875,6 +875,13 @@ assertContains(
 );
 
 assertContains(
+  "src/pages/CommunityDomainPurchasePage.tsx",
+  /DOMAIN_PURCHASE_MOBILE_FACTS[\s\S]*Name check first[\s\S]*Draft only[\s\S]*Payment later[\s\S]*isCompact[\s\S]*DOMAIN_PURCHASE_MOBILE_FACTS\.map[\s\S]*DOMAIN_ENGINE_POINTS\.map[\s\S]*community-domain-purchase\.other-paths[\s\S]*community-domain-purchase\.open-create-community[\s\S]*community-domain-purchase\.lookup-existing-domain/,
+  "Community Domain purchase must keep the mobile first viewport focused on the name-check job while collapsing alternate Committee/existing-domain paths behind Other paths.",
+  { frontend: true }
+);
+
+assertContains(
   "package.json",
   /"audit:community-domain-mobile-visual": "node tools\/audit-community-domain-mobile-visual\.mjs"/,
   "Frontend package scripts must expose the Community Domain mobile visual audit.",
@@ -883,8 +890,8 @@ assertContains(
 
 assertContains(
   "tools/audit-community-domain-mobile-visual.mjs",
-  /const routePath = "\/app\/community-domain\/13"[\s\S]*community-domain-dashboard\.advanced-tools-toggle[\s\S]*community-domain-dashboard\.service-detail\.boundaries[\s\S]*community-domain-service-boundary\.focus\.privacy[\s\S]*community-domain-dashboard\.service-detail\.evidence[\s\S]*community-domain\.trust-evidence\.focus\.release[\s\S]*community-domain-dashboard\.structure-detail\.planning[\s\S]*community-domain\.structure-planning\.focus\.groups[\s\S]*Safe next step[\s\S]*horizontalOverflow[\s\S]*lowContrast/,
-  "Community Domain mobile visual audit must exercise active-domain lanes, focused service/structure packets, dead-block regression, overflow, and contrast checks.",
+  /const routePath = "\/app\/community-domain\/13"[\s\S]*const purchaseRoutePath = "\/community-domain\/purchase\?demo=pillar-of-hope"[\s\S]*community-domain-purchase\.check-domain[\s\S]*Purchase page mobile hero still exposes the four engine explanation cards[\s\S]*community-domain-purchase\.other-paths[\s\S]*community-domain-purchase\.open-create-community[\s\S]*community-domain-dashboard\.advanced-tools-toggle[\s\S]*community-domain-dashboard\.service-detail\.boundaries[\s\S]*community-domain-service-boundary\.focus\.privacy[\s\S]*community-domain-dashboard\.service-detail\.evidence[\s\S]*community-domain\.trust-evidence\.focus\.release[\s\S]*community-domain-dashboard\.structure-detail\.planning[\s\S]*community-domain\.structure-planning\.focus\.groups[\s\S]*Safe next step[\s\S]*horizontalOverflow[\s\S]*lowContrast/,
+  "Community Domain mobile visual audit must exercise purchase first-job compaction, active-domain lanes, focused service/structure packets, dead-block regression, overflow, and contrast checks.",
   { frontend: true }
 );
 
