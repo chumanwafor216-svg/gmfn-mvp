@@ -2499,8 +2499,8 @@ export default function CommunityDomainDashboardPage() {
         setLoadingReadinessLanes((current) => {
           const next = { ...current };
           loadingKeys.forEach((key) => {
+            next[key] = false;
             if (readinessLoadIds.current[key] === requestId) {
-              next[key] = false;
               delete readinessLoadIds.current[key];
             }
           });

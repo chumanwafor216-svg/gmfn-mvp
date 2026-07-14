@@ -867,6 +867,27 @@ assertContains(
   { frontend: true }
 );
 
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /setLoadingReadinessLanes\(\(current\) => \{[\s\S]*loadingKeys\.forEach\(\(key\) => \{[\s\S]*next\[key\] = false;[\s\S]*readinessLoadIds\.current\[key\] === requestId[\s\S]*delete readinessLoadIds\.current\[key\]/,
+  "Community Domain dashboard readiness loading must fail open by releasing visible lane loading flags even when overlapping readiness requests reuse or supersede request ids.",
+  { frontend: true }
+);
+
+assertContains(
+  "package.json",
+  /"audit:community-domain-mobile-visual": "node tools\/audit-community-domain-mobile-visual\.mjs"/,
+  "Frontend package scripts must expose the Community Domain mobile visual audit.",
+  { frontend: true }
+);
+
+assertContains(
+  "tools/audit-community-domain-mobile-visual.mjs",
+  /const routePath = "\/app\/community-domain\/13"[\s\S]*community-domain-dashboard\.advanced-tools-toggle[\s\S]*community-domain-dashboard\.service-detail\.boundaries[\s\S]*community-domain-service-boundary\.focus\.privacy[\s\S]*community-domain-dashboard\.service-detail\.evidence[\s\S]*community-domain\.trust-evidence\.focus\.release[\s\S]*community-domain-dashboard\.structure-detail\.planning[\s\S]*community-domain\.structure-planning\.focus\.groups[\s\S]*Safe next step[\s\S]*horizontalOverflow[\s\S]*lowContrast/,
+  "Community Domain mobile visual audit must exercise active-domain lanes, focused service/structure packets, dead-block regression, overflow, and contrast checks.",
+  { frontend: true }
+);
+
 assertNotContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
   /community-domain-dashboard\.lane\.\$\{|onClick=\{\(\) => setActiveLane\(cleanText\(lane\.lane_key\)\)\}/,
