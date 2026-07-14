@@ -7036,18 +7036,6 @@ export default function CommunityDomainDashboardPage() {
                   </>
                 ) : null}
 
-                {!isActiveLaneReadinessLoading &&
-                activeLane !== "settings" &&
-                activeLane !== "billing" &&
-                activeLane !== "modules" ? (
-                  <div style={softCard()}>
-                    <div style={sectionLabel()}>Safe next step</div>
-                    <div style={{ ...helperText(), marginTop: 7 }}>
-                      Review this lane first. Changes, payment, and verification stay
-                      permission-checked.
-                    </div>
-                  </div>
-                ) : null}
               </div>
             </div>
           </section>

@@ -853,6 +853,13 @@ assertContains(
   { frontend: true }
 );
 
+assertNotContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /Safe next step|Review this lane first\. Changes, payment, and verification stay\s+permission-checked/,
+  "Community Domain dashboard must not append a generic Safe next step card under every lane; each focused lane packet should carry its own next-action and boundary copy.",
+  { frontend: true }
+);
+
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
   /lazy\([\s\S]*import\("\.\/communityDomainDashboard\/LaneSelectorPanel"\)[\s\S]*activeLane[\s\S]*setActiveLane[\s\S]*selectedLane[\s\S]*CommunityDomainLaneSelectorPanel[\s\S]*lanes=\{lanes\}[\s\S]*activeLane=\{activeLane\}[\s\S]*onSelectLane=\{setActiveLane\}/,
