@@ -1,5 +1,5 @@
 import React from "react";
-import { Link } from "react-router-dom";
+import { StableCtaLink } from "../../components/StableButton";
 import { APP_ROUTES } from "../../lib/appRoutes";
 import { humanStatus } from "./statusLanguage";
 
@@ -270,12 +270,20 @@ export default function CommunityDomainTrustEvidenceReadinessPanels({
             marginTop: 12,
           }}
         >
-          <Link to={APP_ROUTES.COMMUNITY_CONFIRMATION_POLICY} style={actionLinkStyle()}>
+          <StableCtaLink
+            to={APP_ROUTES.COMMUNITY_CONFIRMATION_POLICY}
+            debugId="community-domain.trust-evidence.confirmation-policy"
+            style={actionLinkStyle()}
+          >
             Configure confirmation policy
-          </Link>
-          <Link to={APP_ROUTES.COMMUNITY_CONFIRMATION_INBOX} style={actionLinkStyle()}>
+          </StableCtaLink>
+          <StableCtaLink
+            to={APP_ROUTES.COMMUNITY_CONFIRMATION_INBOX}
+            debugId="community-domain.trust-evidence.confirmation-inbox"
+            style={actionLinkStyle()}
+          >
             Open confirmation inbox
-          </Link>
+          </StableCtaLink>
         </div>
         <div style={{ ...helperText(), marginTop: 8, fontSize: 12.5 }}>
           These links only open the confirmation surfaces. They do not create a
