@@ -304,8 +304,8 @@ assertContains(
 );
 
 assertContains(
-  /listMyCommunityDomains[\s\S]*?const \[communityDomainCount, setCommunityDomainCount\] = useState<number \| null>\(null\)[\s\S]*?listMyCommunityDomains\(\)\.catch\(\(\) => \(\{ items: null \}\)\)[\s\S]*?setCommunityDomainCount\(Array\.isArray\(domainRows\) \? domainRows\.length : null\)[\s\S]*?Marketplaces and Community Domains[\s\S]*?debugId="community-home\.summary\.visible-communities"[\s\S]*?\{communityCountFromSummary\} community \{communityCountFromSummary === 1 \? "marketplace" : "marketplaces"\}[\s\S]*?Self-created or joined marketplace communities for local work\.[\s\S]*?debugId="community-home\.summary\.community-domain"[\s\S]*?communityDomainCount === null[\s\S]*?"Community Domains"[\s\S]*?`\$\{communityDomainCount\} community \$\{[\s\S]*?communityDomainCount === 1 \? "domain" : "domains"[\s\S]*?Institutional domains for schools, unions, churches, and markets\.[\s\S]*?openCommunityRoute\(event, routes\.communityDomain\)/,
-  "Community Home summary must distinguish community marketplaces from institutional Community Domains and show the signed-in domain count when available."
+  /listMyCommunityDomains[\s\S]*?const \[communityDomainCount, setCommunityDomainCount\] = useState<number \| null>\(null\)[\s\S]*?listMyCommunityDomains\(\)\.catch\(\(\) => \(\{ items: null \}\)\)[\s\S]*?setCommunityDomainCount\(Array\.isArray\(domainRows\) \? domainRows\.length : null\)[\s\S]*?Marketplaces and Community Domains[\s\S]*?debugId="community-home\.summary\.visible-communities"[\s\S]*?\{communityCountFromSummary\} community \{communityCountFromSummary === 1 \? "marketplace" : "marketplaces"\}[\s\S]*?Self-created or joined marketplace communities for local work\.[\s\S]*?debugId="community-home\.summary\.community-domain"[\s\S]*?communityDomainCount === null[\s\S]*?"Community Domains"[\s\S]*?`\$\{communityDomainCount\} community \$\{[\s\S]*?communityDomainCount === 1 \? "domain" : "domains"[\s\S]*?Set up domain rules, access, and governance; active work opens in Marketplace\.[\s\S]*?openCommunityRoute\(event, routes\.communityDomain\)/,
+  "Community Home summary must distinguish community marketplaces from institutional Community Domains, show the signed-in domain count, and say setup/governance lives here while active work opens in Marketplace."
 );
 
 assertContains(
@@ -377,8 +377,8 @@ assertContains(
 );
 
 assertContains(
-  /communityDomain:\s*"\/app\/community-domain"[\s\S]*?!collapsed\.subscriptions[\s\S]*?id: "community-domain"[\s\S]*?title: "Community Domain"[\s\S]*?detail: "Open institutional dashboard and access requests\."[\s\S]*?openCommunityRoute\(event, routes\.communityDomain\)[\s\S]*?debugId=\{`community-home\.lane\.subscriptions\.\$\{item\.id\}`\}/,
-  "Community Home Community Domain row must live under Subscriptions and open the authenticated institutional dashboard."
+  /communityDomain:\s*"\/app\/community-domain"[\s\S]*?!collapsed\.subscriptions[\s\S]*?id: "community-domain"[\s\S]*?title: "Community Domain"[\s\S]*?detail: "Set up identity, rules, governance, and access requests\."[\s\S]*?openCommunityRoute\(event, routes\.communityDomain\)[\s\S]*?debugId=\{`community-home\.lane\.subscriptions\.\$\{item\.id\}`\}/,
+  "Community Home Community Domain row must live under Subscriptions and open the authenticated setup/governance dashboard."
 );
 
 [

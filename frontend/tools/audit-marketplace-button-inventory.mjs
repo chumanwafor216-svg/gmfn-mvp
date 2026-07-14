@@ -19,11 +19,11 @@ const actionTargetRoutesSource = readFileSync(
   "utf8"
 );
 const findings = [];
-const expectedStableActionCount = 79;
+const expectedStableActionCount = 81;
 const expectedNativeFieldCount = 37;
 const expectedSourceBreakdown = {
-  front: 11,
-  body: 68,
+  front: 10,
+  body: 71,
 };
 const expectedVisibleIntentActionCount = 5;
 const expectedMobileShellBreakdown = {
@@ -117,6 +117,8 @@ function marketplaceActionArea(debugId) {
   ) {
     return "front";
   }
+
+  if (/^marketplace\.domain\./.test(debugId)) return "body";
 
   if (/^marketplace\./.test(debugId)) return "body";
 
@@ -379,9 +381,9 @@ assertContains(
   "Marketplace Official Board grouped card must open the marketplace-local official notice board."
 );
 
-assertContains(
-  /debugId="marketplace\.tile\.trade-evidence"[\s\S]*?aria-label="Open Trade Evidence records"[\s\S]*?openMarketplaceSection\(\s*event,\s*"trade",\s*"marketplace-trade-evidence"\s*\)[\s\S]*?<MarketplaceGlyph name="ledger"[\s\S]*?Trade Evidence[\s\S]*?Record goods, service, and terms\.[\s\S]*?Evidence[\s\S]*?Terms[\s\S]*?Record/,
-  "Marketplace Trade Evidence grouped card must open its own evidence-record lane."
+assertNotContains(
+  /debugId="marketplace\.tile\.trade-evidence"/g,
+  "Marketplace front must not expose Trade Evidence as a duplicate card once it is grouped under Marketing Tools."
 );
 
 assertContains(
@@ -390,8 +392,8 @@ assertContains(
 );
 
 assertContains(
-  /debugId="marketplace\.row\.records-links"[\s\S]*?aria-label="Open marketplace tools, access and public links"[\s\S]*?openMarketplaceSection\(event, "tools", "marketplace-owned-links"\)[\s\S]*?<MarketplaceGlyph name="links"[\s\S]*?Marketplace Tools[\s\S]*?Invite, verify, share, and open helper tools\.[\s\S]*?Verify[\s\S]*?Invite[\s\S]*?Create[\s\S]*?Shop Face[\s\S]*?Helpers/,
-  "Marketplace Tools grouped card must open marketplace-owned links and advertise verify, invite, create, shop sharing, and helper tools."
+  /debugId="marketplace\.row\.records-links"[\s\S]*?aria-label="Open marketplace tools, access and public links"[\s\S]*?openMarketplaceSection\(event, "tools", "marketplace-owned-links"\)[\s\S]*?<MarketplaceGlyph name="links"[\s\S]*?Marketplace Tools[\s\S]*?Access, public links, domain entries, and helper tools\.[\s\S]*?Verify[\s\S]*?Invite[\s\S]*?Create[\s\S]*?Shop Face[\s\S]*?Domains/,
+  "Marketplace Tools grouped card must open marketplace-owned links and advertise verify, invite, create, shop sharing, Community Domains, and helper tools."
 );
 
 assertContains(
@@ -803,11 +805,10 @@ const expectedOrder = [
   exactDebugId("marketplace.empty.dashboard"),
   exactDebugId("marketplace.tile.money"),
   exactDebugId("marketplace.tile.members"),
-  exactDebugId("marketplace.tile.trade-evidence"),
   exactDebugId("marketplace.row.records-links"),
   exactDebugId("marketplace.tile.official-board"),
   exactDebugId("marketplace.tile.support"),
-  exactDebugId("marketplace.tile.spotlight"),
+  exactDebugId("marketplace.tile.marketing-tools"),
   exactDebugId("marketplace.intent.submit"),
   dynamicDebugId(
     "marketplace.intent.${item.id}",
@@ -833,6 +834,10 @@ const expectedOrder = [
   exactDebugId("marketplace.rosca.start-cycle"),
   exactDebugId("marketplace.rosca.record-payout"),
   exactDebugId("marketplace.links.toggle"),
+  dynamicDebugId(
+    "marketplace.domain.*.open",
+    /debugId=\{`marketplace\.domain\.\$\{row\.id \|\| row\.key\}\.open`\}/
+  ),
   exactDebugId("marketplace.links.choose.verify"),
   exactDebugId("marketplace.links.choose.join"),
   exactDebugId("marketplace.links.choose.create-community"),
@@ -862,7 +867,9 @@ const expectedOrder = [
   exactDebugId("marketplace.network-repost.generate-payment-code"),
   exactDebugId("marketplace.network-repost.refresh-credits"),
   exactDebugId("marketplace.network-repost.place"),
+  exactDebugId("marketplace.marketing.free-spotlight"),
   exactDebugId("marketplace.network-repost.subscription"),
+  exactDebugId("marketplace.marketing.trade-evidence"),
   exactDebugId("marketplace.trade.toggle"),
   exactDebugId("marketplace.protected-trade.create"),
   exactDebugId("marketplace.protected-trade.refresh"),

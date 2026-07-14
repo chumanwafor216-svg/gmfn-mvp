@@ -65,7 +65,7 @@ assertNotContains(
 );
 
 assertContains(
-  /debugId="marketplace\.row\.records-links"[\s\S]*?Marketplace Tools[\s\S]*?Invite, verify, share, and open helper tools\./,
+  /debugId="marketplace\.row\.records-links"[\s\S]*?Marketplace Tools[\s\S]*?Access, public links, domain entries, and helper tools\./,
   "Fuller evidence and trust routes must remain under Marketplace Tools, not inside the front summary."
 );
 

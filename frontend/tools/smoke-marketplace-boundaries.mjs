@@ -193,7 +193,10 @@ async function run() {
     waitUntil: "networkidle",
     timeout: 60000,
   });
-  await page.locator('[data-cta-id="marketplace.tile.trade-evidence"]').click({
+  await page.locator('[data-cta-id="marketplace.tile.marketing-tools"]').click({
+    timeout: 30000,
+  });
+  await page.locator('[data-cta-id="marketplace.marketing.trade-evidence"]').click({
     timeout: 30000,
   });
   await waitForDebugSelector(

@@ -39,8 +39,8 @@ function sectionBetween(startPattern, endPattern) {
 }
 
 assertContains(
-  /debugId="marketplace\.row\.records-links"[\s\S]*?aria-label="Open marketplace tools, access and public links"[\s\S]*?openMarketplaceSection\(event, "tools", "marketplace-owned-links"\)[\s\S]*?<MarketplaceGlyph name="links"[\s\S]*?Marketplace Tools[\s\S]*?Invite, verify, share, and open helper tools\.[\s\S]*?Verify[\s\S]*?Invite[\s\S]*?Create[\s\S]*?Shop Face[\s\S]*?Helpers/,
-  "Marketplace Tools grouped card must open marketplace-owned links and advertise verify, invite, create, shop sharing, and helper tools."
+  /debugId="marketplace\.row\.records-links"[\s\S]*?aria-label="Open marketplace tools, access and public links"[\s\S]*?openMarketplaceSection\(event, "tools", "marketplace-owned-links"\)[\s\S]*?<MarketplaceGlyph name="links"[\s\S]*?Marketplace Tools[\s\S]*?Access, public links, domain entries, and helper tools\.[\s\S]*?Verify[\s\S]*?Invite[\s\S]*?Create[\s\S]*?Shop Face[\s\S]*?Domains/,
+  "Marketplace Tools grouped card must open marketplace-owned links and advertise verify, invite, create, shop sharing, Community Domains, and helper tools."
 );
 
 assertContains(
@@ -55,17 +55,18 @@ assertContains(
 
 const recordsLinksSection = sectionBetween(
   /id="marketplace-owned-links"/,
-  /id="marketplace-trade-evidence"/
+  /<section[\s\S]*?id="marketplace-trade-evidence"/
 );
 
 if (!recordsLinksSection.text) {
   addFinding(-1, "Public Links detail section must exist before Trade Evidence.");
 } else {
   const actionIds = [
-    ...recordsLinksSection.text.matchAll(/debugId="(marketplace\.(?:links|public-shop|network-repost)\.[^"]+)"/g),
-  ].map((match) => match[1]);
+    ...recordsLinksSection.text.matchAll(/debugId=(?:"(marketplace\.(?:links|public-shop|network-repost|marketing)\.[^"]+)"|\{`(marketplace\.domain\.[^`]+)`\})/g),
+  ].map((match) => match[1] || match[2]);
   const expectedActionIds = [
     "marketplace.links.toggle",
+    "marketplace.domain.",
     "marketplace.links.choose.join",
     "marketplace.links.choose.verify",
     "marketplace.links.choose.create-community",
@@ -91,11 +92,16 @@ if (!recordsLinksSection.text) {
     "marketplace.network-repost.generate-payment-code",
     "marketplace.network-repost.refresh-credits",
     "marketplace.network-repost.place",
+    "marketplace.marketing.free-spotlight",
     "marketplace.network-repost.subscription",
+    "marketplace.marketing.trade-evidence",
   ];
 
   for (const debugId of expectedActionIds) {
-    if (!actionIds.includes(debugId)) {
+    const found = debugId.endsWith(".")
+      ? actionIds.some((actionId) => actionId.startsWith(debugId))
+      : actionIds.includes(debugId);
+    if (!found) {
       addFinding(
         recordsLinksSection.start,
         "Records & Links detail section is missing an expected link/record action.",
@@ -108,6 +114,8 @@ if (!recordsLinksSection.text) {
     /Access & public links/,
     /Access & Public Links/,
     /Verify the community, invite someone, start your own community,[\s\S]*?or share the public shop\./,
+    /Community Domains[\s\S]*?Domain marketplaces[\s\S]*?Setup stays in Community Home\. Ready domains open here\./,
+    /debugId=\{`marketplace\.domain\.\$\{row\.id \|\| row\.key\}\.open`\}/,
     /4 link jobs/,
     /1 active/,
     /Fast links/,
@@ -135,7 +143,8 @@ if (!recordsLinksSection.text) {
     /gridTemplateColumns: isCompact[\s\S]*?\? "minmax\(0, 1fr\) minmax\(112px, 0\.48fr\)"/,
     /debugId="marketplace\.network-repost\.target-help\.summary"/,
     /debugId="marketplace\.network-repost\.credit-details\.summary"/,
-    /\{\.\.\.marketplaceSurfaceTouchProps\("marketplace\.network-repost\.payment-actions"\)\}[\s\S]*?debugId="marketplace\.network-repost\.generate-payment-code"[\s\S]*?debugId="marketplace\.network-repost\.refresh-credits"[\s\S]*?debugId="marketplace\.network-repost\.place"[\s\S]*?debugId="marketplace\.network-repost\.credit-details\.summary"[\s\S]*?debugId="marketplace\.network-repost\.subscription"/,
+    /\{\.\.\.marketplaceSurfaceTouchProps\("marketplace\.network-repost\.payment-actions"\)\}[\s\S]*?debugId="marketplace\.network-repost\.generate-payment-code"[\s\S]*?debugId="marketplace\.network-repost\.refresh-credits"[\s\S]*?debugId="marketplace\.network-repost\.place"[\s\S]*?debugId="marketplace\.network-repost\.credit-details\.summary"[\s\S]*?debugId="marketplace\.marketing\.free-spotlight"[\s\S]*?debugId="marketplace\.network-repost\.subscription"[\s\S]*?debugId="marketplace\.marketing\.trade-evidence"/,
+    /Free Spotlight[\s\S]*?Subscription Spotlight[\s\S]*?Trade Evidence/,
     /\{!isCompact \? \([\s\S]*?debugId="marketplace\.public-shop\.tag-social"[\s\S]*?\) : null\}/,
     /<MarketplaceGlyph name="join"/,
     /<MarketplaceGlyph name="verify"/,
@@ -161,7 +170,7 @@ if (!recordsLinksSection.text) {
     );
   }
 
-  if (/(Member Ledger|People, shops|Trade Evidence|Support Requests|Money Pool|guarantor|Loan Readiness|Trust Passport|TrustSlip|CCI|What these links do|Choose the door|Outgoing links)/.test(recordsLinksSection.text)) {
+  if (/(Member Ledger|People, shops|Support Requests|Money Pool|guarantor|Loan Readiness|Trust Passport|TrustSlip|CCI|What these links do|Choose the door|Outgoing links)/.test(recordsLinksSection.text)) {
     addFinding(
       recordsLinksSection.start,
       "Public Links detail section must stay compact and must not expose other major lane responsibilities.",

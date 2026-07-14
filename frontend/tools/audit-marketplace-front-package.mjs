@@ -146,16 +146,10 @@ assertNotContains(
     tags: ["Public Shops", "Members"],
   },
   {
-    id: "marketplace.tile.trade-evidence",
-    glyph: "ledger",
-    label: "Trade Evidence",
-    tags: ["Evidence", "Terms", "Record"],
-  },
-  {
     id: "marketplace.row.records-links",
     glyph: "links",
     label: "Marketplace Tools",
-    tags: ["Verify", "Invite", "Create", "Shop Face", "Helpers"],
+    tags: ["Verify", "Invite", "Create", "Shop Face", "Domains"],
   },
   {
     id: "marketplace.tile.official-board",
@@ -170,10 +164,10 @@ assertNotContains(
     tags: ["Start Request", "Supporters", "Repayment"],
   },
   {
-    id: "marketplace.tile.spotlight",
+    id: "marketplace.tile.marketing-tools",
     glyph: "repost",
-    label: "Spotlight",
-    tags: ["Promotion", "Paid credit", "Public reach"],
+    label: "Marketing Tools",
+    tags: ["Repost", "Free Spotlight", "Paid Spotlight", "Evidence"],
   },
 ].forEach((card) => {
   const pattern = new RegExp(
@@ -190,6 +184,21 @@ assertNotContains(
   );
 });
 
+const compactHiddenFrontTagRows = (
+  marketplaceSource.match(
+    /!\s*isCompact\s*\?\s*\(\s*<span style=\{marketplaceFrontTagRowStyle\(isCompact\)\}>/g
+  ) || []
+).length;
+if (compactHiddenFrontTagRows < 6) {
+  addFinding(
+    marketplaceFile,
+    marketplaceSource,
+    -1,
+    "Marketplace front card tag rows must stay hidden on compact screens so mobile cards do not show truncated pill text.",
+    `Expected at least 6 compact-hidden front tag rows, found ${compactHiddenFrontTagRows}.`
+  );
+}
+
 assertContains(
   marketplaceFile,
   marketplaceSource,
@@ -197,11 +206,18 @@ assertContains(
   "Members & Shops must open only the visible members and shop directory lane."
 );
 
+assertNotContains(
+  marketplaceFile,
+  marketplaceSource,
+  /debugId="marketplace\.tile\.trade-evidence"/g,
+  "Trade Evidence must not stay as a duplicate front card after being grouped under Marketing Tools."
+);
+
 assertContains(
   marketplaceFile,
   marketplaceSource,
-  /debugId="marketplace\.tile\.trade-evidence"[\s\S]*?openMarketplaceSection\(event, "trade", "marketplace-trade-evidence"\)[\s\S]*?Trade Evidence[\s\S]*?Record goods, service, and terms\.[\s\S]*?Evidence[\s\S]*?Terms[\s\S]*?Record/,
-  "Trade Evidence must be its own front card and open the protected trade record lane."
+  /debugId="marketplace\.tile\.marketing-tools"[\s\S]*?Marketing Tools[\s\S]*?Repost, Spotlight, and trade evidence\.[\s\S]*?debugId="marketplace\.marketing\.trade-evidence"[\s\S]*?openMarketplaceSection\(event, "trade", "marketplace-trade-evidence"\)[\s\S]*?Trade Evidence/,
+  "Marketing Tools must include the Trade Evidence launcher while preserving the dedicated evidence lane."
 );
 
 assertContains(

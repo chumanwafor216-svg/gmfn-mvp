@@ -56,9 +56,14 @@ assertContains(
   "Trade Evidence must use the stable checked-shop pictogram, not the generic shop mark."
 );
 
+assertNotContains(
+  /debugId="marketplace\.tile\.trade-evidence"/,
+  "Trade Evidence must not stay as a duplicate front card after being grouped under Marketing Tools."
+);
+
 assertContains(
-  /debugId="marketplace\.tile\.trade-evidence"[\s\S]*?aria-label="Open Trade Evidence records"[\s\S]*?openMarketplaceSection\(\s*event,\s*"trade",\s*"marketplace-trade-evidence"\s*\)[\s\S]*?<MarketplaceGlyph name="ledger"[\s\S]*?Trade Evidence[\s\S]*?Record goods, service, and terms\.[\s\S]*?Evidence[\s\S]*?Terms[\s\S]*?Record/,
-  "Trade Evidence grouped card must stay a guided evidence-record launcher and open only the trade evidence section."
+  /debugId="marketplace\.tile\.marketing-tools"[\s\S]*?Marketing Tools[\s\S]*?Repost, Spotlight, and trade evidence\.[\s\S]*?debugId="marketplace\.marketing\.trade-evidence"[\s\S]*?openMarketplaceSection\(event, "trade", "marketplace-trade-evidence"\)[\s\S]*?Trade Evidence/,
+  "Marketing Tools must launch Trade Evidence while the evidence section remains separate from other Marketplace lanes."
 );
 
 assertContains(

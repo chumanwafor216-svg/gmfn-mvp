@@ -3440,7 +3440,7 @@ export default function CommunityHomePage() {
                         lineHeight: 1.35,
                       }}
                     >
-                      Institutional domains for schools, unions, churches, and markets.
+                      Set up domain rules, access, and governance; active work opens in Marketplace.
                     </span>
                   </span>
                   <span aria-hidden="true" style={{ color: "#0B2D4A", fontSize: 24 }}>
@@ -4609,7 +4609,7 @@ export default function CommunityHomePage() {
                       icon: "financeInstitution",
                       id: "community-domain",
                       title: "Community Domain",
-                      detail: "Open institutional dashboard and access requests.",
+                      detail: "Set up identity, rules, governance, and access requests.",
                       onClick: (event: React.SyntheticEvent<HTMLElement>) =>
                         openCommunityRoute(event, routes.communityDomain),
                     },

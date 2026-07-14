@@ -163,7 +163,7 @@ async function run() {
       waitUntil: "networkidle",
       timeout: 60000,
     });
-    await page.waitForSelector('[data-cta-id="marketplace.tile.spotlight"]', {
+    await page.waitForSelector('[data-cta-id="marketplace.tile.marketing-tools"]', {
       timeout: 30000,
     });
     await page.waitForFunction(
@@ -186,9 +186,9 @@ async function run() {
         "CCI",
         "Money & Trust",
         "Members & Shops",
-        "Trade Evidence",
         "Marketplace Tools",
         "Support Requests",
+        "Marketing Tools",
         "Spotlight",
       ];
       const missing = required.filter((item) => !text.includes(item));

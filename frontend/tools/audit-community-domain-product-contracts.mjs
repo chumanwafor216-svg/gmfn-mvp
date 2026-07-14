@@ -151,8 +151,8 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /setupJourneyMode[\s\S]*showSetupAccessCard = setupJourneyMode === "edit" \|\| setupEditingLocked[\s\S]*openSetupJourney\(mode: "setup" \| "edit"\)[\s\S]*community-domain-dashboard\.setup-focus[\s\S]*Continue setup[\s\S]*community-domain-dashboard\.edit-setup-focus[\s\S]*Edit setup[\s\S]*setupJourneyMode === "edit"[\s\S]*Edit Community Domain/,
-  "Community Domain dashboard hero must expose setup and edit as front-door choices, and the setup-access card must lead only when editing or locked.",
+  /setupJourneyMode[\s\S]*showSetupAccessCard = setupJourneyMode === "edit" \|\| setupEditingLocked[\s\S]*openSetupJourney\(mode: "setup" \| "edit"\)[\s\S]*community-domain-dashboard\.setup-focus[\s\S]*Continue setup[\s\S]*setupJourneyMode === "edit"[\s\S]*Edit Community Domain/,
+  "Community Domain dashboard must expose setup as the draft front-door choice while keeping edit mode out of the active first command surface.",
   { frontend: true }
 );
 
@@ -490,8 +490,8 @@ assertContains(
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
-  /listMyCommunityDomains[\s\S]*communityDomainFeatureModeFromPayload[\s\S]*"rosca_cycles"[\s\S]*roscaCyclesFeatureOff[\s\S]*createRoscaYearlyInstruction[\s\S]*roscaCyclesFeatureOffText[\s\S]*createCommunityPackagePaymentInstruction[\s\S]*startMarketplaceRoscaCycle[\s\S]*roscaCyclesFeatureOffText[\s\S]*createRoscaCycle[\s\S]*debugId="marketplace\.rosca\.activate-yearly"[\s\S]*disabled=\{creatingRoscaPackage \|\| roscaCyclesFeatureOff\}[\s\S]*debugId="marketplace\.rosca\.start-cycle"[\s\S]*disabled=\{/,
-  "Marketplace ROSCA controls must read Community Domain feature policy and explain/disable disabled ROSCA before payment or cycle creation.",
+  /listMyCommunityDomains[\s\S]*communityDomainFeatureModeFromPayload[\s\S]*"rosca_cycles"[\s\S]*roscaCyclesFeatureOff[\s\S]*createRoscaYearlyInstruction[\s\S]*roscaCyclesFeatureOffText[\s\S]*createCommunityPackagePaymentInstruction[\s\S]*startMarketplaceRoscaCycle[\s\S]*roscaCyclesFeatureOffText[\s\S]*createRoscaCycle[\s\S]*debugId="marketplace\.rosca\.activate-yearly"[\s\S]*if \(roscaCyclesFeatureOff\)[\s\S]*showNotice\("error", roscaCyclesFeatureOffText\)[\s\S]*debugId="marketplace\.rosca\.start-cycle"[\s\S]*if \(roscaCyclesFeatureOff\)[\s\S]*showNotice\("error", roscaCyclesFeatureOffText\)/,
+  "Marketplace ROSCA controls must read Community Domain feature policy and keep tappable explainers before payment or cycle creation.",
   { frontend: true }
 );
 
@@ -827,15 +827,15 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /function factTile\(\)[\s\S]*padding: 10[\s\S]*minHeight: 62/,
-  "Community Domain dashboard hero fact tiles must stay compact enough for mobile first-viewport action visibility.",
+  /function factTile\(\)[\s\S]*borderRadius: 999[\s\S]*padding: "8px 10px"[\s\S]*minHeight: 42[\s\S]*display: "flex"/,
+  "Community Domain dashboard hero facts must stay compact status chips so mobile first-viewport action visibility is protected.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /communityDomainOperatingStateCopy[\s\S]*Domain closed[\s\S]*Domain suspended[\s\S]*Domain expired[\s\S]*Waiting for activation[\s\S]*Active operating domain[\s\S]*Active, not verified[\s\S]*Run live domain work from the operating lanes[\s\S]*Draft setup[\s\S]*setupWorkspaceOpen[\s\S]*showDomainWorkSurface[\s\S]*setupWorkspaceOpen \|\| showAdvancedTools \|\| setupJourneyMode === "edit"[\s\S]*showOtherDomainToolsEntry[\s\S]*domainOperational \|\| showAdvancedTools \|\| setupJourneyMode === "edit"[\s\S]*Domain command[\s\S]*Complete the next setup step\. Billing, activation, and verification stay separate[\s\S]*community-domain-dashboard\.setup-focus[\s\S]*Do first[\s\S]*operatingStateCopy\.nextStep[\s\S]*Boundary[\s\S]*operatingStateCopy\.risk/,
-  "Community Domain dashboard must land on a compact command centre and keep the setup workbench closed until the owner opens it.",
+  /communityDomainOperatingStateCopy[\s\S]*Domain closed[\s\S]*Domain suspended[\s\S]*Domain expired[\s\S]*Waiting for activation[\s\S]*Active operating domain[\s\S]*Active, not verified[\s\S]*Run live domain work from the operating lanes[\s\S]*Draft setup[\s\S]*setupWorkspaceOpen[\s\S]*showDomainWorkSurface[\s\S]*setupWorkspaceOpen \|\| showAdvancedTools \|\| setupJourneyMode === "edit"[\s\S]*showOtherDomainToolsEntry[\s\S]*showAdvancedTools \|\| setupJourneyMode === "edit"[\s\S]*Domain command[\s\S]*Complete the next setup step\. Billing, activation, and verification stay separate[\s\S]*community-domain-dashboard\.setup-focus[\s\S]*Do first[\s\S]*operatingStateCopy\.nextStep[\s\S]*Boundary[\s\S]*operatingStateCopy\.risk/,
+  "Community Domain dashboard must land on a compact command centre and keep setup/deeper tools closed until the owner opens them.",
   { frontend: true }
 );
 
@@ -855,8 +855,8 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /function pageShell\(\)[\s\S]*display: "grid"[\s\S]*alignContent: "start"[\s\S]*isCommunityDomainOperational[\s\S]*blockedDomain[\s\S]*billingReady[\s\S]*includes\("paid"\)[\s\S]*includes\("confirmed"\)[\s\S]*activationReady[\s\S]*activationBlocked[\s\S]*firstAvailableOperationalLaneKey[\s\S]*domainOperational[\s\S]*operationalLaneKey[\s\S]*mainActionLaneKey[\s\S]*domainOperational \? operationalLaneKey : primaryActionLaneKey[\s\S]*mainActionCopy[\s\S]*operatingStateCopy\.nextStep[\s\S]*otherToolsLaneKey[\s\S]*showDomainWorkSurface[\s\S]*setupWorkspaceOpen \|\| showAdvancedTools \|\| setupJourneyMode === "edit"[\s\S]*!domainOperational \? \([\s\S]*PageTopNav[\s\S]*Domain command[\s\S]*Run one live lane at a time[\s\S]*community-domain-dashboard\.operational-focus[\s\S]*setSetupWorkspaceOpen\(false\)[\s\S]*Open live actions[\s\S]*Edit setup details[\s\S]*commandGuidanceGrid[\s\S]*commandGuidanceTile\("next"\)[\s\S]*commandGuidanceTile\("risk"\)[\s\S]*Open the \{mainActionLaneLabel\} lane[\s\S]*setActiveLane\(mainActionLaneKey\)[\s\S]*setSetupWorkspaceOpen\(true\)/,
-  "Active Community Domains must hand off to live operating lanes, while draft domains keep setup behind an explicit focused workbench.",
+  /function pageShell\(\)[\s\S]*display: "grid"[\s\S]*alignContent: "start"[\s\S]*isCommunityDomainOperational[\s\S]*blockedDomain[\s\S]*billingReady[\s\S]*includes\("paid"\)[\s\S]*includes\("confirmed"\)[\s\S]*activationReady[\s\S]*activationBlocked[\s\S]*firstAvailableOperationalLaneKey[\s\S]*domainOperational[\s\S]*operationalLaneKey[\s\S]*mainActionLaneKey[\s\S]*domainOperational \? operationalLaneKey : primaryActionLaneKey[\s\S]*mainActionCopy[\s\S]*operatingStateCopy\.nextStep[\s\S]*otherToolsLaneKey[\s\S]*showDomainWorkSurface[\s\S]*setupWorkspaceOpen \|\| showAdvancedTools \|\| setupJourneyMode === "edit"[\s\S]*openDomainMarketplace[\s\S]*routeWithCommunity\(APP_ROUTES\.MARKETPLACE, clanId\)[\s\S]*!domainOperational \? \([\s\S]*PageTopNav[\s\S]*Domain command[\s\S]*Run one live lane at a time[\s\S]*community-domain-dashboard\.open-marketplace[\s\S]*Open Marketplace[\s\S]*community-domain-dashboard\.operational-focus[\s\S]*setSetupWorkspaceOpen\(false\)[\s\S]*Open governance lanes[\s\S]*commandGuidanceGrid[\s\S]*commandGuidanceTile\("next"\)[\s\S]*commandGuidanceTile\("risk"\)[\s\S]*Open the \{mainActionLaneLabel\} lane[\s\S]*setActiveLane\(mainActionLaneKey\)[\s\S]*setSetupWorkspaceOpen\(true\)/,
+  "Active Community Domains must hand off to Marketplace first and keep governance lanes secondary, while draft domains keep setup behind an explicit focused workbench.",
   { frontend: true }
 );
 
@@ -871,6 +871,13 @@ assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
   /setupStepPlaceholder[\s\S]*Saturday fitness[\s\S]*Snapfit partner[\s\S]*setupStepPlaceholder\(activeSetupStep, domain, setupDraft\)/,
   "Community Domain dashboard setup must show one setup step at a time and use Pillar/charity-aware examples instead of school-only prompts.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /function setupStepForLane\(laneKey: string\): SetupStepKey[\s\S]*key === "billing"[\s\S]*return "payment"[\s\S]*key === "modules"[\s\S]*return "services"[\s\S]*key === "members"[\s\S]*return "members"[\s\S]*key === "governance"[\s\S]*return "governance"[\s\S]*key === "structure"[\s\S]*return "structure"[\s\S]*key === "verification" \|\| key === "evidence"[\s\S]*return "evidence"[\s\S]*setActiveSetupStep\(setupStepForLane\(mainActionLaneKey\)\)/,
+  "Community Domain setup focus must open the setup step that matches the backend next-action lane instead of always dumping the owner at identity.",
   { frontend: true }
 );
 
@@ -912,7 +919,7 @@ assertNotContains(
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
   /showAdvancedTools[\s\S]*setShowAdvancedTools\(false\)[\s\S]*showAdvancedTools && activeLane === "settings"[\s\S]*Official Board[\s\S]*Community Domain engine[\s\S]*showAdvancedTools \?[\s\S]*Work lanes[\s\S]*showOtherDomainToolsEntry \? \([\s\S]*Other domain tools[\s\S]*community-domain-dashboard\.advanced-tools-toggle/,
-  "Community Domain dashboard must keep notices, engine details, and work lanes closed behind Other domain tools so setup remains the first journey.",
+  "Community Domain dashboard must keep notices, engine details, and work lanes closed until the owner opens governance lanes or edit mode.",
   { frontend: true }
 );
 
@@ -945,6 +952,13 @@ assertContains(
 );
 
 assertContains(
+  "src/pages/CommunityDomainPurchasePage.tsx",
+  /community-domain-purchase\.other-paths[\s\S]*gridTemplateColumns: isCompact[\s\S]*\? "1fr"[\s\S]*: "repeat\(2, minmax\(0, 1fr\)\)"[\s\S]*community-domain-purchase\.open-create-community[\s\S]*community-domain-purchase\.lookup-existing-domain/,
+  "Community Domain purchase must keep Committee and existing-domain alternate paths inside one collapsed Other paths disclosure on desktop and mobile.",
+  { frontend: true }
+);
+
+assertContains(
   "package.json",
   /"audit:community-domain-mobile-visual": "node tools\/audit-community-domain-mobile-visual\.mjs"/,
   "Frontend package scripts must expose the Community Domain mobile visual audit.",
@@ -953,7 +967,7 @@ assertContains(
 
 assertContains(
   "tools/audit-community-domain-mobile-visual.mjs",
-  /const routePath = "\/app\/community-domain\/13"[\s\S]*const purchaseRoutePath = "\/community-domain\/purchase\?demo=pillar-of-hope"[\s\S]*let domainListScenario = "owned"[\s\S]*let dashboardScenario = "active"[\s\S]*dashboardScenario === "draft"[\s\S]*firstViewportActionFinding[\s\S]*viewportElementFinding[\s\S]*community-domain-purchase\.check-domain[\s\S]*Purchase page mobile hero still exposes the four engine explanation cards[\s\S]*community-domain-purchase\.other-paths[\s\S]*domainListScenario = "empty"[\s\S]*community-domain-dashboard\.selector\.setup-new[\s\S]*community-domain-dashboard\.selector\.find-edit-domain[\s\S]*community-domain-dashboard\.selector\.back-to-choice[\s\S]*dashboardScenario = "draft"[\s\S]*community-domain-dashboard\.setup-focus[\s\S]*Draft Community Domain dashboard exposes Other domain tools before setup is opened[\s\S]*community-domain-dashboard\.work-surface[\s\S]*Draft Community Domain setup workbench exposes Other domain tools during the primary setup journey[\s\S]*Draft Community Domain setup workbench exposes advanced dashboard blocks during setup[\s\S]*dashboardScenario = "active"[\s\S]*community-domain-dashboard\.operational-focus[\s\S]*community-domain-dashboard\.advanced-tools-toggle[\s\S]*community-domain-dashboard\.service-detail\.boundaries[\s\S]*community-domain-service-boundary\.focus\.privacy[\s\S]*community-domain-dashboard\.service-detail\.evidence[\s\S]*community-domain\.trust-evidence\.focus\.release[\s\S]*community-domain-dashboard\.structure-detail\.planning[\s\S]*community-domain\.structure-planning\.focus\.groups[\s\S]*Safe next step[\s\S]*horizontalOverflow[\s\S]*lowContrast/,
+  /const routePath = "\/app\/community-domain\/13"[\s\S]*const purchaseRoutePath = "\/community-domain\/purchase\?demo=pillar-of-hope"[\s\S]*let domainListScenario = "owned"[\s\S]*let dashboardScenario = "active"[\s\S]*dashboardScenario === "draft"[\s\S]*firstViewportActionFinding[\s\S]*viewportElementFinding[\s\S]*community-domain-purchase\.check-domain[\s\S]*Purchase page mobile hero still exposes the four engine explanation cards[\s\S]*community-domain-purchase\.other-paths[\s\S]*domainListScenario = "empty"[\s\S]*community-domain-dashboard\.selector\.setup-new[\s\S]*community-domain-dashboard\.selector\.find-edit-domain[\s\S]*community-domain-dashboard\.selector\.back-to-choice[\s\S]*dashboardScenario = "draft"[\s\S]*community-domain-dashboard\.setup-focus[\s\S]*Draft Community Domain dashboard exposes Other domain tools before setup is opened[\s\S]*community-domain-dashboard\.work-surface[\s\S]*Draft Community Domain setup workbench exposes Other domain tools during the primary setup journey[\s\S]*Draft Community Domain setup workbench exposes advanced dashboard blocks during setup[\s\S]*dashboardScenario = "active"[\s\S]*community-domain-dashboard\.open-marketplace[\s\S]*Open Marketplace[\s\S]*Open governance lanes[\s\S]*Active Community Domain dashboard exposes setup editing on the first command surface[\s\S]*Active Community Domain dashboard exposes Other domain tools before governance lanes are opened[\s\S]*community-domain-dashboard\.operational-focus[\s\S]*community-domain-dashboard\.service-detail\.boundaries[\s\S]*community-domain-service-boundary\.focus\.privacy[\s\S]*community-domain-dashboard\.service-detail\.evidence[\s\S]*community-domain\.trust-evidence\.focus\.release[\s\S]*community-domain-dashboard\.structure-detail\.planning[\s\S]*community-domain\.structure-planning\.focus\.groups[\s\S]*Safe next step[\s\S]*horizontalOverflow[\s\S]*lowContrast/,
   "Community Domain mobile visual audit must exercise purchase first-job compaction, selector one-path state, active-domain lanes, focused service/structure packets, dead-block regression, overflow, and contrast checks.",
   { frontend: true }
 );

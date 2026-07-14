@@ -84,7 +84,7 @@ import {
   updateCommunityDomainProfile,
   upsertCommunityDomainPolicy,
 } from "../lib/api";
-import { APP_ROUTES } from "../lib/appRoutes";
+import { APP_ROUTES, routeWithCommunity } from "../lib/appRoutes";
 import {
   communityPayInReady,
   getCommunityPayInSettlement,
@@ -1339,14 +1339,16 @@ function billingInputStyle(): React.CSSProperties {
 
 function factTile(): React.CSSProperties {
   return {
-    borderRadius: 16,
-    background: "rgba(255,255,255,0.10)",
+    borderRadius: 999,
+    background: "rgba(255,255,255,0.08)",
     border: "1px solid rgba(214,228,242,0.16)",
-    padding: 10,
-    minHeight: 62,
-    display: "grid",
-    alignContent: "center",
-    gap: 5,
+    padding: "8px 10px",
+    minHeight: 42,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 10,
+    minWidth: 0,
   };
 }
 
@@ -1432,11 +1434,13 @@ function billingStepCard(
 
 function laneForAction(actionKey: unknown): string {
   const key = cleanText(actionKey).toLowerCase();
+  if (!key || key.includes("setup") || key.includes("draft")) return "settings";
   if (key.includes("package") || key.includes("billing")) return "billing";
   if (key.includes("verify") || key.includes("verification")) return "verification";
   if (key.includes("review") || key.includes("governance")) return "governance";
   if (key.includes("member")) return "members";
   if (key.includes("module")) return "modules";
+  if (key.includes("structure")) return "structure";
   return "structure";
 }
 
@@ -1592,6 +1596,17 @@ function firstAvailableOperationalLaneKey(lanes: any[], status: any): string {
     laneKeys.find((key) => key !== "settings") ||
     "settings"
   );
+}
+
+function setupStepForLane(laneKey: string): SetupStepKey {
+  const key = cleanText(laneKey, "settings").toLowerCase();
+  if (key === "billing") return "payment";
+  if (key === "modules") return "services";
+  if (key === "members") return "members";
+  if (key === "governance") return "governance";
+  if (key === "structure") return "structure";
+  if (key === "verification" || key === "evidence") return "evidence";
+  return "identity";
 }
 
 function setupStepPlaceholder(
@@ -2652,7 +2667,7 @@ export default function CommunityDomainDashboardPage() {
   const showDomainWorkSurface =
     setupWorkspaceOpen || showAdvancedTools || setupJourneyMode === "edit";
   const showOtherDomainToolsEntry =
-    domainOperational || showAdvancedTools || setupJourneyMode === "edit";
+    showAdvancedTools || setupJourneyMode === "edit";
   useEffect(() => {
     if (!showDomainWorkSurface || !focusWorkSurfaceAfterOpenRef.current) {
       return;
@@ -3016,6 +3031,9 @@ export default function CommunityDomainDashboardPage() {
     focusWorkSurfaceAfterOpenRef.current = true;
     setSetupJourneyMode(mode);
     setActiveLane("settings");
+    if (mode === "setup") {
+      setActiveSetupStep(setupStepForLane(mainActionLaneKey));
+    }
     setSetupWorkspaceOpen(true);
     setShowAdvancedTools(false);
     if (mode === "edit") {
@@ -3027,6 +3045,18 @@ export default function CommunityDomainDashboardPage() {
       return;
     }
     setMessage("");
+  }
+
+  function openDomainMarketplace() {
+    const clanId = Number(selectedDomainClanId || 0);
+    if (!clanId) {
+      setMessage(
+        "GSN cannot open this Community Domain as a marketplace yet because it is not linked to a Community Home record."
+      );
+      return;
+    }
+    setSelectedClanId(clanId);
+    navigate(routeWithCommunity(APP_ROUTES.MARKETPLACE, clanId));
   }
 
   function openSetupPaymentLane() {
@@ -4225,10 +4255,10 @@ export default function CommunityDomainDashboardPage() {
 
             <div
               style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(132px, 1fr))",
-                gap: 10,
-                marginTop: 16,
+                display: "flex",
+                flexWrap: "wrap",
+                gap: 8,
+                marginTop: 14,
               }}
             >
               {[
@@ -4240,7 +4270,7 @@ export default function CommunityDomainDashboardPage() {
               ].map(([label, value]) => (
                 <div key={label} style={factTile()}>
                   <div style={sectionLabel(true)}>{label}</div>
-                  <div style={{ color: "#FFFFFF", fontSize: 16, fontWeight: 950, textTransform: "capitalize" }}>
+                  <div style={{ color: "#FFFFFF", fontSize: 14, fontWeight: 950, textTransform: "capitalize" }}>
                     {value}
                   </div>
                 </div>
@@ -4273,6 +4303,17 @@ export default function CommunityDomainDashboardPage() {
                   type="button"
                   kind="primary"
                   fullWidth
+                  debugId="community-domain-dashboard.open-marketplace"
+                  onClick={openDomainMarketplace}
+                >
+                  Open Marketplace
+                </StableButton>
+              ) : null}
+              {domainOperational ? (
+                <StableButton
+                  type="button"
+                  kind="secondary"
+                  fullWidth
                   debugId="community-domain-dashboard.operational-focus"
                   onClick={() => {
                     focusWorkSurfaceAfterOpenRef.current = true;
@@ -4283,7 +4324,7 @@ export default function CommunityDomainDashboardPage() {
                     setMessage("");
                   }}
                 >
-                  Open live actions
+                  Open governance lanes
                 </StableButton>
               ) : (
                 <StableButton
@@ -4296,17 +4337,6 @@ export default function CommunityDomainDashboardPage() {
                   Continue setup
                 </StableButton>
               )}
-              {domainOperational ? (
-                <StableButton
-                  type="button"
-                  kind="secondary"
-                  fullWidth
-                  debugId="community-domain-dashboard.edit-setup-focus"
-                  onClick={() => openSetupJourney("edit")}
-              >
-                Edit setup details
-              </StableButton>
-              ) : null}
               <div style={commandGuidanceGrid()}>
                 <div style={commandGuidanceTile("next")}>
                   <div style={sectionLabel()}>Do first</div>

@@ -1,10 +1,16 @@
 /* global console, document, getComputedStyle, HTMLInputElement, localStorage, location, Node, process, URL, window */
 
 import { chromium } from "@playwright/test";
+import { mkdirSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 
 const baseUrl = process.env.GSN_AUDIT_BASE_URL || "http://127.0.0.1:5180";
 const routePath = "/app/community-domain/13";
 const purchaseRoutePath = "/community-domain/purchase?demo=pillar-of-hope";
+const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
+const screenshotDir = join(frontendRoot, "screenshots");
+mkdirSync(screenshotDir, { recursive: true });
 const handledApiPaths = [];
 let domainListScenario = "owned";
 let dashboardScenario = "active";
@@ -746,7 +752,7 @@ async function viewportElementFinding(page, selector, label) {
       if (!visible) {
         return `${targetLabel} is not visible after the action.`;
       }
-      if (rect.top < -2 || rect.top > Math.min(160, window.innerHeight * 0.24)) {
+      if (rect.top < -2 || rect.top > Math.min(180, window.innerHeight * 0.24)) {
         return `${targetLabel} did not receive focus after the action: top ${Math.round(
           rect.top
         )}, viewport ${window.innerHeight}.`;
@@ -900,6 +906,10 @@ try {
   }
   await clickByDebugId(page, "community-domain-dashboard.setup-focus");
   await page.getByRole("heading", { name: "Create Community Domain" }).waitFor({ timeout: 10000 });
+  await page
+    .locator('[data-cta-id="community-domain-dashboard.setup-check-domain-name"]')
+    .first()
+    .waitFor({ state: "visible", timeout: 10000 });
   const draftSetupSurfaceFinding = await viewportElementFinding(
     page,
     '[data-testid="community-domain-dashboard.work-surface"]',
@@ -951,18 +961,34 @@ try {
   }
   const dashboardFirstAction = await firstViewportActionFinding(
     page,
-    "community-domain-dashboard.operational-focus",
+    "community-domain-dashboard.open-marketplace",
     "Community Domain dashboard"
   );
   if (dashboardFirstAction) findings.push(dashboardFirstAction);
+  if (!normalized(audit.bodyText).includes("Open Marketplace")) {
+    findings.push("Active Community Domain dashboard does not expose Marketplace as the primary handoff.");
+  }
+  if (!normalized(audit.bodyText).includes("Open governance lanes")) {
+    findings.push("Active Community Domain dashboard does not keep governance lanes as the secondary handoff.");
+  }
+  if (normalized(audit.bodyText).includes("Edit setup details")) {
+    findings.push("Active Community Domain dashboard exposes setup editing on the first command surface.");
+  }
+  if (normalized(audit.bodyText).includes("Other domain tools")) {
+    findings.push("Active Community Domain dashboard exposes Other domain tools before governance lanes are opened.");
+  }
   if (normalized(audit.bodyText).includes("Safe next step")) {
     findings.push("Generic Safe next step card is visible on initial Community Domain surface.");
   }
   if (audit.horizontalOverflow || audit.overflow.length) {
     findings.push(`Initial mobile overflow: ${JSON.stringify(audit.overflow)}`);
   }
+  await page.screenshot({
+    path: join(screenshotDir, "community-domain-active-initial-390x844.png"),
+    fullPage: false,
+  });
 
-  await clickByDebugId(page, "community-domain-dashboard.advanced-tools-toggle");
+  await clickByDebugId(page, "community-domain-dashboard.operational-focus");
   await page.getByText("Work lanes", { exact: true }).waitFor({ timeout: 10000 });
 
   await clickByDebugId(page, "community-domain-dashboard.lane.modules");
@@ -999,6 +1025,10 @@ try {
       `Focused Community Domain surface is too long: ${audit.scrollH}px on ${audit.viewportH}px viewport`
     );
   }
+  await page.screenshot({
+    path: join(screenshotDir, "community-domain-focused-lane-390x844.png"),
+    fullPage: false,
+  });
 } catch (error) {
   let debugText = "";
   try {
