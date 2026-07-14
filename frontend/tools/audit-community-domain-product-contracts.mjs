@@ -799,21 +799,21 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /communityDomainOperatingStateCopy[\s\S]*Domain closed[\s\S]*Domain suspended[\s\S]*Domain expired[\s\S]*Waiting for activation[\s\S]*Active operating domain[\s\S]*Active, not verified[\s\S]*Run live domain work from the operating lanes[\s\S]*Draft setup[\s\S]*Create \/ setup[\s\S]*Fill the current setup step, save it, then GSN moves you forward[\s\S]*community-domain-dashboard\.setup-focus/,
-  "Community Domain dashboard must give a short setup-first signpost without exposing duplicate status chips or a long operating-state manual on the primary screen.",
+  /communityDomainOperatingStateCopy[\s\S]*Domain closed[\s\S]*Domain suspended[\s\S]*Domain expired[\s\S]*Waiting for activation[\s\S]*Active operating domain[\s\S]*Active, not verified[\s\S]*Run live domain work from the operating lanes[\s\S]*Draft setup[\s\S]*setupWorkspaceOpen[\s\S]*showDomainWorkSurface[\s\S]*setupWorkspaceOpen \|\| showAdvancedTools \|\| setupJourneyMode === "edit"[\s\S]*Domain command[\s\S]*Complete the next setup step\. Billing, activation, and verification stay separate[\s\S]*community-domain-dashboard\.setup-focus/,
+  "Community Domain dashboard must land on a compact command centre and keep the setup workbench closed until the owner opens it.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /function pageShell\(\)[\s\S]*display: "grid"[\s\S]*alignContent: "start"[\s\S]*isCommunityDomainOperational[\s\S]*blockedDomain[\s\S]*billingReady[\s\S]*includes\("paid"\)[\s\S]*includes\("confirmed"\)[\s\S]*activationReady[\s\S]*activationBlocked[\s\S]*firstAvailableOperationalLaneKey[\s\S]*domainOperational[\s\S]*operationalLaneKey[\s\S]*mainActionLaneKey[\s\S]*domainOperational \? operationalLaneKey : primaryActionLaneKey[\s\S]*mainActionCopy[\s\S]*operatingStateCopy\.nextStep[\s\S]*showDomainWorkSurface[\s\S]*!domainOperational \? \([\s\S]*PageTopNav[\s\S]*Live domain[\s\S]*This domain is active\. Use the operating lanes now[\s\S]*community-domain-dashboard\.operational-focus[\s\S]*Open live actions[\s\S]*Edit setup details[\s\S]*Live next action[\s\S]*Open the \{mainActionLaneLabel\} lane[\s\S]*setActiveLane\(mainActionLaneKey\)/,
-  "Active Community Domains must hand off to live operating lanes by default, keeping setup/edit available without trapping active domains in the setup tunnel.",
+  /function pageShell\(\)[\s\S]*display: "grid"[\s\S]*alignContent: "start"[\s\S]*isCommunityDomainOperational[\s\S]*blockedDomain[\s\S]*billingReady[\s\S]*includes\("paid"\)[\s\S]*includes\("confirmed"\)[\s\S]*activationReady[\s\S]*activationBlocked[\s\S]*firstAvailableOperationalLaneKey[\s\S]*domainOperational[\s\S]*operationalLaneKey[\s\S]*mainActionLaneKey[\s\S]*domainOperational \? operationalLaneKey : primaryActionLaneKey[\s\S]*mainActionCopy[\s\S]*operatingStateCopy\.nextStep[\s\S]*otherToolsLaneKey[\s\S]*showDomainWorkSurface[\s\S]*setupWorkspaceOpen \|\| showAdvancedTools \|\| setupJourneyMode === "edit"[\s\S]*!domainOperational \? \([\s\S]*PageTopNav[\s\S]*Domain command[\s\S]*Run one live lane at a time[\s\S]*community-domain-dashboard\.operational-focus[\s\S]*setSetupWorkspaceOpen\(false\)[\s\S]*Open live actions[\s\S]*Edit setup details[\s\S]*Open the \{mainActionLaneLabel\} lane[\s\S]*setActiveLane\(mainActionLaneKey\)[\s\S]*setSetupWorkspaceOpen\(true\)/,
+  "Active Community Domains must hand off to live operating lanes, while draft domains keep setup behind an explicit focused workbench.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /domainOperational[\s\S]*"Live lane"[\s\S]*"Live domain actions"[\s\S]*"More operating tools\."[\s\S]*"Open operating tools"[\s\S]*"Operating view only\. It does not verify ownership, confirm new payments, grant paid features, or expose private records\."/,
+  /domainOperational[\s\S]*"Live lane"[\s\S]*"Live domain actions"[\s\S]*"More operating tools\."[\s\S]*"Open lanes"[\s\S]*"Operating view only\. It does not verify ownership, confirm new payments, grant paid features, or expose private records\."/,
   "Active Community Domain dashboard tools must use live operating language after activation while keeping setup/edit language scoped to setup work.",
   { frontend: true }
 );

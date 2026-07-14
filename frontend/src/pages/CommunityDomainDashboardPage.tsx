@@ -1789,6 +1789,7 @@ export default function CommunityDomainDashboardPage() {
   const [setupJourneyMode, setSetupJourneyMode] = useState<"setup" | "edit">(
     "setup"
   );
+  const [setupWorkspaceOpen, setSetupWorkspaceOpen] = useState(false);
   const [showAdvancedTools, setShowAdvancedTools] = useState(false);
   const [activeStructureDetail, setActiveStructureDetail] =
     useState<StructureDetailKey>("preview");
@@ -2070,6 +2071,7 @@ export default function CommunityDomainDashboardPage() {
       setBillingSettlementCountry(nextSettlementCountry);
       setQuoteCurrency(nextSettlementCountry === "NG" ? "NGN" : "GBP");
       setActiveLane("settings");
+      setSetupWorkspaceOpen(false);
       setShowAdvancedTools(false);
       setLoading(false);
       void loadLockedFeaturePolicy(requestDomainId);
@@ -2617,8 +2619,13 @@ export default function CommunityDomainDashboardPage() {
         setupPrimaryAction?.label,
         "Review the current Community Domain setup state."
       );
+  const otherToolsLaneKey =
+    domainOperational
+      ? operationalLaneKey
+      : lanes.find((lane) => cleanText(lane.lane_key) !== "settings")?.lane_key ||
+        primaryActionLaneKey;
   const showDomainWorkSurface =
-    !domainOperational || showAdvancedTools || setupJourneyMode === "edit";
+    setupWorkspaceOpen || showAdvancedTools || setupJourneyMode === "edit";
   const primaryActionFallbackNote =
     !setupPrimaryActionHasLane && setupPrimaryActionLaneKey === "verification" && hasServicesLane
       ? "GSN opens Services because authority verification is shown there as a readiness row. Actual authority verification still needs its separate owner or admin path."
@@ -2972,6 +2979,7 @@ export default function CommunityDomainDashboardPage() {
   function openSetupJourney(mode: "setup" | "edit") {
     setSetupJourneyMode(mode);
     setActiveLane("settings");
+    setSetupWorkspaceOpen(true);
     setShowAdvancedTools(false);
     if (mode === "edit") {
       setMessage(
@@ -2987,6 +2995,7 @@ export default function CommunityDomainDashboardPage() {
   function openSetupPaymentLane() {
     const saved = saveSetupProgress();
     if (!saved) return;
+    setSetupWorkspaceOpen(false);
     setShowAdvancedTools(true);
     setActiveLane("billing");
   }
@@ -3008,6 +3017,7 @@ export default function CommunityDomainDashboardPage() {
     const saved = saveSetupProgress();
     if (!saved) return;
     setSetupCompletionSavedAt(cleanText(saved.saved_at, new Date().toISOString()));
+    setSetupWorkspaceOpen(false);
     setSelectedClanId(clanId);
     try {
       window.localStorage.setItem(
@@ -4209,15 +4219,15 @@ export default function CommunityDomainDashboardPage() {
                 </span>
                 <div style={{ minWidth: 0 }}>
                   <div style={sectionLabel()}>
-                    {domainOperational ? "Live domain" : "Create / setup"}
+                    Domain command
                   </div>
                   <h2 style={{ margin: "6px 0 0", fontSize: 24, lineHeight: 1.12 }}>
                     {operatingStateCopy.heading}
                   </h2>
                   <div style={{ ...helperText(), marginTop: 8 }}>
                     {domainOperational
-                      ? "This domain is active. Use the operating lanes now; setup remains available only when details or verification evidence need attention."
-                      : "Fill the current setup step, save it, then GSN moves you forward."}
+                      ? "Run one live lane at a time. Setup stays quiet unless details or evidence need attention."
+                      : "Complete the next setup step. Billing, activation, and verification stay separate."}
                   </div>
                 </div>
               </div>
@@ -4229,6 +4239,7 @@ export default function CommunityDomainDashboardPage() {
                   debugId="community-domain-dashboard.operational-focus"
                   onClick={() => {
                     setSetupJourneyMode("setup");
+                    setSetupWorkspaceOpen(false);
                     setShowAdvancedTools(true);
                     setActiveLane(operationalLaneKey);
                     setMessage("");
@@ -4247,15 +4258,17 @@ export default function CommunityDomainDashboardPage() {
                   Continue setup
                 </StableButton>
               )}
-              <StableButton
-                type="button"
-                kind="secondary"
-                fullWidth
-                debugId="community-domain-dashboard.edit-setup-focus"
-                onClick={() => openSetupJourney("edit")}
-              >
-                {domainOperational ? "Edit setup details" : "Edit setup"}
-              </StableButton>
+              {domainOperational ? (
+                <StableButton
+                  type="button"
+                  kind="secondary"
+                  fullWidth
+                  debugId="community-domain-dashboard.edit-setup-focus"
+                  onClick={() => openSetupJourney("edit")}
+                >
+                  Edit setup details
+                </StableButton>
+              ) : null}
             </div>
           </section>
 
@@ -4266,7 +4279,7 @@ export default function CommunityDomainDashboardPage() {
             </section>
           ) : null}
 
-          {showAdvancedTools && activeLane === "settings" ? (
+          {showAdvancedTools && activeLane === "settings" && setupWorkspaceOpen ? (
             <>
           <section style={whiteCard()}>
             <div style={officialBoardHeaderStyle()}>
@@ -4502,8 +4515,12 @@ export default function CommunityDomainDashboardPage() {
                   onClick={() => {
                     setActiveLane(mainActionLaneKey);
                     if (domainOperational) {
+                      setSetupWorkspaceOpen(false);
                       setShowAdvancedTools(true);
                       setSetupJourneyMode("setup");
+                    } else {
+                      setSetupWorkspaceOpen(true);
+                      setShowAdvancedTools(false);
                     }
                   }}
                 >
@@ -4808,6 +4825,7 @@ export default function CommunityDomainDashboardPage() {
                         debugId="community-domain-dashboard.settings-open-live-lane"
                         onClick={() => {
                           setShowAdvancedTools(true);
+                          setSetupWorkspaceOpen(false);
                           setActiveLane(operationalLaneKey);
                           setSetupJourneyMode("setup");
                         }}
@@ -7067,17 +7085,19 @@ export default function CommunityDomainDashboardPage() {
                   setShowAdvancedTools((current) => {
                     const next = !current;
                     if (next) {
-                      setActiveLane(domainOperational ? operationalLaneKey : primaryActionLaneKey);
+                      setSetupWorkspaceOpen(false);
+                      setSetupJourneyMode("setup");
+                      setActiveLane(cleanText(otherToolsLaneKey, primaryActionLaneKey));
                     }
                     return next;
                   })
                 }
               >
                 {showAdvancedTools
-                  ? "Hide other tools"
+                  ? "Hide lanes"
                   : domainOperational
-                  ? "Open operating tools"
-                  : "Open other tools"}
+                  ? "Open lanes"
+                  : "Open service lanes"}
               </StableButton>
             </div>
           </section>
