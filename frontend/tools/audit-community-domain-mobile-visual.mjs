@@ -672,6 +672,34 @@ async function isDebugVisible(page, debugId) {
   return page.locator(`[data-cta-id="${debugId}"]`).first().isVisible().catch(() => false);
 }
 
+async function firstViewportActionFinding(page, debugId, label) {
+  return page.evaluate(
+    ({ debugId: targetDebugId, label: targetLabel }) => {
+      const element = document.querySelector(`[data-cta-id="${targetDebugId}"]`);
+      if (!element) {
+        return `${targetLabel} primary action is missing.`;
+      }
+      const rect = element.getBoundingClientRect();
+      const visible =
+        rect.width > 0 &&
+        rect.height > 0 &&
+        rect.bottom > 0 &&
+        rect.top < window.innerHeight;
+
+      if (!visible) {
+        return `${targetLabel} primary action is not visible.`;
+      }
+      if (rect.top < 0 || rect.bottom > window.innerHeight) {
+        return `${targetLabel} primary action is not fully inside the first viewport: top ${Math.round(
+          rect.top
+        )}, bottom ${Math.round(rect.bottom)}, viewport ${window.innerHeight}.`;
+      }
+      return "";
+    },
+    { debugId, label }
+  );
+}
+
 function normalized(value) {
   return String(value || "").replace(/\s+/g, " ").trim();
 }
@@ -711,6 +739,12 @@ try {
   if (!(await isDebugVisible(page, "community-domain-purchase.check-domain"))) {
     findings.push("Purchase page mobile first job does not show the Check domain name action.");
   }
+  const purchaseFirstAction = await firstViewportActionFinding(
+    page,
+    "community-domain-purchase.check-domain",
+    "Purchase page"
+  );
+  if (purchaseFirstAction) findings.push(purchaseFirstAction);
   const exposedEngineCards = await Promise.all(
     ["Governance", "Trust record", "Network reach", "Opportunity"].map((label) =>
       page.getByText(label, { exact: true }).first().isVisible().catch(() => false)
@@ -754,6 +788,12 @@ try {
   if (!(await isDebugVisible(page, "community-domain-dashboard.selector.setup-new"))) {
     findings.push("Community Domain selector empty state does not show the setup path first.");
   }
+  const selectorFirstAction = await firstViewportActionFinding(
+    page,
+    "community-domain-dashboard.selector.setup-new",
+    "Community Domain selector"
+  );
+  if (selectorFirstAction) findings.push(selectorFirstAction);
   if (await isDebugVisible(page, "community-domain-dashboard.selector.find-edit-domain")) {
     findings.push("Community Domain selector exposes edit lookup before the user chooses edit.");
   }
@@ -786,6 +826,12 @@ try {
   if (!normalized(audit.bodyText).includes("Boundary")) {
     findings.push("Domain command does not show the operating boundary warning.");
   }
+  const dashboardFirstAction = await firstViewportActionFinding(
+    page,
+    "community-domain-dashboard.operational-focus",
+    "Community Domain dashboard"
+  );
+  if (dashboardFirstAction) findings.push(dashboardFirstAction);
   if (normalized(audit.bodyText).includes("Safe next step")) {
     findings.push("Generic Safe next step card is visible on initial Community Domain surface.");
   }

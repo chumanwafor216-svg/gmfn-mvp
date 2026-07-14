@@ -4254,20 +4254,6 @@ export default function CommunityDomainDashboardPage() {
                   </div>
                 </div>
               </div>
-              <div style={commandGuidanceGrid()}>
-                <div style={commandGuidanceTile("next")}>
-                  <div style={sectionLabel()}>Do first</div>
-                  <div style={{ ...helperText(), fontSize: 13, lineHeight: 1.5 }}>
-                    {operatingStateCopy.nextStep}
-                  </div>
-                </div>
-                <div style={commandGuidanceTile("risk")}>
-                  <div style={sectionLabel()}>Boundary</div>
-                  <div style={{ ...helperText(), fontSize: 13, lineHeight: 1.5 }}>
-                    {operatingStateCopy.risk}
-                  </div>
-                </div>
-              </div>
               {domainOperational ? (
                 <StableButton
                   type="button"
@@ -4302,10 +4288,24 @@ export default function CommunityDomainDashboardPage() {
                   fullWidth
                   debugId="community-domain-dashboard.edit-setup-focus"
                   onClick={() => openSetupJourney("edit")}
-                >
-                  Edit setup details
-                </StableButton>
+              >
+                Edit setup details
+              </StableButton>
               ) : null}
+              <div style={commandGuidanceGrid()}>
+                <div style={commandGuidanceTile("next")}>
+                  <div style={sectionLabel()}>Do first</div>
+                  <div style={{ ...helperText(), fontSize: 13, lineHeight: 1.5 }}>
+                    {operatingStateCopy.nextStep}
+                  </div>
+                </div>
+                <div style={commandGuidanceTile("risk")}>
+                  <div style={sectionLabel()}>Boundary</div>
+                  <div style={{ ...helperText(), fontSize: 13, lineHeight: 1.5 }}>
+                    {operatingStateCopy.risk}
+                  </div>
+                </div>
+              </div>
             </div>
           </section>
 

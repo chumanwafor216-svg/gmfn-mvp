@@ -966,6 +966,21 @@ export default function CommunityDomainPurchasePage() {
                   </label>
                 </div>
 
+                {isCompact ? (
+                  <EntryActionButton
+                    type="submit"
+                    disabled={busy === "availability" || draftFormLocked}
+                    debugId="community-domain-purchase.check-domain"
+                    style={{ width: "100%" }}
+                  >
+                    {hasCreatedDraft
+                      ? "Draft created"
+                      : busy === "availability"
+                      ? "Checking..."
+                      : "Check domain name"}
+                  </EntryActionButton>
+                ) : null}
+
                 <div
                   style={{
                     display: "grid",
@@ -1024,18 +1039,20 @@ export default function CommunityDomainPurchasePage() {
                     {selectedTemplate.summary ||
                       "Template is a planning preset only. Activation, verification, and billing happen later."}
                   </div>
-                  <EntryActionButton
-                    type="submit"
-                    disabled={busy === "availability" || draftFormLocked}
-                    debugId="community-domain-purchase.check-domain"
-                    style={{ minWidth: isCompact ? "100%" : 190 }}
-                  >
-                    {hasCreatedDraft
-                      ? "Draft created"
-                      : busy === "availability"
-                      ? "Checking..."
-                      : "Check domain name"}
-                  </EntryActionButton>
+                  {!isCompact ? (
+                    <EntryActionButton
+                      type="submit"
+                      disabled={busy === "availability" || draftFormLocked}
+                      debugId="community-domain-purchase.check-domain"
+                      style={{ minWidth: 190 }}
+                    >
+                      {hasCreatedDraft
+                        ? "Draft created"
+                        : busy === "availability"
+                        ? "Checking..."
+                        : "Check domain name"}
+                    </EntryActionButton>
+                  ) : null}
                 </div>
 
                 {demoProfile ? (
