@@ -1526,7 +1526,7 @@ function laneDisplayLabel(lane: any, fallback = "Lane"): string {
   const key = cleanText(lane?.lane_key).toLowerCase();
   const label = cleanText(lane?.label, fallback);
   if (key === "modules" || label.toLowerCase() === "modules") return "Services";
-  if (key === "settings") return "Create / setup";
+  if (key === "settings") return "Setup";
   return label;
 }
 
@@ -4728,14 +4728,16 @@ export default function CommunityDomainDashboardPage() {
                           ? "Live lane"
                           : "Opened lane"
                         : setupJourneyMode === "edit"
-                        ? "Edit setup"
+                        ? "Setup workbench"
                         : domainOperational
                         ? "Live domain actions"
-                        : "Create / setup"}
+                        : "Setup workbench"}
                     </div>
                     <h2 style={{ margin: 0, fontSize: 26, lineHeight: 1.1 }}>
                       {setupJourneyMode === "edit" && activeLane === "settings"
-                        ? "Edit Community Domain setup"
+                        ? "Edit Community Domain"
+                        : !showAdvancedTools && activeLane === "settings" && !domainOperational
+                        ? "Create Community Domain"
                         : laneDisplayLabel(selectedLane, "Community Domain setup")}
                     </h2>
                   </div>
@@ -4905,15 +4907,12 @@ export default function CommunityDomainDashboardPage() {
                 !showActiveDomainSettingsSummary ? (
                   <div style={{ ...softCard(), display: "grid", gap: 12 }}>
                     <div style={sectionLabel()}>
-                      {setupJourneyMode === "edit"
-                        ? "Edit Community Domain"
-                        : "Create Community Domain"}
+                      Step {setupStepIndex + 1} of {SETUP_STEP_OPTIONS.length}
                     </div>
                     <h3 style={{ margin: 0, fontSize: 22, lineHeight: 1.15 }}>
                       {setupCurrentStep.label}
                     </h3>
                     <div style={{ ...helperText(), fontSize: 14 }}>
-                      Step {setupStepIndex + 1} of {SETUP_STEP_OPTIONS.length}.{" "}
                       {setupJourneyMode === "edit"
                         ? "Correct saved details only after owner/admin or setup-editor authority is clear."
                         : setupCurrentStep.note}

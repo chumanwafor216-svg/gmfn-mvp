@@ -151,7 +151,7 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /setupJourneyMode[\s\S]*showSetupAccessCard = setupJourneyMode === "edit" \|\| setupEditingLocked[\s\S]*openSetupJourney\(mode: "setup" \| "edit"\)[\s\S]*community-domain-dashboard\.setup-focus[\s\S]*Continue setup[\s\S]*community-domain-dashboard\.edit-setup-focus[\s\S]*Edit setup[\s\S]*setupJourneyMode === "edit"[\s\S]*Edit Community Domain setup/,
+  /setupJourneyMode[\s\S]*showSetupAccessCard = setupJourneyMode === "edit" \|\| setupEditingLocked[\s\S]*openSetupJourney\(mode: "setup" \| "edit"\)[\s\S]*community-domain-dashboard\.setup-focus[\s\S]*Continue setup[\s\S]*community-domain-dashboard\.edit-setup-focus[\s\S]*Edit setup[\s\S]*setupJourneyMode === "edit"[\s\S]*Edit Community Domain/,
   "Community Domain dashboard hero must expose setup and edit as front-door choices, and the setup-access card must lead only when editing or locked.",
   { frontend: true }
 );
@@ -710,7 +710,7 @@ assertNotContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /function laneDisplayLabel[\s\S]*key === "modules"[\s\S]*return "Services"[\s\S]*const primaryActionLaneLabel = laneDisplayLabel\(primaryActionLane, "work"\)[\s\S]*Edit Community Domain setup[\s\S]*laneDisplayLabel\(selectedLane, "Community Domain setup"\)/,
+  /function laneDisplayLabel[\s\S]*key === "modules"[\s\S]*return "Services"[\s\S]*key === "settings"\) return "Setup"[\s\S]*const primaryActionLaneLabel = laneDisplayLabel\(primaryActionLane, "work"\)[\s\S]*Edit Community Domain[\s\S]*laneDisplayLabel\(selectedLane, "Community Domain setup"\)/,
   "Community Domain dashboard parent must show service language for primary and opened modules-lane labels without changing internal lane keys, while allowing the edit setup heading.",
   { frontend: true }
 );
@@ -869,8 +869,22 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /setupStepPlaceholder[\s\S]*Saturday fitness[\s\S]*Snapfit partner[\s\S]*Create Community Domain[\s\S]*setupStepIndex \+ 1[\s\S]*SETUP_STEP_OPTIONS\.length[\s\S]*setupStepPlaceholder\(activeSetupStep, domain, setupDraft\)/,
+  /setupStepPlaceholder[\s\S]*Saturday fitness[\s\S]*Snapfit partner[\s\S]*setupStepPlaceholder\(activeSetupStep, domain, setupDraft\)/,
   "Community Domain dashboard setup must show one setup step at a time and use Pillar/charity-aware examples instead of school-only prompts.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /key === "settings"\) return "Setup"[\s\S]*Setup workbench[\s\S]*Create Community Domain[\s\S]*Step \{setupStepIndex \+ 1\} of \{SETUP_STEP_OPTIONS\.length\}/,
+  "Community Domain setup workbench must use guided setup language instead of repeating lane labels.",
+  { frontend: true }
+);
+
+assertNotContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /Create \/ setup/,
+  "Community Domain setup workbench must not repeat the old generated 'Create / setup' lane label.",
   { frontend: true }
 );
 
@@ -941,6 +955,13 @@ assertContains(
   "tools/audit-community-domain-mobile-visual.mjs",
   /const routePath = "\/app\/community-domain\/13"[\s\S]*const purchaseRoutePath = "\/community-domain\/purchase\?demo=pillar-of-hope"[\s\S]*let domainListScenario = "owned"[\s\S]*let dashboardScenario = "active"[\s\S]*dashboardScenario === "draft"[\s\S]*firstViewportActionFinding[\s\S]*viewportElementFinding[\s\S]*community-domain-purchase\.check-domain[\s\S]*Purchase page mobile hero still exposes the four engine explanation cards[\s\S]*community-domain-purchase\.other-paths[\s\S]*domainListScenario = "empty"[\s\S]*community-domain-dashboard\.selector\.setup-new[\s\S]*community-domain-dashboard\.selector\.find-edit-domain[\s\S]*community-domain-dashboard\.selector\.back-to-choice[\s\S]*dashboardScenario = "draft"[\s\S]*community-domain-dashboard\.setup-focus[\s\S]*Draft Community Domain dashboard exposes Other domain tools before setup is opened[\s\S]*community-domain-dashboard\.work-surface[\s\S]*Draft Community Domain setup workbench exposes Other domain tools during the primary setup journey[\s\S]*Draft Community Domain setup workbench exposes advanced dashboard blocks during setup[\s\S]*dashboardScenario = "active"[\s\S]*community-domain-dashboard\.operational-focus[\s\S]*community-domain-dashboard\.advanced-tools-toggle[\s\S]*community-domain-dashboard\.service-detail\.boundaries[\s\S]*community-domain-service-boundary\.focus\.privacy[\s\S]*community-domain-dashboard\.service-detail\.evidence[\s\S]*community-domain\.trust-evidence\.focus\.release[\s\S]*community-domain-dashboard\.structure-detail\.planning[\s\S]*community-domain\.structure-planning\.focus\.groups[\s\S]*Safe next step[\s\S]*horizontalOverflow[\s\S]*lowContrast/,
   "Community Domain mobile visual audit must exercise purchase first-job compaction, selector one-path state, active-domain lanes, focused service/structure packets, dead-block regression, overflow, and contrast checks.",
+  { frontend: true }
+);
+
+assertContains(
+  "tools/audit-community-domain-mobile-visual.mjs",
+  /Create Community Domain[\s\S]*Create \/ setup[\s\S]*old repeated Create \/ setup label[\s\S]*Setup workbench/,
+  "Community Domain mobile visual audit must guard the setup workbench against repeated generated lane labels.",
   { frontend: true }
 );
 

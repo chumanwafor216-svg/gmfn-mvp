@@ -899,7 +899,7 @@ try {
     findings.push(`Draft Community Domain dashboard mobile overflow: ${JSON.stringify(audit.overflow)}`);
   }
   await clickByDebugId(page, "community-domain-dashboard.setup-focus");
-  await page.getByRole("heading", { name: "Create / setup" }).waitFor({ timeout: 10000 });
+  await page.getByRole("heading", { name: "Create Community Domain" }).waitFor({ timeout: 10000 });
   const draftSetupSurfaceFinding = await viewportElementFinding(
     page,
     '[data-testid="community-domain-dashboard.work-surface"]',
@@ -908,6 +908,12 @@ try {
   if (draftSetupSurfaceFinding) findings.push(draftSetupSurfaceFinding);
   audit = await page.evaluate(pageAudit);
   const draftSetupText = normalized(audit.bodyText);
+  if (draftSetupText.includes("Create / setup")) {
+    findings.push("Draft Community Domain setup workbench still shows the old repeated Create / setup label.");
+  }
+  if (!draftSetupText.includes("Setup workbench")) {
+    findings.push("Draft Community Domain setup workbench does not show the guided setup label.");
+  }
   if (!draftSetupText.includes("Step 1 of")) {
     findings.push("Draft Community Domain setup workbench does not show one setup step at a time.");
   }
