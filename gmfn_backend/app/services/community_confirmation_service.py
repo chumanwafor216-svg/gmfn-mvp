@@ -19,7 +19,9 @@ from app.db.models import (
     ClanJoinRequest,
     ClanJoinVote,
     ClanMembership,
+    CommunityDomain,
     CommunityDomainAffiliation,
+    CommunityDomainMembership,
     CommunityMemberVerification,
     CommunityConfirmationContact,
     CommunityConfirmationDecision,
@@ -3923,6 +3925,125 @@ def _find_public_community(db: Session, *, community_key: str) -> Clan:
     return community
 
 
+def _domain_key_slug(value: str) -> str:
+    text = str(value or "").strip().lower()
+    chars: list[str] = []
+    previous_dash = False
+    for char in text:
+        if char.isalnum():
+            chars.append(char)
+            previous_dash = False
+        elif not previous_dash:
+            chars.append("-")
+            previous_dash = True
+    return "".join(chars).strip("-")
+
+
+def _community_domain_verify_lookup_parts(
+    community_key: str,
+) -> tuple[str, list[str], Optional[int]]:
+    raw = str(community_key or "").strip()
+    normalized = raw.strip().upper()
+    slug = _domain_key_slug(raw)
+    candidates: list[str] = []
+
+    def add(value: str) -> None:
+        item = _domain_key_slug(value)
+        if item and item not in candidates:
+            candidates.append(item)
+
+    add(raw)
+    add(slug)
+    lookup_id: Optional[int] = int(raw) if raw.isdigit() else None
+    for prefix in (
+        "GSN-D-",
+        "GMFN-D-",
+        "GMFM-D-",
+        "GSN-CD-",
+        "GMFN-CD-",
+        "GMFM-CD-",
+        "GSN-DOM-",
+        "GMFN-DOM-",
+        "GMFM-DOM-",
+    ):
+        if not normalized.startswith(prefix):
+            continue
+        suffix = normalized[len(prefix) :].strip()
+        if suffix.isdigit():
+            lookup_id = int(suffix)
+        break
+
+    return slug, candidates, lookup_id
+
+
+def _community_domain_public_code(domain: CommunityDomain) -> str:
+    return f"GSN-D-{int(domain.id):06d}"
+
+
+def _find_public_community_domain(
+    db: Session,
+    *,
+    community_key: str,
+) -> CommunityDomain:
+    key = str(community_key or "").strip()
+    slug, candidates, lookup_id = _community_domain_verify_lookup_parts(key)
+    query = db.query(CommunityDomain)
+    domain = None
+    if lookup_id is not None and key.isdigit():
+        domain = query.filter(CommunityDomain.id == int(lookup_id)).first()
+    if not domain and candidates:
+        domain = query.filter(CommunityDomain.domain_name.in_(candidates)).first()
+    if not domain and lookup_id is not None:
+        domain = query.filter(CommunityDomain.id == int(lookup_id)).first()
+    if not domain and key:
+        domain = query.filter(CommunityDomain.display_name == key).first()
+    if not domain and slug:
+        domain = query.filter(func.lower(CommunityDomain.display_name) == slug).first()
+    if not domain:
+        raise ValueError("Community Domain not found")
+    return domain
+
+
+def _public_domain_type_label(domain: CommunityDomain) -> tuple[str, str, str]:
+    domain_type = str(getattr(domain, "domain_type", "") or "").strip().lower()
+    template_key = str(getattr(domain, "template_key", "") or "").strip().lower()
+    key = template_key or domain_type or "generic_association"
+    labels = {
+        "school": "School / learning body",
+        "school_training_body": "School / learning body",
+        "faith": "Faith institution",
+        "faith_institution": "Faith institution",
+        "church": "Faith institution",
+        "union": "Union / professional body",
+        "union_professional_body": "Union / professional body",
+        "market": "Market / cooperative",
+        "market_association": "Market / cooperative",
+        "cooperative": "Market / cooperative",
+        "town_union": "Town union / community association",
+        "health": "Health / support body",
+        "health_support_body": "Health / support body",
+        "ngo": "NGO / project network",
+        "ngo_project": "NGO / project network",
+        "generic_association": "Organized Community Domain",
+    }
+    return (
+        key,
+        labels.get(key, "Organized Community Domain"),
+        "Recorded from the Community Domain template",
+    )
+
+
+def _domain_member_status_label(status: str) -> str:
+    normalized = str(status or "").strip().lower()
+    return {
+        "active": "Active Community Domain member",
+        "inactive": "Not an active Community Domain member",
+        "suspended": "Suspended Community Domain member",
+        "archived": "Archived Community Domain member",
+        "pending": "Pending Community Domain member",
+    }.get(normalized, "Not an active Community Domain member")
+
+
 def _public_member_key_candidates(member_key: str) -> list[str]:
     raw = str(member_key or "").strip()
     upper = raw.upper()
@@ -3954,6 +4075,282 @@ def _find_public_member(db: Session, *, member_key: str) -> User:
     if not user:
         raise ValueError("Member not found")
     return user
+
+
+def _public_community_domain_verification(
+    db: Session,
+    *,
+    community_key: str,
+) -> Dict[str, Any]:
+    domain = _find_public_community_domain(db, community_key=community_key)
+    domain_status = str(getattr(domain, "status", "") or "draft").strip().lower()
+    domain_code = _community_domain_public_code(domain)
+    domain_type, domain_type_label, domain_type_source = _public_domain_type_label(domain)
+    record_started_at = _to_aware(getattr(domain, "created_at", None))
+    record_started_date = record_started_at.date().isoformat() if record_started_at else None
+    record_started_label = (
+        f"GSN record since {record_started_date}"
+        if record_started_date
+        else "GSN record date not shown"
+    )
+    active_domain = domain_status == "active"
+    evidence_currentness_status = (
+        "active_protected_domain" if active_domain else "protected_domain_not_active"
+    )
+    evidence_currentness_label = (
+        "Active protected Community Domain"
+        if active_domain
+        else "Protected Community Domain is not active"
+    )
+    evidence_currentness_scope = (
+        "This Community Domain resolves to an active protected GSN domain "
+        "record. Member proof still needs a scoped member credential, and "
+        "Trust Events remain person-owned in this MVP."
+        if active_domain
+        else "This Community Domain name resolves to a GSN protected domain "
+        "record, but the domain is not active. Treat it as protected name "
+        "or setup evidence until current scoped evidence is supplied."
+    )
+    domain_scope = (
+        "Community Domain name protection is the record anchor. It protects "
+        "the organization label inside GSN, but it does not create a separate "
+        "institutional shop, institutional Trust Event owner, transaction "
+        "approval, or guarantee."
+    )
+
+    return {
+        "community_name": getattr(domain, "display_name", None) or getattr(domain, "domain_name", None),
+        "community_id": int(domain.id),
+        "community_code": domain_code,
+        "community_domain_id": int(domain.id),
+        "community_domain_name": getattr(domain, "domain_name", None),
+        "community_domain_display_name": getattr(domain, "display_name", None),
+        "community_record_kind": "community_domain",
+        "community_type": domain_type,
+        "community_type_label": domain_type_label,
+        "community_type_source": domain_type_source,
+        "community_public_face_status": "protected_domain_record",
+        "community_public_face_label": "Protected Community Domain record",
+        "community_public_face_scope": (
+            "Shows protected Community Domain identity, lifecycle state, "
+            "public-safe profile text, and member-proof boundary. It is not a "
+            "full member list, sponsor report, service guarantee, shop owner "
+            "record, or institutional trust score."
+        ),
+        "community_next_evidence_label": "Ask for scoped member or activity evidence",
+        "community_next_evidence_scope": (
+            "If a person claims this Community Domain identity, ask for a "
+            "member credential under this protected domain, TrustSlip, "
+            "controlled witness confirmation, or recorded activity evidence. "
+            "Do not rely on the protected name alone."
+        ),
+        "community_record_started_at": (
+            record_started_at.isoformat() if record_started_at else None
+        ),
+        "community_record_started_label": record_started_label,
+        "community_record_started_scope": (
+            "This is the date this Community Domain record entered GSN. It is "
+            "not the date the real-world organization was founded or formally "
+            "registered outside GSN."
+        ),
+        "community_mobility_label": "Portable Community Domain anchor",
+        "community_mobility_scope": (
+            "Use this protected Community Domain ID alongside scoped member "
+            "credentials, TrustSlips, activity records, or controlled "
+            "confirmations when trust needs to travel outside the original "
+            "room. The domain record alone does not transfer trust or approve "
+            "a transaction."
+        ),
+        "community_reader_decision_label": "First check, not final decision",
+        "community_reader_decision_scope": (
+            "Use this record to see whether a protected Community Domain "
+            "resolves inside GSN. For serious trade, lending, sponsor, "
+            "beneficiary, membership, or governance decisions, ask for current "
+            "scoped evidence before acting."
+        ),
+        "community_evidence_currentness_status": evidence_currentness_status,
+        "community_evidence_currentness_label": evidence_currentness_label,
+        "community_evidence_currentness_scope": evidence_currentness_scope,
+        "status": domain_status,
+        "public_record": "Protected Community Domain recorded in GSN",
+        "domain_label": "GSN Protected Community Domain",
+        "domain_status": "Protected Community Domain",
+        "domain_lifecycle_status": domain_status,
+        "domain_lifecycle_label": (
+            "Active in GSN" if active_domain else "Protected / setup stage"
+        ),
+        "domain_lifecycle_note": (
+            "GSN has a protected Community Domain record for this name. In the "
+            "current MVP, the domain is represented by accountable personal "
+            "GSN IDs; shops and Trust Events remain person-owned unless a "
+            "future institutional actor module is deliberately approved."
+        ),
+        "domain_evidence_scope": domain_scope,
+        "domain_proof_scope": domain_scope,
+        "membership_credential_status": (
+            "Member credentials are checked by Community Domain membership rows"
+        ),
+        "official_affiliate_status": "not_asserted",
+        "official_affiliate_label": "No public parent-domain acknowledgement asserted",
+        "official_affiliate_note": (
+            "This public record protects the Community Domain name. Parent, "
+            "sponsor, chapter, or affiliate acknowledgement needs its own "
+            "scoped record."
+        ),
+        "parent_domain": None,
+        "group_affiliation_status": (
+            "Domain membership and affiliations need scoped proof"
+        ),
+        "public_limitation": (
+            "This record shows the protected Community Domain identity in GSN. "
+            "It does not automatically verify every person, shop, beneficiary, "
+            "sponsor, branch, or subgroup using the domain name."
+        ),
+        "member_confirmation": "By scoped member credential or controlled request",
+        "relay_available": False,
+        "relay_availability": "Not available",
+        "request_confirmation_available": False,
+    }
+
+
+def _public_community_domain_member_verification(
+    db: Session,
+    *,
+    community_key: str,
+    member_key: str,
+) -> Dict[str, Any]:
+    domain = _find_public_community_domain(db, community_key=community_key)
+    domain_status = str(getattr(domain, "status", "") or "draft").strip().lower()
+    if domain_status != "active":
+        raise ValueError("Community Domain not found")
+    member = _find_public_member(db, member_key=member_key)
+    membership = (
+        db.query(CommunityDomainMembership)
+        .filter(CommunityDomainMembership.community_domain_id == int(domain.id))
+        .filter(CommunityDomainMembership.user_id == int(member.id))
+        .first()
+    )
+    if not membership:
+        raise ValueError("Member not found in this Community Domain")
+    membership_status = str(getattr(membership, "status", "") or "inactive").strip().lower()
+    if membership_status != "active":
+        raise ValueError("Member not found in this Community Domain")
+    if is_user_activation_pending(member):
+        raise ValueError("Member not found in this Community Domain")
+
+    domain_public_record = _public_community_domain_verification(
+        db,
+        community_key=_community_domain_public_code(domain),
+    )
+    display_name = str(getattr(member, "display_name", "") or "").strip()
+    member_gsn_id = getattr(member, "gmfn_id", None) or f"GMFN-P-{int(member.id):06d}"
+    linked_clan_id = getattr(domain, "clan_id", None)
+    activity_total = 0
+    latest_activity_at = None
+    activity_categories: list[str] = []
+    if linked_clan_id is not None:
+        activity_total = int(
+            db.query(func.count(TrustEvent.id))
+            .filter(TrustEvent.clan_id == int(linked_clan_id))
+            .filter(TrustEvent.subject_user_id == int(member.id))
+            .filter(~TrustEvent.event_type.in_(PUBLIC_ACTIVITY_EXCLUDED_EVENT_TYPES))
+            .scalar()
+            or 0
+        )
+        activity_rows = (
+            db.query(TrustEvent.event_type, TrustEvent.created_at)
+            .filter(TrustEvent.clan_id == int(linked_clan_id))
+            .filter(TrustEvent.subject_user_id == int(member.id))
+            .filter(~TrustEvent.event_type.in_(PUBLIC_ACTIVITY_EXCLUDED_EVENT_TYPES))
+            .order_by(TrustEvent.created_at.desc(), TrustEvent.id.desc())
+            .limit(100)
+            .all()
+        )
+        latest_activity_at = activity_rows[0].created_at if activity_rows else None
+        for row in activity_rows:
+            category = _public_activity_category(row.event_type)
+            if category not in activity_categories:
+                activity_categories.append(category)
+
+    evidence_scope = (
+        "This public credential shows active membership in the protected "
+        "Community Domain roster. It does not expose the full roster, private "
+        "notes, phone numbers, sponsor details, shop records, payment records, "
+        "or beneficiary records."
+    )
+    trust_reading_scope = (
+        f"Inside {domain.display_name}, this credential shows active Community "
+        "Domain membership under the protected name. It is membership evidence "
+        "for judgement, not a universal trust score, guarantee, credit approval, "
+        "sponsor impact report, or transaction permission."
+    )
+    if activity_total > 0:
+        trust_reading_scope += (
+            f" {activity_total} linked community activity event(s) were also "
+            "found for this member in the linked community context."
+        )
+
+    return {
+        "community_name": domain_public_record["community_name"],
+        "community_id": int(domain.id),
+        "community_code": domain_public_record["community_code"],
+        "community_domain_id": int(domain.id),
+        "community_domain_name": domain_public_record["community_domain_name"],
+        "community_domain_display_name": domain_public_record["community_domain_display_name"],
+        "community_record_kind": "community_domain",
+        "community_public_face_status": domain_public_record["community_public_face_status"],
+        "community_public_face_label": domain_public_record["community_public_face_label"],
+        "official_affiliate_status": domain_public_record["official_affiliate_status"],
+        "official_affiliate_label": domain_public_record["official_affiliate_label"],
+        "community_evidence_currentness_status": domain_public_record[
+            "community_evidence_currentness_status"
+        ],
+        "community_evidence_currentness_label": domain_public_record[
+            "community_evidence_currentness_label"
+        ],
+        "community_evidence_currentness_scope": domain_public_record[
+            "community_evidence_currentness_scope"
+        ],
+        "member_gsn_id": member_gsn_id,
+        "member_display_name": display_name or "GSN member",
+        "membership_status": "active",
+        "membership_status_label": _domain_member_status_label("active"),
+        "membership_role": getattr(membership, "role", None) or "member",
+        "membership_title": getattr(membership, "title", None),
+        "public_label": "Active Community Domain member",
+        "member_witness_count": 0,
+        "membership_strength": "joined",
+        "membership_strength_label": "Active domain member",
+        "membership_renewal_status": "not_started",
+        "membership_renewal_status_label": "Not Started",
+        "membership_valid_until": None,
+        "next_witness_renewal_at": None,
+        "next_witness_renewal_status": "not_started",
+        "next_witness_renewal_status_label": "Not Started",
+        "community_activity_count": activity_total,
+        "community_activity_latest_at": (
+            latest_activity_at.isoformat() if latest_activity_at else None
+        ),
+        "community_activity_categories": activity_categories[:6],
+        "community_activity_label": (
+            "Linked community activity recorded"
+            if activity_total > 0
+            else "No linked community activity recorded yet"
+        ),
+        "community_trust_reading_label": "Active Community Domain membership",
+        "community_trust_reading_scope": trust_reading_scope,
+        "membership_currentness_label": "Current domain roster membership",
+        "membership_currentness_scope": (
+            "This member is currently active in the protected Community Domain "
+            "membership roster. Ask for witness confirmation, TrustSlip, or "
+            "activity evidence before relying on character, impact, or serious "
+            "transaction claims."
+        ),
+        "evidence_scope": evidence_scope,
+        "proof_scope": evidence_scope,
+        "privacy_note": "Private member contact details and the full domain roster are not shown.",
+        "decision_note": "Use this as Community Domain membership evidence, not as a guarantee or automatic transaction approval.",
+    }
 
 
 def _verification_strength_label(active_count: int) -> str:
@@ -4024,7 +4421,14 @@ def public_community_member_verification(
     community_key: str,
     member_key: str,
 ) -> Dict[str, Any]:
-    community = _find_public_community(db, community_key=community_key)
+    try:
+        community = _find_public_community(db, community_key=community_key)
+    except ValueError:
+        return _public_community_domain_member_verification(
+            db,
+            community_key=community_key,
+            member_key=member_key,
+        )
     community_status = str(getattr(community, "status", "") or "active").strip().lower()
     if community_status != "active":
         raise ValueError("Community not found")
@@ -4319,7 +4723,13 @@ def _community_record_is_active(community: Optional[Clan]) -> bool:
 
 
 def public_community_verification(db: Session, *, community_key: str) -> Dict[str, Any]:
-    community = _find_public_community(db, community_key=community_key)
+    try:
+        community = _find_public_community(db, community_key=community_key)
+    except ValueError:
+        return _public_community_domain_verification(
+            db,
+            community_key=community_key,
+        )
     approved_affiliation = (
         db.query(CommunityDomainAffiliation)
         .filter(CommunityDomainAffiliation.affiliate_clan_id == int(community.id))

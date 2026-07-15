@@ -15,12 +15,16 @@ import PaymentProofSubmissionPanel from "../components/PaymentProofSubmissionPan
 import { StableButton } from "../components/StableButton";
 import {
   applyCommunityDomainActionReview,
+  attemptCommunityDomainOutcomeConfirmationProviderSend,
   cancelCommunityDomainActionReview,
   checkCommunityDomainAvailability,
+  correctCommunityDomainOutcomeConfirmationDeliveryReceipt,
   createClan,
+  createCommunityDomainOutcomeConfirmationLink,
   createCommunityDomainNotice,
   createCommunityDomainPaymentInstruction,
   createCommunityDomainPackageQuote,
+  deactivateCommunityDomainMember,
   decideCommunityDomainActionReview,
   delegateCommunityDomainSetupEditor,
   getAccessToken,
@@ -59,6 +63,8 @@ import {
   getCommunityDomainNetworkExchangeMap,
   getCommunityDomainNetworkPresence,
   getCommunityDomainNotificationScopeReadiness,
+  getCommunityDomainActivityCatalogue,
+  getCommunityDomainPeriodSummary,
   getCommunityDomainReadiness,
   getCommunityDomainRecordPrivacyMap,
   getCommunityDomainReviewerQueue,
@@ -66,25 +72,37 @@ import {
   getCommunityDomainSetupPlan,
   getCommunityDomainSetupEvidence,
   getCommunityDomainSocialBridge,
+  getCommunityDomainSponsorSummary,
   getCommunityDomainTrustRelayReadiness,
   getCommunityDomainTrustMobility,
   getCommunityDomainSubscriptionLifecycle,
   setSelectedClanId,
   listExpectedPayments,
+  listCommunityDomainBeneficiaryOutcomes,
   listCommunityDomainPolicies,
   listCommunityDomainServiceSettings,
   listCommunityDomainActionReviews,
+  listCommunityDomainActivities,
+  listCommunityDomainMembers,
   listCommunityDomainNodeTree,
   listCommunityDomainNotices,
+  listCommunityDomainOutcomeCorrectionReviews,
   listMyClans,
   listMyCommunityDomainMembershipRequests,
   listMyCommunityDomains,
   requestCommunityDomainMembership,
+  recordCommunityDomainActivity,
+  recordCommunityDomainBeneficiaryOutcome,
+  recordCommunityDomainOutcomeConfirmationDeliveryReceipt,
+  recordCommunityDomainOutcomeContactConsent,
+  reviewCommunityDomainOutcomeCorrection,
   reviseCommunityDomainActionReview,
   selectClan,
   submitCommunityDomainSetupEvidence,
+  updateCommunityDomainMemberStatus,
   updateCommunityDomainProfile,
   upsertCommunityDomainPolicy,
+  withdrawCommunityDomainOutcomeContactConsent,
 } from "../lib/api";
 import { APP_ROUTES, routeWithCommunity } from "../lib/appRoutes";
 import {
@@ -150,7 +168,7 @@ type DomainLane = {
 
 type StructureDetailKey = "preview" | "foundation" | "boundary" | "activity" | "planning";
 type ServiceDetailKey = "readiness" | "local" | "boundaries" | "trust" | "evidence";
-type MemberDetailKey = "readiness" | "placement";
+type MemberDetailKey = "readiness" | "placement" | "roster";
 type SetupStepKey =
   | "identity"
   | "payment"
@@ -283,6 +301,215 @@ type CommunityDomainNoticeItem = {
   posted_by_user_id?: string | number | null;
 };
 
+type CommunityDomainActivityDraft = {
+  subject_user_id: string;
+  activity_type: string;
+  activity_label: string;
+  quantity: string;
+  measurement_unit: string;
+  note: string;
+  evidence_reference: string;
+};
+
+type CommunityDomainOutcomeDraft = {
+  subject_user_id: string;
+  programme_label: string;
+  outcome_indicator: string;
+  baseline_value: string;
+  after_value: string;
+  support_received: string;
+  follow_up_state: string;
+  outcome_state: string;
+  beneficiary_confirmation: string;
+  challenge_status: string;
+  note: string;
+  evidence_reference: string;
+};
+
+type BeneficiaryDeliveryReceiptDraft = {
+  channel: string;
+  delivery_status: string;
+  consent_basis: string;
+  note: string;
+};
+
+type BeneficiaryContactConsentDraft = {
+  channel: string;
+  destination_reference_status: string;
+  destination_reference_label: string;
+  consent_basis: string;
+  note: string;
+};
+
+type BeneficiaryContactConsentWithdrawalDraft = {
+  withdrawal_reason: string;
+  note: string;
+};
+
+type BeneficiaryDeliveryReceiptCorrectionDraft = {
+  decision: string;
+  note: string;
+};
+
+function emptyCommunityDomainActivityDraft(): CommunityDomainActivityDraft {
+  return {
+    subject_user_id: "",
+    activity_type: "attendance",
+    activity_label: "",
+    quantity: "",
+    measurement_unit: "",
+    note: "",
+    evidence_reference: "",
+  };
+}
+
+function emptyCommunityDomainOutcomeDraft(): CommunityDomainOutcomeDraft {
+  return {
+    subject_user_id: "",
+    programme_label: "",
+    outcome_indicator: "",
+    baseline_value: "",
+    after_value: "",
+    support_received: "",
+    follow_up_state: "completed",
+    outcome_state: "not_enough_evidence",
+    beneficiary_confirmation: "not_requested",
+    challenge_status: "none",
+    note: "",
+    evidence_reference: "",
+  };
+}
+
+function emptyBeneficiaryDeliveryReceiptDraft(): BeneficiaryDeliveryReceiptDraft {
+  return {
+    channel: "whatsapp",
+    delivery_status: "manual_sent",
+    consent_basis: "existing_relationship",
+    note: "",
+  };
+}
+
+function emptyBeneficiaryContactConsentDraft(): BeneficiaryContactConsentDraft {
+  return {
+    channel: "whatsapp",
+    destination_reference_status: "admin_verified_off_platform",
+    destination_reference_label: "",
+    consent_basis: "beneficiary_consented",
+    note: "",
+  };
+}
+
+function emptyBeneficiaryContactConsentWithdrawalDraft(): BeneficiaryContactConsentWithdrawalDraft {
+  return {
+    withdrawal_reason: "beneficiary_withdrew_consent",
+    note: "",
+  };
+}
+
+function emptyBeneficiaryDeliveryReceiptCorrectionDraft(): BeneficiaryDeliveryReceiptCorrectionDraft {
+  return {
+    decision: "marked_incorrect",
+    note: "",
+  };
+}
+
+const BENEFICIARY_OUTCOME_STATE_OPTIONS = [
+  { value: "not_enough_evidence", label: "Not enough evidence" },
+  { value: "baseline_only", label: "Baseline only" },
+  { value: "improved", label: "Improved" },
+  { value: "unchanged", label: "Unchanged" },
+  { value: "worsened", label: "Worsened" },
+  { value: "follow_up_needed", label: "Follow-up needed" },
+  { value: "challenged", label: "Challenged" },
+];
+
+const BENEFICIARY_FOLLOW_UP_STATE_OPTIONS = [
+  { value: "completed", label: "Completed" },
+  { value: "scheduled", label: "Scheduled" },
+  { value: "in_progress", label: "In progress" },
+  { value: "not_started", label: "Not started" },
+  { value: "missed", label: "Missed" },
+  { value: "not_required", label: "Not required" },
+];
+
+const BENEFICIARY_CONFIRMATION_OPTIONS = [
+  { value: "not_requested", label: "Not requested" },
+  { value: "admin_recorded", label: "Admin recorded" },
+  { value: "beneficiary_confirmed", label: "Beneficiary confirmed" },
+  { value: "witness_confirmed", label: "Witness confirmed" },
+  { value: "multi_party_confirmed", label: "Multi-party confirmed" },
+  { value: "declined", label: "Declined" },
+  { value: "disputed", label: "Disputed" },
+];
+
+const BENEFICIARY_CHALLENGE_STATUS_OPTIONS = [
+  { value: "none", label: "No challenge" },
+  { value: "challenged", label: "Challenged" },
+  { value: "under_review", label: "Under review" },
+  { value: "corrected", label: "Corrected" },
+  { value: "resolved", label: "Resolved" },
+  { value: "withdrawn", label: "Withdrawn" },
+];
+
+const BENEFICIARY_CORRECTION_DECISION_OPTIONS = [
+  { value: "mark_corrected", label: "Mark corrected" },
+  { value: "uphold_original", label: "Uphold original" },
+  { value: "withdraw_original", label: "Withdraw original" },
+  { value: "needs_follow_up", label: "Needs follow-up" },
+  { value: "no_action", label: "No action yet" },
+];
+
+const BENEFICIARY_DELIVERY_CHANNEL_OPTIONS = [
+  { value: "whatsapp", label: "WhatsApp" },
+  { value: "sms", label: "SMS" },
+  { value: "email", label: "Email" },
+  { value: "copy_link", label: "Copied link" },
+  { value: "other", label: "Other" },
+];
+
+const BENEFICIARY_DELIVERY_STATUS_OPTIONS = [
+  { value: "manual_sent", label: "Shared manually" },
+  { value: "manual_failed", label: "Manual share failed" },
+  { value: "received_reported", label: "Recipient reported received" },
+  { value: "opened_reported", label: "Recipient reported opened" },
+];
+
+const BENEFICIARY_DELIVERY_CONSENT_OPTIONS = [
+  { value: "existing_relationship", label: "Existing relationship" },
+  { value: "beneficiary_consented", label: "Beneficiary consented" },
+  { value: "guardian_or_authorized_contact", label: "Guardian or authorized contact" },
+  { value: "operational_notice", label: "Operational notice" },
+  { value: "not_recorded", label: "Not recorded" },
+];
+
+const BENEFICIARY_DELIVERY_RECEIPT_CORRECTION_OPTIONS = [
+  { value: "marked_incorrect", label: "Marked incorrect" },
+  { value: "superseded_by_new_receipt", label: "Superseded by new receipt" },
+  { value: "needs_follow_up", label: "Needs follow-up" },
+  { value: "no_action", label: "No action yet" },
+];
+
+const BENEFICIARY_CONTACT_REFERENCE_STATUS_OPTIONS = [
+  { value: "admin_verified_off_platform", label: "Admin verified offline" },
+  { value: "beneficiary_provided", label: "Beneficiary provided" },
+  {
+    value: "guardian_or_authorized_contact_provided",
+    label: "Authorized contact provided",
+  },
+  { value: "existing_relationship_record", label: "Existing relationship record" },
+  { value: "not_recorded", label: "Not recorded" },
+];
+
+const BENEFICIARY_CONTACT_CONSENT_WITHDRAWAL_REASON_OPTIONS = [
+  { value: "beneficiary_withdrew_consent", label: "Beneficiary withdrew consent" },
+  { value: "guardian_withdrew_authority", label: "Guardian withdrew authority" },
+  { value: "contact_no_longer_valid", label: "Contact no longer valid" },
+  { value: "wrong_recipient", label: "Wrong recipient" },
+  { value: "consent_expired", label: "Consent expired" },
+  { value: "replaced_by_new_attestation", label: "Replaced by new attestation" },
+  { value: "admin_error", label: "Admin error" },
+];
+
 const STRUCTURE_DETAIL_OPTIONS: Array<{
   key: StructureDetailKey;
   label: string;
@@ -361,6 +588,11 @@ const MEMBER_DETAIL_OPTIONS: Array<{
     key: "placement",
     label: "Unit placement",
     note: "Inspect member participation readiness by operating unit.",
+  },
+  {
+    key: "roster",
+    label: "Roster control",
+    note: "Review active and inactive members, then deactivate or restore carefully.",
   },
 ];
 
@@ -1808,6 +2040,7 @@ export default function CommunityDomainDashboardPage() {
   const [loadingMembershipRequestLineage, setLoadingMembershipRequestLineage] =
     useState(false);
   const [placementSummary, setPlacementSummary] = useState<any | null>(null);
+  const [domainMemberRows, setDomainMemberRows] = useState<any[]>([]);
   const [nodeTree, setNodeTree] = useState<StructureNode[]>([]);
   const [moduleScopeReadiness, setModuleScopeReadiness] = useState<any | null>(null);
   const [setupReadiness, setSetupReadiness] = useState<any | null>(null);
@@ -1815,6 +2048,17 @@ export default function CommunityDomainDashboardPage() {
   const [capacityPlan, setCapacityPlan] = useState<any | null>(null);
   const [governanceCoverage, setGovernanceCoverage] = useState<any | null>(null);
   const [delegationMap, setDelegationMap] = useState<any | null>(null);
+  const [periodSummary, setPeriodSummary] = useState<any | null>(null);
+  const [sponsorSummary, setSponsorSummary] = useState<any | null>(null);
+  const [busySponsorExportCopy, setBusySponsorExportCopy] = useState(false);
+  const [activityCatalogue, setActivityCatalogue] = useState<any[]>([]);
+  const [activityRows, setActivityRows] = useState<any[]>([]);
+  const [beneficiaryOutcomeRows, setBeneficiaryOutcomeRows] = useState<any[]>([]);
+  const [beneficiaryCorrectionRows, setBeneficiaryCorrectionRows] = useState<any[]>([]);
+  const [beneficiaryCorrectionDecisionByOutcomeId, setBeneficiaryCorrectionDecisionByOutcomeId] =
+    useState<Record<string, string>>({});
+  const [beneficiaryCorrectionNoteByOutcomeId, setBeneficiaryCorrectionNoteByOutcomeId] =
+    useState<Record<string, string>>({});
   const [rolloutPlan, setRolloutPlan] = useState<any | null>(null);
   const [activityMap, setActivityMap] = useState<any | null>(null);
   const [activityGroupReadiness, setActivityGroupReadiness] = useState<any | null>(null);
@@ -1911,6 +2155,39 @@ export default function CommunityDomainDashboardPage() {
   const [setupEditorNote, setSetupEditorNote] = useState("");
   const [setupEditorResult, setSetupEditorResult] = useState<any | null>(null);
   const [busyMembershipRequest, setBusyMembershipRequest] = useState(false);
+  const [busyMemberStatusId, setBusyMemberStatusId] = useState<string | null>(null);
+  const [busyActivityRecord, setBusyActivityRecord] = useState(false);
+  const [activityDraft, setActivityDraft] = useState<CommunityDomainActivityDraft>(
+    () => emptyCommunityDomainActivityDraft()
+  );
+  const [busyBeneficiaryOutcomeRecord, setBusyBeneficiaryOutcomeRecord] =
+    useState(false);
+  const [busyOutcomeConfirmationLinkId, setBusyOutcomeConfirmationLinkId] =
+    useState("");
+  const [beneficiaryDeliveryPackByOutcomeId, setBeneficiaryDeliveryPackByOutcomeId] =
+    useState<Record<string, any>>({});
+  const [beneficiaryDeliveryReceiptDraftByOutcomeId, setBeneficiaryDeliveryReceiptDraftByOutcomeId] =
+    useState<Record<string, BeneficiaryDeliveryReceiptDraft>>({});
+  const [beneficiaryContactConsentDraftByOutcomeId, setBeneficiaryContactConsentDraftByOutcomeId] =
+    useState<Record<string, BeneficiaryContactConsentDraft>>({});
+  const [beneficiaryContactConsentWithdrawalDraftByOutcomeId, setBeneficiaryContactConsentWithdrawalDraftByOutcomeId] =
+    useState<Record<string, BeneficiaryContactConsentWithdrawalDraft>>({});
+  const [beneficiaryDeliveryReceiptCorrectionDraftByOutcomeId, setBeneficiaryDeliveryReceiptCorrectionDraftByOutcomeId] =
+    useState<Record<string, BeneficiaryDeliveryReceiptCorrectionDraft>>({});
+  const [busyOutcomeDeliveryReceiptId, setBusyOutcomeDeliveryReceiptId] =
+    useState("");
+  const [busyOutcomeDeliveryReceiptCorrectionId, setBusyOutcomeDeliveryReceiptCorrectionId] =
+    useState("");
+  const [busyOutcomeContactConsentId, setBusyOutcomeContactConsentId] =
+    useState("");
+  const [busyOutcomeContactConsentWithdrawalId, setBusyOutcomeContactConsentWithdrawalId] =
+    useState("");
+  const [busyOutcomeProviderSendId, setBusyOutcomeProviderSendId] =
+    useState("");
+  const [busyOutcomeCorrectionReviewId, setBusyOutcomeCorrectionReviewId] =
+    useState("");
+  const [beneficiaryOutcomeDraft, setBeneficiaryOutcomeDraft] =
+    useState<CommunityDomainOutcomeDraft>(() => emptyCommunityDomainOutcomeDraft());
   const [busyReviewId, setBusyReviewId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [setupDomainNameCheck, setSetupDomainNameCheck] =
@@ -2027,6 +2304,7 @@ export default function CommunityDomainDashboardPage() {
 
   const resetOptionalReadinessState = useCallback(() => {
     setPlacementSummary(null);
+    setDomainMemberRows([]);
     setNodeTree([]);
     setModuleScopeReadiness(null);
     setSetupReadiness(null);
@@ -2034,6 +2312,13 @@ export default function CommunityDomainDashboardPage() {
     setCapacityPlan(null);
     setGovernanceCoverage(null);
     setDelegationMap(null);
+    setPeriodSummary(null);
+    setSponsorSummary(null);
+    setActivityCatalogue([]);
+    setActivityRows([]);
+    setActivityDraft(emptyCommunityDomainActivityDraft());
+    setBeneficiaryOutcomeRows([]);
+    setBeneficiaryOutcomeDraft(emptyCommunityDomainOutcomeDraft());
     setRolloutPlan(null);
     setActivityMap(null);
     setActivityGroupReadiness(null);
@@ -2303,6 +2588,784 @@ export default function CommunityDomainDashboardPage() {
     }
   }
 
+  async function changeDomainMemberStatus(
+    row: any,
+    nextStatus: "active" | "inactive"
+  ) {
+    const requestDomainId = cleanText(domain?.id || communityDomainId);
+    const userId = cleanText(row?.user_id);
+    if (!requestDomainId || !userId) {
+      setMessage("Open a Community Domain member before changing status.");
+      return;
+    }
+    if (!isAdmin) {
+      setMessage("Only a Community Domain owner or domain admin can change member status.");
+      return;
+    }
+
+    const busyKey = `${requestDomainId}:${userId}`;
+    setBusyMemberStatusId(busyKey);
+    try {
+      const payload =
+        nextStatus === "inactive"
+          ? await deactivateCommunityDomainMember(
+              requestDomainId,
+              userId,
+              "Deactivated from Community Domain roster by an owner/admin."
+            )
+          : await updateCommunityDomainMemberStatus(requestDomainId, userId, {
+              status: "active",
+              status_note: "Reactivated in Community Domain roster by an owner/admin.",
+            });
+      const updatedMembership = payload?.membership || null;
+      if (updatedMembership) {
+        setDomainMemberRows((current) =>
+          current.map((item) =>
+            cleanText(item?.user_id) === cleanText(updatedMembership.user_id)
+              ? updatedMembership
+              : item
+          )
+        );
+      }
+      setLoadedReadinessLanes((current) => ({ ...current, members: false }));
+      setMessage(
+        nextStatus === "inactive"
+          ? "Member deactivated. Public active-member proof will no longer pass for this domain."
+          : "Member reactivated. Public active-member proof can pass again for this domain."
+      );
+    } catch (err: any) {
+      setMessage(
+        errorDetailMessage(
+          err,
+          "GSN could not change this Community Domain member status."
+        )
+      );
+    } finally {
+      setBusyMemberStatusId(null);
+    }
+  }
+
+  function updateActivityDraft(
+    key: keyof CommunityDomainActivityDraft,
+    value: string
+  ) {
+    setActivityDraft((current) => ({ ...current, [key]: value }));
+  }
+
+  async function submitCommunityDomainActivityRecord() {
+    const requestDomainId = cleanText(domain?.id || communityDomainId);
+    const subjectUserId = Number(activityDraft.subject_user_id || 0);
+    if (!requestDomainId) {
+      setMessage("Open a Community Domain before recording activity.");
+      return;
+    }
+    if (!isAdmin) {
+      setMessage("Only a Community Domain owner or domain admin can record activity.");
+      return;
+    }
+    if (!Number.isFinite(subjectUserId) || subjectUserId <= 0) {
+      setMessage("Enter the GSN user id for the member or beneficiary this activity belongs to.");
+      return;
+    }
+
+    setBusyActivityRecord(true);
+    try {
+      const recorded = await recordCommunityDomainActivity(requestDomainId, {
+        subject_user_id: subjectUserId,
+        activity_type: activityDraft.activity_type,
+        activity_label: activityDraft.activity_label,
+        quantity: activityDraft.quantity,
+        measurement_unit: activityDraft.measurement_unit,
+        evidence_strength: "admin_recorded",
+        visibility: "director_safe",
+        note: activityDraft.note,
+        evidence_reference: activityDraft.evidence_reference,
+      });
+      const [periodPayload, sponsorPayload, activityPayload] = await Promise.all([
+        readOptional(() => getCommunityDomainPeriodSummary(requestDomainId)),
+        readOptional(() => getCommunityDomainSponsorSummary(requestDomainId)),
+        readOptional(() => listCommunityDomainActivities(requestDomainId, { limit: 5 })),
+      ]);
+      setPeriodSummary(periodPayload || null);
+      setSponsorSummary(sponsorPayload || null);
+      setActivityRows(
+        Array.isArray(activityPayload?.items)
+          ? activityPayload.items
+          : recorded?.activity
+          ? [recorded.activity, ...activityRows].slice(0, 5)
+          : activityRows
+      );
+      setActivityDraft(emptyCommunityDomainActivityDraft());
+      setMessage(
+        "Activity recorded as a person-first Community Domain Trust Event. Beneficiary outcome proof still needs follow-up records."
+      );
+    } catch (err: any) {
+      setMessage(
+        errorDetailMessage(
+          err,
+          "GSN could not record this Community Domain activity."
+        )
+      );
+    } finally {
+      setBusyActivityRecord(false);
+    }
+  }
+
+  function updateBeneficiaryOutcomeDraft(
+    key: keyof CommunityDomainOutcomeDraft,
+    value: string
+  ) {
+    setBeneficiaryOutcomeDraft((current) => ({ ...current, [key]: value }));
+  }
+
+  async function submitCommunityDomainBeneficiaryOutcomeRecord() {
+    const requestDomainId = cleanText(domain?.id || communityDomainId);
+    const subjectUserId = Number(beneficiaryOutcomeDraft.subject_user_id || 0);
+    if (!requestDomainId) {
+      setMessage("Open a Community Domain before recording a beneficiary outcome.");
+      return;
+    }
+    if (!isAdmin) {
+      setMessage(
+        "Only a Community Domain owner or domain admin can record beneficiary outcomes."
+      );
+      return;
+    }
+    if (!Number.isFinite(subjectUserId) || subjectUserId <= 0) {
+      setMessage("Enter the GSN user id for the beneficiary this outcome belongs to.");
+      return;
+    }
+    if (!cleanText(beneficiaryOutcomeDraft.outcome_indicator)) {
+      setMessage("Enter the outcome indicator being measured.");
+      return;
+    }
+    if (!cleanText(beneficiaryOutcomeDraft.baseline_value)) {
+      setMessage("Enter the baseline value before support.");
+      return;
+    }
+    if (!cleanText(beneficiaryOutcomeDraft.after_value)) {
+      setMessage("Enter the after value or current follow-up state.");
+      return;
+    }
+
+    setBusyBeneficiaryOutcomeRecord(true);
+    try {
+      const recorded = await recordCommunityDomainBeneficiaryOutcome(requestDomainId, {
+        subject_user_id: subjectUserId,
+        programme_label: beneficiaryOutcomeDraft.programme_label,
+        outcome_indicator: beneficiaryOutcomeDraft.outcome_indicator,
+        baseline_value: beneficiaryOutcomeDraft.baseline_value,
+        after_value: beneficiaryOutcomeDraft.after_value,
+        support_received: beneficiaryOutcomeDraft.support_received,
+        follow_up_state: beneficiaryOutcomeDraft.follow_up_state,
+        outcome_state: beneficiaryOutcomeDraft.outcome_state,
+        beneficiary_confirmation: beneficiaryOutcomeDraft.beneficiary_confirmation,
+        admin_confirmation: "admin_recorded",
+        challenge_status: beneficiaryOutcomeDraft.challenge_status,
+        evidence_strength:
+          beneficiaryOutcomeDraft.beneficiary_confirmation === "beneficiary_confirmed"
+            ? "beneficiary_confirmed"
+            : "admin_recorded",
+        visibility: "director_safe",
+        note: beneficiaryOutcomeDraft.note,
+        evidence_reference: beneficiaryOutcomeDraft.evidence_reference,
+      });
+      const [periodPayload, sponsorPayload, outcomePayload] = await Promise.all([
+        readOptional(() => getCommunityDomainPeriodSummary(requestDomainId)),
+        readOptional(() => getCommunityDomainSponsorSummary(requestDomainId)),
+        readOptional(() =>
+          listCommunityDomainBeneficiaryOutcomes(requestDomainId, { limit: 5 })
+        ),
+      ]);
+      setPeriodSummary(periodPayload || null);
+      setSponsorSummary(sponsorPayload || null);
+      setBeneficiaryOutcomeRows(
+        Array.isArray(outcomePayload?.items)
+          ? outcomePayload.items
+          : recorded?.outcome
+          ? [recorded.outcome, ...beneficiaryOutcomeRows].slice(0, 5)
+          : beneficiaryOutcomeRows
+      );
+      setBeneficiaryOutcomeDraft(emptyCommunityDomainOutcomeDraft());
+      setMessage(
+        "Beneficiary outcome recorded. It is evidence of baseline-to-after movement, not a final public sponsor report."
+      );
+    } catch (err: any) {
+      setMessage(
+        errorDetailMessage(
+          err,
+          "GSN could not record this beneficiary outcome."
+        )
+      );
+    } finally {
+      setBusyBeneficiaryOutcomeRecord(false);
+    }
+  }
+
+  async function createBeneficiaryOutcomeConfirmationLink(outcomeEventId: string) {
+    const requestDomainId = cleanText(domain?.id || communityDomainId);
+    const requestOutcomeId = cleanText(outcomeEventId);
+    if (!requestDomainId || !requestOutcomeId) {
+      setMessage("Open a beneficiary outcome before creating a confirmation link.");
+      return;
+    }
+    if (!isAdmin) {
+      setMessage(
+        "Only a Community Domain owner or domain admin can create beneficiary confirmation links."
+      );
+      return;
+    }
+
+    setBusyOutcomeConfirmationLinkId(requestOutcomeId);
+    try {
+      const payload = await createCommunityDomainOutcomeConfirmationLink(
+        requestDomainId,
+        requestOutcomeId,
+        {
+          responder_type: "beneficiary",
+          expires_in_days: 14,
+          note: "Private beneficiary confirmation link generated by owner/admin.",
+        }
+      );
+      const path = cleanText(payload?.public_path);
+      const shareText = path ? `${window.location.origin}${path}` : "";
+      const deliveryPack = payload?.delivery_pack || {};
+      const preparedTemplate = cleanText(deliveryPack?.message_text);
+      const preparedMessage = path
+        ? preparedTemplate.replace(path, shareText || path)
+        : preparedTemplate;
+      if (deliveryPack?.delivery_event_id) {
+        setBeneficiaryDeliveryPackByOutcomeId((current) => ({
+          ...current,
+          [requestOutcomeId]: deliveryPack,
+        }));
+      }
+      const copyText = cleanText(preparedMessage, shareText);
+      if (shareText && navigator?.clipboard?.writeText) {
+        try {
+          await navigator.clipboard.writeText(copyText);
+        } catch {
+          // Clipboard access is browser-dependent; the message still shows the path.
+        }
+      }
+      setMessage(
+        copyText
+          ? `Manual delivery pack prepared and copied if allowed. GSN did not send WhatsApp, SMS, or email: ${copyText}`
+          : "Private confirmation link created. GSN did not send WhatsApp, SMS, or email."
+      );
+    } catch (err: any) {
+      setMessage(
+        errorDetailMessage(
+          err,
+          "GSN could not create this beneficiary confirmation link."
+        )
+      );
+    } finally {
+      setBusyOutcomeConfirmationLinkId("");
+    }
+  }
+
+  async function recordBeneficiaryOutcomeContactConsent(item: any) {
+    const requestDomainId = cleanText(domain?.id || communityDomainId);
+    const outcomeEventId = cleanText(item?.event_id);
+    const contactDraft =
+      beneficiaryContactConsentDraftByOutcomeId[outcomeEventId] ||
+      emptyBeneficiaryContactConsentDraft();
+    if (!requestDomainId || !outcomeEventId) {
+      setMessage("Open a beneficiary outcome before recording contact consent.");
+      return;
+    }
+    if (!isAdmin) {
+      setMessage(
+        "Only a Community Domain owner or domain admin can record contact and consent evidence."
+      );
+      return;
+    }
+
+    setBusyOutcomeContactConsentId(outcomeEventId);
+    try {
+      await recordCommunityDomainOutcomeContactConsent(
+        requestDomainId,
+        outcomeEventId,
+        {
+          channel: contactDraft.channel,
+          destination_reference_status:
+            contactDraft.destination_reference_status,
+          destination_reference_label:
+            cleanText(contactDraft.destination_reference_label) || undefined,
+          consent_basis: contactDraft.consent_basis,
+          note:
+            cleanText(contactDraft.note) ||
+            "Admin recorded contact and consent readiness for beneficiary confirmation.",
+        }
+      );
+      const outcomePayload = await listCommunityDomainBeneficiaryOutcomes(
+        requestDomainId,
+        { limit: 5 }
+      );
+      setBeneficiaryOutcomeRows(
+        Array.isArray(outcomePayload?.items) ? outcomePayload.items : beneficiaryOutcomeRows
+      );
+      setMessage(
+        `Contact/consent attestation recorded for ${compactStatus(
+          contactDraft.channel
+        )}. GSN stored no raw destination, did not send WhatsApp, SMS, or email, and provider send is still not ready.`
+      );
+    } catch (err: any) {
+      setMessage(
+        errorDetailMessage(
+          err,
+          "GSN could not record this contact and consent attestation."
+        )
+      );
+    } finally {
+      setBusyOutcomeContactConsentId("");
+    }
+  }
+
+  async function withdrawBeneficiaryOutcomeContactConsent(item: any) {
+    const requestDomainId = cleanText(domain?.id || communityDomainId);
+    const outcomeEventId = cleanText(item?.event_id);
+    const latestContactConsent = item?.latest_contact_consent_record || {};
+    const contactConsentEventId = cleanText(latestContactConsent?.event_id);
+    const withdrawalDraft =
+      beneficiaryContactConsentWithdrawalDraftByOutcomeId[outcomeEventId] ||
+      emptyBeneficiaryContactConsentWithdrawalDraft();
+    if (!requestDomainId || !outcomeEventId || !contactConsentEventId) {
+      setMessage(
+        "Record a contact/consent attestation before recording its withdrawal."
+      );
+      return;
+    }
+    if (!isAdmin) {
+      setMessage(
+        "Only a Community Domain owner or domain admin can record contact consent withdrawal."
+      );
+      return;
+    }
+
+    setBusyOutcomeContactConsentWithdrawalId(outcomeEventId);
+    try {
+      await withdrawCommunityDomainOutcomeContactConsent(
+        requestDomainId,
+        outcomeEventId,
+        contactConsentEventId,
+        {
+          withdrawal_reason: withdrawalDraft.withdrawal_reason,
+          replacement_required: true,
+          note:
+            cleanText(withdrawalDraft.note) ||
+            "Admin recorded that the prior contact/consent attestation is no longer valid.",
+        }
+      );
+      const outcomePayload = await listCommunityDomainBeneficiaryOutcomes(
+        requestDomainId,
+        { limit: 5 }
+      );
+      setBeneficiaryOutcomeRows(
+        Array.isArray(outcomePayload?.items) ? outcomePayload.items : beneficiaryOutcomeRows
+      );
+      setMessage(
+        `Contact/consent withdrawal recorded as ${compactStatus(
+          withdrawalDraft.withdrawal_reason
+        )}. Provider send remains unavailable until a valid replacement attestation exists.`
+      );
+    } catch (err: any) {
+      setMessage(
+        errorDetailMessage(
+          err,
+          "GSN could not record this contact consent withdrawal."
+        )
+      );
+    } finally {
+      setBusyOutcomeContactConsentWithdrawalId("");
+    }
+  }
+
+  async function recordBeneficiaryOutcomeDeliveryReceipt(item: any) {
+    const requestDomainId = cleanText(domain?.id || communityDomainId);
+    const outcomeEventId = cleanText(item?.event_id);
+    const receiptDraft =
+      beneficiaryDeliveryReceiptDraftByOutcomeId[outcomeEventId] ||
+      emptyBeneficiaryDeliveryReceiptDraft();
+    const localDeliveryPack = beneficiaryDeliveryPackByOutcomeId[outcomeEventId] || {};
+    const deliveryEventId = cleanText(
+      localDeliveryPack?.delivery_event_id ||
+        item?.latest_delivery_preparation?.event_id
+    );
+    if (!requestDomainId || !outcomeEventId || !deliveryEventId) {
+      setMessage(
+        "Create a beneficiary confirmation delivery pack before recording manual delivery."
+      );
+      return;
+    }
+    if (!isAdmin) {
+      setMessage(
+        "Only a Community Domain owner or domain admin can record beneficiary delivery receipts."
+      );
+      return;
+    }
+
+    setBusyOutcomeDeliveryReceiptId(outcomeEventId);
+    try {
+      await recordCommunityDomainOutcomeConfirmationDeliveryReceipt(
+        requestDomainId,
+        outcomeEventId,
+        deliveryEventId,
+        {
+          channel: receiptDraft.channel,
+          delivery_status: receiptDraft.delivery_status,
+          consent_basis: receiptDraft.consent_basis,
+          note:
+            cleanText(receiptDraft.note) ||
+            "Admin recorded a manual delivery status for the prepared confirmation text.",
+        }
+      );
+      const outcomePayload = await listCommunityDomainBeneficiaryOutcomes(
+        requestDomainId,
+        { limit: 5 }
+      );
+      setBeneficiaryOutcomeRows(
+        Array.isArray(outcomePayload?.items) ? outcomePayload.items : beneficiaryOutcomeRows
+      );
+      setMessage(
+        `Manual delivery receipt recorded as ${compactStatus(
+          receiptDraft.delivery_status
+        )} by ${compactStatus(
+          receiptDraft.channel
+        )} with consent basis ${compactStatus(
+          receiptDraft.consent_basis
+        )}. GSN still did not send WhatsApp, SMS, or email; this is an admin-stated delivery record.`
+      );
+    } catch (err: any) {
+      setMessage(
+        errorDetailMessage(
+          err,
+          "GSN could not record this manual delivery receipt."
+        )
+      );
+    } finally {
+      setBusyOutcomeDeliveryReceiptId("");
+    }
+  }
+
+  async function correctBeneficiaryOutcomeDeliveryReceipt(item: any) {
+    const requestDomainId = cleanText(domain?.id || communityDomainId);
+    const outcomeEventId = cleanText(item?.event_id);
+    const latestDeliveryReceipt = item?.latest_delivery_receipt || null;
+    const deliveryEventId = cleanText(
+      latestDeliveryReceipt?.delivery_event_id ||
+        item?.latest_delivery_preparation?.event_id
+    );
+    const receiptEventId = cleanText(latestDeliveryReceipt?.event_id);
+    const correctionDraft =
+      beneficiaryDeliveryReceiptCorrectionDraftByOutcomeId[outcomeEventId] ||
+      emptyBeneficiaryDeliveryReceiptCorrectionDraft();
+    if (!requestDomainId || !outcomeEventId || !deliveryEventId || !receiptEventId) {
+      setMessage(
+        "Load a manual delivery receipt before recording a receipt correction."
+      );
+      return;
+    }
+    if (!isAdmin) {
+      setMessage(
+        "Only a Community Domain owner or domain admin can correct beneficiary delivery receipts."
+      );
+      return;
+    }
+
+    setBusyOutcomeDeliveryReceiptCorrectionId(outcomeEventId);
+    try {
+      await correctCommunityDomainOutcomeConfirmationDeliveryReceipt(
+        requestDomainId,
+        outcomeEventId,
+        deliveryEventId,
+        receiptEventId,
+        {
+          decision: correctionDraft.decision,
+          correction_note:
+            cleanText(correctionDraft.note) ||
+            "Admin recorded a correction against the manual delivery receipt.",
+        }
+      );
+      const outcomePayload = await listCommunityDomainBeneficiaryOutcomes(
+        requestDomainId,
+        { limit: 5 }
+      );
+      setBeneficiaryOutcomeRows(
+        Array.isArray(outcomePayload?.items) ? outcomePayload.items : beneficiaryOutcomeRows
+      );
+      setMessage(
+        `Manual delivery receipt correction recorded as ${compactStatus(
+          correctionDraft.decision
+        )}. The original receipt remains in the audit trail; GSN still did not send WhatsApp, SMS, or email.`
+      );
+    } catch (err: any) {
+      setMessage(
+        errorDetailMessage(
+          err,
+          "GSN could not record this manual delivery receipt correction."
+        )
+      );
+    } finally {
+      setBusyOutcomeDeliveryReceiptCorrectionId("");
+    }
+  }
+
+  async function checkBeneficiaryOutcomeProviderSend(item: any) {
+    const requestDomainId = cleanText(domain?.id || communityDomainId);
+    const outcomeEventId = cleanText(item?.event_id);
+    const localDeliveryPack = beneficiaryDeliveryPackByOutcomeId[outcomeEventId] || {};
+    const deliveryEventId = cleanText(
+      localDeliveryPack?.delivery_event_id ||
+        item?.latest_delivery_preparation?.event_id
+    );
+    if (!requestDomainId || !outcomeEventId || !deliveryEventId) {
+      setMessage(
+        "Create a beneficiary confirmation delivery pack before checking provider send readiness."
+      );
+      return;
+    }
+    if (!isAdmin) {
+      setMessage(
+        "Only a Community Domain owner or domain admin can check provider send readiness."
+      );
+      return;
+    }
+
+    setBusyOutcomeProviderSendId(outcomeEventId);
+    try {
+      const payload = await attemptCommunityDomainOutcomeConfirmationProviderSend(
+        requestDomainId,
+        outcomeEventId,
+        deliveryEventId
+      );
+      const sent = Boolean(payload?.external_channels_sent_by_gsn);
+      setMessage(
+        sent
+          ? "Provider send returned as sent. Check delivery receipts before relying on it."
+          : "Provider send is not recorded as sent. GSN did not send WhatsApp, SMS, or email."
+      );
+    } catch (err: any) {
+      const detail = parsedErrorDetail(err);
+      const readiness = detail?.provider_delivery_readiness || {};
+      const missing = Array.isArray(readiness?.missing_components)
+        ? readiness.missing_components.slice(0, 3).join(", ")
+        : "";
+      const contactConsentContract =
+        readiness?.contact_consent_contract || {};
+      const activeContactStatus = compactStatus(
+        contactConsentContract?.active_contact_consent_status ||
+          "not evaluated"
+      );
+      const contactConsentNote =
+        contactConsentContract?.active_contact_consent_satisfied === true
+          ? ` Contact/consent status: ${activeContactStatus}.`
+          : ` Contact/consent is not provider-ready yet: ${activeContactStatus}.`;
+      const blockedCheckNote = detail?.blocked_check_reused
+        ? "The existing blocked readiness-check Trust Event was reused."
+        : "It recorded only this blocked readiness check as a Trust Event.";
+      const messageText =
+        cleanText(detail?.code) === "provider_delivery_not_connected"
+          ? `Provider send blocked: WhatsApp/SMS/email providers are not connected. GSN created no provider job and no external send. ${blockedCheckNote} Missing: ${
+              missing || "provider send API, delivery webhook, retry queue"
+            }.${contactConsentNote}`
+          : errorDetailMessage(
+              err,
+              "GSN could not check provider send readiness."
+            );
+      setMessage(messageText);
+      if (cleanText(detail?.code) === "provider_delivery_not_connected") {
+        const outcomePayload = await listCommunityDomainBeneficiaryOutcomes(
+          requestDomainId,
+          { limit: 5 }
+        );
+        setBeneficiaryOutcomeRows(
+          Array.isArray(outcomePayload?.items)
+            ? outcomePayload.items
+            : beneficiaryOutcomeRows
+        );
+      }
+    } finally {
+      setBusyOutcomeProviderSendId("");
+    }
+  }
+
+  async function copySponsorExportPack() {
+    const exportPack = sponsorSummary?.sponsor_export_pack || {};
+    const copyText = cleanText(exportPack?.copy_text);
+    if (!copyText) {
+      setMessage("No sponsor-safe export pack is available yet.");
+      return;
+    }
+
+    setBusySponsorExportCopy(true);
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(copyText);
+        setMessage(
+          "Sponsor-safe evidence pack copied. GSN did not send or publish it; review the text before sharing."
+        );
+      } else {
+        setMessage(
+          `Clipboard access is not available here. Sponsor-safe evidence pack: ${copyText}`
+        );
+      }
+    } catch {
+      setMessage(
+        `Clipboard access was blocked. Sponsor-safe evidence pack: ${copyText}`
+      );
+    } finally {
+      setBusySponsorExportCopy(false);
+    }
+  }
+
+  function updateBeneficiaryDeliveryReceiptDraft(
+    outcomeEventId: string,
+    key: keyof BeneficiaryDeliveryReceiptDraft,
+    value: string
+  ) {
+    const outcomeKey = cleanText(outcomeEventId);
+    if (!outcomeKey) return;
+    setBeneficiaryDeliveryReceiptDraftByOutcomeId((current) => {
+      const previous =
+        current[outcomeKey] || emptyBeneficiaryDeliveryReceiptDraft();
+      return {
+        ...current,
+        [outcomeKey]: {
+          ...previous,
+          [key]: value,
+        },
+      };
+    });
+  }
+
+  function updateBeneficiaryContactConsentDraft(
+    outcomeEventId: string,
+    key: keyof BeneficiaryContactConsentDraft,
+    value: string
+  ) {
+    const outcomeKey = cleanText(outcomeEventId);
+    if (!outcomeKey) return;
+    setBeneficiaryContactConsentDraftByOutcomeId((current) => {
+      const previous =
+        current[outcomeKey] || emptyBeneficiaryContactConsentDraft();
+      return {
+        ...current,
+        [outcomeKey]: {
+          ...previous,
+          [key]: value,
+        },
+      };
+    });
+  }
+
+  function updateBeneficiaryContactConsentWithdrawalDraft(
+    outcomeEventId: string,
+    key: keyof BeneficiaryContactConsentWithdrawalDraft,
+    value: string
+  ) {
+    const outcomeKey = cleanText(outcomeEventId);
+    if (!outcomeKey) return;
+    setBeneficiaryContactConsentWithdrawalDraftByOutcomeId((current) => {
+      const previous =
+        current[outcomeKey] || emptyBeneficiaryContactConsentWithdrawalDraft();
+      return {
+        ...current,
+        [outcomeKey]: {
+          ...previous,
+          [key]: value,
+        },
+      };
+    });
+  }
+
+  function updateBeneficiaryCorrectionDecision(outcomeEventId: string, decision: string) {
+    const key = cleanText(outcomeEventId);
+    if (!key) return;
+    setBeneficiaryCorrectionDecisionByOutcomeId((current) => ({
+      ...current,
+      [key]: decision,
+    }));
+  }
+
+  function updateBeneficiaryCorrectionNote(outcomeEventId: string, note: string) {
+    const key = cleanText(outcomeEventId);
+    if (!key) return;
+    setBeneficiaryCorrectionNoteByOutcomeId((current) => ({
+      ...current,
+      [key]: note,
+    }));
+  }
+
+  async function submitBeneficiaryOutcomeCorrectionReview(item: any) {
+    const requestDomainId = cleanText(domain?.id || communityDomainId);
+    const outcomeEventId = cleanText(item?.event_id);
+    if (!requestDomainId || !outcomeEventId) {
+      setMessage("Open a beneficiary outcome before reviewing a challenge.");
+      return;
+    }
+    if (!isAdmin) {
+      setMessage(
+        "Only a Community Domain owner or domain admin can review outcome corrections."
+      );
+      return;
+    }
+    const latestResponse = item?.latest_confirmation_response || {};
+    const responseEventId = cleanText(latestResponse?.event_id);
+    const decision =
+      beneficiaryCorrectionDecisionByOutcomeId[outcomeEventId] || "mark_corrected";
+    const reviewNote = beneficiaryCorrectionNoteByOutcomeId[outcomeEventId] || "";
+
+    setBusyOutcomeCorrectionReviewId(outcomeEventId);
+    try {
+      await reviewCommunityDomainOutcomeCorrection(requestDomainId, outcomeEventId, {
+        confirmation_response_event_id: responseEventId || undefined,
+        decision,
+        review_note: reviewNote,
+      });
+      const [periodPayload, sponsorPayload, outcomePayload, correctionPayload] =
+        await Promise.all([
+          readOptional(() => getCommunityDomainPeriodSummary(requestDomainId)),
+          readOptional(() => getCommunityDomainSponsorSummary(requestDomainId)),
+          readOptional(() =>
+            listCommunityDomainBeneficiaryOutcomes(requestDomainId, { limit: 5 })
+          ),
+          readOptional(() =>
+            listCommunityDomainOutcomeCorrectionReviews(requestDomainId, {
+              limit: 5,
+            })
+          ),
+        ]);
+      setPeriodSummary(periodPayload || null);
+      setSponsorSummary(sponsorPayload || null);
+      setBeneficiaryOutcomeRows(
+        Array.isArray(outcomePayload?.items) ? outcomePayload.items : beneficiaryOutcomeRows
+      );
+      setBeneficiaryCorrectionRows(
+        Array.isArray(correctionPayload?.items)
+          ? correctionPayload.items
+          : beneficiaryCorrectionRows
+      );
+      setBeneficiaryCorrectionNoteByOutcomeId((current) => ({
+        ...current,
+        [outcomeEventId]: "",
+      }));
+      setMessage(
+        "Correction review recorded as a separate Trust Event. The original outcome and the challenge response remain in the audit trail."
+      );
+    } catch (err: any) {
+      setMessage(
+        errorDetailMessage(
+          err,
+          "GSN could not record this beneficiary outcome correction review."
+        )
+      );
+    } finally {
+      setBusyOutcomeCorrectionReviewId("");
+    }
+  }
+
   const loadReadinessPayloadsForLane = useCallback(
     async (laneKey: string, domainId: string, viewerUserId?: number | string | null) => {
       if (laneKey === "identity") {
@@ -2365,11 +3428,20 @@ export default function CommunityDomainDashboardPage() {
         return Promise.all([
           readOptional(() => getCommunityDomainGovernanceCoverage(domainId)),
           readOptional(() => getCommunityDomainDelegationMap(domainId)),
+          readOptional(() => getCommunityDomainPeriodSummary(domainId)),
+          readOptional(() => getCommunityDomainSponsorSummary(domainId)),
+          readOptional(() => getCommunityDomainActivityCatalogue(domainId)),
+          readOptional(() => listCommunityDomainActivities(domainId, { limit: 5 })),
+          readOptional(() => listCommunityDomainBeneficiaryOutcomes(domainId, { limit: 5 })),
+          readOptional(() =>
+            listCommunityDomainOutcomeCorrectionReviews(domainId, { limit: 5 })
+          ),
         ]);
       }
 
       if (laneKey === "members") {
         return Promise.all([
+          readOptional(() => listCommunityDomainMembers(domainId)),
           readOptional(() => getCommunityDomainMemberVerificationMap(domainId)),
           readOptional(() => getCommunityDomainNodeParticipationMap(domainId)),
           viewerUserId
@@ -2483,14 +3555,49 @@ export default function CommunityDomainDashboardPage() {
     }
 
     if (laneKey === "governance") {
-      const [governanceCoveragePayload, delegationMapPayload] = payloads;
+      const [
+        governanceCoveragePayload,
+        delegationMapPayload,
+        periodSummaryPayload,
+        sponsorSummaryPayload,
+        activityCataloguePayload,
+        activityRowsPayload,
+        beneficiaryOutcomeRowsPayload,
+        beneficiaryCorrectionRowsPayload,
+      ] = payloads;
       setGovernanceCoverage(governanceCoveragePayload?.governance_coverage || null);
       setDelegationMap(delegationMapPayload?.delegation_map || null);
+      setPeriodSummary(periodSummaryPayload || null);
+      setSponsorSummary(sponsorSummaryPayload || null);
+      setActivityCatalogue(
+        Array.isArray(activityCataloguePayload?.activity_catalogue)
+          ? activityCataloguePayload.activity_catalogue
+          : []
+      );
+      setActivityRows(Array.isArray(activityRowsPayload?.items) ? activityRowsPayload.items : []);
+      setBeneficiaryOutcomeRows(
+        Array.isArray(beneficiaryOutcomeRowsPayload?.items)
+          ? beneficiaryOutcomeRowsPayload.items
+          : []
+      );
+      setBeneficiaryCorrectionRows(
+        Array.isArray(beneficiaryCorrectionRowsPayload?.items)
+          ? beneficiaryCorrectionRowsPayload.items
+          : []
+      );
       return;
     }
 
     if (laneKey === "members") {
-      const [memberVerificationPayload, nodeParticipationPayload, placementPayload] = payloads;
+      const [
+        memberListPayload,
+        memberVerificationPayload,
+        nodeParticipationPayload,
+        placementPayload,
+      ] = payloads;
+      setDomainMemberRows(
+        Array.isArray(memberListPayload?.items) ? memberListPayload.items : []
+      );
       setMemberVerificationMap(memberVerificationPayload?.member_verification_map || null);
       setNodeParticipationMap(nodeParticipationPayload?.node_participation_map || null);
       setPlacementSummary(placementPayload?.placement_summary || null);
@@ -7255,23 +8362,2186 @@ export default function CommunityDomainDashboardPage() {
                 ) : null}
 
                 {!isActiveLaneReadinessLoading && activeLane === "governance" ? (
-                  <Suspense
-                    fallback={
-                      <div style={{ ...helperText(), marginTop: 4 }}>
-                        Loading governance readiness panels...
+                  <>
+                    <Suspense
+                      fallback={
+                        <div style={{ ...helperText(), marginTop: 4 }}>
+                          Loading governance readiness panels...
+                        </div>
+                      }
+                    >
+                      <CommunityDomainGovernanceReadinessPanels
+                        isAdmin={isAdmin}
+                        membershipAccessRequests={membershipAccessRequests}
+                        governanceAttentionCount={governanceAttentionCount}
+                        institutionalOpenReviewCount={institutionalOpenReviewCount}
+                        governanceApprovedCount={governanceApprovedCount}
+                        delegationMap={delegationMap}
+                        governanceCoverage={governanceCoverage}
+                      />
+                    </Suspense>
+
+                    {isAdmin ? (
+                      <div
+                        style={{
+                          ...softCard(),
+                          display: "grid",
+                          gap: 12,
+                        }}
+                      >
+                        <div style={iconHeaderStyle()}>
+                          <div style={iconFrame(44)}>
+                            <GsnRealisticIcon name="records-folder" size={34} />
+                          </div>
+                          <div style={{ minWidth: 0 }}>
+                            <div style={sectionLabel()}>Director period summary</div>
+                            <h3
+                              style={{
+                                margin: "3px 0 0",
+                                fontSize: 20,
+                                lineHeight: 1.16,
+                              }}
+                            >
+                              Recorded facts for this period.
+                            </h3>
+                            <div style={{ ...helperText(), marginTop: 6 }}>
+                              This report only counts records already in GSN. Missing activity or beneficiary records stay marked as not recorded.
+                            </div>
+                          </div>
+                        </div>
+
+                        {periodSummary ? (
+                          (() => {
+                            const membership = periodSummary?.membership_snapshot || {};
+                            const movement = periodSummary?.member_movement || {};
+                            const governance = periodSummary?.governance_summary || {};
+                            const evidence = periodSummary?.evidence_summary || {};
+                            const confirmations = periodSummary?.confirmation_summary || {};
+                            const activityStatus = cleanText(
+                              periodSummary?.activity_summary?.status,
+                              "not_recorded"
+                            );
+                            const outcomeStatus = cleanText(
+                              periodSummary?.beneficiary_outcome_summary?.status,
+                              "not_recorded"
+                            );
+                            const periodStart = cleanText(periodSummary?.period?.start);
+                            const periodEnd = cleanText(periodSummary?.period?.end);
+                            const factTiles = [
+                              ["Active members", membership.active_total ?? 0],
+                              ["Added", movement.added ?? 0],
+                              ["Removed", movement.removed_or_deactivated ?? 0],
+                              ["Governance actions", governance.total ?? 0],
+                              ["Evidence records", evidence.total ?? 0],
+                              ["Confirmations", confirmations.requests_total ?? 0],
+                              [
+                                "Delivery packs",
+                                evidence.beneficiary_confirmation_delivery_prepared ??
+                                  0,
+                              ],
+                              [
+                                "Manual receipts",
+                                evidence.beneficiary_confirmation_delivery_receipts ??
+                                  0,
+                              ],
+                              [
+                                "Current receipts",
+                                evidence.beneficiary_confirmation_delivery_receipts_current_uncorrected ??
+                                  0,
+                              ],
+                              [
+                                "Receipt corrections",
+                                evidence.beneficiary_confirmation_delivery_receipt_corrections ??
+                                  0,
+                              ],
+                              [
+                                "Provider blocked",
+                                evidence.beneficiary_confirmation_provider_send_blocked_checks ??
+                                  0,
+                              ],
+                              [
+                                "Contact consent",
+                                evidence.beneficiary_contact_consent_records ?? 0,
+                              ],
+                              [
+                                "Consent withdrawn",
+                                evidence.beneficiary_contact_consent_withdrawals ??
+                                  0,
+                              ],
+                            ];
+                            return (
+                              <>
+                                <div
+                                  style={{
+                                    display: "flex",
+                                    flexWrap: "wrap",
+                                    gap: 8,
+                                  }}
+                                >
+                                  <span style={statusBadge("admin report")}>Admin report</span>
+                                  <span style={statusBadge(activityStatus)}>
+                                    Activity: {compactStatus(activityStatus)}
+                                  </span>
+                                  <span style={statusBadge(outcomeStatus)}>
+                                    Outcomes: {compactStatus(outcomeStatus)}
+                                  </span>
+                                </div>
+                                <div
+                                  style={{
+                                    display: "grid",
+                                    gridTemplateColumns:
+                                      "repeat(auto-fit, minmax(min(100%, 128px), 1fr))",
+                                    gap: 8,
+                                  }}
+                                >
+                                  {factTiles.map(([label, value]) => (
+                                    <div
+                                      key={String(label)}
+                                      style={{
+                                        borderRadius: 10,
+                                        border: "1px solid rgba(9,27,46,0.1)",
+                                        background: "#FFFFFF",
+                                        padding: "10px 12px",
+                                      }}
+                                    >
+                                      <div style={{ ...helperText(), fontSize: 12 }}>
+                                        {label}
+                                      </div>
+                                      <div
+                                        style={{
+                                          marginTop: 3,
+                                          color: "#091B2E",
+                                          fontSize: 20,
+                                          fontWeight: 950,
+                                          lineHeight: 1,
+                                        }}
+                                      >
+                                        {String(value ?? 0)}
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                                <div style={{ ...helperText(), fontSize: 13 }}>
+                                  Period: {periodStart || "default start"} to{" "}
+                                  {periodEnd || "default end"}.{" "}
+                                  {periodSummary?.boundary ||
+                                    "Every number should trace back to source records."}
+                                </div>
+                                {Number(
+                                  evidence.beneficiary_confirmation_delivery_prepared ??
+                                    0
+                                ) ||
+                                Number(
+                                  evidence.beneficiary_confirmation_delivery_receipts ??
+                                    0
+                                ) ||
+                                Number(
+                                  evidence.beneficiary_confirmation_delivery_receipts_current_uncorrected ??
+                                    0
+                                ) ||
+                                Number(
+                                  evidence.beneficiary_confirmation_delivery_receipt_corrections ??
+                                    0
+                                ) ||
+                                Number(
+                                  evidence.beneficiary_contact_consent_records ?? 0
+                                ) ||
+                                Number(
+                                  evidence.beneficiary_contact_consent_withdrawals ??
+                                    0
+                                ) ? (
+                                  <div style={{ display: "grid", gap: 6 }}>
+                                    <div style={sectionLabel()}>
+                                      Delivery evidence
+                                    </div>
+                                    <div
+                                      style={{
+                                        display: "flex",
+                                        flexWrap: "wrap",
+                                        gap: 8,
+                                      }}
+                                    >
+                                      {Object.entries(
+                                        evidence.beneficiary_confirmation_delivery_receipts_current_by_status ||
+                                          {}
+                                      ).map(([label, value]) => (
+                                        <span
+                                          key={`period-current-delivery-status-${label}`}
+                                          style={statusBadge("current receipt")}
+                                        >
+                                          Current {compactStatus(label)}:{" "}
+                                          {cleanText(value, "0")}
+                                        </span>
+                                      ))}
+                                      {Object.entries(
+                                        evidence.beneficiary_confirmation_delivery_receipts_by_status ||
+                                          {}
+                                      ).map(([label, value]) => (
+                                        <span
+                                          key={`period-delivery-status-${label}`}
+                                          style={statusBadge("manual receipt")}
+                                        >
+                                          {compactStatus(label)}:{" "}
+                                          {cleanText(value, "0")}
+                                        </span>
+                                      ))}
+                                      {Object.entries(
+                                        evidence.beneficiary_confirmation_delivery_receipts_by_consent_basis ||
+                                          {}
+                                      ).map(([label, value]) => (
+                                        <span
+                                          key={`period-delivery-consent-${label}`}
+                                          style={statusBadge("consent basis")}
+                                        >
+                                          {compactStatus(label)}:{" "}
+                                          {cleanText(value, "0")}
+                                        </span>
+                                      ))}
+                                      {Object.entries(
+                                        evidence.beneficiary_confirmation_delivery_receipt_corrections_by_decision ||
+                                          {}
+                                      ).map(([label, value]) => (
+                                        <span
+                                          key={`period-delivery-correction-${label}`}
+                                          style={statusBadge("receipt correction")}
+                                        >
+                                          Correction {compactStatus(label)}:{" "}
+                                          {cleanText(value, "0")}
+                                        </span>
+                                      ))}
+                                      {Object.entries(
+                                        evidence.beneficiary_contact_consent_by_reference_status ||
+                                          {}
+                                      ).map(([label, value]) => (
+                                        <span
+                                          key={`period-contact-consent-${label}`}
+                                          style={statusBadge("contact consent")}
+                                        >
+                                          {compactStatus(label)}:{" "}
+                                          {cleanText(value, "0")}
+                                        </span>
+                                      ))}
+                                      {Object.entries(
+                                        evidence.beneficiary_contact_consent_withdrawals_by_reason ||
+                                          {}
+                                      ).map(([label, value]) => (
+                                        <span
+                                          key={`period-contact-consent-withdrawal-${label}`}
+                                          style={statusBadge("consent withdrawn")}
+                                        >
+                                          Withdrawn {compactStatus(label)}:{" "}
+                                          {cleanText(value, "0")}
+                                        </span>
+                                      ))}
+                                    </div>
+                                    <div style={{ ...helperText(), fontSize: 13 }}>
+                                      GSN did not send WhatsApp, SMS, or email;
+                                      these are prepared packs, contact/consent
+                                      attestations, and admin-recorded manual
+                                      receipts. Current receipts exclude receipts
+                                      marked corrected, superseded, or under review.
+                                    </div>
+                                  </div>
+                                ) : null}
+                              </>
+                            );
+                          })()
+                        ) : (
+                          <div style={helperText()}>
+                            No period summary is loaded for this Governance view yet.
+                          </div>
+                        )}
                       </div>
-                    }
-                  >
-                    <CommunityDomainGovernanceReadinessPanels
-                      isAdmin={isAdmin}
-                      membershipAccessRequests={membershipAccessRequests}
-                      governanceAttentionCount={governanceAttentionCount}
-                      institutionalOpenReviewCount={institutionalOpenReviewCount}
-                      governanceApprovedCount={governanceApprovedCount}
-                      delegationMap={delegationMap}
-                      governanceCoverage={governanceCoverage}
-                    />
-                  </Suspense>
+                    ) : null}
+
+                    {isAdmin ? (
+                      <div
+                        style={{
+                          ...softCard(),
+                          display: "grid",
+                          gap: 12,
+                        }}
+                      >
+                        <div style={iconHeaderStyle()}>
+                          <div style={iconFrame(44)}>
+                            <GsnRealisticIcon name="public-globe" size={34} />
+                          </div>
+                          <div style={{ minWidth: 0 }}>
+                            <div style={sectionLabel()}>Sponsor-safe summary</div>
+                            <h3
+                              style={{
+                                margin: "3px 0 0",
+                                fontSize: 20,
+                                lineHeight: 1.16,
+                              }}
+                            >
+                              Aggregate evidence only.
+                            </h3>
+                            <div style={{ ...helperText(), marginTop: 6 }}>
+                              This view separates recorded, confirmed, and challenged evidence without exposing private beneficiary details.
+                            </div>
+                          </div>
+                        </div>
+
+                        {sponsorSummary ? (
+                          (() => {
+                            const evidence = sponsorSummary?.evidence_summary || {};
+                            const activity = sponsorSummary?.activity_summary || {};
+                            const outcomes =
+                              sponsorSummary?.beneficiary_outcome_summary || {};
+                            const challenges = sponsorSummary?.challenge_summary || {};
+                            const exportPack =
+                              sponsorSummary?.sponsor_export_pack || {};
+                            const exportCopyText = cleanText(exportPack?.copy_text);
+                            const externalDelivery =
+                              sponsorSummary?.external_delivery_readiness || {};
+                            const readiness = cleanText(
+                              sponsorSummary?.sponsor_readiness,
+                              "not_enough_recorded_evidence"
+                            );
+                            const sponsorTiles = [
+                              ["Activities", evidence.activity_records ?? 0],
+                              [
+                                "Outcomes",
+                                evidence.beneficiary_outcome_records ?? 0,
+                              ],
+                              [
+                                "Confirmed",
+                                evidence.beneficiary_confirmed_outcomes ?? 0,
+                              ],
+                              [
+                                "Admin recorded",
+                                evidence.admin_recorded_or_unconfirmed_outcomes ?? 0,
+                              ],
+                              [
+                                "Challenged",
+                                evidence.challenged_or_under_review_outcomes ?? 0,
+                              ],
+                              [
+                                "Reviewed",
+                                evidence.reviewed_challenge_outcomes ?? 0,
+                              ],
+                              [
+                                "Unresolved",
+                                evidence.unresolved_challenge_outcomes ?? 0,
+                              ],
+                              [
+                                "Delivery packs",
+                                evidence.confirmation_delivery_prepared_records ??
+                                  0,
+                              ],
+                              [
+                                "Manual receipts",
+                                evidence.confirmation_delivery_receipt_records ??
+                                  0,
+                              ],
+                              [
+                                "Current receipts",
+                                evidence.confirmation_delivery_receipts_current_uncorrected ??
+                                  0,
+                              ],
+                              [
+                                "Receipt corrections",
+                                evidence.confirmation_delivery_receipt_corrections ??
+                                  0,
+                              ],
+                              [
+                                "Provider blocked",
+                                evidence.confirmation_provider_send_blocked_checks ??
+                                  0,
+                              ],
+                              [
+                                "Contact consent",
+                                evidence.contact_consent_records ?? 0,
+                              ],
+                              [
+                                "Consent withdrawn",
+                                evidence.contact_consent_withdrawals ?? 0,
+                              ],
+                              ["People reached", outcomes.subject_count ?? 0],
+                            ];
+                            return (
+                              <>
+                                <div
+                                  style={{
+                                    display: "flex",
+                                    flexWrap: "wrap",
+                                    gap: 8,
+                                  }}
+                                >
+                                  <span style={statusBadge(readiness)}>
+                                    {compactStatus(readiness)}
+                                  </span>
+                                  <span style={statusBadge(activity.status)}>
+                                    Activity: {compactStatus(activity.status)}
+                                  </span>
+                                  <span style={statusBadge(outcomes.status)}>
+                                    Outcomes: {compactStatus(outcomes.status)}
+                                  </span>
+                                  <span style={statusBadge(challenges.status)}>
+                                    Challenges: {compactStatus(challenges.status)}
+                                  </span>
+                                </div>
+                                <div
+                                  style={{
+                                    display: "grid",
+                                    gridTemplateColumns:
+                                      "repeat(auto-fit, minmax(min(100%, 128px), 1fr))",
+                                    gap: 8,
+                                  }}
+                                >
+                                  {sponsorTiles.map(([label, value]) => (
+                                    <div
+                                      key={String(label)}
+                                      style={{
+                                        borderRadius: 10,
+                                        border: "1px solid rgba(9,27,46,0.1)",
+                                        background: "#FFFFFF",
+                                        padding: "10px 12px",
+                                      }}
+                                    >
+                                      <div style={{ ...helperText(), fontSize: 12 }}>
+                                        {label}
+                                      </div>
+                                      <div
+                                        style={{
+                                          marginTop: 3,
+                                          color: "#091B2E",
+                                          fontSize: 20,
+                                          fontWeight: 950,
+                                          lineHeight: 1,
+                                        }}
+                                      >
+                                        {String(value ?? 0)}
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                                {Array.isArray(outcomes.top_indicators) &&
+                                outcomes.top_indicators.length ? (
+                                  <div style={{ display: "grid", gap: 6 }}>
+                                    <div style={sectionLabel()}>Top indicators</div>
+                                    <div
+                                      style={{
+                                        display: "flex",
+                                        flexWrap: "wrap",
+                                        gap: 8,
+                                      }}
+                                    >
+                                      {outcomes.top_indicators
+                                        .slice(0, 4)
+                                        .map((item: any) => (
+                                          <span
+                                            key={cleanText(item?.label)}
+                                            style={statusBadge("indicator")}
+                                          >
+                                            {cleanText(item?.label)}:{" "}
+                                            {cleanText(item?.count, "0")}
+                                          </span>
+                                        ))}
+                                    </div>
+                                  </div>
+                                ) : null}
+                                {exportCopyText ? (
+                                  <div
+                                    style={{
+                                      display: "grid",
+                                      gap: 8,
+                                      borderRadius: 10,
+                                      border: "1px solid rgba(191,147,62,0.28)",
+                                      background: "rgba(191,147,62,0.08)",
+                                      padding: 12,
+                                    }}
+                                  >
+                                    <div style={sectionLabel()}>
+                                      Sponsor export pack
+                                    </div>
+                                    <div style={{ ...helperText(), fontSize: 13 }}>
+                                      Copy-ready text prepared from this
+                                      sponsor-safe summary. It omits private
+                                      beneficiary detail and is not sent by GSN.
+                                    </div>
+                                    <StableButton
+                                      type="button"
+                                      kind="secondary"
+                                      stableHeight={38}
+                                      disabled={busySponsorExportCopy}
+                                      debugId="community-domain-dashboard.copy-sponsor-export-pack"
+                                      onClick={() => {
+                                        void copySponsorExportPack();
+                                      }}
+                                      style={{
+                                        justifyContent: "center",
+                                        fontSize: 13,
+                                        textTransform: "none",
+                                      }}
+                                    >
+                                      {busySponsorExportCopy
+                                        ? "Copying pack..."
+                                        : "Copy sponsor pack"}
+                                    </StableButton>
+                                  </div>
+                                ) : null}
+                                {Number(
+                                  evidence.confirmation_delivery_prepared_records ??
+                                    0
+                                ) ||
+                                Number(
+                                  evidence.confirmation_delivery_receipt_records ??
+                                    0
+                                ) ||
+                                Number(
+                                  evidence.confirmation_delivery_receipts_current_uncorrected ??
+                                    0
+                                ) ||
+                                Number(
+                                  evidence.confirmation_delivery_receipt_corrections ??
+                                    0
+                                ) ||
+                                Number(
+                                  evidence.contact_consent_records ?? 0
+                                ) ||
+                                Number(
+                                  evidence.contact_consent_withdrawals ?? 0
+                                ) ? (
+                                  <div style={{ display: "grid", gap: 6 }}>
+                                    <div style={sectionLabel()}>
+                                      Delivery evidence
+                                    </div>
+                                    <div
+                                      style={{
+                                        display: "flex",
+                                        flexWrap: "wrap",
+                                        gap: 8,
+                                      }}
+                                    >
+                                      {Object.entries(
+                                        evidence.confirmation_delivery_receipts_current_by_status ||
+                                          {}
+                                      ).map(([label, value]) => (
+                                        <span
+                                          key={`sponsor-current-delivery-status-${label}`}
+                                          style={statusBadge("current receipt")}
+                                        >
+                                          Current {compactStatus(label)}:{" "}
+                                          {cleanText(value, "0")}
+                                        </span>
+                                      ))}
+                                      {Object.entries(
+                                        evidence.confirmation_delivery_receipts_by_status ||
+                                          {}
+                                      ).map(([label, value]) => (
+                                        <span
+                                          key={`sponsor-delivery-status-${label}`}
+                                          style={statusBadge("manual receipt")}
+                                        >
+                                          {compactStatus(label)}:{" "}
+                                          {cleanText(value, "0")}
+                                        </span>
+                                      ))}
+                                      {Object.entries(
+                                        evidence.confirmation_delivery_receipts_by_consent_basis ||
+                                          {}
+                                      ).map(([label, value]) => (
+                                        <span
+                                          key={`sponsor-delivery-consent-${label}`}
+                                          style={statusBadge("consent basis")}
+                                        >
+                                          {compactStatus(label)}:{" "}
+                                          {cleanText(value, "0")}
+                                        </span>
+                                      ))}
+                                      {Object.entries(
+                                        evidence.confirmation_delivery_receipt_corrections_by_decision ||
+                                          {}
+                                      ).map(([label, value]) => (
+                                        <span
+                                          key={`sponsor-delivery-correction-${label}`}
+                                          style={statusBadge("receipt correction")}
+                                        >
+                                          Correction {compactStatus(label)}:{" "}
+                                          {cleanText(value, "0")}
+                                        </span>
+                                      ))}
+                                      {Object.entries(
+                                        evidence.contact_consent_by_reference_status ||
+                                          {}
+                                      ).map(([label, value]) => (
+                                        <span
+                                          key={`sponsor-contact-consent-${label}`}
+                                          style={statusBadge("contact consent")}
+                                        >
+                                          {compactStatus(label)}:{" "}
+                                          {cleanText(value, "0")}
+                                        </span>
+                                      ))}
+                                      {Object.entries(
+                                        evidence.contact_consent_withdrawals_by_reason ||
+                                          {}
+                                      ).map(([label, value]) => (
+                                        <span
+                                          key={`sponsor-contact-consent-withdrawal-${label}`}
+                                          style={statusBadge("consent withdrawn")}
+                                        >
+                                          Withdrawn {compactStatus(label)}:{" "}
+                                          {cleanText(value, "0")}
+                                        </span>
+                                      ))}
+                                    </div>
+                                    <div style={{ ...helperText(), fontSize: 13 }}>
+                                      GSN did not send external messages. These
+                                      counts show prepared packs,
+                                      contact/consent attestations, and
+                                      admin-recorded manual delivery receipts
+                                      only. Provider blocked checks are readiness
+                                      checks, not sends. Current receipts exclude
+                                      receipts marked corrected, superseded, or
+                                      under review.
+                                    </div>
+                                  </div>
+                                ) : null}
+                                {externalDelivery?.status ? (
+                                  <div
+                                    style={{
+                                      display: "grid",
+                                      gap: 8,
+                                      borderRadius: 10,
+                                      border: "1px solid rgba(171,86,48,0.28)",
+                                      background: "rgba(171,86,48,0.08)",
+                                      padding: 12,
+                                    }}
+                                  >
+                                    <div style={sectionLabel()}>
+                                      Provider delivery readiness
+                                    </div>
+                                    <div
+                                      style={{
+                                        display: "flex",
+                                        flexWrap: "wrap",
+                                        gap: 8,
+                                      }}
+                                    >
+                                      <span style={statusBadge(externalDelivery.status)}>
+                                        {compactStatus(externalDelivery.status)}
+                                      </span>
+                                      <span style={statusBadge("not sent")}>
+                                        GSN sent:{" "}
+                                        {externalDelivery.external_channels_sent_by_gsn
+                                          ? "yes"
+                                          : "no"}
+                                      </span>
+                                      <span style={statusBadge("provider")}>
+                                        Send engine:{" "}
+                                        {compactStatus(
+                                          externalDelivery.provider_send_engine_status
+                                        )}
+                                      </span>
+                                    </div>
+                                    {Array.isArray(
+                                      externalDelivery.missing_components
+                                    ) &&
+                                    externalDelivery.missing_components.length ? (
+                                      <div
+                                        style={{
+                                          display: "flex",
+                                          flexWrap: "wrap",
+                                          gap: 8,
+                                        }}
+                                      >
+                                        {externalDelivery.missing_components
+                                          .slice(0, 4)
+                                          .map((item: any) => (
+                                            <span
+                                              key={cleanText(item)}
+                                              style={statusBadge("needed")}
+                                            >
+                                              {cleanText(item)}
+                                            </span>
+                                        ))}
+                                      </div>
+                                    ) : null}
+                                    {externalDelivery.provider_setup_contract ? (
+                                      <div
+                                        style={{
+                                          display: "grid",
+                                          gap: 6,
+                                          borderTop:
+                                            "1px solid rgba(171,86,48,0.18)",
+                                          paddingTop: 8,
+                                        }}
+                                      >
+                                        <div style={sectionLabel()}>
+                                          Provider setup contract
+                                        </div>
+                                        <div
+                                          style={{
+                                            display: "flex",
+                                            flexWrap: "wrap",
+                                            gap: 8,
+                                          }}
+                                        >
+                                          <span style={statusBadge("not configured")}>
+                                            {compactStatus(
+                                              externalDelivery
+                                                .provider_setup_contract?.status ||
+                                                "not_configured"
+                                            )}
+                                          </span>
+                                          {(
+                                            externalDelivery.provider_setup_contract
+                                              ?.send_lift_conditions || []
+                                          )
+                                            .slice(0, 3)
+                                            .map((item: any) => (
+                                              <span
+                                                key={cleanText(item)}
+                                                style={statusBadge("required")}
+                                              >
+                                                {cleanText(item)}
+                                              </span>
+                                            ))}
+                                        </div>
+                                        <div
+                                          style={{ ...helperText(), fontSize: 13 }}
+                                        >
+                                          {cleanText(
+                                            externalDelivery.provider_setup_contract
+                                              ?.truth_gate,
+                                            "Provider sending may only be marked ready after provider send, webhook, consent, retry, and receipt mapping are tested."
+                                          )}
+                                        </div>
+                                      </div>
+                                    ) : null}
+                                    {externalDelivery.contact_consent_contract ? (
+                                      <div
+                                        style={{
+                                          display: "grid",
+                                          gap: 6,
+                                          borderTop:
+                                            "1px solid rgba(171,86,48,0.18)",
+                                          paddingTop: 8,
+                                        }}
+                                      >
+                                        <div style={sectionLabel()}>
+                                          Contact and consent gate
+                                        </div>
+                                        <div
+                                          style={{
+                                            display: "flex",
+                                            flexWrap: "wrap",
+                                            gap: 8,
+                                          }}
+                                        >
+                                          <span style={statusBadge("not connected")}>
+                                            {compactStatus(
+                                              externalDelivery
+                                                .contact_consent_contract?.status ||
+                                                "not_connected"
+                                            )}
+                                          </span>
+                                          <span style={statusBadge("blocked")}>
+                                            {compactStatus(
+                                              externalDelivery
+                                                .contact_consent_contract
+                                                ?.provider_send_blocker ||
+                                                "missing contact preference and consent gate"
+                                            )}
+                                          </span>
+                                          <span style={statusBadge("blocked")}>
+                                            {compactStatus(
+                                              externalDelivery
+                                                .contact_consent_contract
+                                                ?.active_contact_consent_status ||
+                                                "not evaluated"
+                                            )}
+                                          </span>
+                                        </div>
+                                        <div
+                                          style={{ ...helperText(), fontSize: 13 }}
+                                        >
+                                          {cleanText(
+                                            externalDelivery.contact_consent_contract
+                                              ?.active_contact_consent_boundary,
+                                            "Provider sending must stay blocked unless the latest contact/consent status is active attestation."
+                                          )}
+                                        </div>
+                                        <div
+                                          style={{ ...helperText(), fontSize: 13 }}
+                                        >
+                                          {cleanText(
+                                            externalDelivery.contact_consent_contract
+                                              ?.minimum_send_rule,
+                                            "Do not attempt provider delivery until the selected channel has a verified destination and an active consent or legal authority basis."
+                                          )}
+                                        </div>
+                                        <div
+                                          style={{ ...helperText(), fontSize: 13 }}
+                                        >
+                                          {cleanText(
+                                            externalDelivery.contact_consent_contract
+                                              ?.privacy_boundary,
+                                            "This readiness view does not store beneficiary phone numbers, email addresses, provider destinations, or consent records."
+                                          )}
+                                        </div>
+                                      </div>
+                                    ) : null}
+                                    <div style={{ ...helperText(), fontSize: 13 }}>
+                                      {cleanText(
+                                        externalDelivery.boundary,
+                                        "GSN can prepare manual delivery text, but provider sending is not connected."
+                                      )}
+                                    </div>
+                                  </div>
+                                ) : null}
+                                <div style={{ ...helperText(), fontSize: 13 }}>
+                                  {cleanText(
+                                    sponsorSummary?.plain_language,
+                                    "Sponsor-safe summary aggregates recorded facts only."
+                                  )}
+                                </div>
+                                <div style={{ ...helperText(), fontSize: 13 }}>
+                                  {cleanText(
+                                    evidence.privacy,
+                                    "Private beneficiary details are omitted."
+                                  )}
+                                </div>
+                              </>
+                            );
+                          })()
+                        ) : (
+                          <div style={helperText()}>
+                            No sponsor-safe summary is loaded for this Governance view yet.
+                          </div>
+                        )}
+                      </div>
+                    ) : null}
+
+                    {isAdmin ? (
+                      <>
+                      <div
+                        style={{
+                          ...softCard(),
+                          display: "grid",
+                          gap: 12,
+                        }}
+                      >
+                        <div style={iconHeaderStyle()}>
+                          <div style={iconFrame(44)}>
+                            <GsnRealisticIcon name="certificate-seal" size={34} />
+                          </div>
+                          <div style={{ minWidth: 0 }}>
+                            <div style={sectionLabel()}>Activity catalogue</div>
+                            <h3
+                              style={{
+                                margin: "3px 0 0",
+                                fontSize: 20,
+                                lineHeight: 1.16,
+                              }}
+                            >
+                              Record one real activity.
+                            </h3>
+                            <div style={{ ...helperText(), marginTop: 6 }}>
+                              Use this when an admin has a real attendance, service, support, contribution, or project record to preserve.
+                            </div>
+                          </div>
+                        </div>
+
+                        <div
+                          style={{
+                            display: "grid",
+                            gridTemplateColumns:
+                              "repeat(auto-fit, minmax(min(100%, 170px), 1fr))",
+                            gap: 8,
+                          }}
+                        >
+                          <input
+                            value={activityDraft.subject_user_id}
+                            disabled={busyActivityRecord}
+                            onChange={(event) =>
+                              updateActivityDraft("subject_user_id", event.target.value)
+                            }
+                            placeholder="Subject user id"
+                            inputMode="numeric"
+                            style={billingInputStyle()}
+                          />
+                          <select
+                            value={activityDraft.activity_type}
+                            disabled={busyActivityRecord}
+                            onChange={(event) =>
+                              updateActivityDraft("activity_type", event.target.value)
+                            }
+                            style={billingInputStyle()}
+                          >
+                            {(activityCatalogue.length
+                              ? activityCatalogue
+                              : [
+                                  { activity_type: "attendance", label: "Attendance" },
+                                  {
+                                    activity_type: "volunteer_service",
+                                    label: "Volunteer service",
+                                  },
+                                  {
+                                    activity_type: "support_delivered",
+                                    label: "Support delivered",
+                                  },
+                                  {
+                                    activity_type: "follow_up_completed",
+                                    label: "Follow-up completed",
+                                  },
+                                ]
+                            ).map((item) => (
+                              <option
+                                key={cleanText(item?.activity_type)}
+                                value={cleanText(item?.activity_type)}
+                              >
+                                {cleanText(item?.label, item?.activity_type)}
+                              </option>
+                            ))}
+                          </select>
+                          <input
+                            value={activityDraft.activity_label}
+                            disabled={busyActivityRecord}
+                            onChange={(event) =>
+                              updateActivityDraft("activity_label", event.target.value)
+                            }
+                            placeholder="Activity label"
+                            style={billingInputStyle()}
+                          />
+                          <input
+                            value={activityDraft.quantity}
+                            disabled={busyActivityRecord}
+                            onChange={(event) =>
+                              updateActivityDraft("quantity", event.target.value)
+                            }
+                            placeholder="Quantity"
+                            inputMode="decimal"
+                            style={billingInputStyle()}
+                          />
+                          <input
+                            value={activityDraft.measurement_unit}
+                            disabled={busyActivityRecord}
+                            onChange={(event) =>
+                              updateActivityDraft("measurement_unit", event.target.value)
+                            }
+                            placeholder="Unit, e.g. hours"
+                            style={billingInputStyle()}
+                          />
+                          <input
+                            value={activityDraft.evidence_reference}
+                            disabled={busyActivityRecord}
+                            onChange={(event) =>
+                              updateActivityDraft("evidence_reference", event.target.value)
+                            }
+                            placeholder="Evidence reference"
+                            style={billingInputStyle()}
+                          />
+                        </div>
+                        <textarea
+                          value={activityDraft.note}
+                          disabled={busyActivityRecord}
+                          onChange={(event) =>
+                            updateActivityDraft("note", event.target.value)
+                          }
+                          placeholder="Short note about what happened."
+                          style={{
+                            ...billingInputStyle(),
+                            minHeight: 78,
+                            padding: 12,
+                            resize: "vertical",
+                          }}
+                        />
+                        <div
+                          style={{
+                            display: "grid",
+                            gridTemplateColumns:
+                              "repeat(auto-fit, minmax(min(100%, 170px), 1fr))",
+                            gap: 8,
+                            alignItems: "center",
+                          }}
+                        >
+                          <StableButton
+                            type="button"
+                            kind="primary"
+                            stableHeight={46}
+                            disabled={busyActivityRecord}
+                            debugId="community-domain-dashboard.activity-record"
+                            onClick={() => {
+                              void submitCommunityDomainActivityRecord();
+                            }}
+                          >
+                            {busyActivityRecord ? "Recording..." : "Record activity"}
+                          </StableButton>
+                          <div style={{ ...helperText(), fontSize: 13 }}>
+                            Creates an admin-recorded Trust Event for the subject user. It does not prove final beneficiary outcomes.
+                          </div>
+                        </div>
+
+                        {activityRows.length ? (
+                          <div style={{ display: "grid", gap: 8 }}>
+                            <div style={sectionLabel()}>Recent records</div>
+                            {activityRows.slice(0, 5).map((item) => (
+                              <div
+                                key={cleanText(item?.event_id)}
+                                style={{
+                                  display: "flex",
+                                  flexWrap: "wrap",
+                                  gap: 8,
+                                  alignItems: "center",
+                                  padding: "8px 0",
+                                  borderTop: "1px solid rgba(9,27,46,0.1)",
+                                }}
+                              >
+                                <strong style={{ color: "#091B2E", fontSize: 14 }}>
+                                  {cleanText(item?.activity_label, item?.activity_type)}
+                                </strong>
+                                <span style={statusBadge(item?.evidence_strength)}>
+                                  {compactStatus(item?.evidence_strength)}
+                                </span>
+                                <span style={statusBadge("subject")}>
+                                  Subject {cleanText(item?.subject_user_id)}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div style={helperText()}>
+                            No activity records are loaded for this Community Domain yet.
+                          </div>
+                        )}
+                      </div>
+
+                      <div
+                        style={{
+                          ...softCard(),
+                          display: "grid",
+                          gap: 12,
+                        }}
+                      >
+                        <div style={iconHeaderStyle()}>
+                          <div style={iconFrame(44)}>
+                            <GsnRealisticIcon name="records-folder" size={34} />
+                          </div>
+                          <div style={{ minWidth: 0 }}>
+                            <div style={sectionLabel()}>Beneficiary outcomes</div>
+                            <h3
+                              style={{
+                                margin: "3px 0 0",
+                                fontSize: 20,
+                                lineHeight: 1.16,
+                              }}
+                            >
+                              Record baseline to after.
+                            </h3>
+                            <div style={{ ...helperText(), marginTop: 6 }}>
+                              Use this when a beneficiary, member, or case has a before-and-after result worth preserving for directors or sponsors.
+                            </div>
+                          </div>
+                        </div>
+
+                        <div
+                          style={{
+                            display: "grid",
+                            gridTemplateColumns:
+                              "repeat(auto-fit, minmax(min(100%, 170px), 1fr))",
+                            gap: 8,
+                          }}
+                        >
+                          <input
+                            value={beneficiaryOutcomeDraft.subject_user_id}
+                            disabled={busyBeneficiaryOutcomeRecord}
+                            onChange={(event) =>
+                              updateBeneficiaryOutcomeDraft(
+                                "subject_user_id",
+                                event.target.value
+                              )
+                            }
+                            placeholder="Beneficiary user id"
+                            inputMode="numeric"
+                            style={billingInputStyle()}
+                          />
+                          <input
+                            value={beneficiaryOutcomeDraft.programme_label}
+                            disabled={busyBeneficiaryOutcomeRecord}
+                            onChange={(event) =>
+                              updateBeneficiaryOutcomeDraft(
+                                "programme_label",
+                                event.target.value
+                              )
+                            }
+                            placeholder="Programme or case label"
+                            style={billingInputStyle()}
+                          />
+                          <input
+                            value={beneficiaryOutcomeDraft.outcome_indicator}
+                            disabled={busyBeneficiaryOutcomeRecord}
+                            onChange={(event) =>
+                              updateBeneficiaryOutcomeDraft(
+                                "outcome_indicator",
+                                event.target.value
+                              )
+                            }
+                            placeholder="Measured indicator"
+                            style={billingInputStyle()}
+                          />
+                          <select
+                            value={beneficiaryOutcomeDraft.outcome_state}
+                            disabled={busyBeneficiaryOutcomeRecord}
+                            onChange={(event) =>
+                              updateBeneficiaryOutcomeDraft(
+                                "outcome_state",
+                                event.target.value
+                              )
+                            }
+                            style={billingInputStyle()}
+                          >
+                            {BENEFICIARY_OUTCOME_STATE_OPTIONS.map((item) => (
+                              <option key={item.value} value={item.value}>
+                                {item.label}
+                              </option>
+                            ))}
+                          </select>
+                          <select
+                            value={beneficiaryOutcomeDraft.follow_up_state}
+                            disabled={busyBeneficiaryOutcomeRecord}
+                            onChange={(event) =>
+                              updateBeneficiaryOutcomeDraft(
+                                "follow_up_state",
+                                event.target.value
+                              )
+                            }
+                            style={billingInputStyle()}
+                          >
+                            {BENEFICIARY_FOLLOW_UP_STATE_OPTIONS.map((item) => (
+                              <option key={item.value} value={item.value}>
+                                {item.label}
+                              </option>
+                            ))}
+                          </select>
+                          <select
+                            value={beneficiaryOutcomeDraft.beneficiary_confirmation}
+                            disabled={busyBeneficiaryOutcomeRecord}
+                            onChange={(event) =>
+                              updateBeneficiaryOutcomeDraft(
+                                "beneficiary_confirmation",
+                                event.target.value
+                              )
+                            }
+                            style={billingInputStyle()}
+                          >
+                            {BENEFICIARY_CONFIRMATION_OPTIONS.map((item) => (
+                              <option key={item.value} value={item.value}>
+                                {item.label}
+                              </option>
+                            ))}
+                          </select>
+                          <select
+                            value={beneficiaryOutcomeDraft.challenge_status}
+                            disabled={busyBeneficiaryOutcomeRecord}
+                            onChange={(event) =>
+                              updateBeneficiaryOutcomeDraft(
+                                "challenge_status",
+                                event.target.value
+                              )
+                            }
+                            style={billingInputStyle()}
+                          >
+                            {BENEFICIARY_CHALLENGE_STATUS_OPTIONS.map((item) => (
+                              <option key={item.value} value={item.value}>
+                                {item.label}
+                              </option>
+                            ))}
+                          </select>
+                          <input
+                            value={beneficiaryOutcomeDraft.evidence_reference}
+                            disabled={busyBeneficiaryOutcomeRecord}
+                            onChange={(event) =>
+                              updateBeneficiaryOutcomeDraft(
+                                "evidence_reference",
+                                event.target.value
+                              )
+                            }
+                            placeholder="Evidence reference"
+                            style={billingInputStyle()}
+                          />
+                        </div>
+
+                        <textarea
+                          value={beneficiaryOutcomeDraft.baseline_value}
+                          disabled={busyBeneficiaryOutcomeRecord}
+                          onChange={(event) =>
+                            updateBeneficiaryOutcomeDraft(
+                              "baseline_value",
+                              event.target.value
+                            )
+                          }
+                          placeholder="Baseline before support."
+                          style={{
+                            ...billingInputStyle(),
+                            minHeight: 72,
+                            padding: 12,
+                            resize: "vertical",
+                          }}
+                        />
+                        <textarea
+                          value={beneficiaryOutcomeDraft.after_value}
+                          disabled={busyBeneficiaryOutcomeRecord}
+                          onChange={(event) =>
+                            updateBeneficiaryOutcomeDraft("after_value", event.target.value)
+                          }
+                          placeholder="After value or current follow-up result."
+                          style={{
+                            ...billingInputStyle(),
+                            minHeight: 72,
+                            padding: 12,
+                            resize: "vertical",
+                          }}
+                        />
+                        <textarea
+                          value={beneficiaryOutcomeDraft.support_received}
+                          disabled={busyBeneficiaryOutcomeRecord}
+                          onChange={(event) =>
+                            updateBeneficiaryOutcomeDraft(
+                              "support_received",
+                              event.target.value
+                            )
+                          }
+                          placeholder="Support received from this Community Domain."
+                          style={{
+                            ...billingInputStyle(),
+                            minHeight: 72,
+                            padding: 12,
+                            resize: "vertical",
+                          }}
+                        />
+                        <textarea
+                          value={beneficiaryOutcomeDraft.note}
+                          disabled={busyBeneficiaryOutcomeRecord}
+                          onChange={(event) =>
+                            updateBeneficiaryOutcomeDraft("note", event.target.value)
+                          }
+                          placeholder="Private admin note."
+                          style={{
+                            ...billingInputStyle(),
+                            minHeight: 72,
+                            padding: 12,
+                            resize: "vertical",
+                          }}
+                        />
+
+                        <div
+                          style={{
+                            display: "grid",
+                            gridTemplateColumns:
+                              "repeat(auto-fit, minmax(min(100%, 170px), 1fr))",
+                            gap: 8,
+                            alignItems: "center",
+                          }}
+                        >
+                          <StableButton
+                            type="button"
+                            kind="primary"
+                            stableHeight={46}
+                            disabled={busyBeneficiaryOutcomeRecord}
+                            debugId="community-domain-dashboard.beneficiary-outcome-record"
+                            onClick={() => {
+                              void submitCommunityDomainBeneficiaryOutcomeRecord();
+                            }}
+                          >
+                            {busyBeneficiaryOutcomeRecord
+                              ? "Recording..."
+                              : "Record outcome"}
+                          </StableButton>
+                          <div style={{ ...helperText(), fontSize: 13 }}>
+                            Creates a before-and-after Trust Event. Sponsor reports still need aggregation and privacy review.
+                          </div>
+                        </div>
+
+                        {beneficiaryOutcomeRows.length ? (
+                          <div style={{ display: "grid", gap: 8 }}>
+                            <div style={sectionLabel()}>Recent outcomes</div>
+                            {beneficiaryOutcomeRows.slice(0, 5).map((item) => {
+                              const outcomeEventId = cleanText(item?.event_id);
+                              const latestResponse =
+                                item?.latest_confirmation_response || null;
+                              const latestReview =
+                                item?.latest_correction_review || null;
+                              const latestDeliveryPreparation =
+                                item?.latest_delivery_preparation || null;
+                              const latestDeliveryReceipt =
+                                item?.latest_delivery_receipt || null;
+                              const latestProviderSendBlockedCheck =
+                                item?.latest_provider_send_blocked_check || null;
+                              const latestContactConsent =
+                                item?.latest_contact_consent_record || null;
+                              const latestContactConsentWithdrawal =
+                                item?.latest_contact_consent_withdrawal || null;
+                              const contactConsentStatus =
+                                item?.contact_consent_status || {};
+                              const localDeliveryPack =
+                                beneficiaryDeliveryPackByOutcomeId[
+                                  outcomeEventId
+                                ] || null;
+                              const selectedDeliveryReceiptDraft =
+                                beneficiaryDeliveryReceiptDraftByOutcomeId[
+                                  outcomeEventId
+                                ] || emptyBeneficiaryDeliveryReceiptDraft();
+                              const selectedContactConsentDraft =
+                                beneficiaryContactConsentDraftByOutcomeId[
+                                  outcomeEventId
+                                ] || emptyBeneficiaryContactConsentDraft();
+                              const selectedContactConsentWithdrawalDraft =
+                                beneficiaryContactConsentWithdrawalDraftByOutcomeId[
+                                  outcomeEventId
+                                ] || emptyBeneficiaryContactConsentWithdrawalDraft();
+                              const selectedDeliveryReceiptCorrectionDraft =
+                                beneficiaryDeliveryReceiptCorrectionDraftByOutcomeId[
+                                  outcomeEventId
+                                ] ||
+                                emptyBeneficiaryDeliveryReceiptCorrectionDraft();
+                              const canWithdrawContactConsent =
+                                Boolean(latestContactConsent?.event_id) &&
+                                cleanText(contactConsentStatus?.status) ===
+                                  "active_attestation";
+                              const contactConsentStatusName = cleanText(
+                                contactConsentStatus?.status
+                              );
+                              const currentProviderDeliveryReadiness =
+                                item?.current_provider_delivery_readiness || {};
+                              const currentProviderContactStatus = compactStatus(
+                                currentProviderDeliveryReadiness
+                                  ?.active_contact_consent_status ||
+                                  "not evaluated"
+                              );
+                              const preparedDeliveryContactStatus = compactStatus(
+                                latestDeliveryPreparation
+                                  ?.active_contact_consent_status ||
+                                  "not recorded at preparation"
+                              );
+                              const canRecordManualDelivery =
+                                Boolean(
+                                  localDeliveryPack?.delivery_event_id ||
+                                    latestDeliveryPreparation?.event_id
+                                ) &&
+                                !latestDeliveryReceipt &&
+                                contactConsentStatus?.manual_delivery_allowed !== false;
+                              const manualDeliveryBlockedByConsent =
+                                Boolean(
+                                  localDeliveryPack?.delivery_event_id ||
+                                    latestDeliveryPreparation?.event_id
+                                ) &&
+                                !latestDeliveryReceipt &&
+                                contactConsentStatus?.manual_delivery_allowed === false;
+                              const manualDeliveryBlockedText =
+                                contactConsentStatusName === "not_recorded"
+                                  ? "Manual delivery receipt is blocked until contact/consent is recorded. Record contact/consent before recording delivery."
+                                  : "Manual delivery receipt is blocked until an active contact/consent attestation exists. Record replacement contact/consent before recording delivery.";
+                              const responseChallengeStatus = cleanText(
+                                latestResponse?.challenge_status
+                              );
+                              const needsCorrectionReview =
+                                responseChallengeStatus === "challenged" ||
+                                responseChallengeStatus === "under_review";
+                              const selectedCorrectionDecision =
+                                beneficiaryCorrectionDecisionByOutcomeId[
+                                  outcomeEventId
+                                ] || "mark_corrected";
+                              const selectedCorrectionNote =
+                                beneficiaryCorrectionNoteByOutcomeId[
+                                  outcomeEventId
+                                ] || "";
+                              return (
+                              <div
+                                key={outcomeEventId}
+                                style={{
+                                  display: "grid",
+                                  gap: 6,
+                                  padding: "8px 0",
+                                  borderTop: "1px solid rgba(9,27,46,0.1)",
+                                }}
+                              >
+                                <div
+                                  style={{
+                                    display: "flex",
+                                    flexWrap: "wrap",
+                                    gap: 8,
+                                    alignItems: "center",
+                                  }}
+                                >
+                                  <strong style={{ color: "#091B2E", fontSize: 14 }}>
+                                    {cleanText(
+                                      item?.outcome_indicator,
+                                      item?.programme_label || "Outcome"
+                                    )}
+                                  </strong>
+                                  <span style={statusBadge(item?.outcome_state)}>
+                                    {compactStatus(item?.outcome_state)}
+                                  </span>
+                                  <span style={statusBadge(item?.beneficiary_confirmation)}>
+                                    {compactStatus(item?.beneficiary_confirmation)}
+                                  </span>
+                                  <span style={statusBadge("subject")}>
+                                    Subject {cleanText(item?.subject_user_id)}
+                                  </span>
+                                  {latestResponse ? (
+                                    <span
+                                      style={statusBadge(
+                                        latestResponse?.challenge_status ||
+                                          latestResponse?.response_type
+                                      )}
+                                    >
+                                      Response:{" "}
+                                      {compactStatus(latestResponse?.response_type)}
+                                    </span>
+                                  ) : null}
+                                  {latestReview ? (
+                                    <span
+                                      style={statusBadge(
+                                        latestReview?.challenge_status_after ||
+                                          latestReview?.decision
+                                      )}
+                                    >
+                                      Review: {compactStatus(latestReview?.decision)}
+                                    </span>
+                                  ) : null}
+                                  {latestDeliveryReceipt ? (
+                                    <span
+                                      style={statusBadge(
+                                        latestDeliveryReceipt?.delivery_status
+                                      )}
+                                    >
+                                      Delivery:{" "}
+                                      {compactStatus(
+                                        latestDeliveryReceipt?.delivery_status
+                                      )}
+                                    </span>
+                                  ) : null}
+                                  {latestContactConsent ? (
+                                    <span
+                                      style={statusBadge(
+                                        latestContactConsent?.consent_basis ||
+                                          "contact_consent"
+                                      )}
+                                    >
+                                      Contact:{" "}
+                                      {compactStatus(
+                                        latestContactConsent?.consent_basis
+                                      )}
+                                    </span>
+                                  ) : null}
+                                  {latestContactConsentWithdrawal ? (
+                                    <span
+                                      style={statusBadge(
+                                        latestContactConsentWithdrawal?.withdrawal_reason ||
+                                          "contact_consent_withdrawn"
+                                      )}
+                                    >
+                                      Consent withdrawn:{" "}
+                                      {compactStatus(
+                                        latestContactConsentWithdrawal?.withdrawal_reason
+                                      )}
+                                    </span>
+                                  ) : null}
+                                </div>
+                                <div style={{ ...helperText(), fontSize: 13 }}>
+                                  {cleanText(item?.baseline_value, "Baseline not shown")}
+                                  {" -> "}
+                                  {cleanText(item?.after_value, "After value not shown")}
+                                </div>
+                                {latestResponse?.correction_note ? (
+                                  <div style={{ ...helperText(), fontSize: 13 }}>
+                                    Correction note:{" "}
+                                    {cleanText(latestResponse?.correction_note)}
+                                  </div>
+                                ) : null}
+                                {latestReview ? (
+                                  <div style={{ ...helperText(), fontSize: 13 }}>
+                                    Latest review marked this as{" "}
+                                    {compactStatus(
+                                      latestReview?.challenge_status_after
+                                    )}
+                                    . The original outcome was not rewritten.
+                                  </div>
+                                ) : null}
+                                {latestDeliveryReceipt ? (
+                                  <div style={{ ...helperText(), fontSize: 13 }}>
+                                    Manual delivery receipt:{" "}
+                                    {compactStatus(
+                                      latestDeliveryReceipt?.channel
+                                    )}{" "}
+                                    marked as{" "}
+                                    {compactStatus(
+                                      latestDeliveryReceipt?.delivery_status
+                                    )}
+                                    {latestDeliveryReceipt?.consent_basis ? (
+                                      <>
+                                        {" "}
+                                        with consent basis{" "}
+                                        {compactStatus(
+                                          latestDeliveryReceipt?.consent_basis
+                                        )}
+                                      </>
+                                    ) : null}
+                                    {latestDeliveryReceipt?.contact_consent_event_id ? (
+                                      <>
+                                        {" "}
+                                        backed by contact/consent record{" "}
+                                        {cleanText(
+                                          latestDeliveryReceipt?.contact_consent_event_id
+                                        )}
+                                      </>
+                                    ) : null}
+                                    . GSN did not send the external message.
+                                  </div>
+                                ) : null}
+                                {latestDeliveryReceipt?.latest_correction ? (
+                                  <div style={{ ...helperText(), fontSize: 13 }}>
+                                    Receipt correction:{" "}
+                                    {compactStatus(
+                                      latestDeliveryReceipt?.latest_correction
+                                        ?.decision
+                                    )}{" "}
+                                    marked this receipt as{" "}
+                                    {compactStatus(
+                                      latestDeliveryReceipt?.receipt_correction_status
+                                    )}
+                                    . The original manual receipt remains in the
+                                    audit trail.
+                                  </div>
+                                ) : null}
+                                {latestProviderSendBlockedCheck ? (
+                                  <div style={{ ...helperText(), fontSize: 13 }}>
+                                    Provider send blocked:{" "}
+                                    {compactStatus(
+                                      latestProviderSendBlockedCheck?.blocked_reason ||
+                                        "provider_delivery_not_connected"
+                                    )}
+                                    . GSN recorded this readiness check only; no
+                                    provider job, no send attempt, and no external
+                                    message was created.
+                                  </div>
+                                ) : null}
+                                {needsCorrectionReview ? (
+                                  <div
+                                    style={{
+                                      display: "grid",
+                                      gridTemplateColumns:
+                                        "repeat(auto-fit, minmax(min(100%, 170px), 1fr))",
+                                      gap: 8,
+                                      alignItems: "center",
+                                    }}
+                                  >
+                                    <select
+                                      value={selectedCorrectionDecision}
+                                      disabled={
+                                        busyOutcomeCorrectionReviewId ===
+                                        outcomeEventId
+                                      }
+                                      onChange={(event) =>
+                                        updateBeneficiaryCorrectionDecision(
+                                          outcomeEventId,
+                                          event.target.value
+                                        )
+                                      }
+                                      style={billingInputStyle()}
+                                    >
+                                      {BENEFICIARY_CORRECTION_DECISION_OPTIONS.map(
+                                        (option) => (
+                                          <option
+                                            key={option.value}
+                                            value={option.value}
+                                          >
+                                            {option.label}
+                                          </option>
+                                        )
+                                      )}
+                                    </select>
+                                    <input
+                                      value={selectedCorrectionNote}
+                                      disabled={
+                                        busyOutcomeCorrectionReviewId ===
+                                        outcomeEventId
+                                      }
+                                      onChange={(event) =>
+                                        updateBeneficiaryCorrectionNote(
+                                          outcomeEventId,
+                                          event.target.value
+                                        )
+                                      }
+                                      placeholder="Review note"
+                                      style={billingInputStyle()}
+                                    />
+                                    <StableButton
+                                      type="button"
+                                      kind="secondary"
+                                      stableHeight={38}
+                                      disabled={
+                                        busyOutcomeCorrectionReviewId ===
+                                        outcomeEventId
+                                      }
+                                      debugId="community-domain-dashboard.beneficiary-outcome-correction-review"
+                                      onClick={() => {
+                                        void submitBeneficiaryOutcomeCorrectionReview(
+                                          item
+                                        );
+                                      }}
+                                      style={{
+                                        justifyContent: "center",
+                                        fontSize: 13,
+                                        textTransform: "none",
+                                      }}
+                                    >
+                                      {busyOutcomeCorrectionReviewId ===
+                                      outcomeEventId
+                                        ? "Recording review..."
+                                        : "Review challenge"}
+                                    </StableButton>
+                                  </div>
+                                ) : null}
+                                <StableButton
+                                  type="button"
+                                  kind="secondary"
+                                  stableHeight={38}
+                                  disabled={
+                                    busyOutcomeConfirmationLinkId ===
+                                    outcomeEventId
+                                  }
+                                  debugId="community-domain-dashboard.beneficiary-outcome-confirmation-link"
+                                  onClick={() => {
+                                    void createBeneficiaryOutcomeConfirmationLink(
+                                      outcomeEventId
+                                    );
+                                  }}
+                                  style={{
+                                    justifyContent: "center",
+                                    fontSize: 13,
+                                    textTransform: "none",
+                                  }}
+                                >
+                                  {busyOutcomeConfirmationLinkId ===
+                                  outcomeEventId
+                                    ? "Creating link..."
+                                    : "Create confirmation link"}
+                                </StableButton>
+                                {isAdmin ? (
+                                  <div
+                                    style={{
+                                      display: "grid",
+                                      gridTemplateColumns:
+                                        "repeat(auto-fit, minmax(min(100%, 155px), 1fr))",
+                                      gap: 8,
+                                      alignItems: "center",
+                                    }}
+                                  >
+                                    <select
+                                      value={selectedContactConsentDraft.channel}
+                                      disabled={
+                                        busyOutcomeContactConsentId ===
+                                        outcomeEventId
+                                      }
+                                      onChange={(event) =>
+                                        updateBeneficiaryContactConsentDraft(
+                                          outcomeEventId,
+                                          "channel",
+                                          event.target.value
+                                        )
+                                      }
+                                      style={billingInputStyle()}
+                                      aria-label="Contact consent channel"
+                                    >
+                                      {BENEFICIARY_DELIVERY_CHANNEL_OPTIONS.filter(
+                                        (option) =>
+                                          option.value === "whatsapp" ||
+                                          option.value === "sms" ||
+                                          option.value === "email"
+                                      ).map((option) => (
+                                        <option
+                                          key={option.value}
+                                          value={option.value}
+                                        >
+                                          {option.label}
+                                        </option>
+                                      ))}
+                                    </select>
+                                    <select
+                                      value={
+                                        selectedContactConsentDraft.destination_reference_status
+                                      }
+                                      disabled={
+                                        busyOutcomeContactConsentId ===
+                                        outcomeEventId
+                                      }
+                                      onChange={(event) =>
+                                        updateBeneficiaryContactConsentDraft(
+                                          outcomeEventId,
+                                          "destination_reference_status",
+                                          event.target.value
+                                        )
+                                      }
+                                      style={billingInputStyle()}
+                                      aria-label="Contact reference status"
+                                    >
+                                      {BENEFICIARY_CONTACT_REFERENCE_STATUS_OPTIONS.map(
+                                        (option) => (
+                                          <option
+                                            key={option.value}
+                                            value={option.value}
+                                          >
+                                            {option.label}
+                                          </option>
+                                        )
+                                      )}
+                                    </select>
+                                    <input
+                                      value={
+                                        selectedContactConsentDraft.destination_reference_label
+                                      }
+                                      disabled={
+                                        busyOutcomeContactConsentId ===
+                                        outcomeEventId
+                                      }
+                                      onChange={(event) =>
+                                        updateBeneficiaryContactConsentDraft(
+                                          outcomeEventId,
+                                          "destination_reference_label",
+                                          event.target.value
+                                        )
+                                      }
+                                      placeholder="Reference label, not phone/email"
+                                      style={billingInputStyle()}
+                                    />
+                                    <select
+                                      value={selectedContactConsentDraft.consent_basis}
+                                      disabled={
+                                        busyOutcomeContactConsentId ===
+                                        outcomeEventId
+                                      }
+                                      onChange={(event) =>
+                                        updateBeneficiaryContactConsentDraft(
+                                          outcomeEventId,
+                                          "consent_basis",
+                                          event.target.value
+                                        )
+                                      }
+                                      style={billingInputStyle()}
+                                      aria-label="Contact consent basis"
+                                    >
+                                      {BENEFICIARY_DELIVERY_CONSENT_OPTIONS.map(
+                                        (option) => (
+                                          <option
+                                            key={option.value}
+                                            value={option.value}
+                                          >
+                                            {option.label}
+                                          </option>
+                                        )
+                                      )}
+                                    </select>
+                                    <input
+                                      value={selectedContactConsentDraft.note}
+                                      disabled={
+                                        busyOutcomeContactConsentId ===
+                                        outcomeEventId
+                                      }
+                                      onChange={(event) =>
+                                        updateBeneficiaryContactConsentDraft(
+                                          outcomeEventId,
+                                          "note",
+                                          event.target.value
+                                        )
+                                      }
+                                      placeholder="Consent note"
+                                      style={billingInputStyle()}
+                                    />
+                                    <StableButton
+                                      type="button"
+                                      kind="secondary"
+                                      stableHeight={38}
+                                      disabled={
+                                        busyOutcomeContactConsentId ===
+                                        outcomeEventId
+                                      }
+                                      debugId="community-domain-dashboard.beneficiary-outcome-contact-consent"
+                                      onClick={() => {
+                                        void recordBeneficiaryOutcomeContactConsent(
+                                          item
+                                        );
+                                      }}
+                                      style={{
+                                        justifyContent: "center",
+                                        fontSize: 13,
+                                        textTransform: "none",
+                                      }}
+                                    >
+                                      {busyOutcomeContactConsentId ===
+                                      outcomeEventId
+                                        ? "Recording consent..."
+                                        : "Record contact/consent"}
+                                    </StableButton>
+                                  </div>
+                                ) : null}
+                                {isAdmin && canWithdrawContactConsent ? (
+                                  <div
+                                    style={{
+                                      display: "grid",
+                                      gridTemplateColumns:
+                                        "repeat(auto-fit, minmax(min(100%, 155px), 1fr))",
+                                      gap: 8,
+                                      alignItems: "center",
+                                    }}
+                                  >
+                                    <select
+                                      value={
+                                        selectedContactConsentWithdrawalDraft.withdrawal_reason
+                                      }
+                                      disabled={
+                                        busyOutcomeContactConsentWithdrawalId ===
+                                        outcomeEventId
+                                      }
+                                      onChange={(event) =>
+                                        updateBeneficiaryContactConsentWithdrawalDraft(
+                                          outcomeEventId,
+                                          "withdrawal_reason",
+                                          event.target.value
+                                        )
+                                      }
+                                      style={billingInputStyle()}
+                                      aria-label="Contact consent withdrawal reason"
+                                    >
+                                      {BENEFICIARY_CONTACT_CONSENT_WITHDRAWAL_REASON_OPTIONS.map(
+                                        (option) => (
+                                          <option
+                                            key={option.value}
+                                            value={option.value}
+                                          >
+                                            {option.label}
+                                          </option>
+                                        )
+                                      )}
+                                    </select>
+                                    <input
+                                      value={selectedContactConsentWithdrawalDraft.note}
+                                      disabled={
+                                        busyOutcomeContactConsentWithdrawalId ===
+                                        outcomeEventId
+                                      }
+                                      onChange={(event) =>
+                                        updateBeneficiaryContactConsentWithdrawalDraft(
+                                          outcomeEventId,
+                                          "note",
+                                          event.target.value
+                                        )
+                                      }
+                                      placeholder="Withdrawal note"
+                                      style={billingInputStyle()}
+                                    />
+                                    <StableButton
+                                      type="button"
+                                      kind="secondary"
+                                      stableHeight={38}
+                                      disabled={
+                                        busyOutcomeContactConsentWithdrawalId ===
+                                        outcomeEventId
+                                      }
+                                      debugId="community-domain-dashboard.beneficiary-outcome-contact-consent-withdrawal"
+                                      onClick={() => {
+                                        void withdrawBeneficiaryOutcomeContactConsent(
+                                          item
+                                        );
+                                      }}
+                                      style={{
+                                        justifyContent: "center",
+                                        fontSize: 13,
+                                        textTransform: "none",
+                                      }}
+                                    >
+                                      {busyOutcomeContactConsentWithdrawalId ===
+                                      outcomeEventId
+                                        ? "Recording withdrawal..."
+                                        : "Record consent withdrawal"}
+                                    </StableButton>
+                                  </div>
+                                ) : null}
+                                {manualDeliveryBlockedByConsent ? (
+                                  <div style={{ ...helperText(), fontSize: 13 }}>
+                                    {manualDeliveryBlockedText}
+                                  </div>
+                                ) : null}
+                                {latestDeliveryPreparation ? (
+                                  <div style={{ ...helperText(), fontSize: 13 }}>
+                                    Current provider readiness contact/consent:{" "}
+                                    <strong>{currentProviderContactStatus}</strong>.
+                                    Prepared delivery recorded contact/consent as{" "}
+                                    <strong>{preparedDeliveryContactStatus}</strong>.
+                                    GSN still has not sent WhatsApp, SMS, or email.
+                                  </div>
+                                ) : null}
+                                {canRecordManualDelivery ? (
+                                  <div
+                                    style={{
+                                      display: "grid",
+                                      gridTemplateColumns:
+                                        "repeat(auto-fit, minmax(min(100%, 155px), 1fr))",
+                                      gap: 8,
+                                      alignItems: "center",
+                                    }}
+                                  >
+                                    <select
+                                      value={selectedDeliveryReceiptDraft.channel}
+                                      disabled={
+                                        busyOutcomeDeliveryReceiptId ===
+                                        outcomeEventId
+                                      }
+                                      onChange={(event) =>
+                                        updateBeneficiaryDeliveryReceiptDraft(
+                                          outcomeEventId,
+                                          "channel",
+                                          event.target.value
+                                        )
+                                      }
+                                      style={billingInputStyle()}
+                                      aria-label="Manual delivery channel"
+                                    >
+                                      {BENEFICIARY_DELIVERY_CHANNEL_OPTIONS.map(
+                                        (option) => (
+                                          <option
+                                            key={option.value}
+                                            value={option.value}
+                                          >
+                                            {option.label}
+                                          </option>
+                                        )
+                                      )}
+                                    </select>
+                                    <select
+                                      value={
+                                        selectedDeliveryReceiptDraft.delivery_status
+                                      }
+                                      disabled={
+                                        busyOutcomeDeliveryReceiptId ===
+                                        outcomeEventId
+                                      }
+                                      onChange={(event) =>
+                                        updateBeneficiaryDeliveryReceiptDraft(
+                                          outcomeEventId,
+                                          "delivery_status",
+                                          event.target.value
+                                        )
+                                      }
+                                      style={billingInputStyle()}
+                                      aria-label="Manual delivery status"
+                                    >
+                                      {BENEFICIARY_DELIVERY_STATUS_OPTIONS.map(
+                                        (option) => (
+                                          <option
+                                            key={option.value}
+                                            value={option.value}
+                                          >
+                                            {option.label}
+                                          </option>
+                                        )
+                                      )}
+                                    </select>
+                                    <input
+                                      value={selectedDeliveryReceiptDraft.note}
+                                      disabled={
+                                        busyOutcomeDeliveryReceiptId ===
+                                        outcomeEventId
+                                      }
+                                      onChange={(event) =>
+                                        updateBeneficiaryDeliveryReceiptDraft(
+                                          outcomeEventId,
+                                          "note",
+                                          event.target.value
+                                        )
+                                      }
+                                      placeholder="Delivery note"
+                                      style={billingInputStyle()}
+                                    />
+                                    <select
+                                      value={
+                                        selectedDeliveryReceiptDraft.consent_basis
+                                      }
+                                      disabled={
+                                        busyOutcomeDeliveryReceiptId ===
+                                        outcomeEventId
+                                      }
+                                      onChange={(event) =>
+                                        updateBeneficiaryDeliveryReceiptDraft(
+                                          outcomeEventId,
+                                          "consent_basis",
+                                          event.target.value
+                                        )
+                                      }
+                                      style={billingInputStyle()}
+                                      aria-label="Manual delivery consent basis"
+                                    >
+                                      {BENEFICIARY_DELIVERY_CONSENT_OPTIONS.map(
+                                        (option) => (
+                                          <option
+                                            key={option.value}
+                                            value={option.value}
+                                          >
+                                            {option.label}
+                                          </option>
+                                        )
+                                      )}
+                                    </select>
+                                    <StableButton
+                                      type="button"
+                                      kind="secondary"
+                                      stableHeight={38}
+                                      disabled={
+                                        busyOutcomeProviderSendId ===
+                                        outcomeEventId
+                                      }
+                                      debugId="community-domain-dashboard.beneficiary-outcome-provider-send-check"
+                                      onClick={() => {
+                                        void checkBeneficiaryOutcomeProviderSend(
+                                          item
+                                        );
+                                      }}
+                                      style={{
+                                        justifyContent: "center",
+                                        fontSize: 13,
+                                        textTransform: "none",
+                                      }}
+                                    >
+                                      {busyOutcomeProviderSendId ===
+                                      outcomeEventId
+                                        ? "Checking provider..."
+                                        : "Check provider send"}
+                                    </StableButton>
+                                    <StableButton
+                                      type="button"
+                                      kind="secondary"
+                                      stableHeight={38}
+                                      disabled={
+                                        busyOutcomeDeliveryReceiptId ===
+                                        outcomeEventId
+                                      }
+                                      debugId="community-domain-dashboard.beneficiary-outcome-delivery-receipt"
+                                      onClick={() => {
+                                        void recordBeneficiaryOutcomeDeliveryReceipt(
+                                          item
+                                        );
+                                      }}
+                                      style={{
+                                        justifyContent: "center",
+                                        fontSize: 13,
+                                        textTransform: "none",
+                                      }}
+                                    >
+                                      {busyOutcomeDeliveryReceiptId ===
+                                      outcomeEventId
+                                        ? "Recording delivery..."
+                                        : "Record manual receipt"}
+                                    </StableButton>
+                                  </div>
+                                ) : null}
+                                {latestDeliveryReceipt ? (
+                                  <div
+                                    style={{
+                                      display: "grid",
+                                      gridTemplateColumns:
+                                        "repeat(auto-fit, minmax(min(100%, 170px), 1fr))",
+                                      gap: 8,
+                                      alignItems: "center",
+                                    }}
+                                  >
+                                    <select
+                                      value={selectedDeliveryReceiptCorrectionDraft.decision}
+                                      disabled={
+                                        busyOutcomeDeliveryReceiptCorrectionId ===
+                                        outcomeEventId
+                                      }
+                                      onChange={(event) => {
+                                        const nextDecision = event.target.value;
+                                        setBeneficiaryDeliveryReceiptCorrectionDraftByOutcomeId(
+                                          (current) => ({
+                                            ...current,
+                                            [outcomeEventId]: {
+                                              ...selectedDeliveryReceiptCorrectionDraft,
+                                              decision: nextDecision,
+                                            },
+                                          })
+                                        );
+                                      }}
+                                      style={billingInputStyle()}
+                                      aria-label="Manual delivery receipt correction decision"
+                                    >
+                                      {BENEFICIARY_DELIVERY_RECEIPT_CORRECTION_OPTIONS.map(
+                                        (option) => (
+                                          <option
+                                            key={option.value}
+                                            value={option.value}
+                                          >
+                                            {option.label}
+                                          </option>
+                                        )
+                                      )}
+                                    </select>
+                                    <input
+                                      value={selectedDeliveryReceiptCorrectionDraft.note}
+                                      disabled={
+                                        busyOutcomeDeliveryReceiptCorrectionId ===
+                                        outcomeEventId
+                                      }
+                                      onChange={(event) => {
+                                        const nextNote = event.target.value;
+                                        setBeneficiaryDeliveryReceiptCorrectionDraftByOutcomeId(
+                                          (current) => ({
+                                            ...current,
+                                            [outcomeEventId]: {
+                                              ...selectedDeliveryReceiptCorrectionDraft,
+                                              note: nextNote,
+                                            },
+                                          })
+                                        );
+                                      }}
+                                      style={billingInputStyle()}
+                                      aria-label="Manual delivery receipt correction note"
+                                      placeholder="Correction note"
+                                    />
+                                    <StableButton
+                                      type="button"
+                                      kind="secondary"
+                                      stableHeight={38}
+                                      disabled={
+                                        busyOutcomeDeliveryReceiptCorrectionId ===
+                                        outcomeEventId
+                                      }
+                                      debugId="community-domain-dashboard.beneficiary-outcome-delivery-receipt-correction"
+                                      onClick={() => {
+                                        void correctBeneficiaryOutcomeDeliveryReceipt(
+                                          item
+                                        );
+                                      }}
+                                      style={{
+                                        justifyContent: "center",
+                                        fontSize: 13,
+                                        textTransform: "none",
+                                      }}
+                                    >
+                                      {busyOutcomeDeliveryReceiptCorrectionId ===
+                                      outcomeEventId
+                                        ? "Recording correction..."
+                                        : "Record receipt correction"}
+                                    </StableButton>
+                                  </div>
+                                ) : null}
+                              </div>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <div style={helperText()}>
+                            No beneficiary outcome records are loaded for this Community Domain yet.
+                          </div>
+                        )}
+                      </div>
+                      </>
+                    ) : null}
+                  </>
                 ) : null}
 
                 {!isActiveLaneReadinessLoading && activeLane === "members" ? (
@@ -7354,6 +10624,140 @@ export default function CommunityDomainDashboardPage() {
                           nodeParticipationMap={nodeParticipationMap}
                         />
                       </Suspense>
+                    ) : null}
+
+                    {activeMemberDetail === "roster" ? (
+                      <div
+                        style={{
+                          ...softCard(),
+                          display: "grid",
+                          gap: 12,
+                        }}
+                      >
+                        <div style={iconHeaderStyle()}>
+                          <div style={iconFrame(44)}>
+                            <GsnRealisticIcon name="join-person-plus" size={34} />
+                          </div>
+                          <div style={{ minWidth: 0 }}>
+                            <div style={sectionLabel()}>Roster control</div>
+                            <h3 style={{ margin: "3px 0 0", fontSize: 20, lineHeight: 1.16 }}>
+                              Member status and public proof.
+                            </h3>
+                            <div style={{ ...helperText(), marginTop: 6 }}>
+                              Deactivate members who no longer belong. Their record remains in history, but public active-member verification stops passing.
+                            </div>
+                          </div>
+                        </div>
+
+                        {!isAdmin ? (
+                          <div style={{ ...helperText(), marginTop: 2 }}>
+                            Only a Community Domain owner or domain admin can change roster status.
+                          </div>
+                        ) : null}
+
+                        <div style={{ display: "grid", gap: 8 }}>
+                          {domainMemberRows.length ? (
+                            domainMemberRows.map((row) => {
+                              const userId = cleanText(row?.user_id);
+                              const rowKey = cleanText(row?.id, userId);
+                              const statusText = cleanText(row?.status, "inactive").toLowerCase();
+                              const activeMember = statusText === "active";
+                              const busy = busyMemberStatusId === `${cleanText(domain?.id || communityDomainId)}:${userId}`;
+                              const roleText = compactStatus(row?.role || "member");
+                              const label =
+                                cleanText(row?.user_display_name) ||
+                                cleanText(row?.user_email) ||
+                                (userId ? `Member ${userId}` : "Domain member");
+                              return (
+                                <div
+                                  key={rowKey}
+                                  style={{
+                                    display: "grid",
+                                    gridTemplateColumns:
+                                      "minmax(0, 1fr) minmax(min(100%, 136px), auto)",
+                                    gap: 10,
+                                    alignItems: "center",
+                                    padding: "10px 0",
+                                    borderTop: "1px solid rgba(9,27,46,0.1)",
+                                  }}
+                                >
+                                  <div style={{ minWidth: 0 }}>
+                                    <div
+                                      style={{
+                                        display: "flex",
+                                        flexWrap: "wrap",
+                                        gap: 8,
+                                        alignItems: "center",
+                                      }}
+                                    >
+                                      <strong
+                                        style={{
+                                          color: "#091B2E",
+                                          fontSize: 15,
+                                          overflowWrap: "anywhere",
+                                        }}
+                                      >
+                                        {label}
+                                      </strong>
+                                      <span
+                                        style={{
+                                          borderRadius: 999,
+                                          padding: "4px 8px",
+                                          fontSize: 12,
+                                          fontWeight: 900,
+                                          background: activeMember ? "#ECFDF3" : "#FFF7E6",
+                                          color: activeMember ? "#166534" : "#92400E",
+                                          border: `1px solid ${
+                                            activeMember
+                                              ? "rgba(46,155,98,0.22)"
+                                              : "rgba(245,158,11,0.28)"
+                                          }`,
+                                        }}
+                                      >
+                                        {compactStatus(statusText)}
+                                      </span>
+                                    </div>
+                                    <div style={{ ...helperText(), fontSize: 13, marginTop: 4 }}>
+                                      {roleText}
+                                      {cleanText(row?.title) ? ` - ${cleanText(row.title)}` : ""}
+                                    </div>
+                                  </div>
+                                  {isAdmin ? (
+                                    <StableButton
+                                      type="button"
+                                      kind={activeMember ? "secondary" : "primary"}
+                                      stableHeight={44}
+                                      disabled={busy}
+                                      debugId={`community-domain-dashboard.member-status.${rowKey}`}
+                                      onClick={() =>
+                                        void changeDomainMemberStatus(
+                                          row,
+                                          activeMember ? "inactive" : "active"
+                                        )
+                                      }
+                                      style={{
+                                        justifyContent: "center",
+                                        fontSize: 13,
+                                        textTransform: "none",
+                                      }}
+                                    >
+                                      {busy
+                                        ? "Saving"
+                                        : activeMember
+                                          ? "Deactivate"
+                                          : "Reactivate"}
+                                    </StableButton>
+                                  ) : null}
+                                </div>
+                              );
+                            })
+                          ) : (
+                            <div style={helperText()}>
+                              No Community Domain members were returned for this roster view.
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     ) : null}
                   </>
                 ) : null}

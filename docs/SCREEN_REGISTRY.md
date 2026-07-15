@@ -28,6 +28,7 @@ No bottom navigation on these screens.
 3. CommunityVerifyPage
 4. CommunityMemberVerifyPage
 5. MerchantReleasePage
+6. BeneficiaryOutcomeConfirmationPage
 
 ## Authenticated Screens
 

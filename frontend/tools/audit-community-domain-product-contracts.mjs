@@ -32,6 +32,20 @@ function assertContains(rootedPath, pattern, message, options = {}) {
   }
 }
 
+function assertIncludes(rootedPath, expected, message, options = {}) {
+  const text = options.frontend
+    ? readFromFrontend(rootedPath)
+    : readFromRoot(rootedPath);
+
+  if (!text.includes(expected)) {
+    findings.push({
+      file: rootedPath,
+      message,
+      text: `Expected text was not found: ${expected}`,
+    });
+  }
+}
+
 function assertNotContains(rootedPath, pattern, message, options = {}) {
   const text = options.frontend
     ? readFromFrontend(rootedPath)
@@ -80,9 +94,963 @@ assertContains(
 );
 
 assertContains(
+  "docs/SCREEN_REGISTRY.md",
+  /Public Verification Screens[\s\S]*BeneficiaryOutcomeConfirmationPage/,
+  "Beneficiary outcome confirmation page must remain registered as a public verification screen."
+);
+
+assertContains(
   "src/App.tsx",
   /CommunityDomainDashboardPage[\s\S]*path="community-domain"[\s\S]*path="community-domains"[\s\S]*path="community-domain\/:communityDomainId"[\s\S]*path="community-domains\/:communityDomainId"/,
   "Authenticated app routes must expose the Community Domain dashboard without replacing Community Home.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/App.tsx",
+  /BeneficiaryOutcomeConfirmationPage[\s\S]*path="\/community-domains\/public\/beneficiary-outcome-confirmations\/:token"[\s\S]*<BeneficiaryOutcomeConfirmationPage \/>/,
+  "App routes must expose the public beneficiary outcome confirmation page by private token.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/lib/api.ts",
+  /getPublicBeneficiaryOutcomeConfirmation[\s\S]*includeAuth: false[\s\S]*respondPublicBeneficiaryOutcomeConfirmation[\s\S]*includeAuth: false/,
+  "Frontend API helpers for public beneficiary outcome confirmation must stay unauthenticated bearer-link calls.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/BeneficiaryOutcomeConfirmationPage.tsx",
+  /getPublicBeneficiaryOutcomeConfirmation[\s\S]*respondPublicBeneficiaryOutcomeConfirmation[\s\S]*RESPONSE_OPTIONS[\s\S]*confirm[\s\S]*partly_confirm[\s\S]*challenge[\s\S]*cannot_confirm[\s\S]*alreadyResponded[\s\S]*does[\s\S]*not publish your case publicly[\s\S]*does[\s\S]*not make a payment decision[\s\S]*does[\s\S]*not delete the original admin record/,
+  "Public beneficiary outcome confirmation page must load the private outcome, support the four honest response types, block repeated local submission when already answered, and keep its evidence boundary visible.",
+  { frontend: true }
+);
+
+assertContains(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  /COMMUNITY_DOMAIN_OUTCOME_CORRECTION_REVIEW_EVENT[\s\S]*community_domain\.beneficiary_outcome_correction_reviewed[\s\S]*COMMUNITY_DOMAIN_OUTCOME_CORRECTION_DECISIONS[\s\S]*uphold_original[\s\S]*mark_corrected[\s\S]*withdraw_original[\s\S]*needs_follow_up[\s\S]*no_action[\s\S]*CommunityDomainOutcomeCorrectionReviewIn[\s\S]*@router\.get\([\s\S]*\/\{community_domain_id\}\/beneficiary-outcomes\/correction-reviews[\s\S]*@router\.post\([\s\S]*\/\{community_domain_id\}\/beneficiary-outcomes\/\{outcome_event_id\}\/correction-reviews[\s\S]*Correction review recorded as a separate Trust Event/,
+  "Backend must keep beneficiary outcome correction reviews as additive Trust Events with a bounded admin decision set and list/create routes."
+);
+
+assertContains(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  /COMMUNITY_DOMAIN_OUTCOME_CONFIRMATION_DELIVERY_PREPARED_EVENT[\s\S]*community_domain\.beneficiary_outcome_confirmation_delivery_prepared[\s\S]*_community_domain_outcome_confirmation_delivery_pack[\s\S]*prepared_not_sent[\s\S]*whatsapp_url[\s\S]*sms_url[\s\S]*email_url[\s\S]*GSN prepared manual delivery text only[\s\S]*public_path_template[\s\S]*external_channels_sent_by_gsn[\s\S]*False[\s\S]*delivery_pack/,
+  "Backend must prepare beneficiary confirmation manual delivery packs without claiming WhatsApp/SMS/email was sent or storing the raw bearer token in Trust Event metadata."
+);
+
+assertContains(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  /def _community_domain_outcome_provider_delivery_readiness[\s\S]{0,2600}active_contact_consent_status[\s\S]{0,1200}provider_setup_contract[\s\S]{0,2000}required_channel_contracts[\s\S]{0,1600}required_operational_controls[\s\S]{0,1200}send_lift_conditions[\s\S]{0,900}truth_gate[\s\S]{0,1800}contact_consent_contract[\s\S]{0,1800}missing_contact_preference_and_consent_gate[\s\S]{0,1200}active_contact_consent_required[\s\S]{0,1600}manual_only_provider_not_connected[\s\S]{0,800}provider_send_engine_status[\s\S]{0,500}not_connected_in_this_slice[\s\S]{0,800}provider delivery webhook[\s\S]{0,900}cannot send or[\s\S]{0,220}verify WhatsApp, SMS, or email delivery with the current setup/,
+  "Backend must expose beneficiary confirmation provider delivery readiness without implying provider-backed sending exists."
+);
+
+assertContains(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  /COMMUNITY_DOMAIN_OUTCOME_PROVIDER_SEND_BLOCKED_EVENT[\s\S]*community_domain\.beneficiary_outcome_provider_send_blocked[\s\S]*attempt_community_domain_outcome_confirmation_provider_send[\s\S]*active_contact_consent_event_id[\s\S]*latest_contact_consent_withdrawal_event_id[\s\S]*blocked_check_dedupe_key[\s\S]*active_contact_consent_event_id[\s\S]*latest_contact_consent_withdrawal_event_id[\s\S]*existing_blocked_event[\s\S]*log_trust_event[\s\S]*event_type=COMMUNITY_DOMAIN_OUTCOME_PROVIDER_SEND_BLOCKED_EVENT[\s\S]*blocked_check_recorded[\s\S]*True[\s\S]*provider_job_created[\s\S]*False[\s\S]*send_attempt_created[\s\S]*False[\s\S]*external_channels_sent_by_gsn[\s\S]*False[\s\S]*dedupe_key=blocked_check_dedupe_key[\s\S]*blocked_check_reused[\s\S]*blocked_check_created[\s\S]*blocked readiness check as a[\s\S]*Trust Event/,
+  "Backend must fail closed when provider sending is attempted before WhatsApp/SMS/email providers are connected, while recording only a blocked readiness-check Trust Event."
+);
+
+assertIncludes(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  "COMMUNITY_DOMAIN_OUTCOME_CONFIRMATION_DELIVERY_RECORDED_EVENT",
+  "Backend must keep the beneficiary confirmation manual delivery receipt event constant."
+);
+
+assertIncludes(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  "community_domain.beneficiary_outcome_confirmation_delivery_recorded",
+  "Backend must keep the beneficiary confirmation manual delivery receipt event type."
+);
+
+assertIncludes(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  "community_domain.beneficiary_outcome_confirmation_delivery_receipt_corrected",
+  "Backend must keep the beneficiary confirmation manual delivery receipt correction event type."
+);
+
+assertContains(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  /CommunityDomainOutcomeConfirmationDeliveryReceiptIn[\s\S]{0,2400}COMMUNITY_DOMAIN_OUTCOME_DELIVERY_CHANNELS[\s\S]{0,1200}COMMUNITY_DOMAIN_OUTCOME_DELIVERY_STATUSES/,
+  "Backend must validate manual delivery receipt channel/status instead of accepting vague delivery claims."
+);
+
+assertIncludes(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  "COMMUNITY_DOMAIN_OUTCOME_DELIVERY_CONSENT_BASES",
+  "Backend must keep bounded consent bases for manual beneficiary confirmation delivery receipts."
+);
+
+assertContains(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  /beneficiary_consented[\s\S]{0,500}guardian_or_authorized_contact[\s\S]{0,500}existing_relationship[\s\S]{0,500}operational_notice[\s\S]{0,500}not_recorded/,
+  "Backend must keep explicit consent-basis vocabulary for manual delivery receipts."
+);
+
+assertContains(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  /record_community_domain_outcome_confirmation_delivery_receipt[\s\S]*COMMUNITY_DOMAIN_OUTCOME_CONFIRMATION_DELIVERY_PREPARED_EVENT[\s\S]*COMMUNITY_DOMAIN_OUTCOME_CONFIRMATION_DELIVERY_RECORDED_EVENT/,
+  "Backend manual beneficiary confirmation delivery receipt route must validate prepared delivery records before writing receipt events."
+);
+
+assertContains(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  /event_type=COMMUNITY_DOMAIN_OUTCOME_CONFIRMATION_DELIVERY_RECORDED_EVENT[\s\S]{0,1800}consent_basis[\s\S]{0,900}active_contact_consent_status[\s\S]{0,900}contact_consent_event_id[\s\S]{0,1200}admin_recorded_delivery_only[\s\S]{0,1200}external_channels_sent_by_gsn[\s\S]{0,200}False[\s\S]{0,1800}does not mean GSN sent/,
+  "Backend must record manual beneficiary confirmation delivery receipts with consent basis and active contact/consent provenance without claiming GSN sent the external message."
+);
+
+assertContains(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  /correct_community_domain_outcome_confirmation_delivery_receipt[\s\S]*COMMUNITY_DOMAIN_OUTCOME_CONFIRMATION_DELIVERY_RECORDED_EVENT[\s\S]*COMMUNITY_DOMAIN_OUTCOME_CONFIRMATION_DELIVERY_RECEIPT_CORRECTED_EVENT[\s\S]*original_delivery_receipt_preserved[\s\S]*external_channels_sent_by_gsn[\s\S]{0,200}False[\s\S]*original manual receipt remains/,
+  "Backend must correct manual beneficiary confirmation delivery receipts with an additive TrustEvent that preserves the original receipt and does not claim GSN sent the message."
+);
+
+assertIncludes(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  "COMMUNITY_DOMAIN_OUTCOME_CONTACT_CONSENT_RECORDED_EVENT",
+  "Backend must keep the beneficiary contact/consent attestation event constant."
+);
+
+assertIncludes(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  "community_domain.beneficiary_outcome_contact_consent_recorded",
+  "Backend must keep the beneficiary contact/consent attestation event type."
+);
+
+assertIncludes(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  "COMMUNITY_DOMAIN_OUTCOME_CONTACT_CONSENT_WITHDRAWN_EVENT",
+  "Backend must keep the beneficiary contact/consent withdrawal event constant."
+);
+
+assertIncludes(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  "community_domain.beneficiary_outcome_contact_consent_withdrawn",
+  "Backend must keep the beneficiary contact/consent withdrawal event type."
+);
+
+assertContains(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  /COMMUNITY_DOMAIN_OUTCOME_CONTACT_REFERENCE_STATUSES[\s\S]*admin_verified_off_platform[\s\S]*beneficiary_provided[\s\S]*guardian_or_authorized_contact_provided[\s\S]*existing_relationship_record[\s\S]*not_recorded/,
+  "Backend must keep bounded beneficiary contact reference statuses."
+);
+
+assertContains(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  /COMMUNITY_DOMAIN_OUTCOME_CONTACT_CONSENT_WITHDRAWAL_REASONS[\s\S]*beneficiary_withdrew_consent[\s\S]*guardian_withdrew_authority[\s\S]*contact_no_longer_valid[\s\S]*wrong_recipient[\s\S]*consent_expired[\s\S]*replaced_by_new_attestation[\s\S]*admin_error/,
+  "Backend must keep bounded beneficiary contact consent withdrawal reasons."
+);
+
+assertContains(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  /CommunityDomainOutcomeContactConsentRecordIn[\s\S]*COMMUNITY_DOMAIN_OUTCOME_PROVIDER_CONTACT_CHANNELS[\s\S]*COMMUNITY_DOMAIN_OUTCOME_CONTACT_REFERENCE_STATUSES[\s\S]*COMMUNITY_DOMAIN_OUTCOME_DELIVERY_CONSENT_BASES/,
+  "Backend must validate contact/consent attestation channel, reference status, and consent basis."
+);
+
+assertContains(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  /record_community_domain_outcome_contact_consent[\s\S]*manual_attestation_only[\s\S]*provider_send_ready[\s\S]*False[\s\S]*raw_destination_stored[\s\S]*False[\s\S]*external_channels_sent_by_gsn[\s\S]*False/,
+  "Backend must record contact/consent attestations without storing raw destinations, claiming provider send readiness, or claiming external sends."
+);
+
+assertContains(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  /withdraw_community_domain_outcome_contact_consent[\s\S]*COMMUNITY_DOMAIN_OUTCOME_CONTACT_CONSENT_RECORDED_EVENT[\s\S]*beneficiary_outcome_contact_consent_mismatch[\s\S]*COMMUNITY_DOMAIN_OUTCOME_CONTACT_CONSENT_WITHDRAWN_EVENT[\s\S]*replacement_required[\s\S]*provider_send_ready[\s\S]*False[\s\S]*does not delete the original/,
+  "Backend must record contact/consent withdrawals as additive Trust Events without deleting the original record or unlocking provider send."
+);
+
+assertContains(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  /def _community_domain_outcome_contact_consent_status[\s\S]*not_recorded[\s\S]*manual_delivery_allowed = False[\s\S]*active_attestation[\s\S]*manual_delivery_allowed = True[\s\S]*withdrawn_requires_replacement[\s\S]*manual_delivery_allowed = False/,
+  "Backend contact/consent status must allow manual delivery receipts only for active attestations."
+);
+
+assertContains(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  /beneficiary_outcome_contact_consent_not_recorded[\s\S]*beneficiary_outcome_contact_consent_withdrawn[\s\S]*created no manual delivery receipt/,
+  "Backend receipt route must name both missing and withdrawn contact/consent blocks and create no manual delivery receipt."
+);
+
+assertContains(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  /required_next_action[\s\S]*record_contact_consent_attestation[\s\S]*delivery_receipt_created[\s\S]*False[\s\S]*external_channels_sent_by_gsn[\s\S]*False/,
+  "Backend receipt route must block missing or withdrawn contact/consent without creating a manual delivery receipt."
+);
+
+assertContains(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  /latest_delivery_preparation[\s\S]*latest_delivery_receipt[\s\S]*latest_contact_consent_record[\s\S]*latest_contact_consent_withdrawal[\s\S]*contact_consent_status/,
+  "Backend beneficiary outcome listing must expose latest delivery, contact/consent, withdrawal, and active status records for admin review."
+);
+
+assertContains(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  /def _community_domain_outcome_confirmation_delivery_payload[\s\S]*active_contact_consent_status[\s\S]*active_contact_consent_satisfied/,
+  "Backend delivery payloads must expose the contact/consent status captured when the delivery evidence was recorded."
+);
+
+assertContains(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  /contact_consent_status[\s\S]*_community_domain_outcome_contact_consent_status[\s\S]*current_provider_delivery_readiness[\s\S]*_community_domain_outcome_provider_delivery_readiness[\s\S]*contact_consent_status=item\["contact_consent_status"\]/,
+  "Backend beneficiary outcome listing must expose current provider delivery readiness separately from historical delivery preparation metadata."
+);
+
+assertContains(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  /_community_domain_outcome_provider_send_blocked_payload[\s\S]*active_contact_consent_event_id[\s\S]*latest_contact_consent_withdrawal_event_id[\s\S]*provider_job_created[\s\S]*send_attempt_created[\s\S]*external_channels_sent_by_gsn[\s\S]*provider_send_blocked_rows[\s\S]*COMMUNITY_DOMAIN_OUTCOME_PROVIDER_SEND_BLOCKED_EVENT[\s\S]*provider_send_blocked_check_count[\s\S]*latest_provider_send_blocked_check/,
+  "Backend beneficiary outcome listing must expose latest blocked provider-send readiness checks per outcome."
+);
+
+assertContains(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  /"delivery_channels": sorted\(COMMUNITY_DOMAIN_OUTCOME_DELIVERY_CHANNELS\)[\s\S]{0,300}"delivery_statuses": sorted\(COMMUNITY_DOMAIN_OUTCOME_DELIVERY_STATUSES\)[\s\S]{0,300}"delivery_consent_bases": sorted\([\s\S]{0,500}"provider_contact_channels": sorted\([\s\S]{0,500}"contact_reference_statuses": sorted\([\s\S]{0,500}"contact_consent_withdrawal_reasons": sorted\(/,
+  "Backend beneficiary outcome listing must expose allowed delivery, contact/consent, and withdrawal vocabularies for the admin UI."
+);
+
+assertIncludes(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  '"beneficiary_confirmation_delivery_preparations"',
+  "Backend period summary must expose beneficiary confirmation delivery preparation source records."
+);
+
+assertIncludes(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  '"beneficiary_confirmation_delivery_receipts_by_consent_basis"',
+  "Backend period summary must aggregate manual delivery receipt consent-basis evidence."
+);
+
+assertIncludes(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  '"beneficiary_confirmation_delivery_receipts_current_uncorrected"',
+  "Backend period summary must separate current uncorrected manual receipts from all recorded receipt audit rows."
+);
+
+assertContains(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  /_community_domain_current_delivery_receipt_correction_rows[\s\S]*delivery_receipt_event_id[\s\S]*current_delivery_receipt_correction_rows[\s\S]*_community_domain_active_delivery_receipt_rows[\s\S]*current_delivery_receipt_correction_rows/,
+  "Backend period and sponsor summaries must calculate current uncorrected manual receipts from current correction state, not only period-bound correction rows."
+);
+
+assertIncludes(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  '"beneficiary_contact_consent_records"',
+  "Backend period summary must expose beneficiary contact/consent attestation counts."
+);
+
+assertIncludes(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  '"beneficiary_contact_consent_withdrawals"',
+  "Backend period summary must expose beneficiary contact/consent withdrawal counts."
+);
+
+assertIncludes(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  '"confirmation_delivery_prepared_records"',
+  "Backend sponsor-safe summary must expose delivery-prepared counts."
+);
+
+assertIncludes(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  '"confirmation_delivery_receipts_by_consent_basis"',
+  "Backend sponsor-safe summary must aggregate manual delivery receipt consent-basis evidence."
+);
+
+assertIncludes(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  '"confirmation_delivery_receipts_current_uncorrected"',
+  "Backend sponsor-safe summary must separate current uncorrected manual receipts from all recorded receipt audit rows."
+);
+
+assertIncludes(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  '"contact_consent_records"',
+  "Backend sponsor-safe summary must expose contact/consent attestation evidence."
+);
+
+assertIncludes(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  '"contact_consent_withdrawals"',
+  "Backend sponsor-safe summary must expose contact/consent withdrawal evidence."
+);
+
+assertIncludes(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  "Delivery counts are manual/admin-recorded",
+  "Backend sponsor-safe summary must avoid implying provider-backed sending."
+);
+
+assertIncludes(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  '"external_delivery_readiness"',
+  "Backend sponsor-safe summary must expose external delivery readiness."
+);
+
+assertContains(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  /sponsor_export_pack[\s\S]{0,500}community_domain\.sponsor_safe_export_pack[\s\S]{0,500}prepared_not_sent[\s\S]{0,900}copy_text[\s\S]{0,900}omitted_private_fields[\s\S]{0,900}external_channels_sent_by_gsn[\s\S]{0,500}False[\s\S]{0,700}GSN does not send it/,
+  "Backend sponsor-safe summary must prepare a copy-ready export pack without sending, publishing, or exposing private beneficiary fields."
+);
+
+assertContains(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  /def _active_community_domain_admin_recipient_ids[\s\S]*DOMAIN_ADMIN_ROLES[\s\S]*def _create_community_domain_admin_notifications[\s\S]*create_notification/,
+  "Backend must keep route-local admin notification constants and helper for beneficiary outcome response/review notifications."
+);
+
+assertIncludes(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  "COMMUNITY_DOMAIN_OUTCOME_RESPONSE_ADMIN_NOTIFICATION",
+  "Backend must keep the beneficiary response admin notification constant."
+);
+
+assertIncludes(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  "community_domain.beneficiary_outcome_response_recorded",
+  "Backend must keep the beneficiary response admin notification kind."
+);
+
+assertIncludes(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  "COMMUNITY_DOMAIN_OUTCOME_CORRECTION_ADMIN_NOTIFICATION",
+  "Backend must keep the correction-review admin notification constant."
+);
+
+assertIncludes(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  "community_domain.beneficiary_outcome_correction_reviewed",
+  "Backend must keep the correction-review notification kind."
+);
+
+assertIncludes(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  'action_url=f"/app/community-domain/{int(domain.id)}?lane=governance"',
+  "Backend admin notifications must route admins to the Community Domain governance lane, not the public bearer link."
+);
+
+assertContains(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  /payload\.response_type in \{[\s\S]{0,500}partly_confirm[\s\S]{0,500}challenge[\s\S]{0,500}cannot_confirm[\s\S]{0,1200}kind=COMMUNITY_DOMAIN_OUTCOME_RESPONSE_ADMIN_NOTIFICATION[\s\S]{0,1200}Private responder details stay/,
+  "Backend must notify admins for challenged or uncertain beneficiary outcome responses using the governance lane, not the bearer link."
+);
+
+assertContains(
+  "gmfn_backend/app/api/routes/community_domains.py",
+  /kind=COMMUNITY_DOMAIN_OUTCOME_CORRECTION_ADMIN_NOTIFICATION[\s\S]{0,1200}correction review decision[\s\S]{0,1200}exclude_user_ids=\{int\(current_user\.id\)\}/,
+  "Backend must notify other admins after correction review decisions while excluding the acting admin."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  'response_data["admin_notifications_created"] == 2',
+  "Backend tests must prove challenged beneficiary responses create admin notifications."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  'reviewed.json()["admin_notifications_created"] == 1',
+  "Backend tests must prove correction-review decisions create admin notifications for other admins."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  "community_domain.beneficiary_outcome_response_recorded",
+  "Backend tests must prove beneficiary response admin notification rows are recorded."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  "community-domain/1?lane=governance",
+  "Backend tests must prove admin notifications route to the governance lane."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  '"outcome-confirmations" not in',
+  "Backend tests must prove admin notifications do not expose raw public confirmation links."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  "community_domain.beneficiary_outcome_correction_reviewed",
+  "Backend tests must prove correction-review admin notification rows are recorded."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  "beneficiary_outcome_confirmation_delivery_recorded",
+  "Backend tests must prove manual delivery receipt Trust Events are recorded."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  "beneficiary_outcome_confirmation_delivery_receipt_corrected",
+  "Backend tests must prove manual delivery receipt correction Trust Events are recorded."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  "beneficiary_outcome_contact_consent_recorded",
+  "Backend tests must prove contact/consent Trust Events are recorded."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  "beneficiary_outcome_contact_consent_withdrawn",
+  "Backend tests must prove contact/consent withdrawal Trust Events are recorded."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  'delivery_receipt_event.meta["external_channels_sent_by_gsn"] is False',
+  "Backend tests must prove manual delivery receipts do not claim GSN sent the external channel."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  'contact_consent_event.meta["raw_destination_stored"] is False',
+  "Backend tests must prove contact/consent attestations do not store raw destinations."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  'contact_consent_withdrawal_event.meta["provider_send_ready"] is False',
+  "Backend tests must prove contact/consent withdrawals keep provider send unavailable."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  'blocked_receipt_detail["code"]',
+  "Backend tests must prove manual delivery receipt is blocked after contact/consent withdrawal."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  "beneficiary_outcome_contact_consent_not_recorded",
+  "Backend tests must prove manual delivery receipt is blocked before contact/consent is recorded."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  'missing_consent_detail["contact_consent_status"]["status"] ==',
+  "Backend tests must prove missing contact/consent blocked receipts report not-recorded status."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  'blocked_receipt_detail["contact_consent_status"]["status"] ==',
+  "Backend tests must prove blocked manual delivery reports withdrawn contact/consent status."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  'delivery_receipt_event.meta["consent_basis"] == "beneficiary_consented"',
+  "Backend tests must prove manual delivery receipts store the selected consent basis."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  'delivery_receipt_event.meta["contact_consent_event_id"] ==',
+  "Backend tests must prove manual delivery receipts point to the active contact/consent event that allowed them."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  '"original_delivery_receipt_preserved"',
+  "Backend tests must prove manual receipt corrections preserve the original receipt."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  'receipt_data["delivery_receipt"]["active_contact_consent_status"] ==',
+  "Backend tests must prove receipt payloads expose active contact/consent status at receipt time."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  'public_token not in json.dumps(delivery_receipt_event.meta)',
+  "Backend tests must prove manual delivery receipts do not store raw public bearer tokens."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  'listed_after_delivery_data["delivery_channels"]',
+  "Backend tests must prove beneficiary outcome listing returns allowed delivery channels."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  'listed_after_delivery_data["delivery_statuses"]',
+  "Backend tests must prove beneficiary outcome listing returns allowed delivery statuses."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  'listed_after_delivery_data["delivery_consent_bases"]',
+  "Backend tests must prove beneficiary outcome listing returns allowed delivery consent bases."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  'listed_delivery_item["contact_consent_record_count"] == 2',
+  "Backend tests must prove beneficiary outcome listing exposes original and replacement contact/consent records."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  'listed_delivery_item["contact_consent_withdrawal_count"] == 1',
+  "Backend tests must prove beneficiary outcome listing exposes contact/consent withdrawals."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  '"active_contact_consent_status"',
+  "Backend tests must prove delivery preparation payload preserves preparation-time contact/consent status."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  'listed_current_readiness["active_contact_consent_status"] ==',
+  "Backend tests must prove current provider readiness reflects latest contact/consent status."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  'listed_delivery_item["provider_send_blocked_check_count"] == 2',
+  "Backend tests must prove beneficiary outcome listing exposes provider-send blocked check counts."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  'active_blocked_event.meta["active_contact_consent_event_id"]',
+  "Backend tests must prove provider-send blocked dedupe keys change when contact/consent evidence changes."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  '"latest_contact_consent_withdrawal_event_id"',
+  "Backend tests must prove blocked provider-send payloads expose contact/consent evidence ids."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  'latest_blocked_provider_check["provider_job_created"] is False',
+  "Backend tests must prove latest blocked provider-send check payload does not claim provider jobs or sends."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  'listed_delivery_item["contact_consent_status"]["status"] ==',
+  "Backend tests must prove beneficiary outcome listing exposes active contact/consent status after replacement."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  '"beneficiary_confirmation_delivery_receipts_by_consent_basis"',
+  "Backend tests must prove period summaries expose delivery receipt consent-basis evidence."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  '"beneficiary_confirmation_delivery_receipts_current_uncorrected"',
+  "Backend tests must prove period summaries separate current uncorrected receipt counts from corrected receipt audit rows."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  '"confirmation_delivery_receipts_by_consent_basis"',
+  "Backend tests must prove sponsor summaries expose delivery receipt consent-basis evidence."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  '"confirmation_delivery_receipts_current_uncorrected"',
+  "Backend tests must prove sponsor summaries separate current uncorrected receipt counts from corrected receipt audit rows."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  '"Current uncorrected manual delivery receipts: 0"',
+  "Backend tests must prove sponsor export packs disclose current uncorrected receipt counts."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  "period_after_out_of_period_correction",
+  "Backend tests must prove out-of-period correction events still affect current uncorrected receipt counts."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  '"Contact/consent attestations recorded: 2"',
+  "Backend tests must prove sponsor export packs include original and replacement contact/consent attestation counts."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  '"Contact/consent withdrawals recorded: 1"',
+  "Backend tests must prove sponsor export packs include contact/consent withdrawal counts."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  'export_pack["status"] == "prepared_not_sent"',
+  "Backend tests must prove sponsor export packs are prepared but not sent."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  'delivery_readiness["ready_to_send"] is False',
+  "Backend tests must prove beneficiary confirmation delivery packs are not provider-ready."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  'external_delivery["provider_send_engine_status"] ==',
+  "Backend tests must prove sponsor summaries expose provider-send readiness."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  'provider_setup_contract["status"] == "not_configured"',
+  "Backend tests must prove provider setup contract remains not configured until real providers are wired."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  '"delivery receipt Trust Event mapping tested"',
+  "Backend tests must prove provider setup contract names the delivery receipt Trust Event lift condition."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  'contact_consent_contract["status"] == "not_connected"',
+  "Backend tests must prove contact/consent gate remains not connected until contact preference storage exists."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  '"missing_contact_preference_and_consent_gate"',
+  "Backend tests must prove provider-send readiness names the missing contact preference and consent gate."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  'contact_consent_contract["active_contact_consent_status"] ==',
+  "Backend tests must prove delivery readiness exposes missing active contact/consent status."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  'blocked_contact_consent["active_contact_consent_status"] ==',
+  "Backend tests must prove provider-send checks expose withdrawn contact/consent status."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  "blocked_provider_send.status_code == 409",
+  "Backend tests must prove provider-send attempts fail closed while providers are not connected."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  "event_count_after_provider_send == event_count_before_provider_send + 1",
+  "Backend tests must prove blocked provider-send attempts create exactly one blocked readiness-check Trust Event."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  "event_count_after_repeated_provider_send == event_count_after_provider_send",
+  "Backend tests must prove repeated identical blocked provider-send checks do not inflate Trust Events."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  'repeated_blocked_detail["blocked_check_reused"] is True',
+  "Backend tests must prove repeated blocked provider-send checks are labelled as reused."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  '"confirmation_provider_send_blocked_checks"',
+  "Backend tests must prove blocked provider-send readiness checks appear in period and sponsor summaries."
+);
+
+assertIncludes(
+  "gmfn_backend/tests/test_community_domains.py",
+  '"Missed three" not in export_pack["copy_text"]',
+  "Backend tests must prove sponsor export packs omit private baseline detail."
+);
+
+assertContains(
+  "src/lib/api.ts",
+  /listCommunityDomainOutcomeCorrectionReviews[\s\S]*\/beneficiary-outcomes\/correction-reviews[\s\S]*reviewCommunityDomainOutcomeCorrection[\s\S]*\/beneficiary-outcomes\/\$\{outcomeEventId\}\/correction-reviews/,
+  "Frontend API layer must expose beneficiary outcome correction-review list/create helpers.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/lib/api.ts",
+  /recordCommunityDomainOutcomeConfirmationDeliveryReceipt[\s\S]*consent_basis[\s\S]*\/beneficiary-outcomes\/\$\{outcomeEventId\}\/confirmation-deliveries\/\$\{deliveryEventId\}\/receipts/,
+  "Frontend API layer must expose the beneficiary confirmation manual delivery receipt helper with consent basis.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/lib/api.ts",
+  /recordCommunityDomainOutcomeContactConsent[\s\S]*destination_reference_status[\s\S]*consent_basis[\s\S]*\/beneficiary-outcomes\/\$\{outcomeEventId\}\/contact-consent-records/,
+  "Frontend API layer must expose the beneficiary contact/consent attestation helper.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/lib/api.ts",
+  /withdrawCommunityDomainOutcomeContactConsent[\s\S]*withdrawal_reason[\s\S]*replacement_required[\s\S]*\/beneficiary-outcomes\/\$\{outcomeEventId\}\/contact-consent-records\/\$\{contactConsentEventId\}\/withdrawals/,
+  "Frontend API layer must expose the beneficiary contact/consent withdrawal helper.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/lib/api.ts",
+  /attemptCommunityDomainOutcomeConfirmationProviderSend[\s\S]*\/beneficiary-outcomes\/\$\{outcomeEventId\}\/confirmation-deliveries\/\$\{deliveryEventId\}\/provider-send-attempts/,
+  "Frontend API layer must expose the fail-closed beneficiary confirmation provider-send readiness helper.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /listCommunityDomainOutcomeCorrectionReviews[\s\S]*reviewCommunityDomainOutcomeCorrection/,
+  "Community Domain dashboard must import correction-review API helpers.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /BENEFICIARY_DELIVERY_CHANNEL_OPTIONS[\s\S]*whatsapp[\s\S]*sms[\s\S]*email[\s\S]*copy_link[\s\S]*other[\s\S]*BENEFICIARY_DELIVERY_STATUS_OPTIONS[\s\S]*manual_sent[\s\S]*manual_failed[\s\S]*received_reported[\s\S]*opened_reported/,
+  "Community Domain dashboard must expose bounded manual beneficiary delivery receipt channel/status options.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /BENEFICIARY_DELIVERY_CONSENT_OPTIONS[\s\S]*existing_relationship[\s\S]*beneficiary_consented[\s\S]*guardian_or_authorized_contact[\s\S]*operational_notice[\s\S]*not_recorded/,
+  "Community Domain dashboard must expose bounded manual beneficiary delivery consent-basis options.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /BENEFICIARY_CONTACT_REFERENCE_STATUS_OPTIONS[\s\S]*admin_verified_off_platform[\s\S]*beneficiary_provided[\s\S]*guardian_or_authorized_contact_provided[\s\S]*existing_relationship_record[\s\S]*not_recorded/,
+  "Community Domain dashboard must expose bounded beneficiary contact reference status options.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /BENEFICIARY_CONTACT_CONSENT_WITHDRAWAL_REASON_OPTIONS[\s\S]*beneficiary_withdrew_consent[\s\S]*guardian_withdrew_authority[\s\S]*contact_no_longer_valid[\s\S]*wrong_recipient[\s\S]*consent_expired[\s\S]*replaced_by_new_attestation[\s\S]*admin_error/,
+  "Community Domain dashboard must expose bounded beneficiary contact consent withdrawal reason options.",
+  { frontend: true }
+);
+
+assertIncludes(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  "beneficiaryDeliveryReceiptDraftByOutcomeId",
+  "Community Domain dashboard must keep per-outcome manual delivery receipt drafts.",
+  { frontend: true }
+);
+
+assertIncludes(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  "consent_basis: receiptDraft.consent_basis",
+  "Community Domain dashboard must submit the selected manual delivery consent basis.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /beneficiaryContactConsentDraftByOutcomeId[\s\S]*recordBeneficiaryOutcomeContactConsent[\s\S]*recordCommunityDomainOutcomeContactConsent[\s\S]*destination_reference_status[\s\S]*GSN stored no raw destination[\s\S]*community-domain-dashboard\.beneficiary-outcome-contact-consent[\s\S]*Record contact\/consent/,
+  "Community Domain dashboard must let admins record contact/consent attestations without claiming GSN stored raw destinations or sent external messages.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /beneficiaryContactConsentWithdrawalDraftByOutcomeId[\s\S]*withdrawBeneficiaryOutcomeContactConsent[\s\S]*withdrawCommunityDomainOutcomeContactConsent[\s\S]*replacement_required[\s\S]*Provider send remains unavailable[\s\S]*community-domain-dashboard\.beneficiary-outcome-contact-consent-withdrawal[\s\S]*Record consent withdrawal/,
+  "Community Domain dashboard must let admins record contact/consent withdrawals without unlocking provider send.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /recordBeneficiaryOutcomeDeliveryReceipt[\s\S]*Manual delivery receipt recorded[\s\S]*consent basis[\s\S]*GSN still did not send WhatsApp, SMS, or email[\s\S]*contact_consent_event_id[\s\S]*backed by contact\/consent record[\s\S]*Record manual receipt/,
+  "Community Domain dashboard must let admins record selected manual beneficiary confirmation delivery receipts with consent basis and contact/consent provenance without claiming GSN sent external messages.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /correctBeneficiaryOutcomeDeliveryReceipt[\s\S]*Manual delivery receipt correction recorded[\s\S]*original receipt remains in the audit trail[\s\S]*latest_correction[\s\S]*Record receipt correction/,
+  "Community Domain dashboard must let admins record manual delivery receipt corrections and show that the original receipt remains in the audit trail.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /Current receipts[\s\S]*confirmation_delivery_receipts_current_uncorrected[\s\S]*Receipt corrections[\s\S]*Current receipts exclude receipts/,
+  "Community Domain dashboard must show current uncorrected delivery receipts separately from all manual receipt audit rows and corrections.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /contact_consent_status[\s\S]*manual_delivery_allowed[\s\S]*manualDeliveryBlockedByConsent[\s\S]*Manual delivery receipt is blocked until contact\/consent is recorded[\s\S]*Manual delivery receipt is blocked until an active contact\/consent attestation exists/,
+  "Community Domain dashboard must hide manual delivery receipt recording until an active contact/consent attestation exists.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /current_provider_delivery_readiness[\s\S]*currentProviderContactStatus[\s\S]*preparedDeliveryContactStatus[\s\S]*Current provider readiness contact\/consent[\s\S]*Prepared delivery recorded contact\/consent/,
+  "Community Domain dashboard must distinguish current provider readiness from preparation-time delivery contact/consent metadata.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /checkBeneficiaryOutcomeProviderSend[\s\S]*attemptCommunityDomainOutcomeConfirmationProviderSend[\s\S]*Contact\/consent is not provider-ready yet[\s\S]*blockedCheckNote[\s\S]*existing blocked readiness-check Trust Event was reused[\s\S]*Provider send blocked[\s\S]*GSN created no provider job and no external send[\s\S]*community-domain-dashboard\.beneficiary-outcome-provider-send-check[\s\S]*Check provider send/,
+  "Community Domain dashboard must surface provider-send attempts as blocked readiness checks, not as real external delivery.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /listCommunityDomainBeneficiaryOutcomes\([\s\S]*requestDomainId[\s\S]*limit: 5[\s\S]*setBeneficiaryOutcomeRows/,
+  "Community Domain dashboard must refresh beneficiary outcome rows after blocked provider-send checks.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /latest_provider_send_blocked_check[\s\S]*Provider send blocked:[\s\S]*readiness check only[\s\S]*no[\s\S]*provider job[\s\S]*no[\s\S]*send attempt[\s\S]*no external/,
+  "Community Domain dashboard must show latest per-outcome blocked provider-send checks.",
+  { frontend: true }
+);
+
+assertIncludes(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  "evidence.beneficiary_confirmation_delivery_receipts_by_consent_basis",
+  "Community Domain dashboard period summary must expose manual delivery consent-basis evidence.",
+  { frontend: true }
+);
+
+assertIncludes(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  "evidence.beneficiary_contact_consent_records",
+  "Community Domain dashboard period summary must expose contact/consent attestation counts.",
+  { frontend: true }
+);
+
+assertIncludes(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  "evidence.beneficiary_contact_consent_withdrawals",
+  "Community Domain dashboard period summary must expose contact/consent withdrawal counts.",
+  { frontend: true }
+);
+
+assertIncludes(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  "GSN did not send WhatsApp, SMS, or email;",
+  "Community Domain dashboard period summary must avoid claiming GSN sent external channels.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /confirmation_delivery_prepared_records[\s\S]{0,800}confirmation_delivery_receipt_records[\s\S]{0,1200}confirmation_delivery_receipts_current_uncorrected[\s\S]{0,1200}confirmation_delivery_receipt_corrections[\s\S]{0,2200}confirmation_delivery_receipts_current_by_status[\s\S]{0,1800}confirmation_delivery_receipts_by_status[\s\S]{0,2200}confirmation_delivery_receipts_by_consent_basis[\s\S]{0,2200}confirmation_delivery_receipt_corrections_by_decision[\s\S]{0,2200}contact_consent_by_reference_status[\s\S]{0,2200}contact_consent_withdrawals_by_reason[\s\S]{0,1200}GSN did not send external messages/,
+  "Community Domain dashboard sponsor summary must expose delivery, contact/consent, and withdrawal evidence without provider-send claims.",
+  { frontend: true }
+);
+
+assertIncludes(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  "sponsorSummary?.external_delivery_readiness",
+  "Community Domain dashboard sponsor summary must read external delivery readiness.",
+  { frontend: true }
+);
+
+assertIncludes(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  "Provider delivery readiness",
+  "Community Domain dashboard sponsor summary must show provider delivery readiness.",
+  { frontend: true }
+);
+
+assertIncludes(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  "externalDelivery.missing_components",
+  "Community Domain dashboard sponsor summary must show missing provider delivery components.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /Provider setup contract[\s\S]{0,1400}provider_setup_contract[\s\S]{0,1400}send_lift_conditions[\s\S]{0,1400}truth_gate/,
+  "Community Domain dashboard must show the provider setup contract and lift conditions without claiming provider delivery is active.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /Contact and consent gate[\s\S]{0,1000}contact_consent_contract[\s\S]{0,1200}provider_send_blocker[\s\S]{0,1200}active_contact_consent_status[\s\S]{0,1200}active_contact_consent_boundary[\s\S]{0,1200}minimum_send_rule[\s\S]{0,1200}privacy_boundary/,
+  "Community Domain dashboard must show the contact/consent blocker before provider delivery can be treated as ready.",
+  { frontend: true }
+);
+
+assertIncludes(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  "async function copySponsorExportPack()",
+  "Community Domain dashboard must keep the sponsor export pack copy handler.",
+  { frontend: true }
+);
+
+assertIncludes(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  "GSN did not send or publish it",
+  "Community Domain dashboard sponsor export copy feedback must avoid claiming GSN sent or published the report.",
+  { frontend: true }
+);
+
+assertIncludes(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  "community-domain-dashboard.copy-sponsor-export-pack",
+  "Community Domain dashboard must expose the sponsor export pack copy action.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /BENEFICIARY_CORRECTION_DECISION_OPTIONS[\s\S]*mark_corrected[\s\S]*uphold_original[\s\S]*withdraw_original[\s\S]*needs_follow_up[\s\S]*no_action/,
+  "Community Domain dashboard must keep the bounded beneficiary correction-review decision options visible.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /beneficiaryCorrectionDecisionByOutcomeId[\s\S]*submitBeneficiaryOutcomeCorrectionReview[\s\S]*reviewCommunityDomainOutcomeCorrection[\s\S]*Correction review recorded as a separate Trust Event/,
+  "Community Domain dashboard must record correction reviews as additive Trust Events.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /The original outcome was not rewritten[\s\S]*Review challenge/,
+  "Community Domain dashboard must show challenged outcome correction-review controls and preserve the additive-history boundary.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /delivery_pack[\s\S]*message_text[\s\S]*navigator\.clipboard\.writeText\(copyText\)[\s\S]*Manual delivery pack prepared[\s\S]*GSN did not send WhatsApp, SMS, or email/,
+  "Community Domain dashboard must copy prepared beneficiary confirmation delivery text and avoid claiming external delivery was sent.",
   { frontend: true }
 );
 

@@ -12,6 +12,9 @@ from app.db.models import (
     ClanInvite,
     ClanJoinRequest,
     ClanMembership,
+    CommunityConfirmationOutcome,
+    CommunityConfirmationRequest,
+    CommunityConfirmationResponse,
     CommunityDomain,
     CommunityDomainAffiliation,
     CommunityDomainActionReview,
@@ -23,6 +26,7 @@ from app.db.models import (
     CommunityNode,
     CommunityNodeMembership,
     CommunityDomainPolicy,
+    CommunityMemberVerification,
     User,
     TrustEvent,
     TrustSlip,
@@ -216,6 +220,2042 @@ def test_public_domain_lookup_rejects_unknown_or_invalid_code(
     assert blank.status_code == 422, blank.text
     assert blank.json()["detail"]["code"] == "domain_name_required"
     assert blank.json()["detail"]["normalized_domain_name"] == ""
+
+
+def _seed_public_domain_verification_context(*, member_status: str = "active") -> None:
+    _seed_owner()
+    _seed_user(2, "pillar-member@example.com")
+    with SessionLocal() as db:
+        owner = db.get(User, 1)
+        member = db.get(User, 2)
+        owner.display_name = "Felix Representative"
+        owner.gmfn_id = "GSN-U-FELIX001"
+        member.display_name = "Pillar Member"
+        member.gmfn_id = "GSN-U-MEMBER002"
+        domain = CommunityDomain(
+            id=1,
+            domain_name="pillar-of-hope",
+            display_name="Pillar of Hope",
+            domain_type="ngo_project",
+            template_key="ngo_project",
+            owner_user_id=1,
+            status="active",
+            verification_status="verified",
+            public_profile="A public-safe support organization profile.",
+        )
+        db.add(domain)
+        db.flush()
+        db.add(
+            CommunityDomainMembership(
+                community_domain_id=1,
+                user_id=1,
+                role="owner",
+                status="active",
+                title="Accountable representative",
+            )
+        )
+        db.add(
+            CommunityDomainMembership(
+                community_domain_id=1,
+                user_id=2,
+                role="member",
+                status=member_status,
+                title="Volunteer",
+            )
+        )
+        db.commit()
+
+
+def test_public_verify_resolves_protected_community_domain_record(
+    client: TestClient,
+):
+    _seed_public_domain_verification_context()
+
+    for key in ("pillar-of-hope", "Pillar of Hope", "GSN-D-000001", "1"):
+        response = client.get(f"/verify/community/{key}")
+        assert response.status_code == 200, {"key": key, "body": response.text}
+        data = response.json()
+        assert data["community_record_kind"] == "community_domain"
+        assert data["community_domain_id"] == 1
+        assert data["community_name"] == "Pillar of Hope"
+        assert data["community_code"] == "GSN-D-000001"
+        assert data["community_type_label"] == "NGO / project network"
+        assert data["community_public_face_status"] == "protected_domain_record"
+        assert data["community_public_face_label"] == "Protected Community Domain record"
+        assert data["community_evidence_currentness_status"] == "active_protected_domain"
+        assert data["domain_label"] == "GSN Protected Community Domain"
+        assert data["domain_lifecycle_status"] == "active"
+        assert "represented by accountable personal GSN IDs" in data["domain_lifecycle_note"]
+        assert "does not create a separate institutional shop" in data["domain_evidence_scope"]
+        assert data["membership_credential_status"] == (
+            "Member credentials are checked by Community Domain membership rows"
+        )
+        assert data["request_confirmation_available"] is False
+        assert "active_member_count" not in data
+        assert "owner_user_id" not in data
+        assert "phone_e164" not in response.text
+
+
+def test_public_verify_resolves_active_community_domain_member(
+    client: TestClient,
+):
+    _seed_public_domain_verification_context()
+
+    response = client.get(
+        "/verify/community/pillar-of-hope/member/GSN-U-MEMBER002"
+    )
+    assert response.status_code == 200, response.text
+    data = response.json()
+    assert data["community_record_kind"] == "community_domain"
+    assert data["community_domain_id"] == 1
+    assert data["community_name"] == "Pillar of Hope"
+    assert data["community_code"] == "GSN-D-000001"
+    assert data["member_gsn_id"] == "GSN-U-MEMBER002"
+    assert data["member_display_name"] == "Pillar Member"
+    assert data["membership_status"] == "active"
+    assert data["membership_status_label"] == "Active Community Domain member"
+    assert data["membership_role"] == "member"
+    assert data["membership_title"] == "Volunteer"
+    assert data["public_label"] == "Active Community Domain member"
+    assert data["member_witness_count"] == 0
+    assert data["community_activity_count"] == 0
+    assert data["community_activity_label"] == "No linked community activity recorded yet"
+    assert data["community_trust_reading_label"] == "Active Community Domain membership"
+    assert "not a universal trust score" in data["community_trust_reading_scope"]
+    assert "full domain roster" in data["privacy_note"]
+    assert "phone_e164" not in response.text
+    assert "owner_user_id" not in response.text
+
+
+def test_public_verify_rejects_inactive_community_domain_member(
+    client: TestClient,
+):
+    _seed_public_domain_verification_context(member_status="inactive")
+
+    response = client.get(
+        "/verify/community/pillar-of-hope/member/GSN-U-MEMBER002"
+    )
+    assert response.status_code == 404, response.text
+    assert "Member not found in this Community Domain" in response.text
+
+
+def test_community_domain_member_delete_deactivates_and_blocks_public_proof(
+    client: TestClient,
+):
+    _seed_public_domain_verification_context()
+
+    with SessionLocal() as db:
+        owner = db.get(User, 1)
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        removed = client.delete(
+            "/community-domains/1/members/2",
+            params={"status_note": "No longer a current volunteer."},
+        )
+        assert removed.status_code == 200, removed.text
+        data = removed.json()
+        assert data["changed"] is True
+        assert data["previous_status"] == "active"
+        assert data["new_status"] == "inactive"
+        assert data["membership"]["status"] == "inactive"
+        assert "Public active-member verification only passes" in data["boundary"]
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    public = client.get("/verify/community/pillar-of-hope/member/GSN-U-MEMBER002")
+    assert public.status_code == 404, public.text
+
+    with SessionLocal() as db:
+        membership = (
+            db.query(CommunityDomainMembership)
+            .filter(CommunityDomainMembership.community_domain_id == 1)
+            .filter(CommunityDomainMembership.user_id == 2)
+            .one()
+        )
+        assert membership.status == "inactive"
+        event = db.query(TrustEvent).filter(
+            TrustEvent.event_type == "community_domain_member_status_changed"
+        ).one()
+        assert event.actor_user_id == 1
+        assert event.subject_user_id == 2
+        assert event.meta["community_domain_id"] == 1
+        assert event.meta["previous_status"] == "active"
+        assert event.meta["new_status"] == "inactive"
+
+
+def test_community_domain_member_status_route_refuses_owner_removal(
+    client: TestClient,
+):
+    _seed_public_domain_verification_context()
+
+    with SessionLocal() as db:
+        owner = db.get(User, 1)
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        removed = client.delete("/community-domains/1/members/1")
+        assert removed.status_code == 403, removed.text
+        assert removed.json()["detail"]["code"] == "community_domain_owner_membership_locked"
+
+        patched = client.patch(
+            "/community-domains/1/members/1/status",
+            json={"status": "inactive"},
+        )
+        assert patched.status_code == 403, patched.text
+        assert patched.json()["detail"]["code"] == "community_domain_owner_membership_locked"
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    with SessionLocal() as db:
+        owner_membership = (
+            db.query(CommunityDomainMembership)
+            .filter(CommunityDomainMembership.community_domain_id == 1)
+            .filter(CommunityDomainMembership.user_id == 1)
+            .one()
+        )
+        assert owner_membership.status == "active"
+        assert db.query(TrustEvent).count() == 0
+
+
+def test_community_domain_period_summary_reports_recorded_facts_only(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    member = _seed_user(2, "period-member@example.com")
+    witness = _seed_user(3, "period-witness@example.com")
+    now = datetime.now(timezone.utc)
+    start = now - timedelta(days=2)
+    end = now + timedelta(days=2)
+
+    with SessionLocal() as db:
+        clan = Clan(
+            id=1,
+            name="Pillar Linked Clan",
+            community_code="PLC-1",
+            invite_code="period-linked-clan",
+        )
+        db.add(clan)
+        db.add(
+            CommunityDomain(
+                id=1,
+                domain_name="period-pillar",
+                display_name="Period Pillar",
+                domain_type="ngo_project",
+                template_key="ngo_project",
+                owner_user_id=1,
+                clan_id=1,
+                status="active",
+                verification_status="verified",
+            )
+        )
+        db.flush()
+        db.add_all(
+            [
+                CommunityDomainMembership(
+                    community_domain_id=1,
+                    user_id=1,
+                    role="owner",
+                    status="active",
+                    created_at=now - timedelta(days=10),
+                    updated_at=now - timedelta(days=10),
+                ),
+                CommunityDomainMembership(
+                    community_domain_id=1,
+                    user_id=2,
+                    role="member",
+                    status="inactive",
+                    created_at=now - timedelta(hours=6),
+                    updated_at=now - timedelta(hours=1),
+                ),
+            ]
+        )
+        review = CommunityDomainActionReview(
+            id=1,
+            community_domain_id=1,
+            action_key="domain_member.upsert",
+            requested_by_user_id=1,
+            subject_user_id=2,
+            target_type="domain_member",
+            target_id="2",
+            status="applied",
+            decision="approve",
+            created_at=now - timedelta(hours=5),
+            updated_at=now - timedelta(hours=2),
+            decided_at=now - timedelta(hours=3),
+            applied_at=now - timedelta(hours=2),
+            payload_json=json.dumps({"user_id": 2, "status": "active"}),
+        )
+        db.add(review)
+        db.flush()
+        db.add(
+            CommunityDomainActionReviewEvidence(
+                action_review_id=1,
+                community_domain_id=1,
+                submitted_by_user_id=1,
+                evidence_type="meeting_record",
+                title="Attendance sheet for outreach meeting",
+                status="active",
+                created_at=now - timedelta(hours=4),
+            )
+        )
+        db.add(
+            TrustEvent(
+                event_type="community_domain_member_status_changed",
+                actor_user_id=1,
+                subject_user_id=2,
+                created_at=now - timedelta(hours=1),
+                meta={
+                    "community_domain_id": 1,
+                    "previous_status": "active",
+                    "new_status": "inactive",
+                },
+            )
+        )
+        db.add(
+            TrustEvent(
+                event_type="clan_joined",
+                clan_id=1,
+                actor_user_id=2,
+                subject_user_id=2,
+                created_at=now - timedelta(hours=8),
+                meta={"reason": "linked_clan_activity"},
+            )
+        )
+        confirmation = CommunityConfirmationRequest(
+            id=1,
+            public_token="period-confirm-token",
+            requester_user_id=1,
+            subject_user_id=2,
+            community_id=1,
+            reason_type="membership",
+            status="completed",
+            mode="relay",
+            created_at=now - timedelta(hours=7),
+            expires_at=now + timedelta(days=1),
+        )
+        db.add(confirmation)
+        db.flush()
+        db.add(
+            CommunityConfirmationResponse(
+                request_id=1,
+                responder_user_id=3,
+                response_type="good_standing",
+                responded_at=now - timedelta(hours=6),
+            )
+        )
+        db.add(
+            CommunityConfirmationOutcome(
+                request_id=1,
+                positive_count=1,
+                caution_count=0,
+                objection_count=0,
+                no_response_count=0,
+                eligible_contact_count=1,
+                confidence_level="moderate",
+                closed_at=now - timedelta(hours=6),
+            )
+        )
+        db.add(
+            CommunityMemberVerification(
+                clan_id=1,
+                subject_user_id=2,
+                verifier_user_id=3,
+                status="active",
+                verification_year=now.year,
+                created_at=now - timedelta(hours=6),
+                updated_at=now - timedelta(hours=6),
+            )
+        )
+        db.commit()
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        response = client.get(
+            "/community-domains/1/period-summary",
+            params={
+                "period_start": start.isoformat(),
+                "period_end": end.isoformat(),
+            },
+        )
+        assert response.status_code == 200, response.text
+        data = response.json()
+        assert data["community_domain_id"] == 1
+        assert data["period"]["visibility_mode"] == "admin_only"
+        assert data["membership_snapshot"]["total"] == 2
+        assert data["membership_snapshot"]["by_status"]["active"] == 1
+        assert data["membership_snapshot"]["by_status"]["inactive"] == 1
+        assert data["member_movement"]["added"] == 1
+        assert data["member_movement"]["removed_or_deactivated"] == 1
+        assert data["member_movement"]["by_new_status"]["inactive"] == 1
+        assert data["governance_summary"]["total"] == 1
+        assert data["governance_summary"]["requested_total"] == 1
+        assert data["governance_summary"]["decided_total"] == 1
+        assert data["governance_summary"]["applied_total"] == 1
+        assert data["governance_summary"]["by_status"]["applied"] == 1
+        assert data["evidence_summary"]["total"] == 1
+        assert data["evidence_summary"]["meeting_signal_count"] == 1
+        assert data["evidence_summary"]["attendance_signal_count"] == 1
+        assert data["meeting_event_summary"]["status"] == "partial_evidence_signals_only"
+        assert data["confirmation_summary"]["status"] == "recorded"
+        assert data["confirmation_summary"]["requests_total"] == 1
+        assert data["confirmation_summary"]["responses_total"] == 1
+        assert data["confirmation_summary"]["positive_count"] == 1
+        assert data["confirmation_summary"]["member_witness_verifications_total"] == 1
+        assert data["trust_event_summary"]["total"] == 2
+        assert data["activity_summary"]["status"] == "not_recorded"
+        assert data["activity_summary"]["plain_language"] == (
+            "Not recorded in GSN for this period."
+        )
+        assert data["beneficiary_outcome_summary"]["status"] == "not_recorded"
+        assert data["source_records"]["action_reviews"]["ids"] == [1]
+        assert "does not prove unrecorded impact" in data["boundary"]
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+
+def test_community_domain_period_summary_is_admin_only_and_validates_period(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    outsider = _seed_user(2, "period-outsider@example.com")
+    now = datetime.now(timezone.utc)
+    with SessionLocal() as db:
+        db.add(
+            CommunityDomain(
+                id=1,
+                domain_name="period-locked",
+                display_name="Period Locked",
+                domain_type="ngo_project",
+                template_key="ngo_project",
+                owner_user_id=1,
+                status="active",
+            )
+        )
+        db.add(
+            CommunityDomainMembership(
+                community_domain_id=1,
+                user_id=1,
+                role="owner",
+                status="active",
+            )
+        )
+        db.commit()
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: outsider
+        forbidden = client.get("/community-domains/1/period-summary")
+        assert forbidden.status_code == 403, forbidden.text
+
+        app.dependency_overrides[get_current_user] = lambda: owner
+        invalid = client.get(
+            "/community-domains/1/period-summary",
+            params={
+                "period_start": now.isoformat(),
+                "period_end": (now - timedelta(days=1)).isoformat(),
+            },
+        )
+        assert invalid.status_code == 422, invalid.text
+        assert invalid.json()["detail"]["code"] == "invalid_period"
+
+        valid = client.get("/community-domains/1/period-summary")
+        assert valid.status_code == 200, valid.text
+        assert valid.json()["confirmation_summary"]["status"] == (
+            "not_available_for_unlinked_domain"
+        )
+        assert valid.json()["beneficiary_outcome_summary"]["status"] == "not_recorded"
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+
+def test_community_domain_activity_catalogue_records_trust_event_and_period_count(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    member = _seed_user(2, "activity-member@example.com")
+    now = datetime.now(timezone.utc)
+    with SessionLocal() as db:
+        db.add(
+            CommunityDomain(
+                id=1,
+                domain_name="activity-domain",
+                display_name="Activity Domain",
+                domain_type="ngo_project",
+                template_key="ngo_project",
+                owner_user_id=1,
+                status="active",
+            )
+        )
+        db.add_all(
+            [
+                CommunityDomainMembership(
+                    community_domain_id=1,
+                    user_id=1,
+                    role="owner",
+                    status="active",
+                ),
+                CommunityDomainMembership(
+                    community_domain_id=1,
+                    user_id=2,
+                    role="member",
+                    status="active",
+                    title="Volunteer",
+                ),
+            ]
+        )
+        db.commit()
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        catalogue = client.get("/community-domains/1/activity-catalogue")
+        assert catalogue.status_code == 200, catalogue.text
+        catalogue_types = {
+            item["activity_type"] for item in catalogue.json()["activity_catalogue"]
+        }
+        assert "attendance" in catalogue_types
+        assert "support_delivered" in catalogue_types
+
+        recorded = client.post(
+            "/community-domains/1/activities",
+            json={
+                "subject_user_id": 2,
+                "activity_type": "volunteer_service",
+                "activity_label": "Food distribution volunteer shift",
+                "quantity": "3.5",
+                "measurement_unit": "hours",
+                "occurred_at": now.isoformat(),
+                "evidence_strength": "admin_recorded",
+                "visibility": "director_safe",
+                "note": "Served at the community distribution point.",
+                "evidence_reference": "paper-attendance-sheet-1",
+            },
+        )
+        assert recorded.status_code == 201, recorded.text
+        activity = recorded.json()["activity"]
+        assert activity["activity_type"] == "volunteer_service"
+        assert activity["activity_label"] == "Food distribution volunteer shift"
+        assert activity["quantity"] == "3.5"
+        assert activity["measurement_unit"] == "hours"
+        assert activity["evidence_strength"] == "admin_recorded"
+        assert activity["visibility"] == "director_safe"
+        assert activity["membership_status_snapshot"] == "active"
+        assert "not a final beneficiary outcome" in recorded.json()["boundary"]
+
+        listed = client.get("/community-domains/1/activities")
+        assert listed.status_code == 200, listed.text
+        assert listed.json()["total"] == 1
+        assert listed.json()["items"][0]["activity_type"] == "volunteer_service"
+
+        period = client.get(
+            "/community-domains/1/period-summary",
+            params={
+                "period_start": (now - timedelta(days=1)).isoformat(),
+                "period_end": (now + timedelta(days=1)).isoformat(),
+            },
+        )
+        assert period.status_code == 200, period.text
+        summary = period.json()["activity_summary"]
+        assert summary["status"] == "recorded"
+        assert summary["total"] == 1
+        assert summary["subject_count"] == 1
+        assert summary["by_type"]["volunteer_service"] == 1
+        assert summary["by_evidence_strength"]["admin_recorded"] == 1
+        assert summary["by_visibility"]["director_safe"] == 1
+        assert period.json()["beneficiary_outcome_summary"]["status"] == "not_recorded"
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    with SessionLocal() as db:
+        event = (
+            db.query(TrustEvent)
+            .filter(TrustEvent.event_type == "community_domain.activity_recorded")
+            .one()
+        )
+        assert event.actor_user_id == 1
+        assert event.subject_user_id == 2
+        assert event.meta["community_domain_id"] == 1
+        assert event.meta["activity_type"] == "volunteer_service"
+        assert event.meta["evidence_dimension"] == "service"
+
+
+def test_community_domain_beneficiary_outcome_records_trust_event_and_period_count(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    beneficiary = _seed_user(2, "outcome-beneficiary@example.com")
+    now = datetime.now(timezone.utc)
+    with SessionLocal() as db:
+        db.add(
+            CommunityDomain(
+                id=1,
+                domain_name="outcome-domain",
+                display_name="Outcome Domain",
+                domain_type="ngo_project",
+                template_key="ngo_project",
+                owner_user_id=1,
+                status="active",
+            )
+        )
+        db.add_all(
+            [
+                CommunityDomainMembership(
+                    community_domain_id=1,
+                    user_id=1,
+                    role="owner",
+                    status="active",
+                ),
+                CommunityDomainMembership(
+                    community_domain_id=1,
+                    user_id=2,
+                    role="member",
+                    status="active",
+                    title="Beneficiary",
+                ),
+            ]
+        )
+        db.commit()
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        recorded = client.post(
+            "/community-domains/1/beneficiary-outcomes",
+            json={
+                "subject_user_id": 2,
+                "programme_label": "Back to school support",
+                "outcome_indicator": "School attendance stability",
+                "baseline_value": "Missed three school days each week before support.",
+                "after_value": "Attended all school days for the follow-up week.",
+                "support_received": "School materials and transport support.",
+                "follow_up_state": "completed",
+                "outcome_state": "improved",
+                "beneficiary_confirmation": "beneficiary_confirmed",
+                "admin_confirmation": "admin_recorded",
+                "challenge_status": "none",
+                "occurred_at": now.isoformat(),
+                "evidence_strength": "beneficiary_confirmed",
+                "visibility": "director_safe",
+                "note": "Follow-up call completed.",
+                "evidence_reference": "case-note-42",
+            },
+        )
+        assert recorded.status_code == 201, recorded.text
+        outcome = recorded.json()["outcome"]
+        assert outcome["programme_label"] == "Back to school support"
+        assert outcome["outcome_indicator"] == "School attendance stability"
+        assert outcome["baseline_value"].startswith("Missed three")
+        assert outcome["after_value"].startswith("Attended all")
+        assert outcome["outcome_state"] == "improved"
+        assert outcome["beneficiary_confirmation"] == "beneficiary_confirmed"
+        assert outcome["challenge_status"] == "none"
+        assert "not a final public sponsor report" in recorded.json()["boundary"]
+
+        listed = client.get("/community-domains/1/beneficiary-outcomes")
+        assert listed.status_code == 200, listed.text
+        assert listed.json()["total"] == 1
+        assert listed.json()["items"][0]["outcome_state"] == "improved"
+
+        period = client.get(
+            "/community-domains/1/period-summary",
+            params={
+                "period_start": (now - timedelta(days=1)).isoformat(),
+                "period_end": (now + timedelta(days=1)).isoformat(),
+            },
+        )
+        assert period.status_code == 200, period.text
+        data = period.json()
+        outcome_summary = data["beneficiary_outcome_summary"]
+        assert outcome_summary["status"] == "recorded"
+        assert outcome_summary["total"] == 1
+        assert outcome_summary["subject_count"] == 1
+        assert outcome_summary["by_outcome_state"]["improved"] == 1
+        assert outcome_summary["by_follow_up_state"]["completed"] == 1
+        assert outcome_summary["by_beneficiary_confirmation"][
+            "beneficiary_confirmed"
+        ] == 1
+        assert outcome_summary["by_admin_confirmation"]["admin_recorded"] == 1
+        assert outcome_summary["by_evidence_strength"]["beneficiary_confirmed"] == 1
+        assert data["challenge_summary"]["status"] == "recorded"
+        assert data["challenge_summary"]["by_challenge_status"]["none"] == 1
+        assert data["challenge_summary"]["open_or_challenged_total"] == 0
+
+        sponsor = client.get(
+            "/community-domains/1/sponsor-summary",
+            params={
+                "period_start": (now - timedelta(days=1)).isoformat(),
+                "period_end": (now + timedelta(days=1)).isoformat(),
+            },
+        )
+        assert sponsor.status_code == 200, sponsor.text
+        sponsor_data = sponsor.json()
+        assert sponsor_data["period"]["visibility_mode"] == "sponsor_safe"
+        assert sponsor_data["report_status"] == "recorded"
+        assert sponsor_data["sponsor_readiness"] == "sponsor_summary_available"
+        assert sponsor_data["beneficiary_outcome_summary"]["total"] == 1
+        assert sponsor_data["beneficiary_outcome_summary"]["subject_count"] == 1
+        assert sponsor_data["beneficiary_outcome_summary"]["by_outcome_state"][
+            "improved"
+        ] == 1
+        assert sponsor_data["evidence_summary"][
+            "beneficiary_confirmed_outcomes"
+        ] == 1
+        assert sponsor_data["evidence_summary"][
+            "admin_recorded_or_unconfirmed_outcomes"
+        ] == 0
+        assert sponsor_data["source_records"]["beneficiary_outcome_records"] == {
+            "total": 1
+        }
+        assert "subject_user_id" in sponsor_data["omitted_private_fields"]
+        assert "baseline_value" in sponsor_data["omitted_private_fields"]
+        assert "after_value" in sponsor_data["omitted_private_fields"]
+        assert "Missed three" not in sponsor.text
+        assert "Attended all" not in sponsor.text
+        assert '"subject_user_id":' not in sponsor.text
+        assert "case-note-42" not in sponsor.text
+
+        link = client.post(
+            "/community-domains/1/beneficiary-outcomes/"
+            f"{outcome['event_id']}/confirmation-links",
+            json={
+                "responder_type": "beneficiary",
+                "expires_in_days": 7,
+                "note": "Ask the beneficiary to confirm the outcome.",
+            },
+        )
+        assert link.status_code == 201, link.text
+        link_data = link.json()
+        public_token = link_data["public_token"]
+        assert public_token
+        assert public_token not in str(link_data.get("confirmation_request_event_id"))
+        assert link_data["public_path"].endswith(public_token)
+        delivery_pack = link_data["delivery_pack"]
+        assert delivery_pack["status"] == "prepared_not_sent"
+        assert delivery_pack["delivery_event_id"]
+        assert "whatsapp" in delivery_pack["channels"]
+        assert "sms" in delivery_pack["channels"]
+        assert "email" in delivery_pack["channels"]
+        assert delivery_pack["public_path"].endswith(public_token)
+        assert public_token in delivery_pack["message_text"]
+        assert "wa.me" in delivery_pack["whatsapp_url"]
+        assert "mailto:" in delivery_pack["email_url"]
+        assert "did not send WhatsApp" in delivery_pack["boundary"]
+        delivery_readiness = delivery_pack["provider_delivery_readiness"]
+        assert delivery_readiness["ready_to_send"] is False
+        assert delivery_readiness["external_channels_sent_by_gsn"] is False
+        assert (
+            delivery_readiness["provider_send_engine_status"]
+            == "not_connected_in_this_slice"
+        )
+        assert (
+            delivery_readiness["provider_delivery_webhook_status"]
+            == "not_connected_in_this_slice"
+        )
+        assert "provider send API" in delivery_readiness["missing_components"]
+        provider_setup_contract = delivery_readiness["provider_setup_contract"]
+        assert provider_setup_contract["status"] == "not_configured"
+        assert "contact preference storage" in provider_setup_contract[
+            "required_operational_controls"
+        ]
+        assert "delivery receipt Trust Event mapping tested" in (
+            provider_setup_contract["send_lift_conditions"]
+        )
+        provider_channels = {
+            row["channel"]: row
+            for row in provider_setup_contract["required_channel_contracts"]
+        }
+        assert provider_channels["whatsapp"]["configured"] is False
+        assert provider_channels["sms"]["status"] == "not_connected_in_this_slice"
+        assert provider_channels["email"]["provider_type"] == "approved_email_provider"
+        contact_consent_contract = delivery_readiness["contact_consent_contract"]
+        assert contact_consent_contract["status"] == "not_connected"
+        assert contact_consent_contract["provider_send_blocker"] == (
+            "missing_contact_preference_and_consent_gate"
+        )
+        assert "active_contact_consent_required" in contact_consent_contract[
+            "provider_send_blockers"
+        ]
+        assert contact_consent_contract["active_contact_consent_required"] is True
+        assert contact_consent_contract["active_contact_consent_status"] == (
+            "not_recorded"
+        )
+        assert contact_consent_contract["active_contact_consent_satisfied"] is False
+        assert delivery_readiness["active_contact_consent_status"] == "not_recorded"
+        assert delivery_readiness["active_contact_consent_satisfied"] is False
+        assert "preferred_delivery_channel" in contact_consent_contract[
+            "required_contact_fields"
+        ]
+        assert "consent_basis" in contact_consent_contract[
+            "required_consent_fields"
+        ]
+        assert "does not store beneficiary phone numbers" in (
+            contact_consent_contract["privacy_boundary"]
+        )
+
+        missing_consent_receipt = client.post(
+            "/community-domains/1/beneficiary-outcomes/"
+            f"{outcome['event_id']}/confirmation-deliveries/"
+            f"{delivery_pack['delivery_event_id']}/receipts",
+            json={
+                "channel": "whatsapp",
+                "delivery_status": "manual_sent",
+                "consent_basis": "beneficiary_consented",
+                "recipient_label": "Beneficiary One WhatsApp",
+                "note": "Admin says the prepared text was shared manually.",
+            },
+        )
+        assert missing_consent_receipt.status_code == 409, (
+            missing_consent_receipt.text
+        )
+        missing_consent_detail = missing_consent_receipt.json()["detail"]
+        assert (
+            missing_consent_detail["code"]
+            == "beneficiary_outcome_contact_consent_not_recorded"
+        )
+        assert missing_consent_detail["delivery_receipt_created"] is False
+        assert missing_consent_detail["external_channels_sent_by_gsn"] is False
+        assert missing_consent_detail["required_next_action"] == (
+            "record_contact_consent_attestation"
+        )
+        assert missing_consent_detail["contact_consent_status"]["status"] == (
+            "not_recorded"
+        )
+        assert (
+            missing_consent_detail["contact_consent_status"][
+                "manual_delivery_allowed"
+            ]
+            is False
+        )
+        assert "created no manual delivery receipt" in missing_consent_detail[
+            "boundary"
+        ]
+
+        contact_consent = client.post(
+            "/community-domains/1/beneficiary-outcomes/"
+            f"{outcome['event_id']}/contact-consent-records",
+            json={
+                "channel": "whatsapp",
+                "destination_reference_status": "admin_verified_off_platform",
+                "destination_reference_label": "Beneficiary contact verified offline",
+                "consent_basis": "beneficiary_consented",
+                "evidence_reference": "consent-note-42",
+                "note": "Admin confirmed consent basis; raw phone is not stored.",
+            },
+        )
+        assert contact_consent.status_code == 201, contact_consent.text
+        contact_consent_data = contact_consent.json()
+        contact_record = contact_consent_data["contact_consent_record"]
+        assert contact_record["channel"] == "whatsapp"
+        assert (
+            contact_record["destination_reference_status"]
+            == "admin_verified_off_platform"
+        )
+        assert contact_record["consent_basis"] == "beneficiary_consented"
+        assert contact_record["provider_send_ready"] is False
+        assert contact_record["destination_value_stored"] is False
+        assert contact_record["raw_destination_stored"] is False
+        assert contact_record["external_channels_sent_by_gsn"] is False
+        assert "does not store the raw destination" in contact_consent_data["boundary"]
+        assert "does not send WhatsApp" in contact_consent_data["boundary"]
+
+        contact_consent_withdrawal = client.post(
+            "/community-domains/1/beneficiary-outcomes/"
+            f"{outcome['event_id']}/contact-consent-records/"
+            f"{contact_record['event_id']}/withdrawals",
+            json={
+                "withdrawal_reason": "beneficiary_withdrew_consent",
+                "replacement_required": True,
+                "note": "Beneficiary asked to stop using this contact route.",
+            },
+        )
+        assert (
+            contact_consent_withdrawal.status_code == 201
+        ), contact_consent_withdrawal.text
+        withdrawal_data = contact_consent_withdrawal.json()
+        withdrawal_record = withdrawal_data["contact_consent_withdrawal"]
+        assert withdrawal_record["contact_consent_event_id"] == contact_record[
+            "event_id"
+        ]
+        assert (
+            withdrawal_record["withdrawal_reason"]
+            == "beneficiary_withdrew_consent"
+        )
+        assert withdrawal_record["replacement_required"] is True
+        assert withdrawal_record["provider_send_ready"] is False
+        assert withdrawal_record["external_channels_sent_by_gsn"] is False
+        assert "does not delete the original record" in withdrawal_data["boundary"]
+        assert "provider sending unavailable" in withdrawal_data["boundary"]
+
+        with SessionLocal() as db:
+            event_count_before_provider_send = db.query(TrustEvent).count()
+
+        blocked_provider_send = client.post(
+            "/community-domains/1/beneficiary-outcomes/"
+            f"{outcome['event_id']}/confirmation-deliveries/"
+            f"{delivery_pack['delivery_event_id']}/provider-send-attempts"
+        )
+        assert blocked_provider_send.status_code == 409, blocked_provider_send.text
+        blocked_provider_send_detail = blocked_provider_send.json()["detail"]
+        assert blocked_provider_send_detail["code"] == "provider_delivery_not_connected"
+        assert blocked_provider_send_detail["blocked_check_recorded"] is True
+        assert blocked_provider_send_detail["blocked_check_created"] is True
+        assert blocked_provider_send_detail["blocked_check_reused"] is False
+        assert blocked_provider_send_detail["provider_job_created"] is False
+        assert blocked_provider_send_detail["send_attempt_created"] is False
+        assert (
+            blocked_provider_send_detail["external_channels_sent_by_gsn"] is False
+        )
+        blocked_check_event = blocked_provider_send_detail["blocked_check_event"]
+        assert blocked_check_event["event_type"] == (
+            "community_domain.beneficiary_outcome_provider_send_blocked"
+        )
+        blocked_provider_readiness = blocked_provider_send_detail[
+            "provider_delivery_readiness"
+        ]
+        assert blocked_provider_readiness["ready_to_send"] is False
+        assert blocked_provider_readiness["provider_send_engine_status"] == (
+            "not_connected_in_this_slice"
+        )
+        assert "provider send API" in blocked_provider_readiness[
+            "missing_components"
+        ]
+        blocked_setup_contract = blocked_provider_readiness[
+            "provider_setup_contract"
+        ]
+        assert blocked_setup_contract["status"] == "not_configured"
+        assert "provider webhook verified" in blocked_setup_contract[
+            "send_lift_conditions"
+        ]
+        assert "without storing raw secrets" in blocked_setup_contract["truth_gate"]
+        blocked_contact_consent = blocked_provider_readiness[
+            "contact_consent_contract"
+        ]
+        assert blocked_contact_consent["provider_send_blocker"] == (
+            "missing_contact_preference_and_consent_gate"
+        )
+        assert blocked_contact_consent["active_contact_consent_status"] == (
+            "withdrawn_requires_replacement"
+        )
+        assert blocked_contact_consent["active_contact_consent_satisfied"] is False
+        assert "active_contact_consent_required" in blocked_contact_consent[
+            "provider_send_blockers"
+        ]
+        assert "verified destination reference" in blocked_contact_consent[
+            "minimum_send_rule"
+        ]
+        assert "no provider job" in blocked_provider_send_detail["boundary"]
+        assert "blocked readiness check as a Trust Event" in (
+            blocked_provider_send_detail["boundary"]
+        )
+
+        with SessionLocal() as db:
+            event_count_after_provider_send = db.query(TrustEvent).count()
+            blocked_event = db.get(
+                TrustEvent,
+                int(blocked_check_event["event_id"]),
+            )
+            assert blocked_event is not None
+        assert event_count_after_provider_send == event_count_before_provider_send + 1
+        assert blocked_event.meta["provider_job_created"] is False
+        assert blocked_event.meta["send_attempt_created"] is False
+        assert blocked_event.meta["external_channels_sent_by_gsn"] is False
+        assert blocked_event.meta["blocked_reason"] == "provider_delivery_not_connected"
+        assert blocked_event.meta["blocked_check_dedupe_key"]
+        assert blocked_event.meta["active_contact_consent_event_id"] == int(
+            contact_record["event_id"]
+        )
+        assert blocked_event.meta[
+            "latest_contact_consent_withdrawal_event_id"
+        ] == int(withdrawal_record["event_id"])
+        assert str(contact_record["event_id"]) in blocked_event.meta[
+            "blocked_check_dedupe_key"
+        ]
+        assert str(withdrawal_record["event_id"]) in blocked_event.meta[
+            "blocked_check_dedupe_key"
+        ]
+
+        repeated_blocked_provider_send = client.post(
+            "/community-domains/1/beneficiary-outcomes/"
+            f"{outcome['event_id']}/confirmation-deliveries/"
+            f"{delivery_pack['delivery_event_id']}/provider-send-attempts"
+        )
+        assert (
+            repeated_blocked_provider_send.status_code == 409
+        ), repeated_blocked_provider_send.text
+        repeated_blocked_detail = repeated_blocked_provider_send.json()["detail"]
+        assert repeated_blocked_detail["blocked_check_event"]["event_id"] == int(
+            blocked_check_event["event_id"]
+        )
+        assert repeated_blocked_detail["blocked_check_created"] is False
+        assert repeated_blocked_detail["blocked_check_reused"] is True
+        with SessionLocal() as db:
+            event_count_after_repeated_provider_send = db.query(TrustEvent).count()
+        assert event_count_after_repeated_provider_send == event_count_after_provider_send
+
+        delivery_receipt = client.post(
+            "/community-domains/1/beneficiary-outcomes/"
+            f"{outcome['event_id']}/confirmation-deliveries/"
+            f"{delivery_pack['delivery_event_id']}/receipts",
+            json={
+                "channel": "whatsapp",
+                "delivery_status": "manual_sent",
+                "consent_basis": "beneficiary_consented",
+                "recipient_label": "Beneficiary One WhatsApp",
+                "note": "Admin says the prepared text was shared manually.",
+            },
+        )
+        assert delivery_receipt.status_code == 409, delivery_receipt.text
+        blocked_receipt_detail = delivery_receipt.json()["detail"]
+        assert (
+            blocked_receipt_detail["code"]
+            == "beneficiary_outcome_contact_consent_withdrawn"
+        )
+        assert blocked_receipt_detail["delivery_receipt_created"] is False
+        assert blocked_receipt_detail["external_channels_sent_by_gsn"] is False
+        assert blocked_receipt_detail["contact_consent_status"]["status"] == (
+            "withdrawn_requires_replacement"
+        )
+        assert (
+            blocked_receipt_detail["contact_consent_status"][
+                "manual_delivery_allowed"
+            ]
+            is False
+        )
+        assert "created no manual delivery receipt" in blocked_receipt_detail[
+            "boundary"
+        ]
+
+        replacement_contact_consent = client.post(
+            "/community-domains/1/beneficiary-outcomes/"
+            f"{outcome['event_id']}/contact-consent-records",
+            json={
+                "channel": "whatsapp",
+                "destination_reference_status": "admin_verified_off_platform",
+                "destination_reference_label": "Replacement contact verified offline",
+                "consent_basis": "beneficiary_consented",
+                "evidence_reference": "replacement-consent-note-42",
+                "note": "Admin confirmed replacement contact/consent.",
+            },
+        )
+        assert (
+            replacement_contact_consent.status_code == 201
+        ), replacement_contact_consent.text
+        replacement_contact_record = replacement_contact_consent.json()[
+            "contact_consent_record"
+        ]
+
+        with SessionLocal() as db:
+            event_count_before_active_provider_send = db.query(TrustEvent).count()
+
+        active_blocked_provider_send = client.post(
+            "/community-domains/1/beneficiary-outcomes/"
+            f"{outcome['event_id']}/confirmation-deliveries/"
+            f"{delivery_pack['delivery_event_id']}/provider-send-attempts"
+        )
+        assert (
+            active_blocked_provider_send.status_code == 409
+        ), active_blocked_provider_send.text
+        active_blocked_detail = active_blocked_provider_send.json()["detail"]
+        assert active_blocked_detail["blocked_check_created"] is True
+        assert active_blocked_detail["blocked_check_reused"] is False
+        assert active_blocked_detail["provider_job_created"] is False
+        assert active_blocked_detail["send_attempt_created"] is False
+        assert active_blocked_detail["active_contact_consent_event_id"] == int(
+            replacement_contact_record["event_id"]
+        )
+        assert active_blocked_detail[
+            "latest_contact_consent_withdrawal_event_id"
+        ] == int(withdrawal_record["event_id"])
+        active_blocked_check_event = active_blocked_detail["blocked_check_event"]
+        assert active_blocked_check_event["event_id"] != int(
+            blocked_check_event["event_id"]
+        )
+
+        with SessionLocal() as db:
+            event_count_after_active_provider_send = db.query(TrustEvent).count()
+            active_blocked_event = db.get(
+                TrustEvent,
+                int(active_blocked_check_event["event_id"]),
+            )
+            assert active_blocked_event is not None
+        assert (
+            event_count_after_active_provider_send
+            == event_count_before_active_provider_send + 1
+        )
+        assert active_blocked_event.meta["active_contact_consent_status"] == (
+            "active_attestation"
+        )
+        assert active_blocked_event.meta["active_contact_consent_event_id"] == int(
+            replacement_contact_record["event_id"]
+        )
+        assert active_blocked_event.meta[
+            "latest_contact_consent_withdrawal_event_id"
+        ] == int(withdrawal_record["event_id"])
+        assert str(replacement_contact_record["event_id"]) in (
+            active_blocked_event.meta["blocked_check_dedupe_key"]
+        )
+
+        delivery_receipt = client.post(
+            "/community-domains/1/beneficiary-outcomes/"
+            f"{outcome['event_id']}/confirmation-deliveries/"
+            f"{delivery_pack['delivery_event_id']}/receipts",
+            json={
+                "channel": "whatsapp",
+                "delivery_status": "manual_sent",
+                "consent_basis": "beneficiary_consented",
+                "recipient_label": "Beneficiary One WhatsApp",
+                "note": "Admin says the prepared text was shared manually.",
+            },
+        )
+        assert delivery_receipt.status_code == 201, delivery_receipt.text
+        receipt_data = delivery_receipt.json()
+        assert receipt_data["delivery_receipt"]["channel"] == "whatsapp"
+        assert receipt_data["delivery_receipt"]["delivery_status"] == "manual_sent"
+        assert receipt_data["delivery_receipt"]["consent_basis"] == (
+            "beneficiary_consented"
+        )
+        assert receipt_data["delivery_receipt"]["active_contact_consent_status"] == (
+            "active_attestation"
+        )
+        assert (
+            receipt_data["delivery_receipt"]["active_contact_consent_satisfied"]
+            is True
+        )
+        assert receipt_data["delivery_receipt"]["contact_consent_event_id"] == (
+            replacement_contact_record["event_id"]
+        )
+        assert receipt_data["delivery_receipt"]["contact_consent_reference_status"] == (
+            "admin_verified_off_platform"
+        )
+        assert receipt_data["delivery_receipt"]["contact_consent_basis"] == (
+            "beneficiary_consented"
+        )
+        assert receipt_data["delivery_receipt"][
+            "external_channels_sent_by_gsn"
+        ] is False
+        assert "does not mean GSN sent" in receipt_data["boundary"]
+
+        receipt_correction = client.post(
+            "/community-domains/1/beneficiary-outcomes/"
+            f"{outcome['event_id']}/confirmation-deliveries/"
+            f"{delivery_pack['delivery_event_id']}/receipts/"
+            f"{receipt_data['delivery_receipt']['event_id']}/corrections",
+            json={
+                "decision": "marked_incorrect",
+                "correction_note": (
+                    "Admin later found the manual receipt note used the wrong status."
+                ),
+                "corrected_delivery_status": "manual_failed",
+                "corrected_channel": "whatsapp",
+                "corrected_consent_basis": "beneficiary_consented",
+            },
+        )
+        assert receipt_correction.status_code == 201, receipt_correction.text
+        receipt_correction_data = receipt_correction.json()
+        assert receipt_correction_data["delivery_receipt_event_id"] == (
+            receipt_data["delivery_receipt"]["event_id"]
+        )
+        assert (
+            receipt_correction_data["delivery_receipt_correction"]["decision"]
+            == "marked_incorrect"
+        )
+        assert (
+            receipt_correction_data["delivery_receipt_correction"][
+                "receipt_correction_status"
+            ]
+            == "corrected"
+        )
+        assert (
+            receipt_correction_data["delivery_receipt_correction"][
+                "prior_delivery_status"
+            ]
+            == "manual_sent"
+        )
+        assert (
+            receipt_correction_data["delivery_receipt_correction"][
+                "corrected_delivery_status"
+            ]
+            == "manual_failed"
+        )
+        assert "original manual receipt remains" in receipt_correction_data[
+            "boundary"
+        ]
+
+        listed_after_delivery = client.get("/community-domains/1/beneficiary-outcomes")
+        assert listed_after_delivery.status_code == 200, listed_after_delivery.text
+        listed_after_delivery_data = listed_after_delivery.json()
+        assert "whatsapp" in listed_after_delivery_data["delivery_channels"]
+        assert "email" in listed_after_delivery_data["delivery_channels"]
+        assert "manual_sent" in listed_after_delivery_data["delivery_statuses"]
+        assert "opened_reported" in listed_after_delivery_data["delivery_statuses"]
+        assert (
+            "marked_incorrect"
+            in listed_after_delivery_data["delivery_receipt_correction_decisions"]
+        )
+        assert (
+            "beneficiary_consented"
+            in listed_after_delivery_data["delivery_consent_bases"]
+        )
+        assert "not_recorded" in listed_after_delivery_data["delivery_consent_bases"]
+        assert "whatsapp" in listed_after_delivery_data["provider_contact_channels"]
+        assert (
+            "admin_verified_off_platform"
+            in listed_after_delivery_data["contact_reference_statuses"]
+        )
+        assert (
+            "beneficiary_withdrew_consent"
+            in listed_after_delivery_data["contact_consent_withdrawal_reasons"]
+        )
+        listed_delivery_item = listed_after_delivery_data["items"][0]
+        assert listed_delivery_item["delivery_preparation_count"] == 1
+        assert listed_delivery_item["delivery_receipt_count"] == 1
+        assert listed_delivery_item["delivery_receipt_correction_count"] == 1
+        assert listed_delivery_item["provider_send_blocked_check_count"] == 2
+        assert listed_delivery_item["contact_consent_record_count"] == 2
+        assert listed_delivery_item["contact_consent_withdrawal_count"] == 1
+        assert listed_delivery_item["contact_consent_status"]["status"] == (
+            "active_attestation"
+        )
+        assert (
+            listed_delivery_item["contact_consent_status"][
+                "manual_delivery_allowed"
+            ]
+            is True
+        )
+        assert listed_delivery_item["latest_delivery_preparation"][
+            "event_id"
+        ] == delivery_pack["delivery_event_id"]
+        assert listed_delivery_item["latest_delivery_preparation"][
+            "active_contact_consent_status"
+        ] == "not_recorded"
+        assert (
+            listed_delivery_item["latest_delivery_preparation"][
+                "active_contact_consent_satisfied"
+            ]
+            is False
+        )
+        listed_current_readiness = listed_delivery_item[
+            "current_provider_delivery_readiness"
+        ]
+        assert listed_current_readiness["active_contact_consent_status"] == (
+            "active_attestation"
+        )
+        assert listed_current_readiness["active_contact_consent_satisfied"] is True
+        assert listed_current_readiness["ready_to_send"] is False
+        assert (
+            listed_current_readiness["contact_consent_contract"][
+                "active_contact_consent_satisfied"
+            ]
+            is True
+        )
+        latest_blocked_provider_check = listed_delivery_item[
+            "latest_provider_send_blocked_check"
+        ]
+        assert latest_blocked_provider_check["event_id"] == int(
+            active_blocked_check_event["event_id"]
+        )
+        assert latest_blocked_provider_check["delivery_event_id"] == int(
+            delivery_pack["delivery_event_id"]
+        )
+        assert latest_blocked_provider_check["blocked_reason"] == (
+            "provider_delivery_not_connected"
+        )
+        assert latest_blocked_provider_check["provider_job_created"] is False
+        assert latest_blocked_provider_check["send_attempt_created"] is False
+        assert latest_blocked_provider_check["external_channels_sent_by_gsn"] is False
+        assert latest_blocked_provider_check["active_contact_consent_status"] == (
+            "active_attestation"
+        )
+        assert latest_blocked_provider_check["active_contact_consent_event_id"] == (
+            int(replacement_contact_record["event_id"])
+        )
+        assert latest_blocked_provider_check[
+            "latest_contact_consent_withdrawal_event_id"
+        ] == (
+            int(withdrawal_record["event_id"])
+        )
+        assert listed_delivery_item["latest_delivery_receipt"][
+            "delivery_status"
+        ] == "manual_sent"
+        assert listed_delivery_item["latest_delivery_receipt"][
+            "channel"
+        ] == "whatsapp"
+        assert listed_delivery_item["latest_delivery_receipt"][
+            "correction_count"
+        ] == 1
+        assert listed_delivery_item["latest_delivery_receipt"][
+            "receipt_correction_status"
+        ] == "corrected"
+        assert listed_delivery_item["latest_delivery_receipt"][
+            "latest_correction"
+        ]["decision"] == "marked_incorrect"
+        assert listed_delivery_item["latest_delivery_receipt_correction"][
+            "delivery_receipt_event_id"
+        ] == receipt_data["delivery_receipt"]["event_id"]
+        assert listed_delivery_item["latest_contact_consent_record"][
+            "destination_reference_status"
+        ] == "admin_verified_off_platform"
+        assert listed_delivery_item["latest_contact_consent_record"][
+            "raw_destination_stored"
+        ] is False
+        assert listed_delivery_item["latest_contact_consent_withdrawal"][
+            "withdrawal_reason"
+        ] == "beneficiary_withdrew_consent"
+
+        period_after_delivery = client.get(
+            "/community-domains/1/period-summary",
+            params={
+                "period_start": (now - timedelta(days=1)).isoformat(),
+                "period_end": (now + timedelta(days=1)).isoformat(),
+            },
+        )
+        assert period_after_delivery.status_code == 200, period_after_delivery.text
+        period_delivery_data = period_after_delivery.json()
+        assert period_delivery_data["evidence_summary"][
+            "beneficiary_confirmation_delivery_prepared"
+        ] == 1
+        assert period_delivery_data["evidence_summary"][
+            "beneficiary_confirmation_delivery_receipts"
+        ] == 1
+        assert period_delivery_data["evidence_summary"][
+            "beneficiary_confirmation_delivery_receipts_by_status"
+        ]["manual_sent"] == 1
+        assert period_delivery_data["evidence_summary"][
+            "beneficiary_confirmation_delivery_receipts_by_channel"
+        ]["whatsapp"] == 1
+        assert period_delivery_data["evidence_summary"][
+            "beneficiary_confirmation_delivery_receipts_by_consent_basis"
+        ]["beneficiary_consented"] == 1
+        assert period_delivery_data["evidence_summary"][
+            "beneficiary_confirmation_delivery_receipts_current_uncorrected"
+        ] == 0
+        assert (
+            period_delivery_data["evidence_summary"][
+                "beneficiary_confirmation_delivery_receipts_current_by_status"
+            ]
+            == {}
+        )
+        assert period_delivery_data["evidence_summary"][
+            "beneficiary_confirmation_delivery_receipt_corrections"
+        ] == 1
+        assert period_delivery_data["evidence_summary"][
+            "beneficiary_confirmation_provider_send_blocked_checks"
+        ] == 2
+        assert period_delivery_data["evidence_summary"][
+            "beneficiary_confirmation_delivery_receipt_corrections_by_decision"
+        ]["marked_incorrect"] == 1
+        assert period_delivery_data["evidence_summary"][
+            "beneficiary_contact_consent_records"
+        ] == 2
+        assert period_delivery_data["evidence_summary"][
+            "beneficiary_contact_consent_by_reference_status"
+        ]["admin_verified_off_platform"] == 2
+        assert period_delivery_data["evidence_summary"][
+            "beneficiary_contact_consent_withdrawals"
+        ] == 1
+        assert period_delivery_data["evidence_summary"][
+            "beneficiary_contact_consent_withdrawals_by_reason"
+        ]["beneficiary_withdrew_consent"] == 1
+        assert period_delivery_data["beneficiary_outcome_summary"][
+            "confirmation_delivery_prepared_total"
+        ] == 1
+        assert period_delivery_data["beneficiary_outcome_summary"][
+            "confirmation_delivery_receipts_total"
+        ] == 1
+        assert period_delivery_data["beneficiary_outcome_summary"][
+            "confirmation_delivery_receipts_current_uncorrected_total"
+        ] == 0
+        assert period_delivery_data["beneficiary_outcome_summary"][
+            "confirmation_delivery_receipt_corrections_total"
+        ] == 1
+        assert period_delivery_data["beneficiary_outcome_summary"][
+            "confirmation_provider_send_blocked_checks_total"
+        ] == 2
+        assert period_delivery_data["beneficiary_outcome_summary"][
+            "contact_consent_records_total"
+        ] == 2
+        assert period_delivery_data["beneficiary_outcome_summary"][
+            "contact_consent_withdrawals_total"
+        ] == 1
+        assert period_delivery_data["source_records"][
+            "beneficiary_confirmation_delivery_receipts"
+        ]["total"] == 1
+        assert period_delivery_data["source_records"][
+            "beneficiary_confirmation_delivery_receipt_corrections"
+        ]["total"] == 1
+        assert period_delivery_data["source_records"][
+            "beneficiary_contact_consent_records"
+        ]["total"] == 2
+        assert period_delivery_data["source_records"][
+            "beneficiary_contact_consent_withdrawals"
+        ]["total"] == 1
+
+        public_view = client.get(
+            f"/community-domains/public/beneficiary-outcome-confirmations/{public_token}"
+        )
+        assert public_view.status_code == 200, public_view.text
+        public_data = public_view.json()
+        assert public_data["status"] == "open"
+        assert public_data["outcome"]["outcome_indicator"] == (
+            "School attendance stability"
+        )
+        assert public_data["outcome"]["baseline_value"].startswith("Missed three")
+
+        public_response = client.post(
+            "/community-domains/public/beneficiary-outcome-confirmations/"
+            f"{public_token}/responses",
+            json={
+                "response_type": "confirm",
+                "responder_name": "Beneficiary One",
+                "note": "Yes, this support and result are correct.",
+            },
+        )
+        assert public_response.status_code == 201, public_response.text
+        response_data = public_response.json()
+        assert response_data["response_type"] == "confirm"
+        assert response_data["confirmation_state"] == "beneficiary_confirmed"
+        assert response_data["challenge_status"] == "none"
+
+        duplicate_response = client.post(
+            "/community-domains/public/beneficiary-outcome-confirmations/"
+            f"{public_token}/responses",
+            json={"response_type": "confirm"},
+        )
+        assert duplicate_response.status_code == 409, duplicate_response.text
+
+        sponsor_after_response = client.get(
+            "/community-domains/1/sponsor-summary",
+            params={
+                "period_start": (now - timedelta(days=1)).isoformat(),
+                "period_end": (now + timedelta(days=1)).isoformat(),
+            },
+        )
+        assert sponsor_after_response.status_code == 200, sponsor_after_response.text
+        sponsor_after = sponsor_after_response.json()
+        assert sponsor_after["evidence_summary"][
+            "confirmation_response_records"
+        ] == 1
+        assert sponsor_after["beneficiary_outcome_summary"][
+            "confirmation_responses_total"
+        ] == 1
+        assert sponsor_after["beneficiary_outcome_summary"][
+            "confirmation_responses_by_type"
+        ]["confirm"] == 1
+        assert sponsor_after["beneficiary_outcome_summary"][
+            "confirmation_responses_by_state"
+        ]["beneficiary_confirmed"] == 1
+        assert sponsor_after["evidence_summary"][
+            "confirmation_delivery_prepared_records"
+        ] == 1
+        assert sponsor_after["evidence_summary"][
+            "confirmation_delivery_receipt_records"
+        ] == 1
+        assert sponsor_after["evidence_summary"][
+            "confirmation_delivery_receipts_by_status"
+        ]["manual_sent"] == 1
+        assert sponsor_after["evidence_summary"][
+            "confirmation_delivery_receipts_by_channel"
+        ]["whatsapp"] == 1
+        assert sponsor_after["evidence_summary"][
+            "confirmation_delivery_receipts_by_consent_basis"
+        ]["beneficiary_consented"] == 1
+        assert sponsor_after["evidence_summary"][
+            "confirmation_delivery_receipts_current_uncorrected"
+        ] == 0
+        assert (
+            sponsor_after["evidence_summary"][
+                "confirmation_delivery_receipts_current_by_status"
+            ]
+            == {}
+        )
+        assert sponsor_after["evidence_summary"][
+            "confirmation_delivery_receipt_corrections"
+        ] == 1
+        assert sponsor_after["evidence_summary"][
+            "confirmation_provider_send_blocked_checks"
+        ] == 2
+        assert sponsor_after["evidence_summary"][
+            "confirmation_delivery_receipt_corrections_by_decision"
+        ]["marked_incorrect"] == 1
+        assert sponsor_after["evidence_summary"]["contact_consent_records"] == 2
+        assert sponsor_after["evidence_summary"][
+            "contact_consent_by_reference_status"
+        ]["admin_verified_off_platform"] == 2
+        assert sponsor_after["evidence_summary"][
+            "contact_consent_withdrawals"
+        ] == 1
+        assert sponsor_after["evidence_summary"][
+            "contact_consent_withdrawals_by_reason"
+        ]["beneficiary_withdrew_consent"] == 1
+        assert sponsor_after["beneficiary_outcome_summary"][
+            "confirmation_delivery_prepared_total"
+        ] == 1
+        assert sponsor_after["beneficiary_outcome_summary"][
+            "confirmation_delivery_receipts_total"
+        ] == 1
+        assert sponsor_after["beneficiary_outcome_summary"][
+            "confirmation_delivery_receipts_current_uncorrected_total"
+        ] == 0
+        assert sponsor_after["beneficiary_outcome_summary"][
+            "confirmation_delivery_receipt_corrections_total"
+        ] == 1
+        assert sponsor_after["beneficiary_outcome_summary"][
+            "confirmation_provider_send_blocked_checks_total"
+        ] == 2
+        assert sponsor_after["beneficiary_outcome_summary"][
+            "contact_consent_records_total"
+        ] == 2
+        assert sponsor_after["beneficiary_outcome_summary"][
+            "contact_consent_withdrawals_total"
+        ] == 1
+        assert sponsor_after["source_records"][
+            "beneficiary_confirmation_delivery_receipts"
+        ]["total"] == 1
+        assert sponsor_after["source_records"][
+            "beneficiary_confirmation_delivery_receipt_corrections"
+        ]["total"] == 1
+        assert sponsor_after["source_records"][
+            "beneficiary_confirmation_provider_send_blocked_checks"
+        ]["total"] == 2
+        assert sponsor_after["source_records"][
+            "beneficiary_contact_consent_records"
+        ]["total"] == 2
+        assert sponsor_after["source_records"][
+            "beneficiary_contact_consent_withdrawals"
+        ]["total"] == 1
+        external_delivery = sponsor_after["external_delivery_readiness"]
+        assert external_delivery["ready_to_send"] is False
+        assert external_delivery["external_channels_sent_by_gsn"] is False
+        assert external_delivery["provider_send_engine_status"] == (
+            "not_connected_in_this_slice"
+        )
+        assert external_delivery["retry_queue_status"] == (
+            "not_connected_in_this_slice"
+        )
+        assert "provider delivery webhook" in external_delivery["missing_components"]
+        export_pack = sponsor_after["sponsor_export_pack"]
+        assert export_pack["status"] == "prepared_not_sent"
+        assert export_pack["external_channels_sent_by_gsn"] is False
+        assert "GSN sponsor-safe evidence summary" in export_pack["title"]
+        assert (
+            "Beneficiary/witness confirmation signals: 2"
+            in export_pack["copy_text"]
+        )
+        assert (
+            "Confirmation delivery packs prepared: 1" in export_pack["copy_text"]
+        )
+        assert "Manual delivery receipts recorded: 1" in export_pack["copy_text"]
+        assert (
+            "Current uncorrected manual delivery receipts: 0"
+            in export_pack["copy_text"]
+        )
+        assert (
+            "Manual delivery receipt corrections recorded: 1"
+            in export_pack["copy_text"]
+        )
+        assert (
+            "Provider send blocked readiness checks: 2"
+            in export_pack["copy_text"]
+        )
+        assert (
+            "Contact/consent attestations recorded: 2"
+            in export_pack["copy_text"]
+        )
+        assert (
+            "Contact/consent withdrawals recorded: 1"
+            in export_pack["copy_text"]
+        )
+        assert (
+            "Provider send readiness: not_connected_in_this_slice"
+            in export_pack["copy_text"]
+        )
+        assert "School attendance stability: 1" in export_pack["copy_text"]
+        assert "Missed three" not in export_pack["copy_text"]
+        assert "Attended all" not in export_pack["copy_text"]
+        assert "Beneficiary One" not in export_pack["copy_text"]
+        assert "baseline_value" in export_pack["omitted_private_fields"]
+        assert "does not send it" in export_pack["boundary"]
+        assert export_pack["mailto_url"].startswith("mailto:?subject=")
+
+        with SessionLocal() as db:
+            correction_event = db.get(
+                TrustEvent,
+                int(
+                    receipt_correction_data["delivery_receipt_correction"][
+                        "event_id"
+                    ]
+                ),
+            )
+            assert correction_event is not None
+            correction_event.created_at = now + timedelta(days=30)
+            db.commit()
+
+        period_after_out_of_period_correction = client.get(
+            "/community-domains/1/period-summary",
+            params={
+                "period_start": (now - timedelta(days=1)).isoformat(),
+                "period_end": (now + timedelta(days=1)).isoformat(),
+            },
+        )
+        assert (
+            period_after_out_of_period_correction.status_code == 200
+        ), period_after_out_of_period_correction.text
+        period_out_of_period_data = period_after_out_of_period_correction.json()
+        assert period_out_of_period_data["evidence_summary"][
+            "beneficiary_confirmation_delivery_receipts"
+        ] == 1
+        assert period_out_of_period_data["evidence_summary"][
+            "beneficiary_confirmation_delivery_receipt_corrections"
+        ] == 0
+        assert period_out_of_period_data["evidence_summary"][
+            "beneficiary_confirmation_provider_send_blocked_checks"
+        ] == 2
+        assert period_out_of_period_data["evidence_summary"][
+            "beneficiary_confirmation_delivery_receipts_current_uncorrected"
+        ] == 0
+
+        sponsor_after_out_of_period_correction = client.get(
+            "/community-domains/1/sponsor-summary",
+            params={
+                "period_start": (now - timedelta(days=1)).isoformat(),
+                "period_end": (now + timedelta(days=1)).isoformat(),
+            },
+        )
+        assert (
+            sponsor_after_out_of_period_correction.status_code == 200
+        ), sponsor_after_out_of_period_correction.text
+        sponsor_out_of_period_data = sponsor_after_out_of_period_correction.json()
+        assert sponsor_out_of_period_data["evidence_summary"][
+            "confirmation_delivery_receipt_records"
+        ] == 1
+        assert sponsor_out_of_period_data["evidence_summary"][
+            "confirmation_delivery_receipt_corrections"
+        ] == 0
+        assert sponsor_out_of_period_data["evidence_summary"][
+            "confirmation_provider_send_blocked_checks"
+        ] == 2
+        assert sponsor_out_of_period_data["evidence_summary"][
+            "confirmation_delivery_receipts_current_uncorrected"
+        ] == 0
+        assert (
+            "Manual delivery receipt corrections recorded: 0"
+            in sponsor_out_of_period_data["sponsor_export_pack"]["copy_text"]
+        )
+        assert (
+            "Provider send blocked readiness checks: 2"
+            in sponsor_out_of_period_data["sponsor_export_pack"]["copy_text"]
+        )
+        assert (
+            "Current uncorrected manual delivery receipts: 0"
+            in sponsor_out_of_period_data["sponsor_export_pack"]["copy_text"]
+        )
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    with SessionLocal() as db:
+        event = (
+            db.query(TrustEvent)
+            .filter(
+                TrustEvent.event_type
+                == "community_domain.beneficiary_outcome_recorded"
+            )
+            .one()
+        )
+        assert event.actor_user_id == 1
+        assert event.subject_user_id == 2
+        assert event.meta["community_domain_id"] == 1
+        assert event.meta["outcome_indicator"] == "School attendance stability"
+        assert event.meta["baseline_value"].startswith("Missed three")
+        assert event.meta["after_value"].startswith("Attended all")
+        request_event = (
+            db.query(TrustEvent)
+            .filter(
+                TrustEvent.event_type
+                == "community_domain.beneficiary_outcome_confirmation_requested"
+            )
+            .one()
+        )
+        assert request_event.meta["outcome_event_id"] == event.id
+        assert request_event.meta["public_token_prefix"]
+        assert "public_token" not in request_event.meta
+        delivery_event = (
+            db.query(TrustEvent)
+            .filter(
+                TrustEvent.event_type
+                == "community_domain.beneficiary_outcome_confirmation_delivery_prepared"
+            )
+            .one()
+        )
+        assert delivery_event.meta["outcome_event_id"] == event.id
+        assert delivery_event.meta["confirmation_request_event_id"] == request_event.id
+        assert delivery_event.meta["delivery_status"] == "prepared_not_sent"
+        assert delivery_event.meta["external_channels_sent_by_gsn"] is False
+        assert delivery_event.meta["provider_send_engine_status"] == (
+            "not_connected_in_this_slice"
+        )
+        assert delivery_event.meta["provider_delivery_webhook_status"] == (
+            "not_connected_in_this_slice"
+        )
+        assert delivery_event.meta["retry_queue_status"] == (
+            "not_connected_in_this_slice"
+        )
+        assert delivery_event.meta["active_contact_consent_status"] == "not_recorded"
+        assert delivery_event.meta["active_contact_consent_satisfied"] is False
+        assert delivery_event.meta["public_token_prefix"]
+        assert "public_token" not in delivery_event.meta
+        assert public_token not in json.dumps(delivery_event.meta)
+        contact_consent_events = (
+            db.query(TrustEvent)
+            .filter(
+                TrustEvent.event_type
+                == "community_domain.beneficiary_outcome_contact_consent_recorded"
+            )
+            .order_by(TrustEvent.id.asc())
+            .all()
+        )
+        assert len(contact_consent_events) == 2
+        contact_consent_event = contact_consent_events[0]
+        replacement_contact_consent_event = contact_consent_events[1]
+        assert contact_consent_event.meta["outcome_event_id"] == event.id
+        assert contact_consent_event.meta["channel"] == "whatsapp"
+        assert (
+            contact_consent_event.meta["destination_reference_status"]
+            == "admin_verified_off_platform"
+        )
+        assert contact_consent_event.meta["consent_basis"] == "beneficiary_consented"
+        assert contact_consent_event.meta["provider_send_ready"] is False
+        assert contact_consent_event.meta["destination_value_stored"] is False
+        assert contact_consent_event.meta["raw_destination_stored"] is False
+        assert contact_consent_event.meta["external_channels_sent_by_gsn"] is False
+        assert replacement_contact_consent_event.meta["outcome_event_id"] == event.id
+        assert (
+            replacement_contact_consent_event.meta["evidence_reference"]
+            == "replacement-consent-note-42"
+        )
+        assert replacement_contact_consent_event.meta["provider_send_ready"] is False
+        contact_consent_withdrawal_event = (
+            db.query(TrustEvent)
+            .filter(
+                TrustEvent.event_type
+                == "community_domain.beneficiary_outcome_contact_consent_withdrawn"
+            )
+            .one()
+        )
+        assert contact_consent_withdrawal_event.meta["outcome_event_id"] == event.id
+        assert (
+            contact_consent_withdrawal_event.meta["contact_consent_event_id"]
+            == contact_consent_event.id
+        )
+        assert (
+            contact_consent_withdrawal_event.meta["withdrawal_reason"]
+            == "beneficiary_withdrew_consent"
+        )
+        assert contact_consent_withdrawal_event.meta["replacement_required"] is True
+        assert contact_consent_withdrawal_event.meta["provider_send_ready"] is False
+        assert (
+            contact_consent_withdrawal_event.meta["external_channels_sent_by_gsn"]
+            is False
+        )
+        delivery_receipt_event = (
+            db.query(TrustEvent)
+            .filter(
+                TrustEvent.event_type
+                == "community_domain.beneficiary_outcome_confirmation_delivery_recorded"
+            )
+            .one()
+        )
+        assert delivery_receipt_event.meta["outcome_event_id"] == event.id
+        assert delivery_receipt_event.meta["delivery_event_id"] == delivery_event.id
+        assert delivery_receipt_event.meta["channel"] == "whatsapp"
+        assert delivery_receipt_event.meta["delivery_status"] == "manual_sent"
+        assert delivery_receipt_event.meta["consent_basis"] == "beneficiary_consented"
+        assert delivery_receipt_event.meta["active_contact_consent_status"] == (
+            "active_attestation"
+        )
+        assert delivery_receipt_event.meta["active_contact_consent_satisfied"] is True
+        assert delivery_receipt_event.meta["contact_consent_event_id"] == (
+            replacement_contact_consent_event.id
+        )
+        assert delivery_receipt_event.meta["contact_consent_reference_status"] == (
+            "admin_verified_off_platform"
+        )
+        assert delivery_receipt_event.meta["contact_consent_basis"] == (
+            "beneficiary_consented"
+        )
+        assert delivery_receipt_event.meta["admin_recorded_delivery_only"] is True
+        assert delivery_receipt_event.meta["external_channels_sent_by_gsn"] is False
+        assert "public_token" not in delivery_receipt_event.meta
+        assert public_token not in json.dumps(delivery_receipt_event.meta)
+        delivery_receipt_correction_event = (
+            db.query(TrustEvent)
+            .filter(
+                TrustEvent.event_type
+                == "community_domain.beneficiary_outcome_confirmation_delivery_receipt_corrected"
+            )
+            .one()
+        )
+        assert delivery_receipt_correction_event.meta["outcome_event_id"] == event.id
+        assert (
+            delivery_receipt_correction_event.meta["delivery_event_id"]
+            == delivery_event.id
+        )
+        assert (
+            delivery_receipt_correction_event.meta["delivery_receipt_event_id"]
+            == delivery_receipt_event.id
+        )
+        assert delivery_receipt_correction_event.meta["decision"] == "marked_incorrect"
+        assert (
+            delivery_receipt_correction_event.meta["receipt_correction_status"]
+            == "corrected"
+        )
+        assert (
+            delivery_receipt_correction_event.meta["prior_delivery_status"]
+            == "manual_sent"
+        )
+        assert (
+            delivery_receipt_correction_event.meta["corrected_delivery_status"]
+            == "manual_failed"
+        )
+        assert (
+            delivery_receipt_correction_event.meta[
+                "original_delivery_receipt_preserved"
+            ]
+            is True
+        )
+        assert (
+            delivery_receipt_correction_event.meta["external_channels_sent_by_gsn"]
+            is False
+        )
+        response_event = (
+            db.query(TrustEvent)
+            .filter(
+                TrustEvent.event_type
+                == "community_domain.beneficiary_outcome_confirmation_response"
+            )
+            .one()
+        )
+        assert response_event.meta["outcome_event_id"] == event.id
+        assert response_event.meta["response_type"] == "confirm"
+        assert response_event.meta["confirmation_state"] == "beneficiary_confirmed"
+
+
+def test_community_domain_beneficiary_outcome_challenge_can_be_reviewed(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    _seed_user(2, "outcome-challenge-beneficiary@example.com")
+    _seed_user(3, "outcome-challenge-admin@example.com")
+    now = datetime.now(timezone.utc)
+    with SessionLocal() as db:
+        db.add(
+            CommunityDomain(
+                id=1,
+                domain_name="challenge-domain",
+                display_name="Challenge Domain",
+                domain_type="ngo_project",
+                template_key="ngo_project",
+                owner_user_id=1,
+                status="active",
+            )
+        )
+        db.add_all(
+            [
+                CommunityDomainMembership(
+                    community_domain_id=1,
+                    user_id=1,
+                    role="owner",
+                    status="active",
+                ),
+                CommunityDomainMembership(
+                    community_domain_id=1,
+                    user_id=2,
+                    role="member",
+                    status="active",
+                ),
+                CommunityDomainMembership(
+                    community_domain_id=1,
+                    user_id=3,
+                    role="admin",
+                    status="active",
+                ),
+            ]
+        )
+        db.commit()
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        recorded = client.post(
+            "/community-domains/1/beneficiary-outcomes",
+            json={
+                "subject_user_id": 2,
+                "programme_label": "Food support",
+                "outcome_indicator": "Household food security",
+                "baseline_value": "Had no weekly food reserve before support.",
+                "after_value": "Two weeks food reserve recorded by admin.",
+                "support_received": "Food parcel and welfare follow-up.",
+                "follow_up_state": "completed",
+                "outcome_state": "improved",
+                "beneficiary_confirmation": "not_requested",
+                "admin_confirmation": "admin_recorded",
+                "challenge_status": "none",
+                "occurred_at": now.isoformat(),
+                "visibility": "director_safe",
+            },
+        )
+        assert recorded.status_code == 201, recorded.text
+        outcome = recorded.json()["outcome"]
+
+        link = client.post(
+            "/community-domains/1/beneficiary-outcomes/"
+            f"{outcome['event_id']}/confirmation-links",
+            json={"responder_type": "beneficiary", "expires_in_days": 7},
+        )
+        assert link.status_code == 201, link.text
+        token = link.json()["public_token"]
+
+        challenged = client.post(
+            "/community-domains/public/beneficiary-outcome-confirmations/"
+            f"{token}/responses",
+            json={
+                "response_type": "challenge",
+                "responder_name": "Beneficiary Two",
+                "note": "I received food support, but the result is overstated.",
+                "correction_note": "There was only three days reserve, not two weeks.",
+            },
+        )
+        assert challenged.status_code == 201, challenged.text
+        response_data = challenged.json()
+        assert response_data["challenge_status"] == "challenged"
+        assert response_data["admin_notifications_created"] == 2
+
+        listed_after_challenge = client.get("/community-domains/1/beneficiary-outcomes")
+        assert listed_after_challenge.status_code == 200, listed_after_challenge.text
+        listed_item = listed_after_challenge.json()["items"][0]
+        latest_response = listed_item["latest_confirmation_response"]
+        assert listed_item["confirmation_response_count"] == 1
+        assert latest_response["response_type"] == "challenge"
+        assert latest_response["challenge_status"] == "challenged"
+        assert latest_response["correction_note"].startswith("There was only")
+
+        sponsor_before_review = client.get(
+            "/community-domains/1/sponsor-summary",
+            params={
+                "period_start": (now - timedelta(days=1)).isoformat(),
+                "period_end": (now + timedelta(days=1)).isoformat(),
+            },
+        )
+        assert sponsor_before_review.status_code == 200, sponsor_before_review.text
+        before = sponsor_before_review.json()
+        assert before["sponsor_readiness"] == "summary_available_with_caveats"
+        assert before["challenge_summary"]["open_or_challenged_total"] == 1
+        assert before["challenge_summary"]["unresolved_challenge_total"] == 1
+
+        reviewed = client.post(
+            "/community-domains/1/beneficiary-outcomes/"
+            f"{outcome['event_id']}/correction-reviews",
+            json={
+                "confirmation_response_event_id": response_data[
+                    "confirmation_response_event_id"
+                ],
+                "decision": "mark_corrected",
+                "review_note": "Admin reviewed the challenge and accepted the correction.",
+                "corrected_outcome_state": "improved",
+                "corrected_after_value": "Three days food reserve after support.",
+                "corrected_support_received": "Food parcel and welfare follow-up.",
+                "corrected_beneficiary_confirmation": "disputed",
+            },
+        )
+        assert reviewed.status_code == 201, reviewed.text
+        assert reviewed.json()["admin_notifications_created"] == 1
+        review_data = reviewed.json()["correction_review"]
+        assert review_data["decision"] == "mark_corrected"
+        assert review_data["challenge_status_after"] == "corrected"
+        assert "original beneficiary outcome" in reviewed.json()["boundary"]
+
+        correction_list = client.get(
+            "/community-domains/1/beneficiary-outcomes/correction-reviews"
+        )
+        assert correction_list.status_code == 200, correction_list.text
+        assert correction_list.json()["total"] == 1
+        assert correction_list.json()["items"][0]["decision"] == "mark_corrected"
+
+        listed_after_review = client.get("/community-domains/1/beneficiary-outcomes")
+        assert listed_after_review.status_code == 200, listed_after_review.text
+        reviewed_item = listed_after_review.json()["items"][0]
+        assert reviewed_item["correction_review_count"] == 1
+        assert reviewed_item["latest_correction_review"]["decision"] == "mark_corrected"
+
+        sponsor_after_review = client.get(
+            "/community-domains/1/sponsor-summary",
+            params={
+                "period_start": (now - timedelta(days=1)).isoformat(),
+                "period_end": (now + timedelta(days=1)).isoformat(),
+            },
+        )
+        assert sponsor_after_review.status_code == 200, sponsor_after_review.text
+        after = sponsor_after_review.json()
+        assert after["sponsor_readiness"] == "sponsor_summary_available"
+        assert after["evidence_summary"]["correction_review_records"] == 1
+        assert after["evidence_summary"]["reviewed_challenge_outcomes"] == 1
+        assert after["evidence_summary"]["unresolved_challenge_outcomes"] == 0
+        assert after["challenge_summary"]["correction_reviews_by_decision"][
+            "mark_corrected"
+        ] == 1
+        assert after["challenge_summary"]["unresolved_challenge_total"] == 0
+
+        period = client.get(
+            "/community-domains/1/period-summary",
+            params={
+                "period_start": (now - timedelta(days=1)).isoformat(),
+                "period_end": (now + timedelta(days=1)).isoformat(),
+            },
+        )
+        assert period.status_code == 200, period.text
+        period_challenges = period.json()["challenge_summary"]
+        assert period_challenges["correction_reviews_total"] == 1
+        assert period_challenges["correction_reviews_by_decision"][
+            "mark_corrected"
+        ] == 1
+        assert period_challenges["unresolved_challenge_total"] == 0
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    with SessionLocal() as db:
+        review_event = (
+            db.query(TrustEvent)
+            .filter(
+                TrustEvent.event_type
+                == "community_domain.beneficiary_outcome_correction_reviewed"
+            )
+            .one()
+        )
+        assert review_event.actor_user_id == 1
+        assert review_event.subject_user_id == 2
+        assert review_event.meta["decision"] == "mark_corrected"
+        assert review_event.meta["challenge_status_after"] == "corrected"
+        assert review_event.meta["corrected_after_value"].startswith("Three days")
+        response_notifications = (
+            db.query(Notification)
+            .filter(
+                Notification.kind
+                == "community_domain.beneficiary_outcome_response_recorded"
+            )
+            .order_by(Notification.user_id.asc())
+            .all()
+        )
+        assert [row.user_id for row in response_notifications] == [1, 3]
+        assert all("community-domain/1?lane=governance" in (row.action_url or "") for row in response_notifications)
+        assert all("private responder details" in row.message.lower() for row in response_notifications)
+        assert all("outcome-confirmations" not in (row.action_url or "") for row in response_notifications)
+        correction_notifications = (
+            db.query(Notification)
+            .filter(
+                Notification.kind
+                == "community_domain.beneficiary_outcome_correction_reviewed"
+            )
+            .all()
+        )
+        assert len(correction_notifications) == 1
+        assert correction_notifications[0].user_id == 3
+        assert "audit trail" in correction_notifications[0].message.lower()
 
 
 def test_community_domain_notice_board_is_member_scoped_and_admin_posted(

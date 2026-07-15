@@ -90,6 +90,9 @@ const CommunityVerifyPage = React.lazy(
 const CommunityMemberVerifyPage = React.lazy(
   () => import("./pages/CommunityMemberVerifyPage")
 );
+const BeneficiaryOutcomeConfirmationPage = React.lazy(
+  () => import("./pages/BeneficiaryOutcomeConfirmationPage")
+);
 const IdentityIntegrityPage = React.lazy(
   () => import("./pages/IdentityIntegrityPage")
 );
@@ -834,6 +837,10 @@ export default function App() {
       <Route
         path="/community-confirmations/public/:token"
         element={<CommunityConfirmationOutcomePage />}
+      />
+      <Route
+        path="/community-domains/public/beneficiary-outcome-confirmations/:token"
+        element={<BeneficiaryOutcomeConfirmationPage />}
       />
       <Route
         path="/verify/community/:communityKey/member/:memberKey"

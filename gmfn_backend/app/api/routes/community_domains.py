@@ -8,7 +8,8 @@ import secrets
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from pathlib import Path
-from typing import Any, Literal, Optional
+from typing import Any, Literal, Optional, Sequence
+from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -21,6 +22,10 @@ from app.db.database import get_db
 from app.db.models import (
     Clan,
     ClanMembership,
+    CommunityConfirmationOutcome,
+    CommunityConfirmationRequest,
+    CommunityConfirmationResponse,
+    CommunityMemberVerification,
     CommunityDomain,
     CommunityDomainAffiliation,
     CommunityDomainActionReview,
@@ -136,6 +141,204 @@ MEMBERSHIP_REQUEST_OPEN_STATUSES = (
 MEMBERSHIP_STATUS_VALUES = {"active", "inactive", "suspended", "archived"}
 MEMBERSHIP_STATUS_SNAPSHOT_VALUES = {"none", *MEMBERSHIP_STATUS_VALUES}
 POLICY_REVIEW_COUNT_MAX = 25
+COMMUNITY_DOMAIN_ACTIVITY_EVENT = "community_domain.activity_recorded"
+COMMUNITY_DOMAIN_BENEFICIARY_OUTCOME_EVENT = (
+    "community_domain.beneficiary_outcome_recorded"
+)
+COMMUNITY_DOMAIN_OUTCOME_CONFIRMATION_REQUEST_EVENT = (
+    "community_domain.beneficiary_outcome_confirmation_requested"
+)
+COMMUNITY_DOMAIN_OUTCOME_CONFIRMATION_DELIVERY_PREPARED_EVENT = (
+    "community_domain.beneficiary_outcome_confirmation_delivery_prepared"
+)
+COMMUNITY_DOMAIN_OUTCOME_CONFIRMATION_DELIVERY_RECORDED_EVENT = (
+    "community_domain.beneficiary_outcome_confirmation_delivery_recorded"
+)
+COMMUNITY_DOMAIN_OUTCOME_CONFIRMATION_DELIVERY_RECEIPT_CORRECTED_EVENT = (
+    "community_domain.beneficiary_outcome_confirmation_delivery_receipt_corrected"
+)
+COMMUNITY_DOMAIN_OUTCOME_PROVIDER_SEND_BLOCKED_EVENT = (
+    "community_domain.beneficiary_outcome_provider_send_blocked"
+)
+COMMUNITY_DOMAIN_OUTCOME_CONTACT_CONSENT_RECORDED_EVENT = (
+    "community_domain.beneficiary_outcome_contact_consent_recorded"
+)
+COMMUNITY_DOMAIN_OUTCOME_CONTACT_CONSENT_WITHDRAWN_EVENT = (
+    "community_domain.beneficiary_outcome_contact_consent_withdrawn"
+)
+COMMUNITY_DOMAIN_OUTCOME_CONFIRMATION_RESPONSE_EVENT = (
+    "community_domain.beneficiary_outcome_confirmation_response"
+)
+COMMUNITY_DOMAIN_OUTCOME_RESPONSE_ADMIN_NOTIFICATION = (
+    "community_domain.beneficiary_outcome_response_recorded"
+)
+COMMUNITY_DOMAIN_OUTCOME_CORRECTION_REVIEW_EVENT = (
+    "community_domain.beneficiary_outcome_correction_reviewed"
+)
+COMMUNITY_DOMAIN_OUTCOME_CORRECTION_ADMIN_NOTIFICATION = (
+    "community_domain.beneficiary_outcome_correction_reviewed"
+)
+COMMUNITY_DOMAIN_OUTCOME_DELIVERY_CHANNELS = {
+    "copy_link",
+    "whatsapp",
+    "sms",
+    "email",
+    "other",
+}
+COMMUNITY_DOMAIN_OUTCOME_DELIVERY_STATUSES = {
+    "manual_sent",
+    "manual_failed",
+    "received_reported",
+    "opened_reported",
+}
+COMMUNITY_DOMAIN_OUTCOME_DELIVERY_CONSENT_BASES = {
+    "beneficiary_consented",
+    "guardian_or_authorized_contact",
+    "existing_relationship",
+    "operational_notice",
+    "not_recorded",
+}
+COMMUNITY_DOMAIN_OUTCOME_DELIVERY_RECEIPT_CORRECTION_DECISIONS = {
+    "marked_incorrect",
+    "superseded_by_new_receipt",
+    "needs_follow_up",
+    "no_action",
+}
+COMMUNITY_DOMAIN_OUTCOME_PROVIDER_CONTACT_CHANNELS = {
+    "whatsapp",
+    "sms",
+    "email",
+}
+COMMUNITY_DOMAIN_OUTCOME_CONTACT_REFERENCE_STATUSES = {
+    "not_recorded",
+    "admin_verified_off_platform",
+    "beneficiary_provided",
+    "guardian_or_authorized_contact_provided",
+    "existing_relationship_record",
+}
+COMMUNITY_DOMAIN_OUTCOME_CONTACT_CONSENT_SCOPES = {
+    "beneficiary_outcome_confirmation",
+}
+COMMUNITY_DOMAIN_OUTCOME_CONTACT_CONSENT_WITHDRAWAL_REASONS = {
+    "beneficiary_withdrew_consent",
+    "guardian_withdrew_authority",
+    "contact_no_longer_valid",
+    "wrong_recipient",
+    "consent_expired",
+    "replaced_by_new_attestation",
+    "admin_error",
+}
+COMMUNITY_DOMAIN_ACTIVITY_TYPES: dict[str, dict[str, str]] = {
+    "attendance": {
+        "label": "Attendance",
+        "evidence_dimension": "participation",
+        "summary": "A member or beneficiary was present for a real community activity.",
+    },
+    "volunteer_service": {
+        "label": "Volunteer service",
+        "evidence_dimension": "service",
+        "summary": "A member gave time, labour, or service to the community.",
+    },
+    "support_delivered": {
+        "label": "Support delivered",
+        "evidence_dimension": "support",
+        "summary": "Support, welfare, aid, care, or assistance was delivered.",
+    },
+    "follow_up_completed": {
+        "label": "Follow-up completed",
+        "evidence_dimension": "follow_up",
+        "summary": "A follow-up check, visit, call, or review was completed.",
+    },
+    "contribution": {
+        "label": "Contribution",
+        "evidence_dimension": "contribution",
+        "summary": "A useful contribution, donation, duty, payment, or input was recorded.",
+    },
+    "leadership_duty": {
+        "label": "Leadership duty",
+        "evidence_dimension": "leadership",
+        "summary": "A leadership, coordination, or assigned duty was performed.",
+    },
+    "welfare_support": {
+        "label": "Welfare support",
+        "evidence_dimension": "care",
+        "summary": "Welfare, pastoral care, community care, or safe support was provided.",
+    },
+    "training_completion": {
+        "label": "Training completion",
+        "evidence_dimension": "learning",
+        "summary": "A class, training, module, project, or learning step was completed.",
+    },
+    "project_participation": {
+        "label": "Project participation",
+        "evidence_dimension": "project_work",
+        "summary": "A member or beneficiary participated in a project or programme.",
+    },
+}
+COMMUNITY_DOMAIN_ACTIVITY_EVIDENCE_STRENGTHS = {
+    "self_reported",
+    "admin_recorded",
+    "member_confirmed",
+    "beneficiary_confirmed",
+    "witness_confirmed",
+    "imported",
+    "multi_party_confirmed",
+    "challenged",
+}
+COMMUNITY_DOMAIN_OUTCOME_STATES = {
+    "baseline_only",
+    "improved",
+    "unchanged",
+    "worsened",
+    "follow_up_needed",
+    "not_enough_evidence",
+    "challenged",
+}
+COMMUNITY_DOMAIN_OUTCOME_FOLLOW_UP_STATES = {
+    "not_started",
+    "scheduled",
+    "in_progress",
+    "completed",
+    "missed",
+    "not_required",
+}
+COMMUNITY_DOMAIN_OUTCOME_CONFIRMATION_STATES = {
+    "not_requested",
+    "admin_recorded",
+    "beneficiary_confirmed",
+    "witness_confirmed",
+    "multi_party_confirmed",
+    "declined",
+    "disputed",
+}
+COMMUNITY_DOMAIN_OUTCOME_CHALLENGE_STATUSES = {
+    "none",
+    "challenged",
+    "under_review",
+    "corrected",
+    "resolved",
+    "withdrawn",
+}
+COMMUNITY_DOMAIN_OUTCOME_RESPONSE_TYPES = {
+    "confirm",
+    "partly_confirm",
+    "challenge",
+    "cannot_confirm",
+}
+COMMUNITY_DOMAIN_OUTCOME_CORRECTION_DECISIONS = {
+    "uphold_original",
+    "mark_corrected",
+    "withdraw_original",
+    "needs_follow_up",
+    "no_action",
+}
+COMMUNITY_DOMAIN_OUTCOME_RESPONDER_TYPES = {
+    "beneficiary",
+    "guardian",
+    "witness",
+    "member",
+    "external_reviewer",
+}
 COMMUNITY_DOMAIN_ROLE_PRESETS: list[dict[str, Any]] = [
     {
         "role_key": "owner",
@@ -1402,6 +1605,1092 @@ def _json_load(value: Optional[str]) -> dict[str, Any]:
         return {}
 
 
+def _as_aware_utc(value: datetime) -> datetime:
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc)
+
+
+def _parse_datetime(value: Any) -> Optional[datetime]:
+    if isinstance(value, datetime):
+        return _as_aware_utc(value)
+    text = _clean_str(value)
+    if not text:
+        return None
+    try:
+        return _as_aware_utc(datetime.fromisoformat(text.replace("Z", "+00:00")))
+    except ValueError:
+        return None
+
+
+def _period_bounds(
+    *,
+    period_start: Optional[datetime],
+    period_end: Optional[datetime],
+) -> tuple[datetime, datetime]:
+    end = _as_aware_utc(period_end or datetime.now(timezone.utc))
+    start = _as_aware_utc(period_start or (end - timedelta(days=30)))
+    if start >= end:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "code": "invalid_period",
+                "message": "period_start must be earlier than period_end.",
+            },
+        )
+    return start, end
+
+
+def _within_period(
+    value: Optional[datetime],
+    *,
+    period_start: datetime,
+    period_end: datetime,
+) -> bool:
+    if value is None:
+        return False
+    checked = _as_aware_utc(value)
+    return period_start <= checked <= period_end
+
+
+def _increment_count(bucket: dict[str, int], key: Optional[str], default: str = "unknown") -> None:
+    clean_key = _clean_role(key, default)
+    bucket[clean_key] = bucket.get(clean_key, 0) + 1
+
+
+def _not_recorded_period_section(label: str, missing_reason: str) -> dict[str, Any]:
+    return {
+        "status": "not_recorded",
+        "label": label,
+        "total": 0,
+        "missing_reason": missing_reason,
+        "plain_language": "Not recorded in GSN for this period.",
+    }
+
+
+def _source_record_summary(rows: list[Any], *, limit: int = 10) -> dict[str, Any]:
+    ids = [int(getattr(row, "id", 0) or 0) for row in rows if getattr(row, "id", None)]
+    return {
+        "total": len(rows),
+        "ids": ids[: int(limit)],
+        "truncated": len(ids) > int(limit),
+    }
+
+
+def _community_domain_activity_catalogue_items(
+    domain: CommunityDomain,
+) -> list[dict[str, Any]]:
+    template_key = _clean_template_key(domain.template_key, domain.domain_type)
+    return [
+        {
+            "activity_type": key,
+            "label": item["label"],
+            "summary": item["summary"],
+            "evidence_dimension": item["evidence_dimension"],
+            "template_key": template_key,
+            "recording_mode": "manual_admin_record",
+        }
+        for key, item in COMMUNITY_DOMAIN_ACTIVITY_TYPES.items()
+    ]
+
+
+def _community_domain_activity_event_payload(row: TrustEvent) -> dict[str, Any]:
+    meta = row.meta or {}
+    return {
+        "event_id": int(row.id),
+        "event_type": row.event_type,
+        "community_domain_id": int(meta.get("community_domain_id") or 0),
+        "community_node_id": (
+            int(meta.get("community_node_id"))
+            if meta.get("community_node_id") is not None
+            else None
+        ),
+        "actor_user_id": int(row.actor_user_id),
+        "subject_user_id": int(row.subject_user_id),
+        "activity_type": meta.get("activity_type"),
+        "activity_label": meta.get("activity_label"),
+        "evidence_dimension": meta.get("evidence_dimension"),
+        "quantity": meta.get("quantity"),
+        "measurement_unit": meta.get("measurement_unit"),
+        "occurred_at": meta.get("occurred_at"),
+        "evidence_strength": meta.get("evidence_strength"),
+        "visibility": meta.get("visibility"),
+        "membership_status_snapshot": meta.get("membership_status_snapshot"),
+        "membership_role_snapshot": meta.get("membership_role_snapshot"),
+        "baseline_value": meta.get("baseline_value"),
+        "after_value": meta.get("after_value"),
+        "follow_up_due_at": meta.get("follow_up_due_at"),
+        "created_at": _iso(row.created_at),
+    }
+
+
+def _community_domain_activity_events(
+    db: Session,
+    *,
+    community_domain_id: int,
+    period_start: Optional[datetime] = None,
+    period_end: Optional[datetime] = None,
+    community_node_ids: Optional[list[int]] = None,
+    limit: int = 250,
+) -> list[TrustEvent]:
+    query = (
+        db.query(TrustEvent)
+        .filter(TrustEvent.event_type == COMMUNITY_DOMAIN_ACTIVITY_EVENT)
+        .order_by(TrustEvent.created_at.desc(), TrustEvent.id.desc())
+    )
+    if period_start is not None:
+        query = query.filter(TrustEvent.created_at >= period_start)
+    if period_end is not None:
+        query = query.filter(TrustEvent.created_at <= period_end)
+    rows = query.limit(max(int(limit), 1)).all()
+    desired_domain_id = int(community_domain_id)
+    node_filter = {int(item) for item in community_node_ids or []}
+    filtered: list[TrustEvent] = []
+    for row in rows:
+        meta = row.meta or {}
+        if int(meta.get("community_domain_id") or 0) != desired_domain_id:
+            continue
+        if node_filter:
+            node_id = meta.get("community_node_id")
+            if node_id is None or int(node_id) not in node_filter:
+                continue
+        filtered.append(row)
+    return filtered
+
+
+def _community_domain_outcome_event_payload(row: TrustEvent) -> dict[str, Any]:
+    meta = row.meta or {}
+    return {
+        "event_id": int(row.id),
+        "event_type": row.event_type,
+        "community_domain_id": int(meta.get("community_domain_id") or 0),
+        "community_node_id": (
+            int(meta.get("community_node_id"))
+            if meta.get("community_node_id") is not None
+            else None
+        ),
+        "actor_user_id": int(row.actor_user_id),
+        "subject_user_id": int(row.subject_user_id),
+        "programme_label": meta.get("programme_label"),
+        "outcome_indicator": meta.get("outcome_indicator"),
+        "baseline_value": meta.get("baseline_value"),
+        "after_value": meta.get("after_value"),
+        "support_received": meta.get("support_received"),
+        "follow_up_state": meta.get("follow_up_state"),
+        "outcome_state": meta.get("outcome_state"),
+        "beneficiary_confirmation": meta.get("beneficiary_confirmation"),
+        "admin_confirmation": meta.get("admin_confirmation"),
+        "challenge_status": meta.get("challenge_status"),
+        "evidence_strength": meta.get("evidence_strength"),
+        "visibility": meta.get("visibility"),
+        "occurred_at": meta.get("occurred_at"),
+        "follow_up_due_at": meta.get("follow_up_due_at"),
+        "membership_status_snapshot": meta.get("membership_status_snapshot"),
+        "membership_role_snapshot": meta.get("membership_role_snapshot"),
+        "created_at": _iso(row.created_at),
+    }
+
+
+def _community_domain_outcome_events(
+    db: Session,
+    *,
+    community_domain_id: int,
+    period_start: Optional[datetime] = None,
+    period_end: Optional[datetime] = None,
+    community_node_ids: Optional[list[int]] = None,
+    limit: int = 250,
+) -> list[TrustEvent]:
+    query = (
+        db.query(TrustEvent)
+        .filter(TrustEvent.event_type == COMMUNITY_DOMAIN_BENEFICIARY_OUTCOME_EVENT)
+        .order_by(TrustEvent.created_at.desc(), TrustEvent.id.desc())
+    )
+    if period_start is not None:
+        query = query.filter(TrustEvent.created_at >= period_start)
+    if period_end is not None:
+        query = query.filter(TrustEvent.created_at <= period_end)
+    rows = query.limit(max(int(limit), 1)).all()
+    desired_domain_id = int(community_domain_id)
+    node_filter = {int(item) for item in community_node_ids or []}
+    filtered: list[TrustEvent] = []
+    for row in rows:
+        meta = row.meta or {}
+        if int(meta.get("community_domain_id") or 0) != desired_domain_id:
+            continue
+        if node_filter:
+            node_id = meta.get("community_node_id")
+            if node_id is None or int(node_id) not in node_filter:
+                continue
+        filtered.append(row)
+    return filtered
+
+
+def _get_community_domain_outcome_event_or_404(
+    db: Session,
+    *,
+    community_domain_id: int,
+    outcome_event_id: int,
+) -> TrustEvent:
+    event = db.get(TrustEvent, int(outcome_event_id))
+    if event is None or event.event_type != COMMUNITY_DOMAIN_BENEFICIARY_OUTCOME_EVENT:
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "code": "beneficiary_outcome_not_found",
+                "message": "GSN could not find that Community Domain beneficiary outcome.",
+            },
+        )
+    if int((event.meta or {}).get("community_domain_id") or 0) != int(community_domain_id):
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "code": "beneficiary_outcome_not_found_for_domain",
+                "message": "That beneficiary outcome does not belong to this Community Domain.",
+            },
+        )
+    return event
+
+
+def _community_domain_outcome_confirmation_request_by_token(
+    db: Session,
+    *,
+    token: str,
+) -> Optional[TrustEvent]:
+    clean_token = _clean_str(token)
+    if not clean_token:
+        return None
+    token_hash = hashlib.sha256(clean_token.encode("utf-8")).hexdigest()
+    rows = (
+        db.query(TrustEvent)
+        .filter(
+            TrustEvent.event_type
+            == COMMUNITY_DOMAIN_OUTCOME_CONFIRMATION_REQUEST_EVENT
+        )
+        .order_by(TrustEvent.created_at.desc(), TrustEvent.id.desc())
+        .limit(500)
+        .all()
+    )
+    for row in rows:
+        if _clean_str((row.meta or {}).get("public_token_hash")) == token_hash:
+            return row
+    return None
+
+
+def _community_domain_outcome_confirmation_responses(
+    db: Session,
+    *,
+    confirmation_request_event_id: Optional[int] = None,
+    outcome_event_id: Optional[int] = None,
+    community_domain_id: Optional[int] = None,
+    period_start: Optional[datetime] = None,
+    period_end: Optional[datetime] = None,
+    limit: int = 500,
+) -> list[TrustEvent]:
+    query = (
+        db.query(TrustEvent)
+        .filter(
+            TrustEvent.event_type
+            == COMMUNITY_DOMAIN_OUTCOME_CONFIRMATION_RESPONSE_EVENT
+        )
+        .order_by(TrustEvent.created_at.desc(), TrustEvent.id.desc())
+    )
+    if period_start is not None:
+        query = query.filter(TrustEvent.created_at >= period_start)
+    if period_end is not None:
+        query = query.filter(TrustEvent.created_at <= period_end)
+    rows = query.limit(max(int(limit), 1)).all()
+    filtered: list[TrustEvent] = []
+    for row in rows:
+        meta = row.meta or {}
+        if (
+            confirmation_request_event_id is not None
+            and int(meta.get("confirmation_request_event_id") or 0)
+            != int(confirmation_request_event_id)
+        ):
+            continue
+        if (
+            outcome_event_id is not None
+            and int(meta.get("outcome_event_id") or 0) != int(outcome_event_id)
+        ):
+            continue
+        if (
+            community_domain_id is not None
+            and int(meta.get("community_domain_id") or 0) != int(community_domain_id)
+        ):
+            continue
+        filtered.append(row)
+    return filtered
+
+
+def _community_domain_outcome_confirmation_response_payload(row: TrustEvent) -> dict[str, Any]:
+    meta = row.meta or {}
+    return {
+        "event_id": int(row.id),
+        "event_type": row.event_type,
+        "community_domain_id": int(meta.get("community_domain_id") or 0),
+        "outcome_event_id": int(meta.get("outcome_event_id") or 0),
+        "confirmation_request_event_id": int(
+            meta.get("confirmation_request_event_id") or 0
+        ),
+        "responder_type": meta.get("responder_type"),
+        "response_type": meta.get("response_type"),
+        "confirmation_state": meta.get("confirmation_state"),
+        "challenge_status": meta.get("challenge_status"),
+        "note": meta.get("note"),
+        "correction_note": meta.get("correction_note"),
+        "responded_at": meta.get("responded_at"),
+        "created_at": _iso(row.created_at),
+    }
+
+
+def _community_domain_outcome_provider_delivery_readiness(
+    *,
+    contact_consent_status: Optional[dict[str, Any]] = None,
+) -> dict[str, Any]:
+    active_contact_consent_status = (
+        _clean_str(contact_consent_status.get("status"))
+        if contact_consent_status
+        else "not_evaluated"
+    )
+    active_contact_consent_satisfied = (
+        active_contact_consent_status == "active_attestation"
+    )
+    provider_send_blockers = [
+        "missing_contact_preference_and_consent_gate",
+        "provider_delivery_not_connected",
+    ]
+    if not active_contact_consent_satisfied:
+        provider_send_blockers.append("active_contact_consent_required")
+    provider_setup_contract = {
+        "status": "not_configured",
+        "required_channel_contracts": [
+            {
+                "channel": "whatsapp",
+                "provider_type": "approved_whatsapp_business_provider",
+                "status": "not_connected_in_this_slice",
+                "configured": False,
+                "required_capabilities": [
+                    "template or approved message sending",
+                    "delivery status webhook",
+                    "signed webhook verification",
+                    "opt-out and consent handling",
+                ],
+            },
+            {
+                "channel": "sms",
+                "provider_type": "approved_sms_provider",
+                "status": "not_connected_in_this_slice",
+                "configured": False,
+                "required_capabilities": [
+                    "outbound SMS sending",
+                    "delivery status webhook",
+                    "sender identity configuration",
+                    "opt-out and consent handling",
+                ],
+            },
+            {
+                "channel": "email",
+                "provider_type": "approved_email_provider",
+                "status": "not_connected_in_this_slice",
+                "configured": False,
+                "required_capabilities": [
+                    "transactional email sending",
+                    "bounce and delivery webhook",
+                    "sender domain authentication",
+                    "unsubscribe and consent handling",
+                ],
+            },
+        ],
+        "required_operational_controls": [
+            "contact preference storage",
+            "consent basis enforcement before send",
+            "delivery retry policy",
+            "webhook signature verification",
+            "provider message id stored in delivery event metadata",
+            "delivery receipt Trust Event mapping",
+            "admin-visible failed-delivery review path",
+        ],
+        "send_lift_conditions": [
+            "at least one approved provider channel configured",
+            "provider webhook verified",
+            "contact preference and consent basis available",
+            "retry and failure review path defined",
+            "delivery receipt Trust Event mapping tested",
+        ],
+        "truth_gate": (
+            "Provider sending may only be marked ready after at least one "
+            "provider channel can send, receive verified delivery callbacks, "
+            "enforce consent/contact preferences, and write delivery receipt "
+            "Trust Events without storing raw secrets."
+        ),
+    }
+    contact_consent_contract = {
+        "status": "not_connected",
+        "contact_preference_storage_status": "not_connected_in_this_slice",
+        "consent_basis_storage_status": "manual_receipt_consent_basis_only",
+        "provider_send_blocker": "missing_contact_preference_and_consent_gate",
+        "provider_send_blockers": provider_send_blockers,
+        "active_contact_consent_required": True,
+        "active_contact_consent_status": active_contact_consent_status,
+        "active_contact_consent_satisfied": active_contact_consent_satisfied,
+        "active_contact_consent_boundary": (
+            "Provider delivery readiness must be evaluated against the latest "
+            "beneficiary outcome contact/consent status. Provider sending "
+            "must stay blocked unless the latest status is active_attestation."
+        ),
+        "required_contact_fields": [
+            "preferred_delivery_channel",
+            "destination_reference",
+            "destination_verified_at",
+            "contact_owner_type",
+            "contact_scope",
+        ],
+        "required_consent_fields": [
+            "consent_basis",
+            "consent_recorded_at",
+            "consent_recorded_by_user_id",
+            "consent_scope",
+            "withdrawn_at",
+        ],
+        "allowed_delivery_channels": ["whatsapp", "sms", "email"],
+        "minimum_send_rule": (
+            "Do not attempt provider delivery unless the selected channel has "
+            "a verified destination reference and an active consent or legal "
+            "authority basis for this beneficiary confirmation purpose."
+        ),
+        "privacy_boundary": (
+            "The current readiness object describes required contact and "
+            "consent facts but does not store beneficiary phone numbers, email "
+            "addresses, provider destinations, or consent records."
+        ),
+    }
+    return {
+        "status": "manual_only_provider_not_connected",
+        "ready_to_send": False,
+        "external_channels_sent_by_gsn": False,
+        "provider_send_engine_status": "not_connected_in_this_slice",
+        "provider_delivery_webhook_status": "not_connected_in_this_slice",
+        "retry_queue_status": "not_connected_in_this_slice",
+        "contact_preference_status": "not_connected_in_this_slice",
+        "consent_enforcement_status": "manual_receipt_consent_basis_only",
+        "active_contact_consent_status": active_contact_consent_status,
+        "active_contact_consent_satisfied": active_contact_consent_satisfied,
+        "available_manual_channels": sorted(COMMUNITY_DOMAIN_OUTCOME_DELIVERY_CHANNELS),
+        "planned_provider_channels": ["whatsapp", "sms", "email"],
+        "missing_components": [
+            "provider send API",
+            "provider delivery webhook",
+            "retry queue",
+            "contact preference storage",
+            "provider consent enforcement",
+            "provider delivery receipt verification",
+        ],
+        "provider_setup_contract": provider_setup_contract,
+        "contact_consent_contract": contact_consent_contract,
+        "next_step": (
+            "Choose and configure real WhatsApp/SMS/email providers before "
+            "allowing GSN to send beneficiary confirmation requests directly."
+        ),
+        "boundary": (
+            "Read-only delivery readiness. GSN can prepare manual delivery text "
+            "and record admin-stated manual receipts, but it cannot send or "
+            "verify WhatsApp, SMS, or email delivery with the current setup."
+        ),
+    }
+
+
+def _community_domain_outcome_confirmation_delivery_pack(
+    *,
+    domain: CommunityDomain,
+    outcome_event: TrustEvent,
+    public_path: str,
+    delivery_event_id: Optional[int] = None,
+    provider_delivery_readiness: Optional[dict[str, Any]] = None,
+) -> dict[str, Any]:
+    outcome_meta = outcome_event.meta or {}
+    domain_label = _clean_str(
+        getattr(domain, "display_name", None) or getattr(domain, "domain_name", None),
+        "this Community Domain",
+    )
+    indicator = _clean_str(outcome_meta.get("outcome_indicator"), "a beneficiary outcome")
+    message = (
+        f"{domain_label} is asking you to review and confirm {indicator} on GSN. "
+        f"Open this private link and choose the honest answer: {public_path}"
+    )
+    email_subject = f"GSN beneficiary outcome confirmation - {domain_label}"
+    encoded_message = quote(message)
+    encoded_subject = quote(email_subject)
+    return {
+        "status": "prepared_not_sent",
+        "delivery_event_id": int(delivery_event_id) if delivery_event_id else None,
+        "channels": ["copy_link", "whatsapp", "sms", "email"],
+        "public_path": public_path,
+        "message_text": message,
+        "whatsapp_url": f"https://wa.me/?text={encoded_message}",
+        "sms_url": f"sms:?&body={encoded_message}",
+        "email_subject": email_subject,
+        "email_body": message,
+        "email_url": f"mailto:?subject={encoded_subject}&body={encoded_message}",
+        "provider_delivery_readiness": (
+            provider_delivery_readiness
+            or _community_domain_outcome_provider_delivery_readiness()
+        ),
+        "boundary": (
+            "GSN prepared manual delivery text only. It did not send WhatsApp, "
+            "SMS, or email, and it did not prove that the recipient received or "
+            "opened the link."
+        ),
+    }
+
+
+def _community_domain_outcome_confirmation_delivery_payload(
+    row: TrustEvent,
+) -> dict[str, Any]:
+    meta = row.meta or {}
+    return {
+        "event_id": int(row.id),
+        "event_type": row.event_type,
+        "community_domain_id": int(meta.get("community_domain_id") or 0),
+        "outcome_event_id": int(meta.get("outcome_event_id") or 0),
+        "confirmation_request_event_id": int(
+            meta.get("confirmation_request_event_id") or 0
+        ),
+        "delivery_event_id": (
+            int(meta.get("delivery_event_id"))
+            if meta.get("delivery_event_id") is not None
+            else None
+        ),
+        "channel": meta.get("channel"),
+        "delivery_status": meta.get("delivery_status"),
+        "consent_basis": meta.get("consent_basis"),
+        "recipient_label": meta.get("recipient_label"),
+        "recorded_at": meta.get("recorded_at"),
+        "delivered_at": meta.get("delivered_at"),
+        "created_at": _iso(row.created_at),
+        "external_channels_sent_by_gsn": bool(
+            meta.get("external_channels_sent_by_gsn")
+        ),
+        "active_contact_consent_status": meta.get("active_contact_consent_status"),
+        "active_contact_consent_satisfied": bool(
+            meta.get("active_contact_consent_satisfied")
+        ),
+        "contact_consent_event_id": (
+            int(meta.get("contact_consent_event_id"))
+            if meta.get("contact_consent_event_id") is not None
+            else None
+        ),
+        "contact_consent_channel": meta.get("contact_consent_channel"),
+        "contact_consent_reference_status": meta.get(
+            "contact_consent_reference_status"
+        ),
+        "contact_consent_basis": meta.get("contact_consent_basis"),
+    }
+
+
+def _community_domain_outcome_provider_send_blocked_payload(
+    row: TrustEvent,
+) -> dict[str, Any]:
+    meta = row.meta or {}
+    return {
+        "event_id": int(row.id),
+        "event_type": row.event_type,
+        "community_domain_id": int(meta.get("community_domain_id") or 0),
+        "outcome_event_id": int(meta.get("outcome_event_id") or 0),
+        "delivery_event_id": (
+            int(meta.get("delivery_event_id"))
+            if meta.get("delivery_event_id") is not None
+            else None
+        ),
+        "confirmation_request_event_id": (
+            int(meta.get("confirmation_request_event_id"))
+            if meta.get("confirmation_request_event_id") is not None
+            else None
+        ),
+        "provider_delivery_readiness_status": meta.get(
+            "provider_delivery_readiness_status"
+        ),
+        "provider_send_engine_status": meta.get("provider_send_engine_status"),
+        "provider_delivery_webhook_status": meta.get(
+            "provider_delivery_webhook_status"
+        ),
+        "retry_queue_status": meta.get("retry_queue_status"),
+        "active_contact_consent_status": meta.get("active_contact_consent_status"),
+        "active_contact_consent_satisfied": bool(
+            meta.get("active_contact_consent_satisfied")
+        ),
+        "active_contact_consent_event_id": (
+            int(meta.get("active_contact_consent_event_id"))
+            if meta.get("active_contact_consent_event_id") is not None
+            else None
+        ),
+        "latest_contact_consent_withdrawal_event_id": (
+            int(meta.get("latest_contact_consent_withdrawal_event_id"))
+            if meta.get("latest_contact_consent_withdrawal_event_id") is not None
+            else None
+        ),
+        "blocked_reason": meta.get("blocked_reason"),
+        "blocked_check_recorded": bool(meta.get("blocked_check_recorded")),
+        "provider_job_created": bool(meta.get("provider_job_created")),
+        "send_attempt_created": bool(meta.get("send_attempt_created")),
+        "external_channels_sent_by_gsn": bool(
+            meta.get("external_channels_sent_by_gsn")
+        ),
+        "created_at": _iso(row.created_at),
+    }
+
+
+def _community_domain_outcome_delivery_receipt_correction_payload(
+    row: TrustEvent,
+) -> dict[str, Any]:
+    meta = row.meta or {}
+    return {
+        "event_id": int(row.id),
+        "event_type": row.event_type,
+        "community_domain_id": int(meta.get("community_domain_id") or 0),
+        "outcome_event_id": int(meta.get("outcome_event_id") or 0),
+        "delivery_event_id": (
+            int(meta.get("delivery_event_id"))
+            if meta.get("delivery_event_id") is not None
+            else None
+        ),
+        "delivery_receipt_event_id": (
+            int(meta.get("delivery_receipt_event_id"))
+            if meta.get("delivery_receipt_event_id") is not None
+            else None
+        ),
+        "decision": meta.get("decision"),
+        "receipt_correction_status": meta.get("receipt_correction_status"),
+        "prior_delivery_status": meta.get("prior_delivery_status"),
+        "prior_channel": meta.get("prior_channel"),
+        "prior_consent_basis": meta.get("prior_consent_basis"),
+        "corrected_delivery_status": meta.get("corrected_delivery_status"),
+        "corrected_channel": meta.get("corrected_channel"),
+        "corrected_consent_basis": meta.get("corrected_consent_basis"),
+        "correction_note": meta.get("correction_note"),
+        "corrected_at": meta.get("corrected_at"),
+        "created_at": _iso(row.created_at),
+    }
+
+
+def _community_domain_outcome_contact_consent_payload(
+    row: TrustEvent,
+) -> dict[str, Any]:
+    meta = row.meta or {}
+    return {
+        "event_id": int(row.id),
+        "event_type": row.event_type,
+        "community_domain_id": int(meta.get("community_domain_id") or 0),
+        "outcome_event_id": int(meta.get("outcome_event_id") or 0),
+        "channel": meta.get("channel"),
+        "destination_reference_status": meta.get("destination_reference_status"),
+        "destination_reference_label": meta.get("destination_reference_label"),
+        "destination_verified_at": meta.get("destination_verified_at"),
+        "consent_basis": meta.get("consent_basis"),
+        "consent_scope": meta.get("consent_scope"),
+        "consent_recorded_at": meta.get("consent_recorded_at"),
+        "evidence_reference": meta.get("evidence_reference"),
+        "note": meta.get("note"),
+        "provider_send_ready": bool(meta.get("provider_send_ready")),
+        "destination_value_stored": bool(meta.get("destination_value_stored")),
+        "raw_destination_stored": bool(meta.get("raw_destination_stored")),
+        "external_channels_sent_by_gsn": bool(
+            meta.get("external_channels_sent_by_gsn")
+        ),
+        "created_at": _iso(row.created_at),
+    }
+
+
+def _community_domain_outcome_contact_consent_withdrawal_payload(
+    row: TrustEvent,
+) -> dict[str, Any]:
+    meta = row.meta or {}
+    return {
+        "event_id": int(row.id),
+        "event_type": row.event_type,
+        "community_domain_id": int(meta.get("community_domain_id") or 0),
+        "outcome_event_id": int(meta.get("outcome_event_id") or 0),
+        "contact_consent_event_id": (
+            int(meta.get("contact_consent_event_id"))
+            if meta.get("contact_consent_event_id") is not None
+            else None
+        ),
+        "withdrawal_reason": meta.get("withdrawal_reason"),
+        "withdrawn_at": meta.get("withdrawn_at"),
+        "replacement_required": bool(meta.get("replacement_required")),
+        "provider_send_ready": bool(meta.get("provider_send_ready")),
+        "external_channels_sent_by_gsn": bool(
+            meta.get("external_channels_sent_by_gsn")
+        ),
+        "note": meta.get("note"),
+        "created_at": _iso(row.created_at),
+    }
+
+
+def _community_domain_outcome_confirmation_delivery_events(
+    db: Session,
+    *,
+    event_type: str,
+    community_domain_id: Optional[int] = None,
+    outcome_event_id: Optional[int] = None,
+    confirmation_request_event_id: Optional[int] = None,
+    delivery_event_id: Optional[int] = None,
+    period_start: Optional[datetime] = None,
+    period_end: Optional[datetime] = None,
+    limit: int = 500,
+) -> list[TrustEvent]:
+    query = (
+        db.query(TrustEvent)
+        .filter(TrustEvent.event_type == event_type)
+        .order_by(TrustEvent.created_at.desc(), TrustEvent.id.desc())
+    )
+    if period_start is not None:
+        query = query.filter(TrustEvent.created_at >= period_start)
+    if period_end is not None:
+        query = query.filter(TrustEvent.created_at <= period_end)
+    rows = query.limit(max(int(limit), 1)).all()
+    filtered: list[TrustEvent] = []
+    for row in rows:
+        meta = row.meta or {}
+        if (
+            community_domain_id is not None
+            and int(meta.get("community_domain_id") or 0) != int(community_domain_id)
+        ):
+            continue
+        if (
+            outcome_event_id is not None
+            and int(meta.get("outcome_event_id") or 0) != int(outcome_event_id)
+        ):
+            continue
+        if (
+            confirmation_request_event_id is not None
+            and int(meta.get("confirmation_request_event_id") or 0)
+            != int(confirmation_request_event_id)
+        ):
+            continue
+        if (
+            delivery_event_id is not None
+            and int(meta.get("delivery_event_id") or 0) != int(delivery_event_id)
+        ):
+            continue
+        filtered.append(row)
+    return filtered
+
+
+def _community_domain_outcome_delivery_receipt_correction_events(
+    db: Session,
+    *,
+    community_domain_id: Optional[int] = None,
+    outcome_event_id: Optional[int] = None,
+    delivery_event_id: Optional[int] = None,
+    delivery_receipt_event_id: Optional[int] = None,
+    period_start: Optional[datetime] = None,
+    period_end: Optional[datetime] = None,
+    limit: int = 500,
+) -> list[TrustEvent]:
+    query = (
+        db.query(TrustEvent)
+        .filter(
+            TrustEvent.event_type
+            == COMMUNITY_DOMAIN_OUTCOME_CONFIRMATION_DELIVERY_RECEIPT_CORRECTED_EVENT
+        )
+        .order_by(TrustEvent.created_at.desc(), TrustEvent.id.desc())
+    )
+    if period_start is not None:
+        query = query.filter(TrustEvent.created_at >= period_start)
+    if period_end is not None:
+        query = query.filter(TrustEvent.created_at <= period_end)
+    rows = query.limit(max(int(limit), 1)).all()
+    filtered: list[TrustEvent] = []
+    for row in rows:
+        meta = row.meta or {}
+        if (
+            community_domain_id is not None
+            and int(meta.get("community_domain_id") or 0) != int(community_domain_id)
+        ):
+            continue
+        if (
+            outcome_event_id is not None
+            and int(meta.get("outcome_event_id") or 0) != int(outcome_event_id)
+        ):
+            continue
+        if (
+            delivery_event_id is not None
+            and int(meta.get("delivery_event_id") or 0) != int(delivery_event_id)
+        ):
+            continue
+        if (
+            delivery_receipt_event_id is not None
+            and int(meta.get("delivery_receipt_event_id") or 0)
+            != int(delivery_receipt_event_id)
+        ):
+            continue
+        filtered.append(row)
+    return filtered
+
+
+def _community_domain_active_delivery_receipt_rows(
+    delivery_receipt_rows: Sequence[TrustEvent],
+    delivery_receipt_correction_rows: Sequence[TrustEvent],
+) -> list[TrustEvent]:
+    invalidating_statuses = {"corrected", "superseded", "under_review"}
+    invalidated_receipt_ids = {
+        int((row.meta or {}).get("delivery_receipt_event_id") or 0)
+        for row in delivery_receipt_correction_rows
+        if (row.meta or {}).get("receipt_correction_status")
+        in invalidating_statuses
+    }
+    return [
+        row
+        for row in delivery_receipt_rows
+        if int(row.id) not in invalidated_receipt_ids
+    ]
+
+
+def _community_domain_current_delivery_receipt_correction_rows(
+    db: Session,
+    delivery_receipt_rows: Sequence[TrustEvent],
+) -> list[TrustEvent]:
+    receipt_ids = {int(row.id) for row in delivery_receipt_rows}
+    if not receipt_ids:
+        return []
+    rows = (
+        db.query(TrustEvent)
+        .filter(
+            TrustEvent.event_type
+            == COMMUNITY_DOMAIN_OUTCOME_CONFIRMATION_DELIVERY_RECEIPT_CORRECTED_EVENT
+        )
+        .order_by(TrustEvent.created_at.desc(), TrustEvent.id.desc())
+        .limit(max(5000, len(receipt_ids) * 10))
+        .all()
+    )
+    return [
+        row
+        for row in rows
+        if int((row.meta or {}).get("delivery_receipt_event_id") or 0)
+        in receipt_ids
+    ]
+
+
+def _community_domain_outcome_contact_consent_events(
+    db: Session,
+    *,
+    community_domain_id: Optional[int] = None,
+    outcome_event_id: Optional[int] = None,
+    period_start: Optional[datetime] = None,
+    period_end: Optional[datetime] = None,
+    limit: int = 500,
+) -> list[TrustEvent]:
+    query = (
+        db.query(TrustEvent)
+        .filter(
+            TrustEvent.event_type
+            == COMMUNITY_DOMAIN_OUTCOME_CONTACT_CONSENT_RECORDED_EVENT
+        )
+        .order_by(TrustEvent.created_at.desc(), TrustEvent.id.desc())
+    )
+    if period_start is not None:
+        query = query.filter(TrustEvent.created_at >= period_start)
+    if period_end is not None:
+        query = query.filter(TrustEvent.created_at <= period_end)
+    rows = query.limit(max(int(limit), 1)).all()
+    filtered: list[TrustEvent] = []
+    for row in rows:
+        meta = row.meta or {}
+        if (
+            community_domain_id is not None
+            and int(meta.get("community_domain_id") or 0) != int(community_domain_id)
+        ):
+            continue
+        if (
+            outcome_event_id is not None
+            and int(meta.get("outcome_event_id") or 0) != int(outcome_event_id)
+        ):
+            continue
+        filtered.append(row)
+    return filtered
+
+
+def _community_domain_outcome_contact_consent_withdrawal_events(
+    db: Session,
+    *,
+    community_domain_id: Optional[int] = None,
+    outcome_event_id: Optional[int] = None,
+    contact_consent_event_id: Optional[int] = None,
+    period_start: Optional[datetime] = None,
+    period_end: Optional[datetime] = None,
+    limit: int = 500,
+) -> list[TrustEvent]:
+    query = (
+        db.query(TrustEvent)
+        .filter(
+            TrustEvent.event_type
+            == COMMUNITY_DOMAIN_OUTCOME_CONTACT_CONSENT_WITHDRAWN_EVENT
+        )
+        .order_by(TrustEvent.created_at.desc(), TrustEvent.id.desc())
+    )
+    if period_start is not None:
+        query = query.filter(TrustEvent.created_at >= period_start)
+    if period_end is not None:
+        query = query.filter(TrustEvent.created_at <= period_end)
+    rows = query.limit(max(int(limit), 1)).all()
+    filtered: list[TrustEvent] = []
+    for row in rows:
+        meta = row.meta or {}
+        if (
+            community_domain_id is not None
+            and int(meta.get("community_domain_id") or 0) != int(community_domain_id)
+        ):
+            continue
+        if (
+            outcome_event_id is not None
+            and int(meta.get("outcome_event_id") or 0) != int(outcome_event_id)
+        ):
+            continue
+        if (
+            contact_consent_event_id is not None
+            and int(meta.get("contact_consent_event_id") or 0)
+            != int(contact_consent_event_id)
+        ):
+            continue
+        filtered.append(row)
+    return filtered
+
+
+def _community_domain_outcome_contact_consent_status(
+    db: Session,
+    *,
+    community_domain_id: int,
+    outcome_event_id: int,
+) -> dict[str, Any]:
+    contact_rows = _community_domain_outcome_contact_consent_events(
+        db,
+        community_domain_id=int(community_domain_id),
+        outcome_event_id=int(outcome_event_id),
+        limit=1,
+    )
+    withdrawal_rows = _community_domain_outcome_contact_consent_withdrawal_events(
+        db,
+        community_domain_id=int(community_domain_id),
+        outcome_event_id=int(outcome_event_id),
+        limit=1,
+    )
+    latest_contact = contact_rows[0] if contact_rows else None
+    latest_withdrawal = withdrawal_rows[0] if withdrawal_rows else None
+    latest_contact_payload = (
+        _community_domain_outcome_contact_consent_payload(latest_contact)
+        if latest_contact is not None
+        else None
+    )
+    latest_withdrawal_payload = (
+        _community_domain_outcome_contact_consent_withdrawal_payload(
+            latest_withdrawal
+        )
+        if latest_withdrawal is not None
+        else None
+    )
+    if latest_contact is None:
+        status = "not_recorded"
+        manual_delivery_allowed = False
+        replacement_required = False
+    elif latest_withdrawal is None or (
+        latest_contact.created_at > latest_withdrawal.created_at
+        or (
+            latest_contact.created_at == latest_withdrawal.created_at
+            and int(latest_contact.id) > int(latest_withdrawal.id)
+        )
+    ):
+        status = "active_attestation"
+        manual_delivery_allowed = True
+        replacement_required = False
+    else:
+        status = "withdrawn_requires_replacement"
+        manual_delivery_allowed = False
+        replacement_required = True
+
+    return {
+        "status": status,
+        "manual_delivery_allowed": manual_delivery_allowed,
+        "replacement_required": replacement_required,
+        "latest_contact_consent_record": latest_contact_payload,
+        "latest_contact_consent_withdrawal": latest_withdrawal_payload,
+        "boundary": (
+            "Manual delivery receipts require an active contact/consent "
+            "attestation in this v1 slice. If no attestation is recorded, or "
+            "the latest attestation was withdrawn, GSN must not record a "
+            "manual delivery receipt until a valid attestation exists."
+        ),
+    }
+
+
+def _community_domain_outcome_correction_review_payload(row: TrustEvent) -> dict[str, Any]:
+    meta = row.meta or {}
+    return {
+        "event_id": int(row.id),
+        "event_type": row.event_type,
+        "community_domain_id": int(meta.get("community_domain_id") or 0),
+        "outcome_event_id": int(meta.get("outcome_event_id") or 0),
+        "confirmation_response_event_id": (
+            int(meta.get("confirmation_response_event_id"))
+            if meta.get("confirmation_response_event_id") is not None
+            else None
+        ),
+        "decision": meta.get("decision"),
+        "challenge_status_after": meta.get("challenge_status_after"),
+        "corrected_outcome_state": meta.get("corrected_outcome_state"),
+        "corrected_after_value": meta.get("corrected_after_value"),
+        "corrected_support_received": meta.get("corrected_support_received"),
+        "corrected_beneficiary_confirmation": meta.get(
+            "corrected_beneficiary_confirmation"
+        ),
+        "review_note": meta.get("review_note"),
+        "reviewed_at": meta.get("reviewed_at"),
+        "created_at": _iso(row.created_at),
+    }
+
+
+def _community_domain_outcome_correction_reviews(
+    db: Session,
+    *,
+    community_domain_id: Optional[int] = None,
+    outcome_event_id: Optional[int] = None,
+    confirmation_response_event_id: Optional[int] = None,
+    period_start: Optional[datetime] = None,
+    period_end: Optional[datetime] = None,
+    limit: int = 500,
+) -> list[TrustEvent]:
+    query = (
+        db.query(TrustEvent)
+        .filter(TrustEvent.event_type == COMMUNITY_DOMAIN_OUTCOME_CORRECTION_REVIEW_EVENT)
+        .order_by(TrustEvent.created_at.desc(), TrustEvent.id.desc())
+    )
+    if period_start is not None:
+        query = query.filter(TrustEvent.created_at >= period_start)
+    if period_end is not None:
+        query = query.filter(TrustEvent.created_at <= period_end)
+    rows = query.limit(max(int(limit), 1)).all()
+    filtered: list[TrustEvent] = []
+    for row in rows:
+        meta = row.meta or {}
+        if (
+            community_domain_id is not None
+            and int(meta.get("community_domain_id") or 0) != int(community_domain_id)
+        ):
+            continue
+        if (
+            outcome_event_id is not None
+            and int(meta.get("outcome_event_id") or 0) != int(outcome_event_id)
+        ):
+            continue
+        if (
+            confirmation_response_event_id is not None
+            and int(meta.get("confirmation_response_event_id") or 0)
+            != int(confirmation_response_event_id)
+        ):
+            continue
+        filtered.append(row)
+    return filtered
+
+
 def _community_domain_feature_policy_config(
     db: Session,
     *,
@@ -2290,6 +3579,82 @@ def _create_community_domain_notice_notifications(
                 message=body,
                 action_url=f"/app/community-domain/{int(domain.id)}#community-domain-official-board",
                 action_label="Open Notice Board",
+                commit=False,
+                refresh=False,
+            )
+        )
+    db.commit()
+    try:
+        dispatch_web_push_for_notifications(db, notification_rows)
+    except Exception:
+        pass
+    return len(recipient_ids)
+
+
+def _active_community_domain_admin_recipient_ids(
+    db: Session,
+    *,
+    domain: CommunityDomain,
+    exclude_user_ids: Optional[set[int]] = None,
+) -> list[int]:
+    excluded = {int(item) for item in (exclude_user_ids or set())}
+    rows = (
+        db.query(CommunityDomainMembership.user_id, CommunityDomainMembership.role)
+        .filter(CommunityDomainMembership.community_domain_id == int(domain.id))
+        .filter(CommunityDomainMembership.status == "active")
+        .order_by(CommunityDomainMembership.user_id.asc())
+        .all()
+    )
+    recipient_ids: list[int] = []
+    seen: set[int] = set()
+    for user_id, role in rows:
+        clean_role = _clean_role(role, "member")
+        numeric_user_id = int(user_id)
+        if clean_role not in DOMAIN_ADMIN_ROLES:
+            continue
+        if numeric_user_id in excluded or numeric_user_id in seen:
+            continue
+        seen.add(numeric_user_id)
+        recipient_ids.append(numeric_user_id)
+
+    owner_id = int(domain.owner_user_id)
+    if owner_id not in excluded and owner_id not in seen:
+        owner = db.get(User, owner_id)
+        if owner is not None:
+            recipient_ids.append(owner_id)
+    return recipient_ids
+
+
+def _create_community_domain_admin_notifications(
+    db: Session,
+    *,
+    domain: CommunityDomain,
+    kind: str,
+    title: str,
+    message: str,
+    action_url: str,
+    action_label: str,
+    exclude_user_ids: Optional[set[int]] = None,
+) -> int:
+    recipient_ids = _active_community_domain_admin_recipient_ids(
+        db,
+        domain=domain,
+        exclude_user_ids=exclude_user_ids,
+    )
+    if not recipient_ids:
+        return 0
+
+    notification_rows = []
+    for user_id in recipient_ids:
+        notification_rows.append(
+            create_notification(
+                db,
+                user_id=int(user_id),
+                kind=kind,
+                title=title,
+                message=message,
+                action_url=action_url,
+                action_label=action_label,
                 commit=False,
                 refresh=False,
             )
@@ -17582,6 +18947,577 @@ class CommunityDomainMemberUpsertIn(BaseModel):
         return _reject_non_text_value(value, info.field_name)
 
 
+class CommunityDomainMemberStatusUpdateIn(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    status: str = Field(..., min_length=1, max_length=24)
+    status_note: Optional[str] = Field(default=None, max_length=1200)
+
+    @field_validator("status", "status_note", mode="before")
+    @classmethod
+    def _reject_non_text_member_status_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_value(value, info.field_name)
+
+
+class CommunityDomainActivityRecordIn(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    subject_user_id: int = Field(..., ge=1)
+    community_node_id: Optional[int] = Field(default=None, ge=1)
+    activity_type: str = Field(..., min_length=2, max_length=64)
+    activity_label: Optional[str] = Field(default=None, max_length=160)
+    quantity: Optional[Decimal] = Field(default=None, ge=Decimal("0"))
+    measurement_unit: Optional[str] = Field(default=None, max_length=40)
+    occurred_at: Optional[datetime] = None
+    evidence_strength: str = Field(default="admin_recorded", min_length=2, max_length=40)
+    visibility: Literal["admin_only", "director_safe", "sponsor_safe", "public_safe"] = (
+        "admin_only"
+    )
+    note: Optional[str] = Field(default=None, max_length=800)
+    evidence_reference: Optional[str] = Field(default=None, max_length=512)
+    baseline_value: Optional[str] = Field(default=None, max_length=240)
+    after_value: Optional[str] = Field(default=None, max_length=240)
+    follow_up_due_at: Optional[datetime] = None
+
+    @field_validator("subject_user_id", mode="before")
+    @classmethod
+    def _reject_bool_subject_user_id(cls, value: Any) -> Any:
+        return _reject_bool_identifier(value, "subject_user_id")
+
+    @field_validator("community_node_id", mode="before")
+    @classmethod
+    def _reject_bool_community_node_id(cls, value: Any) -> Any:
+        return _reject_bool_identifier(value, "community_node_id")
+
+    @field_validator(
+        "activity_type",
+        "activity_label",
+        "measurement_unit",
+        "evidence_strength",
+        "visibility",
+        "note",
+        "evidence_reference",
+        "baseline_value",
+        "after_value",
+        mode="before",
+    )
+    @classmethod
+    def _reject_non_text_activity_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_value(value, info.field_name)
+
+    @field_validator("activity_type")
+    @classmethod
+    def _normalize_activity_type(cls, value: str) -> str:
+        activity_type = _clean_template_key(value)
+        if activity_type not in COMMUNITY_DOMAIN_ACTIVITY_TYPES:
+            raise ValueError("Unsupported Community Domain activity type.")
+        return activity_type
+
+    @field_validator("evidence_strength")
+    @classmethod
+    def _normalize_evidence_strength(cls, value: str) -> str:
+        evidence_strength = _clean_role(value, "admin_recorded")
+        if evidence_strength not in COMMUNITY_DOMAIN_ACTIVITY_EVIDENCE_STRENGTHS:
+            raise ValueError("Unsupported activity evidence strength.")
+        return evidence_strength
+
+    @field_validator("occurred_at", "follow_up_due_at")
+    @classmethod
+    def _normalize_activity_datetime(cls, value: Optional[datetime]) -> Optional[datetime]:
+        if value is None:
+            return None
+        return _as_aware_utc(value)
+
+
+class CommunityDomainBeneficiaryOutcomeRecordIn(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    subject_user_id: int = Field(..., ge=1)
+    community_node_id: Optional[int] = Field(default=None, ge=1)
+    programme_label: Optional[str] = Field(default=None, max_length=160)
+    outcome_indicator: str = Field(..., min_length=2, max_length=160)
+    baseline_value: str = Field(..., min_length=1, max_length=360)
+    after_value: str = Field(..., min_length=1, max_length=360)
+    support_received: Optional[str] = Field(default=None, max_length=360)
+    follow_up_state: str = Field(default="completed", min_length=2, max_length=40)
+    outcome_state: str = Field(default="not_enough_evidence", min_length=2, max_length=40)
+    beneficiary_confirmation: str = Field(
+        default="not_requested",
+        min_length=2,
+        max_length=40,
+    )
+    admin_confirmation: str = Field(default="admin_recorded", min_length=2, max_length=40)
+    challenge_status: str = Field(default="none", min_length=2, max_length=40)
+    occurred_at: Optional[datetime] = None
+    follow_up_due_at: Optional[datetime] = None
+    evidence_strength: str = Field(default="admin_recorded", min_length=2, max_length=40)
+    visibility: Literal["admin_only", "director_safe", "sponsor_safe", "public_safe"] = (
+        "director_safe"
+    )
+    note: Optional[str] = Field(default=None, max_length=800)
+    evidence_reference: Optional[str] = Field(default=None, max_length=512)
+
+    @field_validator("subject_user_id", mode="before")
+    @classmethod
+    def _reject_bool_subject_user_id(cls, value: Any) -> Any:
+        return _reject_bool_identifier(value, "subject_user_id")
+
+    @field_validator("community_node_id", mode="before")
+    @classmethod
+    def _reject_bool_community_node_id(cls, value: Any) -> Any:
+        return _reject_bool_identifier(value, "community_node_id")
+
+    @field_validator(
+        "programme_label",
+        "outcome_indicator",
+        "baseline_value",
+        "after_value",
+        "support_received",
+        "follow_up_state",
+        "outcome_state",
+        "beneficiary_confirmation",
+        "admin_confirmation",
+        "challenge_status",
+        "evidence_strength",
+        "visibility",
+        "note",
+        "evidence_reference",
+        mode="before",
+    )
+    @classmethod
+    def _reject_non_text_outcome_controls(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_value(value, info.field_name)
+
+    @field_validator("follow_up_state")
+    @classmethod
+    def _normalize_follow_up_state(cls, value: str) -> str:
+        state = _clean_role(value, "completed")
+        if state not in COMMUNITY_DOMAIN_OUTCOME_FOLLOW_UP_STATES:
+            raise ValueError("Unsupported beneficiary outcome follow-up state.")
+        return state
+
+    @field_validator("outcome_state")
+    @classmethod
+    def _normalize_outcome_state(cls, value: str) -> str:
+        state = _clean_role(value, "not_enough_evidence")
+        if state not in COMMUNITY_DOMAIN_OUTCOME_STATES:
+            raise ValueError("Unsupported beneficiary outcome state.")
+        return state
+
+    @field_validator("beneficiary_confirmation", "admin_confirmation")
+    @classmethod
+    def _normalize_confirmation_state(cls, value: str) -> str:
+        state = _clean_role(value, "not_requested")
+        if state not in COMMUNITY_DOMAIN_OUTCOME_CONFIRMATION_STATES:
+            raise ValueError("Unsupported beneficiary outcome confirmation state.")
+        return state
+
+    @field_validator("challenge_status")
+    @classmethod
+    def _normalize_challenge_status(cls, value: str) -> str:
+        status = _clean_role(value, "none")
+        if status not in COMMUNITY_DOMAIN_OUTCOME_CHALLENGE_STATUSES:
+            raise ValueError("Unsupported beneficiary outcome challenge status.")
+        return status
+
+    @field_validator("evidence_strength")
+    @classmethod
+    def _normalize_evidence_strength(cls, value: str) -> str:
+        evidence_strength = _clean_role(value, "admin_recorded")
+        if evidence_strength not in COMMUNITY_DOMAIN_ACTIVITY_EVIDENCE_STRENGTHS:
+            raise ValueError("Unsupported beneficiary outcome evidence strength.")
+        return evidence_strength
+
+    @field_validator("occurred_at", "follow_up_due_at")
+    @classmethod
+    def _normalize_outcome_datetime(cls, value: Optional[datetime]) -> Optional[datetime]:
+        if value is None:
+            return None
+        return _as_aware_utc(value)
+
+
+class CommunityDomainOutcomeConfirmationLinkIn(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    responder_type: str = Field(default="beneficiary", min_length=2, max_length=40)
+    expires_in_days: int = Field(default=14, ge=1, le=90)
+    note: Optional[str] = Field(default=None, max_length=500)
+
+    @field_validator("responder_type", "note", mode="before")
+    @classmethod
+    def _reject_non_text_confirmation_link_controls(
+        cls,
+        value: Any,
+        info: Any,
+    ) -> Any:
+        return _reject_non_text_value(value, info.field_name)
+
+    @field_validator("responder_type")
+    @classmethod
+    def _normalize_responder_type(cls, value: str) -> str:
+        responder_type = _clean_role(value, "beneficiary")
+        if responder_type not in COMMUNITY_DOMAIN_OUTCOME_RESPONDER_TYPES:
+            raise ValueError("Unsupported beneficiary outcome responder type.")
+        return responder_type
+
+
+class CommunityDomainOutcomeConfirmationDeliveryReceiptIn(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    channel: str = Field(..., min_length=2, max_length=40)
+    delivery_status: str = Field(default="manual_sent", min_length=2, max_length=40)
+    consent_basis: str = Field(default="existing_relationship", min_length=2, max_length=60)
+    recipient_label: Optional[str] = Field(default=None, max_length=160)
+    delivered_at: Optional[datetime] = None
+    note: Optional[str] = Field(default=None, max_length=800)
+
+    @field_validator(
+        "channel",
+        "delivery_status",
+        "consent_basis",
+        "recipient_label",
+        "note",
+        mode="before",
+    )
+    @classmethod
+    def _reject_non_text_delivery_receipt_controls(
+        cls,
+        value: Any,
+        info: Any,
+    ) -> Any:
+        return _reject_non_text_value(value, info.field_name)
+
+    @field_validator("channel")
+    @classmethod
+    def _normalize_channel(cls, value: str) -> str:
+        channel = _clean_role(value, "other")
+        if channel not in COMMUNITY_DOMAIN_OUTCOME_DELIVERY_CHANNELS:
+            raise ValueError("Unsupported beneficiary outcome delivery channel.")
+        return channel
+
+    @field_validator("delivery_status")
+    @classmethod
+    def _normalize_delivery_status(cls, value: str) -> str:
+        status = _clean_role(value, "manual_sent")
+        if status not in COMMUNITY_DOMAIN_OUTCOME_DELIVERY_STATUSES:
+            raise ValueError("Unsupported beneficiary outcome delivery status.")
+        return status
+
+    @field_validator("consent_basis")
+    @classmethod
+    def _normalize_consent_basis(cls, value: str) -> str:
+        consent_basis = _clean_role(value, "existing_relationship")
+        if consent_basis not in COMMUNITY_DOMAIN_OUTCOME_DELIVERY_CONSENT_BASES:
+            raise ValueError("Unsupported beneficiary outcome delivery consent basis.")
+        return consent_basis
+
+    @field_validator("delivered_at")
+    @classmethod
+    def _normalize_delivered_at(cls, value: Optional[datetime]) -> Optional[datetime]:
+        if value is None:
+            return None
+        return _as_aware_utc(value)
+
+
+class CommunityDomainOutcomeConfirmationDeliveryReceiptCorrectionIn(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    decision: str = Field(default="marked_incorrect", min_length=2, max_length=60)
+    correction_note: Optional[str] = Field(default=None, max_length=900)
+    corrected_delivery_status: Optional[str] = Field(default=None, max_length=40)
+    corrected_channel: Optional[str] = Field(default=None, max_length=40)
+    corrected_consent_basis: Optional[str] = Field(default=None, max_length=60)
+
+    @field_validator(
+        "decision",
+        "correction_note",
+        "corrected_delivery_status",
+        "corrected_channel",
+        "corrected_consent_basis",
+        mode="before",
+    )
+    @classmethod
+    def _reject_non_text_delivery_receipt_correction_controls(
+        cls,
+        value: Any,
+        info: Any,
+    ) -> Any:
+        return _reject_non_text_value(value, info.field_name)
+
+    @field_validator("decision")
+    @classmethod
+    def _normalize_decision(cls, value: str) -> str:
+        decision = _clean_role(value, "marked_incorrect")
+        if decision not in COMMUNITY_DOMAIN_OUTCOME_DELIVERY_RECEIPT_CORRECTION_DECISIONS:
+            raise ValueError(
+                "Unsupported beneficiary outcome delivery receipt correction decision."
+            )
+        return decision
+
+    @field_validator("corrected_delivery_status")
+    @classmethod
+    def _normalize_corrected_delivery_status(
+        cls,
+        value: Optional[str],
+    ) -> Optional[str]:
+        if value is None or not _clean_str(value):
+            return None
+        status = _clean_role(value, "manual_sent")
+        if status not in COMMUNITY_DOMAIN_OUTCOME_DELIVERY_STATUSES:
+            raise ValueError("Unsupported corrected beneficiary outcome delivery status.")
+        return status
+
+    @field_validator("corrected_channel")
+    @classmethod
+    def _normalize_corrected_channel(cls, value: Optional[str]) -> Optional[str]:
+        if value is None or not _clean_str(value):
+            return None
+        channel = _clean_role(value, "other")
+        if channel not in COMMUNITY_DOMAIN_OUTCOME_DELIVERY_CHANNELS:
+            raise ValueError("Unsupported corrected beneficiary outcome delivery channel.")
+        return channel
+
+    @field_validator("corrected_consent_basis")
+    @classmethod
+    def _normalize_corrected_consent_basis(
+        cls,
+        value: Optional[str],
+    ) -> Optional[str]:
+        if value is None or not _clean_str(value):
+            return None
+        consent_basis = _clean_role(value, "existing_relationship")
+        if consent_basis not in COMMUNITY_DOMAIN_OUTCOME_DELIVERY_CONSENT_BASES:
+            raise ValueError("Unsupported corrected beneficiary outcome consent basis.")
+        return consent_basis
+
+
+class CommunityDomainOutcomeContactConsentRecordIn(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    channel: str = Field(default="whatsapp", min_length=2, max_length=40)
+    destination_reference_status: str = Field(
+        default="not_recorded",
+        min_length=2,
+        max_length=80,
+    )
+    destination_reference_label: Optional[str] = Field(default=None, max_length=160)
+    destination_verified_at: Optional[datetime] = None
+    consent_basis: str = Field(
+        default="existing_relationship",
+        min_length=2,
+        max_length=60,
+    )
+    consent_scope: str = Field(
+        default="beneficiary_outcome_confirmation",
+        min_length=2,
+        max_length=80,
+    )
+    consent_recorded_at: Optional[datetime] = None
+    evidence_reference: Optional[str] = Field(default=None, max_length=160)
+    note: Optional[str] = Field(default=None, max_length=800)
+
+    @field_validator(
+        "channel",
+        "destination_reference_status",
+        "destination_reference_label",
+        "consent_basis",
+        "consent_scope",
+        "evidence_reference",
+        "note",
+        mode="before",
+    )
+    @classmethod
+    def _reject_non_text_contact_consent_controls(
+        cls,
+        value: Any,
+        info: Any,
+    ) -> Any:
+        return _reject_non_text_value(value, info.field_name)
+
+    @field_validator("channel")
+    @classmethod
+    def _normalize_channel(cls, value: str) -> str:
+        channel = _clean_role(value, "whatsapp")
+        if channel not in COMMUNITY_DOMAIN_OUTCOME_PROVIDER_CONTACT_CHANNELS:
+            raise ValueError("Unsupported beneficiary outcome contact channel.")
+        return channel
+
+    @field_validator("destination_reference_status")
+    @classmethod
+    def _normalize_destination_status(cls, value: str) -> str:
+        status = _clean_role(value, "not_recorded")
+        if status not in COMMUNITY_DOMAIN_OUTCOME_CONTACT_REFERENCE_STATUSES:
+            raise ValueError(
+                "Unsupported beneficiary outcome destination reference status."
+            )
+        return status
+
+    @field_validator("consent_basis")
+    @classmethod
+    def _normalize_consent_basis(cls, value: str) -> str:
+        consent_basis = _clean_role(value, "existing_relationship")
+        if consent_basis not in COMMUNITY_DOMAIN_OUTCOME_DELIVERY_CONSENT_BASES:
+            raise ValueError("Unsupported beneficiary outcome consent basis.")
+        return consent_basis
+
+    @field_validator("consent_scope")
+    @classmethod
+    def _normalize_consent_scope(cls, value: str) -> str:
+        scope = _clean_role(value, "beneficiary_outcome_confirmation")
+        if scope not in COMMUNITY_DOMAIN_OUTCOME_CONTACT_CONSENT_SCOPES:
+            raise ValueError("Unsupported beneficiary outcome consent scope.")
+        return scope
+
+    @field_validator("destination_verified_at", "consent_recorded_at")
+    @classmethod
+    def _normalize_contact_consent_datetime(
+        cls,
+        value: Optional[datetime],
+    ) -> Optional[datetime]:
+        if value is None:
+            return None
+        return _as_aware_utc(value)
+
+
+class CommunityDomainOutcomeContactConsentWithdrawalIn(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    withdrawal_reason: str = Field(
+        default="beneficiary_withdrew_consent",
+        min_length=2,
+        max_length=80,
+    )
+    withdrawn_at: Optional[datetime] = None
+    replacement_required: bool = Field(default=True)
+    note: Optional[str] = Field(default=None, max_length=800)
+
+    @field_validator("withdrawal_reason", "note", mode="before")
+    @classmethod
+    def _reject_non_text_contact_consent_withdrawal_controls(
+        cls,
+        value: Any,
+        info: Any,
+    ) -> Any:
+        return _reject_non_text_value(value, info.field_name)
+
+    @field_validator("withdrawal_reason")
+    @classmethod
+    def _normalize_withdrawal_reason(cls, value: str) -> str:
+        reason = _clean_role(value, "beneficiary_withdrew_consent")
+        if reason not in COMMUNITY_DOMAIN_OUTCOME_CONTACT_CONSENT_WITHDRAWAL_REASONS:
+            raise ValueError(
+                "Unsupported beneficiary outcome contact consent withdrawal reason."
+            )
+        return reason
+
+    @field_validator("withdrawn_at")
+    @classmethod
+    def _normalize_withdrawn_at(cls, value: Optional[datetime]) -> Optional[datetime]:
+        if value is None:
+            return None
+        return _as_aware_utc(value)
+
+
+class PublicOutcomeConfirmationResponseIn(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    response_type: str = Field(..., min_length=2, max_length=40)
+    responder_name: Optional[str] = Field(default=None, max_length=120)
+    note: Optional[str] = Field(default=None, max_length=800)
+    correction_note: Optional[str] = Field(default=None, max_length=800)
+
+    @field_validator(
+        "response_type",
+        "responder_name",
+        "note",
+        "correction_note",
+        mode="before",
+    )
+    @classmethod
+    def _reject_non_text_confirmation_response_controls(
+        cls,
+        value: Any,
+        info: Any,
+    ) -> Any:
+        return _reject_non_text_value(value, info.field_name)
+
+    @field_validator("response_type")
+    @classmethod
+    def _normalize_response_type(cls, value: str) -> str:
+        response_type = _clean_role(value, "cannot_confirm")
+        if response_type not in COMMUNITY_DOMAIN_OUTCOME_RESPONSE_TYPES:
+            raise ValueError("Unsupported beneficiary outcome response type.")
+        return response_type
+
+
+class CommunityDomainOutcomeCorrectionReviewIn(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    confirmation_response_event_id: Optional[int] = Field(default=None, ge=1)
+    decision: str = Field(..., min_length=2, max_length=40)
+    review_note: Optional[str] = Field(default=None, max_length=900)
+    corrected_outcome_state: Optional[str] = Field(default=None, max_length=40)
+    corrected_after_value: Optional[str] = Field(default=None, max_length=360)
+    corrected_support_received: Optional[str] = Field(default=None, max_length=360)
+    corrected_beneficiary_confirmation: Optional[str] = Field(
+        default=None,
+        max_length=40,
+    )
+
+    @field_validator("confirmation_response_event_id", mode="before")
+    @classmethod
+    def _reject_bool_confirmation_response_event_id(cls, value: Any) -> Any:
+        return _reject_bool_identifier(value, "confirmation_response_event_id")
+
+    @field_validator(
+        "decision",
+        "review_note",
+        "corrected_outcome_state",
+        "corrected_after_value",
+        "corrected_support_received",
+        "corrected_beneficiary_confirmation",
+        mode="before",
+    )
+    @classmethod
+    def _reject_non_text_correction_review_controls(
+        cls,
+        value: Any,
+        info: Any,
+    ) -> Any:
+        return _reject_non_text_value(value, info.field_name)
+
+    @field_validator("decision")
+    @classmethod
+    def _normalize_decision(cls, value: str) -> str:
+        decision = _clean_role(value, "no_action")
+        if decision not in COMMUNITY_DOMAIN_OUTCOME_CORRECTION_DECISIONS:
+            raise ValueError("Unsupported beneficiary outcome correction decision.")
+        return decision
+
+    @field_validator("corrected_outcome_state")
+    @classmethod
+    def _normalize_corrected_outcome_state(cls, value: Optional[str]) -> Optional[str]:
+        if value is None or not _clean_str(value):
+            return None
+        state = _clean_role(value, "not_enough_evidence")
+        if state not in COMMUNITY_DOMAIN_OUTCOME_STATES:
+            raise ValueError("Unsupported corrected beneficiary outcome state.")
+        return state
+
+    @field_validator("corrected_beneficiary_confirmation")
+    @classmethod
+    def _normalize_corrected_beneficiary_confirmation(
+        cls,
+        value: Optional[str],
+    ) -> Optional[str]:
+        if value is None or not _clean_str(value):
+            return None
+        state = _clean_role(value, "not_requested")
+        if state not in COMMUNITY_DOMAIN_OUTCOME_CONFIRMATION_STATES:
+            raise ValueError("Unsupported corrected beneficiary confirmation state.")
+        return state
+
+
 class CommunityDomainMembershipRequestIn(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
 
@@ -20318,6 +22254,3167 @@ def get_community_domain_dashboard(
     }
 
 
+@router.get("/{community_domain_id}/period-summary", response_model=dict[str, Any])
+def get_community_domain_period_summary(
+    community_domain_id: int,
+    period_start: Optional[datetime] = Query(default=None),
+    period_end: Optional[datetime] = Query(default=None),
+    community_node_id: Optional[int] = Query(default=None, ge=1),
+    include_descendants: bool = Query(default=True),
+    visibility_mode: Literal[
+        "admin_only",
+        "director_safe",
+        "sponsor_safe",
+        "public_safe",
+    ] = Query(default="admin_only"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+    start, end = _period_bounds(period_start=period_start, period_end=period_end)
+
+    node: Optional[CommunityNode] = None
+    node_scope_ids: list[int] = []
+    if community_node_id is not None:
+        node = _get_node_or_404(
+            db,
+            community_domain_id=int(domain.id),
+            community_node_id=int(community_node_id),
+        )
+        node_scope_ids = _descendant_node_ids(
+            db,
+            domain=domain,
+            node=node,
+            include_descendants=bool(include_descendants),
+        )
+
+    include_source_ids = visibility_mode in {"admin_only", "director_safe"}
+
+    members = (
+        db.query(CommunityDomainMembership)
+        .filter(CommunityDomainMembership.community_domain_id == int(domain.id))
+        .all()
+    )
+    membership_by_status: dict[str, int] = {}
+    membership_by_role: dict[str, int] = {}
+    added_members: list[CommunityDomainMembership] = []
+    updated_members: list[CommunityDomainMembership] = []
+    for row in members:
+        _increment_count(membership_by_status, row.status, "unknown")
+        _increment_count(membership_by_role, row.role, "member")
+        if _within_period(row.created_at, period_start=start, period_end=end):
+            added_members.append(row)
+        if (
+            row.updated_at is not None
+            and row.updated_at != row.created_at
+            and _within_period(row.updated_at, period_start=start, period_end=end)
+        ):
+            updated_members.append(row)
+
+    status_change_events = (
+        db.query(TrustEvent)
+        .filter(TrustEvent.event_type == "community_domain_member_status_changed")
+        .filter(TrustEvent.created_at >= start)
+        .filter(TrustEvent.created_at <= end)
+        .order_by(TrustEvent.created_at.desc(), TrustEvent.id.desc())
+        .all()
+    )
+    domain_status_change_events = [
+        row
+        for row in status_change_events
+        if int((row.meta or {}).get("community_domain_id") or 0) == int(domain.id)
+    ]
+    status_movements = {
+        "added": len(added_members),
+        "updated": len(updated_members),
+        "reactivated": 0,
+        "removed_or_deactivated": 0,
+        "suspended": 0,
+        "archived": 0,
+        "by_new_status": {},
+        "source_records": _source_record_summary(domain_status_change_events)
+        if include_source_ids
+        else {"total": len(domain_status_change_events)},
+    }
+    for event in domain_status_change_events:
+        meta = event.meta or {}
+        previous_status = _clean_role(str(meta.get("previous_status") or ""), "none")
+        new_status = _clean_role(str(meta.get("new_status") or ""), "unknown")
+        _increment_count(status_movements["by_new_status"], new_status, "unknown")
+        if new_status == "active" and previous_status != "active":
+            status_movements["reactivated"] += 1
+        if new_status in {"inactive", "removed"}:
+            status_movements["removed_or_deactivated"] += 1
+        if new_status == "suspended":
+            status_movements["suspended"] += 1
+        if new_status == "archived":
+            status_movements["archived"] += 1
+
+    review_rows = (
+        db.query(CommunityDomainActionReview)
+        .filter(CommunityDomainActionReview.community_domain_id == int(domain.id))
+        .all()
+    )
+    if node_scope_ids:
+        review_rows = [
+            row for row in review_rows if row.community_node_id in set(node_scope_ids)
+        ]
+    period_reviews = [
+        row
+        for row in review_rows
+        if any(
+            _within_period(value, period_start=start, period_end=end)
+            for value in (row.created_at, row.updated_at, row.decided_at, row.applied_at)
+        )
+    ]
+    review_by_status: dict[str, int] = {}
+    review_by_action: dict[str, int] = {}
+    review_created = 0
+    review_decided = 0
+    review_applied = 0
+    for row in period_reviews:
+        _increment_count(review_by_status, row.status, "unknown")
+        _increment_count(review_by_action, row.action_key, "unknown")
+        if _within_period(row.created_at, period_start=start, period_end=end):
+            review_created += 1
+        if _within_period(row.decided_at, period_start=start, period_end=end):
+            review_decided += 1
+        if _within_period(row.applied_at, period_start=start, period_end=end):
+            review_applied += 1
+
+    evidence_rows = (
+        db.query(CommunityDomainActionReviewEvidence)
+        .filter(CommunityDomainActionReviewEvidence.community_domain_id == int(domain.id))
+        .filter(CommunityDomainActionReviewEvidence.created_at >= start)
+        .filter(CommunityDomainActionReviewEvidence.created_at <= end)
+        .order_by(
+            CommunityDomainActionReviewEvidence.created_at.desc(),
+            CommunityDomainActionReviewEvidence.id.desc(),
+        )
+        .all()
+    )
+    if node_scope_ids:
+        evidence_rows = [
+            row for row in evidence_rows if row.community_node_id in set(node_scope_ids)
+        ]
+    evidence_by_status: dict[str, int] = {}
+    evidence_by_type: dict[str, int] = {}
+    meeting_signal_count = 0
+    attendance_signal_count = 0
+    for row in evidence_rows:
+        _increment_count(evidence_by_status, row.status, "unknown")
+        _increment_count(evidence_by_type, row.evidence_type, "evidence")
+        text = " ".join(
+            str(part or "").lower()
+            for part in (row.evidence_type, row.title, row.description)
+        )
+        if "meeting" in text or "event" in text:
+            meeting_signal_count += 1
+        if "attendance" in text or "attendee" in text:
+            attendance_signal_count += 1
+
+    linked_clan_id = int(domain.clan_id) if domain.clan_id is not None else None
+    confirmation_summary: dict[str, Any]
+    if linked_clan_id is None:
+        confirmation_summary = {
+            "status": "not_available_for_unlinked_domain",
+            "linked_clan_id": None,
+            "plain_language": "Not recorded in GSN for this period.",
+            "missing_reason": (
+                "This protected Community Domain is not linked to an ordinary "
+                "community confirmation context yet."
+            ),
+        }
+    else:
+        confirmation_requests = (
+            db.query(CommunityConfirmationRequest)
+            .filter(CommunityConfirmationRequest.community_id == linked_clan_id)
+            .filter(CommunityConfirmationRequest.created_at >= start)
+            .filter(CommunityConfirmationRequest.created_at <= end)
+            .all()
+        )
+        request_ids = [int(row.id) for row in confirmation_requests]
+        confirmation_responses = (
+            db.query(CommunityConfirmationResponse)
+            .filter(CommunityConfirmationResponse.request_id.in_(request_ids))
+            .all()
+            if request_ids
+            else []
+        )
+        confirmation_outcomes = (
+            db.query(CommunityConfirmationOutcome)
+            .filter(CommunityConfirmationOutcome.request_id.in_(request_ids))
+            .all()
+            if request_ids
+            else []
+        )
+        member_verifications = (
+            db.query(CommunityMemberVerification)
+            .filter(CommunityMemberVerification.clan_id == linked_clan_id)
+            .filter(CommunityMemberVerification.created_at >= start)
+            .filter(CommunityMemberVerification.created_at <= end)
+            .all()
+        )
+        responses_by_type: dict[str, int] = {}
+        for row in confirmation_responses:
+            _increment_count(responses_by_type, row.response_type, "unknown")
+        confirmation_summary = {
+            "status": "recorded" if request_ids or member_verifications else "recorded_empty",
+            "linked_clan_id": linked_clan_id,
+            "requests_total": len(confirmation_requests),
+            "responses_total": len(confirmation_responses),
+            "outcomes_total": len(confirmation_outcomes),
+            "member_witness_verifications_total": len(member_verifications),
+            "responses_by_type": responses_by_type,
+            "positive_count": sum(int(row.positive_count or 0) for row in confirmation_outcomes),
+            "caution_count": sum(int(row.caution_count or 0) for row in confirmation_outcomes),
+            "objection_count": sum(int(row.objection_count or 0) for row in confirmation_outcomes),
+            "no_response_count": sum(int(row.no_response_count or 0) for row in confirmation_outcomes),
+            "source_records": {
+                "requests": _source_record_summary(confirmation_requests)
+                if include_source_ids
+                else {"total": len(confirmation_requests)},
+                "member_verifications": _source_record_summary(member_verifications)
+                if include_source_ids
+                else {"total": len(member_verifications)},
+            },
+        }
+
+    linked_trust_events: list[TrustEvent] = []
+    if linked_clan_id is not None:
+        linked_trust_events = (
+            db.query(TrustEvent)
+            .filter(TrustEvent.clan_id == linked_clan_id)
+            .filter(TrustEvent.created_at >= start)
+            .filter(TrustEvent.created_at <= end)
+            .order_by(TrustEvent.created_at.desc(), TrustEvent.id.desc())
+            .limit(250)
+            .all()
+        )
+    domain_trust_candidates = (
+        db.query(TrustEvent)
+        .filter(TrustEvent.event_type.like("community_domain%"))
+        .filter(TrustEvent.created_at >= start)
+        .filter(TrustEvent.created_at <= end)
+        .order_by(TrustEvent.created_at.desc(), TrustEvent.id.desc())
+        .limit(250)
+        .all()
+    )
+    domain_trust_events = [
+        row
+        for row in domain_trust_candidates
+        if int((row.meta or {}).get("community_domain_id") or 0) == int(domain.id)
+    ]
+    trust_events_by_type: dict[str, int] = {}
+    seen_trust_event_ids: set[int] = set()
+    for row in [*linked_trust_events, *domain_trust_events]:
+        if int(row.id) in seen_trust_event_ids:
+            continue
+        seen_trust_event_ids.add(int(row.id))
+        _increment_count(trust_events_by_type, row.event_type, "unknown")
+
+    activity_rows = _community_domain_activity_events(
+        db,
+        community_domain_id=int(domain.id),
+        period_start=start,
+        period_end=end,
+        community_node_ids=node_scope_ids or None,
+        limit=500,
+    )
+    activity_by_type: dict[str, int] = {}
+    activity_by_evidence_strength: dict[str, int] = {}
+    activity_by_visibility: dict[str, int] = {}
+    activity_subject_ids: set[int] = set()
+    for row in activity_rows:
+        meta = row.meta or {}
+        _increment_count(activity_by_type, str(meta.get("activity_type") or ""), "unknown")
+        _increment_count(
+            activity_by_evidence_strength,
+            str(meta.get("evidence_strength") or ""),
+            "unknown",
+        )
+        _increment_count(activity_by_visibility, str(meta.get("visibility") or ""), "unknown")
+        activity_subject_ids.add(int(row.subject_user_id))
+
+    outcome_rows = _community_domain_outcome_events(
+        db,
+        community_domain_id=int(domain.id),
+        period_start=start,
+        period_end=end,
+        community_node_ids=node_scope_ids or None,
+        limit=500,
+    )
+    outcome_by_state: dict[str, int] = {}
+    outcome_by_follow_up_state: dict[str, int] = {}
+    outcome_by_beneficiary_confirmation: dict[str, int] = {}
+    outcome_by_admin_confirmation: dict[str, int] = {}
+    outcome_by_challenge_status: dict[str, int] = {}
+    outcome_by_evidence_strength: dict[str, int] = {}
+    outcome_by_visibility: dict[str, int] = {}
+    outcome_subject_ids: set[int] = set()
+    for row in outcome_rows:
+        meta = row.meta or {}
+        _increment_count(outcome_by_state, str(meta.get("outcome_state") or ""), "unknown")
+        _increment_count(
+            outcome_by_follow_up_state,
+            str(meta.get("follow_up_state") or ""),
+            "unknown",
+        )
+        _increment_count(
+            outcome_by_beneficiary_confirmation,
+            str(meta.get("beneficiary_confirmation") or ""),
+            "unknown",
+        )
+        _increment_count(
+            outcome_by_admin_confirmation,
+            str(meta.get("admin_confirmation") or ""),
+            "unknown",
+        )
+        _increment_count(
+            outcome_by_challenge_status,
+            str(meta.get("challenge_status") or ""),
+            "unknown",
+        )
+        _increment_count(
+            outcome_by_evidence_strength,
+            str(meta.get("evidence_strength") or ""),
+            "unknown",
+        )
+        _increment_count(outcome_by_visibility, str(meta.get("visibility") or ""), "unknown")
+        outcome_subject_ids.add(int(row.subject_user_id))
+
+    correction_review_rows = _community_domain_outcome_correction_reviews(
+        db,
+        community_domain_id=int(domain.id),
+        period_start=start,
+        period_end=end,
+        limit=500,
+    )
+    correction_reviews_by_decision: dict[str, int] = {}
+    correction_reviews_by_challenge_status_after: dict[str, int] = {}
+    for row in correction_review_rows:
+        meta = row.meta or {}
+        _increment_count(
+            correction_reviews_by_decision,
+            str(meta.get("decision") or ""),
+            "unknown",
+        )
+        _increment_count(
+            correction_reviews_by_challenge_status_after,
+            str(meta.get("challenge_status_after") or ""),
+            "unknown",
+        )
+    delivery_preparation_rows = _community_domain_outcome_confirmation_delivery_events(
+        db,
+        event_type=COMMUNITY_DOMAIN_OUTCOME_CONFIRMATION_DELIVERY_PREPARED_EVENT,
+        community_domain_id=int(domain.id),
+        period_start=start,
+        period_end=end,
+        limit=500,
+    )
+    delivery_receipt_rows = _community_domain_outcome_confirmation_delivery_events(
+        db,
+        event_type=COMMUNITY_DOMAIN_OUTCOME_CONFIRMATION_DELIVERY_RECORDED_EVENT,
+        community_domain_id=int(domain.id),
+        period_start=start,
+        period_end=end,
+        limit=500,
+    )
+    delivery_receipt_correction_rows = (
+        _community_domain_outcome_delivery_receipt_correction_events(
+            db,
+            community_domain_id=int(domain.id),
+            period_start=start,
+            period_end=end,
+            limit=500,
+        )
+    )
+    provider_send_blocked_rows = (
+        _community_domain_outcome_confirmation_delivery_events(
+            db,
+            event_type=COMMUNITY_DOMAIN_OUTCOME_PROVIDER_SEND_BLOCKED_EVENT,
+            community_domain_id=int(domain.id),
+            period_start=start,
+            period_end=end,
+            limit=500,
+        )
+    )
+    contact_consent_rows = _community_domain_outcome_contact_consent_events(
+        db,
+        community_domain_id=int(domain.id),
+        period_start=start,
+        period_end=end,
+        limit=500,
+    )
+    contact_consent_withdrawal_rows = (
+        _community_domain_outcome_contact_consent_withdrawal_events(
+            db,
+            community_domain_id=int(domain.id),
+            period_start=start,
+            period_end=end,
+            limit=500,
+        )
+    )
+    delivery_receipts_by_channel: dict[str, int] = {}
+    delivery_receipts_by_status: dict[str, int] = {}
+    delivery_receipts_by_consent_basis: dict[str, int] = {}
+    for row in delivery_receipt_rows:
+        meta = row.meta or {}
+        _increment_count(
+            delivery_receipts_by_channel,
+            str(meta.get("channel") or ""),
+            "unknown",
+        )
+        _increment_count(
+            delivery_receipts_by_status,
+            str(meta.get("delivery_status") or ""),
+            "unknown",
+        )
+        _increment_count(
+            delivery_receipts_by_consent_basis,
+            str(meta.get("consent_basis") or ""),
+            "unknown",
+        )
+    delivery_receipt_corrections_by_decision: dict[str, int] = {}
+    delivery_receipt_corrections_by_status: dict[str, int] = {}
+    for row in delivery_receipt_correction_rows:
+        meta = row.meta or {}
+        _increment_count(
+            delivery_receipt_corrections_by_decision,
+            str(meta.get("decision") or ""),
+            "unknown",
+        )
+        _increment_count(
+            delivery_receipt_corrections_by_status,
+            str(meta.get("receipt_correction_status") or ""),
+            "unknown",
+        )
+    current_delivery_receipt_correction_rows = (
+        _community_domain_current_delivery_receipt_correction_rows(
+            db,
+            delivery_receipt_rows,
+        )
+    )
+    active_delivery_receipt_rows = _community_domain_active_delivery_receipt_rows(
+        delivery_receipt_rows,
+        current_delivery_receipt_correction_rows,
+    )
+    active_delivery_receipts_by_status: dict[str, int] = {}
+    active_delivery_receipts_by_channel: dict[str, int] = {}
+    active_delivery_receipts_by_consent_basis: dict[str, int] = {}
+    for row in active_delivery_receipt_rows:
+        meta = row.meta or {}
+        _increment_count(
+            active_delivery_receipts_by_status,
+            str(meta.get("delivery_status") or ""),
+            "unknown",
+        )
+        _increment_count(
+            active_delivery_receipts_by_channel,
+            str(meta.get("channel") or ""),
+            "unknown",
+        )
+        _increment_count(
+            active_delivery_receipts_by_consent_basis,
+            str(meta.get("consent_basis") or ""),
+            "unknown",
+        )
+    contact_consent_by_channel: dict[str, int] = {}
+    contact_consent_by_reference_status: dict[str, int] = {}
+    contact_consent_by_basis: dict[str, int] = {}
+    for row in contact_consent_rows:
+        meta = row.meta or {}
+        _increment_count(
+            contact_consent_by_channel,
+            str(meta.get("channel") or ""),
+            "unknown",
+        )
+        _increment_count(
+            contact_consent_by_reference_status,
+            str(meta.get("destination_reference_status") or ""),
+            "unknown",
+        )
+        _increment_count(
+            contact_consent_by_basis,
+            str(meta.get("consent_basis") or ""),
+            "unknown",
+        )
+    contact_consent_withdrawals_by_reason: dict[str, int] = {}
+    for row in contact_consent_withdrawal_rows:
+        meta = row.meta or {}
+        _increment_count(
+            contact_consent_withdrawals_by_reason,
+            str(meta.get("withdrawal_reason") or ""),
+            "unknown",
+        )
+    open_or_challenged_total = sum(
+        int(count)
+        for status, count in outcome_by_challenge_status.items()
+        if status in {"challenged", "under_review"}
+    )
+    reviewed_or_resolved_total = sum(
+        int(count)
+        for status, count in correction_reviews_by_challenge_status_after.items()
+        if status in {"resolved", "corrected", "withdrawn"}
+    )
+
+    source_sections = {
+        "membership_rows": {"total": len(members)},
+        "member_status_change_events": _source_record_summary(domain_status_change_events)
+        if include_source_ids
+        else {"total": len(domain_status_change_events)},
+        "action_reviews": _source_record_summary(period_reviews)
+        if include_source_ids
+        else {"total": len(period_reviews)},
+        "action_review_evidence": _source_record_summary(evidence_rows)
+        if include_source_ids
+        else {"total": len(evidence_rows)},
+        "trust_events": {
+            "total": len(seen_trust_event_ids),
+            "ids": sorted(seen_trust_event_ids)[:10] if include_source_ids else [],
+            "truncated": len(seen_trust_event_ids) > 10,
+        },
+        "activity_records": _source_record_summary(activity_rows)
+        if include_source_ids
+        else {"total": len(activity_rows)},
+        "beneficiary_outcome_records": _source_record_summary(outcome_rows)
+        if include_source_ids
+        else {"total": len(outcome_rows)},
+        "beneficiary_correction_reviews": _source_record_summary(correction_review_rows)
+        if include_source_ids
+        else {"total": len(correction_review_rows)},
+        "beneficiary_confirmation_delivery_preparations": _source_record_summary(
+            delivery_preparation_rows
+        )
+        if include_source_ids
+        else {"total": len(delivery_preparation_rows)},
+        "beneficiary_confirmation_delivery_receipts": _source_record_summary(
+            delivery_receipt_rows
+        )
+        if include_source_ids
+        else {"total": len(delivery_receipt_rows)},
+        "beneficiary_confirmation_delivery_receipt_corrections": (
+            _source_record_summary(delivery_receipt_correction_rows)
+            if include_source_ids
+            else {"total": len(delivery_receipt_correction_rows)}
+        ),
+        "beneficiary_confirmation_provider_send_blocked_checks": (
+            _source_record_summary(provider_send_blocked_rows)
+            if include_source_ids
+            else {"total": len(provider_send_blocked_rows)}
+        ),
+        "beneficiary_contact_consent_records": _source_record_summary(
+            contact_consent_rows
+        )
+        if include_source_ids
+        else {"total": len(contact_consent_rows)},
+        "beneficiary_contact_consent_withdrawals": _source_record_summary(
+            contact_consent_withdrawal_rows
+        )
+        if include_source_ids
+        else {"total": len(contact_consent_withdrawal_rows)},
+    }
+
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "community_domain": {
+            "id": int(domain.id),
+            "domain_name": domain.domain_name,
+            "display_name": domain.display_name,
+            "domain_type": domain.domain_type,
+            "template_key": domain.template_key,
+            "status": domain.status,
+            "verification_status": domain.verification_status,
+            "linked_clan_id": linked_clan_id,
+        },
+        "period": {
+            "start": _iso(start),
+            "end": _iso(end),
+            "visibility_mode": visibility_mode,
+        },
+        "node_filter": {
+            "community_node_id": int(node.id) if node is not None else None,
+            "community_node_name": getattr(node, "name", None),
+            "include_descendants": bool(include_descendants),
+            "community_node_ids": node_scope_ids,
+            "applies_to_sections": (
+                [
+                    "governance_summary",
+                    "evidence_summary",
+                    "activity_summary",
+                    "beneficiary_outcome_summary",
+                ]
+                if node is not None
+                else []
+            ),
+        },
+        "membership_snapshot": {
+            "total": len(members),
+            "by_status": membership_by_status,
+            "by_role": membership_by_role,
+            "active_total": membership_by_status.get("active", 0),
+            "inactive_total": membership_by_status.get("inactive", 0),
+            "suspended_total": membership_by_status.get("suspended", 0),
+            "archived_total": membership_by_status.get("archived", 0),
+            "source": "community_domain_memberships",
+        },
+        "member_movement": status_movements,
+        "governance_summary": {
+            "total": len(period_reviews),
+            "requested_total": review_created,
+            "decided_total": review_decided,
+            "applied_total": review_applied,
+            "by_status": review_by_status,
+            "by_action": review_by_action,
+            "source": "community_domain_action_reviews",
+        },
+        "evidence_summary": {
+            "total": len(evidence_rows),
+            "by_status": evidence_by_status,
+            "by_type": evidence_by_type,
+            "meeting_signal_count": meeting_signal_count,
+            "attendance_signal_count": attendance_signal_count,
+            "beneficiary_confirmation_delivery_prepared": len(
+                delivery_preparation_rows
+            ),
+            "beneficiary_confirmation_delivery_receipts": len(delivery_receipt_rows),
+            "beneficiary_confirmation_delivery_receipts_by_status": (
+                delivery_receipts_by_status
+            ),
+            "beneficiary_confirmation_delivery_receipts_by_channel": (
+                delivery_receipts_by_channel
+            ),
+            "beneficiary_confirmation_delivery_receipts_by_consent_basis": (
+                delivery_receipts_by_consent_basis
+            ),
+            "beneficiary_confirmation_delivery_receipts_current_uncorrected": len(
+                active_delivery_receipt_rows
+            ),
+            "beneficiary_confirmation_delivery_receipts_current_by_status": (
+                active_delivery_receipts_by_status
+            ),
+            "beneficiary_confirmation_delivery_receipts_current_by_channel": (
+                active_delivery_receipts_by_channel
+            ),
+            "beneficiary_confirmation_delivery_receipts_current_by_consent_basis": (
+                active_delivery_receipts_by_consent_basis
+            ),
+            "beneficiary_confirmation_delivery_receipt_corrections": len(
+                delivery_receipt_correction_rows
+            ),
+            "beneficiary_confirmation_delivery_receipt_corrections_by_decision": (
+                delivery_receipt_corrections_by_decision
+            ),
+            "beneficiary_confirmation_delivery_receipt_corrections_by_status": (
+                delivery_receipt_corrections_by_status
+            ),
+            "beneficiary_confirmation_provider_send_blocked_checks": len(
+                provider_send_blocked_rows
+            ),
+            "beneficiary_contact_consent_records": len(contact_consent_rows),
+            "beneficiary_contact_consent_by_channel": contact_consent_by_channel,
+            "beneficiary_contact_consent_by_reference_status": (
+                contact_consent_by_reference_status
+            ),
+            "beneficiary_contact_consent_by_basis": contact_consent_by_basis,
+            "beneficiary_contact_consent_withdrawals": len(
+                contact_consent_withdrawal_rows
+            ),
+            "beneficiary_contact_consent_withdrawals_by_reason": (
+                contact_consent_withdrawals_by_reason
+            ),
+            "source": "community_domain_action_review_evidence",
+        },
+        "meeting_event_summary": (
+            {
+                "status": "partial_evidence_signals_only",
+                "meeting_signal_count": meeting_signal_count,
+                "attendance_signal_count": attendance_signal_count,
+                "plain_language": (
+                    "Meeting or attendance evidence was attached to governance "
+                    "records, but a dedicated meeting/attendance ledger is not "
+                    "created yet."
+                ),
+            }
+            if meeting_signal_count or attendance_signal_count
+            else _not_recorded_period_section(
+                "Meeting / attendance summary",
+                "No dedicated meeting or attendance records exist for this period.",
+            )
+        ),
+        "confirmation_summary": confirmation_summary,
+        "trust_event_summary": {
+            "total": len(seen_trust_event_ids),
+            "by_type": trust_events_by_type,
+            "linked_clan_id": linked_clan_id,
+            "source": (
+                "linked clan TrustEvents plus Community Domain TrustEvents with "
+                "matching community_domain_id metadata"
+            ),
+        },
+        "activity_summary": (
+            {
+                "status": "recorded",
+                "total": len(activity_rows),
+                "subject_count": len(activity_subject_ids),
+                "by_type": activity_by_type,
+                "by_evidence_strength": activity_by_evidence_strength,
+                "by_visibility": activity_by_visibility,
+                "source": "trust_events.community_domain.activity_recorded",
+                "source_records": _source_record_summary(activity_rows)
+                if include_source_ids
+                else {"total": len(activity_rows)},
+            }
+            if activity_rows
+            else _not_recorded_period_section(
+                "Activity catalogue summary",
+                "No Community Domain activity catalogue records exist for this period.",
+            )
+        ),
+        "beneficiary_outcome_summary": _not_recorded_period_section(
+            "Beneficiary outcome summary",
+            "No beneficiary baseline/support/follow-up/outcome records exist for this period.",
+        )
+        if not outcome_rows
+        and not delivery_preparation_rows
+        and not delivery_receipt_rows
+        and not delivery_receipt_correction_rows
+        and not provider_send_blocked_rows
+        and not contact_consent_rows
+        and not contact_consent_withdrawal_rows
+        else {
+            "status": "recorded",
+            "total": len(outcome_rows),
+            "subject_count": len(outcome_subject_ids),
+            "by_outcome_state": outcome_by_state,
+            "by_follow_up_state": outcome_by_follow_up_state,
+            "by_beneficiary_confirmation": outcome_by_beneficiary_confirmation,
+            "by_admin_confirmation": outcome_by_admin_confirmation,
+            "by_evidence_strength": outcome_by_evidence_strength,
+            "by_visibility": outcome_by_visibility,
+            "confirmation_delivery_prepared_total": len(delivery_preparation_rows),
+            "confirmation_delivery_receipts_total": len(delivery_receipt_rows),
+            "confirmation_delivery_receipts_by_status": delivery_receipts_by_status,
+            "confirmation_delivery_receipts_by_channel": delivery_receipts_by_channel,
+            "confirmation_delivery_receipts_by_consent_basis": (
+                delivery_receipts_by_consent_basis
+            ),
+            "confirmation_delivery_receipts_current_uncorrected_total": len(
+                active_delivery_receipt_rows
+            ),
+            "confirmation_delivery_receipts_current_by_status": (
+                active_delivery_receipts_by_status
+            ),
+            "confirmation_delivery_receipts_current_by_channel": (
+                active_delivery_receipts_by_channel
+            ),
+            "confirmation_delivery_receipts_current_by_consent_basis": (
+                active_delivery_receipts_by_consent_basis
+            ),
+            "confirmation_delivery_receipt_corrections_total": len(
+                delivery_receipt_correction_rows
+            ),
+            "confirmation_delivery_receipt_corrections_by_decision": (
+                delivery_receipt_corrections_by_decision
+            ),
+            "confirmation_delivery_receipt_corrections_by_status": (
+                delivery_receipt_corrections_by_status
+            ),
+            "confirmation_provider_send_blocked_checks_total": len(
+                provider_send_blocked_rows
+            ),
+            "contact_consent_records_total": len(contact_consent_rows),
+            "contact_consent_by_channel": contact_consent_by_channel,
+            "contact_consent_by_reference_status": (
+                contact_consent_by_reference_status
+            ),
+            "contact_consent_by_basis": contact_consent_by_basis,
+            "contact_consent_withdrawals_total": len(
+                contact_consent_withdrawal_rows
+            ),
+            "contact_consent_withdrawals_by_reason": (
+                contact_consent_withdrawals_by_reason
+            ),
+            "source": "trust_events.community_domain.beneficiary_outcome_recorded",
+            "source_records": _source_record_summary(outcome_rows)
+            if include_source_ids
+            else {"total": len(outcome_rows)},
+        },
+        "challenge_summary": (
+            {
+                "status": "recorded",
+                "total": len(outcome_rows),
+                "by_challenge_status": outcome_by_challenge_status,
+                "correction_reviews_total": len(correction_review_rows),
+                "correction_reviews_by_decision": correction_reviews_by_decision,
+                "correction_reviews_by_challenge_status_after": (
+                    correction_reviews_by_challenge_status_after
+                ),
+                "open_or_challenged_total": open_or_challenged_total,
+                "reviewed_or_resolved_total": reviewed_or_resolved_total,
+                "unresolved_challenge_total": max(
+                    open_or_challenged_total - reviewed_or_resolved_total,
+                    0,
+                ),
+                "source": "trust_events.community_domain.beneficiary_outcome_recorded",
+            }
+            if outcome_rows or correction_review_rows
+            else _not_recorded_period_section(
+                "Activity/outcome challenge summary",
+                "No challenge/correction records for activity or outcome evidence exist for this period.",
+            )
+        ),
+        "evidence_strength": [
+            "system-recorded",
+            "admin-recorded",
+            "not independently confirmed",
+        ],
+        "source_records": source_sections,
+        "boundary": (
+            "Community Domain Period Summary v1 is a read-only admin report built "
+            "only from records already in GSN. It does not prove unrecorded impact, "
+            "does not replace beneficiary outcome records, does not create public "
+            "sponsor disclosure, and must show 'Not recorded in GSN for this period' "
+            "where the underlying records do not exist."
+        ),
+    }
+
+
+@router.get("/{community_domain_id}/activity-catalogue", response_model=dict[str, Any])
+def get_community_domain_activity_catalogue(
+    community_domain_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_member_scope(db, domain=domain, current_user=current_user)
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "template_key": domain.template_key,
+        "activity_catalogue": _community_domain_activity_catalogue_items(domain),
+        "evidence_strengths": sorted(COMMUNITY_DOMAIN_ACTIVITY_EVIDENCE_STRENGTHS),
+        "recording_modes": ["manual_admin_record"],
+        "boundary": (
+            "Activity catalogue v1 lists standard record types that can create "
+            "person-first Trust Events. It does not create activities by itself, "
+            "import attendance sheets, confirm beneficiaries, or prove final outcomes."
+        ),
+    }
+
+
+@router.get("/{community_domain_id}/activities", response_model=dict[str, Any])
+def list_community_domain_activities(
+    community_domain_id: int,
+    period_start: Optional[datetime] = Query(default=None),
+    period_end: Optional[datetime] = Query(default=None),
+    community_node_id: Optional[int] = Query(default=None, ge=1),
+    include_descendants: bool = Query(default=True),
+    limit: int = Query(default=50, ge=1, le=250),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+    node_scope_ids: list[int] = []
+    if community_node_id is not None:
+        node = _get_node_or_404(
+            db,
+            community_domain_id=int(domain.id),
+            community_node_id=int(community_node_id),
+        )
+        node_scope_ids = _descendant_node_ids(
+            db,
+            domain=domain,
+            node=node,
+            include_descendants=bool(include_descendants),
+        )
+    rows = _community_domain_activity_events(
+        db,
+        community_domain_id=int(domain.id),
+        period_start=_as_aware_utc(period_start) if period_start is not None else None,
+        period_end=_as_aware_utc(period_end) if period_end is not None else None,
+        community_node_ids=node_scope_ids or None,
+        limit=int(limit),
+    )
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "community_node_ids": node_scope_ids,
+        "items": [_community_domain_activity_event_payload(row) for row in rows],
+        "total": len(rows),
+        "boundary": (
+            "Activity records are admin-visible Trust Events for recorded community "
+            "activities. They do not expose private notes publicly, replace attendance "
+            "imports, or prove beneficiary outcomes without follow-up records."
+        ),
+    }
+
+
+@router.post("/{community_domain_id}/activities", status_code=201, response_model=dict[str, Any])
+def record_community_domain_activity(
+    community_domain_id: int,
+    payload: CommunityDomainActivityRecordIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+    subject = _get_user_or_404(db, int(payload.subject_user_id))
+    node: Optional[CommunityNode] = None
+    if payload.community_node_id is not None:
+        node = _get_node_or_404(
+            db,
+            community_domain_id=int(domain.id),
+            community_node_id=int(payload.community_node_id),
+        )
+
+    activity_type = _clean_template_key(payload.activity_type)
+    preset = COMMUNITY_DOMAIN_ACTIVITY_TYPES[activity_type]
+    occurred_at = payload.occurred_at or datetime.now(timezone.utc)
+    follow_up_due_at = payload.follow_up_due_at
+    membership = _domain_membership_for_user(
+        db,
+        community_domain_id=int(domain.id),
+        user_id=int(subject.id),
+    )
+    membership_status_snapshot = (
+        _clean_role(membership.status, "inactive") if membership is not None else "not_a_domain_member"
+    )
+    membership_role_snapshot = (
+        _clean_role(membership.role, "member") if membership is not None else None
+    )
+    activity_label = _clean_str(payload.activity_label) or preset["label"]
+
+    event = log_trust_event(
+        db,
+        event_type=COMMUNITY_DOMAIN_ACTIVITY_EVENT,
+        clan_id=int(domain.clan_id) if domain.clan_id is not None else None,
+        actor_user_id=int(current_user.id),
+        subject_user_id=int(subject.id),
+        meta={
+            "source": "community_domain_activity_catalogue_v1",
+            "reason": "community_domain_activity_recorded",
+            "community_domain_id": int(domain.id),
+            "community_domain_name": domain.display_name,
+            "community_node_id": int(node.id) if node is not None else None,
+            "community_node_name": node.name if node is not None else None,
+            "activity_type": activity_type,
+            "activity_label": activity_label,
+            "evidence_dimension": preset["evidence_dimension"],
+            "quantity": str(payload.quantity) if payload.quantity is not None else None,
+            "measurement_unit": _clean_str(payload.measurement_unit) or None,
+            "occurred_at": _iso(occurred_at),
+            "evidence_strength": payload.evidence_strength,
+            "visibility": payload.visibility,
+            "note": _clean_str(payload.note) or None,
+            "evidence_reference": _clean_str(payload.evidence_reference) or None,
+            "baseline_value": _clean_str(payload.baseline_value) or None,
+            "after_value": _clean_str(payload.after_value) or None,
+            "follow_up_due_at": _iso(follow_up_due_at),
+            "membership_status_snapshot": membership_status_snapshot,
+            "membership_role_snapshot": membership_role_snapshot,
+            "trust_delta": "0.00",
+        },
+    )
+
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "activity": _community_domain_activity_event_payload(event),
+        "catalogue_item": {
+            "activity_type": activity_type,
+            "label": preset["label"],
+            "evidence_dimension": preset["evidence_dimension"],
+        },
+        "boundary": (
+            "This records a person-first Community Domain activity Trust Event. "
+            "It is not a final beneficiary outcome, not a public sponsor report, "
+            "and not a substitute for member or beneficiary confirmation."
+        ),
+    }
+
+
+@router.get("/{community_domain_id}/beneficiary-outcomes", response_model=dict[str, Any])
+def list_community_domain_beneficiary_outcomes(
+    community_domain_id: int,
+    period_start: Optional[datetime] = Query(default=None),
+    period_end: Optional[datetime] = Query(default=None),
+    community_node_id: Optional[int] = Query(default=None, ge=1),
+    include_descendants: bool = Query(default=True),
+    limit: int = Query(default=50, ge=1, le=250),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+    node_scope_ids: list[int] = []
+    if community_node_id is not None:
+        node = _get_node_or_404(
+            db,
+            community_domain_id=int(domain.id),
+            community_node_id=int(community_node_id),
+        )
+        node_scope_ids = _descendant_node_ids(
+            db,
+            domain=domain,
+            node=node,
+            include_descendants=bool(include_descendants),
+        )
+    rows = _community_domain_outcome_events(
+        db,
+        community_domain_id=int(domain.id),
+        period_start=_as_aware_utc(period_start) if period_start is not None else None,
+        period_end=_as_aware_utc(period_end) if period_end is not None else None,
+        community_node_ids=node_scope_ids or None,
+        limit=int(limit),
+    )
+    items: list[dict[str, Any]] = []
+    for row in rows:
+        item = _community_domain_outcome_event_payload(row)
+        response_rows = _community_domain_outcome_confirmation_responses(
+            db,
+            community_domain_id=int(domain.id),
+            outcome_event_id=int(row.id),
+            limit=20,
+        )
+        delivery_preparation_rows = (
+            _community_domain_outcome_confirmation_delivery_events(
+                db,
+                event_type=COMMUNITY_DOMAIN_OUTCOME_CONFIRMATION_DELIVERY_PREPARED_EVENT,
+                community_domain_id=int(domain.id),
+                outcome_event_id=int(row.id),
+                limit=20,
+            )
+        )
+        delivery_receipt_rows = _community_domain_outcome_confirmation_delivery_events(
+            db,
+            event_type=COMMUNITY_DOMAIN_OUTCOME_CONFIRMATION_DELIVERY_RECORDED_EVENT,
+            community_domain_id=int(domain.id),
+            outcome_event_id=int(row.id),
+            limit=20,
+        )
+        delivery_receipt_correction_rows = (
+            _community_domain_outcome_delivery_receipt_correction_events(
+                db,
+                community_domain_id=int(domain.id),
+                outcome_event_id=int(row.id),
+                limit=20,
+            )
+        )
+        provider_send_blocked_rows = (
+            _community_domain_outcome_confirmation_delivery_events(
+                db,
+                event_type=COMMUNITY_DOMAIN_OUTCOME_PROVIDER_SEND_BLOCKED_EVENT,
+                community_domain_id=int(domain.id),
+                outcome_event_id=int(row.id),
+                limit=20,
+            )
+        )
+        contact_consent_rows = _community_domain_outcome_contact_consent_events(
+            db,
+            community_domain_id=int(domain.id),
+            outcome_event_id=int(row.id),
+            limit=20,
+        )
+        contact_consent_withdrawal_rows = (
+            _community_domain_outcome_contact_consent_withdrawal_events(
+                db,
+                community_domain_id=int(domain.id),
+                outcome_event_id=int(row.id),
+                limit=20,
+            )
+        )
+        correction_rows = _community_domain_outcome_correction_reviews(
+            db,
+            community_domain_id=int(domain.id),
+            outcome_event_id=int(row.id),
+            limit=20,
+        )
+        item["confirmation_response_count"] = len(response_rows)
+        item["latest_confirmation_response"] = (
+            _community_domain_outcome_confirmation_response_payload(response_rows[0])
+            if response_rows
+            else None
+        )
+        item["delivery_preparation_count"] = len(delivery_preparation_rows)
+        item["latest_delivery_preparation"] = (
+            _community_domain_outcome_confirmation_delivery_payload(
+                delivery_preparation_rows[0]
+            )
+            if delivery_preparation_rows
+            else None
+        )
+        item["delivery_receipt_count"] = len(delivery_receipt_rows)
+        latest_delivery_receipt_payload = (
+            _community_domain_outcome_confirmation_delivery_payload(
+                delivery_receipt_rows[0]
+            )
+            if delivery_receipt_rows
+            else None
+        )
+        if latest_delivery_receipt_payload is not None:
+            latest_receipt_corrections = [
+                correction_row
+                for correction_row in delivery_receipt_correction_rows
+                if int((correction_row.meta or {}).get("delivery_receipt_event_id") or 0)
+                == int(latest_delivery_receipt_payload["event_id"])
+            ]
+            latest_delivery_receipt_payload["correction_count"] = len(
+                latest_receipt_corrections
+            )
+            latest_delivery_receipt_payload["latest_correction"] = (
+                _community_domain_outcome_delivery_receipt_correction_payload(
+                    latest_receipt_corrections[0]
+                )
+                if latest_receipt_corrections
+                else None
+            )
+            latest_delivery_receipt_payload["receipt_correction_status"] = (
+                latest_delivery_receipt_payload["latest_correction"] or {}
+            ).get("receipt_correction_status")
+        item["latest_delivery_receipt"] = latest_delivery_receipt_payload
+        item["delivery_receipt_correction_count"] = len(
+            delivery_receipt_correction_rows
+        )
+        item["latest_delivery_receipt_correction"] = (
+            _community_domain_outcome_delivery_receipt_correction_payload(
+                delivery_receipt_correction_rows[0]
+            )
+            if delivery_receipt_correction_rows
+            else None
+        )
+        item["provider_send_blocked_check_count"] = len(provider_send_blocked_rows)
+        item["latest_provider_send_blocked_check"] = (
+            _community_domain_outcome_provider_send_blocked_payload(
+                provider_send_blocked_rows[0]
+            )
+            if provider_send_blocked_rows
+            else None
+        )
+        item["contact_consent_record_count"] = len(contact_consent_rows)
+        item["latest_contact_consent_record"] = (
+            _community_domain_outcome_contact_consent_payload(
+                contact_consent_rows[0]
+            )
+            if contact_consent_rows
+            else None
+        )
+        item["contact_consent_withdrawal_count"] = len(
+            contact_consent_withdrawal_rows
+        )
+        item["latest_contact_consent_withdrawal"] = (
+            _community_domain_outcome_contact_consent_withdrawal_payload(
+                contact_consent_withdrawal_rows[0]
+            )
+            if contact_consent_withdrawal_rows
+            else None
+        )
+        item["contact_consent_status"] = _community_domain_outcome_contact_consent_status(
+            db,
+            community_domain_id=int(domain.id),
+            outcome_event_id=int(row.id),
+        )
+        item["current_provider_delivery_readiness"] = (
+            _community_domain_outcome_provider_delivery_readiness(
+                contact_consent_status=item["contact_consent_status"]
+            )
+        )
+        item["correction_review_count"] = len(correction_rows)
+        item["latest_correction_review"] = (
+            _community_domain_outcome_correction_review_payload(correction_rows[0])
+            if correction_rows
+            else None
+        )
+        items.append(item)
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "community_node_ids": node_scope_ids,
+        "outcome_states": sorted(COMMUNITY_DOMAIN_OUTCOME_STATES),
+        "follow_up_states": sorted(COMMUNITY_DOMAIN_OUTCOME_FOLLOW_UP_STATES),
+        "confirmation_states": sorted(COMMUNITY_DOMAIN_OUTCOME_CONFIRMATION_STATES),
+        "challenge_statuses": sorted(COMMUNITY_DOMAIN_OUTCOME_CHALLENGE_STATUSES),
+        "correction_decisions": sorted(COMMUNITY_DOMAIN_OUTCOME_CORRECTION_DECISIONS),
+        "delivery_channels": sorted(COMMUNITY_DOMAIN_OUTCOME_DELIVERY_CHANNELS),
+        "delivery_statuses": sorted(COMMUNITY_DOMAIN_OUTCOME_DELIVERY_STATUSES),
+        "delivery_consent_bases": sorted(
+            COMMUNITY_DOMAIN_OUTCOME_DELIVERY_CONSENT_BASES
+        ),
+        "delivery_receipt_correction_decisions": sorted(
+            COMMUNITY_DOMAIN_OUTCOME_DELIVERY_RECEIPT_CORRECTION_DECISIONS
+        ),
+        "provider_contact_channels": sorted(
+            COMMUNITY_DOMAIN_OUTCOME_PROVIDER_CONTACT_CHANNELS
+        ),
+        "contact_reference_statuses": sorted(
+            COMMUNITY_DOMAIN_OUTCOME_CONTACT_REFERENCE_STATUSES
+        ),
+        "contact_consent_withdrawal_reasons": sorted(
+            COMMUNITY_DOMAIN_OUTCOME_CONTACT_CONSENT_WITHDRAWAL_REASONS
+        ),
+        "items": items,
+        "total": len(rows),
+        "boundary": (
+            "Beneficiary outcome records are admin-visible before/after Trust "
+            "Events. They do not expose private beneficiary details publicly, "
+            "do not replace beneficiary confirmation, and do not create a final "
+            "sponsor report until aggregation and visibility review are built."
+        ),
+    }
+
+
+@router.post(
+    "/{community_domain_id}/beneficiary-outcomes",
+    status_code=201,
+    response_model=dict[str, Any],
+)
+def record_community_domain_beneficiary_outcome(
+    community_domain_id: int,
+    payload: CommunityDomainBeneficiaryOutcomeRecordIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+    subject = _get_user_or_404(db, int(payload.subject_user_id))
+    node: Optional[CommunityNode] = None
+    if payload.community_node_id is not None:
+        node = _get_node_or_404(
+            db,
+            community_domain_id=int(domain.id),
+            community_node_id=int(payload.community_node_id),
+        )
+
+    occurred_at = payload.occurred_at or datetime.now(timezone.utc)
+    follow_up_due_at = payload.follow_up_due_at
+    membership = _domain_membership_for_user(
+        db,
+        community_domain_id=int(domain.id),
+        user_id=int(subject.id),
+    )
+    membership_status_snapshot = (
+        _clean_role(membership.status, "inactive") if membership is not None else "not_a_domain_member"
+    )
+    membership_role_snapshot = (
+        _clean_role(membership.role, "member") if membership is not None else None
+    )
+
+    event = log_trust_event(
+        db,
+        event_type=COMMUNITY_DOMAIN_BENEFICIARY_OUTCOME_EVENT,
+        clan_id=int(domain.clan_id) if domain.clan_id is not None else None,
+        actor_user_id=int(current_user.id),
+        subject_user_id=int(subject.id),
+        meta={
+            "source": "community_domain_beneficiary_outcome_v1",
+            "reason": "community_domain_beneficiary_outcome_recorded",
+            "community_domain_id": int(domain.id),
+            "community_domain_name": domain.display_name,
+            "community_node_id": int(node.id) if node is not None else None,
+            "community_node_name": node.name if node is not None else None,
+            "programme_label": _clean_str(payload.programme_label) or None,
+            "outcome_indicator": _clean_str(payload.outcome_indicator),
+            "baseline_value": _clean_str(payload.baseline_value),
+            "after_value": _clean_str(payload.after_value),
+            "support_received": _clean_str(payload.support_received) or None,
+            "follow_up_state": payload.follow_up_state,
+            "outcome_state": payload.outcome_state,
+            "beneficiary_confirmation": payload.beneficiary_confirmation,
+            "admin_confirmation": payload.admin_confirmation,
+            "challenge_status": payload.challenge_status,
+            "occurred_at": _iso(occurred_at),
+            "follow_up_due_at": _iso(follow_up_due_at),
+            "evidence_strength": payload.evidence_strength,
+            "visibility": payload.visibility,
+            "note": _clean_str(payload.note) or None,
+            "evidence_reference": _clean_str(payload.evidence_reference) or None,
+            "membership_status_snapshot": membership_status_snapshot,
+            "membership_role_snapshot": membership_role_snapshot,
+            "trust_delta": "0.00",
+        },
+    )
+
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "outcome": _community_domain_outcome_event_payload(event),
+        "boundary": (
+            "This records a person-first beneficiary outcome Trust Event in the "
+            "Community Domain context. It preserves baseline-to-after evidence, "
+            "but it is not a final public sponsor report and not independently "
+            "confirmed unless the confirmation fields say so."
+        ),
+    }
+
+
+@router.post(
+    "/{community_domain_id}/beneficiary-outcomes/{outcome_event_id}"
+    "/contact-consent-records",
+    status_code=201,
+    response_model=dict[str, Any],
+)
+def record_community_domain_outcome_contact_consent(
+    community_domain_id: int,
+    outcome_event_id: int,
+    payload: CommunityDomainOutcomeContactConsentRecordIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+    outcome_event = _get_community_domain_outcome_event_or_404(
+        db,
+        community_domain_id=int(domain.id),
+        outcome_event_id=int(outcome_event_id),
+    )
+    now = datetime.now(timezone.utc)
+    destination_verified_at = payload.destination_verified_at
+    consent_recorded_at = payload.consent_recorded_at or now
+    contact_consent_event = log_trust_event(
+        db,
+        event_type=COMMUNITY_DOMAIN_OUTCOME_CONTACT_CONSENT_RECORDED_EVENT,
+        clan_id=int(domain.clan_id) if domain.clan_id is not None else None,
+        actor_user_id=int(current_user.id),
+        subject_user_id=int(outcome_event.subject_user_id),
+        meta={
+            "source": "community_domain_beneficiary_outcome_contact_consent_v1",
+            "reason": "beneficiary_outcome_contact_consent_recorded",
+            "community_domain_id": int(domain.id),
+            "community_domain_name": domain.display_name,
+            "outcome_event_id": int(outcome_event.id),
+            "channel": payload.channel,
+            "destination_reference_status": payload.destination_reference_status,
+            "destination_reference_label": (
+                _clean_str(payload.destination_reference_label) or None
+            ),
+            "destination_verified_at": _iso(destination_verified_at)
+            if destination_verified_at is not None
+            else None,
+            "consent_basis": payload.consent_basis,
+            "consent_scope": payload.consent_scope,
+            "consent_recorded_at": _iso(consent_recorded_at),
+            "evidence_reference": _clean_str(payload.evidence_reference) or None,
+            "note": _clean_str(payload.note) or None,
+            "contact_preference_storage_status": "manual_attestation_only",
+            "consent_basis_storage_status": "manual_attestation_only",
+            "provider_send_ready": False,
+            "destination_value_stored": False,
+            "raw_destination_stored": False,
+            "external_channels_sent_by_gsn": False,
+            "trust_delta": "0.00",
+        },
+    )
+
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "outcome_event_id": int(outcome_event.id),
+        "contact_consent_record": _community_domain_outcome_contact_consent_payload(
+            contact_consent_event
+        ),
+        "boundary": (
+            "This records an admin-stated contact and consent basis for a "
+            "beneficiary outcome confirmation. It does not store the raw "
+            "destination, does not send WhatsApp, SMS, or email, and does not "
+            "make provider sending ready."
+        ),
+    }
+
+
+@router.post(
+    "/{community_domain_id}/beneficiary-outcomes/{outcome_event_id}"
+    "/contact-consent-records/{contact_consent_event_id}/withdrawals",
+    status_code=201,
+    response_model=dict[str, Any],
+)
+def withdraw_community_domain_outcome_contact_consent(
+    community_domain_id: int,
+    outcome_event_id: int,
+    contact_consent_event_id: int,
+    payload: CommunityDomainOutcomeContactConsentWithdrawalIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+    outcome_event = _get_community_domain_outcome_event_or_404(
+        db,
+        community_domain_id=int(domain.id),
+        outcome_event_id=int(outcome_event_id),
+    )
+    contact_consent_event = db.get(TrustEvent, int(contact_consent_event_id))
+    if (
+        contact_consent_event is None
+        or contact_consent_event.event_type
+        != COMMUNITY_DOMAIN_OUTCOME_CONTACT_CONSENT_RECORDED_EVENT
+    ):
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "code": "beneficiary_outcome_contact_consent_not_found",
+                "message": (
+                    "GSN could not find the contact/consent attestation for "
+                    "this beneficiary outcome."
+                ),
+            },
+        )
+    contact_meta = contact_consent_event.meta or {}
+    if (
+        int(contact_meta.get("community_domain_id") or 0) != int(domain.id)
+        or int(contact_meta.get("outcome_event_id") or 0) != int(outcome_event.id)
+    ):
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "beneficiary_outcome_contact_consent_mismatch",
+                "message": (
+                    "This contact/consent attestation does not belong to the "
+                    "selected Community Domain beneficiary outcome."
+                ),
+            },
+        )
+
+    now = datetime.now(timezone.utc)
+    withdrawn_at = payload.withdrawn_at or now
+    withdrawal_event = log_trust_event(
+        db,
+        event_type=COMMUNITY_DOMAIN_OUTCOME_CONTACT_CONSENT_WITHDRAWN_EVENT,
+        clan_id=int(domain.clan_id) if domain.clan_id is not None else None,
+        actor_user_id=int(current_user.id),
+        subject_user_id=int(outcome_event.subject_user_id),
+        meta={
+            "source": "community_domain_beneficiary_outcome_contact_consent_v1",
+            "reason": "beneficiary_outcome_contact_consent_withdrawn",
+            "community_domain_id": int(domain.id),
+            "community_domain_name": domain.display_name,
+            "outcome_event_id": int(outcome_event.id),
+            "contact_consent_event_id": int(contact_consent_event.id),
+            "prior_channel": contact_meta.get("channel"),
+            "prior_destination_reference_status": contact_meta.get(
+                "destination_reference_status"
+            ),
+            "prior_consent_basis": contact_meta.get("consent_basis"),
+            "withdrawal_reason": payload.withdrawal_reason,
+            "withdrawn_at": _iso(withdrawn_at),
+            "replacement_required": bool(payload.replacement_required),
+            "provider_send_ready": False,
+            "external_channels_sent_by_gsn": False,
+            "note": _clean_str(payload.note) or None,
+            "trust_delta": "0.00",
+        },
+    )
+
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "outcome_event_id": int(outcome_event.id),
+        "contact_consent_event_id": int(contact_consent_event.id),
+        "contact_consent_withdrawal": (
+            _community_domain_outcome_contact_consent_withdrawal_payload(
+                withdrawal_event
+            )
+        ),
+        "boundary": (
+            "This records an additive withdrawal or invalidation of a prior "
+            "contact/consent attestation. It does not delete the original "
+            "record, does not send WhatsApp, SMS, or email, and keeps provider "
+            "sending unavailable until a valid replacement exists."
+        ),
+    }
+
+
+@router.post(
+    "/{community_domain_id}/beneficiary-outcomes/{outcome_event_id}/confirmation-links",
+    status_code=201,
+    response_model=dict[str, Any],
+)
+def create_community_domain_outcome_confirmation_link(
+    community_domain_id: int,
+    outcome_event_id: int,
+    payload: CommunityDomainOutcomeConfirmationLinkIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+    outcome_event = _get_community_domain_outcome_event_or_404(
+        db,
+        community_domain_id=int(domain.id),
+        outcome_event_id=int(outcome_event_id),
+    )
+    token = secrets.token_urlsafe(24)
+    token_hash = hashlib.sha256(token.encode("utf-8")).hexdigest()
+    expires_at = datetime.now(timezone.utc) + timedelta(days=int(payload.expires_in_days))
+    outcome_meta = outcome_event.meta or {}
+    request_event = log_trust_event(
+        db,
+        event_type=COMMUNITY_DOMAIN_OUTCOME_CONFIRMATION_REQUEST_EVENT,
+        clan_id=int(domain.clan_id) if domain.clan_id is not None else None,
+        actor_user_id=int(current_user.id),
+        subject_user_id=int(outcome_event.subject_user_id),
+        meta={
+            "source": "community_domain_beneficiary_outcome_confirmation_v1",
+            "reason": "beneficiary_outcome_confirmation_link_created",
+            "community_domain_id": int(domain.id),
+            "community_domain_name": domain.display_name,
+            "outcome_event_id": int(outcome_event.id),
+            "outcome_indicator": _clean_str(outcome_meta.get("outcome_indicator")),
+            "programme_label": _clean_str(outcome_meta.get("programme_label")) or None,
+            "responder_type": payload.responder_type,
+            "public_token_hash": token_hash,
+            "public_token_prefix": token[:8],
+            "expires_at": _iso(expires_at),
+            "status": "open",
+            "note": _clean_str(payload.note) or None,
+            "privacy": (
+                "Raw public token is returned once and not stored in plain text. "
+                "Responder access is bearer-link based in this v1 slice."
+            ),
+            "trust_delta": "0.00",
+        },
+    )
+    public_path = f"/community-domains/public/beneficiary-outcome-confirmations/{token}"
+    contact_consent_status = _community_domain_outcome_contact_consent_status(
+        db,
+        community_domain_id=int(domain.id),
+        outcome_event_id=int(outcome_event.id),
+    )
+    provider_delivery_readiness = _community_domain_outcome_provider_delivery_readiness(
+        contact_consent_status=contact_consent_status
+    )
+    delivery_event = log_trust_event(
+        db,
+        event_type=COMMUNITY_DOMAIN_OUTCOME_CONFIRMATION_DELIVERY_PREPARED_EVENT,
+        clan_id=int(domain.clan_id) if domain.clan_id is not None else None,
+        actor_user_id=int(current_user.id),
+        subject_user_id=int(outcome_event.subject_user_id),
+        meta={
+            "source": "community_domain_beneficiary_outcome_confirmation_delivery_v1",
+            "reason": "beneficiary_outcome_confirmation_delivery_prepared",
+            "community_domain_id": int(domain.id),
+            "community_domain_name": domain.display_name,
+            "outcome_event_id": int(outcome_event.id),
+            "confirmation_request_event_id": int(request_event.id),
+            "responder_type": payload.responder_type,
+            "manual_delivery_channels": ["copy_link", "whatsapp", "sms", "email"],
+            "public_path_template": (
+                "/community-domains/public/beneficiary-outcome-confirmations/{token}"
+            ),
+            "public_token_hash": token_hash,
+            "public_token_prefix": token[:8],
+            "delivery_status": "prepared_not_sent",
+            "external_channels_sent_by_gsn": False,
+            "provider_send_engine_status": provider_delivery_readiness[
+                "provider_send_engine_status"
+            ],
+            "provider_delivery_webhook_status": provider_delivery_readiness[
+                "provider_delivery_webhook_status"
+            ],
+            "retry_queue_status": provider_delivery_readiness["retry_queue_status"],
+            "contact_preference_status": provider_delivery_readiness[
+                "contact_preference_status"
+            ],
+            "consent_enforcement_status": provider_delivery_readiness[
+                "consent_enforcement_status"
+            ],
+            "active_contact_consent_status": provider_delivery_readiness[
+                "active_contact_consent_status"
+            ],
+            "active_contact_consent_satisfied": provider_delivery_readiness[
+                "active_contact_consent_satisfied"
+            ],
+            "note": _clean_str(payload.note) or None,
+            "trust_delta": "0.00",
+        },
+    )
+    delivery_pack = _community_domain_outcome_confirmation_delivery_pack(
+        domain=domain,
+        outcome_event=outcome_event,
+        public_path=public_path,
+        delivery_event_id=int(delivery_event.id),
+        provider_delivery_readiness=provider_delivery_readiness,
+    )
+
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "outcome_event_id": int(outcome_event.id),
+        "confirmation_request_event_id": int(request_event.id),
+        "public_token": token,
+        "public_path": public_path,
+        "expires_at": _iso(expires_at),
+        "responder_type": payload.responder_type,
+        "delivery_pack": delivery_pack,
+        "boundary": (
+            "This creates a private bearer confirmation link for one beneficiary "
+            "outcome and prepares manual share text. It does not send WhatsApp, "
+            "SMS, or email from GSN, does not publish a public case page, and "
+            "does not prove confirmation until a response Trust Event is recorded."
+        ),
+    }
+
+
+@router.post(
+    "/{community_domain_id}/beneficiary-outcomes/{outcome_event_id}"
+    "/confirmation-deliveries/{delivery_event_id}/provider-send-attempts",
+    response_model=dict[str, Any],
+)
+def attempt_community_domain_outcome_confirmation_provider_send(
+    community_domain_id: int,
+    outcome_event_id: int,
+    delivery_event_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+    outcome_event = _get_community_domain_outcome_event_or_404(
+        db,
+        community_domain_id=int(domain.id),
+        outcome_event_id=int(outcome_event_id),
+    )
+    delivery_event = db.get(TrustEvent, int(delivery_event_id))
+    if (
+        delivery_event is None
+        or delivery_event.event_type
+        != COMMUNITY_DOMAIN_OUTCOME_CONFIRMATION_DELIVERY_PREPARED_EVENT
+    ):
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "code": "beneficiary_outcome_confirmation_delivery_not_found",
+                "message": (
+                    "GSN could not find the prepared delivery record for this "
+                    "beneficiary outcome confirmation link."
+                ),
+            },
+        )
+    delivery_meta = delivery_event.meta or {}
+    if (
+        int(delivery_meta.get("community_domain_id") or 0) != int(domain.id)
+        or int(delivery_meta.get("outcome_event_id") or 0) != int(outcome_event.id)
+    ):
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "beneficiary_outcome_confirmation_delivery_mismatch",
+                "message": (
+                    "This delivery record does not belong to the selected "
+                    "Community Domain beneficiary outcome."
+                ),
+            },
+        )
+
+    contact_consent_status = _community_domain_outcome_contact_consent_status(
+        db,
+        community_domain_id=int(domain.id),
+        outcome_event_id=int(outcome_event.id),
+    )
+    readiness = _community_domain_outcome_provider_delivery_readiness(
+        contact_consent_status=contact_consent_status
+    )
+    latest_contact_consent_record = (
+        contact_consent_status.get("latest_contact_consent_record") or {}
+    )
+    latest_contact_consent_withdrawal = (
+        contact_consent_status.get("latest_contact_consent_withdrawal") or {}
+    )
+    active_contact_consent_event_id = int(
+        latest_contact_consent_record.get("event_id") or 0
+    )
+    latest_contact_consent_withdrawal_event_id = int(
+        latest_contact_consent_withdrawal.get("event_id") or 0
+    )
+    blocked_check_dedupe_key = (
+        "community_domain_provider_send_blocked:"
+        f"{int(domain.id)}:"
+        f"{int(outcome_event.id)}:"
+        f"{int(delivery_event.id)}:"
+        f"{readiness['status']}:"
+        f"{readiness['provider_send_engine_status']}:"
+        f"{readiness['active_contact_consent_status']}:"
+        f"{active_contact_consent_event_id}:"
+        f"{latest_contact_consent_withdrawal_event_id}"
+    )
+    existing_blocked_event = (
+        db.query(TrustEvent)
+        .filter(TrustEvent.dedupe_key == blocked_check_dedupe_key)
+        .first()
+    )
+    blocked_event = log_trust_event(
+        db,
+        event_type=COMMUNITY_DOMAIN_OUTCOME_PROVIDER_SEND_BLOCKED_EVENT,
+        clan_id=int(domain.clan_id) if domain.clan_id is not None else None,
+        actor_user_id=int(current_user.id),
+        subject_user_id=int(outcome_event.subject_user_id),
+        meta={
+            "source": "community_domain_beneficiary_outcome_provider_send_blocked_v1",
+            "reason": "beneficiary_outcome_provider_send_blocked",
+            "community_domain_id": int(domain.id),
+            "community_domain_name": domain.display_name,
+            "outcome_event_id": int(outcome_event.id),
+            "delivery_event_id": int(delivery_event.id),
+            "confirmation_request_event_id": int(
+                delivery_meta.get("confirmation_request_event_id") or 0
+            ),
+            "provider_delivery_readiness_status": readiness["status"],
+            "provider_send_engine_status": readiness[
+                "provider_send_engine_status"
+            ],
+            "provider_delivery_webhook_status": readiness[
+                "provider_delivery_webhook_status"
+            ],
+            "retry_queue_status": readiness["retry_queue_status"],
+            "active_contact_consent_status": readiness[
+                "active_contact_consent_status"
+            ],
+            "active_contact_consent_satisfied": readiness[
+                "active_contact_consent_satisfied"
+            ],
+            "active_contact_consent_event_id": (
+                active_contact_consent_event_id or None
+            ),
+            "latest_contact_consent_withdrawal_event_id": (
+                latest_contact_consent_withdrawal_event_id or None
+            ),
+            "blocked_reason": "provider_delivery_not_connected",
+            "blocked_check_recorded": True,
+            "blocked_check_dedupe_key": blocked_check_dedupe_key,
+            "provider_job_created": False,
+            "send_attempt_created": False,
+            "external_channels_sent_by_gsn": False,
+            "trust_delta": "0.00",
+        },
+        dedupe_key=blocked_check_dedupe_key,
+    )
+    raise HTTPException(
+        status_code=409,
+        detail={
+            "code": "provider_delivery_not_connected",
+            "message": (
+                "GSN cannot send beneficiary confirmation requests through "
+                "WhatsApp, SMS, or email until provider delivery is connected."
+            ),
+            "community_domain_id": int(domain.id),
+            "outcome_event_id": int(outcome_event.id),
+            "delivery_event_id": int(delivery_event.id),
+            "provider_delivery_readiness": readiness,
+            "blocked_check_event": {
+                "event_id": int(blocked_event.id),
+                "event_type": blocked_event.event_type,
+                "created_at": _iso(blocked_event.created_at),
+            },
+            "blocked_check_recorded": True,
+            "blocked_check_reused": existing_blocked_event is not None,
+            "blocked_check_created": existing_blocked_event is None,
+            "active_contact_consent_event_id": (
+                active_contact_consent_event_id or None
+            ),
+            "latest_contact_consent_withdrawal_event_id": (
+                latest_contact_consent_withdrawal_event_id or None
+            ),
+            "provider_job_created": False,
+            "send_attempt_created": False,
+            "external_channels_sent_by_gsn": False,
+            "boundary": (
+                "Provider sending is fail-closed with the current setup. GSN "
+                "created no provider job and no WhatsApp, SMS, or email send "
+                "attempt. It recorded only this blocked readiness check as a "
+                "Trust Event."
+            ),
+        },
+    )
+
+
+@router.post(
+    "/{community_domain_id}/beneficiary-outcomes/{outcome_event_id}"
+    "/confirmation-deliveries/{delivery_event_id}/receipts",
+    status_code=201,
+    response_model=dict[str, Any],
+)
+def record_community_domain_outcome_confirmation_delivery_receipt(
+    community_domain_id: int,
+    outcome_event_id: int,
+    delivery_event_id: int,
+    payload: CommunityDomainOutcomeConfirmationDeliveryReceiptIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+    outcome_event = _get_community_domain_outcome_event_or_404(
+        db,
+        community_domain_id=int(domain.id),
+        outcome_event_id=int(outcome_event_id),
+    )
+    delivery_event = db.get(TrustEvent, int(delivery_event_id))
+    if (
+        delivery_event is None
+        or delivery_event.event_type
+        != COMMUNITY_DOMAIN_OUTCOME_CONFIRMATION_DELIVERY_PREPARED_EVENT
+    ):
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "code": "beneficiary_outcome_confirmation_delivery_not_found",
+                "message": (
+                    "GSN could not find the prepared delivery record for this "
+                    "beneficiary outcome confirmation link."
+                ),
+            },
+        )
+    delivery_meta = delivery_event.meta or {}
+    if (
+        int(delivery_meta.get("community_domain_id") or 0) != int(domain.id)
+        or int(delivery_meta.get("outcome_event_id") or 0) != int(outcome_event.id)
+    ):
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "beneficiary_outcome_confirmation_delivery_mismatch",
+                "message": (
+                    "This delivery record does not belong to the selected "
+                    "Community Domain beneficiary outcome."
+                ),
+            },
+        )
+
+    contact_consent_status = _community_domain_outcome_contact_consent_status(
+        db,
+        community_domain_id=int(domain.id),
+        outcome_event_id=int(outcome_event.id),
+    )
+    if not contact_consent_status["manual_delivery_allowed"]:
+        contact_consent_not_recorded = (
+            contact_consent_status.get("status") == "not_recorded"
+        )
+        blocked_code = (
+            "beneficiary_outcome_contact_consent_not_recorded"
+            if contact_consent_not_recorded
+            else "beneficiary_outcome_contact_consent_withdrawn"
+        )
+        blocked_message = (
+            (
+                "GSN cannot record a manual beneficiary confirmation delivery "
+                "receipt until an active contact/consent attestation is "
+                "recorded."
+            )
+            if contact_consent_not_recorded
+            else (
+                "GSN cannot record a manual beneficiary confirmation "
+                "delivery receipt after contact/consent was withdrawn "
+                "until a replacement contact/consent attestation is recorded."
+            )
+        )
+        blocked_boundary = (
+            (
+                "No active contact/consent attestation exists. GSN created no "
+                "manual delivery receipt and sent no WhatsApp, SMS, or email."
+            )
+            if contact_consent_not_recorded
+            else (
+                "The original withdrawal remains in the audit trail. GSN "
+                "created no manual delivery receipt and sent no WhatsApp, "
+                "SMS, or email."
+            )
+        )
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": blocked_code,
+                "message": blocked_message,
+                "community_domain_id": int(domain.id),
+                "outcome_event_id": int(outcome_event.id),
+                "delivery_event_id": int(delivery_event.id),
+                "contact_consent_status": contact_consent_status,
+                "required_next_action": "record_contact_consent_attestation",
+                "delivery_receipt_created": False,
+                "external_channels_sent_by_gsn": False,
+                "boundary": blocked_boundary,
+            },
+        )
+
+    now = datetime.now(timezone.utc)
+    delivered_at = payload.delivered_at or now
+    active_contact_consent = (
+        contact_consent_status.get("latest_contact_consent_record") or {}
+    )
+    receipt_event = log_trust_event(
+        db,
+        event_type=COMMUNITY_DOMAIN_OUTCOME_CONFIRMATION_DELIVERY_RECORDED_EVENT,
+        clan_id=int(domain.clan_id) if domain.clan_id is not None else None,
+        actor_user_id=int(current_user.id),
+        subject_user_id=int(outcome_event.subject_user_id),
+        meta={
+            "source": "community_domain_beneficiary_outcome_confirmation_delivery_v1",
+            "reason": "beneficiary_outcome_confirmation_delivery_recorded",
+            "community_domain_id": int(domain.id),
+            "community_domain_name": domain.display_name,
+            "outcome_event_id": int(outcome_event.id),
+            "confirmation_request_event_id": int(
+                delivery_meta.get("confirmation_request_event_id") or 0
+            ),
+            "delivery_event_id": int(delivery_event.id),
+            "responder_type": delivery_meta.get("responder_type"),
+            "channel": payload.channel,
+            "delivery_status": payload.delivery_status,
+            "consent_basis": payload.consent_basis,
+            "active_contact_consent_status": contact_consent_status.get("status"),
+            "active_contact_consent_satisfied": (
+                contact_consent_status.get("status") == "active_attestation"
+            ),
+            "contact_consent_event_id": active_contact_consent.get("event_id"),
+            "contact_consent_channel": active_contact_consent.get("channel"),
+            "contact_consent_reference_status": active_contact_consent.get(
+                "destination_reference_status"
+            ),
+            "contact_consent_basis": active_contact_consent.get("consent_basis"),
+            "recipient_label": _clean_str(payload.recipient_label) or None,
+            "recorded_at": _iso(now),
+            "delivered_at": _iso(delivered_at),
+            "admin_recorded_delivery_only": True,
+            "external_channels_sent_by_gsn": False,
+            "public_path_template": delivery_meta.get("public_path_template"),
+            "public_token_hash": delivery_meta.get("public_token_hash"),
+            "public_token_prefix": delivery_meta.get("public_token_prefix"),
+            "note": _clean_str(payload.note) or None,
+            "trust_delta": "0.00",
+        },
+    )
+
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "outcome_event_id": int(outcome_event.id),
+        "delivery_event_id": int(delivery_event.id),
+        "delivery_receipt": _community_domain_outcome_confirmation_delivery_payload(
+            receipt_event
+        ),
+        "boundary": (
+            "This records an admin-stated manual delivery receipt for a "
+            "beneficiary confirmation link. It does not mean GSN sent the "
+            "message, does not prove the recipient received or opened it, and "
+            "does not store the raw public bearer token."
+        ),
+    }
+
+
+@router.post(
+    "/{community_domain_id}/beneficiary-outcomes/{outcome_event_id}"
+    "/confirmation-deliveries/{delivery_event_id}/receipts/{receipt_event_id}"
+    "/corrections",
+    status_code=201,
+    response_model=dict[str, Any],
+)
+def correct_community_domain_outcome_confirmation_delivery_receipt(
+    community_domain_id: int,
+    outcome_event_id: int,
+    delivery_event_id: int,
+    receipt_event_id: int,
+    payload: CommunityDomainOutcomeConfirmationDeliveryReceiptCorrectionIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+    outcome_event = _get_community_domain_outcome_event_or_404(
+        db,
+        community_domain_id=int(domain.id),
+        outcome_event_id=int(outcome_event_id),
+    )
+    delivery_event = db.get(TrustEvent, int(delivery_event_id))
+    delivery_meta = delivery_event.meta if delivery_event is not None else {}
+    if (
+        delivery_event is None
+        or delivery_event.event_type
+        != COMMUNITY_DOMAIN_OUTCOME_CONFIRMATION_DELIVERY_PREPARED_EVENT
+        or int(delivery_meta.get("community_domain_id") or 0) != int(domain.id)
+        or int(delivery_meta.get("outcome_event_id") or 0) != int(outcome_event.id)
+    ):
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "code": "beneficiary_outcome_confirmation_delivery_not_found",
+                "message": (
+                    "GSN could not find the prepared delivery record for this "
+                    "beneficiary outcome confirmation link."
+                ),
+            },
+        )
+
+    receipt_event = db.get(TrustEvent, int(receipt_event_id))
+    receipt_meta = receipt_event.meta if receipt_event is not None else {}
+    if (
+        receipt_event is None
+        or receipt_event.event_type
+        != COMMUNITY_DOMAIN_OUTCOME_CONFIRMATION_DELIVERY_RECORDED_EVENT
+        or int(receipt_meta.get("community_domain_id") or 0) != int(domain.id)
+        or int(receipt_meta.get("outcome_event_id") or 0) != int(outcome_event.id)
+        or int(receipt_meta.get("delivery_event_id") or 0) != int(delivery_event.id)
+    ):
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "code": "beneficiary_outcome_confirmation_delivery_receipt_not_found",
+                "message": (
+                    "GSN could not find that manual delivery receipt for this "
+                    "Community Domain beneficiary outcome."
+                ),
+            },
+        )
+
+    receipt_correction_status = {
+        "marked_incorrect": "corrected",
+        "superseded_by_new_receipt": "superseded",
+        "needs_follow_up": "under_review",
+        "no_action": "noted",
+    }[payload.decision]
+    correction_event = log_trust_event(
+        db,
+        event_type=(
+            COMMUNITY_DOMAIN_OUTCOME_CONFIRMATION_DELIVERY_RECEIPT_CORRECTED_EVENT
+        ),
+        clan_id=int(domain.clan_id) if domain.clan_id is not None else None,
+        actor_user_id=int(current_user.id),
+        subject_user_id=int(outcome_event.subject_user_id),
+        meta={
+            "source": (
+                "community_domain_beneficiary_outcome_delivery_receipt_correction_v1"
+            ),
+            "reason": "beneficiary_outcome_confirmation_delivery_receipt_corrected",
+            "community_domain_id": int(domain.id),
+            "community_domain_name": domain.display_name,
+            "outcome_event_id": int(outcome_event.id),
+            "delivery_event_id": int(delivery_event.id),
+            "delivery_receipt_event_id": int(receipt_event.id),
+            "confirmation_request_event_id": int(
+                receipt_meta.get("confirmation_request_event_id")
+                or delivery_meta.get("confirmation_request_event_id")
+                or 0
+            ),
+            "decision": payload.decision,
+            "receipt_correction_status": receipt_correction_status,
+            "prior_delivery_status": receipt_meta.get("delivery_status"),
+            "prior_channel": receipt_meta.get("channel"),
+            "prior_consent_basis": receipt_meta.get("consent_basis"),
+            "corrected_delivery_status": payload.corrected_delivery_status,
+            "corrected_channel": payload.corrected_channel,
+            "corrected_consent_basis": payload.corrected_consent_basis,
+            "correction_note": _clean_str(payload.correction_note) or None,
+            "admin_recorded_correction_only": True,
+            "original_delivery_receipt_preserved": True,
+            "external_channels_sent_by_gsn": False,
+            "corrected_at": _iso(datetime.now(timezone.utc)),
+            "trust_delta": "0.00",
+        },
+    )
+
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "outcome_event_id": int(outcome_event.id),
+        "delivery_event_id": int(delivery_event.id),
+        "delivery_receipt_event_id": int(receipt_event.id),
+        "delivery_receipt_correction": (
+            _community_domain_outcome_delivery_receipt_correction_payload(
+                correction_event
+            )
+        ),
+        "boundary": (
+            "Delivery receipt correction recorded as a separate Trust Event. "
+            "The original manual receipt remains in the audit trail, GSN still "
+            "did not send the external message, and this correction does not "
+            "prove whether the beneficiary received or opened the message."
+        ),
+    }
+
+
+@router.get(
+    "/public/beneficiary-outcome-confirmations/{public_token}",
+    response_model=dict[str, Any],
+)
+def get_public_beneficiary_outcome_confirmation(
+    public_token: str,
+    db: Session = Depends(get_db),
+):
+    request_event = _community_domain_outcome_confirmation_request_by_token(
+        db,
+        token=public_token,
+    )
+    if request_event is None:
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "code": "beneficiary_outcome_confirmation_not_found",
+                "message": "GSN could not find this beneficiary outcome confirmation link.",
+            },
+        )
+    request_meta = request_event.meta or {}
+    expires_at = _parse_datetime(request_meta.get("expires_at"))
+    if expires_at is not None and _as_aware_utc(expires_at) < datetime.now(timezone.utc):
+        raise HTTPException(
+            status_code=410,
+            detail={
+                "code": "beneficiary_outcome_confirmation_expired",
+                "message": "This beneficiary outcome confirmation link has expired.",
+            },
+        )
+    outcome_event_id = int(request_meta.get("outcome_event_id") or 0)
+    outcome_event = db.get(TrustEvent, outcome_event_id)
+    if (
+        outcome_event is None
+        or outcome_event.event_type != COMMUNITY_DOMAIN_BENEFICIARY_OUTCOME_EVENT
+    ):
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "code": "beneficiary_outcome_not_found",
+                "message": "GSN could not find the beneficiary outcome for this link.",
+            },
+        )
+    domain = db.get(
+        CommunityDomain,
+        int((outcome_event.meta or {}).get("community_domain_id") or 0),
+    )
+    responses = _community_domain_outcome_confirmation_responses(
+        db,
+        confirmation_request_event_id=int(request_event.id),
+        limit=10,
+    )
+    outcome_meta = outcome_event.meta or {}
+    return {
+        "ok": True,
+        "confirmation_request_event_id": int(request_event.id),
+        "outcome_event_id": int(outcome_event.id),
+        "status": "responded" if responses else "open",
+        "expires_at": request_meta.get("expires_at"),
+        "responder_type": request_meta.get("responder_type"),
+        "community_domain": {
+            "id": int(domain.id) if domain is not None else None,
+            "display_name": domain.display_name if domain is not None else None,
+            "domain_name": domain.domain_name if domain is not None else None,
+        },
+        "outcome": {
+            "programme_label": outcome_meta.get("programme_label"),
+            "outcome_indicator": outcome_meta.get("outcome_indicator"),
+            "baseline_value": outcome_meta.get("baseline_value"),
+            "after_value": outcome_meta.get("after_value"),
+            "support_received": outcome_meta.get("support_received"),
+            "outcome_state": outcome_meta.get("outcome_state"),
+            "follow_up_state": outcome_meta.get("follow_up_state"),
+        },
+        "response_options": [
+            "confirm",
+            "partly_confirm",
+            "challenge",
+            "cannot_confirm",
+        ],
+        "existing_response_count": len(responses),
+        "boundary": (
+            "This is a private bearer confirmation view for the named outcome. "
+            "Do not forward it publicly. Responding creates a Trust Event; it "
+            "does not edit the original admin record or expose the case publicly."
+        ),
+    }
+
+
+@router.post(
+    "/public/beneficiary-outcome-confirmations/{public_token}/responses",
+    status_code=201,
+    response_model=dict[str, Any],
+)
+def respond_public_beneficiary_outcome_confirmation(
+    public_token: str,
+    payload: PublicOutcomeConfirmationResponseIn,
+    db: Session = Depends(get_db),
+):
+    request_event = _community_domain_outcome_confirmation_request_by_token(
+        db,
+        token=public_token,
+    )
+    if request_event is None:
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "code": "beneficiary_outcome_confirmation_not_found",
+                "message": "GSN could not find this beneficiary outcome confirmation link.",
+            },
+        )
+    request_meta = request_event.meta or {}
+    expires_at = _parse_datetime(request_meta.get("expires_at"))
+    if expires_at is not None and _as_aware_utc(expires_at) < datetime.now(timezone.utc):
+        raise HTTPException(
+            status_code=410,
+            detail={
+                "code": "beneficiary_outcome_confirmation_expired",
+                "message": "This beneficiary outcome confirmation link has expired.",
+            },
+        )
+    existing = _community_domain_outcome_confirmation_responses(
+        db,
+        confirmation_request_event_id=int(request_event.id),
+        limit=1,
+    )
+    if existing:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "beneficiary_outcome_confirmation_already_responded",
+                "message": "This beneficiary outcome confirmation link has already been answered.",
+            },
+        )
+    outcome_event_id = int(request_meta.get("outcome_event_id") or 0)
+    outcome_event = db.get(TrustEvent, outcome_event_id)
+    if (
+        outcome_event is None
+        or outcome_event.event_type != COMMUNITY_DOMAIN_BENEFICIARY_OUTCOME_EVENT
+    ):
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "code": "beneficiary_outcome_not_found",
+                "message": "GSN could not find the beneficiary outcome for this link.",
+            },
+        )
+    outcome_meta = outcome_event.meta or {}
+    challenge_status = (
+        "challenged"
+        if payload.response_type == "challenge"
+        else (
+            "under_review"
+            if payload.response_type == "partly_confirm"
+            else "none"
+        )
+    )
+    confirmation_state = (
+        "beneficiary_confirmed"
+        if payload.response_type == "confirm"
+        and request_meta.get("responder_type") in {"beneficiary", "guardian"}
+        else (
+            "witness_confirmed"
+            if payload.response_type == "confirm"
+            else (
+                "disputed"
+                if payload.response_type == "challenge"
+                else "not_requested"
+            )
+        )
+    )
+    response_event = log_trust_event(
+        db,
+        event_type=COMMUNITY_DOMAIN_OUTCOME_CONFIRMATION_RESPONSE_EVENT,
+        clan_id=outcome_event.clan_id,
+        actor_user_id=int(outcome_event.actor_user_id),
+        subject_user_id=int(outcome_event.subject_user_id),
+        meta={
+            "source": "community_domain_beneficiary_outcome_confirmation_v1",
+            "reason": "beneficiary_outcome_confirmation_response",
+            "community_domain_id": int(outcome_meta.get("community_domain_id") or 0),
+            "community_domain_name": outcome_meta.get("community_domain_name"),
+            "outcome_event_id": int(outcome_event.id),
+            "confirmation_request_event_id": int(request_event.id),
+            "outcome_indicator": outcome_meta.get("outcome_indicator"),
+            "programme_label": outcome_meta.get("programme_label"),
+            "responder_type": request_meta.get("responder_type"),
+            "response_type": payload.response_type,
+            "confirmation_state": confirmation_state,
+            "challenge_status": challenge_status,
+            "responder_name": _clean_str(payload.responder_name) or None,
+            "note": _clean_str(payload.note) or None,
+            "correction_note": _clean_str(payload.correction_note) or None,
+            "responded_at": _iso(datetime.now(timezone.utc)),
+            "trust_delta": "0.00",
+        },
+    )
+    admin_notifications_created = 0
+    domain_id = int(outcome_meta.get("community_domain_id") or 0)
+    domain = db.get(CommunityDomain, domain_id) if domain_id > 0 else None
+    if domain is not None and payload.response_type in {
+        "partly_confirm",
+        "challenge",
+        "cannot_confirm",
+    }:
+        domain_label = _clean_str(domain.display_name or domain.domain_name, "Community Domain")
+        admin_notifications_created = _create_community_domain_admin_notifications(
+            db,
+            domain=domain,
+            kind=COMMUNITY_DOMAIN_OUTCOME_RESPONSE_ADMIN_NOTIFICATION,
+            title=f"Beneficiary outcome response in {domain_label}",
+            message=(
+                "A beneficiary outcome received a "
+                f"{payload.response_type.replace('_', ' ')} response and may "
+                "need admin review. Private responder details stay in the "
+                "Community Domain Trust Event trail."
+            ),
+            action_url=f"/app/community-domain/{int(domain.id)}?lane=governance",
+            action_label="Open Governance",
+        )
+    return {
+        "ok": True,
+        "confirmation_response_event_id": int(response_event.id),
+        "outcome_event_id": int(outcome_event.id),
+        "response_type": payload.response_type,
+        "confirmation_state": confirmation_state,
+        "challenge_status": challenge_status,
+        "admin_notifications_created": int(admin_notifications_created),
+        "boundary": (
+            "Response recorded as a separate Trust Event. The original outcome "
+            "record remains unchanged; sponsor summaries can now count this "
+            "confirmation or challenge as additional evidence."
+        ),
+    }
+
+
+@router.get(
+    "/{community_domain_id}/beneficiary-outcomes/correction-reviews",
+    response_model=dict[str, Any],
+)
+def list_community_domain_outcome_correction_reviews(
+    community_domain_id: int,
+    outcome_event_id: Optional[int] = Query(default=None, ge=1),
+    period_start: Optional[datetime] = Query(default=None),
+    period_end: Optional[datetime] = Query(default=None),
+    limit: int = Query(default=50, ge=1, le=250),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+    if outcome_event_id is not None:
+        _get_community_domain_outcome_event_or_404(
+            db,
+            community_domain_id=int(domain.id),
+            outcome_event_id=int(outcome_event_id),
+        )
+    rows = _community_domain_outcome_correction_reviews(
+        db,
+        community_domain_id=int(domain.id),
+        outcome_event_id=outcome_event_id,
+        period_start=_as_aware_utc(period_start) if period_start is not None else None,
+        period_end=_as_aware_utc(period_end) if period_end is not None else None,
+        limit=int(limit),
+    )
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "outcome_event_id": int(outcome_event_id) if outcome_event_id is not None else None,
+        "decisions": sorted(COMMUNITY_DOMAIN_OUTCOME_CORRECTION_DECISIONS),
+        "items": [_community_domain_outcome_correction_review_payload(row) for row in rows],
+        "total": len(rows),
+        "boundary": (
+            "Correction reviews are admin-governance Trust Events. They do not "
+            "delete the original outcome or the beneficiary response; they record "
+            "how the Community Domain handled a challenge, partial confirmation, "
+            "or correction request."
+        ),
+    }
+
+
+@router.post(
+    "/{community_domain_id}/beneficiary-outcomes/{outcome_event_id}/correction-reviews",
+    status_code=201,
+    response_model=dict[str, Any],
+)
+def review_community_domain_outcome_correction(
+    community_domain_id: int,
+    outcome_event_id: int,
+    payload: CommunityDomainOutcomeCorrectionReviewIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+    outcome_event = _get_community_domain_outcome_event_or_404(
+        db,
+        community_domain_id=int(domain.id),
+        outcome_event_id=int(outcome_event_id),
+    )
+    outcome_meta = outcome_event.meta or {}
+    response_event: Optional[TrustEvent] = None
+    if payload.confirmation_response_event_id is not None:
+        response_event = db.get(TrustEvent, int(payload.confirmation_response_event_id))
+        response_meta = response_event.meta if response_event is not None else {}
+        if (
+            response_event is None
+            or response_event.event_type
+            != COMMUNITY_DOMAIN_OUTCOME_CONFIRMATION_RESPONSE_EVENT
+            or int(response_meta.get("community_domain_id") or 0) != int(domain.id)
+            or int(response_meta.get("outcome_event_id") or 0) != int(outcome_event.id)
+        ):
+            raise HTTPException(
+                status_code=404,
+                detail={
+                    "code": "beneficiary_outcome_confirmation_response_not_found",
+                    "message": (
+                        "GSN could not find that confirmation response for this "
+                        "Community Domain outcome."
+                    ),
+                },
+            )
+
+    challenge_status_after = {
+        "uphold_original": "resolved",
+        "mark_corrected": "corrected",
+        "withdraw_original": "withdrawn",
+        "needs_follow_up": "under_review",
+        "no_action": "under_review",
+    }[payload.decision]
+    review_event = log_trust_event(
+        db,
+        event_type=COMMUNITY_DOMAIN_OUTCOME_CORRECTION_REVIEW_EVENT,
+        clan_id=outcome_event.clan_id,
+        actor_user_id=int(current_user.id),
+        subject_user_id=int(outcome_event.subject_user_id),
+        meta={
+            "source": "community_domain_beneficiary_outcome_correction_review_v1",
+            "reason": "beneficiary_outcome_correction_reviewed",
+            "community_domain_id": int(domain.id),
+            "community_domain_name": domain.display_name,
+            "outcome_event_id": int(outcome_event.id),
+            "confirmation_response_event_id": (
+                int(response_event.id) if response_event is not None else None
+            ),
+            "decision": payload.decision,
+            "challenge_status_after": challenge_status_after,
+            "prior_outcome_state": outcome_meta.get("outcome_state"),
+            "prior_after_value": outcome_meta.get("after_value"),
+            "prior_support_received": outcome_meta.get("support_received"),
+            "prior_beneficiary_confirmation": outcome_meta.get(
+                "beneficiary_confirmation"
+            ),
+            "corrected_outcome_state": payload.corrected_outcome_state,
+            "corrected_after_value": _clean_str(payload.corrected_after_value) or None,
+            "corrected_support_received": (
+                _clean_str(payload.corrected_support_received) or None
+            ),
+            "corrected_beneficiary_confirmation": (
+                payload.corrected_beneficiary_confirmation
+            ),
+            "review_note": _clean_str(payload.review_note) or None,
+            "reviewed_at": _iso(datetime.now(timezone.utc)),
+            "trust_delta": "0.00",
+        },
+    )
+    domain_label = _clean_str(domain.display_name or domain.domain_name, "Community Domain")
+    admin_notifications_created = _create_community_domain_admin_notifications(
+        db,
+        domain=domain,
+        kind=COMMUNITY_DOMAIN_OUTCOME_CORRECTION_ADMIN_NOTIFICATION,
+        title=f"Outcome correction reviewed in {domain_label}",
+        message=(
+            "A Community Domain admin recorded a correction review decision: "
+            f"{payload.decision.replace('_', ' ')}. The original outcome and "
+            "the response remain in the audit trail."
+        ),
+        action_url=f"/app/community-domain/{int(domain.id)}?lane=governance",
+        action_label="Open Governance",
+        exclude_user_ids={int(current_user.id)},
+    )
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "outcome_event_id": int(outcome_event.id),
+        "correction_review": _community_domain_outcome_correction_review_payload(
+            review_event
+        ),
+        "admin_notifications_created": int(admin_notifications_created),
+        "boundary": (
+            "Correction review recorded as a separate Trust Event. The original "
+            "beneficiary outcome and any confirmation or challenge response remain "
+            "in the audit trail."
+        ),
+    }
+
+
+@router.get("/{community_domain_id}/sponsor-summary", response_model=dict[str, Any])
+def get_community_domain_sponsor_summary(
+    community_domain_id: int,
+    period_start: Optional[datetime] = Query(default=None),
+    period_end: Optional[datetime] = Query(default=None),
+    community_node_id: Optional[int] = Query(default=None, ge=1),
+    include_descendants: bool = Query(default=True),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+    start, end = _period_bounds(period_start=period_start, period_end=period_end)
+
+    node: Optional[CommunityNode] = None
+    node_scope_ids: list[int] = []
+    if community_node_id is not None:
+        node = _get_node_or_404(
+            db,
+            community_domain_id=int(domain.id),
+            community_node_id=int(community_node_id),
+        )
+        node_scope_ids = _descendant_node_ids(
+            db,
+            domain=domain,
+            node=node,
+            include_descendants=bool(include_descendants),
+        )
+
+    active_member_count = (
+        db.query(CommunityDomainMembership)
+        .filter(CommunityDomainMembership.community_domain_id == int(domain.id))
+        .filter(CommunityDomainMembership.status == "active")
+        .count()
+    )
+    activity_rows = _community_domain_activity_events(
+        db,
+        community_domain_id=int(domain.id),
+        period_start=start,
+        period_end=end,
+        community_node_ids=node_scope_ids or None,
+        limit=1000,
+    )
+    outcome_rows = _community_domain_outcome_events(
+        db,
+        community_domain_id=int(domain.id),
+        period_start=start,
+        period_end=end,
+        community_node_ids=node_scope_ids or None,
+        limit=1000,
+    )
+
+    activity_by_type: dict[str, int] = {}
+    activity_by_evidence_strength: dict[str, int] = {}
+    activity_by_visibility: dict[str, int] = {}
+    activity_subject_ids: set[int] = set()
+    for row in activity_rows:
+        meta = row.meta or {}
+        _increment_count(activity_by_type, str(meta.get("activity_type") or ""), "unknown")
+        _increment_count(
+            activity_by_evidence_strength,
+            str(meta.get("evidence_strength") or ""),
+            "unknown",
+        )
+        _increment_count(activity_by_visibility, str(meta.get("visibility") or ""), "unknown")
+        activity_subject_ids.add(int(row.subject_user_id))
+
+    outcome_by_state: dict[str, int] = {}
+    outcome_by_follow_up_state: dict[str, int] = {}
+    outcome_by_beneficiary_confirmation: dict[str, int] = {}
+    outcome_by_admin_confirmation: dict[str, int] = {}
+    outcome_by_challenge_status: dict[str, int] = {}
+    outcome_by_evidence_strength: dict[str, int] = {}
+    outcome_by_visibility: dict[str, int] = {}
+    outcome_subject_ids: set[int] = set()
+    indicator_counts: dict[str, int] = {}
+    programme_counts: dict[str, int] = {}
+    for row in outcome_rows:
+        meta = row.meta or {}
+        _increment_count(outcome_by_state, str(meta.get("outcome_state") or ""), "unknown")
+        _increment_count(
+            outcome_by_follow_up_state,
+            str(meta.get("follow_up_state") or ""),
+            "unknown",
+        )
+        _increment_count(
+            outcome_by_beneficiary_confirmation,
+            str(meta.get("beneficiary_confirmation") or ""),
+            "unknown",
+        )
+        _increment_count(
+            outcome_by_admin_confirmation,
+            str(meta.get("admin_confirmation") or ""),
+            "unknown",
+        )
+        _increment_count(
+            outcome_by_challenge_status,
+            str(meta.get("challenge_status") or ""),
+            "unknown",
+        )
+        _increment_count(
+            outcome_by_evidence_strength,
+            str(meta.get("evidence_strength") or ""),
+            "unknown",
+        )
+        _increment_count(outcome_by_visibility, str(meta.get("visibility") or ""), "unknown")
+        indicator = _clean_str(meta.get("outcome_indicator"))
+        programme = _clean_str(meta.get("programme_label"))
+        if indicator:
+            indicator_counts[indicator] = indicator_counts.get(indicator, 0) + 1
+        if programme:
+            programme_counts[programme] = programme_counts.get(programme, 0) + 1
+        outcome_subject_ids.add(int(row.subject_user_id))
+
+    confirmation_response_rows = _community_domain_outcome_confirmation_responses(
+        db,
+        community_domain_id=int(domain.id),
+        period_start=start,
+        period_end=end,
+        limit=1000,
+    )
+    confirmation_responses_by_type: dict[str, int] = {}
+    confirmation_responses_by_state: dict[str, int] = {}
+    confirmation_responses_by_challenge_status: dict[str, int] = {}
+    for row in confirmation_response_rows:
+        meta = row.meta or {}
+        _increment_count(
+            confirmation_responses_by_type,
+            str(meta.get("response_type") or ""),
+            "unknown",
+        )
+        _increment_count(
+            confirmation_responses_by_state,
+            str(meta.get("confirmation_state") or ""),
+            "unknown",
+        )
+        _increment_count(
+            confirmation_responses_by_challenge_status,
+            str(meta.get("challenge_status") or ""),
+            "unknown",
+        )
+
+    correction_review_rows = _community_domain_outcome_correction_reviews(
+        db,
+        community_domain_id=int(domain.id),
+        period_start=start,
+        period_end=end,
+        limit=1000,
+    )
+    correction_reviews_by_decision: dict[str, int] = {}
+    correction_reviews_by_challenge_status_after: dict[str, int] = {}
+    for row in correction_review_rows:
+        meta = row.meta or {}
+        _increment_count(
+            correction_reviews_by_decision,
+            str(meta.get("decision") or ""),
+            "unknown",
+        )
+        _increment_count(
+            correction_reviews_by_challenge_status_after,
+            str(meta.get("challenge_status_after") or ""),
+            "unknown",
+        )
+    delivery_preparation_rows = _community_domain_outcome_confirmation_delivery_events(
+        db,
+        event_type=COMMUNITY_DOMAIN_OUTCOME_CONFIRMATION_DELIVERY_PREPARED_EVENT,
+        community_domain_id=int(domain.id),
+        period_start=start,
+        period_end=end,
+        limit=1000,
+    )
+    delivery_receipt_rows = _community_domain_outcome_confirmation_delivery_events(
+        db,
+        event_type=COMMUNITY_DOMAIN_OUTCOME_CONFIRMATION_DELIVERY_RECORDED_EVENT,
+        community_domain_id=int(domain.id),
+        period_start=start,
+        period_end=end,
+        limit=1000,
+    )
+    delivery_receipt_correction_rows = (
+        _community_domain_outcome_delivery_receipt_correction_events(
+            db,
+            community_domain_id=int(domain.id),
+            period_start=start,
+            period_end=end,
+            limit=1000,
+        )
+    )
+    provider_send_blocked_rows = (
+        _community_domain_outcome_confirmation_delivery_events(
+            db,
+            event_type=COMMUNITY_DOMAIN_OUTCOME_PROVIDER_SEND_BLOCKED_EVENT,
+            community_domain_id=int(domain.id),
+            period_start=start,
+            period_end=end,
+            limit=1000,
+        )
+    )
+    contact_consent_rows = _community_domain_outcome_contact_consent_events(
+        db,
+        community_domain_id=int(domain.id),
+        period_start=start,
+        period_end=end,
+        limit=1000,
+    )
+    contact_consent_withdrawal_rows = (
+        _community_domain_outcome_contact_consent_withdrawal_events(
+            db,
+            community_domain_id=int(domain.id),
+            period_start=start,
+            period_end=end,
+            limit=1000,
+        )
+    )
+    delivery_receipts_by_channel: dict[str, int] = {}
+    delivery_receipts_by_status: dict[str, int] = {}
+    delivery_receipts_by_consent_basis: dict[str, int] = {}
+    for row in delivery_receipt_rows:
+        meta = row.meta or {}
+        _increment_count(
+            delivery_receipts_by_channel,
+            str(meta.get("channel") or ""),
+            "unknown",
+        )
+        _increment_count(
+            delivery_receipts_by_status,
+            str(meta.get("delivery_status") or ""),
+            "unknown",
+        )
+        _increment_count(
+            delivery_receipts_by_consent_basis,
+            str(meta.get("consent_basis") or ""),
+            "unknown",
+        )
+    delivery_receipt_corrections_by_decision: dict[str, int] = {}
+    delivery_receipt_corrections_by_status: dict[str, int] = {}
+    for row in delivery_receipt_correction_rows:
+        meta = row.meta or {}
+        _increment_count(
+            delivery_receipt_corrections_by_decision,
+            str(meta.get("decision") or ""),
+            "unknown",
+        )
+        _increment_count(
+            delivery_receipt_corrections_by_status,
+            str(meta.get("receipt_correction_status") or ""),
+            "unknown",
+        )
+    current_delivery_receipt_correction_rows = (
+        _community_domain_current_delivery_receipt_correction_rows(
+            db,
+            delivery_receipt_rows,
+        )
+    )
+    active_delivery_receipt_rows = _community_domain_active_delivery_receipt_rows(
+        delivery_receipt_rows,
+        current_delivery_receipt_correction_rows,
+    )
+    active_delivery_receipts_by_status: dict[str, int] = {}
+    active_delivery_receipts_by_channel: dict[str, int] = {}
+    active_delivery_receipts_by_consent_basis: dict[str, int] = {}
+    for row in active_delivery_receipt_rows:
+        meta = row.meta or {}
+        _increment_count(
+            active_delivery_receipts_by_status,
+            str(meta.get("delivery_status") or ""),
+            "unknown",
+        )
+        _increment_count(
+            active_delivery_receipts_by_channel,
+            str(meta.get("channel") or ""),
+            "unknown",
+        )
+        _increment_count(
+            active_delivery_receipts_by_consent_basis,
+            str(meta.get("consent_basis") or ""),
+            "unknown",
+        )
+    contact_consent_by_channel: dict[str, int] = {}
+    contact_consent_by_reference_status: dict[str, int] = {}
+    contact_consent_by_basis: dict[str, int] = {}
+    for row in contact_consent_rows:
+        meta = row.meta or {}
+        _increment_count(
+            contact_consent_by_channel,
+            str(meta.get("channel") or ""),
+            "unknown",
+        )
+        _increment_count(
+            contact_consent_by_reference_status,
+            str(meta.get("destination_reference_status") or ""),
+            "unknown",
+        )
+        _increment_count(
+            contact_consent_by_basis,
+            str(meta.get("consent_basis") or ""),
+            "unknown",
+        )
+    contact_consent_withdrawals_by_reason: dict[str, int] = {}
+    for row in contact_consent_withdrawal_rows:
+        meta = row.meta or {}
+        _increment_count(
+            contact_consent_withdrawals_by_reason,
+            str(meta.get("withdrawal_reason") or ""),
+            "unknown",
+        )
+
+    challenged_total = sum(
+        int(count)
+        for status, count in outcome_by_challenge_status.items()
+        if status in {"challenged", "under_review"}
+    ) + sum(
+        int(count)
+        for status, count in confirmation_responses_by_challenge_status.items()
+        if status in {"challenged", "under_review"}
+    )
+    reviewed_challenge_total = sum(
+        int(count)
+        for status, count in correction_reviews_by_challenge_status_after.items()
+        if status in {"resolved", "corrected", "withdrawn"}
+    )
+    unresolved_challenge_total = max(challenged_total - reviewed_challenge_total, 0)
+    beneficiary_confirmed_total = outcome_by_beneficiary_confirmation.get(
+        "beneficiary_confirmed",
+        0,
+    ) + outcome_by_beneficiary_confirmation.get("multi_party_confirmed", 0)
+    beneficiary_confirmed_total += confirmation_responses_by_state.get(
+        "beneficiary_confirmed",
+        0,
+    ) + confirmation_responses_by_state.get("witness_confirmed", 0)
+    admin_recorded_only_total = max(len(outcome_rows) - beneficiary_confirmed_total, 0)
+    evidence_summary = {
+        "activity_records": len(activity_rows),
+        "beneficiary_outcome_records": len(outcome_rows),
+        "confirmation_response_records": len(confirmation_response_rows),
+        "correction_review_records": len(correction_review_rows),
+        "confirmation_delivery_prepared_records": len(delivery_preparation_rows),
+        "confirmation_delivery_receipt_records": len(delivery_receipt_rows),
+        "confirmation_delivery_receipts_by_status": delivery_receipts_by_status,
+        "confirmation_delivery_receipts_by_channel": delivery_receipts_by_channel,
+        "confirmation_delivery_receipts_by_consent_basis": (
+            delivery_receipts_by_consent_basis
+        ),
+        "confirmation_delivery_receipts_current_uncorrected": len(
+            active_delivery_receipt_rows
+        ),
+        "confirmation_delivery_receipts_current_by_status": (
+            active_delivery_receipts_by_status
+        ),
+        "confirmation_delivery_receipts_current_by_channel": (
+            active_delivery_receipts_by_channel
+        ),
+        "confirmation_delivery_receipts_current_by_consent_basis": (
+            active_delivery_receipts_by_consent_basis
+        ),
+        "confirmation_delivery_receipt_corrections": len(
+            delivery_receipt_correction_rows
+        ),
+        "confirmation_provider_send_blocked_checks": len(
+            provider_send_blocked_rows
+        ),
+        "confirmation_delivery_receipt_corrections_by_decision": (
+            delivery_receipt_corrections_by_decision
+        ),
+        "confirmation_delivery_receipt_corrections_by_status": (
+            delivery_receipt_corrections_by_status
+        ),
+        "contact_consent_records": len(contact_consent_rows),
+        "contact_consent_by_channel": contact_consent_by_channel,
+        "contact_consent_by_reference_status": contact_consent_by_reference_status,
+        "contact_consent_by_basis": contact_consent_by_basis,
+        "contact_consent_withdrawals": len(contact_consent_withdrawal_rows),
+        "contact_consent_withdrawals_by_reason": (
+            contact_consent_withdrawals_by_reason
+        ),
+        "beneficiary_confirmed_outcomes": beneficiary_confirmed_total,
+        "admin_recorded_or_unconfirmed_outcomes": admin_recorded_only_total,
+        "challenged_or_under_review_outcomes": challenged_total,
+        "reviewed_challenge_outcomes": reviewed_challenge_total,
+        "unresolved_challenge_outcomes": unresolved_challenge_total,
+        "privacy": "Beneficiary names, user ids, private notes, baseline text, and after-value text are omitted.",
+    }
+    external_delivery_readiness = (
+        _community_domain_outcome_provider_delivery_readiness()
+    )
+    report_status = (
+        "recorded"
+        if activity_rows or outcome_rows
+        else "not_recorded"
+    )
+    sponsor_readiness = (
+        "sponsor_summary_available"
+        if outcome_rows and unresolved_challenge_total == 0
+        else (
+            "summary_available_with_caveats"
+            if activity_rows or outcome_rows
+            else "not_enough_recorded_evidence"
+        )
+    )
+    period_label = f"{_iso(start)} to {_iso(end)}"
+    export_subject = (
+        f"GSN sponsor-safe evidence summary - {domain.display_name} - {period_label}"
+    )
+    top_indicator_lines = [
+        f"- {label}: {count}"
+        for label, count in sorted(
+            indicator_counts.items(),
+            key=lambda item: (-item[1], item[0]),
+        )[:5]
+    ]
+    export_fact_lines = [
+        f"Active members: {int(active_member_count)}",
+        f"Activities recorded: {len(activity_rows)}",
+        f"Beneficiary outcomes recorded: {len(outcome_rows)}",
+        f"Beneficiary/witness confirmation signals: {beneficiary_confirmed_total}",
+        f"Admin-recorded or unconfirmed outcomes: {admin_recorded_only_total}",
+        f"Challenged or under-review records: {challenged_total}",
+        f"Reviewed challenge records: {reviewed_challenge_total}",
+        f"Unresolved challenge records: {unresolved_challenge_total}",
+        f"Confirmation delivery packs prepared: {len(delivery_preparation_rows)}",
+        f"Manual delivery receipts recorded: {len(delivery_receipt_rows)}",
+        (
+            "Current uncorrected manual delivery receipts: "
+            f"{len(active_delivery_receipt_rows)}"
+        ),
+        (
+            "Manual delivery receipt corrections recorded: "
+            f"{len(delivery_receipt_correction_rows)}"
+        ),
+        (
+            "Provider send blocked readiness checks: "
+            f"{len(provider_send_blocked_rows)}"
+        ),
+        f"Contact/consent attestations recorded: {len(contact_consent_rows)}",
+        (
+            "Contact/consent withdrawals recorded: "
+            f"{len(contact_consent_withdrawal_rows)}"
+        ),
+        (
+            "Provider send readiness: "
+            f"{external_delivery_readiness['provider_send_engine_status']}"
+        ),
+    ]
+    export_body_lines = [
+        export_subject,
+        "",
+        f"Community Domain: {domain.display_name}",
+        f"Period: {period_label}",
+        f"Readiness: {sponsor_readiness}",
+        "",
+        "Recorded facts:",
+        *[f"- {line}" for line in export_fact_lines],
+    ]
+    if top_indicator_lines:
+        export_body_lines.extend(["", "Top outcome indicators:", *top_indicator_lines])
+    export_body_lines.extend(
+        [
+            "",
+            "Privacy boundary:",
+            (
+                "- Beneficiary names, user IDs, private notes, baseline text, "
+                "after-value text, and source record IDs are omitted."
+            ),
+            "- Delivery counts are manual/admin-recorded unless provider sending is added later.",
+            "",
+            "Truth boundary:",
+            (
+                "- This summary only aggregates records already captured in GSN. "
+                "It does not prove unrecorded impact, send external messages, "
+                "or turn admin-recorded claims into beneficiary-confirmed proof."
+            ),
+        ]
+    )
+    sponsor_export_pack = {
+        "kind": "community_domain.sponsor_safe_export_pack",
+        "status": "prepared_not_sent",
+        "title": export_subject,
+        "period_label": period_label,
+        "copy_text": "\n".join(export_body_lines),
+        "email_subject": export_subject,
+        "email_body": "\n".join(export_body_lines),
+        "mailto_url": (
+            "mailto:?subject="
+            f"{quote(export_subject)}&body={quote(chr(10).join(export_body_lines))}"
+        ),
+        "facts": export_fact_lines,
+        "omitted_private_fields": [
+            "subject_user_id",
+            "actor_user_id",
+            "beneficiary_name",
+            "private_note",
+            "baseline_value",
+            "after_value",
+            "evidence_reference",
+            "source_record_ids",
+        ],
+        "external_channels_sent_by_gsn": False,
+        "boundary": (
+            "Sponsor export pack is copy-ready text prepared from the "
+            "admin-gated sponsor-safe summary. GSN does not send it, publish it, "
+            "or certify unrecorded impact."
+        ),
+    }
+
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "community_domain": {
+            "id": int(domain.id),
+            "domain_name": domain.domain_name,
+            "display_name": domain.display_name,
+            "domain_type": domain.domain_type,
+            "template_key": domain.template_key,
+            "status": domain.status,
+            "verification_status": domain.verification_status,
+        },
+        "period": {
+            "start": _iso(start),
+            "end": _iso(end),
+            "visibility_mode": "sponsor_safe",
+        },
+        "node_filter": {
+            "community_node_id": int(node.id) if node is not None else None,
+            "community_node_name": getattr(node, "name", None),
+            "include_descendants": bool(include_descendants),
+            "community_node_ids": node_scope_ids,
+        },
+        "report_status": report_status,
+        "sponsor_readiness": sponsor_readiness,
+        "membership_snapshot": {
+            "active_member_count": int(active_member_count),
+            "source": "community_domain_memberships",
+        },
+        "activity_summary": {
+            "status": "recorded" if activity_rows else "not_recorded",
+            "total": len(activity_rows),
+            "subject_count": len(activity_subject_ids),
+            "by_type": activity_by_type,
+            "by_evidence_strength": activity_by_evidence_strength,
+            "by_visibility": activity_by_visibility,
+            "source": "trust_events.community_domain.activity_recorded",
+        },
+        "beneficiary_outcome_summary": {
+            "status": "recorded" if outcome_rows else "not_recorded",
+            "total": len(outcome_rows),
+            "subject_count": len(outcome_subject_ids),
+            "by_outcome_state": outcome_by_state,
+            "by_follow_up_state": outcome_by_follow_up_state,
+            "by_beneficiary_confirmation": outcome_by_beneficiary_confirmation,
+            "by_admin_confirmation": outcome_by_admin_confirmation,
+            "by_evidence_strength": outcome_by_evidence_strength,
+            "by_visibility": outcome_by_visibility,
+            "confirmation_responses_total": len(confirmation_response_rows),
+            "confirmation_responses_by_type": confirmation_responses_by_type,
+            "confirmation_responses_by_state": confirmation_responses_by_state,
+            "confirmation_delivery_prepared_total": len(delivery_preparation_rows),
+            "confirmation_delivery_receipts_total": len(delivery_receipt_rows),
+            "confirmation_delivery_receipts_by_status": delivery_receipts_by_status,
+            "confirmation_delivery_receipts_by_channel": delivery_receipts_by_channel,
+            "confirmation_delivery_receipts_by_consent_basis": (
+                delivery_receipts_by_consent_basis
+            ),
+            "confirmation_delivery_receipts_current_uncorrected_total": len(
+                active_delivery_receipt_rows
+            ),
+            "confirmation_delivery_receipts_current_by_status": (
+                active_delivery_receipts_by_status
+            ),
+            "confirmation_delivery_receipts_current_by_channel": (
+                active_delivery_receipts_by_channel
+            ),
+            "confirmation_delivery_receipts_current_by_consent_basis": (
+                active_delivery_receipts_by_consent_basis
+            ),
+            "confirmation_delivery_receipt_corrections_total": len(
+                delivery_receipt_correction_rows
+            ),
+            "confirmation_provider_send_blocked_checks_total": len(
+                provider_send_blocked_rows
+            ),
+            "confirmation_delivery_receipt_corrections_by_decision": (
+                delivery_receipt_corrections_by_decision
+            ),
+            "confirmation_delivery_receipt_corrections_by_status": (
+                delivery_receipt_corrections_by_status
+            ),
+            "contact_consent_records_total": len(contact_consent_rows),
+            "contact_consent_by_channel": contact_consent_by_channel,
+            "contact_consent_by_reference_status": (
+                contact_consent_by_reference_status
+            ),
+            "contact_consent_by_basis": contact_consent_by_basis,
+            "contact_consent_withdrawals_total": len(
+                contact_consent_withdrawal_rows
+            ),
+            "contact_consent_withdrawals_by_reason": (
+                contact_consent_withdrawals_by_reason
+            ),
+            "top_indicators": [
+                {"label": label, "count": count}
+                for label, count in sorted(
+                    indicator_counts.items(),
+                    key=lambda item: (-item[1], item[0]),
+                )[:10]
+            ],
+            "top_programmes": [
+                {"label": label, "count": count}
+                for label, count in sorted(
+                    programme_counts.items(),
+                    key=lambda item: (-item[1], item[0]),
+                )[:10]
+            ],
+            "source": "trust_events.community_domain.beneficiary_outcome_recorded",
+        },
+        "challenge_summary": {
+            "status": "recorded" if outcome_rows else "not_recorded",
+            "by_challenge_status": outcome_by_challenge_status,
+            "by_confirmation_response_challenge_status": (
+                confirmation_responses_by_challenge_status
+            ),
+            "correction_reviews_total": len(correction_review_rows),
+            "correction_reviews_by_decision": correction_reviews_by_decision,
+            "correction_reviews_by_challenge_status_after": (
+                correction_reviews_by_challenge_status_after
+            ),
+            "open_or_challenged_total": challenged_total,
+            "reviewed_or_resolved_total": reviewed_challenge_total,
+            "unresolved_challenge_total": unresolved_challenge_total,
+        },
+        "evidence_summary": evidence_summary,
+        "external_delivery_readiness": external_delivery_readiness,
+        "sponsor_export_pack": sponsor_export_pack,
+        "omitted_private_fields": [
+            "subject_user_id",
+            "actor_user_id",
+            "beneficiary_name",
+            "private_note",
+            "baseline_value",
+            "after_value",
+            "evidence_reference",
+            "source_record_ids",
+        ],
+        "source_records": {
+            "activity_records": {"total": len(activity_rows)},
+            "beneficiary_outcome_records": {"total": len(outcome_rows)},
+            "beneficiary_confirmation_responses": {
+                "total": len(confirmation_response_rows),
+            },
+            "beneficiary_correction_reviews": {
+                "total": len(correction_review_rows),
+            },
+            "beneficiary_confirmation_delivery_preparations": {
+                "total": len(delivery_preparation_rows),
+            },
+            "beneficiary_confirmation_delivery_receipts": {
+                "total": len(delivery_receipt_rows),
+            },
+            "beneficiary_confirmation_delivery_receipt_corrections": {
+                "total": len(delivery_receipt_correction_rows),
+            },
+            "beneficiary_confirmation_provider_send_blocked_checks": {
+                "total": len(provider_send_blocked_rows),
+            },
+            "beneficiary_contact_consent_records": {
+                "total": len(contact_consent_rows),
+            },
+            "beneficiary_contact_consent_withdrawals": {
+                "total": len(contact_consent_withdrawal_rows),
+            },
+        },
+        "plain_language": (
+            "This sponsor-safe summary aggregates records already captured in "
+            "GSN. It separates admin-recorded, beneficiary-confirmed, challenged, "
+            "delivery-recorded, and unresolved evidence without exposing private "
+            "beneficiary detail. Delivery counts are manual/admin-recorded unless "
+            "a future provider-backed sender is added."
+        ),
+        "boundary": (
+            "Sponsor Summary v2 is admin-gated and aggregate-only. It does not "
+            "publish a public sponsor page, expose beneficiary names or private "
+            "case notes, prove unrecorded impact, or turn admin-recorded claims "
+            "into beneficiary-confirmed proof."
+        ),
+    }
+
+
 @router.get("/{community_domain_id}/notices", response_model=dict[str, Any])
 def list_community_domain_notices(
     community_domain_id: int,
@@ -22094,6 +27191,161 @@ def upsert_community_domain_member(
             "and verification require their own scoped records."
         ),
     }
+
+
+def _change_community_domain_member_status(
+    db: Session,
+    *,
+    domain: CommunityDomain,
+    membership: CommunityDomainMembership,
+    requested_status: str,
+    current_user: User,
+    status_note: Optional[str] = None,
+) -> dict[str, Any]:
+    previous_status = _clean_role(membership.status, "inactive")
+    new_status = _normalize_member_status_value(requested_status)
+    target_user_id = int(membership.user_id)
+    if target_user_id == int(domain.owner_user_id) and new_status != "active":
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "community_domain_owner_membership_locked",
+                "message": "The recorded Community Domain owner cannot be removed from the domain roster.",
+            },
+        )
+
+    previous_role = _clean_role(membership.role, "member")
+    if previous_role in DOMAIN_ADMIN_ROLES and new_status != "active":
+        remaining_admin_ids = {
+            int(domain.owner_user_id)
+        } if int(domain.owner_user_id) != target_user_id else set()
+        remaining_admin_rows = (
+            db.query(CommunityDomainMembership)
+            .filter(CommunityDomainMembership.community_domain_id == int(domain.id))
+            .filter(CommunityDomainMembership.user_id != target_user_id)
+            .filter(CommunityDomainMembership.status == "active")
+            .all()
+        )
+        for row in remaining_admin_rows:
+            if _clean_role(row.role) in DOMAIN_ADMIN_ROLES:
+                remaining_admin_ids.add(int(row.user_id))
+        if not remaining_admin_ids:
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "code": "community_domain_last_admin_locked",
+                    "message": "At least one owner or active admin must remain before this member can be removed.",
+                },
+            )
+
+    changed = previous_status != new_status
+    membership.status = new_status
+    status_note_text = _clean_str(status_note)
+    if changed:
+        log_trust_event(
+            db,
+            event_type="community_domain_member_status_changed",
+            clan_id=int(domain.clan_id) if domain.clan_id is not None else None,
+            actor_user_id=int(current_user.id),
+            subject_user_id=target_user_id,
+            meta={
+                "community_domain_id": int(domain.id),
+                "domain_name": domain.domain_name,
+                "display_name": domain.display_name,
+                "previous_status": previous_status,
+                "new_status": new_status,
+                "role": previous_role,
+                "status_note_present": bool(status_note_text),
+                "reason": "community_domain_member_status_changed",
+                "trust_delta": "0.00",
+            },
+            commit=False,
+            refresh=False,
+        )
+    db.commit()
+    db.refresh(membership)
+    return {
+        "ok": True,
+        "changed": changed,
+        "community_domain_id": int(domain.id),
+        "user_id": target_user_id,
+        "previous_status": previous_status,
+        "new_status": new_status,
+        "membership": _domain_member_payload(membership),
+        "boundary": (
+            "Community Domain membership status changed as roster history. "
+            "This does not delete the user, delete past Trust Events, remove "
+            "ordinary social Community membership, transfer personal trust, "
+            "or erase historical governance records. Public active-member "
+            "verification only passes while this status is active."
+        ),
+    }
+
+
+@router.patch("/{community_domain_id}/members/{user_id}/status", response_model=dict[str, Any])
+def update_community_domain_member_status(
+    community_domain_id: int,
+    user_id: int,
+    payload: CommunityDomainMemberStatusUpdateIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+    membership = _domain_membership_for_user(
+        db,
+        community_domain_id=int(domain.id),
+        user_id=int(user_id),
+    )
+    if membership is None:
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "code": "community_domain_member_not_found",
+                "message": "Community Domain member was not found.",
+            },
+        )
+    return _change_community_domain_member_status(
+        db,
+        domain=domain,
+        membership=membership,
+        requested_status=payload.status,
+        current_user=current_user,
+        status_note=payload.status_note,
+    )
+
+
+@router.delete("/{community_domain_id}/members/{user_id}", response_model=dict[str, Any])
+def deactivate_community_domain_member(
+    community_domain_id: int,
+    user_id: int,
+    status_note: Optional[str] = Query(default=None, max_length=1200),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_admin_scope(db, domain=domain, current_user=current_user)
+    membership = _domain_membership_for_user(
+        db,
+        community_domain_id=int(domain.id),
+        user_id=int(user_id),
+    )
+    if membership is None:
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "code": "community_domain_member_not_found",
+                "message": "Community Domain member was not found.",
+            },
+        )
+    return _change_community_domain_member_status(
+        db,
+        domain=domain,
+        membership=membership,
+        requested_status="inactive",
+        current_user=current_user,
+        status_note=status_note,
+    )
 
 
 @router.get("/{community_domain_id}/nodes/{community_node_id}/members", response_model=dict[str, Any])
