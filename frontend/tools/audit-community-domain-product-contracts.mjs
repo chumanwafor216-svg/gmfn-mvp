@@ -844,8 +844,8 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /type GovernanceTaskKey[\s\S]*"readiness"[\s\S]*"director_summary"[\s\S]*"sponsor_summary"[\s\S]*"real_life_record"[\s\S]*"access_requests"[\s\S]*type RealLifeRecordTask = "activity" \| "beneficiary_outcome"[\s\S]*quickRecordOpen[\s\S]*openRealLifeRecordTask[\s\S]*setActiveGovernanceTask\("real_life_record"\)[\s\S]*setQuickRecordOpen\(true\)[\s\S]*setShowAdvancedTools\(true\)[\s\S]*setActiveLane\("governance"\)[\s\S]*community-domain-dashboard\.real-life-record-toggle[\s\S]*quickRecordOpen[\s\S]*community-domain-dashboard\.real-life-record\.activity[\s\S]*community-domain-dashboard\.real-life-record\.beneficiary-outcome[\s\S]*community-domain-dashboard\.governance-task\.\$\{task\}[\s\S]*activeGovernanceTask === "readiness"[\s\S]*activeGovernanceTask === "director_summary"[\s\S]*activeGovernanceTask === "sponsor_summary"[\s\S]*activeGovernanceTask === "real_life_record"[\s\S]*activeRealLifeRecordTask === "activity"[\s\S]*community-domain-dashboard\.activity-record[\s\S]*activeRealLifeRecordTask === "beneficiary_outcome"[\s\S]*community-domain-dashboard\.beneficiary-outcome-record[\s\S]*activeGovernanceTask === "access_requests"[\s\S]*CommunityDomainAccessRequestsPanel/,
-  "Community Domain dashboard must keep owner/admin real-life record shortcuts that open Governance, keep one Governance job open at a time, gate access requests behind their selected job, and expose only the selected activity or beneficiary outcome form.",
+  /type GovernanceTaskKey[\s\S]*"readiness"[\s\S]*"director_summary"[\s\S]*"sponsor_summary"[\s\S]*"real_life_record"[\s\S]*"access_requests"[\s\S]*type SetupOverviewTaskKey = "notices" \| "engine" \| "next_setup" \| "counts"[\s\S]*type RealLifeRecordTask = "activity" \| "beneficiary_outcome"[\s\S]*activeSetupOverviewTask[\s\S]*operatingAreaPickerOpen[\s\S]*quickRecordOpen[\s\S]*showOtherDomainToolsEntry = setupJourneyMode === "edit"[\s\S]*openRealLifeRecordTask[\s\S]*setActiveGovernanceTask\("real_life_record"\)[\s\S]*setQuickRecordOpen\(true\)[\s\S]*setShowAdvancedTools\(true\)[\s\S]*setOperatingAreaPickerOpen\(false\)[\s\S]*setActiveLane\("governance"\)[\s\S]*community-domain-dashboard\.real-life-record-toggle[\s\S]*quickRecordOpen[\s\S]*community-domain-dashboard\.real-life-record\.activity[\s\S]*community-domain-dashboard\.real-life-record\.beneficiary-outcome[\s\S]*community-domain-dashboard\.setup-overview\.\$\{task\}[\s\S]*activeSetupOverviewTask === "notices"[\s\S]*activeSetupOverviewTask === "engine"[\s\S]*activeSetupOverviewTask === "next_setup"[\s\S]*activeSetupOverviewTask === "counts"[\s\S]*showAdvancedTools && operatingAreaPickerOpen[\s\S]*CommunityDomainLaneSelectorPanel[\s\S]*setOperatingAreaPickerOpen\(false\)[\s\S]*community-domain-dashboard\.operating-area-picker-toggle[\s\S]*setShowAdvancedTools\(false\)[\s\S]*Close areas[\s\S]*community-domain-dashboard\.governance-task\.\$\{task\}[\s\S]*activeGovernanceTask === "readiness"[\s\S]*activeGovernanceTask === "director_summary"[\s\S]*activeGovernanceTask === "sponsor_summary"[\s\S]*activeGovernanceTask === "real_life_record"[\s\S]*activeRealLifeRecordTask === "activity"[\s\S]*community-domain-dashboard\.activity-record[\s\S]*activeRealLifeRecordTask === "beneficiary_outcome"[\s\S]*community-domain-dashboard\.beneficiary-outcome-record[\s\S]*activeGovernanceTask === "access_requests"[\s\S]*CommunityDomainAccessRequestsPanel/,
+  "Community Domain dashboard must keep setup overview jobs, keep the operating-area picker collapsed until requested, keep the close-areas action inside the work surface, keep owner/admin real-life record shortcuts that open Governance, keep one Governance job open at a time, gate access requests behind their selected job, and expose only the selected activity or beneficiary outcome form.",
   { frontend: true }
 );
 
@@ -1849,7 +1849,7 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /communityDomainOperatingStateCopy[\s\S]*Domain closed[\s\S]*Domain suspended[\s\S]*Domain expired[\s\S]*Waiting for activation[\s\S]*Active operating domain[\s\S]*Active, not verified[\s\S]*Run live domain work from the operating lanes[\s\S]*Draft setup[\s\S]*setupWorkspaceOpen[\s\S]*showDomainWorkSurface[\s\S]*setupWorkspaceOpen \|\| showAdvancedTools \|\| setupJourneyMode === "edit"[\s\S]*showOtherDomainToolsEntry[\s\S]*showAdvancedTools \|\| setupJourneyMode === "edit"[\s\S]*Domain command[\s\S]*Complete the next setup step\. Billing, activation, and verification stay separate[\s\S]*community-domain-dashboard\.setup-focus[\s\S]*Do first[\s\S]*operatingStateCopy\.nextStep[\s\S]*Boundary[\s\S]*operatingStateCopy\.risk/,
+  /communityDomainOperatingStateCopy[\s\S]*Domain closed[\s\S]*Domain suspended[\s\S]*Domain expired[\s\S]*Waiting for activation[\s\S]*Active operating domain[\s\S]*Active, not verified[\s\S]*Run live domain work from the operating lanes[\s\S]*Draft setup[\s\S]*setupWorkspaceOpen[\s\S]*showDomainWorkSurface[\s\S]*setupWorkspaceOpen \|\| showAdvancedTools \|\| setupJourneyMode === "edit"[\s\S]*showOtherDomainToolsEntry = setupJourneyMode === "edit"[\s\S]*Domain command[\s\S]*Complete the next setup step\. Billing, activation, and verification stay separate[\s\S]*community-domain-dashboard\.setup-focus[\s\S]*Do first[\s\S]*operatingStateCopy\.nextStep[\s\S]*Boundary[\s\S]*operatingStateCopy\.risk/,
   "Community Domain dashboard must land on a compact command centre and keep setup/deeper tools closed until the owner opens them.",
   { frontend: true }
 );
@@ -1877,7 +1877,7 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /domainOperational[\s\S]*"Live area"[\s\S]*"Live domain actions"[\s\S]*"More operating tools\."[\s\S]*"Open operating areas"[\s\S]*"Operating view only\. It does not verify ownership, confirm new payments, grant paid features, or expose private records\."/,
+  /domainOperational[\s\S]*"Live area"[\s\S]*"Live domain actions"[\s\S]*community-domain-dashboard\.operating-area-picker-toggle[\s\S]*"Change area"[\s\S]*Close areas[\s\S]*"Operating view only\. It does not verify ownership, confirm new payments, grant paid features, or expose private records\."/,
   "Active Community Domain dashboard tools must use live operating language after activation while keeping setup/edit language scoped to setup work.",
   { frontend: true }
 );
@@ -1933,7 +1933,7 @@ assertNotContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /showAdvancedTools[\s\S]*setShowAdvancedTools\(false\)[\s\S]*showAdvancedTools && activeLane === "settings"[\s\S]*Official Board[\s\S]*Community Domain engine[\s\S]*showAdvancedTools \?[\s\S]*Operating areas[\s\S]*showOtherDomainToolsEntry \? \([\s\S]*Other domain tools[\s\S]*community-domain-dashboard\.advanced-tools-toggle/,
+  /showAdvancedTools && activeLane === "settings" && setupWorkspaceOpen[\s\S]*Setup overview jobs[\s\S]*community-domain-dashboard\.setup-overview\.\$\{task\}[\s\S]*activeSetupOverviewTask === "notices"[\s\S]*Official Board[\s\S]*activeSetupOverviewTask === "engine"[\s\S]*Community Domain engine[\s\S]*showAdvancedTools && operatingAreaPickerOpen[\s\S]*Operating areas[\s\S]*community-domain-dashboard\.operating-area-picker-toggle[\s\S]*showOtherDomainToolsEntry \? \([\s\S]*Other domain tools/,
   "Community Domain dashboard must keep notices, engine details, and operating areas closed until the owner opens the secondary operating surface or edit mode.",
   { frontend: true }
 );
@@ -1947,8 +1947,8 @@ assertNotContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /lazy\([\s\S]*import\("\.\/communityDomainDashboard\/LaneSelectorPanel"\)[\s\S]*activeLane[\s\S]*setActiveLane[\s\S]*selectedLane[\s\S]*CommunityDomainLaneSelectorPanel[\s\S]*lanes=\{lanes\}[\s\S]*activeLane=\{activeLane\}[\s\S]*onSelectLane=\{setActiveLane\}/,
-  "Community Domain dashboard must keep lane state in the parent route while lazy-loading the operating-area selector.",
+  /lazy\([\s\S]*import\("\.\/communityDomainDashboard\/LaneSelectorPanel"\)[\s\S]*activeLane[\s\S]*setActiveLane[\s\S]*selectedLane[\s\S]*operatingAreaPickerOpen[\s\S]*showAdvancedTools && operatingAreaPickerOpen[\s\S]*CommunityDomainLaneSelectorPanel[\s\S]*lanes=\{lanes\}[\s\S]*activeLane=\{activeLane\}[\s\S]*onSelectLane=\{\(laneKey\) => \{[\s\S]*setActiveLane\(laneKey\);[\s\S]*setOperatingAreaPickerOpen\(false\);[\s\S]*community-domain-dashboard\.operating-area-picker-toggle/,
+  "Community Domain dashboard must keep lane state in the parent route while lazy-loading the collapsed operating-area selector.",
   { frontend: true }
 );
 

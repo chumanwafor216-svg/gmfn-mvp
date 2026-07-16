@@ -175,6 +175,7 @@ type GovernanceTaskKey =
   | "sponsor_summary"
   | "real_life_record"
   | "access_requests";
+type SetupOverviewTaskKey = "notices" | "engine" | "next_setup" | "counts";
 type RealLifeRecordTask = "activity" | "beneficiary_outcome";
 type SetupStepKey =
   | "identity"
@@ -2138,7 +2139,10 @@ export default function CommunityDomainDashboardPage() {
     "setup"
   );
   const [setupWorkspaceOpen, setSetupWorkspaceOpen] = useState(false);
+  const [activeSetupOverviewTask, setActiveSetupOverviewTask] =
+    useState<SetupOverviewTaskKey>("next_setup");
   const [showAdvancedTools, setShowAdvancedTools] = useState(false);
+  const [operatingAreaPickerOpen, setOperatingAreaPickerOpen] = useState(false);
   const [activeStructureDetail, setActiveStructureDetail] =
     useState<StructureDetailKey>("preview");
   const [activeServiceDetail, setActiveServiceDetail] =
@@ -2321,6 +2325,8 @@ export default function CommunityDomainDashboardPage() {
     setModuleScopeReadiness(null);
     setSetupReadiness(null);
     setSetupPlan(null);
+    setActiveSetupOverviewTask("next_setup");
+    setOperatingAreaPickerOpen(false);
     setCapacityPlan(null);
     setGovernanceCoverage(null);
     setDelegationMap(null);
@@ -3897,8 +3903,7 @@ export default function CommunityDomainDashboardPage() {
         primaryActionLaneKey;
   const showDomainWorkSurface =
     setupWorkspaceOpen || showAdvancedTools || setupJourneyMode === "edit";
-  const showOtherDomainToolsEntry =
-    showAdvancedTools || setupJourneyMode === "edit";
+  const showOtherDomainToolsEntry = setupJourneyMode === "edit";
   useEffect(() => {
     if (!showDomainWorkSurface || !focusWorkSurfaceAfterOpenRef.current) {
       return;
@@ -4261,6 +4266,7 @@ export default function CommunityDomainDashboardPage() {
   function openSetupJourney(mode: "setup" | "edit") {
     focusWorkSurfaceAfterOpenRef.current = true;
     setSetupJourneyMode(mode);
+    setActiveSetupOverviewTask("next_setup");
     setActiveLane("settings");
     if (mode === "setup") {
       setActiveSetupStep(setupStepForLane(mainActionLaneKey));
@@ -4286,6 +4292,7 @@ export default function CommunityDomainDashboardPage() {
     setSetupJourneyMode("setup");
     setSetupWorkspaceOpen(false);
     setShowAdvancedTools(true);
+    setOperatingAreaPickerOpen(false);
     setActiveLane("governance");
     setMessage("");
   }
@@ -5625,6 +5632,7 @@ export default function CommunityDomainDashboardPage() {
                     setSetupJourneyMode("setup");
                     setSetupWorkspaceOpen(false);
                     setShowAdvancedTools(true);
+                    setOperatingAreaPickerOpen(false);
                     setActiveLane(operationalLaneKey);
                     setMessage("");
                   }}
@@ -5721,6 +5729,56 @@ export default function CommunityDomainDashboardPage() {
 
           {showAdvancedTools && activeLane === "settings" && setupWorkspaceOpen ? (
             <>
+          <section style={whiteCard()}>
+            <div style={{ display: "grid", gap: 12 }}>
+              <div style={iconHeaderStyle()}>
+                <span style={iconFrame(54)}>
+                  <GsnRealisticIcon name="records-folder" size={42} decorative />
+                </span>
+                <div style={{ minWidth: 0 }}>
+                  <div style={sectionLabel()}>Setup overview jobs</div>
+                  <h2 style={{ margin: "6px 0 0", fontSize: 22, lineHeight: 1.12 }}>
+                    Open one setup overview.
+                  </h2>
+                  <div style={{ ...helperText(), marginTop: 8 }}>
+                    Choose the setup question for now. Notices, engine facts, next setup work, and counts stay separate.
+                  </div>
+                </div>
+              </div>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns:
+                    "repeat(auto-fit, minmax(min(100%, 145px), 1fr))",
+                  gap: 8,
+                }}
+              >
+                {[
+                  ["notices", "Notices"],
+                  ["engine", "Engine"],
+                  ["next_setup", "Next setup"],
+                  ["counts", "Counts"],
+                ].map(([task, label]) => (
+                  <StableButton
+                    key={task}
+                    type="button"
+                    kind={
+                      activeSetupOverviewTask === task ? "primary" : "secondary"
+                    }
+                    stableHeight={46}
+                    debugId={`community-domain-dashboard.setup-overview.${task}`}
+                    onClick={() =>
+                      setActiveSetupOverviewTask(task as SetupOverviewTaskKey)
+                    }
+                  >
+                    {label}
+                  </StableButton>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          {activeSetupOverviewTask === "notices" ? (
           <section style={whiteCard()}>
             <div style={officialBoardHeaderStyle()}>
               <div style={iconHeaderStyle()}>
@@ -5837,7 +5895,9 @@ export default function CommunityDomainDashboardPage() {
               )}
             </div>
           </section>
+          ) : null}
 
+          {activeSetupOverviewTask === "engine" ? (
           <section style={whiteCard()}>
             <div style={{ display: "grid", gap: 12 }}>
               <div>
@@ -5911,7 +5971,9 @@ export default function CommunityDomainDashboardPage() {
               </div>
             </div>
           </section>
+          ) : null}
 
+          {activeSetupOverviewTask === "next_setup" ? (
           <section
             style={{
               display: "grid",
@@ -5959,6 +6021,7 @@ export default function CommunityDomainDashboardPage() {
                       setSetupWorkspaceOpen(false);
                       setShowAdvancedTools(true);
                       setSetupJourneyMode("setup");
+                      setOperatingAreaPickerOpen(false);
                     } else {
                       setSetupWorkspaceOpen(true);
                       setShowAdvancedTools(false);
@@ -6037,7 +6100,9 @@ export default function CommunityDomainDashboardPage() {
               />
             </Suspense>
           </section>
+          ) : null}
 
+          {activeSetupOverviewTask === "counts" ? (
           <section style={whiteCard()}>
             <div
               style={{
@@ -6062,6 +6127,7 @@ export default function CommunityDomainDashboardPage() {
               ))}
             </div>
           </section>
+          ) : null}
             </>
           ) : null}
 
@@ -6071,14 +6137,14 @@ export default function CommunityDomainDashboardPage() {
             data-testid="community-domain-dashboard.work-surface"
             style={{
               display: "grid",
-              gridTemplateColumns: showAdvancedTools
+              gridTemplateColumns: showAdvancedTools && operatingAreaPickerOpen
                 ? "repeat(auto-fit, minmax(min(100%, 320px), 1fr))"
                 : "minmax(0, 1fr)",
               gap: 12,
               alignItems: "start",
             }}
           >
-            {showAdvancedTools ? (
+            {showAdvancedTools && operatingAreaPickerOpen ? (
               <Suspense
                 fallback={
                   <div style={whiteCard()}>
@@ -6094,41 +6160,96 @@ export default function CommunityDomainDashboardPage() {
                 <CommunityDomainLaneSelectorPanel
                   lanes={lanes}
                   activeLane={activeLane}
-                  onSelectLane={setActiveLane}
+                  onSelectLane={(laneKey) => {
+                    setActiveLane(laneKey);
+                    setOperatingAreaPickerOpen(false);
+                  }}
                 />
               </Suspense>
             ) : null}
 
             <div style={whiteCard()}>
               <div style={{ display: "grid", gap: 12 }}>
-                <div style={iconHeaderStyle()}>
-                  <span style={iconFrame(54)}>
-                    <GsnRealisticIcon
-                      name={setupJourneyMode === "edit" ? "identity-card" : "records-folder"}
-                      size={42}
-                      decorative
-                    />
-                  </span>
-                  <div style={{ minWidth: 0 }}>
-                    <div style={sectionLabel()}>
-                      {showAdvancedTools
-                        ? domainOperational
-                          ? "Live area"
-                          : "Opened area"
-                        : setupJourneyMode === "edit"
-                        ? "Setup workbench"
-                        : domainOperational
-                        ? "Live domain actions"
-                        : "Setup workbench"}
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns:
+                      "repeat(auto-fit, minmax(min(100%, 220px), 1fr))",
+                    gap: 12,
+                    alignItems: "start",
+                  }}
+                >
+                  <div style={iconHeaderStyle()}>
+                    <span style={iconFrame(54)}>
+                      <GsnRealisticIcon
+                        name={
+                          setupJourneyMode === "edit"
+                            ? "identity-card"
+                            : "records-folder"
+                        }
+                        size={42}
+                        decorative
+                      />
+                    </span>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={sectionLabel()}>
+                        {showAdvancedTools
+                          ? domainOperational
+                            ? "Live area"
+                            : "Opened area"
+                          : setupJourneyMode === "edit"
+                          ? "Setup workbench"
+                          : domainOperational
+                          ? "Live domain actions"
+                          : "Setup workbench"}
+                      </div>
+                      <h2 style={{ margin: 0, fontSize: 26, lineHeight: 1.1 }}>
+                        {setupJourneyMode === "edit" && activeLane === "settings"
+                          ? "Edit Community Domain"
+                          : !showAdvancedTools &&
+                            activeLane === "settings" &&
+                            !domainOperational
+                          ? "Create Community Domain"
+                          : laneDisplayLabel(selectedLane, "Community Domain area")}
+                      </h2>
                     </div>
-                    <h2 style={{ margin: 0, fontSize: 26, lineHeight: 1.1 }}>
-                      {setupJourneyMode === "edit" && activeLane === "settings"
-                        ? "Edit Community Domain"
-                        : !showAdvancedTools && activeLane === "settings" && !domainOperational
-                        ? "Create Community Domain"
-                        : laneDisplayLabel(selectedLane, "Community Domain area")}
-                    </h2>
                   </div>
+                  {showAdvancedTools ? (
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns:
+                          "repeat(auto-fit, minmax(min(100%, 130px), 1fr))",
+                        gap: 8,
+                      }}
+                    >
+                      <StableButton
+                        type="button"
+                        kind={operatingAreaPickerOpen ? "secondary" : "primary"}
+                        fullWidth
+                        stableHeight={44}
+                        debugId="community-domain-dashboard.operating-area-picker-toggle"
+                        onClick={() =>
+                          setOperatingAreaPickerOpen((current) => !current)
+                        }
+                      >
+                        {operatingAreaPickerOpen ? "Hide areas" : "Change area"}
+                      </StableButton>
+                      <StableButton
+                        type="button"
+                        kind="secondary"
+                        fullWidth
+                        stableHeight={44}
+                        debugId="community-domain-dashboard.advanced-tools-toggle"
+                        onClick={() => {
+                          setOperatingAreaPickerOpen(false);
+                          setShowAdvancedTools(false);
+                        }}
+                      >
+                        Close areas
+                      </StableButton>
+                    </div>
+                  ) : null}
                 </div>
                 {showAdvancedTools ? (
                   <div style={helperText()}>
@@ -6271,6 +6392,7 @@ export default function CommunityDomainDashboardPage() {
                         onClick={() => {
                           focusWorkSurfaceAfterOpenRef.current = true;
                           setShowAdvancedTools(true);
+                          setOperatingAreaPickerOpen(false);
                           setSetupWorkspaceOpen(false);
                           setActiveLane(operationalLaneKey);
                           setSetupJourneyMode("setup");
@@ -11006,6 +11128,7 @@ export default function CommunityDomainDashboardPage() {
                       if (next) {
                         focusWorkSurfaceAfterOpenRef.current = true;
                         setSetupWorkspaceOpen(false);
+                        setOperatingAreaPickerOpen(false);
                         setSetupJourneyMode("setup");
                         setActiveLane(cleanText(otherToolsLaneKey, primaryActionLaneKey));
                       }
