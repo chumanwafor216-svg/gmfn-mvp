@@ -1104,7 +1104,14 @@ try {
   await clickByDebugId(page, "community-domain-dashboard.lane.modules");
   await page.getByText("Services focus", { exact: true }).waitFor({ timeout: 10000 });
   await clickByDebugId(page, "community-domain-dashboard.service-group.local");
+  await page.getByText("Local service planning", { exact: true }).waitFor({ timeout: 10000 });
+  if (await page.getByText("Marketplace rule", { exact: true }).isVisible().catch(() => false)) {
+    findings.push("Community Domain Services local maps still expose the marketplace/package rule card.");
+  }
   await clickByDebugId(page, "community-domain-dashboard.service-detail.boundaries");
+  if (!(await page.getByText("Marketplace rule", { exact: true }).isVisible().catch(() => false))) {
+    findings.push("Community Domain Services Boundaries packet does not expose the marketplace/package rule card.");
+  }
   await page.getByText("Boundary packet", { exact: true }).waitFor({ timeout: 10000 });
   await clickByDebugId(page, "community-domain-service-boundary.focus.privacy");
   await page.getByText("Record privacy readiness", { exact: true }).waitFor({ timeout: 10000 });

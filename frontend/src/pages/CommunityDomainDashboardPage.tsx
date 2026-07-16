@@ -9538,40 +9538,73 @@ export default function CommunityDomainDashboardPage() {
                       </div>
                     </div>
 
-                    <div
-                      style={{
-                        ...softCard(),
-                        display: "grid",
-                        gap: 10,
-                        border: "1px solid rgba(214,170,69,0.34)",
-                        background: "rgba(255,249,225,0.72)",
-                      }}
-                    >
-                      <div style={iconHeaderStyle()}>
-                        <span style={iconFrame(46)}>
-                          <GsnRealisticIcon name="finance-bank-building" size={35} decorative />
-                        </span>
-                        <div style={{ minWidth: 0 }}>
-                          <div style={sectionLabel()}>Domain rule</div>
-                          <h3 style={{ margin: "4px 0 0", fontSize: 19, lineHeight: 1.15 }}>
-                            Shared services, governed here.
-                          </h3>
-                        </div>
-                      </div>
+                    {activeServiceDetail === "boundaries" ? (
                       <div
                         style={{
+                          ...softCard(),
                           display: "grid",
-                          gap: 8,
-                          padding: 12,
-                          borderRadius: 18,
-                          border: "1px solid rgba(9,27,46,0.1)",
-                          background: "rgba(255,255,255,0.7)",
+                          gap: 10,
+                          border: "1px solid rgba(214,170,69,0.34)",
+                          background: "rgba(255,249,225,0.72)",
                         }}
                       >
-                        <div style={sectionLabel()}>Professional marketplace rule</div>
+                        <div style={iconHeaderStyle()}>
+                          <span style={iconFrame(46)}>
+                            <GsnRealisticIcon name="finance-bank-building" size={35} decorative />
+                          </span>
+                          <div style={{ minWidth: 0 }}>
+                            <div style={sectionLabel()}>Marketplace rule</div>
+                            <h3 style={{ margin: "4px 0 0", fontSize: 19, lineHeight: 1.15 }}>
+                              Shared services, governed here.
+                            </h3>
+                          </div>
+                        </div>
+                        <div
+                          style={{
+                            display: "grid",
+                            gap: 8,
+                            padding: 12,
+                            borderRadius: 18,
+                            border: "1px solid rgba(9,27,46,0.1)",
+                            background: "rgba(255,255,255,0.7)",
+                          }}
+                        >
+                          <div style={sectionLabel()}>Professional marketplace rule</div>
+                          <div style={{ ...helperText(), fontSize: 13 }}>
+                            Ordinary GSN marketplace behaviours stay available, but
+                            this domain decides who may use each one here.
+                          </div>
+                          <div
+                            style={{
+                              display: "grid",
+                              gridTemplateColumns:
+                                "repeat(auto-fit, minmax(min(100%, 150px), 1fr))",
+                              gap: 8,
+                            }}
+                          >
+                            {professionalMarketplaceFacts.map(([label, value]) => (
+                              <div key={label} style={statusBadge("domain rule")}>
+                                {label}: {value}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                        <div
+                          style={{
+                            display: "grid",
+                            gridTemplateColumns:
+                              "repeat(auto-fit, minmax(min(100%, 120px), 1fr))",
+                            gap: 8,
+                          }}
+                        >
+                          {packageCapacityFacts.map(([label, value]) => (
+                            <div key={label} style={statusBadge("allowance")}>
+                              {label}: {value}
+                            </div>
+                          ))}
+                        </div>
                         <div style={{ ...helperText(), fontSize: 13 }}>
-                          Ordinary GSN marketplace behaviours stay available, but
-                          this domain decides who may use each one here.
+                          {packageTariffBoundaryText}
                         </div>
                         <div
                           style={{
@@ -9581,50 +9614,19 @@ export default function CommunityDomainDashboardPage() {
                             gap: 8,
                           }}
                         >
-                          {professionalMarketplaceFacts.map(([label, value]) => (
-                            <div key={label} style={statusBadge("domain rule")}>
+                          {packageBillingStatusFacts.map(([label, value]) => (
+                            <div key={label} style={statusBadge("manual review")}>
                               {label}: {value}
                             </div>
                           ))}
                         </div>
+                        <div style={{ ...helperText(), fontSize: 13 }}>
+                          {packageBillingAdminAction} Feature policy controls who
+                          can use Spotlight, Demand Box, shops, Shop Diary, Vault,
+                          ROSCA, invites, and contribution tools here.
+                        </div>
                       </div>
-                      <div
-                        style={{
-                          display: "grid",
-                          gridTemplateColumns:
-                            "repeat(auto-fit, minmax(min(100%, 120px), 1fr))",
-                          gap: 8,
-                        }}
-                      >
-                        {packageCapacityFacts.map(([label, value]) => (
-                          <div key={label} style={statusBadge("allowance")}>
-                            {label}: {value}
-                          </div>
-                        ))}
-                      </div>
-                      <div style={{ ...helperText(), fontSize: 13 }}>
-                        {packageTariffBoundaryText}
-                      </div>
-                      <div
-                        style={{
-                          display: "grid",
-                          gridTemplateColumns:
-                            "repeat(auto-fit, minmax(min(100%, 150px), 1fr))",
-                          gap: 8,
-                        }}
-                      >
-                        {packageBillingStatusFacts.map(([label, value]) => (
-                          <div key={label} style={statusBadge("manual review")}>
-                            {label}: {value}
-                          </div>
-                        ))}
-                      </div>
-                      <div style={{ ...helperText(), fontSize: 13 }}>
-                        {packageBillingAdminAction} Feature policy controls who
-                        can use Spotlight, Demand Box, shops, Shop Diary, Vault,
-                        ROSCA, invites, and contribution tools here.
-                      </div>
-                    </div>
+                    ) : null}
 
                     {activeServiceDetail === "readiness" ? (
                       <Suspense

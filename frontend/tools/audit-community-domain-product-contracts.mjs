@@ -2340,8 +2340,8 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /packageCapacityFacts[\s\S]*included_members[\s\S]*included_nodes[\s\S]*included_admins[\s\S]*included_shops[\s\S]*included_storage_gb[\s\S]*packageTariffBoundaryText[\s\S]*Current pilot package allowance only[\s\S]*packageBillingStatusFacts[\s\S]*pricing_model_status[\s\S]*paid_upgrade_status[\s\S]*member_band_status[\s\S]*feature_tariff_status[\s\S]*domain_tariff_status[\s\S]*packageBillingAdminAction[\s\S]*manual finance and capacity review[\s\S]*Domain rule[\s\S]*Shared services, governed here[\s\S]*manual review[\s\S]*Feature policy controls who\s+can use Spotlight, Demand Box, shops, Shop Diary, Vault,\s+ROSCA, invites, and contribution tools here/,
-  "Community Domain Services lane must separate package allowance, feature permission, and future tariff automation without pretending member bands or paid feature pricing are live.",
+  /packageCapacityFacts[\s\S]*included_members[\s\S]*included_nodes[\s\S]*included_admins[\s\S]*included_shops[\s\S]*included_storage_gb[\s\S]*packageTariffBoundaryText[\s\S]*Current pilot package allowance only[\s\S]*packageBillingStatusFacts[\s\S]*pricing_model_status[\s\S]*paid_upgrade_status[\s\S]*member_band_status[\s\S]*feature_tariff_status[\s\S]*domain_tariff_status[\s\S]*packageBillingAdminAction[\s\S]*manual finance and capacity review[\s\S]*activeServiceDetail === "boundaries"[\s\S]*Marketplace rule[\s\S]*Shared services, governed here[\s\S]*manual review[\s\S]*Feature policy controls who\s+can use Spotlight, Demand Box, shops, Shop Diary, Vault,\s+ROSCA, invites, and contribution tools here/,
+  "Community Domain Services lane must keep package allowance, feature permission, and future tariff automation truth inside the Boundaries packet instead of repeating it across every service view.",
   { frontend: true }
 );
 
