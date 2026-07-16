@@ -175,12 +175,15 @@ type GovernanceTaskKey =
   | "sponsor_summary"
   | "real_life_record"
   | "access_requests";
+type DirectorSummaryTaskKey = "overview" | "membership" | "evidence" | "delivery";
 type SponsorSummaryTaskKey = "overview" | "evidence" | "delivery" | "export";
 type SetupOverviewTaskKey = "notices" | "engine" | "next_setup" | "counts";
 type OperatingSummaryTaskKey = "next_action" | "status" | "allowance" | "permissions";
 type SetupWorkbenchTaskKey = "step" | "access";
 type BillingTaskKey = "payment_code" | "account" | "steps" | "readiness";
 type RealLifeRecordTask = "activity" | "beneficiary_outcome";
+type ActivityRecordTaskKey = "record" | "catalogue" | "recent";
+type BeneficiaryOutcomeTaskKey = "record" | "recent";
 type SetupStepKey =
   | "identity"
   | "payment"
@@ -2161,10 +2164,16 @@ export default function CommunityDomainDashboardPage() {
     useState<MemberDetailKey>("readiness");
   const [activeGovernanceTask, setActiveGovernanceTask] =
     useState<GovernanceTaskKey>("readiness");
+  const [activeDirectorSummaryTask, setActiveDirectorSummaryTask] =
+    useState<DirectorSummaryTaskKey>("overview");
   const [activeSponsorSummaryTask, setActiveSponsorSummaryTask] =
     useState<SponsorSummaryTaskKey>("overview");
   const [activeRealLifeRecordTask, setActiveRealLifeRecordTask] =
     useState<RealLifeRecordTask | null>(null);
+  const [activeActivityRecordTask, setActiveActivityRecordTask] =
+    useState<ActivityRecordTaskKey>("record");
+  const [activeBeneficiaryOutcomeTask, setActiveBeneficiaryOutcomeTask] =
+    useState<BeneficiaryOutcomeTaskKey>("record");
   const [quickRecordOpen, setQuickRecordOpen] = useState(false);
   const [loadedReadinessLanes, setLoadedReadinessLanes] = useState<Record<string, boolean>>({});
   const [loadingReadinessLanes, setLoadingReadinessLanes] = useState<Record<string, boolean>>({});
@@ -2346,6 +2355,7 @@ export default function CommunityDomainDashboardPage() {
     setGovernanceCoverage(null);
     setDelegationMap(null);
     setActiveGovernanceTask("readiness");
+    setActiveDirectorSummaryTask("overview");
     setActiveSponsorSummaryTask("overview");
     setPeriodSummary(null);
     setSponsorSummary(null);
@@ -2353,6 +2363,8 @@ export default function CommunityDomainDashboardPage() {
     setActivityRows([]);
     setActivityDraft(emptyCommunityDomainActivityDraft());
     setActiveRealLifeRecordTask(null);
+    setActiveActivityRecordTask("record");
+    setActiveBeneficiaryOutcomeTask("record");
     setQuickRecordOpen(false);
     setBeneficiaryOutcomeRows([]);
     setBeneficiaryOutcomeDraft(emptyCommunityDomainOutcomeDraft());
@@ -4304,6 +4316,11 @@ export default function CommunityDomainDashboardPage() {
     focusWorkSurfaceAfterOpenRef.current = true;
     setActiveGovernanceTask("real_life_record");
     setActiveRealLifeRecordTask(task);
+    if (task === "activity") {
+      setActiveActivityRecordTask("record");
+    } else {
+      setActiveBeneficiaryOutcomeTask("record");
+    }
     setQuickRecordOpen(true);
     setSetupJourneyMode("setup");
     setSetupWorkspaceOpen(false);
@@ -5456,6 +5473,24 @@ export default function CommunityDomainDashboardPage() {
       }
     }
   }
+
+  const activityCatalogueOptions = activityCatalogue.length
+    ? activityCatalogue
+    : [
+        { activity_type: "attendance", label: "Attendance" },
+        {
+          activity_type: "volunteer_service",
+          label: "Volunteer service",
+        },
+        {
+          activity_type: "support_delivered",
+          label: "Support delivered",
+        },
+        {
+          activity_type: "follow_up_completed",
+          label: "Follow-up completed",
+        },
+      ];
 
   return (
     <main style={pageShell()}>
@@ -8863,13 +8898,17 @@ export default function CommunityDomainDashboardPage() {
                             );
                             const periodStart = cleanText(periodSummary?.period?.start);
                             const periodEnd = cleanText(periodSummary?.period?.end);
-                            const factTiles = [
+                            const membershipTiles = [
                               ["Active members", membership.active_total ?? 0],
                               ["Added", movement.added ?? 0],
                               ["Removed", movement.removed_or_deactivated ?? 0],
                               ["Governance actions", governance.total ?? 0],
+                            ];
+                            const evidenceTiles = [
                               ["Evidence records", evidence.total ?? 0],
                               ["Confirmations", confirmations.requests_total ?? 0],
+                            ];
+                            const deliveryTiles = [
                               [
                                 "Delivery packs",
                                 evidence.beneficiary_confirmation_delivery_prepared ??
@@ -8905,6 +8944,31 @@ export default function CommunityDomainDashboardPage() {
                                   0,
                               ],
                             ];
+                            const hasDeliveryEvidence = Boolean(
+                              Number(
+                                evidence.beneficiary_confirmation_delivery_prepared ??
+                                  0
+                              ) ||
+                                Number(
+                                  evidence.beneficiary_confirmation_delivery_receipts ??
+                                    0
+                                ) ||
+                                Number(
+                                  evidence.beneficiary_confirmation_delivery_receipts_current_uncorrected ??
+                                    0
+                                ) ||
+                                Number(
+                                  evidence.beneficiary_confirmation_delivery_receipt_corrections ??
+                                    0
+                                ) ||
+                                Number(
+                                  evidence.beneficiary_contact_consent_records ?? 0
+                                ) ||
+                                Number(
+                                  evidence.beneficiary_contact_consent_withdrawals ??
+                                    0
+                                )
+                            );
                             return (
                               <>
                                 <div
@@ -8926,66 +8990,177 @@ export default function CommunityDomainDashboardPage() {
                                   style={{
                                     display: "grid",
                                     gridTemplateColumns:
-                                      "repeat(auto-fit, minmax(min(100%, 128px), 1fr))",
+                                      "repeat(auto-fit, minmax(min(100%, 140px), 1fr))",
                                     gap: 8,
                                   }}
                                 >
-                                  {factTiles.map(([label, value]) => (
-                                    <div
-                                      key={String(label)}
+                                  {[
+                                    ["overview", "Overview"],
+                                    ["membership", "Membership"],
+                                    ["evidence", "Evidence"],
+                                    ["delivery", "Delivery"],
+                                  ].map(([task, label]) => (
+                                    <StableButton
+                                      key={task}
+                                      type="button"
+                                      kind={
+                                        activeDirectorSummaryTask === task
+                                          ? "primary"
+                                          : "secondary"
+                                      }
+                                      stableHeight={44}
+                                      debugId={`community-domain-dashboard.director-summary.${task}`}
+                                      onClick={() =>
+                                        setActiveDirectorSummaryTask(
+                                          task as DirectorSummaryTaskKey
+                                        )
+                                      }
                                       style={{
-                                        borderRadius: 10,
-                                        border: "1px solid rgba(9,27,46,0.1)",
-                                        background: "#FFFFFF",
-                                        padding: "10px 12px",
+                                        justifyContent: "center",
+                                        fontSize: 13,
+                                        textTransform: "none",
                                       }}
                                     >
-                                      <div style={{ ...helperText(), fontSize: 12 }}>
-                                        {label}
-                                      </div>
-                                      <div
-                                        style={{
-                                          marginTop: 3,
-                                          color: "#091B2E",
-                                          fontSize: 20,
-                                          fontWeight: 950,
-                                          lineHeight: 1,
-                                        }}
-                                      >
-                                        {String(value ?? 0)}
-                                      </div>
-                                    </div>
+                                      {label}
+                                    </StableButton>
                                   ))}
                                 </div>
-                                <div style={{ ...helperText(), fontSize: 13 }}>
-                                  Period: {periodStart || "default start"} to{" "}
-                                  {periodEnd || "default end"}.{" "}
-                                  {periodSummary?.boundary ||
-                                    "Every number should trace back to source records."}
-                                </div>
-                                {Number(
-                                  evidence.beneficiary_confirmation_delivery_prepared ??
-                                    0
-                                ) ||
-                                Number(
-                                  evidence.beneficiary_confirmation_delivery_receipts ??
-                                    0
-                                ) ||
-                                Number(
-                                  evidence.beneficiary_confirmation_delivery_receipts_current_uncorrected ??
-                                    0
-                                ) ||
-                                Number(
-                                  evidence.beneficiary_confirmation_delivery_receipt_corrections ??
-                                    0
-                                ) ||
-                                Number(
-                                  evidence.beneficiary_contact_consent_records ?? 0
-                                ) ||
-                                Number(
-                                  evidence.beneficiary_contact_consent_withdrawals ??
-                                    0
-                                ) ? (
+                                {activeDirectorSummaryTask === "overview" ? (
+                                  <div
+                                    style={{
+                                      display: "grid",
+                                      gap: 8,
+                                      borderRadius: 10,
+                                      border: "1px solid rgba(9,27,46,0.1)",
+                                      background: "#FFFFFF",
+                                      padding: 12,
+                                    }}
+                                  >
+                                    <div style={sectionLabel()}>Report boundary</div>
+                                    <div style={{ ...helperText(), fontSize: 13 }}>
+                                      Period: {periodStart || "default start"} to{" "}
+                                      {periodEnd || "default end"}.
+                                    </div>
+                                    <div style={{ ...helperText(), fontSize: 13 }}>
+                                      {periodSummary?.boundary ||
+                                        "Every number should trace back to source records."}
+                                    </div>
+                                  </div>
+                                ) : null}
+                                {activeDirectorSummaryTask === "membership" ? (
+                                  <div
+                                    style={{
+                                      display: "grid",
+                                      gridTemplateColumns:
+                                        "repeat(auto-fit, minmax(min(100%, 128px), 1fr))",
+                                      gap: 8,
+                                    }}
+                                  >
+                                    {membershipTiles.map(([label, value]) => (
+                                      <div
+                                        key={String(label)}
+                                        style={{
+                                          borderRadius: 10,
+                                          border: "1px solid rgba(9,27,46,0.1)",
+                                          background: "#FFFFFF",
+                                          padding: "10px 12px",
+                                        }}
+                                      >
+                                        <div style={{ ...helperText(), fontSize: 12 }}>
+                                          {label}
+                                        </div>
+                                        <div
+                                          style={{
+                                            marginTop: 3,
+                                            color: "#091B2E",
+                                            fontSize: 20,
+                                            fontWeight: 950,
+                                            lineHeight: 1,
+                                          }}
+                                        >
+                                          {String(value ?? 0)}
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                ) : null}
+                                {activeDirectorSummaryTask === "evidence" ? (
+                                  <div
+                                    style={{
+                                      display: "grid",
+                                      gridTemplateColumns:
+                                        "repeat(auto-fit, minmax(min(100%, 128px), 1fr))",
+                                      gap: 8,
+                                    }}
+                                  >
+                                    {evidenceTiles.map(([label, value]) => (
+                                      <div
+                                        key={String(label)}
+                                        style={{
+                                          borderRadius: 10,
+                                          border: "1px solid rgba(9,27,46,0.1)",
+                                          background: "#FFFFFF",
+                                          padding: "10px 12px",
+                                        }}
+                                      >
+                                        <div style={{ ...helperText(), fontSize: 12 }}>
+                                          {label}
+                                        </div>
+                                        <div
+                                          style={{
+                                            marginTop: 3,
+                                            color: "#091B2E",
+                                            fontSize: 20,
+                                            fontWeight: 950,
+                                            lineHeight: 1,
+                                          }}
+                                        >
+                                          {String(value ?? 0)}
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                ) : null}
+                                {activeDirectorSummaryTask === "delivery" ? (
+                                  <>
+                                    <div
+                                      style={{
+                                        display: "grid",
+                                        gridTemplateColumns:
+                                          "repeat(auto-fit, minmax(min(100%, 128px), 1fr))",
+                                        gap: 8,
+                                      }}
+                                    >
+                                      {deliveryTiles.map(([label, value]) => (
+                                        <div
+                                          key={String(label)}
+                                          style={{
+                                            borderRadius: 10,
+                                            border: "1px solid rgba(9,27,46,0.1)",
+                                            background: "#FFFFFF",
+                                            padding: "10px 12px",
+                                          }}
+                                        >
+                                          <div
+                                            style={{ ...helperText(), fontSize: 12 }}
+                                          >
+                                            {label}
+                                          </div>
+                                          <div
+                                            style={{
+                                              marginTop: 3,
+                                              color: "#091B2E",
+                                              fontSize: 20,
+                                              fontWeight: 950,
+                                              lineHeight: 1,
+                                            }}
+                                          >
+                                            {String(value ?? 0)}
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                {hasDeliveryEvidence ? (
                                   <div style={{ display: "grid", gap: 6 }}>
                                     <div style={sectionLabel()}>
                                       Delivery evidence
@@ -9078,6 +9253,12 @@ export default function CommunityDomainDashboardPage() {
                                       marked corrected, superseded, or under review.
                                     </div>
                                   </div>
+                                ) : (
+                                  <div style={helperText()}>
+                                    No delivery evidence counts are recorded yet.
+                                  </div>
+                                )}
+                                  </>
                                 ) : null}
                               </>
                             );
@@ -9774,7 +9955,10 @@ export default function CommunityDomainDashboardPage() {
                             }
                             stableHeight={46}
                             debugId="community-domain-dashboard.real-life-record.activity-inline"
-                            onClick={() => setActiveRealLifeRecordTask("activity")}
+                            onClick={() => {
+                              setActiveRealLifeRecordTask("activity");
+                              setActiveActivityRecordTask("record");
+                            }}
                           >
                             Activity
                           </StableButton>
@@ -9787,7 +9971,10 @@ export default function CommunityDomainDashboardPage() {
                             }
                             stableHeight={46}
                             debugId="community-domain-dashboard.real-life-record.beneficiary-outcome-inline"
-                            onClick={() => setActiveRealLifeRecordTask("beneficiary_outcome")}
+                            onClick={() => {
+                              setActiveRealLifeRecordTask("beneficiary_outcome");
+                              setActiveBeneficiaryOutcomeTask("record");
+                            }}
                           >
                             Beneficiary outcome
                           </StableButton>
@@ -9828,6 +10015,47 @@ export default function CommunityDomainDashboardPage() {
                           style={{
                             display: "grid",
                             gridTemplateColumns:
+                              "repeat(auto-fit, minmax(min(100%, 140px), 1fr))",
+                            gap: 8,
+                          }}
+                        >
+                          {[
+                            ["record", "Record"],
+                            ["catalogue", "Catalogue"],
+                            ["recent", "Recent"],
+                          ].map(([task, label]) => (
+                            <StableButton
+                              key={task}
+                              type="button"
+                              kind={
+                                activeActivityRecordTask === task
+                                  ? "primary"
+                                  : "secondary"
+                              }
+                              stableHeight={44}
+                              debugId={`community-domain-dashboard.activity-task.${task}`}
+                              onClick={() =>
+                                setActiveActivityRecordTask(
+                                  task as ActivityRecordTaskKey
+                                )
+                              }
+                              style={{
+                                justifyContent: "center",
+                                fontSize: 13,
+                                textTransform: "none",
+                              }}
+                            >
+                              {label}
+                            </StableButton>
+                          ))}
+                        </div>
+
+                        {activeActivityRecordTask === "record" ? (
+                          <>
+                        <div
+                          style={{
+                            display: "grid",
+                            gridTemplateColumns:
                               "repeat(auto-fit, minmax(min(100%, 170px), 1fr))",
                             gap: 8,
                           }}
@@ -9850,24 +10078,7 @@ export default function CommunityDomainDashboardPage() {
                             }
                             style={billingInputStyle()}
                           >
-                            {(activityCatalogue.length
-                              ? activityCatalogue
-                              : [
-                                  { activity_type: "attendance", label: "Attendance" },
-                                  {
-                                    activity_type: "volunteer_service",
-                                    label: "Volunteer service",
-                                  },
-                                  {
-                                    activity_type: "support_delivered",
-                                    label: "Support delivered",
-                                  },
-                                  {
-                                    activity_type: "follow_up_completed",
-                                    label: "Follow-up completed",
-                                  },
-                                ]
-                            ).map((item) => (
+                            {activityCatalogueOptions.map((item) => (
                               <option
                                 key={cleanText(item?.activity_type)}
                                 value={cleanText(item?.activity_type)}
@@ -9953,8 +10164,47 @@ export default function CommunityDomainDashboardPage() {
                             Creates an admin-recorded Trust Event for the subject user. It does not prove final beneficiary outcomes.
                           </div>
                         </div>
+                          </>
+                        ) : null}
 
-                        {activityRows.length ? (
+                        {activeActivityRecordTask === "catalogue" ? (
+                          <div style={{ display: "grid", gap: 8 }}>
+                            <div style={sectionLabel()}>Activity catalogue</div>
+                            <div style={{ ...helperText(), fontSize: 13 }}>
+                              Use one catalogue type when recording a real activity.
+                            </div>
+                            <div
+                              style={{
+                                display: "grid",
+                                gridTemplateColumns:
+                                  "repeat(auto-fit, minmax(min(100%, 150px), 1fr))",
+                                gap: 8,
+                              }}
+                            >
+                              {activityCatalogueOptions.map((item) => (
+                                <div
+                                  key={cleanText(item?.activity_type)}
+                                  style={{
+                                    borderRadius: 10,
+                                    border: "1px solid rgba(9,27,46,0.1)",
+                                    background: "#FFFFFF",
+                                    padding: "10px 12px",
+                                  }}
+                                >
+                                  <div style={sectionLabel()}>
+                                    {cleanText(item?.label, item?.activity_type)}
+                                  </div>
+                                  <div style={{ ...helperText(), fontSize: 12 }}>
+                                    {cleanText(item?.activity_type)}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ) : null}
+
+                        {activeActivityRecordTask === "recent" ? (
+                          activityRows.length ? (
                           <div style={{ display: "grid", gap: 8 }}>
                             <div style={sectionLabel()}>Recent records</div>
                             {activityRows.slice(0, 5).map((item) => (
@@ -9981,11 +10231,12 @@ export default function CommunityDomainDashboardPage() {
                               </div>
                             ))}
                           </div>
-                        ) : (
+                          ) : (
                           <div style={helperText()}>
                             No activity records are loaded for this Community Domain yet.
                           </div>
-                        )}
+                          )
+                        ) : null}
                       </div>
                       ) : null}
 
@@ -10019,6 +10270,46 @@ export default function CommunityDomainDashboardPage() {
                           </div>
                         </div>
 
+                        <div
+                          style={{
+                            display: "grid",
+                            gridTemplateColumns:
+                              "repeat(auto-fit, minmax(min(100%, 150px), 1fr))",
+                            gap: 8,
+                          }}
+                        >
+                          {[
+                            ["record", "Record"],
+                            ["recent", "Recent"],
+                          ].map(([task, label]) => (
+                            <StableButton
+                              key={task}
+                              type="button"
+                              kind={
+                                activeBeneficiaryOutcomeTask === task
+                                  ? "primary"
+                                  : "secondary"
+                              }
+                              stableHeight={44}
+                              debugId={`community-domain-dashboard.beneficiary-outcome-task.${task}`}
+                              onClick={() =>
+                                setActiveBeneficiaryOutcomeTask(
+                                  task as BeneficiaryOutcomeTaskKey
+                                )
+                              }
+                              style={{
+                                justifyContent: "center",
+                                fontSize: 13,
+                                textTransform: "none",
+                              }}
+                            >
+                              {label}
+                            </StableButton>
+                          ))}
+                        </div>
+
+                        {activeBeneficiaryOutcomeTask === "record" ? (
+                          <>
                         <div
                           style={{
                             display: "grid",
@@ -10236,8 +10527,11 @@ export default function CommunityDomainDashboardPage() {
                             Creates a before-and-after Trust Event. Sponsor reports still need aggregation and privacy review.
                           </div>
                         </div>
+                          </>
+                        ) : null}
 
-                        {beneficiaryOutcomeRows.length ? (
+                        {activeBeneficiaryOutcomeTask === "recent" ? (
+                          beneficiaryOutcomeRows.length ? (
                           <div style={{ display: "grid", gap: 8 }}>
                             <div style={sectionLabel()}>Recent outcomes</div>
                             {beneficiaryOutcomeRows.slice(0, 5).map((item) => {
@@ -11114,11 +11408,12 @@ export default function CommunityDomainDashboardPage() {
                               );
                             })}
                           </div>
-                        ) : (
+                          ) : (
                           <div style={helperText()}>
                             No beneficiary outcome records are loaded for this Community Domain yet.
                           </div>
-                        )}
+                          )
+                        ) : null}
                       </div>
                       ) : null}
                       </>

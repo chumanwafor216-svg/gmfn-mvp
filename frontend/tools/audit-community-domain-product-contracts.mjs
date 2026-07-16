@@ -863,6 +863,27 @@ assertContains(
   { frontend: true }
 );
 
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /type DirectorSummaryTaskKey = "overview" \| "membership" \| "evidence" \| "delivery"[\s\S]*activeDirectorSummaryTask[\s\S]*setActiveDirectorSummaryTask[\s\S]*community-domain-dashboard\.director-summary\.\$\{task\}[\s\S]*activeDirectorSummaryTask === "overview"[\s\S]*Report boundary[\s\S]*activeDirectorSummaryTask === "membership"[\s\S]*membershipTiles\.map[\s\S]*activeDirectorSummaryTask === "evidence"[\s\S]*evidenceTiles\.map[\s\S]*activeDirectorSummaryTask === "delivery"[\s\S]*deliveryTiles\.map[\s\S]*Delivery evidence/,
+  "Community Domain director period summary must stay decongested behind Overview, Membership, Evidence, and Delivery packets.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /type ActivityRecordTaskKey = "record" \| "catalogue" \| "recent"[\s\S]*activeActivityRecordTask[\s\S]*activityCatalogueOptions[\s\S]*community-domain-dashboard\.activity-task\.\$\{task\}[\s\S]*activeActivityRecordTask === "record"[\s\S]*community-domain-dashboard\.activity-record[\s\S]*activeActivityRecordTask === "catalogue"[\s\S]*activityCatalogueOptions\.map[\s\S]*activeActivityRecordTask === "recent"[\s\S]*Recent records/,
+  "Community Domain activity recording must stay decongested behind Record, Catalogue, and Recent packets.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /type BeneficiaryOutcomeTaskKey = "record" \| "recent"[\s\S]*activeBeneficiaryOutcomeTask[\s\S]*community-domain-dashboard\.beneficiary-outcome-task\.\$\{task\}[\s\S]*activeBeneficiaryOutcomeTask === "record"[\s\S]*community-domain-dashboard\.beneficiary-outcome-record[\s\S]*activeBeneficiaryOutcomeTask === "recent"[\s\S]*Recent outcomes[\s\S]*community-domain-dashboard\.beneficiary-outcome-confirmation-link/,
+  "Community Domain beneficiary outcome recording must keep capture and recent outcome controls in separate packets.",
+  { frontend: true }
+);
+
 assertNotContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
   /showAdvancedTools\s*&&\s*isAdmin\s*&&\s*activeLane === "governance"\s*&&\s*activeGovernanceTask === "access_requests"/,
