@@ -1590,21 +1590,23 @@ shape.
    it must not be treated as trust, endorsement, shop ownership, sponsor impact,
    delivery proof, legal authority, or full roster visibility.
 
-2. **Community Domain ID is not yet cleanly exposed as the public verification
-   anchor.**
+2. **Community Domain public proof has a domain-key path, but the permanent
+   public ID language still needs product polish.**
 
    Ordinary communities have `clans.community_code`. Community Domains have
-   `id`, `domain_name`, optional `clan_id`, and protected name state, but the
-   public proof flow is still not clearly anchored to a domain-specific
-   verification ID. If a domain is not linked to a `Clan`, its public proof trail
-   is weak.
+   `id`, `domain_name`, optional `clan_id`, and protected name state. The public
+   proof flow can now resolve protected Community Domain keys without depending
+   on a linked `Clan`, but the product still needs cleaner public-facing
+   language for which code/ID should be printed, shared, and searched.
 
-3. **Member removal exists as status, but the user-facing removal path needs to
-   be made obvious.**
+3. **Member removal/reactivation v1 exists, but the user-facing governance
+   language still needs simplification.**
 
-   The backend can upsert member status, but the product still needs a clear
-   admin action: find member, deactivate/remove, record reason, preserve
-   history, and ensure active verification fails.
+   The backend can deactivate members without hard deletion, preserve history,
+   emit status-change Trust Events, block public active-member proof after
+   deactivation, and expose compact roster controls. The remaining product gap
+   is making this feel like a plain governed removal/reactivation path rather
+   than a collection of status machinery.
 
 4. **Representative-person language is not yet visible enough.**
 
@@ -1619,25 +1621,32 @@ shape.
    Events still needs a simple, auditable flow.
 
 6. **Community Domain membership is separate from ordinary social community
-   membership, and this can confuse the product.**
+   membership, and this can still confuse the product.**
 
    The backend correctly separates `CommunityDomainMembership` from
-   `ClanMembership`, but public verification and marketplace surfaces still lean
-   heavily on `Clan`. The UI must explain when a person is a member of a domain
-   versus a member of an ordinary marketplace/community.
+   `ClanMembership`, and public verification now has a protected Community
+   Domain fallback. Marketplace and some compatibility surfaces still lean on
+   the linked ordinary community. The UI must explain when a person is a member
+   of a domain versus a member of an ordinary marketplace/community.
 
-7. **Activity catalogue records are not yet real activity records.**
+7. **Activity catalogue records v1 exist, but capture is still manual.**
 
-   The activity map is read-only planning. It does not create attendance,
-   volunteer, beneficiary, support, contribution, leadership, care, dues, or
-   outcome records yet.
+   The activity map remains read-only planning, but admins can now record manual
+   activity Trust Events such as attendance, volunteer service, support
+   delivered, contribution, leadership duty, welfare support, training
+   completion, and project participation. This does not yet add QR check-in,
+   batch import, participant confirmation, challenge handling, or automated
+   attendance capture.
 
-8. **Beneficiary outcome evidence is not yet implemented.**
+8. **Beneficiary outcome evidence v1 exists, but it is not independent proof by
+   default.**
 
-   The sponsor-facing NGO evidence model exists in the product decision, but
-   not yet as records with baseline, support delivered, follow-up state,
-   beneficiary confirmation, evaluator/admin confirmation, challenge status,
-   and sponsor-safe aggregation.
+   Admins can now record beneficiary outcome Trust Events with baseline, support
+   delivered, follow-up state, outcome state, beneficiary confirmation,
+   evaluator/admin confirmation, challenge status, evidence strength, and
+   visibility. This does not automatically prove unrecorded outcomes, and an
+   admin-recorded claim is still weaker than beneficiary-confirmed,
+   independently reviewed evidence.
 
 9. **Low-burden capture is not yet implemented.**
 
@@ -1646,11 +1655,15 @@ shape.
    batch entry, CSV import, member confirmation, milestone records, or periodic
    roll-ups.
 
-10. **Sponsor-safe aggregation is not yet implemented.**
+10. **Sponsor-safe aggregation v2 exists, but public/submission proof is still
+    not complete.**
 
-    The current system can hold evidence and Trust Events, but it does not yet
-    produce the NGO-style sponsor report: how many beneficiaries moved from
-    point A to point B without exposing private beneficiary details.
+    The current system can aggregate recorded activities, beneficiary outcomes,
+    challenge state, delivery-prepared records, manual delivery receipts,
+    contact/consent attestations, and blocked provider-send checks without
+    exposing private beneficiary details by default. It still does not create a
+    public sponsor portal, certify unrecorded impact, send reports externally,
+    or turn manual/admin-recorded evidence into independent beneficiary proof.
 
 ### Overbuilt or too heavy for the immediate MVP
 

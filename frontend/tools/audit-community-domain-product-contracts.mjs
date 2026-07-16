@@ -3421,6 +3421,12 @@ assertNotContains(
   "Community Domain audit must not reintroduce stale claims that public CommunityDomainMembership proof is still missing after the public proof route and tests exist."
 );
 
+assertNotContains(
+  "docs/COMMUNITY_DOMAIN_ACTOR_IDENTITY_AUDIT_2026-07-15.md",
+  /Activity catalogue records are not yet real activity records|Beneficiary outcome evidence is not yet implemented|Sponsor-safe aggregation is not yet implemented|not yet as records with baseline, support delivered|does not yet produce the NGO-style sponsor report|It does not create attendance,/,
+  "Community Domain audit must not reintroduce stale missing-capability claims after activity records, beneficiary outcome evidence, and sponsor-safe summaries exist as limited manual/admin-gated v1 slices."
+);
+
 assertContains(
   "src/lib/api.ts",
   /lookupCommunityDomainByName[\s\S]*\/community-domains\/lookup[\s\S]*domain_name/,
