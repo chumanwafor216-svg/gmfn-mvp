@@ -12263,6 +12263,268 @@ def test_member_can_read_provider_delivery_lift_plan_but_admin_counts_are_hidden
     assert "private beneficiary records" in lift_plan["boundary"]
 
 
+def test_provider_destination_readiness_projects_destination_gate_without_storage(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    admin = _seed_user(2, "provider-destination-admin@example.com")
+    member = _seed_user(3, "provider-destination-member@example.com")
+    private_destination_label = "secret-beneficiary-destination@example.com"
+    private_phone_label = "+15555550199"
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Provider Destination NGO",
+                "display_name": "Provider Destination NGO",
+                "domain_type": "ngo",
+                "template_key": "ngo_project_network",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain_id = created.json()["community_domain"]["id"]
+
+        for user, role in ((admin, "domain_admin"), (member, "member")):
+            added = client.post(
+                f"/community-domains/{domain_id}/members",
+                json={"user_id": user.id, "role": role},
+            )
+            assert added.status_code == 201, added.text
+
+        with SessionLocal() as db:
+            domain = db.get(CommunityDomain, domain_id)
+            assert domain is not None
+            active_outcome = log_trust_event(
+                db,
+                event_type="community_domain.beneficiary_outcome_recorded",
+                clan_id=int(domain.clan_id) if domain.clan_id is not None else None,
+                actor_user_id=int(owner.id),
+                subject_user_id=int(member.id),
+                meta={
+                    "community_domain_id": domain_id,
+                    "source": "provider_destination_readiness_test",
+                },
+            )
+            withdrawn_outcome = log_trust_event(
+                db,
+                event_type="community_domain.beneficiary_outcome_recorded",
+                clan_id=int(domain.clan_id) if domain.clan_id is not None else None,
+                actor_user_id=int(owner.id),
+                subject_user_id=int(member.id),
+                meta={
+                    "community_domain_id": domain_id,
+                    "source": "provider_destination_readiness_test",
+                },
+            )
+            active_contact = log_trust_event(
+                db,
+                event_type="community_domain.beneficiary_outcome_contact_consent_recorded",
+                clan_id=int(domain.clan_id) if domain.clan_id is not None else None,
+                actor_user_id=int(owner.id),
+                subject_user_id=int(member.id),
+                meta={
+                    "community_domain_id": domain_id,
+                    "outcome_event_id": int(active_outcome.id),
+                    "channel": "email",
+                    "destination_reference_status": "admin_verified_off_platform",
+                    "destination_reference_label": private_destination_label,
+                    "destination_verified_at": datetime.now(timezone.utc).isoformat(),
+                    "consent_basis": "beneficiary_consented",
+                    "consent_scope": "beneficiary_outcome_confirmation",
+                    "destination_value_stored": False,
+                    "raw_destination_stored": False,
+                    "external_channels_sent_by_gsn": False,
+                },
+            )
+            withdrawn_contact = log_trust_event(
+                db,
+                event_type="community_domain.beneficiary_outcome_contact_consent_recorded",
+                clan_id=int(domain.clan_id) if domain.clan_id is not None else None,
+                actor_user_id=int(owner.id),
+                subject_user_id=int(member.id),
+                meta={
+                    "community_domain_id": domain_id,
+                    "outcome_event_id": int(withdrawn_outcome.id),
+                    "channel": "sms",
+                    "destination_reference_status": "beneficiary_provided",
+                    "destination_reference_label": private_phone_label,
+                    "consent_basis": "existing_relationship",
+                    "consent_scope": "beneficiary_outcome_confirmation",
+                    "destination_value_stored": False,
+                    "raw_destination_stored": False,
+                    "external_channels_sent_by_gsn": False,
+                },
+            )
+            assert active_contact.id is not None
+            withdrawal = log_trust_event(
+                db,
+                event_type="community_domain.beneficiary_outcome_contact_consent_withdrawn",
+                clan_id=int(domain.clan_id) if domain.clan_id is not None else None,
+                actor_user_id=int(owner.id),
+                subject_user_id=int(member.id),
+                meta={
+                    "community_domain_id": domain_id,
+                    "outcome_event_id": int(withdrawn_outcome.id),
+                    "contact_consent_event_id": int(withdrawn_contact.id),
+                    "prior_channel": "sms",
+                    "prior_destination_reference_status": "beneficiary_provided",
+                    "withdrawal_reason": "wrong_recipient",
+                    "replacement_required": True,
+                    "external_channels_sent_by_gsn": False,
+                },
+            )
+            assert withdrawal.id is not None
+            before_counts = {
+                "trust_events": db.query(TrustEvent).count(),
+                "domains": db.query(CommunityDomain).count(),
+                "domain_members": db.query(CommunityDomainMembership).count(),
+                "nodes": db.query(CommunityNode).count(),
+                "policies": db.query(CommunityDomainPolicy).count(),
+                "reviews": db.query(CommunityDomainActionReview).count(),
+                "evidence": db.query(CommunityDomainActionReviewEvidence).count(),
+                "clans": db.query(Clan).count(),
+            }
+
+        response = client.get(
+            f"/community-domains/{domain_id}/provider-destination-readiness"
+        )
+        assert response.status_code == 200, response.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    payload = response.json()
+    assert payload["ok"] is True
+    readiness = payload["provider_destination_readiness"]
+    assert readiness["editable"] is False
+    assert readiness["viewer"] == {"user_id": owner.id, "can_admin": True}
+    summary = readiness["summary"]
+    assert summary["provider_destination_readiness_status"] == "manual_attestation_only"
+    assert summary["ready_to_send"] is False
+    assert summary["destination_storage_status"] == "not_connected_in_this_slice"
+    assert summary["contact_consent_record_count"] == 2
+    assert summary["contact_consent_withdrawal_count"] == 1
+    assert summary["active_contact_consent_count"] == 1
+    assert summary["withdrawn_requires_replacement_count"] == 1
+    assert summary["destination_reference_status_counts"] == {
+        "admin_verified_off_platform": 1,
+        "beneficiary_provided": 1,
+    }
+    assert summary["channel_counts"] == {"email": 1, "sms": 1}
+    assert summary["raw_destinations_stored"] == 0
+    assert summary["raw_destinations_exposed"] == 0
+    assert summary["provider_destination_records_created"] == 0
+    assert summary["provider_contact_ids_stored"] == 0
+    assert summary["provider_tokens_stored"] == 0
+    assert summary["provider_send_attempts_created"] == 0
+    assert summary["provider_delivery_receipts_verified"] == 0
+    assert "encrypted destination storage" in readiness["destination_storage_contract"][
+        "required_controls"
+    ]
+    lanes = {item["lane_key"]: item for item in readiness["lanes"]}
+    assert lanes["destination_reference_attestation"]["count"] == 2
+    assert lanes["raw_destination_storage"]["status"] == "not_connected_in_this_slice"
+    assert lanes["destination_verification"]["count"] == 2
+    assert lanes["consent_scope_enforcement"]["count"] == 1
+    assert lanes["withdrawal_replacement_review"]["status"] == "replacement_needed"
+    assert lanes["provider_destination_binding"]["count"] == 0
+    assert readiness["primary_next_action"] == {
+        "action_key": "review_withdrawn_contact_consent_attestations",
+        "label": "Review withdrawn contact/consent attestations",
+        "route_hint": f"/community-domains/{domain_id}/beneficiary-outcomes",
+        "requires_admin": True,
+    }
+    assert "read-only planning" in readiness["boundary"]
+    assert "store raw phone numbers or email addresses" in readiness["boundary"]
+    assert "send WhatsApp, SMS, or email" in readiness["boundary"]
+    assert private_destination_label not in str(readiness)
+    assert private_phone_label not in str(readiness)
+
+    with SessionLocal() as db:
+        after_counts = {
+            "trust_events": db.query(TrustEvent).count(),
+            "domains": db.query(CommunityDomain).count(),
+            "domain_members": db.query(CommunityDomainMembership).count(),
+            "nodes": db.query(CommunityNode).count(),
+            "policies": db.query(CommunityDomainPolicy).count(),
+            "reviews": db.query(CommunityDomainActionReview).count(),
+            "evidence": db.query(CommunityDomainActionReviewEvidence).count(),
+            "clans": db.query(Clan).count(),
+        }
+    assert after_counts == before_counts
+
+
+def test_member_can_read_provider_destination_readiness_but_counts_are_hidden(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    member = _seed_user(2, "provider-destination-visible-member@example.com")
+    outsider = _seed_user(3, "provider-destination-outsider@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Provider Destination Member School",
+                "display_name": "Provider Destination Member School",
+                "domain_type": "school",
+                "template_key": "school_multi_branch",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain_id = created.json()["community_domain"]["id"]
+
+        added = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": member.id, "role": "member"},
+        )
+        assert added.status_code == 201, added.text
+
+        app.dependency_overrides[get_current_user] = lambda: member
+        member_readiness = client.get(
+            f"/community-domains/{domain_id}/provider-destination-readiness"
+        )
+        assert member_readiness.status_code == 200, member_readiness.text
+
+        app.dependency_overrides[get_current_user] = lambda: outsider
+        outsider_readiness = client.get(
+            f"/community-domains/{domain_id}/provider-destination-readiness"
+        )
+        assert outsider_readiness.status_code == 403, outsider_readiness.text
+        assert "active Community Domain members" in outsider_readiness.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    readiness = member_readiness.json()["provider_destination_readiness"]
+    assert readiness["viewer"] == {"user_id": member.id, "can_admin": False}
+    summary = readiness["summary"]
+    assert summary["provider_destination_readiness_status"] == "manual_attestation_only"
+    assert summary["contact_consent_record_count"] is None
+    assert summary["contact_consent_withdrawal_count"] is None
+    assert summary["active_contact_consent_count"] is None
+    assert summary["withdrawn_requires_replacement_count"] is None
+    assert summary["destination_reference_status_counts"] is None
+    assert summary["channel_counts"] is None
+    assert summary["raw_destinations_stored"] == 0
+    assert summary["raw_destinations_exposed"] == 0
+    assert summary["provider_destination_records_created"] == 0
+    assert readiness["primary_next_action"] == {
+        "action_key": "ask_domain_admin_to_review_provider_destination_readiness",
+        "label": "Ask a Community Domain admin to review provider destination readiness",
+        "route_hint": None,
+        "requires_admin": True,
+    }
+    lanes = {item["lane_key"]: item for item in readiness["lanes"]}
+    assert lanes["destination_reference_attestation"]["route_hint"] is None
+    assert lanes["destination_reference_attestation"]["count"] is None
+    assert lanes["raw_destination_storage"]["route_hint"] is None
+    assert lanes["provider_destination_binding"]["count"] == 0
+    assert "does not create destination rows" in readiness["boundary"]
+    assert "expose private contact values" in readiness["boundary"]
+
+
 def test_trust_mobility_projects_portability_readiness_without_issuing_records(
     client: TestClient,
 ):

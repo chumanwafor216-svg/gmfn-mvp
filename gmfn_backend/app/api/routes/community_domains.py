@@ -2290,6 +2290,302 @@ def _community_domain_provider_delivery_lift_plan_payload(
     }
 
 
+def _community_domain_provider_destination_readiness_payload(
+    db: Session,
+    *,
+    domain: CommunityDomain,
+    current_user: User,
+    can_admin: bool,
+) -> dict[str, Any]:
+    domain_id = int(domain.id)
+    root_node = _find_root_node(db, community_domain_id=domain_id)
+    readiness = _community_domain_outcome_provider_delivery_readiness()
+    contact_rows = _community_domain_outcome_contact_consent_events(
+        db,
+        community_domain_id=domain_id,
+        limit=5000,
+    )
+    withdrawal_rows = _community_domain_outcome_contact_consent_withdrawal_events(
+        db,
+        community_domain_id=domain_id,
+        limit=5000,
+    )
+
+    def route_hint(suffix: str, *, requires_admin: bool) -> Optional[str]:
+        if requires_admin and not can_admin:
+            return None
+        return f"/community-domains/{domain_id}{suffix}"
+
+    def admin_count(value: int) -> Optional[int]:
+        return int(value) if can_admin else None
+
+    channel_counts: dict[str, int] = {}
+    reference_status_counts: dict[str, int] = {}
+    consent_basis_counts: dict[str, int] = {}
+    consent_scope_counts: dict[str, int] = {}
+    outcome_ids: set[int] = set()
+    verified_reference_count = 0
+    for row in contact_rows:
+        meta = row.meta or {}
+        _increment_count(channel_counts, str(meta.get("channel") or ""), "unknown")
+        reference_status = str(meta.get("destination_reference_status") or "")
+        _increment_count(reference_status_counts, reference_status, "unknown")
+        _increment_count(
+            consent_basis_counts,
+            str(meta.get("consent_basis") or ""),
+            "unknown",
+        )
+        _increment_count(
+            consent_scope_counts,
+            str(meta.get("consent_scope") or ""),
+            "unknown",
+        )
+        if reference_status in {
+            "admin_verified_off_platform",
+            "beneficiary_provided",
+            "guardian_or_authorized_contact_provided",
+            "existing_relationship_record",
+        }:
+            verified_reference_count += 1
+        outcome_event_id = int(meta.get("outcome_event_id") or 0)
+        if outcome_event_id:
+            outcome_ids.add(outcome_event_id)
+
+    latest_contact_by_outcome: dict[int, TrustEvent] = {}
+    for row in contact_rows:
+        outcome_event_id = int((row.meta or {}).get("outcome_event_id") or 0)
+        if not outcome_event_id:
+            continue
+        current = latest_contact_by_outcome.get(outcome_event_id)
+        if current is None or (row.created_at, int(row.id)) > (
+            current.created_at,
+            int(current.id),
+        ):
+            latest_contact_by_outcome[outcome_event_id] = row
+
+    latest_withdrawal_by_outcome: dict[int, TrustEvent] = {}
+    for row in withdrawal_rows:
+        outcome_event_id = int((row.meta or {}).get("outcome_event_id") or 0)
+        if not outcome_event_id:
+            continue
+        current = latest_withdrawal_by_outcome.get(outcome_event_id)
+        if current is None or (row.created_at, int(row.id)) > (
+            current.created_at,
+            int(current.id),
+        ):
+            latest_withdrawal_by_outcome[outcome_event_id] = row
+
+    active_contact_consent_count = 0
+    withdrawn_requires_replacement_count = 0
+    for outcome_event_id in outcome_ids:
+        latest_contact = latest_contact_by_outcome.get(outcome_event_id)
+        if latest_contact is None:
+            continue
+        latest_withdrawal = latest_withdrawal_by_outcome.get(outcome_event_id)
+        if latest_withdrawal is None or (
+            latest_contact.created_at,
+            int(latest_contact.id),
+        ) > (latest_withdrawal.created_at, int(latest_withdrawal.id)):
+            active_contact_consent_count += 1
+        else:
+            withdrawn_requires_replacement_count += 1
+
+    lanes = [
+        {
+            "lane_key": "destination_reference_attestation",
+            "label": "Destination reference attestation",
+            "status": (
+                "manual_attestations_present"
+                if contact_rows
+                else "manual_attestations_needed"
+            ),
+            "ready": False,
+            "count": admin_count(len(contact_rows)),
+            "route_hint": route_hint("/beneficiary-outcomes", requires_admin=True),
+            "requires_admin": True,
+            "next_step": "Keep using admin-stated contact/consent attestations until scoped provider destination storage is designed.",
+            "boundary": "Read-only destination attestation lane. This does not store or expose raw phone numbers, email addresses, provider destinations, or provider contact ids.",
+        },
+        {
+            "lane_key": "raw_destination_storage",
+            "label": "Raw destination storage",
+            "status": "not_connected_in_this_slice",
+            "ready": False,
+            "count": 0,
+            "route_hint": None,
+            "requires_admin": True,
+            "next_step": "Design encrypted destination storage, retention, masking, audit access, and deletion/replacement rules before provider sending.",
+            "boundary": "Storage lane only. This does not create destination rows, store raw destinations, store provider contact ids, or expose private contact values.",
+        },
+        {
+            "lane_key": "destination_verification",
+            "label": "Destination verification",
+            "status": (
+                "manual_reference_signal_present"
+                if verified_reference_count
+                else "verification_not_connected"
+            ),
+            "ready": False,
+            "count": admin_count(verified_reference_count),
+            "route_hint": route_hint("/beneficiary-outcomes", requires_admin=True),
+            "requires_admin": True,
+            "next_step": "Add a real verification path before treating any destination as provider-send ready.",
+            "boundary": "Verification lane only. Current records are admin-stated references and do not prove a provider-verified destination.",
+        },
+        {
+            "lane_key": "consent_scope_enforcement",
+            "label": "Consent scope enforcement",
+            "status": (
+                "active_manual_attestations_present"
+                if active_contact_consent_count
+                else "active_attestation_needed"
+            ),
+            "ready": False,
+            "count": admin_count(active_contact_consent_count),
+            "route_hint": route_hint("/beneficiary-outcomes", requires_admin=True),
+            "requires_admin": True,
+            "next_step": "Keep consent tied to the beneficiary confirmation purpose before any provider send path is enabled.",
+            "boundary": "Consent enforcement lane only. This does not enforce provider sends or convert manual consent attestations into provider permission.",
+        },
+        {
+            "lane_key": "withdrawal_replacement_review",
+            "label": "Withdrawal and replacement review",
+            "status": (
+                "replacement_needed"
+                if withdrawn_requires_replacement_count
+                else (
+                    "withdrawal_history_present"
+                    if withdrawal_rows
+                    else "no_withdrawal_signal"
+                )
+            ),
+            "ready": withdrawn_requires_replacement_count == 0,
+            "count": admin_count(len(withdrawal_rows)),
+            "route_hint": route_hint("/beneficiary-outcomes", requires_admin=True),
+            "requires_admin": True,
+            "next_step": "Review withdrawn or invalidated contact/consent attestations before any external delivery planning.",
+            "boundary": "Withdrawal review lane only. This does not delete old attestations, notify recipients, or create replacement contacts.",
+        },
+        {
+            "lane_key": "provider_destination_binding",
+            "label": "Provider destination binding",
+            "status": "not_connected_in_this_slice",
+            "ready": False,
+            "count": 0,
+            "route_hint": None,
+            "requires_admin": True,
+            "next_step": "Map provider message ids and destination references only after provider APIs, consent enforcement, and webhook verification exist.",
+            "boundary": "Provider binding lane only. This does not create provider destination records, provider tokens, send attempts, or receipts.",
+        },
+    ]
+
+    if not can_admin:
+        primary_next_action = {
+            "action_key": "ask_domain_admin_to_review_provider_destination_readiness",
+            "label": "Ask a Community Domain admin to review provider destination readiness",
+            "route_hint": None,
+            "requires_admin": True,
+        }
+    elif not contact_rows:
+        primary_next_action = {
+            "action_key": "record_manual_contact_consent_attestation_first",
+            "label": "Record contact/consent evidence before provider destination planning",
+            "route_hint": route_hint("/beneficiary-outcomes", requires_admin=True),
+            "requires_admin": True,
+        }
+    elif withdrawn_requires_replacement_count:
+        primary_next_action = {
+            "action_key": "review_withdrawn_contact_consent_attestations",
+            "label": "Review withdrawn contact/consent attestations",
+            "route_hint": route_hint("/beneficiary-outcomes", requires_admin=True),
+            "requires_admin": True,
+        }
+    else:
+        primary_next_action = {
+            "action_key": "keep_manual_attestations_until_destination_storage_exists",
+            "label": "Keep manual attestations until provider destination storage exists",
+            "route_hint": route_hint("/beneficiary-outcomes", requires_admin=True),
+            "requires_admin": True,
+        }
+
+    return {
+        "community_domain": _domain_payload(domain, root_node=root_node),
+        "viewer": {
+            "user_id": int(current_user.id),
+            "can_admin": bool(can_admin),
+        },
+        "summary": {
+            "provider_destination_readiness_status": "manual_attestation_only",
+            "ready_to_send": False,
+            "destination_storage_status": "not_connected_in_this_slice",
+            "destination_encryption_status": "not_connected_in_this_slice",
+            "destination_masking_status": "not_connected_in_this_slice",
+            "provider_destination_binding_status": "not_connected_in_this_slice",
+            "provider_send_engine_status": readiness["provider_send_engine_status"],
+            "contact_preference_status": readiness["contact_preference_status"],
+            "consent_enforcement_status": readiness["consent_enforcement_status"],
+            "planned_provider_channels": readiness["planned_provider_channels"],
+            "contact_consent_record_count": admin_count(len(contact_rows)),
+            "contact_consent_withdrawal_count": admin_count(len(withdrawal_rows)),
+            "active_contact_consent_count": admin_count(
+                active_contact_consent_count
+            ),
+            "withdrawn_requires_replacement_count": admin_count(
+                withdrawn_requires_replacement_count
+            ),
+            "destination_reference_status_counts": (
+                reference_status_counts if can_admin else None
+            ),
+            "channel_counts": channel_counts if can_admin else None,
+            "consent_basis_counts": consent_basis_counts if can_admin else None,
+            "consent_scope_counts": consent_scope_counts if can_admin else None,
+            "raw_destinations_stored": 0,
+            "raw_destinations_exposed": 0,
+            "provider_destination_records_created": 0,
+            "provider_contact_ids_stored": 0,
+            "provider_tokens_stored": 0,
+            "provider_send_attempts_created": 0,
+            "provider_delivery_receipts_verified": 0,
+        },
+        "destination_storage_contract": {
+            "status": "not_designed_in_this_slice",
+            "required_controls": [
+                "encrypted destination storage",
+                "purpose-scoped consent enforcement",
+                "masked admin display",
+                "replacement and withdrawal audit trail",
+                "provider destination id mapping",
+                "retention and deletion rules",
+            ],
+            "minimum_send_rule": (
+                "Do not send externally until the selected channel has a "
+                "verified destination, active purpose-scoped consent or legal "
+                "authority, provider binding, webhook verification, and retry "
+                "failure review."
+            ),
+            "privacy_boundary": (
+                "This readiness view summarizes manual attestations only. It "
+                "does not show or store phone numbers, email addresses, provider "
+                "destinations, provider tokens, or provider contact ids."
+            ),
+        },
+        "lanes": lanes,
+        "ready_total": sum(1 for item in lanes if item["ready"]),
+        "blocked_lanes": [item["lane_key"] for item in lanes if not item["ready"]],
+        "primary_next_action": primary_next_action,
+        "editable": False,
+        "boundary": (
+            "Community Domain provider destination readiness is read-only "
+            "planning. It does not create destination rows, store raw phone "
+            "numbers or email addresses, expose private contact values, store "
+            "provider contact ids, store provider tokens, create provider jobs, "
+            "send WhatsApp, SMS, or email, create webhooks, create retry queues, "
+            "verify provider receipts, expose private beneficiary records, move "
+            "money, issue TrustSlips, or write Trust Passport entries."
+        ),
+    }
+
+
 def _community_domain_outcome_confirmation_delivery_pack(
     *,
     domain: CommunityDomain,
@@ -26258,6 +26554,27 @@ def get_community_domain_provider_delivery_lift_plan(
         "ok": True,
         "community_domain_id": int(domain.id),
         "provider_delivery_lift_plan": _community_domain_provider_delivery_lift_plan_payload(
+            db,
+            domain=domain,
+            current_user=current_user,
+            can_admin=can_admin,
+        ),
+    }
+
+
+@router.get("/{community_domain_id}/provider-destination-readiness", response_model=dict[str, Any])
+def get_community_domain_provider_destination_readiness(
+    community_domain_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_member_scope(db, domain=domain, current_user=current_user)
+    can_admin = _has_domain_admin_scope(db, domain=domain, current_user=current_user)
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "provider_destination_readiness": _community_domain_provider_destination_readiness_payload(
             db,
             domain=domain,
             current_user=current_user,

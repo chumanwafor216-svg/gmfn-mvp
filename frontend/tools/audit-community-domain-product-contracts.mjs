@@ -3976,6 +3976,24 @@ assertContains(
 
 assertContains(
   "gmfn_backend/app/api/routes/community_domains.py",
+  /def _community_domain_provider_destination_readiness_payload[\s\S]*manual_attestation_only[\s\S]*destination_storage_status[\s\S]*raw_destinations_stored[\s\S]*raw_destinations_exposed[\s\S]*provider_destination_records_created[\s\S]*provider_contact_ids_stored[\s\S]*provider_tokens_stored[\s\S]*does not create destination rows[\s\S]*store raw phone[\s\S]*email addresses[\s\S]*send WhatsApp, SMS, or[\s\S]*email[\s\S]*@router\.get\("\/\{community_domain_id\}\/provider-destination-readiness"[\s\S]*def get_community_domain_provider_destination_readiness[\s\S]*_require_domain_member_scope/,
+  "Backend route must expose scoped read-only Community Domain provider destination readiness without destination rows, raw phone/email storage, private contact exposure, provider ids/tokens, provider jobs, sends, webhooks, retry queues, provider receipts, private beneficiary exposure, money, TrustSlips, or Trust Passport writes."
+);
+
+assertContains(
+  "gmfn_backend/tests/test_community_domains.py",
+  /test_provider_destination_readiness_projects_destination_gate_without_storage[\s\S]*private_destination_label = "secret-beneficiary-destination@example\.com"[\s\S]*\/provider-destination-readiness[\s\S]*provider_destination_readiness_status[\s\S]*manual_attestation_only[\s\S]*raw_destinations_stored[\s\S]*raw_destinations_exposed[\s\S]*provider_destination_records_created[\s\S]*provider_contact_ids_stored[\s\S]*provider_tokens_stored[\s\S]*private_destination_label not in str\(readiness\)[\s\S]*private_phone_label not in str\(readiness\)[\s\S]*after_counts == before_counts/,
+  "Backend tests must prove provider destination readiness projects destination and consent gates without storing or exposing raw destinations, creating provider records/tokens, sending externally, or changing data."
+);
+
+assertContains(
+  "gmfn_backend/tests/test_community_domains.py",
+  /test_member_can_read_provider_destination_readiness_but_counts_are_hidden[\s\S]*\/provider-destination-readiness[\s\S]*outsider_readiness\.status_code == 403[\s\S]*"destination_reference_status_counts"\] is None[\s\S]*lanes\["destination_reference_attestation"\]\["route_hint"\] is None/,
+  "Backend tests must prove members can read provider destination readiness while outsiders are rejected and admin-only aggregate counts/routes are hidden."
+);
+
+assertContains(
+  "gmfn_backend/app/api/routes/community_domains.py",
   /def _community_domain_trust_mobility_payload[\s\S]*read-only portability planning[\s\S]*does not create TrustSlips[\s\S]*write Trust Passport[\s\S]*show storage keys[\s\S]*create a social Community[\s\S]*@router\.get\("\/\{community_domain_id\}\/trust-mobility"[\s\S]*def get_community_domain_trust_mobility[\s\S]*_require_domain_member_scope/,
   "Backend route must expose scoped read-only Community Domain trust mobility without TrustSlip, Trust Passport, credential, relay, evidence release, public proof, outward link, billing, marketplace, social Community, money, or private-record side effects."
 );

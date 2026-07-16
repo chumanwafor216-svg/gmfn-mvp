@@ -613,6 +613,12 @@ GSN also ties blocked provider-send checks to the actual contact/consent
 evidence behind the case. If the consent record changes, GSN can record a new
 readiness fact; if nothing changed, repeated clicks do not inflate the report.
 
+GSN also separates contact/consent attestations from provider-ready destination
+storage. A Community Domain can now see whether it has manual destination and
+consent evidence, but GSN still does not store raw phone numbers, email
+addresses, provider destination ids, or provider tokens, and it still does not
+send WhatsApp, SMS, or email.
+
 The aim is not to expose private records, but to preserve important community
 value and share only safe, verified summaries when needed.
 ```

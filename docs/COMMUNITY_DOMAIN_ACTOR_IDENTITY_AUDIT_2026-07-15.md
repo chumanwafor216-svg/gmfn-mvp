@@ -3002,6 +3002,49 @@ To make the outreach promise true end-to-end, build in this order:
    - this does not expose private beneficiary records, move money, issue
      TrustSlips, or write Trust Passport entries.
 
+38. **Provider destination readiness v1 - implemented 2026-07-16**
+
+   Community Domains now have a standalone read-only provider destination
+   readiness projection:
+
+   ```text
+   GET /community-domains/{community_domain_id}/provider-destination-readiness
+   ```
+
+   What it does:
+
+   - shows that provider destination handling is still manual-attestation-only;
+   - projects the destination storage, encryption, masking, provider binding,
+     contact preference, and consent enforcement blockers;
+   - gives admins aggregate counts for contact/consent records, withdrawals,
+     active manual attestations, replacement-needed cases, channels, destination
+     reference statuses, consent bases, and consent scopes;
+   - hides admin-only aggregate counts and route hints from ordinary members;
+   - rejects outsiders who are not active Community Domain members;
+   - includes a storage contract for what must exist before GSN can honestly
+     store or use WhatsApp/SMS/email destinations.
+
+   Why this matters:
+
+   - the system can now distinguish "we have an admin-stated contact/consent
+     attestation" from "GSN has a provider-ready destination";
+   - admins can see whether destination and consent evidence exists without
+     exposing raw phone numbers, email addresses, or provider destination ids;
+   - future provider work has a truth gate before anyone can claim GSN is ready
+     to send externally.
+
+   Boundary:
+
+   - this does not create destination rows;
+   - this does not store raw phone numbers or email addresses;
+   - this does not expose private contact values;
+   - this does not store provider contact ids or provider tokens;
+   - this does not create provider jobs, webhooks, retry queues, send attempts,
+     or verified provider receipts;
+   - this does not send WhatsApp, SMS, or email;
+   - this does not expose private beneficiary records, move money, issue
+     TrustSlips, or write Trust Passport entries.
+
 #### Outreach positioning
 
 The outreach language should be:
