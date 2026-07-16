@@ -23,6 +23,7 @@ function assertContains(rootedPath, pattern, message, options = {}) {
     ? readFromFrontend(rootedPath)
     : readFromRoot(rootedPath);
 
+  pattern.lastIndex = 0;
   if (!pattern.test(text)) {
     findings.push({
       file: rootedPath,
@@ -53,6 +54,7 @@ function assertNotContains(rootedPath, pattern, message, options = {}) {
 
   let foundOnLine = false;
   text.split(/\r?\n/).forEach((line, index) => {
+    pattern.lastIndex = 0;
     if (pattern.test(line)) {
       foundOnLine = true;
       findings.push({
