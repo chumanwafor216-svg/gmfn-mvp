@@ -1351,8 +1351,132 @@ try {
   }
   await clickByDebugId(page, "community-domain-dashboard.beneficiary-outcome-task.recent");
   await page.getByText("Recent outcomes", { exact: true }).waitFor({ timeout: 10000 });
-  await clickByDebugId(page, "community-domain-dashboard.beneficiary-outcome-recent-packet.receipt");
-  await page.getByText("Record receipt correction", { exact: true }).waitFor({ timeout: 10000 });
+  if (
+    await isDebugVisible(
+      page,
+      "community-domain-dashboard.beneficiary-outcome-recent-packet.receipt"
+    )
+  ) {
+    findings.push(
+      "Community Domain Recent outcome packet buttons are visible before Change packet is opened."
+    );
+  }
+  if (
+    !(await isDebugVisible(
+      page,
+      "community-domain-dashboard.beneficiary-outcome-recent-packet-toggle"
+    ))
+  ) {
+    findings.push(
+      "Community Domain Recent outcome packets are missing a Change packet control."
+    );
+  }
+  await clickByDebugId(
+    page,
+    "community-domain-dashboard.beneficiary-outcome-recent-packet-toggle"
+  );
+  await clickByDebugId(
+    page,
+    "community-domain-dashboard.beneficiary-outcome-recent-packet.contact"
+  );
+  await page
+    .locator(
+      '[data-cta-id="community-domain-dashboard.beneficiary-outcome-contact-consent"]'
+    )
+    .first()
+    .waitFor({ state: "visible", timeout: 10000 });
+  if (
+    await isDebugVisible(
+      page,
+      "community-domain-dashboard.beneficiary-outcome-contact-consent-withdrawal"
+    )
+  ) {
+    findings.push(
+      "Community Domain Contact packet shows consent withdrawal before Change contact action is opened."
+    );
+  }
+  if (
+    !(await isDebugVisible(
+      page,
+      "community-domain-dashboard.beneficiary-outcome-contact-action-toggle"
+    ))
+  ) {
+    findings.push(
+      "Community Domain Contact packet is missing a Change contact action control."
+    );
+  }
+  await clickByDebugId(
+    page,
+    "community-domain-dashboard.beneficiary-outcome-contact-action-toggle"
+  );
+  await clickByDebugId(
+    page,
+    "community-domain-dashboard.beneficiary-outcome-contact-action.withdraw"
+  );
+  await page
+    .locator(
+      '[data-cta-id="community-domain-dashboard.beneficiary-outcome-contact-consent-withdrawal"]'
+    )
+    .first()
+    .waitFor({ state: "visible", timeout: 10000 });
+  if (
+    await isDebugVisible(
+      page,
+      "community-domain-dashboard.beneficiary-outcome-contact-consent"
+    )
+  ) {
+    findings.push(
+      "Community Domain Contact packet still shows record contact/consent after selecting withdrawal."
+    );
+  }
+  await clickByDebugId(
+    page,
+    "community-domain-dashboard.beneficiary-outcome-recent-packet-toggle"
+  );
+  await clickByDebugId(
+    page,
+    "community-domain-dashboard.beneficiary-outcome-recent-packet.receipt"
+  );
+  if (
+    await isDebugVisible(
+      page,
+      "community-domain-dashboard.beneficiary-outcome-delivery-receipt-correction"
+    )
+  ) {
+    findings.push(
+      "Community Domain Receipt packet shows the correction form before Open receipt form."
+    );
+  }
+  if (
+    !(await isDebugVisible(
+      page,
+      "community-domain-dashboard.beneficiary-outcome-receipt-form-toggle"
+    ))
+  ) {
+    findings.push(
+      "Community Domain Receipt packet is missing an Open receipt form control."
+    );
+  }
+  await clickByDebugId(
+    page,
+    "community-domain-dashboard.beneficiary-outcome-receipt-form-toggle"
+  );
+  await page
+    .locator(
+      '[data-cta-id="community-domain-dashboard.beneficiary-outcome-delivery-receipt-correction"]'
+    )
+    .first()
+    .waitFor({ state: "visible", timeout: 10000 });
+  if (
+    await isDebugVisible(
+      page,
+      "community-domain-dashboard.beneficiary-outcome-recent-packet.summary"
+    )
+  ) {
+    findings.push(
+      "Community Domain Recent outcome packet buttons stay visible after selecting a packet."
+    );
+  }
 
   audit = await page.evaluate(pageAudit);
   const finalText = normalized(audit.bodyText);

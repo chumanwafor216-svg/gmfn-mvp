@@ -210,6 +210,7 @@ type BeneficiaryOutcomeRecentPacketKey =
   | "contact"
   | "delivery"
   | "receipt";
+type BeneficiaryOutcomeContactActionKey = "record" | "withdraw";
 type SetupStepKey =
   | "identity"
   | "payment"
@@ -2708,6 +2709,22 @@ export default function CommunityDomainDashboardPage() {
     beneficiaryOutcomeRecentPacketById,
     setBeneficiaryOutcomeRecentPacketById,
   ] = useState<Record<string, BeneficiaryOutcomeRecentPacketKey>>({});
+  const [
+    beneficiaryOutcomeRecentPacketChooserOpenById,
+    setBeneficiaryOutcomeRecentPacketChooserOpenById,
+  ] = useState<Record<string, boolean>>({});
+  const [
+    beneficiaryOutcomeContactActionById,
+    setBeneficiaryOutcomeContactActionById,
+  ] = useState<Record<string, BeneficiaryOutcomeContactActionKey>>({});
+  const [
+    beneficiaryOutcomeContactActionChooserOpenById,
+    setBeneficiaryOutcomeContactActionChooserOpenById,
+  ] = useState<Record<string, boolean>>({});
+  const [
+    beneficiaryOutcomeReceiptFormOpenById,
+    setBeneficiaryOutcomeReceiptFormOpenById,
+  ] = useState<Record<string, boolean>>({});
   const [loadedReadinessLanes, setLoadedReadinessLanes] = useState<Record<string, boolean>>({});
   const [loadingReadinessLanes, setLoadingReadinessLanes] = useState<Record<string, boolean>>({});
   const readinessLoadSequence = useRef(0);
@@ -2910,6 +2927,10 @@ export default function CommunityDomainDashboardPage() {
     setBeneficiaryOutcomeRecordStageChooserOpen(false);
     setBeneficiaryOutcomeRows([]);
     setBeneficiaryOutcomeRecentPacketById({});
+    setBeneficiaryOutcomeRecentPacketChooserOpenById({});
+    setBeneficiaryOutcomeContactActionById({});
+    setBeneficiaryOutcomeContactActionChooserOpenById({});
+    setBeneficiaryOutcomeReceiptFormOpenById({});
     setBeneficiaryOutcomeDraft(emptyCommunityDomainOutcomeDraft());
     setRolloutPlan(null);
     setActivityMap(null);
@@ -12462,12 +12483,59 @@ export default function CommunityDomainDashboardPage() {
                                 beneficiaryOutcomeRecentPacketById[
                                   outcomeEventId
                                 ] || "summary";
+                              const outcomeRecentPacketChooserOpen = Boolean(
+                                beneficiaryOutcomeRecentPacketChooserOpenById[
+                                  outcomeEventId
+                                ]
+                              );
                               const activeOutcomeRecentPacketOption =
                                 BENEFICIARY_OUTCOME_RECENT_PACKET_OPTIONS.find(
                                   (packet) =>
                                     packet.key === activeOutcomeRecentPacket
                                 ) ||
                                 BENEFICIARY_OUTCOME_RECENT_PACKET_OPTIONS[0];
+                              const requestedOutcomeContactAction =
+                                beneficiaryOutcomeContactActionById[
+                                  outcomeEventId
+                                ] || "record";
+                              const activeOutcomeContactAction =
+                                requestedOutcomeContactAction === "withdraw" &&
+                                canWithdrawContactConsent
+                                  ? "withdraw"
+                                  : "record";
+                              const outcomeContactActionChooserOpen = Boolean(
+                                beneficiaryOutcomeContactActionChooserOpenById[
+                                  outcomeEventId
+                                ]
+                              );
+                              const activeOutcomeContactActionLabel =
+                                activeOutcomeContactAction === "withdraw"
+                                  ? "Withdraw consent"
+                                  : "Record contact/consent";
+                              const activeOutcomeContactActionNote =
+                                activeOutcomeContactAction === "withdraw"
+                                  ? "Use this only when the beneficiary or authorized contact withdraws consent."
+                                  : "Record or replace contact/consent evidence without exposing private contact details.";
+                              const outcomeReceiptFormOpen = Boolean(
+                                beneficiaryOutcomeReceiptFormOpenById[
+                                  outcomeEventId
+                                ]
+                              );
+                              const canOpenOutcomeReceiptForm =
+                                canRecordManualDelivery ||
+                                Boolean(latestDeliveryReceipt);
+                              const activeOutcomeReceiptTaskLabel =
+                                latestDeliveryReceipt
+                                  ? "Record receipt correction"
+                                  : canRecordManualDelivery
+                                    ? "Record manual receipt"
+                                    : "Wait for delivery readiness";
+                              const activeOutcomeReceiptTaskNote =
+                                latestDeliveryReceipt
+                                  ? "Use this only to correct an existing receipt; the original stays in the audit trail."
+                                  : canRecordManualDelivery
+                                    ? "Open this after manual delivery has happened and record one receipt outcome."
+                                    : "Prepare a confirmation link and keep active contact/consent evidence before recording delivery.";
                               return (
                               <div
                                 key={outcomeEventId}
@@ -12566,50 +12634,100 @@ export default function CommunityDomainDashboardPage() {
                                   {" -> "}
                                   {cleanText(item?.after_value, "After value not shown")}
                                 </div>
-                                <div
-                                  style={{
-                                    display: "grid",
-                                    gridTemplateColumns:
-                                      "repeat(auto-fit, minmax(min(100%, 112px), 1fr))",
-                                    gap: 8,
-                                  }}
-                                >
-                                  {BENEFICIARY_OUTCOME_RECENT_PACKET_OPTIONS.map(
-                                    (packet) => {
-                                      const selected =
-                                        packet.key === activeOutcomeRecentPacket;
-                                      return (
-                                        <StableButton
-                                          key={packet.key}
-                                          type="button"
-                                          kind={selected ? "primary" : "secondary"}
-                                          stableHeight={38}
-                                          fullWidth
-                                          aria-pressed={selected}
-                                          title={packet.note}
-                                          debugId={`community-domain-dashboard.beneficiary-outcome-recent-packet.${packet.key}`}
-                                          onClick={() => {
-                                            setBeneficiaryOutcomeRecentPacketById(
-                                              (current) => ({
-                                                ...current,
-                                                [outcomeEventId]: packet.key,
-                                              })
-                                            );
-                                          }}
-                                          style={{
-                                            justifyContent: "center",
-                                            fontSize: 12,
-                                            textTransform: "none",
-                                          }}
-                                        >
-                                          {packet.label}
-                                        </StableButton>
-                                      );
+                                <div style={{ display: "grid", gap: 8 }}>
+                                  <div style={{ ...helperText(), fontSize: 13 }}>
+                                    Current packet:{" "}
+                                    <strong>
+                                      {activeOutcomeRecentPacketOption.label}
+                                    </strong>
+                                    . {activeOutcomeRecentPacketOption.note}
+                                  </div>
+                                  <StableButton
+                                    type="button"
+                                    kind="secondary"
+                                    fullWidth
+                                    stableHeight={38}
+                                    debugId="community-domain-dashboard.beneficiary-outcome-recent-packet-toggle"
+                                    aria-expanded={outcomeRecentPacketChooserOpen}
+                                    aria-controls={`community-domain-beneficiary-outcome-recent-packets-${outcomeEventId}`}
+                                    onClick={() =>
+                                      setBeneficiaryOutcomeRecentPacketChooserOpenById(
+                                        (current) => ({
+                                          ...current,
+                                          [outcomeEventId]: !current[outcomeEventId],
+                                        })
+                                      )
                                     }
-                                  )}
-                                </div>
-                                <div style={{ ...helperText(), fontSize: 13 }}>
-                                  {activeOutcomeRecentPacketOption.note}
+                                    style={{
+                                      justifyContent: "center",
+                                      fontSize: 13,
+                                      textTransform: "none",
+                                    }}
+                                  >
+                                    {outcomeRecentPacketChooserOpen
+                                      ? "Close packets"
+                                      : "Change packet"}
+                                  </StableButton>
+                                  {outcomeRecentPacketChooserOpen ? (
+                                    <div
+                                      id={`community-domain-beneficiary-outcome-recent-packets-${outcomeEventId}`}
+                                      data-debug-id="community-domain-dashboard.beneficiary-outcome-recent-packet-panel"
+                                      style={{
+                                        display: "grid",
+                                        gridTemplateColumns:
+                                          "repeat(auto-fit, minmax(min(100%, 112px), 1fr))",
+                                        gap: 8,
+                                      }}
+                                    >
+                                      {BENEFICIARY_OUTCOME_RECENT_PACKET_OPTIONS.map(
+                                        (packet) => {
+                                          const selected =
+                                            packet.key === activeOutcomeRecentPacket;
+                                          return (
+                                            <StableButton
+                                              key={packet.key}
+                                              type="button"
+                                              kind={
+                                                selected ? "primary" : "secondary"
+                                              }
+                                              stableHeight={38}
+                                              fullWidth
+                                              aria-pressed={selected}
+                                              title={packet.note}
+                                              debugId={`community-domain-dashboard.beneficiary-outcome-recent-packet.${packet.key}`}
+                                              onClick={() => {
+                                                setBeneficiaryOutcomeRecentPacketById(
+                                                  (current) => ({
+                                                    ...current,
+                                                    [outcomeEventId]: packet.key,
+                                                  })
+                                                );
+                                                setBeneficiaryOutcomeRecentPacketChooserOpenById(
+                                                  (current) => ({
+                                                    ...current,
+                                                    [outcomeEventId]: false,
+                                                  })
+                                                );
+                                                setBeneficiaryOutcomeReceiptFormOpenById(
+                                                  (current) => ({
+                                                    ...current,
+                                                    [outcomeEventId]: false,
+                                                  })
+                                                );
+                                              }}
+                                              style={{
+                                                justifyContent: "center",
+                                                fontSize: 12,
+                                                textTransform: "none",
+                                              }}
+                                            >
+                                              {packet.label}
+                                            </StableButton>
+                                          );
+                                        }
+                                      )}
+                                    </div>
+                                  ) : null}
                                 </div>
                                 {activeOutcomeRecentPacket === "summary" ? (
                                   <>
@@ -12794,7 +12912,116 @@ export default function CommunityDomainDashboardPage() {
                                       : "Create confirmation link"}
                                   </StableButton>
                                 ) : null}
-                                {activeOutcomeRecentPacket === "contact" && isAdmin ? (
+                                {activeOutcomeRecentPacket === "contact" &&
+                                isAdmin ? (
+                                  <div style={{ display: "grid", gap: 8 }}>
+                                    <div style={{ ...helperText(), fontSize: 13 }}>
+                                      Current contact task:{" "}
+                                      <strong>
+                                        {activeOutcomeContactActionLabel}
+                                      </strong>
+                                      . {activeOutcomeContactActionNote}
+                                    </div>
+                                    {canWithdrawContactConsent ? (
+                                      <StableButton
+                                        type="button"
+                                        kind="secondary"
+                                        fullWidth
+                                        stableHeight={38}
+                                        debugId="community-domain-dashboard.beneficiary-outcome-contact-action-toggle"
+                                        aria-expanded={
+                                          outcomeContactActionChooserOpen
+                                        }
+                                        aria-controls={`community-domain-beneficiary-outcome-contact-actions-${outcomeEventId}`}
+                                        onClick={() =>
+                                          setBeneficiaryOutcomeContactActionChooserOpenById(
+                                            (current) => ({
+                                              ...current,
+                                              [outcomeEventId]:
+                                                !current[outcomeEventId],
+                                            })
+                                          )
+                                        }
+                                        style={{
+                                          justifyContent: "center",
+                                          fontSize: 13,
+                                          textTransform: "none",
+                                        }}
+                                      >
+                                        {outcomeContactActionChooserOpen
+                                          ? "Close contact actions"
+                                          : "Change contact action"}
+                                      </StableButton>
+                                    ) : null}
+                                    {canWithdrawContactConsent &&
+                                    outcomeContactActionChooserOpen ? (
+                                      <div
+                                        id={`community-domain-beneficiary-outcome-contact-actions-${outcomeEventId}`}
+                                        data-debug-id="community-domain-dashboard.beneficiary-outcome-contact-action-panel"
+                                        style={{
+                                          display: "grid",
+                                          gridTemplateColumns:
+                                            "repeat(auto-fit, minmax(min(100%, 155px), 1fr))",
+                                          gap: 8,
+                                        }}
+                                      >
+                                        {[
+                                          [
+                                            "record",
+                                            "Record contact/consent",
+                                          ],
+                                          ["withdraw", "Withdraw consent"],
+                                        ].map(([action, label]) => {
+                                          const actionKey =
+                                            action as BeneficiaryOutcomeContactActionKey;
+                                          return (
+                                            <StableButton
+                                              key={actionKey}
+                                              type="button"
+                                              kind={
+                                                activeOutcomeContactAction ===
+                                                actionKey
+                                                  ? "primary"
+                                                  : "secondary"
+                                              }
+                                              stableHeight={38}
+                                              fullWidth
+                                              aria-pressed={
+                                                activeOutcomeContactAction ===
+                                                actionKey
+                                              }
+                                              debugId={`community-domain-dashboard.beneficiary-outcome-contact-action.${actionKey}`}
+                                              onClick={() => {
+                                                setBeneficiaryOutcomeContactActionById(
+                                                  (current) => ({
+                                                    ...current,
+                                                    [outcomeEventId]: actionKey,
+                                                  })
+                                                );
+                                                setBeneficiaryOutcomeContactActionChooserOpenById(
+                                                  (current) => ({
+                                                    ...current,
+                                                    [outcomeEventId]: false,
+                                                  })
+                                                );
+                                              }}
+                                              style={{
+                                                justifyContent: "center",
+                                                fontSize: 13,
+                                                textTransform: "none",
+                                              }}
+                                            >
+                                              {label}
+                                            </StableButton>
+                                          );
+                                        })}
+                                      </div>
+                                    ) : null}
+                                  </div>
+                                ) : null}
+                                {activeOutcomeRecentPacket === "contact" &&
+                                isAdmin &&
+                                activeOutcomeContactAction === "record" ? (
                                   <div
                                     style={{
                                       display: "grid",
@@ -12953,7 +13180,8 @@ export default function CommunityDomainDashboardPage() {
                                 ) : null}
                                 {activeOutcomeRecentPacket === "contact" &&
                                 isAdmin &&
-                                canWithdrawContactConsent ? (
+                                canWithdrawContactConsent &&
+                                activeOutcomeContactAction === "withdraw" ? (
                                   <div
                                     style={{
                                       display: "grid",
@@ -13070,9 +13298,51 @@ export default function CommunityDomainDashboardPage() {
                                     Open Receipt after manual delivery happens.
                                   </div>
                                 ) : null}
+                                {activeOutcomeRecentPacket === "receipt" ? (
+                                  <div style={{ display: "grid", gap: 8 }}>
+                                    <div style={{ ...helperText(), fontSize: 13 }}>
+                                      Current receipt task:{" "}
+                                      <strong>
+                                        {activeOutcomeReceiptTaskLabel}
+                                      </strong>
+                                      . {activeOutcomeReceiptTaskNote}
+                                    </div>
+                                    {canOpenOutcomeReceiptForm ? (
+                                      <StableButton
+                                        type="button"
+                                        kind="secondary"
+                                        fullWidth
+                                        stableHeight={38}
+                                        debugId="community-domain-dashboard.beneficiary-outcome-receipt-form-toggle"
+                                        aria-expanded={outcomeReceiptFormOpen}
+                                        aria-controls={`community-domain-beneficiary-outcome-receipt-form-${outcomeEventId}`}
+                                        onClick={() =>
+                                          setBeneficiaryOutcomeReceiptFormOpenById(
+                                            (current) => ({
+                                              ...current,
+                                              [outcomeEventId]:
+                                                !current[outcomeEventId],
+                                            })
+                                          )
+                                        }
+                                        style={{
+                                          justifyContent: "center",
+                                          fontSize: 13,
+                                          textTransform: "none",
+                                        }}
+                                      >
+                                        {outcomeReceiptFormOpen
+                                          ? "Close receipt form"
+                                          : "Open receipt form"}
+                                      </StableButton>
+                                    ) : null}
+                                  </div>
+                                ) : null}
                                 {activeOutcomeRecentPacket === "receipt" &&
-                                canRecordManualDelivery ? (
+                                canRecordManualDelivery &&
+                                outcomeReceiptFormOpen ? (
                                   <div
+                                    id={`community-domain-beneficiary-outcome-receipt-form-${outcomeEventId}`}
                                     style={{
                                       display: "grid",
                                       gridTemplateColumns:
@@ -13235,17 +13505,10 @@ export default function CommunityDomainDashboardPage() {
                                   </div>
                                 ) : null}
                                 {activeOutcomeRecentPacket === "receipt" &&
-                                !canRecordManualDelivery &&
-                                !latestDeliveryReceipt ? (
-                                  <div style={{ ...helperText(), fontSize: 13 }}>
-                                    Manual receipt is not ready yet. Prepare a
-                                    confirmation link and keep active contact/consent
-                                    evidence before recording delivery.
-                                  </div>
-                                ) : null}
-                                {activeOutcomeRecentPacket === "receipt" &&
-                                latestDeliveryReceipt ? (
+                                latestDeliveryReceipt &&
+                                outcomeReceiptFormOpen ? (
                                   <div
+                                    id={`community-domain-beneficiary-outcome-receipt-form-${outcomeEventId}`}
                                     style={{
                                       display: "grid",
                                       gridTemplateColumns:

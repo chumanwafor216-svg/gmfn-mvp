@@ -884,11 +884,100 @@ assertContains(
   { frontend: true }
 );
 
-assertContains(
-  "src/pages/CommunityDomainDashboardPage.tsx",
-  /type BeneficiaryOutcomeTaskKey = "record" \| "recent"[\s\S]*type BeneficiaryOutcomeRecordStageKey = "person" \| "change" \| "proof"[\s\S]*type BeneficiaryOutcomeRecentPacketKey =[\s\S]*"summary"[\s\S]*"confirmation"[\s\S]*"contact"[\s\S]*"delivery"[\s\S]*"receipt"[\s\S]*BENEFICIARY_OUTCOME_RECORD_STAGE_OPTIONS[\s\S]*key: "person"[\s\S]*key: "change"[\s\S]*key: "proof"[\s\S]*BENEFICIARY_OUTCOME_RECENT_PACKET_OPTIONS[\s\S]*key: "summary"[\s\S]*key: "confirmation"[\s\S]*key: "contact"[\s\S]*key: "delivery"[\s\S]*key: "receipt"[\s\S]*activeBeneficiaryOutcomeTask[\s\S]*activeBeneficiaryOutcomeRecordStage[\s\S]*beneficiaryOutcomeRecordStageChooserOpen[\s\S]*beneficiaryOutcomeRecentPacketById[\s\S]*community-domain-dashboard\.beneficiary-outcome-task\.\$\{task\}[\s\S]*activeBeneficiaryOutcomeTask === "record"[\s\S]*community-domain-dashboard\.beneficiary-outcome-record-stage-toggle[\s\S]*Close steps[\s\S]*Change step[\s\S]*beneficiaryOutcomeRecordStageChooserOpen \? \([\s\S]*community-domain-dashboard\.beneficiary-outcome-record-stage\.\$\{stage\.key\}[\s\S]*setBeneficiaryOutcomeRecordStageChooserOpen\([\s\S]*false[\s\S]*activeBeneficiaryOutcomeRecordStage === "person"[\s\S]*community-domain-dashboard\.beneficiary-outcome-record-next\.change[\s\S]*activeBeneficiaryOutcomeRecordStage === "change"[\s\S]*community-domain-dashboard\.beneficiary-outcome-record-next\.proof[\s\S]*activeBeneficiaryOutcomeRecordStage === "proof"[\s\S]*community-domain-dashboard\.beneficiary-outcome-record[\s\S]*activeBeneficiaryOutcomeTask === "recent"[\s\S]*Recent outcomes[\s\S]*activeOutcomeRecentPacket[\s\S]*community-domain-dashboard\.beneficiary-outcome-recent-packet\.\$\{packet\.key\}[\s\S]*activeOutcomeRecentPacket === "summary"[\s\S]*activeOutcomeRecentPacket === "confirmation"[\s\S]*community-domain-dashboard\.beneficiary-outcome-confirmation-link[\s\S]*activeOutcomeRecentPacket === "contact"[\s\S]*community-domain-dashboard\.beneficiary-outcome-contact-consent[\s\S]*activeOutcomeRecentPacket === "delivery"[\s\S]*No delivery pack is prepared[\s\S]*activeOutcomeRecentPacket === "receipt"[\s\S]*community-domain-dashboard\.beneficiary-outcome-delivery-receipt/,
-  "Community Domain beneficiary outcome recording must keep capture and recent outcome controls in separate packets, with the Record packet staged into Person, Change, and Proof steps behind a closed Change step control and Recent rows grouped behind Summary, Confirm, Contact, Delivery, and Receipt packets.",
-  { frontend: true }
+[
+  "type BeneficiaryOutcomeTaskKey = \"record\" | \"recent\";",
+  "type BeneficiaryOutcomeRecordStageKey = \"person\" | \"change\" | \"proof\";",
+  "type BeneficiaryOutcomeRecentPacketKey =",
+  "BENEFICIARY_OUTCOME_RECORD_STAGE_OPTIONS",
+  "BENEFICIARY_OUTCOME_RECENT_PACKET_OPTIONS",
+  "beneficiaryOutcomeRecordStageChooserOpen",
+  "beneficiaryOutcomeRecentPacketById",
+  "beneficiaryOutcomeRecentPacketChooserOpenById",
+  "beneficiaryOutcomeReceiptFormOpenById",
+  "community-domain-dashboard.beneficiary-outcome-task.${task}",
+  "activeBeneficiaryOutcomeTask === \"record\"",
+  "community-domain-dashboard.beneficiary-outcome-record-stage-toggle",
+  "Close steps",
+  "Change step",
+  "beneficiaryOutcomeRecordStageChooserOpen ? (",
+  "community-domain-dashboard.beneficiary-outcome-record-stage.${stage.key}",
+  "setBeneficiaryOutcomeRecordStageChooserOpen(false)",
+  "activeBeneficiaryOutcomeRecordStage === \"person\"",
+  "community-domain-dashboard.beneficiary-outcome-record-next.change",
+  "activeBeneficiaryOutcomeRecordStage === \"change\"",
+  "community-domain-dashboard.beneficiary-outcome-record-next.proof",
+  "activeBeneficiaryOutcomeRecordStage === \"proof\"",
+  "community-domain-dashboard.beneficiary-outcome-record",
+  "activeBeneficiaryOutcomeTask === \"recent\"",
+  "Recent outcomes",
+  "activeOutcomeRecentPacket",
+  "outcomeRecentPacketChooserOpen",
+  "Current packet",
+  "community-domain-dashboard.beneficiary-outcome-recent-packet-toggle",
+  "Close packets",
+  "Change packet",
+  "outcomeRecentPacketChooserOpen ? (",
+  "community-domain-dashboard.beneficiary-outcome-recent-packet.${packet.key}",
+  "setBeneficiaryOutcomeRecentPacketChooserOpenById",
+  "activeOutcomeRecentPacket === \"summary\"",
+  "activeOutcomeRecentPacket === \"confirmation\"",
+  "community-domain-dashboard.beneficiary-outcome-confirmation-link",
+  "activeOutcomeRecentPacket === \"contact\"",
+  "community-domain-dashboard.beneficiary-outcome-contact-consent",
+  "activeOutcomeRecentPacket === \"delivery\"",
+  "No delivery pack is prepared",
+  "activeOutcomeRecentPacket === \"receipt\"",
+  "outcomeReceiptFormOpen",
+  "Current receipt task",
+  "community-domain-dashboard.beneficiary-outcome-receipt-form-toggle",
+  "Close receipt form",
+  "Open receipt form",
+  "community-domain-dashboard.beneficiary-outcome-delivery-receipt",
+  "community-domain-dashboard.beneficiary-outcome-delivery-receipt-correction",
+].forEach((expected) =>
+  assertIncludes(
+    "src/pages/CommunityDomainDashboardPage.tsx",
+    expected,
+    "Community Domain beneficiary outcome recording must keep Record and Recent controls staged behind closed packet choosers.",
+    { frontend: true }
+  )
+);
+
+[
+  "type BeneficiaryOutcomeContactActionKey = \"record\" | \"withdraw\";",
+  "beneficiaryOutcomeContactActionById",
+  "beneficiaryOutcomeContactActionChooserOpenById",
+  "requestedOutcomeContactAction",
+  "activeOutcomeContactAction",
+  "Current contact task",
+  "community-domain-dashboard.beneficiary-outcome-contact-action-toggle",
+  "Close contact actions",
+  "Change contact action",
+  "community-domain-dashboard.beneficiary-outcome-contact-action.${actionKey}",
+  "setBeneficiaryOutcomeContactActionById",
+  "setBeneficiaryOutcomeContactActionChooserOpenById",
+].forEach((expected) =>
+  assertIncludes(
+    "src/pages/CommunityDomainDashboardPage.tsx",
+    expected,
+    "Community Domain Contact packet must keep Record contact/consent and Withdraw consent behind an explicit action chooser.",
+    { frontend: true }
+  )
+);
+
+[
+  "activeOutcomeContactAction === \"record\" ? (",
+  "community-domain-dashboard.beneficiary-outcome-contact-consent",
+  "canWithdrawContactConsent &&",
+  "activeOutcomeContactAction === \"withdraw\" ? (",
+  "community-domain-dashboard.beneficiary-outcome-contact-consent-withdrawal",
+].forEach((expected) =>
+  assertIncludes(
+    "src/pages/CommunityDomainDashboardPage.tsx",
+    expected,
+    "Community Domain Contact packet must show only the selected Contact action form.",
+    { frontend: true }
+  )
 );
 
 assertNotContains(
@@ -2273,7 +2362,18 @@ assertContains(
       String.raw`community-domain-dashboard\.beneficiary-outcome-record-stage\.proof`,
       String.raw`Beneficiary outcome record step buttons stay visible after selecting a step`,
       String.raw`community-domain-dashboard\.beneficiary-outcome-task\.recent`,
+      String.raw`Recent outcome packet buttons are visible before Change packet is opened`,
+      String.raw`community-domain-dashboard\.beneficiary-outcome-recent-packet-toggle`,
+      String.raw`community-domain-dashboard\.beneficiary-outcome-recent-packet\.contact`,
+      String.raw`Contact packet shows consent withdrawal before Change contact action is opened`,
+      String.raw`community-domain-dashboard\.beneficiary-outcome-contact-action-toggle`,
+      String.raw`community-domain-dashboard\.beneficiary-outcome-contact-action\.withdraw`,
+      String.raw`Contact packet still shows record contact/consent after selecting withdrawal`,
       String.raw`community-domain-dashboard\.beneficiary-outcome-recent-packet\.receipt`,
+      String.raw`Receipt packet shows the correction form before Open receipt form`,
+      String.raw`community-domain-dashboard\.beneficiary-outcome-receipt-form-toggle`,
+      String.raw`Receipt packet is missing an Open receipt form control`,
+      String.raw`Recent outcome packet buttons stay visible after selecting a packet`,
       String.raw`Safe next step`,
       String.raw`horizontalOverflow`,
       String.raw`lowContrast`,
