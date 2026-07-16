@@ -3451,6 +3451,12 @@ assertNotContains(
   "Community Domain audit roadmap must not describe manual activity records, beneficiary outcome Trust Events, or basic Trust Event creation as entirely future after bounded v1 slices exist."
 );
 
+assertNotContains(
+  "docs/COMMUNITY_DOMAIN_ACTOR_IDENTITY_AUDIT_2026-07-15.md",
+  /Build NGO beneficiary outcomes as the first high-value activity template|build toward beneficiary outcome reporting for sponsors/,
+  "Community Domain audit must not frame beneficiary outcome reporting as entirely future after bounded beneficiary outcome records, sponsor-safe summaries, and export packs exist."
+);
+
 assertContains(
   "src/lib/api.ts",
   /lookupCommunityDomainByName[\s\S]*\/community-domains\/lookup[\s\S]*domain_name/,

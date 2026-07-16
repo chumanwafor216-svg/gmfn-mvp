@@ -1753,10 +1753,13 @@ shape.
    participant confirmation, and deeper challenge workflow after the basic
    ledger stays stable.
 
-6. **Build NGO beneficiary outcomes as the first high-value activity template.**
+6. **Treat NGO beneficiary outcome v1 as the first high-value activity
+   template.**
 
-   This answers the sponsor question directly: baseline, support, follow-up,
-   improvement/challenge, confirmation, and aggregate impact.
+   The bounded v1 already records baseline, support, follow-up,
+   improvement/challenge, confirmation state, and aggregate sponsor-safe counts.
+   The remaining lift is deeper confirmation, public/submission proof, and
+   provider-backed delivery.
 
 ### Director / sponsor period summary
 
@@ -1921,7 +1924,8 @@ that the platform is designed to help them:
 - prepare a copy-ready sponsor-safe pack without exposing private beneficiary
   detail by default;
 - keep private records private while sharing public-safe proof;
-- build toward beneficiary outcome reporting for sponsors.
+- keep strengthening beneficiary outcome reporting for sponsors beyond the
+  current admin-gated v1/v2 slices.
 
 These are accurate because they either exist now or are directly aligned with
 the agreed MVP bridge.
