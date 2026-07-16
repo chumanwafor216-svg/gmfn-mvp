@@ -1345,8 +1345,20 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityConfirmationPolicyPage.tsx",
-  /const canShareMemberWitnessRequest = Boolean\(memberWitnessRequest\?\.oneTimeCode\);[\s\S]*?\{memberWitnessRequest && canShareMemberWitnessRequest \? \([\s\S]*?Request ready[\s\S]*?One-time code[\s\S]*?Share request[\s\S]*?Copy one-time code/,
-  "Community confirmation policy must only show requester-side witness request/code controls when the backend returned a one-time code."
+  /function WitnessCodePackage[\s\S]*?data-gsn-witness-code-package="one-time-code-for-member"[\s\S]*?One-time code for member[\s\S]*?Share code and link[\s\S]*?Copy response link[\s\S]*?const canShareMemberWitnessRequest = Boolean\(memberWitnessRequest\?\.oneTimeCode\);[\s\S]*?memberWitnessFocus && memberWitnessRequest && canShareMemberWitnessRequest/,
+  "Community confirmation policy must only show the focused requester-side witness code package when the backend returned a one-time code."
+);
+
+assertContains(
+  "src/pages/CommunityConfirmationPolicyPage.tsx",
+  /sectionLabel=\{memberWitnessFocus \? "GSN" : "Community confirmation"\}[\s\S]*?title=\{memberWitnessFocus \? "Workspace" : "Instant Confirmation Policy"\}[\s\S]*?memberWitnessFocus && memberWitnessRequest && canShareMemberWitnessRequest[\s\S]*?<WitnessCodePackage[\s\S]*?memberWitnessFocus \? \([\s\S]*?<WitnessAfterResponseCard[\s\S]*?: \([\s\S]*?Current witness strength/,
+  "Community confirmation policy focused member-witness Workspace must use the compact code package plus after-response card instead of exposing the witness-strength workbench first."
+);
+
+assertContains(
+  "src/pages/CommunityConfirmationPolicyPage.tsx",
+  /display: memberWitnessFocus \? "none" : undefined,[\s\S]*?Eligible response pool[\s\S]*?display: memberWitnessFocus \? "none" : undefined,[\s\S]*?Privacy rule/,
+  "Community confirmation policy must keep Eligible response pool and Privacy rule outside the focused member-witness Workspace."
 );
 
 assertContains(

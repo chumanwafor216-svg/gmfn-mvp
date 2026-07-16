@@ -481,6 +481,275 @@ function MeaningTile({
   );
 }
 
+function expiryWindowLabel(value: any): string {
+  const text = safeStr(value);
+  if (!text) return "Expires after a short time";
+  const parsed = new Date(text);
+  if (Number.isNaN(parsed.getTime())) return `Expires ${text}`;
+  const diffMs = parsed.getTime() - Date.now();
+  if (diffMs <= 0) return "Expired";
+  const minutes = Math.max(1, Math.round(diffMs / 60000));
+  if (minutes < 60) return `Expires in ${minutes} minute${minutes === 1 ? "" : "s"}`;
+  const hours = Math.max(1, Math.round(minutes / 60));
+  if (hours < 24) return `Expires in ${hours} hour${hours === 1 ? "" : "s"}`;
+  return `Expires ${dateLabel(text)}`;
+}
+
+function WitnessCodePackage({
+  request,
+  approvalUrl,
+  isCompact,
+  busy,
+  onShare,
+  onCopyLink,
+  onCopyCode,
+}: {
+  request: MemberWitnessRequest;
+  approvalUrl: string;
+  isCompact: boolean;
+  busy: boolean;
+  onShare: () => void;
+  onCopyLink: () => void;
+  onCopyCode: () => void;
+}) {
+  const oneTimeCode = firstTruthy(request.oneTimeCode, "Not shown");
+
+  return (
+    <div data-gsn-witness-code-package="one-time-code-for-member" style={{ display: "grid", gap: 12 }}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "46px minmax(0, 1fr)",
+          gap: 12,
+          alignItems: "start",
+        }}
+      >
+        {iconTile("shield", "green", 20)}
+        <div>
+          <h3 style={{ margin: 0, color: "#166534", fontSize: 20, fontWeight: 1000 }}>
+            One-time code for member
+          </h3>
+          <p style={{ margin: "6px 0 0", ...helperText(), fontSize: 14 }}>
+            The member opens the link, enters this code, and submits their response to stand for you.
+          </p>
+        </div>
+      </div>
+
+      <div
+        style={{
+          ...innerCard("#EAF8EF"),
+          color: "#166534",
+          display: "grid",
+          gridTemplateColumns: "30px minmax(0, 1fr)",
+          gap: 10,
+          alignItems: "center",
+        }}
+      >
+        {iconTile("check", "green", 14)}
+        <span style={{ fontSize: 13, fontWeight: 950 }}>
+          Use this one-time code only for this single request.
+        </span>
+      </div>
+
+      <div
+        style={{
+          ...statTile("#FFFFFF"),
+          display: "grid",
+          gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) 104px",
+          gap: 10,
+          alignItems: "center",
+        }}
+      >
+        <div>
+          <div style={sectionLabel()}>One-time code</div>
+          <div
+            style={{
+              marginTop: 6,
+              color: "#166534",
+              fontSize: 26,
+              fontWeight: 1000,
+              letterSpacing: 1.2,
+              wordBreak: "break-word",
+            }}
+          >
+            {oneTimeCode}
+          </div>
+          <div style={{ marginTop: 6, color: "#526579", fontSize: 13, fontWeight: 850 }}>
+            {expiryWindowLabel(request.expiresAt)}
+          </div>
+        </div>
+        <SecondaryButton
+          type="button"
+          onClick={onCopyCode}
+          disabled={!request.oneTimeCode || busy}
+          stableHeight={46}
+          debugId="community-confirmation-policy.member-witness.copy-code-package-code"
+        >
+          {labelWithIcon("copy", "Copy", "blue")}
+        </SecondaryButton>
+      </div>
+
+      <PrimaryButton
+        type="button"
+        onClick={onShare}
+        disabled={!approvalUrl || !request.oneTimeCode || busy}
+        fullWidth
+        stableHeight={52}
+        debugId="community-confirmation-policy.member-witness.share-code-and-link"
+      >
+        {labelWithIcon("navigation", "Share code and link", "navy")}
+      </PrimaryButton>
+
+      <SecondaryButton
+        type="button"
+        onClick={onCopyLink}
+        disabled={!approvalUrl || busy}
+        fullWidth
+        stableHeight={48}
+        debugId="community-confirmation-policy.member-witness.copy-code-package-link"
+      >
+        {labelWithIcon("copy", "Copy response link", "green")}
+      </SecondaryButton>
+
+      <div
+        style={{
+          ...innerCard("#F8FBFF"),
+          display: "grid",
+          gridTemplateColumns: "32px minmax(0, 1fr)",
+          gap: 10,
+          alignItems: "start",
+        }}
+      >
+        {iconTile("lock", "blue", 15)}
+        <p style={{ margin: 0, ...helperText(), fontSize: 13 }}>
+          Do not post the code publicly. Share it only with the member you choose.
+        </p>
+      </div>
+
+      {approvalUrl ? (
+        <div
+          style={{
+            justifySelf: "center",
+            borderRadius: 18,
+            padding: 10,
+            background: "#FFFFFF",
+            border: "1px solid rgba(37,78,119,0.14)",
+            boxShadow: "0 10px 24px rgba(2,6,23,0.08)",
+          }}
+        >
+          <QRCodeSVG
+            value={approvalUrl}
+            size={118}
+            bgColor="#FFFFFF"
+            fgColor="#07172C"
+            level="M"
+            includeMargin
+          />
+          <div style={{ marginTop: 4, ...sectionLabel(), textAlign: "center" }}>
+            Scan to respond
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function WitnessAfterResponseCard({
+  onOpenInbox,
+}: {
+  onOpenInbox: () => void;
+}) {
+  const steps: Array<{ icon: GsnIconName; title: string; text: string }> = [
+    {
+      icon: "user",
+      title: "Response received",
+      text: "The member submits their one-time code response.",
+    },
+    {
+      icon: "shield",
+      title: "Record created",
+      text: "GSN records the signed support event with time and context.",
+    },
+    {
+      icon: "document",
+      title: "Public credential updated",
+      text: "The member's public credential shows the new support.",
+    },
+    {
+      icon: "lock",
+      title: "Private details protected",
+      text: "Notes, IP, and device details stay private by default.",
+    },
+  ];
+
+  return (
+    <div data-gsn-witness-after-response="true" style={{ display: "grid", gap: 12 }}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "46px minmax(0, 1fr)",
+          gap: 12,
+          alignItems: "start",
+        }}
+      >
+        {iconTile("shield", "blue", 20)}
+        <div>
+          <h3 style={{ margin: 0, color: "#07172C", fontSize: 20, fontWeight: 1000 }}>
+            After the member responds
+          </h3>
+        </div>
+      </div>
+
+      <div style={{ display: "grid", gap: 10 }}>
+        {steps.map((step) => (
+          <div
+            key={step.title}
+            style={{
+              display: "grid",
+              gridTemplateColumns: "40px minmax(0, 1fr)",
+              gap: 12,
+              alignItems: "start",
+            }}
+          >
+            {iconTile(step.icon, "blue", 15)}
+            <div>
+              <div style={{ color: "#07172C", fontWeight: 1000 }}>{step.title}</div>
+              <p style={{ margin: "3px 0 0", ...helperText(), fontSize: 13 }}>
+                {step.text}
+              </p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div
+        style={{
+          ...innerCard("#F8FBFF"),
+          display: "grid",
+          gridTemplateColumns: "40px minmax(0, 1fr)",
+          gap: 12,
+          alignItems: "center",
+        }}
+      >
+        {iconTile("certificate", "blue", 16)}
+        <p style={{ margin: 0, color: "#07172C", fontSize: 13, fontWeight: 900, lineHeight: 1.45 }}>
+          This is human trust, digitally recorded. It shows that a person stood for a known member inside this community.
+        </p>
+      </div>
+
+      <SecondaryButton
+        type="button"
+        onClick={onOpenInbox}
+        fullWidth
+        stableHeight={52}
+        debugId="community-confirmation-policy.member-witness.open-witness-inbox"
+      >
+        {labelWithIcon("briefcase", "Open witness inbox", "navy")}
+      </SecondaryButton>
+    </div>
+  );
+}
+
 function normalizeDomainAffiliation(raw: any): DomainAffiliation | null {
   const id = Number(raw?.id || 0);
   if (!Number.isFinite(id) || id <= 0) return null;
@@ -1527,11 +1796,11 @@ function CommunityConfirmationPolicyPage() {
   return (
     <div style={{ maxWidth: 1120, margin: "0 auto", paddingBottom: isCompact ? 36 : 56 }}>
       <PageTopNav
-        sectionLabel={memberWitnessFocus ? "Community witness" : "Community confirmation"}
-        title={memberWitnessFocus ? "Member Witness" : "Instant Confirmation Policy"}
+        sectionLabel={memberWitnessFocus ? "GSN" : "Community confirmation"}
+        title={memberWitnessFocus ? "Workspace" : "Instant Confirmation Policy"}
         subtitle={
           memberWitnessFocus
-            ? "Ask known members to stand for you, or respond to a witness request."
+            ? ""
             : "Choose who may answer live community confirmation requests."
         }
         homeTo={APP_ROUTES.DASHBOARD}
@@ -1540,26 +1809,16 @@ function CommunityConfirmationPolicyPage() {
         backLabel={memberWitnessFocus ? "Trust Passport" : "Inbox"}
       />
 
-      <ExplainToggle
-        label="How this works"
-        what={
-          memberWitnessFocus
-            ? "A member witness is a known community member standing for another member."
-            : "A TrustSlip may say community confirmation is available."
-        }
-        why={
-          memberWitnessFocus
-            ? "It turns human trust into a recorded community signal without exposing private notes publicly."
-            : "This page controls who can answer and how many answers are enough."
-        }
-        next={
-          memberWitnessFocus
-            ? "Choose a member, create a request, and share the QR or one-time code with the assigned verifier."
-            : "Admins set routing. The result still comes from member responses."
-        }
-        tone="blue"
-        style={{ marginTop: 16 }}
-      />
+      {!memberWitnessFocus ? (
+        <ExplainToggle
+          label="How this works"
+          what="A TrustSlip may say community confirmation is available."
+          why="This page controls who can answer and how many answers are enough."
+          next="Admins set routing. The result still comes from member responses."
+          tone="blue"
+          style={{ marginTop: 16 }}
+        />
+      ) : null}
 
       {notice ? (
         <div
@@ -1574,6 +1833,7 @@ function CommunityConfirmationPolicyPage() {
         </div>
       ) : null}
 
+      {!memberWitnessFocus ? (
       <section
         style={{
           marginTop: 16,
@@ -1674,6 +1934,7 @@ function CommunityConfirmationPolicyPage() {
           </div>
         </div>
       </section>
+      ) : null}
 
       {!communityId ? (
         <section style={{ marginTop: 14, ...softCard("#FEF2F2") }}>
@@ -2584,11 +2845,17 @@ function CommunityConfirmationPolicyPage() {
         </div>
       </section>
 
-      <section id="member-witness" style={{ marginTop: 14, ...softCard("#F7FAFF") }}>
+      <section
+        id="member-witness"
+        style={{
+          marginTop: memberWitnessFocus ? 10 : 14,
+          ...softCard(memberWitnessFocus ? "#FFFFFF" : "#F7FAFF"),
+        }}
+      >
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) auto",
+            gridTemplateColumns: memberWitnessFocus || isCompact ? "1fr" : "minmax(0, 1fr) auto",
             gap: 12,
             alignItems: "start",
           }}
@@ -2601,40 +2868,45 @@ function CommunityConfirmationPolicyPage() {
             )}
             <h2 style={{ margin: "6px 0 0", color: "#07172C", fontSize: 24, fontWeight: 1000 }}>
               {memberWitnessFocus
-                ? "Ask a known member to stand for you"
+                ? memberWitnessRequest && canShareMemberWitnessRequest
+                  ? "One-time code for member"
+                  : "Ask a known member to stand for you"
                 : "Stand for a known member"}
             </h2>
             <p style={{ margin: "8px 0 0", ...helperText() }}>
               {memberWitnessFocus
-                ? "Choose an active member who knows you inside this community, then send a QR or one-time-code request. GSN records nothing until they respond."
+                ? "Create one request, share one code, then wait for the member response. GSN records nothing until they answer."
                 : "This records that the signed-in verifier knows this person inside the selected community. It is human trust, digitally recorded."}
             </p>
           </div>
-          <SecondaryButton
-            type="button"
-            onClick={() => void loadMembers()}
-            busy={memberVerificationLoading}
-            busyLabel="Refreshing..."
-            stableHeight={52}
-            minWidth={128}
-            debugId="community-confirmation-policy.member-witness.refresh-members"
-          >
-            {labelWithIcon("refresh", "Refresh", "blue")}
-          </SecondaryButton>
+          {!memberWitnessFocus ? (
+            <SecondaryButton
+              type="button"
+              onClick={() => void loadMembers()}
+              busy={memberVerificationLoading}
+              busyLabel="Refreshing..."
+              stableHeight={52}
+              minWidth={128}
+              debugId="community-confirmation-policy.member-witness.refresh-members"
+            >
+              {labelWithIcon("refresh", "Refresh", "blue")}
+            </SecondaryButton>
+          ) : null}
         </div>
 
         <div
           style={{
             marginTop: 14,
             display: "grid",
-            gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 0.95fr) minmax(0, 1.05fr)",
+            gridTemplateColumns:
+              memberWitnessFocus || isCompact ? "1fr" : "minmax(0, 0.95fr) minmax(0, 1.05fr)",
             gap: 10,
           }}
         >
           <div
             style={{
               gridColumn: "1 / -1",
-              display: "grid",
+              display: memberWitnessFocus ? "none" : "grid",
               gridTemplateColumns: isCompact ? "1fr" : "repeat(3, minmax(0, 1fr))",
               gap: 8,
               order: memberWitnessFocus ? 3 : 0,
@@ -2664,6 +2936,18 @@ function CommunityConfirmationPolicyPage() {
           </div>
 
           <div style={{ ...innerCard("#FFFFFF"), order: memberWitnessFocus ? 1 : 0 }}>
+            {memberWitnessFocus && memberWitnessRequest && canShareMemberWitnessRequest ? (
+              <WitnessCodePackage
+                request={memberWitnessRequest}
+                approvalUrl={memberWitnessApprovalUrl}
+                isCompact={isCompact}
+                busy={Boolean(busyKey)}
+                onShare={() => void shareMemberWitnessRequestPackage()}
+                onCopyLink={() => void copyMemberWitnessRequestLink()}
+                onCopyCode={() => void copyMemberWitnessRequestCode()}
+              />
+            ) : (
+              <>
             <div style={{ color: "#07172C", fontWeight: 1000 }}>
               {labelWithIcon(
                 "user",
@@ -2701,46 +2985,35 @@ function CommunityConfirmationPolicyPage() {
               style={{
                 marginTop: 10,
                 display: "grid",
-                gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
+                gridTemplateColumns: memberWitnessFocus || isCompact ? "1fr" : "1fr 1fr",
                 gap: 8,
               }}
             >
-              <SecondaryButton
-                type="button"
-                onClick={() => void loadMemberWitnessSummary()}
-                disabled={!selectedSubjectUserId || Boolean(busyKey)}
-                busy={memberVerificationLoading}
-                busyLabel="Checking..."
-                stableHeight={50}
-                debugId="community-confirmation-policy.member-witness.check"
-              >
-                {labelWithIcon("shield", "Check strength", "blue")}
-              </SecondaryButton>
+              {!memberWitnessFocus ? (
+                <SecondaryButton
+                  type="button"
+                  onClick={() => void loadMemberWitnessSummary()}
+                  disabled={!selectedSubjectUserId || Boolean(busyKey)}
+                  busy={memberVerificationLoading}
+                  busyLabel="Checking..."
+                  stableHeight={50}
+                  debugId="community-confirmation-policy.member-witness.check"
+                >
+                  {labelWithIcon("shield", "Check strength", "blue")}
+                </SecondaryButton>
+              ) : null}
               {memberWitnessFocus ? (
-                <>
-                  <PrimaryButton
-                    type="button"
-                    onClick={() => void createMemberWitnessRequest()}
-                    disabled={!selectedSubjectUserId || Boolean(busyKey)}
-                    busy={busyKey === "member-witness-request"}
-                    busyLabel="Creating..."
-                    stableHeight={50}
-                    debugId="community-confirmation-policy.member-witness.request"
-                  >
-                    {labelWithIcon("certificate", "Ask for witness", "navy")}
-                  </PrimaryButton>
-                  <SecondaryButton
-                    type="button"
-                    onClick={() => void recordMemberWitness()}
-                    disabled={!selectedSubjectUserId || Boolean(busyKey)}
-                    busy={busyKey === "member-witness-record"}
-                    busyLabel="Recording..."
-                    stableHeight={50}
-                    debugId="community-confirmation-policy.member-witness.record"
-                  >
-                    {labelWithIcon("check", "Stand for member", "green")}
-                  </SecondaryButton>
-                </>
+                <PrimaryButton
+                  type="button"
+                  onClick={() => void createMemberWitnessRequest()}
+                  disabled={!selectedSubjectUserId || Boolean(busyKey)}
+                  busy={busyKey === "member-witness-request"}
+                  busyLabel="Creating..."
+                  stableHeight={52}
+                  debugId="community-confirmation-policy.member-witness.request"
+                >
+                  {labelWithIcon("certificate", "Ask for witness", "navy")}
+                </PrimaryButton>
               ) : (
                 <>
                   <PrimaryButton
@@ -2767,38 +3040,44 @@ function CommunityConfirmationPolicyPage() {
                   </SecondaryButton>
                 </>
               )}
-              <SecondaryButton
-                type="button"
-                onClick={() => void copyMemberCredentialLink()}
-                disabled={!selectedMember?.gsnId || Boolean(busyKey)}
-                stableHeight={50}
-                debugId="community-confirmation-policy.member-witness.copy-public-credential"
-              >
-                {labelWithIcon("copy", "Copy credential link", "green")}
-              </SecondaryButton>
+              {!memberWitnessFocus ? (
+                <SecondaryButton
+                  type="button"
+                  onClick={() => void copyMemberCredentialLink()}
+                  disabled={!selectedMember?.gsnId || Boolean(busyKey)}
+                  stableHeight={50}
+                  debugId="community-confirmation-policy.member-witness.copy-public-credential"
+                >
+                  {labelWithIcon("copy", "Copy credential link", "green")}
+                </SecondaryButton>
+              ) : null}
             </div>
 
-            <input
-              value={memberWitnessClaim}
-              onChange={(event) => setMemberWitnessClaim(event.target.value)}
-              placeholder="Optional: shop line, role, or how you know them"
-              style={{ ...fieldStyle(), marginTop: 10 }}
-              aria-label="Member witness claim"
-              data-field-id="community-confirmation-policy.member-witness.claim"
-            />
-            <textarea
-              value={memberWitnessNote}
-              onChange={(event) => setMemberWitnessNote(event.target.value)}
-              placeholder="Optional note. Keep it short and factual."
-              style={{ ...fieldStyle(), marginTop: 10, minHeight: 92, resize: "none" }}
-              aria-label="Member witness note"
-              data-field-id="community-confirmation-policy.member-witness.note"
-            />
-            <p style={{ margin: "10px 0 0", ...helperText(), fontSize: 13 }}>
-              Share the QR and one-time code with the member who will answer.
-              GSN records nothing until that person opens the response page and submits their answer.
-            </p>
-            {memberWitnessRequest && canShareMemberWitnessRequest ? (
+            {!memberWitnessFocus ? (
+              <>
+                <input
+                  value={memberWitnessClaim}
+                  onChange={(event) => setMemberWitnessClaim(event.target.value)}
+                  placeholder="Optional: shop line, role, or how you know them"
+                  style={{ ...fieldStyle(), marginTop: 10 }}
+                  aria-label="Member witness claim"
+                  data-field-id="community-confirmation-policy.member-witness.claim"
+                />
+                <textarea
+                  value={memberWitnessNote}
+                  onChange={(event) => setMemberWitnessNote(event.target.value)}
+                  placeholder="Optional note. Keep it short and factual."
+                  style={{ ...fieldStyle(), marginTop: 10, minHeight: 92, resize: "none" }}
+                  aria-label="Member witness note"
+                  data-field-id="community-confirmation-policy.member-witness.note"
+                />
+                <p style={{ margin: "10px 0 0", ...helperText(), fontSize: 13 }}>
+                  Share the QR and one-time code with the member who will answer.
+                  GSN records nothing until that person opens the response page and submits their answer.
+                </p>
+              </>
+            ) : null}
+            {!memberWitnessFocus && memberWitnessRequest && canShareMemberWitnessRequest ? (
               <div style={{ marginTop: 10, ...innerCard("#F8FBFF") }}>
                 <div
                   style={{
@@ -2913,9 +3192,19 @@ function CommunityConfirmationPolicyPage() {
                 </div>
               </div>
             ) : null}
+              </>
+            )}
           </div>
 
           <div style={{ ...innerCard("#FFFFFF"), order: memberWitnessFocus ? 2 : 0 }}>
+            {memberWitnessFocus ? (
+              <WitnessAfterResponseCard
+                onOpenInbox={() =>
+                  navigateWithOrigin(navigate, APP_ROUTES.COMMUNITY_CONFIRMATION_INBOX, location)
+                }
+              />
+            ) : (
+              <>
             <div style={{ color: "#07172C", fontWeight: 1000 }}>
               {labelWithIcon("certificate", "Current witness strength", "gold")}
             </div>
@@ -3032,6 +3321,8 @@ function CommunityConfirmationPolicyPage() {
                 No member selected. This lane records member-backed witness evidence, not
                 paid parent community affiliation.
               </div>
+            )}
+              </>
             )}
           </div>
         </div>
