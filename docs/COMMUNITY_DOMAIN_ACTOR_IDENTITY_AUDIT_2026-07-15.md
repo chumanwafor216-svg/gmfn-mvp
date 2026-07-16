@@ -1487,7 +1487,7 @@ Community Domain name protection exists.
 Community Domain membership rows exist.
 Ordinary community membership removal exists.
 Individual shop ownership exists.
-Community Domain activity catalogues are not yet implemented.
+Community Domain manual activity records now exist as v1 Trust Events.
 Community Domain public membership verification is present but narrowly scoped.
 ```
 
@@ -1774,13 +1774,15 @@ These summaries and attendance counts were captured where meeting records
 exist.
 ```
 
-#### What cannot be honestly summarized yet
+#### What cannot be honestly summarized without source records
 
-The system cannot yet produce a full sponsor/director impact report for
-`Pillar of Hope` or similar domains unless the underlying activities were
-recorded first.
+The system can now produce period and sponsor-safe summaries from recorded
+facts, including manual activity records and beneficiary outcome records. It
+still cannot produce a full sponsor/director impact report for `Pillar of Hope`
+or similar domains unless the underlying activities, outcomes, confirmations,
+and corrections were recorded first.
 
-It cannot yet automatically say:
+It cannot automatically say:
 
 - how many beneficiaries received support;
 - which beneficiaries moved from point A to point B;
@@ -1789,14 +1791,16 @@ It cannot yet automatically say:
 - how many volunteer hours were performed;
 - how many attendance records were captured by named member;
 - which activity records were beneficiary-confirmed or member-confirmed;
-- which sponsor-safe aggregate is ready for public/submission use.
+- which sponsor-safe aggregate is ready for public/submission use beyond the
+  admin-gated sponsor-safe pack.
 
 The reason is simple: readiness maps and governance reviews are not the same as
 a real activity/outcome ledger.
 
-#### Minimum feature to add
+#### Minimum feature added, remaining lift
 
-Add a **Community Domain Period Summary** feature.
+The **Community Domain Period Summary** feature now exists as a read-only,
+admin-gated summary over recorded facts.
 
 Inputs:
 
@@ -1816,10 +1820,9 @@ The generated summary should include:
 - evidence summary: evidence records added, challenged, accepted, pending;
 - meeting/event summary: reminders, summaries, attendance counts, named
   attendance where present;
-- activity summary: only real activity records once the activity catalogue is
-  built;
-- beneficiary outcome summary: baseline/support/follow-up/outcome counts once
-  beneficiary outcome records exist;
+- activity summary: only real activity records that were actually recorded;
+- beneficiary outcome summary: baseline/support/follow-up/outcome counts only
+  when beneficiary outcome records exist;
 - confirmation summary: witness requests, positive/caution/objection/no
   response counts;
 - challenge summary: disputed records, unresolved challenges, corrected
@@ -1874,8 +1877,11 @@ The remaining gap is small in concept but important in product truth:
 
 ```text
 Community Domains already have protected names, member rows, governance
-records, and readiness maps. They still need a clean public member proof route
-and a real activity/outcome ledger before sponsor-grade reporting is complete.
+records, readiness maps, narrow public member proof, manual activity records,
+beneficiary outcome records, and admin-gated sponsor-safe summaries. They still
+need low-burden capture, configurable domain-specific activity templates,
+deeper participant/beneficiary confirmation, public/submission proof, and
+provider-backed delivery before sponsor-grade reporting is complete.
 ```
 
 #### Safe outreach claims now
@@ -1894,7 +1900,10 @@ that the platform is designed to help them:
   applied changes;
 - record meeting summaries and attendance counts where the meeting pack is
   used;
+- record manual activity and beneficiary outcome Trust Events;
 - prepare director/sponsor summaries from recorded facts;
+- prepare a copy-ready sponsor-safe pack without exposing private beneficiary
+  detail by default;
 - keep private records private while sharing public-safe proof;
 - build toward beneficiary outcome reporting for sponsors.
 
@@ -1904,18 +1913,16 @@ the agreed MVP bridge.
 #### Claims that must be marked as coming next
 
 GSN should not yet promise that every Community Domain can automatically
-produce full sponsor impact reports. That depends on missing structured
-records.
+produce full sponsor impact reports. That depends on complete structured
+records and confirmation depth, not merely dashboard readiness maps.
 
 These should be described as next-stage build items:
 
-- first-class public verification from `CommunityDomainMembership`;
-- simple member deactivation/removal UX;
-- configurable activity catalogue;
-- beneficiary outcome records;
+- low-burden capture for routine activity records;
+- configurable domain-specific activity catalogue templates;
 - named attendance/import/roll-up capture;
-- sponsor-safe period summary;
-- participant/beneficiary confirmation loop;
+- public/submission-ready sponsor proof and sponsor access control;
+- deeper participant/beneficiary confirmation loop;
 - challenge/correction trail for impact records.
 
 #### Minimum implementation bridge

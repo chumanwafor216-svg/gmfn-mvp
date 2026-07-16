@@ -3423,7 +3423,7 @@ assertNotContains(
 
 assertNotContains(
   "docs/COMMUNITY_DOMAIN_ACTOR_IDENTITY_AUDIT_2026-07-15.md",
-  /Activity catalogue records are not yet real activity records|Beneficiary outcome evidence is not yet implemented|Sponsor-safe aggregation is not yet implemented|not yet as records with baseline, support delivered|does not yet produce the NGO-style sponsor report|It does not create attendance,/,
+  /Activity catalogue records are not yet real activity records|Community Domain activity catalogues are not yet implemented|Beneficiary outcome evidence is not yet implemented|Sponsor-safe aggregation is not yet implemented|not yet as records with baseline, support delivered|does not yet produce the NGO-style sponsor report|It does not create attendance,|first-class public verification from `CommunityDomainMembership`|simple member deactivation\/removal UX;|sponsor-safe period summary;|produce full sponsor impact reports\. That depends on missing structured/,
   "Community Domain audit must not reintroduce stale missing-capability claims after activity records, beneficiary outcome evidence, and sponsor-safe summaries exist as limited manual/admin-gated v1 slices."
 );
 
