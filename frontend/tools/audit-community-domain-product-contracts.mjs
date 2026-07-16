@@ -4683,6 +4683,30 @@ assertContains(
   "Community Domain audit helper must reset regex state and scan full files for wrapped multi-line assertNotContains matches."
 );
 
+assertIncludes(
+  "docs/COMMUNITY_DOMAIN_ACTOR_IDENTITY_AUDIT_2026-07-15.md",
+  "## Same mistake review - actor identity logic",
+  "Community Domain actor identity audit must preserve the same-mistake review heading."
+);
+
+assertIncludes(
+  "docs/COMMUNITY_DOMAIN_ACTOR_IDENTITY_AUDIT_2026-07-15.md",
+  "CommunityDomain.domain_name",
+  "Community Domain actor identity audit must explicitly warn that protected domain names are not personal actor identities."
+);
+
+assertContains(
+  "docs/COMMUNITY_DOMAIN_ACTOR_IDENTITY_AUDIT_2026-07-15.md",
+  /MarketplaceShop\.owner_user_id[\s\S]*MarketplaceProduct\.seller_user_id[\s\S]*MarketplaceBroadcast\.author_user_id[\s\S]*MarketplaceRequest\.user_id[\s\S]*current_user\.id[\s\S]*actor_user_id[\s\S]*subject_user_id/,
+  "Community Domain actor identity audit must keep the confirmed person-first shop, product, Spotlight, Demand, and Trust Event boundaries."
+);
+
+assertContains(
+  "docs/COMMUNITY_DOMAIN_ACTOR_IDENTITY_AUDIT_2026-07-15.md",
+  /CommunityDomain\.clan_id[\s\S]*clan_id` is currently an interim context bridge[\s\S]*Do not create an institutional actor from domain_name[\s\S]*Do not treat clan_id as actor identity/,
+  "Community Domain actor identity audit must keep the clan_id bridge warning and forbid implicit institutional actors."
+);
+
 assertNotContains(
   "docs/SCREEN_SPECS.md",
   /## CommunityDomainPurchasePage[\s\S]*Verified Community Domain by default/,

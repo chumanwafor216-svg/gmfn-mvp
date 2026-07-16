@@ -3124,6 +3124,121 @@ To make the outreach promise true end-to-end, build in this order:
 
 #### Outreach positioning
 
+## Same mistake review - actor identity logic
+
+Owner concern:
+
+The original Community Domain malfunction came from treating name reservation
+as if it could carry personal actor rights. The same mistake would be:
+
+```text
+CommunityDomain.domain_name
+-> silently becomes a shop owner, Spotlight author, Demand requester,
+   Trust Event subject, payment actor, delivery actor, or legal authority
+```
+
+That is false for the current MVP.
+
+The current code confirms several person-first boundaries:
+
+- shops are still owned by `MarketplaceShop.owner_user_id`;
+- products are still owned by `MarketplaceProduct.seller_user_id`;
+- Spotlight broadcasts are still authored by
+  `MarketplaceBroadcast.author_user_id`;
+- free Spotlight quota is still counted against `author_user_id`;
+- Demand Box rows are still owned by `MarketplaceRequest.user_id`;
+- Demand Box create and close actions still use `current_user.id`;
+- Trust Events still use `actor_user_id` and `subject_user_id`;
+- TrustSlip and report evidence still point at user, loan, community, and
+  Trust Event records, not at a Community Domain name acting alone;
+- the public shop route resolves a personal GMFN/GSN user key, not a protected
+  Community Domain `domain_name`.
+
+Demand Box was specifically checked because it belongs to the same family as
+shops and Spotlight. It is not currently repeating the exact original bug:
+
+```text
+MarketplaceRequest.user_id = current_user.id
+```
+
+Posting a Demand also requires active membership in the selected `clan_id`, and
+the Community Domain Demand Box feature switch is checked through that
+`clan_id`.
+
+The remaining risk is subtler and more dangerous in product language:
+
+```text
+clan_id
+-> ordinary community context
+-> marketplace visibility context
+-> finance/reporting context
+-> linked Community Domain operating context
+```
+
+That bridge is useful, but it is not an actor identity. The service layer uses
+`CommunityDomain.clan_id` to find whether a linked Community Domain has turned
+features such as shops, Spotlight, Demand Box, payments, ROSCA, vault, or Shop
+Diary on or off. That means `clan_id` is currently an interim context bridge
+for Community Domain behavior.
+
+Do not let that bridge become a lie in copy, UI, reports, exports, or future
+schema work. A Community Domain may make a feature available to members, but
+the actor remains the person, shop owner, author, requester, borrower,
+beneficiary, admin, witness, or reviewer recorded on the row.
+
+### Same mistake checklist
+
+Before adding or changing any Community Domain feature, ask these questions:
+
+1. Does this create or consume a personal actor right?
+   If yes, it must point to a personal user field such as `owner_user_id`,
+   `seller_user_id`, `author_user_id`, `user_id`, `actor_user_id`, or
+   `subject_user_id`.
+
+2. Does this only control availability inside a Community Domain?
+   If yes, it may use `CommunityDomain.clan_id` or `community_domain_id` as
+   context, but it must not imply the domain performed the action.
+
+3. Does this prove membership only?
+   If yes, it must stay limited to active membership rows. It must not become
+   trust, endorsement, shop ownership, sponsor impact proof, delivery proof, or
+   legal authority.
+
+4. Does this expose a public paper, share link, QR, report, or export?
+   If yes, its language must identify the human actor and the evidence source.
+   It must not say or imply that a protected `domain_name` performed the work.
+
+5. Does this need future institutional independence?
+   If yes, park it until GSN has a separate institutional actor model with its
+   own actor ID, operator authority, succession rules, dispute path, Trust Event
+   ownership rules, shop ownership rules, and liability language.
+
+### Immediate follow-up targets
+
+The next audit passes should focus on:
+
+- TrustSlip and Trust Passport public wording, to ensure Community Domain
+  context never reads as automatic approval or institutional guarantee;
+- report and evidence-pack wording, to ensure `community_code`, `clan_id`, or
+  `domain_name` remain context labels unless a real actor field exists;
+- payment package and contribution flows, to ensure feature consumption remains
+  person or shop owned while Community Domain policy remains only a feature
+  gate;
+- public link generation, to ensure protected names are not formatted as if
+  they are personal GMFN/GSN IDs;
+- future institutional shop design, which must not be created implicitly from
+  `domain_name`.
+
+Short decision:
+
+```text
+Do not create an institutional actor from domain_name.
+Do not convert Community Domain into shop owner by implication.
+Do not treat clan_id as actor identity.
+Use CommunityDomain.clan_id only as a context bridge until a true institutional
+actor model exists.
+```
+
 The outreach language should be:
 
 ```text
