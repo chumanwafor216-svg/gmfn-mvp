@@ -176,6 +176,7 @@ type GovernanceTaskKey =
   | "real_life_record"
   | "access_requests";
 type SetupOverviewTaskKey = "notices" | "engine" | "next_setup" | "counts";
+type OperatingSummaryTaskKey = "next_action" | "status" | "allowance" | "permissions";
 type RealLifeRecordTask = "activity" | "beneficiary_outcome";
 type SetupStepKey =
   | "identity"
@@ -2141,6 +2142,8 @@ export default function CommunityDomainDashboardPage() {
   const [setupWorkspaceOpen, setSetupWorkspaceOpen] = useState(false);
   const [activeSetupOverviewTask, setActiveSetupOverviewTask] =
     useState<SetupOverviewTaskKey>("next_setup");
+  const [activeOperatingSummaryTask, setActiveOperatingSummaryTask] =
+    useState<OperatingSummaryTaskKey>("next_action");
   const [showAdvancedTools, setShowAdvancedTools] = useState(false);
   const [operatingAreaPickerOpen, setOperatingAreaPickerOpen] = useState(false);
   const [activeStructureDetail, setActiveStructureDetail] =
@@ -2326,6 +2329,7 @@ export default function CommunityDomainDashboardPage() {
     setSetupReadiness(null);
     setSetupPlan(null);
     setActiveSetupOverviewTask("next_setup");
+    setActiveOperatingSummaryTask("next_action");
     setOperatingAreaPickerOpen(false);
     setCapacityPlan(null);
     setGovernanceCoverage(null);
@@ -6252,12 +6256,20 @@ export default function CommunityDomainDashboardPage() {
                   ) : null}
                 </div>
                 {showAdvancedTools ? (
-                  <div style={helperText()}>
-                    Current state:{" "}
-                    <strong style={{ textTransform: "capitalize" }}>
-                      {compactStatus(selectedLane?.status)}
-                    </strong>
-                    . Count: <strong>{countValue(selectedLane?.count)}</strong>.
+                  <div style={{ display: "grid", gap: 5 }}>
+                    <div style={helperText()}>
+                      Current state:{" "}
+                      <strong style={{ textTransform: "capitalize" }}>
+                        {compactStatus(selectedLane?.status)}
+                      </strong>
+                      . Count: <strong>{countValue(selectedLane?.count)}</strong>.
+                    </div>
+                    <div style={{ ...helperText(), fontSize: 12.5 }}>
+                      Boundary:{" "}
+                      {domainOperational
+                        ? "Operating view only. It does not verify ownership, confirm new payments, grant paid features, or expose private records."
+                        : "Setup view only. It does not confirm payment, activate the domain, verify ownership, or expose private records."}
+                    </div>
                   </div>
                 ) : null}
 
@@ -6277,138 +6289,191 @@ export default function CommunityDomainDashboardPage() {
                   <div style={{ ...softCard(), display: "grid", gap: 12 }}>
                     <div style={sectionLabel()}>Operating summary</div>
                     <h3 style={{ margin: 0, fontSize: 22, lineHeight: 1.15 }}>
-                      This domain is active. Use live operating areas first.
+                      Open one active-domain question.
                     </h3>
                     <div style={{ ...helperText(), fontSize: 14 }}>
-                      Pillar-style Community Domains should not fall back into a
-                      setup-first flow after activation. Use setup only when you
-                      need to correct saved details, add authority evidence, or
-                      prepare verification.
+                      Keep live action, status, package allowance, and permissions
+                      separate so this active domain does not fall back into a
+                      setup dump.
                     </div>
                     <div
                       style={{
                         display: "grid",
                         gridTemplateColumns:
-                          "repeat(auto-fit, minmax(min(100%, 150px), 1fr))",
+                          "repeat(auto-fit, minmax(min(100%, 145px), 1fr))",
                         gap: 8,
                       }}
                     >
-                      <div style={statusBadge(status.domain_status)}>
-                        Domain: {compactStatus(status.domain_status)}
-                      </div>
-                      <div style={statusBadge(status.billing_status)}>
-                        Billing: {compactStatus(status.billing_status)}
-                      </div>
-                      <div style={statusBadge(status.activation_status)}>
-                        Activation: {compactStatus(status.activation_status)}
-                      </div>
-                      <div style={statusBadge(status.verification_status)}>
-                        Verification: {compactStatus(status.verification_status)}
-                      </div>
+                      {[
+                        ["next_action", "Do next"],
+                        ["status", "Status"],
+                        ["allowance", "Allowance"],
+                        ["permissions", "Permissions"],
+                      ].map(([task, label]) => (
+                        <StableButton
+                          key={task}
+                          type="button"
+                          kind={
+                            activeOperatingSummaryTask === task
+                              ? "primary"
+                              : "secondary"
+                          }
+                          stableHeight={46}
+                          debugId={`community-domain-dashboard.operating-summary.${task}`}
+                          onClick={() =>
+                            setActiveOperatingSummaryTask(
+                              task as OperatingSummaryTaskKey
+                            )
+                          }
+                        >
+                          {label}
+                        </StableButton>
+                      ))}
                     </div>
-                    <div
-                      style={{
-                        display: "grid",
-                        gap: 8,
-                        padding: 12,
-                        borderRadius: 18,
-                        border: "1px solid rgba(214,170,69,0.28)",
-                        background: "rgba(255,249,225,0.68)",
-                      }}
-                    >
-                      <div style={sectionLabel()}>Package allowance</div>
+
+                    {activeOperatingSummaryTask === "next_action" ? (
+                      <>
+                        <div style={{ ...helperText(), fontSize: 14 }}>
+                          Pillar-style Community Domains should use live operating
+                          areas first after activation. Use setup only when you
+                          need to correct saved details, add authority evidence, or
+                          prepare verification.
+                        </div>
+                        <div style={{ ...helperText(), fontSize: 13 }}>
+                          Boundary: active does not mean verified. Verification
+                          still needs authority evidence and review; tariff
+                          upgrades, member bands, and paid feature changes still
+                          need manual capacity/finance handling.
+                        </div>
+                        <div
+                          style={{
+                            display: "grid",
+                            gridTemplateColumns:
+                              "repeat(auto-fit, minmax(min(100%, 170px), 1fr))",
+                            gap: 8,
+                          }}
+                        >
+                          <StableButton
+                            type="button"
+                            kind="primary"
+                            debugId="community-domain-dashboard.settings-open-live-lane"
+                            onClick={() => {
+                              focusWorkSurfaceAfterOpenRef.current = true;
+                              setShowAdvancedTools(true);
+                              setOperatingAreaPickerOpen(false);
+                              setSetupWorkspaceOpen(false);
+                              setActiveLane(operationalLaneKey);
+                              setSetupJourneyMode("setup");
+                            }}
+                          >
+                            Open {operationalLaneLabel}
+                          </StableButton>
+                          <StableButton
+                            type="button"
+                            kind="secondary"
+                            debugId="community-domain-dashboard.settings-edit-setup-details"
+                            onClick={() => openSetupJourney("edit")}
+                          >
+                            Edit setup details
+                          </StableButton>
+                        </div>
+                      </>
+                    ) : null}
+
+                    {activeOperatingSummaryTask === "status" ? (
                       <div
                         style={{
                           display: "grid",
                           gridTemplateColumns:
-                            "repeat(auto-fit, minmax(min(100%, 118px), 1fr))",
+                            "repeat(auto-fit, minmax(min(100%, 150px), 1fr))",
                           gap: 8,
                         }}
                       >
-                        {packageCapacityFacts.map(([label, value]) => (
-                          <div key={label} style={statusBadge("included")}>
-                            {label}: {value}
-                          </div>
-                        ))}
+                        <div style={statusBadge(status.domain_status)}>
+                          Domain: {compactStatus(status.domain_status)}
+                        </div>
+                        <div style={statusBadge(status.billing_status)}>
+                          Billing: {compactStatus(status.billing_status)}
+                        </div>
+                        <div style={statusBadge(status.activation_status)}>
+                          Activation: {compactStatus(status.activation_status)}
+                        </div>
+                        <div style={statusBadge(status.verification_status)}>
+                          Verification: {compactStatus(status.verification_status)}
+                        </div>
                       </div>
-                      <div style={{ ...helperText(), fontSize: 13 }}>
-                        {packageTariffBoundaryText}
-                      </div>
-                      <div style={{ ...helperText(), fontSize: 12.5 }}>
-                        Summary only. This does not add members, sell extra
-                        bands, grant paid features, confirm payment, or verify
-                        the organisation.
-                      </div>
-                    </div>
-                    <div
-                      style={{
-                        display: "grid",
-                        gap: 8,
-                        padding: 12,
-                        borderRadius: 18,
-                        border: "1px solid rgba(9,27,46,0.10)",
-                        background: "rgba(255,255,255,0.72)",
-                      }}
-                    >
-                      <div style={sectionLabel()}>Domain permissions</div>
+                    ) : null}
+
+                    {activeOperatingSummaryTask === "allowance" ? (
                       <div
                         style={{
                           display: "grid",
-                          gridTemplateColumns:
-                            "repeat(auto-fit, minmax(min(100%, 118px), 1fr))",
                           gap: 8,
+                          padding: 12,
+                          borderRadius: 18,
+                          border: "1px solid rgba(214,170,69,0.28)",
+                          background: "rgba(255,249,225,0.68)",
                         }}
                       >
-                        {activeDomainPermissionFacts.map(([label, value]) => (
-                          <div key={label} style={statusBadge("feature policy")}>
-                            {label}: {value}
-                          </div>
-                        ))}
+                        <div style={sectionLabel()}>Package allowance</div>
+                        <div
+                          style={{
+                            display: "grid",
+                            gridTemplateColumns:
+                              "repeat(auto-fit, minmax(min(100%, 118px), 1fr))",
+                            gap: 8,
+                          }}
+                        >
+                          {packageCapacityFacts.map(([label, value]) => (
+                            <div key={label} style={statusBadge("included")}>
+                              {label}: {value}
+                            </div>
+                          ))}
+                        </div>
+                        <div style={{ ...helperText(), fontSize: 13 }}>
+                          {packageTariffBoundaryText}
+                        </div>
+                        <div style={{ ...helperText(), fontSize: 12.5 }}>
+                          Summary only. This does not add members, sell extra
+                          bands, grant paid features, confirm payment, or verify
+                          the organisation.
+                        </div>
                       </div>
-                      <div style={{ ...helperText(), fontSize: 12.5 }}>
-                        Source: {featurePolicySourceLabel}. This summary only
-                        explains the current policy; change live behaviour
-                        through Edit setup details.
-                      </div>
-                    </div>
-                    <div style={{ ...helperText(), fontSize: 13 }}>
-                      Boundary: active does not mean verified. Verification still
-                      needs authority evidence and review; tariff upgrades,
-                      member bands, and paid feature changes still need manual
-                      capacity/finance handling.
-                    </div>
-                    <div
-                      style={{
-                        display: "grid",
-                        gridTemplateColumns:
-                          "repeat(auto-fit, minmax(min(100%, 170px), 1fr))",
-                        gap: 8,
-                      }}
-                    >
-                      <StableButton
-                        type="button"
-                        kind="primary"
-                        debugId="community-domain-dashboard.settings-open-live-lane"
-                        onClick={() => {
-                          focusWorkSurfaceAfterOpenRef.current = true;
-                          setShowAdvancedTools(true);
-                          setOperatingAreaPickerOpen(false);
-                          setSetupWorkspaceOpen(false);
-                          setActiveLane(operationalLaneKey);
-                          setSetupJourneyMode("setup");
+                    ) : null}
+
+                    {activeOperatingSummaryTask === "permissions" ? (
+                      <div
+                        style={{
+                          display: "grid",
+                          gap: 8,
+                          padding: 12,
+                          borderRadius: 18,
+                          border: "1px solid rgba(9,27,46,0.10)",
+                          background: "rgba(255,255,255,0.72)",
                         }}
                       >
-                        Open {operationalLaneLabel}
-                      </StableButton>
-                      <StableButton
-                        type="button"
-                        kind="secondary"
-                        debugId="community-domain-dashboard.settings-edit-setup-details"
-                        onClick={() => openSetupJourney("edit")}
-                      >
-                        Edit setup details
-                      </StableButton>
-                    </div>
+                        <div style={sectionLabel()}>Domain permissions</div>
+                        <div
+                          style={{
+                            display: "grid",
+                            gridTemplateColumns:
+                              "repeat(auto-fit, minmax(min(100%, 118px), 1fr))",
+                            gap: 8,
+                          }}
+                        >
+                          {activeDomainPermissionFacts.map(([label, value]) => (
+                            <div key={label} style={statusBadge("feature policy")}>
+                              {label}: {value}
+                            </div>
+                          ))}
+                        </div>
+                        <div style={{ ...helperText(), fontSize: 12.5 }}>
+                          Source: {featurePolicySourceLabel}. This summary only
+                          explains the current policy; change live behaviour
+                          through Edit setup details.
+                        </div>
+                      </div>
+                    ) : null}
                   </div>
                 ) : null}
 
@@ -11175,18 +11240,6 @@ export default function CommunityDomainDashboardPage() {
             </Suspense>
           ) : null}
 
-          {showAdvancedTools ? (
-          <section style={whiteCard()}>
-            <div style={{ display: "grid", gap: 8 }}>
-              <div style={sectionLabel()}>Boundary</div>
-              <div style={helperText()}>
-                {domainOperational
-                  ? "Operating view only. It does not verify ownership, confirm new payments, grant paid features, or expose private records."
-                  : "Setup view only. It does not confirm payment, activate the domain, verify ownership, or expose private records."}
-              </div>
-            </div>
-          </section>
-          ) : null}
         </>
       ) : null}
     </main>

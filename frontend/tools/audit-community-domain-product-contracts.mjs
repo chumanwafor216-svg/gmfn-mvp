@@ -1159,8 +1159,8 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /activeDomainPermissionFacts = DOMAIN_FEATURE_POLICY_ROWS\.map[\s\S]*showActiveDomainSettingsSummary[\s\S]*domainOperational && activeLane === "settings" && setupJourneyMode !== "edit"[\s\S]*Operating summary[\s\S]*This domain is active\. Use live operating areas first[\s\S]*should not fall back into a\s+setup-first flow after activation[\s\S]*Use setup only when you\s+need to correct saved details, add authority evidence, or\s+prepare verification[\s\S]*Package allowance[\s\S]*packageCapacityFacts\.map[\s\S]*packageTariffBoundaryText[\s\S]*Summary only[\s\S]*does not add members, sell extra\s+bands, grant paid features, confirm payment, or verify\s+the organisation[\s\S]*Domain permissions[\s\S]*activeDomainPermissionFacts\.map[\s\S]*Source: \{featurePolicySourceLabel\}[\s\S]*summary only\s+explains the current policy[\s\S]*change live behaviour\s+through Edit setup details[\s\S]*active does not mean verified[\s\S]*community-domain-dashboard\.settings-open-live-lane[\s\S]*community-domain-dashboard\.settings-edit-setup-details[\s\S]*Edit setup details/,
-  "Active Community Domains must show an operating summary with package allowance and all domain permission boundaries on the settings lane, and keep setup editing behind an explicit edit action.",
+  /activeDomainPermissionFacts = DOMAIN_FEATURE_POLICY_ROWS\.map[\s\S]*showActiveDomainSettingsSummary[\s\S]*domainOperational && activeLane === "settings" && setupJourneyMode !== "edit"[\s\S]*Operating summary[\s\S]*Open one active-domain question[\s\S]*community-domain-dashboard\.operating-summary\.\$\{task\}[\s\S]*activeOperatingSummaryTask === "next_action"[\s\S]*should use live operating\s+areas first after activation[\s\S]*Use setup only when you\s+need to correct saved details, add authority evidence, or\s+prepare verification[\s\S]*active does not mean verified[\s\S]*community-domain-dashboard\.settings-open-live-lane[\s\S]*community-domain-dashboard\.settings-edit-setup-details[\s\S]*Edit setup details[\s\S]*activeOperatingSummaryTask === "allowance"[\s\S]*Package allowance[\s\S]*packageCapacityFacts\.map[\s\S]*packageTariffBoundaryText[\s\S]*Summary only[\s\S]*does not add members, sell extra\s+bands, grant paid features, confirm payment, or verify\s+the organisation[\s\S]*activeOperatingSummaryTask === "permissions"[\s\S]*Domain permissions[\s\S]*activeDomainPermissionFacts\.map[\s\S]*Source: \{featurePolicySourceLabel\}[\s\S]*summary only\s+explains the current policy[\s\S]*change live behaviour\s+through Edit setup details/,
+  "Active Community Domains must keep next action, package allowance, and all domain permission boundaries on the settings lane, but expose them through one operating-summary selector with setup editing behind an explicit edit action.",
   { frontend: true }
 );
 
@@ -1879,6 +1879,20 @@ assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
   /domainOperational[\s\S]*"Live area"[\s\S]*"Live domain actions"[\s\S]*community-domain-dashboard\.operating-area-picker-toggle[\s\S]*"Change area"[\s\S]*Close areas[\s\S]*"Operating view only\. It does not verify ownership, confirm new payments, grant paid features, or expose private records\."/,
   "Active Community Domain dashboard tools must use live operating language after activation while keeping setup/edit language scoped to setup work.",
+  { frontend: true }
+);
+
+assertNotContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /showAdvancedTools \? \([\s\S]{0,260}<section style=\{whiteCard\(\)\}>[\s\S]{0,180}<div style=\{sectionLabel\(\)\}>Boundary<\/div>/,
+  "Community Domain dashboard must not add a standalone Boundary card after every opened operating area; boundary copy belongs inside the active work surface.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /type OperatingSummaryTaskKey = "next_action" \| "status" \| "allowance" \| "permissions"[\s\S]*activeOperatingSummaryTask[\s\S]*setActiveOperatingSummaryTask[\s\S]*community-domain-dashboard\.operating-summary\.\$\{task\}[\s\S]*activeOperatingSummaryTask === "next_action"[\s\S]*community-domain-dashboard\.settings-open-live-lane[\s\S]*activeOperatingSummaryTask === "status"[\s\S]*Domain: \{compactStatus\(status\.domain_status\)\}[\s\S]*activeOperatingSummaryTask === "allowance"[\s\S]*Package allowance[\s\S]*activeOperatingSummaryTask === "permissions"[\s\S]*Domain permissions/,
+  "Active Community Domain settings must keep next action, status, package allowance, and permissions behind one operating-summary selector instead of dumping the whole packet at once.",
   { frontend: true }
 );
 
