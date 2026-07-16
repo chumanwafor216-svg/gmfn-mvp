@@ -24,7 +24,11 @@ export type TrustSlipVerifyRecord = {
   trust_slip_limit?: string | number | null;
   currency?: string | null;
   cci_score?: string | number | null;
+  cci_score_visibility?: string | null;
   cci_band?: string | null;
+  cci_public_label?: string | null;
+  cci_public_meaning?: string | null;
+  cci_public_boundary?: string | null;
   sponsor_count?: string | number | null;
   profile_image_url?: string | null;
   identity_context?: Record<string, any> | null;
@@ -254,7 +258,26 @@ export function normalizeTrustSlipVerification(
     ),
     currency: firstTruthy(src?.currency, merchantView?.currency, merchantSummary?.currency),
     cci_score: firstNumberLike(src?.cci_score, merchantView?.cci_score, merchantSummary?.cci_score),
+    cci_score_visibility: firstTruthy(src?.cci_score_visibility, merchantView?.cci_score_visibility),
     cci_band: firstTruthy(src?.cci_band, merchantView?.cci_band, merchantSummary?.cci_band),
+    cci_public_label: firstTruthy(
+      src?.cci_public_label,
+      merchantView?.cci_public_label,
+      merchantSummary?.cci_public_label,
+      cciExplainer?.public_label
+    ),
+    cci_public_meaning: firstTruthy(
+      src?.cci_public_meaning,
+      merchantView?.cci_public_meaning,
+      merchantSummary?.cci_public_meaning,
+      cciExplainer?.public_meaning
+    ),
+    cci_public_boundary: firstTruthy(
+      src?.cci_public_boundary,
+      merchantView?.cci_public_boundary,
+      merchantSummary?.cci_public_boundary,
+      cciExplainer?.public_boundary
+    ),
     sponsor_count: firstNumberLike(
       src?.sponsor_count,
       merchantView?.sponsor_count,

@@ -189,6 +189,7 @@ type OperatingSummaryTaskKey = "next_action" | "status" | "allowance" | "permiss
 type OperatingSummaryGroupKey = "action" | "reference";
 type SetupWorkbenchTaskKey = "step" | "access";
 type SetupAccessTaskKey = "summary" | "authority";
+type SetupEditGroupKey = "foundation" | "people" | "services";
 type BillingTaskKey = "payment_code" | "account" | "steps" | "readiness";
 type BillingAccountTaskKey = "summary" | "setup";
 type BillingPaymentTaskKey =
@@ -918,6 +919,36 @@ const SETUP_STEP_OPTIONS: Array<{
     key: "launch",
     label: "Launch",
     note: "Check what is still blocking activation or verification.",
+  },
+];
+
+const SETUP_EDIT_GROUP_OPTIONS: Array<{
+  key: SetupEditGroupKey;
+  label: string;
+  note: string;
+  defaultStep: SetupStepKey;
+  stepKeys: SetupStepKey[];
+}> = [
+  {
+    key: "foundation",
+    label: "Foundation",
+    note: "Correct identity, payment, or authority evidence first.",
+    defaultStep: "identity",
+    stepKeys: ["identity", "payment", "evidence"],
+  },
+  {
+    key: "people",
+    label: "People",
+    note: "Adjust structure, member placement, or governance notes.",
+    defaultStep: "structure",
+    stepKeys: ["structure", "members", "governance"],
+  },
+  {
+    key: "services",
+    label: "Services",
+    note: "Review which domain services should be available first.",
+    defaultStep: "services",
+    stepKeys: ["services"],
   },
 ];
 
@@ -2728,6 +2759,7 @@ export default function CommunityDomainDashboardPage() {
   const [domainNoticePosting, setDomainNoticePosting] = useState(false);
   const mountedRef = useRef(true);
   const activeCommunityDomainIdRef = useRef(communityDomainId);
+  const commandSurfaceRef = useRef<HTMLElement | null>(null);
   const workSurfaceRef = useRef<HTMLElement | null>(null);
   const focusWorkSurfaceAfterOpenRef = useRef(false);
   const dashboardLoadSequence = useRef(0);
@@ -4612,6 +4644,27 @@ export default function CommunityDomainDashboardPage() {
   const setupCurrentStep =
     SETUP_STEP_OPTIONS.find((option) => option.key === activeSetupStep) ||
     SETUP_STEP_OPTIONS[0];
+  const activeSetupEditGroup = useMemo<SetupEditGroupKey>(() => {
+    if (
+      activeSetupStep === "structure" ||
+      activeSetupStep === "members" ||
+      activeSetupStep === "governance"
+    ) {
+      return "people";
+    }
+    if (activeSetupStep === "services") {
+      return "services";
+    }
+    return "foundation";
+  }, [activeSetupStep]);
+  const activeSetupEditGroupOption =
+    SETUP_EDIT_GROUP_OPTIONS.find((group) => group.key === activeSetupEditGroup) ||
+    SETUP_EDIT_GROUP_OPTIONS[0];
+  const activeSetupEditGroupSteps = SETUP_STEP_OPTIONS.filter(
+    (option) =>
+      option.key !== "launch" &&
+      activeSetupEditGroupOption.stepKeys.includes(option.key)
+  );
   const setupEditingLocked = !canSetupEdit;
   const setupEditLockMessage =
     "Only the owner/admin or an authorised setup editor can edit this setup.";
@@ -4970,6 +5023,29 @@ export default function CommunityDomainDashboardPage() {
     setOperatingAreaPickerOpen(false);
     setActiveLane("governance");
     setMessage("");
+  }
+
+  function returnToDomainCommand() {
+    setOperatingAreaPickerOpen(false);
+    setShowAdvancedTools(false);
+    setSetupWorkspaceOpen(false);
+    setSetupJourneyMode("setup");
+    setMessage("Returned to Domain command. Choose Marketplace or open one operating area.");
+    window.requestAnimationFrame(() => {
+      commandSurfaceRef.current?.scrollIntoView({ block: "start", behavior: "auto" });
+    });
+  }
+
+  function openMemberDashboard() {
+    navigate(APP_ROUTES.DASHBOARD);
+  }
+
+  function openDomainCommunityHome() {
+    const clanId = Number(selectedDomainClanId || 0);
+    if (clanId) {
+      setSelectedClanId(clanId);
+    }
+    navigate(routeWithCommunity(APP_ROUTES.COMMUNITY, clanId));
   }
 
   function openDomainMarketplace() {
@@ -6198,7 +6274,19 @@ export default function CommunityDomainDashboardPage() {
       ) : null}
 
       {!loading && !communityDomainId && !message ? (
-        <section style={whiteCard()}>
+        <section
+          style={
+            domainItems.length
+              ? whiteCard()
+              : {
+                  ...whiteCard(),
+                  padding: 0,
+                  background: "transparent",
+                  border: "none",
+                  boxShadow: "none",
+                }
+          }
+        >
           <Suspense
             fallback={
               <div style={{ display: "grid", gap: 10 }}>
@@ -6286,9 +6374,49 @@ export default function CommunityDomainDashboardPage() {
                 </div>
               ))}
             </div>
+
+            {domainOperational ? (
+              <nav
+                aria-label="Community Domain navigation"
+                style={{
+                  display: "grid",
+                  gridTemplateColumns:
+                    "repeat(auto-fit, minmax(min(100%, 138px), 1fr))",
+                  gap: 8,
+                  marginTop: 12,
+                }}
+              >
+                <StableButton
+                  type="button"
+                  kind="secondary"
+                  fullWidth
+                  stableHeight={40}
+                  debugId="community-domain-dashboard.nav.dashboard"
+                  style={{ fontSize: 13, borderColor: "rgba(255,255,255,0.28)" }}
+                  onClick={openMemberDashboard}
+                >
+                  Dashboard
+                </StableButton>
+                <StableButton
+                  type="button"
+                  kind="secondary"
+                  fullWidth
+                  stableHeight={40}
+                  debugId="community-domain-dashboard.nav.community-home"
+                  style={{ fontSize: 13, borderColor: "rgba(255,255,255,0.28)" }}
+                  onClick={openDomainCommunityHome}
+                >
+                  Community Home
+                </StableButton>
+              </nav>
+            ) : null}
           </section>
 
-          <section id="community-domain-official-board" style={whiteCard()}>
+          <section
+            ref={commandSurfaceRef}
+            id="community-domain-official-board"
+            style={whiteCard()}
+          >
             <div style={{ display: "grid", gap: 12 }}>
               <div style={iconHeaderStyle()}>
                 <span style={iconFrame(54)}>
@@ -6335,7 +6463,7 @@ export default function CommunityDomainDashboardPage() {
                     setMessage("");
                   }}
                 >
-                  Open operating areas
+                  Open {operationalLaneLabel}
                 </StableButton>
               ) : (
                 <StableButton
@@ -6357,7 +6485,7 @@ export default function CommunityDomainDashboardPage() {
                   debugId="community-domain-dashboard.real-life-record-shortcut"
                   onClick={() => openRealLifeRecordTask("activity")}
                 >
-                  Record from real life
+                  Record activity
                 </StableButton>
               ) : null}
               <div style={commandGuidanceGrid()}>
@@ -6979,15 +7107,25 @@ export default function CommunityDomainDashboardPage() {
                       </h2>
                     </div>
                   </div>
-                  {showAdvancedTools ? (
-                    <div
-                      style={{
-                        display: "grid",
-                        gridTemplateColumns:
-                          "repeat(auto-fit, minmax(min(100%, 130px), 1fr))",
-                        gap: 8,
-                      }}
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns:
+                        "repeat(auto-fit, minmax(min(100%, 130px), 1fr))",
+                      gap: 8,
+                    }}
+                  >
+                    <StableButton
+                      type="button"
+                      kind="secondary"
+                      fullWidth
+                      stableHeight={44}
+                      debugId="community-domain-dashboard.work-surface.back-to-command"
+                      onClick={returnToDomainCommand}
                     >
+                      Back to command
+                    </StableButton>
+                    {showAdvancedTools ? (
                       <StableButton
                         type="button"
                         kind={operatingAreaPickerOpen ? "secondary" : "primary"}
@@ -7000,21 +7138,8 @@ export default function CommunityDomainDashboardPage() {
                       >
                         {operatingAreaPickerOpen ? "Hide areas" : "Change area"}
                       </StableButton>
-                      <StableButton
-                        type="button"
-                        kind="secondary"
-                        fullWidth
-                        stableHeight={44}
-                        debugId="community-domain-dashboard.advanced-tools-toggle"
-                        onClick={() => {
-                          setOperatingAreaPickerOpen(false);
-                          setShowAdvancedTools(false);
-                        }}
-                      >
-                        Close areas
-                      </StableButton>
-                    </div>
-                  ) : null}
+                    ) : null}
+                  </div>
                 </div>
                 {showAdvancedTools ? (
                   <div style={{ display: "grid", gap: 5 }}>
@@ -8150,20 +8275,49 @@ export default function CommunityDomainDashboardPage() {
                               gap: 8,
                             }}
                           >
-                            {SETUP_STEP_OPTIONS.filter((option) => option.key !== "launch").map(
-                              (option) => (
+                            {SETUP_EDIT_GROUP_OPTIONS.map((group) => {
+                              const selected = group.key === activeSetupEditGroup;
+                              return (
                                 <StableButton
-                                  key={option.key}
+                                  key={group.key}
                                   type="button"
-                                  kind="secondary"
-                                  debugId={`community-domain-dashboard.setup-edit-step.${option.key}`}
+                                  kind={selected ? "primary" : "secondary"}
+                                  stableHeight={46}
+                                  title={group.note}
+                                  debugId={`community-domain-dashboard.setup-edit-group.${group.key}`}
                                   disabled={setupEditingLocked}
-                                  onClick={() => setActiveSetupStep(option.key)}
+                                  onClick={() => setActiveSetupStep(group.defaultStep)}
                                 >
-                                  {option.label}
+                                  {group.label}
                                 </StableButton>
-                              )
-                            )}
+                              );
+                            })}
+                          </div>
+                          <div style={{ ...helperText(), fontSize: 13 }}>
+                            {activeSetupEditGroupOption.note}
+                          </div>
+                          <div
+                            style={{
+                              display: "grid",
+                              gridTemplateColumns:
+                                "repeat(auto-fit, minmax(min(100%, 130px), 1fr))",
+                              gap: 8,
+                            }}
+                          >
+                            {activeSetupEditGroupSteps.map((option) => (
+                              <StableButton
+                                key={option.key}
+                                type="button"
+                                kind={option.key === activeSetupStep ? "primary" : "secondary"}
+                                stableHeight={44}
+                                title={option.note}
+                                debugId={`community-domain-dashboard.setup-edit-step.${option.key}`}
+                                disabled={setupEditingLocked}
+                                onClick={() => setActiveSetupStep(option.key)}
+                              >
+                                {option.label}
+                              </StableButton>
+                            ))}
                           </div>
                         </div>
                         <div style={{ ...softCard(), display: "grid", gap: 10 }}>

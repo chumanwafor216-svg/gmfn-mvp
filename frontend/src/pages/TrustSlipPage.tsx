@@ -45,6 +45,7 @@ import {
   type MerchantLinkResponse,
 } from "../lib/merchantChannel";
 import {
+  getContextualEvidencePosture,
   getTrustBandShortLabel,
   getTrustEvidenceLanguage,
   normalizeTrustBand,
@@ -2500,7 +2501,12 @@ export default function TrustSlipPage() {
     passportVerified || passportRecorded
       ? passportVerificationLabel
       : "ID not connected";
-  const cciMeaning = firstTruthy(cciExplainer?.meaning, cciExplainer?.plain_language);
+  const cciMeaning = firstTruthy(
+    cciExplainer?.public_meaning,
+    cciExplainer?.meaning,
+    cciExplainer?.plain_language
+  );
+  const cciPosture = getContextualEvidencePosture(cciScore, cciBand);
   const lastReleaseText = safeDateTime(summary?.last_release_at) || "Not shown";
   const lastFullRepaymentText =
     safeDateTime(summary?.last_full_repayment_at) || "Not shown";
@@ -2519,7 +2525,7 @@ export default function TrustSlipPage() {
       title: "What decision can this TrustSlip evidence support?",
       answer: hasBlockingTrustSlipState
         ? "Not from this TrustSlip alone. Ask for a fresh TrustSlip or the fuller Trust Passport before any risky decision."
-        : `The visible reading is ${merchantBand} (${merchantBandLabel}), with TrustSlip limit signal ${merchantTrustLimit} ${merchantCurrency} and cross-community consistency ${cciScore} / ${cciBand}. This supports a careful decision; it is not an automatic approval.`,
+        : `The visible reading is ${merchantBand} (${merchantBandLabel}), with TrustSlip limit signal ${merchantTrustLimit} ${merchantCurrency} and cross-community evidence posture ${cciPosture.label}. This supports a careful decision; it is not an automatic approval.`,
     },
     {
       title: "Do they follow through?",
@@ -2556,7 +2562,7 @@ export default function TrustSlipPage() {
       label: "Trust decision",
       value: hasBlockingTrustSlipState
         ? "Do not rely yet. Ask for a refreshed TrustSlip before support, goods, money, work, or referral."
-        : `Use carefully. Reading ${merchantBand} (${merchantBandLabel}); trust-limit signal ${merchantTrustLimit} ${merchantCurrency}; cross-community consistency ${cciScore} / ${cciBand}.`,
+        : `Use carefully. Reading ${merchantBand} (${merchantBandLabel}); trust-limit signal ${merchantTrustLimit} ${merchantCurrency}; cross-community evidence posture ${cciPosture.label}.`,
     },
     {
       label: "Follow-through",
@@ -2929,7 +2935,7 @@ export default function TrustSlipPage() {
     "Holder display name and GSN ID shown on this TrustSlip",
     "Community label and Community ID/reference shown on this TrustSlip",
     "Current TrustSlip status, code, issue window, and expiry window where available",
-    "Visible trust band, TrustSlip limit signal, and cross-community consistency reading",
+    "Visible trust band, TrustSlip limit signal, and cross-community evidence posture",
     "QR, verify action, and copied verify link open the public TrustSlip reading when available",
   ];
   const trustSlipHolderDoesNotConfirmList = [
@@ -4549,10 +4555,13 @@ export default function TrustSlipPage() {
                     lineHeight: 1.25,
                   }}
                 >
-                  {cciScore} / {cciBand}
+                  {cciPosture.label}
                 </div>
                 <div style={{ marginTop: 6, ...helperText(), fontSize: 12.5, lineHeight: 1.45 }}>
-                  This wider reading checks whether the member's trust evidence stays consistent across communities.
+                  Band: {cciBand}. Internal index is available only in detailed review where authorised.
+                </div>
+                <div style={{ marginTop: 6, ...helperText(), fontSize: 12.5, lineHeight: 1.45 }}>
+                  {cciPosture.boundary}
                 </div>
               </div>
             </div>

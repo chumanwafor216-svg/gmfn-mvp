@@ -543,7 +543,9 @@ export default function TrustSlipVerifyPage() {
     verifyPath,
     verifyUrl,
     compactTrustLimit,
-    publicVisibleScore,
+    publicEvidencePosture,
+    publicEvidencePostureMeaning,
+    publicEvidencePostureBoundary,
     visibleBandLabel,
     visibleBandMeaning,
     visibleEvidenceLabel,
@@ -1181,7 +1183,9 @@ export default function TrustSlipVerifyPage() {
           visibleBandLabel={visibleBandLabel}
           visibleBandMeaning={visibleBandMeaning}
           visibleEvidenceLabel={visibleEvidenceLabel}
-          publicVisibleScore={publicVisibleScore}
+          publicEvidencePosture={publicEvidencePosture}
+          publicEvidencePostureMeaning={publicEvidencePostureMeaning}
+          publicEvidencePostureBoundary={publicEvidencePostureBoundary}
           compactTrustLimit={compactTrustLimit}
           issuedAtLabel={issuedAtLabel}
           expiresAtLabel={expiresAtLabel}

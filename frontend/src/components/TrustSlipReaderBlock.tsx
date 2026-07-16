@@ -1,6 +1,7 @@
 import React from "react";
 import TrustBandMeaningGuide from "./TrustBandMeaningGuide";
 import { StableCtaLink } from "./StableButton";
+import { getContextualEvidencePosture } from "../lib/trustBandLanguage";
 
 type TrustSlipQuestion = {
   title: string;
@@ -220,6 +221,7 @@ export default function TrustSlipReaderBlock({
   ]
     .filter(Boolean)
     .join(" ");
+  const cciPosture = getContextualEvidencePosture(cciScore, cciBand);
 
   return (
     <section style={shell()}>
@@ -413,13 +415,19 @@ export default function TrustSlipReaderBlock({
               lineHeight: 1.2,
             }}
           >
-            {clean(cciScore, "Not shown")} / {clean(cciBand, "Not stated")}
+            {cciPosture.label}
+          </div>
+          <div style={{ marginTop: 6, ...body(), color: "#64748B" }}>
+            Band: {clean(cciBand, "Not stated")}. Internal index is available only in detailed review where authorised.
           </div>
           <div style={{ marginTop: 8, ...body() }}>
             {clean(
               cciMeaning,
-              "Cross-community consistency helps the reader understand how much visible community evidence exists. If the score is low or empty, treat it as weak evidence, not a quiet approval."
+              cciPosture.plainMeaning
             )}
+          </div>
+          <div style={{ marginTop: 8, ...body(), color: "#7A5B00" }}>
+            {cciPosture.boundary}
           </div>
           <div style={{ marginTop: 8, ...body() }}>
             Trust-limit signal:{" "}

@@ -4,6 +4,7 @@ import {
   publicFrontendUrl,
 } from "../../lib/publicLinks";
 import {
+  getContextualEvidencePosture,
   getTrustBandLanguage,
   getTrustBandShortLabel,
   getTrustEvidenceLanguage,
@@ -80,7 +81,9 @@ export type TrustSlipVerifyViewModel = {
   verifyPath: string;
   verifyUrl: string;
   compactTrustLimit: string;
-  publicVisibleScore: string;
+  publicEvidencePosture: string;
+  publicEvidencePostureMeaning: string;
+  publicEvidencePostureBoundary: string;
   visibleBandLabel: string;
   visibleBandMeaning: string;
   visibleEvidenceLabel: string;
@@ -287,7 +290,12 @@ export function buildTrustSlipVerifyViewModel({
     record?.identity_status_label,
     identityContext?.identity_status_label
   );
-  const cciMeaning = firstTruthy(cciExplainer?.meaning, cciExplainer?.plain_language);
+  const cciMeaning = firstTruthy(
+    record?.cci_public_meaning,
+    cciExplainer?.public_meaning,
+    cciExplainer?.meaning,
+    cciExplainer?.plain_language
+  );
   const phoneVerified =
     record?.phone_verified === true
       ? "Verified"
@@ -338,6 +346,34 @@ export function buildTrustSlipVerifyViewModel({
   const evidenceLanguage = getTrustEvidenceLanguage(evidenceStatus, {
     lowData: lowDataReading,
   });
+  const contextualPosture = getContextualEvidencePosture(visibleScore, visibleBand);
+  const backendPublicPostureLabel = firstTruthy(
+    record?.cci_public_label,
+    cciExplainer?.public_label
+  );
+  const backendPublicPostureMeaning = firstTruthy(
+    record?.cci_public_meaning,
+    cciExplainer?.public_meaning
+  );
+  const backendPublicPostureBoundary = firstTruthy(
+    record?.cci_public_boundary,
+    cciExplainer?.public_boundary
+  );
+  const publicEvidencePosture = lowDataReading
+    ? {
+        ...contextualPosture,
+        label: "Building history",
+        plainMeaning:
+          "This record is still building confirmed evidence. Use it as an early identity and community signal only.",
+        boundary:
+          "A thin record is not a bad record. Ask for recent events or live community confirmation before a serious decision.",
+      }
+    : {
+        ...contextualPosture,
+        label: backendPublicPostureLabel || contextualPosture.label,
+        plainMeaning: backendPublicPostureMeaning || contextualPosture.plainMeaning,
+        boundary: backendPublicPostureBoundary || contextualPosture.boundary,
+      };
   const visibleBandMeaning = hasBlockingState
     ? "This public check needs a fresh or safer verification before anyone relies on it."
     : evidenceLanguage.implication;
@@ -393,8 +429,6 @@ export function buildTrustSlipVerifyViewModel({
   const compactTrustLimit = trustLimit
     ? `${trustLimit}${currency ? ` ${currency}` : ""}`
     : "Not shown";
-  const publicVisibleScore =
-    visibleScore === null ? "10 / 100" : `${Math.round(visibleScore)} / 100`;
   const validNow = banner.tone === "success" && !hasBlockingState;
   const publicValidityLabel = validNow ? "VALID NOW" : banner.title;
   const quickTrustAnswers: TrustSlipVerifyQuickAnswer[] = [
@@ -532,7 +566,9 @@ export function buildTrustSlipVerifyViewModel({
     verifyPath,
     verifyUrl,
     compactTrustLimit,
-    publicVisibleScore,
+    publicEvidencePosture: publicEvidencePosture.label,
+    publicEvidencePostureMeaning: publicEvidencePosture.plainMeaning,
+    publicEvidencePostureBoundary: publicEvidencePosture.boundary,
     validNow,
     publicValidityLabel,
     quickTrustAnswers,

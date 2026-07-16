@@ -3963,6 +3963,10 @@ export default function DashboardPage() {
   const spotlightPriceIsVisible = Boolean(
     spotlightProductPrice && spotlightProductPrice !== "Price on request"
   );
+  const spotlightDescriptionIsDuplicatePrice =
+    spotlightPriceIsVisible &&
+    safeStr(spotlightProductDescription).toLowerCase() ===
+      safeStr(spotlightProductPrice).toLowerCase();
 
   const myShopLink = "/app/shop-control";
 
@@ -9626,7 +9630,8 @@ export default function DashboardPage() {
                 </div>
 
                 {spotlightProductDescription &&
-                spotlightProductDescription !== spotlightProductName ? (
+                spotlightProductDescription !== spotlightProductName &&
+                !spotlightDescriptionIsDuplicatePrice ? (
                   <div
                     style={{
                       color: "#475569",

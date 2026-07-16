@@ -609,6 +609,110 @@ CCI_BAND_EXPLANATIONS: Dict[str, str] = {
     "F": "Not enough usable evidence, or a negative reading. Do not rely on this TrustSlip for trust decisions.",
 }
 
+CONTEXTUAL_EVIDENCE_POSTURES: list[dict[str, str]] = [
+    {
+        "label": "Enduring record",
+        "short_label": "Enduring",
+        "plain_meaning": (
+            "A long-running pattern of confirmed community evidence is visible. "
+            "Still check the current context, freshness, and limits before relying on it."
+        ),
+        "boundary": (
+            "This is a descriptive evidence posture, not a personal worth score, "
+            "credit score, guarantee, or automatic approval."
+        ),
+    },
+    {
+        "label": "Established record",
+        "short_label": "Established",
+        "plain_meaning": (
+            "A steady pattern of confirmed participation and follow-through is visible "
+            "in this context."
+        ),
+        "boundary": (
+            "Use the evidence beside the decision in front of you; it does not predict "
+            "future behaviour or replace human judgement."
+        ),
+    },
+    {
+        "label": "Developing record",
+        "short_label": "Developing",
+        "plain_meaning": (
+            "A useful evidence pattern is forming, but bigger decisions still need "
+            "recent events, provenance, or live community confirmation."
+        ),
+        "boundary": "This means the record is still maturing. It is not a character judgement.",
+    },
+    {
+        "label": "Emerging record",
+        "short_label": "Emerging",
+        "plain_meaning": (
+            "Some early evidence is visible, but the record is still thin, recent, "
+            "or not yet proven across enough activity."
+        ),
+        "boundary": (
+            "Keep decisions small and ask for more current evidence before serious reliance."
+        ),
+    },
+    {
+        "label": "Insufficient confirmed evidence",
+        "short_label": "Insufficient",
+        "plain_meaning": (
+            "Not enough confirmed evidence is visible yet to support a serious decision "
+            "from this record alone."
+        ),
+        "boundary": (
+            "A thin record is not the same as bad behaviour. Ask for context, current "
+            "evidence, or direct community confirmation."
+        ),
+    },
+]
+
+
+def _safe_public_score(value: Any) -> Optional[Decimal]:
+    try:
+        if value is None or _safe_str(value) == "":
+            return None
+        score = Decimal(str(value))
+    except Exception:
+        return None
+    return max(Decimal("0"), min(Decimal("100"), score))
+
+
+def _contextual_evidence_posture(score: Any, band: Any) -> Dict[str, str]:
+    numeric = _safe_public_score(score)
+    if numeric is not None:
+        if numeric >= Decimal("80"):
+            return CONTEXTUAL_EVIDENCE_POSTURES[0]
+        if numeric >= Decimal("60"):
+            return CONTEXTUAL_EVIDENCE_POSTURES[1]
+        if numeric >= Decimal("40"):
+            return CONTEXTUAL_EVIDENCE_POSTURES[2]
+        if numeric >= Decimal("20"):
+            return CONTEXTUAL_EVIDENCE_POSTURES[3]
+        return CONTEXTUAL_EVIDENCE_POSTURES[4]
+
+    safe_band = _safe_str(band).upper()[:1]
+    if safe_band == "A":
+        return CONTEXTUAL_EVIDENCE_POSTURES[0]
+    if safe_band == "B":
+        return CONTEXTUAL_EVIDENCE_POSTURES[1]
+    if safe_band == "C":
+        return CONTEXTUAL_EVIDENCE_POSTURES[2]
+    if safe_band == "D":
+        return CONTEXTUAL_EVIDENCE_POSTURES[3]
+    if safe_band in {"E", "F"}:
+        return CONTEXTUAL_EVIDENCE_POSTURES[4]
+    return {
+        "label": "Evidence not shown",
+        "short_label": "Not shown",
+        "plain_meaning": "This public record does not show enough evidence posture detail yet.",
+        "boundary": (
+            "Do not make a serious decision from a missing reading. Ask for the current "
+            "TrustSlip, Trust Passport, or community confirmation."
+        ),
+    }
+
 
 RELATIONSHIP_TYPE_LABELS: Dict[str, str] = {
     "blood_or_family": "Blood or family relation",
@@ -749,19 +853,31 @@ def _invite_relationship_evidence_summary(db: Session, *, user_id: int) -> Dict[
 def _cci_explainer(score: Any, band: Any) -> Dict[str, Any]:
     raw_band = _safe_str(band).upper()[:1]
     safe_band = raw_band if raw_band in CCI_BAND_EXPLANATIONS else ""
+    posture = _contextual_evidence_posture(score, safe_band or band)
     return {
         "score": score,
+        "score_visibility": "internal_index",
+        "internal_index_note": (
+            "The numeric CCI value is retained for system calibration, audit, and "
+            "authorised detailed review. Public readers should use the descriptive "
+            "evidence posture, not treat the number as a human score."
+        ),
         "band": safe_band or _safe_str(band, "Not stated"),
+        "public_name": "Contextual Community Indicator",
+        "public_label": posture["label"],
+        "public_short_label": posture["short_label"],
+        "public_meaning": posture["plain_meaning"],
+        "public_boundary": posture["boundary"],
         "meaning": CCI_BAND_EXPLANATIONS.get(
             safe_band,
-            "CCI is the community confidence reading. The exact band meaning is not available for this record.",
+            "The exact band meaning is not available for this record. Use the descriptive evidence posture and ask for current evidence before relying on it.",
         ),
         "scale": [
             {"band": key, "meaning": value}
             for key, value in CCI_BAND_EXPLANATIONS.items()
         ],
         "plain_language": (
-            "CCI helps a reader understand community confidence. It should support a decision, not make the decision alone."
+            "CCI is a contextual community indicator. Public readers see a descriptive evidence posture; internal numeric indexes support calibration and audit only."
         ),
     }
 

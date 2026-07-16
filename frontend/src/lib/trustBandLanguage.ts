@@ -17,6 +17,14 @@ export type TrustEvidenceLanguage = {
   tone: "strong" | "care";
 };
 
+export type ContextualEvidencePosture = {
+  label: string;
+  shortLabel: string;
+  plainMeaning: string;
+  boundary: string;
+  tone: "strong" | "good" | "care";
+};
+
 export const TRUST_BAND_LANGUAGE: TrustBandLanguage[] = [
   {
     band: "A",
@@ -124,10 +132,109 @@ export const TRUST_EVIDENCE_LANGUAGE: Record<
   },
 };
 
+export const CONTEXTUAL_EVIDENCE_POSTURES: ContextualEvidencePosture[] = [
+  {
+    label: "Enduring record",
+    shortLabel: "Enduring",
+    plainMeaning:
+      "A long-running pattern of confirmed community evidence is visible. Still check the current context, freshness, and limits before relying on it.",
+    boundary:
+      "This is a descriptive evidence posture, not a personal worth score, credit score, guarantee, or automatic approval.",
+    tone: "strong",
+  },
+  {
+    label: "Established record",
+    shortLabel: "Established",
+    plainMeaning:
+      "A steady pattern of confirmed participation and follow-through is visible in this context.",
+    boundary:
+      "Use the evidence beside the decision in front of you; it does not predict future behaviour or replace human judgement.",
+    tone: "good",
+  },
+  {
+    label: "Developing record",
+    shortLabel: "Developing",
+    plainMeaning:
+      "A useful evidence pattern is forming, but bigger decisions still need recent events, provenance, or live community confirmation.",
+    boundary:
+      "This means the record is still maturing. It is not a character judgement.",
+    tone: "care",
+  },
+  {
+    label: "Emerging record",
+    shortLabel: "Emerging",
+    plainMeaning:
+      "Some early evidence is visible, but the record is still thin, recent, or not yet proven across enough activity.",
+    boundary:
+      "Keep decisions small and ask for more current evidence before serious reliance.",
+    tone: "care",
+  },
+  {
+    label: "Insufficient confirmed evidence",
+    shortLabel: "Insufficient",
+    plainMeaning:
+      "Not enough confirmed evidence is visible yet to support a serious decision from this record alone.",
+    boundary:
+      "A thin record is not the same as bad behaviour. Ask for context, current evidence, or direct community confirmation.",
+    tone: "care",
+  },
+];
+
 export function normalizeTrustBand(raw: unknown): string {
   const text = String(raw ?? "").trim().toUpperCase();
   const first = text.slice(0, 1);
   return /^[A-F]$/.test(first) ? first : "";
+}
+
+function normalizeEvidenceScore(raw: unknown): number | null {
+  if (raw === null || raw === undefined || String(raw).trim() === "") return null;
+  const value = Number(raw);
+  if (!Number.isFinite(value)) return null;
+  return Math.max(0, Math.min(100, value));
+}
+
+function postureByIndex(index: number): ContextualEvidencePosture {
+  return CONTEXTUAL_EVIDENCE_POSTURES[
+    Math.max(0, Math.min(CONTEXTUAL_EVIDENCE_POSTURES.length - 1, index))
+  ];
+}
+
+export function getContextualEvidencePosture(
+  score: unknown,
+  band?: unknown
+): ContextualEvidencePosture {
+  const numeric = normalizeEvidenceScore(score);
+  if (numeric !== null) {
+    if (numeric >= 80) return postureByIndex(0);
+    if (numeric >= 60) return postureByIndex(1);
+    if (numeric >= 40) return postureByIndex(2);
+    if (numeric >= 20) return postureByIndex(3);
+    return postureByIndex(4);
+  }
+
+  switch (normalizeTrustBand(band)) {
+    case "A":
+      return postureByIndex(0);
+    case "B":
+      return postureByIndex(1);
+    case "C":
+      return postureByIndex(2);
+    case "D":
+      return postureByIndex(3);
+    case "E":
+    case "F":
+      return postureByIndex(4);
+    default:
+      return {
+        label: "Evidence not shown",
+        shortLabel: "Not shown",
+        plainMeaning:
+          "This public record does not show enough evidence posture detail yet.",
+        boundary:
+          "Do not make a serious decision from a missing reading. Ask for the current TrustSlip, Trust Passport, or community confirmation.",
+        tone: "care",
+      };
+  }
 }
 
 export function normalizeTrustEvidenceStatus(raw: unknown): TrustEvidenceStatus {

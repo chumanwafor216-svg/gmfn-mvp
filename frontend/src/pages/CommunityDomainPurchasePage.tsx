@@ -273,6 +273,120 @@ function statusPill(kind: "ready" | "blocked" | "waiting"): React.CSSProperties 
   };
 }
 
+function stepCard(): React.CSSProperties {
+  return {
+    ...darkPanel(),
+    display: "grid",
+    gap: 12,
+    color: "#F8FBFF",
+  };
+}
+
+function resultBanner(kind: "ready" | "blocked" | "waiting"): React.CSSProperties {
+  const palette =
+    kind === "ready"
+      ? {
+          bg: "linear-gradient(180deg, rgba(35,190,106,0.18) 0%, rgba(255,255,255,0.08) 100%)",
+          border: "rgba(74,222,128,0.24)",
+        }
+      : kind === "blocked"
+      ? {
+          bg: "linear-gradient(180deg, rgba(220,38,38,0.16) 0%, rgba(255,255,255,0.08) 100%)",
+          border: "rgba(248,113,113,0.22)",
+        }
+      : {
+          bg: "linear-gradient(180deg, rgba(246,199,102,0.16) 0%, rgba(255,255,255,0.08) 100%)",
+          border: "rgba(246,199,102,0.22)",
+        };
+
+  return {
+    minHeight: 92,
+    borderRadius: 20,
+    border: `1px solid ${palette.border}`,
+    background: palette.bg,
+    padding: 14,
+    display: "grid",
+    gridTemplateColumns: "58px minmax(0, 1fr)",
+    gap: 14,
+    alignItems: "center",
+  };
+}
+
+function resultMark(kind: "ready" | "blocked" | "waiting"): React.CSSProperties {
+  const palette =
+    kind === "ready"
+      ? { bg: "#22C55E", color: "#062014" }
+      : kind === "blocked"
+      ? { bg: "#EF4444", color: "#FFFFFF" }
+      : { bg: "#F2C766", color: "#10253B" };
+
+  return {
+    width: 52,
+    height: 52,
+    borderRadius: 999,
+    display: "grid",
+    placeItems: "center",
+    background: palette.bg,
+    color: palette.color,
+    fontSize: 13,
+    fontWeight: 950,
+    boxShadow:
+      "0 16px 30px rgba(0,8,18,0.26), inset 0 1px 0 rgba(255,255,255,0.36)",
+  };
+}
+
+function detailRow(): React.CSSProperties {
+  return {
+    display: "grid",
+    gridTemplateColumns: "minmax(92px, 0.45fr) minmax(0, 1fr)",
+    gap: 10,
+    alignItems: "start",
+    color: "rgba(255,255,255,0.82)",
+    fontSize: 14,
+    lineHeight: 1.45,
+    minWidth: 0,
+  };
+}
+
+function detailValue(): React.CSSProperties {
+  return {
+    color: "#F8FBFF",
+    fontWeight: 850,
+    textAlign: "right",
+    minWidth: 0,
+    overflowWrap: "normal",
+    wordBreak: "normal",
+  };
+}
+
+function stepLine(): React.CSSProperties {
+  return {
+    display: "grid",
+    gridTemplateColumns: "28px minmax(0, 1fr)",
+    gap: 10,
+    alignItems: "start",
+    paddingTop: 10,
+    borderTop: "1px solid rgba(220,231,243,0.12)",
+    color: "rgba(255,255,255,0.82)",
+    fontSize: 14,
+    lineHeight: 1.45,
+  };
+}
+
+function smallLineIcon(): React.CSSProperties {
+  return {
+    width: 28,
+    height: 28,
+    borderRadius: 10,
+    display: "grid",
+    placeItems: "center",
+    border: "1px solid rgba(246,199,102,0.30)",
+    color: "#F2C766",
+    fontSize: 11,
+    fontWeight: 950,
+  };
+}
+
 function compactValue(value: unknown, fallback = "Not set"): string {
   const text = String(value ?? "").trim();
   return text || fallback;
@@ -280,6 +394,11 @@ function compactValue(value: unknown, fallback = "Not set"): string {
 
 function compactOptional(value: unknown): string {
   return String(value ?? "").trim();
+}
+
+function domainDisplayCode(value: unknown): string {
+  const clean = compactValue(value, "").replace(/\.gsn$/i, "");
+  return clean ? `${clean}.gsn` : "Not returned";
 }
 
 function readPurchaseDraftSnapshot(): PurchaseDraftSnapshot | null {
@@ -430,6 +549,7 @@ export default function CommunityDomainPurchasePage() {
   const isSignedIn = Boolean(getAccessToken());
 
   useEffect(() => {
+    mountedRef.current = true;
     if (typeof document !== "undefined") {
       document.title = "GSN | Purchase Community Domain";
     }
@@ -573,6 +693,20 @@ export default function CommunityDomainPurchasePage() {
     : isSignedIn
     ? "Create draft request"
     : "Sign in to create draft";
+  const purchaseReviewMode = Boolean(availability);
+  const checkedDomainCode = domainDisplayCode(
+    availability?.normalized_domain_name || domainName
+  );
+  const checkedDomainStatus = availability
+    ? availability.available
+      ? "Available"
+      : "Unavailable"
+    : busy === "templates"
+    ? "Loading templates"
+    : "Not checked";
+  const locationLabel = [compactOptional(country), compactOptional(stateName)]
+    .filter(Boolean)
+    .join(" / ");
 
   function handleDomainNameChange(nextDomainName: string) {
     availabilityCheckSequence.current += 1;
@@ -580,6 +714,15 @@ export default function CommunityDomainPurchasePage() {
     setAvailability(null);
     setDraftResult(null);
     setQuoteResult(null);
+    if (busyRef.current === "availability") setBusyState(null);
+  }
+
+  function handleCheckAnotherName() {
+    availabilityCheckSequence.current += 1;
+    setAvailability(null);
+    setDraftResult(null);
+    setQuoteResult(null);
+    setMessage("Update the requested name and check availability again.");
     if (busyRef.current === "availability") setBusyState(null);
   }
 
@@ -803,7 +946,7 @@ export default function CommunityDomainPurchasePage() {
                 style={{
                   margin: 0,
                   color: "#F8FBFF",
-                  fontSize: isCompact ? 31 : 44,
+                  fontSize: isCompact ? (purchaseReviewMode ? 27 : 31) : 44,
                   lineHeight: 1.03,
                   fontWeight: 950,
                   textAlign: isCompact ? "left" : "center",
@@ -812,81 +955,85 @@ export default function CommunityDomainPurchasePage() {
               >
                 Purchase Community Domain
               </h1>
-              <p
-                style={{
-                  ...helperText(),
-                  margin: 0,
-                  maxWidth: 760,
-                  textAlign: isCompact ? "left" : "center",
-                }}
-              >
-                Check the institutional domain name first. A draft request is not a live
-                domain, not a payment, and not a verified public record.
-              </p>
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: isCompact
-                    ? "repeat(3, minmax(0, 1fr))"
-                    : "repeat(4, minmax(0, 1fr))",
-                  gap: 10,
-                  width: "100%",
-                  maxWidth: 900,
-                  marginTop: 4,
-                }}
-              >
-                {isCompact
-                  ? DOMAIN_PURCHASE_MOBILE_FACTS.map((label) => (
-                      <div
-                        key={label}
-                        style={{
-                          minHeight: 42,
-                          borderRadius: 14,
-                          border: "1px solid rgba(220,231,243,0.16)",
-                          background: "rgba(255,255,255,0.075)",
-                          display: "grid",
-                          placeItems: "center",
-                          padding: "8px 6px",
-                          color: "rgba(255,255,255,0.88)",
-                          fontSize: 12,
-                          fontWeight: 900,
-                          textAlign: "center",
-                          lineHeight: 1.2,
-                        }}
-                      >
-                        {label}
-                      </div>
-                    ))
-                  : DOMAIN_ENGINE_POINTS.map((point) => (
-                      <div
-                        key={point.label}
-                        style={{
-                          borderRadius: 16,
-                          border: "1px solid rgba(220,231,243,0.16)",
-                          background:
-                            "linear-gradient(180deg, rgba(255,255,255,0.095) 0%, rgba(255,255,255,0.045) 100%)",
-                          padding: "11px 12px",
-                          minHeight: 92,
-                          display: "grid",
-                          alignContent: "start",
-                          gap: 6,
-                        }}
-                      >
-                        <div style={labelText()}>
-                          {point.label}
-                        </div>
-                        <div
-                          style={{
-                            color: "rgba(255,255,255,0.82)",
-                            fontSize: 13,
-                            lineHeight: 1.45,
-                          }}
-                        >
-                          {point.text}
-                        </div>
-                      </div>
-                    ))}
-              </div>
+              {!purchaseReviewMode ? (
+                <>
+                  <p
+                    style={{
+                      ...helperText(),
+                      margin: 0,
+                      maxWidth: 760,
+                      textAlign: isCompact ? "left" : "center",
+                    }}
+                  >
+                    Check the institutional domain name first. A draft request is not a live
+                    domain, not a payment, and not a verified public record.
+                  </p>
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: isCompact
+                        ? "repeat(3, minmax(0, 1fr))"
+                        : "repeat(4, minmax(0, 1fr))",
+                      gap: 10,
+                      width: "100%",
+                      maxWidth: 900,
+                      marginTop: 4,
+                    }}
+                  >
+                    {isCompact
+                      ? DOMAIN_PURCHASE_MOBILE_FACTS.map((label) => (
+                          <div
+                            key={label}
+                            style={{
+                              minHeight: 42,
+                              borderRadius: 14,
+                              border: "1px solid rgba(220,231,243,0.16)",
+                              background: "rgba(255,255,255,0.075)",
+                              display: "grid",
+                              placeItems: "center",
+                              padding: "8px 6px",
+                              color: "rgba(255,255,255,0.88)",
+                              fontSize: 12,
+                              fontWeight: 900,
+                              textAlign: "center",
+                              lineHeight: 1.2,
+                            }}
+                          >
+                            {label}
+                          </div>
+                        ))
+                      : DOMAIN_ENGINE_POINTS.map((point) => (
+                          <div
+                            key={point.label}
+                            style={{
+                              borderRadius: 16,
+                              border: "1px solid rgba(220,231,243,0.16)",
+                              background:
+                                "linear-gradient(180deg, rgba(255,255,255,0.095) 0%, rgba(255,255,255,0.045) 100%)",
+                              padding: "11px 12px",
+                              minHeight: 92,
+                              display: "grid",
+                              alignContent: "start",
+                              gap: 6,
+                            }}
+                          >
+                            <div style={labelText()}>
+                              {point.label}
+                            </div>
+                            <div
+                              style={{
+                                color: "rgba(255,255,255,0.82)",
+                                fontSize: 13,
+                                lineHeight: 1.45,
+                              }}
+                            >
+                              {point.text}
+                            </div>
+                          </div>
+                        ))}
+                  </div>
+                </>
+              ) : null}
             </div>
             {isCompact ? null : <div />}
           </header>
@@ -894,11 +1041,15 @@ export default function CommunityDomainPurchasePage() {
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1.15fr) minmax(330px, 0.85fr)",
+              gridTemplateColumns:
+                isCompact || purchaseReviewMode
+                  ? "1fr"
+                  : "minmax(0, 1.15fr) minmax(330px, 0.85fr)",
               gap: 16,
               alignItems: "start",
             }}
           >
+            {!purchaseReviewMode ? (
             <form onSubmit={handleCheckAvailability} style={whiteCard()}>
               <div style={{ display: "grid", gap: 16 }}>
                 <div
@@ -1073,8 +1224,216 @@ export default function CommunityDomainPurchasePage() {
                 ) : null}
               </div>
             </form>
+            ) : null}
 
-            <aside style={{ display: "grid", gap: 12, minWidth: 0 }}>
+            <aside
+              style={{
+                display: purchaseReviewMode ? "grid" : "none",
+                gap: 12,
+                minWidth: 0,
+              }}
+            >
+              {purchaseReviewMode ? (
+                <>
+                  <section style={stepCard()}>
+                    <div style={labelText()}>2. Availability</div>
+                    <div style={resultBanner(availabilityKind)}>
+                      <div style={resultMark(availabilityKind)}>
+                        {availability?.available ? "OK" : "NO"}
+                      </div>
+                      <div style={{ display: "grid", gap: 4, minWidth: 0 }}>
+                        <div
+                          style={{
+                            color: availability?.available ? "#4ADE80" : "#FCA5A5",
+                            fontSize: 18,
+                            fontWeight: 950,
+                            lineHeight: 1.1,
+                          }}
+                        >
+                          {checkedDomainStatus}
+                        </div>
+                        <div
+                          style={{
+                            color: "#F8FBFF",
+                            fontSize: 15,
+                            fontWeight: 850,
+                            overflowWrap: "normal",
+                            wordBreak: "normal",
+                            hyphens: "none",
+                          }}
+                        >
+                          {checkedDomainCode}
+                        </div>
+                      </div>
+                    </div>
+                  </section>
+
+                  <section style={stepCard()}>
+                    <div style={labelText()}>Domain details</div>
+                    <div style={{ display: "grid", gap: 9 }}>
+                      <div style={detailRow()}>
+                        <span>Domain</span>
+                        <strong style={detailValue()}>{checkedDomainCode}</strong>
+                      </div>
+                      <div style={detailRow()}>
+                        <span>Status</span>
+                        <strong
+                          style={{
+                            ...detailValue(),
+                            color: availability?.available ? "#4ADE80" : "#FCA5A5",
+                          }}
+                        >
+                          {checkedDomainStatus}
+                        </strong>
+                      </div>
+                      <div style={detailRow()}>
+                        <span>Type</span>
+                        <strong style={detailValue()}>{selectedTemplate.label}</strong>
+                      </div>
+                      <div style={detailRow()}>
+                        <span>Location</span>
+                        <strong style={detailValue()}>
+                          {locationLabel || "Not set"}
+                        </strong>
+                      </div>
+                    </div>
+                  </section>
+
+                  <section style={stepCard()}>
+                    <div style={labelText()}>3. Draft & quote</div>
+                    <div
+                      style={{
+                        ...statusPill(
+                          draftResult
+                            ? "ready"
+                            : availability?.available
+                            ? "waiting"
+                            : "blocked"
+                        ),
+                        justifySelf: "start",
+                      }}
+                    >
+                      {draftResult ? "Draft created" : "Waiting for owner"}
+                    </div>
+                    {draftResult?.community_domain ? (
+                      <div style={{ display: "grid", gap: 8 }}>
+                        <div style={detailRow()}>
+                          <span>Draft ID</span>
+                          <strong style={detailValue()}>
+                            {draftResult.community_domain.id}
+                          </strong>
+                        </div>
+                        <div style={detailRow()}>
+                          <span>Status</span>
+                          <strong style={detailValue()}>
+                            {draftResult.community_domain.status}
+                          </strong>
+                        </div>
+                        <div style={detailRow()}>
+                          <span>Verification</span>
+                          <strong style={detailValue()}>
+                            {draftResult.community_domain.verification_status}
+                          </strong>
+                        </div>
+                      </div>
+                    ) : (
+                      <div style={{ display: "grid", gap: 0 }}>
+                        <div style={stepLine()}>
+                          <span style={smallLineIcon()}>1</span>
+                          <span>Draft can be created after the name is available.</span>
+                        </div>
+                        <div style={stepLine()}>
+                          <span style={smallLineIcon()}>2</span>
+                          <span>Draft is not a live Committee or public record.</span>
+                        </div>
+                        <div style={stepLine()}>
+                          <span style={smallLineIcon()}>3</span>
+                          <span>You can proceed when you are ready.</span>
+                        </div>
+                      </div>
+                    )}
+                    {quoteResult ? (
+                      <div style={helperText()}>
+                        {quoteResult.error ? (
+                          <>Package quote: {quoteResult.error}</>
+                        ) : (
+                          <>
+                            Package quote:{" "}
+                            <strong>
+                              {compactValue(
+                                quoteResult?.quote?.status ||
+                                  quoteResult?.quote?.quote_status,
+                                "generated"
+                              )}
+                            </strong>
+                          </>
+                        )}
+                      </div>
+                    ) : null}
+                    {draftResult?.community_domain?.id ? (
+                      <EntryActionButton
+                        type="button"
+                        variant="secondary"
+                        onClick={() =>
+                          navigate(
+                            `/app/community-domain/${encodeURIComponent(
+                              String(draftResult.community_domain.id)
+                            )}`
+                          )
+                        }
+                        debugId="community-domain-purchase.open-dashboard"
+                        style={{ width: "100%" }}
+                      >
+                        Open domain dashboard
+                      </EntryActionButton>
+                    ) : null}
+                    <EntryActionButton
+                      type="button"
+                      onClick={handleCreateDraft}
+                      disabled={
+                        busy === "draft" ||
+                        Boolean(draftResult) ||
+                        !availability?.available
+                      }
+                      debugId="community-domain-purchase.create-draft"
+                      style={{ width: "100%" }}
+                    >
+                      {availability?.available ? "Create draft" : "Choose another name"}
+                    </EntryActionButton>
+                  </section>
+
+                  <section style={stepCard()}>
+                    <div style={labelText()}>4. Payment</div>
+                    <div style={{ ...statusPill("waiting"), justifySelf: "start" }}>
+                      Not generated
+                    </div>
+                    <div style={{ display: "grid", gap: 0 }}>
+                      <div style={stepLine()}>
+                        <span style={smallLineIcon()}>1</span>
+                        <span>Payment instructions appear in the draft.</span>
+                      </div>
+                      <div style={stepLine()}>
+                        <span style={smallLineIcon()}>2</span>
+                        <span>Confirmation and activation are separate.</span>
+                      </div>
+                      <div style={stepLine()}>
+                        <span style={smallLineIcon()}>3</span>
+                        <span>This page does not confirm verification.</span>
+                      </div>
+                    </div>
+                    <EntryActionButton
+                      type="button"
+                      variant="secondary"
+                      onClick={handleCheckAnotherName}
+                      debugId="community-domain-purchase.check-another-name"
+                      style={{ width: "100%" }}
+                    >
+                      Check another name
+                    </EntryActionButton>
+                  </section>
+                </>
+              ) : (
+                <>
               <div style={whiteCard()}>
                 <div style={{ display: "grid", gap: 10, minWidth: 0 }}>
                   <div style={labelText(false)}>Availability result</div>
@@ -1238,6 +1597,8 @@ export default function CommunityDomainPurchasePage() {
                   </div>
                 </div>
               </div>
+                </>
+              )}
             </aside>
           </div>
 

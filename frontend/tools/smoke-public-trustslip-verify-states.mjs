@@ -168,8 +168,29 @@ function publicTrustSlipPayload(scenario) {
     community_code: minimal ? "" : "GMFN-C-BOUNDARY",
     trust_band: scenario.trust_band ?? "A",
     band: scenario.band ?? "A",
-    open_trust_score: scenario.open_trust_score ?? 82,
-    cci_score: scenario.cci_score ?? 82,
+    cci_score: null,
+    cci_score_visibility: "internal_index",
+    cci_band: scenario.band ?? "A",
+    cci_public_label: scenario.noSnapshotOrEvents ? "Building history" : "Enduring record",
+    cci_public_meaning: scenario.noSnapshotOrEvents
+      ? "This record is still building confirmed evidence."
+      : "Confirmed evidence is deep and consistently positive across the current context.",
+    cci_public_boundary:
+      "Descriptive evidence posture only; not a score of human worth, guarantee, or automatic approval.",
+    cci_explainer: minimal
+      ? {}
+      : {
+          score_visibility: "internal_index",
+          internal_index_note:
+            "Numeric indexes are retained for calibration and authorised detailed review.",
+          public_label: scenario.noSnapshotOrEvents ? "Building history" : "Enduring record",
+          public_short_label: scenario.noSnapshotOrEvents ? "Building" : "Enduring",
+          public_meaning: scenario.noSnapshotOrEvents
+            ? "This record is still building confirmed evidence."
+            : "Confirmed evidence is deep and consistently positive across the current context.",
+          public_boundary:
+            "Descriptive evidence posture only; not a score of human worth, guarantee, or automatic approval.",
+        },
     trust_limit: "100",
     currency: "GBP",
     issued_at: scenario.issued_at ?? "2026-07-05T08:00:00.000Z",

@@ -844,7 +844,7 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /type GovernanceTaskKey[\s\S]*"readiness"[\s\S]*"director_summary"[\s\S]*"sponsor_summary"[\s\S]*"real_life_record"[\s\S]*"access_requests"[\s\S]*type GovernanceTaskGroupKey = "readiness" \| "reports" \| "records"[\s\S]*type SetupOverviewTaskKey = "notices" \| "engine" \| "next_setup" \| "counts"[\s\S]*type SetupOverviewGroupKey = "action" \| "reference"[\s\S]*type RealLifeRecordTask = "activity" \| "beneficiary_outcome"[\s\S]*GOVERNANCE_TASK_OPTIONS[\s\S]*key: "readiness"[\s\S]*key: "director_summary"[\s\S]*key: "sponsor_summary"[\s\S]*key: "real_life_record"[\s\S]*key: "access_requests"[\s\S]*GOVERNANCE_TASK_GROUP_OPTIONS[\s\S]*key: "readiness"[\s\S]*taskKeys: \["readiness"\][\s\S]*key: "reports"[\s\S]*taskKeys: \["director_summary", "sponsor_summary"\][\s\S]*key: "records"[\s\S]*taskKeys: \["real_life_record", "access_requests"\][\s\S]*SETUP_OVERVIEW_TASK_OPTIONS[\s\S]*key: "next_setup"[\s\S]*key: "notices"[\s\S]*key: "engine"[\s\S]*key: "counts"[\s\S]*SETUP_OVERVIEW_GROUP_OPTIONS[\s\S]*key: "action"[\s\S]*taskKeys: \["next_setup", "notices"\][\s\S]*key: "reference"[\s\S]*taskKeys: \["engine", "counts"\][\s\S]*activeSetupOverviewTask[\s\S]*operatingAreaPickerOpen[\s\S]*activeSetupOverviewGroup[\s\S]*activeSetupOverviewGroupTasks[\s\S]*showOtherDomainToolsEntry = setupJourneyMode === "edit"[\s\S]*activeGovernanceTaskGroup[\s\S]*GOVERNANCE_TASK_GROUP_OPTIONS\.find[\s\S]*activeGovernanceGroupTasks[\s\S]*selectGovernanceTask[\s\S]*setActiveGovernanceTask\(task\)[\s\S]*setActiveRealLifeRecordTask\(\(current\) => current \|\| "activity"\)[\s\S]*openRealLifeRecordTask[\s\S]*setActiveGovernanceTask\("real_life_record"\)[\s\S]*setShowAdvancedTools\(true\)[\s\S]*setOperatingAreaPickerOpen\(false\)[\s\S]*setActiveLane\("governance"\)[\s\S]*community-domain-dashboard\.real-life-record-shortcut[\s\S]*openRealLifeRecordTask\("activity"\)[\s\S]*community-domain-dashboard\.setup-overview-group\.\$\{group\.key\}[\s\S]*activeSetupOverviewGroupTasks\.map[\s\S]*community-domain-dashboard\.setup-overview\.\$\{task\.key\}[\s\S]*activeSetupOverviewTask === "notices"[\s\S]*activeSetupOverviewTask === "engine"[\s\S]*activeSetupOverviewTask === "next_setup"[\s\S]*activeSetupOverviewTask === "counts"[\s\S]*showAdvancedTools && operatingAreaPickerOpen[\s\S]*CommunityDomainLaneSelectorPanel[\s\S]*setOperatingAreaPickerOpen\(false\)[\s\S]*community-domain-dashboard\.operating-area-picker-toggle[\s\S]*setShowAdvancedTools\(false\)[\s\S]*Close areas[\s\S]*Governance jobs[\s\S]*Choose the governance stage first[\s\S]*community-domain-dashboard\.governance-group\.\$\{group\.key\}[\s\S]*community-domain-dashboard\.governance-task\.\$\{task\.key\}[\s\S]*activeGovernanceTask === "readiness"[\s\S]*activeGovernanceTask === "director_summary"[\s\S]*activeGovernanceTask === "sponsor_summary"[\s\S]*activeGovernanceTask === "real_life_record"[\s\S]*activeRealLifeRecordTask === "activity"[\s\S]*community-domain-dashboard\.activity-record[\s\S]*activeRealLifeRecordTask === "beneficiary_outcome"[\s\S]*community-domain-dashboard\.beneficiary-outcome-record[\s\S]*activeGovernanceTask === "access_requests"[\s\S]*CommunityDomainAccessRequestsPanel/,
+  /type GovernanceTaskKey[\s\S]*"readiness"[\s\S]*"director_summary"[\s\S]*"sponsor_summary"[\s\S]*"real_life_record"[\s\S]*"access_requests"[\s\S]*type GovernanceTaskGroupKey = "readiness" \| "reports" \| "records"[\s\S]*type SetupOverviewTaskKey = "notices" \| "engine" \| "next_setup" \| "counts"[\s\S]*type SetupOverviewGroupKey = "action" \| "reference"[\s\S]*type RealLifeRecordTask = "activity" \| "beneficiary_outcome"[\s\S]*GOVERNANCE_TASK_OPTIONS[\s\S]*key: "readiness"[\s\S]*key: "director_summary"[\s\S]*key: "sponsor_summary"[\s\S]*key: "real_life_record"[\s\S]*key: "access_requests"[\s\S]*GOVERNANCE_TASK_GROUP_OPTIONS[\s\S]*key: "readiness"[\s\S]*taskKeys: \["readiness"\][\s\S]*key: "reports"[\s\S]*taskKeys: \["director_summary", "sponsor_summary"\][\s\S]*key: "records"[\s\S]*taskKeys: \["real_life_record", "access_requests"\][\s\S]*SETUP_OVERVIEW_TASK_OPTIONS[\s\S]*key: "next_setup"[\s\S]*key: "notices"[\s\S]*key: "engine"[\s\S]*key: "counts"[\s\S]*SETUP_OVERVIEW_GROUP_OPTIONS[\s\S]*key: "action"[\s\S]*taskKeys: \["next_setup", "notices"\][\s\S]*key: "reference"[\s\S]*taskKeys: \["engine", "counts"\][\s\S]*activeSetupOverviewTask[\s\S]*operatingAreaPickerOpen[\s\S]*activeSetupOverviewGroup[\s\S]*activeSetupOverviewGroupTasks[\s\S]*showOtherDomainToolsEntry = setupJourneyMode === "edit"[\s\S]*activeGovernanceTaskGroup[\s\S]*GOVERNANCE_TASK_GROUP_OPTIONS\.find[\s\S]*activeGovernanceGroupTasks[\s\S]*selectGovernanceTask[\s\S]*setActiveGovernanceTask\(task\)[\s\S]*setActiveRealLifeRecordTask\(\(current\) => current \|\| "activity"\)[\s\S]*openRealLifeRecordTask[\s\S]*setActiveGovernanceTask\("real_life_record"\)[\s\S]*setShowAdvancedTools\(true\)[\s\S]*setOperatingAreaPickerOpen\(false\)[\s\S]*setActiveLane\("governance"\)[\s\S]*community-domain-dashboard\.real-life-record-shortcut[\s\S]*openRealLifeRecordTask\("activity"\)[\s\S]*community-domain-dashboard\.setup-overview-group\.\$\{group\.key\}[\s\S]*activeSetupOverviewGroupTasks\.map[\s\S]*community-domain-dashboard\.setup-overview\.\$\{task\.key\}[\s\S]*activeSetupOverviewTask === "notices"[\s\S]*activeSetupOverviewTask === "engine"[\s\S]*activeSetupOverviewTask === "next_setup"[\s\S]*activeSetupOverviewTask === "counts"[\s\S]*showAdvancedTools && operatingAreaPickerOpen[\s\S]*CommunityDomainLaneSelectorPanel[\s\S]*setOperatingAreaPickerOpen\(false\)[\s\S]*community-domain-dashboard\.work-surface\.back-to-command[\s\S]*community-domain-dashboard\.operating-area-picker-toggle[\s\S]*Governance jobs[\s\S]*Choose the governance stage first[\s\S]*community-domain-dashboard\.governance-group\.\$\{group\.key\}[\s\S]*community-domain-dashboard\.governance-task\.\$\{task\.key\}[\s\S]*activeGovernanceTask === "readiness"[\s\S]*activeGovernanceTask === "director_summary"[\s\S]*activeGovernanceTask === "sponsor_summary"[\s\S]*activeGovernanceTask === "real_life_record"[\s\S]*activeRealLifeRecordTask === "activity"[\s\S]*community-domain-dashboard\.activity-record[\s\S]*activeRealLifeRecordTask === "beneficiary_outcome"[\s\S]*community-domain-dashboard\.beneficiary-outcome-record[\s\S]*activeGovernanceTask === "access_requests"[\s\S]*CommunityDomainAccessRequestsPanel/,
   "Community Domain dashboard must keep setup overview jobs, keep the operating-area picker collapsed until requested, keep owner/admin real-life record as a direct Governance shortcut, group Governance into Readiness/Reports/Records before showing packet buttons, gate access requests behind their selected job, and expose only the selected activity or beneficiary outcome form.",
   { frontend: true }
 );
@@ -1708,8 +1708,8 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /Edit saved setup[\s\S]*community-domain-dashboard\.setup-edit-step\.\$\{option\.key\}[\s\S]*setActiveSetupStep\(option\.key\)/,
-  "Community Domain dashboard setup must provide an owner/admin edit path for correcting saved setup mistakes.",
+  /type SetupEditGroupKey = "foundation" \| "people" \| "services"[\s\S]*SETUP_EDIT_GROUP_OPTIONS[\s\S]*key: "foundation"[\s\S]*stepKeys: \["identity", "payment", "evidence"\][\s\S]*key: "people"[\s\S]*stepKeys: \["structure", "members", "governance"\][\s\S]*key: "services"[\s\S]*stepKeys: \["services"\][\s\S]*activeSetupEditGroup[\s\S]*activeSetupEditGroupSteps[\s\S]*Edit saved setup[\s\S]*community-domain-dashboard\.setup-edit-group\.\$\{group\.key\}[\s\S]*setActiveSetupStep\(group\.defaultStep\)[\s\S]*activeSetupEditGroupSteps\.map[\s\S]*community-domain-dashboard\.setup-edit-step\.\$\{option\.key\}[\s\S]*setActiveSetupStep\(option\.key\)/,
+  "Community Domain dashboard setup must provide an owner/admin edit path for correcting saved setup mistakes without exposing every saved setup step as equal first-level buttons.",
   { frontend: true }
 );
 
@@ -1736,8 +1736,8 @@ assertContains(
 
 assertContains(
   "src/pages/communityDomainDashboard/DomainSelectorPanel.tsx",
-  /No domains yet[\s\S]*community-domain-dashboard\.empty\.community-home[\s\S]*Your Community Domains[\s\S]*draftDomain \? "Continue setup" : "Open domain"/,
-  "Lazy Community Domain selector panel must keep empty-state recovery, draft setup wording, and owned-domain opening.",
+  /openMyDomains[\s\S]*No Community Domains are linked[\s\S]*Choose a Path[\s\S]*community-domain-dashboard\.selector\.free-committee[\s\S]*Free Committee[\s\S]*community-domain-dashboard\.selector\.setup-new[\s\S]*Buy Domain[\s\S]*community-domain-dashboard\.selector\.my-domains[\s\S]*Your Community Domains[\s\S]*Choose a Domain[\s\S]*draftDomain \? "Continue setup" : "Open domain"/,
+  "Lazy Community Domain selector panel must keep the compact path chooser, empty-state recovery, draft setup wording, and owned-domain opening.",
   { frontend: true }
 );
 
@@ -1996,6 +1996,13 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
+  /commandSurfaceRef[\s\S]*workSurfaceRef[\s\S]*function returnToDomainCommand\(\)[\s\S]*setOperatingAreaPickerOpen\(false\)[\s\S]*setShowAdvancedTools\(false\)[\s\S]*setSetupWorkspaceOpen\(false\)[\s\S]*setSetupJourneyMode\("setup"\)[\s\S]*Returned to Domain command\. Choose Marketplace or open one operating area\.[\s\S]*commandSurfaceRef\.current\?\.scrollIntoView[\s\S]*function openMemberDashboard\(\)[\s\S]*navigate\(APP_ROUTES\.DASHBOARD\)[\s\S]*function openDomainCommunityHome\(\)[\s\S]*setSelectedClanId\(clanId\)[\s\S]*navigate\(routeWithCommunity\(APP_ROUTES\.COMMUNITY, clanId\)\)[\s\S]*aria-label="Community Domain navigation"[\s\S]*community-domain-dashboard\.nav\.dashboard[\s\S]*Dashboard[\s\S]*community-domain-dashboard\.nav\.community-home[\s\S]*Community Home[\s\S]*ref=\{commandSurfaceRef\}[\s\S]*community-domain-dashboard\.work-surface\.back-to-command[\s\S]*onClick=\{returnToDomainCommand\}/,
+  "Active Community Domains must expose route-level Dashboard/Community Home navigation and every opened work surface must visibly return to the Domain command card with action-response copy.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
   /openSetupJourney[\s\S]*focusWorkSurfaceAfterOpenRef\.current = true[\s\S]*community-domain-dashboard\.operational-focus[\s\S]*focusWorkSurfaceAfterOpenRef\.current = true[\s\S]*community-domain-dashboard\.continue-setup[\s\S]*focusWorkSurfaceAfterOpenRef\.current = true[\s\S]*community-domain-dashboard\.settings-open-live-lane[\s\S]*focusWorkSurfaceAfterOpenRef\.current = true[\s\S]*community-domain-dashboard\.advanced-tools-toggle[\s\S]*focusWorkSurfaceAfterOpenRef\.current = true/,
   "Community Domain work-surface entry points must all request focus when they open setup or lanes.",
   { frontend: true }
@@ -2003,15 +2010,43 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /function pageShell\(\)[\s\S]*display: "grid"[\s\S]*alignContent: "start"[\s\S]*isCommunityDomainOperational[\s\S]*blockedDomain[\s\S]*billingReady[\s\S]*includes\("paid"\)[\s\S]*includes\("confirmed"\)[\s\S]*activationReady[\s\S]*activationBlocked[\s\S]*firstAvailableOperationalLaneKey[\s\S]*domainOperational[\s\S]*operationalLaneKey[\s\S]*mainActionLaneKey[\s\S]*domainOperational \? operationalLaneKey : primaryActionLaneKey[\s\S]*mainActionCopy[\s\S]*operatingStateCopy\.nextStep[\s\S]*otherToolsLaneKey[\s\S]*showDomainWorkSurface[\s\S]*setupWorkspaceOpen \|\| showAdvancedTools \|\| setupJourneyMode === "edit"[\s\S]*openDomainMarketplace[\s\S]*routeWithCommunity\(APP_ROUTES\.MARKETPLACE, clanId\)[\s\S]*!domainOperational \? \([\s\S]*PageTopNav[\s\S]*Domain command[\s\S]*Run one operating area at a time[\s\S]*community-domain-dashboard\.open-marketplace[\s\S]*Open Marketplace[\s\S]*community-domain-dashboard\.operational-focus[\s\S]*setSetupWorkspaceOpen\(false\)[\s\S]*Open operating areas[\s\S]*commandGuidanceGrid[\s\S]*commandGuidanceTile\("next"\)[\s\S]*commandGuidanceTile\("risk"\)[\s\S]*Open the \{mainActionLaneLabel\} area[\s\S]*setActiveLane\(mainActionLaneKey\)[\s\S]*setSetupWorkspaceOpen\(true\)/,
-  "Active Community Domains must hand off to Marketplace first and keep operating areas secondary, while draft domains keep setup behind an explicit focused workbench.",
+  /function pageShell\(\)[\s\S]*display: "grid"[\s\S]*alignContent: "start"[\s\S]*isCommunityDomainOperational[\s\S]*blockedDomain[\s\S]*billingReady[\s\S]*includes\("paid"\)[\s\S]*includes\("confirmed"\)[\s\S]*activationReady[\s\S]*activationBlocked[\s\S]*firstAvailableOperationalLaneKey[\s\S]*domainOperational[\s\S]*operationalLaneKey[\s\S]*operationalLaneLabel[\s\S]*mainActionLaneKey[\s\S]*domainOperational \? operationalLaneKey : primaryActionLaneKey[\s\S]*mainActionCopy[\s\S]*operatingStateCopy\.nextStep[\s\S]*otherToolsLaneKey[\s\S]*showDomainWorkSurface[\s\S]*setupWorkspaceOpen \|\| showAdvancedTools \|\| setupJourneyMode === "edit"[\s\S]*openDomainMarketplace[\s\S]*routeWithCommunity\(APP_ROUTES\.MARKETPLACE, clanId\)[\s\S]*!domainOperational \? \([\s\S]*PageTopNav[\s\S]*Domain command[\s\S]*Run one operating area at a time[\s\S]*community-domain-dashboard\.open-marketplace[\s\S]*Open Marketplace[\s\S]*community-domain-dashboard\.operational-focus[\s\S]*setSetupWorkspaceOpen\(false\)[\s\S]*Open \{operationalLaneLabel\}[\s\S]*commandGuidanceGrid[\s\S]*commandGuidanceTile\("next"\)[\s\S]*commandGuidanceTile\("risk"\)[\s\S]*Open the \{mainActionLaneLabel\} area[\s\S]*setActiveLane\(mainActionLaneKey\)[\s\S]*setSetupWorkspaceOpen\(true\)/,
+  "Active Community Domains must hand off to Marketplace first and use a deterministic named live-area shortcut, while draft domains keep setup behind an explicit focused workbench.",
+  { frontend: true }
+);
+
+assertNotContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /community-domain-dashboard\.operational-focus[\s\S]{0,320}Open operating areas/,
+  "Community Domain top command must not use broad 'Open operating areas' wording when it opens one computed live area.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /domainOperational[\s\S]*"Live area"[\s\S]*"Live domain actions"[\s\S]*community-domain-dashboard\.operating-area-picker-toggle[\s\S]*"Change area"[\s\S]*Close areas[\s\S]*"Operating view only\. It does not verify ownership, confirm new payments, grant paid features, or expose private records\."/,
+  /community-domain-dashboard\.real-life-record-shortcut[\s\S]{0,220}openRealLifeRecordTask\("activity"\)[\s\S]{0,220}Record activity/,
+  "Community Domain top real-life shortcut must be deterministic: the first command surface opens the Activity record task, not a vague multi-record surface.",
+  { frontend: true }
+);
+
+assertNotContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /community-domain-dashboard\.real-life-record-shortcut[\s\S]{0,260}Record from real life/,
+  "Community Domain top command shortcut must not use broad 'Record from real life' wording when it opens Activity directly.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /domainOperational[\s\S]*"Live area"[\s\S]*"Live domain actions"[\s\S]*community-domain-dashboard\.work-surface\.back-to-command[\s\S]*Back to command[\s\S]*community-domain-dashboard\.operating-area-picker-toggle[\s\S]*"Change area"[\s\S]*"Operating view only\. It does not verify ownership, confirm new payments, grant paid features, or expose private records\."/,
   "Active Community Domain dashboard tools must use live operating language after activation while keeping setup/edit language scoped to setup work.",
+  { frontend: true }
+);
+
+assertNotContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /Close areas/,
+  "Community Domain work surfaces must not expose a duplicate Close areas button now that Back to command is the canonical return action.",
   { frontend: true }
 );
 
@@ -2115,8 +2150,8 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainPurchasePage.tsx",
-  /DOMAIN_PURCHASE_MOBILE_FACTS[\s\S]*Name check first[\s\S]*Draft only[\s\S]*Payment later[\s\S]*isCompact[\s\S]*DOMAIN_PURCHASE_MOBILE_FACTS\.map[\s\S]*DOMAIN_ENGINE_POINTS\.map[\s\S]*Requested domain name[\s\S]*isCompact \? \([\s\S]*debugId="community-domain-purchase\.check-domain"[\s\S]*Society type \/ template[\s\S]*!isCompact \? \([\s\S]*debugId="community-domain-purchase\.check-domain"[\s\S]*community-domain-purchase\.other-paths[\s\S]*community-domain-purchase\.open-create-community[\s\S]*community-domain-purchase\.lookup-existing-domain/,
-  "Community Domain purchase must keep the mobile first viewport focused on the name-check job while collapsing alternate Committee/existing-domain paths behind Other paths.",
+  /DOMAIN_PURCHASE_MOBILE_FACTS[\s\S]*Name check first[\s\S]*Draft only[\s\S]*Payment later[\s\S]*purchaseReviewMode[\s\S]*!purchaseReviewMode \?[\s\S]*DOMAIN_PURCHASE_MOBILE_FACTS\.map[\s\S]*DOMAIN_ENGINE_POINTS\.map[\s\S]*Requested domain name[\s\S]*debugId="community-domain-purchase\.check-domain"[\s\S]*Society type \/ template[\s\S]*display: purchaseReviewMode \? "grid" : "none"[\s\S]*2\. Availability[\s\S]*Domain details[\s\S]*3\. Draft & quote[\s\S]*community-domain-purchase\.create-draft[\s\S]*4\. Payment[\s\S]*community-domain-purchase\.check-another-name[\s\S]*community-domain-purchase\.other-paths[\s\S]*community-domain-purchase\.open-create-community[\s\S]*community-domain-purchase\.lookup-existing-domain/,
+  "Community Domain purchase must split into a focused name-check state and a second availability/draft/payment review state while keeping alternate Committee/existing-domain paths collapsed.",
   { frontend: true }
 );
 
@@ -2143,9 +2178,12 @@ assertContains(
       String.raw`let domainListScenario = "owned"`,
       String.raw`let dashboardScenario = "active"`,
       String.raw`dashboardScenario === "draft"`,
+      String.raw`/community-domains/availability`,
       String.raw`firstViewportActionFinding`,
       String.raw`viewportElementFinding`,
-      String.raw`community-domain-purchase\.check-domain`,
+      String.raw`2. Availability`,
+      String.raw`Purchase page demo still exposes the pre-check form after availability is returned`,
+      String.raw`community-domain-purchase\.create-draft`,
       String.raw`Purchase page mobile hero still exposes the four engine explanation cards`,
       String.raw`community-domain-purchase\.other-paths`,
       String.raw`domainListScenario = "empty"`,
@@ -2161,7 +2199,8 @@ assertContains(
       String.raw`dashboardScenario = "active"`,
       String.raw`community-domain-dashboard\.open-marketplace`,
       String.raw`Open Marketplace`,
-      String.raw`Open operating areas`,
+      String.raw`Open Members`,
+      String.raw`Active Community Domain dashboard exposes broad Open operating areas wording on the first command surface`,
       String.raw`Active Community Domain dashboard exposes setup editing on the first command surface`,
       String.raw`Active Community Domain dashboard exposes Other domain tools before operating areas are opened`,
       String.raw`routePath\}\?lane=settings`,
@@ -3247,8 +3286,8 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainPurchasePage.tsx",
-  /aside style=\{\{ display: "grid", gap: 12, minWidth: 0 \}\}[\s\S]*overflowWrap: "normal"[\s\S]*wordBreak: "normal"[\s\S]*hyphens: "none"[\s\S]*Payment instructions, confirmation, and activation are separate/,
-  "Community Domain purchase payment/draft status cards must stay readable and avoid narrow word-stacking.",
+  /aside[\s\S]*display: purchaseReviewMode \? "grid" : "none"[\s\S]*overflowWrap: "normal"[\s\S]*wordBreak: "normal"[\s\S]*hyphens: "none"[\s\S]*Confirmation and activation are separate/,
+  "Community Domain purchase payment/draft review cards must stay hidden until availability exists and remain readable without narrow word-stacking.",
   { frontend: true }
 );
 

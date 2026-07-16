@@ -220,6 +220,11 @@ PUBLIC_TRUSTSLIP_BLOCKED_KEYS = {
     "internal_contacts",
     "sponsors",
     "owner",
+    "score",
+    "cci_score",
+    "trust_score",
+    "open_trust_score",
+    "community_trust_score",
     "last_full_repayment_at",
     "days_since_last_full_repayment",
     "risk_flags",
@@ -1079,6 +1084,20 @@ def verify_trust_slip_public(
     identity_context = merchant_view_out.get("identity_context") or {}
     community_context = merchant_view_out.get("community_context") or {}
     cci_explainer = merchant_view_out.get("cci_explainer") or {}
+    cci_public_label = _safe_str(
+        cci_explainer.get("public_label"),
+        _safe_str(top_level_cci_band, "Evidence not shown"),
+    )
+    cci_public_meaning = _safe_str(cci_explainer.get("public_meaning"))
+    cci_public_boundary = _safe_str(
+        cci_explainer.get("public_boundary"),
+        "Descriptive evidence posture only; not a score of human worth, guarantee, or automatic approval.",
+    )
+    public_cci_explainer = _public_trustslip_merchant_view(cci_explainer)
+    merchant_view_out["cci_explainer"] = public_cci_explainer
+    merchant_view_out.setdefault("merchant_summary", {})[
+        "cci_explainer"
+    ] = public_cci_explainer
     member_credential_page = _member_credential_page_for_holder(
         db,
         clan=db.get(Clan, int(getattr(slip, "clan_id", 0) or 0)),
@@ -1141,7 +1160,7 @@ def verify_trust_slip_public(
             "relay_available": bool(community_confirmation.get("relay_available")),
             "plain_language": community_confirmation.get("plain_language"),
         },
-        "cci_explainer": cci_explainer if visibility_level != "minimal" else {},
+        "cci_explainer": public_cci_explainer if visibility_level != "minimal" else {},
         "identity_verified": bool(identity_context.get("identity_verified")),
         "identity_status_label": identity_context.get("identity_status_label"),
         "community_global_id": community_context.get("community_global_id"),
@@ -1164,8 +1183,12 @@ def verify_trust_slip_public(
         "trust_limit": trust_limit,
         "trust_slip_limit": trust_limit,
         "currency": currency,
-        "cci_score": top_level_cci_score,
+        "cci_score": None,
+        "cci_score_visibility": "internal_index",
         "cci_band": top_level_cci_band,
+        "cci_public_label": cci_public_label,
+        "cci_public_meaning": cci_public_meaning,
+        "cci_public_boundary": cci_public_boundary,
         "sponsor_count": top_level_sponsor_count,
         "phone_verified": bool(top_level_phone_verified),
         "membership_currentness_label": membership_currentness_label,
@@ -1548,6 +1571,12 @@ def trust_slip_verify_page(
     expires_text = _display_datetime(raw_expires_text, "No expiry")
     issued_text = _display_datetime(getattr(slip, "created_at", None), "Not stated")
     verified_text = _display_datetime(_now_utc().isoformat())
+    cci_explainer = (
+        merchant_view.get("cci_explainer")
+        or merchant_summary.get("cci_explainer")
+        or full_summary.get("cci_explainer")
+        or {}
+    )
 
     if effective == "active":
         plain_reading = (
@@ -1583,8 +1612,15 @@ def trust_slip_verify_page(
     cci_row = ""
     if merchant_summary.get("cci_score") not in (None, "", "-"):
         cci_band = _safe_str(merchant_summary.get("cci_band"), "")
-        band_part = f" ({_band_with_label(cci_band)})" if cci_band else ""
-        cci_value = f"{_safe_str(merchant_summary.get('cci_score'))}{band_part}"
+        cci_label = _safe_str(
+            cci_explainer.get("public_label"),
+            _band_with_label(cci_band, "Evidence not shown"),
+        )
+        cci_boundary = _safe_str(
+            cci_explainer.get("public_boundary"),
+            "Descriptive evidence posture only; not a human score, guarantee, or automatic approval.",
+        )
+        cci_value = f"{cci_label}. {cci_boundary}"
         cci_row = f'<div class="row"><b>Cross-community consistency</b><span>{_html(cci_value)}</span></div>'
     member_credential_page = _member_credential_page_for_holder(
         db,

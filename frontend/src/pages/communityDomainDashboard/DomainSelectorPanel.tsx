@@ -1,5 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import {
+  GsnRealisticIcon,
+  type Gsn3DIconKey,
+} from "../../components/GsnRealisticIcon";
 import { StableButton, StableCtaLink } from "../../components/StableButton";
 import { APP_ROUTES } from "../../lib/appRoutes";
 import { lookupCommunityDomainByName } from "../../lib/api";
@@ -62,6 +66,135 @@ function helperText(): React.CSSProperties {
   };
 }
 
+function darkShell(): React.CSSProperties {
+  return {
+    borderRadius: 30,
+    border: "1px solid rgba(220,231,243,0.10)",
+    background:
+      "radial-gradient(circle at 80% 0%, rgba(70,119,165,0.15) 0%, transparent 32%), linear-gradient(180deg, #111D2B 0%, #07111E 100%)",
+    boxShadow:
+      "0 30px 70px rgba(0,8,18,0.34), inset 0 1px 0 rgba(255,255,255,0.08)",
+    padding: "26px 22px",
+    color: "#FFFFFF",
+    display: "grid",
+    gap: 20,
+  };
+}
+
+function darkLabel(): React.CSSProperties {
+  return {
+    color: "#F2C766",
+    fontSize: 14,
+    fontWeight: 950,
+    letterSpacing: 0,
+    textTransform: "uppercase",
+  };
+}
+
+function pathGroup(): React.CSSProperties {
+  return {
+    borderRadius: 24,
+    border: "1px solid rgba(220,231,243,0.08)",
+    background:
+      "linear-gradient(180deg, rgba(255,255,255,0.060) 0%, rgba(255,255,255,0.032) 100%)",
+    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.07)",
+    padding: 16,
+    display: "grid",
+    gap: 12,
+  };
+}
+
+function pathActionStyle(): React.CSSProperties {
+  return {
+    width: "100%",
+    minHeight: 76,
+    height: "auto",
+    maxHeight: "none",
+    borderRadius: 20,
+    padding: "12px 14px",
+    display: "grid",
+    gridTemplateColumns: "58px minmax(0, 1fr) 24px",
+    justifyContent: "stretch",
+    alignItems: "center",
+    gap: 14,
+    border: "1px solid rgba(220,231,243,0.09)",
+    background:
+      "linear-gradient(180deg, rgba(255,255,255,0.070) 0%, rgba(255,255,255,0.036) 100%)",
+    color: "#FFFFFF",
+    boxShadow: "none",
+    textAlign: "left",
+  };
+}
+
+function quickActionStyle(): React.CSSProperties {
+  return {
+    ...pathActionStyle(),
+    minHeight: 64,
+    gridTemplateColumns: "48px minmax(0, 1fr)",
+    borderRadius: 18,
+    fontSize: 14,
+  };
+}
+
+function iconDisk(accent: "gold" | "green" | "blue" | "slate"): React.CSSProperties {
+  const palette =
+    accent === "gold"
+      ? "linear-gradient(180deg, #F5D76E 0%, #D9A72E 100%)"
+      : accent === "green"
+      ? "linear-gradient(180deg, #75D878 0%, #2E9B62 100%)"
+      : accent === "blue"
+      ? "linear-gradient(180deg, #5FA1FF 0%, #225ED8 100%)"
+      : "linear-gradient(180deg, #7D8EA4 0%, #304259 100%)";
+
+  return {
+    width: 54,
+    height: 54,
+    borderRadius: 999,
+    display: "grid",
+    placeItems: "center",
+    background: palette,
+    boxShadow: "0 14px 26px rgba(0,8,18,0.22)",
+  };
+}
+
+function pathText(): React.CSSProperties {
+  return {
+    minWidth: 0,
+    color: "#FFFFFF",
+    fontSize: 24,
+    fontWeight: 950,
+    lineHeight: 1.08,
+    overflowWrap: "normal",
+    wordBreak: "normal",
+  };
+}
+
+function arrowStyle(color: string): React.CSSProperties {
+  return {
+    color,
+    fontSize: 34,
+    fontWeight: 500,
+    lineHeight: 1,
+    justifySelf: "end",
+  };
+}
+
+function PathIcon({
+  icon,
+  accent,
+  size = 40,
+}: {
+  icon: Gsn3DIconKey;
+  accent: "gold" | "green" | "blue" | "slate";
+  size?: number;
+}) {
+  return (
+    <span style={iconDisk(accent)}>
+      <GsnRealisticIcon name={icon} size={size} decorative />
+    </span>
+  );
+}
+
 function statusBadge(status: unknown): React.CSSProperties {
   const text = compactStatus(status).toLowerCase();
   const warning =
@@ -105,6 +238,7 @@ export default function CommunityDomainSelectorPanel({
   const [editLookup, setEditLookup] = useState<any | null>(null);
   const [editLookupMessage, setEditLookupMessage] = useState("");
   const [editLookupBusy, setEditLookupBusy] = useState(false);
+  const [selectorNotice, setSelectorNotice] = useState("");
 
   useEffect(() => {
     setSelectorMode((current) => {
@@ -156,43 +290,133 @@ export default function CommunityDomainSelectorPanel({
     navigate(path);
   }
 
+  function openMyDomains() {
+    if (domainItems.length) {
+      setSelectorMode("owned");
+      setSelectorNotice("");
+      return;
+    }
+    setSelectorNotice("No Community Domains are linked to this account yet.");
+  }
+
   const startPanel = (
-    <div style={{ ...softCard(), display: "grid", gap: 12 }}>
-      <div style={sectionLabel()}>Community Domain home</div>
-      <h2 style={{ margin: 0, fontSize: 25, lineHeight: 1.1 }}>
-        Set up or find a domain.
-      </h2>
-      <div style={helperText()}>
-        Start a new institutional domain, or find an existing domain code before
-        asking for owner-approved edit access.
+    <div style={darkShell()}>
+      <div style={{ display: "grid", gap: 6 }}>
+        <div
+          style={{
+            color: "rgba(255,255,255,0.66)",
+            fontSize: 17,
+            fontWeight: 950,
+            letterSpacing: 0,
+            textTransform: "uppercase",
+          }}
+        >
+          GSN / Community Domain
+        </div>
+        <h2 style={{ margin: 0, fontSize: 34, lineHeight: 1.03, fontWeight: 950 }}>
+          Choose a Path
+        </h2>
       </div>
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 180px), 1fr))",
-          gap: 10,
-        }}
-      >
+
+      <div style={pathGroup()}>
+        <div style={darkLabel()}>Community path</div>
+        <StableCtaLink
+          to="/create"
+          kind="secondary"
+          stableHeight={76}
+          debugId="community-domain-dashboard.selector.free-committee"
+          style={pathActionStyle()}
+        >
+          <PathIcon icon="join-person-plus" accent="gold" />
+          <span style={pathText()}>Free Committee</span>
+          <span aria-hidden="true" style={arrowStyle("#F2C766")}>
+            &gt;
+          </span>
+        </StableCtaLink>
+      </div>
+
+      <div style={pathGroup()}>
+        <div style={darkLabel()}>Domain path</div>
         <StableCtaLink
           to="/community-domain/purchase"
-          kind="primary"
+          kind="secondary"
+          stableHeight={76}
           debugId="community-domain-dashboard.selector.setup-new"
+          style={pathActionStyle()}
         >
-          Set up new domain
+          <PathIcon icon="finance-bank-building" accent="green" />
+          <span style={pathText()}>Buy Domain</span>
+          <span aria-hidden="true" style={arrowStyle("#57C76D")}>
+            &gt;
+          </span>
         </StableCtaLink>
         <StableButton
           type="button"
           kind="secondary"
+          stableHeight={76}
           debugId="community-domain-dashboard.selector.edit-existing-focus"
+          style={pathActionStyle()}
           onClick={() => {
             setSelectorMode("edit");
+            setSelectorNotice("");
             setEditLookupMessage(
               "Enter the Community Domain code below, then tap Find domain."
             );
           }}
         >
-          Edit existing domain
+          <PathIcon icon="public-globe" accent="blue" />
+          <span style={pathText()}>Find Domain</span>
+          <span aria-hidden="true" style={arrowStyle("#4D8DF7")}>
+            &gt;
+          </span>
         </StableButton>
+      </div>
+
+      <div style={pathGroup()}>
+        <div
+          style={{
+            color: "rgba(255,255,255,0.62)",
+            fontSize: 13,
+            fontWeight: 950,
+            textTransform: "uppercase",
+          }}
+        >
+          Quick actions
+        </div>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+            gap: 12,
+          }}
+        >
+          <StableButton
+            type="button"
+            kind="secondary"
+            stableHeight={64}
+            debugId="community-domain-dashboard.selector.my-domains"
+            style={quickActionStyle()}
+            onClick={openMyDomains}
+          >
+            <PathIcon icon="records-folder" accent="blue" size={35} />
+            <span style={{ ...pathText(), fontSize: 17 }}>My Domains</span>
+          </StableButton>
+          <StableCtaLink
+            to={APP_ROUTES.SETTINGS}
+            kind="secondary"
+            stableHeight={64}
+            debugId="community-domain-dashboard.selector.settings"
+            style={quickActionStyle()}
+          >
+            <PathIcon icon="identity-card" accent="slate" size={35} />
+            <span style={{ ...pathText(), fontSize: 17 }}>Settings</span>
+          </StableCtaLink>
+        </div>
+        {selectorNotice ? (
+          <div role="status" style={{ color: "rgba(255,255,255,0.76)", fontSize: 13 }}>
+            {selectorNotice}
+          </div>
+        ) : null}
       </div>
     </div>
   );
@@ -290,6 +514,7 @@ export default function CommunityDomainSelectorPanel({
         debugId="community-domain-dashboard.selector.edit-existing-compact"
         onClick={() => {
           setSelectorMode("edit");
+          setSelectorNotice("");
           setEditLookupMessage(
             "Enter the Community Domain code below, then tap Find domain."
           );
@@ -304,23 +529,6 @@ export default function CommunityDomainSelectorPanel({
     return (
       <div style={{ display: "grid", gap: 12 }}>
         {selectorMode === "edit" ? editPanel : startPanel}
-        <div style={sectionLabel()}>Your Community Domains</div>
-        <h2 style={{ margin: 0, fontSize: 26, lineHeight: 1.1 }}>
-          No domains yet.
-        </h2>
-        <div style={helperText()}>
-          This account has no Community Domain membership to open here. Set one
-          up, find an existing domain code, or return to Community Home.
-        </div>
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-          <StableCtaLink
-            to={APP_ROUTES.COMMUNITY}
-            kind="secondary"
-            debugId="community-domain-dashboard.empty.community-home"
-          >
-            Community Home
-          </StableCtaLink>
-        </div>
       </div>
     );
   }
@@ -337,7 +545,7 @@ export default function CommunityDomainSelectorPanel({
     <div style={{ display: "grid", gap: 12 }}>
       <div style={sectionLabel()}>Your Community Domains</div>
       <h2 style={{ margin: 0, fontSize: 26, lineHeight: 1.1 }}>
-        Choose a Community Domain.
+        Choose a Domain.
       </h2>
       <div style={helperText()}>
         Drafts continue setup. Active domains open their institutional operating
@@ -359,20 +567,38 @@ export default function CommunityDomainSelectorPanel({
             `/app/community-domain/${encodeURIComponent(String(itemDomain.id))}`;
           return (
             <div key={cleanText(itemDomain.id, path)} style={softCard()}>
-              <div style={{ display: "grid", gap: 8 }}>
-                <div style={sectionLabel()}>
-                  {item?.viewer?.can_admin ? "Owner/admin" : "Member"}
+              <div style={{ display: "grid", gap: 10 }}>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "58px minmax(0, 1fr)",
+                    gap: 12,
+                    alignItems: "center",
+                  }}
+                >
+                  <span style={iconDisk("slate")}>
+                    <GsnRealisticIcon
+                      name="finance-bank-building"
+                      size={43}
+                      decorative
+                    />
+                  </span>
+                  <div style={{ minWidth: 0 }}>
+                    <h3 style={{ margin: 0, fontSize: 21, lineHeight: 1.12 }}>
+                      {cleanText(itemDomain.display_name, "Community Domain")}
+                    </h3>
+                    <div style={{ ...helperText(), marginTop: 5 }}>
+                      Code: <strong>{cleanText(itemDomain.domain_name, "not recorded")}</strong>
+                      <br />
+                      Role:{" "}
+                      <strong style={{ textTransform: "capitalize" }}>
+                        {compactStatus(itemMembership.role)}
+                      </strong>
+                    </div>
+                  </div>
                 </div>
-                <h3 style={{ margin: 0, fontSize: 19, lineHeight: 1.14 }}>
-                  {cleanText(itemDomain.display_name, "Community Domain")}
-                </h3>
                 <div style={helperText()}>
-                  Code: <strong>{cleanText(itemDomain.domain_name, "not recorded")}</strong>
-                  <br />
-                  Role:{" "}
-                  <strong style={{ textTransform: "capitalize" }}>
-                    {compactStatus(itemMembership.role)}
-                  </strong>
+                  {item?.viewer?.can_admin ? "Owner/admin" : "Member"}
                 </div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                   <span style={statusBadge(itemDomain.status)}>

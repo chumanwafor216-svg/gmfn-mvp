@@ -81,8 +81,8 @@ the public paper can confirm:
 - the current public validity/status reading for that code;
 - the visible holder label and GSN ID returned for that public record;
 - the community label/context returned for the public record;
-- the visible evidence band/public score/trust-limit signal returned by the
-  TrustSlip public view;
+- the visible evidence band, descriptive evidence posture, and trust-limit
+  signal returned by the TrustSlip public view;
 - issue and expiry labels when returned;
 - public visibility level (`minimal` or `standard`);
 - public verification path and QR destination when available;
@@ -259,4 +259,3 @@ The unabated truth: it is not fully hardened yet. The next safest engineering
 step is not a visual redesign. It is a route-local audit/test pass that proves
 private evidence cannot leak onto public aliases and that every public state
 uses honest evidence language.
-

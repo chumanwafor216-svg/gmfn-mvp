@@ -173,8 +173,38 @@ assertContains(
 
 assertContains(
   "publicPaper",
-  /const trustSlipConfirmsList = \[[\s\S]*?Public TrustSlip code status[\s\S]*?Visible evidence band and public score[\s\S]*?Displayed holder and GSN ID from this paper[\s\S]*?Community label shown on this TrustSlip[\s\S]*?Verification path and QR destination when available[\s\S]*?\];/,
+  /const trustSlipConfirmsList = \[[\s\S]*?Public TrustSlip code status[\s\S]*?Visible evidence band and descriptive evidence posture[\s\S]*?Displayed holder and GSN ID from this paper[\s\S]*?Community label shown on this TrustSlip[\s\S]*?Verification path and QR destination when available[\s\S]*?\];/,
   "Public TrustSlip paper must keep a clear 'this confirms' boundary list."
+);
+
+assertContains(
+  "publicPaper",
+  /Evidence posture[\s\S]*?\{publicEvidencePosture\}[\s\S]*?\{publicEvidencePostureMeaning\}[\s\S]*?\{publicEvidencePostureBoundary\}/,
+  "Public TrustSlip paper must translate numeric readings into descriptive evidence posture before outsider readers see them."
+);
+
+assertContains(
+  "backend",
+  /"cci_public_label": cci_public_label[\s\S]*?"cci_public_meaning": cci_public_meaning[\s\S]*?"cci_public_boundary": cci_public_boundary/,
+  "Backend public TrustSlip payload must expose descriptive CCI posture fields."
+);
+
+assertContains(
+  "backend",
+  /PUBLIC_TRUSTSLIP_BLOCKED_KEYS = \{[\s\S]*?"score"[\s\S]*?"cci_score"[\s\S]*?"trust_score"[\s\S]*?"open_trust_score"[\s\S]*?"community_trust_score"[\s\S]*?\}/,
+  "Backend public TrustSlip sanitizer must block raw score-like fields from nested public objects."
+);
+
+assertContains(
+  "backend",
+  /public_cci_explainer = _public_trustslip_merchant_view\(cci_explainer\)[\s\S]*?merchant_view_out\["cci_explainer"\] = public_cci_explainer[\s\S]*?"cci_explainer": public_cci_explainer if visibility_level != "minimal" else \{\}/,
+  "Backend public TrustSlip payload must sanitize the CCI explainer before exposing it publicly."
+);
+
+assertContains(
+  "backend",
+  /"cci_score": None,[\s\S]*?"cci_score_visibility": "internal_index"[\s\S]*?"cci_band": top_level_cci_band/,
+  "Backend public TrustSlip payload must not send raw CCI score to outsider readers."
 );
 
 assertContains(

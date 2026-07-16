@@ -84,7 +84,9 @@ type TrustSlipVerifyPublicPaperProps = {
   visibleBandLabel: string;
   visibleBandMeaning: string;
   visibleEvidenceLabel: string;
-  publicVisibleScore: string;
+  publicEvidencePosture: string;
+  publicEvidencePostureMeaning: string;
+  publicEvidencePostureBoundary: string;
   compactTrustLimit: string;
   issuedAtLabel: string;
   expiresAtLabel: string;
@@ -749,7 +751,9 @@ export default function TrustSlipVerifyPublicPaper({
   visibleBandLabel,
   visibleBandMeaning,
   visibleEvidenceLabel,
-  publicVisibleScore,
+  publicEvidencePosture,
+  publicEvidencePostureMeaning,
+  publicEvidencePostureBoundary,
   compactTrustLimit,
   issuedAtLabel,
   expiresAtLabel,
@@ -905,7 +909,7 @@ export default function TrustSlipVerifyPublicPaper({
     gsnId,
     communityLabel,
     visibleBand,
-    publicVisibleScore,
+    publicEvidencePosture,
     issuedAtLabel,
     expiresAtLabel
   );
@@ -974,7 +978,7 @@ export default function TrustSlipVerifyPublicPaper({
   ];
   const trustSlipConfirmsList = [
     "Public TrustSlip code status",
-    "Visible evidence band and public score",
+    "Visible evidence band and descriptive evidence posture",
     "Displayed holder and GSN ID from this paper",
     "Community label shown on this TrustSlip",
     "Verification path and QR destination when available",
@@ -1027,7 +1031,7 @@ export default function TrustSlipVerifyPublicPaper({
       title: "Public result",
       rows: [
         ["Visible band", visibleBand],
-        ["Visible score", publicVisibleScore],
+        ["Evidence posture", publicEvidencePosture],
         ["Trust-limit signal", compactTrustLimit],
         ["Validity", publicValidityLabel],
       ],
@@ -1559,12 +1563,18 @@ export default function TrustSlipVerifyPublicPaper({
                   </div>
                 </div>
                 <div style={statTile("#FFFFFF")}>
-                  <div style={sectionLabel()}>Visible score</div>
+                  <div style={sectionLabel()}>Evidence posture</div>
                   <div style={{ ...readableText(), marginTop: 6, color: "#07172C", fontSize: compact ? 21 : 24, fontWeight: 1000 }}>
-                    {publicVisibleScore}
+                    {publicEvidencePosture}
                   </div>
                   <div style={{ ...readableText(), color: "#64748B", fontSize: 11, fontWeight: 800 }}>
                     {visibleEvidenceLabel}
+                  </div>
+                  <div style={{ ...readableText(), marginTop: 4, color: "#64748B", fontSize: 11, fontWeight: 760 }}>
+                    {publicEvidencePostureMeaning}
+                  </div>
+                  <div style={{ ...readableText(), marginTop: 4, color: "#7A5B00", fontSize: 11, fontWeight: 820 }}>
+                    {publicEvidencePostureBoundary}
                   </div>
                 </div>
                 <div style={statTile("#FFFFFF")}>

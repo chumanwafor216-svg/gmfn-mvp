@@ -374,6 +374,15 @@ function pathPayload(pathname) {
     };
   }
 
+  if (pathname.includes("/community-domains/availability")) {
+    return {
+      domain_name: "pillar-of-hope-demo",
+      normalized_domain_name: "pillar-of-hope-demo",
+      available: true,
+      reason: null,
+    };
+  }
+
   if (pathname.includes("/community-domains/13/dashboard")) {
     return { dashboard };
   }
@@ -833,17 +842,27 @@ await page.addInitScript(() => {
 try {
   await page.goto(`${baseUrl}${purchaseRoutePath}`, { waitUntil: "networkidle", timeout: 15000 });
   await page.getByText("Purchase Community Domain", { exact: true }).waitFor({ timeout: 10000 });
+  await page.getByText("2. Availability", { exact: true }).waitFor({ timeout: 10000 });
 
   let audit = await page.evaluate(pageAudit);
-  if (!(await isDebugVisible(page, "community-domain-purchase.check-domain"))) {
-    findings.push("Purchase page mobile first job does not show the Check domain name action.");
+  if (await isDebugVisible(page, "community-domain-purchase.check-domain")) {
+    findings.push("Purchase page demo still exposes the pre-check form after availability is returned.");
   }
-  const purchaseFirstAction = await firstViewportActionFinding(
+  if (!(await isDebugVisible(page, "community-domain-purchase.create-draft"))) {
+    findings.push("Purchase page availability review does not show the Create draft action.");
+  }
+  const purchaseReviewAction = await firstViewportActionFinding(
     page,
-    "community-domain-purchase.check-domain",
-    "Purchase page"
+    "community-domain-purchase.create-draft",
+    "Purchase page availability review"
   );
-  if (purchaseFirstAction) findings.push(purchaseFirstAction);
+  if (purchaseReviewAction) findings.push(purchaseReviewAction);
+  const purchaseText = normalized(audit.bodyText);
+  for (const label of ["Available", "Domain details", "3. Draft & quote", "4. Payment"]) {
+    if (!purchaseText.includes(label)) {
+      findings.push(`Purchase page availability review is missing ${label}.`);
+    }
+  }
   const exposedEngineCards = await Promise.all(
     ["Governance", "Trust record", "Network reach", "Opportunity"].map((label) =>
       page.getByText(label, { exact: true }).first().isVisible().catch(() => false)
@@ -880,16 +899,22 @@ try {
     waitUntil: "networkidle",
     timeout: 15000,
   });
-  await page.getByText("No domains yet.", { exact: true }).waitFor({
+  await page.getByText("Choose a Path", { exact: true }).waitFor({
     timeout: 10000,
   });
+  if (!(await isDebugVisible(page, "community-domain-dashboard.selector.free-committee"))) {
+    findings.push("Community Domain selector empty state does not expose the free Committee path.");
+  }
   audit = await page.evaluate(pageAudit);
   if (!(await isDebugVisible(page, "community-domain-dashboard.selector.setup-new"))) {
-    findings.push("Community Domain selector empty state does not show the setup path first.");
+    findings.push("Community Domain selector empty state does not expose the buy-domain path.");
+  }
+  if (!(await isDebugVisible(page, "community-domain-dashboard.selector.my-domains"))) {
+    findings.push("Community Domain selector empty state does not expose My Domains as a quick action.");
   }
   const selectorFirstAction = await firstViewportActionFinding(
     page,
-    "community-domain-dashboard.selector.setup-new",
+    "community-domain-dashboard.selector.free-committee",
     "Community Domain selector"
   );
   if (selectorFirstAction) findings.push(selectorFirstAction);
@@ -1005,8 +1030,23 @@ try {
   if (!normalized(audit.bodyText).includes("Open Marketplace")) {
     findings.push("Active Community Domain dashboard does not expose Marketplace as the primary handoff.");
   }
-  if (!normalized(audit.bodyText).includes("Open operating areas")) {
-    findings.push("Active Community Domain dashboard does not keep operating areas as the secondary handoff.");
+  if (!normalized(audit.bodyText).includes("Open Members")) {
+    findings.push("Active Community Domain dashboard does not expose the deterministic Open Members live-area shortcut.");
+  }
+  if (normalized(audit.bodyText).includes("Open operating areas")) {
+    findings.push("Active Community Domain dashboard exposes broad Open operating areas wording on the first command surface.");
+  }
+  if (!normalized(audit.bodyText).includes("Record activity")) {
+    findings.push("Active Community Domain dashboard does not expose the deterministic Record activity shortcut.");
+  }
+  if (normalized(audit.bodyText).includes("Record from real life")) {
+    findings.push("Active Community Domain dashboard exposes broad Record from real life wording on the first command surface.");
+  }
+  if (!(await isDebugVisible(page, "community-domain-dashboard.nav.dashboard"))) {
+    findings.push("Active Community Domain dashboard does not expose the Dashboard route escape.");
+  }
+  if (!(await isDebugVisible(page, "community-domain-dashboard.nav.community-home"))) {
+    findings.push("Active Community Domain dashboard does not expose the Community Home route escape.");
   }
   if (normalized(audit.bodyText).includes("Edit setup details")) {
     findings.push("Active Community Domain dashboard exposes setup editing on the first command surface.");
@@ -1036,6 +1076,26 @@ try {
 
   await page.goto(`${baseUrl}${routePath}`, { waitUntil: "networkidle", timeout: 15000 });
   await page.getByText("Domain command", { exact: true }).waitFor({ timeout: 10000 });
+  await clickByDebugId(page, "community-domain-dashboard.operational-focus");
+  await page.getByText("Live area", { exact: true }).waitFor({ timeout: 10000 });
+  if (!(await isDebugVisible(page, "community-domain-dashboard.work-surface.back-to-command"))) {
+    findings.push("Opened Community Domain work surface does not expose Back to command.");
+  }
+  audit = await page.evaluate(pageAudit);
+  if (normalized(audit.bodyText).includes("Close areas")) {
+    findings.push("Opened Community Domain work surface still exposes duplicate Close areas control.");
+  }
+  await clickByDebugId(page, "community-domain-dashboard.work-surface.back-to-command");
+  await page.getByText("Returned to Domain command.", { exact: false }).waitFor({ timeout: 10000 });
+  if (await isDebugVisible(page, "community-domain-dashboard.work-surface.back-to-command")) {
+    findings.push("Back to command did not close the opened Community Domain work surface.");
+  }
+  const commandReturnFinding = await viewportElementFinding(
+    page,
+    "#community-domain-official-board",
+    "Community Domain command return"
+  );
+  if (commandReturnFinding) findings.push(commandReturnFinding);
   await clickByDebugId(page, "community-domain-dashboard.operational-focus");
   await page.getByText("Live area", { exact: true }).waitFor({ timeout: 10000 });
 
