@@ -4677,6 +4677,12 @@ assertContains(
   "Backend tests must prove members can read only their own placement summary while admin-only route hints stay hidden."
 );
 
+assertContains(
+  "frontend/tools/audit-community-domain-product-contracts.mjs",
+  /function assertContains\(rootedPath, pattern, message, options = \{\}\) \{[\s\S]*pattern\.lastIndex = 0;[\s\S]*function assertNotContains\(rootedPath, pattern, message, options = \{\}\) \{[\s\S]*let foundOnLine = false;[\s\S]*pattern\.lastIndex = 0;[\s\S]*if \(!foundOnLine\) \{[\s\S]*const match = pattern\.exec\(text\);/,
+  "Community Domain audit helper must reset regex state and scan full files for wrapped multi-line assertNotContains matches."
+);
+
 assertNotContains(
   "docs/SCREEN_SPECS.md",
   /## CommunityDomainPurchasePage[\s\S]*Verified Community Domain by default/,
