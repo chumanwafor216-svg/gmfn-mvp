@@ -3429,6 +3429,12 @@ assertNotContains(
 
 assertNotContains(
   "docs/COMMUNITY_DOMAIN_ACTOR_IDENTITY_AUDIT_2026-07-15.md",
+  /first MVP needs a plain remove\/deactivate member action|users do not think attendance\/outcomes are already\s+being captured/,
+  "Community Domain audit must not reintroduce stale warnings that ignore bounded member deactivation/reactivation controls and manual activity/outcome Trust Event records."
+);
+
+assertNotContains(
+  "docs/COMMUNITY_DOMAIN_ACTOR_IDENTITY_AUDIT_2026-07-15.md",
   /beneficiary\s+confirmation links,[\s\S]{0,120}remain future work|beneficiary\s+confirmation links,[\s\S]{0,160}not yet\s+complete|correction approval,[\s\S]{0,120}remain future work|delivery receipts,[\s\S]{0,120}remain future work|delivery consent rules remain future work/,
   "Community Domain audit must not reintroduce stale future-work claims for beneficiary confirmation links, correction reviews, manual delivery receipts, or delivery consent-basis capture after those bounded slices exist."
 );

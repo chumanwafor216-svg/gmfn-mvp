@@ -1693,15 +1693,17 @@ shape.
    member removal.**
 
    For serious governance it is good. For a small NGO/church/association, the
-   first MVP needs a plain remove/deactivate member action that still records
-   history.
+   plain deactivation/reactivation path now exists and still records history.
+   The remaining risk is language and workflow weight: users should not have to
+   understand the whole action-review system just to remove or restore a member.
 
 3. **Activity maps are well-caged, but they can look like implemented activity
    tracking.**
 
-   The backend correctly says they do not create activities. The UI must keep
-   that boundary clear so users do not think attendance/outcomes are already
-   being captured.
+   The backend correctly says readiness maps do not create activities. Manual
+   activity and beneficiary outcome records now exist elsewhere, so the UI must
+   keep the boundary clear: maps are planning views; recorded Trust Events are
+   the actual activity/outcome ledger.
 
 4. **Institutional actor/shop ownership should remain parked.**
 
