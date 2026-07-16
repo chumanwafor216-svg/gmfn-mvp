@@ -36,6 +36,7 @@ type AccessRequestsPanelProps = {
   onApplyApproved: (review: ActionReviewItem) => void;
   onRefresh: () => void;
   onOpenInvite?: () => void;
+  embedded?: boolean;
 };
 
 function cleanText(value: unknown, fallback = ""): string {
@@ -178,6 +179,7 @@ export default function CommunityDomainAccessRequestsPanel({
   onApplyApproved,
   onRefresh,
   onOpenInvite,
+  embedded = false,
 }: AccessRequestsPanelProps): React.ReactElement {
   const [showAllRequests, setShowAllRequests] = useState(false);
   const [decisionByReviewId, setDecisionByReviewId] = useState<
@@ -192,7 +194,7 @@ export default function CommunityDomainAccessRequestsPanel({
   );
 
   return (
-    <section style={whiteCard()}>
+    <section style={embedded ? softCard() : whiteCard()}>
       <div style={{ display: "grid", gap: 12 }}>
         <div>
           <div style={sectionLabel()}>Access requests</div>

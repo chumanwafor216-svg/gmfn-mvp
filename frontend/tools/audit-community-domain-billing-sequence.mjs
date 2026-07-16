@@ -482,13 +482,12 @@ try {
   const requiredDefaultText = [
     "Billing",
     "Code, account, proof.",
-    "Show steps",
-    "Community pay-in account",
-    "Shown to payers. Locked for editing.",
-    "Use this account with the generated code.",
-    "Audit Society Bank",
-    "Audit Community Pay-In",
-    "Edit account",
+    "Billing jobs",
+    "Open one billing job",
+    "Code & proof",
+    "Pay-in account",
+    "Steps",
+    "Readiness",
     "Latest payment code",
     "Show credit link",
     "Generate another code",
@@ -500,8 +499,6 @@ try {
     "Payment: Pending Authentication",
     "Proof: Not uploaded",
     "Open proof upload",
-    "Billing readiness details",
-    "Open readiness details",
   ];
 
   for (const text of requiredDefaultText) {
@@ -512,6 +509,14 @@ try {
 
   if (normalizeText(defaultResult.bodyText).includes("Review quote")) {
     findings.push("Billing steps are exposed before the user opens them.");
+  }
+
+  if (normalizeText(defaultResult.bodyText).includes("Community pay-in account")) {
+    findings.push("Pay-in account details are exposed before the user opens the account billing job.");
+  }
+
+  if (normalizeText(defaultResult.bodyText).includes("Billing readiness details")) {
+    findings.push("Billing readiness diagnostics are exposed before the user opens the readiness billing job.");
   }
 
   if (normalizeText(defaultResult.bodyText).includes("Enter amount, area, and currency.")) {
@@ -545,17 +550,11 @@ try {
     );
   }
 
-  await page.locator('[data-cta-id="community-domain-dashboard.billing-sequence-toggle"]').first().click();
   await page.locator('[data-cta-id="community-domain-dashboard.credit-link-toggle"]').first().click();
   await page.waitForTimeout(350);
 
   const detailResult = await pageAudit(page);
   const requiredDetailText = [
-    "Review quote",
-    "Generate payment code",
-    "Use your bank",
-    "Upload proof",
-    "Finance review",
     "GSN credit link",
     "GMFN-U-0B5A2953",
     "Audit Community",
@@ -588,30 +587,108 @@ try {
 
   await page.locator('[data-cta-id="community-domain-dashboard.payment-proof-toggle"]').first().click();
   await page.getByText("Community Domain payment proof", { exact: true }).waitFor({ timeout: 10000 });
+  await page.waitForTimeout(350);
+
+  const proofResult = await pageAudit(page);
+  const requiredProofText = [
+    "Community Domain payment proof",
+    "Payment code used",
+    "Choose proof file",
+  ];
+
+  for (const text of requiredProofText) {
+    if (!normalizeText(proofResult.bodyText).includes(normalizeText(text))) {
+      findings.push(`Missing expanded Billing text: ${text}`);
+    }
+  }
+
+  if (proofResult.horizontalOverflow) {
+    findings.push(
+      `Expanded proof horizontal overflow: scroll width ${proofResult.scrollW}px on ${proofResult.viewportW}px viewport`
+    );
+  }
+
+  await page.locator('[data-cta-id="community-domain-dashboard.billing-task.account"]').first().click();
+  await page.getByText("Community pay-in account", { exact: true }).waitFor({ timeout: 10000 });
+  await page.waitForTimeout(250);
+
+  const accountResult = await pageAudit(page);
+  const requiredAccountText = [
+    "Community pay-in account",
+    "Shown to payers. Locked for editing.",
+    "Use this account with the generated code.",
+    "Audit Society Bank",
+    "Audit Community Pay-In",
+    "Edit account",
+  ];
+
+  for (const text of requiredAccountText) {
+    if (!normalizeText(accountResult.bodyText).includes(normalizeText(text))) {
+      findings.push(`Missing account Billing text: ${text}`);
+    }
+  }
+
+  if (normalizeText(accountResult.bodyText).includes("Latest payment code")) {
+    findings.push("Payment code details stayed visible after opening the account billing job.");
+  }
+
+  if (accountResult.horizontalOverflow) {
+    findings.push(
+      `Account billing horizontal overflow: scroll width ${accountResult.scrollW}px on ${accountResult.viewportW}px viewport`
+    );
+  }
+
+  await page.locator('[data-cta-id="community-domain-dashboard.billing-task.steps"]').first().click();
+  await page.locator('[data-cta-id="community-domain-dashboard.billing-sequence-toggle"]').first().click();
+  await page.waitForTimeout(350);
+
+  const stepsResult = await pageAudit(page);
+  const requiredStepsText = [
+    "Review quote",
+    "Generate payment code",
+    "Use your bank",
+    "Upload proof",
+    "Finance review",
+  ];
+
+  for (const text of requiredStepsText) {
+    if (!normalizeText(stepsResult.bodyText).includes(normalizeText(text))) {
+      findings.push(`Missing steps Billing text: ${text}`);
+    }
+  }
+
+  if (stepsResult.horizontalOverflow) {
+    findings.push(
+      `Steps billing horizontal overflow: scroll width ${stepsResult.scrollW}px on ${stepsResult.viewportW}px viewport`
+    );
+  }
+
+  await page.locator('[data-cta-id="community-domain-dashboard.billing-task.readiness"]').first().click();
   await page.locator('[data-cta-id="community-domain-dashboard.billing-readiness-toggle"]').first().click();
   await page.getByText("Subscription lifecycle", { exact: true }).waitFor({ timeout: 10000 });
   await page.waitForTimeout(350);
 
-  const expandedResult = await pageAudit(page);
-  const requiredExpandedText = [
-    "Community Domain payment proof",
-    "Payment code used",
-    "Choose proof file",
+  const readinessResult = await pageAudit(page);
+  const requiredReadinessText = [
     "Billing readiness details",
     "Subscription lifecycle",
     "Package",
     "Pricing",
   ];
 
-  for (const text of requiredExpandedText) {
-    if (!normalizeText(expandedResult.bodyText).includes(normalizeText(text))) {
-      findings.push(`Missing expanded Billing text: ${text}`);
+  for (const text of requiredReadinessText) {
+    if (!normalizeText(readinessResult.bodyText).includes(normalizeText(text))) {
+      findings.push(`Missing readiness Billing text: ${text}`);
     }
   }
 
-  if (expandedResult.horizontalOverflow) {
+  if (normalizeText(readinessResult.bodyText).includes("Latest payment code")) {
+    findings.push("Payment code details stayed visible after opening the readiness billing job.");
+  }
+
+  if (readinessResult.horizontalOverflow) {
     findings.push(
-      `Expanded proof/readiness horizontal overflow: scroll width ${expandedResult.scrollW}px on ${expandedResult.viewportW}px viewport`
+      `Readiness billing horizontal overflow: scroll width ${readinessResult.scrollW}px on ${readinessResult.viewportW}px viewport`
     );
   }
 

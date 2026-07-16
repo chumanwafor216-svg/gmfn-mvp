@@ -175,8 +175,11 @@ type GovernanceTaskKey =
   | "sponsor_summary"
   | "real_life_record"
   | "access_requests";
+type SponsorSummaryTaskKey = "overview" | "evidence" | "delivery" | "export";
 type SetupOverviewTaskKey = "notices" | "engine" | "next_setup" | "counts";
 type OperatingSummaryTaskKey = "next_action" | "status" | "allowance" | "permissions";
+type SetupWorkbenchTaskKey = "step" | "access";
+type BillingTaskKey = "payment_code" | "account" | "steps" | "readiness";
 type RealLifeRecordTask = "activity" | "beneficiary_outcome";
 type SetupStepKey =
   | "identity"
@@ -2126,6 +2129,8 @@ export default function CommunityDomainDashboardPage() {
   const [domainPaymentCreditOpen, setDomainPaymentCreditOpen] = useState(false);
   const [domainPaymentProofOpen, setDomainPaymentProofOpen] = useState(false);
   const [billingReadinessOpen, setBillingReadinessOpen] = useState(false);
+  const [activeBillingTask, setActiveBillingTask] =
+    useState<BillingTaskKey>("payment_code");
   const [setupDraft, setSetupDraft] = useState<CommunityDomainSetupDraft>(
     () => setupDraftFromDomain(null)
   );
@@ -2144,6 +2149,8 @@ export default function CommunityDomainDashboardPage() {
     useState<SetupOverviewTaskKey>("next_setup");
   const [activeOperatingSummaryTask, setActiveOperatingSummaryTask] =
     useState<OperatingSummaryTaskKey>("next_action");
+  const [activeSetupWorkbenchTask, setActiveSetupWorkbenchTask] =
+    useState<SetupWorkbenchTaskKey>("step");
   const [showAdvancedTools, setShowAdvancedTools] = useState(false);
   const [operatingAreaPickerOpen, setOperatingAreaPickerOpen] = useState(false);
   const [activeStructureDetail, setActiveStructureDetail] =
@@ -2154,6 +2161,8 @@ export default function CommunityDomainDashboardPage() {
     useState<MemberDetailKey>("readiness");
   const [activeGovernanceTask, setActiveGovernanceTask] =
     useState<GovernanceTaskKey>("readiness");
+  const [activeSponsorSummaryTask, setActiveSponsorSummaryTask] =
+    useState<SponsorSummaryTaskKey>("overview");
   const [activeRealLifeRecordTask, setActiveRealLifeRecordTask] =
     useState<RealLifeRecordTask | null>(null);
   const [quickRecordOpen, setQuickRecordOpen] = useState(false);
@@ -2330,11 +2339,14 @@ export default function CommunityDomainDashboardPage() {
     setSetupPlan(null);
     setActiveSetupOverviewTask("next_setup");
     setActiveOperatingSummaryTask("next_action");
+    setActiveSetupWorkbenchTask("step");
+    setActiveBillingTask("payment_code");
     setOperatingAreaPickerOpen(false);
     setCapacityPlan(null);
     setGovernanceCoverage(null);
     setDelegationMap(null);
     setActiveGovernanceTask("readiness");
+    setActiveSponsorSummaryTask("overview");
     setPeriodSummary(null);
     setSponsorSummary(null);
     setActivityCatalogue([]);
@@ -4377,6 +4389,7 @@ export default function CommunityDomainDashboardPage() {
     if (!saved) return;
     setSetupWorkspaceOpen(false);
     setShowAdvancedTools(true);
+    setActiveBillingTask("payment_code");
     setActiveLane("billing");
   }
 
@@ -4986,6 +4999,7 @@ export default function CommunityDomainDashboardPage() {
       const payload = await createCommunityDomainPackageQuote(requestDomainId);
       if (!isCurrentDomainRequest(requestDomainId)) return;
       setQuote(payload?.quote || null);
+      setActiveBillingTask("payment_code");
       setActiveLane("billing");
       setMessage(
         billingIsActive
@@ -5064,6 +5078,7 @@ export default function CommunityDomainDashboardPage() {
             : prev
         );
       }
+      setActiveBillingTask("payment_code");
       setActiveLane("billing");
       setMessage(
         "Payment code generated. Use that exact code as the payment reference, then upload proof here for finance review."
@@ -6493,6 +6508,42 @@ export default function CommunityDomainDashboardPage() {
                         : setupCurrentStep.note}
                     </div>
                     {showSetupAccessCard ? (
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns:
+                            "repeat(auto-fit, minmax(min(100%, 145px), 1fr))",
+                          gap: 8,
+                        }}
+                      >
+                        {[
+                          ["step", "Setup step"],
+                          ["access", "Access"],
+                        ].map(([task, label]) => (
+                          <StableButton
+                            key={task}
+                            type="button"
+                            kind={
+                              activeSetupWorkbenchTask === task
+                                ? "primary"
+                                : "secondary"
+                            }
+                            stableHeight={46}
+                            debugId={`community-domain-dashboard.setup-workbench.${task}`}
+                            onClick={() =>
+                              setActiveSetupWorkbenchTask(
+                                task as SetupWorkbenchTaskKey
+                              )
+                            }
+                          >
+                            {label}
+                          </StableButton>
+                        ))}
+                      </div>
+                    ) : null}
+
+                    {showSetupAccessCard &&
+                    activeSetupWorkbenchTask === "access" ? (
                       <div style={{ ...softCard(), display: "grid", gap: 8 }}>
                         <div style={iconHeaderStyle()}>
                           <span style={iconFrame(46)}>
@@ -6630,6 +6681,9 @@ export default function CommunityDomainDashboardPage() {
                       </div>
                     ) : null}
 
+                    {(!showSetupAccessCard ||
+                      activeSetupWorkbenchTask === "step") ? (
+                      <>
                     {activeSetupStep === "identity" ? (
                       <div style={{ display: "grid", gap: 10 }}>
                         <div
@@ -7383,6 +7437,8 @@ export default function CommunityDomainDashboardPage() {
                       Last saved: {setupDraftTimeLabel(setupDraft.saved_at)}. Draft
                       window: {setupDraftTimeLabel(setupDraft.expires_at)}.
                     </div>
+                      </>
+                    ) : null}
                   </div>
                 ) : null}
 
@@ -7440,6 +7496,45 @@ export default function CommunityDomainDashboardPage() {
                         {domainPaymentReference ? "Code ready" : "Code needed"}
                       </span>
                     </div>
+                    <div style={{ ...softCard(), marginTop: 12, display: "grid", gap: 10 }}>
+                      <div style={sectionLabel()}>Billing jobs</div>
+                      <div style={{ ...helperText(), fontSize: 13 }}>
+                        Open one billing job. Payment code and proof stay separate
+                        from account setup, sequence steps, and readiness diagnostics.
+                      </div>
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns:
+                            "repeat(auto-fit, minmax(min(100%, 132px), 1fr))",
+                          gap: 8,
+                        }}
+                      >
+                        {[
+                          ["payment_code", "Code & proof"],
+                          ["account", "Pay-in account"],
+                          ["steps", "Steps"],
+                          ["readiness", "Readiness"],
+                        ].map(([task, label]) => (
+                          <StableButton
+                            key={task}
+                            type="button"
+                            kind={
+                              activeBillingTask === task ? "primary" : "secondary"
+                            }
+                            stableHeight={46}
+                            debugId={`community-domain-dashboard.billing-task.${task}`}
+                            onClick={() =>
+                              setActiveBillingTask(task as BillingTaskKey)
+                            }
+                          >
+                            {label}
+                          </StableButton>
+                        ))}
+                      </div>
+                    </div>
+                    {activeBillingTask === "steps" ? (
+                      <>
                     <StableButton
                       type="button"
                       kind="secondary"
@@ -7469,6 +7564,9 @@ export default function CommunityDomainDashboardPage() {
                         )}
                       </div>
                     ) : null}
+                      </>
+                    ) : null}
+                    {activeBillingTask === "account" ? (
                     <div
                       style={{
                         ...softCard(),
@@ -7767,6 +7865,9 @@ export default function CommunityDomainDashboardPage() {
                         </div>
                       ) : null}
                     </div>
+                    ) : null}
+                    {activeBillingTask === "payment_code" ? (
+                      <>
                     <StableButton
                       type="button"
                       kind="secondary"
@@ -8223,10 +8324,12 @@ export default function CommunityDomainDashboardPage() {
                         ) : null}
                       </div>
                     ) : null}
+                      </>
+                    ) : null}
                   </div>
                 ) : null}
 
-                {activeLane === "billing" ? (
+                {activeLane === "billing" && activeBillingTask === "readiness" ? (
                   <div style={softCard()}>
                     <div style={sectionLabel()}>Billing readiness details</div>
                     <div style={{ ...helperText(), marginTop: 7 }}>
@@ -9093,6 +9196,28 @@ export default function CommunityDomainDashboardPage() {
                               ],
                               ["People reached", outcomes.subject_count ?? 0],
                             ];
+                            const hasDeliveryEvidence = Boolean(
+                              Number(
+                                evidence.confirmation_delivery_prepared_records ??
+                                  0
+                              ) ||
+                                Number(
+                                  evidence.confirmation_delivery_receipt_records ??
+                                    0
+                                ) ||
+                                Number(
+                                  evidence.confirmation_delivery_receipts_current_uncorrected ??
+                                    0
+                                ) ||
+                                Number(
+                                  evidence.confirmation_delivery_receipt_corrections ??
+                                    0
+                                ) ||
+                                Number(evidence.contact_consent_records ?? 0) ||
+                                Number(
+                                  evidence.contact_consent_withdrawals ?? 0
+                                )
+                            );
                             return (
                               <>
                                 <div
@@ -9115,6 +9240,73 @@ export default function CommunityDomainDashboardPage() {
                                     Challenges: {compactStatus(challenges.status)}
                                   </span>
                                 </div>
+                                <div
+                                  style={{
+                                    display: "grid",
+                                    gridTemplateColumns:
+                                      "repeat(auto-fit, minmax(min(100%, 140px), 1fr))",
+                                    gap: 8,
+                                  }}
+                                >
+                                  {[
+                                    ["overview", "Overview"],
+                                    ["evidence", "Evidence"],
+                                    ["delivery", "Delivery"],
+                                    ["export", "Export"],
+                                  ].map(([task, label]) => (
+                                    <StableButton
+                                      key={task}
+                                      type="button"
+                                      kind={
+                                        activeSponsorSummaryTask === task
+                                          ? "primary"
+                                          : "secondary"
+                                      }
+                                      stableHeight={44}
+                                      debugId={`community-domain-dashboard.sponsor-summary.${task}`}
+                                      onClick={() =>
+                                        setActiveSponsorSummaryTask(
+                                          task as SponsorSummaryTaskKey
+                                        )
+                                      }
+                                      style={{
+                                        justifyContent: "center",
+                                        fontSize: 13,
+                                        textTransform: "none",
+                                      }}
+                                    >
+                                      {label}
+                                    </StableButton>
+                                  ))}
+                                </div>
+                                {activeSponsorSummaryTask === "overview" ? (
+                                  <div
+                                    style={{
+                                      display: "grid",
+                                      gap: 8,
+                                      borderRadius: 10,
+                                      border: "1px solid rgba(9,27,46,0.1)",
+                                      background: "#FFFFFF",
+                                      padding: 12,
+                                    }}
+                                  >
+                                    <div style={sectionLabel()}>Pack boundary</div>
+                                    <div style={{ ...helperText(), fontSize: 13 }}>
+                                      {cleanText(
+                                        sponsorSummary?.plain_language,
+                                        "Sponsor-safe summary aggregates recorded facts only."
+                                      )}
+                                    </div>
+                                    <div style={{ ...helperText(), fontSize: 13 }}>
+                                      {cleanText(
+                                        evidence.privacy,
+                                        "Private beneficiary details are omitted."
+                                      )}
+                                    </div>
+                                  </div>
+                                ) : null}
+                                {activeSponsorSummaryTask === "evidence" ? (
+                                  <>
                                 <div
                                   style={{
                                     display: "grid",
@@ -9175,7 +9367,10 @@ export default function CommunityDomainDashboardPage() {
                                     </div>
                                   </div>
                                 ) : null}
-                                {exportCopyText ? (
+                                  </>
+                                ) : null}
+                                {activeSponsorSummaryTask === "export" ? (
+                                  exportCopyText ? (
                                   <div
                                     style={{
                                       display: "grid",
@@ -9211,32 +9406,18 @@ export default function CommunityDomainDashboardPage() {
                                     >
                                       {busySponsorExportCopy
                                         ? "Copying pack..."
-                                        : "Copy sponsor pack"}
+                                      : "Copy sponsor pack"}
                                     </StableButton>
                                   </div>
+                                  ) : (
+                                    <div style={helperText()}>
+                                      No copy-ready sponsor export pack is available yet.
+                                    </div>
+                                  )
                                 ) : null}
-                                {Number(
-                                  evidence.confirmation_delivery_prepared_records ??
-                                    0
-                                ) ||
-                                Number(
-                                  evidence.confirmation_delivery_receipt_records ??
-                                    0
-                                ) ||
-                                Number(
-                                  evidence.confirmation_delivery_receipts_current_uncorrected ??
-                                    0
-                                ) ||
-                                Number(
-                                  evidence.confirmation_delivery_receipt_corrections ??
-                                    0
-                                ) ||
-                                Number(
-                                  evidence.contact_consent_records ?? 0
-                                ) ||
-                                Number(
-                                  evidence.contact_consent_withdrawals ?? 0
-                                ) ? (
+                                {activeSponsorSummaryTask === "delivery" ? (
+                                  <>
+                                {hasDeliveryEvidence ? (
                                   <div style={{ display: "grid", gap: 6 }}>
                                     <div style={sectionLabel()}>
                                       Delivery evidence
@@ -9332,7 +9513,11 @@ export default function CommunityDomainDashboardPage() {
                                       under review.
                                     </div>
                                   </div>
-                                ) : null}
+                                ) : (
+                                  <div style={helperText()}>
+                                    No delivery evidence counts are recorded yet.
+                                  </div>
+                                )}
                                 {externalDelivery?.status ? (
                                   <div
                                     style={{
@@ -9525,19 +9710,13 @@ export default function CommunityDomainDashboardPage() {
                                       )}
                                     </div>
                                   </div>
+                                ) : (
+                                  <div style={helperText()}>
+                                    No provider delivery readiness details are loaded yet.
+                                  </div>
+                                )}
+                                  </>
                                 ) : null}
-                                <div style={{ ...helperText(), fontSize: 13 }}>
-                                  {cleanText(
-                                    sponsorSummary?.plain_language,
-                                    "Sponsor-safe summary aggregates recorded facts only."
-                                  )}
-                                </div>
-                                <div style={{ ...helperText(), fontSize: 13 }}>
-                                  {cleanText(
-                                    evidence.privacy,
-                                    "Private beneficiary details are omitted."
-                                  )}
-                                </div>
                               </>
                             );
                           })()
@@ -10944,6 +11123,33 @@ export default function CommunityDomainDashboardPage() {
                       ) : null}
                       </>
                     ) : null}
+
+                    {isAdmin && activeGovernanceTask === "access_requests" ? (
+                      <Suspense
+                        fallback={
+                          <div style={{ ...softCard(), display: "grid", gap: 8 }}>
+                            <div style={sectionLabel()}>Access requests</div>
+                            <div style={{ ...helperText(), marginTop: 2 }}>
+                              Loading access request controls...
+                            </div>
+                          </div>
+                        }
+                      >
+                        <CommunityDomainAccessRequestsPanel
+                          embedded
+                          membershipAccessRequests={membershipAccessRequests}
+                          loadingQueue={loadingQueue}
+                          busyReviewId={busyReviewId}
+                          onApproveOnly={(review) => approveAccessRequest(review, false)}
+                          onRequestChanges={requestChangesForAccessRequest}
+                          onDecline={declineAccessRequest}
+                          onApproveAndApply={(review) => approveAccessRequest(review, true)}
+                          onApplyApproved={applyApprovedAccessRequest}
+                          onRefresh={refreshReviewerQueue}
+                          onOpenInvite={openSetupFirstCircle}
+                        />
+                      </Suspense>
+                    ) : null}
                   </>
                 ) : null}
 
@@ -11209,35 +11415,6 @@ export default function CommunityDomainDashboardPage() {
                 </StableButton>
               </div>
             </section>
-          ) : null}
-
-          {showAdvancedTools &&
-          isAdmin &&
-          activeLane === "governance" &&
-          activeGovernanceTask === "access_requests" ? (
-            <Suspense
-              fallback={
-                <section style={whiteCard()}>
-                  <div style={sectionLabel()}>Access requests</div>
-                  <div style={{ ...helperText(), marginTop: 8 }}>
-                    Loading access request controls...
-                  </div>
-                </section>
-              }
-            >
-              <CommunityDomainAccessRequestsPanel
-                membershipAccessRequests={membershipAccessRequests}
-                loadingQueue={loadingQueue}
-                busyReviewId={busyReviewId}
-                onApproveOnly={(review) => approveAccessRequest(review, false)}
-                onRequestChanges={requestChangesForAccessRequest}
-                onDecline={declineAccessRequest}
-                onApproveAndApply={(review) => approveAccessRequest(review, true)}
-                onApplyApproved={applyApprovedAccessRequest}
-                onRefresh={refreshReviewerQueue}
-                onOpenInvite={openSetupFirstCircle}
-              />
-            </Suspense>
           ) : null}
 
         </>

@@ -851,6 +851,34 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
+  /activeLane === "governance"[\s\S]*community-domain-dashboard\.governance-task\.\$\{task\}[\s\S]*activeGovernanceTask === "real_life_record"[\s\S]*activeGovernanceTask === "access_requests"[\s\S]*Loading access request controls[\s\S]*CommunityDomainAccessRequestsPanel[\s\S]*embedded[\s\S]*activeLane === "members"/,
+  "Community Domain Governance access requests must render inside the selected Governance job instead of as a detached section after the work surface.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /type SponsorSummaryTaskKey = "overview" \| "evidence" \| "delivery" \| "export"[\s\S]*activeSponsorSummaryTask[\s\S]*setActiveSponsorSummaryTask[\s\S]*community-domain-dashboard\.sponsor-summary\.\$\{task\}[\s\S]*activeSponsorSummaryTask === "overview"[\s\S]*Pack boundary[\s\S]*activeSponsorSummaryTask === "evidence"[\s\S]*sponsorTiles\.map[\s\S]*activeSponsorSummaryTask === "export"[\s\S]*community-domain-dashboard\.copy-sponsor-export-pack[\s\S]*activeSponsorSummaryTask === "delivery"[\s\S]*Delivery evidence[\s\S]*Provider delivery readiness/,
+  "Community Domain sponsor-safe summary must stay decongested behind Overview, Evidence, Export, and Delivery packets.",
+  { frontend: true }
+);
+
+assertNotContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /showAdvancedTools\s*&&\s*isAdmin\s*&&\s*activeLane === "governance"\s*&&\s*activeGovernanceTask === "access_requests"/,
+  "Community Domain access requests must not return as a standalone post-work-surface section.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/communityDomainDashboard/AccessRequestsPanel.tsx",
+  /embedded\?: boolean[\s\S]*embedded = false[\s\S]*embedded \? softCard\(\) : whiteCard\(\)/,
+  "Community Domain access request panel must keep an embedded rendering mode for the Governance job surface.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
   /BENEFICIARY_DELIVERY_CHANNEL_OPTIONS[\s\S]*whatsapp[\s\S]*sms[\s\S]*email[\s\S]*copy_link[\s\S]*other[\s\S]*BENEFICIARY_DELIVERY_STATUS_OPTIONS[\s\S]*manual_sent[\s\S]*manual_failed[\s\S]*received_reported[\s\S]*opened_reported/,
   "Community Domain dashboard must expose bounded manual beneficiary delivery receipt channel/status options.",
   { frontend: true }
@@ -991,7 +1019,7 @@ assertIncludes(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /confirmation_delivery_prepared_records[\s\S]{0,800}confirmation_delivery_receipt_records[\s\S]{0,1200}confirmation_delivery_receipts_current_uncorrected[\s\S]{0,1200}confirmation_delivery_receipt_corrections[\s\S]{0,2200}confirmation_delivery_receipts_current_by_status[\s\S]{0,1800}confirmation_delivery_receipts_by_status[\s\S]{0,2200}confirmation_delivery_receipts_by_consent_basis[\s\S]{0,2200}confirmation_delivery_receipt_corrections_by_decision[\s\S]{0,2200}contact_consent_by_reference_status[\s\S]{0,2200}contact_consent_withdrawals_by_reason[\s\S]{0,1200}GSN did not send external messages/,
+  /confirmation_delivery_prepared_records[\s\S]*confirmation_delivery_receipt_records[\s\S]*confirmation_delivery_receipts_current_uncorrected[\s\S]*confirmation_delivery_receipt_corrections[\s\S]*contact_consent_records[\s\S]*contact_consent_withdrawals[\s\S]*activeSponsorSummaryTask === "delivery"[\s\S]*confirmation_delivery_receipts_current_by_status[\s\S]*confirmation_delivery_receipts_by_status[\s\S]*confirmation_delivery_receipts_by_consent_basis[\s\S]*confirmation_delivery_receipt_corrections_by_decision[\s\S]*contact_consent_by_reference_status[\s\S]*contact_consent_withdrawals_by_reason[\s\S]*GSN did not send external messages/,
   "Community Domain dashboard sponsor summary must expose delivery, contact/consent, and withdrawal evidence without provider-send claims.",
   { frontend: true }
 );
@@ -1154,6 +1182,20 @@ assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
   /setupJourneyMode[\s\S]*showSetupAccessCard = setupJourneyMode === "edit" \|\| setupEditingLocked[\s\S]*openSetupJourney\(mode: "setup" \| "edit"\)[\s\S]*community-domain-dashboard\.setup-focus[\s\S]*Continue setup[\s\S]*setupJourneyMode === "edit"[\s\S]*Edit Community Domain/,
   "Community Domain dashboard must expose setup as the draft front-door choice while keeping edit mode out of the active first command surface.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /type SetupWorkbenchTaskKey = "step" \| "access"[\s\S]*activeSetupWorkbenchTask[\s\S]*setActiveSetupWorkbenchTask[\s\S]*Setup step[\s\S]*Access[\s\S]*activeSetupWorkbenchTask === task[\s\S]*community-domain-dashboard\.setup-workbench\.\$\{task\}[\s\S]*activeSetupWorkbenchTask === "access"[\s\S]*Setup access[\s\S]*Authorise setup editor[\s\S]*activeSetupWorkbenchTask === "step"[\s\S]*activeSetupStep === "identity"[\s\S]*community-domain-dashboard\.setup-save-and-continue/,
+  "Community Domain setup workbench must choose between the setup step and access/authority controls instead of exposing both packets at once.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /type BillingTaskKey = "payment_code" \| "account" \| "steps" \| "readiness"[\s\S]*activeBillingTask[\s\S]*setActiveBillingTask[\s\S]*Billing jobs[\s\S]*Open one billing job[\s\S]*community-domain-dashboard\.billing-task\.\$\{task\}[\s\S]*activeBillingTask === "steps"[\s\S]*community-domain-dashboard\.billing-sequence-toggle[\s\S]*activeBillingTask === "account"[\s\S]*Community pay-in account[\s\S]*activeBillingTask === "payment_code"[\s\S]*community-domain-dashboard\.refresh-package-quote[\s\S]*Latest payment code[\s\S]*activeLane === "billing" && activeBillingTask === "readiness"[\s\S]*Billing readiness details/,
+  "Community Domain Billing must stay behind one billing-job selector so steps, account, payment code/proof, and readiness diagnostics do not dump together.",
   { frontend: true }
 );
 
