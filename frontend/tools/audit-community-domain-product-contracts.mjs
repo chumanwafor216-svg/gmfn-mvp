@@ -3445,6 +3445,12 @@ assertNotContains(
   "Community Domain audit must not reintroduce stale claims that manual activity catalogue records are still future after activity Trust Events exist."
 );
 
+assertNotContains(
+  "docs/COMMUNITY_DOMAIN_ACTOR_IDENTITY_AUDIT_2026-07-15.md",
+  /Implement the Community Domain activity catalogue|Approved activity records should create Trust Events|These records should produce beneficiary-owned Trust Events|Build:\s*[\s\S]{0,120}manual admin record/,
+  "Community Domain audit roadmap must not describe manual activity records, beneficiary outcome Trust Events, or basic Trust Event creation as entirely future after bounded v1 slices exist."
+);
+
 assertContains(
   "src/lib/api.ts",
   /lookupCommunityDomainByName[\s\S]*\/community-domains\/lookup[\s\S]*domain_name/,

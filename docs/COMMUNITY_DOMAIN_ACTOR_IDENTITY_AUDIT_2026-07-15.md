@@ -983,19 +983,22 @@ same strength.
 
 The first build should not try to automate everything.
 
-Build:
+Built as bounded v1 slices:
 
-- configurable activity catalogue;
 - manual admin record;
 - named member selection;
-- bulk CSV/spreadsheet import;
-- beneficiary/member confirmation request;
-- periodic roll-up event;
-- challenge/correction status;
 - Trust Event creation after approval.
 
-Later build:
+Partly built, still needs depth:
 
+- beneficiary/member confirmation request;
+- challenge/correction status.
+
+Still to build:
+
+- configurable domain-specific activity templates;
+- bulk CSV/spreadsheet import;
+- periodic roll-up event;
 - QR event check-in;
 - integrations with school/church/NGO systems;
 - evaluator workflows;
@@ -1366,17 +1369,21 @@ Make membership status and removal explicit for Community Domains:
 
 ### Phase 3 - Community Domain public verification
 
-Expand public verification to support:
+Public verification now supports the narrow active-member proof path:
 
 - ordinary community membership via `ClanMembership`;
 - Community Domain membership via `CommunityDomainMembership`;
-- active, inactive/removed, never-member, and pending states;
 - clear separation between automatic membership proof and human witness
   confirmation.
 
+Remaining lift: turn inactive/removed, never-member, and pending states into a
+clear public-safe response model without exposing the private roster.
+
 ### Phase 4 - Activity catalogue and Trust Events
 
-Implement the Community Domain activity catalogue:
+Manual Community Domain activity records now exist as v1 Trust Events. The
+remaining activity-catalogue lift is configurable domain-specific templates and
+low-burden capture for examples such as:
 
 - church examples: attendance, tithe/support evidence, volunteer service,
   member care, choir/service duty, leadership role;
@@ -1400,9 +1407,13 @@ Each local activity should map to stable universal evidence dimensions:
 - learning and development;
 - recognition.
 
-Approved activity records should create Trust Events.
+Approved/manual activity records now create Trust Events in the bounded v1
+ledger.
 
-For NGO/project templates, include beneficiary outcome activities:
+For NGO/project templates, beneficiary outcome records now cover bounded
+baseline/support/follow-up/outcome evidence. The remaining lift is configurable
+templates and stronger confirmation/correction workflow around examples such
+as:
 
 - baseline captured;
 - support delivered;
@@ -1414,9 +1425,9 @@ For NGO/project templates, include beneficiary outcome activities:
 - evaluator/admin confirmed;
 - sponsor-safe aggregate updated.
 
-These records should produce beneficiary-owned Trust Events with `Pillar of
-Hope` or the relevant domain recorded as the programme/context, not as a
-self-certifying impact owner.
+These records produce person-first Trust Events with `Pillar of Hope` or the
+relevant domain recorded as the programme/context, not as a self-certifying
+impact owner.
 
 ### Phase 5 - CCI / Trust Passport consumption
 
