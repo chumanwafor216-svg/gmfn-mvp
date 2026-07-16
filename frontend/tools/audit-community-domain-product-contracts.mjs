@@ -3415,6 +3415,12 @@ assertContains(
   "Backend tests must prove protected Community Domain public verification resolves the domain record, confirms active CommunityDomainMembership only, hides private roster/owner data, rejects inactive members, and fails after deactivation."
 );
 
+assertNotContains(
+  "docs/COMMUNITY_DOMAIN_ACTOR_IDENTITY_AUDIT_2026-07-15.md",
+  /Community Domain public membership verification is not yet complete|Community Domain public member verification is not complete|does not yet prove `CommunityDomainMembership`|core member verification route should come before more maps|verification gap is closed/,
+  "Community Domain audit must not reintroduce stale claims that public CommunityDomainMembership proof is still missing after the public proof route and tests exist."
+);
+
 assertContains(
   "src/lib/api.ts",
   /lookupCommunityDomainByName[\s\S]*\/community-domains\/lookup[\s\S]*domain_name/,

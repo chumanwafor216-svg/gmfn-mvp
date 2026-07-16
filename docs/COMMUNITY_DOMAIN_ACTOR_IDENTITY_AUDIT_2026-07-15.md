@@ -128,9 +128,9 @@ own shops, post products, send Spotlight, and post Demand through active
 community membership. A future institutional-shop model would be a separate,
 governed product decision, not an automatic right created by name registration.
 
-### Public member verification is ordinary-community based
+### Public member verification is ordinary-community first, then domain-scoped
 
-Public member verification resolves:
+Public member verification first resolves ordinary communities:
 
 ```text
 community key -> Clan
@@ -140,10 +140,20 @@ ClanMembership(clan_id, user_id)
 
 It then layers witness evidence from `CommunityMemberVerification`.
 
-Impact: the current public verification route can prove that a user belongs to
-an ordinary community, but it does not yet prove Community Domain membership
-through `CommunityDomainMembership`, nor does it clearly expose removed/inactive
-domain membership as failed or inactive verification.
+For protected Community Domain keys, the same public verification service now
+falls back to Community Domain membership proof:
+
+```text
+community/domain key -> CommunityDomain
+member key -> User
+CommunityDomainMembership(community_domain_id, user_id, status = active)
+```
+
+Impact: the current public verification route can prove the narrow question of
+whether a user is currently an active member of a protected Community Domain.
+Removed, deactivated, or inactive domain memberships fail public active-member
+verification. This does not prove trust, endorsement, shop ownership, sponsor
+impact, delivery proof, legal authority, or full roster visibility.
 
 ## Fault found
 
@@ -1478,7 +1488,7 @@ Community Domain membership rows exist.
 Ordinary community membership removal exists.
 Individual shop ownership exists.
 Community Domain activity catalogues are not yet implemented.
-Community Domain public membership verification is not yet complete.
+Community Domain public membership verification is present but narrowly scoped.
 ```
 
 For MVP, `Pillar of Hope` should be treated like a protected community/domain:
@@ -1570,13 +1580,15 @@ shape.
     map/evidence map surfaces clearly say they are planning/readiness views.
     This is useful groundwork for the future activity catalogue.
 
-### Shut off or missing for the agreed MVP
+### Present, shut off, or missing for the agreed MVP
 
-1. **Community Domain public member verification is not complete.**
+1. **Community Domain public member verification is present but narrow.**
 
-   The public verification route currently proves ordinary `ClanMembership`.
-   It does not yet prove `CommunityDomainMembership` as a first-class public
-   member credential. This is the biggest actual gap.
+   The public verification route still proves ordinary `ClanMembership` for
+   ordinary communities, and now also proves active `CommunityDomainMembership`
+   when a protected Community Domain key is used. This is membership proof only:
+   it must not be treated as trust, endorsement, shop ownership, sponsor impact,
+   delivery proof, legal authority, or full roster visibility.
 
 2. **Community Domain ID is not yet cleanly exposed as the public verification
    anchor.**
@@ -1643,11 +1655,13 @@ shape.
 ### Overbuilt or too heavy for the immediate MVP
 
 1. **The Community Domain dashboard has many readiness maps before the core
-   verification gap is closed.**
+   activity and impact evidence gaps are closed.**
 
    These maps are useful, but they can give the feeling that the institution is
-   more operational than it really is. The core member verification route should
-   come before more maps.
+   more operational than it really is. The member verification route is now
+   present; the remaining risk is over-reading readiness maps as actual
+   activity records, sponsor impact evidence, provider delivery, or
+   institution-owned trust.
 
 2. **Action-review governance is powerful but may be too heavy for simple
    member removal.**
