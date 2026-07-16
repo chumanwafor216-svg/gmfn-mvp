@@ -2060,9 +2060,11 @@ To make the outreach promise true end-to-end, build in this order:
    - this is still manual admin recording;
    - `admin_recorded` means the organization recorded the claim, not that the
      beneficiary has confirmed it;
-   - sponsor-safe reporting, public disclosure, privacy review, beneficiary
-     confirmation links, dispute workflow, and challenge resolution are not yet
-     complete.
+   - sponsor-safe aggregation, beneficiary confirmation links, correction
+     reviews, and copy-ready export packs now exist as bounded later slices in
+     this audit, but this v1 outcome record alone is not public disclosure,
+     independent proof, provider-backed delivery, legal dispute resolution, or
+     certified sponsor submission.
 
 6. **Sponsor-safe summary v2 - implemented 2026-07-15**
 
@@ -2089,8 +2091,11 @@ To make the outreach promise true end-to-end, build in this order:
    - it does not expose beneficiary names or private case notes;
    - it does not prove unrecorded impact;
    - it does not turn admin-recorded claims into beneficiary-confirmed proof;
-   - public sharing, sponsor access control, export/download, beneficiary
-     confirmation links, and dispute resolution remain future work.
+   - copy-ready export packs, beneficiary confirmation links, and correction
+     reviews now exist as bounded later slices in this audit; public sponsor
+     portal sharing, sponsor access control, certified download/PDF generation,
+     direct sponsor delivery, and legal-grade dispute resolution remain future
+     work.
 
 7. **Beneficiary confirmation / challenge links v1 - implemented 2026-07-15**
 
@@ -2127,8 +2132,9 @@ To make the outreach promise true end-to-end, build in this order:
      portal;
    - responses do not edit or delete the original admin outcome record;
    - duplicate responses on the same token are blocked;
-   - dispute resolution, correction approval, revocation, and public sponsor
-     publishing remain future work.
+   - correction review now exists as a bounded additive Trust Event lane below;
+   - formal dispute resolution, link revocation, multi-admin correction
+     approval, and public sponsor publishing remain future work.
 
 8. **Public beneficiary confirmation page v1 - implemented 2026-07-15**
 
@@ -2235,8 +2241,11 @@ To make the outreach promise true end-to-end, build in this order:
    - it does not prove the recipient received, opened, or answered the link;
    - it does not store the raw bearer token in Trust Event metadata;
    - it does not create in-app notifications for the beneficiary yet;
-   - real delivery rails, delivery receipts, retry logic, stakeholder
-     notification, and delivery consent rules remain future work.
+   - manual delivery receipts and consent-basis capture now exist as bounded
+     later slices in this audit;
+   - real provider delivery rails, retry logic, beneficiary/sponsor
+     notification, webhook receipts, and full consent-management rules remain
+     future work.
 
 11. **Beneficiary outcome admin notifications v1 - implemented 2026-07-15**
 

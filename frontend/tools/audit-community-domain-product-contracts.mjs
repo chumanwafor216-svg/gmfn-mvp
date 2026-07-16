@@ -3427,6 +3427,12 @@ assertNotContains(
   "Community Domain audit must not reintroduce stale missing-capability claims after activity records, beneficiary outcome evidence, and sponsor-safe summaries exist as limited manual/admin-gated v1 slices."
 );
 
+assertNotContains(
+  "docs/COMMUNITY_DOMAIN_ACTOR_IDENTITY_AUDIT_2026-07-15.md",
+  /beneficiary\s+confirmation links,[\s\S]{0,120}remain future work|beneficiary\s+confirmation links,[\s\S]{0,160}not yet\s+complete|correction approval,[\s\S]{0,120}remain future work|delivery receipts,[\s\S]{0,120}remain future work|delivery consent rules remain future work/,
+  "Community Domain audit must not reintroduce stale future-work claims for beneficiary confirmation links, correction reviews, manual delivery receipts, or delivery consent-basis capture after those bounded slices exist."
+);
+
 assertContains(
   "src/lib/api.ts",
   /lookupCommunityDomainByName[\s\S]*\/community-domains\/lookup[\s\S]*domain_name/,
