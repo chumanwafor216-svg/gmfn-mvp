@@ -278,6 +278,11 @@ It also shows the contact and consent gate. GSN should not attempt provider
 delivery until the selected channel has a verified destination and an active
 consent or legal-authority basis for that beneficiary confirmation purpose.
 
+GSN also has a provider delivery lift plan for each Community Domain. It lets
+leaders see, in one place, what is ready today, what remains manual, and what
+must be connected before WhatsApp, SMS, or email delivery can be trusted. This
+is a planning and truth-check surface, not a sending engine.
+
 ### 3.13 Privacy-Controlled Evidence
 
 Not every record should be public.

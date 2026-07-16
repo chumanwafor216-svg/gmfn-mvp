@@ -34,6 +34,7 @@ from app.db.models import (
 from app.db.bank_models import ExpectedPayment
 from app.db.notification_models import Notification
 from app.main import app
+from app.services.trust_events_services import log_trust_event
 
 
 def _seed_owner() -> User:
@@ -12029,6 +12030,237 @@ def test_member_can_read_notification_scope_readiness_but_admin_counts_are_hidde
     assert "does not send notifications" in readiness["boundary"]
     assert "show member lists" in readiness["boundary"]
     assert "private member" in readiness["boundary"]
+
+
+def test_provider_delivery_lift_plan_projects_provider_path_without_sending(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    admin = _seed_user(2, "provider-lift-admin@example.com")
+    member = _seed_user(3, "provider-lift-member@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Provider Lift NGO",
+                "display_name": "Provider Lift NGO",
+                "domain_type": "ngo",
+                "template_key": "ngo_project_network",
+                "public_profile": "A public-safe NGO profile.",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain_id = created.json()["community_domain"]["id"]
+
+        for user, role in ((admin, "domain_admin"), (member, "member")):
+            added = client.post(
+                f"/community-domains/{domain_id}/members",
+                json={"user_id": user.id, "role": role},
+            )
+            assert added.status_code == 201, added.text
+
+        with SessionLocal() as db:
+            domain = db.get(CommunityDomain, domain_id)
+            assert domain is not None
+            for index, event_type in enumerate(
+                (
+                    "community_domain.beneficiary_outcome_recorded",
+                    "community_domain.beneficiary_outcome_confirmation_delivery_prepared",
+                    "community_domain.beneficiary_outcome_confirmation_delivery_recorded",
+                    "community_domain.beneficiary_outcome_contact_consent_recorded",
+                    "community_domain.beneficiary_outcome_contact_consent_withdrawn",
+                    "community_domain.beneficiary_outcome_provider_send_blocked",
+                ),
+                start=1,
+            ):
+                log_trust_event(
+                    db,
+                    event_type=event_type,
+                    clan_id=int(domain.clan_id) if domain.clan_id is not None else None,
+                    actor_user_id=int(owner.id),
+                    subject_user_id=int(member.id),
+                    meta={
+                        "community_domain_id": domain_id,
+                        "outcome_event_id": 900 + index,
+                        "source": "provider_delivery_lift_plan_test",
+                    },
+                )
+            before_counts = {
+                "trust_events": db.query(TrustEvent).count(),
+                "domains": db.query(CommunityDomain).count(),
+                "domain_members": db.query(CommunityDomainMembership).count(),
+                "nodes": db.query(CommunityNode).count(),
+                "policies": db.query(CommunityDomainPolicy).count(),
+                "reviews": db.query(CommunityDomainActionReview).count(),
+                "evidence": db.query(CommunityDomainActionReviewEvidence).count(),
+                "clans": db.query(Clan).count(),
+            }
+
+        response = client.get(
+            f"/community-domains/{domain_id}/provider-delivery-lift-plan"
+        )
+        assert response.status_code == 200, response.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    payload = response.json()
+    assert payload["ok"] is True
+    lift_plan = payload["provider_delivery_lift_plan"]
+    assert lift_plan["editable"] is False
+    assert lift_plan["viewer"] == {"user_id": owner.id, "can_admin": True}
+    summary = lift_plan["summary"]
+    assert summary["provider_delivery_lift_status"] == "blocked_manual_only"
+    assert summary["ready_to_send"] is False
+    assert summary["external_channels_sent_by_gsn"] is False
+    assert summary["provider_send_engine_status"] == "not_connected_in_this_slice"
+    assert summary["provider_delivery_webhook_status"] == "not_connected_in_this_slice"
+    assert summary["retry_queue_status"] == "not_connected_in_this_slice"
+    assert summary["contact_preference_status"] == "not_connected_in_this_slice"
+    assert summary["consent_enforcement_status"] == (
+        "manual_receipt_consent_basis_only"
+    )
+    assert summary["planned_provider_channels"] == ["whatsapp", "sms", "email"]
+    assert "provider send API" in summary["missing_components"]
+    assert "provider delivery webhook" in summary["missing_components"]
+    assert summary["outcome_count"] == 1
+    assert summary["delivery_pack_count"] == 1
+    assert summary["manual_receipt_count"] == 1
+    assert summary["contact_consent_record_count"] == 1
+    assert summary["contact_consent_withdrawal_count"] == 1
+    assert summary["provider_send_blocked_check_count"] == 1
+    assert summary["provider_jobs_created"] == 0
+    assert summary["provider_send_attempts_created"] == 0
+    assert summary["provider_delivery_receipts_verified"] == 0
+    assert summary["raw_destinations_exposed"] == 0
+    assert lift_plan["provider_setup_contract"]["status"] == "not_configured"
+    assert "provider webhook verified" in lift_plan["provider_setup_contract"][
+        "send_lift_conditions"
+    ]
+    assert lift_plan["contact_consent_contract"]["provider_send_blocker"] == (
+        "missing_contact_preference_and_consent_gate"
+    )
+
+    lanes = {item["lane_key"]: item for item in lift_plan["lanes"]}
+    assert lanes["provider_send_engine"]["status"] == "not_connected_in_this_slice"
+    assert lanes["provider_send_engine"]["ready"] is False
+    assert lanes["provider_send_engine"]["route_hint"].endswith(
+        "/beneficiary-outcomes"
+    )
+    assert lanes["provider_webhook_verification"]["route_hint"] is None
+    assert lanes["retry_and_failure_review"]["route_hint"].endswith(
+        "/action-reviews"
+    )
+    assert lanes["contact_consent_evidence"]["status"] == (
+        "manual_attestations_present"
+    )
+    assert lanes["contact_consent_evidence"]["count"] == 1
+    assert lanes["manual_delivery_evidence"]["ready"] is True
+    assert lanes["manual_delivery_evidence"]["count"] == 2
+    assert lanes["provider_receipt_mapping"]["status"] == (
+        "not_connected_in_this_slice"
+    )
+    assert lift_plan["ready_total"] == 1
+    assert "provider_send_engine" in lift_plan["blocked_lanes"]
+    assert lift_plan["primary_next_action"] == {
+        "action_key": "continue_manual_delivery_until_providers_are_connected",
+        "label": "Continue manual delivery until providers are connected",
+        "route_hint": f"/community-domains/{domain_id}/beneficiary-outcomes",
+        "requires_admin": True,
+    }
+    assert "read-only readiness planning" in lift_plan["boundary"]
+    assert "does not create provider jobs" in lift_plan["boundary"]
+    assert "send WhatsApp, SMS, or email" in lift_plan["boundary"]
+    assert "store raw destinations" in lift_plan["boundary"]
+    assert "verify provider receipts" in lift_plan["boundary"]
+    assert "private beneficiary records" in lift_plan["boundary"]
+    assert "provider-lift-member@example.com" not in str(lift_plan)
+
+    with SessionLocal() as db:
+        after_counts = {
+            "trust_events": db.query(TrustEvent).count(),
+            "domains": db.query(CommunityDomain).count(),
+            "domain_members": db.query(CommunityDomainMembership).count(),
+            "nodes": db.query(CommunityNode).count(),
+            "policies": db.query(CommunityDomainPolicy).count(),
+            "reviews": db.query(CommunityDomainActionReview).count(),
+            "evidence": db.query(CommunityDomainActionReviewEvidence).count(),
+            "clans": db.query(Clan).count(),
+        }
+    assert after_counts == before_counts
+
+
+def test_member_can_read_provider_delivery_lift_plan_but_admin_counts_are_hidden(
+    client: TestClient,
+):
+    owner = _seed_owner()
+    member = _seed_user(2, "provider-lift-visible-member@example.com")
+    outsider = _seed_user(3, "provider-lift-outsider@example.com")
+
+    try:
+        app.dependency_overrides[get_current_user] = lambda: owner
+        created = client.post(
+            "/community-domains/drafts",
+            json={
+                "domain_name": "Provider Lift Member School",
+                "display_name": "Provider Lift Member School",
+                "domain_type": "school",
+                "template_key": "school_multi_branch",
+            },
+        )
+        assert created.status_code == 201, created.text
+        domain_id = created.json()["community_domain"]["id"]
+
+        added = client.post(
+            f"/community-domains/{domain_id}/members",
+            json={"user_id": member.id, "role": "member"},
+        )
+        assert added.status_code == 201, added.text
+
+        app.dependency_overrides[get_current_user] = lambda: member
+        member_plan = client.get(
+            f"/community-domains/{domain_id}/provider-delivery-lift-plan"
+        )
+        assert member_plan.status_code == 200, member_plan.text
+
+        app.dependency_overrides[get_current_user] = lambda: outsider
+        outsider_plan = client.get(
+            f"/community-domains/{domain_id}/provider-delivery-lift-plan"
+        )
+        assert outsider_plan.status_code == 403, outsider_plan.text
+        assert "active Community Domain members" in outsider_plan.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    lift_plan = member_plan.json()["provider_delivery_lift_plan"]
+    assert lift_plan["viewer"] == {"user_id": member.id, "can_admin": False}
+    summary = lift_plan["summary"]
+    assert summary["provider_delivery_lift_status"] == "blocked_manual_only"
+    assert summary["outcome_count"] is None
+    assert summary["delivery_pack_count"] is None
+    assert summary["manual_receipt_count"] is None
+    assert summary["contact_consent_record_count"] is None
+    assert summary["contact_consent_withdrawal_count"] is None
+    assert summary["provider_send_blocked_check_count"] is None
+    assert summary["provider_jobs_created"] == 0
+    assert summary["provider_send_attempts_created"] == 0
+    assert summary["provider_delivery_receipts_verified"] == 0
+    assert summary["raw_destinations_exposed"] == 0
+    assert lift_plan["primary_next_action"] == {
+        "action_key": "ask_domain_admin_to_review_provider_delivery_lift_plan",
+        "label": "Ask a Community Domain admin to review provider delivery readiness",
+        "route_hint": None,
+        "requires_admin": True,
+    }
+
+    lanes = {item["lane_key"]: item for item in lift_plan["lanes"]}
+    assert lanes["provider_send_engine"]["route_hint"] is None
+    assert lanes["retry_and_failure_review"]["route_hint"] is None
+    assert lanes["contact_consent_evidence"]["count"] is None
+    assert lanes["manual_delivery_evidence"]["count"] is None
+    assert "does not create provider jobs" in lift_plan["boundary"]
+    assert "private beneficiary records" in lift_plan["boundary"]
 
 
 def test_trust_mobility_projects_portability_readiness_without_issuing_records(

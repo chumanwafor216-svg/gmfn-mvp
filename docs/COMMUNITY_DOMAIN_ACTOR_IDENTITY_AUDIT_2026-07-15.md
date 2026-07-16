@@ -2961,6 +2961,47 @@ To make the outreach promise true end-to-end, build in this order:
      provider delivery receipt;
    - it only makes the fail-closed evidence trail more exact.
 
+37. **Provider delivery lift plan v1 - implemented 2026-07-16**
+
+   Community Domains now have a standalone read-only provider delivery lift
+   plan:
+
+   ```text
+   GET /community-domains/{community_domain_id}/provider-delivery-lift-plan
+   ```
+
+   What it does:
+
+   - shows that provider delivery remains `blocked_manual_only`;
+   - exposes the provider send engine, webhook, retry queue, contact preference,
+     and consent enforcement statuses;
+   - lists planned provider channels: WhatsApp, SMS, and email;
+   - lists the missing components that must exist before GSN can honestly send
+     externally;
+   - gives admins aggregate counts for outcomes, prepared delivery packs,
+     manual receipts, contact/consent records, withdrawals, and blocked
+     provider-send checks;
+   - hides admin-only aggregate counts from ordinary members;
+   - rejects outsiders who are not active Community Domain members.
+
+   Why this matters:
+
+   - the admin can now see the future provider-delivery pathway without opening
+     a specific beneficiary outcome first;
+   - members can read the truth boundary without seeing private beneficiary
+     evidence;
+   - the system has a stable API surface for future frontend panels or provider
+     setup work.
+
+   Boundary:
+
+   - this does not create provider jobs;
+   - this does not send WhatsApp, SMS, or email;
+   - this does not store raw destinations or provider credentials;
+   - this does not create webhooks, retry queues, or verified provider receipts;
+   - this does not expose private beneficiary records, move money, issue
+     TrustSlips, or write Trust Passport entries.
+
 #### Outreach positioning
 
 The outreach language should be:

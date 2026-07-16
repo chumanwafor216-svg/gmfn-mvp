@@ -3958,6 +3958,24 @@ assertContains(
 
 assertContains(
   "gmfn_backend/app/api/routes/community_domains.py",
+  /def _community_domain_provider_delivery_lift_plan_payload[\s\S]*blocked_manual_only[\s\S]*provider_send_engine_status[\s\S]*provider_delivery_webhook_status[\s\S]*provider_jobs_created[\s\S]*provider_send_attempts_created[\s\S]*provider_delivery_receipts_verified[\s\S]*raw_destinations_exposed[\s\S]*does not create provider jobs[\s\S]*send WhatsApp, SMS, or[\s\S]*email[\s\S]*store raw destinations[\s\S]*verify provider receipts[\s\S]*@router\.get\("\/\{community_domain_id\}\/provider-delivery-lift-plan"[\s\S]*def get_community_domain_provider_delivery_lift_plan[\s\S]*_require_domain_member_scope/,
+  "Backend route must expose scoped read-only Community Domain provider delivery lift planning without provider jobs, sends, raw destinations, credentials, webhooks, retry queues, provider receipts, private beneficiary exposure, money, TrustSlips, or Trust Passport writes."
+);
+
+assertContains(
+  "gmfn_backend/tests/test_community_domains.py",
+  /test_provider_delivery_lift_plan_projects_provider_path_without_sending[\s\S]*\/provider-delivery-lift-plan[\s\S]*provider_delivery_lift_status[\s\S]*blocked_manual_only[\s\S]*provider_jobs_created[\s\S]*provider_send_attempts_created[\s\S]*provider_delivery_receipts_verified[\s\S]*raw_destinations_exposed[\s\S]*provider-lift-member@example\.com" not in str\(lift_plan\)[\s\S]*after_counts == before_counts/,
+  "Backend tests must prove provider delivery lift planning projects provider blockers and manual evidence counts without sending, writing provider jobs, verifying receipts, exposing private beneficiary records, or changing data."
+);
+
+assertContains(
+  "gmfn_backend/tests/test_community_domains.py",
+  /test_member_can_read_provider_delivery_lift_plan_but_admin_counts_are_hidden[\s\S]*\/provider-delivery-lift-plan[\s\S]*outsider_plan\.status_code == 403[\s\S]*"provider_send_blocked_check_count"\] is None/,
+  "Backend tests must prove members can read provider delivery lift planning while outsiders are rejected and admin-only provider evidence counts/routes are hidden."
+);
+
+assertContains(
+  "gmfn_backend/app/api/routes/community_domains.py",
   /def _community_domain_trust_mobility_payload[\s\S]*read-only portability planning[\s\S]*does not create TrustSlips[\s\S]*write Trust Passport[\s\S]*show storage keys[\s\S]*create a social Community[\s\S]*@router\.get\("\/\{community_domain_id\}\/trust-mobility"[\s\S]*def get_community_domain_trust_mobility[\s\S]*_require_domain_member_scope/,
   "Backend route must expose scoped read-only Community Domain trust mobility without TrustSlip, Trust Passport, credential, relay, evidence release, public proof, outward link, billing, marketplace, social Community, money, or private-record side effects."
 );

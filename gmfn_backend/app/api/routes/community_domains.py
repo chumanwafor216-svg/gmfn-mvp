@@ -2099,6 +2099,197 @@ def _community_domain_outcome_provider_delivery_readiness(
     }
 
 
+def _community_domain_provider_delivery_lift_plan_payload(
+    db: Session,
+    *,
+    domain: CommunityDomain,
+    current_user: User,
+    can_admin: bool,
+) -> dict[str, Any]:
+    domain_id = int(domain.id)
+    root_node = _find_root_node(db, community_domain_id=domain_id)
+    readiness = _community_domain_outcome_provider_delivery_readiness()
+
+    def domain_trust_event_count(event_type: str) -> int:
+        rows = db.query(TrustEvent).filter(TrustEvent.event_type == event_type).all()
+        return sum(
+            1
+            for row in rows
+            if int((row.meta or {}).get("community_domain_id") or 0) == domain_id
+        )
+
+    outcome_count = domain_trust_event_count(COMMUNITY_DOMAIN_BENEFICIARY_OUTCOME_EVENT)
+    delivery_pack_count = domain_trust_event_count(
+        COMMUNITY_DOMAIN_OUTCOME_CONFIRMATION_DELIVERY_PREPARED_EVENT
+    )
+    manual_receipt_count = domain_trust_event_count(
+        COMMUNITY_DOMAIN_OUTCOME_CONFIRMATION_DELIVERY_RECORDED_EVENT
+    )
+    contact_consent_record_count = domain_trust_event_count(
+        COMMUNITY_DOMAIN_OUTCOME_CONTACT_CONSENT_RECORDED_EVENT
+    )
+    contact_consent_withdrawal_count = domain_trust_event_count(
+        COMMUNITY_DOMAIN_OUTCOME_CONTACT_CONSENT_WITHDRAWN_EVENT
+    )
+    provider_send_blocked_check_count = domain_trust_event_count(
+        COMMUNITY_DOMAIN_OUTCOME_PROVIDER_SEND_BLOCKED_EVENT
+    )
+
+    def route_hint(suffix: str, *, requires_admin: bool) -> Optional[str]:
+        if requires_admin and not can_admin:
+            return None
+        return f"/community-domains/{domain_id}{suffix}"
+
+    def admin_count(value: int) -> Optional[int]:
+        return int(value) if can_admin else None
+
+    lanes = [
+        {
+            "lane_key": "provider_send_engine",
+            "label": "Provider send engine",
+            "status": readiness["provider_send_engine_status"],
+            "ready": False,
+            "count": 0,
+            "route_hint": route_hint("/beneficiary-outcomes", requires_admin=True),
+            "requires_admin": True,
+            "next_step": "Choose, configure, and test an approved WhatsApp, SMS, or email provider before enabling direct sends.",
+            "boundary": "Read-only provider-send lane. This does not create provider jobs, send messages, store credentials, or mark provider delivery as ready.",
+        },
+        {
+            "lane_key": "provider_webhook_verification",
+            "label": "Provider webhook verification",
+            "status": readiness["provider_delivery_webhook_status"],
+            "ready": False,
+            "count": 0,
+            "route_hint": None,
+            "requires_admin": True,
+            "next_step": "Add signed provider callbacks and signature verification before trusting delivery receipts from providers.",
+            "boundary": "Webhook lane only. This does not create webhooks, accept callbacks, verify signatures, or write provider delivery receipts.",
+        },
+        {
+            "lane_key": "retry_and_failure_review",
+            "label": "Retry and failure review",
+            "status": readiness["retry_queue_status"],
+            "ready": False,
+            "count": 0,
+            "route_hint": route_hint("/action-reviews", requires_admin=True),
+            "requires_admin": True,
+            "next_step": "Define retry, failure, dispute, and admin review rules before provider messages can be sent safely.",
+            "boundary": "Retry planning lane only. This does not create retry queues, reschedule messages, decide disputes, or notify recipients.",
+        },
+        {
+            "lane_key": "contact_consent_evidence",
+            "label": "Contact and consent evidence",
+            "status": (
+                "manual_attestations_present"
+                if contact_consent_record_count
+                else "manual_attestations_needed"
+            ),
+            "ready": False,
+            "count": admin_count(contact_consent_record_count),
+            "route_hint": route_hint("/beneficiary-outcomes", requires_admin=True),
+            "requires_admin": True,
+            "next_step": "Keep contact/consent attestations attached to each beneficiary outcome; real provider sending still needs scoped consent enforcement.",
+            "boundary": "Contact/consent evidence lane only. This does not expose raw phone numbers or email addresses, store provider destinations, or send messages.",
+        },
+        {
+            "lane_key": "manual_delivery_evidence",
+            "label": "Manual delivery evidence",
+            "status": "manual_path_available",
+            "ready": True,
+            "count": admin_count(delivery_pack_count + manual_receipt_count),
+            "route_hint": route_hint("/beneficiary-outcomes", requires_admin=True),
+            "requires_admin": True,
+            "next_step": "Continue using prepared manual delivery packs and admin-stated receipts until provider delivery is genuinely connected.",
+            "boundary": "Manual delivery lane only. This records prepared text and admin-stated receipts; it does not prove GSN sent or verified WhatsApp, SMS, or email.",
+        },
+        {
+            "lane_key": "provider_receipt_mapping",
+            "label": "Provider receipt mapping",
+            "status": "not_connected_in_this_slice",
+            "ready": False,
+            "count": 0,
+            "route_hint": None,
+            "requires_admin": True,
+            "next_step": "Map provider message ids, statuses, callbacks, and verified delivery receipt Trust Events before claiming provider delivery.",
+            "boundary": "Receipt mapping lane only. This does not create provider receipt rows, accept delivery callbacks, or certify delivery.",
+        },
+    ]
+
+    if not can_admin:
+        primary_next_action = {
+            "action_key": "ask_domain_admin_to_review_provider_delivery_lift_plan",
+            "label": "Ask a Community Domain admin to review provider delivery readiness",
+            "route_hint": None,
+            "requires_admin": True,
+        }
+    elif contact_consent_record_count == 0:
+        primary_next_action = {
+            "action_key": "record_contact_consent_evidence_first",
+            "label": "Record contact/consent evidence before provider delivery planning",
+            "route_hint": route_hint("/beneficiary-outcomes", requires_admin=True),
+            "requires_admin": True,
+        }
+    else:
+        primary_next_action = {
+            "action_key": "continue_manual_delivery_until_providers_are_connected",
+            "label": "Continue manual delivery until providers are connected",
+            "route_hint": route_hint("/beneficiary-outcomes", requires_admin=True),
+            "requires_admin": True,
+        }
+
+    return {
+        "community_domain": _domain_payload(domain, root_node=root_node),
+        "viewer": {
+            "user_id": int(current_user.id),
+            "can_admin": bool(can_admin),
+        },
+        "summary": {
+            "provider_delivery_lift_status": "blocked_manual_only",
+            "ready_to_send": False,
+            "external_channels_sent_by_gsn": False,
+            "provider_send_engine_status": readiness["provider_send_engine_status"],
+            "provider_delivery_webhook_status": readiness[
+                "provider_delivery_webhook_status"
+            ],
+            "retry_queue_status": readiness["retry_queue_status"],
+            "contact_preference_status": readiness["contact_preference_status"],
+            "consent_enforcement_status": readiness["consent_enforcement_status"],
+            "planned_provider_channels": readiness["planned_provider_channels"],
+            "missing_components": readiness["missing_components"],
+            "outcome_count": admin_count(outcome_count),
+            "delivery_pack_count": admin_count(delivery_pack_count),
+            "manual_receipt_count": admin_count(manual_receipt_count),
+            "contact_consent_record_count": admin_count(contact_consent_record_count),
+            "contact_consent_withdrawal_count": admin_count(
+                contact_consent_withdrawal_count
+            ),
+            "provider_send_blocked_check_count": admin_count(
+                provider_send_blocked_check_count
+            ),
+            "provider_jobs_created": 0,
+            "provider_send_attempts_created": 0,
+            "provider_delivery_receipts_verified": 0,
+            "raw_destinations_exposed": 0,
+        },
+        "provider_setup_contract": readiness["provider_setup_contract"],
+        "contact_consent_contract": readiness["contact_consent_contract"],
+        "lanes": lanes,
+        "ready_total": sum(1 for item in lanes if item["ready"]),
+        "blocked_lanes": [item["lane_key"] for item in lanes if not item["ready"]],
+        "primary_next_action": primary_next_action,
+        "editable": False,
+        "boundary": (
+            "Community Domain provider delivery lift plan is read-only readiness "
+            "planning. It does not create provider jobs, send WhatsApp, SMS, or "
+            "email, store raw destinations, store provider credentials, create "
+            "webhooks, create retry queues, verify provider receipts, expose "
+            "private beneficiary records, move money, issue TrustSlips, or write "
+            "Trust Passport entries."
+        ),
+    }
+
+
 def _community_domain_outcome_confirmation_delivery_pack(
     *,
     domain: CommunityDomain,
@@ -26046,6 +26237,27 @@ def get_community_domain_notification_scope_readiness(
         "ok": True,
         "community_domain_id": int(domain.id),
         "notification_scope_readiness": _community_domain_notification_scope_readiness_payload(
+            db,
+            domain=domain,
+            current_user=current_user,
+            can_admin=can_admin,
+        ),
+    }
+
+
+@router.get("/{community_domain_id}/provider-delivery-lift-plan", response_model=dict[str, Any])
+def get_community_domain_provider_delivery_lift_plan(
+    community_domain_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    domain = _get_domain_or_404(db, community_domain_id)
+    _require_domain_member_scope(db, domain=domain, current_user=current_user)
+    can_admin = _has_domain_admin_scope(db, domain=domain, current_user=current_user)
+    return {
+        "ok": True,
+        "community_domain_id": int(domain.id),
+        "provider_delivery_lift_plan": _community_domain_provider_delivery_lift_plan_payload(
             db,
             domain=domain,
             current_user=current_user,
