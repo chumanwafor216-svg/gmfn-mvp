@@ -3064,19 +3064,19 @@ underlying activities.
 
 ### Short verdict
 
-The system is not fundamentally wrong, but the most important proof route is
-not finished.
+The system is not fundamentally wrong, and the most important membership proof
+route is now present.
 
 The current backend already agrees with the final MVP on personal shops,
 person-owned Trust Events, protected domain names, broad witness categories, and
-domain membership rows. The shut-off point is that public verification still
-uses ordinary community membership first, while Community Domain membership has
-not become a first-class public proof trail. The overbuilt risk is continuing to
-add readiness maps and institutional planning before the simple question is
-answered:
+domain membership rows. The public route can now answer the simple membership
+question through `CommunityDomainMembership` when a protected Community Domain
+key is used:
 
 ```text
 Is this GSN ID currently a member of this protected Community Domain?
 ```
 
-That is the next correction to make.
+The remaining risk is different: do not let that membership proof silently
+become trust, endorsement, shop ownership, sponsor impact proof, delivery proof,
+or legal authority. Those still require their own scoped records and evidence.

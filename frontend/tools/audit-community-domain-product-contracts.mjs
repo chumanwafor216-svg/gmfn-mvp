@@ -3404,6 +3404,18 @@ assertContains(
 );
 
 assertContains(
+  "gmfn_backend/app/services/community_confirmation_service.py",
+  /def _public_community_domain_verification[\s\S]*community_record_kind": "community_domain"[\s\S]*membership_credential_status[\s\S]*Member credentials are checked by Community Domain membership rows[\s\S]*request_confirmation_available": False[\s\S]*def _public_community_domain_member_verification[\s\S]*CommunityDomainMembership[\s\S]*membership_status != "active"[\s\S]*Member not found in this Community Domain[\s\S]*Active Community Domain member[\s\S]*full domain roster[\s\S]*def public_community_member_verification[\s\S]*except ValueError:[\s\S]*_public_community_domain_member_verification/,
+  "Community confirmation service must resolve protected Community Domain public records and active CommunityDomainMembership member credentials without exposing private rosters or merging them with ordinary ClanMembership proof."
+);
+
+assertContains(
+  "gmfn_backend/tests/test_community_domains.py",
+  /test_public_verify_resolves_protected_community_domain_record[\s\S]*\/verify\/community\/\{key\}[\s\S]*community_record_kind"\] == "community_domain"[\s\S]*membership_credential_status[\s\S]*active_member_count" not in data[\s\S]*owner_user_id" not in data[\s\S]*test_public_verify_resolves_active_community_domain_member[\s\S]*\/verify\/community\/pillar-of-hope\/member\/GSN-U-MEMBER002[\s\S]*membership_status"\] == "active"[\s\S]*membership_status_label"\] == "Active Community Domain member"[\s\S]*full domain roster[\s\S]*test_public_verify_rejects_inactive_community_domain_member[\s\S]*status_code == 404[\s\S]*test_community_domain_member_delete_deactivates_and_blocks_public_proof[\s\S]*public\.status_code == 404/,
+  "Backend tests must prove protected Community Domain public verification resolves the domain record, confirms active CommunityDomainMembership only, hides private roster/owner data, rejects inactive members, and fails after deactivation."
+);
+
+assertContains(
   "src/lib/api.ts",
   /lookupCommunityDomainByName[\s\S]*\/community-domains\/lookup[\s\S]*domain_name/,
   "Frontend API layer must expose public-safe Community Domain lookup by code.",
