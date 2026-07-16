@@ -1949,7 +1949,7 @@ These should be described as next-stage build items:
 - named attendance/import/roll-up capture;
 - public/submission-ready sponsor proof and sponsor access control;
 - deeper participant/beneficiary confirmation loop;
-- challenge/correction trail for impact records.
+- deeper challenge/correction workflow beyond the bounded v1 review trail.
 
 #### Minimum implementation bridge
 

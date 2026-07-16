@@ -3469,6 +3469,12 @@ assertNotContains(
   "Community Domain audit must not frame beneficiary outcome reporting as entirely future after bounded beneficiary outcome records, sponsor-safe summaries, and export packs exist."
 );
 
+assertNotContains(
+  "docs/COMMUNITY_DOMAIN_ACTOR_IDENTITY_AUDIT_2026-07-15.md",
+  /challenge\/correction trail for impact records/,
+  "Community Domain audit must not frame challenge/correction impact evidence as entirely future after bounded correction-review Trust Events exist."
+);
+
 assertContains(
   "src/lib/api.ts",
   /lookupCommunityDomainByName[\s\S]*\/community-domains\/lookup[\s\S]*domain_name/,
