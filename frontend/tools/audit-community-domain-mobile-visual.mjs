@@ -1280,14 +1280,75 @@ try {
     .getByTestId("community-domain-dashboard.work-surface")
     .getByText("Record from real life", { exact: true })
     .waitFor({ timeout: 10000 });
+  if (
+    await isDebugVisible(
+      page,
+      "community-domain-dashboard.real-life-record.beneficiary-outcome-inline"
+    )
+  ) {
+    findings.push(
+      "Community Domain real-life record types are visible before Change record type is opened."
+    );
+  }
+  if (!(await isDebugVisible(page, "community-domain-dashboard.real-life-record.type-toggle"))) {
+    findings.push("Community Domain real-life record type switcher is missing.");
+  }
+  if (await isDebugVisible(page, "community-domain-dashboard.activity-record-stage.evidence")) {
+    findings.push("Community Domain Activity record steps are visible before Change step is opened.");
+  }
+  if (!(await isDebugVisible(page, "community-domain-dashboard.activity-record-stage-toggle"))) {
+    findings.push("Community Domain Activity record staged capture is missing a Change step control.");
+  }
+  await clickByDebugId(page, "community-domain-dashboard.activity-record-stage-toggle");
   await clickByDebugId(page, "community-domain-dashboard.activity-record-stage.evidence");
   await page.getByPlaceholder("Evidence reference").waitFor({ timeout: 10000 });
+  if (await isDebugVisible(page, "community-domain-dashboard.activity-record-stage.person")) {
+    findings.push("Community Domain Activity record step buttons stay visible after selecting a step.");
+  }
+  await clickByDebugId(page, "community-domain-dashboard.real-life-record.type-toggle");
   await clickByDebugId(
     page,
     "community-domain-dashboard.real-life-record.beneficiary-outcome-inline"
   );
+  if (await isDebugVisible(page, "community-domain-dashboard.real-life-record.activity-inline")) {
+    findings.push("Community Domain real-life record types stay visible after selecting a type.");
+  }
+  if (
+    await isDebugVisible(
+      page,
+      "community-domain-dashboard.beneficiary-outcome-record-stage.proof"
+    )
+  ) {
+    findings.push(
+      "Community Domain Beneficiary outcome record steps are visible before Change step is opened."
+    );
+  }
+  if (
+    !(await isDebugVisible(
+      page,
+      "community-domain-dashboard.beneficiary-outcome-record-stage-toggle"
+    ))
+  ) {
+    findings.push(
+      "Community Domain Beneficiary outcome staged capture is missing a Change step control."
+    );
+  }
+  await clickByDebugId(
+    page,
+    "community-domain-dashboard.beneficiary-outcome-record-stage-toggle"
+  );
   await clickByDebugId(page, "community-domain-dashboard.beneficiary-outcome-record-stage.proof");
   await page.getByText("Record outcome", { exact: true }).waitFor({ timeout: 10000 });
+  if (
+    await isDebugVisible(
+      page,
+      "community-domain-dashboard.beneficiary-outcome-record-stage.person"
+    )
+  ) {
+    findings.push(
+      "Community Domain Beneficiary outcome record step buttons stay visible after selecting a step."
+    );
+  }
   await clickByDebugId(page, "community-domain-dashboard.beneficiary-outcome-task.recent");
   await page.getByText("Recent outcomes", { exact: true }).waitFor({ timeout: 10000 });
   await clickByDebugId(page, "community-domain-dashboard.beneficiary-outcome-recent-packet.receipt");

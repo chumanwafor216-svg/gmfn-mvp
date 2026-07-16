@@ -2672,6 +2672,8 @@ export default function CommunityDomainDashboardPage() {
   const [structurePacketChooserOpen, setStructurePacketChooserOpen] = useState(false);
   const [memberPacketChooserOpen, setMemberPacketChooserOpen] = useState(false);
   const [governanceTaskChooserOpen, setGovernanceTaskChooserOpen] = useState(false);
+  const [realLifeRecordTypeChooserOpen, setRealLifeRecordTypeChooserOpen] =
+    useState(false);
   const [activeStructureDetail, setActiveStructureDetail] =
     useState<StructureDetailKey>("preview");
   const [activeServiceDetail, setActiveServiceDetail] =
@@ -2692,10 +2694,16 @@ export default function CommunityDomainDashboardPage() {
     useState<ActivityRecordTaskKey>("record");
   const [activeActivityRecordStage, setActiveActivityRecordStage] =
     useState<ActivityRecordStageKey>("person");
+  const [activityRecordStageChooserOpen, setActivityRecordStageChooserOpen] =
+    useState(false);
   const [activeBeneficiaryOutcomeTask, setActiveBeneficiaryOutcomeTask] =
     useState<BeneficiaryOutcomeTaskKey>("record");
   const [activeBeneficiaryOutcomeRecordStage, setActiveBeneficiaryOutcomeRecordStage] =
     useState<BeneficiaryOutcomeRecordStageKey>("person");
+  const [
+    beneficiaryOutcomeRecordStageChooserOpen,
+    setBeneficiaryOutcomeRecordStageChooserOpen,
+  ] = useState(false);
   const [
     beneficiaryOutcomeRecentPacketById,
     setBeneficiaryOutcomeRecentPacketById,
@@ -2896,8 +2904,10 @@ export default function CommunityDomainDashboardPage() {
     setActiveRealLifeRecordTask(null);
     setActiveActivityRecordTask("record");
     setActiveActivityRecordStage("person");
+    setActivityRecordStageChooserOpen(false);
     setActiveBeneficiaryOutcomeTask("record");
     setActiveBeneficiaryOutcomeRecordStage("person");
+    setBeneficiaryOutcomeRecordStageChooserOpen(false);
     setBeneficiaryOutcomeRows([]);
     setBeneficiaryOutcomeRecentPacketById({});
     setBeneficiaryOutcomeDraft(emptyCommunityDomainOutcomeDraft());
@@ -3247,6 +3257,7 @@ export default function CommunityDomainDashboardPage() {
     }
     if (!Number.isFinite(subjectUserId) || subjectUserId <= 0) {
       setActiveActivityRecordStage("person");
+      setActivityRecordStageChooserOpen(false);
       setMessage("Enter the GSN user id for the member or beneficiary this activity belongs to.");
       return;
     }
@@ -3280,6 +3291,7 @@ export default function CommunityDomainDashboardPage() {
       );
       setActivityDraft(emptyCommunityDomainActivityDraft());
       setActiveActivityRecordStage("person");
+      setActivityRecordStageChooserOpen(false);
       setMessage(
         "Activity recorded as a person-first Community Domain Trust Event. Beneficiary outcome proof still needs follow-up records."
       );
@@ -3317,21 +3329,25 @@ export default function CommunityDomainDashboardPage() {
     }
     if (!Number.isFinite(subjectUserId) || subjectUserId <= 0) {
       setActiveBeneficiaryOutcomeRecordStage("person");
+      setBeneficiaryOutcomeRecordStageChooserOpen(false);
       setMessage("Enter the GSN user id for the beneficiary this outcome belongs to.");
       return;
     }
     if (!cleanText(beneficiaryOutcomeDraft.outcome_indicator)) {
       setActiveBeneficiaryOutcomeRecordStage("change");
+      setBeneficiaryOutcomeRecordStageChooserOpen(false);
       setMessage("Enter the outcome indicator being measured.");
       return;
     }
     if (!cleanText(beneficiaryOutcomeDraft.baseline_value)) {
       setActiveBeneficiaryOutcomeRecordStage("change");
+      setBeneficiaryOutcomeRecordStageChooserOpen(false);
       setMessage("Enter the baseline value before support.");
       return;
     }
     if (!cleanText(beneficiaryOutcomeDraft.after_value)) {
       setActiveBeneficiaryOutcomeRecordStage("change");
+      setBeneficiaryOutcomeRecordStageChooserOpen(false);
       setMessage("Enter the after value or current follow-up state.");
       return;
     }
@@ -3376,6 +3392,7 @@ export default function CommunityDomainDashboardPage() {
       );
       setBeneficiaryOutcomeDraft(emptyCommunityDomainOutcomeDraft());
       setActiveBeneficiaryOutcomeRecordStage("person");
+      setBeneficiaryOutcomeRecordStageChooserOpen(false);
       setMessage(
         "Beneficiary outcome recorded. It is evidence of baseline-to-after movement, not a final public sponsor report."
       );
@@ -4406,6 +4423,7 @@ export default function CommunityDomainDashboardPage() {
     setStructurePacketChooserOpen(false);
     setMemberPacketChooserOpen(false);
     setGovernanceTaskChooserOpen(false);
+    setRealLifeRecordTypeChooserOpen(false);
     focusWorkSurfaceAfterOpenRef.current = true;
   }, [lanes, requestedLane]);
   const latestMembershipRequest = latestRelevantMembershipRequest(ownMembershipRequests);
@@ -5007,6 +5025,7 @@ export default function CommunityDomainDashboardPage() {
     setStructurePacketChooserOpen(false);
     setMemberPacketChooserOpen(false);
     setGovernanceTaskChooserOpen(false);
+    setRealLifeRecordTypeChooserOpen(false);
     if (mode === "edit") {
       setMessage(
         setupEditingLocked
@@ -5021,10 +5040,13 @@ export default function CommunityDomainDashboardPage() {
   function selectGovernanceTask(task: GovernanceTaskKey) {
     setActiveGovernanceTask(task);
     setGovernanceTaskChooserOpen(false);
+    setRealLifeRecordTypeChooserOpen(false);
     if (task === "real_life_record") {
       setActiveRealLifeRecordTask((current) => current || "activity");
       setActiveActivityRecordTask("record");
       setActiveActivityRecordStage("person");
+      setActivityRecordStageChooserOpen(false);
+      setBeneficiaryOutcomeRecordStageChooserOpen(false);
     }
   }
 
@@ -5035,9 +5057,13 @@ export default function CommunityDomainDashboardPage() {
     if (task === "activity") {
       setActiveActivityRecordTask("record");
       setActiveActivityRecordStage("person");
+      setActivityRecordStageChooserOpen(false);
+      setBeneficiaryOutcomeRecordStageChooserOpen(false);
     } else {
       setActiveBeneficiaryOutcomeTask("record");
       setActiveBeneficiaryOutcomeRecordStage("person");
+      setActivityRecordStageChooserOpen(false);
+      setBeneficiaryOutcomeRecordStageChooserOpen(false);
     }
     setSetupJourneyMode("setup");
     setSetupWorkspaceOpen(false);
@@ -5050,6 +5076,7 @@ export default function CommunityDomainDashboardPage() {
     setStructurePacketChooserOpen(false);
     setMemberPacketChooserOpen(false);
     setGovernanceTaskChooserOpen(false);
+    setRealLifeRecordTypeChooserOpen(false);
     setActiveLane("governance");
     setMessage("");
   }
@@ -5066,6 +5093,7 @@ export default function CommunityDomainDashboardPage() {
     setStructurePacketChooserOpen(false);
     setMemberPacketChooserOpen(false);
     setGovernanceTaskChooserOpen(false);
+    setRealLifeRecordTypeChooserOpen(false);
     setMessage("Returned to Domain command. Choose Marketplace or open one operating area.");
     window.requestAnimationFrame(() => {
       commandSurfaceRef.current?.scrollIntoView({ block: "start", behavior: "auto" });
@@ -5167,6 +5195,7 @@ export default function CommunityDomainDashboardPage() {
     setStructurePacketChooserOpen(false);
     setMemberPacketChooserOpen(false);
     setGovernanceTaskChooserOpen(false);
+    setRealLifeRecordTypeChooserOpen(false);
     setActiveBillingTask("payment_code");
     setActiveBillingPaymentTask("reference");
     setActiveLane("billing");
@@ -6509,6 +6538,7 @@ export default function CommunityDomainDashboardPage() {
                     setStructurePacketChooserOpen(false);
                     setMemberPacketChooserOpen(false);
                     setGovernanceTaskChooserOpen(false);
+                    setRealLifeRecordTypeChooserOpen(false);
                     setActiveLane(operationalLaneKey);
                     setMessage("");
                   }}
@@ -6994,6 +7024,7 @@ export default function CommunityDomainDashboardPage() {
                     setStructurePacketChooserOpen(false);
                     setMemberPacketChooserOpen(false);
                     setGovernanceTaskChooserOpen(false);
+                    setRealLifeRecordTypeChooserOpen(false);
                   }}
                 >
                   Open {mainActionLaneLabel}
@@ -7137,6 +7168,7 @@ export default function CommunityDomainDashboardPage() {
                     setStructurePacketChooserOpen(false);
                     setMemberPacketChooserOpen(false);
                     setGovernanceTaskChooserOpen(false);
+                    setRealLifeRecordTypeChooserOpen(false);
                   }}
                 />
               </Suspense>
@@ -7388,6 +7420,7 @@ export default function CommunityDomainDashboardPage() {
                               setStructurePacketChooserOpen(false);
                               setMemberPacketChooserOpen(false);
                               setGovernanceTaskChooserOpen(false);
+                              setRealLifeRecordTypeChooserOpen(false);
                             }}
                           >
                             Open {operationalLaneLabel}
@@ -9626,6 +9659,7 @@ export default function CommunityDomainDashboardPage() {
                                 setStructurePacketChooserOpen(false);
                                 setMemberPacketChooserOpen(false);
                                 setGovernanceTaskChooserOpen(false);
+                                setRealLifeRecordTypeChooserOpen(false);
                               }}
                               style={{
                                 justifyContent: "center",
@@ -9704,6 +9738,7 @@ export default function CommunityDomainDashboardPage() {
                                         setStructurePacketChooserOpen(false);
                                         setMemberPacketChooserOpen(false);
                                         setGovernanceTaskChooserOpen(false);
+                                        setRealLifeRecordTypeChooserOpen(false);
                                       }}
                                       style={{
                                         justifyContent: "center",
@@ -9947,6 +9982,7 @@ export default function CommunityDomainDashboardPage() {
                                 setStructurePacketChooserOpen(false);
                                 setMemberPacketChooserOpen(false);
                                 setGovernanceTaskChooserOpen(false);
+                                setRealLifeRecordTypeChooserOpen(false);
                               }}
                               style={{
                                 justifyContent: "center",
@@ -10024,6 +10060,7 @@ export default function CommunityDomainDashboardPage() {
                                         setStructurePacketChooserOpen(false);
                                         setMemberPacketChooserOpen(false);
                                         setGovernanceTaskChooserOpen(false);
+                                        setRealLifeRecordTypeChooserOpen(false);
                                       }}
                                       style={{
                                         justifyContent: "center",
@@ -11362,48 +11399,90 @@ export default function CommunityDomainDashboardPage() {
                             </div>
                           </div>
                         </div>
-                        <div
-                          style={{
-                            display: "grid",
-                            gridTemplateColumns:
-                              "repeat(auto-fit, minmax(min(100%, 170px), 1fr))",
-                            gap: 8,
-                          }}
-                        >
+                        <div style={{ display: "grid", gap: 8 }}>
+                          <div style={{ ...helperText(), fontSize: 13 }}>
+                            Current record type:{" "}
+                            <strong>
+                              {activeRealLifeRecordTask === "beneficiary_outcome"
+                                ? "Beneficiary outcome"
+                                : "Activity"}
+                            </strong>
+                            .
+                          </div>
                           <StableButton
                             type="button"
-                            kind={
-                              activeRealLifeRecordTask === "activity"
-                                ? "primary"
-                                : "secondary"
+                            kind="secondary"
+                            fullWidth
+                            stableHeight={42}
+                            debugId="community-domain-dashboard.real-life-record.type-toggle"
+                            aria-expanded={realLifeRecordTypeChooserOpen}
+                            aria-controls="community-domain-real-life-record-types"
+                            onClick={() =>
+                              setRealLifeRecordTypeChooserOpen((current) => !current)
                             }
-                            stableHeight={46}
-                            debugId="community-domain-dashboard.real-life-record.activity-inline"
-                            onClick={() => {
-                              setActiveRealLifeRecordTask("activity");
-                              setActiveActivityRecordTask("record");
-                              setActiveActivityRecordStage("person");
+                            style={{
+                              justifyContent: "center",
+                              fontSize: 13,
+                              textTransform: "none",
                             }}
                           >
-                            Activity
+                            {realLifeRecordTypeChooserOpen
+                              ? "Close record types"
+                              : "Change record type"}
                           </StableButton>
-                          <StableButton
-                            type="button"
-                            kind={
-                              activeRealLifeRecordTask === "beneficiary_outcome"
-                                ? "primary"
-                                : "secondary"
-                            }
-                            stableHeight={46}
-                            debugId="community-domain-dashboard.real-life-record.beneficiary-outcome-inline"
-                            onClick={() => {
-                              setActiveRealLifeRecordTask("beneficiary_outcome");
-                              setActiveBeneficiaryOutcomeTask("record");
-                              setActiveBeneficiaryOutcomeRecordStage("person");
-                            }}
-                          >
-                            Beneficiary outcome
-                          </StableButton>
+                          {realLifeRecordTypeChooserOpen ? (
+                            <div
+                              id="community-domain-real-life-record-types"
+                              data-debug-id="community-domain-dashboard.real-life-record.type-panel"
+                              style={{
+                                display: "grid",
+                                gridTemplateColumns:
+                                  "repeat(auto-fit, minmax(min(100%, 170px), 1fr))",
+                                gap: 8,
+                              }}
+                            >
+                              <StableButton
+                                type="button"
+                                kind={
+                                  activeRealLifeRecordTask === "activity"
+                                    ? "primary"
+                                    : "secondary"
+                                }
+                                stableHeight={46}
+                                debugId="community-domain-dashboard.real-life-record.activity-inline"
+                                onClick={() => {
+                                  setActiveRealLifeRecordTask("activity");
+                                  setActiveActivityRecordTask("record");
+                                  setActiveActivityRecordStage("person");
+                                  setActivityRecordStageChooserOpen(false);
+                                  setBeneficiaryOutcomeRecordStageChooserOpen(false);
+                                  setRealLifeRecordTypeChooserOpen(false);
+                                }}
+                              >
+                                Activity
+                              </StableButton>
+                              <StableButton
+                                type="button"
+                                kind={
+                                  activeRealLifeRecordTask === "beneficiary_outcome"
+                                    ? "primary"
+                                    : "secondary"
+                                }
+                                stableHeight={46}
+                                debugId="community-domain-dashboard.real-life-record.beneficiary-outcome-inline"
+                                onClick={() => {
+                                  setActiveRealLifeRecordTask("beneficiary_outcome");
+                                  setActiveBeneficiaryOutcomeTask("record");
+                                  setActiveBeneficiaryOutcomeRecordStage("person");
+                                  setActivityRecordStageChooserOpen(false);
+                                  setBeneficiaryOutcomeRecordStageChooserOpen(false);
+                                  setRealLifeRecordTypeChooserOpen(false);
+                                }}
+                              >
+                                Beneficiary outcome
+                              </StableButton>
+                            </div>
+                          ) : null}
                         </div>
                       </div>
 
@@ -11466,6 +11545,7 @@ export default function CommunityDomainDashboardPage() {
                                 if (nextTask === "record") {
                                   setActiveActivityRecordStage("person");
                                 }
+                                setActivityRecordStageChooserOpen(false);
                               }}
                               style={{
                                 justifyContent: "center",
@@ -11483,42 +11563,84 @@ export default function CommunityDomainDashboardPage() {
                             <div
                               style={{
                                 display: "grid",
-                                gridTemplateColumns:
-                                  "repeat(auto-fit, minmax(min(100%, 120px), 1fr))",
                                 gap: 8,
                               }}
                             >
-                              {ACTIVITY_RECORD_STAGE_OPTIONS.map((stage) => {
-                                const selected =
-                                  stage.key === activeActivityRecordStage;
-                                return (
-                                  <StableButton
-                                    key={stage.key}
-                                    type="button"
-                                    kind={selected ? "primary" : "secondary"}
-                                    stableHeight={42}
-                                    fullWidth
-                                    aria-pressed={selected}
-                                    title={stage.note}
-                                    debugId={`community-domain-dashboard.activity-record-stage.${stage.key}`}
-                                    onClick={() =>
-                                      setActiveActivityRecordStage(stage.key)
-                                    }
-                                    style={{
-                                      justifyContent: "center",
-                                      fontSize: 13,
-                                      textTransform: "none",
-                                    }}
-                                  >
-                                    {stage.label}
-                                  </StableButton>
-                                );
-                              })}
-                            </div>
-                            <div style={{ ...helperText(), fontSize: 13 }}>
-                              {ACTIVITY_RECORD_STAGE_OPTIONS.find(
-                                (stage) => stage.key === activeActivityRecordStage
-                              )?.note || "Choose the capture step you need."}
+                              <div style={{ ...helperText(), fontSize: 13 }}>
+                                Current step:{" "}
+                                <strong>
+                                  {ACTIVITY_RECORD_STAGE_OPTIONS.find(
+                                    (stage) => stage.key === activeActivityRecordStage
+                                  )?.label || "Person"}
+                                </strong>
+                                .{" "}
+                                {ACTIVITY_RECORD_STAGE_OPTIONS.find(
+                                  (stage) => stage.key === activeActivityRecordStage
+                                )?.note || "Follow the next action to continue."}
+                              </div>
+                              <StableButton
+                                type="button"
+                                kind="secondary"
+                                fullWidth
+                                stableHeight={42}
+                                debugId="community-domain-dashboard.activity-record-stage-toggle"
+                                aria-expanded={activityRecordStageChooserOpen}
+                                aria-controls="community-domain-activity-record-stages"
+                                onClick={() =>
+                                  setActivityRecordStageChooserOpen(
+                                    (current) => !current
+                                  )
+                                }
+                                style={{
+                                  justifyContent: "center",
+                                  fontSize: 13,
+                                  textTransform: "none",
+                                }}
+                              >
+                                {activityRecordStageChooserOpen
+                                  ? "Close steps"
+                                  : "Change step"}
+                              </StableButton>
+                              {activityRecordStageChooserOpen ? (
+                                <div
+                                  id="community-domain-activity-record-stages"
+                                  data-debug-id="community-domain-dashboard.activity-record-stage-panel"
+                                  style={{
+                                    display: "grid",
+                                    gridTemplateColumns:
+                                      "repeat(auto-fit, minmax(min(100%, 120px), 1fr))",
+                                    gap: 8,
+                                  }}
+                                >
+                                  {ACTIVITY_RECORD_STAGE_OPTIONS.map((stage) => {
+                                    const selected =
+                                      stage.key === activeActivityRecordStage;
+                                    return (
+                                      <StableButton
+                                        key={stage.key}
+                                        type="button"
+                                        kind={selected ? "primary" : "secondary"}
+                                        stableHeight={42}
+                                        fullWidth
+                                        aria-pressed={selected}
+                                        title={stage.note}
+                                        debugId={`community-domain-dashboard.activity-record-stage.${stage.key}`}
+                                        onClick={() => {
+                                          setActiveActivityRecordStage(stage.key);
+                                          setActivityRecordStageChooserOpen(false);
+                                        }}
+                                        style={{
+                                          justifyContent: "center",
+                                          fontSize: 13,
+                                          textTransform: "none",
+                                        }}
+                                      >
+                                        {stage.label}
+                                      </StableButton>
+                                    );
+                                  })}
+                                </div>
+                              ) : null}
                             </div>
 
                             {activeActivityRecordStage === "person" ? (
@@ -11570,9 +11692,10 @@ export default function CommunityDomainDashboardPage() {
                                   kind="primary"
                                   stableHeight={44}
                                   debugId="community-domain-dashboard.activity-record-next.activity"
-                                  onClick={() =>
-                                    setActiveActivityRecordStage("activity")
-                                  }
+                                  onClick={() => {
+                                    setActiveActivityRecordStage("activity");
+                                    setActivityRecordStageChooserOpen(false);
+                                  }}
                                   style={{
                                     justifyContent: "center",
                                     fontSize: 13,
@@ -11637,9 +11760,10 @@ export default function CommunityDomainDashboardPage() {
                                   kind="primary"
                                   stableHeight={44}
                                   debugId="community-domain-dashboard.activity-record-next.evidence"
-                                  onClick={() =>
-                                    setActiveActivityRecordStage("evidence")
-                                  }
+                                  onClick={() => {
+                                    setActiveActivityRecordStage("evidence");
+                                    setActivityRecordStageChooserOpen(false);
+                                  }}
                                   style={{
                                     justifyContent: "center",
                                     fontSize: 13,
@@ -11842,6 +11966,7 @@ export default function CommunityDomainDashboardPage() {
                                 if (nextTask === "record") {
                                   setActiveBeneficiaryOutcomeRecordStage("person");
                                 }
+                                setBeneficiaryOutcomeRecordStageChooserOpen(false);
                               }}
                               style={{
                                 justifyContent: "center",
@@ -11859,47 +11984,93 @@ export default function CommunityDomainDashboardPage() {
                             <div
                               style={{
                                 display: "grid",
-                                gridTemplateColumns:
-                                  "repeat(auto-fit, minmax(min(100%, 120px), 1fr))",
                                 gap: 8,
                               }}
                             >
-                              {BENEFICIARY_OUTCOME_RECORD_STAGE_OPTIONS.map(
-                                (stage) => {
-                                  const selected =
-                                    stage.key === activeBeneficiaryOutcomeRecordStage;
-                                  return (
-                                    <StableButton
-                                      key={stage.key}
-                                      type="button"
-                                      kind={selected ? "primary" : "secondary"}
-                                      stableHeight={42}
-                                      fullWidth
-                                      aria-pressed={selected}
-                                      title={stage.note}
-                                      debugId={`community-domain-dashboard.beneficiary-outcome-record-stage.${stage.key}`}
-                                      onClick={() =>
-                                        setActiveBeneficiaryOutcomeRecordStage(
-                                          stage.key
-                                        )
-                                      }
-                                      style={{
-                                        justifyContent: "center",
-                                        fontSize: 13,
-                                        textTransform: "none",
-                                      }}
-                                    >
-                                      {stage.label}
-                                    </StableButton>
-                                  );
+                              <div style={{ ...helperText(), fontSize: 13 }}>
+                                Current step:{" "}
+                                <strong>
+                                  {BENEFICIARY_OUTCOME_RECORD_STAGE_OPTIONS.find(
+                                    (stage) =>
+                                      stage.key === activeBeneficiaryOutcomeRecordStage
+                                  )?.label || "Person"}
+                                </strong>
+                                .{" "}
+                                {BENEFICIARY_OUTCOME_RECORD_STAGE_OPTIONS.find(
+                                  (stage) =>
+                                    stage.key === activeBeneficiaryOutcomeRecordStage
+                                )?.note || "Follow the next action to continue."}
+                              </div>
+                              <StableButton
+                                type="button"
+                                kind="secondary"
+                                fullWidth
+                                stableHeight={42}
+                                debugId="community-domain-dashboard.beneficiary-outcome-record-stage-toggle"
+                                aria-expanded={beneficiaryOutcomeRecordStageChooserOpen}
+                                aria-controls="community-domain-beneficiary-outcome-record-stages"
+                                onClick={() =>
+                                  setBeneficiaryOutcomeRecordStageChooserOpen(
+                                    (current) => !current
+                                  )
                                 }
-                              )}
-                            </div>
-                            <div style={{ ...helperText(), fontSize: 13 }}>
-                              {BENEFICIARY_OUTCOME_RECORD_STAGE_OPTIONS.find(
-                                (stage) =>
-                                  stage.key === activeBeneficiaryOutcomeRecordStage
-                              )?.note || "Choose the capture step you need."}
+                                style={{
+                                  justifyContent: "center",
+                                  fontSize: 13,
+                                  textTransform: "none",
+                                }}
+                              >
+                                {beneficiaryOutcomeRecordStageChooserOpen
+                                  ? "Close steps"
+                                  : "Change step"}
+                              </StableButton>
+                              {beneficiaryOutcomeRecordStageChooserOpen ? (
+                                <div
+                                  id="community-domain-beneficiary-outcome-record-stages"
+                                  data-debug-id="community-domain-dashboard.beneficiary-outcome-record-stage-panel"
+                                  style={{
+                                    display: "grid",
+                                    gridTemplateColumns:
+                                      "repeat(auto-fit, minmax(min(100%, 120px), 1fr))",
+                                    gap: 8,
+                                  }}
+                                >
+                                  {BENEFICIARY_OUTCOME_RECORD_STAGE_OPTIONS.map(
+                                    (stage) => {
+                                      const selected =
+                                        stage.key ===
+                                        activeBeneficiaryOutcomeRecordStage;
+                                      return (
+                                        <StableButton
+                                          key={stage.key}
+                                          type="button"
+                                          kind={selected ? "primary" : "secondary"}
+                                          stableHeight={42}
+                                          fullWidth
+                                          aria-pressed={selected}
+                                          title={stage.note}
+                                          debugId={`community-domain-dashboard.beneficiary-outcome-record-stage.${stage.key}`}
+                                          onClick={() => {
+                                            setActiveBeneficiaryOutcomeRecordStage(
+                                              stage.key
+                                            );
+                                            setBeneficiaryOutcomeRecordStageChooserOpen(
+                                              false
+                                            );
+                                          }}
+                                          style={{
+                                            justifyContent: "center",
+                                            fontSize: 13,
+                                            textTransform: "none",
+                                          }}
+                                        >
+                                          {stage.label}
+                                        </StableButton>
+                                      );
+                                    }
+                                  )}
+                                </div>
+                              ) : null}
                             </div>
 
                             {activeBeneficiaryOutcomeRecordStage === "person" ? (
@@ -11943,9 +12114,12 @@ export default function CommunityDomainDashboardPage() {
                                   kind="primary"
                                   stableHeight={44}
                                   debugId="community-domain-dashboard.beneficiary-outcome-record-next.change"
-                                  onClick={() =>
-                                    setActiveBeneficiaryOutcomeRecordStage("change")
-                                  }
+                                  onClick={() => {
+                                    setActiveBeneficiaryOutcomeRecordStage("change");
+                                    setBeneficiaryOutcomeRecordStageChooserOpen(
+                                      false
+                                    );
+                                  }}
                                   style={{
                                     justifyContent: "center",
                                     fontSize: 13,
@@ -12027,9 +12201,12 @@ export default function CommunityDomainDashboardPage() {
                                   kind="primary"
                                   stableHeight={44}
                                   debugId="community-domain-dashboard.beneficiary-outcome-record-next.proof"
-                                  onClick={() =>
-                                    setActiveBeneficiaryOutcomeRecordStage("proof")
-                                  }
+                                  onClick={() => {
+                                    setActiveBeneficiaryOutcomeRecordStage("proof");
+                                    setBeneficiaryOutcomeRecordStageChooserOpen(
+                                      false
+                                    );
+                                  }}
                                   style={{
                                     justifyContent: "center",
                                     fontSize: 13,
@@ -13241,6 +13418,7 @@ export default function CommunityDomainDashboardPage() {
                                 setActiveMemberDetail(group.defaultDetail);
                                 setMemberPacketChooserOpen(false);
                                 setGovernanceTaskChooserOpen(false);
+                                setRealLifeRecordTypeChooserOpen(false);
                                 if (group.defaultDetail === "roster") {
                                   setActiveMemberRosterTask("summary");
                                 }
@@ -13323,6 +13501,7 @@ export default function CommunityDomainDashboardPage() {
                                         setActiveMemberDetail(option.key);
                                         setMemberPacketChooserOpen(false);
                                         setGovernanceTaskChooserOpen(false);
+                                        setRealLifeRecordTypeChooserOpen(false);
                                         if (option.key === "roster") {
                                           setActiveMemberRosterTask("summary");
                                         }
@@ -13631,6 +13810,7 @@ export default function CommunityDomainDashboardPage() {
                         setStructurePacketChooserOpen(false);
                         setMemberPacketChooserOpen(false);
                         setGovernanceTaskChooserOpen(false);
+                        setRealLifeRecordTypeChooserOpen(false);
                         setActiveLane(cleanText(otherToolsLaneKey, primaryActionLaneKey));
                       }
                       return next;
