@@ -171,6 +171,7 @@ type StructureDetailGroupKey = "map" | "readiness" | "rollout";
 type ServiceDetailKey = "readiness" | "local" | "boundaries" | "trust" | "evidence";
 type ServiceDetailGroupKey = "readiness" | "local" | "trust";
 type MemberDetailKey = "readiness" | "placement" | "roster";
+type MemberDetailGroupKey = "readiness" | "roster";
 type MemberRosterTaskKey = "summary" | "members";
 type GovernanceTaskKey =
   | "readiness"
@@ -182,8 +183,10 @@ type GovernanceTaskGroupKey = "readiness" | "reports" | "records";
 type DirectorSummaryTaskKey = "overview" | "membership" | "evidence" | "delivery";
 type SponsorSummaryTaskKey = "overview" | "evidence" | "delivery" | "export";
 type SetupOverviewTaskKey = "notices" | "engine" | "next_setup" | "counts";
+type SetupOverviewGroupKey = "action" | "reference";
 type SetupNoticeTaskKey = "recent" | "post";
 type OperatingSummaryTaskKey = "next_action" | "status" | "allowance" | "permissions";
+type OperatingSummaryGroupKey = "action" | "reference";
 type SetupWorkbenchTaskKey = "step" | "access";
 type SetupAccessTaskKey = "summary" | "authority";
 type BillingTaskKey = "payment_code" | "account" | "steps" | "readiness";
@@ -200,6 +203,12 @@ type ActivityRecordTaskKey = "record" | "catalogue" | "recent";
 type ActivityRecordStageKey = "person" | "activity" | "evidence";
 type BeneficiaryOutcomeTaskKey = "record" | "recent";
 type BeneficiaryOutcomeRecordStageKey = "person" | "change" | "proof";
+type BeneficiaryOutcomeRecentPacketKey =
+  | "summary"
+  | "confirmation"
+  | "contact"
+  | "delivery"
+  | "receipt";
 type SetupStepKey =
   | "identity"
   | "payment"
@@ -749,6 +758,29 @@ const MEMBER_DETAIL_OPTIONS: Array<{
   },
 ];
 
+const MEMBER_DETAIL_GROUP_OPTIONS: Array<{
+  key: MemberDetailGroupKey;
+  label: string;
+  note: string;
+  defaultDetail: MemberDetailKey;
+  detailKeys: MemberDetailKey[];
+}> = [
+  {
+    key: "readiness",
+    label: "Readiness",
+    note: "Review member readiness and operating-unit placement before roster changes.",
+    defaultDetail: "readiness",
+    detailKeys: ["readiness", "placement"],
+  },
+  {
+    key: "roster",
+    label: "Roster",
+    note: "Open roster control only when you need to deactivate or restore members.",
+    defaultDetail: "roster",
+    detailKeys: ["roster"],
+  },
+];
+
 const MEMBER_ROSTER_TASK_OPTIONS: Array<{
   key: MemberRosterTaskKey;
   label: string;
@@ -807,6 +839,38 @@ const BENEFICIARY_OUTCOME_RECORD_STAGE_OPTIONS: Array<{
     key: "proof",
     label: "Proof",
     note: "Record confirmation, challenge, and evidence details.",
+  },
+];
+
+const BENEFICIARY_OUTCOME_RECENT_PACKET_OPTIONS: Array<{
+  key: BeneficiaryOutcomeRecentPacketKey;
+  label: string;
+  note: string;
+}> = [
+  {
+    key: "summary",
+    label: "Summary",
+    note: "Review the outcome, response, review, and delivery status first.",
+  },
+  {
+    key: "confirmation",
+    label: "Confirm",
+    note: "Create a beneficiary confirmation link or review a challenged response.",
+  },
+  {
+    key: "contact",
+    label: "Contact",
+    note: "Record contact/consent evidence or consent withdrawal.",
+  },
+  {
+    key: "delivery",
+    label: "Delivery",
+    note: "Review delivery readiness before any manual receipt is recorded.",
+  },
+  {
+    key: "receipt",
+    label: "Receipt",
+    note: "Record or correct a manual delivery receipt.",
   },
 ];
 
@@ -1000,6 +1064,106 @@ const BILLING_PAYMENT_GROUP_OPTIONS: Array<{
     note: "Payment proof upload and review.",
     defaultTask: "proof",
     taskKeys: ["proof"],
+  },
+];
+
+const SETUP_OVERVIEW_TASK_OPTIONS: Array<{
+  key: SetupOverviewTaskKey;
+  label: string;
+  note: string;
+}> = [
+  {
+    key: "next_setup",
+    label: "Next setup",
+    note: "Open the next practical setup action first.",
+  },
+  {
+    key: "notices",
+    label: "Notices",
+    note: "Review or post official member-only notices.",
+  },
+  {
+    key: "engine",
+    label: "Engine",
+    note: "Review the institutional engine facts for this domain.",
+  },
+  {
+    key: "counts",
+    label: "Counts",
+    note: "Check structure, member, policy, and review totals.",
+  },
+];
+
+const SETUP_OVERVIEW_GROUP_OPTIONS: Array<{
+  key: SetupOverviewGroupKey;
+  label: string;
+  note: string;
+  defaultTask: SetupOverviewTaskKey;
+  taskKeys: SetupOverviewTaskKey[];
+}> = [
+  {
+    key: "action",
+    label: "Action",
+    note: "Start with the next setup move or member-only notices.",
+    defaultTask: "next_setup",
+    taskKeys: ["next_setup", "notices"],
+  },
+  {
+    key: "reference",
+    label: "Reference",
+    note: "Use engine facts and counts only when you need context.",
+    defaultTask: "engine",
+    taskKeys: ["engine", "counts"],
+  },
+];
+
+const OPERATING_SUMMARY_TASK_OPTIONS: Array<{
+  key: OperatingSummaryTaskKey;
+  label: string;
+  note: string;
+}> = [
+  {
+    key: "next_action",
+    label: "Do next",
+    note: "Open the next safe live operating area or edit setup deliberately.",
+  },
+  {
+    key: "status",
+    label: "Status",
+    note: "Review domain, billing, activation, and verification state.",
+  },
+  {
+    key: "allowance",
+    label: "Allowance",
+    note: "Check package limits without changing paid features.",
+  },
+  {
+    key: "permissions",
+    label: "Permissions",
+    note: "Review feature policy before changing live behaviour.",
+  },
+];
+
+const OPERATING_SUMMARY_GROUP_OPTIONS: Array<{
+  key: OperatingSummaryGroupKey;
+  label: string;
+  note: string;
+  defaultTask: OperatingSummaryTaskKey;
+  taskKeys: OperatingSummaryTaskKey[];
+}> = [
+  {
+    key: "action",
+    label: "Action",
+    note: "Start with the next live move and current status.",
+    defaultTask: "next_action",
+    taskKeys: ["next_action", "status"],
+  },
+  {
+    key: "reference",
+    label: "Reference",
+    note: "Use allowance and permissions only when you need context.",
+    defaultTask: "allowance",
+    taskKeys: ["allowance", "permissions"],
   },
 ];
 
@@ -2494,6 +2658,10 @@ export default function CommunityDomainDashboardPage() {
     useState<BeneficiaryOutcomeTaskKey>("record");
   const [activeBeneficiaryOutcomeRecordStage, setActiveBeneficiaryOutcomeRecordStage] =
     useState<BeneficiaryOutcomeRecordStageKey>("person");
+  const [
+    beneficiaryOutcomeRecentPacketById,
+    setBeneficiaryOutcomeRecentPacketById,
+  ] = useState<Record<string, BeneficiaryOutcomeRecentPacketKey>>({});
   const [loadedReadinessLanes, setLoadedReadinessLanes] = useState<Record<string, boolean>>({});
   const [loadingReadinessLanes, setLoadingReadinessLanes] = useState<Record<string, boolean>>({});
   const readinessLoadSequence = useRef(0);
@@ -2692,6 +2860,7 @@ export default function CommunityDomainDashboardPage() {
     setActiveBeneficiaryOutcomeTask("record");
     setActiveBeneficiaryOutcomeRecordStage("person");
     setBeneficiaryOutcomeRows([]);
+    setBeneficiaryOutcomeRecentPacketById({});
     setBeneficiaryOutcomeDraft(emptyCommunityDomainOutcomeDraft());
     setRolloutPlan(null);
     setActivityMap(null);
@@ -4217,6 +4386,35 @@ export default function CommunityDomainDashboardPage() {
   const selectedMemberDetail =
     MEMBER_DETAIL_OPTIONS.find((option) => option.key === activeMemberDetail) ||
     MEMBER_DETAIL_OPTIONS[0];
+  const activeSetupOverviewGroup = useMemo<SetupOverviewGroupKey>(() => {
+    if (activeSetupOverviewTask === "engine" || activeSetupOverviewTask === "counts") {
+      return "reference";
+    }
+    return "action";
+  }, [activeSetupOverviewTask]);
+  const activeSetupOverviewGroupOption =
+    SETUP_OVERVIEW_GROUP_OPTIONS.find(
+      (group) => group.key === activeSetupOverviewGroup
+    ) || SETUP_OVERVIEW_GROUP_OPTIONS[0];
+  const activeSetupOverviewGroupTasks = SETUP_OVERVIEW_TASK_OPTIONS.filter((task) =>
+    activeSetupOverviewGroupOption.taskKeys.includes(task.key)
+  );
+  const activeOperatingSummaryGroup = useMemo<OperatingSummaryGroupKey>(() => {
+    if (
+      activeOperatingSummaryTask === "allowance" ||
+      activeOperatingSummaryTask === "permissions"
+    ) {
+      return "reference";
+    }
+    return "action";
+  }, [activeOperatingSummaryTask]);
+  const activeOperatingSummaryGroupOption =
+    OPERATING_SUMMARY_GROUP_OPTIONS.find(
+      (group) => group.key === activeOperatingSummaryGroup
+    ) || OPERATING_SUMMARY_GROUP_OPTIONS[0];
+  const activeOperatingSummaryGroupTasks = OPERATING_SUMMARY_TASK_OPTIONS.filter((task) =>
+    activeOperatingSummaryGroupOption.taskKeys.includes(task.key)
+  );
   const activeStructureDetailGroup = useMemo<StructureDetailGroupKey>(() => {
     if (activeStructureDetail === "foundation" || activeStructureDetail === "boundary") {
       return "readiness";
@@ -4247,6 +4445,18 @@ export default function CommunityDomainDashboardPage() {
     SERVICE_DETAIL_GROUP_OPTIONS[0];
   const activeServiceGroupDetails = SERVICE_DETAIL_OPTIONS.filter((option) =>
     activeServiceDetailGroupOption.detailKeys.includes(option.key)
+  );
+  const activeMemberDetailGroup = useMemo<MemberDetailGroupKey>(() => {
+    if (activeMemberDetail === "roster") {
+      return "roster";
+    }
+    return "readiness";
+  }, [activeMemberDetail]);
+  const activeMemberDetailGroupOption =
+    MEMBER_DETAIL_GROUP_OPTIONS.find((group) => group.key === activeMemberDetailGroup) ||
+    MEMBER_DETAIL_GROUP_OPTIONS[0];
+  const activeMemberGroupDetails = MEMBER_DETAIL_OPTIONS.filter((option) =>
+    activeMemberDetailGroupOption.detailKeys.includes(option.key)
   );
   const activeDomainMemberCount = domainMemberRows.filter(
     (row) => cleanText(row?.status, "inactive").toLowerCase() === "active"
@@ -6188,9 +6398,45 @@ export default function CommunityDomainDashboardPage() {
                     Open one setup overview.
                   </h2>
                   <div style={{ ...helperText(), marginTop: 8 }}>
-                    Choose the setup question for now. Notices, engine facts, next setup work, and counts stay separate.
+                    Choose the setup stage first. Current view:{" "}
+                    <strong>{activeSetupOverviewGroupOption.label}</strong>.
                   </div>
                 </div>
+              </div>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns:
+                    "repeat(auto-fit, minmax(min(100%, 132px), 1fr))",
+                  gap: 8,
+                }}
+              >
+                {SETUP_OVERVIEW_GROUP_OPTIONS.map((group) => {
+                  const selected = group.key === activeSetupOverviewGroup;
+                  return (
+                    <StableButton
+                      key={group.key}
+                      type="button"
+                      kind={selected ? "primary" : "secondary"}
+                      stableHeight={46}
+                      fullWidth
+                      aria-pressed={selected}
+                      title={group.note}
+                      debugId={`community-domain-dashboard.setup-overview-group.${group.key}`}
+                      onClick={() => {
+                        setActiveSetupOverviewTask(group.defaultTask);
+                        if (group.defaultTask === "notices") {
+                          setActiveSetupNoticeTask("recent");
+                        }
+                      }}
+                    >
+                      {group.label}
+                    </StableButton>
+                  );
+                })}
+              </div>
+              <div style={{ ...helperText(), fontSize: 13 }}>
+                {activeSetupOverviewGroupOption.note}
               </div>
               <div
                 style={{
@@ -6200,31 +6446,34 @@ export default function CommunityDomainDashboardPage() {
                   gap: 8,
                 }}
               >
-                {[
-                  ["notices", "Notices"],
-                  ["engine", "Engine"],
-                  ["next_setup", "Next setup"],
-                  ["counts", "Counts"],
-                ].map(([task, label]) => (
-                  <StableButton
-                    key={task}
-                    type="button"
-                    kind={
-                      activeSetupOverviewTask === task ? "primary" : "secondary"
-                    }
-                    stableHeight={46}
-                    debugId={`community-domain-dashboard.setup-overview.${task}`}
-                    onClick={() => {
-                      const nextTask = task as SetupOverviewTaskKey;
-                      setActiveSetupOverviewTask(nextTask);
-                      if (nextTask === "notices") {
-                        setActiveSetupNoticeTask("recent");
-                      }
-                    }}
-                  >
-                    {label}
-                  </StableButton>
-                ))}
+                {activeSetupOverviewGroupTasks.map((task) => {
+                  const selected = task.key === activeSetupOverviewTask;
+                  return (
+                    <StableButton
+                      key={task.key}
+                      type="button"
+                      kind={selected ? "primary" : "secondary"}
+                      stableHeight={46}
+                      fullWidth
+                      aria-pressed={selected}
+                      title={task.note}
+                      debugId={`community-domain-dashboard.setup-overview.${task.key}`}
+                      onClick={() => {
+                        setActiveSetupOverviewTask(task.key);
+                        if (task.key === "notices") {
+                          setActiveSetupNoticeTask("recent");
+                        }
+                      }}
+                    >
+                      {task.label}
+                    </StableButton>
+                  );
+                })}
+              </div>
+              <div style={{ ...helperText(), fontSize: 13 }}>
+                {SETUP_OVERVIEW_TASK_OPTIONS.find(
+                  (task) => task.key === activeSetupOverviewTask
+                )?.note || "Choose the setup overview packet you need."}
               </div>
             </div>
           </section>
@@ -6804,9 +7053,40 @@ export default function CommunityDomainDashboardPage() {
                       Open one active-domain question.
                     </h3>
                     <div style={{ ...helperText(), fontSize: 14 }}>
-                      Keep live action, status, package allowance, and permissions
-                      separate so this active domain does not fall back into a
-                      setup dump.
+                      Choose the live stage first. Current view:{" "}
+                      <strong>{activeOperatingSummaryGroupOption.label}</strong>.
+                    </div>
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns:
+                          "repeat(auto-fit, minmax(min(100%, 132px), 1fr))",
+                        gap: 8,
+                      }}
+                    >
+                      {OPERATING_SUMMARY_GROUP_OPTIONS.map((group) => {
+                        const selected = group.key === activeOperatingSummaryGroup;
+                        return (
+                          <StableButton
+                            key={group.key}
+                            type="button"
+                            kind={selected ? "primary" : "secondary"}
+                            stableHeight={46}
+                            fullWidth
+                            aria-pressed={selected}
+                            title={group.note}
+                            debugId={`community-domain-dashboard.operating-summary-group.${group.key}`}
+                            onClick={() =>
+                              setActiveOperatingSummaryTask(group.defaultTask)
+                            }
+                          >
+                            {group.label}
+                          </StableButton>
+                        );
+                      })}
+                    </div>
+                    <div style={{ ...helperText(), fontSize: 13 }}>
+                      {activeOperatingSummaryGroupOption.note}
                     </div>
                     <div
                       style={{
@@ -6816,31 +7096,29 @@ export default function CommunityDomainDashboardPage() {
                         gap: 8,
                       }}
                     >
-                      {[
-                        ["next_action", "Do next"],
-                        ["status", "Status"],
-                        ["allowance", "Allowance"],
-                        ["permissions", "Permissions"],
-                      ].map(([task, label]) => (
-                        <StableButton
-                          key={task}
-                          type="button"
-                          kind={
-                            activeOperatingSummaryTask === task
-                              ? "primary"
-                              : "secondary"
-                          }
-                          stableHeight={46}
-                          debugId={`community-domain-dashboard.operating-summary.${task}`}
-                          onClick={() =>
-                            setActiveOperatingSummaryTask(
-                              task as OperatingSummaryTaskKey
-                            )
-                          }
-                        >
-                          {label}
-                        </StableButton>
-                      ))}
+                      {activeOperatingSummaryGroupTasks.map((task) => {
+                        const selected = task.key === activeOperatingSummaryTask;
+                        return (
+                          <StableButton
+                            key={task.key}
+                            type="button"
+                            kind={selected ? "primary" : "secondary"}
+                            stableHeight={46}
+                            fullWidth
+                            aria-pressed={selected}
+                            title={task.note}
+                            debugId={`community-domain-dashboard.operating-summary.${task.key}`}
+                            onClick={() => setActiveOperatingSummaryTask(task.key)}
+                          >
+                            {task.label}
+                          </StableButton>
+                        );
+                      })}
+                    </div>
+                    <div style={{ ...helperText(), fontSize: 13 }}>
+                      {OPERATING_SUMMARY_TASK_OPTIONS.find(
+                        (task) => task.key === activeOperatingSummaryTask
+                      )?.note || "Choose the operating summary packet you need."}
                     </div>
 
                     {activeOperatingSummaryTask === "next_action" ? (
@@ -11590,6 +11868,16 @@ export default function CommunityDomainDashboardPage() {
                                 beneficiaryCorrectionNoteByOutcomeId[
                                   outcomeEventId
                                 ] || "";
+                              const activeOutcomeRecentPacket =
+                                beneficiaryOutcomeRecentPacketById[
+                                  outcomeEventId
+                                ] || "summary";
+                              const activeOutcomeRecentPacketOption =
+                                BENEFICIARY_OUTCOME_RECENT_PACKET_OPTIONS.find(
+                                  (packet) =>
+                                    packet.key === activeOutcomeRecentPacket
+                                ) ||
+                                BENEFICIARY_OUTCOME_RECENT_PACKET_OPTIONS[0];
                               return (
                               <div
                                 key={outcomeEventId}
@@ -11688,80 +11976,131 @@ export default function CommunityDomainDashboardPage() {
                                   {" -> "}
                                   {cleanText(item?.after_value, "After value not shown")}
                                 </div>
-                                {latestResponse?.correction_note ? (
-                                  <div style={{ ...helperText(), fontSize: 13 }}>
-                                    Correction note:{" "}
-                                    {cleanText(latestResponse?.correction_note)}
-                                  </div>
-                                ) : null}
-                                {latestReview ? (
-                                  <div style={{ ...helperText(), fontSize: 13 }}>
-                                    Latest review marked this as{" "}
-                                    {compactStatus(
-                                      latestReview?.challenge_status_after
-                                    )}
-                                    . The original outcome was not rewritten.
-                                  </div>
-                                ) : null}
-                                {latestDeliveryReceipt ? (
-                                  <div style={{ ...helperText(), fontSize: 13 }}>
-                                    Manual delivery receipt:{" "}
-                                    {compactStatus(
-                                      latestDeliveryReceipt?.channel
-                                    )}{" "}
-                                    marked as{" "}
-                                    {compactStatus(
-                                      latestDeliveryReceipt?.delivery_status
-                                    )}
-                                    {latestDeliveryReceipt?.consent_basis ? (
-                                      <>
-                                        {" "}
-                                        with consent basis{" "}
+                                <div
+                                  style={{
+                                    display: "grid",
+                                    gridTemplateColumns:
+                                      "repeat(auto-fit, minmax(min(100%, 112px), 1fr))",
+                                    gap: 8,
+                                  }}
+                                >
+                                  {BENEFICIARY_OUTCOME_RECENT_PACKET_OPTIONS.map(
+                                    (packet) => {
+                                      const selected =
+                                        packet.key === activeOutcomeRecentPacket;
+                                      return (
+                                        <StableButton
+                                          key={packet.key}
+                                          type="button"
+                                          kind={selected ? "primary" : "secondary"}
+                                          stableHeight={38}
+                                          fullWidth
+                                          aria-pressed={selected}
+                                          title={packet.note}
+                                          debugId={`community-domain-dashboard.beneficiary-outcome-recent-packet.${packet.key}`}
+                                          onClick={() => {
+                                            setBeneficiaryOutcomeRecentPacketById(
+                                              (current) => ({
+                                                ...current,
+                                                [outcomeEventId]: packet.key,
+                                              })
+                                            );
+                                          }}
+                                          style={{
+                                            justifyContent: "center",
+                                            fontSize: 12,
+                                            textTransform: "none",
+                                          }}
+                                        >
+                                          {packet.label}
+                                        </StableButton>
+                                      );
+                                    }
+                                  )}
+                                </div>
+                                <div style={{ ...helperText(), fontSize: 13 }}>
+                                  {activeOutcomeRecentPacketOption.note}
+                                </div>
+                                {activeOutcomeRecentPacket === "summary" ? (
+                                  <>
+                                    {latestResponse?.correction_note ? (
+                                      <div style={{ ...helperText(), fontSize: 13 }}>
+                                        Correction note:{" "}
+                                        {cleanText(latestResponse?.correction_note)}
+                                      </div>
+                                    ) : null}
+                                    {latestReview ? (
+                                      <div style={{ ...helperText(), fontSize: 13 }}>
+                                        Latest review marked this as{" "}
                                         {compactStatus(
-                                          latestDeliveryReceipt?.consent_basis
+                                          latestReview?.challenge_status_after
                                         )}
-                                      </>
+                                        . The original outcome was not rewritten.
+                                      </div>
                                     ) : null}
-                                    {latestDeliveryReceipt?.contact_consent_event_id ? (
-                                      <>
-                                        {" "}
-                                        backed by contact/consent record{" "}
-                                        {cleanText(
-                                          latestDeliveryReceipt?.contact_consent_event_id
+                                    {latestDeliveryReceipt ? (
+                                      <div style={{ ...helperText(), fontSize: 13 }}>
+                                        Manual delivery receipt:{" "}
+                                        {compactStatus(
+                                          latestDeliveryReceipt?.channel
+                                        )}{" "}
+                                        marked as{" "}
+                                        {compactStatus(
+                                          latestDeliveryReceipt?.delivery_status
                                         )}
-                                      </>
+                                        {latestDeliveryReceipt?.consent_basis ? (
+                                          <>
+                                            {" "}
+                                            with consent basis{" "}
+                                            {compactStatus(
+                                              latestDeliveryReceipt?.consent_basis
+                                            )}
+                                          </>
+                                        ) : null}
+                                        {latestDeliveryReceipt?.contact_consent_event_id ? (
+                                          <>
+                                            {" "}
+                                            backed by contact/consent record{" "}
+                                            {cleanText(
+                                              latestDeliveryReceipt?.contact_consent_event_id
+                                            )}
+                                          </>
+                                        ) : null}
+                                        . GSN did not send the external message.
+                                      </div>
                                     ) : null}
-                                    . GSN did not send the external message.
-                                  </div>
+                                    {latestDeliveryReceipt?.latest_correction ? (
+                                      <div style={{ ...helperText(), fontSize: 13 }}>
+                                        Receipt correction:{" "}
+                                        {compactStatus(
+                                          latestDeliveryReceipt?.latest_correction
+                                            ?.decision
+                                        )}{" "}
+                                        marked this receipt as{" "}
+                                        {compactStatus(
+                                          latestDeliveryReceipt
+                                            ?.receipt_correction_status
+                                        )}
+                                        . The original manual receipt remains in the
+                                        audit trail.
+                                      </div>
+                                    ) : null}
+                                    {latestProviderSendBlockedCheck ? (
+                                      <div style={{ ...helperText(), fontSize: 13 }}>
+                                        Provider send blocked:{" "}
+                                        {compactStatus(
+                                          latestProviderSendBlockedCheck?.blocked_reason ||
+                                            "provider_delivery_not_connected"
+                                        )}
+                                        . GSN recorded this readiness check only; no
+                                        provider job, no send attempt, and no external
+                                        message was created.
+                                      </div>
+                                    ) : null}
+                                  </>
                                 ) : null}
-                                {latestDeliveryReceipt?.latest_correction ? (
-                                  <div style={{ ...helperText(), fontSize: 13 }}>
-                                    Receipt correction:{" "}
-                                    {compactStatus(
-                                      latestDeliveryReceipt?.latest_correction
-                                        ?.decision
-                                    )}{" "}
-                                    marked this receipt as{" "}
-                                    {compactStatus(
-                                      latestDeliveryReceipt?.receipt_correction_status
-                                    )}
-                                    . The original manual receipt remains in the
-                                    audit trail.
-                                  </div>
-                                ) : null}
-                                {latestProviderSendBlockedCheck ? (
-                                  <div style={{ ...helperText(), fontSize: 13 }}>
-                                    Provider send blocked:{" "}
-                                    {compactStatus(
-                                      latestProviderSendBlockedCheck?.blocked_reason ||
-                                        "provider_delivery_not_connected"
-                                    )}
-                                    . GSN recorded this readiness check only; no
-                                    provider job, no send attempt, and no external
-                                    message was created.
-                                  </div>
-                                ) : null}
-                                {needsCorrectionReview ? (
+                                {activeOutcomeRecentPacket === "confirmation" &&
+                                needsCorrectionReview ? (
                                   <div
                                     style={{
                                       display: "grid",
@@ -11838,32 +12177,34 @@ export default function CommunityDomainDashboardPage() {
                                     </StableButton>
                                   </div>
                                 ) : null}
-                                <StableButton
-                                  type="button"
-                                  kind="secondary"
-                                  stableHeight={38}
-                                  disabled={
-                                    busyOutcomeConfirmationLinkId ===
-                                    outcomeEventId
-                                  }
-                                  debugId="community-domain-dashboard.beneficiary-outcome-confirmation-link"
-                                  onClick={() => {
-                                    void createBeneficiaryOutcomeConfirmationLink(
+                                {activeOutcomeRecentPacket === "confirmation" ? (
+                                  <StableButton
+                                    type="button"
+                                    kind="secondary"
+                                    stableHeight={38}
+                                    disabled={
+                                      busyOutcomeConfirmationLinkId ===
                                       outcomeEventId
-                                    );
-                                  }}
-                                  style={{
-                                    justifyContent: "center",
-                                    fontSize: 13,
-                                    textTransform: "none",
-                                  }}
-                                >
-                                  {busyOutcomeConfirmationLinkId ===
-                                  outcomeEventId
-                                    ? "Creating link..."
-                                    : "Create confirmation link"}
-                                </StableButton>
-                                {isAdmin ? (
+                                    }
+                                    debugId="community-domain-dashboard.beneficiary-outcome-confirmation-link"
+                                    onClick={() => {
+                                      void createBeneficiaryOutcomeConfirmationLink(
+                                        outcomeEventId
+                                      );
+                                    }}
+                                    style={{
+                                      justifyContent: "center",
+                                      fontSize: 13,
+                                      textTransform: "none",
+                                    }}
+                                  >
+                                    {busyOutcomeConfirmationLinkId ===
+                                    outcomeEventId
+                                      ? "Creating link..."
+                                      : "Create confirmation link"}
+                                  </StableButton>
+                                ) : null}
+                                {activeOutcomeRecentPacket === "contact" && isAdmin ? (
                                   <div
                                     style={{
                                       display: "grid",
@@ -12020,7 +12361,9 @@ export default function CommunityDomainDashboardPage() {
                                     </StableButton>
                                   </div>
                                 ) : null}
-                                {isAdmin && canWithdrawContactConsent ? (
+                                {activeOutcomeRecentPacket === "contact" &&
+                                isAdmin &&
+                                canWithdrawContactConsent ? (
                                   <div
                                     style={{
                                       display: "grid",
@@ -12102,12 +12445,14 @@ export default function CommunityDomainDashboardPage() {
                                     </StableButton>
                                   </div>
                                 ) : null}
-                                {manualDeliveryBlockedByConsent ? (
+                                {activeOutcomeRecentPacket === "delivery" &&
+                                manualDeliveryBlockedByConsent ? (
                                   <div style={{ ...helperText(), fontSize: 13 }}>
                                     {manualDeliveryBlockedText}
                                   </div>
                                 ) : null}
-                                {latestDeliveryPreparation ? (
+                                {activeOutcomeRecentPacket === "delivery" &&
+                                latestDeliveryPreparation ? (
                                   <div style={{ ...helperText(), fontSize: 13 }}>
                                     Current provider readiness contact/consent:{" "}
                                     <strong>{currentProviderContactStatus}</strong>.
@@ -12116,7 +12461,27 @@ export default function CommunityDomainDashboardPage() {
                                     GSN still has not sent WhatsApp, SMS, or email.
                                   </div>
                                 ) : null}
-                                {canRecordManualDelivery ? (
+                                {activeOutcomeRecentPacket === "delivery" &&
+                                !manualDeliveryBlockedByConsent &&
+                                !latestDeliveryPreparation &&
+                                !localDeliveryPack ? (
+                                  <div style={{ ...helperText(), fontSize: 13 }}>
+                                    No delivery pack is prepared for this outcome yet.
+                                    Use Confirm to create the private confirmation
+                                    link and delivery text before delivery checks.
+                                  </div>
+                                ) : null}
+                                {activeOutcomeRecentPacket === "delivery" &&
+                                localDeliveryPack &&
+                                !latestDeliveryPreparation ? (
+                                  <div style={{ ...helperText(), fontSize: 13 }}>
+                                    A delivery pack is prepared in this session.
+                                    GSN still has not sent WhatsApp, SMS, or email.
+                                    Open Receipt after manual delivery happens.
+                                  </div>
+                                ) : null}
+                                {activeOutcomeRecentPacket === "receipt" &&
+                                canRecordManualDelivery ? (
                                   <div
                                     style={{
                                       display: "grid",
@@ -12279,7 +12644,17 @@ export default function CommunityDomainDashboardPage() {
                                     </StableButton>
                                   </div>
                                 ) : null}
-                                {latestDeliveryReceipt ? (
+                                {activeOutcomeRecentPacket === "receipt" &&
+                                !canRecordManualDelivery &&
+                                !latestDeliveryReceipt ? (
+                                  <div style={{ ...helperText(), fontSize: 13 }}>
+                                    Manual receipt is not ready yet. Prepare a
+                                    confirmation link and keep active contact/consent
+                                    evidence before recording delivery.
+                                  </div>
+                                ) : null}
+                                {activeOutcomeRecentPacket === "receipt" &&
+                                latestDeliveryReceipt ? (
                                   <div
                                     style={{
                                       display: "grid",
@@ -12425,8 +12800,49 @@ export default function CommunityDomainDashboardPage() {
                     >
                       <div style={sectionLabel()}>Members focus</div>
                       <div style={helperText()}>
-                        Open one member packet at a time. Current view:{" "}
-                        <strong>{selectedMemberDetail.label}</strong>.
+                        Choose the member stage first. Current view:{" "}
+                        <strong>{activeMemberDetailGroupOption.label}</strong>{" "}
+                        / <strong>{selectedMemberDetail.label}</strong>.
+                      </div>
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns:
+                            "repeat(auto-fit, minmax(min(100%, 132px), 1fr))",
+                          gap: 8,
+                        }}
+                      >
+                        {MEMBER_DETAIL_GROUP_OPTIONS.map((group) => {
+                          const selected = group.key === activeMemberDetailGroup;
+                          return (
+                            <StableButton
+                              key={group.key}
+                              type="button"
+                              kind={selected ? "primary" : "secondary"}
+                              stableHeight={46}
+                              fullWidth
+                              aria-pressed={selected}
+                              title={group.note}
+                              debugId={`community-domain-dashboard.member-group.${group.key}`}
+                              onClick={() => {
+                                setActiveMemberDetail(group.defaultDetail);
+                                if (group.defaultDetail === "roster") {
+                                  setActiveMemberRosterTask("summary");
+                                }
+                              }}
+                              style={{
+                                justifyContent: "center",
+                                fontSize: 13,
+                                textTransform: "none",
+                              }}
+                            >
+                              {group.label}
+                            </StableButton>
+                          );
+                        })}
+                      </div>
+                      <div style={{ ...helperText(), fontSize: 13 }}>
+                        {activeMemberDetailGroupOption.note}
                       </div>
                       <div
                         style={{
@@ -12436,7 +12852,7 @@ export default function CommunityDomainDashboardPage() {
                           gap: 8,
                         }}
                       >
-                        {MEMBER_DETAIL_OPTIONS.map((option) => {
+                        {activeMemberGroupDetails.map((option) => {
                           const selected = option.key === activeMemberDetail;
                           return (
                             <StableButton

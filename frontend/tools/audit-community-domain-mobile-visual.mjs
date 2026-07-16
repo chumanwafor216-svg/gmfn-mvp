@@ -508,6 +508,42 @@ function pathPayload(pathname) {
   if (pathname.includes("/community-domains/13/placement-summary")) {
     return placementSummary;
   }
+  if (pathname.includes("/community-domains/13/beneficiary-outcomes")) {
+    return {
+      items: [
+        {
+          event_id: "outcome-audit-1",
+          subject_user_id: 7,
+          programme_label: "Skills support",
+          outcome_indicator: "Training completion",
+          outcome_state: "improved",
+          beneficiary_confirmation: "beneficiary_confirmed",
+          baseline_value: "Not enrolled",
+          after_value: "Completed first cohort",
+          latest_contact_consent_record: {
+            event_id: "contact-audit-1",
+            consent_basis: "beneficiary_consented",
+          },
+          contact_consent_status: {
+            status: "active_attestation",
+            manual_delivery_allowed: true,
+          },
+          latest_delivery_preparation: {
+            event_id: "delivery-audit-1",
+            active_contact_consent_status: "active_attestation",
+          },
+          latest_delivery_receipt: {
+            event_id: "receipt-audit-1",
+            delivery_event_id: "delivery-audit-1",
+            channel: "whatsapp",
+            delivery_status: "manual_sent",
+            consent_basis: "beneficiary_consented",
+            contact_consent_event_id: "contact-audit-1",
+          },
+        },
+      ],
+    };
+  }
   if (pathname.includes("/community-domains/13/notices")) return { items: [] };
   if (pathname.includes("/community-domains/13/package-quote")) {
     return { quote: dashboard.package_quote };
@@ -989,6 +1025,17 @@ try {
     fullPage: false,
   });
 
+  await page.goto(`${baseUrl}${routePath}?lane=settings`, {
+    waitUntil: "networkidle",
+    timeout: 15000,
+  });
+  await page.getByText("Operating summary", { exact: true }).waitFor({ timeout: 10000 });
+  await clickByDebugId(page, "community-domain-dashboard.operating-summary-group.reference");
+  await clickByDebugId(page, "community-domain-dashboard.operating-summary.permissions");
+  await page.getByText("Domain permissions", { exact: true }).waitFor({ timeout: 10000 });
+
+  await page.goto(`${baseUrl}${routePath}`, { waitUntil: "networkidle", timeout: 15000 });
+  await page.getByText("Domain command", { exact: true }).waitFor({ timeout: 10000 });
   await clickByDebugId(page, "community-domain-dashboard.operational-focus");
   await page.getByText("Live area", { exact: true }).waitFor({ timeout: 10000 });
 
@@ -1019,6 +1066,20 @@ try {
 
   await clickByDebugId(page, "community-domain-dashboard.operating-area-picker-toggle");
   await page.getByText("Operating areas", { exact: true }).waitFor({ timeout: 10000 });
+  await clickByDebugId(page, "community-domain-dashboard.lane.members");
+  await page.getByText("Members focus", { exact: true }).waitFor({ timeout: 10000 });
+  await clickByDebugId(page, "community-domain-dashboard.member-group.roster");
+  await clickByDebugId(page, "community-domain-dashboard.member-detail.roster");
+  await page.getByText("Member status and public proof.", { exact: true }).waitFor({
+    timeout: 10000,
+  });
+  await clickByDebugId(page, "community-domain-dashboard.member-roster.members");
+  await page
+    .getByText("No Community Domain members were returned for this roster view.", { exact: true })
+    .waitFor({ timeout: 10000 });
+
+  await clickByDebugId(page, "community-domain-dashboard.operating-area-picker-toggle");
+  await page.getByText("Operating areas", { exact: true }).waitFor({ timeout: 10000 });
   await clickByDebugId(page, "community-domain-dashboard.lane.governance");
   await page.getByText("Governance jobs", { exact: true }).waitFor({ timeout: 10000 });
   await clickByDebugId(page, "community-domain-dashboard.governance-group.records");
@@ -1035,6 +1096,10 @@ try {
   );
   await clickByDebugId(page, "community-domain-dashboard.beneficiary-outcome-record-stage.proof");
   await page.getByText("Record outcome", { exact: true }).waitFor({ timeout: 10000 });
+  await clickByDebugId(page, "community-domain-dashboard.beneficiary-outcome-task.recent");
+  await page.getByText("Recent outcomes", { exact: true }).waitFor({ timeout: 10000 });
+  await clickByDebugId(page, "community-domain-dashboard.beneficiary-outcome-recent-packet.receipt");
+  await page.getByText("Record receipt correction", { exact: true }).waitFor({ timeout: 10000 });
 
   audit = await page.evaluate(pageAudit);
   const finalText = normalized(audit.bodyText);
