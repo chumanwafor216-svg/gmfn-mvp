@@ -2299,8 +2299,9 @@ To make the outreach promise true end-to-end, build in this order:
      `received_reported`, and `opened_reported`;
    - beneficiary outcome listing now exposes latest delivery preparation and
      latest delivery receipt records for admin review;
-   - the Community Domain dashboard can record a compact WhatsApp manual-share
-     receipt from the recent outcome row;
+   - the Community Domain dashboard can record a compact selected
+     channel/status/consent-basis manual-share receipt from the recent outcome
+     row;
    - the receipt Trust Event stores token hash/prefix and route template only,
      not the raw bearer token.
 
@@ -2310,8 +2311,9 @@ To make the outreach promise true end-to-end, build in this order:
    - this does not prove the recipient received or opened the message;
    - this is an admin-stated delivery record, not a provider delivery receipt;
    - it does not retry failed delivery;
-   - it does not yet support multiple channel-specific UI choices beyond the
-     first compact WhatsApp manual-share action in the dashboard;
+   - the dashboard now supports bounded manual channel/status/consent-basis
+     selection, but this is still admin-recorded evidence, not a provider send
+     or verified provider receipt;
    - it does not notify beneficiaries or sponsors directly.
 
 13. **Beneficiary confirmation delivery channel/status selection v1 - implemented 2026-07-15**

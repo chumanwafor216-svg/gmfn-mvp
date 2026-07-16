@@ -3433,6 +3433,12 @@ assertNotContains(
   "Community Domain audit must not reintroduce stale future-work claims for beneficiary confirmation links, correction reviews, manual delivery receipts, or delivery consent-basis capture after those bounded slices exist."
 );
 
+assertNotContains(
+  "docs/COMMUNITY_DOMAIN_ACTOR_IDENTITY_AUDIT_2026-07-15.md",
+  /does not yet support multiple channel-specific UI choices|first compact WhatsApp manual-share action/,
+  "Community Domain audit must not reintroduce stale claims that manual delivery receipt UI is WhatsApp-only after bounded channel/status/consent-basis selection exists."
+);
+
 assertContains(
   "src/lib/api.ts",
   /lookupCommunityDomainByName[\s\S]*\/community-domains\/lookup[\s\S]*domain_name/,
