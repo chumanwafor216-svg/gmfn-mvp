@@ -179,9 +179,12 @@ type GovernanceTaskKey =
 type DirectorSummaryTaskKey = "overview" | "membership" | "evidence" | "delivery";
 type SponsorSummaryTaskKey = "overview" | "evidence" | "delivery" | "export";
 type SetupOverviewTaskKey = "notices" | "engine" | "next_setup" | "counts";
+type SetupNoticeTaskKey = "recent" | "post";
 type OperatingSummaryTaskKey = "next_action" | "status" | "allowance" | "permissions";
 type SetupWorkbenchTaskKey = "step" | "access";
+type SetupAccessTaskKey = "summary" | "authority";
 type BillingTaskKey = "payment_code" | "account" | "steps" | "readiness";
+type BillingAccountTaskKey = "summary" | "setup";
 type BillingPaymentTaskKey = "reference" | "pay_account" | "proof";
 type RealLifeRecordTask = "activity" | "beneficiary_outcome";
 type ActivityRecordTaskKey = "record" | "catalogue" | "recent";
@@ -780,6 +783,57 @@ const BILLING_PAYMENT_TASK_OPTIONS: Array<{
     key: "proof",
     label: "Proof",
     note: "Upload payment proof after the bank or provider step is complete.",
+  },
+];
+
+const SETUP_NOTICE_TASK_OPTIONS: Array<{
+  key: SetupNoticeTaskKey;
+  label: string;
+  note: string;
+}> = [
+  {
+    key: "recent",
+    label: "Recent",
+    note: "Review official notices already posted for this selected domain.",
+  },
+  {
+    key: "post",
+    label: "Post",
+    note: "Open the post action only when a new official notice is needed.",
+  },
+];
+
+const SETUP_ACCESS_TASK_OPTIONS: Array<{
+  key: SetupAccessTaskKey;
+  label: string;
+  note: string;
+}> = [
+  {
+    key: "summary",
+    label: "Summary",
+    note: "Check who can edit this setup before changing authority.",
+  },
+  {
+    key: "authority",
+    label: "Authority",
+    note: "Open delegation or access-request controls only when needed.",
+  },
+];
+
+const BILLING_ACCOUNT_TASK_OPTIONS: Array<{
+  key: BillingAccountTaskKey;
+  label: string;
+  note: string;
+}> = [
+  {
+    key: "summary",
+    label: "Summary",
+    note: "Review the saved pay-in account before anyone sends money.",
+  },
+  {
+    key: "setup",
+    label: "Setup",
+    note: "Open account setup only for the GSN platform admin editing step.",
   },
 ];
 
@@ -2165,15 +2219,15 @@ export default function CommunityDomainDashboardPage() {
     useState<CommunityMoneySettlement | null>(null);
   const [communityPayInDraft, setCommunityPayInDraft] =
     useState<CommunityDomainPayInDraft>(() => emptyCommunityDomainPayInDraft("GB", "GBP"));
-  const [communityPayInEditorOpen, setCommunityPayInEditorOpen] = useState(false);
   const [communityPayInLoading, setCommunityPayInLoading] = useState(false);
   const [communityPayInSaving, setCommunityPayInSaving] = useState(false);
-  const [billingSequenceOpen, setBillingSequenceOpen] = useState(false);
   const [domainPaymentFormOpen, setDomainPaymentFormOpen] = useState(false);
   const [domainPaymentCreditOpen, setDomainPaymentCreditOpen] = useState(false);
   const [billingReadinessOpen, setBillingReadinessOpen] = useState(false);
   const [activeBillingTask, setActiveBillingTask] =
     useState<BillingTaskKey>("payment_code");
+  const [activeBillingAccountTask, setActiveBillingAccountTask] =
+    useState<BillingAccountTaskKey>("summary");
   const [activeBillingPaymentTask, setActiveBillingPaymentTask] =
     useState<BillingPaymentTaskKey>("reference");
   const [setupDraft, setSetupDraft] = useState<CommunityDomainSetupDraft>(
@@ -2192,10 +2246,14 @@ export default function CommunityDomainDashboardPage() {
   const [setupWorkspaceOpen, setSetupWorkspaceOpen] = useState(false);
   const [activeSetupOverviewTask, setActiveSetupOverviewTask] =
     useState<SetupOverviewTaskKey>("next_setup");
+  const [activeSetupNoticeTask, setActiveSetupNoticeTask] =
+    useState<SetupNoticeTaskKey>("recent");
   const [activeOperatingSummaryTask, setActiveOperatingSummaryTask] =
     useState<OperatingSummaryTaskKey>("next_action");
   const [activeSetupWorkbenchTask, setActiveSetupWorkbenchTask] =
     useState<SetupWorkbenchTaskKey>("step");
+  const [activeSetupAccessTask, setActiveSetupAccessTask] =
+    useState<SetupAccessTaskKey>("summary");
   const [showAdvancedTools, setShowAdvancedTools] = useState(false);
   const [operatingAreaPickerOpen, setOperatingAreaPickerOpen] = useState(false);
   const [activeStructureDetail, setActiveStructureDetail] =
@@ -2391,9 +2449,12 @@ export default function CommunityDomainDashboardPage() {
     setSetupReadiness(null);
     setSetupPlan(null);
     setActiveSetupOverviewTask("next_setup");
+    setActiveSetupNoticeTask("recent");
     setActiveOperatingSummaryTask("next_action");
     setActiveSetupWorkbenchTask("step");
+    setActiveSetupAccessTask("summary");
     setActiveBillingTask("payment_code");
+    setActiveBillingAccountTask("summary");
     setActiveBillingPaymentTask("reference");
     setOperatingAreaPickerOpen(false);
     setCapacityPlan(null);
@@ -4353,6 +4414,8 @@ export default function CommunityDomainDashboardPage() {
     focusWorkSurfaceAfterOpenRef.current = true;
     setSetupJourneyMode(mode);
     setActiveSetupOverviewTask("next_setup");
+    setActiveSetupNoticeTask("recent");
+    setActiveSetupAccessTask("summary");
     setActiveLane("settings");
     if (mode === "setup") {
       setActiveSetupStep(setupStepForLane(mainActionLaneKey));
@@ -4774,7 +4837,7 @@ export default function CommunityDomainDashboardPage() {
       );
       setBillingSettlementCountry(nextCountry);
       setQuoteCurrency(nextCurrency);
-      setCommunityPayInEditorOpen(false);
+      setActiveBillingAccountTask("summary");
       setMessage(
         "Community pay-in account saved. Generate the next payment code for this area so the bank details match this account."
       );
@@ -5882,9 +5945,13 @@ export default function CommunityDomainDashboardPage() {
                     }
                     stableHeight={46}
                     debugId={`community-domain-dashboard.setup-overview.${task}`}
-                    onClick={() =>
-                      setActiveSetupOverviewTask(task as SetupOverviewTaskKey)
-                    }
+                    onClick={() => {
+                      const nextTask = task as SetupOverviewTaskKey;
+                      setActiveSetupOverviewTask(nextTask);
+                      if (nextTask === "notices") {
+                        setActiveSetupNoticeTask("recent");
+                      }
+                    }}
                   >
                     {label}
                   </StableButton>
@@ -5913,9 +5980,9 @@ export default function CommunityDomainDashboardPage() {
                     Notices for this Community Domain only.
                   </h2>
                   <div style={{ ...helperText(), marginTop: 8 }}>
-                    Newest official announcement first. Each notice is capped at
-                    50 words, has no comments or reactions, and is limited to
-                    active members of this selected Community Domain.
+                    Official notices are capped at 50 words, have no comments
+                    or reactions, and stay limited to active members of this
+                    selected Community Domain.
                   </div>
                 </div>
               </div>
@@ -5933,21 +6000,85 @@ export default function CommunityDomainDashboardPage() {
                     ? "Off in settings"
                     : featurePolicyModeLabel(domainNoticeFeatureMode)}
                 </span>
-                {isAdmin ? (
-                  <StableButton
-                    type="button"
-                    kind="secondary"
-                    stableHeight={44}
-                    debugId="community-domain-dashboard.notice.post"
-                    disabled={domainNoticeFeatureMode === "off"}
-                    onClick={() => setDomainNoticeModalOpen(true)}
-                  >
-                    {domainNoticeFeatureMode === "off" ? "Not used here" : "Post notice"}
-                  </StableButton>
-                ) : null}
               </div>
             </div>
 
+            <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns:
+                    "repeat(auto-fit, minmax(min(100%, 145px), 1fr))",
+                  gap: 8,
+                }}
+              >
+                {SETUP_NOTICE_TASK_OPTIONS.map((task) => {
+                  const selected = task.key === activeSetupNoticeTask;
+                  return (
+                    <StableButton
+                      key={task.key}
+                      type="button"
+                      kind={selected ? "primary" : "secondary"}
+                      stableHeight={46}
+                      debugId={`community-domain-dashboard.setup-notice.${task.key}`}
+                      onClick={() => setActiveSetupNoticeTask(task.key)}
+                    >
+                      {task.label}
+                    </StableButton>
+                  );
+                })}
+              </div>
+              <div style={{ ...helperText(), fontSize: 13 }}>
+                {SETUP_NOTICE_TASK_OPTIONS.find(
+                  (task) => task.key === activeSetupNoticeTask
+                )?.note || "Choose the Official Board packet you need."}
+              </div>
+            </div>
+
+            {activeSetupNoticeTask === "post" ? (
+              <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
+                {domainNoticeFeatureMode === "off" ? (
+                  <div style={softCard()}>
+                    <div style={{ fontWeight: 950 }}>Announcement Board is off.</div>
+                    <div style={{ ...helperText(), marginTop: 6, fontSize: 13 }}>
+                      This domain has chosen not to use official notices here.
+                      Owner/admin can change this in Domain feature policy.
+                    </div>
+                  </div>
+                ) : null}
+                {isAdmin ? (
+                  <div style={softCard()}>
+                    <div style={{ fontWeight: 950 }}>Post an official notice.</div>
+                    <div style={{ ...helperText(), marginTop: 6, fontSize: 13 }}>
+                      Use this only for a short member-only domain notice.
+                      It does not open comments, reactions, or public broadcast.
+                    </div>
+                    <div style={{ marginTop: 10 }}>
+                      <StableButton
+                        type="button"
+                        kind="secondary"
+                        stableHeight={44}
+                        debugId="community-domain-dashboard.notice.post"
+                        disabled={domainNoticeFeatureMode === "off"}
+                        onClick={() => setDomainNoticeModalOpen(true)}
+                      >
+                        {domainNoticeFeatureMode === "off" ? "Not used here" : "Post notice"}
+                      </StableButton>
+                    </div>
+                  </div>
+                ) : (
+                  <div style={softCard()}>
+                    <div style={{ fontWeight: 950 }}>Owner/admin action.</div>
+                    <div style={{ ...helperText(), marginTop: 6, fontSize: 13 }}>
+                      Only a Community Domain owner or domain admin can post an
+                      official notice.
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : null}
+
+            {activeSetupNoticeTask === "recent" ? (
             <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
               {domainNoticeFeatureMode === "off" ? (
                 <div style={softCard()}>
@@ -6009,6 +6140,7 @@ export default function CommunityDomainDashboardPage() {
                 </div>
               )}
             </div>
+            ) : null}
           </section>
           ) : null}
 
@@ -6626,11 +6758,13 @@ export default function CommunityDomainDashboardPage() {
                             }
                             stableHeight={46}
                             debugId={`community-domain-dashboard.setup-workbench.${task}`}
-                            onClick={() =>
-                              setActiveSetupWorkbenchTask(
-                                task as SetupWorkbenchTaskKey
-                              )
-                            }
+                            onClick={() => {
+                              const nextTask = task as SetupWorkbenchTaskKey;
+                              setActiveSetupWorkbenchTask(nextTask);
+                              if (nextTask === "access") {
+                                setActiveSetupAccessTask("summary");
+                              }
+                            }}
                           >
                             {label}
                           </StableButton>
@@ -6659,7 +6793,45 @@ export default function CommunityDomainDashboardPage() {
                             ? "You hold final owner/admin authority. You can authorise or remove one trusted setup editor."
                             : "You can edit setup, profile, and setup evidence only. Owner/admin authority remains above this role."}
                         </div>
-                        {isAdmin ? (
+                        <div
+                          style={{
+                            display: "grid",
+                            gridTemplateColumns:
+                              "repeat(auto-fit, minmax(min(100%, 145px), 1fr))",
+                            gap: 8,
+                          }}
+                        >
+                          {SETUP_ACCESS_TASK_OPTIONS.map((task) => {
+                            const selected = task.key === activeSetupAccessTask;
+                            return (
+                              <StableButton
+                                key={task.key}
+                                type="button"
+                                kind={selected ? "primary" : "secondary"}
+                                stableHeight={46}
+                                debugId={`community-domain-dashboard.setup-access.${task.key}`}
+                                onClick={() => setActiveSetupAccessTask(task.key)}
+                              >
+                                {task.label}
+                              </StableButton>
+                            );
+                          })}
+                        </div>
+                        <div style={{ ...helperText(), fontSize: 13 }}>
+                          {SETUP_ACCESS_TASK_OPTIONS.find(
+                            (task) => task.key === activeSetupAccessTask
+                          )?.note || "Choose the setup access packet you need."}
+                        </div>
+                        {activeSetupAccessTask === "summary" ? (
+                          <div style={statusBadge(setupAccessLabel)}>
+                            {setupEditingLocked
+                              ? "Setup changes need owner/admin approval."
+                              : isAdmin
+                              ? "Owner/admin can keep editing and delegate one setup editor."
+                              : "Setup editor can update setup details, not owner authority."}
+                          </div>
+                        ) : null}
+                        {activeSetupAccessTask === "authority" && isAdmin ? (
                           <div style={{ display: "grid", gap: 8 }}>
                             <div style={sectionLabel()}>Authorise setup editor</div>
                             <div style={{ ...helperText(), fontSize: 13 }}>
@@ -6728,7 +6900,10 @@ export default function CommunityDomainDashboardPage() {
                               </div>
                             ) : null}
                           </div>
-                        ) : setupEditingLocked ? (
+                        ) : null}
+                        {activeSetupAccessTask === "authority" &&
+                        !isAdmin &&
+                        setupEditingLocked ? (
                           <div style={{ display: "grid", gap: 8 }}>
                             <div style={sectionLabel()}>Request editing access</div>
                             <div style={{ ...helperText(), fontSize: 13 }}>
@@ -6772,6 +6947,18 @@ export default function CommunityDomainDashboardPage() {
                                 Request: {compactStatus(setupEditorResult.action_review.status)}
                               </div>
                             ) : null}
+                          </div>
+                        ) : null}
+                        {activeSetupAccessTask === "authority" &&
+                        !isAdmin &&
+                        !setupEditingLocked ? (
+                          <div style={softCard()}>
+                            <div style={{ fontWeight: 950 }}>Limited editor access.</div>
+                            <div style={{ ...helperText(), marginTop: 6, fontSize: 13 }}>
+                              You already have setup-editor access. Owner/admin
+                              authority, billing activation, paid features, and
+                              final verification stay outside this role.
+                            </div>
                           </div>
                         ) : null}
                       </div>
@@ -7624,6 +7811,8 @@ export default function CommunityDomainDashboardPage() {
                               setActiveBillingTask(task as BillingTaskKey);
                               if (task === "payment_code") {
                                 setActiveBillingPaymentTask("reference");
+                              } else if (task === "account") {
+                                setActiveBillingAccountTask("summary");
                               }
                             }}
                           >
@@ -7633,18 +7822,6 @@ export default function CommunityDomainDashboardPage() {
                       </div>
                     </div>
                     {activeBillingTask === "steps" ? (
-                      <>
-                    <StableButton
-                      type="button"
-                      kind="secondary"
-                      fullWidth
-                      debugId="community-domain-dashboard.billing-sequence-toggle"
-                      onClick={() => setBillingSequenceOpen((open) => !open)}
-                      style={{ marginTop: 12 }}
-                    >
-                      {billingSequenceOpen ? "Hide steps" : "Show steps"}
-                    </StableButton>
-                    {billingSequenceOpen ? (
                       <div
                         style={{
                           display: "grid",
@@ -7662,8 +7839,6 @@ export default function CommunityDomainDashboardPage() {
                           )
                         )}
                       </div>
-                    ) : null}
-                      </>
                     ) : null}
                     {activeBillingTask === "account" ? (
                     <div
@@ -7708,7 +7883,49 @@ export default function CommunityDomainDashboardPage() {
                       <div style={{ ...helperText(), fontSize: 13 }}>
                         Use this account with the generated code. Editing is GSN-admin only.
                       </div>
-                      {communityPayInIsReady ? (
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns:
+                            "repeat(auto-fit, minmax(min(100%, 145px), 1fr))",
+                          gap: 8,
+                        }}
+                      >
+                        {BILLING_ACCOUNT_TASK_OPTIONS.map((task) => {
+                          const selected = task.key === activeBillingAccountTask;
+                          return (
+                            <StableButton
+                              key={task.key}
+                              type="button"
+                              kind={selected ? "primary" : "secondary"}
+                              stableHeight={46}
+                              debugId={`community-domain-dashboard.billing-account.${task.key}`}
+                              onClick={() => {
+                                setActiveBillingAccountTask(task.key);
+                                if (task.key === "setup" && !communityPayInIsReady) {
+                                  const nextCountry = normalizeSettlementCountryCode(
+                                    billingSettlementCountry
+                                  );
+                                  setCommunityPayInDraft(
+                                    emptyCommunityDomainPayInDraft(
+                                      nextCountry,
+                                      settlementCurrencyForCountry(nextCountry)
+                                    )
+                                  );
+                                }
+                              }}
+                            >
+                              {task.label}
+                            </StableButton>
+                          );
+                        })}
+                      </div>
+                      <div style={{ ...helperText(), fontSize: 13 }}>
+                        {BILLING_ACCOUNT_TASK_OPTIONS.find(
+                          (task) => task.key === activeBillingAccountTask
+                        )?.note || "Choose the pay-in account packet you need."}
+                      </div>
+                      {activeBillingAccountTask === "summary" && communityPayInIsReady ? (
                         <div
                           style={{
                             display: "grid",
@@ -7762,45 +7979,19 @@ export default function CommunityDomainDashboardPage() {
                             </div>
                           ))}
                         </div>
-                      ) : (
+                      ) : null}
+                      {activeBillingAccountTask === "summary" && !communityPayInIsReady ? (
                         <div style={{ ...helperText(), fontSize: 13, fontWeight: 820 }}>
                           No account is saved yet. Do not pay until GSN assigns one.
                         </div>
-                      )}
-                      {canEditPayInAccount ? (
-                        <StableButton
-                          type="button"
-                          kind="secondary"
-                          fullWidth
-                          debugId="community-domain-dashboard.pay-in-account-toggle"
-                          onClick={() => {
-                            setCommunityPayInEditorOpen((open) => !open);
-                            if (!communityPayInEditorOpen && !communityPayInIsReady) {
-                              const nextCountry = normalizeSettlementCountryCode(
-                                billingSettlementCountry
-                              );
-                              setCommunityPayInDraft(
-                                emptyCommunityDomainPayInDraft(
-                                  nextCountry,
-                                  settlementCurrencyForCountry(nextCountry)
-                                )
-                              );
-                            }
-                          }}
-                        >
-                          {communityPayInEditorOpen
-                            ? "Close account setup"
-                            : communityPayInIsReady
-                            ? "Edit account"
-                            : "Set account"}
-                        </StableButton>
-                      ) : (
+                      ) : null}
+                      {activeBillingAccountTask === "setup" && !canEditPayInAccount ? (
                         <div style={{ ...helperText(), fontSize: 12.5, fontWeight: 820 }}>
                           Edit locked. The account can be used for payment, but only GSN platform
                           admin can change it during the pilot.
                         </div>
-                      )}
-                      {canEditPayInAccount && communityPayInEditorOpen ? (
+                      ) : null}
+                      {activeBillingAccountTask === "setup" && canEditPayInAccount ? (
                         <div style={{ display: "grid", gap: 10 }}>
                           <div
                             style={{
@@ -7956,7 +8147,7 @@ export default function CommunityDomainDashboardPage() {
                               kind="secondary"
                               fullWidth
                               debugId="community-domain-dashboard.pay-in-account-close"
-                              onClick={() => setCommunityPayInEditorOpen(false)}
+                              onClick={() => setActiveBillingAccountTask("summary")}
                             >
                               Close
                             </StableButton>

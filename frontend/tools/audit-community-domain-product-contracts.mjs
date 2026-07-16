@@ -1215,8 +1215,36 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /type BillingTaskKey = "payment_code" \| "account" \| "steps" \| "readiness"[\s\S]*activeBillingTask[\s\S]*setActiveBillingTask[\s\S]*Billing jobs[\s\S]*Open one billing job[\s\S]*community-domain-dashboard\.billing-task\.\$\{task\}[\s\S]*activeBillingTask === "steps"[\s\S]*community-domain-dashboard\.billing-sequence-toggle[\s\S]*activeBillingTask === "account"[\s\S]*Community pay-in account[\s\S]*activeBillingTask === "payment_code"[\s\S]*community-domain-dashboard\.refresh-package-quote[\s\S]*Latest payment code[\s\S]*activeLane === "billing" && activeBillingTask === "readiness"[\s\S]*Billing readiness details/,
+  /type SetupAccessTaskKey = "summary" \| "authority"[\s\S]*SETUP_ACCESS_TASK_OPTIONS[\s\S]*key: "summary"[\s\S]*key: "authority"[\s\S]*activeSetupAccessTask[\s\S]*setActiveSetupAccessTask\("summary"\)[\s\S]*nextTask === "access"[\s\S]*setActiveSetupAccessTask\("summary"\)[\s\S]*Setup access[\s\S]*community-domain-dashboard\.setup-access\.\$\{task\.key\}[\s\S]*activeSetupAccessTask === "summary"[\s\S]*activeSetupAccessTask === "authority" && isAdmin[\s\S]*community-domain-dashboard\.setup-editor-appoint[\s\S]*community-domain-dashboard\.setup-editor-revoke[\s\S]*activeSetupAccessTask === "authority" &&[\s\S]*!isAdmin &&[\s\S]*setupEditingLocked[\s\S]*community-domain-dashboard\.setup-editor-request/,
+  "Community Domain Setup access must keep authority/request controls behind the selected Authority packet instead of exposing them beside the access summary.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /type BillingTaskKey = "payment_code" \| "account" \| "steps" \| "readiness"[\s\S]*activeBillingTask[\s\S]*setActiveBillingTask[\s\S]*Billing jobs[\s\S]*Open one billing job[\s\S]*community-domain-dashboard\.billing-task\.\$\{task\}[\s\S]*activeBillingTask === "steps"[\s\S]*billingSequenceSteps\.map[\s\S]*billingStepCard[\s\S]*activeBillingTask === "account"[\s\S]*Community pay-in account[\s\S]*activeBillingTask === "payment_code"[\s\S]*community-domain-dashboard\.refresh-package-quote[\s\S]*Latest payment code[\s\S]*activeLane === "billing" && activeBillingTask === "readiness"[\s\S]*Billing readiness details/,
   "Community Domain Billing must stay behind one billing-job selector so steps, account, payment code/proof, and readiness diagnostics do not dump together.",
+  { frontend: true }
+);
+
+assertNotContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /billingSequenceOpen|community-domain-dashboard\.billing-sequence-toggle/,
+  "Community Domain Billing Steps must render directly after selecting the Steps job instead of adding a second nested Show steps reveal.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /type BillingAccountTaskKey = "summary" \| "setup"[\s\S]*BILLING_ACCOUNT_TASK_OPTIONS[\s\S]*key: "summary"[\s\S]*key: "setup"[\s\S]*activeBillingAccountTask[\s\S]*setActiveBillingAccountTask\("summary"\)[\s\S]*task === "account"[\s\S]*setActiveBillingAccountTask\("summary"\)[\s\S]*activeBillingTask === "account"[\s\S]*Community pay-in account[\s\S]*community-domain-dashboard\.billing-account\.\$\{task\.key\}[\s\S]*activeBillingAccountTask === "summary" && communityPayInIsReady[\s\S]*activeBillingAccountTask === "summary" && !communityPayInIsReady[\s\S]*activeBillingAccountTask === "setup" && !canEditPayInAccount[\s\S]*activeBillingAccountTask === "setup" && canEditPayInAccount[\s\S]*community-domain-dashboard\.pay-in-account-save[\s\S]*community-domain-dashboard\.pay-in-account-close/,
+  "Community Domain Billing pay-in account must keep saved-account summary and GSN-admin setup form behind separate account packets.",
+  { frontend: true }
+);
+
+assertNotContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /communityPayInEditorOpen|community-domain-dashboard\.pay-in-account-toggle/,
+  "Community Domain Billing pay-in account must not return to a nested Set/Edit account reveal inside the account job.",
   { frontend: true }
 );
 
@@ -2029,6 +2057,13 @@ assertContains(
   { frontend: true }
 );
 
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /type SetupNoticeTaskKey = "recent" \| "post"[\s\S]*SETUP_NOTICE_TASK_OPTIONS[\s\S]*key: "recent"[\s\S]*key: "post"[\s\S]*activeSetupNoticeTask[\s\S]*setActiveSetupNoticeTask\("recent"\)[\s\S]*nextTask === "notices"[\s\S]*setActiveSetupNoticeTask\("recent"\)[\s\S]*Official Board[\s\S]*community-domain-dashboard\.setup-notice\.\$\{task\.key\}[\s\S]*activeSetupNoticeTask === "post"[\s\S]*community-domain-dashboard\.notice\.post[\s\S]*activeSetupNoticeTask === "recent"[\s\S]*domainNoticesLoading[\s\S]*domainNotices\.length/,
+  "Community Domain Official Board must keep recent notices and the post action behind an inner packet selector instead of exposing the post control beside the notice list.",
+  { frontend: true }
+);
+
 assertNotContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
   /Safe next step|Review this lane first\. Changes, payment, and verification stay\s+permission-checked/,
@@ -2073,7 +2108,7 @@ assertContains(
 
 assertContains(
   "tools/audit-community-domain-mobile-visual.mjs",
-  /const routePath = "\/app\/community-domain\/13"[\s\S]*const purchaseRoutePath = "\/community-domain\/purchase\?demo=pillar-of-hope"[\s\S]*let domainListScenario = "owned"[\s\S]*let dashboardScenario = "active"[\s\S]*dashboardScenario === "draft"[\s\S]*firstViewportActionFinding[\s\S]*viewportElementFinding[\s\S]*community-domain-purchase\.check-domain[\s\S]*Purchase page mobile hero still exposes the four engine explanation cards[\s\S]*community-domain-purchase\.other-paths[\s\S]*domainListScenario = "empty"[\s\S]*community-domain-dashboard\.selector\.setup-new[\s\S]*community-domain-dashboard\.selector\.find-edit-domain[\s\S]*community-domain-dashboard\.selector\.back-to-choice[\s\S]*dashboardScenario = "draft"[\s\S]*community-domain-dashboard\.setup-focus[\s\S]*Draft Community Domain dashboard exposes Other domain tools before setup is opened[\s\S]*community-domain-dashboard\.work-surface[\s\S]*Draft Community Domain setup workbench exposes Other domain tools during the primary setup journey[\s\S]*Draft Community Domain setup workbench exposes advanced dashboard blocks during setup[\s\S]*dashboardScenario = "active"[\s\S]*community-domain-dashboard\.open-marketplace[\s\S]*Open Marketplace[\s\S]*Open operating areas[\s\S]*Active Community Domain dashboard exposes setup editing on the first command surface[\s\S]*Active Community Domain dashboard exposes Other domain tools before operating areas are opened[\s\S]*community-domain-dashboard\.operational-focus[\s\S]*community-domain-dashboard\.service-detail\.boundaries[\s\S]*community-domain-service-boundary\.focus\.privacy[\s\S]*community-domain-dashboard\.service-detail\.evidence[\s\S]*community-domain\.trust-evidence\.focus\.release[\s\S]*community-domain-dashboard\.structure-detail\.planning[\s\S]*community-domain\.structure-planning\.focus\.groups[\s\S]*Safe next step[\s\S]*horizontalOverflow[\s\S]*lowContrast/,
+  /const routePath = "\/app\/community-domain\/13"[\s\S]*const purchaseRoutePath = "\/community-domain\/purchase\?demo=pillar-of-hope"[\s\S]*let domainListScenario = "owned"[\s\S]*let dashboardScenario = "active"[\s\S]*dashboardScenario === "draft"[\s\S]*firstViewportActionFinding[\s\S]*viewportElementFinding[\s\S]*community-domain-purchase\.check-domain[\s\S]*Purchase page mobile hero still exposes the four engine explanation cards[\s\S]*community-domain-purchase\.other-paths[\s\S]*domainListScenario = "empty"[\s\S]*community-domain-dashboard\.selector\.setup-new[\s\S]*community-domain-dashboard\.selector\.find-edit-domain[\s\S]*community-domain-dashboard\.selector\.back-to-choice[\s\S]*dashboardScenario = "draft"[\s\S]*community-domain-dashboard\.setup-focus[\s\S]*Draft Community Domain dashboard exposes Other domain tools before setup is opened[\s\S]*community-domain-dashboard\.work-surface[\s\S]*Draft Community Domain setup workbench exposes Other domain tools during the primary setup journey[\s\S]*Draft Community Domain setup workbench exposes advanced dashboard blocks during setup[\s\S]*dashboardScenario = "active"[\s\S]*community-domain-dashboard\.open-marketplace[\s\S]*Open Marketplace[\s\S]*Open operating areas[\s\S]*Active Community Domain dashboard exposes setup editing on the first command surface[\s\S]*Active Community Domain dashboard exposes Other domain tools before operating areas are opened[\s\S]*community-domain-dashboard\.operational-focus[\s\S]*Live area[\s\S]*community-domain-dashboard\.operating-area-picker-toggle[\s\S]*community-domain-dashboard\.lane\.modules[\s\S]*community-domain-dashboard\.service-detail\.boundaries[\s\S]*community-domain-service-boundary\.focus\.privacy[\s\S]*community-domain-dashboard\.service-detail\.evidence[\s\S]*community-domain\.trust-evidence\.focus\.release[\s\S]*community-domain-dashboard\.operating-area-picker-toggle[\s\S]*community-domain-dashboard\.lane\.structure[\s\S]*community-domain-dashboard\.structure-detail\.planning[\s\S]*community-domain\.structure-planning\.focus\.groups[\s\S]*Safe next step[\s\S]*horizontalOverflow[\s\S]*lowContrast/,
   "Community Domain mobile visual audit must exercise purchase first-job compaction, selector one-path state, active-domain lanes, focused service/structure packets, dead-block regression, overflow, and contrast checks.",
   { frontend: true }
 );
@@ -2964,6 +2999,13 @@ assertContains(
   "src/pages/communityDomainDashboard/AccessRequestsPanel.tsx",
   /parent_review_id[\s\S]*subject_user_email[\s\S]*required_approvals[\s\S]*approval_count[\s\S]*onRequestChanges[\s\S]*onOpenInvite[\s\S]*numericCount[\s\S]*selectStyle[\s\S]*fontSize: 16[\s\S]*reviewUserLabel[\s\S]*reviewRequesterLabel[\s\S]*approvalProgressText[\s\S]*requiredApprovals[\s\S]*approvalCount[\s\S]*Approvals complete[\s\S]*more needed[\s\S]*followUpText[\s\S]*reviewStatus === "approved"[\s\S]*Apply membership here[\s\S]*Decide here[\s\S]*Follow-up to[\s\S]*Updated request[\s\S]*requestLabel[\s\S]*Follow-up request[\s\S]*Membership request[\s\S]*showAllRequests[\s\S]*decisionByReviewId[\s\S]*"approve" \| "needs_changes" \| "reject"[\s\S]*visibleAccessRequests[\s\S]*membershipAccessRequests\.slice\(0, 3\)[\s\S]*hiddenRequestCount[\s\S]*Access requests[\s\S]*Review access[\s\S]*Decide who can enter this domain[\s\S]*visibleAccessRequests\.map[\s\S]*needsChangesBusy[\s\S]*selectedDecision[\s\S]*followUp[\s\S]*recordDecision[\s\S]*onRequestChanges\(review\)[\s\S]*onDecline\(review\)[\s\S]*onApproveOnly\(review\)[\s\S]*approvalProgress[\s\S]*Sends the request back[\s\S]*Membership is not added[\s\S]*Ask for changes[\s\S]*Record decision[\s\S]*Add approved member[\s\S]*Approve, add if ready[\s\S]*community-domain-dashboard\.access-request\.toggle-all[\s\S]*Show first 3 requests[\s\S]*Show \$\{hiddenRequestCount\} more request[\s\S]*No open access requests[\s\S]*Invite trusted people[\s\S]*community-domain-dashboard\.access-request\.open-invite[\s\S]*Invite people[\s\S]*community-domain-dashboard\.access-request\.refresh/,
   "Lazy Community Domain access request panel must expose pending and approved-but-unapplied self-service access requests, label follow-up revisions separately from fresh membership requests, show status-aware follow-up revision context from parent_review_id, keep approve/needs-changes/reject decisions separate from apply, explain that ask-for-changes sends applicant-safe update guidance while private reviewer notes stay inside the owner/admin record, show approval progress for multi-approval policies, preserve a visible apply path after approve-only, avoid silently hiding more than three requests, and use truthful empty-state copy.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/communityDomainDashboard/AccessRequestsPanel.tsx",
+  /openDecisionReviewId[\s\S]*decisionOpen = openDecisionReviewId === reviewId[\s\S]*community-domain-dashboard\.access-request\.decision-toggle-\$\{reviewId\}[\s\S]*Hide request action[\s\S]*Open apply step[\s\S]*Review decision[\s\S]*decisionOpen \? \([\s\S]*selectedDecision === "needs_changes"[\s\S]*Sends the request back[\s\S]*selectStyle\(\)[\s\S]*community-domain-dashboard\.access-request\.record-decision-\$\{reviewId\}[\s\S]*community-domain-dashboard\.access-request\.approve-apply-\$\{reviewId\}[\s\S]*Add approved member[\s\S]*Approve, add if ready/,
+  "Lazy Community Domain access request panel must keep per-request decision controls collapsed behind an explicit request action so summary cards do not expose every decision and apply control at once.",
   { frontend: true }
 );
 

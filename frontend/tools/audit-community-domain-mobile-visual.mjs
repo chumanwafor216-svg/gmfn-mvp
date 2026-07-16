@@ -990,8 +990,10 @@ try {
   });
 
   await clickByDebugId(page, "community-domain-dashboard.operational-focus");
-  await page.getByText("Operating areas", { exact: true }).waitFor({ timeout: 10000 });
+  await page.getByText("Live area", { exact: true }).waitFor({ timeout: 10000 });
 
+  await clickByDebugId(page, "community-domain-dashboard.operating-area-picker-toggle");
+  await page.getByText("Operating areas", { exact: true }).waitFor({ timeout: 10000 });
   await clickByDebugId(page, "community-domain-dashboard.lane.modules");
   await page.getByText("Services focus", { exact: true }).waitFor({ timeout: 10000 });
   await clickByDebugId(page, "community-domain-dashboard.service-detail.boundaries");
@@ -1003,6 +1005,8 @@ try {
   await clickByDebugId(page, "community-domain.trust-evidence.focus.release");
   await page.getByText("Evidence release readiness", { exact: true }).waitFor({ timeout: 10000 });
 
+  await clickByDebugId(page, "community-domain-dashboard.operating-area-picker-toggle");
+  await page.getByText("Operating areas", { exact: true }).waitFor({ timeout: 10000 });
   await clickByDebugId(page, "community-domain-dashboard.lane.structure");
   await page.getByText("Structure focus", { exact: true }).waitFor({ timeout: 10000 });
   await clickByDebugId(page, "community-domain-dashboard.structure-detail.planning");

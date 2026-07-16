@@ -182,6 +182,7 @@ export default function CommunityDomainAccessRequestsPanel({
   embedded = false,
 }: AccessRequestsPanelProps): React.ReactElement {
   const [showAllRequests, setShowAllRequests] = useState(false);
+  const [openDecisionReviewId, setOpenDecisionReviewId] = useState<string | null>(null);
   const [decisionByReviewId, setDecisionByReviewId] = useState<
     Record<string, "approve" | "needs_changes" | "reject">
   >({});
@@ -221,6 +222,7 @@ export default function CommunityDomainAccessRequestsPanel({
                 approveBusy || needsChangesBusy || declineBusy;
               const selectedDecision =
                 decisionByReviewId[reviewId] || "approve";
+              const decisionOpen = openDecisionReviewId === reviewId;
               const approvalProgress = approvalProgressText(review);
               const followUp = followUpText(review);
               const recordDecision = () => {
@@ -268,78 +270,100 @@ export default function CommunityDomainAccessRequestsPanel({
                         {approvalProgress}
                       </div>
                     ) : null}
-                    {!isApprovedReview &&
-                    selectedDecision === "needs_changes" ? (
-                      <div style={{ ...helperText(), fontSize: 13 }}>
-                        Sends the request back. Membership is not added.
+                    <StableButton
+                      type="button"
+                      kind={decisionOpen ? "secondary" : "primary"}
+                      fullWidth
+                      disabled={Boolean(busyReviewId)}
+                      debugId={`community-domain-dashboard.access-request.decision-toggle-${reviewId}`}
+                      onClick={() =>
+                        setOpenDecisionReviewId((current) =>
+                          current === reviewId ? null : reviewId
+                        )
+                      }
+                    >
+                      {decisionOpen
+                        ? "Hide request action"
+                        : isApprovedReview
+                        ? "Open apply step"
+                        : "Review decision"}
+                    </StableButton>
+                    {decisionOpen ? (
+                      <div style={{ display: "grid", gap: 8 }}>
+                        {!isApprovedReview &&
+                        selectedDecision === "needs_changes" ? (
+                          <div style={{ ...helperText(), fontSize: 13 }}>
+                            Sends the request back. Membership is not added.
+                          </div>
+                        ) : null}
+                        <div
+                          style={{
+                            display: "grid",
+                            gridTemplateColumns:
+                              "repeat(auto-fit, minmax(min(100%, 150px), 1fr))",
+                            gap: 8,
+                          }}
+                        >
+                          {!isApprovedReview ? (
+                            <select
+                              style={selectStyle()}
+                              value={selectedDecision}
+                              disabled={Boolean(busyReviewId)}
+                              aria-label={`Decision for access request ${reviewId}`}
+                              onChange={(event) =>
+                                setDecisionByReviewId((current) => ({
+                                  ...current,
+                                  [reviewId]: event.target.value as
+                                    | "approve"
+                                    | "needs_changes"
+                                    | "reject",
+                                }))
+                              }
+                            >
+                              <option value="approve">Approve only</option>
+                              <option value="needs_changes">Ask for changes</option>
+                              <option value="reject">Decline</option>
+                            </select>
+                          ) : null}
+                          {!isApprovedReview ? (
+                            <StableButton
+                              type="button"
+                              kind="secondary"
+                              fullWidth
+                              disabled={Boolean(busyReviewId)}
+                              debugId={`community-domain-dashboard.access-request.record-decision-${reviewId}`}
+                              onClick={recordDecision}
+                            >
+                              {decisionBusy
+                                ? "Recording..."
+                                : selectedDecision === "needs_changes"
+                                ? "Ask for changes"
+                                : selectedDecision === "reject"
+                                ? "Decline"
+                                : "Record decision"}
+                              </StableButton>
+                          ) : null}
+                          <StableButton
+                            type="button"
+                            kind="primary"
+                            fullWidth
+                            disabled={Boolean(busyReviewId)}
+                            debugId={`community-domain-dashboard.access-request.approve-apply-${reviewId}`}
+                            onClick={() =>
+                              isApprovedReview
+                                ? onApplyApproved(review)
+                                : onApproveAndApply(review)
+                            }
+                          >
+                            {applyBusy
+                              ? "Working..."
+                              : isApprovedReview
+                              ? "Add approved member"
+                              : "Approve, add if ready"}
+                          </StableButton>
+                        </div>
                       </div>
                     ) : null}
-                    <div
-                      style={{
-                        display: "grid",
-                        gridTemplateColumns:
-                          "repeat(auto-fit, minmax(min(100%, 150px), 1fr))",
-                        gap: 8,
-                      }}
-                    >
-                      {!isApprovedReview ? (
-                        <select
-                          style={selectStyle()}
-                          value={selectedDecision}
-                          disabled={Boolean(busyReviewId)}
-                          aria-label={`Decision for access request ${reviewId}`}
-                          onChange={(event) =>
-                            setDecisionByReviewId((current) => ({
-                              ...current,
-                              [reviewId]: event.target.value as
-                                | "approve"
-                                | "needs_changes"
-                                | "reject",
-                            }))
-                          }
-                        >
-                          <option value="approve">Approve only</option>
-                          <option value="needs_changes">Ask for changes</option>
-                          <option value="reject">Decline</option>
-                        </select>
-                      ) : null}
-                      {!isApprovedReview ? (
-                        <StableButton
-                          type="button"
-                          kind="secondary"
-                          fullWidth
-                          disabled={Boolean(busyReviewId)}
-                          debugId={`community-domain-dashboard.access-request.record-decision-${reviewId}`}
-                          onClick={recordDecision}
-                        >
-                          {decisionBusy
-                            ? "Recording..."
-                            : selectedDecision === "needs_changes"
-                            ? "Ask for changes"
-                            : selectedDecision === "reject"
-                            ? "Decline"
-                            : "Record decision"}
-                        </StableButton>
-                      ) : null}
-                      <StableButton
-                        type="button"
-                        kind="primary"
-                        fullWidth
-                        disabled={Boolean(busyReviewId)}
-                        debugId={`community-domain-dashboard.access-request.approve-apply-${reviewId}`}
-                        onClick={() =>
-                          isApprovedReview
-                            ? onApplyApproved(review)
-                            : onApproveAndApply(review)
-                        }
-                      >
-                        {applyBusy
-                          ? "Working..."
-                          : isApprovedReview
-                          ? "Add approved member"
-                          : "Approve, add if ready"}
-                      </StableButton>
-                    </div>
                   </div>
                 </div>
               );
