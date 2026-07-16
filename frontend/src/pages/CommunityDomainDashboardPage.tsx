@@ -169,6 +169,7 @@ type DomainLane = {
 type StructureDetailKey = "preview" | "foundation" | "boundary" | "activity" | "planning";
 type ServiceDetailKey = "readiness" | "local" | "boundaries" | "trust" | "evidence";
 type MemberDetailKey = "readiness" | "placement" | "roster";
+type MemberRosterTaskKey = "summary" | "members";
 type GovernanceTaskKey =
   | "readiness"
   | "director_summary"
@@ -181,6 +182,7 @@ type SetupOverviewTaskKey = "notices" | "engine" | "next_setup" | "counts";
 type OperatingSummaryTaskKey = "next_action" | "status" | "allowance" | "permissions";
 type SetupWorkbenchTaskKey = "step" | "access";
 type BillingTaskKey = "payment_code" | "account" | "steps" | "readiness";
+type BillingPaymentTaskKey = "reference" | "pay_account" | "proof";
 type RealLifeRecordTask = "activity" | "beneficiary_outcome";
 type ActivityRecordTaskKey = "record" | "catalogue" | "recent";
 type BeneficiaryOutcomeTaskKey = "record" | "recent";
@@ -611,6 +613,23 @@ const MEMBER_DETAIL_OPTIONS: Array<{
   },
 ];
 
+const MEMBER_ROSTER_TASK_OPTIONS: Array<{
+  key: MemberRosterTaskKey;
+  label: string;
+  note: string;
+}> = [
+  {
+    key: "summary",
+    label: "Summary",
+    note: "Check roster size, active public proof, and inactive history first.",
+  },
+  {
+    key: "members",
+    label: "Members",
+    note: "Open the member rows only when you need to deactivate or restore someone.",
+  },
+];
+
 const SETUP_STEP_OPTIONS: Array<{
   key: SetupStepKey;
   label: string;
@@ -739,6 +758,28 @@ const DOMAIN_FEATURE_POLICY_ROWS: Array<{
     note: "Rotating contribution cycles and member contribution discipline.",
     defaultMode: "members_submit_admin_approves",
     icon: "repayment-schedule",
+  },
+];
+
+const BILLING_PAYMENT_TASK_OPTIONS: Array<{
+  key: BillingPaymentTaskKey;
+  label: string;
+  note: string;
+}> = [
+  {
+    key: "reference",
+    label: "Reference",
+    note: "Generate or review the exact payment code first.",
+  },
+  {
+    key: "pay_account",
+    label: "Pay account",
+    note: "Check the official GSN account before money leaves the payer.",
+  },
+  {
+    key: "proof",
+    label: "Proof",
+    note: "Upload payment proof after the bank or provider step is complete.",
   },
 ];
 
@@ -2130,10 +2171,11 @@ export default function CommunityDomainDashboardPage() {
   const [billingSequenceOpen, setBillingSequenceOpen] = useState(false);
   const [domainPaymentFormOpen, setDomainPaymentFormOpen] = useState(false);
   const [domainPaymentCreditOpen, setDomainPaymentCreditOpen] = useState(false);
-  const [domainPaymentProofOpen, setDomainPaymentProofOpen] = useState(false);
   const [billingReadinessOpen, setBillingReadinessOpen] = useState(false);
   const [activeBillingTask, setActiveBillingTask] =
     useState<BillingTaskKey>("payment_code");
+  const [activeBillingPaymentTask, setActiveBillingPaymentTask] =
+    useState<BillingPaymentTaskKey>("reference");
   const [setupDraft, setSetupDraft] = useState<CommunityDomainSetupDraft>(
     () => setupDraftFromDomain(null)
   );
@@ -2162,6 +2204,8 @@ export default function CommunityDomainDashboardPage() {
     useState<ServiceDetailKey>("readiness");
   const [activeMemberDetail, setActiveMemberDetail] =
     useState<MemberDetailKey>("readiness");
+  const [activeMemberRosterTask, setActiveMemberRosterTask] =
+    useState<MemberRosterTaskKey>("summary");
   const [activeGovernanceTask, setActiveGovernanceTask] =
     useState<GovernanceTaskKey>("readiness");
   const [activeDirectorSummaryTask, setActiveDirectorSummaryTask] =
@@ -2350,11 +2394,13 @@ export default function CommunityDomainDashboardPage() {
     setActiveOperatingSummaryTask("next_action");
     setActiveSetupWorkbenchTask("step");
     setActiveBillingTask("payment_code");
+    setActiveBillingPaymentTask("reference");
     setOperatingAreaPickerOpen(false);
     setCapacityPlan(null);
     setGovernanceCoverage(null);
     setDelegationMap(null);
     setActiveGovernanceTask("readiness");
+    setActiveMemberRosterTask("summary");
     setActiveDirectorSummaryTask("overview");
     setActiveSponsorSummaryTask("overview");
     setPeriodSummary(null);
@@ -3885,6 +3931,18 @@ export default function CommunityDomainDashboardPage() {
   const selectedMemberDetail =
     MEMBER_DETAIL_OPTIONS.find((option) => option.key === activeMemberDetail) ||
     MEMBER_DETAIL_OPTIONS[0];
+  const activeDomainMemberCount = domainMemberRows.filter(
+    (row) => cleanText(row?.status, "inactive").toLowerCase() === "active"
+  ).length;
+  const inactiveDomainMemberCount = Math.max(
+    domainMemberRows.length - activeDomainMemberCount,
+    0
+  );
+  const memberRosterSummaryRows: Array<[string, number]> = [
+    ["Loaded members", domainMemberRows.length],
+    ["Active proof", activeDomainMemberCount],
+    ["Inactive history", inactiveDomainMemberCount],
+  ];
   const domainInSetup = isCommunityDomainInSetup(status, domain);
   const domainOperational = isCommunityDomainOperational(status, domain);
   const pageTitle = domainInSetup
@@ -4407,6 +4465,7 @@ export default function CommunityDomainDashboardPage() {
     setSetupWorkspaceOpen(false);
     setShowAdvancedTools(true);
     setActiveBillingTask("payment_code");
+    setActiveBillingPaymentTask("reference");
     setActiveLane("billing");
   }
 
@@ -5017,6 +5076,7 @@ export default function CommunityDomainDashboardPage() {
       if (!isCurrentDomainRequest(requestDomainId)) return;
       setQuote(payload?.quote || null);
       setActiveBillingTask("payment_code");
+      setActiveBillingPaymentTask("reference");
       setActiveLane("billing");
       setMessage(
         billingIsActive
@@ -5096,6 +5156,7 @@ export default function CommunityDomainDashboardPage() {
         );
       }
       setActiveBillingTask("payment_code");
+      setActiveBillingPaymentTask("reference");
       setActiveLane("billing");
       setMessage(
         "Payment code generated. Use that exact code as the payment reference, then upload proof here for finance review."
@@ -7559,9 +7620,12 @@ export default function CommunityDomainDashboardPage() {
                             }
                             stableHeight={46}
                             debugId={`community-domain-dashboard.billing-task.${task}`}
-                            onClick={() =>
-                              setActiveBillingTask(task as BillingTaskKey)
-                            }
+                            onClick={() => {
+                              setActiveBillingTask(task as BillingTaskKey);
+                              if (task === "payment_code") {
+                                setActiveBillingPaymentTask("reference");
+                              }
+                            }}
                           >
                             {label}
                           </StableButton>
@@ -7956,7 +8020,55 @@ export default function CommunityDomainDashboardPage() {
                       </div>
                     </div>
 
-                    {isAdmin && !billingIsActive && domainPayment ? (
+                    <div style={{ ...softCard(), marginTop: 12, display: "grid", gap: 10 }}>
+                      <div style={sectionLabel()}>Code & proof packets</div>
+                      <div style={{ ...helperText(), fontSize: 13 }}>
+                        Pick the payment question for now. The reference, official pay
+                        account, and proof upload stay separate.
+                      </div>
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns:
+                            "repeat(auto-fit, minmax(min(100%, 132px), 1fr))",
+                          gap: 8,
+                        }}
+                      >
+                        {BILLING_PAYMENT_TASK_OPTIONS.map((task) => {
+                          const selected = task.key === activeBillingPaymentTask;
+                          return (
+                            <StableButton
+                              key={task.key}
+                              type="button"
+                              kind={selected ? "primary" : "secondary"}
+                              stableHeight={44}
+                              fullWidth
+                              aria-pressed={selected}
+                              title={task.note}
+                              debugId={`community-domain-dashboard.billing-payment.${task.key}`}
+                              onClick={() => setActiveBillingPaymentTask(task.key)}
+                              style={{
+                                justifyContent: "center",
+                                fontSize: 13,
+                                textTransform: "none",
+                              }}
+                            >
+                              {task.label}
+                            </StableButton>
+                          );
+                        })}
+                      </div>
+                      <div style={{ ...helperText(), fontSize: 13 }}>
+                        {BILLING_PAYMENT_TASK_OPTIONS.find(
+                          (task) => task.key === activeBillingPaymentTask
+                        )?.note || "Choose the payment packet you need."}
+                      </div>
+                    </div>
+
+                    {activeBillingPaymentTask === "reference" &&
+                    isAdmin &&
+                    !billingIsActive &&
+                    domainPayment ? (
                       <StableButton
                         type="button"
                         kind="secondary"
@@ -7969,7 +8081,10 @@ export default function CommunityDomainDashboardPage() {
                       </StableButton>
                     ) : null}
 
-                    {isAdmin && !billingIsActive && (!domainPayment || domainPaymentFormOpen) ? (
+                    {activeBillingPaymentTask === "reference" &&
+                    isAdmin &&
+                    !billingIsActive &&
+                    (!domainPayment || domainPaymentFormOpen) ? (
                       <div style={{ ...softCard(), marginTop: 12 }}>
                         <div style={sectionLabel()}>Generate payment code</div>
                         <div style={{ ...helperText(), marginTop: 7, fontSize: 13 }}>
@@ -8151,212 +8266,220 @@ export default function CommunityDomainDashboardPage() {
                           </strong>
                           . Finance confirms only after bank/provider reconciliation succeeds.
                         </div>
-                        <StableButton
-                          type="button"
-                          kind="secondary"
-                          fullWidth
-                          debugId="community-domain-dashboard.credit-link-toggle"
-                          onClick={() => setDomainPaymentCreditOpen((open) => !open)}
-                          style={{ marginTop: 10 }}
-                        >
-                          {domainPaymentCreditOpen ? "Hide credit link" : "Show credit link"}
-                        </StableButton>
-                        {domainPaymentCreditOpen ? (
+                        {activeBillingPaymentTask === "reference" ? (
+                          <>
+                            <StableButton
+                              type="button"
+                              kind="secondary"
+                              fullWidth
+                              debugId="community-domain-dashboard.credit-link-toggle"
+                              onClick={() => setDomainPaymentCreditOpen((open) => !open)}
+                              style={{ marginTop: 10 }}
+                            >
+                              {domainPaymentCreditOpen ? "Hide credit link" : "Show credit link"}
+                            </StableButton>
+                            {domainPaymentCreditOpen ? (
+                              <div
+                                style={{
+                                  marginTop: 10,
+                                  borderRadius: 16,
+                                  border: "1px solid rgba(12,79,168,0.18)",
+                                  background: "#F1F7FF",
+                                  padding: "12px",
+                                  display: "grid",
+                                  gap: 9,
+                                }}
+                              >
+                                <div style={sectionLabel()}>GSN credit link</div>
+                                <div
+                                  style={{
+                                    display: "grid",
+                                    gridTemplateColumns:
+                                      "repeat(auto-fit, minmax(min(100%, 150px), 1fr))",
+                                    gap: 8,
+                                  }}
+                                >
+                                  {[
+                                    [
+                                      "GSN ID",
+                                      cleanText(
+                                        domainPaymentIntent?.payer_gmfn_id,
+                                        "Signed-in owner account"
+                                      ),
+                                    ],
+                                    [
+                                      "Community",
+                                      cleanText(
+                                        domainPaymentIntent?.community_name,
+                                        `Community ${selectedDomainClanId || ""}`.trim()
+                                      ),
+                                    ],
+                                    [
+                                      "Domain",
+                                      cleanText(
+                                        domainPaymentIntent?.domain_display_name,
+                                        cleanText((dashboard?.community_domain as any)?.display_name, "Community Domain")
+                                      ),
+                                    ],
+                                    [
+                                      "Record",
+                                      cleanText(
+                                        domainPaymentIntent?.expected_payment_id,
+                                        domainPayment?.id
+                                      ),
+                                    ],
+                                  ].map(([label, value]) => (
+                                    <div
+                                      key={label}
+                                      style={{
+                                        borderRadius: 12,
+                                        background: "rgba(255,255,255,0.82)",
+                                        border: "1px solid rgba(9,27,46,0.10)",
+                                        padding: "8px 10px",
+                                      }}
+                                    >
+                                      <div style={{ ...sectionLabel(), fontSize: 11 }}>{label}</div>
+                                      <div
+                                        style={{
+                                          color: "#091B2E",
+                                          fontSize: 13,
+                                          fontWeight: 900,
+                                          marginTop: 3,
+                                          overflowWrap: "anywhere",
+                                        }}
+                                      >
+                                        {cleanText(value, "Recorded")}
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                                <div style={{ ...helperText(), fontSize: 12.5, fontWeight: 820 }}>
+                                  Use only the payment code as the bank reference.
+                                </div>
+                              </div>
+                            ) : null}
+                          </>
+                        ) : null}
+                        {activeBillingPaymentTask === "pay_account" ? (
                           <div
                             style={{
                               marginTop: 10,
                               borderRadius: 16,
-                              border: "1px solid rgba(12,79,168,0.18)",
-                              background: "#F1F7FF",
+                              border: domainPaymentSettlementReady
+                                ? "1px solid rgba(22,101,52,0.22)"
+                                : "1px solid rgba(146,64,14,0.24)",
+                              background: domainPaymentSettlementReady
+                                ? "rgba(240,253,244,0.88)"
+                                : "rgba(255,247,237,0.92)",
                               padding: "12px",
                               display: "grid",
                               gap: 9,
                             }}
                           >
-                            <div style={sectionLabel()}>GSN credit link</div>
-                            <div
-                              style={{
-                                display: "grid",
-                                gridTemplateColumns:
-                                  "repeat(auto-fit, minmax(min(100%, 150px), 1fr))",
-                                gap: 8,
-                              }}
-                            >
-                              {[
-                                [
-                                  "GSN ID",
-                                  cleanText(
-                                    domainPaymentIntent?.payer_gmfn_id,
-                                    "Signed-in owner account"
-                                  ),
-                                ],
-                                [
-                                  "Community",
-                                  cleanText(
-                                    domainPaymentIntent?.community_name,
-                                    `Community ${selectedDomainClanId || ""}`.trim()
-                                  ),
-                                ],
-                                [
-                                  "Domain",
-                                  cleanText(
-                                    domainPaymentIntent?.domain_display_name,
-                                    cleanText((dashboard?.community_domain as any)?.display_name, "Community Domain")
-                                  ),
-                                ],
-                                [
-                                  "Record",
-                                  cleanText(
-                                    domainPaymentIntent?.expected_payment_id,
-                                    domainPayment?.id
-                                  ),
-                                ],
-                              ].map(([label, value]) => (
-                                <div
-                                  key={label}
-                                  style={{
-                                    borderRadius: 12,
-                                    background: "rgba(255,255,255,0.82)",
-                                    border: "1px solid rgba(9,27,46,0.10)",
-                                    padding: "8px 10px",
-                                  }}
-                                >
-                                  <div style={{ ...sectionLabel(), fontSize: 11 }}>{label}</div>
+                            <div style={sectionLabel()}>
+                              Official GSN account for {domainPaymentSettlementLabel}
+                            </div>
+                            {domainPaymentSettlementReady ? (
+                              <div
+                                style={{
+                                  display: "grid",
+                                  gridTemplateColumns:
+                                    "repeat(auto-fit, minmax(min(100%, 170px), 1fr))",
+                                  gap: 8,
+                                }}
+                              >
+                                {domainPaymentSettlementRows.map(([label, value]) => (
                                   <div
+                                    key={label}
                                     style={{
-                                      color: "#091B2E",
-                                      fontSize: 13,
-                                      fontWeight: 900,
-                                      marginTop: 3,
-                                      overflowWrap: "anywhere",
+                                      borderRadius: 12,
+                                      background: "rgba(255,255,255,0.82)",
+                                      border: "1px solid rgba(9,27,46,0.10)",
+                                      padding: "8px 10px",
                                     }}
                                   >
-                                    {cleanText(value, "Recorded")}
+                                    <div style={{ ...sectionLabel(), fontSize: 11 }}>
+                                      {label}
+                                    </div>
+                                    <div
+                                      style={{
+                                        color: "#091B2E",
+                                        fontSize: 13,
+                                        fontWeight: 900,
+                                        marginTop: 3,
+                                        overflowWrap: "anywhere",
+                                      }}
+                                    >
+                                      {value}
+                                    </div>
                                   </div>
-                                </div>
-                              ))}
-                            </div>
-                            <div style={{ ...helperText(), fontSize: 12.5, fontWeight: 820 }}>
-                              Use only the payment code as the bank reference.
-                            </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <div style={{ ...helperText(), fontSize: 13, fontWeight: 850 }}>
+                                Payment account is not ready for this area yet. Do not send
+                                money until GSN finance gives an active account.
+                              </div>
+                            )}
+                            {cleanText(domainPaymentSettlement?.support_note) ? (
+                              <div style={{ ...helperText(), fontSize: 12.5 }}>
+                                {cleanText(domainPaymentSettlement?.support_note)}
+                              </div>
+                            ) : null}
                           </div>
                         ) : null}
-                        <div
-                          style={{
-                            marginTop: 10,
-                            borderRadius: 16,
-                            border: domainPaymentSettlementReady
-                              ? "1px solid rgba(22,101,52,0.22)"
-                              : "1px solid rgba(146,64,14,0.24)",
-                            background: domainPaymentSettlementReady
-                              ? "rgba(240,253,244,0.88)"
-                              : "rgba(255,247,237,0.92)",
-                            padding: "12px",
-                            display: "grid",
-                            gap: 9,
-                          }}
-                        >
-                          <div style={sectionLabel()}>
-                            Official GSN account for {domainPaymentSettlementLabel}
-                          </div>
-                          {domainPaymentSettlementReady ? (
+                        {activeBillingPaymentTask === "proof" ? (
+                          <>
                             <div
                               style={{
-                                display: "grid",
-                                gridTemplateColumns:
-                                  "repeat(auto-fit, minmax(min(100%, 170px), 1fr))",
-                                gap: 8,
+                                marginTop: 10,
+                                borderRadius: 16,
+                                border: "1px solid rgba(12,79,168,0.18)",
+                                background: "#F1F7FF",
+                                color: "#25415F",
+                                padding: "10px 12px",
+                                fontSize: 13,
+                                fontWeight: 820,
+                                lineHeight: 1.45,
                               }}
                             >
-                              {domainPaymentSettlementRows.map(([label, value]) => (
-                                <div
-                                  key={label}
-                                  style={{
-                                    borderRadius: 12,
-                                    background: "rgba(255,255,255,0.82)",
-                                    border: "1px solid rgba(9,27,46,0.10)",
-                                    padding: "8px 10px",
-                                  }}
-                                >
-                                  <div style={{ ...sectionLabel(), fontSize: 11 }}>
-                                    {label}
-                                  </div>
-                                  <div
-                                    style={{
-                                      color: "#091B2E",
-                                      fontSize: 13,
-                                      fontWeight: 900,
-                                      marginTop: 3,
-                                      overflowWrap: "anywhere",
-                                    }}
-                                  >
-                                    {value}
-                                  </div>
-                                </div>
-                              ))}
+                              Use this code as the payment reference in your own bank or
+                              provider channel. If the bank asks for app approval, SMS OTP,
+                              a one-time code, code generator, or biometric confirmation,
+                              complete that with the bank first.
                             </div>
-                          ) : (
-                            <div style={{ ...helperText(), fontSize: 13, fontWeight: 850 }}>
-                              Payment account is not ready for this area yet. Do not send
-                              money until GSN finance gives an active account.
+                            <div style={{ marginTop: 10 }}>
+                              <PaymentProofSubmissionPanel
+                                payment={domainPayment}
+                                clanId={selectedDomainClanId}
+                                title="Community Domain payment proof"
+                                compact
+                                debugIdPrefix="community-domain-payment-proof"
+                                onUploaded={(updated) => {
+                                  setDomainPayment({ ...domainPayment, ...updated });
+                                  setMessage(
+                                    "Community Domain payment proof uploaded for finance review. Activation still waits for reconciliation."
+                                  );
+                                }}
+                                onNotice={(tone, text) => {
+                                  if (tone === "success" || tone === "error") {
+                                    setMessage(text);
+                                  }
+                                }}
+                              />
                             </div>
-                          )}
-                          {cleanText(domainPaymentSettlement?.support_note) ? (
-                            <div style={{ ...helperText(), fontSize: 12.5 }}>
-                              {cleanText(domainPaymentSettlement?.support_note)}
-                            </div>
-                          ) : null}
-                        </div>
-                        <div
-                          style={{
-                            marginTop: 10,
-                            borderRadius: 16,
-                            border: "1px solid rgba(12,79,168,0.18)",
-                            background: "#F1F7FF",
-                            color: "#25415F",
-                            padding: "10px 12px",
-                            fontSize: 13,
-                            fontWeight: 820,
-                            lineHeight: 1.45,
-                          }}
-                        >
-                          Use this code as the payment reference in your own bank or
-                          provider channel. If the bank asks for app approval, SMS OTP,
-                          a one-time code, code generator, or biometric confirmation,
-                          complete that with the bank first.
-                        </div>
-                        <StableButton
-                          type="button"
-                          kind="secondary"
-                          fullWidth
-                          debugId="community-domain-dashboard.payment-proof-toggle"
-                          onClick={() => setDomainPaymentProofOpen((open) => !open)}
-                          style={{ marginTop: 10 }}
-                        >
-                          {domainPaymentProofOpen ? "Hide proof upload" : "Open proof upload"}
-                        </StableButton>
-                        {domainPaymentProofOpen ? (
-                          <div style={{ marginTop: 10 }}>
-                            <PaymentProofSubmissionPanel
-                              payment={domainPayment}
-                              clanId={selectedDomainClanId}
-                              title="Community Domain payment proof"
-                              compact
-                              debugIdPrefix="community-domain-payment-proof"
-                              onUploaded={(updated) => {
-                                setDomainPayment({ ...domainPayment, ...updated });
-                                setMessage(
-                                  "Community Domain payment proof uploaded for finance review. Activation still waits for reconciliation."
-                                );
-                              }}
-                              onNotice={(tone, text) => {
-                                if (tone === "success" || tone === "error") {
-                                  setMessage(text);
-                                }
-                              }}
-                            />
-                          </div>
+                          </>
                         ) : null}
+                      </div>
+                    ) : null}
+                    {!domainPayment && activeBillingPaymentTask !== "reference" ? (
+                      <div style={{ ...softCard(), marginTop: 12 }}>
+                        <div style={sectionLabel()}>Payment code needed</div>
+                        <div style={{ ...helperText(), marginTop: 7 }}>
+                          Generate the Community Domain payment code first. The
+                          official pay account and proof upload appear after the
+                          payment record exists.
+                        </div>
                       </div>
                     ) : null}
                       </>
@@ -11482,7 +11605,12 @@ export default function CommunityDomainDashboardPage() {
                               aria-pressed={selected}
                               title={option.note}
                               debugId={`community-domain-dashboard.member-detail.${option.key}`}
-                              onClick={() => setActiveMemberDetail(option.key)}
+                              onClick={() => {
+                                setActiveMemberDetail(option.key);
+                                if (option.key === "roster") {
+                                  setActiveMemberRosterTask("summary");
+                                }
+                              }}
                               style={{
                                 justifyContent: "center",
                                 fontSize: 13,
@@ -11559,108 +11687,188 @@ export default function CommunityDomainDashboardPage() {
                           </div>
                         ) : null}
 
-                        <div style={{ display: "grid", gap: 8 }}>
-                          {domainMemberRows.length ? (
-                            domainMemberRows.map((row) => {
-                              const userId = cleanText(row?.user_id);
-                              const rowKey = cleanText(row?.id, userId);
-                              const statusText = cleanText(row?.status, "inactive").toLowerCase();
-                              const activeMember = statusText === "active";
-                              const busy = busyMemberStatusId === `${cleanText(domain?.id || communityDomainId)}:${userId}`;
-                              const roleText = compactStatus(row?.role || "member");
-                              const label =
-                                cleanText(row?.user_display_name) ||
-                                cleanText(row?.user_email) ||
-                                (userId ? `Member ${userId}` : "Domain member");
-                              return (
+                        <div
+                          style={{
+                            display: "grid",
+                            gridTemplateColumns:
+                              "repeat(auto-fit, minmax(min(100%, 132px), 1fr))",
+                            gap: 8,
+                          }}
+                        >
+                          {MEMBER_ROSTER_TASK_OPTIONS.map((task) => {
+                            const selected = task.key === activeMemberRosterTask;
+                            return (
+                              <StableButton
+                                key={task.key}
+                                type="button"
+                                kind={selected ? "primary" : "secondary"}
+                                stableHeight={44}
+                                fullWidth
+                                aria-pressed={selected}
+                                title={task.note}
+                                debugId={`community-domain-dashboard.member-roster.${task.key}`}
+                                onClick={() => setActiveMemberRosterTask(task.key)}
+                                style={{
+                                  justifyContent: "center",
+                                  fontSize: 13,
+                                  textTransform: "none",
+                                }}
+                              >
+                                {task.label}
+                              </StableButton>
+                            );
+                          })}
+                        </div>
+                        <div style={{ ...helperText(), fontSize: 13 }}>
+                          {MEMBER_ROSTER_TASK_OPTIONS.find(
+                            (task) => task.key === activeMemberRosterTask
+                          )?.note || "Choose the roster packet you need."}
+                        </div>
+
+                        {activeMemberRosterTask === "summary" ? (
+                          <div style={{ display: "grid", gap: 10 }}>
+                            <div
+                              style={{
+                                display: "grid",
+                                gridTemplateColumns:
+                                  "repeat(auto-fit, minmax(min(100%, 132px), 1fr))",
+                                gap: 8,
+                              }}
+                            >
+                              {memberRosterSummaryRows.map(([label, value]) => (
                                 <div
-                                  key={rowKey}
+                                  key={label}
                                   style={{
+                                    border: "1px solid rgba(9,27,46,0.1)",
+                                    borderRadius: 16,
+                                    background: "rgba(255,255,255,0.66)",
+                                    padding: "10px 12px",
+                                    minHeight: 68,
                                     display: "grid",
-                                    gridTemplateColumns:
-                                      "minmax(0, 1fr) minmax(min(100%, 136px), auto)",
-                                    gap: 10,
-                                    alignItems: "center",
-                                    padding: "10px 0",
-                                    borderTop: "1px solid rgba(9,27,46,0.1)",
+                                    alignContent: "center",
+                                    gap: 3,
                                   }}
                                 >
-                                  <div style={{ minWidth: 0 }}>
-                                    <div
-                                      style={{
-                                        display: "flex",
-                                        flexWrap: "wrap",
-                                        gap: 8,
-                                        alignItems: "center",
-                                      }}
-                                    >
-                                      <strong
-                                        style={{
-                                          color: "#091B2E",
-                                          fontSize: 15,
-                                          overflowWrap: "anywhere",
-                                        }}
-                                      >
-                                        {label}
-                                      </strong>
-                                      <span
-                                        style={{
-                                          borderRadius: 999,
-                                          padding: "4px 8px",
-                                          fontSize: 12,
-                                          fontWeight: 900,
-                                          background: activeMember ? "#ECFDF3" : "#FFF7E6",
-                                          color: activeMember ? "#166534" : "#92400E",
-                                          border: `1px solid ${
-                                            activeMember
-                                              ? "rgba(46,155,98,0.22)"
-                                              : "rgba(245,158,11,0.28)"
-                                          }`,
-                                        }}
-                                      >
-                                        {compactStatus(statusText)}
-                                      </span>
-                                    </div>
-                                    <div style={{ ...helperText(), fontSize: 13, marginTop: 4 }}>
-                                      {roleText}
-                                      {cleanText(row?.title) ? ` - ${cleanText(row.title)}` : ""}
-                                    </div>
-                                  </div>
-                                  {isAdmin ? (
-                                    <StableButton
-                                      type="button"
-                                      kind={activeMember ? "secondary" : "primary"}
-                                      stableHeight={44}
-                                      disabled={busy}
-                                      debugId={`community-domain-dashboard.member-status.${rowKey}`}
-                                      onClick={() =>
-                                        void changeDomainMemberStatus(
-                                          row,
-                                          activeMember ? "inactive" : "active"
-                                        )
-                                      }
-                                      style={{
-                                        justifyContent: "center",
-                                        fontSize: 13,
-                                        textTransform: "none",
-                                      }}
-                                    >
-                                      {busy
-                                        ? "Saving"
-                                        : activeMember
-                                          ? "Deactivate"
-                                          : "Reactivate"}
-                                    </StableButton>
-                                  ) : null}
+                                  <span style={{ ...helperText(), fontSize: 12 }}>
+                                    {label}
+                                  </span>
+                                  <strong style={{ color: "#091B2E", fontSize: 22 }}>
+                                    {value}
+                                  </strong>
                                 </div>
-                              );
-                            })
-                          ) : (
-                            <div style={helperText()}>
-                              No Community Domain members were returned for this roster view.
+                              ))}
                             </div>
-                          )}
-                        </div>
+                            <div style={helperText()}>
+                              Active members can pass public active-member proof for this domain.
+                              Inactive rows stay in history but should not pass that public check.
+                            </div>
+                          </div>
+                        ) : null}
+
+                        {activeMemberRosterTask === "members" ? (
+                          <div style={{ display: "grid", gap: 8 }}>
+                            {domainMemberRows.length ? (
+                              domainMemberRows.map((row) => {
+                                const userId = cleanText(row?.user_id);
+                                const rowKey = cleanText(row?.id, userId);
+                                const statusText = cleanText(row?.status, "inactive").toLowerCase();
+                                const activeMember = statusText === "active";
+                                const busy = busyMemberStatusId === `${cleanText(domain?.id || communityDomainId)}:${userId}`;
+                                const roleText = compactStatus(row?.role || "member");
+                                const label =
+                                  cleanText(row?.user_display_name) ||
+                                  cleanText(row?.user_email) ||
+                                  (userId ? `Member ${userId}` : "Domain member");
+                                return (
+                                  <div
+                                    key={rowKey}
+                                    style={{
+                                      display: "grid",
+                                      gridTemplateColumns:
+                                        "minmax(0, 1fr) minmax(min(100%, 136px), auto)",
+                                      gap: 10,
+                                      alignItems: "center",
+                                      padding: "10px 0",
+                                      borderTop: "1px solid rgba(9,27,46,0.1)",
+                                    }}
+                                  >
+                                    <div style={{ minWidth: 0 }}>
+                                      <div
+                                        style={{
+                                          display: "flex",
+                                          flexWrap: "wrap",
+                                          gap: 8,
+                                          alignItems: "center",
+                                        }}
+                                      >
+                                        <strong
+                                          style={{
+                                            color: "#091B2E",
+                                            fontSize: 15,
+                                            overflowWrap: "anywhere",
+                                          }}
+                                        >
+                                          {label}
+                                        </strong>
+                                        <span
+                                          style={{
+                                            borderRadius: 999,
+                                            padding: "4px 8px",
+                                            fontSize: 12,
+                                            fontWeight: 900,
+                                            background: activeMember ? "#ECFDF3" : "#FFF7E6",
+                                            color: activeMember ? "#166534" : "#92400E",
+                                            border: `1px solid ${
+                                              activeMember
+                                                ? "rgba(46,155,98,0.22)"
+                                                : "rgba(245,158,11,0.28)"
+                                            }`,
+                                          }}
+                                        >
+                                          {compactStatus(statusText)}
+                                        </span>
+                                      </div>
+                                      <div style={{ ...helperText(), fontSize: 13, marginTop: 4 }}>
+                                        {roleText}
+                                        {cleanText(row?.title) ? ` - ${cleanText(row.title)}` : ""}
+                                      </div>
+                                    </div>
+                                    {isAdmin ? (
+                                      <StableButton
+                                        type="button"
+                                        kind={activeMember ? "secondary" : "primary"}
+                                        stableHeight={44}
+                                        disabled={busy}
+                                        debugId={`community-domain-dashboard.member-status.${rowKey}`}
+                                        onClick={() =>
+                                          void changeDomainMemberStatus(
+                                            row,
+                                            activeMember ? "inactive" : "active"
+                                          )
+                                        }
+                                        style={{
+                                          justifyContent: "center",
+                                          fontSize: 13,
+                                          textTransform: "none",
+                                        }}
+                                      >
+                                        {busy
+                                          ? "Saving"
+                                          : activeMember
+                                            ? "Deactivate"
+                                            : "Reactivate"}
+                                      </StableButton>
+                                    ) : null}
+                                  </div>
+                                );
+                              })
+                            ) : (
+                              <div style={helperText()}>
+                                No Community Domain members were returned for this roster view.
+                              </div>
+                            )}
+                          </div>
+                        ) : null}
                       </div>
                     ) : null}
                   </>

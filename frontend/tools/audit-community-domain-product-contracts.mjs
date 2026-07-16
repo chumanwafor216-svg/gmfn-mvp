@@ -1222,6 +1222,20 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
+  /type BillingPaymentTaskKey = "reference" \| "pay_account" \| "proof"[\s\S]*BILLING_PAYMENT_TASK_OPTIONS[\s\S]*key: "reference"[\s\S]*key: "pay_account"[\s\S]*key: "proof"[\s\S]*activeBillingPaymentTask[\s\S]*setActiveBillingPaymentTask\("reference"\)[\s\S]*Code & proof packets[\s\S]*community-domain-dashboard\.billing-payment\.\$\{task\.key\}[\s\S]*activeBillingPaymentTask === "reference"[\s\S]*community-domain-dashboard\.payment-code-form-toggle[\s\S]*activeBillingPaymentTask === "pay_account"[\s\S]*Official GSN account[\s\S]*activeBillingPaymentTask === "proof"[\s\S]*PaymentProofSubmissionPanel[\s\S]*Payment code needed/,
+  "Community Domain Billing Code & proof must keep reference generation, official pay account, and proof upload in separate packets.",
+  { frontend: true }
+);
+
+assertNotContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /domainPaymentProofOpen|community-domain-dashboard\.payment-proof-toggle/,
+  "Community Domain Billing proof upload must be the selected Proof packet, not a second nested reveal inside Code & proof.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
   /activeDomainPermissionFacts = DOMAIN_FEATURE_POLICY_ROWS\.map[\s\S]*showActiveDomainSettingsSummary[\s\S]*domainOperational && activeLane === "settings" && setupJourneyMode !== "edit"[\s\S]*Operating summary[\s\S]*Open one active-domain question[\s\S]*community-domain-dashboard\.operating-summary\.\$\{task\}[\s\S]*activeOperatingSummaryTask === "next_action"[\s\S]*should use live operating\s+areas first after activation[\s\S]*Use setup only when you\s+need to correct saved details, add authority evidence, or\s+prepare verification[\s\S]*active does not mean verified[\s\S]*community-domain-dashboard\.settings-open-live-lane[\s\S]*community-domain-dashboard\.settings-edit-setup-details[\s\S]*Edit setup details[\s\S]*activeOperatingSummaryTask === "allowance"[\s\S]*Package allowance[\s\S]*packageCapacityFacts\.map[\s\S]*packageTariffBoundaryText[\s\S]*Summary only[\s\S]*does not add members, sell extra\s+bands, grant paid features, confirm payment, or verify\s+the organisation[\s\S]*activeOperatingSummaryTask === "permissions"[\s\S]*Domain permissions[\s\S]*activeDomainPermissionFacts\.map[\s\S]*Source: \{featurePolicySourceLabel\}[\s\S]*summary only\s+explains the current policy[\s\S]*change live behaviour\s+through Edit setup details/,
   "Active Community Domains must keep next action, package allowance, and all domain permission boundaries on the settings lane, but expose them through one operating-summary selector with setup editing behind an explicit edit action.",
   { frontend: true }
@@ -2390,6 +2404,13 @@ assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
   /MEMBER_DETAIL_OPTIONS[\s\S]*key: "readiness"[\s\S]*key: "placement"[\s\S]*activeMemberDetail[\s\S]*community-domain-dashboard\.member-detail\.\$\{option\.key\}[\s\S]*activeMemberDetail === "readiness"[\s\S]*CommunityDomainMemberReadinessPanels[\s\S]*activeMemberDetail === "placement"[\s\S]*variant="memberParticipation"/,
   "Community Domain dashboard Members lane must expose one focused member packet at a time instead of dumping member readiness and unit placement together.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /type MemberRosterTaskKey = "summary" \| "members"[\s\S]*MEMBER_ROSTER_TASK_OPTIONS[\s\S]*key: "summary"[\s\S]*key: "members"[\s\S]*activeMemberRosterTask[\s\S]*setActiveMemberRosterTask\("summary"\)[\s\S]*memberRosterSummaryRows[\s\S]*community-domain-dashboard\.member-roster\.\$\{task\.key\}[\s\S]*activeMemberRosterTask === "summary"[\s\S]*Active members can pass public active-member proof[\s\S]*activeMemberRosterTask === "members"[\s\S]*domainMemberRows\.length[\s\S]*community-domain-dashboard\.member-status\.\$\{rowKey\}/,
+  "Community Domain dashboard roster control must keep summary and member status rows in separate packets instead of exposing the full roster by default.",
   { frontend: true }
 );
 
