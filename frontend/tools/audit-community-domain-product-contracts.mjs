@@ -3435,6 +3435,12 @@ assertNotContains(
 
 assertNotContains(
   "docs/COMMUNITY_DOMAIN_ACTOR_IDENTITY_AUDIT_2026-07-15.md",
+  /Phase 2 - Membership governance completion|Make membership status and removal explicit for Community Domains|governance completion\s+and activity-catalogue Trust Events/,
+  "Community Domain audit must not reintroduce stale roadmap framing that treats bounded membership governance and activity Trust Events as still unimplemented."
+);
+
+assertNotContains(
+  "docs/COMMUNITY_DOMAIN_ACTOR_IDENTITY_AUDIT_2026-07-15.md",
   /beneficiary\s+confirmation links,[\s\S]{0,120}remain future work|beneficiary\s+confirmation links,[\s\S]{0,160}not yet\s+complete|correction approval,[\s\S]{0,120}remain future work|delivery receipts,[\s\S]{0,120}remain future work|delivery consent rules remain future work/,
   "Community Domain audit must not reintroduce stale future-work claims for beneficiary confirmation links, correction reviews, manual delivery receipts, or delivery consent-basis capture after those bounded slices exist."
 );

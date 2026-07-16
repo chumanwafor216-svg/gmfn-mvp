@@ -1355,17 +1355,19 @@ work does not treat `domain_name` as full actor authority.
 
 No schema change is required for this phase.
 
-### Phase 2 - Membership governance completion
+### Phase 2 - Membership governance v1
 
-Make membership status and removal explicit for Community Domains:
+Membership status and removal are now explicit in the bounded v1 path:
 
 - add/apply member;
 - approve request;
 - deactivate/remove member;
-- prevent removing the last owner/admin;
-- make public active-membership verification fail or show inactive when a
-  member is removed;
+- prevent removing the recorded owner through the roster route;
+- make public active-membership verification fail when a member is removed;
 - preserve removal as history, not deletion.
+
+Remaining lift: simplify the governance language and decide the public-safe
+inactive/pending/not-found response model without exposing the private roster.
 
 ### Phase 3 - Community Domain public verification
 
@@ -1515,11 +1517,13 @@ For MVP, `Pillar of Hope` should be treated like a protected community/domain:
 - the domain itself does not own a shop unless a future institutional-shop
   model is deliberately approved.
 
-The next implementation should focus on Community Domain governance completion
-and activity-catalogue Trust Events. Institutional shop ownership should be
-parked as a future optional governed module, because it needs pricing, operator
-authority, dispute handling, institutional Trust Event ownership, and succession
-rules before it is safe.
+The next implementation should focus on simplifying Community Domain governance
+language, configurable domain-specific activity templates, low-burden capture,
+public-safe inactive/pending membership wording, deeper confirmation/correction
+workflow, and public/submission sponsor proof. Institutional shop ownership
+should be parked as a future optional governed module, because it needs pricing,
+operator authority, dispute handling, institutional Trust Event ownership, and
+succession rules before it is safe.
 
 ## Current system comparison - what fits, what is shut off, what is overbuilt
 
