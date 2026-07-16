@@ -2666,6 +2666,12 @@ export default function CommunityDomainDashboardPage() {
   const [showAdvancedTools, setShowAdvancedTools] = useState(false);
   const [operatingAreaPickerOpen, setOperatingAreaPickerOpen] = useState(false);
   const [commandGuidanceOpen, setCommandGuidanceOpen] = useState(false);
+  const [workSurfaceNotesOpen, setWorkSurfaceNotesOpen] = useState(false);
+  const [operatingSummaryNotesOpen, setOperatingSummaryNotesOpen] = useState(false);
+  const [servicePacketChooserOpen, setServicePacketChooserOpen] = useState(false);
+  const [structurePacketChooserOpen, setStructurePacketChooserOpen] = useState(false);
+  const [memberPacketChooserOpen, setMemberPacketChooserOpen] = useState(false);
+  const [governanceTaskChooserOpen, setGovernanceTaskChooserOpen] = useState(false);
   const [activeStructureDetail, setActiveStructureDetail] =
     useState<StructureDetailKey>("preview");
   const [activeServiceDetail, setActiveServiceDetail] =
@@ -4394,6 +4400,12 @@ export default function CommunityDomainDashboardPage() {
     setSetupJourneyMode("setup");
     setShowAdvancedTools(requestedLane !== "settings");
     setCommandGuidanceOpen(false);
+    setWorkSurfaceNotesOpen(false);
+    setOperatingSummaryNotesOpen(false);
+    setServicePacketChooserOpen(false);
+    setStructurePacketChooserOpen(false);
+    setMemberPacketChooserOpen(false);
+    setGovernanceTaskChooserOpen(false);
     focusWorkSurfaceAfterOpenRef.current = true;
   }, [lanes, requestedLane]);
   const latestMembershipRequest = latestRelevantMembershipRequest(ownMembershipRequests);
@@ -4989,6 +5001,12 @@ export default function CommunityDomainDashboardPage() {
     setSetupWorkspaceOpen(true);
     setShowAdvancedTools(false);
     setCommandGuidanceOpen(false);
+    setWorkSurfaceNotesOpen(false);
+    setOperatingSummaryNotesOpen(false);
+    setServicePacketChooserOpen(false);
+    setStructurePacketChooserOpen(false);
+    setMemberPacketChooserOpen(false);
+    setGovernanceTaskChooserOpen(false);
     if (mode === "edit") {
       setMessage(
         setupEditingLocked
@@ -5002,6 +5020,7 @@ export default function CommunityDomainDashboardPage() {
 
   function selectGovernanceTask(task: GovernanceTaskKey) {
     setActiveGovernanceTask(task);
+    setGovernanceTaskChooserOpen(false);
     if (task === "real_life_record") {
       setActiveRealLifeRecordTask((current) => current || "activity");
       setActiveActivityRecordTask("record");
@@ -5025,6 +5044,12 @@ export default function CommunityDomainDashboardPage() {
     setShowAdvancedTools(true);
     setOperatingAreaPickerOpen(false);
     setCommandGuidanceOpen(false);
+    setWorkSurfaceNotesOpen(false);
+    setOperatingSummaryNotesOpen(false);
+    setServicePacketChooserOpen(false);
+    setStructurePacketChooserOpen(false);
+    setMemberPacketChooserOpen(false);
+    setGovernanceTaskChooserOpen(false);
     setActiveLane("governance");
     setMessage("");
   }
@@ -5035,6 +5060,12 @@ export default function CommunityDomainDashboardPage() {
     setSetupWorkspaceOpen(false);
     setSetupJourneyMode("setup");
     setCommandGuidanceOpen(false);
+    setWorkSurfaceNotesOpen(false);
+    setOperatingSummaryNotesOpen(false);
+    setServicePacketChooserOpen(false);
+    setStructurePacketChooserOpen(false);
+    setMemberPacketChooserOpen(false);
+    setGovernanceTaskChooserOpen(false);
     setMessage("Returned to Domain command. Choose Marketplace or open one operating area.");
     window.requestAnimationFrame(() => {
       commandSurfaceRef.current?.scrollIntoView({ block: "start", behavior: "auto" });
@@ -5130,6 +5161,12 @@ export default function CommunityDomainDashboardPage() {
     setSetupWorkspaceOpen(false);
     setShowAdvancedTools(true);
     setCommandGuidanceOpen(false);
+    setWorkSurfaceNotesOpen(false);
+    setOperatingSummaryNotesOpen(false);
+    setServicePacketChooserOpen(false);
+    setStructurePacketChooserOpen(false);
+    setMemberPacketChooserOpen(false);
+    setGovernanceTaskChooserOpen(false);
     setActiveBillingTask("payment_code");
     setActiveBillingPaymentTask("reference");
     setActiveLane("billing");
@@ -6466,6 +6503,12 @@ export default function CommunityDomainDashboardPage() {
                     setShowAdvancedTools(true);
                     setOperatingAreaPickerOpen(false);
                     setCommandGuidanceOpen(false);
+                    setWorkSurfaceNotesOpen(false);
+                    setOperatingSummaryNotesOpen(false);
+                    setServicePacketChooserOpen(false);
+                    setStructurePacketChooserOpen(false);
+                    setMemberPacketChooserOpen(false);
+                    setGovernanceTaskChooserOpen(false);
                     setActiveLane(operationalLaneKey);
                     setMessage("");
                   }}
@@ -6945,6 +6988,12 @@ export default function CommunityDomainDashboardPage() {
                       setShowAdvancedTools(false);
                     }
                     setCommandGuidanceOpen(false);
+                    setWorkSurfaceNotesOpen(false);
+                    setOperatingSummaryNotesOpen(false);
+                    setServicePacketChooserOpen(false);
+                    setStructurePacketChooserOpen(false);
+                    setMemberPacketChooserOpen(false);
+                    setGovernanceTaskChooserOpen(false);
                   }}
                 >
                   Open {mainActionLaneLabel}
@@ -7082,6 +7131,12 @@ export default function CommunityDomainDashboardPage() {
                   onSelectLane={(laneKey) => {
                     setActiveLane(laneKey);
                     setOperatingAreaPickerOpen(false);
+                    setWorkSurfaceNotesOpen(false);
+                    setOperatingSummaryNotesOpen(false);
+                    setServicePacketChooserOpen(false);
+                    setStructurePacketChooserOpen(false);
+                    setMemberPacketChooserOpen(false);
+                    setGovernanceTaskChooserOpen(false);
                   }}
                 />
               </Suspense>
@@ -7168,20 +7223,49 @@ export default function CommunityDomainDashboardPage() {
                   </div>
                 </div>
                 {showAdvancedTools ? (
-                  <div style={{ display: "grid", gap: 5 }}>
-                    <div style={helperText()}>
-                      Current state:{" "}
-                      <strong style={{ textTransform: "capitalize" }}>
-                        {compactStatus(selectedLane?.status)}
-                      </strong>
-                      . Count: <strong>{countValue(selectedLane?.count)}</strong>.
+                  <div style={{ display: "grid", gap: 8 }}>
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns:
+                          "minmax(0, 1fr) minmax(min(100%, 118px), auto)",
+                        gap: 8,
+                        alignItems: "center",
+                      }}
+                    >
+                      <div style={helperText()}>
+                        Current state:{" "}
+                        <strong style={{ textTransform: "capitalize" }}>
+                          {compactStatus(selectedLane?.status)}
+                        </strong>
+                        . Count: <strong>{countValue(selectedLane?.count)}</strong>.
+                      </div>
+                      <StableButton
+                        type="button"
+                        kind="secondary"
+                        stableHeight={38}
+                        minWidth={118}
+                        debugId="community-domain-dashboard.work-surface.notes-toggle"
+                        aria-expanded={workSurfaceNotesOpen}
+                        aria-controls="community-domain-work-surface-notes"
+                        onClick={() => setWorkSurfaceNotesOpen((current) => !current)}
+                        style={{ fontSize: 13 }}
+                      >
+                        {workSurfaceNotesOpen ? "Close notes" : "Open notes"}
+                      </StableButton>
                     </div>
-                    <div style={{ ...helperText(), fontSize: 12.5 }}>
-                      Boundary:{" "}
-                      {domainOperational
-                        ? "Operating view only. It does not verify ownership, confirm new payments, grant paid features, or expose private records."
-                        : "Setup view only. It does not confirm payment, activate the domain, verify ownership, or expose private records."}
-                    </div>
+                    {workSurfaceNotesOpen ? (
+                      <div
+                        id="community-domain-work-surface-notes"
+                        data-debug-id="community-domain-dashboard.work-surface.notes-panel"
+                        style={{ ...helperText(), fontSize: 12.5 }}
+                      >
+                        Boundary:{" "}
+                        {domainOperational
+                          ? "Operating view only. It does not verify ownership, confirm new payments, grant paid features, or expose private records."
+                          : "Setup view only. It does not confirm payment, activate the domain, verify ownership, or expose private records."}
+                      </div>
+                    ) : null}
                   </div>
                 ) : null}
 
@@ -7227,9 +7311,10 @@ export default function CommunityDomainDashboardPage() {
                             aria-pressed={selected}
                             title={group.note}
                             debugId={`community-domain-dashboard.operating-summary-group.${group.key}`}
-                            onClick={() =>
-                              setActiveOperatingSummaryTask(group.defaultTask)
-                            }
+                            onClick={() => {
+                              setActiveOperatingSummaryTask(group.defaultTask);
+                              setOperatingSummaryNotesOpen(false);
+                            }}
                           >
                             {group.label}
                           </StableButton>
@@ -7259,7 +7344,10 @@ export default function CommunityDomainDashboardPage() {
                             aria-pressed={selected}
                             title={task.note}
                             debugId={`community-domain-dashboard.operating-summary.${task.key}`}
-                            onClick={() => setActiveOperatingSummaryTask(task.key)}
+                            onClick={() => {
+                              setActiveOperatingSummaryTask(task.key);
+                              setOperatingSummaryNotesOpen(false);
+                            }}
                           >
                             {task.label}
                           </StableButton>
@@ -7274,18 +7362,6 @@ export default function CommunityDomainDashboardPage() {
 
                     {activeOperatingSummaryTask === "next_action" ? (
                       <>
-                        <div style={{ ...helperText(), fontSize: 14 }}>
-                          Pillar-style Community Domains should use live operating
-                          areas first after activation. Use setup only when you
-                          need to correct saved details, add authority evidence, or
-                          prepare verification.
-                        </div>
-                        <div style={{ ...helperText(), fontSize: 13 }}>
-                          Boundary: active does not mean verified. Verification
-                          still needs authority evidence and review; tariff
-                          upgrades, member bands, and paid feature changes still
-                          need manual capacity/finance handling.
-                        </div>
                         <div
                           style={{
                             display: "grid",
@@ -7306,6 +7382,12 @@ export default function CommunityDomainDashboardPage() {
                               setActiveLane(operationalLaneKey);
                               setSetupJourneyMode("setup");
                               setCommandGuidanceOpen(false);
+                              setWorkSurfaceNotesOpen(false);
+                              setOperatingSummaryNotesOpen(false);
+                              setServicePacketChooserOpen(false);
+                              setStructurePacketChooserOpen(false);
+                              setMemberPacketChooserOpen(false);
+                              setGovernanceTaskChooserOpen(false);
                             }}
                           >
                             Open {operationalLaneLabel}
@@ -7319,6 +7401,42 @@ export default function CommunityDomainDashboardPage() {
                             Edit setup details
                           </StableButton>
                         </div>
+                        <StableButton
+                          type="button"
+                          kind="secondary"
+                          fullWidth
+                          stableHeight={42}
+                          debugId="community-domain-dashboard.operating-summary-notes-toggle"
+                          aria-expanded={operatingSummaryNotesOpen}
+                          aria-controls="community-domain-operating-summary-notes"
+                          onClick={() =>
+                            setOperatingSummaryNotesOpen((current) => !current)
+                          }
+                          style={{ fontSize: 13 }}
+                        >
+                          {operatingSummaryNotesOpen ? "Close notes" : "Open notes"}
+                        </StableButton>
+                        {operatingSummaryNotesOpen ? (
+                          <div
+                            id="community-domain-operating-summary-notes"
+                            data-debug-id="community-domain-dashboard.operating-summary-notes-panel"
+                            style={{ display: "grid", gap: 7 }}
+                          >
+                            <div style={{ ...helperText(), fontSize: 14 }}>
+                              Pillar-style Community Domains should use live
+                              operating areas first after activation. Use setup
+                              only when you need to correct saved details, add
+                              authority evidence, or prepare verification.
+                            </div>
+                            <div style={{ ...helperText(), fontSize: 13 }}>
+                              Boundary: active does not mean verified.
+                              Verification still needs authority evidence and
+                              review; tariff upgrades, member bands, and paid
+                              feature changes still need manual capacity/finance
+                              handling.
+                            </div>
+                          </div>
+                        ) : null}
                       </>
                     ) : null}
 
@@ -9502,7 +9620,13 @@ export default function CommunityDomainDashboardPage() {
                               aria-pressed={selected}
                               title={group.note}
                               debugId={`community-domain-dashboard.service-group.${group.key}`}
-                              onClick={() => setActiveServiceDetail(group.defaultDetail)}
+                              onClick={() => {
+                                setActiveServiceDetail(group.defaultDetail);
+                                setServicePacketChooserOpen(false);
+                                setStructurePacketChooserOpen(false);
+                                setMemberPacketChooserOpen(false);
+                                setGovernanceTaskChooserOpen(false);
+                              }}
                               style={{
                                 justifyContent: "center",
                                 fontSize: 13,
@@ -9523,41 +9647,77 @@ export default function CommunityDomainDashboardPage() {
                             gap: 8,
                           }}
                         >
-                          <div style={sectionLabel()}>
-                            {activeServiceDetailGroupOption.label} packets
-                          </div>
-                          <div
+                          <StableButton
+                            type="button"
+                            kind="secondary"
+                            fullWidth
+                            stableHeight={42}
+                            debugId="community-domain-dashboard.service-packet-toggle"
+                            aria-expanded={servicePacketChooserOpen}
+                            aria-controls="community-domain-service-packets"
+                            onClick={() =>
+                              setServicePacketChooserOpen((current) => !current)
+                            }
                             style={{
-                              display: "grid",
-                              gridTemplateColumns:
-                                "repeat(auto-fit, minmax(min(100%, 136px), 1fr))",
-                              gap: 8,
+                              justifyContent: "center",
+                              fontSize: 13,
+                              textTransform: "none",
                             }}
                           >
-                            {activeServiceGroupDetails.map((option) => {
-                              const selected = option.key === activeServiceDetail;
-                              return (
-                                <StableButton
-                                  key={option.key}
-                                  type="button"
-                                  kind={selected ? "primary" : "secondary"}
-                                  stableHeight={42}
-                                  fullWidth
-                                  aria-pressed={selected}
-                                  title={option.note}
-                                  debugId={`community-domain-dashboard.service-detail.${option.key}`}
-                                  onClick={() => setActiveServiceDetail(option.key)}
-                                  style={{
-                                    justifyContent: "center",
-                                    fontSize: 13,
-                                    textTransform: "none",
-                                  }}
-                                >
-                                  {option.label}
-                                </StableButton>
-                              );
-                            })}
-                          </div>
+                            {servicePacketChooserOpen ? "Close packets" : "Change packet"}
+                          </StableButton>
+                          {servicePacketChooserOpen ? (
+                            <div
+                              id="community-domain-service-packets"
+                              data-debug-id="community-domain-dashboard.service-packet-panel"
+                              style={{
+                                display: "grid",
+                                gap: 8,
+                              }}
+                            >
+                              <div style={sectionLabel()}>
+                                {activeServiceDetailGroupOption.label} packets
+                              </div>
+                              <div
+                                style={{
+                                  display: "grid",
+                                  gridTemplateColumns:
+                                    "repeat(auto-fit, minmax(min(100%, 136px), 1fr))",
+                                  gap: 8,
+                                }}
+                              >
+                                {activeServiceGroupDetails.map((option) => {
+                                  const selected = option.key === activeServiceDetail;
+                                  return (
+                                    <StableButton
+                                      key={option.key}
+                                      type="button"
+                                      kind={selected ? "primary" : "secondary"}
+                                      stableHeight={42}
+                                      fullWidth
+                                      aria-pressed={selected}
+                                      title={option.note}
+                                      debugId={`community-domain-dashboard.service-detail.${option.key}`}
+                                      onClick={() => {
+                                        setActiveServiceDetail(option.key);
+                                        setServicePacketChooserOpen(false);
+                                        setStructurePacketChooserOpen(false);
+                                        setMemberPacketChooserOpen(false);
+                                        setGovernanceTaskChooserOpen(false);
+                                      }}
+                                      style={{
+                                        justifyContent: "center",
+                                        fontSize: 13,
+                                        textTransform: "none",
+                                      }}
+                                    >
+                                      {option.label}
+                                    </StableButton>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          ) : null}
                         </div>
                       ) : null}
                       <div style={{ ...helperText(), fontSize: 13 }}>
@@ -9782,7 +9942,12 @@ export default function CommunityDomainDashboardPage() {
                               aria-pressed={selected}
                               title={group.note}
                               debugId={`community-domain-dashboard.structure-group.${group.key}`}
-                              onClick={() => setActiveStructureDetail(group.defaultDetail)}
+                              onClick={() => {
+                                setActiveStructureDetail(group.defaultDetail);
+                                setStructurePacketChooserOpen(false);
+                                setMemberPacketChooserOpen(false);
+                                setGovernanceTaskChooserOpen(false);
+                              }}
                               style={{
                                 justifyContent: "center",
                                 fontSize: 13,
@@ -9803,41 +9968,76 @@ export default function CommunityDomainDashboardPage() {
                             gap: 8,
                           }}
                         >
-                          <div style={sectionLabel()}>
-                            {activeStructureDetailGroupOption.label} packets
-                          </div>
-                          <div
+                          <StableButton
+                            type="button"
+                            kind="secondary"
+                            fullWidth
+                            stableHeight={42}
+                            debugId="community-domain-dashboard.structure-packet-toggle"
+                            aria-expanded={structurePacketChooserOpen}
+                            aria-controls="community-domain-structure-packets"
+                            onClick={() =>
+                              setStructurePacketChooserOpen((current) => !current)
+                            }
                             style={{
-                              display: "grid",
-                              gridTemplateColumns:
-                                "repeat(auto-fit, minmax(min(100%, 136px), 1fr))",
-                              gap: 8,
+                              justifyContent: "center",
+                              fontSize: 13,
+                              textTransform: "none",
                             }}
                           >
-                            {activeStructureGroupDetails.map((option) => {
-                              const selected = option.key === activeStructureDetail;
-                              return (
-                                <StableButton
-                                  key={option.key}
-                                  type="button"
-                                  kind={selected ? "primary" : "secondary"}
-                                  stableHeight={42}
-                                  fullWidth
-                                  aria-pressed={selected}
-                                  title={option.note}
-                                  debugId={`community-domain-dashboard.structure-detail.${option.key}`}
-                                  onClick={() => setActiveStructureDetail(option.key)}
-                                  style={{
-                                    justifyContent: "center",
-                                    fontSize: 13,
-                                    textTransform: "none",
-                                  }}
-                                >
-                                  {option.label}
-                                </StableButton>
-                              );
-                            })}
-                          </div>
+                            {structurePacketChooserOpen ? "Close packets" : "Change packet"}
+                          </StableButton>
+                          {structurePacketChooserOpen ? (
+                            <div
+                              id="community-domain-structure-packets"
+                              data-debug-id="community-domain-dashboard.structure-packet-panel"
+                              style={{
+                                display: "grid",
+                                gap: 8,
+                              }}
+                            >
+                              <div style={sectionLabel()}>
+                                {activeStructureDetailGroupOption.label} packets
+                              </div>
+                              <div
+                                style={{
+                                  display: "grid",
+                                  gridTemplateColumns:
+                                    "repeat(auto-fit, minmax(min(100%, 136px), 1fr))",
+                                  gap: 8,
+                                }}
+                              >
+                                {activeStructureGroupDetails.map((option) => {
+                                  const selected = option.key === activeStructureDetail;
+                                  return (
+                                    <StableButton
+                                      key={option.key}
+                                      type="button"
+                                      kind={selected ? "primary" : "secondary"}
+                                      stableHeight={42}
+                                      fullWidth
+                                      aria-pressed={selected}
+                                      title={option.note}
+                                      debugId={`community-domain-dashboard.structure-detail.${option.key}`}
+                                      onClick={() => {
+                                        setActiveStructureDetail(option.key);
+                                        setStructurePacketChooserOpen(false);
+                                        setMemberPacketChooserOpen(false);
+                                        setGovernanceTaskChooserOpen(false);
+                                      }}
+                                      style={{
+                                        justifyContent: "center",
+                                        fontSize: 13,
+                                        textTransform: "none",
+                                      }}
+                                    >
+                                      {option.label}
+                                    </StableButton>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          ) : null}
                         </div>
                       ) : null}
                       <div style={{ ...helperText(), fontSize: 13 }}>
@@ -9990,34 +10190,64 @@ export default function CommunityDomainDashboardPage() {
                               gap: 8,
                             }}
                           >
-                            <div style={sectionLabel()}>
-                              {activeGovernanceTaskGroupOption.label} jobs
-                            </div>
-                            <div
+                            <StableButton
+                              type="button"
+                              kind="secondary"
+                              fullWidth
+                              stableHeight={42}
+                              debugId="community-domain-dashboard.governance-task-toggle"
+                              aria-expanded={governanceTaskChooserOpen}
+                              aria-controls="community-domain-governance-jobs"
+                              onClick={() =>
+                                setGovernanceTaskChooserOpen((current) => !current)
+                              }
                               style={{
-                                display: "grid",
-                                gridTemplateColumns:
-                                  "repeat(auto-fit, minmax(min(100%, 150px), 1fr))",
-                                gap: 8,
+                                justifyContent: "center",
+                                fontSize: 13,
+                                textTransform: "none",
                               }}
                             >
-                              {activeGovernanceGroupTasks.map((task) => (
-                                <StableButton
-                                  key={task.key}
-                                  type="button"
-                                  kind={
-                                    activeGovernanceTask === task.key
-                                      ? "primary"
-                                      : "secondary"
-                                  }
-                                  stableHeight={42}
-                                  debugId={`community-domain-dashboard.governance-task.${task.key}`}
-                                  onClick={() => selectGovernanceTask(task.key)}
+                              {governanceTaskChooserOpen ? "Close jobs" : "Change job"}
+                            </StableButton>
+                            {governanceTaskChooserOpen ? (
+                              <div
+                                id="community-domain-governance-jobs"
+                                data-debug-id="community-domain-dashboard.governance-task-panel"
+                                style={{
+                                  display: "grid",
+                                  gap: 8,
+                                }}
+                              >
+                                <div style={sectionLabel()}>
+                                  {activeGovernanceTaskGroupOption.label} jobs
+                                </div>
+                                <div
+                                  style={{
+                                    display: "grid",
+                                    gridTemplateColumns:
+                                      "repeat(auto-fit, minmax(min(100%, 150px), 1fr))",
+                                    gap: 8,
+                                  }}
                                 >
-                                  {task.label}
-                                </StableButton>
-                              ))}
-                            </div>
+                                  {activeGovernanceGroupTasks.map((task) => (
+                                    <StableButton
+                                      key={task.key}
+                                      type="button"
+                                      kind={
+                                        activeGovernanceTask === task.key
+                                          ? "primary"
+                                          : "secondary"
+                                      }
+                                      stableHeight={42}
+                                      debugId={`community-domain-dashboard.governance-task.${task.key}`}
+                                      onClick={() => selectGovernanceTask(task.key)}
+                                    >
+                                      {task.label}
+                                    </StableButton>
+                                  ))}
+                                </div>
+                              </div>
+                            ) : null}
                           </div>
                         ) : null}
                         <div style={{ ...helperText(), fontSize: 13 }}>
@@ -13009,6 +13239,8 @@ export default function CommunityDomainDashboardPage() {
                               debugId={`community-domain-dashboard.member-group.${group.key}`}
                               onClick={() => {
                                 setActiveMemberDetail(group.defaultDetail);
+                                setMemberPacketChooserOpen(false);
+                                setGovernanceTaskChooserOpen(false);
                                 if (group.defaultDetail === "roster") {
                                   setActiveMemberRosterTask("summary");
                                 }
@@ -13027,43 +13259,89 @@ export default function CommunityDomainDashboardPage() {
                       <div style={{ ...helperText(), fontSize: 13 }}>
                         {activeMemberDetailGroupOption.note}
                       </div>
-                      <div
-                        style={{
-                          display: "grid",
-                          gridTemplateColumns:
-                            "repeat(auto-fit, minmax(min(100%, 148px), 1fr))",
-                          gap: 8,
-                        }}
-                      >
-                        {activeMemberGroupDetails.map((option) => {
-                          const selected = option.key === activeMemberDetail;
-                          return (
-                            <StableButton
-                              key={option.key}
-                              type="button"
-                              kind={selected ? "primary" : "secondary"}
-                              stableHeight={48}
-                              fullWidth
-                              aria-pressed={selected}
-                              title={option.note}
-                              debugId={`community-domain-dashboard.member-detail.${option.key}`}
-                              onClick={() => {
-                                setActiveMemberDetail(option.key);
-                                if (option.key === "roster") {
-                                  setActiveMemberRosterTask("summary");
-                                }
-                              }}
+                      {activeMemberGroupDetails.length > 1 ? (
+                        <div
+                          style={{
+                            borderTop: "1px solid rgba(9,27,46,0.08)",
+                            paddingTop: 10,
+                            display: "grid",
+                            gap: 8,
+                          }}
+                        >
+                          <StableButton
+                            type="button"
+                            kind="secondary"
+                            fullWidth
+                            stableHeight={42}
+                            debugId="community-domain-dashboard.member-packet-toggle"
+                            aria-expanded={memberPacketChooserOpen}
+                            aria-controls="community-domain-member-packets"
+                            onClick={() =>
+                              setMemberPacketChooserOpen((current) => !current)
+                            }
+                            style={{
+                              justifyContent: "center",
+                              fontSize: 13,
+                              textTransform: "none",
+                            }}
+                          >
+                            {memberPacketChooserOpen ? "Close packets" : "Change packet"}
+                          </StableButton>
+                          {memberPacketChooserOpen ? (
+                            <div
+                              id="community-domain-member-packets"
+                              data-debug-id="community-domain-dashboard.member-packet-panel"
                               style={{
-                                justifyContent: "center",
-                                fontSize: 13,
-                                textTransform: "none",
+                                display: "grid",
+                                gap: 8,
                               }}
                             >
-                              {option.label}
-                            </StableButton>
-                          );
-                        })}
-                      </div>
+                              <div style={sectionLabel()}>
+                                {activeMemberDetailGroupOption.label} packets
+                              </div>
+                              <div
+                                style={{
+                                  display: "grid",
+                                  gridTemplateColumns:
+                                    "repeat(auto-fit, minmax(min(100%, 148px), 1fr))",
+                                  gap: 8,
+                                }}
+                              >
+                                {activeMemberGroupDetails.map((option) => {
+                                  const selected = option.key === activeMemberDetail;
+                                  return (
+                                    <StableButton
+                                      key={option.key}
+                                      type="button"
+                                      kind={selected ? "primary" : "secondary"}
+                                      stableHeight={48}
+                                      fullWidth
+                                      aria-pressed={selected}
+                                      title={option.note}
+                                      debugId={`community-domain-dashboard.member-detail.${option.key}`}
+                                      onClick={() => {
+                                        setActiveMemberDetail(option.key);
+                                        setMemberPacketChooserOpen(false);
+                                        setGovernanceTaskChooserOpen(false);
+                                        if (option.key === "roster") {
+                                          setActiveMemberRosterTask("summary");
+                                        }
+                                      }}
+                                      style={{
+                                        justifyContent: "center",
+                                        fontSize: 13,
+                                        textTransform: "none",
+                                      }}
+                                    >
+                                      {option.label}
+                                    </StableButton>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          ) : null}
+                        </div>
+                      ) : null}
                       <div style={{ ...helperText(), fontSize: 13 }}>
                         {selectedMemberDetail.note}
                       </div>
@@ -13347,6 +13625,12 @@ export default function CommunityDomainDashboardPage() {
                         setOperatingAreaPickerOpen(false);
                         setSetupJourneyMode("setup");
                         setCommandGuidanceOpen(false);
+                        setWorkSurfaceNotesOpen(false);
+                        setOperatingSummaryNotesOpen(false);
+                        setServicePacketChooserOpen(false);
+                        setStructurePacketChooserOpen(false);
+                        setMemberPacketChooserOpen(false);
+                        setGovernanceTaskChooserOpen(false);
                         setActiveLane(cleanText(otherToolsLaneKey, primaryActionLaneKey));
                       }
                       return next;

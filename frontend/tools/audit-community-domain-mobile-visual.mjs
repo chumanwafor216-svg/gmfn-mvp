@@ -1098,6 +1098,42 @@ try {
     timeout: 15000,
   });
   await page.getByText("Operating summary", { exact: true }).waitFor({ timeout: 10000 });
+  audit = await page.evaluate(pageAudit);
+  let settingsSummaryText = normalized(audit.bodyText);
+  if (
+    settingsSummaryText.includes(
+      "Pillar-style Community Domains should use live operating areas first after activation"
+    ) ||
+    settingsSummaryText.includes("Boundary: active does not mean verified")
+  ) {
+    findings.push("Active Community Domain settings summary exposes operating notes before the user opens them.");
+  }
+  if (!(await isDebugVisible(page, "community-domain-dashboard.operating-summary-notes-toggle"))) {
+    findings.push("Active Community Domain settings summary does not expose an open-close notes control.");
+  }
+  await clickByDebugId(page, "community-domain-dashboard.operating-summary-notes-toggle");
+  audit = await page.evaluate(pageAudit);
+  settingsSummaryText = normalized(audit.bodyText);
+  if (
+    !settingsSummaryText.includes(
+      "Pillar-style Community Domains should use live operating areas first after activation"
+    ) ||
+    !settingsSummaryText.includes("Boundary: active does not mean verified")
+  ) {
+    findings.push("Active Community Domain settings summary notes do not open when requested.");
+  }
+  await page.waitForTimeout(450);
+  await clickByDebugId(page, "community-domain-dashboard.operating-summary-notes-toggle");
+  audit = await page.evaluate(pageAudit);
+  settingsSummaryText = normalized(audit.bodyText);
+  if (
+    settingsSummaryText.includes(
+      "Pillar-style Community Domains should use live operating areas first after activation"
+    ) ||
+    settingsSummaryText.includes("Boundary: active does not mean verified")
+  ) {
+    findings.push("Active Community Domain settings summary notes do not close after reading.");
+  }
   await clickByDebugId(page, "community-domain-dashboard.operating-summary-group.reference");
   await clickByDebugId(page, "community-domain-dashboard.operating-summary.permissions");
   await page.getByText("Domain permissions", { exact: true }).waitFor({ timeout: 10000 });
@@ -1112,6 +1148,26 @@ try {
   audit = await page.evaluate(pageAudit);
   if (normalized(audit.bodyText).includes("Close areas")) {
     findings.push("Opened Community Domain work surface still exposes duplicate Close areas control.");
+  }
+  let liveAreaText = normalized(audit.bodyText);
+  if (liveAreaText.includes("Operating view only. It does not verify ownership")) {
+    findings.push("Opened Community Domain work surface exposes area boundary notes before the user opens them.");
+  }
+  if (!(await isDebugVisible(page, "community-domain-dashboard.work-surface.notes-toggle"))) {
+    findings.push("Opened Community Domain work surface does not expose an open-close area notes control.");
+  }
+  await clickByDebugId(page, "community-domain-dashboard.work-surface.notes-toggle");
+  audit = await page.evaluate(pageAudit);
+  liveAreaText = normalized(audit.bodyText);
+  if (!liveAreaText.includes("Operating view only. It does not verify ownership")) {
+    findings.push("Opened Community Domain work surface notes do not open when requested.");
+  }
+  await page.waitForTimeout(450);
+  await clickByDebugId(page, "community-domain-dashboard.work-surface.notes-toggle");
+  audit = await page.evaluate(pageAudit);
+  liveAreaText = normalized(audit.bodyText);
+  if (liveAreaText.includes("Operating view only. It does not verify ownership")) {
+    findings.push("Opened Community Domain work surface notes do not close after reading.");
   }
   await clickByDebugId(page, "community-domain-dashboard.work-surface.back-to-command");
   await page.getByText("Returned to Domain command.", { exact: false }).waitFor({ timeout: 10000 });
@@ -1136,14 +1192,25 @@ try {
   if (await page.getByText("Marketplace rule", { exact: true }).isVisible().catch(() => false)) {
     findings.push("Community Domain Services local maps still expose the marketplace/package rule card.");
   }
+  if (await isDebugVisible(page, "community-domain-dashboard.service-detail.boundaries")) {
+    findings.push("Community Domain Services packet buttons are visible before Change packet is opened.");
+  }
+  if (!(await isDebugVisible(page, "community-domain-dashboard.service-packet-toggle"))) {
+    findings.push("Community Domain Services multi-packet groups do not expose a Change packet control.");
+  }
+  await clickByDebugId(page, "community-domain-dashboard.service-packet-toggle");
   await clickByDebugId(page, "community-domain-dashboard.service-detail.boundaries");
   if (!(await page.getByText("Marketplace rule", { exact: true }).isVisible().catch(() => false))) {
     findings.push("Community Domain Services Boundaries packet does not expose the marketplace/package rule card.");
+  }
+  if (await isDebugVisible(page, "community-domain-dashboard.service-detail.local")) {
+    findings.push("Community Domain Services packet buttons stay visible after a packet is selected.");
   }
   await page.getByText("Boundary packet", { exact: true }).waitFor({ timeout: 10000 });
   await clickByDebugId(page, "community-domain-service-boundary.focus.privacy");
   await page.getByText("Record privacy readiness", { exact: true }).waitFor({ timeout: 10000 });
   await clickByDebugId(page, "community-domain-dashboard.service-group.trust");
+  await clickByDebugId(page, "community-domain-dashboard.service-packet-toggle");
   await clickByDebugId(page, "community-domain-dashboard.service-detail.evidence");
   await page.getByText("Trust and evidence packet", { exact: true }).waitFor({ timeout: 10000 });
   await clickByDebugId(page, "community-domain.trust-evidence.focus.release");
@@ -1154,7 +1221,17 @@ try {
   await clickByDebugId(page, "community-domain-dashboard.lane.structure");
   await page.getByText("Structure focus", { exact: true }).waitFor({ timeout: 10000 });
   await clickByDebugId(page, "community-domain-dashboard.structure-group.rollout");
+  if (await isDebugVisible(page, "community-domain-dashboard.structure-detail.planning")) {
+    findings.push("Community Domain Structure packet buttons are visible before Change packet is opened.");
+  }
+  if (!(await isDebugVisible(page, "community-domain-dashboard.structure-packet-toggle"))) {
+    findings.push("Community Domain Structure multi-packet groups do not expose a Change packet control.");
+  }
+  await clickByDebugId(page, "community-domain-dashboard.structure-packet-toggle");
   await clickByDebugId(page, "community-domain-dashboard.structure-detail.planning");
+  if (await isDebugVisible(page, "community-domain-dashboard.structure-detail.activity")) {
+    findings.push("Community Domain Structure packet buttons stay visible after a packet is selected.");
+  }
   await page.getByText("Planning packet", { exact: true }).waitFor({ timeout: 10000 });
   await clickByDebugId(page, "community-domain.structure-planning.focus.groups");
   await page.getByText("Group readiness", { exact: true }).waitFor({ timeout: 10000 });
@@ -1163,8 +1240,18 @@ try {
   await page.getByText("Operating areas", { exact: true }).waitFor({ timeout: 10000 });
   await clickByDebugId(page, "community-domain-dashboard.lane.members");
   await page.getByText("Members focus", { exact: true }).waitFor({ timeout: 10000 });
+  if (await isDebugVisible(page, "community-domain-dashboard.member-detail.placement")) {
+    findings.push("Community Domain Members packet buttons are visible before Change packet is opened.");
+  }
+  if (!(await isDebugVisible(page, "community-domain-dashboard.member-packet-toggle"))) {
+    findings.push("Community Domain Members multi-packet groups do not expose a Change packet control.");
+  }
+  await clickByDebugId(page, "community-domain-dashboard.member-packet-toggle");
+  await clickByDebugId(page, "community-domain-dashboard.member-detail.placement");
+  if (await isDebugVisible(page, "community-domain-dashboard.member-detail.readiness")) {
+    findings.push("Community Domain Members packet buttons stay visible after a packet is selected.");
+  }
   await clickByDebugId(page, "community-domain-dashboard.member-group.roster");
-  await clickByDebugId(page, "community-domain-dashboard.member-detail.roster");
   await page.getByText("Member status and public proof.", { exact: true }).waitFor({
     timeout: 10000,
   });
@@ -1178,7 +1265,17 @@ try {
   await clickByDebugId(page, "community-domain-dashboard.lane.governance");
   await page.getByText("Governance jobs", { exact: true }).waitFor({ timeout: 10000 });
   await clickByDebugId(page, "community-domain-dashboard.governance-group.records");
+  if (await isDebugVisible(page, "community-domain-dashboard.governance-task.access_requests")) {
+    findings.push("Community Domain Governance job buttons are visible before Change job is opened.");
+  }
+  if (!(await isDebugVisible(page, "community-domain-dashboard.governance-task-toggle"))) {
+    findings.push("Community Domain Governance multi-job groups do not expose a Change job control.");
+  }
+  await clickByDebugId(page, "community-domain-dashboard.governance-task-toggle");
   await clickByDebugId(page, "community-domain-dashboard.governance-task.real_life_record");
+  if (await isDebugVisible(page, "community-domain-dashboard.governance-task.access_requests")) {
+    findings.push("Community Domain Governance job buttons stay visible after a job is selected.");
+  }
   await page
     .getByTestId("community-domain-dashboard.work-surface")
     .getByText("Record from real life", { exact: true })
