@@ -2665,6 +2665,7 @@ export default function CommunityDomainDashboardPage() {
     useState<SetupAccessTaskKey>("summary");
   const [showAdvancedTools, setShowAdvancedTools] = useState(false);
   const [operatingAreaPickerOpen, setOperatingAreaPickerOpen] = useState(false);
+  const [commandGuidanceOpen, setCommandGuidanceOpen] = useState(false);
   const [activeStructureDetail, setActiveStructureDetail] =
     useState<StructureDetailKey>("preview");
   const [activeServiceDetail, setActiveServiceDetail] =
@@ -4392,6 +4393,7 @@ export default function CommunityDomainDashboardPage() {
     setSetupWorkspaceOpen(true);
     setSetupJourneyMode("setup");
     setShowAdvancedTools(requestedLane !== "settings");
+    setCommandGuidanceOpen(false);
     focusWorkSurfaceAfterOpenRef.current = true;
   }, [lanes, requestedLane]);
   const latestMembershipRequest = latestRelevantMembershipRequest(ownMembershipRequests);
@@ -4986,6 +4988,7 @@ export default function CommunityDomainDashboardPage() {
     }
     setSetupWorkspaceOpen(true);
     setShowAdvancedTools(false);
+    setCommandGuidanceOpen(false);
     if (mode === "edit") {
       setMessage(
         setupEditingLocked
@@ -5021,6 +5024,7 @@ export default function CommunityDomainDashboardPage() {
     setSetupWorkspaceOpen(false);
     setShowAdvancedTools(true);
     setOperatingAreaPickerOpen(false);
+    setCommandGuidanceOpen(false);
     setActiveLane("governance");
     setMessage("");
   }
@@ -5030,6 +5034,7 @@ export default function CommunityDomainDashboardPage() {
     setShowAdvancedTools(false);
     setSetupWorkspaceOpen(false);
     setSetupJourneyMode("setup");
+    setCommandGuidanceOpen(false);
     setMessage("Returned to Domain command. Choose Marketplace or open one operating area.");
     window.requestAnimationFrame(() => {
       commandSurfaceRef.current?.scrollIntoView({ block: "start", behavior: "auto" });
@@ -5124,6 +5129,7 @@ export default function CommunityDomainDashboardPage() {
     if (!saved) return;
     setSetupWorkspaceOpen(false);
     setShowAdvancedTools(true);
+    setCommandGuidanceOpen(false);
     setActiveBillingTask("payment_code");
     setActiveBillingPaymentTask("reference");
     setActiveLane("billing");
@@ -6459,6 +6465,7 @@ export default function CommunityDomainDashboardPage() {
                     setSetupWorkspaceOpen(false);
                     setShowAdvancedTools(true);
                     setOperatingAreaPickerOpen(false);
+                    setCommandGuidanceOpen(false);
                     setActiveLane(operationalLaneKey);
                     setMessage("");
                   }}
@@ -6488,20 +6495,38 @@ export default function CommunityDomainDashboardPage() {
                   Record activity
                 </StableButton>
               ) : null}
-              <div style={commandGuidanceGrid()}>
-                <div style={commandGuidanceTile("next")}>
-                  <div style={sectionLabel()}>Do first</div>
-                  <div style={{ ...helperText(), fontSize: 13, lineHeight: 1.5 }}>
-                    {operatingStateCopy.nextStep}
+              <StableButton
+                type="button"
+                kind="secondary"
+                fullWidth
+                stableHeight={44}
+                debugId="community-domain-dashboard.command-guidance-toggle"
+                aria-expanded={commandGuidanceOpen}
+                aria-controls="community-domain-command-guidance"
+                onClick={() => setCommandGuidanceOpen((current) => !current)}
+              >
+                {commandGuidanceOpen ? "Close guidance" : "Open guidance"}
+              </StableButton>
+              {commandGuidanceOpen ? (
+                <div
+                  id="community-domain-command-guidance"
+                  data-debug-id="community-domain-dashboard.command-guidance-panel"
+                  style={commandGuidanceGrid()}
+                >
+                  <div style={commandGuidanceTile("next")}>
+                    <div style={sectionLabel()}>Do first</div>
+                    <div style={{ ...helperText(), fontSize: 13, lineHeight: 1.5 }}>
+                      {operatingStateCopy.nextStep}
+                    </div>
+                  </div>
+                  <div style={commandGuidanceTile("risk")}>
+                    <div style={sectionLabel()}>Boundary</div>
+                    <div style={{ ...helperText(), fontSize: 13, lineHeight: 1.5 }}>
+                      {operatingStateCopy.risk}
+                    </div>
                   </div>
                 </div>
-                <div style={commandGuidanceTile("risk")}>
-                  <div style={sectionLabel()}>Boundary</div>
-                  <div style={{ ...helperText(), fontSize: 13, lineHeight: 1.5 }}>
-                    {operatingStateCopy.risk}
-                  </div>
-                </div>
-              </div>
+              ) : null}
             </div>
           </section>
 
@@ -6919,6 +6944,7 @@ export default function CommunityDomainDashboardPage() {
                       setSetupWorkspaceOpen(true);
                       setShowAdvancedTools(false);
                     }
+                    setCommandGuidanceOpen(false);
                   }}
                 >
                   Open {mainActionLaneLabel}
@@ -7279,6 +7305,7 @@ export default function CommunityDomainDashboardPage() {
                               setSetupWorkspaceOpen(false);
                               setActiveLane(operationalLaneKey);
                               setSetupJourneyMode("setup");
+                              setCommandGuidanceOpen(false);
                             }}
                           >
                             Open {operationalLaneLabel}
@@ -13319,6 +13346,7 @@ export default function CommunityDomainDashboardPage() {
                         setSetupWorkspaceOpen(false);
                         setOperatingAreaPickerOpen(false);
                         setSetupJourneyMode("setup");
+                        setCommandGuidanceOpen(false);
                         setActiveLane(cleanText(otherToolsLaneKey, primaryActionLaneKey));
                       }
                       return next;

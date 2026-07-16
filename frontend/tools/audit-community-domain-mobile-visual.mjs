@@ -941,14 +941,28 @@ try {
   await page.goto(`${baseUrl}${routePath}`, { waitUntil: "networkidle", timeout: 15000 });
   await page.getByText("Domain command", { exact: true }).waitFor({ timeout: 10000 });
   audit = await page.evaluate(pageAudit);
-  if (!normalized(audit.bodyText).includes("Complete the next setup step")) {
+  let commandText = normalized(audit.bodyText);
+  if (!commandText.includes("Complete the next setup step")) {
     findings.push("Draft Community Domain command does not show setup-first guidance.");
   }
-  if (!normalized(audit.bodyText).includes("Do first")) {
-    findings.push("Draft Community Domain command does not show first action guidance.");
+  if (!(await isDebugVisible(page, "community-domain-dashboard.command-guidance-toggle"))) {
+    findings.push("Draft Community Domain command does not expose an open-close guidance control.");
   }
-  if (!normalized(audit.bodyText).includes("Boundary")) {
-    findings.push("Draft Community Domain command does not show boundary warning.");
+  if (commandText.includes("Do first") || commandText.includes("Boundary")) {
+    findings.push("Draft Community Domain command shows read-only guidance before the user opens it.");
+  }
+  await clickByDebugId(page, "community-domain-dashboard.command-guidance-toggle");
+  audit = await page.evaluate(pageAudit);
+  commandText = normalized(audit.bodyText);
+  if (!commandText.includes("Do first") || !commandText.includes("Boundary")) {
+    findings.push("Draft Community Domain command guidance does not open the first action and boundary notes.");
+  }
+  await page.waitForTimeout(450);
+  await clickByDebugId(page, "community-domain-dashboard.command-guidance-toggle");
+  audit = await page.evaluate(pageAudit);
+  commandText = normalized(audit.bodyText);
+  if (commandText.includes("Do first") || commandText.includes("Boundary")) {
+    findings.push("Draft Community Domain command guidance does not close after reading.");
   }
   const draftFirstAction = await firstViewportActionFinding(
     page,
@@ -1012,14 +1026,28 @@ try {
   await page.getByText("Domain command", { exact: true }).waitFor({ timeout: 10000 });
 
   audit = await page.evaluate(pageAudit);
-  if (!normalized(audit.bodyText).includes("Run one operating area at a time")) {
+  commandText = normalized(audit.bodyText);
+  if (!commandText.includes("Run one operating area at a time")) {
     findings.push("Domain command does not show the focused operating-area guidance.");
   }
-  if (!normalized(audit.bodyText).includes("Do first")) {
-    findings.push("Domain command does not show the first action guidance.");
+  if (!(await isDebugVisible(page, "community-domain-dashboard.command-guidance-toggle"))) {
+    findings.push("Domain command does not expose an open-close guidance control.");
   }
-  if (!normalized(audit.bodyText).includes("Boundary")) {
-    findings.push("Domain command does not show the operating boundary warning.");
+  if (commandText.includes("Do first") || commandText.includes("Boundary")) {
+    findings.push("Domain command shows read-only guidance before the user opens it.");
+  }
+  await clickByDebugId(page, "community-domain-dashboard.command-guidance-toggle");
+  audit = await page.evaluate(pageAudit);
+  commandText = normalized(audit.bodyText);
+  if (!commandText.includes("Do first") || !commandText.includes("Boundary")) {
+    findings.push("Domain command guidance does not open the first action and boundary notes.");
+  }
+  await page.waitForTimeout(450);
+  await clickByDebugId(page, "community-domain-dashboard.command-guidance-toggle");
+  audit = await page.evaluate(pageAudit);
+  commandText = normalized(audit.bodyText);
+  if (commandText.includes("Do first") || commandText.includes("Boundary")) {
+    findings.push("Domain command guidance does not close after reading.");
   }
   const dashboardFirstAction = await firstViewportActionFinding(
     page,
@@ -1027,19 +1055,19 @@ try {
     "Community Domain dashboard"
   );
   if (dashboardFirstAction) findings.push(dashboardFirstAction);
-  if (!normalized(audit.bodyText).includes("Open Marketplace")) {
+  if (!commandText.includes("Open Marketplace")) {
     findings.push("Active Community Domain dashboard does not expose Marketplace as the primary handoff.");
   }
-  if (!normalized(audit.bodyText).includes("Open Members")) {
+  if (!commandText.includes("Open Members")) {
     findings.push("Active Community Domain dashboard does not expose the deterministic Open Members live-area shortcut.");
   }
-  if (normalized(audit.bodyText).includes("Open operating areas")) {
+  if (commandText.includes("Open operating areas")) {
     findings.push("Active Community Domain dashboard exposes broad Open operating areas wording on the first command surface.");
   }
-  if (!normalized(audit.bodyText).includes("Record activity")) {
+  if (!commandText.includes("Record activity")) {
     findings.push("Active Community Domain dashboard does not expose the deterministic Record activity shortcut.");
   }
-  if (normalized(audit.bodyText).includes("Record from real life")) {
+  if (commandText.includes("Record from real life")) {
     findings.push("Active Community Domain dashboard exposes broad Record from real life wording on the first command surface.");
   }
   if (!(await isDebugVisible(page, "community-domain-dashboard.nav.dashboard"))) {
@@ -1048,13 +1076,13 @@ try {
   if (!(await isDebugVisible(page, "community-domain-dashboard.nav.community-home"))) {
     findings.push("Active Community Domain dashboard does not expose the Community Home route escape.");
   }
-  if (normalized(audit.bodyText).includes("Edit setup details")) {
+  if (commandText.includes("Edit setup details")) {
     findings.push("Active Community Domain dashboard exposes setup editing on the first command surface.");
   }
-  if (normalized(audit.bodyText).includes("Other domain tools")) {
+  if (commandText.includes("Other domain tools")) {
     findings.push("Active Community Domain dashboard exposes Other domain tools before operating areas are opened.");
   }
-  if (normalized(audit.bodyText).includes("Safe next step")) {
+  if (commandText.includes("Safe next step")) {
     findings.push("Generic Safe next step card is visible on initial Community Domain surface.");
   }
   if (audit.horizontalOverflow || audit.overflow.length) {
