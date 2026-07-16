@@ -167,7 +167,9 @@ type DomainLane = {
 };
 
 type StructureDetailKey = "preview" | "foundation" | "boundary" | "activity" | "planning";
+type StructureDetailGroupKey = "map" | "readiness" | "rollout";
 type ServiceDetailKey = "readiness" | "local" | "boundaries" | "trust" | "evidence";
+type ServiceDetailGroupKey = "readiness" | "local" | "trust";
 type MemberDetailKey = "readiness" | "placement" | "roster";
 type MemberRosterTaskKey = "summary" | "members";
 type GovernanceTaskKey =
@@ -176,6 +178,7 @@ type GovernanceTaskKey =
   | "sponsor_summary"
   | "real_life_record"
   | "access_requests";
+type GovernanceTaskGroupKey = "readiness" | "reports" | "records";
 type DirectorSummaryTaskKey = "overview" | "membership" | "evidence" | "delivery";
 type SponsorSummaryTaskKey = "overview" | "evidence" | "delivery" | "export";
 type SetupOverviewTaskKey = "notices" | "engine" | "next_setup" | "counts";
@@ -185,10 +188,18 @@ type SetupWorkbenchTaskKey = "step" | "access";
 type SetupAccessTaskKey = "summary" | "authority";
 type BillingTaskKey = "payment_code" | "account" | "steps" | "readiness";
 type BillingAccountTaskKey = "summary" | "setup";
-type BillingPaymentTaskKey = "reference" | "pay_account" | "proof";
+type BillingPaymentTaskKey =
+  | "reference"
+  | "generate"
+  | "credit_link"
+  | "pay_account"
+  | "proof";
+type BillingPaymentGroupKey = "code" | "settlement" | "proof";
 type RealLifeRecordTask = "activity" | "beneficiary_outcome";
 type ActivityRecordTaskKey = "record" | "catalogue" | "recent";
+type ActivityRecordStageKey = "person" | "activity" | "evidence";
 type BeneficiaryOutcomeTaskKey = "record" | "recent";
+type BeneficiaryOutcomeRecordStageKey = "person" | "change" | "proof";
 type SetupStepKey =
   | "identity"
   | "payment"
@@ -530,6 +541,68 @@ const BENEFICIARY_CONTACT_CONSENT_WITHDRAWAL_REASON_OPTIONS = [
   { value: "admin_error", label: "Admin error" },
 ];
 
+const GOVERNANCE_TASK_OPTIONS: Array<{
+  key: GovernanceTaskKey;
+  label: string;
+  note: string;
+}> = [
+  {
+    key: "readiness",
+    label: "Readiness",
+    note: "Review governance blockers, approvals, and setup health.",
+  },
+  {
+    key: "director_summary",
+    label: "Director summary",
+    note: "Review owner/admin governance counts and action status.",
+  },
+  {
+    key: "sponsor_summary",
+    label: "Sponsor pack",
+    note: "Review sponsor-safe evidence, delivery, and export material.",
+  },
+  {
+    key: "real_life_record",
+    label: "Record real life",
+    note: "Capture activity or beneficiary outcome evidence.",
+  },
+  {
+    key: "access_requests",
+    label: "Access requests",
+    note: "Review pending membership and access decisions.",
+  },
+];
+
+const GOVERNANCE_TASK_GROUP_OPTIONS: Array<{
+  key: GovernanceTaskGroupKey;
+  label: string;
+  note: string;
+  defaultTask: GovernanceTaskKey;
+  taskKeys: GovernanceTaskKey[];
+}> = [
+  {
+    key: "readiness",
+    label: "Readiness",
+    note: "Governance health and setup blockers.",
+    defaultTask: "readiness",
+    taskKeys: ["readiness"],
+  },
+  {
+    key: "reports",
+    label: "Reports",
+    note: "Director and sponsor-safe reporting.",
+    defaultTask: "director_summary",
+    taskKeys: ["director_summary", "sponsor_summary"],
+  },
+  {
+    key: "records",
+    label: "Records",
+    note: "Real-life evidence capture and access requests.",
+    defaultTask: "real_life_record",
+    taskKeys: ["real_life_record", "access_requests"],
+  },
+];
+
 const STRUCTURE_DETAIL_OPTIONS: Array<{
   key: StructureDetailKey;
   label: string;
@@ -562,6 +635,36 @@ const STRUCTURE_DETAIL_OPTIONS: Array<{
   },
 ];
 
+const STRUCTURE_DETAIL_GROUP_OPTIONS: Array<{
+  key: StructureDetailGroupKey;
+  label: string;
+  note: string;
+  defaultDetail: StructureDetailKey;
+  detailKeys: StructureDetailKey[];
+}> = [
+  {
+    key: "map",
+    label: "Map",
+    note: "Start with the operating-unit tree.",
+    defaultDetail: "preview",
+    detailKeys: ["preview"],
+  },
+  {
+    key: "readiness",
+    label: "Readiness",
+    note: "Review foundation and boundary readiness.",
+    defaultDetail: "foundation",
+    detailKeys: ["foundation", "boundary"],
+  },
+  {
+    key: "rollout",
+    label: "Rollout",
+    note: "Review activity readiness and rollout planning.",
+    defaultDetail: "activity",
+    detailKeys: ["activity", "planning"],
+  },
+];
+
 const SERVICE_DETAIL_OPTIONS: Array<{
   key: ServiceDetailKey;
   label: string;
@@ -591,6 +694,36 @@ const SERVICE_DETAIL_OPTIONS: Array<{
     key: "evidence",
     label: "Evidence",
     note: "Open evidence records, release, relay, notices, and mobility readiness.",
+  },
+];
+
+const SERVICE_DETAIL_GROUP_OPTIONS: Array<{
+  key: ServiceDetailGroupKey;
+  label: string;
+  note: string;
+  defaultDetail: ServiceDetailKey;
+  detailKeys: ServiceDetailKey[];
+}> = [
+  {
+    key: "readiness",
+    label: "Readiness",
+    note: "Review service, billing, settings, economy, and presence readiness.",
+    defaultDetail: "readiness",
+    detailKeys: ["readiness"],
+  },
+  {
+    key: "local",
+    label: "Local rules",
+    note: "Review local service maps and operating boundaries.",
+    defaultDetail: "local",
+    detailKeys: ["local", "boundaries"],
+  },
+  {
+    key: "trust",
+    label: "Trust",
+    note: "Review trust maps and evidence readiness.",
+    defaultDetail: "trust",
+    detailKeys: ["trust", "evidence"],
   },
 ];
 
@@ -630,6 +763,50 @@ const MEMBER_ROSTER_TASK_OPTIONS: Array<{
     key: "members",
     label: "Members",
     note: "Open the member rows only when you need to deactivate or restore someone.",
+  },
+];
+
+const ACTIVITY_RECORD_STAGE_OPTIONS: Array<{
+  key: ActivityRecordStageKey;
+  label: string;
+  note: string;
+}> = [
+  {
+    key: "person",
+    label: "Person",
+    note: "Identify the member or beneficiary and the activity type.",
+  },
+  {
+    key: "activity",
+    label: "Activity",
+    note: "Describe what happened and how much was recorded.",
+  },
+  {
+    key: "evidence",
+    label: "Evidence",
+    note: "Add the evidence reference and record the Trust Event.",
+  },
+];
+
+const BENEFICIARY_OUTCOME_RECORD_STAGE_OPTIONS: Array<{
+  key: BeneficiaryOutcomeRecordStageKey;
+  label: string;
+  note: string;
+}> = [
+  {
+    key: "person",
+    label: "Person",
+    note: "Identify the beneficiary, programme, or case.",
+  },
+  {
+    key: "change",
+    label: "Change",
+    note: "Capture the measured before-and-after outcome.",
+  },
+  {
+    key: "proof",
+    label: "Proof",
+    note: "Record confirmation, challenge, and evidence details.",
   },
 ];
 
@@ -772,7 +949,17 @@ const BILLING_PAYMENT_TASK_OPTIONS: Array<{
   {
     key: "reference",
     label: "Reference",
-    note: "Generate or review the exact payment code first.",
+    note: "Review the latest exact payment code.",
+  },
+  {
+    key: "generate",
+    label: "Generate",
+    note: "Open payment-code generation only when a new code is needed.",
+  },
+  {
+    key: "credit_link",
+    label: "Credit link",
+    note: "Review the GSN record that connects this payment to the owner and domain.",
   },
   {
     key: "pay_account",
@@ -783,6 +970,36 @@ const BILLING_PAYMENT_TASK_OPTIONS: Array<{
     key: "proof",
     label: "Proof",
     note: "Upload payment proof after the bank or provider step is complete.",
+  },
+];
+
+const BILLING_PAYMENT_GROUP_OPTIONS: Array<{
+  key: BillingPaymentGroupKey;
+  label: string;
+  note: string;
+  defaultTask: BillingPaymentTaskKey;
+  taskKeys: BillingPaymentTaskKey[];
+}> = [
+  {
+    key: "code",
+    label: "Code",
+    note: "Reference review and code generation.",
+    defaultTask: "reference",
+    taskKeys: ["reference", "generate"],
+  },
+  {
+    key: "settlement",
+    label: "Settlement",
+    note: "Credit identity and official pay account.",
+    defaultTask: "credit_link",
+    taskKeys: ["credit_link", "pay_account"],
+  },
+  {
+    key: "proof",
+    label: "Proof",
+    note: "Payment proof upload and review.",
+    defaultTask: "proof",
+    taskKeys: ["proof"],
   },
 ];
 
@@ -2221,9 +2438,6 @@ export default function CommunityDomainDashboardPage() {
     useState<CommunityDomainPayInDraft>(() => emptyCommunityDomainPayInDraft("GB", "GBP"));
   const [communityPayInLoading, setCommunityPayInLoading] = useState(false);
   const [communityPayInSaving, setCommunityPayInSaving] = useState(false);
-  const [domainPaymentFormOpen, setDomainPaymentFormOpen] = useState(false);
-  const [domainPaymentCreditOpen, setDomainPaymentCreditOpen] = useState(false);
-  const [billingReadinessOpen, setBillingReadinessOpen] = useState(false);
   const [activeBillingTask, setActiveBillingTask] =
     useState<BillingTaskKey>("payment_code");
   const [activeBillingAccountTask, setActiveBillingAccountTask] =
@@ -2274,9 +2488,12 @@ export default function CommunityDomainDashboardPage() {
     useState<RealLifeRecordTask | null>(null);
   const [activeActivityRecordTask, setActiveActivityRecordTask] =
     useState<ActivityRecordTaskKey>("record");
+  const [activeActivityRecordStage, setActiveActivityRecordStage] =
+    useState<ActivityRecordStageKey>("person");
   const [activeBeneficiaryOutcomeTask, setActiveBeneficiaryOutcomeTask] =
     useState<BeneficiaryOutcomeTaskKey>("record");
-  const [quickRecordOpen, setQuickRecordOpen] = useState(false);
+  const [activeBeneficiaryOutcomeRecordStage, setActiveBeneficiaryOutcomeRecordStage] =
+    useState<BeneficiaryOutcomeRecordStageKey>("person");
   const [loadedReadinessLanes, setLoadedReadinessLanes] = useState<Record<string, boolean>>({});
   const [loadingReadinessLanes, setLoadingReadinessLanes] = useState<Record<string, boolean>>({});
   const readinessLoadSequence = useRef(0);
@@ -2471,8 +2688,9 @@ export default function CommunityDomainDashboardPage() {
     setActivityDraft(emptyCommunityDomainActivityDraft());
     setActiveRealLifeRecordTask(null);
     setActiveActivityRecordTask("record");
+    setActiveActivityRecordStage("person");
     setActiveBeneficiaryOutcomeTask("record");
-    setQuickRecordOpen(false);
+    setActiveBeneficiaryOutcomeRecordStage("person");
     setBeneficiaryOutcomeRows([]);
     setBeneficiaryOutcomeDraft(emptyCommunityDomainOutcomeDraft());
     setRolloutPlan(null);
@@ -2820,6 +3038,7 @@ export default function CommunityDomainDashboardPage() {
       return;
     }
     if (!Number.isFinite(subjectUserId) || subjectUserId <= 0) {
+      setActiveActivityRecordStage("person");
       setMessage("Enter the GSN user id for the member or beneficiary this activity belongs to.");
       return;
     }
@@ -2852,6 +3071,7 @@ export default function CommunityDomainDashboardPage() {
           : activityRows
       );
       setActivityDraft(emptyCommunityDomainActivityDraft());
+      setActiveActivityRecordStage("person");
       setMessage(
         "Activity recorded as a person-first Community Domain Trust Event. Beneficiary outcome proof still needs follow-up records."
       );
@@ -2888,18 +3108,22 @@ export default function CommunityDomainDashboardPage() {
       return;
     }
     if (!Number.isFinite(subjectUserId) || subjectUserId <= 0) {
+      setActiveBeneficiaryOutcomeRecordStage("person");
       setMessage("Enter the GSN user id for the beneficiary this outcome belongs to.");
       return;
     }
     if (!cleanText(beneficiaryOutcomeDraft.outcome_indicator)) {
+      setActiveBeneficiaryOutcomeRecordStage("change");
       setMessage("Enter the outcome indicator being measured.");
       return;
     }
     if (!cleanText(beneficiaryOutcomeDraft.baseline_value)) {
+      setActiveBeneficiaryOutcomeRecordStage("change");
       setMessage("Enter the baseline value before support.");
       return;
     }
     if (!cleanText(beneficiaryOutcomeDraft.after_value)) {
+      setActiveBeneficiaryOutcomeRecordStage("change");
       setMessage("Enter the after value or current follow-up state.");
       return;
     }
@@ -2943,6 +3167,7 @@ export default function CommunityDomainDashboardPage() {
           : beneficiaryOutcomeRows
       );
       setBeneficiaryOutcomeDraft(emptyCommunityDomainOutcomeDraft());
+      setActiveBeneficiaryOutcomeRecordStage("person");
       setMessage(
         "Beneficiary outcome recorded. It is evidence of baseline-to-after movement, not a final public sponsor report."
       );
@@ -3992,6 +4217,37 @@ export default function CommunityDomainDashboardPage() {
   const selectedMemberDetail =
     MEMBER_DETAIL_OPTIONS.find((option) => option.key === activeMemberDetail) ||
     MEMBER_DETAIL_OPTIONS[0];
+  const activeStructureDetailGroup = useMemo<StructureDetailGroupKey>(() => {
+    if (activeStructureDetail === "foundation" || activeStructureDetail === "boundary") {
+      return "readiness";
+    }
+    if (activeStructureDetail === "activity" || activeStructureDetail === "planning") {
+      return "rollout";
+    }
+    return "map";
+  }, [activeStructureDetail]);
+  const activeStructureDetailGroupOption =
+    STRUCTURE_DETAIL_GROUP_OPTIONS.find(
+      (group) => group.key === activeStructureDetailGroup
+    ) || STRUCTURE_DETAIL_GROUP_OPTIONS[0];
+  const activeStructureGroupDetails = STRUCTURE_DETAIL_OPTIONS.filter((option) =>
+    activeStructureDetailGroupOption.detailKeys.includes(option.key)
+  );
+  const activeServiceDetailGroup = useMemo<ServiceDetailGroupKey>(() => {
+    if (activeServiceDetail === "local" || activeServiceDetail === "boundaries") {
+      return "local";
+    }
+    if (activeServiceDetail === "trust" || activeServiceDetail === "evidence") {
+      return "trust";
+    }
+    return "readiness";
+  }, [activeServiceDetail]);
+  const activeServiceDetailGroupOption =
+    SERVICE_DETAIL_GROUP_OPTIONS.find((group) => group.key === activeServiceDetailGroup) ||
+    SERVICE_DETAIL_GROUP_OPTIONS[0];
+  const activeServiceGroupDetails = SERVICE_DETAIL_OPTIONS.filter((option) =>
+    activeServiceDetailGroupOption.detailKeys.includes(option.key)
+  );
   const activeDomainMemberCount = domainMemberRows.filter(
     (row) => cleanText(row?.status, "inactive").toLowerCase() === "active"
   ).length;
@@ -4064,8 +4320,53 @@ export default function CommunityDomainDashboardPage() {
     !setupPrimaryActionHasLane && setupPrimaryActionLaneKey === "verification" && hasServicesLane
       ? "GSN opens Services because authority verification is shown there as a readiness row. Actual authority verification still needs its separate owner or admin path."
       : "";
+  const activeGovernanceTaskGroup = useMemo<GovernanceTaskGroupKey>(() => {
+    if (
+      activeGovernanceTask === "director_summary" ||
+      activeGovernanceTask === "sponsor_summary"
+    ) {
+      return "reports";
+    }
+    if (
+      activeGovernanceTask === "real_life_record" ||
+      activeGovernanceTask === "access_requests"
+    ) {
+      return "records";
+    }
+    return "readiness";
+  }, [activeGovernanceTask]);
+  const activeGovernanceTaskGroupOption =
+    GOVERNANCE_TASK_GROUP_OPTIONS.find((group) => group.key === activeGovernanceTaskGroup) ||
+    GOVERNANCE_TASK_GROUP_OPTIONS[0];
+  const activeGovernanceTaskOption =
+    GOVERNANCE_TASK_OPTIONS.find((task) => task.key === activeGovernanceTask) ||
+    GOVERNANCE_TASK_OPTIONS[0];
+  const activeGovernanceGroupTasks = GOVERNANCE_TASK_OPTIONS.filter((task) =>
+    activeGovernanceTaskGroupOption.taskKeys.includes(task.key)
+  );
   const billingIsActive =
     cleanText(status.billing_status || selectedLane?.status).toLowerCase() === "active";
+  const activeBillingPaymentGroup = useMemo<BillingPaymentGroupKey>(() => {
+    if (activeBillingPaymentTask === "proof") {
+      return "proof";
+    }
+    if (
+      activeBillingPaymentTask === "credit_link" ||
+      activeBillingPaymentTask === "pay_account"
+    ) {
+      return "settlement";
+    }
+    return "code";
+  }, [activeBillingPaymentTask]);
+  const activeBillingPaymentGroupOption =
+    BILLING_PAYMENT_GROUP_OPTIONS.find((group) => group.key === activeBillingPaymentGroup) ||
+    BILLING_PAYMENT_GROUP_OPTIONS[0];
+  const activeBillingPaymentTaskOption =
+    BILLING_PAYMENT_TASK_OPTIONS.find((task) => task.key === activeBillingPaymentTask) ||
+    BILLING_PAYMENT_TASK_OPTIONS[0];
+  const activeBillingPaymentGroupTasks = BILLING_PAYMENT_TASK_OPTIONS.filter((task) =>
+    activeBillingPaymentGroupOption.taskKeys.includes(task.key)
+  );
   const setupDraftDomainId = cleanText(domain?.id || communityDomainId);
   const setupEvidenceItems = Array.isArray(setupEvidence?.items)
     ? setupEvidence.items
@@ -4433,16 +4734,26 @@ export default function CommunityDomainDashboardPage() {
     setMessage("");
   }
 
+  function selectGovernanceTask(task: GovernanceTaskKey) {
+    setActiveGovernanceTask(task);
+    if (task === "real_life_record") {
+      setActiveRealLifeRecordTask((current) => current || "activity");
+      setActiveActivityRecordTask("record");
+      setActiveActivityRecordStage("person");
+    }
+  }
+
   function openRealLifeRecordTask(task: RealLifeRecordTask) {
     focusWorkSurfaceAfterOpenRef.current = true;
     setActiveGovernanceTask("real_life_record");
     setActiveRealLifeRecordTask(task);
     if (task === "activity") {
       setActiveActivityRecordTask("record");
+      setActiveActivityRecordStage("person");
     } else {
       setActiveBeneficiaryOutcomeTask("record");
+      setActiveBeneficiaryOutcomeRecordStage("person");
     }
-    setQuickRecordOpen(true);
     setSetupJourneyMode("setup");
     setSetupWorkspaceOpen(false);
     setShowAdvancedTools(true);
@@ -5207,7 +5518,6 @@ export default function CommunityDomainDashboardPage() {
       };
       setDomainPayment(payment);
       setPaymentClanIdDraft(String(clanId));
-      setDomainPaymentFormOpen(false);
       if (payload?.community_domain) {
         setDashboard((prev) =>
           prev
@@ -5829,57 +6139,16 @@ export default function CommunityDomainDashboardPage() {
                 </StableButton>
               )}
               {domainOperational && isAdmin ? (
-                <>
-                  <StableButton
-                    type="button"
-                    kind={quickRecordOpen ? "primary" : "secondary"}
-                    fullWidth
-                    stableHeight={46}
-                    debugId="community-domain-dashboard.real-life-record-toggle"
-                    onClick={() => setQuickRecordOpen((current) => !current)}
-                  >
-                    Record from real life
-                  </StableButton>
-                  {quickRecordOpen ? (
-                    <div
-                      style={{
-                        display: "grid",
-                        gridTemplateColumns:
-                          "repeat(auto-fit, minmax(min(100%, 190px), 1fr))",
-                        gap: 8,
-                      }}
-                    >
-                      <StableButton
-                        type="button"
-                        kind={
-                          activeRealLifeRecordTask === "activity" &&
-                          activeLane === "governance"
-                            ? "primary"
-                            : "secondary"
-                        }
-                        stableHeight={48}
-                        debugId="community-domain-dashboard.real-life-record.activity"
-                        onClick={() => openRealLifeRecordTask("activity")}
-                      >
-                        Record activity
-                      </StableButton>
-                      <StableButton
-                        type="button"
-                        kind={
-                          activeRealLifeRecordTask === "beneficiary_outcome" &&
-                          activeLane === "governance"
-                            ? "primary"
-                            : "secondary"
-                        }
-                        stableHeight={48}
-                        debugId="community-domain-dashboard.real-life-record.beneficiary-outcome"
-                        onClick={() => openRealLifeRecordTask("beneficiary_outcome")}
-                      >
-                        Record outcome
-                      </StableButton>
-                    </div>
-                  ) : null}
-                </>
+                <StableButton
+                  type="button"
+                  kind="secondary"
+                  fullWidth
+                  stableHeight={46}
+                  debugId="community-domain-dashboard.real-life-record-shortcut"
+                  onClick={() => openRealLifeRecordTask("activity")}
+                >
+                  Record from real life
+                </StableButton>
               ) : null}
               <div style={commandGuidanceGrid()}>
                 <div style={commandGuidanceTile("next")}>
@@ -8203,19 +8472,18 @@ export default function CommunityDomainDashboardPage() {
                         </span>
                       </div>
                       <div style={{ ...helperText(), fontSize: 13 }}>
-                        The code below is for Community Domain subscription
-                        activation. Do not use the Payments and Contributions
-                        setting to block this setup payment. Use that setting for
-                        registrations, donations, event fees, seminar fees, and
-                        other money-in activity inside the domain.
+                        This setup payment is the Community Domain subscription.
+                        Do not use the Payments and Contributions setting to block this setup payment.
+                        Use that setting for registrations,
+                        donations, event fees, seminar fees, and other domain money-in.
                       </div>
                     </div>
 
                     <div style={{ ...softCard(), marginTop: 12, display: "grid", gap: 10 }}>
                       <div style={sectionLabel()}>Code & proof packets</div>
                       <div style={{ ...helperText(), fontSize: 13 }}>
-                        Pick the payment question for now. The reference, official pay
-                        account, and proof upload stay separate.
+                        Choose the stage first. Reference, generation, credit link,
+                        official pay account, and proof upload stay separate.
                       </div>
                       <div
                         style={{
@@ -8225,57 +8493,96 @@ export default function CommunityDomainDashboardPage() {
                           gap: 8,
                         }}
                       >
-                        {BILLING_PAYMENT_TASK_OPTIONS.map((task) => {
-                          const selected = task.key === activeBillingPaymentTask;
+                        {BILLING_PAYMENT_GROUP_OPTIONS.map((group) => {
+                          const selected = group.key === activeBillingPaymentGroup;
                           return (
                             <StableButton
-                              key={task.key}
+                              key={group.key}
                               type="button"
                               kind={selected ? "primary" : "secondary"}
                               stableHeight={44}
                               fullWidth
                               aria-pressed={selected}
-                              title={task.note}
-                              debugId={`community-domain-dashboard.billing-payment.${task.key}`}
-                              onClick={() => setActiveBillingPaymentTask(task.key)}
+                              title={group.note}
+                              debugId={`community-domain-dashboard.billing-payment-group.${group.key}`}
+                              onClick={() => setActiveBillingPaymentTask(group.defaultTask)}
                               style={{
                                 justifyContent: "center",
                                 fontSize: 13,
                                 textTransform: "none",
                               }}
                             >
-                              {task.label}
+                              {group.label}
                             </StableButton>
                           );
                         })}
                       </div>
+                      {activeBillingPaymentGroupTasks.length > 1 ? (
+                        <div
+                          style={{
+                            borderTop: "1px solid rgba(9,27,46,0.08)",
+                            paddingTop: 10,
+                            display: "grid",
+                            gap: 8,
+                          }}
+                        >
+                          <div style={sectionLabel()}>
+                            {activeBillingPaymentGroupOption.label} packets
+                          </div>
+                          <div
+                            style={{
+                              display: "grid",
+                              gridTemplateColumns:
+                                "repeat(auto-fit, minmax(min(100%, 128px), 1fr))",
+                              gap: 8,
+                            }}
+                          >
+                            {activeBillingPaymentGroupTasks.map((task) => {
+                              const selected = task.key === activeBillingPaymentTask;
+                              return (
+                                <StableButton
+                                  key={task.key}
+                                  type="button"
+                                  kind={selected ? "primary" : "secondary"}
+                                  stableHeight={40}
+                                  fullWidth
+                                  aria-pressed={selected}
+                                  title={task.note}
+                                  debugId={`community-domain-dashboard.billing-payment.${task.key}`}
+                                  onClick={() => setActiveBillingPaymentTask(task.key)}
+                                  style={{
+                                    justifyContent: "center",
+                                    fontSize: 13,
+                                    textTransform: "none",
+                                  }}
+                                >
+                                  {task.label}
+                                </StableButton>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ) : null}
                       <div style={{ ...helperText(), fontSize: 13 }}>
-                        {BILLING_PAYMENT_TASK_OPTIONS.find(
-                          (task) => task.key === activeBillingPaymentTask
-                        )?.note || "Choose the payment packet you need."}
+                        {activeBillingPaymentTaskOption.note}
                       </div>
                     </div>
 
-                    {activeBillingPaymentTask === "reference" &&
-                    isAdmin &&
-                    !billingIsActive &&
-                    domainPayment ? (
-                      <StableButton
-                        type="button"
-                        kind="secondary"
-                        fullWidth
-                        debugId="community-domain-dashboard.payment-code-form-toggle"
-                        onClick={() => setDomainPaymentFormOpen((open) => !open)}
-                        style={{ marginTop: 10 }}
-                      >
-                        {domainPaymentFormOpen ? "Hide code form" : "Generate another code"}
-                      </StableButton>
+                    {activeBillingPaymentTask === "generate" &&
+                    (!isAdmin || billingIsActive) ? (
+                      <div style={{ ...softCard(), marginTop: 12 }}>
+                        <div style={sectionLabel()}>Generate payment code</div>
+                        <div style={{ ...helperText(), marginTop: 7 }}>
+                          Payment-code generation is locked here because billing is
+                          already active or this account does not have Community
+                          Domain admin authority.
+                        </div>
+                      </div>
                     ) : null}
 
-                    {activeBillingPaymentTask === "reference" &&
+                    {activeBillingPaymentTask === "generate" &&
                     isAdmin &&
-                    !billingIsActive &&
-                    (!domainPayment || domainPaymentFormOpen) ? (
+                    !billingIsActive ? (
                       <div style={{ ...softCard(), marginTop: 12 }}>
                         <div style={sectionLabel()}>Generate payment code</div>
                         <div style={{ ...helperText(), marginTop: 7, fontSize: 13 }}>
@@ -8422,7 +8729,7 @@ export default function CommunityDomainDashboardPage() {
                       </div>
                     ) : null}
 
-                    {domainPayment ? (
+                    {domainPayment && activeBillingPaymentTask !== "generate" ? (
                       <div style={{ ...softCard(), marginTop: 12 }}>
                         <div style={sectionLabel()}>Latest payment code</div>
                         <div style={{ ...helperText(), marginTop: 7, fontWeight: 900 }}>
@@ -8457,99 +8764,88 @@ export default function CommunityDomainDashboardPage() {
                           </strong>
                           . Finance confirms only after bank/provider reconciliation succeeds.
                         </div>
-                        {activeBillingPaymentTask === "reference" ? (
-                          <>
-                            <StableButton
-                              type="button"
-                              kind="secondary"
-                              fullWidth
-                              debugId="community-domain-dashboard.credit-link-toggle"
-                              onClick={() => setDomainPaymentCreditOpen((open) => !open)}
-                              style={{ marginTop: 10 }}
+                        {activeBillingPaymentTask === "credit_link" ? (
+                          <div
+                            style={{
+                              marginTop: 10,
+                              borderRadius: 16,
+                              border: "1px solid rgba(12,79,168,0.18)",
+                              background: "#F1F7FF",
+                              padding: "12px",
+                              display: "grid",
+                              gap: 9,
+                            }}
+                          >
+                            <div style={sectionLabel()}>GSN credit link</div>
+                            <div
+                              style={{
+                                display: "grid",
+                                gridTemplateColumns:
+                                  "repeat(auto-fit, minmax(min(100%, 150px), 1fr))",
+                                gap: 8,
+                              }}
                             >
-                              {domainPaymentCreditOpen ? "Hide credit link" : "Show credit link"}
-                            </StableButton>
-                            {domainPaymentCreditOpen ? (
-                              <div
-                                style={{
-                                  marginTop: 10,
-                                  borderRadius: 16,
-                                  border: "1px solid rgba(12,79,168,0.18)",
-                                  background: "#F1F7FF",
-                                  padding: "12px",
-                                  display: "grid",
-                                  gap: 9,
-                                }}
-                              >
-                                <div style={sectionLabel()}>GSN credit link</div>
+                              {[
+                                [
+                                  "GSN ID",
+                                  cleanText(
+                                    domainPaymentIntent?.payer_gmfn_id,
+                                    "Signed-in owner account"
+                                  ),
+                                ],
+                                [
+                                  "Community",
+                                  cleanText(
+                                    domainPaymentIntent?.community_name,
+                                    `Community ${selectedDomainClanId || ""}`.trim()
+                                  ),
+                                ],
+                                [
+                                  "Domain",
+                                  cleanText(
+                                    domainPaymentIntent?.domain_display_name,
+                                    cleanText(
+                                      (dashboard?.community_domain as any)?.display_name,
+                                      "Community Domain"
+                                    )
+                                  ),
+                                ],
+                                [
+                                  "Record",
+                                  cleanText(
+                                    domainPaymentIntent?.expected_payment_id,
+                                    domainPayment?.id
+                                  ),
+                                ],
+                              ].map(([label, value]) => (
                                 <div
+                                  key={label}
                                   style={{
-                                    display: "grid",
-                                    gridTemplateColumns:
-                                      "repeat(auto-fit, minmax(min(100%, 150px), 1fr))",
-                                    gap: 8,
+                                    borderRadius: 12,
+                                    background: "rgba(255,255,255,0.82)",
+                                    border: "1px solid rgba(9,27,46,0.10)",
+                                    padding: "8px 10px",
                                   }}
                                 >
-                                  {[
-                                    [
-                                      "GSN ID",
-                                      cleanText(
-                                        domainPaymentIntent?.payer_gmfn_id,
-                                        "Signed-in owner account"
-                                      ),
-                                    ],
-                                    [
-                                      "Community",
-                                      cleanText(
-                                        domainPaymentIntent?.community_name,
-                                        `Community ${selectedDomainClanId || ""}`.trim()
-                                      ),
-                                    ],
-                                    [
-                                      "Domain",
-                                      cleanText(
-                                        domainPaymentIntent?.domain_display_name,
-                                        cleanText((dashboard?.community_domain as any)?.display_name, "Community Domain")
-                                      ),
-                                    ],
-                                    [
-                                      "Record",
-                                      cleanText(
-                                        domainPaymentIntent?.expected_payment_id,
-                                        domainPayment?.id
-                                      ),
-                                    ],
-                                  ].map(([label, value]) => (
-                                    <div
-                                      key={label}
-                                      style={{
-                                        borderRadius: 12,
-                                        background: "rgba(255,255,255,0.82)",
-                                        border: "1px solid rgba(9,27,46,0.10)",
-                                        padding: "8px 10px",
-                                      }}
-                                    >
-                                      <div style={{ ...sectionLabel(), fontSize: 11 }}>{label}</div>
-                                      <div
-                                        style={{
-                                          color: "#091B2E",
-                                          fontSize: 13,
-                                          fontWeight: 900,
-                                          marginTop: 3,
-                                          overflowWrap: "anywhere",
-                                        }}
-                                      >
-                                        {cleanText(value, "Recorded")}
-                                      </div>
-                                    </div>
-                                  ))}
+                                  <div style={{ ...sectionLabel(), fontSize: 11 }}>{label}</div>
+                                  <div
+                                    style={{
+                                      color: "#091B2E",
+                                      fontSize: 13,
+                                      fontWeight: 900,
+                                      marginTop: 3,
+                                      overflowWrap: "anywhere",
+                                    }}
+                                  >
+                                    {cleanText(value, "Recorded")}
+                                  </div>
                                 </div>
-                                <div style={{ ...helperText(), fontSize: 12.5, fontWeight: 820 }}>
-                                  Use only the payment code as the bank reference.
-                                </div>
-                              </div>
-                            ) : null}
-                          </>
+                              ))}
+                            </div>
+                            <div style={{ ...helperText(), fontSize: 12.5, fontWeight: 820 }}>
+                              Use only the payment code as the bank reference.
+                            </div>
+                          </div>
                         ) : null}
                         {activeBillingPaymentTask === "pay_account" ? (
                           <div
@@ -8663,7 +8959,7 @@ export default function CommunityDomainDashboardPage() {
                         ) : null}
                       </div>
                     ) : null}
-                    {!domainPayment && activeBillingPaymentTask !== "reference" ? (
+                    {!domainPayment && activeBillingPaymentTask !== "generate" ? (
                       <div style={{ ...softCard(), marginTop: 12 }}>
                         <div style={sectionLabel()}>Payment code needed</div>
                         <div style={{ ...helperText(), marginTop: 7 }}>
@@ -8671,6 +8967,16 @@ export default function CommunityDomainDashboardPage() {
                           official pay account and proof upload appear after the
                           payment record exists.
                         </div>
+                        <StableButton
+                          type="button"
+                          kind="primary"
+                          fullWidth
+                          debugId="community-domain-dashboard.open-generate-payment-code"
+                          onClick={() => setActiveBillingPaymentTask("generate")}
+                          style={{ marginTop: 12 }}
+                        >
+                          Open Generate
+                        </StableButton>
                       </div>
                     ) : null}
                       </>
@@ -8682,38 +8988,24 @@ export default function CommunityDomainDashboardPage() {
                   <div style={softCard()}>
                     <div style={sectionLabel()}>Billing readiness details</div>
                     <div style={{ ...helperText(), marginTop: 7 }}>
-                      Open this only when you need the deeper lifecycle and capacity
-                      diagnostics. The payment-code and account steps above are the
-                      normal owner workflow.
+                      This selected job shows the deeper lifecycle and capacity
+                      diagnostics. Use the Code & proof or Pay-in account jobs
+                      for the normal owner payment workflow.
                     </div>
-                    <StableButton
-                      type="button"
-                      kind="secondary"
-                      fullWidth
-                      debugId="community-domain-dashboard.billing-readiness-toggle"
-                      onClick={() => setBillingReadinessOpen((open) => !open)}
-                      style={{ marginTop: 12 }}
-                    >
-                      {billingReadinessOpen
-                        ? "Hide readiness details"
-                        : "Open readiness details"}
-                    </StableButton>
-                    {billingReadinessOpen ? (
-                      <div style={{ marginTop: 12 }}>
-                        <Suspense
-                          fallback={
-                            <div style={{ ...helperText(), marginTop: 4 }}>
-                              Loading billing readiness panels...
-                            </div>
-                          }
-                        >
-                          <CommunityDomainBillingReadinessPanels
-                            subscriptionLifecycle={subscriptionLifecycle}
-                            capacityPlan={capacityPlan}
-                          />
-                        </Suspense>
-                      </div>
-                    ) : null}
+                    <div style={{ marginTop: 12 }}>
+                      <Suspense
+                        fallback={
+                          <div style={{ ...helperText(), marginTop: 4 }}>
+                            Loading billing readiness panels...
+                          </div>
+                        }
+                      >
+                        <CommunityDomainBillingReadinessPanels
+                          subscriptionLifecycle={subscriptionLifecycle}
+                          capacityPlan={capacityPlan}
+                        />
+                      </Suspense>
+                    </div>
                   </div>
                 ) : null}
 
@@ -8728,7 +9020,7 @@ export default function CommunityDomainDashboardPage() {
                     >
                       <div style={sectionLabel()}>Services focus</div>
                       <div style={helperText()}>
-                        Open one service packet at a time. Current view:{" "}
+                        Choose the service stage first. Current view:{" "}
                         <strong>{selectedServiceDetail.label}</strong>.
                       </div>
                       <div
@@ -8739,30 +9031,76 @@ export default function CommunityDomainDashboardPage() {
                           gap: 8,
                         }}
                       >
-                        {SERVICE_DETAIL_OPTIONS.map((option) => {
-                          const selected = option.key === activeServiceDetail;
+                        {SERVICE_DETAIL_GROUP_OPTIONS.map((group) => {
+                          const selected = group.key === activeServiceDetailGroup;
                           return (
                             <StableButton
-                              key={option.key}
+                              key={group.key}
                               type="button"
                               kind={selected ? "primary" : "secondary"}
                               stableHeight={48}
                               fullWidth
                               aria-pressed={selected}
-                              title={option.note}
-                              debugId={`community-domain-dashboard.service-detail.${option.key}`}
-                              onClick={() => setActiveServiceDetail(option.key)}
+                              title={group.note}
+                              debugId={`community-domain-dashboard.service-group.${group.key}`}
+                              onClick={() => setActiveServiceDetail(group.defaultDetail)}
                               style={{
                                 justifyContent: "center",
                                 fontSize: 13,
                                 textTransform: "none",
                               }}
                             >
-                              {option.label}
+                              {group.label}
                             </StableButton>
                           );
                         })}
                       </div>
+                      {activeServiceGroupDetails.length > 1 ? (
+                        <div
+                          style={{
+                            borderTop: "1px solid rgba(9,27,46,0.08)",
+                            paddingTop: 10,
+                            display: "grid",
+                            gap: 8,
+                          }}
+                        >
+                          <div style={sectionLabel()}>
+                            {activeServiceDetailGroupOption.label} packets
+                          </div>
+                          <div
+                            style={{
+                              display: "grid",
+                              gridTemplateColumns:
+                                "repeat(auto-fit, minmax(min(100%, 136px), 1fr))",
+                              gap: 8,
+                            }}
+                          >
+                            {activeServiceGroupDetails.map((option) => {
+                              const selected = option.key === activeServiceDetail;
+                              return (
+                                <StableButton
+                                  key={option.key}
+                                  type="button"
+                                  kind={selected ? "primary" : "secondary"}
+                                  stableHeight={42}
+                                  fullWidth
+                                  aria-pressed={selected}
+                                  title={option.note}
+                                  debugId={`community-domain-dashboard.service-detail.${option.key}`}
+                                  onClick={() => setActiveServiceDetail(option.key)}
+                                  style={{
+                                    justifyContent: "center",
+                                    fontSize: 13,
+                                    textTransform: "none",
+                                  }}
+                                >
+                                  {option.label}
+                                </StableButton>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ) : null}
                       <div style={{ ...helperText(), fontSize: 13 }}>
                         {selectedServiceDetail.note}
                       </div>
@@ -8960,7 +9298,7 @@ export default function CommunityDomainDashboardPage() {
                     >
                       <div style={sectionLabel()}>Structure focus</div>
                       <div style={helperText()}>
-                        Open one institutional structure view at a time. Current
+                        Choose the structure stage first. Current
                         view: <strong>{selectedStructureDetail.label}</strong>.
                       </div>
                       <div
@@ -8971,30 +9309,76 @@ export default function CommunityDomainDashboardPage() {
                           gap: 8,
                         }}
                       >
-                        {STRUCTURE_DETAIL_OPTIONS.map((option) => {
-                          const selected = option.key === activeStructureDetail;
+                        {STRUCTURE_DETAIL_GROUP_OPTIONS.map((group) => {
+                          const selected = group.key === activeStructureDetailGroup;
                           return (
                             <StableButton
-                              key={option.key}
+                              key={group.key}
                               type="button"
                               kind={selected ? "primary" : "secondary"}
                               stableHeight={48}
                               fullWidth
                               aria-pressed={selected}
-                              title={option.note}
-                              debugId={`community-domain-dashboard.structure-detail.${option.key}`}
-                              onClick={() => setActiveStructureDetail(option.key)}
+                              title={group.note}
+                              debugId={`community-domain-dashboard.structure-group.${group.key}`}
+                              onClick={() => setActiveStructureDetail(group.defaultDetail)}
                               style={{
                                 justifyContent: "center",
                                 fontSize: 13,
                                 textTransform: "none",
                               }}
                             >
-                              {option.label}
+                              {group.label}
                             </StableButton>
                           );
                         })}
                       </div>
+                      {activeStructureGroupDetails.length > 1 ? (
+                        <div
+                          style={{
+                            borderTop: "1px solid rgba(9,27,46,0.08)",
+                            paddingTop: 10,
+                            display: "grid",
+                            gap: 8,
+                          }}
+                        >
+                          <div style={sectionLabel()}>
+                            {activeStructureDetailGroupOption.label} packets
+                          </div>
+                          <div
+                            style={{
+                              display: "grid",
+                              gridTemplateColumns:
+                                "repeat(auto-fit, minmax(min(100%, 136px), 1fr))",
+                              gap: 8,
+                            }}
+                          >
+                            {activeStructureGroupDetails.map((option) => {
+                              const selected = option.key === activeStructureDetail;
+                              return (
+                                <StableButton
+                                  key={option.key}
+                                  type="button"
+                                  kind={selected ? "primary" : "secondary"}
+                                  stableHeight={42}
+                                  fullWidth
+                                  aria-pressed={selected}
+                                  title={option.note}
+                                  debugId={`community-domain-dashboard.structure-detail.${option.key}`}
+                                  onClick={() => setActiveStructureDetail(option.key)}
+                                  style={{
+                                    justifyContent: "center",
+                                    fontSize: 13,
+                                    textTransform: "none",
+                                  }}
+                                >
+                                  {option.label}
+                                </StableButton>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ) : null}
                       <div style={{ ...helperText(), fontSize: 13 }}>
                         {selectedStructureDetail.note}
                       </div>
@@ -9103,10 +9487,11 @@ export default function CommunityDomainDashboardPage() {
                                 lineHeight: 1.16,
                               }}
                             >
-                              Open one governance task.
+                              Choose the governance stage first.
                             </h3>
                             <div style={{ ...helperText(), marginTop: 6 }}>
-                              Pick the question you are answering now. Reports and capture stay separate so the surface does not dump every control at once.
+                              Readiness, reports, and records stay separate so
+                              the surface does not dump every control at once.
                             </div>
                           </div>
                         </div>
@@ -9118,30 +9503,64 @@ export default function CommunityDomainDashboardPage() {
                             gap: 8,
                           }}
                         >
-                          {[
-                            ["readiness", "Readiness"],
-                            ["director_summary", "Director summary"],
-                            ["sponsor_summary", "Sponsor pack"],
-                            ["real_life_record", "Record real life"],
-                            ["access_requests", "Access requests"],
-                          ].map(([task, label]) => (
+                          {GOVERNANCE_TASK_GROUP_OPTIONS.map((group) => (
                             <StableButton
-                              key={task}
+                              key={group.key}
                               type="button"
                               kind={
-                                activeGovernanceTask === task
+                                activeGovernanceTaskGroup === group.key
                                   ? "primary"
                                   : "secondary"
                               }
                               stableHeight={46}
-                              debugId={`community-domain-dashboard.governance-task.${task}`}
-                              onClick={() =>
-                                setActiveGovernanceTask(task as GovernanceTaskKey)
-                              }
+                              debugId={`community-domain-dashboard.governance-group.${group.key}`}
+                              onClick={() => selectGovernanceTask(group.defaultTask)}
                             >
-                              {label}
+                              {group.label}
                             </StableButton>
                           ))}
+                        </div>
+                        {activeGovernanceGroupTasks.length > 1 ? (
+                          <div
+                            style={{
+                              borderTop: "1px solid rgba(9,27,46,0.08)",
+                              paddingTop: 10,
+                              display: "grid",
+                              gap: 8,
+                            }}
+                          >
+                            <div style={sectionLabel()}>
+                              {activeGovernanceTaskGroupOption.label} jobs
+                            </div>
+                            <div
+                              style={{
+                                display: "grid",
+                                gridTemplateColumns:
+                                  "repeat(auto-fit, minmax(min(100%, 150px), 1fr))",
+                                gap: 8,
+                              }}
+                            >
+                              {activeGovernanceGroupTasks.map((task) => (
+                                <StableButton
+                                  key={task.key}
+                                  type="button"
+                                  kind={
+                                    activeGovernanceTask === task.key
+                                      ? "primary"
+                                      : "secondary"
+                                  }
+                                  stableHeight={42}
+                                  debugId={`community-domain-dashboard.governance-task.${task.key}`}
+                                  onClick={() => selectGovernanceTask(task.key)}
+                                >
+                                  {task.label}
+                                </StableButton>
+                              ))}
+                            </div>
+                          </div>
+                        ) : null}
+                        <div style={{ ...helperText(), fontSize: 13 }}>
+                          {activeGovernanceTaskOption.note}
                         </div>
                       </div>
                     ) : null}
@@ -10272,6 +10691,7 @@ export default function CommunityDomainDashboardPage() {
                             onClick={() => {
                               setActiveRealLifeRecordTask("activity");
                               setActiveActivityRecordTask("record");
+                              setActiveActivityRecordStage("person");
                             }}
                           >
                             Activity
@@ -10288,6 +10708,7 @@ export default function CommunityDomainDashboardPage() {
                             onClick={() => {
                               setActiveRealLifeRecordTask("beneficiary_outcome");
                               setActiveBeneficiaryOutcomeTask("record");
+                              setActiveBeneficiaryOutcomeRecordStage("person");
                             }}
                           >
                             Beneficiary outcome
@@ -10348,11 +10769,13 @@ export default function CommunityDomainDashboardPage() {
                               }
                               stableHeight={44}
                               debugId={`community-domain-dashboard.activity-task.${task}`}
-                              onClick={() =>
-                                setActiveActivityRecordTask(
-                                  task as ActivityRecordTaskKey
-                                )
-                              }
+                              onClick={() => {
+                                const nextTask = task as ActivityRecordTaskKey;
+                                setActiveActivityRecordTask(nextTask);
+                                if (nextTask === "record") {
+                                  setActiveActivityRecordStage("person");
+                                }
+                              }}
                               style={{
                                 justifyContent: "center",
                                 fontSize: 13,
@@ -10366,118 +10789,234 @@ export default function CommunityDomainDashboardPage() {
 
                         {activeActivityRecordTask === "record" ? (
                           <>
-                        <div
-                          style={{
-                            display: "grid",
-                            gridTemplateColumns:
-                              "repeat(auto-fit, minmax(min(100%, 170px), 1fr))",
-                            gap: 8,
-                          }}
-                        >
-                          <input
-                            value={activityDraft.subject_user_id}
-                            disabled={busyActivityRecord}
-                            onChange={(event) =>
-                              updateActivityDraft("subject_user_id", event.target.value)
-                            }
-                            placeholder="Subject user id"
-                            inputMode="numeric"
-                            style={billingInputStyle()}
-                          />
-                          <select
-                            value={activityDraft.activity_type}
-                            disabled={busyActivityRecord}
-                            onChange={(event) =>
-                              updateActivityDraft("activity_type", event.target.value)
-                            }
-                            style={billingInputStyle()}
-                          >
-                            {activityCatalogueOptions.map((item) => (
-                              <option
-                                key={cleanText(item?.activity_type)}
-                                value={cleanText(item?.activity_type)}
-                              >
-                                {cleanText(item?.label, item?.activity_type)}
-                              </option>
-                            ))}
-                          </select>
-                          <input
-                            value={activityDraft.activity_label}
-                            disabled={busyActivityRecord}
-                            onChange={(event) =>
-                              updateActivityDraft("activity_label", event.target.value)
-                            }
-                            placeholder="Activity label"
-                            style={billingInputStyle()}
-                          />
-                          <input
-                            value={activityDraft.quantity}
-                            disabled={busyActivityRecord}
-                            onChange={(event) =>
-                              updateActivityDraft("quantity", event.target.value)
-                            }
-                            placeholder="Quantity"
-                            inputMode="decimal"
-                            style={billingInputStyle()}
-                          />
-                          <input
-                            value={activityDraft.measurement_unit}
-                            disabled={busyActivityRecord}
-                            onChange={(event) =>
-                              updateActivityDraft("measurement_unit", event.target.value)
-                            }
-                            placeholder="Unit, e.g. hours"
-                            style={billingInputStyle()}
-                          />
-                          <input
-                            value={activityDraft.evidence_reference}
-                            disabled={busyActivityRecord}
-                            onChange={(event) =>
-                              updateActivityDraft("evidence_reference", event.target.value)
-                            }
-                            placeholder="Evidence reference"
-                            style={billingInputStyle()}
-                          />
-                        </div>
-                        <textarea
-                          value={activityDraft.note}
-                          disabled={busyActivityRecord}
-                          onChange={(event) =>
-                            updateActivityDraft("note", event.target.value)
-                          }
-                          placeholder="Short note about what happened."
-                          style={{
-                            ...billingInputStyle(),
-                            minHeight: 78,
-                            padding: 12,
-                            resize: "vertical",
-                          }}
-                        />
-                        <div
-                          style={{
-                            display: "grid",
-                            gridTemplateColumns:
-                              "repeat(auto-fit, minmax(min(100%, 170px), 1fr))",
-                            gap: 8,
-                            alignItems: "center",
-                          }}
-                        >
-                          <StableButton
-                            type="button"
-                            kind="primary"
-                            stableHeight={46}
-                            disabled={busyActivityRecord}
-                            debugId="community-domain-dashboard.activity-record"
-                            onClick={() => {
-                              void submitCommunityDomainActivityRecord();
-                            }}
-                          >
-                            {busyActivityRecord ? "Recording..." : "Record activity"}
-                          </StableButton>
-                          <div style={{ ...helperText(), fontSize: 13 }}>
-                            Creates an admin-recorded Trust Event for the subject user. It does not prove final beneficiary outcomes.
-                          </div>
-                        </div>
+                            <div
+                              style={{
+                                display: "grid",
+                                gridTemplateColumns:
+                                  "repeat(auto-fit, minmax(min(100%, 120px), 1fr))",
+                                gap: 8,
+                              }}
+                            >
+                              {ACTIVITY_RECORD_STAGE_OPTIONS.map((stage) => {
+                                const selected =
+                                  stage.key === activeActivityRecordStage;
+                                return (
+                                  <StableButton
+                                    key={stage.key}
+                                    type="button"
+                                    kind={selected ? "primary" : "secondary"}
+                                    stableHeight={42}
+                                    fullWidth
+                                    aria-pressed={selected}
+                                    title={stage.note}
+                                    debugId={`community-domain-dashboard.activity-record-stage.${stage.key}`}
+                                    onClick={() =>
+                                      setActiveActivityRecordStage(stage.key)
+                                    }
+                                    style={{
+                                      justifyContent: "center",
+                                      fontSize: 13,
+                                      textTransform: "none",
+                                    }}
+                                  >
+                                    {stage.label}
+                                  </StableButton>
+                                );
+                              })}
+                            </div>
+                            <div style={{ ...helperText(), fontSize: 13 }}>
+                              {ACTIVITY_RECORD_STAGE_OPTIONS.find(
+                                (stage) => stage.key === activeActivityRecordStage
+                              )?.note || "Choose the capture step you need."}
+                            </div>
+
+                            {activeActivityRecordStage === "person" ? (
+                              <div style={{ display: "grid", gap: 10 }}>
+                                <div
+                                  style={{
+                                    display: "grid",
+                                    gridTemplateColumns:
+                                      "repeat(auto-fit, minmax(min(100%, 170px), 1fr))",
+                                    gap: 8,
+                                  }}
+                                >
+                                  <input
+                                    value={activityDraft.subject_user_id}
+                                    disabled={busyActivityRecord}
+                                    onChange={(event) =>
+                                      updateActivityDraft(
+                                        "subject_user_id",
+                                        event.target.value
+                                      )
+                                    }
+                                    placeholder="Subject user id"
+                                    inputMode="numeric"
+                                    style={billingInputStyle()}
+                                  />
+                                  <select
+                                    value={activityDraft.activity_type}
+                                    disabled={busyActivityRecord}
+                                    onChange={(event) =>
+                                      updateActivityDraft(
+                                        "activity_type",
+                                        event.target.value
+                                      )
+                                    }
+                                    style={billingInputStyle()}
+                                  >
+                                    {activityCatalogueOptions.map((item) => (
+                                      <option
+                                        key={cleanText(item?.activity_type)}
+                                        value={cleanText(item?.activity_type)}
+                                      >
+                                        {cleanText(item?.label, item?.activity_type)}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
+                                <StableButton
+                                  type="button"
+                                  kind="primary"
+                                  stableHeight={44}
+                                  debugId="community-domain-dashboard.activity-record-next.activity"
+                                  onClick={() =>
+                                    setActiveActivityRecordStage("activity")
+                                  }
+                                  style={{
+                                    justifyContent: "center",
+                                    fontSize: 13,
+                                    textTransform: "none",
+                                  }}
+                                >
+                                  Next: activity
+                                </StableButton>
+                              </div>
+                            ) : null}
+
+                            {activeActivityRecordStage === "activity" ? (
+                              <div style={{ display: "grid", gap: 10 }}>
+                                <div
+                                  style={{
+                                    display: "grid",
+                                    gridTemplateColumns:
+                                      "repeat(auto-fit, minmax(min(100%, 170px), 1fr))",
+                                    gap: 8,
+                                  }}
+                                >
+                                  <input
+                                    value={activityDraft.activity_label}
+                                    disabled={busyActivityRecord}
+                                    onChange={(event) =>
+                                      updateActivityDraft(
+                                        "activity_label",
+                                        event.target.value
+                                      )
+                                    }
+                                    placeholder="Activity label"
+                                    style={billingInputStyle()}
+                                  />
+                                  <input
+                                    value={activityDraft.quantity}
+                                    disabled={busyActivityRecord}
+                                    onChange={(event) =>
+                                      updateActivityDraft(
+                                        "quantity",
+                                        event.target.value
+                                      )
+                                    }
+                                    placeholder="Quantity"
+                                    inputMode="decimal"
+                                    style={billingInputStyle()}
+                                  />
+                                  <input
+                                    value={activityDraft.measurement_unit}
+                                    disabled={busyActivityRecord}
+                                    onChange={(event) =>
+                                      updateActivityDraft(
+                                        "measurement_unit",
+                                        event.target.value
+                                      )
+                                    }
+                                    placeholder="Unit, e.g. hours"
+                                    style={billingInputStyle()}
+                                  />
+                                </div>
+                                <StableButton
+                                  type="button"
+                                  kind="primary"
+                                  stableHeight={44}
+                                  debugId="community-domain-dashboard.activity-record-next.evidence"
+                                  onClick={() =>
+                                    setActiveActivityRecordStage("evidence")
+                                  }
+                                  style={{
+                                    justifyContent: "center",
+                                    fontSize: 13,
+                                    textTransform: "none",
+                                  }}
+                                >
+                                  Next: evidence
+                                </StableButton>
+                              </div>
+                            ) : null}
+
+                            {activeActivityRecordStage === "evidence" ? (
+                              <div style={{ display: "grid", gap: 10 }}>
+                                <input
+                                  value={activityDraft.evidence_reference}
+                                  disabled={busyActivityRecord}
+                                  onChange={(event) =>
+                                    updateActivityDraft(
+                                      "evidence_reference",
+                                      event.target.value
+                                    )
+                                  }
+                                  placeholder="Evidence reference"
+                                  style={billingInputStyle()}
+                                />
+                                <textarea
+                                  value={activityDraft.note}
+                                  disabled={busyActivityRecord}
+                                  onChange={(event) =>
+                                    updateActivityDraft("note", event.target.value)
+                                  }
+                                  placeholder="Short note about what happened."
+                                  style={{
+                                    ...billingInputStyle(),
+                                    minHeight: 78,
+                                    padding: 12,
+                                    resize: "vertical",
+                                  }}
+                                />
+                                <div
+                                  style={{
+                                    display: "grid",
+                                    gridTemplateColumns:
+                                      "repeat(auto-fit, minmax(min(100%, 170px), 1fr))",
+                                    gap: 8,
+                                    alignItems: "center",
+                                  }}
+                                >
+                                  <StableButton
+                                    type="button"
+                                    kind="primary"
+                                    stableHeight={46}
+                                    disabled={busyActivityRecord}
+                                    debugId="community-domain-dashboard.activity-record"
+                                    onClick={() => {
+                                      void submitCommunityDomainActivityRecord();
+                                    }}
+                                  >
+                                    {busyActivityRecord
+                                      ? "Recording..."
+                                      : "Record activity"}
+                                  </StableButton>
+                                  <div style={{ ...helperText(), fontSize: 13 }}>
+                                    Creates an admin-recorded Trust Event for the subject user. It does not prove final beneficiary outcomes.
+                                  </div>
+                                </div>
+                              </div>
+                            ) : null}
                           </>
                         ) : null}
 
@@ -10606,11 +11145,13 @@ export default function CommunityDomainDashboardPage() {
                               }
                               stableHeight={44}
                               debugId={`community-domain-dashboard.beneficiary-outcome-task.${task}`}
-                              onClick={() =>
-                                setActiveBeneficiaryOutcomeTask(
-                                  task as BeneficiaryOutcomeTaskKey
-                                )
-                              }
+                              onClick={() => {
+                                const nextTask = task as BeneficiaryOutcomeTaskKey;
+                                setActiveBeneficiaryOutcomeTask(nextTask);
+                                if (nextTask === "record") {
+                                  setActiveBeneficiaryOutcomeRecordStage("person");
+                                }
+                              }}
                               style={{
                                 justifyContent: "center",
                                 fontSize: 13,
@@ -10624,223 +11165,334 @@ export default function CommunityDomainDashboardPage() {
 
                         {activeBeneficiaryOutcomeTask === "record" ? (
                           <>
-                        <div
-                          style={{
-                            display: "grid",
-                            gridTemplateColumns:
-                              "repeat(auto-fit, minmax(min(100%, 170px), 1fr))",
-                            gap: 8,
-                          }}
-                        >
-                          <input
-                            value={beneficiaryOutcomeDraft.subject_user_id}
-                            disabled={busyBeneficiaryOutcomeRecord}
-                            onChange={(event) =>
-                              updateBeneficiaryOutcomeDraft(
-                                "subject_user_id",
-                                event.target.value
-                              )
-                            }
-                            placeholder="Beneficiary user id"
-                            inputMode="numeric"
-                            style={billingInputStyle()}
-                          />
-                          <input
-                            value={beneficiaryOutcomeDraft.programme_label}
-                            disabled={busyBeneficiaryOutcomeRecord}
-                            onChange={(event) =>
-                              updateBeneficiaryOutcomeDraft(
-                                "programme_label",
-                                event.target.value
-                              )
-                            }
-                            placeholder="Programme or case label"
-                            style={billingInputStyle()}
-                          />
-                          <input
-                            value={beneficiaryOutcomeDraft.outcome_indicator}
-                            disabled={busyBeneficiaryOutcomeRecord}
-                            onChange={(event) =>
-                              updateBeneficiaryOutcomeDraft(
-                                "outcome_indicator",
-                                event.target.value
-                              )
-                            }
-                            placeholder="Measured indicator"
-                            style={billingInputStyle()}
-                          />
-                          <select
-                            value={beneficiaryOutcomeDraft.outcome_state}
-                            disabled={busyBeneficiaryOutcomeRecord}
-                            onChange={(event) =>
-                              updateBeneficiaryOutcomeDraft(
-                                "outcome_state",
-                                event.target.value
-                              )
-                            }
-                            style={billingInputStyle()}
-                          >
-                            {BENEFICIARY_OUTCOME_STATE_OPTIONS.map((item) => (
-                              <option key={item.value} value={item.value}>
-                                {item.label}
-                              </option>
-                            ))}
-                          </select>
-                          <select
-                            value={beneficiaryOutcomeDraft.follow_up_state}
-                            disabled={busyBeneficiaryOutcomeRecord}
-                            onChange={(event) =>
-                              updateBeneficiaryOutcomeDraft(
-                                "follow_up_state",
-                                event.target.value
-                              )
-                            }
-                            style={billingInputStyle()}
-                          >
-                            {BENEFICIARY_FOLLOW_UP_STATE_OPTIONS.map((item) => (
-                              <option key={item.value} value={item.value}>
-                                {item.label}
-                              </option>
-                            ))}
-                          </select>
-                          <select
-                            value={beneficiaryOutcomeDraft.beneficiary_confirmation}
-                            disabled={busyBeneficiaryOutcomeRecord}
-                            onChange={(event) =>
-                              updateBeneficiaryOutcomeDraft(
-                                "beneficiary_confirmation",
-                                event.target.value
-                              )
-                            }
-                            style={billingInputStyle()}
-                          >
-                            {BENEFICIARY_CONFIRMATION_OPTIONS.map((item) => (
-                              <option key={item.value} value={item.value}>
-                                {item.label}
-                              </option>
-                            ))}
-                          </select>
-                          <select
-                            value={beneficiaryOutcomeDraft.challenge_status}
-                            disabled={busyBeneficiaryOutcomeRecord}
-                            onChange={(event) =>
-                              updateBeneficiaryOutcomeDraft(
-                                "challenge_status",
-                                event.target.value
-                              )
-                            }
-                            style={billingInputStyle()}
-                          >
-                            {BENEFICIARY_CHALLENGE_STATUS_OPTIONS.map((item) => (
-                              <option key={item.value} value={item.value}>
-                                {item.label}
-                              </option>
-                            ))}
-                          </select>
-                          <input
-                            value={beneficiaryOutcomeDraft.evidence_reference}
-                            disabled={busyBeneficiaryOutcomeRecord}
-                            onChange={(event) =>
-                              updateBeneficiaryOutcomeDraft(
-                                "evidence_reference",
-                                event.target.value
-                              )
-                            }
-                            placeholder="Evidence reference"
-                            style={billingInputStyle()}
-                          />
-                        </div>
+                            <div
+                              style={{
+                                display: "grid",
+                                gridTemplateColumns:
+                                  "repeat(auto-fit, minmax(min(100%, 120px), 1fr))",
+                                gap: 8,
+                              }}
+                            >
+                              {BENEFICIARY_OUTCOME_RECORD_STAGE_OPTIONS.map(
+                                (stage) => {
+                                  const selected =
+                                    stage.key === activeBeneficiaryOutcomeRecordStage;
+                                  return (
+                                    <StableButton
+                                      key={stage.key}
+                                      type="button"
+                                      kind={selected ? "primary" : "secondary"}
+                                      stableHeight={42}
+                                      fullWidth
+                                      aria-pressed={selected}
+                                      title={stage.note}
+                                      debugId={`community-domain-dashboard.beneficiary-outcome-record-stage.${stage.key}`}
+                                      onClick={() =>
+                                        setActiveBeneficiaryOutcomeRecordStage(
+                                          stage.key
+                                        )
+                                      }
+                                      style={{
+                                        justifyContent: "center",
+                                        fontSize: 13,
+                                        textTransform: "none",
+                                      }}
+                                    >
+                                      {stage.label}
+                                    </StableButton>
+                                  );
+                                }
+                              )}
+                            </div>
+                            <div style={{ ...helperText(), fontSize: 13 }}>
+                              {BENEFICIARY_OUTCOME_RECORD_STAGE_OPTIONS.find(
+                                (stage) =>
+                                  stage.key === activeBeneficiaryOutcomeRecordStage
+                              )?.note || "Choose the capture step you need."}
+                            </div>
 
-                        <textarea
-                          value={beneficiaryOutcomeDraft.baseline_value}
-                          disabled={busyBeneficiaryOutcomeRecord}
-                          onChange={(event) =>
-                            updateBeneficiaryOutcomeDraft(
-                              "baseline_value",
-                              event.target.value
-                            )
-                          }
-                          placeholder="Baseline before support."
-                          style={{
-                            ...billingInputStyle(),
-                            minHeight: 72,
-                            padding: 12,
-                            resize: "vertical",
-                          }}
-                        />
-                        <textarea
-                          value={beneficiaryOutcomeDraft.after_value}
-                          disabled={busyBeneficiaryOutcomeRecord}
-                          onChange={(event) =>
-                            updateBeneficiaryOutcomeDraft("after_value", event.target.value)
-                          }
-                          placeholder="After value or current follow-up result."
-                          style={{
-                            ...billingInputStyle(),
-                            minHeight: 72,
-                            padding: 12,
-                            resize: "vertical",
-                          }}
-                        />
-                        <textarea
-                          value={beneficiaryOutcomeDraft.support_received}
-                          disabled={busyBeneficiaryOutcomeRecord}
-                          onChange={(event) =>
-                            updateBeneficiaryOutcomeDraft(
-                              "support_received",
-                              event.target.value
-                            )
-                          }
-                          placeholder="Support received from this Community Domain."
-                          style={{
-                            ...billingInputStyle(),
-                            minHeight: 72,
-                            padding: 12,
-                            resize: "vertical",
-                          }}
-                        />
-                        <textarea
-                          value={beneficiaryOutcomeDraft.note}
-                          disabled={busyBeneficiaryOutcomeRecord}
-                          onChange={(event) =>
-                            updateBeneficiaryOutcomeDraft("note", event.target.value)
-                          }
-                          placeholder="Private admin note."
-                          style={{
-                            ...billingInputStyle(),
-                            minHeight: 72,
-                            padding: 12,
-                            resize: "vertical",
-                          }}
-                        />
+                            {activeBeneficiaryOutcomeRecordStage === "person" ? (
+                              <div style={{ display: "grid", gap: 10 }}>
+                                <div
+                                  style={{
+                                    display: "grid",
+                                    gridTemplateColumns:
+                                      "repeat(auto-fit, minmax(min(100%, 170px), 1fr))",
+                                    gap: 8,
+                                  }}
+                                >
+                                  <input
+                                    value={beneficiaryOutcomeDraft.subject_user_id}
+                                    disabled={busyBeneficiaryOutcomeRecord}
+                                    onChange={(event) =>
+                                      updateBeneficiaryOutcomeDraft(
+                                        "subject_user_id",
+                                        event.target.value
+                                      )
+                                    }
+                                    placeholder="Beneficiary user id"
+                                    inputMode="numeric"
+                                    style={billingInputStyle()}
+                                  />
+                                  <input
+                                    value={beneficiaryOutcomeDraft.programme_label}
+                                    disabled={busyBeneficiaryOutcomeRecord}
+                                    onChange={(event) =>
+                                      updateBeneficiaryOutcomeDraft(
+                                        "programme_label",
+                                        event.target.value
+                                      )
+                                    }
+                                    placeholder="Programme or case label"
+                                    style={billingInputStyle()}
+                                  />
+                                </div>
+                                <StableButton
+                                  type="button"
+                                  kind="primary"
+                                  stableHeight={44}
+                                  debugId="community-domain-dashboard.beneficiary-outcome-record-next.change"
+                                  onClick={() =>
+                                    setActiveBeneficiaryOutcomeRecordStage("change")
+                                  }
+                                  style={{
+                                    justifyContent: "center",
+                                    fontSize: 13,
+                                    textTransform: "none",
+                                  }}
+                                >
+                                  Next: change
+                                </StableButton>
+                              </div>
+                            ) : null}
 
-                        <div
-                          style={{
-                            display: "grid",
-                            gridTemplateColumns:
-                              "repeat(auto-fit, minmax(min(100%, 170px), 1fr))",
-                            gap: 8,
-                            alignItems: "center",
-                          }}
-                        >
-                          <StableButton
-                            type="button"
-                            kind="primary"
-                            stableHeight={46}
-                            disabled={busyBeneficiaryOutcomeRecord}
-                            debugId="community-domain-dashboard.beneficiary-outcome-record"
-                            onClick={() => {
-                              void submitCommunityDomainBeneficiaryOutcomeRecord();
-                            }}
-                          >
-                            {busyBeneficiaryOutcomeRecord
-                              ? "Recording..."
-                              : "Record outcome"}
-                          </StableButton>
-                          <div style={{ ...helperText(), fontSize: 13 }}>
-                            Creates a before-and-after Trust Event. Sponsor reports still need aggregation and privacy review.
-                          </div>
-                        </div>
+                            {activeBeneficiaryOutcomeRecordStage === "change" ? (
+                              <div style={{ display: "grid", gap: 10 }}>
+                                <input
+                                  value={beneficiaryOutcomeDraft.outcome_indicator}
+                                  disabled={busyBeneficiaryOutcomeRecord}
+                                  onChange={(event) =>
+                                    updateBeneficiaryOutcomeDraft(
+                                      "outcome_indicator",
+                                      event.target.value
+                                    )
+                                  }
+                                  placeholder="Measured indicator"
+                                  style={billingInputStyle()}
+                                />
+                                <textarea
+                                  value={beneficiaryOutcomeDraft.baseline_value}
+                                  disabled={busyBeneficiaryOutcomeRecord}
+                                  onChange={(event) =>
+                                    updateBeneficiaryOutcomeDraft(
+                                      "baseline_value",
+                                      event.target.value
+                                    )
+                                  }
+                                  placeholder="Baseline before support."
+                                  style={{
+                                    ...billingInputStyle(),
+                                    minHeight: 72,
+                                    padding: 12,
+                                    resize: "vertical",
+                                  }}
+                                />
+                                <textarea
+                                  value={beneficiaryOutcomeDraft.after_value}
+                                  disabled={busyBeneficiaryOutcomeRecord}
+                                  onChange={(event) =>
+                                    updateBeneficiaryOutcomeDraft(
+                                      "after_value",
+                                      event.target.value
+                                    )
+                                  }
+                                  placeholder="After value or current follow-up result."
+                                  style={{
+                                    ...billingInputStyle(),
+                                    minHeight: 72,
+                                    padding: 12,
+                                    resize: "vertical",
+                                  }}
+                                />
+                                <textarea
+                                  value={beneficiaryOutcomeDraft.support_received}
+                                  disabled={busyBeneficiaryOutcomeRecord}
+                                  onChange={(event) =>
+                                    updateBeneficiaryOutcomeDraft(
+                                      "support_received",
+                                      event.target.value
+                                    )
+                                  }
+                                  placeholder="Support received from this Community Domain."
+                                  style={{
+                                    ...billingInputStyle(),
+                                    minHeight: 72,
+                                    padding: 12,
+                                    resize: "vertical",
+                                  }}
+                                />
+                                <StableButton
+                                  type="button"
+                                  kind="primary"
+                                  stableHeight={44}
+                                  debugId="community-domain-dashboard.beneficiary-outcome-record-next.proof"
+                                  onClick={() =>
+                                    setActiveBeneficiaryOutcomeRecordStage("proof")
+                                  }
+                                  style={{
+                                    justifyContent: "center",
+                                    fontSize: 13,
+                                    textTransform: "none",
+                                  }}
+                                >
+                                  Next: proof
+                                </StableButton>
+                              </div>
+                            ) : null}
+
+                            {activeBeneficiaryOutcomeRecordStage === "proof" ? (
+                              <div style={{ display: "grid", gap: 10 }}>
+                                <div
+                                  style={{
+                                    display: "grid",
+                                    gridTemplateColumns:
+                                      "repeat(auto-fit, minmax(min(100%, 170px), 1fr))",
+                                    gap: 8,
+                                  }}
+                                >
+                                  <select
+                                    value={beneficiaryOutcomeDraft.outcome_state}
+                                    disabled={busyBeneficiaryOutcomeRecord}
+                                    onChange={(event) =>
+                                      updateBeneficiaryOutcomeDraft(
+                                        "outcome_state",
+                                        event.target.value
+                                      )
+                                    }
+                                    style={billingInputStyle()}
+                                  >
+                                    {BENEFICIARY_OUTCOME_STATE_OPTIONS.map((item) => (
+                                      <option key={item.value} value={item.value}>
+                                        {item.label}
+                                      </option>
+                                    ))}
+                                  </select>
+                                  <select
+                                    value={beneficiaryOutcomeDraft.follow_up_state}
+                                    disabled={busyBeneficiaryOutcomeRecord}
+                                    onChange={(event) =>
+                                      updateBeneficiaryOutcomeDraft(
+                                        "follow_up_state",
+                                        event.target.value
+                                      )
+                                    }
+                                    style={billingInputStyle()}
+                                  >
+                                    {BENEFICIARY_FOLLOW_UP_STATE_OPTIONS.map(
+                                      (item) => (
+                                        <option key={item.value} value={item.value}>
+                                          {item.label}
+                                        </option>
+                                      )
+                                    )}
+                                  </select>
+                                  <select
+                                    value={
+                                      beneficiaryOutcomeDraft.beneficiary_confirmation
+                                    }
+                                    disabled={busyBeneficiaryOutcomeRecord}
+                                    onChange={(event) =>
+                                      updateBeneficiaryOutcomeDraft(
+                                        "beneficiary_confirmation",
+                                        event.target.value
+                                      )
+                                    }
+                                    style={billingInputStyle()}
+                                  >
+                                    {BENEFICIARY_CONFIRMATION_OPTIONS.map((item) => (
+                                      <option key={item.value} value={item.value}>
+                                        {item.label}
+                                      </option>
+                                    ))}
+                                  </select>
+                                  <select
+                                    value={beneficiaryOutcomeDraft.challenge_status}
+                                    disabled={busyBeneficiaryOutcomeRecord}
+                                    onChange={(event) =>
+                                      updateBeneficiaryOutcomeDraft(
+                                        "challenge_status",
+                                        event.target.value
+                                      )
+                                    }
+                                    style={billingInputStyle()}
+                                  >
+                                    {BENEFICIARY_CHALLENGE_STATUS_OPTIONS.map(
+                                      (item) => (
+                                        <option key={item.value} value={item.value}>
+                                          {item.label}
+                                        </option>
+                                      )
+                                    )}
+                                  </select>
+                                  <input
+                                    value={beneficiaryOutcomeDraft.evidence_reference}
+                                    disabled={busyBeneficiaryOutcomeRecord}
+                                    onChange={(event) =>
+                                      updateBeneficiaryOutcomeDraft(
+                                        "evidence_reference",
+                                        event.target.value
+                                      )
+                                    }
+                                    placeholder="Evidence reference"
+                                    style={billingInputStyle()}
+                                  />
+                                </div>
+                                <textarea
+                                  value={beneficiaryOutcomeDraft.note}
+                                  disabled={busyBeneficiaryOutcomeRecord}
+                                  onChange={(event) =>
+                                    updateBeneficiaryOutcomeDraft(
+                                      "note",
+                                      event.target.value
+                                    )
+                                  }
+                                  placeholder="Private admin note."
+                                  style={{
+                                    ...billingInputStyle(),
+                                    minHeight: 72,
+                                    padding: 12,
+                                    resize: "vertical",
+                                  }}
+                                />
+                                <div
+                                  style={{
+                                    display: "grid",
+                                    gridTemplateColumns:
+                                      "repeat(auto-fit, minmax(min(100%, 170px), 1fr))",
+                                    gap: 8,
+                                    alignItems: "center",
+                                  }}
+                                >
+                                  <StableButton
+                                    type="button"
+                                    kind="primary"
+                                    stableHeight={46}
+                                    disabled={busyBeneficiaryOutcomeRecord}
+                                    debugId="community-domain-dashboard.beneficiary-outcome-record"
+                                    onClick={() => {
+                                      void submitCommunityDomainBeneficiaryOutcomeRecord();
+                                    }}
+                                  >
+                                    {busyBeneficiaryOutcomeRecord
+                                      ? "Recording..."
+                                      : "Record outcome"}
+                                  </StableButton>
+                                  <div style={{ ...helperText(), fontSize: 13 }}>
+                                    Creates a before-and-after Trust Event. Sponsor reports still need aggregation and privacy review.
+                                  </div>
+                                </div>
+                              </div>
+                            ) : null}
                           </>
                         ) : null}
 

@@ -996,10 +996,12 @@ try {
   await page.getByText("Operating areas", { exact: true }).waitFor({ timeout: 10000 });
   await clickByDebugId(page, "community-domain-dashboard.lane.modules");
   await page.getByText("Services focus", { exact: true }).waitFor({ timeout: 10000 });
+  await clickByDebugId(page, "community-domain-dashboard.service-group.local");
   await clickByDebugId(page, "community-domain-dashboard.service-detail.boundaries");
   await page.getByText("Boundary packet", { exact: true }).waitFor({ timeout: 10000 });
   await clickByDebugId(page, "community-domain-service-boundary.focus.privacy");
   await page.getByText("Record privacy readiness", { exact: true }).waitFor({ timeout: 10000 });
+  await clickByDebugId(page, "community-domain-dashboard.service-group.trust");
   await clickByDebugId(page, "community-domain-dashboard.service-detail.evidence");
   await page.getByText("Trust and evidence packet", { exact: true }).waitFor({ timeout: 10000 });
   await clickByDebugId(page, "community-domain.trust-evidence.focus.release");
@@ -1009,10 +1011,30 @@ try {
   await page.getByText("Operating areas", { exact: true }).waitFor({ timeout: 10000 });
   await clickByDebugId(page, "community-domain-dashboard.lane.structure");
   await page.getByText("Structure focus", { exact: true }).waitFor({ timeout: 10000 });
+  await clickByDebugId(page, "community-domain-dashboard.structure-group.rollout");
   await clickByDebugId(page, "community-domain-dashboard.structure-detail.planning");
   await page.getByText("Planning packet", { exact: true }).waitFor({ timeout: 10000 });
   await clickByDebugId(page, "community-domain.structure-planning.focus.groups");
   await page.getByText("Group readiness", { exact: true }).waitFor({ timeout: 10000 });
+
+  await clickByDebugId(page, "community-domain-dashboard.operating-area-picker-toggle");
+  await page.getByText("Operating areas", { exact: true }).waitFor({ timeout: 10000 });
+  await clickByDebugId(page, "community-domain-dashboard.lane.governance");
+  await page.getByText("Governance jobs", { exact: true }).waitFor({ timeout: 10000 });
+  await clickByDebugId(page, "community-domain-dashboard.governance-group.records");
+  await clickByDebugId(page, "community-domain-dashboard.governance-task.real_life_record");
+  await page
+    .getByTestId("community-domain-dashboard.work-surface")
+    .getByText("Record from real life", { exact: true })
+    .waitFor({ timeout: 10000 });
+  await clickByDebugId(page, "community-domain-dashboard.activity-record-stage.evidence");
+  await page.getByPlaceholder("Evidence reference").waitFor({ timeout: 10000 });
+  await clickByDebugId(
+    page,
+    "community-domain-dashboard.real-life-record.beneficiary-outcome-inline"
+  );
+  await clickByDebugId(page, "community-domain-dashboard.beneficiary-outcome-record-stage.proof");
+  await page.getByText("Record outcome", { exact: true }).waitFor({ timeout: 10000 });
 
   audit = await page.evaluate(pageAudit);
   const finalText = normalized(audit.bodyText);
