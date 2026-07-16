@@ -1574,11 +1574,13 @@ shape.
    access requests, setup evidence, setup editors, nodes, node members, and
    readiness maps are already present.
 
-10. **Activity planning language already exists.**
+10. **Activity planning language and manual activity records now exist.**
 
     Community Domain templates already carry activity lanes, and the activity
     map/evidence map surfaces clearly say they are planning/readiness views.
-    This is useful groundwork for the future activity catalogue.
+    Manual activity Trust Events now provide the first activity-record ledger.
+    The remaining lift is configurable domain-specific templates, QR/import,
+    roll-up capture, participant confirmation, and stronger challenge workflows.
 
 ### Present, shut off, or missing for the agreed MVP
 
@@ -1731,11 +1733,14 @@ shape.
    roster, shops remain personal, activity evidence not yet recorded unless
    explicitly captured.
 
-5. **Build the activity catalogue only after the verification trail is clean.**
+5. **Treat activity catalogue v1 as the basic ledger, not the full capture
+   system.**
 
-   Start with manual admin record, named member/beneficiary subject, evidence
-   strength, challenge status, and Trust Event creation. Add CSV/import/roll-up
-   after the basic ledger works.
+   Manual admin records, named member/beneficiary subjects, evidence strength,
+   visibility, and Trust Event creation now exist. Add configurable
+   domain-specific templates, CSV/import, roll-up capture, QR check-in,
+   participant confirmation, and deeper challenge workflow after the basic
+   ledger stays stable.
 
 6. **Build NGO beneficiary outcomes as the first high-value activity template.**
 

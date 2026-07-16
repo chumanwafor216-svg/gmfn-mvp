@@ -3439,6 +3439,12 @@ assertNotContains(
   "Community Domain audit must not reintroduce stale claims that manual delivery receipt UI is WhatsApp-only after bounded channel/status/consent-basis selection exists."
 );
 
+assertNotContains(
+  "docs/COMMUNITY_DOMAIN_ACTOR_IDENTITY_AUDIT_2026-07-15.md",
+  /future activity catalogue|Build the activity catalogue only after the verification trail is clean|Start with manual admin record, named member\/beneficiary subject/,
+  "Community Domain audit must not reintroduce stale claims that manual activity catalogue records are still future after activity Trust Events exist."
+);
+
 assertContains(
   "src/lib/api.ts",
   /lookupCommunityDomainByName[\s\S]*\/community-domains\/lookup[\s\S]*domain_name/,
