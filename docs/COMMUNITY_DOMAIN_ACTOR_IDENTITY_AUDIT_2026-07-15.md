@@ -1099,33 +1099,39 @@ However:
 
 ### 6. Membership roster
 
-Community Domains need a governed member roster.
+Community Domains need a governed member roster. Bounded roster v1 now exists.
 
-The roster should support:
+The roster now supports the core v1 path:
 
 - add member;
 - approve request;
 - active member;
-- pending member;
 - inactive member;
 - removed/deactivated member;
 - role/title;
-- history of who added, approved, removed, or changed the member.
+- status-change history through Trust Events.
 
-Membership should be preserved as history, not hard-deleted.
+Remaining lift: keep pending/request state legible to applicants and admins,
+show plain-language history without exposing reviewer-private fields, and avoid
+making users understand the full action-review machinery for simple membership
+work.
 
 ### 7. Member removal / deactivation
 
-Admins must be able to remove or deactivate a person who is no longer a member.
+Admins can now remove or deactivate a person who is no longer a member through
+the bounded roster v1 path.
 
 When a member is removed:
 
-- the member should no longer pass active-membership verification;
-- the removal should be recorded with date, actor, and reason where possible;
-- historical Trust Events should remain;
-- the former member should not disappear from past evidence;
-- public verification should distinguish active member from inactive/removed
-  member where safe.
+- the member no longer passes active-membership verification;
+- the removal is recorded as a status-change Trust Event;
+- historical Trust Events remain;
+- the former member does not disappear from past evidence;
+- the recorded owner is protected from removal through this route.
+
+Remaining lift: decide whether public verification should distinguish
+inactive/removed from never-member where safe, without exposing the private
+roster.
 
 ### 8. Automatic membership verification
 

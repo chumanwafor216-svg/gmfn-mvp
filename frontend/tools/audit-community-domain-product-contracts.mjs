@@ -3441,6 +3441,12 @@ assertNotContains(
 
 assertNotContains(
   "docs/COMMUNITY_DOMAIN_ACTOR_IDENTITY_AUDIT_2026-07-15.md",
+  /The roster should support|Admins must be able to remove or deactivate|the member should no longer pass active-membership verification|Membership should be preserved as history, not hard-deleted/,
+  "Community Domain audit must not reintroduce stale roster/removal language after bounded membership status changes, owner-removal protection, and public-proof failure after deactivation exist."
+);
+
+assertNotContains(
+  "docs/COMMUNITY_DOMAIN_ACTOR_IDENTITY_AUDIT_2026-07-15.md",
   /beneficiary\s+confirmation links,[\s\S]{0,120}remain future work|beneficiary\s+confirmation links,[\s\S]{0,160}not yet\s+complete|correction approval,[\s\S]{0,120}remain future work|delivery receipts,[\s\S]{0,120}remain future work|delivery consent rules remain future work/,
   "Community Domain audit must not reintroduce stale future-work claims for beneficiary confirmation links, correction reviews, manual delivery receipts, or delivery consent-basis capture after those bounded slices exist."
 );
