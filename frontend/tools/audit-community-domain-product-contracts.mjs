@@ -51,8 +51,10 @@ function assertNotContains(rootedPath, pattern, message, options = {}) {
     ? readFromFrontend(rootedPath)
     : readFromRoot(rootedPath);
 
+  let foundOnLine = false;
   text.split(/\r?\n/).forEach((line, index) => {
     if (pattern.test(line)) {
+      foundOnLine = true;
       findings.push({
         file: rootedPath,
         line: index + 1,
@@ -61,6 +63,21 @@ function assertNotContains(rootedPath, pattern, message, options = {}) {
       });
     }
   });
+
+  if (!foundOnLine) {
+    pattern.lastIndex = 0;
+    const match = pattern.exec(text);
+
+    if (match) {
+      const line = text.slice(0, match.index).split(/\r?\n/).length;
+      findings.push({
+        file: rootedPath,
+        line,
+        message,
+        text: match[0].replace(/\s+/g, " ").trim().slice(0, 240),
+      });
+    }
+  }
 }
 
 assertContains(
