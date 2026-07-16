@@ -169,6 +169,13 @@ type DomainLane = {
 type StructureDetailKey = "preview" | "foundation" | "boundary" | "activity" | "planning";
 type ServiceDetailKey = "readiness" | "local" | "boundaries" | "trust" | "evidence";
 type MemberDetailKey = "readiness" | "placement" | "roster";
+type GovernanceTaskKey =
+  | "readiness"
+  | "director_summary"
+  | "sponsor_summary"
+  | "real_life_record"
+  | "access_requests";
+type RealLifeRecordTask = "activity" | "beneficiary_outcome";
 type SetupStepKey =
   | "identity"
   | "payment"
@@ -2138,6 +2145,11 @@ export default function CommunityDomainDashboardPage() {
     useState<ServiceDetailKey>("readiness");
   const [activeMemberDetail, setActiveMemberDetail] =
     useState<MemberDetailKey>("readiness");
+  const [activeGovernanceTask, setActiveGovernanceTask] =
+    useState<GovernanceTaskKey>("readiness");
+  const [activeRealLifeRecordTask, setActiveRealLifeRecordTask] =
+    useState<RealLifeRecordTask | null>(null);
+  const [quickRecordOpen, setQuickRecordOpen] = useState(false);
   const [loadedReadinessLanes, setLoadedReadinessLanes] = useState<Record<string, boolean>>({});
   const [loadingReadinessLanes, setLoadingReadinessLanes] = useState<Record<string, boolean>>({});
   const readinessLoadSequence = useRef(0);
@@ -2312,11 +2324,14 @@ export default function CommunityDomainDashboardPage() {
     setCapacityPlan(null);
     setGovernanceCoverage(null);
     setDelegationMap(null);
+    setActiveGovernanceTask("readiness");
     setPeriodSummary(null);
     setSponsorSummary(null);
     setActivityCatalogue([]);
     setActivityRows([]);
     setActivityDraft(emptyCommunityDomainActivityDraft());
+    setActiveRealLifeRecordTask(null);
+    setQuickRecordOpen(false);
     setBeneficiaryOutcomeRows([]);
     setBeneficiaryOutcomeDraft(emptyCommunityDomainOutcomeDraft());
     setRolloutPlan(null);
@@ -4263,6 +4278,18 @@ export default function CommunityDomainDashboardPage() {
     setMessage("");
   }
 
+  function openRealLifeRecordTask(task: RealLifeRecordTask) {
+    focusWorkSurfaceAfterOpenRef.current = true;
+    setActiveGovernanceTask("real_life_record");
+    setActiveRealLifeRecordTask(task);
+    setQuickRecordOpen(true);
+    setSetupJourneyMode("setup");
+    setSetupWorkspaceOpen(false);
+    setShowAdvancedTools(true);
+    setActiveLane("governance");
+    setMessage("");
+  }
+
   function openDomainMarketplace() {
     const clanId = Number(selectedDomainClanId || 0);
     if (!clanId) {
@@ -5615,6 +5642,59 @@ export default function CommunityDomainDashboardPage() {
                   Continue setup
                 </StableButton>
               )}
+              {domainOperational && isAdmin ? (
+                <>
+                  <StableButton
+                    type="button"
+                    kind={quickRecordOpen ? "primary" : "secondary"}
+                    fullWidth
+                    stableHeight={46}
+                    debugId="community-domain-dashboard.real-life-record-toggle"
+                    onClick={() => setQuickRecordOpen((current) => !current)}
+                  >
+                    Record from real life
+                  </StableButton>
+                  {quickRecordOpen ? (
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns:
+                          "repeat(auto-fit, minmax(min(100%, 190px), 1fr))",
+                        gap: 8,
+                      }}
+                    >
+                      <StableButton
+                        type="button"
+                        kind={
+                          activeRealLifeRecordTask === "activity" &&
+                          activeLane === "governance"
+                            ? "primary"
+                            : "secondary"
+                        }
+                        stableHeight={48}
+                        debugId="community-domain-dashboard.real-life-record.activity"
+                        onClick={() => openRealLifeRecordTask("activity")}
+                      >
+                        Record activity
+                      </StableButton>
+                      <StableButton
+                        type="button"
+                        kind={
+                          activeRealLifeRecordTask === "beneficiary_outcome" &&
+                          activeLane === "governance"
+                            ? "primary"
+                            : "secondary"
+                        }
+                        stableHeight={48}
+                        debugId="community-domain-dashboard.real-life-record.beneficiary-outcome"
+                        onClick={() => openRealLifeRecordTask("beneficiary_outcome")}
+                      >
+                        Record outcome
+                      </StableButton>
+                    </div>
+                  ) : null}
+                </>
+              ) : null}
               <div style={commandGuidanceGrid()}>
                 <div style={commandGuidanceTile("next")}>
                   <div style={sectionLabel()}>Do first</div>
@@ -8363,6 +8443,71 @@ export default function CommunityDomainDashboardPage() {
 
                 {!isActiveLaneReadinessLoading && activeLane === "governance" ? (
                   <>
+                    {isAdmin ? (
+                      <div
+                        style={{
+                          ...softCard(),
+                          display: "grid",
+                          gap: 12,
+                        }}
+                      >
+                        <div style={iconHeaderStyle()}>
+                          <div style={iconFrame(44)}>
+                            <GsnRealisticIcon name="records-folder" size={34} />
+                          </div>
+                          <div style={{ minWidth: 0 }}>
+                            <div style={sectionLabel()}>Governance jobs</div>
+                            <h3
+                              style={{
+                                margin: "3px 0 0",
+                                fontSize: 20,
+                                lineHeight: 1.16,
+                              }}
+                            >
+                              Open one governance task.
+                            </h3>
+                            <div style={{ ...helperText(), marginTop: 6 }}>
+                              Pick the question you are answering now. Reports and capture stay separate so the surface does not dump every control at once.
+                            </div>
+                          </div>
+                        </div>
+                        <div
+                          style={{
+                            display: "grid",
+                            gridTemplateColumns:
+                              "repeat(auto-fit, minmax(min(100%, 150px), 1fr))",
+                            gap: 8,
+                          }}
+                        >
+                          {[
+                            ["readiness", "Readiness"],
+                            ["director_summary", "Director summary"],
+                            ["sponsor_summary", "Sponsor pack"],
+                            ["real_life_record", "Record real life"],
+                            ["access_requests", "Access requests"],
+                          ].map(([task, label]) => (
+                            <StableButton
+                              key={task}
+                              type="button"
+                              kind={
+                                activeGovernanceTask === task
+                                  ? "primary"
+                                  : "secondary"
+                              }
+                              stableHeight={46}
+                              debugId={`community-domain-dashboard.governance-task.${task}`}
+                              onClick={() =>
+                                setActiveGovernanceTask(task as GovernanceTaskKey)
+                              }
+                            >
+                              {label}
+                            </StableButton>
+                          ))}
+                        </div>
+                      </div>
+                    ) : null}
+
+                    {activeGovernanceTask === "readiness" || !isAdmin ? (
                     <Suspense
                       fallback={
                         <div style={{ ...helperText(), marginTop: 4 }}>
@@ -8380,8 +8525,9 @@ export default function CommunityDomainDashboardPage() {
                         governanceCoverage={governanceCoverage}
                       />
                     </Suspense>
+                    ) : null}
 
-                    {isAdmin ? (
+                    {isAdmin && activeGovernanceTask === "director_summary" ? (
                       <div
                         style={{
                           ...softCard(),
@@ -8654,7 +8800,7 @@ export default function CommunityDomainDashboardPage() {
                       </div>
                     ) : null}
 
-                    {isAdmin ? (
+                    {isAdmin && activeGovernanceTask === "sponsor_summary" ? (
                       <div
                         style={{
                           ...softCard(),
@@ -9216,9 +9362,75 @@ export default function CommunityDomainDashboardPage() {
                       </div>
                     ) : null}
 
-                    {isAdmin ? (
+                    {isAdmin && activeGovernanceTask === "real_life_record" ? (
                       <>
                       <div
+                        style={{
+                          ...softCard(),
+                          display: "grid",
+                          gap: 12,
+                        }}
+                      >
+                        <div style={iconHeaderStyle()}>
+                          <div style={iconFrame(44)}>
+                            <GsnRealisticIcon name="certificate-seal" size={34} />
+                          </div>
+                          <div style={{ minWidth: 0 }}>
+                            <div style={sectionLabel()}>Record from real life</div>
+                            <h3
+                              style={{
+                                margin: "3px 0 0",
+                                fontSize: 20,
+                                lineHeight: 1.16,
+                              }}
+                            >
+                              Choose the one record task you are doing now.
+                            </h3>
+                            <div style={{ ...helperText(), marginTop: 6 }}>
+                              Activity says work happened. Beneficiary outcome says what changed for a person or case.
+                            </div>
+                          </div>
+                        </div>
+                        <div
+                          style={{
+                            display: "grid",
+                            gridTemplateColumns:
+                              "repeat(auto-fit, minmax(min(100%, 170px), 1fr))",
+                            gap: 8,
+                          }}
+                        >
+                          <StableButton
+                            type="button"
+                            kind={
+                              activeRealLifeRecordTask === "activity"
+                                ? "primary"
+                                : "secondary"
+                            }
+                            stableHeight={46}
+                            debugId="community-domain-dashboard.real-life-record.activity-inline"
+                            onClick={() => setActiveRealLifeRecordTask("activity")}
+                          >
+                            Activity
+                          </StableButton>
+                          <StableButton
+                            type="button"
+                            kind={
+                              activeRealLifeRecordTask === "beneficiary_outcome"
+                                ? "primary"
+                                : "secondary"
+                            }
+                            stableHeight={46}
+                            debugId="community-domain-dashboard.real-life-record.beneficiary-outcome-inline"
+                            onClick={() => setActiveRealLifeRecordTask("beneficiary_outcome")}
+                          >
+                            Beneficiary outcome
+                          </StableButton>
+                        </div>
+                      </div>
+
+                      {activeRealLifeRecordTask === "activity" ? (
+                      <div
+                        id="community-domain-activity-record-panel"
                         style={{
                           ...softCard(),
                           display: "grid",
@@ -9409,8 +9621,11 @@ export default function CommunityDomainDashboardPage() {
                           </div>
                         )}
                       </div>
+                      ) : null}
 
+                      {activeRealLifeRecordTask === "beneficiary_outcome" ? (
                       <div
+                        id="community-domain-beneficiary-outcome-record-panel"
                         style={{
                           ...softCard(),
                           display: "grid",
@@ -10539,6 +10754,7 @@ export default function CommunityDomainDashboardPage() {
                           </div>
                         )}
                       </div>
+                      ) : null}
                       </>
                     ) : null}
                   </>
@@ -10807,7 +11023,10 @@ export default function CommunityDomainDashboardPage() {
             </section>
           ) : null}
 
-          {showAdvancedTools && isAdmin ? (
+          {showAdvancedTools &&
+          isAdmin &&
+          activeLane === "governance" &&
+          activeGovernanceTask === "access_requests" ? (
             <Suspense
               fallback={
                 <section style={whiteCard()}>

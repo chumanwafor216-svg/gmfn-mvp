@@ -844,6 +844,13 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
+  /type GovernanceTaskKey[\s\S]*"readiness"[\s\S]*"director_summary"[\s\S]*"sponsor_summary"[\s\S]*"real_life_record"[\s\S]*"access_requests"[\s\S]*type RealLifeRecordTask = "activity" \| "beneficiary_outcome"[\s\S]*quickRecordOpen[\s\S]*openRealLifeRecordTask[\s\S]*setActiveGovernanceTask\("real_life_record"\)[\s\S]*setQuickRecordOpen\(true\)[\s\S]*setShowAdvancedTools\(true\)[\s\S]*setActiveLane\("governance"\)[\s\S]*community-domain-dashboard\.real-life-record-toggle[\s\S]*quickRecordOpen[\s\S]*community-domain-dashboard\.real-life-record\.activity[\s\S]*community-domain-dashboard\.real-life-record\.beneficiary-outcome[\s\S]*community-domain-dashboard\.governance-task\.\$\{task\}[\s\S]*activeGovernanceTask === "readiness"[\s\S]*activeGovernanceTask === "director_summary"[\s\S]*activeGovernanceTask === "sponsor_summary"[\s\S]*activeGovernanceTask === "real_life_record"[\s\S]*activeRealLifeRecordTask === "activity"[\s\S]*community-domain-dashboard\.activity-record[\s\S]*activeRealLifeRecordTask === "beneficiary_outcome"[\s\S]*community-domain-dashboard\.beneficiary-outcome-record[\s\S]*activeGovernanceTask === "access_requests"[\s\S]*CommunityDomainAccessRequestsPanel/,
+  "Community Domain dashboard must keep owner/admin real-life record shortcuts that open Governance, keep one Governance job open at a time, gate access requests behind their selected job, and expose only the selected activity or beneficiary outcome form.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
   /BENEFICIARY_DELIVERY_CHANNEL_OPTIONS[\s\S]*whatsapp[\s\S]*sms[\s\S]*email[\s\S]*copy_link[\s\S]*other[\s\S]*BENEFICIARY_DELIVERY_STATUS_OPTIONS[\s\S]*manual_sent[\s\S]*manual_failed[\s\S]*received_reported[\s\S]*opened_reported/,
   "Community Domain dashboard must expose bounded manual beneficiary delivery receipt channel/status options.",
   { frontend: true }
