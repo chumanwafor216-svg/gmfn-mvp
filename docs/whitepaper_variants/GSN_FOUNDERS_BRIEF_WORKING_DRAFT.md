@@ -85,6 +85,19 @@ community trust infrastructure opportunity?
 | Evidence | GSN preserves contextual Trust Events: what happened, who recorded it, which community owns it, who confirmed or challenged it, and what the evidence does not prove. | Source-level evidence surfaces exist; accepted pilot evidence capture is still incomplete. |
 | Pilot readiness | First pilot should be Community Trust Confirmation: one community, one organiser, one workflow, one evidence output. | Proposed, not completed; needs named pilot, participants, evidence path, screenshots, and review criteria. |
 
+## Claim Discipline Ledger
+
+| Claim area | Safe to say now | Do not say yet | Proof that unlocks stronger language |
+| --- | --- | --- | --- |
+| Thesis | GSN is a community trust infrastructure thesis with a clear first proof path. | GSN has proven product-market fit. | Discovery evidence plus repeated pilot use. |
+| Product | Source-level MVP surfaces exist across entry, community, marketplace, shop, Trust Passport, TrustSlip, confirmation, and pilot-readiness surfaces. | The whole product is pilot-complete or production-proven. | Accepted screenshots, reviewed PDFs, live route checks, and pilot evidence pack approval. |
+| Adoption | Candidate wedges are identified and ready for discovery. | Communities are already adopting GSN at scale. | Interviews, named organiser interest, active pilot usage, or signed pilot intent. |
+| Revenue | Revenue may come from packages, evidence services, TrustSlip outputs, marketplace/shop tools, and institutional pilots. | Revenue is validated or the payer is proven. | Budget-holder interviews, paid pilot, LOI, sponsor commitment, or repeated paid use. |
+| Safeguards | GSN is designed to be private-by-default, purpose-bound, challengeable, and non-scoring. | Privacy, consent, correction, and retention are solved everywhere. | Route-by-route privacy review, active consent records, challenge workflow, expiry/currentness evidence, and rejected misuse cases. |
+| Evidence | GSN should preserve contextual Trust Events rather than star ratings. | GSN can automatically decide who is trustworthy. | Real event records, confirmations, challenges, corrections, and understood TrustSlip outputs. |
+| Social-credit risk | GSN refuses global scores, public rankings, and permanent numerical human grades. | There is no risk of social-credit perception. | Pilot participants explain GSN as evidence infrastructure and reject public ranking as a rule. |
+| Exact ask | Ask for a pilot partner, sponsor, technical/product review partner, or milestone-tied capital. | Ask for broad belief in the whole platform. | Named ask with scope, amount or support type, timeline, deliverables, and proof returned. |
+
 ## 1. Short Position
 
 GSN is community trust infrastructure.
