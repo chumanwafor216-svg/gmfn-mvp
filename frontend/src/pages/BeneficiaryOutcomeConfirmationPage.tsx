@@ -364,9 +364,12 @@ export default function BeneficiaryOutcomeConfirmationPage() {
                     {RESPONSE_OPTIONS.map((option) => {
                       const selected = option.value === responseType;
                       return (
-                        <button
+                        <StableButton
                           key={option.value}
                           type="button"
+                          kind="secondary"
+                          debugId={`beneficiary-outcome.response.${option.value}`}
+                          fullWidth
                           onClick={() => setResponseType(option.value)}
                           style={{
                             borderRadius: 16,
@@ -377,6 +380,9 @@ export default function BeneficiaryOutcomeConfirmationPage() {
                             padding: 12,
                             minHeight: 92,
                             textAlign: "left",
+                            alignItems: "flex-start",
+                            justifyContent: "flex-start",
+                            flexDirection: "column",
                             cursor: "pointer",
                             color: "#091B2E",
                             font: "inherit",
@@ -386,7 +392,7 @@ export default function BeneficiaryOutcomeConfirmationPage() {
                           <div style={{ ...helper(), marginTop: 4, fontSize: 13 }}>
                             {option.note}
                           </div>
-                        </button>
+                        </StableButton>
                       );
                     })}
                   </div>
