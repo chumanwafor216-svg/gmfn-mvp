@@ -373,6 +373,7 @@ export default function CommunityDomainServiceReadinessPanels({
   );
   const [activeServiceFocus, setActiveServiceFocus] =
     useState<ServiceFocusKey>("services");
+  const [serviceFocusChooserOpen, setServiceFocusChooserOpen] = useState(false);
   const selectedServiceFocus =
     SERVICE_FOCUS_OPTIONS.find((option) => option.key === activeServiceFocus) ||
     SERVICE_FOCUS_OPTIONS[0];
@@ -390,7 +391,27 @@ export default function CommunityDomainServiceReadinessPanels({
         <div style={helperText()}>
           Current view: <strong>{selectedServiceFocus.label}</strong>.
         </div>
-        <div
+        <StableButton
+          type="button"
+          kind="secondary"
+          fullWidth
+          stableHeight={42}
+          debugId="community-domain-service-readiness.focus-toggle"
+          aria-expanded={serviceFocusChooserOpen}
+          aria-controls="community-domain-service-readiness-focus"
+          onClick={() => setServiceFocusChooserOpen((current) => !current)}
+          style={{
+            justifyContent: "center",
+            fontSize: 13,
+            textTransform: "none",
+          }}
+        >
+          {serviceFocusChooserOpen ? "Close views" : "Change view"}
+        </StableButton>
+        {serviceFocusChooserOpen ? (
+          <div
+            id="community-domain-service-readiness-focus"
+            data-debug-id="community-domain-service-readiness.focus-panel"
           style={{
             display: "grid",
             gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 132px), 1fr))",
@@ -409,7 +430,10 @@ export default function CommunityDomainServiceReadinessPanels({
                 aria-pressed={selected}
                 title={option.note}
                 debugId={`community-domain-service-readiness.focus.${option.key}`}
-                onClick={() => setActiveServiceFocus(option.key)}
+                onClick={() => {
+                  setActiveServiceFocus(option.key);
+                  setServiceFocusChooserOpen(false);
+                }}
                 style={{
                   justifyContent: "center",
                   fontSize: 13,
@@ -420,7 +444,8 @@ export default function CommunityDomainServiceReadinessPanels({
               </StableButton>
             );
           })}
-        </div>
+          </div>
+        ) : null}
         <div style={{ ...helperText(), fontSize: 13 }}>
           {selectedServiceFocus.note}
         </div>

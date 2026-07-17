@@ -236,6 +236,7 @@ export default function CommunityDomainIdentityReadinessPanels({
   );
   const [activeIdentityDetail, setActiveIdentityDetail] =
     useState<IdentityDetailKey>("identity");
+  const [identityDetailChooserOpen, setIdentityDetailChooserOpen] = useState(false);
   const selectedIdentityDetail =
     IDENTITY_DETAIL_OPTIONS.find((option) => option.key === activeIdentityDetail) ||
     IDENTITY_DETAIL_OPTIONS[0];
@@ -254,37 +255,61 @@ export default function CommunityDomainIdentityReadinessPanels({
           Open one identity packet at a time. Current view:{" "}
           <strong>{selectedIdentityDetail.label}</strong>.
         </div>
-        <div
+        <StableButton
+          type="button"
+          kind="secondary"
+          fullWidth
+          stableHeight={42}
+          debugId="community-domain-identity.detail-toggle"
+          aria-expanded={identityDetailChooserOpen}
+          aria-controls="community-domain-identity-packets"
+          onClick={() => setIdentityDetailChooserOpen((current) => !current)}
           style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 140px), 1fr))",
-            gap: 8,
+            justifyContent: "center",
+            fontSize: 13,
+            textTransform: "none",
           }}
         >
-          {IDENTITY_DETAIL_OPTIONS.map((option) => {
-            const selected = option.key === activeIdentityDetail;
-            return (
-              <StableButton
-                key={option.key}
-                type="button"
-                kind={selected ? "primary" : "secondary"}
-                stableHeight={48}
-                fullWidth
-                aria-pressed={selected}
-                title={option.note}
-                debugId={`community-domain-identity.detail.${option.key}`}
-                onClick={() => setActiveIdentityDetail(option.key)}
-                style={{
-                  justifyContent: "center",
-                  fontSize: 13,
-                  textTransform: "none",
-                }}
-              >
-                {option.label}
-              </StableButton>
-            );
-          })}
-        </div>
+          {identityDetailChooserOpen ? "Close packets" : "Change packet"}
+        </StableButton>
+        {identityDetailChooserOpen ? (
+          <div
+            id="community-domain-identity-packets"
+            data-debug-id="community-domain-identity.detail-panel"
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 140px), 1fr))",
+              gap: 8,
+            }}
+          >
+            {IDENTITY_DETAIL_OPTIONS.map((option) => {
+              const selected = option.key === activeIdentityDetail;
+              return (
+                <StableButton
+                  key={option.key}
+                  type="button"
+                  kind={selected ? "primary" : "secondary"}
+                  stableHeight={48}
+                  fullWidth
+                  aria-pressed={selected}
+                  title={option.note}
+                  debugId={`community-domain-identity.detail.${option.key}`}
+                  onClick={() => {
+                    setActiveIdentityDetail(option.key);
+                    setIdentityDetailChooserOpen(false);
+                  }}
+                  style={{
+                    justifyContent: "center",
+                    fontSize: 13,
+                    textTransform: "none",
+                  }}
+                >
+                  {option.label}
+                </StableButton>
+              );
+            })}
+          </div>
+        ) : null}
         <div style={{ ...helperText(), fontSize: 13 }}>
           {selectedIdentityDetail.note}
         </div>

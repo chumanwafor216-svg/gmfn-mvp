@@ -5,7 +5,10 @@ import { mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const baseUrl = process.env.GSN_AUDIT_BASE_URL || "http://127.0.0.1:5180";
+const baseUrl = (process.env.GSN_AUDIT_BASE_URL || "http://127.0.0.1:5180").replace(
+  /\/+$/,
+  ""
+);
 const routePath = "/app/community-domain/13";
 const purchaseRoutePath = "/community-domain/purchase?demo=pillar-of-hope";
 const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -188,6 +191,13 @@ const dashboardPayload = {
       status: "active",
       count: 12,
       summary: "Review placement and readiness.",
+    },
+    {
+      lane_key: "identity",
+      label: "Identity",
+      status: "active",
+      count: 3,
+      summary: "Review public-safe identity packets.",
     },
     {
       lane_key: "billing",
@@ -511,6 +521,54 @@ function pathPayload(pathname) {
   if (pathname.includes("/community-domains/13/delegation-map")) {
     return { delegation_map: readinessMap("Delegation") };
   }
+  if (pathname.includes("/community-domains/13/institutional-profile")) {
+    return {
+      institutional_profile: {
+        ...readinessMap("Institutional profile"),
+        summary: {
+          domain_status: "active",
+          verification_status: "verified",
+          structure_ready: true,
+          authority_verified: true,
+          active_member_count: 12,
+          active_policy_count: 3,
+        },
+        institutional_profile: {
+          template_label: "Community association",
+          marketplace_role: "local_market_ready",
+        },
+      },
+    };
+  }
+  if (pathname.includes("/community-domains/13/social-bridge")) {
+    return {
+      social_bridge: {
+        ...readinessMap("Social bridge"),
+        summary: {
+          bridge_status: "linked",
+          upgrade_path_status: "optional",
+          linked_member_count: 12,
+        },
+        linked_community: {
+          name: "Pillar of Hope",
+          clan_id: 1,
+        },
+      },
+    };
+  }
+  if (pathname.includes("/community-domains/13/affiliation-readiness")) {
+    return {
+      affiliation_readiness: {
+        ...readinessMap("Affiliation"),
+        summary: {
+          bridge_status: "linked",
+          domain_affiliation_engine_status: "planning_ready",
+          approved_affiliations: 0,
+          pending_affiliations: 0,
+        },
+      },
+    };
+  }
   if (pathname.includes("/community-domains/13/member-verification-map")) {
     return memberVerificationMap;
   }
@@ -829,15 +887,6 @@ page.on("console", (message) => {
 });
 
 await page.route("**/*", mockApi);
-await page.addInitScript(() => {
-  localStorage.setItem("access_token", "audit-token");
-  localStorage.setItem("gmfn_auth_token", "audit-token");
-  localStorage.setItem("token", "audit-token");
-  localStorage.setItem("gmfn_role", "admin");
-  localStorage.setItem("gmfn_current_id", "GMFN-U-0B5A2953");
-  localStorage.setItem("gmfn_selected_clan_id", "1");
-  localStorage.setItem("selected_clan_id", "1");
-});
 
 try {
   await page.goto(`${baseUrl}${purchaseRoutePath}`, { waitUntil: "networkidle", timeout: 15000 });
@@ -893,6 +942,16 @@ try {
   if (!(await isDebugVisible(page, "community-domain-purchase.lookup-existing-domain"))) {
     findings.push("Purchase page Other paths drawer does not reveal existing-domain lookup.");
   }
+
+  await page.evaluate(() => {
+    localStorage.setItem("access_token", "audit-token");
+    localStorage.setItem("gmfn_auth_token", "audit-token");
+    localStorage.setItem("token", "audit-token");
+    localStorage.setItem("gmfn_role", "admin");
+    localStorage.setItem("gmfn_current_id", "GMFN-U-0B5A2953");
+    localStorage.setItem("gmfn_selected_clan_id", "1");
+    localStorage.setItem("selected_clan_id", "1");
+  });
 
   domainListScenario = "empty";
   await page.goto(`${baseUrl}/app/community-domain`, {
@@ -1234,6 +1293,25 @@ try {
 
   await clickByDebugId(page, "community-domain-dashboard.operating-area-picker-toggle");
   await page.getByText("Operating areas", { exact: true }).waitFor({ timeout: 10000 });
+  await clickByDebugId(page, "community-domain-dashboard.lane.identity");
+  await page.getByText("Identity focus", { exact: true }).waitFor({ timeout: 10000 });
+  if (await isDebugVisible(page, "community-domain-identity.detail.profile")) {
+    findings.push("Community Domain Identity packet buttons are visible before Change packet is opened.");
+  }
+  if (!(await isDebugVisible(page, "community-domain-identity.detail-toggle"))) {
+    findings.push("Community Domain Identity does not expose a Change packet control.");
+  }
+  await clickByDebugId(page, "community-domain-identity.detail-toggle");
+  await clickByDebugId(page, "community-domain-identity.detail.profile");
+  if (await isDebugVisible(page, "community-domain-identity.detail.bridge")) {
+    findings.push("Community Domain Identity packet buttons stay visible after selecting a packet.");
+  }
+  await page.getByText("Institutional checks needing attention", { exact: false }).waitFor({
+    timeout: 10000,
+  });
+
+  await clickByDebugId(page, "community-domain-dashboard.operating-area-picker-toggle");
+  await page.getByText("Operating areas", { exact: true }).waitFor({ timeout: 10000 });
   await clickByDebugId(page, "community-domain-dashboard.lane.billing");
   await page.getByText("Billing jobs", { exact: true }).waitFor({ timeout: 10000 });
   if (await isDebugVisible(page, "community-domain-dashboard.billing-task.account")) {
@@ -1294,6 +1372,21 @@ try {
   await page.getByText("Operating areas", { exact: true }).waitFor({ timeout: 10000 });
   await clickByDebugId(page, "community-domain-dashboard.lane.modules");
   await page.getByText("Services focus", { exact: true }).waitFor({ timeout: 10000 });
+  await clickByDebugId(page, "community-domain-dashboard.service-stage-toggle");
+  await clickByDebugId(page, "community-domain-dashboard.service-group.readiness");
+  await page.getByText("Service readiness", { exact: true }).waitFor({ timeout: 10000 });
+  if (await isDebugVisible(page, "community-domain-service-readiness.focus.settings")) {
+    findings.push("Community Domain Services readiness view buttons are visible before Change view is opened.");
+  }
+  if (!(await isDebugVisible(page, "community-domain-service-readiness.focus-toggle"))) {
+    findings.push("Community Domain Services readiness does not expose a Change view control.");
+  }
+  await clickByDebugId(page, "community-domain-service-readiness.focus-toggle");
+  await clickByDebugId(page, "community-domain-service-readiness.focus.settings");
+  if (await isDebugVisible(page, "community-domain-service-readiness.focus.economy")) {
+    findings.push("Community Domain Services readiness view buttons stay visible after selecting a view.");
+  }
+  await page.getByText("Service settings view", { exact: true }).waitFor({ timeout: 10000 });
   if (await isDebugVisible(page, "community-domain-dashboard.service-group.local")) {
     findings.push("Community Domain Services stage buttons are visible before Change stage is opened.");
   }
@@ -1321,20 +1414,47 @@ try {
     findings.push("Community Domain Services packet buttons stay visible after a packet is selected.");
   }
   await page.getByText("Boundary packet", { exact: true }).waitFor({ timeout: 10000 });
+  if (await isDebugVisible(page, "community-domain-service-boundary.focus.privacy")) {
+    findings.push("Community Domain Services boundary view buttons are visible before Change view is opened.");
+  }
+  if (!(await isDebugVisible(page, "community-domain-service-boundary.focus-toggle"))) {
+    findings.push("Community Domain Services boundary packet does not expose a Change view control.");
+  }
+  await clickByDebugId(page, "community-domain-service-boundary.focus-toggle");
   await clickByDebugId(page, "community-domain-service-boundary.focus.privacy");
+  if (await isDebugVisible(page, "community-domain-service-boundary.focus.exchange")) {
+    findings.push("Community Domain Services boundary view buttons stay visible after selecting a view.");
+  }
   await page.getByText("Record privacy readiness", { exact: true }).waitFor({ timeout: 10000 });
   await clickByDebugId(page, "community-domain-dashboard.service-stage-toggle");
   await clickByDebugId(page, "community-domain-dashboard.service-group.trust");
   await clickByDebugId(page, "community-domain-dashboard.service-packet-toggle");
   await clickByDebugId(page, "community-domain-dashboard.service-detail.evidence");
   await page.getByText("Trust and evidence packet", { exact: true }).waitFor({ timeout: 10000 });
+  if (await isDebugVisible(page, "community-domain.trust-evidence.focus.release")) {
+    findings.push("Community Domain Trust/Evidence view buttons are visible before Change view is opened.");
+  }
+  if (!(await isDebugVisible(page, "community-domain.trust-evidence.focus-toggle"))) {
+    findings.push("Community Domain Trust/Evidence packet does not expose a Change view control.");
+  }
+  await clickByDebugId(page, "community-domain.trust-evidence.focus-toggle");
   await clickByDebugId(page, "community-domain.trust-evidence.focus.release");
+  if (await isDebugVisible(page, "community-domain.trust-evidence.focus.records")) {
+    findings.push("Community Domain Trust/Evidence view buttons stay visible after selecting a view.");
+  }
   await page.getByText("Evidence release readiness", { exact: true }).waitFor({ timeout: 10000 });
 
   await clickByDebugId(page, "community-domain-dashboard.operating-area-picker-toggle");
   await page.getByText("Operating areas", { exact: true }).waitFor({ timeout: 10000 });
   await clickByDebugId(page, "community-domain-dashboard.lane.structure");
   await page.getByText("Structure focus", { exact: true }).waitFor({ timeout: 10000 });
+  if (await isDebugVisible(page, "community-domain-dashboard.structure-group.rollout")) {
+    findings.push("Community Domain Structure stage buttons are visible before Change stage is opened.");
+  }
+  if (!(await isDebugVisible(page, "community-domain-dashboard.structure-stage-toggle"))) {
+    findings.push("Community Domain Structure does not expose a Change stage control.");
+  }
+  await clickByDebugId(page, "community-domain-dashboard.structure-stage-toggle");
   await clickByDebugId(page, "community-domain-dashboard.structure-group.rollout");
   if (await isDebugVisible(page, "community-domain-dashboard.structure-detail.planning")) {
     findings.push("Community Domain Structure packet buttons are visible before Change packet is opened.");
@@ -1355,6 +1475,12 @@ try {
   await page.getByText("Operating areas", { exact: true }).waitFor({ timeout: 10000 });
   await clickByDebugId(page, "community-domain-dashboard.lane.members");
   await page.getByText("Members focus", { exact: true }).waitFor({ timeout: 10000 });
+  if (await isDebugVisible(page, "community-domain-dashboard.member-group.roster")) {
+    findings.push("Community Domain Members stage buttons are visible before Change stage is opened.");
+  }
+  if (!(await isDebugVisible(page, "community-domain-dashboard.member-stage-toggle"))) {
+    findings.push("Community Domain Members does not expose a Change stage control.");
+  }
   if (await isDebugVisible(page, "community-domain-dashboard.member-detail.placement")) {
     findings.push("Community Domain Members packet buttons are visible before Change packet is opened.");
   }
@@ -1366,6 +1492,7 @@ try {
   if (await isDebugVisible(page, "community-domain-dashboard.member-detail.readiness")) {
     findings.push("Community Domain Members packet buttons stay visible after a packet is selected.");
   }
+  await clickByDebugId(page, "community-domain-dashboard.member-stage-toggle");
   await clickByDebugId(page, "community-domain-dashboard.member-group.roster");
   await page.getByText("Member status and public proof.", { exact: true }).waitFor({
     timeout: 10000,

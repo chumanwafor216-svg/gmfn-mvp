@@ -282,6 +282,8 @@ export default function CommunityDomainTrustEvidenceReadinessPanels({
   const trustMobilityReadyTotal = readyTotal(trustMobility, visibleTrustMobilityLanes);
   const [activeTrustEvidenceFocus, setActiveTrustEvidenceFocus] =
     useState<TrustEvidenceFocusKey>("records");
+  const [trustEvidenceFocusChooserOpen, setTrustEvidenceFocusChooserOpen] =
+    useState(false);
   const selectedTrustEvidenceFocus =
     TRUST_EVIDENCE_FOCUS_OPTIONS.find(
       (option) => option.key === activeTrustEvidenceFocus
@@ -348,37 +350,61 @@ export default function CommunityDomainTrustEvidenceReadinessPanels({
         <div style={helperText()}>
           Current view: <strong>{selectedTrustEvidenceFocus.label}</strong>.
         </div>
-        <div
+        <StableButton
+          type="button"
+          kind="secondary"
+          fullWidth
+          stableHeight={42}
+          debugId="community-domain.trust-evidence.focus-toggle"
+          aria-expanded={trustEvidenceFocusChooserOpen}
+          aria-controls="community-domain-trust-evidence-focus"
+          onClick={() => setTrustEvidenceFocusChooserOpen((current) => !current)}
           style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 132px), 1fr))",
-            gap: 8,
+            justifyContent: "center",
+            fontSize: 13,
+            textTransform: "none",
           }}
         >
-          {TRUST_EVIDENCE_FOCUS_OPTIONS.map((option) => {
-            const selected = option.key === activeTrustEvidenceFocus;
-            return (
-              <StableButton
-                key={option.key}
-                type="button"
-                kind={selected ? "primary" : "secondary"}
-                stableHeight={48}
-                fullWidth
-                aria-pressed={selected}
-                title={option.note}
-                debugId={`community-domain.trust-evidence.focus.${option.key}`}
-                onClick={() => setActiveTrustEvidenceFocus(option.key)}
-                style={{
-                  justifyContent: "center",
-                  fontSize: 13,
-                  textTransform: "none",
-                }}
-              >
-                {option.label}
-              </StableButton>
-            );
-          })}
-        </div>
+          {trustEvidenceFocusChooserOpen ? "Close views" : "Change view"}
+        </StableButton>
+        {trustEvidenceFocusChooserOpen ? (
+          <div
+            id="community-domain-trust-evidence-focus"
+            data-debug-id="community-domain.trust-evidence.focus-panel"
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 132px), 1fr))",
+              gap: 8,
+            }}
+          >
+            {TRUST_EVIDENCE_FOCUS_OPTIONS.map((option) => {
+              const selected = option.key === activeTrustEvidenceFocus;
+              return (
+                <StableButton
+                  key={option.key}
+                  type="button"
+                  kind={selected ? "primary" : "secondary"}
+                  stableHeight={48}
+                  fullWidth
+                  aria-pressed={selected}
+                  title={option.note}
+                  debugId={`community-domain.trust-evidence.focus.${option.key}`}
+                  onClick={() => {
+                    setActiveTrustEvidenceFocus(option.key);
+                    setTrustEvidenceFocusChooserOpen(false);
+                  }}
+                  style={{
+                    justifyContent: "center",
+                    fontSize: 13,
+                    textTransform: "none",
+                  }}
+                >
+                  {option.label}
+                </StableButton>
+              );
+            })}
+          </div>
+        ) : null}
         <div style={{ ...helperText(), fontSize: 13 }}>
           {selectedTrustEvidenceFocus.note}
         </div>

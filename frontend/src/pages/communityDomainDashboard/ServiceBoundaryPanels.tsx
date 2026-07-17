@@ -259,6 +259,7 @@ export default function CommunityDomainServiceBoundaryPanels({
   const appealReadinessSignalTotal = signalTotal(visibleAppealReadinessLanes);
   const [activeBoundaryFocus, setActiveBoundaryFocus] =
     useState<BoundaryFocusKey>("exchange");
+  const [boundaryFocusChooserOpen, setBoundaryFocusChooserOpen] = useState(false);
   const selectedBoundaryFocus =
     BOUNDARY_FOCUS_OPTIONS.find((option) => option.key === activeBoundaryFocus) ||
     BOUNDARY_FOCUS_OPTIONS[0];
@@ -276,37 +277,61 @@ export default function CommunityDomainServiceBoundaryPanels({
         <div style={helperText()}>
           Current view: <strong>{selectedBoundaryFocus.label}</strong>.
         </div>
-        <div
+        <StableButton
+          type="button"
+          kind="secondary"
+          fullWidth
+          stableHeight={42}
+          debugId="community-domain-service-boundary.focus-toggle"
+          aria-expanded={boundaryFocusChooserOpen}
+          aria-controls="community-domain-service-boundary-focus"
+          onClick={() => setBoundaryFocusChooserOpen((current) => !current)}
           style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 132px), 1fr))",
-            gap: 8,
+            justifyContent: "center",
+            fontSize: 13,
+            textTransform: "none",
           }}
         >
-          {BOUNDARY_FOCUS_OPTIONS.map((option) => {
-            const selected = option.key === activeBoundaryFocus;
-            return (
-              <StableButton
-                key={option.key}
-                type="button"
-                kind={selected ? "primary" : "secondary"}
-                stableHeight={48}
-                fullWidth
-                aria-pressed={selected}
-                title={option.note}
-                debugId={`community-domain-service-boundary.focus.${option.key}`}
-                onClick={() => setActiveBoundaryFocus(option.key)}
-                style={{
-                  justifyContent: "center",
-                  fontSize: 13,
-                  textTransform: "none",
-                }}
-              >
-                {option.label}
-              </StableButton>
-            );
-          })}
-        </div>
+          {boundaryFocusChooserOpen ? "Close views" : "Change view"}
+        </StableButton>
+        {boundaryFocusChooserOpen ? (
+          <div
+            id="community-domain-service-boundary-focus"
+            data-debug-id="community-domain-service-boundary.focus-panel"
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 132px), 1fr))",
+              gap: 8,
+            }}
+          >
+            {BOUNDARY_FOCUS_OPTIONS.map((option) => {
+              const selected = option.key === activeBoundaryFocus;
+              return (
+                <StableButton
+                  key={option.key}
+                  type="button"
+                  kind={selected ? "primary" : "secondary"}
+                  stableHeight={48}
+                  fullWidth
+                  aria-pressed={selected}
+                  title={option.note}
+                  debugId={`community-domain-service-boundary.focus.${option.key}`}
+                  onClick={() => {
+                    setActiveBoundaryFocus(option.key);
+                    setBoundaryFocusChooserOpen(false);
+                  }}
+                  style={{
+                    justifyContent: "center",
+                    fontSize: 13,
+                    textTransform: "none",
+                  }}
+                >
+                  {option.label}
+                </StableButton>
+              );
+            })}
+          </div>
+        ) : null}
         <div style={{ ...helperText(), fontSize: 13 }}>
           {selectedBoundaryFocus.note}
         </div>

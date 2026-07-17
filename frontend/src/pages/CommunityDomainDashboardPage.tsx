@@ -2757,7 +2757,9 @@ export default function CommunityDomainDashboardPage() {
     useState(false);
   const [serviceStageChooserOpen, setServiceStageChooserOpen] = useState(false);
   const [servicePacketChooserOpen, setServicePacketChooserOpen] = useState(false);
+  const [structureStageChooserOpen, setStructureStageChooserOpen] = useState(false);
   const [structurePacketChooserOpen, setStructurePacketChooserOpen] = useState(false);
+  const [memberStageChooserOpen, setMemberStageChooserOpen] = useState(false);
   const [memberPacketChooserOpen, setMemberPacketChooserOpen] = useState(false);
   const [memberRosterTaskChooserOpen, setMemberRosterTaskChooserOpen] =
     useState(false);
@@ -4612,6 +4614,8 @@ export default function CommunityDomainDashboardPage() {
   }, [activeSetupWorkbenchTask]);
   useEffect(() => {
     if (activeLane !== "members") {
+      setMemberStageChooserOpen(false);
+      setMemberPacketChooserOpen(false);
       setMemberRosterTaskChooserOpen(false);
     }
   }, [activeLane]);
@@ -4624,6 +4628,12 @@ export default function CommunityDomainDashboardPage() {
     if (activeLane !== "modules") {
       setServiceStageChooserOpen(false);
       setServicePacketChooserOpen(false);
+    }
+  }, [activeLane]);
+  useEffect(() => {
+    if (activeLane !== "structure") {
+      setStructureStageChooserOpen(false);
+      setStructurePacketChooserOpen(false);
     }
   }, [activeLane]);
   useEffect(() => {
@@ -5269,7 +5279,9 @@ export default function CommunityDomainDashboardPage() {
     setOperatingSummaryTaskChooserOpen(false);
     setSetupWorkbenchChooserOpen(false);
     setSetupAccessTaskChooserOpen(false);
+    setServiceStageChooserOpen(false);
     setServicePacketChooserOpen(false);
+    setStructureStageChooserOpen(false);
     setStructurePacketChooserOpen(false);
     setMemberPacketChooserOpen(false);
     setGovernanceGroupChooserOpen(false);
@@ -5343,8 +5355,11 @@ export default function CommunityDomainDashboardPage() {
     setOperatingSummaryTaskChooserOpen(false);
     setSetupWorkbenchChooserOpen(false);
     setSetupAccessTaskChooserOpen(false);
+    setServiceStageChooserOpen(false);
     setServicePacketChooserOpen(false);
+    setStructureStageChooserOpen(false);
     setStructurePacketChooserOpen(false);
+    setMemberStageChooserOpen(false);
     setMemberPacketChooserOpen(false);
     setMemberRosterTaskChooserOpen(false);
     setGovernanceGroupChooserOpen(false);
@@ -10600,44 +10615,67 @@ export default function CommunityDomainDashboardPage() {
                         Choose the structure stage first. Current
                         view: <strong>{selectedStructureDetail.label}</strong>.
                       </div>
-                      <div
+                      <StableButton
+                        type="button"
+                        kind="secondary"
+                        fullWidth
+                        stableHeight={42}
+                        debugId="community-domain-dashboard.structure-stage-toggle"
+                        aria-expanded={structureStageChooserOpen}
+                        aria-controls="community-domain-structure-stages"
+                        onClick={() =>
+                          setStructureStageChooserOpen((current) => !current)
+                        }
                         style={{
-                          display: "grid",
-                          gridTemplateColumns:
-                            "repeat(auto-fit, minmax(min(100%, 136px), 1fr))",
-                          gap: 8,
+                          justifyContent: "center",
+                          fontSize: 13,
+                          textTransform: "none",
                         }}
                       >
-                        {STRUCTURE_DETAIL_GROUP_OPTIONS.map((group) => {
-                          const selected = group.key === activeStructureDetailGroup;
-                          return (
-                            <StableButton
-                              key={group.key}
-                              type="button"
-                              kind={selected ? "primary" : "secondary"}
-                              stableHeight={48}
-                              fullWidth
-                              aria-pressed={selected}
-                              title={group.note}
-                              debugId={`community-domain-dashboard.structure-group.${group.key}`}
-                              onClick={() => {
-                                setActiveStructureDetail(group.defaultDetail);
-                                setStructurePacketChooserOpen(false);
-                                setMemberPacketChooserOpen(false);
-                                setGovernanceTaskChooserOpen(false);
-                                setRealLifeRecordTypeChooserOpen(false);
-                              }}
-                              style={{
-                                justifyContent: "center",
-                                fontSize: 13,
-                                textTransform: "none",
-                              }}
-                            >
-                              {group.label}
-                            </StableButton>
-                          );
-                        })}
-                      </div>
+                        {structureStageChooserOpen ? "Close stages" : "Change stage"}
+                      </StableButton>
+                      {structureStageChooserOpen ? (
+                        <div
+                          id="community-domain-structure-stages"
+                          style={{
+                            display: "grid",
+                            gridTemplateColumns:
+                              "repeat(auto-fit, minmax(min(100%, 136px), 1fr))",
+                            gap: 8,
+                          }}
+                        >
+                          {STRUCTURE_DETAIL_GROUP_OPTIONS.map((group) => {
+                            const selected = group.key === activeStructureDetailGroup;
+                            return (
+                              <StableButton
+                                key={group.key}
+                                type="button"
+                                kind={selected ? "primary" : "secondary"}
+                                stableHeight={48}
+                                fullWidth
+                                aria-pressed={selected}
+                                title={group.note}
+                                debugId={`community-domain-dashboard.structure-group.${group.key}`}
+                                onClick={() => {
+                                  setActiveStructureDetail(group.defaultDetail);
+                                  setStructureStageChooserOpen(false);
+                                  setStructurePacketChooserOpen(false);
+                                  setMemberPacketChooserOpen(false);
+                                  setGovernanceTaskChooserOpen(false);
+                                  setRealLifeRecordTypeChooserOpen(false);
+                                }}
+                                style={{
+                                  justifyContent: "center",
+                                  fontSize: 13,
+                                  textTransform: "none",
+                                }}
+                              >
+                                {group.label}
+                              </StableButton>
+                            );
+                          })}
+                        </div>
+                      ) : null}
                       {activeStructureGroupDetails.length > 1 ? (
                         <div
                           style={{
@@ -10700,6 +10738,7 @@ export default function CommunityDomainDashboardPage() {
                                       debugId={`community-domain-dashboard.structure-detail.${option.key}`}
                                       onClick={() => {
                                         setActiveStructureDetail(option.key);
+                                        setStructureStageChooserOpen(false);
                                         setStructurePacketChooserOpen(false);
                                         setMemberPacketChooserOpen(false);
                                         setGovernanceTaskChooserOpen(false);
@@ -14686,7 +14725,28 @@ export default function CommunityDomainDashboardPage() {
                         <strong>{activeMemberDetailGroupOption.label}</strong>{" "}
                         / <strong>{selectedMemberDetail.label}</strong>.
                       </div>
-                      <div
+                      <StableButton
+                        type="button"
+                        kind="secondary"
+                        fullWidth
+                        stableHeight={42}
+                        debugId="community-domain-dashboard.member-stage-toggle"
+                        aria-expanded={memberStageChooserOpen}
+                        aria-controls="community-domain-member-stages"
+                        onClick={() =>
+                          setMemberStageChooserOpen((current) => !current)
+                        }
+                        style={{
+                          justifyContent: "center",
+                          fontSize: 13,
+                          textTransform: "none",
+                        }}
+                      >
+                        {memberStageChooserOpen ? "Close stages" : "Change stage"}
+                      </StableButton>
+                      {memberStageChooserOpen ? (
+                        <div
+                          id="community-domain-member-stages"
                         style={{
                           display: "grid",
                           gridTemplateColumns:
@@ -14708,6 +14768,7 @@ export default function CommunityDomainDashboardPage() {
                               debugId={`community-domain-dashboard.member-group.${group.key}`}
                               onClick={() => {
                                 setActiveMemberDetail(group.defaultDetail);
+                                setMemberStageChooserOpen(false);
                                 setMemberPacketChooserOpen(false);
                                 setGovernanceTaskChooserOpen(false);
                                 setRealLifeRecordTypeChooserOpen(false);
@@ -14726,7 +14787,8 @@ export default function CommunityDomainDashboardPage() {
                             </StableButton>
                           );
                         })}
-                      </div>
+                        </div>
+                      ) : null}
                       <div style={{ ...helperText(), fontSize: 13 }}>
                         {activeMemberDetailGroupOption.note}
                       </div>
@@ -14792,6 +14854,7 @@ export default function CommunityDomainDashboardPage() {
                                       debugId={`community-domain-dashboard.member-detail.${option.key}`}
                                       onClick={() => {
                                         setActiveMemberDetail(option.key);
+                                        setMemberStageChooserOpen(false);
                                         setMemberPacketChooserOpen(false);
                                         setGovernanceTaskChooserOpen(false);
                                         setRealLifeRecordTypeChooserOpen(false);

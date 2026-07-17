@@ -2381,6 +2381,15 @@ assertContains(
       String.raw`community-domain-dashboard\.work-surface\.notes-toggle`,
       String.raw`work surface notes do not close after reading`,
       String.raw`community-domain-dashboard\.operating-area-picker-toggle`,
+      String.raw`community-domain-dashboard\.lane\.identity`,
+      String.raw`community-domain-identity\.detail\.profile`,
+      String.raw`Identity packet buttons are visible before Change packet is opened`,
+      String.raw`community-domain-identity\.detail-toggle`,
+      String.raw`Identity does not expose a Change packet control`,
+      String.raw`community-domain-identity\.detail\.bridge`,
+      String.raw`Identity packet buttons stay visible after selecting a packet`,
+      String.raw`Institutional checks needing attention`,
+      String.raw`community-domain-dashboard\.operating-area-picker-toggle`,
       String.raw`community-domain-dashboard\.lane\.billing`,
       String.raw`community-domain-dashboard\.billing-task\.account`,
       String.raw`Billing job buttons are visible before Change billing job is opened`,
@@ -2410,14 +2419,33 @@ assertContains(
       String.raw`community-domain-dashboard\.billing-account\.summary`,
       String.raw`pay-in account packets stay visible after selecting a packet`,
       String.raw`community-domain-dashboard\.lane\.modules`,
+      String.raw`community-domain-service-readiness\.focus\.settings`,
+      String.raw`Services readiness view buttons are visible before Change view is opened`,
+      String.raw`community-domain-service-readiness\.focus-toggle`,
+      String.raw`Services readiness does not expose a Change view control`,
+      String.raw`community-domain-service-readiness\.focus\.economy`,
+      String.raw`Services readiness view buttons stay visible after selecting a view`,
+      String.raw`Service settings view`,
       String.raw`community-domain-dashboard\.service-group\.local`,
       String.raw`Services packet buttons are visible before Change packet is opened`,
       String.raw`community-domain-dashboard\.service-packet-toggle`,
       String.raw`community-domain-dashboard\.service-detail\.boundaries`,
       String.raw`community-domain-service-boundary\.focus\.privacy`,
+      String.raw`Services boundary view buttons are visible before Change view is opened`,
+      String.raw`community-domain-service-boundary\.focus-toggle`,
+      String.raw`Services boundary packet does not expose a Change view control`,
+      String.raw`community-domain-service-boundary\.focus\.privacy`,
+      String.raw`community-domain-service-boundary\.focus\.exchange`,
+      String.raw`Services boundary view buttons stay visible after selecting a view`,
       String.raw`community-domain-dashboard\.service-group\.trust`,
       String.raw`community-domain-dashboard\.service-detail\.evidence`,
       String.raw`community-domain\.trust-evidence\.focus\.release`,
+      String.raw`Trust/Evidence view buttons are visible before Change view is opened`,
+      String.raw`community-domain\.trust-evidence\.focus-toggle`,
+      String.raw`Trust/Evidence packet does not expose a Change view control`,
+      String.raw`community-domain\.trust-evidence\.focus\.release`,
+      String.raw`community-domain\.trust-evidence\.focus\.records`,
+      String.raw`Trust/Evidence view buttons stay visible after selecting a view`,
       String.raw`community-domain-dashboard\.operating-area-picker-toggle`,
       String.raw`community-domain-dashboard\.lane\.structure`,
       String.raw`community-domain-dashboard\.structure-group\.rollout`,
@@ -2500,7 +2528,7 @@ assertContains(
       String.raw`lowContrast`,
     ].join("[\\s\\S]*")
   ),
-  "Community Domain mobile visual audit must exercise purchase first-job compaction, selector one-path state, active-domain summary grouping, focused service/structure/member packets, staged Governance record capture, Recent outcome packet capture, dead-block regression, overflow, and contrast checks.",
+  "Community Domain mobile visual audit must exercise purchase first-job compaction, selector one-path state, active-domain summary grouping, focused identity/service/structure/member packets, staged Governance record capture, Recent outcome packet capture, dead-block regression, overflow, and contrast checks.",
   { frontend: true }
 );
 
@@ -2625,8 +2653,8 @@ assertContains(
 
 assertContains(
   "src/pages/communityDomainDashboard/ServiceReadinessPanels.tsx",
-  /rows\.push\(\{[\s\S]*label: "Billing"[\s\S]*rows\.push\(\{[\s\S]*label: "Settings"[\s\S]*activeServiceFocus[\s\S]*community-domain-service-readiness\.focus\.\$\{option\.key\}[\s\S]*activeServiceFocus === "services"[\s\S]*Service readiness/,
-  "Community Domain dashboard Services lane must expose module-scope readiness as one focused sub-view instead of stacking every readiness packet.",
+  /rows\.push\(\{[\s\S]*label: "Billing"[\s\S]*rows\.push\(\{[\s\S]*label: "Settings"[\s\S]*activeServiceFocus[\s\S]*serviceFocusChooserOpen[\s\S]*community-domain-service-readiness\.focus-toggle[\s\S]*serviceFocusChooserOpen \? "Close views" : "Change view"[\s\S]*serviceFocusChooserOpen \? \([\s\S]*community-domain-service-readiness\.focus\.\$\{option\.key\}[\s\S]*setServiceFocusChooserOpen\(false\)[\s\S]*activeServiceFocus === "services"[\s\S]*Service readiness/,
+  "Community Domain dashboard Services readiness packet must keep sub-views behind Change view and expose module-scope readiness as one focused sub-view instead of stacking every readiness packet.",
   { frontend: true }
 );
 
@@ -2653,8 +2681,8 @@ assertContains(
 
 assertContains(
   "src/pages/communityDomainDashboard/ServiceBoundaryPanels.tsx",
-  /BOUNDARY_FOCUS_OPTIONS[\s\S]*key: "exchange"[\s\S]*key: "privacy"[\s\S]*key: "setup"[\s\S]*key: "compliance"[\s\S]*key: "appeals"[\s\S]*activeBoundaryFocus[\s\S]*community-domain-service-boundary\.focus\.\$\{option\.key\}[\s\S]*activeBoundaryFocus === "exchange"[\s\S]*Network exchange readiness[\s\S]*activeBoundaryFocus === "privacy"[\s\S]*Record privacy readiness[\s\S]*activeBoundaryFocus === "setup"[\s\S]*Setup map[\s\S]*activeBoundaryFocus === "compliance"[\s\S]*Compliance map[\s\S]*activeBoundaryFocus === "appeals"[\s\S]*Appeal readiness/,
-  "Community Domain Services boundary packet must expose one focused boundary sub-view at a time instead of stacking exchange, privacy, setup, compliance, and appeal readiness together.",
+  /BOUNDARY_FOCUS_OPTIONS[\s\S]*key: "exchange"[\s\S]*key: "privacy"[\s\S]*key: "setup"[\s\S]*key: "compliance"[\s\S]*key: "appeals"[\s\S]*activeBoundaryFocus[\s\S]*boundaryFocusChooserOpen[\s\S]*community-domain-service-boundary\.focus-toggle[\s\S]*boundaryFocusChooserOpen \? "Close views" : "Change view"[\s\S]*boundaryFocusChooserOpen \? \([\s\S]*community-domain-service-boundary\.focus\.\$\{option\.key\}[\s\S]*setBoundaryFocusChooserOpen\(false\)[\s\S]*activeBoundaryFocus === "exchange"[\s\S]*Network exchange readiness[\s\S]*activeBoundaryFocus === "privacy"[\s\S]*Record privacy readiness[\s\S]*activeBoundaryFocus === "setup"[\s\S]*Setup map[\s\S]*activeBoundaryFocus === "compliance"[\s\S]*Compliance map[\s\S]*activeBoundaryFocus === "appeals"[\s\S]*Appeal readiness/,
+  "Community Domain Services boundary packet must keep boundary sub-views behind Change view and expose one focused boundary sub-view at a time instead of stacking exchange, privacy, setup, compliance, and appeal readiness together.",
   { frontend: true }
 );
 
@@ -2828,8 +2856,8 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /type MemberDetailKey = "readiness" \| "placement" \| "roster"[\s\S]*type MemberDetailGroupKey = "readiness" \| "roster"[\s\S]*MEMBER_DETAIL_OPTIONS[\s\S]*key: "readiness"[\s\S]*key: "placement"[\s\S]*key: "roster"[\s\S]*MEMBER_DETAIL_GROUP_OPTIONS[\s\S]*key: "readiness"[\s\S]*detailKeys: \["readiness", "placement"\][\s\S]*key: "roster"[\s\S]*detailKeys: \["roster"\][\s\S]*memberPacketChooserOpen[\s\S]*activeMemberDetail[\s\S]*activeMemberDetailGroup[\s\S]*activeMemberGroupDetails[\s\S]*Choose the member stage first[\s\S]*community-domain-dashboard\.member-group\.\$\{group\.key\}[\s\S]*setMemberPacketChooserOpen\(false\)[\s\S]*community-domain-dashboard\.member-packet-toggle[\s\S]*memberPacketChooserOpen \? "Close packets" : "Change packet"[\s\S]*memberPacketChooserOpen \? \([\s\S]*activeMemberGroupDetails\.map[\s\S]*community-domain-dashboard\.member-detail\.\$\{option\.key\}[\s\S]*setMemberPacketChooserOpen\(false\)[\s\S]*activeMemberDetail === "readiness"[\s\S]*CommunityDomainMemberReadinessPanels[\s\S]*activeMemberDetail === "placement"[\s\S]*variant="memberParticipation"[\s\S]*activeMemberDetail === "roster"/,
-  "Community Domain dashboard Members lane must group Readiness and Roster stages first, hide second-level packets behind Change packet, and expose one focused member packet at a time instead of dumping member readiness, placement, and roster control together.",
+  /type MemberDetailKey = "readiness" \| "placement" \| "roster"[\s\S]*type MemberDetailGroupKey = "readiness" \| "roster"[\s\S]*MEMBER_DETAIL_OPTIONS[\s\S]*key: "readiness"[\s\S]*key: "placement"[\s\S]*key: "roster"[\s\S]*MEMBER_DETAIL_GROUP_OPTIONS[\s\S]*key: "readiness"[\s\S]*detailKeys: \["readiness", "placement"\][\s\S]*key: "roster"[\s\S]*detailKeys: \["roster"\][\s\S]*memberStageChooserOpen[\s\S]*memberPacketChooserOpen[\s\S]*activeMemberDetail[\s\S]*activeMemberDetailGroup[\s\S]*activeMemberGroupDetails[\s\S]*Choose the member stage first[\s\S]*community-domain-dashboard\.member-stage-toggle[\s\S]*memberStageChooserOpen \? "Close stages" : "Change stage"[\s\S]*memberStageChooserOpen \? \([\s\S]*community-domain-dashboard\.member-group\.\$\{group\.key\}[\s\S]*setMemberStageChooserOpen\(false\)[\s\S]*setMemberPacketChooserOpen\(false\)[\s\S]*community-domain-dashboard\.member-packet-toggle[\s\S]*memberPacketChooserOpen \? "Close packets" : "Change packet"[\s\S]*memberPacketChooserOpen \? \([\s\S]*activeMemberGroupDetails\.map[\s\S]*community-domain-dashboard\.member-detail\.\$\{option\.key\}[\s\S]*setMemberStageChooserOpen\(false\)[\s\S]*setMemberPacketChooserOpen\(false\)[\s\S]*activeMemberDetail === "readiness"[\s\S]*CommunityDomainMemberReadinessPanels[\s\S]*activeMemberDetail === "placement"[\s\S]*variant="memberParticipation"[\s\S]*activeMemberDetail === "roster"/,
+  "Community Domain dashboard Members lane must keep Readiness and Roster stages behind Change stage, hide second-level packets behind Change packet, and expose one focused member packet at a time instead of dumping member readiness, placement, and roster control together.",
   { frontend: true }
 );
 
@@ -2996,8 +3024,8 @@ assertContains(
 
 assertContains(
   "src/pages/communityDomainDashboard/TrustEvidenceReadinessPanels.tsx",
-  /TRUST_EVIDENCE_FOCUS_OPTIONS[\s\S]*key: "records"[\s\S]*key: "release"[\s\S]*key: "relay"[\s\S]*key: "notification"[\s\S]*key: "mobility"[\s\S]*activeTrustEvidenceFocus[\s\S]*community-domain\.trust-evidence\.focus\.\$\{option\.key\}[\s\S]*activeTrustEvidenceFocus === "records"[\s\S]*Evidence record readiness[\s\S]*activeTrustEvidenceFocus === "release"[\s\S]*Evidence release readiness[\s\S]*activeTrustEvidenceFocus === "relay"[\s\S]*Trust relay readiness[\s\S]*activeTrustEvidenceFocus === "notification"[\s\S]*Notification scope readiness[\s\S]*activeTrustEvidenceFocus === "mobility"[\s\S]*Trust mobility readiness/,
-  "Community Domain Trust/Evidence packet must expose one focused sub-view at a time instead of stacking records, release, relay, notification, and mobility readiness together.",
+  /TRUST_EVIDENCE_FOCUS_OPTIONS[\s\S]*key: "records"[\s\S]*key: "release"[\s\S]*key: "relay"[\s\S]*key: "notification"[\s\S]*key: "mobility"[\s\S]*activeTrustEvidenceFocus[\s\S]*trustEvidenceFocusChooserOpen[\s\S]*community-domain\.trust-evidence\.focus-toggle[\s\S]*trustEvidenceFocusChooserOpen \? "Close views" : "Change view"[\s\S]*trustEvidenceFocusChooserOpen \? \([\s\S]*community-domain\.trust-evidence\.focus\.\$\{option\.key\}[\s\S]*setTrustEvidenceFocusChooserOpen\(false\)[\s\S]*activeTrustEvidenceFocus === "records"[\s\S]*Evidence record readiness[\s\S]*activeTrustEvidenceFocus === "release"[\s\S]*Evidence release readiness[\s\S]*activeTrustEvidenceFocus === "relay"[\s\S]*Trust relay readiness[\s\S]*activeTrustEvidenceFocus === "notification"[\s\S]*Notification scope readiness[\s\S]*activeTrustEvidenceFocus === "mobility"[\s\S]*Trust mobility readiness/,
+  "Community Domain Trust/Evidence packet must keep sub-views behind Change view and expose one focused sub-view at a time instead of stacking records, release, relay, notification, and mobility readiness together.",
   { frontend: true }
 );
 
@@ -3066,8 +3094,8 @@ assertContains(
 
 assertContains(
   "src/pages/communityDomainDashboard/IdentityReadinessPanels.tsx",
-  /IDENTITY_DETAIL_OPTIONS[\s\S]*key: "identity"[\s\S]*key: "profile"[\s\S]*key: "bridge"[\s\S]*key: "affiliation"[\s\S]*activeIdentityDetail[\s\S]*community-domain-identity\.detail\.\$\{option\.key\}[\s\S]*activeIdentityDetail === "identity"[\s\S]*Domain identity[\s\S]*activeIdentityDetail === "profile"[\s\S]*Institutional profile[\s\S]*activeIdentityDetail === "bridge"[\s\S]*Community bridge readiness[\s\S]*activeIdentityDetail === "affiliation"[\s\S]*Affiliation readiness/,
-  "Community Domain Identity readiness panel must expose one focused identity packet at a time instead of dumping identity, profile, bridge, and affiliation together.",
+  /IDENTITY_DETAIL_OPTIONS[\s\S]*key: "identity"[\s\S]*key: "profile"[\s\S]*key: "bridge"[\s\S]*key: "affiliation"[\s\S]*activeIdentityDetail[\s\S]*identityDetailChooserOpen[\s\S]*community-domain-identity\.detail-toggle[\s\S]*identityDetailChooserOpen \? "Close packets" : "Change packet"[\s\S]*identityDetailChooserOpen \? \([\s\S]*community-domain-identity\.detail\.\$\{option\.key\}[\s\S]*setIdentityDetailChooserOpen\(false\)[\s\S]*activeIdentityDetail === "identity"[\s\S]*Domain identity[\s\S]*activeIdentityDetail === "profile"[\s\S]*Institutional profile[\s\S]*activeIdentityDetail === "bridge"[\s\S]*Community bridge readiness[\s\S]*activeIdentityDetail === "affiliation"[\s\S]*Affiliation readiness/,
+  "Community Domain Identity readiness panel must keep identity packets behind Change packet and expose one focused identity packet at a time instead of dumping identity, profile, bridge, and affiliation together.",
   { frontend: true }
 );
 
@@ -3129,8 +3157,8 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /type StructureDetailGroupKey = "map" \| "readiness" \| "rollout"[\s\S]*STRUCTURE_DETAIL_OPTIONS[\s\S]*key: "preview"[\s\S]*key: "foundation"[\s\S]*key: "boundary"[\s\S]*key: "activity"[\s\S]*key: "planning"[\s\S]*STRUCTURE_DETAIL_GROUP_OPTIONS[\s\S]*key: "map"[\s\S]*detailKeys: \["preview"\][\s\S]*key: "readiness"[\s\S]*detailKeys: \["foundation", "boundary"\][\s\S]*key: "rollout"[\s\S]*detailKeys: \["activity", "planning"\][\s\S]*structurePacketChooserOpen[\s\S]*activeStructureDetail[\s\S]*activeStructureDetailGroup[\s\S]*STRUCTURE_DETAIL_GROUP_OPTIONS\.find[\s\S]*activeStructureGroupDetails[\s\S]*Choose the structure stage first[\s\S]*community-domain-dashboard\.structure-group\.\$\{group\.key\}[\s\S]*setStructurePacketChooserOpen\(false\)[\s\S]*community-domain-dashboard\.structure-packet-toggle[\s\S]*structurePacketChooserOpen \? "Close packets" : "Change packet"[\s\S]*structurePacketChooserOpen \? \([\s\S]*community-domain-dashboard\.structure-detail\.\$\{option\.key\}[\s\S]*setStructurePacketChooserOpen\(false\)[\s\S]*activeStructureDetail === "preview"[\s\S]*CommunityDomainStructurePreviewPanel[\s\S]*activeStructureDetail === "foundation"[\s\S]*variant="structureFoundation"[\s\S]*activeStructureDetail === "boundary"[\s\S]*variant="structureBoundary"[\s\S]*activeStructureDetail === "activity"[\s\S]*variant="structureActivity"[\s\S]*activeStructureDetail === "planning"[\s\S]*CommunityDomainStructurePlanningPanels/,
-  "Community Domain dashboard Structure lane must expose Map, Readiness, and Rollout stages first, hide second-level packets behind Change packet, then show one focused institutional detail view at a time instead of dumping all Structure panels on first open.",
+  /type StructureDetailGroupKey = "map" \| "readiness" \| "rollout"[\s\S]*STRUCTURE_DETAIL_OPTIONS[\s\S]*key: "preview"[\s\S]*key: "foundation"[\s\S]*key: "boundary"[\s\S]*key: "activity"[\s\S]*key: "planning"[\s\S]*STRUCTURE_DETAIL_GROUP_OPTIONS[\s\S]*key: "map"[\s\S]*detailKeys: \["preview"\][\s\S]*key: "readiness"[\s\S]*detailKeys: \["foundation", "boundary"\][\s\S]*key: "rollout"[\s\S]*detailKeys: \["activity", "planning"\][\s\S]*structureStageChooserOpen[\s\S]*structurePacketChooserOpen[\s\S]*activeStructureDetail[\s\S]*activeStructureDetailGroup[\s\S]*STRUCTURE_DETAIL_GROUP_OPTIONS\.find[\s\S]*activeStructureGroupDetails[\s\S]*Choose the structure stage first[\s\S]*community-domain-dashboard\.structure-stage-toggle[\s\S]*structureStageChooserOpen \? "Close stages" : "Change stage"[\s\S]*structureStageChooserOpen \? \([\s\S]*community-domain-dashboard\.structure-group\.\$\{group\.key\}[\s\S]*setStructureStageChooserOpen\(false\)[\s\S]*setStructurePacketChooserOpen\(false\)[\s\S]*community-domain-dashboard\.structure-packet-toggle[\s\S]*structurePacketChooserOpen \? "Close packets" : "Change packet"[\s\S]*structurePacketChooserOpen \? \([\s\S]*community-domain-dashboard\.structure-detail\.\$\{option\.key\}[\s\S]*setStructurePacketChooserOpen\(false\)[\s\S]*activeStructureDetail === "preview"[\s\S]*CommunityDomainStructurePreviewPanel[\s\S]*activeStructureDetail === "foundation"[\s\S]*variant="structureFoundation"[\s\S]*activeStructureDetail === "boundary"[\s\S]*variant="structureBoundary"[\s\S]*activeStructureDetail === "activity"[\s\S]*variant="structureActivity"[\s\S]*activeStructureDetail === "planning"[\s\S]*CommunityDomainStructurePlanningPanels/,
+  "Community Domain dashboard Structure lane must keep Map, Readiness, and Rollout stages behind Change stage, hide second-level packets behind Change packet, then show one focused institutional detail view at a time instead of dumping all Structure panels on first open.",
   { frontend: true }
 );
 
