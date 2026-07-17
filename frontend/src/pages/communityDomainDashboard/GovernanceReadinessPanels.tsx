@@ -251,7 +251,7 @@ export default function CommunityDomainGovernanceReadinessPanels({
       >
         <div style={sectionLabel()}>Governance focus</div>
         <div style={helperText()}>
-          Open one governance packet at a time. Current packet:{" "}
+          Open one governance view at a time. Current view:{" "}
           <strong>{selectedGovernanceDetail.label}</strong>.
         </div>
         <StableButton
@@ -269,7 +269,7 @@ export default function CommunityDomainGovernanceReadinessPanels({
             textTransform: "none",
           }}
         >
-          {governanceDetailChooserOpen ? "Close packets" : "Change packet"}
+          {governanceDetailChooserOpen ? "Close views" : "Change view"}
         </StableButton>
         {governanceDetailChooserOpen ? (
           <div

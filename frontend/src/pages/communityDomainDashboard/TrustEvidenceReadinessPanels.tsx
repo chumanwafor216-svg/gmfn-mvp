@@ -346,7 +346,7 @@ export default function CommunityDomainTrustEvidenceReadinessPanels({
           gap: 10,
         }}
       >
-        <div style={sectionLabel()}>Trust and evidence packet</div>
+        <div style={sectionLabel()}>Trust and evidence view</div>
         <div style={helperText()}>
           Current view: <strong>{selectedTrustEvidenceFocus.label}</strong>.
         </div>

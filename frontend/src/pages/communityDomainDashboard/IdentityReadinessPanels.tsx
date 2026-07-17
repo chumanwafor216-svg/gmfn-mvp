@@ -252,7 +252,7 @@ export default function CommunityDomainIdentityReadinessPanels({
       >
         <div style={sectionLabel()}>Identity focus</div>
         <div style={helperText()}>
-          Open one identity packet at a time. Current view:{" "}
+          Open one identity view at a time. Current view:{" "}
           <strong>{selectedIdentityDetail.label}</strong>.
         </div>
         <StableButton
@@ -270,7 +270,7 @@ export default function CommunityDomainIdentityReadinessPanels({
             textTransform: "none",
           }}
         >
-          {identityDetailChooserOpen ? "Close packets" : "Change packet"}
+          {identityDetailChooserOpen ? "Close views" : "Change view"}
         </StableButton>
         {identityDetailChooserOpen ? (
           <div

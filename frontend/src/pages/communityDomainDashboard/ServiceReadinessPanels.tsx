@@ -387,7 +387,7 @@ export default function CommunityDomainServiceReadinessPanels({
           gap: 10,
         }}
       >
-        <div style={sectionLabel()}>Readiness packet</div>
+        <div style={sectionLabel()}>Readiness view</div>
         <div style={helperText()}>
           Current view: <strong>{selectedServiceFocus.label}</strong>.
         </div>

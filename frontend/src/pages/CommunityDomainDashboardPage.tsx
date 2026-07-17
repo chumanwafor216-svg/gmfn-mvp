@@ -890,7 +890,7 @@ const BENEFICIARY_OUTCOME_TASK_OPTIONS: Array<{
   {
     key: "recent",
     label: "Recent",
-    note: "Review recent outcome records and their packets.",
+    note: "Review recent outcome records one view at a time.",
   },
 ];
 
@@ -8471,7 +8471,7 @@ export default function CommunityDomainDashboardPage() {
                             : "You can edit setup, profile, and setup evidence only. Owner/admin authority remains above this role."}
                         </div>
                         <div style={{ ...helperText(), fontSize: 13 }}>
-                          Current access packet:{" "}
+                          Current access view:{" "}
                           <strong>{activeSetupAccessTaskOption.label}</strong>.{" "}
                           {activeSetupAccessTaskOption.note}
                         </div>
@@ -8489,8 +8489,8 @@ export default function CommunityDomainDashboardPage() {
                           style={{ justifyContent: "center", fontSize: 13 }}
                         >
                           {setupAccessTaskChooserOpen
-                            ? "Close access packets"
-                            : "Change access packet"}
+                            ? "Close access views"
+                            : "Change access view"}
                         </StableButton>
                         {setupAccessTaskChooserOpen ? (
                           <div
@@ -11028,7 +11028,7 @@ export default function CommunityDomainDashboardPage() {
                               textTransform: "none",
                             }}
                           >
-                            {servicePacketChooserOpen ? "Close packets" : "Change packet"}
+                            {servicePacketChooserOpen ? "Close views" : "Change view"}
                           </StableButton>
                           {servicePacketChooserOpen ? (
                             <div
@@ -11040,7 +11040,7 @@ export default function CommunityDomainDashboardPage() {
                               }}
                             >
                               <div style={sectionLabel()}>
-                                {activeServiceDetailGroupOption.label} packets
+                                {activeServiceDetailGroupOption.label} views
                               </div>
                               <div
                                 style={{
@@ -11412,7 +11412,7 @@ export default function CommunityDomainDashboardPage() {
                               textTransform: "none",
                             }}
                           >
-                            {structurePacketChooserOpen ? "Close packets" : "Change packet"}
+                            {structurePacketChooserOpen ? "Close views" : "Change view"}
                           </StableButton>
                           {structurePacketChooserOpen ? (
                             <div
@@ -11424,7 +11424,7 @@ export default function CommunityDomainDashboardPage() {
                               }}
                             >
                               <div style={sectionLabel()}>
-                                {activeStructureDetailGroupOption.label} packets
+                                {activeStructureDetailGroupOption.label} views
                               </div>
                               <div
                                 style={{
@@ -11870,7 +11870,7 @@ export default function CommunityDomainDashboardPage() {
                                   </span>
                                 </div>
                                 <div style={{ ...helperText(), fontSize: 13 }}>
-                                  Current report packet:{" "}
+                                  Current report view:{" "}
                                   <strong>{activeDirectorSummaryTaskOption.label}</strong>.{" "}
                                   {activeDirectorSummaryTaskOption.note}
                                 </div>
@@ -11892,8 +11892,8 @@ export default function CommunityDomainDashboardPage() {
                                   }}
                                 >
                                   {directorSummaryTaskChooserOpen
-                                    ? "Close report packets"
-                                    : "Change report packet"}
+                                    ? "Close report views"
+                                    : "Change report view"}
                                 </StableButton>
                                 {directorSummaryTaskChooserOpen ? (
                                   <div
@@ -12329,7 +12329,7 @@ export default function CommunityDomainDashboardPage() {
                                   </span>
                                 </div>
                                 <div style={{ ...helperText(), fontSize: 13 }}>
-                                  Current sponsor packet:{" "}
+                                  Current sponsor view:{" "}
                                   <strong>{activeSponsorSummaryTaskOption.label}</strong>.{" "}
                                   {activeSponsorSummaryTaskOption.note}
                                 </div>
@@ -12351,8 +12351,8 @@ export default function CommunityDomainDashboardPage() {
                                   }}
                                 >
                                   {sponsorSummaryTaskChooserOpen
-                                    ? "Close sponsor packets"
-                                    : "Change sponsor packet"}
+                                    ? "Close sponsor views"
+                                    : "Change sponsor view"}
                                 </StableButton>
                                 {sponsorSummaryTaskChooserOpen ? (
                                   <div
@@ -12402,7 +12402,7 @@ export default function CommunityDomainDashboardPage() {
                                       padding: 12,
                                     }}
                                   >
-                                    <div style={sectionLabel()}>Pack boundary</div>
+                                    <div style={sectionLabel()}>Sponsor boundary</div>
                                     <div style={{ ...helperText(), fontSize: 13 }}>
                                       {cleanText(
                                         sponsorSummary?.plain_language,
@@ -12989,7 +12989,7 @@ export default function CommunityDomainDashboardPage() {
                         </div>
 
                         <div style={{ ...helperText(), fontSize: 13 }}>
-                          Current activity packet:{" "}
+                          Current activity view:{" "}
                           <strong>{activeActivityRecordTaskOption.label}</strong>.{" "}
                           {activeActivityRecordTaskOption.note}
                         </div>
@@ -13011,8 +13011,8 @@ export default function CommunityDomainDashboardPage() {
                           }}
                         >
                           {activityRecordTaskChooserOpen
-                            ? "Close activity packets"
-                            : "Change activity packet"}
+                            ? "Close activity views"
+                            : "Change activity view"}
                         </StableButton>
                         {activityRecordTaskChooserOpen ? (
                           <div
@@ -13437,7 +13437,7 @@ export default function CommunityDomainDashboardPage() {
                         </div>
 
                         <div style={{ ...helperText(), fontSize: 13 }}>
-                          Current outcome packet:{" "}
+                          Current outcome view:{" "}
                           <strong>{activeBeneficiaryOutcomeTaskOption.label}</strong>.{" "}
                           {activeBeneficiaryOutcomeTaskOption.note}
                         </div>
@@ -13459,8 +13459,8 @@ export default function CommunityDomainDashboardPage() {
                           }}
                         >
                           {beneficiaryOutcomeTaskChooserOpen
-                            ? "Close outcome packets"
-                            : "Change outcome packet"}
+                            ? "Close outcome views"
+                            : "Change outcome view"}
                         </StableButton>
                         {beneficiaryOutcomeTaskChooserOpen ? (
                           <div
@@ -14207,7 +14207,7 @@ export default function CommunityDomainDashboardPage() {
                                 </div>
                                 <div style={{ display: "grid", gap: 8 }}>
                                   <div style={{ ...helperText(), fontSize: 13 }}>
-                                    Current packet:{" "}
+                                    Current view:{" "}
                                     <strong>
                                       {activeOutcomeRecentPacketOption.label}
                                     </strong>
@@ -14236,8 +14236,8 @@ export default function CommunityDomainDashboardPage() {
                                     }}
                                   >
                                     {outcomeRecentPacketChooserOpen
-                                      ? "Close packets"
-                                      : "Change packet"}
+                                      ? "Close views"
+                                      : "Change view"}
                                   </StableButton>
                                   {outcomeRecentPacketChooserOpen ? (
                                     <div
@@ -15631,7 +15631,7 @@ export default function CommunityDomainDashboardPage() {
                               textTransform: "none",
                             }}
                           >
-                            {memberPacketChooserOpen ? "Close packets" : "Change packet"}
+                            {memberPacketChooserOpen ? "Close views" : "Change view"}
                           </StableButton>
                           {memberPacketChooserOpen ? (
                             <div
@@ -15643,7 +15643,7 @@ export default function CommunityDomainDashboardPage() {
                               }}
                             >
                               <div style={sectionLabel()}>
-                                {activeMemberDetailGroupOption.label} packets
+                                {activeMemberDetailGroupOption.label} views
                               </div>
                               <div
                                 style={{
@@ -15757,7 +15757,7 @@ export default function CommunityDomainDashboardPage() {
                         ) : null}
 
                         <div style={{ ...helperText(), fontSize: 13 }}>
-                          Current roster packet:{" "}
+                          Current roster view:{" "}
                           <strong>{activeMemberRosterTaskOption.label}</strong>.{" "}
                           {activeMemberRosterTaskOption.note}
                         </div>
@@ -15779,8 +15779,8 @@ export default function CommunityDomainDashboardPage() {
                           }}
                         >
                           {memberRosterTaskChooserOpen
-                            ? "Close roster packets"
-                            : "Change roster packet"}
+                            ? "Close roster views"
+                            : "Change roster view"}
                         </StableButton>
                         {memberRosterTaskChooserOpen ? (
                           <div

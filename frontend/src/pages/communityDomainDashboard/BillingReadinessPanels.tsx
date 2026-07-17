@@ -256,7 +256,7 @@ export default function CommunityDomainBillingReadinessPanels({
       >
         <div style={sectionLabel()}>Billing focus</div>
         <div style={helperText()}>
-          Current packet: <strong>{selectedBillingDetail.label}</strong>.
+          Current view: <strong>{selectedBillingDetail.label}</strong>.
         </div>
         <StableButton
           type="button"
@@ -273,7 +273,7 @@ export default function CommunityDomainBillingReadinessPanels({
             textTransform: "none",
           }}
         >
-          {billingDetailChooserOpen ? "Close packets" : "Change packet"}
+          {billingDetailChooserOpen ? "Close views" : "Change view"}
         </StableButton>
         {billingDetailChooserOpen ? (
           <div

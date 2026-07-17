@@ -852,7 +852,7 @@ assertContains(
 assertNotContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
   /quickRecordOpen|setQuickRecordOpen|community-domain-dashboard\.real-life-record-toggle/,
-  "Community Domain command must not return to a nested quick-record reveal; the shortcut should open the Governance record packet directly.",
+  "Community Domain command must not return to a nested quick-record reveal; the shortcut should open the Governance record view directly.",
   { frontend: true }
 );
 
@@ -865,22 +865,22 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /type SponsorSummaryTaskKey = "overview" \| "evidence" \| "delivery" \| "export"[\s\S]*SPONSOR_SUMMARY_TASK_OPTIONS[\s\S]*key: "overview"[\s\S]*key: "evidence"[\s\S]*key: "delivery"[\s\S]*key: "export"[\s\S]*activeSponsorSummaryTask[\s\S]*sponsorSummaryTaskChooserOpen[\s\S]*activeSponsorSummaryTaskOption[\s\S]*community-domain-dashboard\.sponsor-summary-toggle[\s\S]*sponsorSummaryTaskChooserOpen[\s\S]*Close sponsor packets[\s\S]*Change sponsor packet[\s\S]*sponsorSummaryTaskChooserOpen \? \([\s\S]*community-domain-dashboard\.sponsor-summary\.\$\{task\.key\}[\s\S]*setSponsorSummaryTaskChooserOpen\(false\)[\s\S]*activeSponsorSummaryTask === "overview"[\s\S]*Pack boundary[\s\S]*activeSponsorSummaryTask === "evidence"[\s\S]*sponsorTiles\.map[\s\S]*activeSponsorSummaryTask === "export"[\s\S]*community-domain-dashboard\.copy-sponsor-export-pack[\s\S]*activeSponsorSummaryTask === "delivery"[\s\S]*Delivery evidence[\s\S]*Provider delivery readiness/,
-  "Community Domain sponsor-safe summary must keep Overview, Evidence, Export, and Delivery packets behind a closed Change sponsor packet control.",
+  /type SponsorSummaryTaskKey = "overview" \| "evidence" \| "delivery" \| "export"[\s\S]*SPONSOR_SUMMARY_TASK_OPTIONS[\s\S]*key: "overview"[\s\S]*key: "evidence"[\s\S]*key: "delivery"[\s\S]*key: "export"[\s\S]*activeSponsorSummaryTask[\s\S]*sponsorSummaryTaskChooserOpen[\s\S]*activeSponsorSummaryTaskOption[\s\S]*community-domain-dashboard\.sponsor-summary-toggle[\s\S]*sponsorSummaryTaskChooserOpen[\s\S]*Close sponsor views[\s\S]*Change sponsor view[\s\S]*sponsorSummaryTaskChooserOpen \? \([\s\S]*community-domain-dashboard\.sponsor-summary\.\$\{task\.key\}[\s\S]*setSponsorSummaryTaskChooserOpen\(false\)[\s\S]*activeSponsorSummaryTask === "overview"[\s\S]*Sponsor boundary[\s\S]*activeSponsorSummaryTask === "evidence"[\s\S]*sponsorTiles\.map[\s\S]*activeSponsorSummaryTask === "export"[\s\S]*community-domain-dashboard\.copy-sponsor-export-pack[\s\S]*activeSponsorSummaryTask === "delivery"[\s\S]*Delivery evidence[\s\S]*Provider delivery readiness/,
+  "Community Domain sponsor-safe summary must keep Overview, Evidence, Export, and Delivery views behind a closed Change sponsor view control.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /type DirectorSummaryTaskKey = "overview" \| "membership" \| "evidence" \| "delivery"[\s\S]*DIRECTOR_SUMMARY_TASK_OPTIONS[\s\S]*key: "overview"[\s\S]*key: "membership"[\s\S]*key: "evidence"[\s\S]*key: "delivery"[\s\S]*activeDirectorSummaryTask[\s\S]*directorSummaryTaskChooserOpen[\s\S]*activeDirectorSummaryTaskOption[\s\S]*community-domain-dashboard\.director-summary-toggle[\s\S]*directorSummaryTaskChooserOpen[\s\S]*Close report packets[\s\S]*Change report packet[\s\S]*directorSummaryTaskChooserOpen \? \([\s\S]*community-domain-dashboard\.director-summary\.\$\{task\.key\}[\s\S]*setDirectorSummaryTaskChooserOpen\(false\)[\s\S]*activeDirectorSummaryTask === "overview"[\s\S]*Report boundary[\s\S]*activeDirectorSummaryTask === "membership"[\s\S]*membershipTiles\.map[\s\S]*activeDirectorSummaryTask === "evidence"[\s\S]*evidenceTiles\.map[\s\S]*activeDirectorSummaryTask === "delivery"[\s\S]*deliveryTiles\.map[\s\S]*Delivery evidence/,
-  "Community Domain director period summary must keep Overview, Membership, Evidence, and Delivery packets behind a closed Change report packet control.",
+  /type DirectorSummaryTaskKey = "overview" \| "membership" \| "evidence" \| "delivery"[\s\S]*DIRECTOR_SUMMARY_TASK_OPTIONS[\s\S]*key: "overview"[\s\S]*key: "membership"[\s\S]*key: "evidence"[\s\S]*key: "delivery"[\s\S]*activeDirectorSummaryTask[\s\S]*directorSummaryTaskChooserOpen[\s\S]*activeDirectorSummaryTaskOption[\s\S]*community-domain-dashboard\.director-summary-toggle[\s\S]*directorSummaryTaskChooserOpen[\s\S]*Close report views[\s\S]*Change report view[\s\S]*directorSummaryTaskChooserOpen \? \([\s\S]*community-domain-dashboard\.director-summary\.\$\{task\.key\}[\s\S]*setDirectorSummaryTaskChooserOpen\(false\)[\s\S]*activeDirectorSummaryTask === "overview"[\s\S]*Report boundary[\s\S]*activeDirectorSummaryTask === "membership"[\s\S]*membershipTiles\.map[\s\S]*activeDirectorSummaryTask === "evidence"[\s\S]*evidenceTiles\.map[\s\S]*activeDirectorSummaryTask === "delivery"[\s\S]*deliveryTiles\.map[\s\S]*Delivery evidence/,
+  "Community Domain director period summary must keep Overview, Membership, Evidence, and Delivery views behind a closed Change report view control.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /type ActivityRecordTaskKey = "record" \| "catalogue" \| "recent"[\s\S]*type ActivityRecordStageKey = "person" \| "activity" \| "evidence"[\s\S]*ACTIVITY_RECORD_TASK_OPTIONS[\s\S]*key: "record"[\s\S]*key: "catalogue"[\s\S]*key: "recent"[\s\S]*ACTIVITY_RECORD_STAGE_OPTIONS[\s\S]*key: "person"[\s\S]*key: "activity"[\s\S]*key: "evidence"[\s\S]*activeActivityRecordTask[\s\S]*activityRecordTaskChooserOpen[\s\S]*activeActivityRecordStage[\s\S]*activityRecordStageChooserOpen[\s\S]*activeActivityRecordTaskOption[\s\S]*community-domain-dashboard\.activity-task-toggle[\s\S]*activityRecordTaskChooserOpen[\s\S]*Close activity packets[\s\S]*Change activity packet[\s\S]*activityRecordTaskChooserOpen \? \([\s\S]*community-domain-dashboard\.activity-task\.\$\{task\.key\}[\s\S]*setActivityRecordTaskChooserOpen\(false\)[\s\S]*activeActivityRecordTask === "record"[\s\S]*community-domain-dashboard\.activity-record-stage-toggle[\s\S]*Close steps[\s\S]*Change step[\s\S]*activityRecordStageChooserOpen \? \([\s\S]*community-domain-dashboard\.activity-record-stage\.\$\{stage\.key\}[\s\S]*setActivityRecordStageChooserOpen\(false\)[\s\S]*activeActivityRecordStage === "person"[\s\S]*community-domain-dashboard\.activity-record-next\.activity[\s\S]*activeActivityRecordStage === "activity"[\s\S]*community-domain-dashboard\.activity-record-next\.evidence[\s\S]*activeActivityRecordStage === "evidence"[\s\S]*community-domain-dashboard\.activity-record[\s\S]*activeActivityRecordTask === "catalogue"[\s\S]*activityCatalogueOptions\.map[\s\S]*activeActivityRecordTask === "recent"[\s\S]*Recent records/,
-  "Community Domain activity recording must keep Record, Catalogue, and Recent behind a closed Change activity packet control, with the Record packet staged into Person, Activity, and Evidence steps behind a closed Change step control.",
+  /type ActivityRecordTaskKey = "record" \| "catalogue" \| "recent"[\s\S]*type ActivityRecordStageKey = "person" \| "activity" \| "evidence"[\s\S]*ACTIVITY_RECORD_TASK_OPTIONS[\s\S]*key: "record"[\s\S]*key: "catalogue"[\s\S]*key: "recent"[\s\S]*ACTIVITY_RECORD_STAGE_OPTIONS[\s\S]*key: "person"[\s\S]*key: "activity"[\s\S]*key: "evidence"[\s\S]*activeActivityRecordTask[\s\S]*activityRecordTaskChooserOpen[\s\S]*activeActivityRecordStage[\s\S]*activityRecordStageChooserOpen[\s\S]*activeActivityRecordTaskOption[\s\S]*community-domain-dashboard\.activity-task-toggle[\s\S]*activityRecordTaskChooserOpen[\s\S]*Close activity views[\s\S]*Change activity view[\s\S]*activityRecordTaskChooserOpen \? \([\s\S]*community-domain-dashboard\.activity-task\.\$\{task\.key\}[\s\S]*setActivityRecordTaskChooserOpen\(false\)[\s\S]*activeActivityRecordTask === "record"[\s\S]*community-domain-dashboard\.activity-record-stage-toggle[\s\S]*Close steps[\s\S]*Change step[\s\S]*activityRecordStageChooserOpen \? \([\s\S]*community-domain-dashboard\.activity-record-stage\.\$\{stage\.key\}[\s\S]*setActivityRecordStageChooserOpen\(false\)[\s\S]*activeActivityRecordStage === "person"[\s\S]*community-domain-dashboard\.activity-record-next\.activity[\s\S]*activeActivityRecordStage === "activity"[\s\S]*community-domain-dashboard\.activity-record-next\.evidence[\s\S]*activeActivityRecordStage === "evidence"[\s\S]*community-domain-dashboard\.activity-record[\s\S]*activeActivityRecordTask === "catalogue"[\s\S]*activityCatalogueOptions\.map[\s\S]*activeActivityRecordTask === "recent"[\s\S]*Recent records/,
+  "Community Domain activity recording must keep Record, Catalogue, and Recent behind a closed Change activity view control, with the Record view staged into Person, Activity, and Evidence steps behind a closed Change step control.",
   { frontend: true }
 );
 
@@ -905,8 +905,8 @@ assertContains(
   "beneficiaryOutcomeDeliveryNotesOpenById",
   "activeBeneficiaryOutcomeTaskOption",
   "community-domain-dashboard.beneficiary-outcome-task-toggle",
-  "Close outcome packets",
-  "Change outcome packet",
+  "Close outcome views",
+  "Change outcome view",
   "beneficiaryOutcomeTaskChooserOpen ? (",
   "community-domain-dashboard.beneficiary-outcome-task.${task.key}",
   "activeBeneficiaryOutcomeTask === \"record\"",
@@ -926,10 +926,10 @@ assertContains(
   "Recent outcomes",
   "activeOutcomeRecentPacket",
   "outcomeRecentPacketChooserOpen",
-  "Current packet",
+  "Current view",
   "community-domain-dashboard.beneficiary-outcome-recent-packet-toggle",
-  "Close packets",
-  "Change packet",
+  "Close views",
+  "Change view",
   "outcomeRecentPacketChooserOpen ? (",
   "community-domain-dashboard.beneficiary-outcome-recent-packet.${packet.key}",
   "setBeneficiaryOutcomeRecentPacketChooserOpenById",
@@ -975,7 +975,7 @@ assertContains(
   assertIncludes(
     "src/pages/CommunityDomainDashboardPage.tsx",
     expected,
-    "Community Domain beneficiary outcome recording must keep Record and Recent controls staged behind closed packet choosers.",
+    "Community Domain beneficiary outcome recording must keep Record and Recent controls staged behind closed view choosers.",
     { frontend: true }
   )
 );
@@ -1003,7 +1003,7 @@ assertContains(
   assertIncludes(
     "src/pages/CommunityDomainDashboardPage.tsx",
     expected,
-    "Community Domain Contact packet must keep Record contact/consent and Withdraw consent behind an explicit action chooser.",
+    "Community Domain Contact view must keep Record contact/consent and Withdraw consent behind an explicit action chooser.",
     { frontend: true }
   )
 );
@@ -1019,7 +1019,7 @@ assertContains(
   assertIncludes(
     "src/pages/CommunityDomainDashboardPage.tsx",
     expected,
-    "Community Domain Contact packet must show only the selected Contact action form.",
+    "Community Domain Contact view must show only the selected Contact action form.",
     { frontend: true }
   )
 );
@@ -1349,14 +1349,14 @@ assertContains(
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
   /type SetupWorkbenchTaskKey = "step" \| "access"[\s\S]*SETUP_WORKBENCH_TASK_OPTIONS[\s\S]*key: "step"[\s\S]*key: "access"[\s\S]*activeSetupWorkbenchTask[\s\S]*setupWorkbenchChooserOpen[\s\S]*activeSetupWorkbenchTaskOption[\s\S]*Current setup view[\s\S]*community-domain-dashboard\.setup-workbench-toggle[\s\S]*Close setup views[\s\S]*Change setup view[\s\S]*setupWorkbenchChooserOpen \? \([\s\S]*SETUP_WORKBENCH_TASK_OPTIONS\.map[\s\S]*community-domain-dashboard\.setup-workbench\.\$\{task\.key\}[\s\S]*setSetupWorkbenchChooserOpen\(false\)[\s\S]*setSetupAccessTaskChooserOpen\(false\)[\s\S]*activeSetupWorkbenchTask === "access"[\s\S]*Setup access[\s\S]*Authorise setup editor[\s\S]*activeSetupWorkbenchTask === "step"[\s\S]*activeSetupStep === "identity"[\s\S]*community-domain-dashboard\.setup-save-and-continue/,
-  "Community Domain setup workbench must keep Setup step and Access behind a closed Change setup view selector instead of exposing both packets at once.",
+  "Community Domain setup workbench must keep Setup step and Access behind a closed Change setup view selector instead of exposing both views at once.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /type SetupAccessTaskKey = "summary" \| "authority"[\s\S]*SETUP_ACCESS_TASK_OPTIONS[\s\S]*key: "summary"[\s\S]*key: "authority"[\s\S]*activeSetupAccessTask[\s\S]*setupAccessTaskChooserOpen[\s\S]*activeSetupAccessTaskOption[\s\S]*setActiveSetupAccessTask\("summary"\)[\s\S]*task\.key === "access"[\s\S]*setActiveSetupAccessTask\("summary"\)[\s\S]*Setup access[\s\S]*Current access packet[\s\S]*community-domain-dashboard\.setup-access-toggle[\s\S]*Close access packets[\s\S]*Change access packet[\s\S]*setupAccessTaskChooserOpen \? \([\s\S]*community-domain-dashboard\.setup-access\.\$\{task\.key\}[\s\S]*setSetupAccessTaskChooserOpen\(false\)[\s\S]*activeSetupAccessTask === "summary"[\s\S]*activeSetupAccessTask === "authority" && isAdmin[\s\S]*community-domain-dashboard\.setup-editor-appoint[\s\S]*community-domain-dashboard\.setup-editor-revoke[\s\S]*activeSetupAccessTask === "authority" &&[\s\S]*!isAdmin &&[\s\S]*setupEditingLocked[\s\S]*community-domain-dashboard\.setup-editor-request/,
-  "Community Domain Setup access must keep Summary and Authority behind a closed Change access packet selector instead of exposing authority controls beside the access summary.",
+  /type SetupAccessTaskKey = "summary" \| "authority"[\s\S]*SETUP_ACCESS_TASK_OPTIONS[\s\S]*key: "summary"[\s\S]*key: "authority"[\s\S]*activeSetupAccessTask[\s\S]*setupAccessTaskChooserOpen[\s\S]*activeSetupAccessTaskOption[\s\S]*setActiveSetupAccessTask\("summary"\)[\s\S]*task\.key === "access"[\s\S]*setActiveSetupAccessTask\("summary"\)[\s\S]*Setup access[\s\S]*Current access view[\s\S]*community-domain-dashboard\.setup-access-toggle[\s\S]*Close access views[\s\S]*Change access view[\s\S]*setupAccessTaskChooserOpen \? \([\s\S]*community-domain-dashboard\.setup-access\.\$\{task\.key\}[\s\S]*setSetupAccessTaskChooserOpen\(false\)[\s\S]*activeSetupAccessTask === "summary"[\s\S]*activeSetupAccessTask === "authority" && isAdmin[\s\S]*community-domain-dashboard\.setup-editor-appoint[\s\S]*community-domain-dashboard\.setup-editor-revoke[\s\S]*activeSetupAccessTask === "authority" &&[\s\S]*!isAdmin &&[\s\S]*setupEditingLocked[\s\S]*community-domain-dashboard\.setup-editor-request/,
+  "Community Domain Setup access must keep Summary and Authority behind a closed Change access view selector instead of exposing authority controls beside the access summary.",
   { frontend: true }
 );
 
@@ -1405,21 +1405,21 @@ assertContains(
 assertNotContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
   /domainPaymentFormOpen|community-domain-dashboard\.payment-code-form-toggle|Generate another code|Hide code form/,
-  "Community Domain Billing payment-code generation must be the selected Generate packet, not a second nested reveal inside Reference.",
+  "Community Domain Billing payment-code generation must be the selected Generate view, not a second nested reveal inside Reference.",
   { frontend: true }
 );
 
 assertNotContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
   /domainPaymentProofOpen|community-domain-dashboard\.payment-proof-toggle/,
-  "Community Domain Billing proof upload must be the selected Proof packet, not a second nested reveal inside Code & proof.",
+  "Community Domain Billing proof upload must be the selected Proof view, not a second nested reveal inside Code & proof.",
   { frontend: true }
 );
 
 assertNotContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
   /domainPaymentCreditOpen|community-domain-dashboard\.credit-link-toggle|Show credit link|Hide credit link/,
-  "Community Domain Billing credit-link facts must be the selected Credit link packet, not a second nested reveal inside Reference.",
+  "Community Domain Billing credit-link facts must be the selected Credit link view, not a second nested reveal inside Reference.",
   { frontend: true }
 );
 
@@ -2062,7 +2062,7 @@ assertContains(
 assertContains(
   "src/pages/communityDomainDashboard/BillingReadinessPanels.tsx",
   /BILLING_DETAIL_OPTIONS[\s\S]*key: "lifecycle"[\s\S]*key: "capacity"[\s\S]*activeBillingDetail[\s\S]*community-domain-billing\.detail\.\$\{option\.key\}[\s\S]*activeBillingDetail === "lifecycle"[\s\S]*Subscription lifecycle[\s\S]*activeBillingDetail === "capacity"[\s\S]*Package capacity/,
-  "Community Domain Billing readiness panel must expose one focused billing packet at a time instead of dumping lifecycle and capacity together.",
+  "Community Domain Billing readiness panel must expose one focused billing view at a time instead of dumping lifecycle and capacity together.",
   { frontend: true }
 );
 
@@ -2214,7 +2214,7 @@ assertNotContains(
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
   /type OperatingSummaryTaskKey = "next_action" \| "status" \| "allowance" \| "permissions"[\s\S]*type OperatingSummaryGroupKey = "action" \| "reference"[\s\S]*OPERATING_SUMMARY_TASK_OPTIONS[\s\S]*key: "next_action"[\s\S]*key: "status"[\s\S]*key: "allowance"[\s\S]*key: "permissions"[\s\S]*OPERATING_SUMMARY_GROUP_OPTIONS[\s\S]*key: "action"[\s\S]*taskKeys: \["next_action", "status"\][\s\S]*key: "reference"[\s\S]*taskKeys: \["allowance", "permissions"\][\s\S]*activeOperatingSummaryTask[\s\S]*setActiveOperatingSummaryTask[\s\S]*operatingSummaryNotesOpen[\s\S]*operatingSummaryGroupChooserOpen[\s\S]*operatingSummaryTaskChooserOpen[\s\S]*activeOperatingSummaryGroup[\s\S]*activeOperatingSummaryGroupTasks[\s\S]*activeOperatingSummaryTaskOption[\s\S]*community-domain-dashboard\.operating-summary-group-toggle[\s\S]*operatingSummaryGroupChooserOpen \? \([\s\S]*community-domain-dashboard\.operating-summary-group\.\$\{group\.key\}[\s\S]*setOperatingSummaryGroupChooserOpen\(false\)[\s\S]*community-domain-dashboard\.operating-summary-task-toggle[\s\S]*operatingSummaryTaskChooserOpen \? \([\s\S]*activeOperatingSummaryGroupTasks\.map[\s\S]*community-domain-dashboard\.operating-summary\.\$\{task\.key\}[\s\S]*setOperatingSummaryTaskChooserOpen\(false\)[\s\S]*activeOperatingSummaryTask === "next_action"[\s\S]*community-domain-dashboard\.settings-open-live-lane[\s\S]*community-domain-dashboard\.operating-summary-notes-toggle[\s\S]*activeOperatingSummaryTask === "status"[\s\S]*Domain: \{compactStatus\(status\.domain_status\)\}[\s\S]*activeOperatingSummaryTask === "allowance"[\s\S]*Package allowance[\s\S]*activeOperatingSummaryTask === "permissions"[\s\S]*Domain permissions/,
-  "Active Community Domain settings must keep next action, status, package allowance, and permissions behind closed Action/Reference and question selectors instead of dumping the whole packet at once.",
+  "Active Community Domain settings must keep next action, status, package allowance, and permissions behind closed Action/Reference and question selectors instead of dumping the whole view at once.",
   { frontend: true }
 );
 
@@ -2270,21 +2270,21 @@ assertNotContains(
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
   /activeSetupOverviewTask[\s\S]*activeSetupNoticeTask[\s\S]*setupOverviewGroupChooserOpen[\s\S]*setupOverviewTaskChooserOpen[\s\S]*setupNoticeTaskChooserOpen[\s\S]*activeSetupOverviewTaskOption[\s\S]*activeSetupNoticeTaskOption[\s\S]*showAdvancedTools && activeLane === "settings" && setupWorkspaceOpen[\s\S]*Setup work[\s\S]*Choose the setup stage first[\s\S]*community-domain-dashboard\.setup-overview-group-toggle[\s\S]*setupOverviewGroupChooserOpen[\s\S]*Close setup stages[\s\S]*Change setup stage[\s\S]*setupOverviewGroupChooserOpen \? \([\s\S]*community-domain-dashboard\.setup-overview-group\.\$\{group\.key\}[\s\S]*setSetupOverviewGroupChooserOpen\(false\)[\s\S]*setSetupOverviewTaskChooserOpen\(false\)[\s\S]*community-domain-dashboard\.setup-overview-task-toggle[\s\S]*setupOverviewTaskChooserOpen[\s\S]*Close setup views[\s\S]*Change setup view[\s\S]*setupOverviewTaskChooserOpen \? \([\s\S]*activeSetupOverviewGroupTasks\.map[\s\S]*community-domain-dashboard\.setup-overview\.\$\{task\.key\}[\s\S]*setSetupOverviewTaskChooserOpen\(false\)[\s\S]*activeSetupOverviewTask === "notices"[\s\S]*Official Board[\s\S]*activeSetupOverviewTask === "engine"[\s\S]*Community Domain facts[\s\S]*activeSetupOverviewTask === "next_setup"[\s\S]*Open the \{mainActionLaneLabel\} area[\s\S]*activeSetupOverviewTask === "counts"[\s\S]*showAdvancedTools && operatingAreaPickerOpen[\s\S]*Operating areas[\s\S]*community-domain-dashboard\.operating-area-picker-toggle[\s\S]*showOtherDomainToolsEntry \? \([\s\S]*Other domain tools/,
-  "Community Domain dashboard must keep setup overview stages and packets behind closed controls, while keeping notices, engine details, counts, and operating areas closed until the owner opens the matching secondary surface or edit mode.",
+  "Community Domain dashboard must keep setup overview stages and views behind closed controls, while keeping notices, engine details, counts, and operating areas closed until the owner opens the matching secondary surface or edit mode.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
   /type SetupNoticeTaskKey = "recent" \| "post"[\s\S]*SETUP_NOTICE_TASK_OPTIONS[\s\S]*key: "recent"[\s\S]*key: "post"[\s\S]*activeSetupNoticeTask[\s\S]*setupNoticeTaskChooserOpen[\s\S]*setActiveSetupNoticeTask\("recent"\)[\s\S]*setSetupNoticeTaskChooserOpen\(false\)[\s\S]*Official Board[\s\S]*Current notice view[\s\S]*community-domain-dashboard\.setup-notice-toggle[\s\S]*setupNoticeTaskChooserOpen[\s\S]*Close notice views[\s\S]*Change notice view[\s\S]*setupNoticeTaskChooserOpen \? \([\s\S]*community-domain-dashboard\.setup-notice\.\$\{task\.key\}[\s\S]*setSetupNoticeTaskChooserOpen\(false\)[\s\S]*activeSetupNoticeTask === "post"[\s\S]*community-domain-dashboard\.notice\.post[\s\S]*activeSetupNoticeTask === "recent"[\s\S]*domainNoticesLoading[\s\S]*domainNotices\.length/,
-  "Community Domain Official Board must keep recent notices and the post action behind an inner packet selector instead of exposing the post control beside the notice list.",
+  "Community Domain Official Board must keep recent notices and the post action behind an inner view selector instead of exposing the post control beside the notice list.",
   { frontend: true }
 );
 
 assertNotContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
   /Safe next step|Review this lane first\. Changes, payment, and verification stay\s+permission-checked/,
-  "Community Domain dashboard must not append a generic Safe next step card under every lane; each focused lane packet should carry its own next-action and boundary copy.",
+  "Community Domain dashboard must not append a generic Safe next step card under every lane; each focused lane view should carry its own next-action and boundary copy.",
   { frontend: true }
 );
 
@@ -2380,11 +2380,11 @@ assertContains(
       String.raw`community-domain-dashboard\.setup-workbench\.step`,
       String.raw`setup workbench view buttons stay visible after selecting a setup view`,
       String.raw`community-domain-dashboard\.setup-access\.authority`,
-      String.raw`setup access packets are visible before Change access packet is opened`,
+      String.raw`setup access views are visible before Change access view is opened`,
       String.raw`community-domain-dashboard\.setup-access-toggle`,
-      String.raw`setup access does not expose a Change access packet control`,
+      String.raw`setup access does not expose a Change access view control`,
       String.raw`community-domain-dashboard\.setup-access\.summary`,
-      String.raw`setup access packets stay visible after selecting a packet`,
+      String.raw`setup access views stay visible after selecting a view`,
       String.raw`routePath\}\?lane=settings`,
       String.raw`Operating summary`,
       String.raw`community-domain-dashboard\.operating-summary-group-toggle`,
@@ -2404,11 +2404,11 @@ assertContains(
       String.raw`community-domain-dashboard\.operating-area-picker-toggle`,
       String.raw`community-domain-dashboard\.lane\.identity`,
       String.raw`community-domain-identity\.detail\.profile`,
-      String.raw`Identity packet buttons are visible before Change packet is opened`,
+      String.raw`Identity view buttons are visible before Change view is opened`,
       String.raw`community-domain-identity\.detail-toggle`,
-      String.raw`Identity does not expose a Change packet control`,
+      String.raw`Identity does not expose a Change view control`,
       String.raw`community-domain-identity\.detail\.bridge`,
-      String.raw`Identity packet buttons stay visible after selecting a packet`,
+      String.raw`Identity view buttons stay visible after selecting a view`,
       String.raw`Institutional checks needing attention`,
       String.raw`community-domain-dashboard\.operating-area-picker-toggle`,
       String.raw`community-domain-dashboard\.lane\.billing`,
@@ -2448,13 +2448,13 @@ assertContains(
       String.raw`Services readiness view buttons stay visible after selecting a view`,
       String.raw`Service settings view`,
       String.raw`community-domain-dashboard\.service-group\.local`,
-      String.raw`Services packet buttons are visible before Change packet is opened`,
+      String.raw`Services view buttons are visible before Change view is opened`,
       String.raw`community-domain-dashboard\.service-packet-toggle`,
       String.raw`community-domain-dashboard\.service-detail\.boundaries`,
       String.raw`community-domain-service-boundary\.focus\.privacy`,
       String.raw`Services boundary view buttons are visible before Change view is opened`,
       String.raw`community-domain-service-boundary\.focus-toggle`,
-      String.raw`Services boundary packet does not expose a Change view control`,
+      String.raw`Services boundary view does not expose a Change view control`,
       String.raw`community-domain-service-boundary\.focus\.privacy`,
       String.raw`community-domain-service-boundary\.focus\.exchange`,
       String.raw`Services boundary view buttons stay visible after selecting a view`,
@@ -2463,39 +2463,39 @@ assertContains(
       String.raw`community-domain\.trust-evidence\.focus\.release`,
       String.raw`Trust/Evidence view buttons are visible before Change view is opened`,
       String.raw`community-domain\.trust-evidence\.focus-toggle`,
-      String.raw`Trust/Evidence packet does not expose a Change view control`,
+      String.raw`Trust/Evidence view does not expose a Change view control`,
       String.raw`community-domain\.trust-evidence\.focus\.release`,
       String.raw`community-domain\.trust-evidence\.focus\.records`,
       String.raw`Trust/Evidence view buttons stay visible after selecting a view`,
       String.raw`community-domain-dashboard\.operating-area-picker-toggle`,
       String.raw`community-domain-dashboard\.lane\.structure`,
       String.raw`community-domain-dashboard\.structure-group\.rollout`,
-      String.raw`Structure packet buttons are visible before Change packet is opened`,
+      String.raw`Structure view buttons are visible before Change view is opened`,
       String.raw`community-domain-dashboard\.structure-packet-toggle`,
-      String.raw`Structure multi-packet groups do not expose a Change packet control`,
+      String.raw`Structure multi-view groups do not expose a Change view control`,
       String.raw`community-domain-dashboard\.structure-detail\.planning`,
-      String.raw`Structure packet buttons stay visible after a packet is selected`,
+      String.raw`Structure view buttons stay visible after a view is selected`,
       String.raw`community-domain\.structure-planning\.focus\.groups`,
       String.raw`Structure planning view buttons are visible before Change view is opened`,
       String.raw`community-domain\.structure-planning\.focus-toggle`,
-      String.raw`Structure planning packet does not expose a Change view control`,
+      String.raw`Structure planning view does not expose a Change view control`,
       String.raw`community-domain\.structure-planning\.focus\.groups`,
       String.raw`community-domain\.structure-planning\.focus\.rollout`,
       String.raw`Structure planning view buttons stay visible after selecting a view`,
       String.raw`community-domain-dashboard\.operating-area-picker-toggle`,
       String.raw`community-domain-dashboard\.lane\.members`,
-      String.raw`Members packet buttons are visible before Change packet is opened`,
+      String.raw`Members view buttons are visible before Change view is opened`,
       String.raw`community-domain-dashboard\.member-packet-toggle`,
-      String.raw`Members multi-packet groups do not expose a Change packet control`,
+      String.raw`Members multi-view groups do not expose a Change view control`,
       String.raw`community-domain-dashboard\.member-detail\.placement`,
-      String.raw`Members packet buttons stay visible after a packet is selected`,
+      String.raw`Members view buttons stay visible after a view is selected`,
       String.raw`community-domain-dashboard\.member-group\.roster`,
       String.raw`community-domain-dashboard\.member-roster\.members`,
-      String.raw`member roster packets are visible before Change roster packet is opened`,
+      String.raw`member roster views are visible before Change roster view is opened`,
       String.raw`community-domain-dashboard\.member-roster-toggle`,
-      String.raw`member roster does not expose a Change roster packet control`,
+      String.raw`member roster does not expose a Change roster view control`,
       String.raw`community-domain-dashboard\.member-roster\.summary`,
-      String.raw`member roster packets stay visible after selecting a packet`,
+      String.raw`member roster views stay visible after selecting a view`,
       String.raw`community-domain-dashboard\.operating-area-picker-toggle`,
       String.raw`community-domain-dashboard\.lane\.governance`,
       String.raw`community-domain-dashboard\.governance-group\.records`,
@@ -2525,37 +2525,37 @@ assertContains(
       String.raw`community-domain-dashboard\.beneficiary-outcome-record-stage\.proof`,
       String.raw`Beneficiary outcome record step buttons stay visible after selecting a step`,
       String.raw`community-domain-dashboard\.beneficiary-outcome-task\.recent`,
-      String.raw`Recent outcome packet buttons are visible before Change packet is opened`,
+      String.raw`Recent outcome view buttons are visible before Change view is opened`,
       String.raw`community-domain-dashboard\.beneficiary-outcome-recent-packet-toggle`,
-      String.raw`Summary packet shows audit details before Open summary details`,
+      String.raw`Summary view shows audit details before Open summary details`,
       String.raw`community-domain-dashboard\.beneficiary-outcome-summary-details-toggle`,
-      String.raw`Summary packet details stay visible after closing summary details`,
+      String.raw`Summary view details stay visible after closing summary details`,
       String.raw`community-domain-dashboard\.beneficiary-outcome-recent-packet\.confirmation`,
-      String.raw`Confirm packet shows confirmation link creation before Open confirmation action`,
+      String.raw`Confirm view shows confirmation link creation before Open confirmation action`,
       String.raw`community-domain-dashboard\.beneficiary-outcome-confirmation-action-form-toggle`,
       String.raw`community-domain-dashboard\.beneficiary-outcome-recent-packet\.delivery`,
-      String.raw`Delivery packet shows delivery notes before Open delivery notes`,
+      String.raw`Delivery view shows delivery notes before Open delivery notes`,
       String.raw`community-domain-dashboard\.beneficiary-outcome-delivery-notes-toggle`,
       String.raw`community-domain-dashboard\.beneficiary-outcome-recent-packet\.contact`,
-      String.raw`Contact packet shows the contact form before Open contact action`,
-      String.raw`Contact packet shows consent withdrawal before Change contact action is opened`,
+      String.raw`Contact view shows the contact form before Open contact action`,
+      String.raw`Contact view shows consent withdrawal before Change contact action is opened`,
       String.raw`community-domain-dashboard\.beneficiary-outcome-contact-action-toggle`,
-      String.raw`Contact packet is missing an Open contact action control`,
+      String.raw`Contact view is missing an Open contact action control`,
       String.raw`community-domain-dashboard\.beneficiary-outcome-contact-action-form-toggle`,
       String.raw`community-domain-dashboard\.beneficiary-outcome-contact-action\.withdraw`,
-      String.raw`Contact packet shows consent withdrawal before Open contact action`,
-      String.raw`Contact packet still shows record contact/consent after selecting withdrawal`,
+      String.raw`Contact view shows consent withdrawal before Open contact action`,
+      String.raw`Contact view still shows record contact/consent after selecting withdrawal`,
       String.raw`community-domain-dashboard\.beneficiary-outcome-recent-packet\.receipt`,
-      String.raw`Receipt packet shows the correction form before Open receipt form`,
+      String.raw`Receipt view shows the correction form before Open receipt form`,
       String.raw`community-domain-dashboard\.beneficiary-outcome-receipt-form-toggle`,
-      String.raw`Receipt packet is missing an Open receipt form control`,
-      String.raw`Recent outcome packet buttons stay visible after selecting a packet`,
+      String.raw`Receipt view is missing an Open receipt form control`,
+      String.raw`Recent outcome view buttons stay visible after selecting a view`,
       String.raw`Safe next step`,
       String.raw`horizontalOverflow`,
       String.raw`lowContrast`,
     ].join("[\\s\\S]*")
   ),
-  "Community Domain mobile visual audit must exercise purchase first-job compaction, selector one-path state, active-domain summary grouping, focused identity/service/structure/member packets, staged Governance record capture, Recent outcome packet capture, dead-block regression, overflow, and contrast checks.",
+  "Community Domain mobile visual audit must exercise purchase first-job compaction, selector one-path state, active-domain summary grouping, focused identity/service/structure/member views, staged Governance record capture, Recent outcome view capture, dead-block regression, overflow, and contrast checks.",
   { frontend: true }
 );
 
@@ -2645,15 +2645,15 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /type ServiceDetailGroupKey = "readiness" \| "local" \| "trust"[\s\S]*SERVICE_DETAIL_OPTIONS[\s\S]*key: "readiness"[\s\S]*key: "local"[\s\S]*key: "boundaries"[\s\S]*key: "trust"[\s\S]*key: "evidence"[\s\S]*SERVICE_DETAIL_GROUP_OPTIONS[\s\S]*key: "readiness"[\s\S]*detailKeys: \["readiness"\][\s\S]*key: "local"[\s\S]*detailKeys: \["local", "boundaries"\][\s\S]*key: "trust"[\s\S]*detailKeys: \["trust", "evidence"\][\s\S]*serviceStageChooserOpen[\s\S]*servicePacketChooserOpen[\s\S]*activeServiceDetail[\s\S]*activeServiceDetailGroup[\s\S]*SERVICE_DETAIL_GROUP_OPTIONS\.find[\s\S]*activeServiceGroupDetails[\s\S]*Choose the service stage first[\s\S]*community-domain-dashboard\.service-stage-toggle[\s\S]*serviceStageChooserOpen \? "Close stages" : "Change stage"[\s\S]*serviceStageChooserOpen \? \([\s\S]*community-domain-dashboard\.service-group\.\$\{group\.key\}[\s\S]*setServiceStageChooserOpen\(false\)[\s\S]*setServicePacketChooserOpen\(false\)[\s\S]*community-domain-dashboard\.service-packet-toggle[\s\S]*servicePacketChooserOpen \? "Close packets" : "Change packet"[\s\S]*servicePacketChooserOpen \? \([\s\S]*community-domain-dashboard\.service-detail\.\$\{option\.key\}[\s\S]*setServicePacketChooserOpen\(false\)[\s\S]*activeServiceDetail === "readiness"[\s\S]*CommunityDomainServiceReadinessPanels[\s\S]*activeServiceDetail === "local"[\s\S]*variant="services"[\s\S]*activeServiceDetail === "boundaries"[\s\S]*CommunityDomainServiceBoundaryPanels[\s\S]*activeServiceDetail === "trust"[\s\S]*variant="trustEvidence"[\s\S]*activeServiceDetail === "evidence"[\s\S]*CommunityDomainTrustEvidenceReadinessPanels/,
-  "Community Domain dashboard Services lane must keep Readiness, Local rules, and Trust stages behind Change stage, then show one focused service packet at a time instead of dumping readiness, local service maps, boundary panels, trust maps, and evidence readiness together.",
+  /type ServiceDetailGroupKey = "readiness" \| "local" \| "trust"[\s\S]*SERVICE_DETAIL_OPTIONS[\s\S]*key: "readiness"[\s\S]*key: "local"[\s\S]*key: "boundaries"[\s\S]*key: "trust"[\s\S]*key: "evidence"[\s\S]*SERVICE_DETAIL_GROUP_OPTIONS[\s\S]*key: "readiness"[\s\S]*detailKeys: \["readiness"\][\s\S]*key: "local"[\s\S]*detailKeys: \["local", "boundaries"\][\s\S]*key: "trust"[\s\S]*detailKeys: \["trust", "evidence"\][\s\S]*serviceStageChooserOpen[\s\S]*servicePacketChooserOpen[\s\S]*activeServiceDetail[\s\S]*activeServiceDetailGroup[\s\S]*SERVICE_DETAIL_GROUP_OPTIONS\.find[\s\S]*activeServiceGroupDetails[\s\S]*Choose the service stage first[\s\S]*community-domain-dashboard\.service-stage-toggle[\s\S]*serviceStageChooserOpen \? "Close stages" : "Change stage"[\s\S]*serviceStageChooserOpen \? \([\s\S]*community-domain-dashboard\.service-group\.\$\{group\.key\}[\s\S]*setServiceStageChooserOpen\(false\)[\s\S]*setServicePacketChooserOpen\(false\)[\s\S]*community-domain-dashboard\.service-packet-toggle[\s\S]*servicePacketChooserOpen \? "Close views" : "Change view"[\s\S]*servicePacketChooserOpen \? \([\s\S]*community-domain-dashboard\.service-detail\.\$\{option\.key\}[\s\S]*setServicePacketChooserOpen\(false\)[\s\S]*activeServiceDetail === "readiness"[\s\S]*CommunityDomainServiceReadinessPanels[\s\S]*activeServiceDetail === "local"[\s\S]*variant="services"[\s\S]*activeServiceDetail === "boundaries"[\s\S]*CommunityDomainServiceBoundaryPanels[\s\S]*activeServiceDetail === "trust"[\s\S]*variant="trustEvidence"[\s\S]*activeServiceDetail === "evidence"[\s\S]*CommunityDomainTrustEvidenceReadinessPanels/,
+  "Community Domain dashboard Services lane must keep Readiness, Local rules, and Trust stages behind Change stage, then show one focused service view at a time instead of dumping readiness, local service maps, boundary panels, trust maps, and evidence readiness together.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
   /serviceRuleDetailsOpen[\s\S]*packageCapacityFacts[\s\S]*included_members[\s\S]*included_nodes[\s\S]*included_admins[\s\S]*included_shops[\s\S]*included_storage_gb[\s\S]*packageTariffBoundaryText[\s\S]*Current pilot package allowance only[\s\S]*packageBillingStatusFacts[\s\S]*pricing_model_status[\s\S]*paid_upgrade_status[\s\S]*member_band_status[\s\S]*feature_tariff_status[\s\S]*domain_tariff_status[\s\S]*packageBillingAdminAction[\s\S]*manual finance and capacity review[\s\S]*activeServiceDetail === "boundaries"[\s\S]*Marketplace rule[\s\S]*Shared services, governed here[\s\S]*community-domain-dashboard\.service-rule-details-toggle[\s\S]*serviceRuleDetailsOpen[\s\S]*Close rule details[\s\S]*View rule details[\s\S]*community-domain-dashboard\.service-rule-details-panel[\s\S]*manual review[\s\S]*Domain service rules control who\s+can use Spotlight, Demand Box, shops, Shop Diary, Vault,\s+ROSCA, invites, and contribution tools here/,
-  "Community Domain Services lane must keep package allowance, feature permission, and future tariff automation truth inside the Boundaries packet behind the closed rule-details drawer instead of repeating it across every service view.",
+  "Community Domain Services lane must keep package allowance, feature permission, and future tariff automation truth inside the Boundaries view behind the closed rule-details drawer instead of repeating it across every service view.",
   { frontend: true }
 );
 
@@ -2681,7 +2681,7 @@ assertContains(
 assertContains(
   "src/pages/communityDomainDashboard/ServiceReadinessPanels.tsx",
   /rows\.push\(\{[\s\S]*label: "Billing"[\s\S]*rows\.push\(\{[\s\S]*label: "Settings"[\s\S]*activeServiceFocus[\s\S]*serviceFocusChooserOpen[\s\S]*community-domain-service-readiness\.focus-toggle[\s\S]*serviceFocusChooserOpen \? "Close views" : "Change view"[\s\S]*serviceFocusChooserOpen \? \([\s\S]*community-domain-service-readiness\.focus\.\$\{option\.key\}[\s\S]*setServiceFocusChooserOpen\(false\)[\s\S]*activeServiceFocus === "services"[\s\S]*Service readiness/,
-  "Community Domain dashboard Services readiness packet must keep sub-views behind Change view and expose module-scope readiness as one focused sub-view instead of stacking every readiness packet.",
+  "Community Domain dashboard Services readiness view must keep sub-views behind Change view and expose module-scope readiness as one focused sub-view instead of stacking every readiness view.",
   { frontend: true }
 );
 
@@ -2709,7 +2709,7 @@ assertContains(
 assertContains(
   "src/pages/communityDomainDashboard/ServiceBoundaryPanels.tsx",
   /BOUNDARY_FOCUS_OPTIONS[\s\S]*key: "exchange"[\s\S]*key: "privacy"[\s\S]*key: "setup"[\s\S]*key: "compliance"[\s\S]*key: "appeals"[\s\S]*activeBoundaryFocus[\s\S]*boundaryFocusChooserOpen[\s\S]*community-domain-service-boundary\.focus-toggle[\s\S]*boundaryFocusChooserOpen \? "Close views" : "Change view"[\s\S]*boundaryFocusChooserOpen \? \([\s\S]*community-domain-service-boundary\.focus\.\$\{option\.key\}[\s\S]*setBoundaryFocusChooserOpen\(false\)[\s\S]*activeBoundaryFocus === "exchange"[\s\S]*Network exchange readiness[\s\S]*activeBoundaryFocus === "privacy"[\s\S]*Record privacy readiness[\s\S]*activeBoundaryFocus === "setup"[\s\S]*Setup map[\s\S]*activeBoundaryFocus === "compliance"[\s\S]*Compliance map[\s\S]*activeBoundaryFocus === "appeals"[\s\S]*Appeal readiness/,
-  "Community Domain Services boundary packet must keep boundary sub-views behind Change view and expose one focused boundary sub-view at a time instead of stacking exchange, privacy, setup, compliance, and appeal readiness together.",
+  "Community Domain Services boundary view must keep boundary sub-views behind Change view and expose one focused boundary sub-view at a time instead of stacking exchange, privacy, setup, compliance, and appeal readiness together.",
   { frontend: true }
 );
 
@@ -2772,7 +2772,7 @@ assertNotContains(
 assertContains(
   "src/pages/communityDomainDashboard/ServiceReadinessPanels.tsx",
   /visibleServiceSettingsItems[\s\S]*enabledServiceSettingsItems[\s\S]*optionalServiceSettingsItems[\s\S]*activeServiceFocus === "settings"[\s\S]*Service settings view[\s\S]*serviceSettingsProjection\?\.enabled_total[\s\S]*serviceSettingsProjection\?\.optional_total/,
-  "Community Domain dashboard Services lane must show service settings projection inside the Settings sub-view without stacking it with every other readiness packet.",
+  "Community Domain dashboard Services lane must show service settings projection inside the Settings sub-view without stacking it with every other readiness view.",
   { frontend: true }
 );
 
@@ -2807,14 +2807,14 @@ assertContains(
 assertContains(
   "src/pages/communityDomainDashboard/ServiceReadinessPanels.tsx",
   /activeServiceFocus === "economy"[\s\S]*Economic participation[\s\S]*primary_next_action[\s\S]*economicParticipationTemplate\.marketplace_role[\s\S]*Units[\s\S]*economicParticipationCounts\.nodes[\s\S]*economicParticipationCounts\.finance_records/,
-  "Community Domain dashboard Services lane must show economic participation inside the Economy sub-view without stacking it with every other readiness packet.",
+  "Community Domain dashboard Services lane must show economic participation inside the Economy sub-view without stacking it with every other readiness view.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/communityDomainDashboard/ServiceReadinessPanels.tsx",
   /activeServiceFocus === "presence"[\s\S]*Network presence[\s\S]*primary_next_action[\s\S]*networkPresenceStatus\.public_url_status[\s\S]*networkPresenceStatus\.social_community_bridge_status/,
-  "Community Domain dashboard Services lane must show network presence inside the Presence sub-view without stacking it with every other readiness packet.",
+  "Community Domain dashboard Services lane must show network presence inside the Presence sub-view without stacking it with every other readiness view.",
   { frontend: true }
 );
 
@@ -2883,15 +2883,15 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /type MemberDetailKey = "readiness" \| "placement" \| "roster"[\s\S]*type MemberDetailGroupKey = "readiness" \| "roster"[\s\S]*MEMBER_DETAIL_OPTIONS[\s\S]*key: "readiness"[\s\S]*key: "placement"[\s\S]*key: "roster"[\s\S]*MEMBER_DETAIL_GROUP_OPTIONS[\s\S]*key: "readiness"[\s\S]*detailKeys: \["readiness", "placement"\][\s\S]*key: "roster"[\s\S]*detailKeys: \["roster"\][\s\S]*memberStageChooserOpen[\s\S]*memberPacketChooserOpen[\s\S]*activeMemberDetail[\s\S]*activeMemberDetailGroup[\s\S]*activeMemberGroupDetails[\s\S]*Choose the member stage first[\s\S]*community-domain-dashboard\.member-stage-toggle[\s\S]*memberStageChooserOpen \? "Close stages" : "Change stage"[\s\S]*memberStageChooserOpen \? \([\s\S]*community-domain-dashboard\.member-group\.\$\{group\.key\}[\s\S]*setMemberStageChooserOpen\(false\)[\s\S]*setMemberPacketChooserOpen\(false\)[\s\S]*community-domain-dashboard\.member-packet-toggle[\s\S]*memberPacketChooserOpen \? "Close packets" : "Change packet"[\s\S]*memberPacketChooserOpen \? \([\s\S]*activeMemberGroupDetails\.map[\s\S]*community-domain-dashboard\.member-detail\.\$\{option\.key\}[\s\S]*setMemberStageChooserOpen\(false\)[\s\S]*setMemberPacketChooserOpen\(false\)[\s\S]*activeMemberDetail === "readiness"[\s\S]*CommunityDomainMemberReadinessPanels[\s\S]*activeMemberDetail === "placement"[\s\S]*variant="memberParticipation"[\s\S]*activeMemberDetail === "roster"/,
-  "Community Domain dashboard Members lane must keep Readiness and Roster stages behind Change stage, hide second-level packets behind Change packet, and expose one focused member packet at a time instead of dumping member readiness, placement, and roster control together.",
+  /type MemberDetailKey = "readiness" \| "placement" \| "roster"[\s\S]*type MemberDetailGroupKey = "readiness" \| "roster"[\s\S]*MEMBER_DETAIL_OPTIONS[\s\S]*key: "readiness"[\s\S]*key: "placement"[\s\S]*key: "roster"[\s\S]*MEMBER_DETAIL_GROUP_OPTIONS[\s\S]*key: "readiness"[\s\S]*detailKeys: \["readiness", "placement"\][\s\S]*key: "roster"[\s\S]*detailKeys: \["roster"\][\s\S]*memberStageChooserOpen[\s\S]*memberPacketChooserOpen[\s\S]*activeMemberDetail[\s\S]*activeMemberDetailGroup[\s\S]*activeMemberGroupDetails[\s\S]*Choose the member stage first[\s\S]*community-domain-dashboard\.member-stage-toggle[\s\S]*memberStageChooserOpen \? "Close stages" : "Change stage"[\s\S]*memberStageChooserOpen \? \([\s\S]*community-domain-dashboard\.member-group\.\$\{group\.key\}[\s\S]*setMemberStageChooserOpen\(false\)[\s\S]*setMemberPacketChooserOpen\(false\)[\s\S]*community-domain-dashboard\.member-packet-toggle[\s\S]*memberPacketChooserOpen \? "Close views" : "Change view"[\s\S]*memberPacketChooserOpen \? \([\s\S]*activeMemberGroupDetails\.map[\s\S]*community-domain-dashboard\.member-detail\.\$\{option\.key\}[\s\S]*setMemberStageChooserOpen\(false\)[\s\S]*setMemberPacketChooserOpen\(false\)[\s\S]*activeMemberDetail === "readiness"[\s\S]*CommunityDomainMemberReadinessPanels[\s\S]*activeMemberDetail === "placement"[\s\S]*variant="memberParticipation"[\s\S]*activeMemberDetail === "roster"/,
+  "Community Domain dashboard Members lane must keep Readiness and Roster stages behind Change stage, hide second-level views behind Change view, and expose one focused member view at a time instead of dumping member readiness, placement, and roster control together.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /type MemberRosterTaskKey = "summary" \| "members"[\s\S]*MEMBER_ROSTER_TASK_OPTIONS[\s\S]*key: "summary"[\s\S]*key: "members"[\s\S]*memberRosterTaskChooserOpen[\s\S]*activeMemberRosterTask[\s\S]*setActiveMemberRosterTask\("summary"\)[\s\S]*memberRosterSummaryRows[\s\S]*activeMemberRosterTaskOption[\s\S]*Current roster packet[\s\S]*community-domain-dashboard\.member-roster-toggle[\s\S]*Close roster packets[\s\S]*Change roster packet[\s\S]*memberRosterTaskChooserOpen \? \([\s\S]*community-domain-dashboard\.member-roster\.\$\{task\.key\}[\s\S]*setMemberRosterTaskChooserOpen\(false\)[\s\S]*activeMemberRosterTask === "summary"[\s\S]*Active members can pass public active-member proof[\s\S]*activeMemberRosterTask === "members"[\s\S]*domainMemberRows\.length[\s\S]*community-domain-dashboard\.member-status\.\$\{rowKey\}/,
-  "Community Domain dashboard roster control must keep Summary and Members behind a closed Change roster packet selector.",
+  /type MemberRosterTaskKey = "summary" \| "members"[\s\S]*MEMBER_ROSTER_TASK_OPTIONS[\s\S]*key: "summary"[\s\S]*key: "members"[\s\S]*memberRosterTaskChooserOpen[\s\S]*activeMemberRosterTask[\s\S]*setActiveMemberRosterTask\("summary"\)[\s\S]*memberRosterSummaryRows[\s\S]*activeMemberRosterTaskOption[\s\S]*Current roster view[\s\S]*community-domain-dashboard\.member-roster-toggle[\s\S]*Close roster views[\s\S]*Change roster view[\s\S]*memberRosterTaskChooserOpen \? \([\s\S]*community-domain-dashboard\.member-roster\.\$\{task\.key\}[\s\S]*setMemberRosterTaskChooserOpen\(false\)[\s\S]*activeMemberRosterTask === "summary"[\s\S]*Active members can pass public active-member proof[\s\S]*activeMemberRosterTask === "members"[\s\S]*domainMemberRows\.length[\s\S]*community-domain-dashboard\.member-status\.\$\{rowKey\}/,
+  "Community Domain dashboard roster control must keep Summary and Members behind a closed Change roster view selector.",
   { frontend: true }
 );
 
@@ -3052,7 +3052,7 @@ assertContains(
 assertContains(
   "src/pages/communityDomainDashboard/TrustEvidenceReadinessPanels.tsx",
   /TRUST_EVIDENCE_FOCUS_OPTIONS[\s\S]*key: "records"[\s\S]*key: "release"[\s\S]*key: "relay"[\s\S]*key: "notification"[\s\S]*key: "mobility"[\s\S]*activeTrustEvidenceFocus[\s\S]*trustEvidenceFocusChooserOpen[\s\S]*community-domain\.trust-evidence\.focus-toggle[\s\S]*trustEvidenceFocusChooserOpen \? "Close views" : "Change view"[\s\S]*trustEvidenceFocusChooserOpen \? \([\s\S]*community-domain\.trust-evidence\.focus\.\$\{option\.key\}[\s\S]*setTrustEvidenceFocusChooserOpen\(false\)[\s\S]*activeTrustEvidenceFocus === "records"[\s\S]*Evidence record readiness[\s\S]*activeTrustEvidenceFocus === "release"[\s\S]*Evidence release readiness[\s\S]*activeTrustEvidenceFocus === "relay"[\s\S]*Trust relay readiness[\s\S]*activeTrustEvidenceFocus === "notification"[\s\S]*Notification scope readiness[\s\S]*activeTrustEvidenceFocus === "mobility"[\s\S]*Trust mobility readiness/,
-  "Community Domain Trust/Evidence packet must keep sub-views behind Change view and expose one focused sub-view at a time instead of stacking records, release, relay, notification, and mobility readiness together.",
+  "Community Domain Trust/Evidence view must keep sub-views behind Change view and expose one focused sub-view at a time instead of stacking records, release, relay, notification, and mobility readiness together.",
   { frontend: true }
 );
 
@@ -3121,8 +3121,8 @@ assertContains(
 
 assertContains(
   "src/pages/communityDomainDashboard/IdentityReadinessPanels.tsx",
-  /IDENTITY_DETAIL_OPTIONS[\s\S]*key: "identity"[\s\S]*key: "profile"[\s\S]*key: "bridge"[\s\S]*key: "affiliation"[\s\S]*activeIdentityDetail[\s\S]*identityDetailChooserOpen[\s\S]*community-domain-identity\.detail-toggle[\s\S]*identityDetailChooserOpen \? "Close packets" : "Change packet"[\s\S]*identityDetailChooserOpen \? \([\s\S]*community-domain-identity\.detail\.\$\{option\.key\}[\s\S]*setIdentityDetailChooserOpen\(false\)[\s\S]*activeIdentityDetail === "identity"[\s\S]*Domain identity[\s\S]*activeIdentityDetail === "profile"[\s\S]*Institutional profile[\s\S]*activeIdentityDetail === "bridge"[\s\S]*Community bridge readiness[\s\S]*activeIdentityDetail === "affiliation"[\s\S]*Affiliation readiness/,
-  "Community Domain Identity readiness panel must keep identity packets behind Change packet and expose one focused identity packet at a time instead of dumping identity, profile, bridge, and affiliation together.",
+  /IDENTITY_DETAIL_OPTIONS[\s\S]*key: "identity"[\s\S]*key: "profile"[\s\S]*key: "bridge"[\s\S]*key: "affiliation"[\s\S]*activeIdentityDetail[\s\S]*identityDetailChooserOpen[\s\S]*community-domain-identity\.detail-toggle[\s\S]*identityDetailChooserOpen \? "Close views" : "Change view"[\s\S]*identityDetailChooserOpen \? \([\s\S]*community-domain-identity\.detail\.\$\{option\.key\}[\s\S]*setIdentityDetailChooserOpen\(false\)[\s\S]*activeIdentityDetail === "identity"[\s\S]*Domain identity[\s\S]*activeIdentityDetail === "profile"[\s\S]*Institutional profile[\s\S]*activeIdentityDetail === "bridge"[\s\S]*Community bridge readiness[\s\S]*activeIdentityDetail === "affiliation"[\s\S]*Affiliation readiness/,
+  "Community Domain Identity readiness panel must keep identity views behind Change view and expose one focused identity view at a time instead of dumping identity, profile, bridge, and affiliation together.",
   { frontend: true }
 );
 
@@ -3184,8 +3184,8 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /type StructureDetailGroupKey = "map" \| "readiness" \| "rollout"[\s\S]*STRUCTURE_DETAIL_OPTIONS[\s\S]*key: "preview"[\s\S]*key: "foundation"[\s\S]*key: "boundary"[\s\S]*key: "activity"[\s\S]*key: "planning"[\s\S]*STRUCTURE_DETAIL_GROUP_OPTIONS[\s\S]*key: "map"[\s\S]*detailKeys: \["preview"\][\s\S]*key: "readiness"[\s\S]*detailKeys: \["foundation", "boundary"\][\s\S]*key: "rollout"[\s\S]*detailKeys: \["activity", "planning"\][\s\S]*structureStageChooserOpen[\s\S]*structurePacketChooserOpen[\s\S]*activeStructureDetail[\s\S]*activeStructureDetailGroup[\s\S]*STRUCTURE_DETAIL_GROUP_OPTIONS\.find[\s\S]*activeStructureGroupDetails[\s\S]*Choose the structure stage first[\s\S]*community-domain-dashboard\.structure-stage-toggle[\s\S]*structureStageChooserOpen \? "Close stages" : "Change stage"[\s\S]*structureStageChooserOpen \? \([\s\S]*community-domain-dashboard\.structure-group\.\$\{group\.key\}[\s\S]*setStructureStageChooserOpen\(false\)[\s\S]*setStructurePacketChooserOpen\(false\)[\s\S]*community-domain-dashboard\.structure-packet-toggle[\s\S]*structurePacketChooserOpen \? "Close packets" : "Change packet"[\s\S]*structurePacketChooserOpen \? \([\s\S]*community-domain-dashboard\.structure-detail\.\$\{option\.key\}[\s\S]*setStructurePacketChooserOpen\(false\)[\s\S]*activeStructureDetail === "preview"[\s\S]*CommunityDomainStructurePreviewPanel[\s\S]*activeStructureDetail === "foundation"[\s\S]*variant="structureFoundation"[\s\S]*activeStructureDetail === "boundary"[\s\S]*variant="structureBoundary"[\s\S]*activeStructureDetail === "activity"[\s\S]*variant="structureActivity"[\s\S]*activeStructureDetail === "planning"[\s\S]*CommunityDomainStructurePlanningPanels/,
-  "Community Domain dashboard Structure lane must keep Map, Readiness, and Rollout stages behind Change stage, hide second-level packets behind Change packet, then show one focused institutional detail view at a time instead of dumping all Structure panels on first open.",
+  /type StructureDetailGroupKey = "map" \| "readiness" \| "rollout"[\s\S]*STRUCTURE_DETAIL_OPTIONS[\s\S]*key: "preview"[\s\S]*key: "foundation"[\s\S]*key: "boundary"[\s\S]*key: "activity"[\s\S]*key: "planning"[\s\S]*STRUCTURE_DETAIL_GROUP_OPTIONS[\s\S]*key: "map"[\s\S]*detailKeys: \["preview"\][\s\S]*key: "readiness"[\s\S]*detailKeys: \["foundation", "boundary"\][\s\S]*key: "rollout"[\s\S]*detailKeys: \["activity", "planning"\][\s\S]*structureStageChooserOpen[\s\S]*structurePacketChooserOpen[\s\S]*activeStructureDetail[\s\S]*activeStructureDetailGroup[\s\S]*STRUCTURE_DETAIL_GROUP_OPTIONS\.find[\s\S]*activeStructureGroupDetails[\s\S]*Choose the structure stage first[\s\S]*community-domain-dashboard\.structure-stage-toggle[\s\S]*structureStageChooserOpen \? "Close stages" : "Change stage"[\s\S]*structureStageChooserOpen \? \([\s\S]*community-domain-dashboard\.structure-group\.\$\{group\.key\}[\s\S]*setStructureStageChooserOpen\(false\)[\s\S]*setStructurePacketChooserOpen\(false\)[\s\S]*community-domain-dashboard\.structure-packet-toggle[\s\S]*structurePacketChooserOpen \? "Close views" : "Change view"[\s\S]*structurePacketChooserOpen \? \([\s\S]*community-domain-dashboard\.structure-detail\.\$\{option\.key\}[\s\S]*setStructurePacketChooserOpen\(false\)[\s\S]*activeStructureDetail === "preview"[\s\S]*CommunityDomainStructurePreviewPanel[\s\S]*activeStructureDetail === "foundation"[\s\S]*variant="structureFoundation"[\s\S]*activeStructureDetail === "boundary"[\s\S]*variant="structureBoundary"[\s\S]*activeStructureDetail === "activity"[\s\S]*variant="structureActivity"[\s\S]*activeStructureDetail === "planning"[\s\S]*CommunityDomainStructurePlanningPanels/,
+  "Community Domain dashboard Structure lane must keep Map, Readiness, and Rollout stages behind Change stage, hide second-level views behind Change view, then show one focused institutional detail view at a time instead of dumping all Structure panels on first open.",
   { frontend: true }
 );
 
@@ -3241,7 +3241,7 @@ assertContains(
 assertContains(
   "src/pages/communityDomainDashboard/StructurePlanningPanels.tsx",
   /STRUCTURE_PLANNING_FOCUS_OPTIONS[\s\S]*key: "rollout"[\s\S]*key: "activity"[\s\S]*key: "groups"[\s\S]*activeStructurePlanningFocus[\s\S]*structurePlanningFocusChooserOpen[\s\S]*community-domain\.structure-planning\.focus-toggle[\s\S]*structurePlanningFocusChooserOpen \? "Close views" : "Change view"[\s\S]*structurePlanningFocusChooserOpen \? \([\s\S]*community-domain\.structure-planning\.focus\.\$\{option\.key\}[\s\S]*setStructurePlanningFocusChooserOpen\(false\)[\s\S]*activeStructurePlanningFocus === "rollout"[\s\S]*Rollout plan[\s\S]*activeStructurePlanningFocus === "activity"[\s\S]*Activity map[\s\S]*activeStructurePlanningFocus === "groups"[\s\S]*Group readiness/,
-  "Community Domain Structure planning packet must keep sub-views behind Change view and expose one focused sub-view at a time instead of stacking rollout, activity, and group readiness together.",
+  "Community Domain Structure planning view must keep sub-views behind Change view and expose one focused sub-view at a time instead of stacking rollout, activity, and group readiness together.",
   { frontend: true }
 );
 
@@ -3304,7 +3304,7 @@ assertContains(
 assertContains(
   "src/pages/communityDomainDashboard/GovernanceReadinessPanels.tsx",
   /GOVERNANCE_DETAIL_OPTIONS[\s\S]*key: "review"[\s\S]*key: "delegation"[\s\S]*key: "coverage"[\s\S]*activeGovernanceDetail[\s\S]*community-domain-governance\.detail\.\$\{option\.key\}[\s\S]*activeGovernanceDetail === "review"[\s\S]*Governance review pulse[\s\S]*activeGovernanceDetail === "delegation"[\s\S]*Delegation map[\s\S]*activeGovernanceDetail === "coverage"[\s\S]*Governance coverage/,
-  "Community Domain Governance readiness panel must expose one focused governance packet at a time instead of dumping review pulse, delegation, and coverage together.",
+  "Community Domain Governance readiness panel must expose one focused governance view at a time instead of dumping review pulse, delegation, and coverage together.",
   { frontend: true }
 );
 

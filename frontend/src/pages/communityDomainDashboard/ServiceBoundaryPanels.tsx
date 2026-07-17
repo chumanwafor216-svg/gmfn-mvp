@@ -273,7 +273,7 @@ export default function CommunityDomainServiceBoundaryPanels({
           gap: 10,
         }}
       >
-        <div style={sectionLabel()}>Boundary packet</div>
+        <div style={sectionLabel()}>Boundary view</div>
         <div style={helperText()}>
           Current view: <strong>{selectedBoundaryFocus.label}</strong>.
         </div>

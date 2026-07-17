@@ -252,7 +252,7 @@ export default function CommunityDomainStructurePlanningPanels({
           gap: 10,
         }}
       >
-        <div style={sectionLabel()}>Planning packet</div>
+        <div style={sectionLabel()}>Planning view</div>
         <div style={helperText()}>
           Current view: <strong>{selectedStructurePlanningFocus.label}</strong>.
         </div>

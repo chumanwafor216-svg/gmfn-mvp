@@ -197,7 +197,7 @@ const dashboardPayload = {
       label: "Identity",
       status: "active",
       count: 3,
-      summary: "Review public-safe identity packets.",
+      summary: "Review public-safe identity views.",
     },
     {
       lane_key: "billing",
@@ -1219,15 +1219,15 @@ try {
     findings.push("Community Domain setup workbench view buttons stay visible after selecting a setup view.");
   }
   if (await isDebugVisible(page, "community-domain-dashboard.setup-access.authority")) {
-    findings.push("Community Domain setup access packets are visible before Change access packet is opened.");
+    findings.push("Community Domain setup access views are visible before Change access view is opened.");
   }
   if (!(await isDebugVisible(page, "community-domain-dashboard.setup-access-toggle"))) {
-    findings.push("Community Domain setup access does not expose a Change access packet control.");
+    findings.push("Community Domain setup access does not expose a Change access view control.");
   }
   await clickByDebugId(page, "community-domain-dashboard.setup-access-toggle");
   await clickByDebugId(page, "community-domain-dashboard.setup-access.authority");
   if (await isDebugVisible(page, "community-domain-dashboard.setup-access.summary")) {
-    findings.push("Community Domain setup access packets stay visible after selecting a packet.");
+    findings.push("Community Domain setup access views stay visible after selecting a view.");
   }
   await page.goto(`${baseUrl}${routePath}?lane=settings`, {
     waitUntil: "networkidle",
@@ -1296,15 +1296,15 @@ try {
   await clickByDebugId(page, "community-domain-dashboard.lane.identity");
   await page.getByText("Identity focus", { exact: true }).waitFor({ timeout: 10000 });
   if (await isDebugVisible(page, "community-domain-identity.detail.profile")) {
-    findings.push("Community Domain Identity packet buttons are visible before Change packet is opened.");
+    findings.push("Community Domain Identity view buttons are visible before Change view is opened.");
   }
   if (!(await isDebugVisible(page, "community-domain-identity.detail-toggle"))) {
-    findings.push("Community Domain Identity does not expose a Change packet control.");
+    findings.push("Community Domain Identity does not expose a Change view control.");
   }
   await clickByDebugId(page, "community-domain-identity.detail-toggle");
   await clickByDebugId(page, "community-domain-identity.detail.profile");
   if (await isDebugVisible(page, "community-domain-identity.detail.bridge")) {
-    findings.push("Community Domain Identity packet buttons stay visible after selecting a packet.");
+    findings.push("Community Domain Identity view buttons stay visible after selecting a view.");
   }
   await page.getByText("Institutional checks needing attention", { exact: false }).waitFor({
     timeout: 10000,
@@ -1400,25 +1400,25 @@ try {
     findings.push("Community Domain Services local maps still expose the marketplace/package rule card.");
   }
   if (await isDebugVisible(page, "community-domain-dashboard.service-detail.boundaries")) {
-    findings.push("Community Domain Services packet buttons are visible before Change packet is opened.");
+    findings.push("Community Domain Services view buttons are visible before Change view is opened.");
   }
   if (!(await isDebugVisible(page, "community-domain-dashboard.service-packet-toggle"))) {
-    findings.push("Community Domain Services multi-packet groups do not expose a Change packet control.");
+    findings.push("Community Domain Services multi-view groups do not expose a Change view control.");
   }
   await clickByDebugId(page, "community-domain-dashboard.service-packet-toggle");
   await clickByDebugId(page, "community-domain-dashboard.service-detail.boundaries");
   if (!(await page.getByText("Marketplace rule", { exact: true }).isVisible().catch(() => false))) {
-    findings.push("Community Domain Services Boundaries packet does not expose the marketplace/package rule card.");
+    findings.push("Community Domain Services Boundaries view does not expose the marketplace/package rule card.");
   }
   if (await isDebugVisible(page, "community-domain-dashboard.service-detail.local")) {
-    findings.push("Community Domain Services packet buttons stay visible after a packet is selected.");
+    findings.push("Community Domain Services view buttons stay visible after a view is selected.");
   }
-  await page.getByText("Boundary packet", { exact: true }).waitFor({ timeout: 10000 });
+  await page.getByText("Boundary view", { exact: true }).waitFor({ timeout: 10000 });
   if (await isDebugVisible(page, "community-domain-service-boundary.focus.privacy")) {
     findings.push("Community Domain Services boundary view buttons are visible before Change view is opened.");
   }
   if (!(await isDebugVisible(page, "community-domain-service-boundary.focus-toggle"))) {
-    findings.push("Community Domain Services boundary packet does not expose a Change view control.");
+    findings.push("Community Domain Services boundary view does not expose a Change view control.");
   }
   await clickByDebugId(page, "community-domain-service-boundary.focus-toggle");
   await clickByDebugId(page, "community-domain-service-boundary.focus.privacy");
@@ -1430,12 +1430,12 @@ try {
   await clickByDebugId(page, "community-domain-dashboard.service-group.trust");
   await clickByDebugId(page, "community-domain-dashboard.service-packet-toggle");
   await clickByDebugId(page, "community-domain-dashboard.service-detail.evidence");
-  await page.getByText("Trust and evidence packet", { exact: true }).waitFor({ timeout: 10000 });
+  await page.getByText("Trust and evidence view", { exact: true }).waitFor({ timeout: 10000 });
   if (await isDebugVisible(page, "community-domain.trust-evidence.focus.release")) {
     findings.push("Community Domain Trust/Evidence view buttons are visible before Change view is opened.");
   }
   if (!(await isDebugVisible(page, "community-domain.trust-evidence.focus-toggle"))) {
-    findings.push("Community Domain Trust/Evidence packet does not expose a Change view control.");
+    findings.push("Community Domain Trust/Evidence view does not expose a Change view control.");
   }
   await clickByDebugId(page, "community-domain.trust-evidence.focus-toggle");
   await clickByDebugId(page, "community-domain.trust-evidence.focus.release");
@@ -1457,22 +1457,22 @@ try {
   await clickByDebugId(page, "community-domain-dashboard.structure-stage-toggle");
   await clickByDebugId(page, "community-domain-dashboard.structure-group.rollout");
   if (await isDebugVisible(page, "community-domain-dashboard.structure-detail.planning")) {
-    findings.push("Community Domain Structure packet buttons are visible before Change packet is opened.");
+    findings.push("Community Domain Structure view buttons are visible before Change view is opened.");
   }
   if (!(await isDebugVisible(page, "community-domain-dashboard.structure-packet-toggle"))) {
-    findings.push("Community Domain Structure multi-packet groups do not expose a Change packet control.");
+    findings.push("Community Domain Structure multi-view groups do not expose a Change view control.");
   }
   await clickByDebugId(page, "community-domain-dashboard.structure-packet-toggle");
   await clickByDebugId(page, "community-domain-dashboard.structure-detail.planning");
   if (await isDebugVisible(page, "community-domain-dashboard.structure-detail.activity")) {
-    findings.push("Community Domain Structure packet buttons stay visible after a packet is selected.");
+    findings.push("Community Domain Structure view buttons stay visible after a view is selected.");
   }
-  await page.getByText("Planning packet", { exact: true }).waitFor({ timeout: 10000 });
+  await page.getByText("Planning view", { exact: true }).waitFor({ timeout: 10000 });
   if (await isDebugVisible(page, "community-domain.structure-planning.focus.groups")) {
     findings.push("Community Domain Structure planning view buttons are visible before Change view is opened.");
   }
   if (!(await isDebugVisible(page, "community-domain.structure-planning.focus-toggle"))) {
-    findings.push("Community Domain Structure planning packet does not expose a Change view control.");
+    findings.push("Community Domain Structure planning view does not expose a Change view control.");
   }
   await clickByDebugId(page, "community-domain.structure-planning.focus-toggle");
   await clickByDebugId(page, "community-domain.structure-planning.focus.groups");
@@ -1492,15 +1492,15 @@ try {
     findings.push("Community Domain Members does not expose a Change stage control.");
   }
   if (await isDebugVisible(page, "community-domain-dashboard.member-detail.placement")) {
-    findings.push("Community Domain Members packet buttons are visible before Change packet is opened.");
+    findings.push("Community Domain Members view buttons are visible before Change view is opened.");
   }
   if (!(await isDebugVisible(page, "community-domain-dashboard.member-packet-toggle"))) {
-    findings.push("Community Domain Members multi-packet groups do not expose a Change packet control.");
+    findings.push("Community Domain Members multi-view groups do not expose a Change view control.");
   }
   await clickByDebugId(page, "community-domain-dashboard.member-packet-toggle");
   await clickByDebugId(page, "community-domain-dashboard.member-detail.placement");
   if (await isDebugVisible(page, "community-domain-dashboard.member-detail.readiness")) {
-    findings.push("Community Domain Members packet buttons stay visible after a packet is selected.");
+    findings.push("Community Domain Members view buttons stay visible after a view is selected.");
   }
   await clickByDebugId(page, "community-domain-dashboard.member-stage-toggle");
   await clickByDebugId(page, "community-domain-dashboard.member-group.roster");
@@ -1509,18 +1509,18 @@ try {
   });
   if (await isDebugVisible(page, "community-domain-dashboard.member-roster.members")) {
     findings.push(
-      "Community Domain member roster packets are visible before Change roster packet is opened."
+      "Community Domain member roster views are visible before Change roster view is opened."
     );
   }
   if (!(await isDebugVisible(page, "community-domain-dashboard.member-roster-toggle"))) {
     findings.push(
-      "Community Domain member roster does not expose a Change roster packet control."
+      "Community Domain member roster does not expose a Change roster view control."
     );
   }
   await clickByDebugId(page, "community-domain-dashboard.member-roster-toggle");
   await clickByDebugId(page, "community-domain-dashboard.member-roster.members");
   if (await isDebugVisible(page, "community-domain-dashboard.member-roster.summary")) {
-    findings.push("Community Domain member roster packets stay visible after selecting a packet.");
+    findings.push("Community Domain member roster views stay visible after selecting a view.");
   }
   await page
     .getByText("No Community Domain members were returned for this roster view.", { exact: true })
@@ -1542,15 +1542,15 @@ try {
   await clickByDebugId(page, "community-domain-dashboard.governance-group.reports");
   await page.getByText("Director period summary", { exact: true }).waitFor({ timeout: 10000 });
   if (await isDebugVisible(page, "community-domain-dashboard.director-summary.membership")) {
-    findings.push("Community Domain Director summary packets are visible before Change report packet is opened.");
+    findings.push("Community Domain Director summary views are visible before Change report view is opened.");
   }
   if (!(await isDebugVisible(page, "community-domain-dashboard.director-summary-toggle"))) {
-    findings.push("Community Domain Director summary does not expose a Change report packet control.");
+    findings.push("Community Domain Director summary does not expose a Change report view control.");
   }
   await clickByDebugId(page, "community-domain-dashboard.director-summary-toggle");
   await clickByDebugId(page, "community-domain-dashboard.director-summary.membership");
   if (await isDebugVisible(page, "community-domain-dashboard.director-summary.overview")) {
-    findings.push("Community Domain Director summary packets stay visible after selecting a report packet.");
+    findings.push("Community Domain Director summary views stay visible after selecting a report view.");
   }
   await page.getByText("Active members", { exact: true }).waitFor({ timeout: 10000 });
   if (await isDebugVisible(page, "community-domain-dashboard.governance-task.sponsor_summary")) {
@@ -1563,20 +1563,20 @@ try {
   }
   await page.getByText("Sponsor-safe summary", { exact: true }).waitFor({ timeout: 10000 });
   if (await isDebugVisible(page, "community-domain-dashboard.sponsor-summary.evidence")) {
-    findings.push("Community Domain Sponsor summary packets are visible before Change sponsor packet is opened.");
+    findings.push("Community Domain Sponsor summary views are visible before Change sponsor view is opened.");
   }
   if (!(await isDebugVisible(page, "community-domain-dashboard.sponsor-summary-toggle"))) {
-    findings.push("Community Domain Sponsor summary does not expose a Change sponsor packet control.");
+    findings.push("Community Domain Sponsor summary does not expose a Change sponsor view control.");
   }
   await clickByDebugId(page, "community-domain-dashboard.sponsor-summary-toggle");
   await clickByDebugId(page, "community-domain-dashboard.sponsor-summary.delivery");
   if (await isDebugVisible(page, "community-domain-dashboard.sponsor-summary.overview")) {
-    findings.push("Community Domain Sponsor summary packets stay visible after selecting a sponsor packet.");
+    findings.push("Community Domain Sponsor summary views stay visible after selecting a sponsor view.");
   }
   await page.waitForTimeout(450);
   audit = await page.evaluate(pageAudit);
-  if (!normalized(audit.bodyText).includes("Current sponsor packet: Delivery")) {
-    findings.push("Community Domain Sponsor summary did not land on the selected Delivery packet.");
+  if (!normalized(audit.bodyText).includes("Current sponsor view: Delivery")) {
+    findings.push("Community Domain Sponsor summary did not land on the selected Delivery view.");
   }
   await clickByDebugId(page, "community-domain-dashboard.governance-group-toggle");
   await clickByDebugId(page, "community-domain-dashboard.governance-group.records");
@@ -1612,15 +1612,15 @@ try {
     findings.push("Community Domain real-life record type switcher is missing.");
   }
   if (await isDebugVisible(page, "community-domain-dashboard.activity-task.catalogue")) {
-    findings.push("Community Domain Activity packets are visible before Change activity packet is opened.");
+    findings.push("Community Domain Activity views are visible before Change activity view is opened.");
   }
   if (!(await isDebugVisible(page, "community-domain-dashboard.activity-task-toggle"))) {
-    findings.push("Community Domain Activity record does not expose a Change activity packet control.");
+    findings.push("Community Domain Activity record does not expose a Change activity view control.");
   }
   await clickByDebugId(page, "community-domain-dashboard.activity-task-toggle");
   await clickByDebugId(page, "community-domain-dashboard.activity-task.catalogue");
   if (await isDebugVisible(page, "community-domain-dashboard.activity-task.record")) {
-    findings.push("Community Domain Activity packets stay visible after selecting a packet.");
+    findings.push("Community Domain Activity views stay visible after selecting a view.");
   }
   await page
     .getByText("Use one catalogue type when recording a real activity.", { exact: true })
@@ -1628,7 +1628,7 @@ try {
   await clickByDebugId(page, "community-domain-dashboard.activity-task-toggle");
   await clickByDebugId(page, "community-domain-dashboard.activity-task.record");
   if (await isDebugVisible(page, "community-domain-dashboard.activity-task.catalogue")) {
-    findings.push("Community Domain Activity packets stay visible after returning to Record packet.");
+    findings.push("Community Domain Activity views stay visible after returning to Record view.");
   }
   if (await isDebugVisible(page, "community-domain-dashboard.activity-record-stage.evidence")) {
     findings.push("Community Domain Activity record steps are visible before Change step is opened.");
@@ -1651,10 +1651,10 @@ try {
     findings.push("Community Domain real-life record types stay visible after selecting a type.");
   }
   if (await isDebugVisible(page, "community-domain-dashboard.beneficiary-outcome-task.recent")) {
-    findings.push("Community Domain Beneficiary outcome packets are visible before Change outcome packet is opened.");
+    findings.push("Community Domain Beneficiary outcome views are visible before Change outcome view is opened.");
   }
   if (!(await isDebugVisible(page, "community-domain-dashboard.beneficiary-outcome-task-toggle"))) {
-    findings.push("Community Domain Beneficiary outcome does not expose a Change outcome packet control.");
+    findings.push("Community Domain Beneficiary outcome does not expose a Change outcome view control.");
   }
   if (
     await isDebugVisible(
@@ -1695,7 +1695,7 @@ try {
   await clickByDebugId(page, "community-domain-dashboard.beneficiary-outcome-task-toggle");
   await clickByDebugId(page, "community-domain-dashboard.beneficiary-outcome-task.recent");
   if (await isDebugVisible(page, "community-domain-dashboard.beneficiary-outcome-task.record")) {
-    findings.push("Community Domain Beneficiary outcome packets stay visible after selecting a packet.");
+    findings.push("Community Domain Beneficiary outcome views stay visible after selecting a view.");
   }
   await page.getByText("Recent outcomes", { exact: true }).waitFor({ timeout: 10000 });
   if (
@@ -1705,7 +1705,7 @@ try {
     )
   ) {
     findings.push(
-      "Community Domain Recent outcome packet buttons are visible before Change packet is opened."
+      "Community Domain Recent outcome view buttons are visible before Change view is opened."
     );
   }
   if (
@@ -1715,7 +1715,7 @@ try {
     ))
   ) {
     findings.push(
-      "Community Domain Recent outcome packets are missing a Change packet control."
+      "Community Domain Recent outcome views are missing a Change view control."
     );
   }
   const summaryDetailsPanel = page.locator(
@@ -1723,7 +1723,7 @@ try {
   );
   if (await summaryDetailsPanel.isVisible().catch(() => false)) {
     findings.push(
-      "Community Domain Summary packet shows audit details before Open summary details."
+      "Community Domain Summary view shows audit details before Open summary details."
     );
   }
   if (
@@ -1733,7 +1733,7 @@ try {
     ))
   ) {
     findings.push(
-      "Community Domain Summary packet is missing an Open summary details control."
+      "Community Domain Summary view is missing an Open summary details control."
     );
   }
   await clickByDebugId(
@@ -1752,7 +1752,7 @@ try {
     .catch(() => false);
   if (!summaryDetailClosed) {
     findings.push(
-      "Community Domain Summary packet details stay visible after closing summary details."
+      "Community Domain Summary view details stay visible after closing summary details."
     );
   }
   await clickByDebugId(
@@ -1770,7 +1770,7 @@ try {
     )
   ) {
     findings.push(
-      "Community Domain Confirm packet shows confirmation link creation before Open confirmation action."
+      "Community Domain Confirm view shows confirmation link creation before Open confirmation action."
     );
   }
   if (
@@ -1780,7 +1780,7 @@ try {
     ))
   ) {
     findings.push(
-      "Community Domain Confirm packet is missing an Open confirmation action control."
+      "Community Domain Confirm view is missing an Open confirmation action control."
     );
   }
   await clickByDebugId(
@@ -1811,7 +1811,7 @@ try {
       .catch(() => false)
   ) {
     findings.push(
-      "Community Domain Delivery packet shows delivery notes before Open delivery notes."
+      "Community Domain Delivery view shows delivery notes before Open delivery notes."
     );
   }
   if (
@@ -1821,7 +1821,7 @@ try {
     ))
   ) {
     findings.push(
-      "Community Domain Delivery packet is missing an Open delivery notes control."
+      "Community Domain Delivery view is missing an Open delivery notes control."
     );
   }
   await clickByDebugId(
@@ -1849,7 +1849,7 @@ try {
     )
   ) {
     findings.push(
-      "Community Domain Contact packet shows the contact form before Open contact action."
+      "Community Domain Contact view shows the contact form before Open contact action."
     );
   }
   if (
@@ -1859,7 +1859,7 @@ try {
     )
   ) {
     findings.push(
-      "Community Domain Contact packet shows consent withdrawal before Change contact action is opened."
+      "Community Domain Contact view shows consent withdrawal before Change contact action is opened."
     );
   }
   if (
@@ -1869,7 +1869,7 @@ try {
     ))
   ) {
     findings.push(
-      "Community Domain Contact packet is missing a Change contact action control."
+      "Community Domain Contact view is missing a Change contact action control."
     );
   }
   if (
@@ -1879,7 +1879,7 @@ try {
     ))
   ) {
     findings.push(
-      "Community Domain Contact packet is missing an Open contact action control."
+      "Community Domain Contact view is missing an Open contact action control."
     );
   }
   await clickByDebugId(
@@ -1907,7 +1907,7 @@ try {
     )
   ) {
     findings.push(
-      "Community Domain Contact packet shows consent withdrawal before Open contact action."
+      "Community Domain Contact view shows consent withdrawal before Open contact action."
     );
   }
   await clickByDebugId(
@@ -1927,7 +1927,7 @@ try {
     )
   ) {
     findings.push(
-      "Community Domain Contact packet still shows record contact/consent after selecting withdrawal."
+      "Community Domain Contact view still shows record contact/consent after selecting withdrawal."
     );
   }
   await clickByDebugId(
@@ -1945,7 +1945,7 @@ try {
     )
   ) {
     findings.push(
-      "Community Domain Receipt packet shows the correction form before Open receipt form."
+      "Community Domain Receipt view shows the correction form before Open receipt form."
     );
   }
   if (
@@ -1955,7 +1955,7 @@ try {
     ))
   ) {
     findings.push(
-      "Community Domain Receipt packet is missing an Open receipt form control."
+      "Community Domain Receipt view is missing an Open receipt form control."
     );
   }
   await clickByDebugId(
@@ -1975,20 +1975,20 @@ try {
     )
   ) {
     findings.push(
-      "Community Domain Recent outcome packet buttons stay visible after selecting a packet."
+      "Community Domain Recent outcome view buttons stay visible after selecting a view."
     );
   }
 
   audit = await page.evaluate(pageAudit);
   const finalText = normalized(audit.bodyText);
   if (finalText.includes("Safe next step") || finalText.includes("Review this lane first")) {
-    findings.push("Generic lane filler text returned after opening focused packets.");
+    findings.push("Generic lane filler text returned after opening focused views.");
   }
   if (audit.horizontalOverflow || audit.overflow.length) {
-    findings.push(`Focused packet mobile overflow: ${JSON.stringify(audit.overflow)}`);
+    findings.push(`Focused view mobile overflow: ${JSON.stringify(audit.overflow)}`);
   }
   if (audit.lowContrast.length) {
-    findings.push(`Focused packet possible low contrast: ${JSON.stringify(audit.lowContrast)}`);
+    findings.push(`Focused view possible low contrast: ${JSON.stringify(audit.lowContrast)}`);
   }
   if (audit.scrollH > audit.viewportH * 7) {
     findings.push(

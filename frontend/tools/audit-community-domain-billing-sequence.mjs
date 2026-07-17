@@ -541,7 +541,7 @@ try {
   }
 
   if (defaultBody.includes("Community Domain payment proof")) {
-    findings.push("Payment proof upload is exposed before the user opens the Proof packet.");
+    findings.push("Payment proof upload is exposed before the user opens the Proof view.");
   }
 
   if (defaultResult.horizontalOverflow) {
@@ -659,7 +659,7 @@ try {
   await assertTextIncludes(findings, accountResult, requiredAccountText, "account");
 
   if (normalizeText(accountResult.bodyText).includes("Edit locked.")) {
-    findings.push("Pay-in account setup packet is exposed before the user opens it.");
+    findings.push("Pay-in account setup view is exposed before the user opens it.");
   }
 
   if (normalizeText(accountResult.bodyText).includes("Latest payment code")) {
