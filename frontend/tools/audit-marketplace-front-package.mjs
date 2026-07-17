@@ -114,8 +114,8 @@ assertContains(
 assertContains(
   marketplaceFile,
   marketplaceSource,
-  /const marketplaceStats = \[[\s\S]*?label: "Trust"[\s\S]*?value: marketplaceTrustDisplay[\s\S]*?label: "CCI"[\s\S]*?value: marketplaceCciDisplay/,
-  "Marketplace hero stats must carry local Trust and CCI values."
+  /const marketplaceStats = \[[\s\S]*?label: "Trust"[\s\S]*?value: marketplaceTrustDisplay[\s\S]*?label: "Wider"[\s\S]*?value: marketplaceCciDisplay[\s\S]*?detail: "Cross-community signal"/,
+  "Marketplace hero stats must carry local Trust and CCI-backed wider posture without exposing the internal CCI acronym."
 );
 
 assertContains(

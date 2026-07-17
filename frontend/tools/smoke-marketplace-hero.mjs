@@ -248,7 +248,7 @@ async function run() {
         "Finance Summary",
         "Finance details",
         "Trust",
-        "CCI",
+        "Wider",
         "Money & Trust",
         "Community Members & Shops",
         "Marketplace Tools",

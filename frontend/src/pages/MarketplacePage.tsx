@@ -8143,9 +8143,9 @@ export default function MarketplacePage() {
       tone: "linear-gradient(180deg, #25A65A 0%, #0B5A34 100%)",
     },
     {
-      label: "CCI",
+      label: "Wider",
       value: marketplaceCciDisplay,
-      detail: "Local integrity signal",
+      detail: "Cross-community signal",
       glyph: "chart" as MarketplaceGlyphName,
       tone: "linear-gradient(180deg, #B98921 0%, #6E4B08 100%)",
     },
@@ -12335,7 +12335,7 @@ export default function MarketplacePage() {
                       }}
                     >
                       One tap records what happened. It becomes event evidence,
-                      not a personal label.
+                      not a human score.
                     </div>
                   </div>
                   <span style={stableStatusPillStyle(Boolean(selectedProtectedTrade?.id))}>

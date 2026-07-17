@@ -40,8 +40,8 @@ assertContains(
 );
 
 assertContains(
-  /const marketplaceStats = \[[\s\S]*?label: "Members"[\s\S]*?label: "Shops"[\s\S]*?label: "Trust"[\s\S]*?value: marketplaceTrustDisplay[\s\S]*?detail: marketplaceTrustEvidenceLabel[\s\S]*?glyph: "trust"[\s\S]*?label: "CCI"[\s\S]*?value: marketplaceCciDisplay[\s\S]*?glyph: "chart"/,
-  "Marketplace hero stats must show local Trust and CCI instead of duplicating Support or Demand."
+  /const marketplaceStats = \[[\s\S]*?label: "Members"[\s\S]*?label: "Shops"[\s\S]*?label: "Trust"[\s\S]*?value: marketplaceTrustDisplay[\s\S]*?detail: marketplaceTrustEvidenceLabel[\s\S]*?glyph: "trust"[\s\S]*?label: "Wider"[\s\S]*?value: marketplaceCciDisplay[\s\S]*?detail: "Cross-community signal"[\s\S]*?glyph: "chart"/,
+  "Marketplace hero stats must show local Trust and CCI-backed wider posture instead of duplicating Support or Demand."
 );
 
 assertContains(

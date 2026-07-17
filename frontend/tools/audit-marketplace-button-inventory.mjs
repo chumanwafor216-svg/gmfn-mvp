@@ -367,8 +367,8 @@ assertContains(
 );
 
 assertContains(
-  /label: "Trust"[\s\S]*?value: marketplaceTrustDisplay[\s\S]*?label: "CCI"[\s\S]*?value: marketplaceCciDisplay[\s\S]*?debugId="marketplace\.finance-standing\.details"[\s\S]*?Owing total[\s\S]*?Locked by guarantees[\s\S]*?Current guarantee earning/,
-  "Marketplace front stats must expose local Trust and CCI, while finance detail stays inside one disclosure."
+  /label: "Trust"[\s\S]*?value: marketplaceTrustDisplay[\s\S]*?label: "Wider"[\s\S]*?value: marketplaceCciDisplay[\s\S]*?detail: "Cross-community signal"[\s\S]*?debugId="marketplace\.finance-standing\.details"[\s\S]*?Owing total[\s\S]*?Locked by guarantees[\s\S]*?Current guarantee earning/,
+  "Marketplace front stats must expose local Trust and CCI-backed wider posture, while finance detail stays inside one disclosure."
 );
 
 assertContains(
