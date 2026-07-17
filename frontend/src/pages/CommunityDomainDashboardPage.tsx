@@ -6357,7 +6357,7 @@ export default function CommunityDomainDashboardPage() {
     ["Member bands", packageBillingBoundary?.member_band_status],
     ["Feature tariffs", packageBillingBoundary?.feature_tariff_status],
     ["Domain tariffs", packageBillingBoundary?.domain_tariff_status],
-  ].map(([label, value]) => [label, cleanText(value, "not automated")]);
+  ].map(([label, value]) => [label, compactStatus(value || "not_automated")]);
   const packageBillingAdminAction = cleanText(
     packageBillingBoundary?.admin_action_required,
     "Use manual finance and capacity review before promising upgraded limits."

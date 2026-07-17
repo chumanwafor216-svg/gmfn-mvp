@@ -2068,8 +2068,8 @@ assertContains(
 
 assertContains(
   "src/pages/communityDomainDashboard/statusLanguage.ts",
-  /configured: "not set up yet"[\s\S]*connected: "not connected yet"[\s\S]*created: "not created yet"[\s\S]*recorded: "not recorded yet"[\s\S]*replace\(\s*\/\[-_\]\+\/g,\s*" "\s*\)[\s\S]*replace\(\s*\/\\s\+\/g,\s*" "\s*\)[\s\S]*normalized\.toLowerCase\(\) === "not configured"[\s\S]*return "not set up yet"[\s\S]*normalized\.match\(/,
-  "Community Domain status language helper must normalize raw snake-case or hyphenated slice statuses before they reach user-facing panels.",
+  /configured: "not set up yet"[\s\S]*connected: "not connected yet"[\s\S]*created: "not created yet"[\s\S]*recorded: "not recorded yet"[\s\S]*"manual pilot quote only": "Manual quote only"[\s\S]*"not automated": "Needs manual review"[\s\S]*"pilot quote required": "Quote needed"[\s\S]*replace\(\s*\/\[-_\]\+\/g,\s*" "\s*\)[\s\S]*replace\(\s*\/\\s\+\/g,\s*" "\s*\)[\s\S]*const key = normalized\.toLowerCase\(\)[\s\S]*STATUS_LABELS\[key\][\s\S]*return STATUS_LABELS\[key\][\s\S]*key === "not configured"[\s\S]*return "not set up yet"[\s\S]*normalized\.match\(/,
+  "Community Domain status language helper must normalize raw snake-case or hyphenated slice statuses and translate machine billing statuses before they reach user-facing panels.",
   { frontend: true }
 );
 
@@ -2652,7 +2652,7 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /serviceRuleDetailsOpen[\s\S]*packageCapacityFacts[\s\S]*included_members[\s\S]*included_nodes[\s\S]*included_admins[\s\S]*included_shops[\s\S]*included_storage_gb[\s\S]*packageTariffBoundaryText[\s\S]*Current pilot package allowance only[\s\S]*packageBillingStatusFacts[\s\S]*pricing_model_status[\s\S]*paid_upgrade_status[\s\S]*member_band_status[\s\S]*feature_tariff_status[\s\S]*domain_tariff_status[\s\S]*packageBillingAdminAction[\s\S]*manual finance and capacity review[\s\S]*activeServiceDetail === "boundaries"[\s\S]*Marketplace rule[\s\S]*Shared services, governed here[\s\S]*community-domain-dashboard\.service-rule-details-toggle[\s\S]*serviceRuleDetailsOpen[\s\S]*Close rule details[\s\S]*View rule details[\s\S]*community-domain-dashboard\.service-rule-details-panel[\s\S]*manual review[\s\S]*Domain service rules control who\s+can use Spotlight, Demand Box, shops, Shop Diary, Vault,\s+ROSCA, invites, and contribution tools here/,
+  /serviceRuleDetailsOpen[\s\S]*packageCapacityFacts[\s\S]*included_members[\s\S]*included_nodes[\s\S]*included_admins[\s\S]*included_shops[\s\S]*included_storage_gb[\s\S]*packageTariffBoundaryText[\s\S]*Current pilot package allowance only[\s\S]*packageBillingStatusFacts[\s\S]*pricing_model_status[\s\S]*paid_upgrade_status[\s\S]*member_band_status[\s\S]*feature_tariff_status[\s\S]*domain_tariff_status[\s\S]*compactStatus\(value \|\| "not_automated"\)[\s\S]*packageBillingAdminAction[\s\S]*manual finance and capacity review[\s\S]*activeServiceDetail === "boundaries"[\s\S]*Marketplace rule[\s\S]*Shared services, governed here[\s\S]*community-domain-dashboard\.service-rule-details-toggle[\s\S]*serviceRuleDetailsOpen[\s\S]*Close rule details[\s\S]*View rule details[\s\S]*community-domain-dashboard\.service-rule-details-panel[\s\S]*manual review[\s\S]*Domain service rules control who\s+can use Spotlight, Demand Box, shops, Shop Diary, Vault,\s+ROSCA, invites, and contribution tools here/,
   "Community Domain Services lane must keep package allowance, feature permission, and future tariff automation truth inside the Boundaries view behind the closed rule-details drawer instead of repeating it across every service view.",
   { frontend: true }
 );
