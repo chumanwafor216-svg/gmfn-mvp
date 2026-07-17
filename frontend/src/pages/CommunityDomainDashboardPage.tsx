@@ -615,6 +615,60 @@ const GOVERNANCE_TASK_GROUP_OPTIONS: Array<{
   },
 ];
 
+const DIRECTOR_SUMMARY_TASK_OPTIONS: Array<{
+  key: DirectorSummaryTaskKey;
+  label: string;
+  note: string;
+}> = [
+  {
+    key: "overview",
+    label: "Overview",
+    note: "Read the period boundary before using the report.",
+  },
+  {
+    key: "membership",
+    label: "Membership",
+    note: "Review active, added, removed, and governance action counts.",
+  },
+  {
+    key: "evidence",
+    label: "Evidence",
+    note: "Review evidence and confirmation totals already recorded.",
+  },
+  {
+    key: "delivery",
+    label: "Delivery",
+    note: "Review beneficiary confirmation delivery and receipt counts.",
+  },
+];
+
+const SPONSOR_SUMMARY_TASK_OPTIONS: Array<{
+  key: SponsorSummaryTaskKey;
+  label: string;
+  note: string;
+}> = [
+  {
+    key: "overview",
+    label: "Overview",
+    note: "Read the sponsor-safe pack boundary first.",
+  },
+  {
+    key: "evidence",
+    label: "Evidence",
+    note: "Review sponsor-safe evidence and outcome totals.",
+  },
+  {
+    key: "delivery",
+    label: "Delivery",
+    note: "Review provider delivery readiness and receipts.",
+  },
+  {
+    key: "export",
+    label: "Export",
+    note: "Prepare a sponsor-safe text pack for copying.",
+  },
+];
+
 const STRUCTURE_DETAIL_OPTIONS: Array<{
   key: StructureDetailKey;
   label: string;
@@ -798,6 +852,45 @@ const MEMBER_ROSTER_TASK_OPTIONS: Array<{
     key: "members",
     label: "Members",
     note: "Open the member rows only when you need to deactivate or restore someone.",
+  },
+];
+
+const ACTIVITY_RECORD_TASK_OPTIONS: Array<{
+  key: ActivityRecordTaskKey;
+  label: string;
+  note: string;
+}> = [
+  {
+    key: "record",
+    label: "Record",
+    note: "Capture one real activity in staged steps.",
+  },
+  {
+    key: "catalogue",
+    label: "Catalogue",
+    note: "Review valid activity types before recording.",
+  },
+  {
+    key: "recent",
+    label: "Recent",
+    note: "Review the latest activity records only when needed.",
+  },
+];
+
+const BENEFICIARY_OUTCOME_TASK_OPTIONS: Array<{
+  key: BeneficiaryOutcomeTaskKey;
+  label: string;
+  note: string;
+}> = [
+  {
+    key: "record",
+    label: "Record",
+    note: "Capture one before-and-after beneficiary outcome.",
+  },
+  {
+    key: "recent",
+    label: "Recent",
+    note: "Review recent outcome records and their packets.",
   },
 ];
 
@@ -2736,6 +2829,12 @@ export default function CommunityDomainDashboardPage() {
     useState<SetupOverviewTaskKey>("next_setup");
   const [activeSetupNoticeTask, setActiveSetupNoticeTask] =
     useState<SetupNoticeTaskKey>("recent");
+  const [setupOverviewGroupChooserOpen, setSetupOverviewGroupChooserOpen] =
+    useState(false);
+  const [setupOverviewTaskChooserOpen, setSetupOverviewTaskChooserOpen] =
+    useState(false);
+  const [setupNoticeTaskChooserOpen, setSetupNoticeTaskChooserOpen] =
+    useState(false);
   const [activeOperatingSummaryTask, setActiveOperatingSummaryTask] =
     useState<OperatingSummaryTaskKey>("next_action");
   const [activeSetupWorkbenchTask, setActiveSetupWorkbenchTask] =
@@ -2782,16 +2881,24 @@ export default function CommunityDomainDashboardPage() {
     useState<DirectorSummaryTaskKey>("overview");
   const [activeSponsorSummaryTask, setActiveSponsorSummaryTask] =
     useState<SponsorSummaryTaskKey>("overview");
+  const [directorSummaryTaskChooserOpen, setDirectorSummaryTaskChooserOpen] =
+    useState(false);
+  const [sponsorSummaryTaskChooserOpen, setSponsorSummaryTaskChooserOpen] =
+    useState(false);
   const [activeRealLifeRecordTask, setActiveRealLifeRecordTask] =
     useState<RealLifeRecordTask | null>(null);
   const [activeActivityRecordTask, setActiveActivityRecordTask] =
     useState<ActivityRecordTaskKey>("record");
+  const [activityRecordTaskChooserOpen, setActivityRecordTaskChooserOpen] =
+    useState(false);
   const [activeActivityRecordStage, setActiveActivityRecordStage] =
     useState<ActivityRecordStageKey>("person");
   const [activityRecordStageChooserOpen, setActivityRecordStageChooserOpen] =
     useState(false);
   const [activeBeneficiaryOutcomeTask, setActiveBeneficiaryOutcomeTask] =
     useState<BeneficiaryOutcomeTaskKey>("record");
+  const [beneficiaryOutcomeTaskChooserOpen, setBeneficiaryOutcomeTaskChooserOpen] =
+    useState(false);
   const [activeBeneficiaryOutcomeRecordStage, setActiveBeneficiaryOutcomeRecordStage] =
     useState<BeneficiaryOutcomeRecordStageKey>("person");
   const [
@@ -3040,6 +3147,8 @@ export default function CommunityDomainDashboardPage() {
     setMemberRosterTaskChooserOpen(false);
     setActiveDirectorSummaryTask("overview");
     setActiveSponsorSummaryTask("overview");
+    setDirectorSummaryTaskChooserOpen(false);
+    setSponsorSummaryTaskChooserOpen(false);
     setPeriodSummary(null);
     setSponsorSummary(null);
     setActivityCatalogue([]);
@@ -3047,9 +3156,11 @@ export default function CommunityDomainDashboardPage() {
     setActivityDraft(emptyCommunityDomainActivityDraft());
     setActiveRealLifeRecordTask(null);
     setActiveActivityRecordTask("record");
+    setActivityRecordTaskChooserOpen(false);
     setActiveActivityRecordStage("person");
     setActivityRecordStageChooserOpen(false);
     setActiveBeneficiaryOutcomeTask("record");
+    setBeneficiaryOutcomeTaskChooserOpen(false);
     setActiveBeneficiaryOutcomeRecordStage("person");
     setBeneficiaryOutcomeRecordStageChooserOpen(false);
     setBeneficiaryOutcomeRows([]);
@@ -4579,6 +4690,9 @@ export default function CommunityDomainDashboardPage() {
     setOperatingSummaryNotesOpen(false);
     setOperatingSummaryGroupChooserOpen(false);
     setOperatingSummaryTaskChooserOpen(false);
+    setSetupOverviewGroupChooserOpen(false);
+    setSetupOverviewTaskChooserOpen(false);
+    setSetupNoticeTaskChooserOpen(false);
     setSetupWorkbenchChooserOpen(false);
     setSetupAccessTaskChooserOpen(false);
     setServiceStageChooserOpen(false);
@@ -4698,6 +4812,12 @@ export default function CommunityDomainDashboardPage() {
   const activeSetupOverviewGroupTasks = SETUP_OVERVIEW_TASK_OPTIONS.filter((task) =>
     activeSetupOverviewGroupOption.taskKeys.includes(task.key)
   );
+  const activeSetupOverviewTaskOption =
+    SETUP_OVERVIEW_TASK_OPTIONS.find((task) => task.key === activeSetupOverviewTask) ||
+    SETUP_OVERVIEW_TASK_OPTIONS[0];
+  const activeSetupNoticeTaskOption =
+    SETUP_NOTICE_TASK_OPTIONS.find((task) => task.key === activeSetupNoticeTask) ||
+    SETUP_NOTICE_TASK_OPTIONS[0];
   const activeSetupWorkbenchTaskOption =
     SETUP_WORKBENCH_TASK_OPTIONS.find((task) => task.key === activeSetupWorkbenchTask) ||
     SETUP_WORKBENCH_TASK_OPTIONS[0];
@@ -4781,6 +4901,13 @@ export default function CommunityDomainDashboardPage() {
   const activeMemberRosterTaskOption =
     MEMBER_ROSTER_TASK_OPTIONS.find((task) => task.key === activeMemberRosterTask) ||
     MEMBER_ROSTER_TASK_OPTIONS[0];
+  const activeActivityRecordTaskOption =
+    ACTIVITY_RECORD_TASK_OPTIONS.find((task) => task.key === activeActivityRecordTask) ||
+    ACTIVITY_RECORD_TASK_OPTIONS[0];
+  const activeBeneficiaryOutcomeTaskOption =
+    BENEFICIARY_OUTCOME_TASK_OPTIONS.find(
+      (task) => task.key === activeBeneficiaryOutcomeTask
+    ) || BENEFICIARY_OUTCOME_TASK_OPTIONS[0];
   const domainInSetup = isCommunityDomainInSetup(status, domain);
   const domainOperational = isCommunityDomainOperational(status, domain);
   const pageTitle = domainInSetup
@@ -4865,6 +4992,14 @@ export default function CommunityDomainDashboardPage() {
   const activeGovernanceGroupTasks = GOVERNANCE_TASK_OPTIONS.filter((task) =>
     activeGovernanceTaskGroupOption.taskKeys.includes(task.key)
   );
+  const activeDirectorSummaryTaskOption =
+    DIRECTOR_SUMMARY_TASK_OPTIONS.find(
+      (task) => task.key === activeDirectorSummaryTask
+    ) || DIRECTOR_SUMMARY_TASK_OPTIONS[0];
+  const activeSponsorSummaryTaskOption =
+    SPONSOR_SUMMARY_TASK_OPTIONS.find(
+      (task) => task.key === activeSponsorSummaryTask
+    ) || SPONSOR_SUMMARY_TASK_OPTIONS[0];
   const billingIsActive =
     cleanText(status.billing_status || selectedLane?.status).toLowerCase() === "active";
   const activeBillingTaskOption =
@@ -5287,6 +5422,8 @@ export default function CommunityDomainDashboardPage() {
     setGovernanceGroupChooserOpen(false);
     setGovernanceTaskChooserOpen(false);
     setRealLifeRecordTypeChooserOpen(false);
+    setActivityRecordTaskChooserOpen(false);
+    setBeneficiaryOutcomeTaskChooserOpen(false);
     if (mode === "edit") {
       setMessage(
         setupEditingLocked
@@ -5302,7 +5439,11 @@ export default function CommunityDomainDashboardPage() {
     setActiveGovernanceTask(task);
     setGovernanceGroupChooserOpen(false);
     setGovernanceTaskChooserOpen(false);
+    setDirectorSummaryTaskChooserOpen(false);
+    setSponsorSummaryTaskChooserOpen(false);
     setRealLifeRecordTypeChooserOpen(false);
+    setActivityRecordTaskChooserOpen(false);
+    setBeneficiaryOutcomeTaskChooserOpen(false);
     if (task === "real_life_record") {
       setActiveRealLifeRecordTask((current) => current || "activity");
       setActiveActivityRecordTask("record");
@@ -5318,11 +5459,13 @@ export default function CommunityDomainDashboardPage() {
     setActiveRealLifeRecordTask(task);
     if (task === "activity") {
       setActiveActivityRecordTask("record");
+      setActivityRecordTaskChooserOpen(false);
       setActiveActivityRecordStage("person");
       setActivityRecordStageChooserOpen(false);
       setBeneficiaryOutcomeRecordStageChooserOpen(false);
     } else {
       setActiveBeneficiaryOutcomeTask("record");
+      setBeneficiaryOutcomeTaskChooserOpen(false);
       setActiveBeneficiaryOutcomeRecordStage("person");
       setActivityRecordStageChooserOpen(false);
       setBeneficiaryOutcomeRecordStageChooserOpen(false);
@@ -5334,6 +5477,9 @@ export default function CommunityDomainDashboardPage() {
     setCommandGuidanceOpen(false);
     setWorkSurfaceNotesOpen(false);
     setOperatingSummaryNotesOpen(false);
+    setSetupOverviewGroupChooserOpen(false);
+    setSetupOverviewTaskChooserOpen(false);
+    setSetupNoticeTaskChooserOpen(false);
     setSetupWorkbenchChooserOpen(false);
     setSetupAccessTaskChooserOpen(false);
     setServicePacketChooserOpen(false);
@@ -5353,6 +5499,9 @@ export default function CommunityDomainDashboardPage() {
     setOperatingSummaryNotesOpen(false);
     setOperatingSummaryGroupChooserOpen(false);
     setOperatingSummaryTaskChooserOpen(false);
+    setSetupOverviewGroupChooserOpen(false);
+    setSetupOverviewTaskChooserOpen(false);
+    setSetupNoticeTaskChooserOpen(false);
     setSetupWorkbenchChooserOpen(false);
     setSetupAccessTaskChooserOpen(false);
     setServiceStageChooserOpen(false);
@@ -5364,11 +5513,15 @@ export default function CommunityDomainDashboardPage() {
     setMemberRosterTaskChooserOpen(false);
     setGovernanceGroupChooserOpen(false);
     setGovernanceTaskChooserOpen(false);
+    setDirectorSummaryTaskChooserOpen(false);
+    setSponsorSummaryTaskChooserOpen(false);
     setBillingTaskChooserOpen(false);
     setBillingPaymentGroupChooserOpen(false);
     setBillingPaymentStepChooserOpen(false);
     setBillingAccountTaskChooserOpen(false);
     setRealLifeRecordTypeChooserOpen(false);
+    setActivityRecordTaskChooserOpen(false);
+    setBeneficiaryOutcomeTaskChooserOpen(false);
     setActivityRecordStageChooserOpen(false);
     setBeneficiaryOutcomeRecordStageChooserOpen(false);
   }
@@ -5416,6 +5569,9 @@ export default function CommunityDomainDashboardPage() {
     setCommandGuidanceOpen(false);
     setWorkSurfaceNotesOpen(false);
     setOperatingSummaryNotesOpen(false);
+    setSetupOverviewGroupChooserOpen(false);
+    setSetupOverviewTaskChooserOpen(false);
+    setSetupNoticeTaskChooserOpen(false);
     setSetupWorkbenchChooserOpen(false);
     setSetupAccessTaskChooserOpen(false);
     setServicePacketChooserOpen(false);
@@ -5423,7 +5579,11 @@ export default function CommunityDomainDashboardPage() {
     setMemberPacketChooserOpen(false);
     setGovernanceGroupChooserOpen(false);
     setGovernanceTaskChooserOpen(false);
+    setDirectorSummaryTaskChooserOpen(false);
+    setSponsorSummaryTaskChooserOpen(false);
     setRealLifeRecordTypeChooserOpen(false);
+    setActivityRecordTaskChooserOpen(false);
+    setBeneficiaryOutcomeTaskChooserOpen(false);
     setMessage("Returned to Domain command. Choose Marketplace or open one operating area.");
     window.requestAnimationFrame(() => {
       commandSurfaceRef.current?.scrollIntoView({ block: "start", behavior: "auto" });
@@ -6999,78 +7159,133 @@ export default function CommunityDomainDashboardPage() {
                   </div>
                 </div>
               </div>
-              <div
+              <StableButton
+                type="button"
+                kind="secondary"
+                fullWidth
+                stableHeight={42}
+                debugId="community-domain-dashboard.setup-overview-group-toggle"
+                aria-expanded={setupOverviewGroupChooserOpen}
+                aria-controls="community-domain-setup-overview-stages"
+                onClick={() =>
+                  setSetupOverviewGroupChooserOpen((current) => !current)
+                }
                 style={{
-                  display: "grid",
-                  gridTemplateColumns:
-                    "repeat(auto-fit, minmax(min(100%, 132px), 1fr))",
-                  gap: 8,
+                  justifyContent: "center",
+                  fontSize: 13,
+                  textTransform: "none",
                 }}
               >
-                {SETUP_OVERVIEW_GROUP_OPTIONS.map((group) => {
-                  const selected = group.key === activeSetupOverviewGroup;
-                  return (
-                    <StableButton
-                      key={group.key}
-                      type="button"
-                      kind={selected ? "primary" : "secondary"}
-                      stableHeight={46}
-                      fullWidth
-                      aria-pressed={selected}
-                      title={group.note}
-                      debugId={`community-domain-dashboard.setup-overview-group.${group.key}`}
-                      onClick={() => {
-                        setActiveSetupOverviewTask(group.defaultTask);
-                        if (group.defaultTask === "notices") {
-                          setActiveSetupNoticeTask("recent");
-                        }
-                      }}
-                    >
-                      {group.label}
-                    </StableButton>
-                  );
-                })}
-              </div>
+                {setupOverviewGroupChooserOpen
+                  ? "Close setup stages"
+                  : "Change setup stage"}
+              </StableButton>
+              {setupOverviewGroupChooserOpen ? (
+                <div
+                  id="community-domain-setup-overview-stages"
+                  data-debug-id="community-domain-dashboard.setup-overview-group-panel"
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns:
+                      "repeat(auto-fit, minmax(min(100%, 132px), 1fr))",
+                    gap: 8,
+                  }}
+                >
+                  {SETUP_OVERVIEW_GROUP_OPTIONS.map((group) => {
+                    const selected = group.key === activeSetupOverviewGroup;
+                    return (
+                      <StableButton
+                        key={group.key}
+                        type="button"
+                        kind={selected ? "primary" : "secondary"}
+                        stableHeight={46}
+                        fullWidth
+                        aria-pressed={selected}
+                        title={group.note}
+                        debugId={`community-domain-dashboard.setup-overview-group.${group.key}`}
+                        onClick={() => {
+                          setActiveSetupOverviewTask(group.defaultTask);
+                          setSetupOverviewGroupChooserOpen(false);
+                          setSetupOverviewTaskChooserOpen(false);
+                          if (group.defaultTask === "notices") {
+                            setActiveSetupNoticeTask("recent");
+                            setSetupNoticeTaskChooserOpen(false);
+                          }
+                        }}
+                      >
+                        {group.label}
+                      </StableButton>
+                    );
+                  })}
+                </div>
+              ) : null}
               <div style={{ ...helperText(), fontSize: 13 }}>
                 {activeSetupOverviewGroupOption.note}
               </div>
-              <div
+              <div style={{ ...helperText(), fontSize: 13 }}>
+                Current packet:{" "}
+                <strong>{activeSetupOverviewTaskOption.label}</strong>.{" "}
+                {activeSetupOverviewTaskOption.note}
+              </div>
+              <StableButton
+                type="button"
+                kind="secondary"
+                fullWidth
+                stableHeight={42}
+                debugId="community-domain-dashboard.setup-overview-task-toggle"
+                aria-expanded={setupOverviewTaskChooserOpen}
+                aria-controls="community-domain-setup-overview-packets"
+                onClick={() =>
+                  setSetupOverviewTaskChooserOpen((current) => !current)
+                }
                 style={{
-                  display: "grid",
-                  gridTemplateColumns:
-                    "repeat(auto-fit, minmax(min(100%, 145px), 1fr))",
-                  gap: 8,
+                  justifyContent: "center",
+                  fontSize: 13,
+                  textTransform: "none",
                 }}
               >
-                {activeSetupOverviewGroupTasks.map((task) => {
-                  const selected = task.key === activeSetupOverviewTask;
-                  return (
-                    <StableButton
-                      key={task.key}
-                      type="button"
-                      kind={selected ? "primary" : "secondary"}
-                      stableHeight={46}
-                      fullWidth
-                      aria-pressed={selected}
-                      title={task.note}
-                      debugId={`community-domain-dashboard.setup-overview.${task.key}`}
-                      onClick={() => {
-                        setActiveSetupOverviewTask(task.key);
-                        if (task.key === "notices") {
-                          setActiveSetupNoticeTask("recent");
-                        }
-                      }}
-                    >
-                      {task.label}
-                    </StableButton>
-                  );
-                })}
-              </div>
-              <div style={{ ...helperText(), fontSize: 13 }}>
-                {SETUP_OVERVIEW_TASK_OPTIONS.find(
-                  (task) => task.key === activeSetupOverviewTask
-                )?.note || "Choose the setup overview packet you need."}
-              </div>
+                {setupOverviewTaskChooserOpen
+                  ? "Close setup packets"
+                  : "Change setup packet"}
+              </StableButton>
+              {setupOverviewTaskChooserOpen ? (
+                <div
+                  id="community-domain-setup-overview-packets"
+                  data-debug-id="community-domain-dashboard.setup-overview-task-panel"
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns:
+                      "repeat(auto-fit, minmax(min(100%, 145px), 1fr))",
+                    gap: 8,
+                  }}
+                >
+                  {activeSetupOverviewGroupTasks.map((task) => {
+                    const selected = task.key === activeSetupOverviewTask;
+                    return (
+                      <StableButton
+                        key={task.key}
+                        type="button"
+                        kind={selected ? "primary" : "secondary"}
+                        stableHeight={46}
+                        fullWidth
+                        aria-pressed={selected}
+                        title={task.note}
+                        debugId={`community-domain-dashboard.setup-overview.${task.key}`}
+                        onClick={() => {
+                          setActiveSetupOverviewTask(task.key);
+                          setSetupOverviewTaskChooserOpen(false);
+                          if (task.key === "notices") {
+                            setActiveSetupNoticeTask("recent");
+                            setSetupNoticeTaskChooserOpen(false);
+                          }
+                        }}
+                      >
+                        {task.label}
+                      </StableButton>
+                    );
+                  })}
+                </div>
+              ) : null}
             </div>
           </section>
 
@@ -7117,35 +7332,63 @@ export default function CommunityDomainDashboardPage() {
             </div>
 
             <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
-              <div
+              <div style={{ ...helperText(), fontSize: 13 }}>
+                Current notice packet:{" "}
+                <strong>{activeSetupNoticeTaskOption.label}</strong>.{" "}
+                {activeSetupNoticeTaskOption.note}
+              </div>
+              <StableButton
+                type="button"
+                kind="secondary"
+                fullWidth
+                stableHeight={42}
+                debugId="community-domain-dashboard.setup-notice-toggle"
+                aria-expanded={setupNoticeTaskChooserOpen}
+                aria-controls="community-domain-setup-notice-packets"
+                onClick={() =>
+                  setSetupNoticeTaskChooserOpen((current) => !current)
+                }
                 style={{
-                  display: "grid",
-                  gridTemplateColumns:
-                    "repeat(auto-fit, minmax(min(100%, 145px), 1fr))",
-                  gap: 8,
+                  justifyContent: "center",
+                  fontSize: 13,
+                  textTransform: "none",
                 }}
               >
-                {SETUP_NOTICE_TASK_OPTIONS.map((task) => {
-                  const selected = task.key === activeSetupNoticeTask;
-                  return (
-                    <StableButton
-                      key={task.key}
-                      type="button"
-                      kind={selected ? "primary" : "secondary"}
-                      stableHeight={46}
-                      debugId={`community-domain-dashboard.setup-notice.${task.key}`}
-                      onClick={() => setActiveSetupNoticeTask(task.key)}
-                    >
-                      {task.label}
-                    </StableButton>
-                  );
-                })}
-              </div>
-              <div style={{ ...helperText(), fontSize: 13 }}>
-                {SETUP_NOTICE_TASK_OPTIONS.find(
-                  (task) => task.key === activeSetupNoticeTask
-                )?.note || "Choose the Official Board packet you need."}
-              </div>
+                {setupNoticeTaskChooserOpen
+                  ? "Close notice packets"
+                  : "Change notice packet"}
+              </StableButton>
+              {setupNoticeTaskChooserOpen ? (
+                <div
+                  id="community-domain-setup-notice-packets"
+                  data-debug-id="community-domain-dashboard.setup-notice-panel"
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns:
+                      "repeat(auto-fit, minmax(min(100%, 145px), 1fr))",
+                    gap: 8,
+                  }}
+                >
+                  {SETUP_NOTICE_TASK_OPTIONS.map((task) => {
+                    const selected = task.key === activeSetupNoticeTask;
+                    return (
+                      <StableButton
+                        key={task.key}
+                        type="button"
+                        kind={selected ? "primary" : "secondary"}
+                        stableHeight={46}
+                        debugId={`community-domain-dashboard.setup-notice.${task.key}`}
+                        onClick={() => {
+                          setActiveSetupNoticeTask(task.key);
+                          setSetupNoticeTaskChooserOpen(false);
+                        }}
+                      >
+                        {task.label}
+                      </StableButton>
+                    );
+                  })}
+                </div>
+              ) : null}
             </div>
 
             {activeSetupNoticeTask === "post" ? (
@@ -11159,45 +11402,69 @@ export default function CommunityDomainDashboardPage() {
                                     Outcomes: {compactStatus(outcomeStatus)}
                                   </span>
                                 </div>
-                                <div
+                                <div style={{ ...helperText(), fontSize: 13 }}>
+                                  Current report packet:{" "}
+                                  <strong>{activeDirectorSummaryTaskOption.label}</strong>.{" "}
+                                  {activeDirectorSummaryTaskOption.note}
+                                </div>
+                                <StableButton
+                                  type="button"
+                                  kind="secondary"
+                                  fullWidth
+                                  stableHeight={42}
+                                  debugId="community-domain-dashboard.director-summary-toggle"
+                                  aria-expanded={directorSummaryTaskChooserOpen}
+                                  aria-controls="community-domain-director-summary-packets"
+                                  onClick={() =>
+                                    setDirectorSummaryTaskChooserOpen((current) => !current)
+                                  }
                                   style={{
-                                    display: "grid",
-                                    gridTemplateColumns:
-                                      "repeat(auto-fit, minmax(min(100%, 140px), 1fr))",
-                                    gap: 8,
+                                    justifyContent: "center",
+                                    fontSize: 13,
+                                    textTransform: "none",
                                   }}
                                 >
-                                  {[
-                                    ["overview", "Overview"],
-                                    ["membership", "Membership"],
-                                    ["evidence", "Evidence"],
-                                    ["delivery", "Delivery"],
-                                  ].map(([task, label]) => (
-                                    <StableButton
-                                      key={task}
-                                      type="button"
-                                      kind={
-                                        activeDirectorSummaryTask === task
-                                          ? "primary"
-                                          : "secondary"
-                                      }
-                                      stableHeight={44}
-                                      debugId={`community-domain-dashboard.director-summary.${task}`}
-                                      onClick={() =>
-                                        setActiveDirectorSummaryTask(
-                                          task as DirectorSummaryTaskKey
-                                        )
-                                      }
-                                      style={{
-                                        justifyContent: "center",
-                                        fontSize: 13,
-                                        textTransform: "none",
-                                      }}
-                                    >
-                                      {label}
-                                    </StableButton>
-                                  ))}
-                                </div>
+                                  {directorSummaryTaskChooserOpen
+                                    ? "Close report packets"
+                                    : "Change report packet"}
+                                </StableButton>
+                                {directorSummaryTaskChooserOpen ? (
+                                  <div
+                                    id="community-domain-director-summary-packets"
+                                    data-debug-id="community-domain-dashboard.director-summary-panel"
+                                    style={{
+                                      display: "grid",
+                                      gridTemplateColumns:
+                                        "repeat(auto-fit, minmax(min(100%, 140px), 1fr))",
+                                      gap: 8,
+                                    }}
+                                  >
+                                    {DIRECTOR_SUMMARY_TASK_OPTIONS.map((task) => (
+                                      <StableButton
+                                        key={task.key}
+                                        type="button"
+                                        kind={
+                                          activeDirectorSummaryTask === task.key
+                                            ? "primary"
+                                            : "secondary"
+                                        }
+                                        stableHeight={44}
+                                        debugId={`community-domain-dashboard.director-summary.${task.key}`}
+                                        onClick={() => {
+                                          setActiveDirectorSummaryTask(task.key);
+                                          setDirectorSummaryTaskChooserOpen(false);
+                                        }}
+                                        style={{
+                                          justifyContent: "center",
+                                          fontSize: 13,
+                                          textTransform: "none",
+                                        }}
+                                      >
+                                        {task.label}
+                                      </StableButton>
+                                    ))}
+                                  </div>
+                                ) : null}
                                 {activeDirectorSummaryTask === "overview" ? (
                                   <div
                                     style={{
@@ -11594,45 +11861,69 @@ export default function CommunityDomainDashboardPage() {
                                     Challenges: {compactStatus(challenges.status)}
                                   </span>
                                 </div>
-                                <div
+                                <div style={{ ...helperText(), fontSize: 13 }}>
+                                  Current sponsor packet:{" "}
+                                  <strong>{activeSponsorSummaryTaskOption.label}</strong>.{" "}
+                                  {activeSponsorSummaryTaskOption.note}
+                                </div>
+                                <StableButton
+                                  type="button"
+                                  kind="secondary"
+                                  fullWidth
+                                  stableHeight={42}
+                                  debugId="community-domain-dashboard.sponsor-summary-toggle"
+                                  aria-expanded={sponsorSummaryTaskChooserOpen}
+                                  aria-controls="community-domain-sponsor-summary-packets"
+                                  onClick={() =>
+                                    setSponsorSummaryTaskChooserOpen((current) => !current)
+                                  }
                                   style={{
-                                    display: "grid",
-                                    gridTemplateColumns:
-                                      "repeat(auto-fit, minmax(min(100%, 140px), 1fr))",
-                                    gap: 8,
+                                    justifyContent: "center",
+                                    fontSize: 13,
+                                    textTransform: "none",
                                   }}
                                 >
-                                  {[
-                                    ["overview", "Overview"],
-                                    ["evidence", "Evidence"],
-                                    ["delivery", "Delivery"],
-                                    ["export", "Export"],
-                                  ].map(([task, label]) => (
-                                    <StableButton
-                                      key={task}
-                                      type="button"
-                                      kind={
-                                        activeSponsorSummaryTask === task
-                                          ? "primary"
-                                          : "secondary"
-                                      }
-                                      stableHeight={44}
-                                      debugId={`community-domain-dashboard.sponsor-summary.${task}`}
-                                      onClick={() =>
-                                        setActiveSponsorSummaryTask(
-                                          task as SponsorSummaryTaskKey
-                                        )
-                                      }
-                                      style={{
-                                        justifyContent: "center",
-                                        fontSize: 13,
-                                        textTransform: "none",
-                                      }}
-                                    >
-                                      {label}
-                                    </StableButton>
-                                  ))}
-                                </div>
+                                  {sponsorSummaryTaskChooserOpen
+                                    ? "Close sponsor packets"
+                                    : "Change sponsor packet"}
+                                </StableButton>
+                                {sponsorSummaryTaskChooserOpen ? (
+                                  <div
+                                    id="community-domain-sponsor-summary-packets"
+                                    data-debug-id="community-domain-dashboard.sponsor-summary-panel"
+                                    style={{
+                                      display: "grid",
+                                      gridTemplateColumns:
+                                        "repeat(auto-fit, minmax(min(100%, 140px), 1fr))",
+                                      gap: 8,
+                                    }}
+                                  >
+                                    {SPONSOR_SUMMARY_TASK_OPTIONS.map((task) => (
+                                      <StableButton
+                                        key={task.key}
+                                        type="button"
+                                        kind={
+                                          activeSponsorSummaryTask === task.key
+                                            ? "primary"
+                                            : "secondary"
+                                        }
+                                        stableHeight={44}
+                                        debugId={`community-domain-dashboard.sponsor-summary.${task.key}`}
+                                        onClick={() => {
+                                          setActiveSponsorSummaryTask(task.key);
+                                          setSponsorSummaryTaskChooserOpen(false);
+                                        }}
+                                        style={{
+                                          justifyContent: "center",
+                                          fontSize: 13,
+                                          textTransform: "none",
+                                        }}
+                                      >
+                                        {task.label}
+                                      </StableButton>
+                                    ))}
+                                  </div>
+                                ) : null}
                                 {activeSponsorSummaryTask === "overview" ? (
                                   <div
                                     style={{
@@ -12165,6 +12456,7 @@ export default function CommunityDomainDashboardPage() {
                                 onClick={() => {
                                   setActiveRealLifeRecordTask("activity");
                                   setActiveActivityRecordTask("record");
+                                  setActivityRecordTaskChooserOpen(false);
                                   setActiveActivityRecordStage("person");
                                   setActivityRecordStageChooserOpen(false);
                                   setBeneficiaryOutcomeRecordStageChooserOpen(false);
@@ -12185,6 +12477,7 @@ export default function CommunityDomainDashboardPage() {
                                 onClick={() => {
                                   setActiveRealLifeRecordTask("beneficiary_outcome");
                                   setActiveBeneficiaryOutcomeTask("record");
+                                  setBeneficiaryOutcomeTaskChooserOpen(false);
                                   setActiveBeneficiaryOutcomeRecordStage("person");
                                   setActivityRecordStageChooserOpen(false);
                                   setBeneficiaryOutcomeRecordStageChooserOpen(false);
@@ -12228,47 +12521,73 @@ export default function CommunityDomainDashboardPage() {
                           </div>
                         </div>
 
-                        <div
+                        <div style={{ ...helperText(), fontSize: 13 }}>
+                          Current activity packet:{" "}
+                          <strong>{activeActivityRecordTaskOption.label}</strong>.{" "}
+                          {activeActivityRecordTaskOption.note}
+                        </div>
+                        <StableButton
+                          type="button"
+                          kind="secondary"
+                          fullWidth
+                          stableHeight={42}
+                          debugId="community-domain-dashboard.activity-task-toggle"
+                          aria-expanded={activityRecordTaskChooserOpen}
+                          aria-controls="community-domain-activity-record-packets"
+                          onClick={() =>
+                            setActivityRecordTaskChooserOpen((current) => !current)
+                          }
                           style={{
-                            display: "grid",
-                            gridTemplateColumns:
-                              "repeat(auto-fit, minmax(min(100%, 140px), 1fr))",
-                            gap: 8,
+                            justifyContent: "center",
+                            fontSize: 13,
+                            textTransform: "none",
                           }}
                         >
-                          {[
-                            ["record", "Record"],
-                            ["catalogue", "Catalogue"],
-                            ["recent", "Recent"],
-                          ].map(([task, label]) => (
-                            <StableButton
-                              key={task}
-                              type="button"
-                              kind={
-                                activeActivityRecordTask === task
-                                  ? "primary"
-                                  : "secondary"
-                              }
-                              stableHeight={44}
-                              debugId={`community-domain-dashboard.activity-task.${task}`}
-                              onClick={() => {
-                                const nextTask = task as ActivityRecordTaskKey;
-                                setActiveActivityRecordTask(nextTask);
-                                if (nextTask === "record") {
-                                  setActiveActivityRecordStage("person");
+                          {activityRecordTaskChooserOpen
+                            ? "Close activity packets"
+                            : "Change activity packet"}
+                        </StableButton>
+                        {activityRecordTaskChooserOpen ? (
+                          <div
+                            id="community-domain-activity-record-packets"
+                            data-debug-id="community-domain-dashboard.activity-task-panel"
+                            style={{
+                              display: "grid",
+                              gridTemplateColumns:
+                                "repeat(auto-fit, minmax(min(100%, 140px), 1fr))",
+                              gap: 8,
+                            }}
+                          >
+                            {ACTIVITY_RECORD_TASK_OPTIONS.map((task) => (
+                              <StableButton
+                                key={task.key}
+                                type="button"
+                                kind={
+                                  activeActivityRecordTask === task.key
+                                    ? "primary"
+                                    : "secondary"
                                 }
-                                setActivityRecordStageChooserOpen(false);
-                              }}
-                              style={{
-                                justifyContent: "center",
-                                fontSize: 13,
-                                textTransform: "none",
-                              }}
-                            >
-                              {label}
-                            </StableButton>
-                          ))}
-                        </div>
+                                stableHeight={44}
+                                debugId={`community-domain-dashboard.activity-task.${task.key}`}
+                                onClick={() => {
+                                  setActiveActivityRecordTask(task.key);
+                                  if (task.key === "record") {
+                                    setActiveActivityRecordStage("person");
+                                  }
+                                  setActivityRecordTaskChooserOpen(false);
+                                  setActivityRecordStageChooserOpen(false);
+                                }}
+                                style={{
+                                  justifyContent: "center",
+                                  fontSize: 13,
+                                  textTransform: "none",
+                                }}
+                              >
+                                {task.label}
+                              </StableButton>
+                            ))}
+                          </div>
+                        ) : null}
 
                         {activeActivityRecordTask === "record" ? (
                           <>
@@ -12650,46 +12969,73 @@ export default function CommunityDomainDashboardPage() {
                           </div>
                         </div>
 
-                        <div
+                        <div style={{ ...helperText(), fontSize: 13 }}>
+                          Current outcome packet:{" "}
+                          <strong>{activeBeneficiaryOutcomeTaskOption.label}</strong>.{" "}
+                          {activeBeneficiaryOutcomeTaskOption.note}
+                        </div>
+                        <StableButton
+                          type="button"
+                          kind="secondary"
+                          fullWidth
+                          stableHeight={42}
+                          debugId="community-domain-dashboard.beneficiary-outcome-task-toggle"
+                          aria-expanded={beneficiaryOutcomeTaskChooserOpen}
+                          aria-controls="community-domain-beneficiary-outcome-packets"
+                          onClick={() =>
+                            setBeneficiaryOutcomeTaskChooserOpen((current) => !current)
+                          }
                           style={{
-                            display: "grid",
-                            gridTemplateColumns:
-                              "repeat(auto-fit, minmax(min(100%, 150px), 1fr))",
-                            gap: 8,
+                            justifyContent: "center",
+                            fontSize: 13,
+                            textTransform: "none",
                           }}
                         >
-                          {[
-                            ["record", "Record"],
-                            ["recent", "Recent"],
-                          ].map(([task, label]) => (
-                            <StableButton
-                              key={task}
-                              type="button"
-                              kind={
-                                activeBeneficiaryOutcomeTask === task
-                                  ? "primary"
-                                  : "secondary"
-                              }
-                              stableHeight={44}
-                              debugId={`community-domain-dashboard.beneficiary-outcome-task.${task}`}
-                              onClick={() => {
-                                const nextTask = task as BeneficiaryOutcomeTaskKey;
-                                setActiveBeneficiaryOutcomeTask(nextTask);
-                                if (nextTask === "record") {
-                                  setActiveBeneficiaryOutcomeRecordStage("person");
+                          {beneficiaryOutcomeTaskChooserOpen
+                            ? "Close outcome packets"
+                            : "Change outcome packet"}
+                        </StableButton>
+                        {beneficiaryOutcomeTaskChooserOpen ? (
+                          <div
+                            id="community-domain-beneficiary-outcome-packets"
+                            data-debug-id="community-domain-dashboard.beneficiary-outcome-task-panel"
+                            style={{
+                              display: "grid",
+                              gridTemplateColumns:
+                                "repeat(auto-fit, minmax(min(100%, 150px), 1fr))",
+                              gap: 8,
+                            }}
+                          >
+                            {BENEFICIARY_OUTCOME_TASK_OPTIONS.map((task) => (
+                              <StableButton
+                                key={task.key}
+                                type="button"
+                                kind={
+                                  activeBeneficiaryOutcomeTask === task.key
+                                    ? "primary"
+                                    : "secondary"
                                 }
-                                setBeneficiaryOutcomeRecordStageChooserOpen(false);
-                              }}
-                              style={{
-                                justifyContent: "center",
-                                fontSize: 13,
-                                textTransform: "none",
-                              }}
-                            >
-                              {label}
-                            </StableButton>
-                          ))}
-                        </div>
+                                stableHeight={44}
+                                debugId={`community-domain-dashboard.beneficiary-outcome-task.${task.key}`}
+                                onClick={() => {
+                                  setActiveBeneficiaryOutcomeTask(task.key);
+                                  if (task.key === "record") {
+                                    setActiveBeneficiaryOutcomeRecordStage("person");
+                                  }
+                                  setBeneficiaryOutcomeTaskChooserOpen(false);
+                                  setBeneficiaryOutcomeRecordStageChooserOpen(false);
+                                }}
+                                style={{
+                                  justifyContent: "center",
+                                  fontSize: 13,
+                                  textTransform: "none",
+                                }}
+                              >
+                                {task.label}
+                              </StableButton>
+                            ))}
+                          </div>
+                        ) : null}
 
                         {activeBeneficiaryOutcomeTask === "record" ? (
                           <>
@@ -15191,6 +15537,9 @@ export default function CommunityDomainDashboardPage() {
                         setCommandGuidanceOpen(false);
                         setWorkSurfaceNotesOpen(false);
                         setOperatingSummaryNotesOpen(false);
+                        setSetupOverviewGroupChooserOpen(false);
+                        setSetupOverviewTaskChooserOpen(false);
+                        setSetupNoticeTaskChooserOpen(false);
                         setServicePacketChooserOpen(false);
                         setStructurePacketChooserOpen(false);
                         setMemberPacketChooserOpen(false);

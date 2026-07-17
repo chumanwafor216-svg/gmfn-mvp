@@ -1468,7 +1468,17 @@ try {
     findings.push("Community Domain Structure packet buttons stay visible after a packet is selected.");
   }
   await page.getByText("Planning packet", { exact: true }).waitFor({ timeout: 10000 });
+  if (await isDebugVisible(page, "community-domain.structure-planning.focus.groups")) {
+    findings.push("Community Domain Structure planning view buttons are visible before Change view is opened.");
+  }
+  if (!(await isDebugVisible(page, "community-domain.structure-planning.focus-toggle"))) {
+    findings.push("Community Domain Structure planning packet does not expose a Change view control.");
+  }
+  await clickByDebugId(page, "community-domain.structure-planning.focus-toggle");
   await clickByDebugId(page, "community-domain.structure-planning.focus.groups");
+  if (await isDebugVisible(page, "community-domain.structure-planning.focus.rollout")) {
+    findings.push("Community Domain Structure planning view buttons stay visible after selecting a view.");
+  }
   await page.getByText("Group readiness", { exact: true }).waitFor({ timeout: 10000 });
 
   await clickByDebugId(page, "community-domain-dashboard.operating-area-picker-toggle");
@@ -1529,6 +1539,46 @@ try {
     findings.push("Community Domain Governance does not expose a Change governance stage control.");
   }
   await clickByDebugId(page, "community-domain-dashboard.governance-group-toggle");
+  await clickByDebugId(page, "community-domain-dashboard.governance-group.reports");
+  await page.getByText("Director period summary", { exact: true }).waitFor({ timeout: 10000 });
+  if (await isDebugVisible(page, "community-domain-dashboard.director-summary.membership")) {
+    findings.push("Community Domain Director summary packets are visible before Change report packet is opened.");
+  }
+  if (!(await isDebugVisible(page, "community-domain-dashboard.director-summary-toggle"))) {
+    findings.push("Community Domain Director summary does not expose a Change report packet control.");
+  }
+  await clickByDebugId(page, "community-domain-dashboard.director-summary-toggle");
+  await clickByDebugId(page, "community-domain-dashboard.director-summary.membership");
+  if (await isDebugVisible(page, "community-domain-dashboard.director-summary.overview")) {
+    findings.push("Community Domain Director summary packets stay visible after selecting a report packet.");
+  }
+  await page.getByText("Active members", { exact: true }).waitFor({ timeout: 10000 });
+  if (await isDebugVisible(page, "community-domain-dashboard.governance-task.sponsor_summary")) {
+    findings.push("Community Domain Governance report jobs are visible before Change job is opened.");
+  }
+  await clickByDebugId(page, "community-domain-dashboard.governance-task-toggle");
+  await clickByDebugId(page, "community-domain-dashboard.governance-task.sponsor_summary");
+  if (await isDebugVisible(page, "community-domain-dashboard.governance-task.director_summary")) {
+    findings.push("Community Domain Governance report jobs stay visible after selecting a report job.");
+  }
+  await page.getByText("Sponsor-safe summary", { exact: true }).waitFor({ timeout: 10000 });
+  if (await isDebugVisible(page, "community-domain-dashboard.sponsor-summary.evidence")) {
+    findings.push("Community Domain Sponsor summary packets are visible before Change sponsor packet is opened.");
+  }
+  if (!(await isDebugVisible(page, "community-domain-dashboard.sponsor-summary-toggle"))) {
+    findings.push("Community Domain Sponsor summary does not expose a Change sponsor packet control.");
+  }
+  await clickByDebugId(page, "community-domain-dashboard.sponsor-summary-toggle");
+  await clickByDebugId(page, "community-domain-dashboard.sponsor-summary.delivery");
+  if (await isDebugVisible(page, "community-domain-dashboard.sponsor-summary.overview")) {
+    findings.push("Community Domain Sponsor summary packets stay visible after selecting a sponsor packet.");
+  }
+  await page.waitForTimeout(450);
+  audit = await page.evaluate(pageAudit);
+  if (!normalized(audit.bodyText).includes("Current sponsor packet: Delivery")) {
+    findings.push("Community Domain Sponsor summary did not land on the selected Delivery packet.");
+  }
+  await clickByDebugId(page, "community-domain-dashboard.governance-group-toggle");
   await clickByDebugId(page, "community-domain-dashboard.governance-group.records");
   if (await isDebugVisible(page, "community-domain-dashboard.governance-group.reports")) {
     findings.push("Community Domain Governance stage buttons stay visible after selecting a stage.");
@@ -1561,6 +1611,25 @@ try {
   if (!(await isDebugVisible(page, "community-domain-dashboard.real-life-record.type-toggle"))) {
     findings.push("Community Domain real-life record type switcher is missing.");
   }
+  if (await isDebugVisible(page, "community-domain-dashboard.activity-task.catalogue")) {
+    findings.push("Community Domain Activity packets are visible before Change activity packet is opened.");
+  }
+  if (!(await isDebugVisible(page, "community-domain-dashboard.activity-task-toggle"))) {
+    findings.push("Community Domain Activity record does not expose a Change activity packet control.");
+  }
+  await clickByDebugId(page, "community-domain-dashboard.activity-task-toggle");
+  await clickByDebugId(page, "community-domain-dashboard.activity-task.catalogue");
+  if (await isDebugVisible(page, "community-domain-dashboard.activity-task.record")) {
+    findings.push("Community Domain Activity packets stay visible after selecting a packet.");
+  }
+  await page
+    .getByText("Use one catalogue type when recording a real activity.", { exact: true })
+    .waitFor({ timeout: 10000 });
+  await clickByDebugId(page, "community-domain-dashboard.activity-task-toggle");
+  await clickByDebugId(page, "community-domain-dashboard.activity-task.record");
+  if (await isDebugVisible(page, "community-domain-dashboard.activity-task.catalogue")) {
+    findings.push("Community Domain Activity packets stay visible after returning to Record packet.");
+  }
   if (await isDebugVisible(page, "community-domain-dashboard.activity-record-stage.evidence")) {
     findings.push("Community Domain Activity record steps are visible before Change step is opened.");
   }
@@ -1580,6 +1649,12 @@ try {
   );
   if (await isDebugVisible(page, "community-domain-dashboard.real-life-record.activity-inline")) {
     findings.push("Community Domain real-life record types stay visible after selecting a type.");
+  }
+  if (await isDebugVisible(page, "community-domain-dashboard.beneficiary-outcome-task.recent")) {
+    findings.push("Community Domain Beneficiary outcome packets are visible before Change outcome packet is opened.");
+  }
+  if (!(await isDebugVisible(page, "community-domain-dashboard.beneficiary-outcome-task-toggle"))) {
+    findings.push("Community Domain Beneficiary outcome does not expose a Change outcome packet control.");
   }
   if (
     await isDebugVisible(
@@ -1617,7 +1692,11 @@ try {
       "Community Domain Beneficiary outcome record step buttons stay visible after selecting a step."
     );
   }
+  await clickByDebugId(page, "community-domain-dashboard.beneficiary-outcome-task-toggle");
   await clickByDebugId(page, "community-domain-dashboard.beneficiary-outcome-task.recent");
+  if (await isDebugVisible(page, "community-domain-dashboard.beneficiary-outcome-task.record")) {
+    findings.push("Community Domain Beneficiary outcome packets stay visible after selecting a packet.");
+  }
   await page.getByText("Recent outcomes", { exact: true }).waitFor({ timeout: 10000 });
   if (
     await isDebugVisible(

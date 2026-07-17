@@ -236,6 +236,8 @@ export default function CommunityDomainStructurePlanningPanels({
   ).length;
   const [activeStructurePlanningFocus, setActiveStructurePlanningFocus] =
     useState<StructurePlanningFocusKey>("rollout");
+  const [structurePlanningFocusChooserOpen, setStructurePlanningFocusChooserOpen] =
+    useState(false);
   const selectedStructurePlanningFocus =
     STRUCTURE_PLANNING_FOCUS_OPTIONS.find(
       (option) => option.key === activeStructurePlanningFocus
@@ -254,37 +256,61 @@ export default function CommunityDomainStructurePlanningPanels({
         <div style={helperText()}>
           Current view: <strong>{selectedStructurePlanningFocus.label}</strong>.
         </div>
-        <div
+        <StableButton
+          type="button"
+          kind="secondary"
+          fullWidth
+          stableHeight={42}
+          debugId="community-domain.structure-planning.focus-toggle"
+          aria-expanded={structurePlanningFocusChooserOpen}
+          aria-controls="community-domain-structure-planning-focus"
+          onClick={() => setStructurePlanningFocusChooserOpen((current) => !current)}
           style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 132px), 1fr))",
-            gap: 8,
+            justifyContent: "center",
+            fontSize: 13,
+            textTransform: "none",
           }}
         >
-          {STRUCTURE_PLANNING_FOCUS_OPTIONS.map((option) => {
-            const selected = option.key === activeStructurePlanningFocus;
-            return (
-              <StableButton
-                key={option.key}
-                type="button"
-                kind={selected ? "primary" : "secondary"}
-                stableHeight={48}
-                fullWidth
-                aria-pressed={selected}
-                title={option.note}
-                debugId={`community-domain.structure-planning.focus.${option.key}`}
-                onClick={() => setActiveStructurePlanningFocus(option.key)}
-                style={{
-                  justifyContent: "center",
-                  fontSize: 13,
-                  textTransform: "none",
-                }}
-              >
-                {option.label}
-              </StableButton>
-            );
-          })}
-        </div>
+          {structurePlanningFocusChooserOpen ? "Close views" : "Change view"}
+        </StableButton>
+        {structurePlanningFocusChooserOpen ? (
+          <div
+            id="community-domain-structure-planning-focus"
+            data-debug-id="community-domain.structure-planning.focus-panel"
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 132px), 1fr))",
+              gap: 8,
+            }}
+          >
+            {STRUCTURE_PLANNING_FOCUS_OPTIONS.map((option) => {
+              const selected = option.key === activeStructurePlanningFocus;
+              return (
+                <StableButton
+                  key={option.key}
+                  type="button"
+                  kind={selected ? "primary" : "secondary"}
+                  stableHeight={48}
+                  fullWidth
+                  aria-pressed={selected}
+                  title={option.note}
+                  debugId={`community-domain.structure-planning.focus.${option.key}`}
+                  onClick={() => {
+                    setActiveStructurePlanningFocus(option.key);
+                    setStructurePlanningFocusChooserOpen(false);
+                  }}
+                  style={{
+                    justifyContent: "center",
+                    fontSize: 13,
+                    textTransform: "none",
+                  }}
+                >
+                  {option.label}
+                </StableButton>
+              );
+            })}
+          </div>
+        ) : null}
         <div style={{ ...helperText(), fontSize: 13 }}>
           {selectedStructurePlanningFocus.note}
         </div>
