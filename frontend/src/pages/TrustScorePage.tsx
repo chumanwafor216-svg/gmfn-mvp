@@ -70,7 +70,7 @@ type TrustPassportLaneKey =
 
 type TrustReadingState = {
   classText: string;
-  scoreText: string;
+  postureSource: string;
   tone: "green" | "yellow" | "red" | "neutral";
   statusText: string;
   whyText: string;
@@ -1127,7 +1127,7 @@ function getCciState(me: any, trustSlip: any): TrustReadingState {
     if (classText === "A" || classText === "A+") {
       return {
         classText,
-        scoreText:
+        postureSource:
           scoreNum === null || Number.isNaN(scoreNum)
             ? "-"
             : String(Math.round(scoreNum)),
@@ -1140,7 +1140,7 @@ function getCciState(me: any, trustSlip: any): TrustReadingState {
     if (classText === "B") {
       return {
         classText,
-        scoreText:
+        postureSource:
           scoreNum === null || Number.isNaN(scoreNum)
             ? "-"
             : String(Math.round(scoreNum)),
@@ -1155,7 +1155,7 @@ function getCciState(me: any, trustSlip: any): TrustReadingState {
     if (classText === "C") {
       return {
         classText,
-        scoreText:
+        postureSource:
           scoreNum === null || Number.isNaN(scoreNum)
             ? "-"
             : String(Math.round(scoreNum)),
@@ -1169,7 +1169,7 @@ function getCciState(me: any, trustSlip: any): TrustReadingState {
 
     return {
       classText,
-      scoreText:
+      postureSource:
         scoreNum === null || Number.isNaN(scoreNum)
           ? "-"
           : String(Math.round(scoreNum)),
@@ -1183,7 +1183,7 @@ function getCciState(me: any, trustSlip: any): TrustReadingState {
     if (scoreNum >= 75) {
       return {
         classText: "A",
-        scoreText: String(Math.round(scoreNum)),
+        postureSource: String(Math.round(scoreNum)),
         tone: "green",
         statusText: "Healthy across visible communities",
         whyText: String(rawWhy || "Your trust position is looking strong."),
@@ -1193,7 +1193,7 @@ function getCciState(me: any, trustSlip: any): TrustReadingState {
     if (scoreNum >= 55) {
       return {
         classText: "B",
-        scoreText: String(Math.round(scoreNum)),
+        postureSource: String(Math.round(scoreNum)),
         tone: "green",
         statusText: "Stable and growing",
         whyText: String(
@@ -1205,7 +1205,7 @@ function getCciState(me: any, trustSlip: any): TrustReadingState {
     if (scoreNum >= 35) {
       return {
         classText: "C",
-        scoreText: String(Math.round(scoreNum)),
+        postureSource: String(Math.round(scoreNum)),
         tone: "yellow",
         statusText: "Needs attention",
         whyText: String(
@@ -1216,7 +1216,7 @@ function getCciState(me: any, trustSlip: any): TrustReadingState {
 
     return {
       classText: "D",
-      scoreText: String(Math.round(scoreNum)),
+      postureSource: String(Math.round(scoreNum)),
       tone: "red",
       statusText: "At risk",
       whyText: String(rawWhy || "Your trust position needs urgent improvement."),
@@ -1225,7 +1225,7 @@ function getCciState(me: any, trustSlip: any): TrustReadingState {
 
   return {
     classText: "Not shown yet",
-    scoreText: "-",
+    postureSource: "-",
     tone: "neutral",
     statusText: "No cross-community consistency reading yet",
     whyText: "Complete identity and community activity first. The wider consistency reading will appear here when it is available.",
@@ -1282,7 +1282,7 @@ function getOpenTrustState(
     if (rawClass === "A" || rawClass === "A+") {
       return {
         classText: rawClass,
-        scoreText:
+        postureSource:
           rawScore === null || Number.isNaN(rawScore)
             ? "-"
             : String(Math.round(rawScore)),
@@ -1295,7 +1295,7 @@ function getOpenTrustState(
     if (rawClass === "B") {
       return {
         classText: rawClass,
-        scoreText:
+        postureSource:
           rawScore === null || Number.isNaN(rawScore)
             ? "-"
             : String(Math.round(rawScore)),
@@ -1309,7 +1309,7 @@ function getOpenTrustState(
     if (rawClass === "C") {
       return {
         classText: rawClass,
-        scoreText:
+        postureSource:
           rawScore === null || Number.isNaN(rawScore)
             ? "-"
             : String(Math.round(rawScore)),
@@ -1323,7 +1323,7 @@ function getOpenTrustState(
 
     return {
       classText: rawClass,
-      scoreText:
+      postureSource:
         rawScore === null || Number.isNaN(rawScore)
           ? "-"
           : String(Math.round(rawScore)),
@@ -1339,7 +1339,7 @@ function getOpenTrustState(
     if (rawScore >= 75) {
       return {
         classText: "A",
-        scoreText: String(Math.round(rawScore)),
+        postureSource: String(Math.round(rawScore)),
         tone: "green",
         statusText: "Strong in your current community",
         whyText: rawWhy || "Your current community reading is strong.",
@@ -1349,7 +1349,7 @@ function getOpenTrustState(
     if (rawScore >= 55) {
       return {
         classText: "B",
-        scoreText: String(Math.round(rawScore)),
+        postureSource: String(Math.round(rawScore)),
         tone: "green",
         statusText: "Stable in your current community",
         whyText:
@@ -1360,7 +1360,7 @@ function getOpenTrustState(
     if (rawScore >= 35) {
       return {
         classText: "C",
-        scoreText: String(Math.round(rawScore)),
+        postureSource: String(Math.round(rawScore)),
         tone: "yellow",
         statusText: "Needs attention in your current community",
         whyText:
@@ -1371,7 +1371,7 @@ function getOpenTrustState(
 
     return {
       classText: "D",
-      scoreText: String(Math.round(rawScore)),
+      postureSource: String(Math.round(rawScore)),
       tone: "red",
       statusText: "At risk in your current community",
       whyText:
@@ -1383,7 +1383,7 @@ function getOpenTrustState(
   if (!hasSelectedCommunity) {
     return {
       classText: "Not shown yet",
-      scoreText: "-",
+      postureSource: "-",
       tone: "neutral",
       statusText: "Select a community to view local community trust",
       whyText:
@@ -1393,7 +1393,7 @@ function getOpenTrustState(
 
   return {
     classText: "Not shown yet",
-    scoreText: "-",
+    postureSource: "-",
     tone: "neutral",
     statusText: "No local community trust reading yet",
     whyText:

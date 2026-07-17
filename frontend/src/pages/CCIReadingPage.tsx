@@ -24,7 +24,7 @@ import { getContextualEvidencePosture } from "../lib/trustBandLanguage";
 
 type ReadingState = {
   classText: string;
-  scoreText: string;
+  postureSource: string;
   tone: "green" | "yellow" | "red" | "neutral";
   statusText: string;
   whyText: string;
@@ -265,7 +265,7 @@ function getCciState(me: any, trustSlip?: any, trust?: any): ReadingState {
     if (classText === "A" || classText === "A+") {
       return {
         classText,
-        scoreText: formatReadingScore(rawScore, scoreNum),
+        postureSource: formatReadingScore(rawScore, scoreNum),
         tone: "green",
         statusText: "Healthy across visible communities",
         whyText: String(rawWhy || "Your trust position is steady right now."),
@@ -274,7 +274,7 @@ function getCciState(me: any, trustSlip?: any, trust?: any): ReadingState {
     if (classText === "B") {
       return {
         classText,
-        scoreText: formatReadingScore(rawScore, scoreNum),
+        postureSource: formatReadingScore(rawScore, scoreNum),
         tone: "green",
         statusText: "Stable and growing",
         whyText: String(rawWhy || "Keep consistent positive actions across communities."),
@@ -283,7 +283,7 @@ function getCciState(me: any, trustSlip?: any, trust?: any): ReadingState {
     if (classText === "C") {
       return {
         classText,
-        scoreText: formatReadingScore(rawScore, scoreNum),
+        postureSource: formatReadingScore(rawScore, scoreNum),
         tone: "yellow",
         statusText: "Needs attention",
         whyText: String(rawWhy || "A few better actions can improve your standing."),
@@ -291,7 +291,7 @@ function getCciState(me: any, trustSlip?: any, trust?: any): ReadingState {
     }
     return {
       classText,
-      scoreText: formatReadingScore(rawScore, scoreNum),
+      postureSource: formatReadingScore(rawScore, scoreNum),
       tone: "red",
       statusText: "At risk",
       whyText: String(rawWhy || "Your trust position needs action and repair."),
@@ -302,7 +302,7 @@ function getCciState(me: any, trustSlip?: any, trust?: any): ReadingState {
     if (scoreNum >= 75) {
       return {
         classText: "A",
-        scoreText: formatReadingScore(rawScore, scoreNum),
+        postureSource: formatReadingScore(rawScore, scoreNum),
         tone: "green",
         statusText: "Healthy across visible communities",
         whyText: String(rawWhy || "Your trust position is looking strong."),
@@ -311,7 +311,7 @@ function getCciState(me: any, trustSlip?: any, trust?: any): ReadingState {
     if (scoreNum >= 55) {
       return {
         classText: "B",
-        scoreText: formatReadingScore(rawScore, scoreNum),
+        postureSource: formatReadingScore(rawScore, scoreNum),
         tone: "green",
         statusText: "Stable and growing",
         whyText: String(rawWhy || "Keep consistent actions to strengthen your standing."),
@@ -320,7 +320,7 @@ function getCciState(me: any, trustSlip?: any, trust?: any): ReadingState {
     if (scoreNum >= 35) {
       return {
         classText: "C",
-        scoreText: formatReadingScore(rawScore, scoreNum),
+        postureSource: formatReadingScore(rawScore, scoreNum),
         tone: "yellow",
         statusText: "Needs attention",
         whyText: String(rawWhy || "Some recent actions may have reduced your trust strength."),
@@ -328,7 +328,7 @@ function getCciState(me: any, trustSlip?: any, trust?: any): ReadingState {
     }
     return {
       classText: "D",
-      scoreText: formatReadingScore(rawScore, scoreNum),
+      postureSource: formatReadingScore(rawScore, scoreNum),
       tone: "red",
       statusText: "At risk",
       whyText: String(rawWhy || "Your trust position needs urgent improvement."),
@@ -337,7 +337,7 @@ function getCciState(me: any, trustSlip?: any, trust?: any): ReadingState {
 
   return {
     classText: "Not shown yet",
-    scoreText: "-",
+    postureSource: "-",
     tone: "neutral",
     statusText: "No wider consistency reading yet",
     whyText: "Complete identity and community activity first. The fuller cross-community reading will appear here when it is available.",
@@ -443,8 +443,8 @@ export default function CCIReadingPage() {
     [me, trustSlip, trustExplanation]
   );
   const cciPosture = useMemo(
-    () => getContextualEvidencePosture(cci.scoreText, cci.classText),
-    [cci.classText, cci.scoreText]
+    () => getContextualEvidencePosture(cci.postureSource, cci.classText),
+    [cci.classText, cci.postureSource]
   );
   const tone = useMemo(() => toneMeta(cci.tone), [cci.tone]);
   const guideItems = useMemo(() => buildCciGuideItems(), []);
