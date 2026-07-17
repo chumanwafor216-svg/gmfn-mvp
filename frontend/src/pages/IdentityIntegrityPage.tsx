@@ -2036,9 +2036,9 @@ export default function IdentityIntegrityPage() {
       communityLabel,
       trustSlipCode,
       openTrustClass: openTrust.classText,
-      openTrustScore: openTrustPosture.label,
+      openTrustPosture: openTrustPosture.label,
       cciClass: cci.classText,
-      cciScore: cciPosture.label,
+      cciPosture: cciPosture.label,
       continuityLabel: continuity.label,
       nextMoveLabel,
     });

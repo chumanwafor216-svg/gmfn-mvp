@@ -474,7 +474,7 @@ export default function CCIReadingPage() {
       buildCciSnapshot({
         memberLabel,
         classText: cci.classText,
-        scoreText: cciPosture.label,
+        postureText: cciPosture.label,
         statusText: cci.statusText,
         whyText: cci.whyText,
       })

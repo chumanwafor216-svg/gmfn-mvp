@@ -10,9 +10,9 @@ type IdentityIntegritySnapshotParams = {
   communityLabel: string;
   trustSlipCode: string;
   openTrustClass: string;
-  openTrustScore: string;
+  openTrustPosture: string;
   cciClass: string;
-  cciScore: string;
+  cciPosture: string;
   continuityLabel: string;
   nextMoveLabel: string;
 };
@@ -20,7 +20,7 @@ type IdentityIntegritySnapshotParams = {
 type CciSnapshotParams = {
   memberLabel: string;
   classText: string;
-  scoreText: string;
+  postureText: string;
   statusText: string;
   whyText: string;
 };
@@ -52,7 +52,7 @@ type TrustSlipVerifySnapshotParams = {
   witnessEvidence?: string;
   trustSlipCode: string;
   visibleBand: string;
-  visibleScore: string;
+  visiblePosture: string;
   verificationStatus: string;
   issuedAt: string;
   expiresAt: string;
@@ -66,7 +66,7 @@ type TrustPassportSnapshotParams = {
   communityCode: string;
   holderRole?: string;
   currentBand: string;
-  currentScore: string;
+  currentPosture: string;
   openTrustClass: string;
   cciClass: string;
   communityActivitySummary?: string;
@@ -122,10 +122,16 @@ function friendlyTrustBand(raw: string): string {
   return `${languageByBand[band]} - ${guidanceByBand[band]}`;
 }
 
-function friendlyScore(raw: string, band?: string): string {
+function friendlyEvidencePosture(raw: string, band?: string): string {
   const text = String(raw || "").trim();
   if (!text || text === "-") {
     return "Not enough visible activity yet.";
+  }
+
+  const isDirectPostureLabel =
+    !Number.isFinite(Number(text)) && !normalizeTrustBand(text);
+  if (isDirectPostureLabel) {
+    return `${text.replace(/\.$/, "")}. Only descriptive evidence posture is shown.`;
   }
 
   const posture = getContextualEvidencePosture(text, band);
@@ -162,11 +168,11 @@ export function buildIdentityIntegritySnapshot(
     bodyLines: [
       cleanLine(
         "Local community reading",
-        `${friendlyTrustBand(params.openTrustClass)} Evidence posture: ${friendlyScore(params.openTrustScore, params.openTrustClass)}`
+        `${friendlyTrustBand(params.openTrustClass)} Evidence posture: ${friendlyEvidencePosture(params.openTrustPosture, params.openTrustClass)}`
       ),
       cleanLine(
         "Cross-community reading",
-        `${friendlyConsistency(params.cciClass)} Evidence posture: ${friendlyScore(params.cciScore, params.cciClass)}`
+        `${friendlyConsistency(params.cciClass)} Evidence posture: ${friendlyEvidencePosture(params.cciPosture, params.cciClass)}`
       ),
       cleanLine("Continuity", params.continuityLabel),
       cleanLine("Next clean step", params.nextMoveLabel),
@@ -186,7 +192,7 @@ export function buildCciSnapshot(params: CciSnapshotParams) {
     context: [
       { label: "Member", value: params.memberLabel },
       { label: "Consistency reading", value: friendlyConsistency(params.classText) },
-      { label: "Evidence posture", value: friendlyScore(params.scoreText, params.classText) },
+      { label: "Evidence posture", value: friendlyEvidencePosture(params.postureText, params.classText) },
     ],
     bodyLines: [
       cleanLine("Reading", params.statusText),
@@ -285,7 +291,10 @@ export function buildTrustSlipVerifySnapshot(
         ? cleanLine("Witness route", params.witnessEvidence)
         : "",
       cleanLine("Visible trust reading", friendlyTrustBand(params.visibleBand)),
-      cleanLine("Evidence posture", friendlyScore(params.visibleScore, params.visibleBand)),
+      cleanLine(
+        "Evidence posture",
+        friendlyEvidencePosture(params.visiblePosture, params.visibleBand)
+      ),
       cleanLine("Verification", params.verificationStatus),
       cleanLine("Issued", params.issuedAt),
       cleanLine("Expires", params.expiresAt),
@@ -341,7 +350,10 @@ export function buildTrustPassportSnapshot(
         ? cleanLine("Known here as", `${params.holderRole} inside ${params.communityName}`)
         : "",
       cleanLine("Main reading", friendlyTrustBand(params.currentBand)),
-      cleanLine("Evidence posture", friendlyScore(params.currentScore, params.currentBand)),
+      cleanLine(
+        "Evidence posture",
+        friendlyEvidencePosture(params.currentPosture, params.currentBand)
+      ),
       cleanLine("Community reading", friendlyTrustBand(params.openTrustClass)),
       cleanLine("Wider-network reading", friendlyConsistency(params.cciClass)),
       cleanLine("Community activity", params.communityActivitySummary || "Not shown"),
