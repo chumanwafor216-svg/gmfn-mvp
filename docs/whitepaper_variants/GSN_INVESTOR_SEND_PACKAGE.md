@@ -67,9 +67,16 @@ GSN_CUSTOMER_DISCOVERY_INTERVIEW_SCRIPT.md
 GSN_DISCOVERY_INTERVIEW_LOG_TEMPLATE.md
 GSN_DISCOVERY_EVIDENCE_MEMO_TEMPLATE.md
 GSN_WHITEPAPER_SEND_GUIDE.md
+raw screenshots
+uncaptioned screenshot packs
 ```
 
 If you have real discovery evidence, you may later share a short synthesis memo. Do not attach raw interview logs.
+
+Do not attach screenshots unless they have passed
+`GSN_FOUNDERS_BRIEF_SCREENSHOT_PACK.md`: redacted, captioned, same demo
+account/community, no private identifiers, no personal CCI/trust-score numbers,
+and every screenshot states what it does not prove.
 
 ## Subject
 
