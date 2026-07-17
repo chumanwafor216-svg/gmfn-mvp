@@ -116,7 +116,7 @@ export default function LoanSuggestionsPanel({
             <tr className="border-b text-slate-500">
               <th className="px-3 py-2">Candidate</th>
               <th className="px-3 py-2">Consistency</th>
-              <th className="px-3 py-2">CCI posture</th>
+              <th className="px-3 py-2">Wider posture</th>
               <th className="px-3 py-2">Evidence</th>
               <th className="px-3 py-2">Capacity</th>
               <th className="px-3 py-2">Support</th>

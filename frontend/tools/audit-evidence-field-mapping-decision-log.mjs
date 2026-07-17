@@ -171,7 +171,7 @@ assertContains(
 
 assertContains(
   "trustDocumentSnapshots",
-  /signal only; not a character label[\s\S]*?Limitation: identity snapshot only\. Not legal identity proof[\s\S]*?Limitation: consistency evidence only\. Not a character label[\s\S]*?Limitation: TrustSlip is GSN evidence only\. Not a bank guarantee[\s\S]*?Limitation: TrustSlip verification is GSN evidence only[\s\S]*?Limitation: GSN evidence only\. Not approval, guarantee, payment instruction, or auto-debit/,
+  /Only descriptive evidence posture is shown[\s\S]*?Limitation: identity snapshot only\. Not legal identity proof[\s\S]*?Limitation: consistency evidence only\. Not a character label[\s\S]*?Limitation: TrustSlip is GSN evidence only\. Not a bank guarantee[\s\S]*?Limitation: TrustSlip verification is GSN evidence only[\s\S]*?Limitation: GSN evidence only\. Not approval, guarantee, payment instruction, or auto-debit/,
   "Trust document snapshots must keep identity, CCI, TrustSlip, verify, and Passport limitations."
 );
 

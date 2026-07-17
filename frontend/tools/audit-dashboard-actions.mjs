@@ -259,13 +259,13 @@ assertContains(
 );
 
 assertContains(
-  /label: "CCI"[\s\S]*?value: cciDisplayText\(cci\)[\s\S]*?detail: "Cross-Community Integrity"[\s\S]*?label: "TrustSlip"[\s\S]*?value: trustSlipCode \|\| "Not issued yet"/,
-  "Dashboard passport signals must keep the approved Trust, CCI, and TrustSlip readings."
+  /label: "Wider"[\s\S]*?value: cciDisplayText\(cci\)[\s\S]*?detail: "Cross-community signal"[\s\S]*?label: "TrustSlip"[\s\S]*?value: trustSlipCode \|\| "Not issued yet"/,
+  "Dashboard passport signals must keep the approved Trust, wider consistency, and TrustSlip readings without exposing the internal CCI acronym."
 );
 
 assertContains(
-  /order: 30,[\s\S]*?display: "grid"[\s\S]*?label: "Trust"[\s\S]*?label: "CCI"[\s\S]*?label: "TrustSlip"/,
-  "Dashboard passport Trust / CCI / TrustSlip strip must remain visibly restored inside the passport pack."
+  /order: 30,[\s\S]*?display: "grid"[\s\S]*?label: "Trust"[\s\S]*?label: "Wider"[\s\S]*?label: "TrustSlip"/,
+  "Dashboard passport Trust / Wider / TrustSlip strip must remain visibly restored inside the passport pack."
 );
 
 assertContains(

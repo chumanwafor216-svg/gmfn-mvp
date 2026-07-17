@@ -29,7 +29,7 @@ export function buildTrustDocumentFamilyItems(
       label: "Cross-community reading",
       title: "Cross-community consistency",
       detail:
-        "This is the narrower cross-community consistency read. It helps you see how visible trust behaviour looks outside one immediate community. CCI is the short label.",
+        "This is the narrower cross-community consistency read. It helps you see how visible trust behaviour looks outside one immediate community.",
       to: isAppRoute ? "/app/cci-reading" : undefined,
       disabled: !isAppRoute,
       disabledReason: !isAppRoute

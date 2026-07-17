@@ -7678,9 +7678,9 @@ export default function DashboardPage() {
                 to: DASHBOARD_TARGETS.TRUST,
               },
               {
-                label: "CCI",
+                label: "Wider",
                 value: cciDisplayText(cci),
-                detail: "Cross-Community Integrity",
+                detail: "Cross-community signal",
                 strength: dashboardPassportSignalStrength(cci.classText),
                 to: DASHBOARD_TARGETS.CCI,
               },

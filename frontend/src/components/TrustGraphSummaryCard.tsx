@@ -50,7 +50,7 @@ export default function TrustGraphSummaryCard(props: {
 
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           <Pill kind="blue">
-            CCI {getContextualEvidencePosture(summary.cci_score).shortLabel}
+            Wider {getContextualEvidencePosture(summary.cci_score).shortLabel}
           </Pill>
           <Pill kind="gold">
             Graph {getContextualEvidencePosture(summary.graph_score).shortLabel}
