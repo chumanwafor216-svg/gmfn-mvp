@@ -246,7 +246,7 @@ const required = [
   ["frontend/src/pages/TrustGraphAdminPage.tsx", 'graph.gmfn_id || "Not issued yet"'],
   ["frontend/src/pages/TrustGraphAdminPage.tsx", 'placeholder="Not issued yet"'],
   ["frontend/src/pages/MarketplacePage.tsx", 'return raw ? displayGsnLabel(raw) : "No community ID yet"'],
-  ["frontend/src/pages/MarketplacePage.tsx", 'return cciBand || cciValue || "Not shown yet"'],
+  ["frontend/src/pages/MarketplacePage.tsx", "return getContextualEvidencePosture(cciValue, cciBand).shortLabel"],
   ["frontend/src/pages/MarketplacePage.tsx", 'publicCommunityWorkspaceLink ? "Ready" : "Not ready yet"'],
   ["frontend/src/pages/MarketplacePage.tsx", "No amount recorded yet"],
   ["frontend/src/pages/MarketplacePage.tsx", "No trade code yet"],
@@ -270,7 +270,7 @@ const required = [
   ["frontend/src/lib/guidance.ts", "A requester is waiting for your support decision."],
   [
     "frontend/src/pages/TrustSlipPage.tsx",
-    "This wider reading checks whether the member's trust evidence stays consistent across communities.",
+    "cross-community evidence posture",
   ],
   ["frontend/src/pages/TrustSlipPage.tsx", "Support pressure reading"],
   ["frontend/src/pages/TrustScorePage.tsx", "Support pressure reading"],

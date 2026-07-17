@@ -126,7 +126,7 @@ export default function TrustLeaderboardPage() {
 
   useEffect(() => {
     setItems([]);
-    setError("Leaderboard disabled in this build.");
+    setError("Trust evidence directory is disabled in this build.");
     setLoading(false);
   }, []);
 
@@ -134,12 +134,12 @@ export default function TrustLeaderboardPage() {
     return (
       <div style={{ maxWidth: 980, margin: "0 auto", padding: 16 }}>
         <PageTopNav
-          sectionLabel="Trust Leaderboard"
-          title="Trust Leaderboard"
-          subtitle="This page is reserved for cross-user trust ranking when that surface is enabled."
+          sectionLabel="Trust Evidence"
+          title="Trust Evidence Directory"
+          subtitle="This page is reserved for community-scoped trust evidence views when that surface is enabled."
         />
         <section style={pageCard("#FFFFFF")}>
-          {trustLeaderboardActionText("refresh", "Loading trust leaderboard", 24)}
+          {trustLeaderboardActionText("refresh", "Loading trust evidence", 24)}
         </section>
       </div>
     );
@@ -151,9 +151,9 @@ export default function TrustLeaderboardPage() {
         style={{ maxWidth: 980, margin: "0 auto", padding: 16, display: "grid", gap: 18 }}
       >
         <PageTopNav
-          sectionLabel="Trust Leaderboard"
-          title="Trust Leaderboard"
-          subtitle="This page is reserved for cross-user trust ranking when that surface is enabled."
+          sectionLabel="Trust Evidence"
+          title="Trust Evidence Directory"
+          subtitle="This page is reserved for community-scoped trust evidence views when that surface is enabled."
         />
         <section style={pageCard("#FFFFFF")}>
           <div style={watermarkStyle()} aria-hidden="true">
@@ -172,14 +172,14 @@ export default function TrustLeaderboardPage() {
                     lineHeight: 1.08,
                   }}
                 >
-                  Leaderboard is disabled in this build.
+                  Trust evidence directory is disabled in this build.
                 </div>
               </div>
               {trustLeaderboardStatusIcon("lock", "Not public")}
             </div>
             <div style={{ ...helperText(), maxWidth: 760 }}>
               GSN is keeping trust evidence readable through Trust, TrustSlip, Trust
-              Timeline, and Trust Passport instead of pushing a public ranking
+              Timeline, and Trust Passport instead of pushing a public list
               surface right now.
             </div>
             <CardActionRow>
@@ -217,14 +217,14 @@ export default function TrustLeaderboardPage() {
       style={{ maxWidth: 980, margin: "0 auto", padding: 16, display: "grid", gap: 18 }}
     >
       <PageTopNav
-        sectionLabel="Trust Leaderboard"
-        title="Trust Leaderboard"
-        subtitle="Compare visible trust ranking only when this surface is enabled for the build."
+        sectionLabel="Trust Evidence"
+        title="Trust Evidence Directory"
+        subtitle="Open community-scoped evidence views only when this surface is enabled for the build."
       />
 
       {items.length === 0 ? (
         <section style={pageCard("#FFFFFF")}>
-          {trustLeaderboardActionText("document", "No trust data available yet", 24)}
+          {trustLeaderboardActionText("document", "No trust evidence available yet", 24)}
         </section>
       ) : (
         <section style={pageCard("#FFFFFF")}>

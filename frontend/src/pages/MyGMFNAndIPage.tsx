@@ -607,7 +607,7 @@ const CAPABILITY_MAP_DETAILS: Record<number, CapabilityMapDetail> = {
     realWorld: "Serious members can be harder to find than louder members when visibility depends only on posting volume.",
     danger: "Opportunity can flow toward noise while stronger evidence stays hidden from buyers, supporters, and partners.",
     decision: "GSN lets recorded reputation support reach while still showing the limits of the evidence.",
-    tools: "Reputation signals -> Trust Reading -> Spotlight ranking -> Marketplace visibility.",
+    tools: "Reputation signals -> Trust Reading -> Spotlight placement -> Marketplace visibility.",
     where: "Dashboard -> Market Wisdom; Marketplace -> Public Shops; Trust -> Trust Passport.",
     evidence: "Trust posture, activity trail, shop status, community context, and current public record.",
     summary: "Lets stronger recorded evidence influence visibility without confusing reach with certainty.",
