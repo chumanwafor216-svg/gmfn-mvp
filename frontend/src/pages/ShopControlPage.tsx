@@ -222,7 +222,6 @@ type TrustSlipFeatureSummary = {
 
 type ContinuityReviewState = {
   blocked: boolean;
-  score: string;
   reason: string;
 };
 
@@ -921,7 +920,6 @@ export default function ShopControlPage() {
   const [me, setMe] = useState<any>(null);
   const [continuityReview, setContinuityReview] = useState<ContinuityReviewState>({
     blocked: false,
-    score: "",
     reason: "",
   });
   const [shop, setShop] = useState<ShopRecord | null>(null);
@@ -1336,14 +1334,10 @@ export default function ShopControlPage() {
       setMe(meRes || null);
       const continuity = (riskRes as any)?.continuity || {};
       const continuityStatus = String(continuity?.status || "").trim().toLowerCase();
-      const continuityScore = Number(continuity?.score);
       setContinuityReview({
         blocked:
           continuityStatus === "reverify_required" ||
           continuityStatus === "protected_lock",
-        score: Number.isFinite(continuityScore)
-          ? String(Math.round(continuityScore))
-          : "",
         reason: firstTruthy(
           continuity?.reason,
           "Identity continuity needs review before shop changes continue."

@@ -28,7 +28,6 @@ type AuthenticatedShellContext = {
 
 type ContinuityBlock = {
   status: "reverify_required" | "protected_lock";
-  score: string;
   reason: string;
   action: string;
 };
@@ -132,11 +131,8 @@ function extractContinuityBlock(summary: any): ContinuityBlock | null {
     return null;
   }
 
-  const rawScore = Number(continuity?.score);
-
   return {
     status,
-    score: Number.isFinite(rawScore) ? String(Math.round(rawScore)) : "Not shown yet",
     reason:
       String(continuity?.reason || "").trim() ||
       "Identity continuity changed enough that the app needs to protect the account before sensitive actions continue.",
