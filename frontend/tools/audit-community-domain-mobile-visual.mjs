@@ -169,7 +169,7 @@ const dashboardPayload = {
       label: "Services",
       status: "active",
       count: 5,
-      summary: "Run service readiness and boundaries.",
+      summary: "Run service readiness and rules.",
     },
     {
       lane_key: "structure",

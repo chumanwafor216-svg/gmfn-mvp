@@ -570,7 +570,7 @@ const GOVERNANCE_TASK_OPTIONS: Array<{
   },
   {
     key: "sponsor_summary",
-    label: "Sponsor pack",
+    label: "Sponsor report",
     note: "Review sponsor-safe evidence, delivery, and export material.",
   },
   {
@@ -623,7 +623,7 @@ const DIRECTOR_SUMMARY_TASK_OPTIONS: Array<{
   {
     key: "overview",
     label: "Overview",
-    note: "Read the period boundary before using the report.",
+    note: "Read the period rule before using the report.",
   },
   {
     key: "membership",
@@ -650,7 +650,7 @@ const SPONSOR_SUMMARY_TASK_OPTIONS: Array<{
   {
     key: "overview",
     label: "Overview",
-    note: "Read the sponsor-safe pack boundary first.",
+    note: "Read the sponsor-safe rule first.",
   },
   {
     key: "evidence",
@@ -665,7 +665,7 @@ const SPONSOR_SUMMARY_TASK_OPTIONS: Array<{
   {
     key: "export",
     label: "Export",
-    note: "Prepare a sponsor-safe text pack for copying.",
+    note: "Prepare sponsor-safe text for copying.",
   },
 ];
 
@@ -686,8 +686,8 @@ const STRUCTURE_DETAIL_OPTIONS: Array<{
   },
   {
     key: "boundary",
-    label: "Boundaries",
-    note: "Check child-domain and public boundary readiness.",
+    label: "Domain rules",
+    note: "Check child-domain and public rule readiness.",
   },
   {
     key: "activity",
@@ -718,7 +718,7 @@ const STRUCTURE_DETAIL_GROUP_OPTIONS: Array<{
   {
     key: "readiness",
     label: "Readiness",
-    note: "Review foundation and boundary readiness.",
+    note: "Review foundation and rule readiness.",
     defaultDetail: "foundation",
     detailKeys: ["foundation", "boundary"],
   },
@@ -748,8 +748,8 @@ const SERVICE_DETAIL_OPTIONS: Array<{
   },
   {
     key: "boundaries",
-    label: "Boundaries",
-    note: "Check exchange, privacy, setup, compliance, and appeal boundaries.",
+    label: "Rules",
+    note: "Check exchange, privacy, setup, compliance, and appeal rules.",
   },
   {
     key: "trust",
@@ -780,7 +780,7 @@ const SERVICE_DETAIL_GROUP_OPTIONS: Array<{
   {
     key: "local",
     label: "Local rules",
-    note: "Review local service maps and operating boundaries.",
+    note: "Review local service maps and operating rules.",
     defaultDetail: "local",
     detailKeys: ["local", "boundaries"],
   },
@@ -1676,7 +1676,7 @@ function domainFeatureRouteEffect(featureKey: DomainFeaturePolicyKey): string {
   if (featureKey === "vault") {
     return "Live route effect: private Vault content and active Vault access-link creation are blocked when this is off; paid slot entitlement, expiry, and privacy rules stay separate.";
   }
-  return "Planning rule only: recorded as the domain rule while this feature engine is connected.";
+  return "Planning rule only: recorded as the domain rule while this feature path is connected.";
 }
 
 function communityDomainSetupDraftKey(domainId: unknown): string {

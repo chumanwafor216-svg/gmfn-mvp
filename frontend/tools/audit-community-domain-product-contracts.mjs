@@ -2012,8 +2012,8 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /Check exchange, privacy, setup, compliance, and appeal boundaries[\s\S]*status: compactStatus\(quote\?\.pricing_status \|\| quote\?\.quote_status \|\| "quote required"\)/,
-  "Community Domain dashboard visible notes must use setup wording for service boundaries and billing steps.",
+  /Check exchange, privacy, setup, compliance, and appeal rules[\s\S]*status: compactStatus\(quote\?\.pricing_status \|\| quote\?\.quote_status \|\| "quote required"\)/,
+  "Community Domain dashboard visible notes must use setup/rules wording for service controls and billing steps.",
   { frontend: true }
 );
 
