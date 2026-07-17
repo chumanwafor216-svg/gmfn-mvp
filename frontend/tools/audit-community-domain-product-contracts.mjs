@@ -844,8 +844,8 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /type GovernanceTaskKey[\s\S]*"readiness"[\s\S]*"director_summary"[\s\S]*"sponsor_summary"[\s\S]*"real_life_record"[\s\S]*"access_requests"[\s\S]*type GovernanceTaskGroupKey = "readiness" \| "reports" \| "records"[\s\S]*type SetupOverviewTaskKey = "notices" \| "engine" \| "next_setup" \| "counts"[\s\S]*type SetupOverviewGroupKey = "action" \| "reference"[\s\S]*type RealLifeRecordTask = "activity" \| "beneficiary_outcome"[\s\S]*GOVERNANCE_TASK_OPTIONS[\s\S]*key: "readiness"[\s\S]*key: "director_summary"[\s\S]*key: "sponsor_summary"[\s\S]*key: "real_life_record"[\s\S]*key: "access_requests"[\s\S]*GOVERNANCE_TASK_GROUP_OPTIONS[\s\S]*key: "readiness"[\s\S]*taskKeys: \["readiness"\][\s\S]*key: "reports"[\s\S]*taskKeys: \["director_summary", "sponsor_summary"\][\s\S]*key: "records"[\s\S]*taskKeys: \["real_life_record", "access_requests"\][\s\S]*SETUP_OVERVIEW_TASK_OPTIONS[\s\S]*key: "next_setup"[\s\S]*key: "notices"[\s\S]*key: "engine"[\s\S]*key: "counts"[\s\S]*SETUP_OVERVIEW_GROUP_OPTIONS[\s\S]*key: "action"[\s\S]*taskKeys: \["next_setup", "notices"\][\s\S]*key: "reference"[\s\S]*taskKeys: \["engine", "counts"\][\s\S]*activeSetupOverviewTask[\s\S]*operatingAreaPickerOpen[\s\S]*activeSetupOverviewGroup[\s\S]*activeSetupOverviewGroupTasks[\s\S]*showOtherDomainToolsEntry = setupJourneyMode === "edit"[\s\S]*activeGovernanceTaskGroup[\s\S]*GOVERNANCE_TASK_GROUP_OPTIONS\.find[\s\S]*activeGovernanceGroupTasks[\s\S]*selectGovernanceTask[\s\S]*setActiveGovernanceTask\(task\)[\s\S]*setGovernanceTaskChooserOpen\(false\)[\s\S]*setActiveRealLifeRecordTask\(\(current\) => current \|\| "activity"\)[\s\S]*openRealLifeRecordTask[\s\S]*setActiveGovernanceTask\("real_life_record"\)[\s\S]*setShowAdvancedTools\(true\)[\s\S]*setOperatingAreaPickerOpen\(false\)[\s\S]*setActiveLane\("governance"\)[\s\S]*community-domain-dashboard\.real-life-record-shortcut[\s\S]*openRealLifeRecordTask\("activity"\)[\s\S]*community-domain-dashboard\.setup-overview-group\.\$\{group\.key\}[\s\S]*activeSetupOverviewGroupTasks\.map[\s\S]*community-domain-dashboard\.setup-overview\.\$\{task\.key\}[\s\S]*activeSetupOverviewTask === "notices"[\s\S]*activeSetupOverviewTask === "engine"[\s\S]*activeSetupOverviewTask === "next_setup"[\s\S]*activeSetupOverviewTask === "counts"[\s\S]*showAdvancedTools && operatingAreaPickerOpen[\s\S]*CommunityDomainLaneSelectorPanel[\s\S]*setOperatingAreaPickerOpen\(false\)[\s\S]*community-domain-dashboard\.work-surface\.back-to-command[\s\S]*community-domain-dashboard\.operating-area-picker-toggle[\s\S]*Governance jobs[\s\S]*Choose the governance stage first[\s\S]*community-domain-dashboard\.governance-group\.\$\{group\.key\}[\s\S]*community-domain-dashboard\.governance-task-toggle[\s\S]*governanceTaskChooserOpen \? "Close jobs" : "Change job"[\s\S]*governanceTaskChooserOpen \? \([\s\S]*community-domain-dashboard\.governance-task\.\$\{task\.key\}[\s\S]*activeGovernanceTask === "readiness"[\s\S]*activeGovernanceTask === "director_summary"[\s\S]*activeGovernanceTask === "sponsor_summary"[\s\S]*activeGovernanceTask === "real_life_record"[\s\S]*activeRealLifeRecordTask === "activity"[\s\S]*community-domain-dashboard\.activity-record[\s\S]*activeRealLifeRecordTask === "beneficiary_outcome"[\s\S]*community-domain-dashboard\.beneficiary-outcome-record[\s\S]*activeGovernanceTask === "access_requests"[\s\S]*CommunityDomainAccessRequestsPanel/,
-  "Community Domain dashboard must keep setup overview jobs, keep the operating-area picker collapsed until requested, keep owner/admin real-life record as a direct Governance shortcut, group Governance into Readiness/Reports/Records before hiding second-level jobs behind Change job, gate access requests behind their selected job, and expose only the selected activity or beneficiary outcome form.",
+  /type GovernanceTaskKey[\s\S]*"readiness"[\s\S]*"director_summary"[\s\S]*"sponsor_summary"[\s\S]*"real_life_record"[\s\S]*"access_requests"[\s\S]*type GovernanceTaskGroupKey = "readiness" \| "reports" \| "records"[\s\S]*type SetupOverviewTaskKey = "notices" \| "engine" \| "next_setup" \| "counts"[\s\S]*type SetupOverviewGroupKey = "action" \| "reference"[\s\S]*type RealLifeRecordTask = "activity" \| "beneficiary_outcome"[\s\S]*GOVERNANCE_TASK_OPTIONS[\s\S]*key: "readiness"[\s\S]*key: "director_summary"[\s\S]*key: "sponsor_summary"[\s\S]*key: "real_life_record"[\s\S]*key: "access_requests"[\s\S]*GOVERNANCE_TASK_GROUP_OPTIONS[\s\S]*key: "readiness"[\s\S]*taskKeys: \["readiness"\][\s\S]*key: "reports"[\s\S]*taskKeys: \["director_summary", "sponsor_summary"\][\s\S]*key: "records"[\s\S]*taskKeys: \["real_life_record", "access_requests"\][\s\S]*SETUP_OVERVIEW_TASK_OPTIONS[\s\S]*key: "next_setup"[\s\S]*key: "notices"[\s\S]*key: "engine"[\s\S]*key: "counts"[\s\S]*SETUP_OVERVIEW_GROUP_OPTIONS[\s\S]*key: "action"[\s\S]*taskKeys: \["next_setup", "notices"\][\s\S]*key: "reference"[\s\S]*taskKeys: \["engine", "counts"\][\s\S]*activeSetupOverviewTask[\s\S]*operatingAreaPickerOpen[\s\S]*governanceGroupChooserOpen[\s\S]*activeSetupOverviewGroup[\s\S]*activeSetupOverviewGroupTasks[\s\S]*showOtherDomainToolsEntry = setupJourneyMode === "edit"[\s\S]*activeGovernanceTaskGroup[\s\S]*GOVERNANCE_TASK_GROUP_OPTIONS\.find[\s\S]*activeGovernanceGroupTasks[\s\S]*selectGovernanceTask[\s\S]*setActiveGovernanceTask\(task\)[\s\S]*setGovernanceGroupChooserOpen\(false\)[\s\S]*setGovernanceTaskChooserOpen\(false\)[\s\S]*setActiveRealLifeRecordTask\(\(current\) => current \|\| "activity"\)[\s\S]*openRealLifeRecordTask[\s\S]*setActiveGovernanceTask\("real_life_record"\)[\s\S]*setShowAdvancedTools\(true\)[\s\S]*setOperatingAreaPickerOpen\(false\)[\s\S]*setActiveLane\("governance"\)[\s\S]*community-domain-dashboard\.real-life-record-shortcut[\s\S]*openRealLifeRecordTask\("activity"\)[\s\S]*community-domain-dashboard\.setup-overview-group\.\$\{group\.key\}[\s\S]*activeSetupOverviewGroupTasks\.map[\s\S]*community-domain-dashboard\.setup-overview\.\$\{task\.key\}[\s\S]*activeSetupOverviewTask === "notices"[\s\S]*activeSetupOverviewTask === "engine"[\s\S]*activeSetupOverviewTask === "next_setup"[\s\S]*activeSetupOverviewTask === "counts"[\s\S]*showAdvancedTools && operatingAreaPickerOpen[\s\S]*CommunityDomainLaneSelectorPanel[\s\S]*setOperatingAreaPickerOpen\(false\)[\s\S]*community-domain-dashboard\.work-surface\.back-to-command[\s\S]*community-domain-dashboard\.operating-area-picker-toggle[\s\S]*Governance jobs[\s\S]*Choose the governance stage first[\s\S]*Current governance stage[\s\S]*community-domain-dashboard\.governance-group-toggle[\s\S]*Close governance stages[\s\S]*Change governance stage[\s\S]*governanceGroupChooserOpen \? \([\s\S]*community-domain-dashboard\.governance-group\.\$\{group\.key\}[\s\S]*community-domain-dashboard\.governance-task-toggle[\s\S]*governanceTaskChooserOpen \? "Close jobs" : "Change job"[\s\S]*governanceTaskChooserOpen \? \([\s\S]*community-domain-dashboard\.governance-task\.\$\{task\.key\}[\s\S]*activeGovernanceTask === "readiness"[\s\S]*activeGovernanceTask === "director_summary"[\s\S]*activeGovernanceTask === "sponsor_summary"[\s\S]*activeGovernanceTask === "real_life_record"[\s\S]*activeRealLifeRecordTask === "activity"[\s\S]*community-domain-dashboard\.activity-record[\s\S]*activeRealLifeRecordTask === "beneficiary_outcome"[\s\S]*community-domain-dashboard\.beneficiary-outcome-record[\s\S]*activeGovernanceTask === "access_requests"[\s\S]*CommunityDomainAccessRequestsPanel/,
+  "Community Domain dashboard must keep setup overview jobs, keep the operating-area picker collapsed until requested, keep owner/admin real-life record as a direct Governance shortcut, keep Governance stages behind Change governance stage before hiding second-level jobs behind Change job, gate access requests behind their selected job, and expose only the selected activity or beneficiary outcome form.",
   { frontend: true }
 );
 
@@ -888,12 +888,19 @@ assertContains(
   "type BeneficiaryOutcomeTaskKey = \"record\" | \"recent\";",
   "type BeneficiaryOutcomeRecordStageKey = \"person\" | \"change\" | \"proof\";",
   "type BeneficiaryOutcomeRecentPacketKey =",
+  "type BeneficiaryOutcomeConfirmationActionKey = \"link\" | \"review\";",
   "BENEFICIARY_OUTCOME_RECORD_STAGE_OPTIONS",
   "BENEFICIARY_OUTCOME_RECENT_PACKET_OPTIONS",
   "beneficiaryOutcomeRecordStageChooserOpen",
   "beneficiaryOutcomeRecentPacketById",
   "beneficiaryOutcomeRecentPacketChooserOpenById",
+  "beneficiaryOutcomeSummaryDetailsOpenById",
+  "beneficiaryOutcomeConfirmationActionById",
+  "beneficiaryOutcomeConfirmationActionChooserOpenById",
+  "beneficiaryOutcomeConfirmationActionOpenById",
+  "beneficiaryOutcomeContactActionOpenById",
   "beneficiaryOutcomeReceiptFormOpenById",
+  "beneficiaryOutcomeDeliveryNotesOpenById",
   "community-domain-dashboard.beneficiary-outcome-task.${task}",
   "activeBeneficiaryOutcomeTask === \"record\"",
   "community-domain-dashboard.beneficiary-outcome-record-stage-toggle",
@@ -920,11 +927,34 @@ assertContains(
   "community-domain-dashboard.beneficiary-outcome-recent-packet.${packet.key}",
   "setBeneficiaryOutcomeRecentPacketChooserOpenById",
   "activeOutcomeRecentPacket === \"summary\"",
+  "outcomeSummaryDetailsOpen",
+  "Summary details:",
+  "community-domain-dashboard.beneficiary-outcome-summary-details-toggle",
+  "Close summary details",
+  "Open summary details",
   "activeOutcomeRecentPacket === \"confirmation\"",
+  "activeOutcomeConfirmationAction",
+  "Current confirmation task",
+  "community-domain-dashboard.beneficiary-outcome-confirmation-action-toggle",
+  "Close confirmation actions",
+  "Change confirmation action",
+  "community-domain-dashboard.beneficiary-outcome-confirmation-action.${actionKey}",
+  "community-domain-dashboard.beneficiary-outcome-confirmation-action-form-toggle",
+  "Close confirmation action",
+  "Open confirmation action",
   "community-domain-dashboard.beneficiary-outcome-confirmation-link",
   "activeOutcomeRecentPacket === \"contact\"",
+  "outcomeContactActionOpen",
+  "community-domain-dashboard.beneficiary-outcome-contact-action-form-toggle",
+  "Close contact action",
+  "Open contact action",
   "community-domain-dashboard.beneficiary-outcome-contact-consent",
   "activeOutcomeRecentPacket === \"delivery\"",
+  "outcomeDeliveryNotesOpen",
+  "Current delivery task",
+  "community-domain-dashboard.beneficiary-outcome-delivery-notes-toggle",
+  "Close delivery notes",
+  "Open delivery notes",
   "No delivery pack is prepared",
   "activeOutcomeRecentPacket === \"receipt\"",
   "outcomeReceiptFormOpen",
@@ -947,15 +977,21 @@ assertContains(
   "type BeneficiaryOutcomeContactActionKey = \"record\" | \"withdraw\";",
   "beneficiaryOutcomeContactActionById",
   "beneficiaryOutcomeContactActionChooserOpenById",
+  "beneficiaryOutcomeContactActionOpenById",
   "requestedOutcomeContactAction",
   "activeOutcomeContactAction",
+  "outcomeContactActionOpen",
   "Current contact task",
   "community-domain-dashboard.beneficiary-outcome-contact-action-toggle",
   "Close contact actions",
   "Change contact action",
   "community-domain-dashboard.beneficiary-outcome-contact-action.${actionKey}",
+  "community-domain-dashboard.beneficiary-outcome-contact-action-form-toggle",
+  "Close contact action",
+  "Open contact action",
   "setBeneficiaryOutcomeContactActionById",
   "setBeneficiaryOutcomeContactActionChooserOpenById",
+  "setBeneficiaryOutcomeContactActionOpenById",
 ].forEach((expected) =>
   assertIncludes(
     "src/pages/CommunityDomainDashboardPage.tsx",
@@ -966,10 +1002,11 @@ assertContains(
 );
 
 [
-  "activeOutcomeContactAction === \"record\" ? (",
+  "activeOutcomeContactAction === \"record\" &&",
+  "outcomeContactActionOpen ? (",
   "community-domain-dashboard.beneficiary-outcome-contact-consent",
   "canWithdrawContactConsent &&",
-  "activeOutcomeContactAction === \"withdraw\" ? (",
+  "activeOutcomeContactAction === \"withdraw\" &&",
   "community-domain-dashboard.beneficiary-outcome-contact-consent-withdrawal",
 ].forEach((expected) =>
   assertIncludes(
@@ -1304,22 +1341,22 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /type SetupWorkbenchTaskKey = "step" \| "access"[\s\S]*activeSetupWorkbenchTask[\s\S]*setActiveSetupWorkbenchTask[\s\S]*Setup step[\s\S]*Access[\s\S]*activeSetupWorkbenchTask === task[\s\S]*community-domain-dashboard\.setup-workbench\.\$\{task\}[\s\S]*activeSetupWorkbenchTask === "access"[\s\S]*Setup access[\s\S]*Authorise setup editor[\s\S]*activeSetupWorkbenchTask === "step"[\s\S]*activeSetupStep === "identity"[\s\S]*community-domain-dashboard\.setup-save-and-continue/,
-  "Community Domain setup workbench must choose between the setup step and access/authority controls instead of exposing both packets at once.",
+  /type SetupWorkbenchTaskKey = "step" \| "access"[\s\S]*SETUP_WORKBENCH_TASK_OPTIONS[\s\S]*key: "step"[\s\S]*key: "access"[\s\S]*activeSetupWorkbenchTask[\s\S]*setupWorkbenchChooserOpen[\s\S]*activeSetupWorkbenchTaskOption[\s\S]*Current setup view[\s\S]*community-domain-dashboard\.setup-workbench-toggle[\s\S]*Close setup views[\s\S]*Change setup view[\s\S]*setupWorkbenchChooserOpen \? \([\s\S]*SETUP_WORKBENCH_TASK_OPTIONS\.map[\s\S]*community-domain-dashboard\.setup-workbench\.\$\{task\.key\}[\s\S]*setSetupWorkbenchChooserOpen\(false\)[\s\S]*setSetupAccessTaskChooserOpen\(false\)[\s\S]*activeSetupWorkbenchTask === "access"[\s\S]*Setup access[\s\S]*Authorise setup editor[\s\S]*activeSetupWorkbenchTask === "step"[\s\S]*activeSetupStep === "identity"[\s\S]*community-domain-dashboard\.setup-save-and-continue/,
+  "Community Domain setup workbench must keep Setup step and Access behind a closed Change setup view selector instead of exposing both packets at once.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /type SetupAccessTaskKey = "summary" \| "authority"[\s\S]*SETUP_ACCESS_TASK_OPTIONS[\s\S]*key: "summary"[\s\S]*key: "authority"[\s\S]*activeSetupAccessTask[\s\S]*setActiveSetupAccessTask\("summary"\)[\s\S]*nextTask === "access"[\s\S]*setActiveSetupAccessTask\("summary"\)[\s\S]*Setup access[\s\S]*community-domain-dashboard\.setup-access\.\$\{task\.key\}[\s\S]*activeSetupAccessTask === "summary"[\s\S]*activeSetupAccessTask === "authority" && isAdmin[\s\S]*community-domain-dashboard\.setup-editor-appoint[\s\S]*community-domain-dashboard\.setup-editor-revoke[\s\S]*activeSetupAccessTask === "authority" &&[\s\S]*!isAdmin &&[\s\S]*setupEditingLocked[\s\S]*community-domain-dashboard\.setup-editor-request/,
-  "Community Domain Setup access must keep authority/request controls behind the selected Authority packet instead of exposing them beside the access summary.",
+  /type SetupAccessTaskKey = "summary" \| "authority"[\s\S]*SETUP_ACCESS_TASK_OPTIONS[\s\S]*key: "summary"[\s\S]*key: "authority"[\s\S]*activeSetupAccessTask[\s\S]*setupAccessTaskChooserOpen[\s\S]*activeSetupAccessTaskOption[\s\S]*setActiveSetupAccessTask\("summary"\)[\s\S]*task\.key === "access"[\s\S]*setActiveSetupAccessTask\("summary"\)[\s\S]*Setup access[\s\S]*Current access packet[\s\S]*community-domain-dashboard\.setup-access-toggle[\s\S]*Close access packets[\s\S]*Change access packet[\s\S]*setupAccessTaskChooserOpen \? \([\s\S]*community-domain-dashboard\.setup-access\.\$\{task\.key\}[\s\S]*setSetupAccessTaskChooserOpen\(false\)[\s\S]*activeSetupAccessTask === "summary"[\s\S]*activeSetupAccessTask === "authority" && isAdmin[\s\S]*community-domain-dashboard\.setup-editor-appoint[\s\S]*community-domain-dashboard\.setup-editor-revoke[\s\S]*activeSetupAccessTask === "authority" &&[\s\S]*!isAdmin &&[\s\S]*setupEditingLocked[\s\S]*community-domain-dashboard\.setup-editor-request/,
+  "Community Domain Setup access must keep Summary and Authority behind a closed Change access packet selector instead of exposing authority controls beside the access summary.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /type BillingTaskKey = "payment_code" \| "account" \| "steps" \| "readiness"[\s\S]*activeBillingTask[\s\S]*setActiveBillingTask[\s\S]*Billing jobs[\s\S]*Open one billing job[\s\S]*community-domain-dashboard\.billing-task\.\$\{task\}[\s\S]*activeBillingTask === "steps"[\s\S]*billingSequenceSteps\.map[\s\S]*billingStepCard[\s\S]*activeBillingTask === "account"[\s\S]*Community pay-in account[\s\S]*activeBillingTask === "payment_code"[\s\S]*community-domain-dashboard\.refresh-package-quote[\s\S]*Latest payment code[\s\S]*activeLane === "billing" && activeBillingTask === "readiness"[\s\S]*Billing readiness details[\s\S]*CommunityDomainBillingReadinessPanels/,
-  "Community Domain Billing must stay behind one billing-job selector so steps, account, payment code/proof, and readiness diagnostics do not dump together.",
+  /type BillingTaskKey = "payment_code" \| "account" \| "steps" \| "readiness"[\s\S]*BILLING_TASK_OPTIONS[\s\S]*key: "payment_code"[\s\S]*key: "account"[\s\S]*key: "steps"[\s\S]*key: "readiness"[\s\S]*activeBillingTask[\s\S]*billingTaskChooserOpen[\s\S]*activeBillingTaskOption[\s\S]*Billing jobs[\s\S]*Current billing job[\s\S]*community-domain-dashboard\.billing-task-toggle[\s\S]*Close billing jobs[\s\S]*Change billing job[\s\S]*billingTaskChooserOpen \? \([\s\S]*community-domain-dashboard\.billing-task\.\$\{task\.key\}[\s\S]*setBillingTaskChooserOpen\(false\)[\s\S]*activeBillingTask === "steps"[\s\S]*billingSequenceSteps\.map[\s\S]*billingStepCard[\s\S]*activeBillingTask === "account"[\s\S]*Community pay-in account[\s\S]*activeBillingTask === "payment_code"[\s\S]*community-domain-dashboard\.refresh-package-quote[\s\S]*Latest payment code[\s\S]*activeLane === "billing" && activeBillingTask === "readiness"[\s\S]*Billing readiness details[\s\S]*CommunityDomainBillingReadinessPanels/,
+  "Community Domain Billing must keep billing jobs behind a closed Change billing job selector so steps, account, payment code/proof, and readiness diagnostics do not dump together.",
   { frontend: true }
 );
 
@@ -1339,8 +1376,8 @@ assertNotContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /type BillingAccountTaskKey = "summary" \| "setup"[\s\S]*BILLING_ACCOUNT_TASK_OPTIONS[\s\S]*key: "summary"[\s\S]*key: "setup"[\s\S]*activeBillingAccountTask[\s\S]*setActiveBillingAccountTask\("summary"\)[\s\S]*task === "account"[\s\S]*setActiveBillingAccountTask\("summary"\)[\s\S]*activeBillingTask === "account"[\s\S]*Community pay-in account[\s\S]*community-domain-dashboard\.billing-account\.\$\{task\.key\}[\s\S]*activeBillingAccountTask === "summary" && communityPayInIsReady[\s\S]*activeBillingAccountTask === "summary" && !communityPayInIsReady[\s\S]*activeBillingAccountTask === "setup" && !canEditPayInAccount[\s\S]*activeBillingAccountTask === "setup" && canEditPayInAccount[\s\S]*community-domain-dashboard\.pay-in-account-save[\s\S]*community-domain-dashboard\.pay-in-account-close/,
-  "Community Domain Billing pay-in account must keep saved-account summary and GSN-admin setup form behind separate account packets.",
+  /type BillingAccountTaskKey = "summary" \| "setup"[\s\S]*BILLING_ACCOUNT_TASK_OPTIONS[\s\S]*key: "summary"[\s\S]*key: "setup"[\s\S]*billingAccountTaskChooserOpen[\s\S]*activeBillingAccountTask[\s\S]*setActiveBillingAccountTask\("summary"\)[\s\S]*activeBillingAccountTaskOption[\s\S]*task\.key === "account"[\s\S]*setActiveBillingAccountTask\("summary"\)[\s\S]*activeBillingTask === "account"[\s\S]*Community pay-in account[\s\S]*Current pay-in account packet[\s\S]*community-domain-dashboard\.billing-account-toggle[\s\S]*Close pay-in account packets[\s\S]*Change pay-in account packet[\s\S]*billingAccountTaskChooserOpen \? \([\s\S]*community-domain-dashboard\.billing-account\.\$\{task\.key\}[\s\S]*setBillingAccountTaskChooserOpen\(false\)[\s\S]*activeBillingAccountTask === "summary" && communityPayInIsReady[\s\S]*activeBillingAccountTask === "summary" && !communityPayInIsReady[\s\S]*activeBillingAccountTask === "setup" && !canEditPayInAccount[\s\S]*activeBillingAccountTask === "setup" && canEditPayInAccount[\s\S]*community-domain-dashboard\.pay-in-account-save[\s\S]*community-domain-dashboard\.pay-in-account-close/,
+  "Community Domain Billing pay-in account must keep Summary and Setup behind a closed Change pay-in account packet selector.",
   { frontend: true }
 );
 
@@ -1353,8 +1390,8 @@ assertNotContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /type BillingPaymentTaskKey =[\s\S]*"reference"[\s\S]*"generate"[\s\S]*"credit_link"[\s\S]*"pay_account"[\s\S]*"proof"[\s\S]*type BillingPaymentGroupKey = "code" \| "settlement" \| "proof"[\s\S]*BILLING_PAYMENT_TASK_OPTIONS[\s\S]*key: "reference"[\s\S]*key: "generate"[\s\S]*key: "credit_link"[\s\S]*key: "pay_account"[\s\S]*key: "proof"[\s\S]*BILLING_PAYMENT_GROUP_OPTIONS[\s\S]*key: "code"[\s\S]*taskKeys: \["reference", "generate"\][\s\S]*key: "settlement"[\s\S]*taskKeys: \["credit_link", "pay_account"\][\s\S]*key: "proof"[\s\S]*taskKeys: \["proof"\][\s\S]*activeBillingPaymentTask[\s\S]*setActiveBillingPaymentTask\("reference"\)[\s\S]*activeBillingPaymentGroup[\s\S]*BILLING_PAYMENT_GROUP_OPTIONS\.find[\s\S]*activeBillingPaymentGroupTasks[\s\S]*Code & proof packets[\s\S]*Choose the stage first[\s\S]*community-domain-dashboard\.billing-payment-group\.\$\{group\.key\}[\s\S]*community-domain-dashboard\.billing-payment\.\$\{task\.key\}[\s\S]*activeBillingPaymentTask === "generate"[\s\S]*Payment-code generation is locked[\s\S]*activeBillingPaymentTask === "generate"[\s\S]*community-domain-dashboard\.generate-payment-code[\s\S]*activeBillingPaymentTask !== "generate"[\s\S]*activeBillingPaymentTask === "credit_link"[\s\S]*GSN credit link[\s\S]*activeBillingPaymentTask === "pay_account"[\s\S]*Official GSN account[\s\S]*activeBillingPaymentTask === "proof"[\s\S]*PaymentProofSubmissionPanel[\s\S]*Payment code needed[\s\S]*community-domain-dashboard\.open-generate-payment-code/,
-  "Community Domain Billing Code & proof must keep code, settlement, and proof stages compact while preserving reference review, payment-code generation, credit-link identity, official pay account, and proof upload as separate packets.",
+  /type BillingPaymentTaskKey =[\s\S]*"reference"[\s\S]*"generate"[\s\S]*"credit_link"[\s\S]*"pay_account"[\s\S]*"proof"[\s\S]*type BillingPaymentGroupKey = "code" \| "settlement" \| "proof"[\s\S]*BILLING_PAYMENT_TASK_OPTIONS[\s\S]*key: "reference"[\s\S]*key: "generate"[\s\S]*key: "credit_link"[\s\S]*key: "pay_account"[\s\S]*key: "proof"[\s\S]*BILLING_PAYMENT_GROUP_OPTIONS[\s\S]*key: "code"[\s\S]*taskKeys: \["reference", "generate"\][\s\S]*key: "settlement"[\s\S]*taskKeys: \["credit_link", "pay_account"\][\s\S]*key: "proof"[\s\S]*taskKeys: \["proof"\][\s\S]*billingPaymentGroupChooserOpen[\s\S]*billingPaymentStepChooserOpen[\s\S]*activeBillingPaymentTask[\s\S]*setActiveBillingPaymentTask\("reference"\)[\s\S]*activeBillingPaymentGroup[\s\S]*BILLING_PAYMENT_GROUP_OPTIONS\.find[\s\S]*activeBillingPaymentGroupTasks[\s\S]*Code & proof packets[\s\S]*Current packet:[\s\S]*community-domain-dashboard\.billing-payment-group-toggle[\s\S]*Close code\/proof packets[\s\S]*Change code\/proof packet[\s\S]*billingPaymentGroupChooserOpen \? \([\s\S]*community-domain-dashboard\.billing-payment-group\.\$\{group\.key\}[\s\S]*setBillingPaymentGroupChooserOpen\(false\)[\s\S]*setBillingPaymentStepChooserOpen\(false\)[\s\S]*Current step:[\s\S]*community-domain-dashboard\.billing-payment-step-toggle[\s\S]*community-domain-dashboard\.billing-payment-step-panel[\s\S]*community-domain-dashboard\.billing-payment\.\$\{task\.key\}[\s\S]*setBillingPaymentStepChooserOpen\(false\)[\s\S]*activeBillingPaymentTask === "generate"[\s\S]*Payment-code generation is locked[\s\S]*activeBillingPaymentTask === "generate"[\s\S]*community-domain-dashboard\.generate-payment-code[\s\S]*activeBillingPaymentTask !== "generate"[\s\S]*activeBillingPaymentTask === "credit_link"[\s\S]*GSN credit link[\s\S]*activeBillingPaymentTask === "pay_account"[\s\S]*Official GSN account[\s\S]*activeBillingPaymentTask === "proof"[\s\S]*PaymentProofSubmissionPanel[\s\S]*Payment code needed[\s\S]*community-domain-dashboard\.open-generate-payment-code/,
+  "Community Domain Billing Code & proof must keep code, settlement, proof, and their sub-steps behind closed selectors while preserving reference review, payment-code generation, credit-link identity, official pay account, and proof upload as separate packets.",
   { frontend: true }
 );
 
@@ -1381,8 +1418,8 @@ assertNotContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /OPERATING_SUMMARY_TASK_OPTIONS[\s\S]*key: "next_action"[\s\S]*key: "status"[\s\S]*key: "allowance"[\s\S]*key: "permissions"[\s\S]*OPERATING_SUMMARY_GROUP_OPTIONS[\s\S]*key: "action"[\s\S]*taskKeys: \["next_action", "status"\][\s\S]*key: "reference"[\s\S]*taskKeys: \["allowance", "permissions"\][\s\S]*activeOperatingSummaryGroup[\s\S]*activeOperatingSummaryGroupTasks[\s\S]*activeDomainPermissionFacts = DOMAIN_FEATURE_POLICY_ROWS\.map[\s\S]*showActiveDomainSettingsSummary[\s\S]*domainOperational && activeLane === "settings" && setupJourneyMode !== "edit"[\s\S]*Operating summary[\s\S]*Open one active-domain question[\s\S]*community-domain-dashboard\.operating-summary-group\.\$\{group\.key\}[\s\S]*setOperatingSummaryNotesOpen\(false\)[\s\S]*activeOperatingSummaryGroupTasks\.map[\s\S]*community-domain-dashboard\.operating-summary\.\$\{task\.key\}[\s\S]*setOperatingSummaryNotesOpen\(false\)[\s\S]*activeOperatingSummaryTask === "next_action"[\s\S]*community-domain-dashboard\.settings-open-live-lane[\s\S]*community-domain-dashboard\.settings-edit-setup-details[\s\S]*Edit setup details[\s\S]*community-domain-dashboard\.operating-summary-notes-toggle[\s\S]*operatingSummaryNotesOpen \? "Close notes" : "Open notes"[\s\S]*operatingSummaryNotesOpen \? \([\s\S]*should use live\s+operating areas first after activation[\s\S]*Use setup\s+only when you need to correct saved details, add\s+authority evidence, or prepare verification[\s\S]*active does not mean verified[\s\S]*activeOperatingSummaryTask === "allowance"[\s\S]*Package allowance[\s\S]*packageCapacityFacts\.map[\s\S]*packageTariffBoundaryText[\s\S]*Summary only[\s\S]*does not add members, sell extra\s+bands, grant paid features, confirm payment, or verify\s+the organisation[\s\S]*activeOperatingSummaryTask === "permissions"[\s\S]*Domain permissions[\s\S]*activeDomainPermissionFacts\.map[\s\S]*Source: \{featurePolicySourceLabel\}[\s\S]*summary only\s+explains the current policy[\s\S]*change live behaviour\s+through Edit setup details/,
-  "Active Community Domains must keep next action, status, package allowance, and all domain permission boundaries on the settings lane, but expose them through Action/Reference operating-summary stages with setup editing behind an explicit edit action.",
+  /OPERATING_SUMMARY_TASK_OPTIONS[\s\S]*key: "next_action"[\s\S]*key: "status"[\s\S]*key: "allowance"[\s\S]*key: "permissions"[\s\S]*OPERATING_SUMMARY_GROUP_OPTIONS[\s\S]*key: "action"[\s\S]*taskKeys: \["next_action", "status"\][\s\S]*key: "reference"[\s\S]*taskKeys: \["allowance", "permissions"\][\s\S]*operatingSummaryGroupChooserOpen[\s\S]*operatingSummaryTaskChooserOpen[\s\S]*activeOperatingSummaryGroup[\s\S]*activeOperatingSummaryGroupTasks[\s\S]*activeOperatingSummaryTaskOption[\s\S]*activeDomainPermissionFacts = DOMAIN_FEATURE_POLICY_ROWS\.map[\s\S]*showActiveDomainSettingsSummary[\s\S]*domainOperational && activeLane === "settings" && setupJourneyMode !== "edit"[\s\S]*Operating summary[\s\S]*Open one active-domain question[\s\S]*Current live stage[\s\S]*community-domain-dashboard\.operating-summary-group-toggle[\s\S]*Close live stages[\s\S]*Change live stage[\s\S]*operatingSummaryGroupChooserOpen \? \([\s\S]*community-domain-dashboard\.operating-summary-group\.\$\{group\.key\}[\s\S]*setOperatingSummaryGroupChooserOpen\(false\)[\s\S]*setOperatingSummaryTaskChooserOpen\(false\)[\s\S]*Current question[\s\S]*community-domain-dashboard\.operating-summary-task-toggle[\s\S]*Close questions[\s\S]*Change question[\s\S]*operatingSummaryTaskChooserOpen \? \([\s\S]*activeOperatingSummaryGroupTasks\.map[\s\S]*community-domain-dashboard\.operating-summary\.\$\{task\.key\}[\s\S]*setOperatingSummaryTaskChooserOpen\(false\)[\s\S]*activeOperatingSummaryTask === "next_action"[\s\S]*community-domain-dashboard\.settings-open-live-lane[\s\S]*community-domain-dashboard\.settings-edit-setup-details[\s\S]*Edit setup details[\s\S]*community-domain-dashboard\.operating-summary-notes-toggle[\s\S]*operatingSummaryNotesOpen \? "Close notes" : "Open notes"[\s\S]*operatingSummaryNotesOpen \? \([\s\S]*should use live\s+operating areas first after activation[\s\S]*Use setup\s+only when you need to correct saved details, add\s+authority evidence, or prepare verification[\s\S]*active does not mean verified[\s\S]*activeOperatingSummaryTask === "allowance"[\s\S]*Package allowance[\s\S]*packageCapacityFacts\.map[\s\S]*packageTariffBoundaryText[\s\S]*Summary only[\s\S]*does not add members, sell extra\s+bands, grant paid features, confirm payment, or verify\s+the organisation[\s\S]*activeOperatingSummaryTask === "permissions"[\s\S]*Domain permissions[\s\S]*activeDomainPermissionFacts\.map[\s\S]*Source: \{featurePolicySourceLabel\}[\s\S]*summary only\s+explains the current policy[\s\S]*change live behaviour\s+through Edit setup details/,
+  "Active Community Domains must keep next action, status, package allowance, and all domain permission boundaries on the settings lane, but expose them through closed Action/Reference and question selectors with setup editing behind an explicit edit action.",
   { frontend: true }
 );
 
@@ -2155,8 +2192,8 @@ assertNotContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /type OperatingSummaryTaskKey = "next_action" \| "status" \| "allowance" \| "permissions"[\s\S]*type OperatingSummaryGroupKey = "action" \| "reference"[\s\S]*OPERATING_SUMMARY_TASK_OPTIONS[\s\S]*key: "next_action"[\s\S]*key: "status"[\s\S]*key: "allowance"[\s\S]*key: "permissions"[\s\S]*OPERATING_SUMMARY_GROUP_OPTIONS[\s\S]*key: "action"[\s\S]*taskKeys: \["next_action", "status"\][\s\S]*key: "reference"[\s\S]*taskKeys: \["allowance", "permissions"\][\s\S]*activeOperatingSummaryTask[\s\S]*setActiveOperatingSummaryTask[\s\S]*operatingSummaryNotesOpen[\s\S]*activeOperatingSummaryGroup[\s\S]*activeOperatingSummaryGroupTasks[\s\S]*community-domain-dashboard\.operating-summary-group\.\$\{group\.key\}[\s\S]*activeOperatingSummaryGroupTasks\.map[\s\S]*community-domain-dashboard\.operating-summary\.\$\{task\.key\}[\s\S]*activeOperatingSummaryTask === "next_action"[\s\S]*community-domain-dashboard\.settings-open-live-lane[\s\S]*community-domain-dashboard\.operating-summary-notes-toggle[\s\S]*activeOperatingSummaryTask === "status"[\s\S]*Domain: \{compactStatus\(status\.domain_status\)\}[\s\S]*activeOperatingSummaryTask === "allowance"[\s\S]*Package allowance[\s\S]*activeOperatingSummaryTask === "permissions"[\s\S]*Domain permissions/,
-  "Active Community Domain settings must keep next action, status, package allowance, and permissions behind Action/Reference operating-summary stages instead of dumping the whole packet at once.",
+  /type OperatingSummaryTaskKey = "next_action" \| "status" \| "allowance" \| "permissions"[\s\S]*type OperatingSummaryGroupKey = "action" \| "reference"[\s\S]*OPERATING_SUMMARY_TASK_OPTIONS[\s\S]*key: "next_action"[\s\S]*key: "status"[\s\S]*key: "allowance"[\s\S]*key: "permissions"[\s\S]*OPERATING_SUMMARY_GROUP_OPTIONS[\s\S]*key: "action"[\s\S]*taskKeys: \["next_action", "status"\][\s\S]*key: "reference"[\s\S]*taskKeys: \["allowance", "permissions"\][\s\S]*activeOperatingSummaryTask[\s\S]*setActiveOperatingSummaryTask[\s\S]*operatingSummaryNotesOpen[\s\S]*operatingSummaryGroupChooserOpen[\s\S]*operatingSummaryTaskChooserOpen[\s\S]*activeOperatingSummaryGroup[\s\S]*activeOperatingSummaryGroupTasks[\s\S]*activeOperatingSummaryTaskOption[\s\S]*community-domain-dashboard\.operating-summary-group-toggle[\s\S]*operatingSummaryGroupChooserOpen \? \([\s\S]*community-domain-dashboard\.operating-summary-group\.\$\{group\.key\}[\s\S]*setOperatingSummaryGroupChooserOpen\(false\)[\s\S]*community-domain-dashboard\.operating-summary-task-toggle[\s\S]*operatingSummaryTaskChooserOpen \? \([\s\S]*activeOperatingSummaryGroupTasks\.map[\s\S]*community-domain-dashboard\.operating-summary\.\$\{task\.key\}[\s\S]*setOperatingSummaryTaskChooserOpen\(false\)[\s\S]*activeOperatingSummaryTask === "next_action"[\s\S]*community-domain-dashboard\.settings-open-live-lane[\s\S]*community-domain-dashboard\.operating-summary-notes-toggle[\s\S]*activeOperatingSummaryTask === "status"[\s\S]*Domain: \{compactStatus\(status\.domain_status\)\}[\s\S]*activeOperatingSummaryTask === "allowance"[\s\S]*Package allowance[\s\S]*activeOperatingSummaryTask === "permissions"[\s\S]*Domain permissions/,
+  "Active Community Domain settings must keep next action, status, package allowance, and permissions behind closed Action/Reference and question selectors instead of dumping the whole packet at once.",
   { frontend: true }
 );
 
@@ -2304,9 +2341,39 @@ assertContains(
       String.raw`routePath\}\?lane=settings`,
       String.raw`Operating summary`,
       String.raw`community-domain-dashboard\.operating-summary-notes-toggle`,
-      String.raw`settings summary notes do not close after reading`,
       String.raw`community-domain-dashboard\.operating-summary-group\.reference`,
+      String.raw`settings summary live stages are visible before Change live stage is opened`,
+      String.raw`community-domain-dashboard\.operating-summary-group-toggle`,
+      String.raw`settings summary does not expose a Change live stage control`,
+      String.raw`community-domain-dashboard\.operating-summary\.status`,
+      String.raw`settings summary questions are visible before Change question is opened`,
+      String.raw`community-domain-dashboard\.operating-summary-task-toggle`,
+      String.raw`settings summary does not expose a Change question control`,
+      String.raw`settings summary notes do not close after reading`,
+      String.raw`community-domain-dashboard\.settings-edit-setup-details`,
+      String.raw`Edit Community Domain`,
+      String.raw`community-domain-dashboard\.setup-workbench\.access`,
+      String.raw`setup workbench view buttons are visible before Change setup view is opened`,
+      String.raw`community-domain-dashboard\.setup-workbench-toggle`,
+      String.raw`setup workbench does not expose a Change setup view control`,
+      String.raw`community-domain-dashboard\.setup-workbench\.step`,
+      String.raw`setup workbench view buttons stay visible after selecting a setup view`,
+      String.raw`community-domain-dashboard\.setup-access\.authority`,
+      String.raw`setup access packets are visible before Change access packet is opened`,
+      String.raw`community-domain-dashboard\.setup-access-toggle`,
+      String.raw`setup access does not expose a Change access packet control`,
+      String.raw`community-domain-dashboard\.setup-access\.summary`,
+      String.raw`setup access packets stay visible after selecting a packet`,
+      String.raw`routePath\}\?lane=settings`,
+      String.raw`Operating summary`,
+      String.raw`community-domain-dashboard\.operating-summary-group-toggle`,
+      String.raw`community-domain-dashboard\.operating-summary-group\.reference`,
+      String.raw`community-domain-dashboard\.operating-summary-group\.action`,
+      String.raw`settings summary live stages stay visible after selecting a stage`,
+      String.raw`community-domain-dashboard\.operating-summary-task-toggle`,
       String.raw`community-domain-dashboard\.operating-summary\.permissions`,
+      String.raw`community-domain-dashboard\.operating-summary\.allowance`,
+      String.raw`settings summary questions stay visible after selecting a question`,
       String.raw`Domain permissions`,
       String.raw`routePath\}`,
       String.raw`community-domain-dashboard\.operational-focus`,
@@ -2314,6 +2381,34 @@ assertContains(
       String.raw`community-domain-dashboard\.work-surface\.notes-toggle`,
       String.raw`work surface notes do not close after reading`,
       String.raw`community-domain-dashboard\.operating-area-picker-toggle`,
+      String.raw`community-domain-dashboard\.lane\.billing`,
+      String.raw`community-domain-dashboard\.billing-task\.account`,
+      String.raw`Billing job buttons are visible before Change billing job is opened`,
+      String.raw`community-domain-dashboard\.billing-task-toggle`,
+      String.raw`Billing jobs do not expose a Change billing job control`,
+      String.raw`community-domain-dashboard\.billing-payment-group\.settlement`,
+      String.raw`Community Domain Billing Code & proof packet buttons are visible before Change code/proof packet is opened`,
+      String.raw`community-domain-dashboard\.billing-payment-group-toggle`,
+      String.raw`Community Domain Billing Code & proof does not expose a Change code/proof packet control`,
+      String.raw`community-domain-dashboard\.billing-payment\.generate`,
+      String.raw`Community Domain Billing Code step buttons are visible before Change Code step is opened`,
+      String.raw`community-domain-dashboard\.billing-payment-step-toggle`,
+      String.raw`Community Domain Billing Code & proof does not expose a Change step control`,
+      String.raw`community-domain-dashboard\.billing-payment-group\.code`,
+      String.raw`Community Domain Billing Code & proof packet buttons stay visible after selecting a packet`,
+      String.raw`community-domain-dashboard\.billing-payment\.pay_account`,
+      String.raw`Community Domain Billing Settlement step buttons are visible before Change Settlement step is opened`,
+      String.raw`community-domain-dashboard\.billing-payment\.credit_link`,
+      String.raw`Community Domain Billing Code & proof step buttons stay visible after selecting a step`,
+      String.raw`community-domain-dashboard\.billing-task\.account`,
+      String.raw`community-domain-dashboard\.billing-task\.steps`,
+      String.raw`Billing job buttons stay visible after selecting a billing job`,
+      String.raw`community-domain-dashboard\.billing-account\.setup`,
+      String.raw`pay-in account packets are visible before Change pay-in account packet is opened`,
+      String.raw`community-domain-dashboard\.billing-account-toggle`,
+      String.raw`pay-in account does not expose a Change pay-in account packet control`,
+      String.raw`community-domain-dashboard\.billing-account\.summary`,
+      String.raw`pay-in account packets stay visible after selecting a packet`,
       String.raw`community-domain-dashboard\.lane\.modules`,
       String.raw`community-domain-dashboard\.service-group\.local`,
       String.raw`Services packet buttons are visible before Change packet is opened`,
@@ -2341,9 +2436,22 @@ assertContains(
       String.raw`Members packet buttons stay visible after a packet is selected`,
       String.raw`community-domain-dashboard\.member-group\.roster`,
       String.raw`community-domain-dashboard\.member-roster\.members`,
+      String.raw`member roster packets are visible before Change roster packet is opened`,
+      String.raw`community-domain-dashboard\.member-roster-toggle`,
+      String.raw`member roster does not expose a Change roster packet control`,
+      String.raw`community-domain-dashboard\.member-roster\.summary`,
+      String.raw`member roster packets stay visible after selecting a packet`,
       String.raw`community-domain-dashboard\.operating-area-picker-toggle`,
       String.raw`community-domain-dashboard\.lane\.governance`,
       String.raw`community-domain-dashboard\.governance-group\.records`,
+      String.raw`Governance stage buttons are visible before Change governance stage is opened`,
+      String.raw`community-domain-dashboard\.governance-group-toggle`,
+      String.raw`Governance does not expose a Change governance stage control`,
+      String.raw`community-domain-dashboard\.governance-group-toggle`,
+      String.raw`community-domain-dashboard\.governance-group\.records`,
+      String.raw`community-domain-dashboard\.governance-group\.reports`,
+      String.raw`Governance stage buttons stay visible after selecting a stage`,
+      String.raw`community-domain-dashboard\.governance-task\.access_requests`,
       String.raw`Governance job buttons are visible before Change job is opened`,
       String.raw`community-domain-dashboard\.governance-task-toggle`,
       String.raw`Governance multi-job groups do not expose a Change job control`,
@@ -2364,10 +2472,23 @@ assertContains(
       String.raw`community-domain-dashboard\.beneficiary-outcome-task\.recent`,
       String.raw`Recent outcome packet buttons are visible before Change packet is opened`,
       String.raw`community-domain-dashboard\.beneficiary-outcome-recent-packet-toggle`,
+      String.raw`Summary packet shows audit details before Open summary details`,
+      String.raw`community-domain-dashboard\.beneficiary-outcome-summary-details-toggle`,
+      String.raw`Summary packet details stay visible after closing summary details`,
+      String.raw`community-domain-dashboard\.beneficiary-outcome-recent-packet\.confirmation`,
+      String.raw`Confirm packet shows confirmation link creation before Open confirmation action`,
+      String.raw`community-domain-dashboard\.beneficiary-outcome-confirmation-action-form-toggle`,
+      String.raw`community-domain-dashboard\.beneficiary-outcome-recent-packet\.delivery`,
+      String.raw`Delivery packet shows delivery notes before Open delivery notes`,
+      String.raw`community-domain-dashboard\.beneficiary-outcome-delivery-notes-toggle`,
       String.raw`community-domain-dashboard\.beneficiary-outcome-recent-packet\.contact`,
+      String.raw`Contact packet shows the contact form before Open contact action`,
       String.raw`Contact packet shows consent withdrawal before Change contact action is opened`,
       String.raw`community-domain-dashboard\.beneficiary-outcome-contact-action-toggle`,
+      String.raw`Contact packet is missing an Open contact action control`,
+      String.raw`community-domain-dashboard\.beneficiary-outcome-contact-action-form-toggle`,
       String.raw`community-domain-dashboard\.beneficiary-outcome-contact-action\.withdraw`,
+      String.raw`Contact packet shows consent withdrawal before Open contact action`,
       String.raw`Contact packet still shows record contact/consent after selecting withdrawal`,
       String.raw`community-domain-dashboard\.beneficiary-outcome-recent-packet\.receipt`,
       String.raw`Receipt packet shows the correction form before Open receipt form`,
@@ -2714,8 +2835,8 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /type MemberRosterTaskKey = "summary" \| "members"[\s\S]*MEMBER_ROSTER_TASK_OPTIONS[\s\S]*key: "summary"[\s\S]*key: "members"[\s\S]*activeMemberRosterTask[\s\S]*setActiveMemberRosterTask\("summary"\)[\s\S]*memberRosterSummaryRows[\s\S]*community-domain-dashboard\.member-roster\.\$\{task\.key\}[\s\S]*activeMemberRosterTask === "summary"[\s\S]*Active members can pass public active-member proof[\s\S]*activeMemberRosterTask === "members"[\s\S]*domainMemberRows\.length[\s\S]*community-domain-dashboard\.member-status\.\$\{rowKey\}/,
-  "Community Domain dashboard roster control must keep summary and member status rows in separate packets instead of exposing the full roster by default.",
+  /type MemberRosterTaskKey = "summary" \| "members"[\s\S]*MEMBER_ROSTER_TASK_OPTIONS[\s\S]*key: "summary"[\s\S]*key: "members"[\s\S]*memberRosterTaskChooserOpen[\s\S]*activeMemberRosterTask[\s\S]*setActiveMemberRosterTask\("summary"\)[\s\S]*memberRosterSummaryRows[\s\S]*activeMemberRosterTaskOption[\s\S]*Current roster packet[\s\S]*community-domain-dashboard\.member-roster-toggle[\s\S]*Close roster packets[\s\S]*Change roster packet[\s\S]*memberRosterTaskChooserOpen \? \([\s\S]*community-domain-dashboard\.member-roster\.\$\{task\.key\}[\s\S]*setMemberRosterTaskChooserOpen\(false\)[\s\S]*activeMemberRosterTask === "summary"[\s\S]*Active members can pass public active-member proof[\s\S]*activeMemberRosterTask === "members"[\s\S]*domainMemberRows\.length[\s\S]*community-domain-dashboard\.member-status\.\$\{rowKey\}/,
+  "Community Domain dashboard roster control must keep Summary and Members behind a closed Change roster packet selector.",
   { frontend: true }
 );
 

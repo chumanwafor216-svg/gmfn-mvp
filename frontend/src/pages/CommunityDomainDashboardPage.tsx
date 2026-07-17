@@ -210,6 +210,7 @@ type BeneficiaryOutcomeRecentPacketKey =
   | "contact"
   | "delivery"
   | "receipt";
+type BeneficiaryOutcomeConfirmationActionKey = "link" | "review";
 type BeneficiaryOutcomeContactActionKey = "record" | "withdraw";
 type SetupStepKey =
   | "identity"
@@ -1069,6 +1070,33 @@ const BILLING_PAYMENT_TASK_OPTIONS: Array<{
   },
 ];
 
+const BILLING_TASK_OPTIONS: Array<{
+  key: BillingTaskKey;
+  label: string;
+  note: string;
+}> = [
+  {
+    key: "payment_code",
+    label: "Code & proof",
+    note: "Generate or review one payment code, then handle proof after payment.",
+  },
+  {
+    key: "account",
+    label: "Pay-in account",
+    note: "Review the official account before anyone sends money.",
+  },
+  {
+    key: "steps",
+    label: "Steps",
+    note: "Read the payment sequence without opening account or proof tools.",
+  },
+  {
+    key: "readiness",
+    label: "Readiness",
+    note: "Use diagnostics only when billing needs investigation.",
+  },
+];
+
 const BILLING_PAYMENT_GROUP_OPTIONS: Array<{
   key: BillingPaymentGroupKey;
   label: string;
@@ -1146,6 +1174,23 @@ const SETUP_OVERVIEW_GROUP_OPTIONS: Array<{
     note: "Use engine facts and counts only when you need context.",
     defaultTask: "engine",
     taskKeys: ["engine", "counts"],
+  },
+];
+
+const SETUP_WORKBENCH_TASK_OPTIONS: Array<{
+  key: SetupWorkbenchTaskKey;
+  label: string;
+  note: string;
+}> = [
+  {
+    key: "step",
+    label: "Setup step",
+    note: "Continue the selected setup step.",
+  },
+  {
+    key: "access",
+    label: "Access",
+    note: "Review who may edit setup details.",
   },
 ];
 
@@ -2636,6 +2681,13 @@ export default function CommunityDomainDashboardPage() {
   const [communityPayInSaving, setCommunityPayInSaving] = useState(false);
   const [activeBillingTask, setActiveBillingTask] =
     useState<BillingTaskKey>("payment_code");
+  const [billingTaskChooserOpen, setBillingTaskChooserOpen] = useState(false);
+  const [billingPaymentGroupChooserOpen, setBillingPaymentGroupChooserOpen] =
+    useState(false);
+  const [billingPaymentStepChooserOpen, setBillingPaymentStepChooserOpen] =
+    useState(false);
+  const [billingAccountTaskChooserOpen, setBillingAccountTaskChooserOpen] =
+    useState(false);
   const [activeBillingAccountTask, setActiveBillingAccountTask] =
     useState<BillingAccountTaskKey>("summary");
   const [activeBillingPaymentTask, setActiveBillingPaymentTask] =
@@ -2664,14 +2716,26 @@ export default function CommunityDomainDashboardPage() {
     useState<SetupWorkbenchTaskKey>("step");
   const [activeSetupAccessTask, setActiveSetupAccessTask] =
     useState<SetupAccessTaskKey>("summary");
+  const [setupWorkbenchChooserOpen, setSetupWorkbenchChooserOpen] =
+    useState(false);
+  const [setupAccessTaskChooserOpen, setSetupAccessTaskChooserOpen] =
+    useState(false);
   const [showAdvancedTools, setShowAdvancedTools] = useState(false);
   const [operatingAreaPickerOpen, setOperatingAreaPickerOpen] = useState(false);
   const [commandGuidanceOpen, setCommandGuidanceOpen] = useState(false);
   const [workSurfaceNotesOpen, setWorkSurfaceNotesOpen] = useState(false);
   const [operatingSummaryNotesOpen, setOperatingSummaryNotesOpen] = useState(false);
+  const [operatingSummaryGroupChooserOpen, setOperatingSummaryGroupChooserOpen] =
+    useState(false);
+  const [operatingSummaryTaskChooserOpen, setOperatingSummaryTaskChooserOpen] =
+    useState(false);
   const [servicePacketChooserOpen, setServicePacketChooserOpen] = useState(false);
   const [structurePacketChooserOpen, setStructurePacketChooserOpen] = useState(false);
   const [memberPacketChooserOpen, setMemberPacketChooserOpen] = useState(false);
+  const [memberRosterTaskChooserOpen, setMemberRosterTaskChooserOpen] =
+    useState(false);
+  const [governanceGroupChooserOpen, setGovernanceGroupChooserOpen] =
+    useState(false);
   const [governanceTaskChooserOpen, setGovernanceTaskChooserOpen] = useState(false);
   const [realLifeRecordTypeChooserOpen, setRealLifeRecordTypeChooserOpen] =
     useState(false);
@@ -2714,6 +2778,22 @@ export default function CommunityDomainDashboardPage() {
     setBeneficiaryOutcomeRecentPacketChooserOpenById,
   ] = useState<Record<string, boolean>>({});
   const [
+    beneficiaryOutcomeSummaryDetailsOpenById,
+    setBeneficiaryOutcomeSummaryDetailsOpenById,
+  ] = useState<Record<string, boolean>>({});
+  const [
+    beneficiaryOutcomeConfirmationActionById,
+    setBeneficiaryOutcomeConfirmationActionById,
+  ] = useState<Record<string, BeneficiaryOutcomeConfirmationActionKey>>({});
+  const [
+    beneficiaryOutcomeConfirmationActionChooserOpenById,
+    setBeneficiaryOutcomeConfirmationActionChooserOpenById,
+  ] = useState<Record<string, boolean>>({});
+  const [
+    beneficiaryOutcomeConfirmationActionOpenById,
+    setBeneficiaryOutcomeConfirmationActionOpenById,
+  ] = useState<Record<string, boolean>>({});
+  const [
     beneficiaryOutcomeContactActionById,
     setBeneficiaryOutcomeContactActionById,
   ] = useState<Record<string, BeneficiaryOutcomeContactActionKey>>({});
@@ -2722,8 +2802,16 @@ export default function CommunityDomainDashboardPage() {
     setBeneficiaryOutcomeContactActionChooserOpenById,
   ] = useState<Record<string, boolean>>({});
   const [
+    beneficiaryOutcomeContactActionOpenById,
+    setBeneficiaryOutcomeContactActionOpenById,
+  ] = useState<Record<string, boolean>>({});
+  const [
     beneficiaryOutcomeReceiptFormOpenById,
     setBeneficiaryOutcomeReceiptFormOpenById,
+  ] = useState<Record<string, boolean>>({});
+  const [
+    beneficiaryOutcomeDeliveryNotesOpenById,
+    setBeneficiaryOutcomeDeliveryNotesOpenById,
   ] = useState<Record<string, boolean>>({});
   const [loadedReadinessLanes, setLoadedReadinessLanes] = useState<Record<string, boolean>>({});
   const [loadingReadinessLanes, setLoadingReadinessLanes] = useState<Record<string, boolean>>({});
@@ -2900,9 +2988,16 @@ export default function CommunityDomainDashboardPage() {
     setActiveSetupOverviewTask("next_setup");
     setActiveSetupNoticeTask("recent");
     setActiveOperatingSummaryTask("next_action");
+    setOperatingSummaryGroupChooserOpen(false);
+    setOperatingSummaryTaskChooserOpen(false);
     setActiveSetupWorkbenchTask("step");
     setActiveSetupAccessTask("summary");
+    setSetupWorkbenchChooserOpen(false);
+    setSetupAccessTaskChooserOpen(false);
     setActiveBillingTask("payment_code");
+    setBillingPaymentGroupChooserOpen(false);
+    setBillingPaymentStepChooserOpen(false);
+    setBillingAccountTaskChooserOpen(false);
     setActiveBillingAccountTask("summary");
     setActiveBillingPaymentTask("reference");
     setOperatingAreaPickerOpen(false);
@@ -2910,7 +3005,10 @@ export default function CommunityDomainDashboardPage() {
     setGovernanceCoverage(null);
     setDelegationMap(null);
     setActiveGovernanceTask("readiness");
+    setGovernanceGroupChooserOpen(false);
+    setGovernanceTaskChooserOpen(false);
     setActiveMemberRosterTask("summary");
+    setMemberRosterTaskChooserOpen(false);
     setActiveDirectorSummaryTask("overview");
     setActiveSponsorSummaryTask("overview");
     setPeriodSummary(null);
@@ -2928,9 +3026,15 @@ export default function CommunityDomainDashboardPage() {
     setBeneficiaryOutcomeRows([]);
     setBeneficiaryOutcomeRecentPacketById({});
     setBeneficiaryOutcomeRecentPacketChooserOpenById({});
+    setBeneficiaryOutcomeSummaryDetailsOpenById({});
+    setBeneficiaryOutcomeConfirmationActionById({});
+    setBeneficiaryOutcomeConfirmationActionChooserOpenById({});
+    setBeneficiaryOutcomeConfirmationActionOpenById({});
     setBeneficiaryOutcomeContactActionById({});
     setBeneficiaryOutcomeContactActionChooserOpenById({});
+    setBeneficiaryOutcomeContactActionOpenById({});
     setBeneficiaryOutcomeReceiptFormOpenById({});
+    setBeneficiaryOutcomeDeliveryNotesOpenById({});
     setBeneficiaryOutcomeDraft(emptyCommunityDomainOutcomeDraft());
     setRolloutPlan(null);
     setActivityMap(null);
@@ -3068,6 +3172,10 @@ export default function CommunityDomainDashboardPage() {
       setBillingSettlementCountry(nextSettlementCountry);
       setQuoteCurrency(nextSettlementCountry === "NG" ? "NGN" : "GBP");
       setActiveLane("settings");
+      setBillingTaskChooserOpen(false);
+      setBillingPaymentGroupChooserOpen(false);
+      setBillingPaymentStepChooserOpen(false);
+      setBillingAccountTaskChooserOpen(false);
       setSetupWorkspaceOpen(false);
       setShowAdvancedTools(false);
       setLoading(false);
@@ -4440,13 +4548,75 @@ export default function CommunityDomainDashboardPage() {
     setCommandGuidanceOpen(false);
     setWorkSurfaceNotesOpen(false);
     setOperatingSummaryNotesOpen(false);
+    setOperatingSummaryGroupChooserOpen(false);
+    setOperatingSummaryTaskChooserOpen(false);
+    setSetupWorkbenchChooserOpen(false);
+    setSetupAccessTaskChooserOpen(false);
     setServicePacketChooserOpen(false);
     setStructurePacketChooserOpen(false);
     setMemberPacketChooserOpen(false);
+    setGovernanceGroupChooserOpen(false);
     setGovernanceTaskChooserOpen(false);
+    setBillingTaskChooserOpen(false);
+    setBillingPaymentGroupChooserOpen(false);
+    setBillingPaymentStepChooserOpen(false);
+    setBillingAccountTaskChooserOpen(false);
     setRealLifeRecordTypeChooserOpen(false);
     focusWorkSurfaceAfterOpenRef.current = true;
   }, [lanes, requestedLane]);
+  useEffect(() => {
+    if (activeLane !== "settings" || setupJourneyMode === "edit") {
+      setOperatingSummaryGroupChooserOpen(false);
+      setOperatingSummaryTaskChooserOpen(false);
+    }
+  }, [activeLane, setupJourneyMode]);
+  useEffect(() => {
+    const shouldShowSetupAccessCard = setupJourneyMode === "edit" || !canSetupEdit;
+    if (activeLane !== "settings" || !setupWorkspaceOpen || !shouldShowSetupAccessCard) {
+      setSetupWorkbenchChooserOpen(false);
+      setSetupAccessTaskChooserOpen(false);
+    }
+  }, [activeLane, canSetupEdit, setupJourneyMode, setupWorkspaceOpen]);
+  useEffect(() => {
+    if (activeSetupWorkbenchTask !== "access") {
+      setSetupAccessTaskChooserOpen(false);
+    }
+  }, [activeSetupWorkbenchTask]);
+  useEffect(() => {
+    if (activeLane !== "members") {
+      setMemberRosterTaskChooserOpen(false);
+    }
+  }, [activeLane]);
+  useEffect(() => {
+    if (activeMemberDetail !== "roster") {
+      setMemberRosterTaskChooserOpen(false);
+    }
+  }, [activeMemberDetail]);
+  useEffect(() => {
+    if (activeLane !== "governance") {
+      setGovernanceGroupChooserOpen(false);
+      setGovernanceTaskChooserOpen(false);
+    }
+  }, [activeLane]);
+  useEffect(() => {
+    if (activeLane !== "billing") {
+      setBillingTaskChooserOpen(false);
+      setBillingPaymentGroupChooserOpen(false);
+      setBillingPaymentStepChooserOpen(false);
+      setBillingAccountTaskChooserOpen(false);
+    }
+  }, [activeLane]);
+  useEffect(() => {
+    if (activeBillingTask !== "payment_code") {
+      setBillingPaymentGroupChooserOpen(false);
+      setBillingPaymentStepChooserOpen(false);
+    }
+  }, [activeBillingTask]);
+  useEffect(() => {
+    if (activeBillingTask !== "account") {
+      setBillingAccountTaskChooserOpen(false);
+    }
+  }, [activeBillingTask]);
   const latestMembershipRequest = latestRelevantMembershipRequest(ownMembershipRequests);
   const latestMembershipRequestId = cleanText(latestMembershipRequest?.id);
   const membershipAccessRequests = sortMembershipAccessRequests(
@@ -4484,6 +4654,12 @@ export default function CommunityDomainDashboardPage() {
   const activeSetupOverviewGroupTasks = SETUP_OVERVIEW_TASK_OPTIONS.filter((task) =>
     activeSetupOverviewGroupOption.taskKeys.includes(task.key)
   );
+  const activeSetupWorkbenchTaskOption =
+    SETUP_WORKBENCH_TASK_OPTIONS.find((task) => task.key === activeSetupWorkbenchTask) ||
+    SETUP_WORKBENCH_TASK_OPTIONS[0];
+  const activeSetupAccessTaskOption =
+    SETUP_ACCESS_TASK_OPTIONS.find((task) => task.key === activeSetupAccessTask) ||
+    SETUP_ACCESS_TASK_OPTIONS[0];
   const activeOperatingSummaryGroup = useMemo<OperatingSummaryGroupKey>(() => {
     if (
       activeOperatingSummaryTask === "allowance" ||
@@ -4500,6 +4676,9 @@ export default function CommunityDomainDashboardPage() {
   const activeOperatingSummaryGroupTasks = OPERATING_SUMMARY_TASK_OPTIONS.filter((task) =>
     activeOperatingSummaryGroupOption.taskKeys.includes(task.key)
   );
+  const activeOperatingSummaryTaskOption =
+    OPERATING_SUMMARY_TASK_OPTIONS.find((task) => task.key === activeOperatingSummaryTask) ||
+    OPERATING_SUMMARY_TASK_OPTIONS[0];
   const activeStructureDetailGroup = useMemo<StructureDetailGroupKey>(() => {
     if (activeStructureDetail === "foundation" || activeStructureDetail === "boundary") {
       return "readiness";
@@ -4555,6 +4734,9 @@ export default function CommunityDomainDashboardPage() {
     ["Active proof", activeDomainMemberCount],
     ["Inactive history", inactiveDomainMemberCount],
   ];
+  const activeMemberRosterTaskOption =
+    MEMBER_ROSTER_TASK_OPTIONS.find((task) => task.key === activeMemberRosterTask) ||
+    MEMBER_ROSTER_TASK_OPTIONS[0];
   const domainInSetup = isCommunityDomainInSetup(status, domain);
   const domainOperational = isCommunityDomainOperational(status, domain);
   const pageTitle = domainInSetup
@@ -4641,6 +4823,12 @@ export default function CommunityDomainDashboardPage() {
   );
   const billingIsActive =
     cleanText(status.billing_status || selectedLane?.status).toLowerCase() === "active";
+  const activeBillingTaskOption =
+    BILLING_TASK_OPTIONS.find((task) => task.key === activeBillingTask) ||
+    BILLING_TASK_OPTIONS[0];
+  const activeBillingAccountTaskOption =
+    BILLING_ACCOUNT_TASK_OPTIONS.find((task) => task.key === activeBillingAccountTask) ||
+    BILLING_ACCOUNT_TASK_OPTIONS[0];
   const activeBillingPaymentGroup = useMemo<BillingPaymentGroupKey>(() => {
     if (activeBillingPaymentTask === "proof") {
       return "proof";
@@ -5042,9 +5230,14 @@ export default function CommunityDomainDashboardPage() {
     setCommandGuidanceOpen(false);
     setWorkSurfaceNotesOpen(false);
     setOperatingSummaryNotesOpen(false);
+    setOperatingSummaryGroupChooserOpen(false);
+    setOperatingSummaryTaskChooserOpen(false);
+    setSetupWorkbenchChooserOpen(false);
+    setSetupAccessTaskChooserOpen(false);
     setServicePacketChooserOpen(false);
     setStructurePacketChooserOpen(false);
     setMemberPacketChooserOpen(false);
+    setGovernanceGroupChooserOpen(false);
     setGovernanceTaskChooserOpen(false);
     setRealLifeRecordTypeChooserOpen(false);
     if (mode === "edit") {
@@ -5060,6 +5253,7 @@ export default function CommunityDomainDashboardPage() {
 
   function selectGovernanceTask(task: GovernanceTaskKey) {
     setActiveGovernanceTask(task);
+    setGovernanceGroupChooserOpen(false);
     setGovernanceTaskChooserOpen(false);
     setRealLifeRecordTypeChooserOpen(false);
     if (task === "real_life_record") {
@@ -5093,9 +5287,12 @@ export default function CommunityDomainDashboardPage() {
     setCommandGuidanceOpen(false);
     setWorkSurfaceNotesOpen(false);
     setOperatingSummaryNotesOpen(false);
+    setSetupWorkbenchChooserOpen(false);
+    setSetupAccessTaskChooserOpen(false);
     setServicePacketChooserOpen(false);
     setStructurePacketChooserOpen(false);
     setMemberPacketChooserOpen(false);
+    setGovernanceGroupChooserOpen(false);
     setGovernanceTaskChooserOpen(false);
     setRealLifeRecordTypeChooserOpen(false);
     setActiveLane("governance");
@@ -5110,9 +5307,12 @@ export default function CommunityDomainDashboardPage() {
     setCommandGuidanceOpen(false);
     setWorkSurfaceNotesOpen(false);
     setOperatingSummaryNotesOpen(false);
+    setSetupWorkbenchChooserOpen(false);
+    setSetupAccessTaskChooserOpen(false);
     setServicePacketChooserOpen(false);
     setStructurePacketChooserOpen(false);
     setMemberPacketChooserOpen(false);
+    setGovernanceGroupChooserOpen(false);
     setGovernanceTaskChooserOpen(false);
     setRealLifeRecordTypeChooserOpen(false);
     setMessage("Returned to Domain command. Choose Marketplace or open one operating area.");
@@ -5212,12 +5412,17 @@ export default function CommunityDomainDashboardPage() {
     setCommandGuidanceOpen(false);
     setWorkSurfaceNotesOpen(false);
     setOperatingSummaryNotesOpen(false);
+    setSetupWorkbenchChooserOpen(false);
+    setSetupAccessTaskChooserOpen(false);
     setServicePacketChooserOpen(false);
     setStructurePacketChooserOpen(false);
     setMemberPacketChooserOpen(false);
     setGovernanceTaskChooserOpen(false);
     setRealLifeRecordTypeChooserOpen(false);
     setActiveBillingTask("payment_code");
+    setBillingPaymentGroupChooserOpen(false);
+    setBillingPaymentStepChooserOpen(false);
+    setBillingAccountTaskChooserOpen(false);
     setActiveBillingPaymentTask("reference");
     setActiveLane("billing");
   }
@@ -5528,6 +5733,7 @@ export default function CommunityDomainDashboardPage() {
       setBillingSettlementCountry(nextCountry);
       setQuoteCurrency(nextCurrency);
       setActiveBillingAccountTask("summary");
+      setBillingAccountTaskChooserOpen(false);
       setMessage(
         "Community pay-in account saved. Generate the next payment code for this area so the bank details match this account."
       );
@@ -5829,6 +6035,9 @@ export default function CommunityDomainDashboardPage() {
       if (!isCurrentDomainRequest(requestDomainId)) return;
       setQuote(payload?.quote || null);
       setActiveBillingTask("payment_code");
+      setBillingPaymentGroupChooserOpen(false);
+      setBillingPaymentStepChooserOpen(false);
+      setBillingAccountTaskChooserOpen(false);
       setActiveBillingPaymentTask("reference");
       setActiveLane("billing");
       setMessage(
@@ -5908,6 +6117,9 @@ export default function CommunityDomainDashboardPage() {
         );
       }
       setActiveBillingTask("payment_code");
+      setBillingPaymentGroupChooserOpen(false);
+      setBillingPaymentStepChooserOpen(false);
+      setBillingAccountTaskChooserOpen(false);
       setActiveBillingPaymentTask("reference");
       setActiveLane("billing");
       setMessage(
@@ -7189,6 +7401,10 @@ export default function CommunityDomainDashboardPage() {
                     setStructurePacketChooserOpen(false);
                     setMemberPacketChooserOpen(false);
                     setGovernanceTaskChooserOpen(false);
+                    setBillingTaskChooserOpen(false);
+                    setBillingPaymentGroupChooserOpen(false);
+                    setBillingPaymentStepChooserOpen(false);
+                    setBillingAccountTaskChooserOpen(false);
                     setRealLifeRecordTypeChooserOpen(false);
                   }}
                 />
@@ -7341,77 +7557,128 @@ export default function CommunityDomainDashboardPage() {
                       Open one active-domain question.
                     </h3>
                     <div style={{ ...helperText(), fontSize: 14 }}>
-                      Choose the live stage first. Current view:{" "}
-                      <strong>{activeOperatingSummaryGroupOption.label}</strong>.
-                    </div>
-                    <div
-                      style={{
-                        display: "grid",
-                        gridTemplateColumns:
-                          "repeat(auto-fit, minmax(min(100%, 132px), 1fr))",
-                        gap: 8,
-                      }}
-                    >
-                      {OPERATING_SUMMARY_GROUP_OPTIONS.map((group) => {
-                        const selected = group.key === activeOperatingSummaryGroup;
-                        return (
-                          <StableButton
-                            key={group.key}
-                            type="button"
-                            kind={selected ? "primary" : "secondary"}
-                            stableHeight={46}
-                            fullWidth
-                            aria-pressed={selected}
-                            title={group.note}
-                            debugId={`community-domain-dashboard.operating-summary-group.${group.key}`}
-                            onClick={() => {
-                              setActiveOperatingSummaryTask(group.defaultTask);
-                              setOperatingSummaryNotesOpen(false);
-                            }}
-                          >
-                            {group.label}
-                          </StableButton>
-                        );
-                      })}
-                    </div>
-                    <div style={{ ...helperText(), fontSize: 13 }}>
+                      Current live stage:{" "}
+                      <strong>{activeOperatingSummaryGroupOption.label}</strong>.{" "}
                       {activeOperatingSummaryGroupOption.note}
                     </div>
-                    <div
+                    <StableButton
+                      type="button"
+                      kind="secondary"
+                      fullWidth
+                      stableHeight={42}
+                      debugId="community-domain-dashboard.operating-summary-group-toggle"
+                      aria-expanded={operatingSummaryGroupChooserOpen}
+                      aria-controls="community-domain-operating-summary-groups"
+                      onClick={() =>
+                        setOperatingSummaryGroupChooserOpen((current) => !current)
+                      }
                       style={{
-                        display: "grid",
-                        gridTemplateColumns:
-                          "repeat(auto-fit, minmax(min(100%, 145px), 1fr))",
-                        gap: 8,
+                        justifyContent: "center",
+                        fontSize: 13,
+                        textTransform: "none",
                       }}
                     >
-                      {activeOperatingSummaryGroupTasks.map((task) => {
-                        const selected = task.key === activeOperatingSummaryTask;
-                        return (
-                          <StableButton
-                            key={task.key}
-                            type="button"
-                            kind={selected ? "primary" : "secondary"}
-                            stableHeight={46}
-                            fullWidth
-                            aria-pressed={selected}
-                            title={task.note}
-                            debugId={`community-domain-dashboard.operating-summary.${task.key}`}
-                            onClick={() => {
-                              setActiveOperatingSummaryTask(task.key);
-                              setOperatingSummaryNotesOpen(false);
-                            }}
-                          >
-                            {task.label}
-                          </StableButton>
-                        );
-                      })}
-                    </div>
+                      {operatingSummaryGroupChooserOpen
+                        ? "Close live stages"
+                        : "Change live stage"}
+                    </StableButton>
+                    {operatingSummaryGroupChooserOpen ? (
+                      <div
+                        id="community-domain-operating-summary-groups"
+                        data-debug-id="community-domain-dashboard.operating-summary-group-panel"
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns:
+                            "repeat(auto-fit, minmax(min(100%, 132px), 1fr))",
+                          gap: 8,
+                        }}
+                      >
+                        {OPERATING_SUMMARY_GROUP_OPTIONS.map((group) => {
+                          const selected = group.key === activeOperatingSummaryGroup;
+                          return (
+                            <StableButton
+                              key={group.key}
+                              type="button"
+                              kind={selected ? "primary" : "secondary"}
+                              stableHeight={46}
+                              fullWidth
+                              aria-pressed={selected}
+                              title={group.note}
+                              debugId={`community-domain-dashboard.operating-summary-group.${group.key}`}
+                              onClick={() => {
+                                setActiveOperatingSummaryTask(group.defaultTask);
+                                setOperatingSummaryGroupChooserOpen(false);
+                                setOperatingSummaryTaskChooserOpen(false);
+                                setOperatingSummaryNotesOpen(false);
+                              }}
+                            >
+                              {group.label}
+                            </StableButton>
+                          );
+                        })}
+                      </div>
+                    ) : null}
                     <div style={{ ...helperText(), fontSize: 13 }}>
-                      {OPERATING_SUMMARY_TASK_OPTIONS.find(
-                        (task) => task.key === activeOperatingSummaryTask
-                      )?.note || "Choose the operating summary packet you need."}
+                      Current question:{" "}
+                      <strong>{activeOperatingSummaryTaskOption.label}</strong>.{" "}
+                      {activeOperatingSummaryTaskOption.note}
                     </div>
+                    <StableButton
+                      type="button"
+                      kind="secondary"
+                      fullWidth
+                      stableHeight={42}
+                      debugId="community-domain-dashboard.operating-summary-task-toggle"
+                      aria-expanded={operatingSummaryTaskChooserOpen}
+                      aria-controls="community-domain-operating-summary-questions"
+                      onClick={() =>
+                        setOperatingSummaryTaskChooserOpen((current) => !current)
+                      }
+                      style={{
+                        justifyContent: "center",
+                        fontSize: 13,
+                        textTransform: "none",
+                      }}
+                    >
+                      {operatingSummaryTaskChooserOpen
+                        ? "Close questions"
+                        : "Change question"}
+                    </StableButton>
+                    {operatingSummaryTaskChooserOpen ? (
+                      <div
+                        id="community-domain-operating-summary-questions"
+                        data-debug-id="community-domain-dashboard.operating-summary-task-panel"
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns:
+                            "repeat(auto-fit, minmax(min(100%, 145px), 1fr))",
+                          gap: 8,
+                        }}
+                      >
+                        {activeOperatingSummaryGroupTasks.map((task) => {
+                          const selected = task.key === activeOperatingSummaryTask;
+                          return (
+                            <StableButton
+                              key={task.key}
+                              type="button"
+                              kind={selected ? "primary" : "secondary"}
+                              stableHeight={46}
+                              fullWidth
+                              aria-pressed={selected}
+                              title={task.note}
+                              debugId={`community-domain-dashboard.operating-summary.${task.key}`}
+                              onClick={() => {
+                                setActiveOperatingSummaryTask(task.key);
+                                setOperatingSummaryTaskChooserOpen(false);
+                                setOperatingSummaryNotesOpen(false);
+                              }}
+                            >
+                              {task.label}
+                            </StableButton>
+                          );
+                        })}
+                      </div>
+                    ) : null}
 
                     {activeOperatingSummaryTask === "next_action" ? (
                       <>
@@ -7607,39 +7874,65 @@ export default function CommunityDomainDashboardPage() {
                         : setupCurrentStep.note}
                     </div>
                     {showSetupAccessCard ? (
-                      <div
-                        style={{
-                          display: "grid",
-                          gridTemplateColumns:
-                            "repeat(auto-fit, minmax(min(100%, 145px), 1fr))",
-                          gap: 8,
-                        }}
-                      >
-                        {[
-                          ["step", "Setup step"],
-                          ["access", "Access"],
-                        ].map(([task, label]) => (
-                          <StableButton
-                            key={task}
-                            type="button"
-                            kind={
-                              activeSetupWorkbenchTask === task
-                                ? "primary"
-                                : "secondary"
-                            }
-                            stableHeight={46}
-                            debugId={`community-domain-dashboard.setup-workbench.${task}`}
-                            onClick={() => {
-                              const nextTask = task as SetupWorkbenchTaskKey;
-                              setActiveSetupWorkbenchTask(nextTask);
-                              if (nextTask === "access") {
-                                setActiveSetupAccessTask("summary");
-                              }
+                      <div style={{ display: "grid", gap: 8 }}>
+                        <div style={{ ...helperText(), fontSize: 13 }}>
+                          Current setup view:{" "}
+                          <strong>{activeSetupWorkbenchTaskOption.label}</strong>.{" "}
+                          {activeSetupWorkbenchTaskOption.note}
+                        </div>
+                        <StableButton
+                          type="button"
+                          kind="secondary"
+                          fullWidth
+                          stableHeight={42}
+                          debugId="community-domain-dashboard.setup-workbench-toggle"
+                          aria-expanded={setupWorkbenchChooserOpen}
+                          aria-controls="community-domain-setup-workbench-views"
+                          onClick={() =>
+                            setSetupWorkbenchChooserOpen((current) => !current)
+                          }
+                          style={{ justifyContent: "center", fontSize: 13 }}
+                        >
+                          {setupWorkbenchChooserOpen
+                            ? "Close setup views"
+                            : "Change setup view"}
+                        </StableButton>
+                        {setupWorkbenchChooserOpen ? (
+                          <div
+                            id="community-domain-setup-workbench-views"
+                            data-debug-id="community-domain-dashboard.setup-workbench-panel"
+                            style={{
+                              display: "grid",
+                              gridTemplateColumns:
+                                "repeat(auto-fit, minmax(min(100%, 145px), 1fr))",
+                              gap: 8,
                             }}
                           >
-                            {label}
-                          </StableButton>
-                        ))}
+                            {SETUP_WORKBENCH_TASK_OPTIONS.map((task) => (
+                              <StableButton
+                                key={task.key}
+                                type="button"
+                                kind={
+                                  activeSetupWorkbenchTask === task.key
+                                    ? "primary"
+                                    : "secondary"
+                                }
+                                stableHeight={46}
+                                debugId={`community-domain-dashboard.setup-workbench.${task.key}`}
+                                onClick={() => {
+                                  setActiveSetupWorkbenchTask(task.key);
+                                  setSetupWorkbenchChooserOpen(false);
+                                  setSetupAccessTaskChooserOpen(false);
+                                  if (task.key === "access") {
+                                    setActiveSetupAccessTask("summary");
+                                  }
+                                }}
+                              >
+                                {task.label}
+                              </StableButton>
+                            ))}
+                          </div>
+                        ) : null}
                       </div>
                     ) : null}
 
@@ -7664,35 +7957,59 @@ export default function CommunityDomainDashboardPage() {
                             ? "You hold final owner/admin authority. You can authorise or remove one trusted setup editor."
                             : "You can edit setup, profile, and setup evidence only. Owner/admin authority remains above this role."}
                         </div>
-                        <div
-                          style={{
-                            display: "grid",
-                            gridTemplateColumns:
-                              "repeat(auto-fit, minmax(min(100%, 145px), 1fr))",
-                            gap: 8,
-                          }}
-                        >
-                          {SETUP_ACCESS_TASK_OPTIONS.map((task) => {
-                            const selected = task.key === activeSetupAccessTask;
-                            return (
-                              <StableButton
-                                key={task.key}
-                                type="button"
-                                kind={selected ? "primary" : "secondary"}
-                                stableHeight={46}
-                                debugId={`community-domain-dashboard.setup-access.${task.key}`}
-                                onClick={() => setActiveSetupAccessTask(task.key)}
-                              >
-                                {task.label}
-                              </StableButton>
-                            );
-                          })}
-                        </div>
                         <div style={{ ...helperText(), fontSize: 13 }}>
-                          {SETUP_ACCESS_TASK_OPTIONS.find(
-                            (task) => task.key === activeSetupAccessTask
-                          )?.note || "Choose the setup access packet you need."}
+                          Current access packet:{" "}
+                          <strong>{activeSetupAccessTaskOption.label}</strong>.{" "}
+                          {activeSetupAccessTaskOption.note}
                         </div>
+                        <StableButton
+                          type="button"
+                          kind="secondary"
+                          fullWidth
+                          stableHeight={42}
+                          debugId="community-domain-dashboard.setup-access-toggle"
+                          aria-expanded={setupAccessTaskChooserOpen}
+                          aria-controls="community-domain-setup-access-packets"
+                          onClick={() =>
+                            setSetupAccessTaskChooserOpen((current) => !current)
+                          }
+                          style={{ justifyContent: "center", fontSize: 13 }}
+                        >
+                          {setupAccessTaskChooserOpen
+                            ? "Close access packets"
+                            : "Change access packet"}
+                        </StableButton>
+                        {setupAccessTaskChooserOpen ? (
+                          <div
+                            id="community-domain-setup-access-packets"
+                            data-debug-id="community-domain-dashboard.setup-access-panel"
+                            style={{
+                              display: "grid",
+                              gridTemplateColumns:
+                                "repeat(auto-fit, minmax(min(100%, 145px), 1fr))",
+                              gap: 8,
+                            }}
+                          >
+                            {SETUP_ACCESS_TASK_OPTIONS.map((task) => {
+                              const selected = task.key === activeSetupAccessTask;
+                              return (
+                                <StableButton
+                                  key={task.key}
+                                  type="button"
+                                  kind={selected ? "primary" : "secondary"}
+                                  stableHeight={46}
+                                  debugId={`community-domain-dashboard.setup-access.${task.key}`}
+                                  onClick={() => {
+                                    setActiveSetupAccessTask(task.key);
+                                    setSetupAccessTaskChooserOpen(false);
+                                  }}
+                                >
+                                  {task.label}
+                                </StableButton>
+                              );
+                            })}
+                          </div>
+                        ) : null}
                         {activeSetupAccessTask === "summary" ? (
                           <div style={statusBadge(setupAccessLabel)}>
                             {setupEditingLocked
@@ -8682,44 +8999,71 @@ export default function CommunityDomainDashboardPage() {
                     <div style={{ ...softCard(), marginTop: 12, display: "grid", gap: 10 }}>
                       <div style={sectionLabel()}>Billing jobs</div>
                       <div style={{ ...helperText(), fontSize: 13 }}>
-                        Open one billing job. Payment code and proof stay separate
-                        from account setup, sequence steps, and readiness diagnostics.
+                        Current billing job:{" "}
+                        <strong>{activeBillingTaskOption.label}</strong>.{" "}
+                        {activeBillingTaskOption.note}
                       </div>
-                      <div
+                      <StableButton
+                        type="button"
+                        kind="secondary"
+                        fullWidth
+                        stableHeight={42}
+                        debugId="community-domain-dashboard.billing-task-toggle"
+                        aria-expanded={billingTaskChooserOpen}
+                        aria-controls="community-domain-billing-jobs"
+                        onClick={() =>
+                          setBillingTaskChooserOpen((current) => !current)
+                        }
                         style={{
-                          display: "grid",
-                          gridTemplateColumns:
-                            "repeat(auto-fit, minmax(min(100%, 132px), 1fr))",
-                          gap: 8,
+                          justifyContent: "center",
+                          fontSize: 13,
+                          textTransform: "none",
                         }}
                       >
-                        {[
-                          ["payment_code", "Code & proof"],
-                          ["account", "Pay-in account"],
-                          ["steps", "Steps"],
-                          ["readiness", "Readiness"],
-                        ].map(([task, label]) => (
-                          <StableButton
-                            key={task}
-                            type="button"
-                            kind={
-                              activeBillingTask === task ? "primary" : "secondary"
-                            }
-                            stableHeight={46}
-                            debugId={`community-domain-dashboard.billing-task.${task}`}
-                            onClick={() => {
-                              setActiveBillingTask(task as BillingTaskKey);
-                              if (task === "payment_code") {
-                                setActiveBillingPaymentTask("reference");
-                              } else if (task === "account") {
-                                setActiveBillingAccountTask("summary");
+                        {billingTaskChooserOpen
+                          ? "Close billing jobs"
+                          : "Change billing job"}
+                      </StableButton>
+                      {billingTaskChooserOpen ? (
+                        <div
+                          id="community-domain-billing-jobs"
+                          data-debug-id="community-domain-dashboard.billing-task-panel"
+                          style={{
+                            display: "grid",
+                            gridTemplateColumns:
+                              "repeat(auto-fit, minmax(min(100%, 132px), 1fr))",
+                            gap: 8,
+                          }}
+                        >
+                          {BILLING_TASK_OPTIONS.map((task) => (
+                            <StableButton
+                              key={task.key}
+                              type="button"
+                              kind={
+                                activeBillingTask === task.key
+                                  ? "primary"
+                                  : "secondary"
                               }
-                            }}
-                          >
-                            {label}
-                          </StableButton>
-                        ))}
-                      </div>
+                              stableHeight={46}
+                              debugId={`community-domain-dashboard.billing-task.${task.key}`}
+                              onClick={() => {
+                                setActiveBillingTask(task.key);
+                                setBillingTaskChooserOpen(false);
+                                setBillingPaymentGroupChooserOpen(false);
+                                setBillingPaymentStepChooserOpen(false);
+                                setBillingAccountTaskChooserOpen(false);
+                                if (task.key === "payment_code") {
+                                  setActiveBillingPaymentTask("reference");
+                                } else if (task.key === "account") {
+                                  setActiveBillingAccountTask("summary");
+                                }
+                              }}
+                            >
+                              {task.label}
+                            </StableButton>
+                          ))}
+                        </div>
+                      ) : null}
                     </div>
                     {activeBillingTask === "steps" ? (
                       <div
@@ -8783,48 +9127,76 @@ export default function CommunityDomainDashboardPage() {
                       <div style={{ ...helperText(), fontSize: 13 }}>
                         Use this account with the generated code. Editing is GSN-admin only.
                       </div>
-                      <div
+                      <div style={{ ...helperText(), fontSize: 13 }}>
+                        Current pay-in account packet:{" "}
+                        <strong>{activeBillingAccountTaskOption.label}</strong>.{" "}
+                        {activeBillingAccountTaskOption.note}
+                      </div>
+                      <StableButton
+                        type="button"
+                        kind="secondary"
+                        fullWidth
+                        stableHeight={42}
+                        debugId="community-domain-dashboard.billing-account-toggle"
+                        aria-expanded={billingAccountTaskChooserOpen}
+                        aria-controls="community-domain-billing-account-packets"
+                        onClick={() =>
+                          setBillingAccountTaskChooserOpen((current) => !current)
+                        }
                         style={{
-                          display: "grid",
-                          gridTemplateColumns:
-                            "repeat(auto-fit, minmax(min(100%, 145px), 1fr))",
-                          gap: 8,
+                          justifyContent: "center",
+                          fontSize: 13,
+                          textTransform: "none",
                         }}
                       >
-                        {BILLING_ACCOUNT_TASK_OPTIONS.map((task) => {
-                          const selected = task.key === activeBillingAccountTask;
-                          return (
-                            <StableButton
-                              key={task.key}
-                              type="button"
-                              kind={selected ? "primary" : "secondary"}
-                              stableHeight={46}
-                              debugId={`community-domain-dashboard.billing-account.${task.key}`}
-                              onClick={() => {
-                                setActiveBillingAccountTask(task.key);
-                                if (task.key === "setup" && !communityPayInIsReady) {
-                                  const nextCountry = normalizeSettlementCountryCode(
-                                    billingSettlementCountry
-                                  );
-                                  setCommunityPayInDraft(
-                                    emptyCommunityDomainPayInDraft(
-                                      nextCountry,
-                                      settlementCurrencyForCountry(nextCountry)
-                                    )
-                                  );
-                                }
-                              }}
-                            >
-                              {task.label}
-                            </StableButton>
-                          );
-                        })}
-                      </div>
-                      <div style={{ ...helperText(), fontSize: 13 }}>
-                        {BILLING_ACCOUNT_TASK_OPTIONS.find(
-                          (task) => task.key === activeBillingAccountTask
-                        )?.note || "Choose the pay-in account packet you need."}
-                      </div>
+                        {billingAccountTaskChooserOpen
+                          ? "Close pay-in account packets"
+                          : "Change pay-in account packet"}
+                      </StableButton>
+                      {billingAccountTaskChooserOpen ? (
+                        <div
+                          id="community-domain-billing-account-packets"
+                          data-debug-id="community-domain-dashboard.billing-account-panel"
+                          style={{
+                            display: "grid",
+                            gridTemplateColumns:
+                              "repeat(auto-fit, minmax(min(100%, 145px), 1fr))",
+                            gap: 8,
+                          }}
+                        >
+                          {BILLING_ACCOUNT_TASK_OPTIONS.map((task) => {
+                            const selected = task.key === activeBillingAccountTask;
+                            return (
+                              <StableButton
+                                key={task.key}
+                                type="button"
+                                kind={selected ? "primary" : "secondary"}
+                                stableHeight={46}
+                                aria-pressed={selected}
+                                title={task.note}
+                                debugId={`community-domain-dashboard.billing-account.${task.key}`}
+                                onClick={() => {
+                                  setActiveBillingAccountTask(task.key);
+                                  setBillingAccountTaskChooserOpen(false);
+                                  if (task.key === "setup" && !communityPayInIsReady) {
+                                    const nextCountry = normalizeSettlementCountryCode(
+                                      billingSettlementCountry
+                                    );
+                                    setCommunityPayInDraft(
+                                      emptyCommunityDomainPayInDraft(
+                                        nextCountry,
+                                        settlementCurrencyForCountry(nextCountry)
+                                      )
+                                    );
+                                  }
+                                }}
+                              >
+                                {task.label}
+                              </StableButton>
+                            );
+                          })}
+                        </div>
+                      ) : null}
                       {activeBillingAccountTask === "summary" && communityPayInIsReady ? (
                         <div
                           style={{
@@ -9047,7 +9419,10 @@ export default function CommunityDomainDashboardPage() {
                               kind="secondary"
                               fullWidth
                               debugId="community-domain-dashboard.pay-in-account-close"
-                              onClick={() => setActiveBillingAccountTask("summary")}
+                              onClick={() => {
+                                setActiveBillingAccountTask("summary");
+                                setBillingAccountTaskChooserOpen(false);
+                              }}
                             >
                               Close
                             </StableButton>
@@ -9113,41 +9488,71 @@ export default function CommunityDomainDashboardPage() {
                     <div style={{ ...softCard(), marginTop: 12, display: "grid", gap: 10 }}>
                       <div style={sectionLabel()}>Code & proof packets</div>
                       <div style={{ ...helperText(), fontSize: 13 }}>
-                        Choose the stage first. Reference, generation, credit link,
-                        official pay account, and proof upload stay separate.
+                        Current packet:{" "}
+                        <strong>{activeBillingPaymentGroupOption.label}</strong>.{" "}
+                        {activeBillingPaymentGroupOption.note}
                       </div>
-                      <div
+                      <StableButton
+                        type="button"
+                        kind="secondary"
+                        fullWidth
+                        stableHeight={42}
+                        debugId="community-domain-dashboard.billing-payment-group-toggle"
+                        aria-expanded={billingPaymentGroupChooserOpen}
+                        aria-controls="community-domain-billing-payment-groups"
+                        onClick={() =>
+                          setBillingPaymentGroupChooserOpen((current) => !current)
+                        }
                         style={{
-                          display: "grid",
-                          gridTemplateColumns:
-                            "repeat(auto-fit, minmax(min(100%, 132px), 1fr))",
-                          gap: 8,
+                          justifyContent: "center",
+                          fontSize: 13,
+                          textTransform: "none",
                         }}
                       >
-                        {BILLING_PAYMENT_GROUP_OPTIONS.map((group) => {
-                          const selected = group.key === activeBillingPaymentGroup;
-                          return (
-                            <StableButton
-                              key={group.key}
-                              type="button"
-                              kind={selected ? "primary" : "secondary"}
-                              stableHeight={44}
-                              fullWidth
-                              aria-pressed={selected}
-                              title={group.note}
-                              debugId={`community-domain-dashboard.billing-payment-group.${group.key}`}
-                              onClick={() => setActiveBillingPaymentTask(group.defaultTask)}
-                              style={{
-                                justifyContent: "center",
-                                fontSize: 13,
-                                textTransform: "none",
-                              }}
-                            >
-                              {group.label}
-                            </StableButton>
-                          );
-                        })}
-                      </div>
+                        {billingPaymentGroupChooserOpen
+                          ? "Close code/proof packets"
+                          : "Change code/proof packet"}
+                      </StableButton>
+                      {billingPaymentGroupChooserOpen ? (
+                        <div
+                          id="community-domain-billing-payment-groups"
+                          data-debug-id="community-domain-dashboard.billing-payment-group-panel"
+                          style={{
+                            display: "grid",
+                            gridTemplateColumns:
+                              "repeat(auto-fit, minmax(min(100%, 132px), 1fr))",
+                            gap: 8,
+                          }}
+                        >
+                          {BILLING_PAYMENT_GROUP_OPTIONS.map((group) => {
+                            const selected = group.key === activeBillingPaymentGroup;
+                            return (
+                              <StableButton
+                                key={group.key}
+                                type="button"
+                                kind={selected ? "primary" : "secondary"}
+                                stableHeight={44}
+                                fullWidth
+                                aria-pressed={selected}
+                                title={group.note}
+                                debugId={`community-domain-dashboard.billing-payment-group.${group.key}`}
+                                onClick={() => {
+                                  setActiveBillingPaymentTask(group.defaultTask);
+                                  setBillingPaymentGroupChooserOpen(false);
+                                  setBillingPaymentStepChooserOpen(false);
+                                }}
+                                style={{
+                                  justifyContent: "center",
+                                  fontSize: 13,
+                                  textTransform: "none",
+                                }}
+                              >
+                                {group.label}
+                              </StableButton>
+                            );
+                          })}
+                        </div>
+                      ) : null}
                       {activeBillingPaymentGroupTasks.length > 1 ? (
                         <div
                           style={{
@@ -9158,45 +9563,82 @@ export default function CommunityDomainDashboardPage() {
                           }}
                         >
                           <div style={sectionLabel()}>
-                            {activeBillingPaymentGroupOption.label} packets
+                            {activeBillingPaymentGroupOption.label} steps
                           </div>
-                          <div
+                          <div style={{ ...helperText(), fontSize: 13 }}>
+                            Current step:{" "}
+                            <strong>{activeBillingPaymentTaskOption.label}</strong>.{" "}
+                            {activeBillingPaymentTaskOption.note}
+                          </div>
+                          <StableButton
+                            type="button"
+                            kind="secondary"
+                            fullWidth
+                            stableHeight={40}
+                            debugId="community-domain-dashboard.billing-payment-step-toggle"
+                            aria-expanded={billingPaymentStepChooserOpen}
+                            aria-controls="community-domain-billing-payment-steps"
+                            onClick={() =>
+                              setBillingPaymentStepChooserOpen((current) => !current)
+                            }
                             style={{
-                              display: "grid",
-                              gridTemplateColumns:
-                                "repeat(auto-fit, minmax(min(100%, 128px), 1fr))",
-                              gap: 8,
+                              justifyContent: "center",
+                              fontSize: 13,
+                              textTransform: "none",
                             }}
                           >
-                            {activeBillingPaymentGroupTasks.map((task) => {
-                              const selected = task.key === activeBillingPaymentTask;
-                              return (
-                                <StableButton
-                                  key={task.key}
-                                  type="button"
-                                  kind={selected ? "primary" : "secondary"}
-                                  stableHeight={40}
-                                  fullWidth
-                                  aria-pressed={selected}
-                                  title={task.note}
-                                  debugId={`community-domain-dashboard.billing-payment.${task.key}`}
-                                  onClick={() => setActiveBillingPaymentTask(task.key)}
-                                  style={{
-                                    justifyContent: "center",
-                                    fontSize: 13,
-                                    textTransform: "none",
-                                  }}
-                                >
-                                  {task.label}
-                                </StableButton>
-                              );
-                            })}
-                          </div>
+                            {billingPaymentStepChooserOpen
+                              ? `Close ${activeBillingPaymentGroupOption.label} steps`
+                              : `Change ${activeBillingPaymentGroupOption.label} step`}
+                          </StableButton>
+                          {billingPaymentStepChooserOpen ? (
+                            <div
+                              id="community-domain-billing-payment-steps"
+                              data-debug-id="community-domain-dashboard.billing-payment-step-panel"
+                              style={{
+                                display: "grid",
+                                gridTemplateColumns:
+                                  "repeat(auto-fit, minmax(min(100%, 128px), 1fr))",
+                                gap: 8,
+                              }}
+                            >
+                              {activeBillingPaymentGroupTasks.map((task) => {
+                                const selected = task.key === activeBillingPaymentTask;
+                                return (
+                                  <StableButton
+                                    key={task.key}
+                                    type="button"
+                                    kind={selected ? "primary" : "secondary"}
+                                    stableHeight={40}
+                                    fullWidth
+                                    aria-pressed={selected}
+                                    title={task.note}
+                                    debugId={`community-domain-dashboard.billing-payment.${task.key}`}
+                                    onClick={() => {
+                                      setActiveBillingPaymentTask(task.key);
+                                      setBillingPaymentStepChooserOpen(false);
+                                    }}
+                                    style={{
+                                      justifyContent: "center",
+                                      fontSize: 13,
+                                      textTransform: "none",
+                                    }}
+                                  >
+                                    {task.label}
+                                  </StableButton>
+                                );
+                              })}
+                            </div>
+                          ) : null}
                         </div>
                       ) : null}
-                      <div style={{ ...helperText(), fontSize: 13 }}>
-                        {activeBillingPaymentTaskOption.note}
-                      </div>
+                      {activeBillingPaymentGroupTasks.length === 1 ? (
+                        <div style={{ ...helperText(), fontSize: 13 }}>
+                          Current step:{" "}
+                          <strong>{activeBillingPaymentTaskOption.label}</strong>.{" "}
+                          {activeBillingPaymentTaskOption.note}
+                        </div>
+                      ) : null}
                     </div>
 
                     {activeBillingPaymentTask === "generate" &&
@@ -9603,7 +10045,12 @@ export default function CommunityDomainDashboardPage() {
                           kind="primary"
                           fullWidth
                           debugId="community-domain-dashboard.open-generate-payment-code"
-                          onClick={() => setActiveBillingPaymentTask("generate")}
+                          onClick={() => {
+                            setActiveBillingPaymentTask("generate");
+                            setBillingPaymentGroupChooserOpen(false);
+                            setBillingPaymentStepChooserOpen(false);
+                            setBillingAccountTaskChooserOpen(false);
+                          }}
                           style={{ marginTop: 12 }}
                         >
                           Open Generate
@@ -10214,31 +10661,61 @@ export default function CommunityDomainDashboardPage() {
                             </div>
                           </div>
                         </div>
-                        <div
+                        <div style={{ ...helperText(), fontSize: 13 }}>
+                          Current governance stage:{" "}
+                          <strong>{activeGovernanceTaskGroupOption.label}</strong>.{" "}
+                          {activeGovernanceTaskGroupOption.note}
+                        </div>
+                        <StableButton
+                          type="button"
+                          kind="secondary"
+                          fullWidth
+                          stableHeight={42}
+                          debugId="community-domain-dashboard.governance-group-toggle"
+                          aria-expanded={governanceGroupChooserOpen}
+                          aria-controls="community-domain-governance-stages"
+                          onClick={() =>
+                            setGovernanceGroupChooserOpen((current) => !current)
+                          }
                           style={{
-                            display: "grid",
-                            gridTemplateColumns:
-                              "repeat(auto-fit, minmax(min(100%, 150px), 1fr))",
-                            gap: 8,
+                            justifyContent: "center",
+                            fontSize: 13,
+                            textTransform: "none",
                           }}
                         >
-                          {GOVERNANCE_TASK_GROUP_OPTIONS.map((group) => (
-                            <StableButton
-                              key={group.key}
-                              type="button"
-                              kind={
-                                activeGovernanceTaskGroup === group.key
-                                  ? "primary"
-                                  : "secondary"
-                              }
-                              stableHeight={46}
-                              debugId={`community-domain-dashboard.governance-group.${group.key}`}
-                              onClick={() => selectGovernanceTask(group.defaultTask)}
-                            >
-                              {group.label}
-                            </StableButton>
-                          ))}
-                        </div>
+                          {governanceGroupChooserOpen
+                            ? "Close governance stages"
+                            : "Change governance stage"}
+                        </StableButton>
+                        {governanceGroupChooserOpen ? (
+                          <div
+                            id="community-domain-governance-stages"
+                            data-debug-id="community-domain-dashboard.governance-group-panel"
+                            style={{
+                              display: "grid",
+                              gridTemplateColumns:
+                                "repeat(auto-fit, minmax(min(100%, 150px), 1fr))",
+                              gap: 8,
+                            }}
+                          >
+                            {GOVERNANCE_TASK_GROUP_OPTIONS.map((group) => (
+                              <StableButton
+                                key={group.key}
+                                type="button"
+                                kind={
+                                  activeGovernanceTaskGroup === group.key
+                                    ? "primary"
+                                    : "secondary"
+                                }
+                                stableHeight={46}
+                                debugId={`community-domain-dashboard.governance-group.${group.key}`}
+                                onClick={() => selectGovernanceTask(group.defaultTask)}
+                              >
+                                {group.label}
+                              </StableButton>
+                            ))}
+                          </div>
+                        ) : null}
                         {activeGovernanceGroupTasks.length > 1 ? (
                           <div
                             style={{
@@ -12494,6 +12971,47 @@ export default function CommunityDomainDashboardPage() {
                                     packet.key === activeOutcomeRecentPacket
                                 ) ||
                                 BENEFICIARY_OUTCOME_RECENT_PACKET_OPTIONS[0];
+                              const outcomeSummaryDetailCount = [
+                                latestResponse?.correction_note,
+                                latestReview,
+                                latestDeliveryReceipt,
+                                latestDeliveryReceipt?.latest_correction,
+                                latestProviderSendBlockedCheck,
+                              ].filter(Boolean).length;
+                              const outcomeSummaryDetailsOpen = Boolean(
+                                beneficiaryOutcomeSummaryDetailsOpenById[
+                                  outcomeEventId
+                                ]
+                              );
+                              const requestedOutcomeConfirmationAction =
+                                beneficiaryOutcomeConfirmationActionById[
+                                  outcomeEventId
+                                ] ||
+                                (needsCorrectionReview ? "review" : "link");
+                              const activeOutcomeConfirmationAction =
+                                requestedOutcomeConfirmationAction === "review" &&
+                                needsCorrectionReview
+                                  ? "review"
+                                  : "link";
+                              const outcomeConfirmationActionChooserOpen =
+                                Boolean(
+                                  beneficiaryOutcomeConfirmationActionChooserOpenById[
+                                    outcomeEventId
+                                  ]
+                                );
+                              const outcomeConfirmationActionOpen = Boolean(
+                                beneficiaryOutcomeConfirmationActionOpenById[
+                                  outcomeEventId
+                                ]
+                              );
+                              const activeOutcomeConfirmationActionLabel =
+                                activeOutcomeConfirmationAction === "review"
+                                  ? "Review challenge"
+                                  : "Create confirmation link";
+                              const activeOutcomeConfirmationActionNote =
+                                activeOutcomeConfirmationAction === "review"
+                                  ? "Resolve the beneficiary challenge before treating this outcome as settled."
+                                  : "Prepare one private confirmation link for the beneficiary response.";
                               const requestedOutcomeContactAction =
                                 beneficiaryOutcomeContactActionById[
                                   outcomeEventId
@@ -12505,6 +13023,11 @@ export default function CommunityDomainDashboardPage() {
                                   : "record";
                               const outcomeContactActionChooserOpen = Boolean(
                                 beneficiaryOutcomeContactActionChooserOpenById[
+                                  outcomeEventId
+                                ]
+                              );
+                              const outcomeContactActionOpen = Boolean(
+                                beneficiaryOutcomeContactActionOpenById[
                                   outcomeEventId
                                 ]
                               );
@@ -12536,6 +13059,27 @@ export default function CommunityDomainDashboardPage() {
                                   : canRecordManualDelivery
                                     ? "Open this after manual delivery has happened and record one receipt outcome."
                                     : "Prepare a confirmation link and keep active contact/consent evidence before recording delivery.";
+                              const outcomeDeliveryNotesOpen = Boolean(
+                                beneficiaryOutcomeDeliveryNotesOpenById[
+                                  outcomeEventId
+                                ]
+                              );
+                              const activeOutcomeDeliveryTaskLabel =
+                                manualDeliveryBlockedByConsent
+                                  ? "Resolve contact/consent first"
+                                  : latestDeliveryPreparation
+                                    ? "Delivery readiness recorded"
+                                    : localDeliveryPack && !latestDeliveryPreparation
+                                      ? "Session delivery pack ready"
+                                      : "Prepare delivery pack";
+                              const activeOutcomeDeliveryTaskNote =
+                                manualDeliveryBlockedByConsent
+                                  ? manualDeliveryBlockedText
+                                  : latestDeliveryPreparation
+                                    ? "Review readiness before recording any manual receipt."
+                                    : localDeliveryPack && !latestDeliveryPreparation
+                                      ? "GSN has prepared local delivery text in this session only."
+                                      : "Use Confirm to create the private confirmation link and delivery text first.";
                               return (
                               <div
                                 key={outcomeEventId}
@@ -12708,7 +13252,43 @@ export default function CommunityDomainDashboardPage() {
                                                     [outcomeEventId]: false,
                                                   })
                                                 );
+                                                setBeneficiaryOutcomeSummaryDetailsOpenById(
+                                                  (current) => ({
+                                                    ...current,
+                                                    [outcomeEventId]: false,
+                                                  })
+                                                );
+                                                setBeneficiaryOutcomeConfirmationActionChooserOpenById(
+                                                  (current) => ({
+                                                    ...current,
+                                                    [outcomeEventId]: false,
+                                                  })
+                                                );
+                                                setBeneficiaryOutcomeConfirmationActionOpenById(
+                                                  (current) => ({
+                                                    ...current,
+                                                    [outcomeEventId]: false,
+                                                  })
+                                                );
+                                                setBeneficiaryOutcomeContactActionChooserOpenById(
+                                                  (current) => ({
+                                                    ...current,
+                                                    [outcomeEventId]: false,
+                                                  })
+                                                );
+                                                setBeneficiaryOutcomeContactActionOpenById(
+                                                  (current) => ({
+                                                    ...current,
+                                                    [outcomeEventId]: false,
+                                                  })
+                                                );
                                                 setBeneficiaryOutcomeReceiptFormOpenById(
+                                                  (current) => ({
+                                                    ...current,
+                                                    [outcomeEventId]: false,
+                                                  })
+                                                );
+                                                setBeneficiaryOutcomeDeliveryNotesOpenById(
                                                   (current) => ({
                                                     ...current,
                                                     [outcomeEventId]: false,
@@ -12731,85 +13311,272 @@ export default function CommunityDomainDashboardPage() {
                                 </div>
                                 {activeOutcomeRecentPacket === "summary" ? (
                                   <>
-                                    {latestResponse?.correction_note ? (
+                                    <div style={{ display: "grid", gap: 8 }}>
                                       <div style={{ ...helperText(), fontSize: 13 }}>
-                                        Correction note:{" "}
-                                        {cleanText(latestResponse?.correction_note)}
+                                        Summary details:{" "}
+                                        <strong>
+                                          {outcomeSummaryDetailCount
+                                            ? `${outcomeSummaryDetailCount} recorded`
+                                            : "none recorded"}
+                                        </strong>
+                                        . Keep this closed unless you need the
+                                        audit context for this outcome.
                                       </div>
-                                    ) : null}
-                                    {latestReview ? (
-                                      <div style={{ ...helperText(), fontSize: 13 }}>
-                                        Latest review marked this as{" "}
-                                        {compactStatus(
-                                          latestReview?.challenge_status_after
-                                        )}
-                                        . The original outcome was not rewritten.
-                                      </div>
-                                    ) : null}
-                                    {latestDeliveryReceipt ? (
-                                      <div style={{ ...helperText(), fontSize: 13 }}>
-                                        Manual delivery receipt:{" "}
-                                        {compactStatus(
-                                          latestDeliveryReceipt?.channel
-                                        )}{" "}
-                                        marked as{" "}
-                                        {compactStatus(
-                                          latestDeliveryReceipt?.delivery_status
-                                        )}
-                                        {latestDeliveryReceipt?.consent_basis ? (
-                                          <>
-                                            {" "}
-                                            with consent basis{" "}
+                                      {outcomeSummaryDetailCount ? (
+                                        <StableButton
+                                          type="button"
+                                          kind="secondary"
+                                          fullWidth
+                                          stableHeight={38}
+                                          debugId="community-domain-dashboard.beneficiary-outcome-summary-details-toggle"
+                                          aria-expanded={outcomeSummaryDetailsOpen}
+                                          aria-controls={`community-domain-beneficiary-outcome-summary-details-${outcomeEventId}`}
+                                          onClick={() =>
+                                            setBeneficiaryOutcomeSummaryDetailsOpenById(
+                                              (current) => ({
+                                                ...current,
+                                                [outcomeEventId]:
+                                                  !outcomeSummaryDetailsOpen,
+                                              })
+                                            )
+                                          }
+                                          style={{
+                                            justifyContent: "center",
+                                            fontSize: 13,
+                                            textTransform: "none",
+                                          }}
+                                        >
+                                          {outcomeSummaryDetailsOpen
+                                            ? "Close summary details"
+                                            : "Open summary details"}
+                                        </StableButton>
+                                      ) : null}
+                                    </div>
+                                    {outcomeSummaryDetailsOpen ? (
+                                      <div
+                                        id={`community-domain-beneficiary-outcome-summary-details-${outcomeEventId}`}
+                                        style={{ display: "grid", gap: 6 }}
+                                      >
+                                        {latestResponse?.correction_note ? (
+                                          <div style={{ ...helperText(), fontSize: 13 }}>
+                                            Correction note:{" "}
+                                            {cleanText(latestResponse?.correction_note)}
+                                          </div>
+                                        ) : null}
+                                        {latestReview ? (
+                                          <div style={{ ...helperText(), fontSize: 13 }}>
+                                            Latest review marked this as{" "}
                                             {compactStatus(
-                                              latestDeliveryReceipt?.consent_basis
+                                              latestReview?.challenge_status_after
                                             )}
-                                          </>
+                                            . The original outcome was not rewritten.
+                                          </div>
                                         ) : null}
-                                        {latestDeliveryReceipt?.contact_consent_event_id ? (
-                                          <>
-                                            {" "}
-                                            backed by contact/consent record{" "}
-                                            {cleanText(
-                                              latestDeliveryReceipt?.contact_consent_event_id
+                                        {latestDeliveryReceipt ? (
+                                          <div style={{ ...helperText(), fontSize: 13 }}>
+                                            Manual delivery receipt:{" "}
+                                            {compactStatus(
+                                              latestDeliveryReceipt?.channel
+                                            )}{" "}
+                                            marked as{" "}
+                                            {compactStatus(
+                                              latestDeliveryReceipt?.delivery_status
                                             )}
-                                          </>
+                                            {latestDeliveryReceipt?.consent_basis ? (
+                                              <>
+                                                {" "}
+                                                with consent basis{" "}
+                                                {compactStatus(
+                                                  latestDeliveryReceipt?.consent_basis
+                                                )}
+                                              </>
+                                            ) : null}
+                                            {latestDeliveryReceipt?.contact_consent_event_id ? (
+                                              <>
+                                                {" "}
+                                                backed by contact/consent record{" "}
+                                                {cleanText(
+                                                  latestDeliveryReceipt?.contact_consent_event_id
+                                                )}
+                                              </>
+                                            ) : null}
+                                            . GSN did not send the external message.
+                                          </div>
                                         ) : null}
-                                        . GSN did not send the external message.
-                                      </div>
-                                    ) : null}
-                                    {latestDeliveryReceipt?.latest_correction ? (
-                                      <div style={{ ...helperText(), fontSize: 13 }}>
-                                        Receipt correction:{" "}
-                                        {compactStatus(
-                                          latestDeliveryReceipt?.latest_correction
-                                            ?.decision
-                                        )}{" "}
-                                        marked this receipt as{" "}
-                                        {compactStatus(
-                                          latestDeliveryReceipt
-                                            ?.receipt_correction_status
-                                        )}
-                                        . The original manual receipt remains in the
-                                        audit trail.
-                                      </div>
-                                    ) : null}
-                                    {latestProviderSendBlockedCheck ? (
-                                      <div style={{ ...helperText(), fontSize: 13 }}>
-                                        Provider send blocked:{" "}
-                                        {compactStatus(
-                                          latestProviderSendBlockedCheck?.blocked_reason ||
-                                            "provider_delivery_not_connected"
-                                        )}
-                                        . GSN recorded this readiness check only; no
-                                        provider job, no send attempt, and no external
-                                        message was created.
+                                        {latestDeliveryReceipt?.latest_correction ? (
+                                          <div style={{ ...helperText(), fontSize: 13 }}>
+                                            Receipt correction:{" "}
+                                            {compactStatus(
+                                              latestDeliveryReceipt?.latest_correction
+                                                ?.decision
+                                            )}{" "}
+                                            marked this receipt as{" "}
+                                            {compactStatus(
+                                              latestDeliveryReceipt
+                                                ?.receipt_correction_status
+                                            )}
+                                            . The original manual receipt remains in the
+                                            audit trail.
+                                          </div>
+                                        ) : null}
+                                        {latestProviderSendBlockedCheck ? (
+                                          <div style={{ ...helperText(), fontSize: 13 }}>
+                                            Provider send blocked:{" "}
+                                            {compactStatus(
+                                              latestProviderSendBlockedCheck?.blocked_reason ||
+                                                "provider_delivery_not_connected"
+                                            )}
+                                            . GSN recorded this readiness check only; no
+                                            provider job, no send attempt, and no external
+                                            message was created.
+                                          </div>
+                                        ) : null}
                                       </div>
                                     ) : null}
                                   </>
                                 ) : null}
+                                {activeOutcomeRecentPacket === "confirmation" ? (
+                                  <div style={{ display: "grid", gap: 8 }}>
+                                    <div style={{ ...helperText(), fontSize: 13 }}>
+                                      Current confirmation task:{" "}
+                                      <strong>
+                                        {activeOutcomeConfirmationActionLabel}
+                                      </strong>
+                                      . {activeOutcomeConfirmationActionNote}
+                                    </div>
+                                    {needsCorrectionReview ? (
+                                      <StableButton
+                                        type="button"
+                                        kind="secondary"
+                                        fullWidth
+                                        stableHeight={38}
+                                        debugId="community-domain-dashboard.beneficiary-outcome-confirmation-action-toggle"
+                                        aria-expanded={
+                                          outcomeConfirmationActionChooserOpen
+                                        }
+                                        aria-controls={`community-domain-beneficiary-outcome-confirmation-actions-${outcomeEventId}`}
+                                        onClick={() =>
+                                          setBeneficiaryOutcomeConfirmationActionChooserOpenById(
+                                            (current) => ({
+                                              ...current,
+                                              [outcomeEventId]:
+                                                !current[outcomeEventId],
+                                            })
+                                          )
+                                        }
+                                        style={{
+                                          justifyContent: "center",
+                                          fontSize: 13,
+                                          textTransform: "none",
+                                        }}
+                                      >
+                                        {outcomeConfirmationActionChooserOpen
+                                          ? "Close confirmation actions"
+                                          : "Change confirmation action"}
+                                      </StableButton>
+                                    ) : null}
+                                    {needsCorrectionReview &&
+                                    outcomeConfirmationActionChooserOpen ? (
+                                      <div
+                                        id={`community-domain-beneficiary-outcome-confirmation-actions-${outcomeEventId}`}
+                                        data-debug-id="community-domain-dashboard.beneficiary-outcome-confirmation-action-panel"
+                                        style={{
+                                          display: "grid",
+                                          gridTemplateColumns:
+                                            "repeat(auto-fit, minmax(min(100%, 155px), 1fr))",
+                                          gap: 8,
+                                        }}
+                                      >
+                                        {[
+                                          ["review", "Review challenge"],
+                                          ["link", "Create link"],
+                                        ].map(([action, label]) => {
+                                          const actionKey =
+                                            action as BeneficiaryOutcomeConfirmationActionKey;
+                                          return (
+                                            <StableButton
+                                              key={actionKey}
+                                              type="button"
+                                              kind={
+                                                activeOutcomeConfirmationAction ===
+                                                actionKey
+                                                  ? "primary"
+                                                  : "secondary"
+                                              }
+                                              stableHeight={38}
+                                              fullWidth
+                                              aria-pressed={
+                                                activeOutcomeConfirmationAction ===
+                                                actionKey
+                                              }
+                                              debugId={`community-domain-dashboard.beneficiary-outcome-confirmation-action.${actionKey}`}
+                                              onClick={() => {
+                                                setBeneficiaryOutcomeConfirmationActionById(
+                                                  (current) => ({
+                                                    ...current,
+                                                    [outcomeEventId]: actionKey,
+                                                  })
+                                                );
+                                                setBeneficiaryOutcomeConfirmationActionChooserOpenById(
+                                                  (current) => ({
+                                                    ...current,
+                                                    [outcomeEventId]: false,
+                                                  })
+                                                );
+                                                setBeneficiaryOutcomeConfirmationActionOpenById(
+                                                  (current) => ({
+                                                    ...current,
+                                                    [outcomeEventId]: false,
+                                                  })
+                                                );
+                                              }}
+                                              style={{
+                                                justifyContent: "center",
+                                                fontSize: 13,
+                                                textTransform: "none",
+                                              }}
+                                            >
+                                              {label}
+                                            </StableButton>
+                                          );
+                                        })}
+                                      </div>
+                                    ) : null}
+                                    <StableButton
+                                      type="button"
+                                      kind="secondary"
+                                      fullWidth
+                                      stableHeight={38}
+                                      debugId="community-domain-dashboard.beneficiary-outcome-confirmation-action-form-toggle"
+                                      aria-expanded={outcomeConfirmationActionOpen}
+                                      aria-controls={`community-domain-beneficiary-outcome-confirmation-action-form-${outcomeEventId}`}
+                                      onClick={() =>
+                                        setBeneficiaryOutcomeConfirmationActionOpenById(
+                                          (current) => ({
+                                            ...current,
+                                            [outcomeEventId]:
+                                              !current[outcomeEventId],
+                                          })
+                                        )
+                                      }
+                                      style={{
+                                        justifyContent: "center",
+                                        fontSize: 13,
+                                        textTransform: "none",
+                                      }}
+                                    >
+                                      {outcomeConfirmationActionOpen
+                                        ? "Close confirmation action"
+                                        : "Open confirmation action"}
+                                    </StableButton>
+                                  </div>
+                                ) : null}
                                 {activeOutcomeRecentPacket === "confirmation" &&
+                                activeOutcomeConfirmationAction === "review" &&
+                                outcomeConfirmationActionOpen &&
                                 needsCorrectionReview ? (
                                   <div
+                                    id={`community-domain-beneficiary-outcome-confirmation-action-form-${outcomeEventId}`}
                                     style={{
                                       display: "grid",
                                       gridTemplateColumns:
@@ -12885,32 +13652,39 @@ export default function CommunityDomainDashboardPage() {
                                     </StableButton>
                                   </div>
                                 ) : null}
-                                {activeOutcomeRecentPacket === "confirmation" ? (
-                                  <StableButton
-                                    type="button"
-                                    kind="secondary"
-                                    stableHeight={38}
-                                    disabled={
-                                      busyOutcomeConfirmationLinkId ===
-                                      outcomeEventId
-                                    }
-                                    debugId="community-domain-dashboard.beneficiary-outcome-confirmation-link"
-                                    onClick={() => {
-                                      void createBeneficiaryOutcomeConfirmationLink(
-                                        outcomeEventId
-                                      );
-                                    }}
-                                    style={{
-                                      justifyContent: "center",
-                                      fontSize: 13,
-                                      textTransform: "none",
-                                    }}
+                                {activeOutcomeRecentPacket === "confirmation" &&
+                                activeOutcomeConfirmationAction === "link" &&
+                                outcomeConfirmationActionOpen ? (
+                                  <div
+                                    id={`community-domain-beneficiary-outcome-confirmation-action-form-${outcomeEventId}`}
+                                    style={{ display: "grid", gap: 8 }}
                                   >
-                                    {busyOutcomeConfirmationLinkId ===
-                                    outcomeEventId
-                                      ? "Creating link..."
-                                      : "Create confirmation link"}
-                                  </StableButton>
+                                    <StableButton
+                                      type="button"
+                                      kind="secondary"
+                                      stableHeight={38}
+                                      disabled={
+                                        busyOutcomeConfirmationLinkId ===
+                                        outcomeEventId
+                                      }
+                                      debugId="community-domain-dashboard.beneficiary-outcome-confirmation-link"
+                                      onClick={() => {
+                                        void createBeneficiaryOutcomeConfirmationLink(
+                                          outcomeEventId
+                                        );
+                                      }}
+                                      style={{
+                                        justifyContent: "center",
+                                        fontSize: 13,
+                                        textTransform: "none",
+                                      }}
+                                    >
+                                      {busyOutcomeConfirmationLinkId ===
+                                      outcomeEventId
+                                        ? "Creating link..."
+                                        : "Create confirmation link"}
+                                    </StableButton>
+                                  </div>
                                 ) : null}
                                 {activeOutcomeRecentPacket === "contact" &&
                                 isAdmin ? (
@@ -13004,6 +13778,12 @@ export default function CommunityDomainDashboardPage() {
                                                     [outcomeEventId]: false,
                                                   })
                                                 );
+                                                setBeneficiaryOutcomeContactActionOpenById(
+                                                  (current) => ({
+                                                    ...current,
+                                                    [outcomeEventId]: false,
+                                                  })
+                                                );
                                               }}
                                               style={{
                                                 justifyContent: "center",
@@ -13017,12 +13797,41 @@ export default function CommunityDomainDashboardPage() {
                                         })}
                                       </div>
                                     ) : null}
+                                    <StableButton
+                                      type="button"
+                                      kind="secondary"
+                                      fullWidth
+                                      stableHeight={38}
+                                      debugId="community-domain-dashboard.beneficiary-outcome-contact-action-form-toggle"
+                                      aria-expanded={outcomeContactActionOpen}
+                                      aria-controls={`community-domain-beneficiary-outcome-contact-action-form-${outcomeEventId}`}
+                                      onClick={() =>
+                                        setBeneficiaryOutcomeContactActionOpenById(
+                                          (current) => ({
+                                            ...current,
+                                            [outcomeEventId]:
+                                              !current[outcomeEventId],
+                                          })
+                                        )
+                                      }
+                                      style={{
+                                        justifyContent: "center",
+                                        fontSize: 13,
+                                        textTransform: "none",
+                                      }}
+                                    >
+                                      {outcomeContactActionOpen
+                                        ? "Close contact action"
+                                        : "Open contact action"}
+                                    </StableButton>
                                   </div>
                                 ) : null}
                                 {activeOutcomeRecentPacket === "contact" &&
                                 isAdmin &&
-                                activeOutcomeContactAction === "record" ? (
+                                activeOutcomeContactAction === "record" &&
+                                outcomeContactActionOpen ? (
                                   <div
+                                    id={`community-domain-beneficiary-outcome-contact-action-form-${outcomeEventId}`}
                                     style={{
                                       display: "grid",
                                       gridTemplateColumns:
@@ -13181,8 +13990,10 @@ export default function CommunityDomainDashboardPage() {
                                 {activeOutcomeRecentPacket === "contact" &&
                                 isAdmin &&
                                 canWithdrawContactConsent &&
-                                activeOutcomeContactAction === "withdraw" ? (
+                                activeOutcomeContactAction === "withdraw" &&
+                                outcomeContactActionOpen ? (
                                   <div
+                                    id={`community-domain-beneficiary-outcome-contact-action-form-${outcomeEventId}`}
                                     style={{
                                       display: "grid",
                                       gridTemplateColumns:
@@ -13264,38 +14075,81 @@ export default function CommunityDomainDashboardPage() {
                                   </div>
                                 ) : null}
                                 {activeOutcomeRecentPacket === "delivery" &&
-                                manualDeliveryBlockedByConsent ? (
-                                  <div style={{ ...helperText(), fontSize: 13 }}>
-                                    {manualDeliveryBlockedText}
+                                (
+                                  <div style={{ display: "grid", gap: 8 }}>
+                                    <div style={{ ...helperText(), fontSize: 13 }}>
+                                      Current delivery task:{" "}
+                                      <strong>
+                                        {activeOutcomeDeliveryTaskLabel}
+                                      </strong>
+                                      . {activeOutcomeDeliveryTaskNote}
+                                    </div>
+                                    <StableButton
+                                      type="button"
+                                      kind="secondary"
+                                      fullWidth
+                                      stableHeight={38}
+                                      debugId="community-domain-dashboard.beneficiary-outcome-delivery-notes-toggle"
+                                      aria-expanded={outcomeDeliveryNotesOpen}
+                                      aria-controls={`community-domain-beneficiary-outcome-delivery-notes-${outcomeEventId}`}
+                                      onClick={() =>
+                                        setBeneficiaryOutcomeDeliveryNotesOpenById(
+                                          (current) => ({
+                                            ...current,
+                                            [outcomeEventId]:
+                                              !current[outcomeEventId],
+                                          })
+                                        )
+                                      }
+                                      style={{
+                                        justifyContent: "center",
+                                        fontSize: 13,
+                                        textTransform: "none",
+                                      }}
+                                    >
+                                      {outcomeDeliveryNotesOpen
+                                        ? "Close delivery notes"
+                                        : "Open delivery notes"}
+                                    </StableButton>
                                   </div>
-                                ) : null}
+                                )}
                                 {activeOutcomeRecentPacket === "delivery" &&
-                                latestDeliveryPreparation ? (
-                                  <div style={{ ...helperText(), fontSize: 13 }}>
-                                    Current provider readiness contact/consent:{" "}
-                                    <strong>{currentProviderContactStatus}</strong>.
-                                    Prepared delivery recorded contact/consent as{" "}
-                                    <strong>{preparedDeliveryContactStatus}</strong>.
-                                    GSN still has not sent WhatsApp, SMS, or email.
-                                  </div>
-                                ) : null}
-                                {activeOutcomeRecentPacket === "delivery" &&
-                                !manualDeliveryBlockedByConsent &&
-                                !latestDeliveryPreparation &&
-                                !localDeliveryPack ? (
-                                  <div style={{ ...helperText(), fontSize: 13 }}>
-                                    No delivery pack is prepared for this outcome yet.
-                                    Use Confirm to create the private confirmation
-                                    link and delivery text before delivery checks.
-                                  </div>
-                                ) : null}
-                                {activeOutcomeRecentPacket === "delivery" &&
-                                localDeliveryPack &&
-                                !latestDeliveryPreparation ? (
-                                  <div style={{ ...helperText(), fontSize: 13 }}>
-                                    A delivery pack is prepared in this session.
-                                    GSN still has not sent WhatsApp, SMS, or email.
-                                    Open Receipt after manual delivery happens.
+                                outcomeDeliveryNotesOpen ? (
+                                  <div
+                                    id={`community-domain-beneficiary-outcome-delivery-notes-${outcomeEventId}`}
+                                    style={{ display: "grid", gap: 6 }}
+                                  >
+                                    {manualDeliveryBlockedByConsent ? (
+                                      <div style={{ ...helperText(), fontSize: 13 }}>
+                                        {manualDeliveryBlockedText}
+                                      </div>
+                                    ) : null}
+                                    {latestDeliveryPreparation ? (
+                                      <div style={{ ...helperText(), fontSize: 13 }}>
+                                        Current provider readiness contact/consent:{" "}
+                                        <strong>{currentProviderContactStatus}</strong>.
+                                        Prepared delivery recorded contact/consent as{" "}
+                                        <strong>{preparedDeliveryContactStatus}</strong>.
+                                        GSN still has not sent WhatsApp, SMS, or email.
+                                      </div>
+                                    ) : null}
+                                    {!manualDeliveryBlockedByConsent &&
+                                    !latestDeliveryPreparation &&
+                                    !localDeliveryPack ? (
+                                      <div style={{ ...helperText(), fontSize: 13 }}>
+                                        No delivery pack is prepared for this outcome yet.
+                                        Use Confirm to create the private confirmation
+                                        link and delivery text before delivery checks.
+                                      </div>
+                                    ) : null}
+                                    {localDeliveryPack &&
+                                    !latestDeliveryPreparation ? (
+                                      <div style={{ ...helperText(), fontSize: 13 }}>
+                                        A delivery pack is prepared in this session.
+                                        GSN still has not sent WhatsApp, SMS, or email.
+                                        Open Receipt after manual delivery happens.
+                                      </div>
+                                    ) : null}
                                   </div>
                                 ) : null}
                                 {activeOutcomeRecentPacket === "receipt" ? (
@@ -13684,6 +14538,7 @@ export default function CommunityDomainDashboardPage() {
                                 setRealLifeRecordTypeChooserOpen(false);
                                 if (group.defaultDetail === "roster") {
                                   setActiveMemberRosterTask("summary");
+                                  setMemberRosterTaskChooserOpen(false);
                                 }
                               }}
                               style={{
@@ -13767,6 +14622,7 @@ export default function CommunityDomainDashboardPage() {
                                         setRealLifeRecordTypeChooserOpen(false);
                                         if (option.key === "roster") {
                                           setActiveMemberRosterTask("summary");
+                                          setMemberRosterTaskChooserOpen(false);
                                         }
                                       }}
                                       style={{
@@ -13849,43 +14705,71 @@ export default function CommunityDomainDashboardPage() {
                           </div>
                         ) : null}
 
-                        <div
+                        <div style={{ ...helperText(), fontSize: 13 }}>
+                          Current roster packet:{" "}
+                          <strong>{activeMemberRosterTaskOption.label}</strong>.{" "}
+                          {activeMemberRosterTaskOption.note}
+                        </div>
+                        <StableButton
+                          type="button"
+                          kind="secondary"
+                          fullWidth
+                          stableHeight={42}
+                          debugId="community-domain-dashboard.member-roster-toggle"
+                          aria-expanded={memberRosterTaskChooserOpen}
+                          aria-controls="community-domain-member-roster-packets"
+                          onClick={() =>
+                            setMemberRosterTaskChooserOpen((current) => !current)
+                          }
                           style={{
-                            display: "grid",
-                            gridTemplateColumns:
-                              "repeat(auto-fit, minmax(min(100%, 132px), 1fr))",
-                            gap: 8,
+                            justifyContent: "center",
+                            fontSize: 13,
+                            textTransform: "none",
                           }}
                         >
-                          {MEMBER_ROSTER_TASK_OPTIONS.map((task) => {
-                            const selected = task.key === activeMemberRosterTask;
-                            return (
-                              <StableButton
-                                key={task.key}
-                                type="button"
-                                kind={selected ? "primary" : "secondary"}
-                                stableHeight={44}
-                                fullWidth
-                                aria-pressed={selected}
-                                title={task.note}
-                                debugId={`community-domain-dashboard.member-roster.${task.key}`}
-                                onClick={() => setActiveMemberRosterTask(task.key)}
-                                style={{
-                                  justifyContent: "center",
-                                  fontSize: 13,
-                                  textTransform: "none",
-                                }}
-                              >
-                                {task.label}
-                              </StableButton>
-                            );
-                          })}
-                        </div>
-                        <div style={{ ...helperText(), fontSize: 13 }}>
-                          {MEMBER_ROSTER_TASK_OPTIONS.find(
-                            (task) => task.key === activeMemberRosterTask
-                          )?.note || "Choose the roster packet you need."}
-                        </div>
+                          {memberRosterTaskChooserOpen
+                            ? "Close roster packets"
+                            : "Change roster packet"}
+                        </StableButton>
+                        {memberRosterTaskChooserOpen ? (
+                          <div
+                            id="community-domain-member-roster-packets"
+                            data-debug-id="community-domain-dashboard.member-roster-panel"
+                            style={{
+                              display: "grid",
+                              gridTemplateColumns:
+                                "repeat(auto-fit, minmax(min(100%, 132px), 1fr))",
+                              gap: 8,
+                            }}
+                          >
+                            {MEMBER_ROSTER_TASK_OPTIONS.map((task) => {
+                              const selected = task.key === activeMemberRosterTask;
+                              return (
+                                <StableButton
+                                  key={task.key}
+                                  type="button"
+                                  kind={selected ? "primary" : "secondary"}
+                                  stableHeight={44}
+                                  fullWidth
+                                  aria-pressed={selected}
+                                  title={task.note}
+                                  debugId={`community-domain-dashboard.member-roster.${task.key}`}
+                                  onClick={() => {
+                                    setActiveMemberRosterTask(task.key);
+                                    setMemberRosterTaskChooserOpen(false);
+                                  }}
+                                  style={{
+                                    justifyContent: "center",
+                                    fontSize: 13,
+                                    textTransform: "none",
+                                  }}
+                                >
+                                  {task.label}
+                                </StableButton>
+                              );
+                            })}
+                          </div>
+                        ) : null}
 
                         {activeMemberRosterTask === "summary" ? (
                           <div style={{ display: "grid", gap: 10 }}>

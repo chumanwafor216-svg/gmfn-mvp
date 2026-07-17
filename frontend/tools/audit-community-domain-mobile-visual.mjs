@@ -1111,6 +1111,18 @@ try {
   if (!(await isDebugVisible(page, "community-domain-dashboard.operating-summary-notes-toggle"))) {
     findings.push("Active Community Domain settings summary does not expose an open-close notes control.");
   }
+  if (await isDebugVisible(page, "community-domain-dashboard.operating-summary-group.reference")) {
+    findings.push("Active Community Domain settings summary live stages are visible before Change live stage is opened.");
+  }
+  if (!(await isDebugVisible(page, "community-domain-dashboard.operating-summary-group-toggle"))) {
+    findings.push("Active Community Domain settings summary does not expose a Change live stage control.");
+  }
+  if (await isDebugVisible(page, "community-domain-dashboard.operating-summary.status")) {
+    findings.push("Active Community Domain settings summary questions are visible before Change question is opened.");
+  }
+  if (!(await isDebugVisible(page, "community-domain-dashboard.operating-summary-task-toggle"))) {
+    findings.push("Active Community Domain settings summary does not expose a Change question control.");
+  }
   await clickByDebugId(page, "community-domain-dashboard.operating-summary-notes-toggle");
   audit = await page.evaluate(pageAudit);
   settingsSummaryText = normalized(audit.bodyText);
@@ -1134,8 +1146,45 @@ try {
   ) {
     findings.push("Active Community Domain settings summary notes do not close after reading.");
   }
+  await clickByDebugId(page, "community-domain-dashboard.settings-edit-setup-details");
+  await page.getByRole("heading", { name: "Edit Community Domain" }).waitFor({ timeout: 10000 });
+  if (await isDebugVisible(page, "community-domain-dashboard.setup-workbench.access")) {
+    findings.push("Community Domain setup workbench view buttons are visible before Change setup view is opened.");
+  }
+  if (!(await isDebugVisible(page, "community-domain-dashboard.setup-workbench-toggle"))) {
+    findings.push("Community Domain setup workbench does not expose a Change setup view control.");
+  }
+  await clickByDebugId(page, "community-domain-dashboard.setup-workbench-toggle");
+  await clickByDebugId(page, "community-domain-dashboard.setup-workbench.access");
+  if (await isDebugVisible(page, "community-domain-dashboard.setup-workbench.step")) {
+    findings.push("Community Domain setup workbench view buttons stay visible after selecting a setup view.");
+  }
+  if (await isDebugVisible(page, "community-domain-dashboard.setup-access.authority")) {
+    findings.push("Community Domain setup access packets are visible before Change access packet is opened.");
+  }
+  if (!(await isDebugVisible(page, "community-domain-dashboard.setup-access-toggle"))) {
+    findings.push("Community Domain setup access does not expose a Change access packet control.");
+  }
+  await clickByDebugId(page, "community-domain-dashboard.setup-access-toggle");
+  await clickByDebugId(page, "community-domain-dashboard.setup-access.authority");
+  if (await isDebugVisible(page, "community-domain-dashboard.setup-access.summary")) {
+    findings.push("Community Domain setup access packets stay visible after selecting a packet.");
+  }
+  await page.goto(`${baseUrl}${routePath}?lane=settings`, {
+    waitUntil: "networkidle",
+    timeout: 15000,
+  });
+  await page.getByText("Operating summary", { exact: true }).waitFor({ timeout: 10000 });
+  await clickByDebugId(page, "community-domain-dashboard.operating-summary-group-toggle");
   await clickByDebugId(page, "community-domain-dashboard.operating-summary-group.reference");
+  if (await isDebugVisible(page, "community-domain-dashboard.operating-summary-group.action")) {
+    findings.push("Active Community Domain settings summary live stages stay visible after selecting a stage.");
+  }
+  await clickByDebugId(page, "community-domain-dashboard.operating-summary-task-toggle");
   await clickByDebugId(page, "community-domain-dashboard.operating-summary.permissions");
+  if (await isDebugVisible(page, "community-domain-dashboard.operating-summary.allowance")) {
+    findings.push("Active Community Domain settings summary questions stay visible after selecting a question.");
+  }
   await page.getByText("Domain permissions", { exact: true }).waitFor({ timeout: 10000 });
 
   await page.goto(`${baseUrl}${routePath}`, { waitUntil: "networkidle", timeout: 15000 });
@@ -1182,6 +1231,64 @@ try {
   if (commandReturnFinding) findings.push(commandReturnFinding);
   await clickByDebugId(page, "community-domain-dashboard.operational-focus");
   await page.getByText("Live area", { exact: true }).waitFor({ timeout: 10000 });
+
+  await clickByDebugId(page, "community-domain-dashboard.operating-area-picker-toggle");
+  await page.getByText("Operating areas", { exact: true }).waitFor({ timeout: 10000 });
+  await clickByDebugId(page, "community-domain-dashboard.lane.billing");
+  await page.getByText("Billing jobs", { exact: true }).waitFor({ timeout: 10000 });
+  if (await isDebugVisible(page, "community-domain-dashboard.billing-task.account")) {
+    findings.push("Community Domain Billing job buttons are visible before Change billing job is opened.");
+  }
+  if (!(await isDebugVisible(page, "community-domain-dashboard.billing-task-toggle"))) {
+    findings.push("Community Domain Billing jobs do not expose a Change billing job control.");
+  }
+  if (await isDebugVisible(page, "community-domain-dashboard.billing-payment-group.settlement")) {
+    findings.push("Community Domain Billing Code & proof packet buttons are visible before Change code/proof packet is opened.");
+  }
+  if (!(await isDebugVisible(page, "community-domain-dashboard.billing-payment-group-toggle"))) {
+    findings.push("Community Domain Billing Code & proof does not expose a Change code/proof packet control.");
+  }
+  if (await isDebugVisible(page, "community-domain-dashboard.billing-payment.generate")) {
+    findings.push("Community Domain Billing Code step buttons are visible before Change Code step is opened.");
+  }
+  if (!(await isDebugVisible(page, "community-domain-dashboard.billing-payment-step-toggle"))) {
+    findings.push("Community Domain Billing Code & proof does not expose a Change step control.");
+  }
+  await clickByDebugId(page, "community-domain-dashboard.billing-payment-group-toggle");
+  await clickByDebugId(page, "community-domain-dashboard.billing-payment-group.settlement");
+  if (await isDebugVisible(page, "community-domain-dashboard.billing-payment-group.code")) {
+    findings.push("Community Domain Billing Code & proof packet buttons stay visible after selecting a packet.");
+  }
+  if (await isDebugVisible(page, "community-domain-dashboard.billing-payment.pay_account")) {
+    findings.push("Community Domain Billing Settlement step buttons are visible before Change Settlement step is opened.");
+  }
+  await clickByDebugId(page, "community-domain-dashboard.billing-payment-step-toggle");
+  await clickByDebugId(page, "community-domain-dashboard.billing-payment.pay_account");
+  if (await isDebugVisible(page, "community-domain-dashboard.billing-payment.credit_link")) {
+    findings.push("Community Domain Billing Code & proof step buttons stay visible after selecting a step.");
+  }
+  await clickByDebugId(page, "community-domain-dashboard.billing-task-toggle");
+  await clickByDebugId(page, "community-domain-dashboard.billing-task.account");
+  if (await isDebugVisible(page, "community-domain-dashboard.billing-task.steps")) {
+    findings.push("Community Domain Billing job buttons stay visible after selecting a billing job.");
+  }
+  if (await isDebugVisible(page, "community-domain-dashboard.billing-account.setup")) {
+    findings.push(
+      "Community Domain Billing pay-in account packets are visible before Change pay-in account packet is opened."
+    );
+  }
+  if (!(await isDebugVisible(page, "community-domain-dashboard.billing-account-toggle"))) {
+    findings.push(
+      "Community Domain Billing pay-in account does not expose a Change pay-in account packet control."
+    );
+  }
+  await clickByDebugId(page, "community-domain-dashboard.billing-account-toggle");
+  await clickByDebugId(page, "community-domain-dashboard.billing-account.setup");
+  if (await isDebugVisible(page, "community-domain-dashboard.billing-account.summary")) {
+    findings.push(
+      "Community Domain Billing pay-in account packets stay visible after selecting a packet."
+    );
+  }
 
   await clickByDebugId(page, "community-domain-dashboard.operating-area-picker-toggle");
   await page.getByText("Operating areas", { exact: true }).waitFor({ timeout: 10000 });
@@ -1255,7 +1362,21 @@ try {
   await page.getByText("Member status and public proof.", { exact: true }).waitFor({
     timeout: 10000,
   });
+  if (await isDebugVisible(page, "community-domain-dashboard.member-roster.members")) {
+    findings.push(
+      "Community Domain member roster packets are visible before Change roster packet is opened."
+    );
+  }
+  if (!(await isDebugVisible(page, "community-domain-dashboard.member-roster-toggle"))) {
+    findings.push(
+      "Community Domain member roster does not expose a Change roster packet control."
+    );
+  }
+  await clickByDebugId(page, "community-domain-dashboard.member-roster-toggle");
   await clickByDebugId(page, "community-domain-dashboard.member-roster.members");
+  if (await isDebugVisible(page, "community-domain-dashboard.member-roster.summary")) {
+    findings.push("Community Domain member roster packets stay visible after selecting a packet.");
+  }
   await page
     .getByText("No Community Domain members were returned for this roster view.", { exact: true })
     .waitFor({ timeout: 10000 });
@@ -1264,7 +1385,19 @@ try {
   await page.getByText("Operating areas", { exact: true }).waitFor({ timeout: 10000 });
   await clickByDebugId(page, "community-domain-dashboard.lane.governance");
   await page.getByText("Governance jobs", { exact: true }).waitFor({ timeout: 10000 });
+  if (await isDebugVisible(page, "community-domain-dashboard.governance-group.records")) {
+    findings.push(
+      "Community Domain Governance stage buttons are visible before Change governance stage is opened."
+    );
+  }
+  if (!(await isDebugVisible(page, "community-domain-dashboard.governance-group-toggle"))) {
+    findings.push("Community Domain Governance does not expose a Change governance stage control.");
+  }
+  await clickByDebugId(page, "community-domain-dashboard.governance-group-toggle");
   await clickByDebugId(page, "community-domain-dashboard.governance-group.records");
+  if (await isDebugVisible(page, "community-domain-dashboard.governance-group.reports")) {
+    findings.push("Community Domain Governance stage buttons stay visible after selecting a stage.");
+  }
   if (await isDebugVisible(page, "community-domain-dashboard.governance-task.access_requests")) {
     findings.push("Community Domain Governance job buttons are visible before Change job is opened.");
   }
@@ -1371,6 +1504,122 @@ try {
       "Community Domain Recent outcome packets are missing a Change packet control."
     );
   }
+  const summaryDetailsPanel = page.locator(
+    "#community-domain-beneficiary-outcome-summary-details-outcome-audit-1"
+  );
+  if (await summaryDetailsPanel.isVisible().catch(() => false)) {
+    findings.push(
+      "Community Domain Summary packet shows audit details before Open summary details."
+    );
+  }
+  if (
+    !(await isDebugVisible(
+      page,
+      "community-domain-dashboard.beneficiary-outcome-summary-details-toggle"
+    ))
+  ) {
+    findings.push(
+      "Community Domain Summary packet is missing an Open summary details control."
+    );
+  }
+  await clickByDebugId(
+    page,
+    "community-domain-dashboard.beneficiary-outcome-summary-details-toggle"
+  );
+  await summaryDetailsPanel.waitFor({ state: "visible", timeout: 10000 });
+  await page.waitForTimeout(450);
+  await clickByDebugId(
+    page,
+    "community-domain-dashboard.beneficiary-outcome-summary-details-toggle"
+  );
+  const summaryDetailClosed = await summaryDetailsPanel
+    .waitFor({ state: "hidden", timeout: 10000 })
+    .then(() => true)
+    .catch(() => false);
+  if (!summaryDetailClosed) {
+    findings.push(
+      "Community Domain Summary packet details stay visible after closing summary details."
+    );
+  }
+  await clickByDebugId(
+    page,
+    "community-domain-dashboard.beneficiary-outcome-recent-packet-toggle"
+  );
+  await clickByDebugId(
+    page,
+    "community-domain-dashboard.beneficiary-outcome-recent-packet.confirmation"
+  );
+  if (
+    await isDebugVisible(
+      page,
+      "community-domain-dashboard.beneficiary-outcome-confirmation-link"
+    )
+  ) {
+    findings.push(
+      "Community Domain Confirm packet shows confirmation link creation before Open confirmation action."
+    );
+  }
+  if (
+    !(await isDebugVisible(
+      page,
+      "community-domain-dashboard.beneficiary-outcome-confirmation-action-form-toggle"
+    ))
+  ) {
+    findings.push(
+      "Community Domain Confirm packet is missing an Open confirmation action control."
+    );
+  }
+  await clickByDebugId(
+    page,
+    "community-domain-dashboard.beneficiary-outcome-confirmation-action-form-toggle"
+  );
+  await page
+    .locator(
+      '[data-cta-id="community-domain-dashboard.beneficiary-outcome-confirmation-link"]'
+    )
+    .first()
+    .waitFor({ state: "visible", timeout: 10000 });
+  await clickByDebugId(
+    page,
+    "community-domain-dashboard.beneficiary-outcome-recent-packet-toggle"
+  );
+  await clickByDebugId(
+    page,
+    "community-domain-dashboard.beneficiary-outcome-recent-packet.delivery"
+  );
+  if (
+    await page
+      .getByText("Current provider readiness contact/consent:", {
+        exact: false,
+      })
+      .first()
+      .isVisible()
+      .catch(() => false)
+  ) {
+    findings.push(
+      "Community Domain Delivery packet shows delivery notes before Open delivery notes."
+    );
+  }
+  if (
+    !(await isDebugVisible(
+      page,
+      "community-domain-dashboard.beneficiary-outcome-delivery-notes-toggle"
+    ))
+  ) {
+    findings.push(
+      "Community Domain Delivery packet is missing an Open delivery notes control."
+    );
+  }
+  await clickByDebugId(
+    page,
+    "community-domain-dashboard.beneficiary-outcome-delivery-notes-toggle"
+  );
+  await page
+    .getByText("Current provider readiness contact/consent:", {
+      exact: false,
+    })
+    .first()
+    .waitFor({ state: "visible", timeout: 10000 });
   await clickByDebugId(
     page,
     "community-domain-dashboard.beneficiary-outcome-recent-packet-toggle"
@@ -1379,12 +1628,16 @@ try {
     page,
     "community-domain-dashboard.beneficiary-outcome-recent-packet.contact"
   );
-  await page
-    .locator(
-      '[data-cta-id="community-domain-dashboard.beneficiary-outcome-contact-consent"]'
+  if (
+    await isDebugVisible(
+      page,
+      "community-domain-dashboard.beneficiary-outcome-contact-consent"
     )
-    .first()
-    .waitFor({ state: "visible", timeout: 10000 });
+  ) {
+    findings.push(
+      "Community Domain Contact packet shows the contact form before Open contact action."
+    );
+  }
   if (
     await isDebugVisible(
       page,
@@ -1405,6 +1658,26 @@ try {
       "Community Domain Contact packet is missing a Change contact action control."
     );
   }
+  if (
+    !(await isDebugVisible(
+      page,
+      "community-domain-dashboard.beneficiary-outcome-contact-action-form-toggle"
+    ))
+  ) {
+    findings.push(
+      "Community Domain Contact packet is missing an Open contact action control."
+    );
+  }
+  await clickByDebugId(
+    page,
+    "community-domain-dashboard.beneficiary-outcome-contact-action-form-toggle"
+  );
+  await page
+    .locator(
+      '[data-cta-id="community-domain-dashboard.beneficiary-outcome-contact-consent"]'
+    )
+    .first()
+    .waitFor({ state: "visible", timeout: 10000 });
   await clickByDebugId(
     page,
     "community-domain-dashboard.beneficiary-outcome-contact-action-toggle"
@@ -1412,6 +1685,20 @@ try {
   await clickByDebugId(
     page,
     "community-domain-dashboard.beneficiary-outcome-contact-action.withdraw"
+  );
+  if (
+    await isDebugVisible(
+      page,
+      "community-domain-dashboard.beneficiary-outcome-contact-consent-withdrawal"
+    )
+  ) {
+    findings.push(
+      "Community Domain Contact packet shows consent withdrawal before Open contact action."
+    );
+  }
+  await clickByDebugId(
+    page,
+    "community-domain-dashboard.beneficiary-outcome-contact-action-form-toggle"
   );
   await page
     .locator(
