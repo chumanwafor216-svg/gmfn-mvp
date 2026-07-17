@@ -92,8 +92,28 @@ assertContains(
 );
 
 assertContains(
+  /payment\.under_review[\s\S]*?Payment under review[\s\S]*?without calling it bank-confirmed/,
+  "Protected Trade event options must expose payment-under-review as an evidence state, not bank confirmation."
+);
+
+assertContains(
+  /function protectedTradeOutcomeActions[\s\S]*?receipt\.confirmed[\s\S]*?Received and OK[\s\S]*?receipt\.not_received[\s\S]*?Not received[\s\S]*?dispute\.opened[\s\S]*?Open issue/,
+  "Trade Evidence must expose simple buyer-side outcome actions backed by existing protected-trade events."
+);
+
+assertContains(
+  /function protectedTradeOutcomeActions[\s\S]*?release\.recorded[\s\S]*?Released \/ done[\s\S]*?payment\.under_review[\s\S]*?Payment issue[\s\S]*?dispute\.opened[\s\S]*?Open issue/,
+  "Trade Evidence must expose simple seller-side outcome actions backed by existing protected-trade events."
+);
+
+assertContains(
   /Evidence update only\. Not escrow, not automatic payout, not a bank guarantee, not a delivery guarantee/,
   "Protected Trade event logging must keep the non-custodial boundary in metadata."
+);
+
+assertContains(
+  /marketplace_trade_outcome_panel[\s\S]*?not_star_rating: true[\s\S]*?not_person_review: true[\s\S]*?trust_event_backed: true/,
+  "Outcome confirmation must record event-backed evidence metadata instead of a star rating or person review."
 );
 
 assertContains(
@@ -156,10 +176,17 @@ if (!tradeEvidenceSection.text) {
     /marketplace\.trade\.evidence-module/,
     /marketplaceDepartmentShellStyle\("trade", isCompact\)/,
     /creates evidence, not escrow/,
+    /Confirm outcome[\s\S]*?One tap records what happened\. It becomes event evidence,\s+not a human score\./,
+    /debugId="marketplace\.protected-trade\.outcome\.good"[\s\S]*?selectedProtectedTradeOutcomeActions\.good\.label/,
+    /debugId="marketplace\.protected-trade\.outcome\.blocked"[\s\S]*?selectedProtectedTradeOutcomeActions\.blocked\.label/,
+    /debugId="marketplace\.protected-trade\.outcome\.issue"[\s\S]*?selectedProtectedTradeOutcomeActions\.issue\.label/,
+    /debugId="marketplace\.protected-trade\.start-another"[\s\S]*?New record/,
+    /debugId="marketplace\.protected-trade\.refresh"[\s\S]*?Refresh/,
     /marketplaceFieldTouchProps\("marketplace\.protected-trade\.role"\)/,
     /marketplaceFieldTouchProps\("marketplace\.protected-trade\.counterpart"\)/,
     /Minimum evidence packet[\s\S]*?marketplaceFieldTouchProps\("marketplace\.protected-trade\.packet"\)[\s\S]*?invoice reference[\s\S]*?courier handoff[\s\S]*?payment schedule/,
     /debugId="marketplace\.protected-trade\.create"[\s\S]*?Start record/,
+    /debugId="marketplace\.protected-trade\.refresh-empty"[\s\S]*?Refresh records/,
     /debugId="marketplace\.protected-trade\.refresh"[\s\S]*?Refresh records/,
     /Record update/,
     /marketplaceFieldTouchProps\("marketplace\.protected-trade\.update\.record"\)/,
@@ -240,7 +267,7 @@ if (!memberShopSection.text) {
     /\{visibleTradeShopCount\} public shop/,
     /\{marketplaceCommunityDomainRows\.length\} domain/,
     /Community-bound directory/,
-    /Community Domains[\s\S]*?Professional marketplace communities[\s\S]*?They sit with community members and shops\. Setup stays in[\s\S]*?Community Home\./,
+    /Community Domains[\s\S]*?Professional marketplace communities[\s\S]*?They sit with community members and shops\. Setup stays in[\s\S]*?Community Domain dashboard\./,
     /debugId=\{`marketplace\.domain\.\$\{row\.id \|\| row\.key\}\.open`\}/,
     /Visible members/,
     /marketplace\.members\.visible-members-module/,

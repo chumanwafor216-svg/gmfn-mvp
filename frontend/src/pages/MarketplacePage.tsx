@@ -249,6 +249,18 @@ type ProtectedTradeDraft = {
   evidencePacketNote: string;
 };
 
+type ProtectedTradeUserSide = "buyer" | "seller" | "participant";
+
+type ProtectedTradeOutcomeAction = {
+  key: "good" | "blocked" | "issue";
+  eventType: string;
+  label: string;
+  detail: string;
+  note: string;
+  success: string;
+  tone: "primary" | "secondary";
+};
+
 const PROTECTED_TRADE_EVENT_OPTIONS = [
   {
     value: "payment.claimed",
@@ -259,6 +271,11 @@ const PROTECTED_TRADE_EVENT_OPTIONS = [
     value: "payment.recorded",
     label: "Payment note recorded",
     detail: "Record payment evidence seen by the parties, not automatic payout.",
+  },
+  {
+    value: "payment.under_review",
+    label: "Payment under review",
+    detail: "Record a payment concern without calling it bank-confirmed.",
   },
   {
     value: "release.requested",
@@ -306,6 +323,82 @@ const PROTECTED_TRADE_EVENT_OPTIONS = [
     detail: "Close the trade record after the parties are done.",
   },
 ] as const;
+
+function protectedTradeUserSide(
+  trade: ProtectedTradeRecord | null | undefined,
+  currentUserId: number
+): ProtectedTradeUserSide {
+  if (!trade || !currentUserId) return "participant";
+  if (positiveNumber(trade.buyer_user_id) === currentUserId) return "buyer";
+  if (positiveNumber(trade.seller_user_id) === currentUserId) return "seller";
+  return "participant";
+}
+
+function protectedTradeOutcomeActions(
+  side: ProtectedTradeUserSide
+): Record<ProtectedTradeOutcomeAction["key"], ProtectedTradeOutcomeAction> {
+  if (side === "seller") {
+    return {
+      good: {
+        key: "good",
+        eventType: "release.recorded",
+        label: "Released / done",
+        detail: "The goods or service left your side.",
+        note: "Seller recorded that the item or service was released or completed.",
+        success: "Release outcome recorded.",
+        tone: "primary",
+      },
+      blocked: {
+        key: "blocked",
+        eventType: "payment.under_review",
+        label: "Payment issue",
+        detail: "Payment needs checking before this can close.",
+        note: "Seller recorded that payment needs review before the trade can close.",
+        success: "Payment issue recorded.",
+        tone: "secondary",
+      },
+      issue: {
+        key: "issue",
+        eventType: "dispute.opened",
+        label: "Open issue",
+        detail: "Something needs review by the parties or community.",
+        note: "Seller opened an issue for this trade outcome.",
+        success: "Issue opened.",
+        tone: "secondary",
+      },
+    };
+  }
+
+  return {
+    good: {
+      key: "good",
+      eventType: "receipt.confirmed",
+      label: side === "buyer" ? "Received and OK" : "Completed",
+      detail: "The item or service arrived and is acceptable.",
+      note: "Buyer-side outcome recorded: received and acceptable.",
+      success: "Receipt outcome recorded.",
+      tone: "primary",
+    },
+    blocked: {
+      key: "blocked",
+      eventType: "receipt.not_received",
+      label: "Not received",
+      detail: "The item or service has not arrived.",
+      note: "Buyer-side outcome recorded: item or service not received.",
+      success: "Not-received outcome recorded.",
+      tone: "secondary",
+    },
+    issue: {
+      key: "issue",
+      eventType: "dispute.opened",
+      label: "Open issue",
+      detail: "There is a problem with the item, service, or agreement.",
+      note: "Buyer-side issue opened for this trade outcome.",
+      success: "Issue opened.",
+      tone: "secondary",
+    },
+  };
+}
 
 type ExpectedPaymentRecord = {
   id?: number | string | null;
@@ -4384,6 +4477,9 @@ export default function MarketplacePage() {
   const [protectedTradeEventType, setProtectedTradeEventType] =
     useState("payment.claimed");
   const [protectedTradeEventNote, setProtectedTradeEventNote] = useState("");
+  const [protectedTradeCreateOpen, setProtectedTradeCreateOpen] = useState(false);
+  const [recordingProtectedTradeOutcome, setRecordingProtectedTradeOutcome] =
+    useState<ProtectedTradeOutcomeAction["key"] | null>(null);
   const [creatingProtectedTrade, setCreatingProtectedTrade] = useState(false);
   const [recordingProtectedTradeEvent, setRecordingProtectedTradeEvent] =
     useState(false);
@@ -6588,6 +6684,15 @@ export default function MarketplacePage() {
     Boolean(selectedProtectedTrade?.id) &&
     positiveNumber(selectedProtectedTradeDetail?.id) ===
       positiveNumber(selectedProtectedTrade?.id);
+  const selectedProtectedTradeUserSide = protectedTradeUserSide(
+    selectedProtectedTrade,
+    currentUserId
+  );
+  const selectedProtectedTradeOutcomeActions = protectedTradeOutcomeActions(
+    selectedProtectedTradeUserSide
+  );
+  const showProtectedTradeCreateForm =
+    !recentProtectedTrades.length || protectedTradeCreateOpen;
 
   useEffect(() => {
     const tradeId = selectedProtectedTradeNumericId;
@@ -6807,6 +6912,7 @@ export default function MarketplacePage() {
       if (positiveNumber(created?.id)) {
         setSelectedProtectedTradeId(String(positiveNumber(created.id)));
       }
+      setProtectedTradeCreateOpen(false);
       setProtectedTradeDraft((prev) => ({
         ...prev,
         itemTitle: "",
@@ -6825,6 +6931,61 @@ export default function MarketplacePage() {
       );
     } finally {
       setCreatingProtectedTrade(false);
+    }
+  }
+
+  async function handleConfirmProtectedTradeOutcome(
+    event: React.SyntheticEvent<HTMLElement> | undefined,
+    outcome: ProtectedTradeOutcomeAction
+  ) {
+    consumeMarketplaceButtonEvent(event);
+
+    const tradeId = positiveNumber(selectedProtectedTrade?.id);
+    if (!tradeId) {
+      showNotice("error", "Start or choose a trade record first.");
+      return;
+    }
+
+    setRecordingProtectedTradeOutcome(outcome.key);
+    try {
+      await addProtectedTradeEvent(tradeId, {
+        event_type: outcome.eventType,
+        note: outcome.note,
+        meta: {
+          source: "marketplace_trade_outcome_panel",
+          outcome_key: outcome.key,
+          user_side: selectedProtectedTradeUserSide,
+          trade_code: selectedProtectedTrade?.trade_code || null,
+          not_star_rating: true,
+          not_person_review: true,
+          trust_event_backed: true,
+          boundary:
+            "Outcome evidence only. Not a star rating, not a public human score, not escrow, not automatic payout, not a bank guarantee, not a delivery guarantee.",
+        },
+      });
+
+      const rows = await listProtectedTrades({ limit: 30 });
+      const detail = await getProtectedTrade(tradeId);
+      setSelectedProtectedTradeDetail(detail);
+      setProtectedTrades(
+        rows
+          .filter((item) => {
+            const tradeClanId = Number(item?.clan_id || 0);
+            return tradeClanId <= 0 || tradeClanId === activeCommunityId;
+          })
+          .map((item) =>
+            positiveNumber(item.id) === tradeId ? { ...item, ...detail } : item
+          )
+          .slice(0, 8)
+      );
+      showNotice("success", outcome.success);
+    } catch (err: any) {
+      showNotice(
+        "error",
+        marketplaceErrorMessage(err, "Trade outcome could not be recorded.")
+      );
+    } finally {
+      setRecordingProtectedTradeOutcome(null);
     }
   }
 
@@ -12092,11 +12253,231 @@ export default function MarketplacePage() {
                 }}
               >
                 {protectedTrades.length
-                  ? `${protectedTrades.length} recent`
-                  : "No records yet"}
+                ? `${protectedTrades.length} recent`
+                : "No records yet"}
               </span>
             </div>
 
+            {recentProtectedTrades.length ? (
+              <div
+                style={{
+                  borderRadius: 16,
+                  border: "1px solid rgba(13,95,168,0.16)",
+                  background:
+                    "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(240,247,255,0.96) 100%)",
+                  padding: isCompact ? 10 : 12,
+                  display: "grid",
+                  gap: 10,
+                  overflow: "hidden",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    gap: 8,
+                    alignItems: "center",
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <div style={{ minWidth: 0 }}>
+                    <div style={sectionLabel()}>Confirm outcome</div>
+                    <div
+                      style={{
+                        marginTop: 4,
+                        ...helperText(),
+                        fontSize: isCompact ? 12 : 13,
+                        lineHeight: 1.35,
+                      }}
+                    >
+                      One tap records what happened. It becomes event evidence,
+                      not a human score.
+                    </div>
+                  </div>
+                  <span style={stableStatusPillStyle(Boolean(selectedProtectedTrade?.id))}>
+                    {selectedProtectedTradeUserSide === "seller"
+                      ? "Seller side"
+                      : selectedProtectedTradeUserSide === "buyer"
+                        ? "Buyer side"
+                        : "Participant"}
+                  </span>
+                </div>
+
+                <div
+                  style={{
+                    display: "flex",
+                    flexWrap: "wrap",
+                    gap: 6,
+                    minWidth: 0,
+                  }}
+                >
+                  <span style={stableStatusPillStyle(Boolean(selectedProtectedTrade?.id))}>
+                    {safeStr(selectedProtectedTrade?.trade_code) || "Choose record"}
+                  </span>
+                  <span
+                    style={stableStatusPillStyle(
+                      Boolean(
+                        selectedProtectedTradeUserSide === "seller"
+                          ? selectedProtectedTrade?.payment_status
+                          : selectedProtectedTrade?.receipt_status
+                      )
+                    )}
+                  >
+                    {selectedProtectedTradeUserSide === "seller"
+                      ? "Payment"
+                      : "Receipt"}
+                    :{" "}
+                    {protectedTradeStatusLabel(
+                      selectedProtectedTradeUserSide === "seller"
+                        ? selectedProtectedTrade?.payment_status
+                        : selectedProtectedTrade?.receipt_status
+                    )}
+                  </span>
+                  <span
+                    style={stableStatusPillStyle(
+                      Boolean(
+                        selectedProtectedTradeUserSide === "seller"
+                          ? selectedProtectedTrade?.release_status
+                          : selectedProtectedTrade?.dispute_status
+                      )
+                    )}
+                  >
+                    {selectedProtectedTradeUserSide === "seller"
+                      ? "Release"
+                      : "Issue"}
+                    :{" "}
+                    {protectedTradeStatusLabel(
+                      selectedProtectedTradeUserSide === "seller"
+                        ? selectedProtectedTrade?.release_status
+                        : selectedProtectedTrade?.dispute_status
+                    )}
+                  </span>
+                </div>
+
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: isCompact
+                      ? "1fr"
+                      : "repeat(3, minmax(0, 1fr))",
+                    gap: 8,
+                  }}
+                >
+                  <StableButton
+                    debugId="marketplace.protected-trade.outcome.good"
+                    type="button"
+                    busy={recordingProtectedTradeOutcome === "good"}
+                    busyLabel="Recording"
+                    onClick={(event) =>
+                      void handleConfirmProtectedTradeOutcome(
+                        event,
+                        selectedProtectedTradeOutcomeActions.good
+                      )
+                    }
+                    stableHeight={52}
+                    style={marketplaceInlineActionStyle(
+                      selectedProtectedTradeOutcomeActions.good.tone,
+                      false,
+                      isCompact
+                    )}
+                  >
+                    {selectedProtectedTradeOutcomeActions.good.label}
+                  </StableButton>
+                  <StableButton
+                    debugId="marketplace.protected-trade.outcome.blocked"
+                    type="button"
+                    busy={recordingProtectedTradeOutcome === "blocked"}
+                    busyLabel="Recording"
+                    onClick={(event) =>
+                      void handleConfirmProtectedTradeOutcome(
+                        event,
+                        selectedProtectedTradeOutcomeActions.blocked
+                      )
+                    }
+                    stableHeight={52}
+                    style={marketplaceInlineActionStyle(
+                      selectedProtectedTradeOutcomeActions.blocked.tone,
+                      false,
+                      isCompact
+                    )}
+                  >
+                    {selectedProtectedTradeOutcomeActions.blocked.label}
+                  </StableButton>
+                  <StableButton
+                    debugId="marketplace.protected-trade.outcome.issue"
+                    type="button"
+                    busy={recordingProtectedTradeOutcome === "issue"}
+                    busyLabel="Opening"
+                    onClick={(event) =>
+                      void handleConfirmProtectedTradeOutcome(
+                        event,
+                        selectedProtectedTradeOutcomeActions.issue
+                      )
+                    }
+                    stableHeight={52}
+                    style={marketplaceInlineActionStyle(
+                      selectedProtectedTradeOutcomeActions.issue.tone,
+                      false,
+                      isCompact
+                    )}
+                  >
+                    {selectedProtectedTradeOutcomeActions.issue.label}
+                  </StableButton>
+                </div>
+
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                    gap: 8,
+                  }}
+                >
+                  <StableButton
+                    debugId="marketplace.protected-trade.start-another"
+                    type="button"
+                    onClick={(event) => {
+                      consumeMarketplaceButtonEvent(event);
+                      setProtectedTradeCreateOpen((open) => !open);
+                    }}
+                    stableHeight={44}
+                    style={{
+                      ...marketplaceInlineActionStyle("soft", false, isCompact),
+                      height: 44,
+                      minHeight: 44,
+                      maxHeight: 44,
+                      fontSize: isCompact ? 12 : 12.5,
+                    }}
+                  >
+                    {protectedTradeCreateOpen
+                      ? "Hide form"
+                      : "New record"}
+                  </StableButton>
+                  <StableButton
+                    debugId="marketplace.protected-trade.refresh"
+                    type="button"
+                    busy={loadingProtectedTrades}
+                    busyLabel="Refreshing"
+                    onClick={(event) => {
+                      consumeMarketplaceButtonEvent(event);
+                      void refreshProtectedTrades();
+                    }}
+                    stableHeight={44}
+                    style={{
+                      ...marketplaceInlineActionStyle("soft", false, isCompact),
+                      height: 44,
+                      minHeight: 44,
+                      maxHeight: 44,
+                      fontSize: isCompact ? 12 : 12.5,
+                    }}
+                  >
+                    Refresh
+                  </StableButton>
+                </div>
+              </div>
+            ) : null}
+
+            {showProtectedTradeCreateForm ? (
+              <>
             <div
               style={{
                 display: "grid",
@@ -12265,21 +12646,25 @@ export default function MarketplacePage() {
               >
                 Start record
               </StableButton>
-              <StableButton
-                debugId="marketplace.protected-trade.refresh"
-                type="button"
-                busy={loadingProtectedTrades}
-                busyLabel="Refreshing"
-                onClick={(event) => {
-                  consumeMarketplaceButtonEvent(event);
-                  void refreshProtectedTrades();
-                }}
-                stableHeight={52}
-                style={marketplaceInlineActionStyle("secondary", false, isCompact)}
-              >
-                Refresh records
-              </StableButton>
+              {!recentProtectedTrades.length ? (
+                <StableButton
+                  debugId="marketplace.protected-trade.refresh-empty"
+                  type="button"
+                  busy={loadingProtectedTrades}
+                  busyLabel="Refreshing"
+                  onClick={(event) => {
+                    consumeMarketplaceButtonEvent(event);
+                    void refreshProtectedTrades();
+                  }}
+                  stableHeight={52}
+                  style={marketplaceInlineActionStyle("secondary", false, isCompact)}
+                >
+                  Refresh records
+                </StableButton>
+              ) : null}
             </div>
+              </>
+            ) : null}
 
             {recentProtectedTrades.length ? (
               <div style={{ display: "grid", gap: 8 }}>

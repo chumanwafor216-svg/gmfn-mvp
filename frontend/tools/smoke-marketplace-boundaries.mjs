@@ -86,7 +86,70 @@ function mockData(baseURL) {
     },
   ];
 
-  return { me, clan, members, shops, baseURL };
+  const protectedTrade = {
+    id: 900,
+    trade_code: "GSN-TRADE-SMOKE-900",
+    clan_id: 8,
+    creator_user_id: 217,
+    seller_user_id: 217,
+    buyer_user_id: 216,
+    shop_id: 55,
+    product_id: null,
+    vault_access_link_id: null,
+    trust_slip_code: null,
+    expected_payment_id: null,
+    shipment_pack_id: null,
+    evidence_pack_id: null,
+    item_title: "Two bags of rice",
+    terms_summary: "Buyer pays after checking the agreed delivery evidence.",
+    amount: "45.00",
+    currency: "GBP",
+    status: "released",
+    payment_status: "recorded_not_bank_confirmed",
+    release_status: "released",
+    receipt_status: "not_confirmed",
+    dispute_status: "none",
+    meta: {
+      minimum_trade_packet: {
+        trade_context: "gsn_gsn",
+        evidence_packet_note:
+          "Agreement message and courier handoff reference recorded.",
+      },
+    },
+    created_at: "2026-07-17T10:00:00Z",
+    updated_at: "2026-07-17T10:30:00Z",
+    closed_at: null,
+    boundary_note:
+      "GSN Protected Trade Record is a non-custodial evidence rail.",
+    events: [
+      {
+        id: 901,
+        trade_id: 900,
+        event_type: "protected_trade.created",
+        actor_user_id: 217,
+        status_from: "draft",
+        status_to: "draft",
+        trust_event_id: 5001,
+        note: "Protected trade record created.",
+        meta: {},
+        created_at: "2026-07-17T10:00:00Z",
+      },
+      {
+        id: 902,
+        trade_id: 900,
+        event_type: "protected_trade.release.recorded",
+        actor_user_id: 217,
+        status_from: "release_pending",
+        status_to: "released",
+        trust_event_id: 5002,
+        note: "Seller recorded release.",
+        meta: {},
+        created_at: "2026-07-17T10:30:00Z",
+      },
+    ],
+  };
+
+  return { me, clan, members, shops, protectedTrade, baseURL };
 }
 
 async function installApiMocks(page, baseURL) {
@@ -130,8 +193,11 @@ async function installApiMocks(page, baseURL) {
         json({ score: 13, grade: "D", reading: "Evidence building", events: [] })
       );
     }
+    if (/^\/protected-trades\/900/.test(path)) {
+      return route.fulfill(json(data.protectedTrade));
+    }
     if (/^\/protected-trades/.test(path)) {
-      return route.fulfill(json({ items: [], records: [] }));
+      return route.fulfill(json([data.protectedTrade]));
     }
     if (/^\/payment-instructions\/community-package\/status/.test(path)) {
       return route.fulfill(
@@ -292,9 +358,33 @@ async function run() {
     return {
       tradeExists: Boolean(trade),
       tradeTitle: trade?.textContent?.includes("Trade Evidence Record") || false,
+      outcomeTitle: trade?.textContent?.includes("Confirm outcome") || false,
+      receivedOk: Boolean(
+        trade?.querySelector('[data-cta-id="marketplace.protected-trade.outcome.good"]')
+      ),
+      notReceived: Boolean(
+        trade?.querySelector('[data-cta-id="marketplace.protected-trade.outcome.blocked"]')
+      ),
+      openIssue: Boolean(
+        trade?.querySelector('[data-cta-id="marketplace.protected-trade.outcome.issue"]')
+      ),
+      noHumanScore: trade?.textContent?.includes("not a human score") || false,
       overflow,
     };
   });
+
+  if (
+    !tradeFacts.tradeExists ||
+    !tradeFacts.tradeTitle ||
+    !tradeFacts.outcomeTitle ||
+    !tradeFacts.receivedOk ||
+    !tradeFacts.notReceived ||
+    !tradeFacts.openIssue ||
+    !tradeFacts.noHumanScore
+  ) {
+    console.error("Marketplace Trade Evidence outcome smoke failed:", tradeFacts);
+    process.exit(1);
+  }
 
   await page.evaluate(() => {
     localStorage.setItem(

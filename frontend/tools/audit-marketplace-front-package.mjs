@@ -223,8 +223,8 @@ assertContains(
 assertContains(
   marketplaceFile,
   marketplaceSource,
-  /id="marketplace-trade-evidence"[\s\S]*?Trade Evidence[\s\S]*?Record the item, the other side, and agreed terms[\s\S]*?marketplace\.trade\.evidence-module[\s\S]*?Trade Evidence Record[\s\S]*?debugId="marketplace\.protected-trade\.create"/,
-  "Trade Evidence must render as a separate lane from the members directory."
+  /id="marketplace-trade-evidence"[\s\S]*?Trade Evidence[\s\S]*?Record the item, the other side, and agreed terms[\s\S]*?marketplace\.trade\.evidence-module[\s\S]*?Trade Evidence Record[\s\S]*?Confirm outcome[\s\S]*?event evidence,\s+not a human score[\s\S]*?debugId="marketplace\.protected-trade\.outcome\.good"[\s\S]*?debugId="marketplace\.protected-trade\.create"/,
+  "Trade Evidence must render as a separate lane with a simple outcome surface before the detailed record form."
 );
 
 assertContains(

@@ -19,11 +19,11 @@ const actionTargetRoutesSource = readFileSync(
   "utf8"
 );
 const findings = [];
-const expectedStableActionCount = 82;
+const expectedStableActionCount = 87;
 const expectedNativeFieldCount = 37;
 const expectedSourceBreakdown = {
   front: 10,
-  body: 72,
+  body: 77,
 };
 const expectedVisibleIntentActionCount = 5;
 const expectedMobileShellBreakdown = {
@@ -532,8 +532,13 @@ if (!tradeEvidenceSection) {
   ].map((item) => item[1]);
   const expectedTradeEvidenceActionIds = [
     "marketplace.trade.toggle",
-    "marketplace.protected-trade.create",
+    "marketplace.protected-trade.outcome.good",
+    "marketplace.protected-trade.outcome.blocked",
+    "marketplace.protected-trade.outcome.issue",
+    "marketplace.protected-trade.start-another",
     "marketplace.protected-trade.refresh",
+    "marketplace.protected-trade.create",
+    "marketplace.protected-trade.refresh-empty",
     "marketplace.protected-trade.record-update",
     "marketplace.protected-trade.copy-paper",
   ];
@@ -553,6 +558,12 @@ if (!tradeEvidenceSection) {
     /This is evidence, not escrow/,
     /Trade Evidence Record/,
     /Trade record lane/,
+    /Confirm outcome/,
+    /event evidence,\s+not a human score/,
+    /selectedProtectedTradeOutcomeActions\.good\.label/,
+    /selectedProtectedTradeOutcomeActions\.blocked\.label/,
+    /selectedProtectedTradeOutcomeActions\.issue\.label/,
+    /New record/,
     /Start record/,
     /Record update/,
     /Copy paper text/,
@@ -907,8 +918,13 @@ const expectedOrder = [
   exactDebugId("marketplace.network-repost.subscription"),
   exactDebugId("marketplace.marketing.trade-evidence"),
   exactDebugId("marketplace.trade.toggle"),
-  exactDebugId("marketplace.protected-trade.create"),
+  exactDebugId("marketplace.protected-trade.outcome.good"),
+  exactDebugId("marketplace.protected-trade.outcome.blocked"),
+  exactDebugId("marketplace.protected-trade.outcome.issue"),
+  exactDebugId("marketplace.protected-trade.start-another"),
   exactDebugId("marketplace.protected-trade.refresh"),
+  exactDebugId("marketplace.protected-trade.create"),
+  exactDebugId("marketplace.protected-trade.refresh-empty"),
   exactDebugId("marketplace.protected-trade.record-update"),
   exactDebugId("marketplace.protected-trade.copy-paper"),
   exactDebugId("marketplace.members.toggle"),
