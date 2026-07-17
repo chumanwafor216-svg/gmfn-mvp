@@ -129,7 +129,7 @@ function friendlyScore(raw: string, band?: string): string {
   }
 
   const posture = getContextualEvidencePosture(text, band);
-  return `${posture.label}. No public human score is shown.`;
+  return `${posture.label}. No public numeric human label is shown.`;
 }
 
 function friendlyConsistency(raw: string): string {

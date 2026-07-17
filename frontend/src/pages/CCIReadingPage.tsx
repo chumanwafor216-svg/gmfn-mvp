@@ -521,7 +521,7 @@ export default function CCIReadingPage() {
               {cciPosture.label}
             </div>
             <div style={{ marginTop: 10, color: "#475569", fontSize: 14, fontWeight: 800 }}>
-              No public human score is shown.
+              No public numeric human label is shown.
             </div>
             <div style={{ marginTop: 10, color: "#0B1F33", fontSize: 14, fontWeight: 800, lineHeight: 1.45 }}>
               {cci.statusText}

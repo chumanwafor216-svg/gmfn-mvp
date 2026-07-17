@@ -6963,7 +6963,7 @@ export default function MarketplacePage() {
           not_person_review: true,
           trust_event_backed: true,
           boundary:
-            "Outcome evidence only. Not a star rating, not a public human score, not escrow, not automatic payout, not a bank guarantee, not a delivery guarantee.",
+            "Outcome evidence only. Not a public review, not a public human label, not escrow, not automatic payout, not a bank guarantee, not a delivery guarantee.",
         },
       });
 
@@ -12294,7 +12294,7 @@ export default function MarketplacePage() {
                       }}
                     >
                       One tap records what happened. It becomes event evidence,
-                      not a human score.
+                      not a human label.
                     </div>
                   </div>
                   <span style={stableStatusPillStyle(Boolean(selectedProtectedTrade?.id))}>

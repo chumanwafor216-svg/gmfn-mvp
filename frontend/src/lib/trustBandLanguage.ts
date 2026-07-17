@@ -139,7 +139,7 @@ export const CONTEXTUAL_EVIDENCE_POSTURES: ContextualEvidencePosture[] = [
     plainMeaning:
       "A long-running pattern of confirmed community evidence is visible. Still check the current context, freshness, and limits before relying on it.",
     boundary:
-      "This is a descriptive evidence posture, not a personal worth score, credit score, guarantee, or automatic approval.",
+      "This is a descriptive evidence posture, not a personal worth label, credit approval, guarantee, or automatic approval.",
     tone: "strong",
   },
   {

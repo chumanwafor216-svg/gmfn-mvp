@@ -600,7 +600,7 @@ export default function TrustPage() {
                 {trustPosture.label}
               </div>
               <div style={{ marginTop: 6, ...helperText(), fontSize: 13 }}>
-                No public human score is shown here.
+                No public numeric human label is shown here.
               </div>
             </div>
 

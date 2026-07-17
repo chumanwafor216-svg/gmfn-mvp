@@ -403,7 +403,7 @@ export default function CommunityMemberVerifyPage() {
   );
   const trustReadingScope = firstTruthy(
     credential?.community_trust_reading_scope,
-    "This credential reads active membership, witness strength, renewal status, and broad community activity together. It is community-scoped evidence for judgement, not a universal trust score, guarantee, credit approval, or transaction permission."
+    "This credential reads active membership, witness strength, renewal status, and broad community activity together. It is community-scoped evidence for decisions, not a universal person label, guarantee, credit approval, or transaction permission."
   );
   const currentnessLabel = firstTruthy(
     credential?.membership_currentness_label,
@@ -509,7 +509,7 @@ export default function CommunityMemberVerifyPage() {
     {
       title: "Community-scoped evidence",
       detail:
-        "The credential is scoped to this one community. It is not a universal trust score or parent community membership claim.",
+        "The credential is scoped to this one community. It is not a universal person label or parent community membership claim.",
       tone: "info",
     },
     {
