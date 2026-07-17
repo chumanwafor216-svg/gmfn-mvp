@@ -1186,7 +1186,7 @@ const BILLING_TASK_OPTIONS: Array<{
   {
     key: "readiness",
     label: "Readiness",
-    note: "Use diagnostics only when billing needs investigation.",
+    note: "Use this only when billing needs investigation.",
   },
 ];
 
@@ -1237,8 +1237,8 @@ const SETUP_OVERVIEW_TASK_OPTIONS: Array<{
   },
   {
     key: "engine",
-    label: "Engine",
-    note: "Review the institutional engine facts for this domain.",
+    label: "Facts",
+    note: "Review the institutional facts for this domain.",
   },
   {
     key: "counts",
@@ -1264,7 +1264,7 @@ const SETUP_OVERVIEW_GROUP_OPTIONS: Array<{
   {
     key: "reference",
     label: "Reference",
-    note: "Use engine facts and counts only when you need context.",
+    note: "Use facts and counts only when you need context.",
     defaultTask: "engine",
     taskKeys: ["engine", "counts"],
   },
@@ -1310,7 +1310,7 @@ const OPERATING_SUMMARY_TASK_OPTIONS: Array<{
   {
     key: "permissions",
     label: "Permissions",
-    note: "Review feature policy before changing live behaviour.",
+    note: "Review service rules before changing live behaviour.",
   },
 ];
 
@@ -7251,7 +7251,7 @@ export default function CommunityDomainDashboardPage() {
                     </div>
                   </div>
                   <div style={commandGuidanceTile("risk")}>
-                    <div style={sectionLabel()}>Boundary</div>
+                    <div style={sectionLabel()}>Important rule</div>
                     <div style={{ ...helperText(), fontSize: 13, lineHeight: 1.5 }}>
                       {operatingStateCopy.risk}
                     </div>
@@ -7263,7 +7263,7 @@ export default function CommunityDomainDashboardPage() {
 
           {message ? (
             <section style={whiteCard()}>
-              <div style={sectionLabel()}>Action response</div>
+              <div style={sectionLabel()}>Result</div>
               <div style={{ ...helperText(), marginTop: 8 }}>{message}</div>
             </section>
           ) : null}
@@ -7277,9 +7277,9 @@ export default function CommunityDomainDashboardPage() {
                   <GsnRealisticIcon name="records-folder" size={42} decorative />
                 </span>
                 <div style={{ minWidth: 0 }}>
-                  <div style={sectionLabel()}>Setup overview jobs</div>
+                  <div style={sectionLabel()}>Setup work</div>
                   <h2 style={{ margin: "6px 0 0", fontSize: 22, lineHeight: 1.12 }}>
-                    Open one setup overview.
+                    Choose one setup view.
                   </h2>
                   <div style={{ ...helperText(), marginTop: 8 }}>
                     Choose the setup stage first. Current view:{" "}
@@ -7351,7 +7351,7 @@ export default function CommunityDomainDashboardPage() {
                 {activeSetupOverviewGroupOption.note}
               </div>
               <div style={{ ...helperText(), fontSize: 13 }}>
-                Current packet:{" "}
+                Current view:{" "}
                 <strong>{activeSetupOverviewTaskOption.label}</strong>.{" "}
                 {activeSetupOverviewTaskOption.note}
               </div>
@@ -7373,8 +7373,8 @@ export default function CommunityDomainDashboardPage() {
                 }}
               >
                 {setupOverviewTaskChooserOpen
-                  ? "Close setup packets"
-                  : "Change setup packet"}
+                  ? "Close setup views"
+                  : "Change setup view"}
               </StableButton>
               {setupOverviewTaskChooserOpen ? (
                 <div
@@ -7461,7 +7461,7 @@ export default function CommunityDomainDashboardPage() {
 
             <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
               <div style={{ ...helperText(), fontSize: 13 }}>
-                Current notice packet:{" "}
+                Current notice view:{" "}
                 <strong>{activeSetupNoticeTaskOption.label}</strong>.{" "}
                 {activeSetupNoticeTaskOption.note}
               </div>
@@ -7483,8 +7483,8 @@ export default function CommunityDomainDashboardPage() {
                 }}
               >
                 {setupNoticeTaskChooserOpen
-                  ? "Close notice packets"
-                  : "Change notice packet"}
+                  ? "Close notice views"
+                  : "Change notice view"}
               </StableButton>
               {setupNoticeTaskChooserOpen ? (
                 <div
@@ -7526,7 +7526,7 @@ export default function CommunityDomainDashboardPage() {
                     <div style={{ fontWeight: 950 }}>Announcement Board is off.</div>
                     <div style={{ ...helperText(), marginTop: 6, fontSize: 13 }}>
                       This domain has chosen not to use official notices here.
-                      Owner/admin can change this in Domain feature policy.
+                      Owner/admin can change this in Domain service rules.
                     </div>
                   </div>
                 ) : null}
@@ -7569,7 +7569,7 @@ export default function CommunityDomainDashboardPage() {
                   <div style={{ fontWeight: 950 }}>Announcement Board is off.</div>
                   <div style={{ ...helperText(), marginTop: 6, fontSize: 13 }}>
                     This domain has chosen not to use official notices here.
-                    Owner/admin can change this in Domain feature policy.
+                    Owner/admin can change this in Domain service rules.
                   </div>
                 </div>
               ) : domainNoticesLoading ? (
@@ -7632,7 +7632,7 @@ export default function CommunityDomainDashboardPage() {
           <section style={whiteCard()}>
             <div style={{ display: "grid", gap: 12 }}>
               <div>
-                <div style={sectionLabel()}>Community Domain engine</div>
+                <div style={sectionLabel()}>Community Domain facts</div>
                 <h2 style={{ margin: "6px 0 0", fontSize: 24, lineHeight: 1.12 }}>
                   One institutional home for structure, rules, services, and trust.
                 </h2>
@@ -8257,7 +8257,7 @@ export default function CommunityDomainDashboardPage() {
                               authority evidence, or prepare verification.
                             </div>
                             <div style={{ ...helperText(), fontSize: 13 }}>
-                              Boundary: active does not mean verified.
+                              Rule: active does not mean verified.
                               Verification still needs authority evidence and
                               review; tariff upgrades, member bands, and paid
                               feature changes still need manual capacity/finance
@@ -9092,7 +9092,7 @@ export default function CommunityDomainDashboardPage() {
                             <GsnRealisticIcon name="vault-safe" size={36} decorative />
                           </span>
                           <div style={{ minWidth: 0 }}>
-                            <div style={sectionLabel()}>Domain feature policy</div>
+                            <div style={sectionLabel()}>Domain service rules</div>
                             <h3 style={{ margin: "4px 0 0", fontSize: 19, lineHeight: 1.15 }}>
                               Choose what this domain allows.
                             </h3>
@@ -9135,7 +9135,7 @@ export default function CommunityDomainDashboardPage() {
                                 padding: 12,
                               }}
                             >
-                              <div style={sectionLabel()}>Enforcement boundary</div>
+                              <div style={sectionLabel()}>What this controls</div>
                               <div style={{ ...helperText(), marginTop: 5, fontSize: 13 }}>
                                 Live enforcement exists for notices, member invites,
                                 marketplace shops, Shop Diary writes, payments and
@@ -9154,7 +9154,7 @@ export default function CommunityDomainDashboardPage() {
                                 padding: 12,
                               }}
                             >
-                              <div style={sectionLabel()}>Feature rule used</div>
+                              <div style={sectionLabel()}>Rule in use</div>
                               <div
                                 style={{ marginTop: 4, fontWeight: 900, color: "#07172C" }}
                               >
@@ -9967,7 +9967,7 @@ export default function CommunityDomainDashboardPage() {
                         Use this account with the generated code. Editing is GSN-admin only.
                       </div>
                       <div style={{ ...helperText(), fontSize: 13 }}>
-                        Current pay-in account packet:{" "}
+                        Current pay-in account view:{" "}
                         <strong>{activeBillingAccountTaskOption.label}</strong>.{" "}
                         {activeBillingAccountTaskOption.note}
                       </div>
@@ -9989,8 +9989,8 @@ export default function CommunityDomainDashboardPage() {
                         }}
                       >
                         {billingAccountTaskChooserOpen
-                          ? "Close pay-in account packets"
-                          : "Change pay-in account packet"}
+                          ? "Close pay-in account views"
+                          : "Change pay-in account view"}
                       </StableButton>
                       {billingAccountTaskChooserOpen ? (
                         <div
@@ -10292,7 +10292,7 @@ export default function CommunityDomainDashboardPage() {
                         gap: 8,
                       }}
                     >
-                      <div style={sectionLabel()}>Payment policy boundary</div>
+                      <div style={sectionLabel()}>Payment rule</div>
                       <div
                         style={{
                           display: "flex",
@@ -10325,9 +10325,9 @@ export default function CommunityDomainDashboardPage() {
                     </div>
 
                     <div style={{ ...softCard(), marginTop: 12, display: "grid", gap: 10 }}>
-                      <div style={sectionLabel()}>Code & proof packets</div>
+                      <div style={sectionLabel()}>Code & proof views</div>
                       <div style={{ ...helperText(), fontSize: 13 }}>
-                        Current packet:{" "}
+                        Current view:{" "}
                         <strong>{activeBillingPaymentGroupOption.label}</strong>.{" "}
                         {activeBillingPaymentGroupOption.note}
                       </div>
@@ -10349,8 +10349,8 @@ export default function CommunityDomainDashboardPage() {
                         }}
                       >
                         {billingPaymentGroupChooserOpen
-                          ? "Close code/proof packets"
-                          : "Change code/proof packet"}
+                          ? "Close code/proof views"
+                          : "Change code/proof view"}
                       </StableButton>
                       {billingPaymentGroupChooserOpen ? (
                         <div
@@ -10903,7 +10903,7 @@ export default function CommunityDomainDashboardPage() {
 
                 {activeLane === "billing" && activeBillingTask === "readiness" ? (
                   <div style={softCard()}>
-                    <div style={sectionLabel()}>Billing readiness details</div>
+                    <div style={sectionLabel()}>Subscription readiness</div>
                     <div style={{ ...helperText(), marginTop: 7 }}>
                       Lifecycle and package capacity stay here. Payment code,
                       account, proof, and steps stay behind Change billing job.
@@ -11209,7 +11209,7 @@ export default function CommunityDomainDashboardPage() {
                               ))}
                             </div>
                             <div style={{ ...helperText(), fontSize: 13 }}>
-                              {packageBillingAdminAction} Feature policy controls who
+                              {packageBillingAdminAction} Domain service rules control who
                               can use Spotlight, Demand Box, shops, Shop Diary, Vault,
                               ROSCA, invites, and contribution tools here.
                             </div>

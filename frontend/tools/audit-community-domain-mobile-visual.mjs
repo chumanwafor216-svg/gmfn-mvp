@@ -1007,20 +1007,20 @@ try {
   if (!(await isDebugVisible(page, "community-domain-dashboard.command-guidance-toggle"))) {
     findings.push("Draft Community Domain command does not expose an open-close guidance control.");
   }
-  if (commandText.includes("Do first") || commandText.includes("Boundary")) {
+  if (commandText.includes("Do first") || commandText.includes("Important rule")) {
     findings.push("Draft Community Domain command shows read-only guidance before the user opens it.");
   }
   await clickByDebugId(page, "community-domain-dashboard.command-guidance-toggle");
   audit = await page.evaluate(pageAudit);
   commandText = normalized(audit.bodyText);
-  if (!commandText.includes("Do first") || !commandText.includes("Boundary")) {
-    findings.push("Draft Community Domain command guidance does not open the first action and boundary notes.");
+  if (!commandText.includes("Do first") || !commandText.includes("Important rule")) {
+    findings.push("Draft Community Domain command guidance does not open the first action and rule notes.");
   }
   await page.waitForTimeout(450);
   await clickByDebugId(page, "community-domain-dashboard.command-guidance-toggle");
   audit = await page.evaluate(pageAudit);
   commandText = normalized(audit.bodyText);
-  if (commandText.includes("Do first") || commandText.includes("Boundary")) {
+  if (commandText.includes("Do first") || commandText.includes("Important rule")) {
     findings.push("Draft Community Domain command guidance does not close after reading.");
   }
   const draftFirstAction = await firstViewportActionFinding(
@@ -1069,7 +1069,7 @@ try {
   }
   if (
     draftSetupText.includes("Official Board") ||
-    draftSetupText.includes("Community Domain engine") ||
+    draftSetupText.includes("Community Domain facts") ||
     draftSetupText.includes("Work lanes") ||
     draftSetupText.includes("Operating areas")
   ) {
@@ -1092,20 +1092,20 @@ try {
   if (!(await isDebugVisible(page, "community-domain-dashboard.command-guidance-toggle"))) {
     findings.push("Domain command does not expose an open-close guidance control.");
   }
-  if (commandText.includes("Do first") || commandText.includes("Boundary")) {
+  if (commandText.includes("Do first") || commandText.includes("Important rule")) {
     findings.push("Domain command shows read-only guidance before the user opens it.");
   }
   await clickByDebugId(page, "community-domain-dashboard.command-guidance-toggle");
   audit = await page.evaluate(pageAudit);
   commandText = normalized(audit.bodyText);
-  if (!commandText.includes("Do first") || !commandText.includes("Boundary")) {
-    findings.push("Domain command guidance does not open the first action and boundary notes.");
+  if (!commandText.includes("Do first") || !commandText.includes("Important rule")) {
+    findings.push("Domain command guidance does not open the first action and rule notes.");
   }
   await page.waitForTimeout(450);
   await clickByDebugId(page, "community-domain-dashboard.command-guidance-toggle");
   audit = await page.evaluate(pageAudit);
   commandText = normalized(audit.bodyText);
-  if (commandText.includes("Do first") || commandText.includes("Boundary")) {
+  if (commandText.includes("Do first") || commandText.includes("Important rule")) {
     findings.push("Domain command guidance does not close after reading.");
   }
   const dashboardFirstAction = await firstViewportActionFinding(
@@ -1163,7 +1163,7 @@ try {
     settingsSummaryText.includes(
       "Pillar-style Community Domains should use live operating areas first after activation"
     ) ||
-    settingsSummaryText.includes("Boundary: active does not mean verified")
+    settingsSummaryText.includes("Rule: active does not mean verified")
   ) {
     findings.push("Active Community Domain settings summary exposes operating notes before the user opens them.");
   }
@@ -1189,7 +1189,7 @@ try {
     !settingsSummaryText.includes(
       "Pillar-style Community Domains should use live operating areas first after activation"
     ) ||
-    !settingsSummaryText.includes("Boundary: active does not mean verified")
+    !settingsSummaryText.includes("Rule: active does not mean verified")
   ) {
     findings.push("Active Community Domain settings summary notes do not open when requested.");
   }
@@ -1201,7 +1201,7 @@ try {
     settingsSummaryText.includes(
       "Pillar-style Community Domains should use live operating areas first after activation"
     ) ||
-    settingsSummaryText.includes("Boundary: active does not mean verified")
+    settingsSummaryText.includes("Rule: active does not mean verified")
   ) {
     findings.push("Active Community Domain settings summary notes do not close after reading.");
   }
@@ -1321,10 +1321,10 @@ try {
     findings.push("Community Domain Billing jobs do not expose a Change billing job control.");
   }
   if (await isDebugVisible(page, "community-domain-dashboard.billing-payment-group.settlement")) {
-    findings.push("Community Domain Billing Code & proof packet buttons are visible before Change code/proof packet is opened.");
+    findings.push("Community Domain Billing Code & proof view buttons are visible before Change code/proof view is opened.");
   }
   if (!(await isDebugVisible(page, "community-domain-dashboard.billing-payment-group-toggle"))) {
-    findings.push("Community Domain Billing Code & proof does not expose a Change code/proof packet control.");
+    findings.push("Community Domain Billing Code & proof does not expose a Change code/proof view control.");
   }
   if (await isDebugVisible(page, "community-domain-dashboard.billing-payment.generate")) {
     findings.push("Community Domain Billing Code step buttons are visible before Change Code step is opened.");
@@ -1335,7 +1335,7 @@ try {
   await clickByDebugId(page, "community-domain-dashboard.billing-payment-group-toggle");
   await clickByDebugId(page, "community-domain-dashboard.billing-payment-group.settlement");
   if (await isDebugVisible(page, "community-domain-dashboard.billing-payment-group.code")) {
-    findings.push("Community Domain Billing Code & proof packet buttons stay visible after selecting a packet.");
+    findings.push("Community Domain Billing Code & proof view buttons stay visible after selecting a view.");
   }
   if (await isDebugVisible(page, "community-domain-dashboard.billing-payment.pay_account")) {
     findings.push("Community Domain Billing Settlement step buttons are visible before Change Settlement step is opened.");
@@ -1352,19 +1352,19 @@ try {
   }
   if (await isDebugVisible(page, "community-domain-dashboard.billing-account.setup")) {
     findings.push(
-      "Community Domain Billing pay-in account packets are visible before Change pay-in account packet is opened."
+      "Community Domain Billing pay-in account views are visible before Change pay-in account view is opened."
     );
   }
   if (!(await isDebugVisible(page, "community-domain-dashboard.billing-account-toggle"))) {
     findings.push(
-      "Community Domain Billing pay-in account does not expose a Change pay-in account packet control."
+      "Community Domain Billing pay-in account does not expose a Change pay-in account view control."
     );
   }
   await clickByDebugId(page, "community-domain-dashboard.billing-account-toggle");
   await clickByDebugId(page, "community-domain-dashboard.billing-account.setup");
   if (await isDebugVisible(page, "community-domain-dashboard.billing-account.summary")) {
     findings.push(
-      "Community Domain Billing pay-in account packets stay visible after selecting a packet."
+      "Community Domain Billing pay-in account views stay visible after selecting a view."
     );
   }
 

@@ -501,9 +501,9 @@ try {
     "Current billing job: Code & proof",
     "Change billing job",
     "Code & proof",
-    "Code & proof packets",
-    "Current packet: Code",
-    "Change code/proof packet",
+    "Code & proof views",
+    "Current view: Code",
+    "Change code/proof view",
     "Code steps",
     "Current step: Reference",
     "Change Code step",
@@ -524,7 +524,7 @@ try {
     findings.push("Pay-in account details are exposed before the user opens the account billing job.");
   }
 
-  if (defaultBody.includes("Billing readiness details")) {
+  if (defaultBody.includes("Subscription readiness")) {
     findings.push("Billing readiness diagnostics are exposed before the user opens the readiness billing job.");
   }
 
@@ -650,8 +650,8 @@ try {
     "Community pay-in account",
     "Shown to payers. Locked for editing.",
     "Use this account with the generated code.",
-    "Current pay-in account packet: Summary",
-    "Change pay-in account packet",
+    "Current pay-in account view: Summary",
+    "Change pay-in account view",
     "Audit Society Bank",
     "Audit Community Pay-In",
   ];
@@ -700,7 +700,7 @@ try {
 
   const readinessResult = await pageAudit(page);
   const requiredReadinessText = [
-    "Billing readiness details",
+    "Subscription readiness",
     "Subscription lifecycle",
     "Package",
     "Pricing",
