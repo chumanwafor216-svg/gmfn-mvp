@@ -32,6 +32,32 @@ GSN is testing whether communities will preserve and permission community-recogn
 - Whether the governance model survives conflict, bias, correction requests, and authority disputes.
 - Whether GSN can avoid being perceived as reputation scoring.
 
+## Founder Brief Gap Discipline
+
+Before rewriting or sending the founder/investor brief, complete:
+
+```text
+GSN_FOUNDERS_BRIEF_GAP_CLOSURE.md
+```
+
+The brief must answer these questions plainly. If the answer is not yet proven,
+say so instead of turning the vision into a claim.
+
+| Question | Required discipline |
+| --- | --- |
+| What services may generate revenue? | Name services, but separate possible revenue from proven revenue. |
+| Who exactly pays first? | Name the likely first payer or sponsor; do not assume ordinary members pay first. |
+| What is the first use case? | Pick one narrow decision, not "all community trust." |
+| What is the first pilot? | Name one community, one organiser, one workflow, and one evidence output before calling it pilot-ready. |
+| What has already been built? | Distinguish source-level MVP surfaces from accepted pilot evidence. |
+| What traction exists? | Do not claim traction unless interviews, pilot usage, LOIs, payment, or repeated use exist. |
+| How is information verified? | Explain provenance, confirmation, timestamp, community context, and sharing purpose. |
+| How are consent and privacy protected? | State private-by-default, purpose-bound sharing, and no raw private details on public surfaces. |
+| How can somebody challenge inaccurate evidence? | Describe dispute, context, admin review, contested status, and correction history. |
+| How does information expire or become irrelevant? | Show currentness, expiry/review dates, replacement, withdrawal, revoked, or stale states. |
+| How will GSN avoid becoming social credit? | Refuse global scores, public rankings, and permanent numerical human grades. |
+| What exact partnership or investment is requested? | Ask for a pilot partner, sponsor, technical/product review partner, or milestone-tied capital. |
+
 ## The Best Early Investor Ask
 
 ```text

@@ -19,7 +19,31 @@ Do not send the investor brief unless you can answer these clearly:
 [ ] What would a narrow pilot test?
 ```
 
+Also complete:
+
+```text
+GSN_FOUNDERS_BRIEF_GAP_CLOSURE.md
+GSN_FOUNDERS_BRIEF_WORKING_DRAFT.md
+```
+
+The gap sheet must name the first payer, first use case, first pilot, what is
+already built, what traction exists, verification method, consent/privacy
+boundary, challenge/correction route, expiry/currentness rule,
+anti-social-credit rule, and exact ask. The working draft should then turn those
+answers into readable brief language without overclaiming.
+
 If three or more answers are weak, do not send the investor brief yet. Use the diligence Q&A internally and continue discovery.
+
+If any of these five answers are weak, do not send the investor brief as
+investor-ready:
+
+```text
+[ ] Who pays first?
+[ ] What is the first pilot?
+[ ] How can inaccurate evidence be challenged?
+[ ] How does evidence expire or become stale?
+[ ] How does GSN avoid social credit without relying on slogans?
+```
 
 ## Send Goal
 
@@ -151,6 +175,7 @@ I am holding the investor brief until discovery can answer three questions: whic
 Then go back to:
 
 ```text
+GSN_FOUNDERS_BRIEF_GAP_CLOSURE.md
 GSN_CUSTOMER_DISCOVERY_INTERVIEW_SCRIPT.md
 GSN_DISCOVERY_INTERVIEW_LOG_TEMPLATE.md
 GSN_DISCOVERY_EVIDENCE_MEMO_TEMPLATE.md

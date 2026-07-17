@@ -137,6 +137,8 @@ If participants cannot name one painful trust decision, do not pitch investors y
 
 Use:
 
+- `GSN_FOUNDERS_BRIEF_GAP_CLOSURE.md`
+- `GSN_FOUNDERS_BRIEF_WORKING_DRAFT.md`
 - `GSN_Trust_Infrastructure_Investor_Brief.docx`
 - `GSN_INVESTOR_DILIGENCE_QA_AND_PROOF_ROADMAP.md`
 
@@ -151,6 +153,9 @@ Only send the investor brief if you can answer:
 [ ] What is the biggest governance/privacy risk?
 [ ] How does GSN avoid social scoring?
 [ ] What would a narrow pilot test?
+[ ] How can inaccurate evidence be challenged or corrected?
+[ ] How does evidence expire, age, withdraw, or become stale?
+[ ] What exact pilot, partnership, or investment ask is being made?
 ```
 
 If those answers are weak, keep the investor document internal.
