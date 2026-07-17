@@ -2,7 +2,7 @@ export type DashboardGuidanceTone = "green" | "yellow" | "red" | "neutral";
 
 export type DashboardGuidanceReadingState = {
   classText: string;
-  scoreText: string;
+  postureSource: string;
   tone: DashboardGuidanceTone;
   statusText: string;
   whyText: string;
