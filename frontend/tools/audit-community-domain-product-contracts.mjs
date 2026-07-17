@@ -3254,21 +3254,21 @@ assertNotContains(
 
 assertContains(
   "src/pages/communityDomainDashboard/StructurePlanningPanels.tsx",
-  /Rollout plan[\s\S]*primary_next_action[\s\S]*Current phase:[\s\S]*First units[\s\S]*rolloutPlanCounts\.first_level_units[\s\S]*Ready units[\s\S]*rolloutPlanCounts\.ready_units[\s\S]*Units needing attention[\s\S]*Boundary: rollout planning only[\s\S]*no structure, membership, authority,[\s\S]*billing, public-page, marketplace, money, or private-evidence changes/,
+  /Rollout plan[\s\S]*primary_next_action[\s\S]*Current phase:[\s\S]*First units[\s\S]*rolloutPlanCounts\.first_level_units[\s\S]*Ready units[\s\S]*rolloutPlanCounts\.ready_units[\s\S]*Units needing attention[\s\S]*Rule: rollout planning only[\s\S]*no structure, membership, authority,[\s\S]*billing, public-page, marketplace, money, or private-evidence changes/,
   "Community Domain dashboard Structure lane must show the backend rollout plan as read-only institutional onboarding guidance without implying structure writes, invitations, placements, policy creation, billing, publishing, marketplace activity, social Community creation, money movement, or private evidence access.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/communityDomainDashboard/StructurePlanningPanels.tsx",
-  /Activity map[\s\S]*primary_next_action[\s\S]*activity_lane_count[\s\S]*active_operating_unit_count[\s\S]*active_policy_count[\s\S]*paid_activity_status[\s\S]*scheduled_activity_status[\s\S]*Boundary: activity planning only[\s\S]*no activities, payments,[\s\S]*marketplace records, notifications, trust records, proof, money, or[\s\S]*private member records/,
+  /Activity map[\s\S]*primary_next_action[\s\S]*activity_lane_count[\s\S]*active_operating_unit_count[\s\S]*active_policy_count[\s\S]*paid_activity_status[\s\S]*scheduled_activity_status[\s\S]*Rule: activity planning only[\s\S]*no activities, payments,[\s\S]*marketplace records, notifications, trust records, proof, money, or[\s\S]*private member records/,
   "Community Domain dashboard Structure lane must show read-only activity map planning without implying activity/event/attendance/dues/payment/marketplace/notification/TrustSlip/Trust Passport/public proof/private-record writes.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/communityDomainDashboard/StructurePlanningPanels.tsx",
-  /Group readiness[\s\S]*primary_next_action[\s\S]*activity_group_candidate_count[\s\S]*Units[\s\S]*activityGroupSummary\.node_count[\s\S]*Unit members[\s\S]*active_node_memberships[\s\S]*active_policies[\s\S]*review_records[\s\S]*activity_group_engine_status[\s\S]*activity_group_records_created[\s\S]*rosca_cycles_created[\s\S]*Boundary: group planning only[\s\S]*no groups, ROSCA cycles, attendance,[\s\S]*payment records, marketplace records, notifications, trust records, or[\s\S]*private member records/,
+  /Group readiness[\s\S]*primary_next_action[\s\S]*activity_group_candidate_count[\s\S]*Units[\s\S]*activityGroupSummary\.node_count[\s\S]*Unit members[\s\S]*active_node_memberships[\s\S]*active_policies[\s\S]*review_records[\s\S]*activity_group_engine_status[\s\S]*activity_group_records_created[\s\S]*rosca_cycles_created[\s\S]*Rule: group planning only[\s\S]*no groups, ROSCA cycles, attendance,[\s\S]*payment records, marketplace records, notifications, trust records, or[\s\S]*private member records/,
   "Community Domain dashboard Structure lane must show read-only activity-group readiness without implying group/ROSCA/attendance/payment/marketplace/notification/TrustSlip/Trust Passport/private-member writes.",
   { frontend: true }
 );

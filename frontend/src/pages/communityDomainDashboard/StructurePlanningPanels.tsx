@@ -23,7 +23,7 @@ const STRUCTURE_PLANNING_FOCUS_OPTIONS: Array<{
   {
     key: "activity",
     label: "Activity",
-    note: "Activity, schedule, paid activity, and marketplace boundaries.",
+    note: "Activity, schedule, paid activity, and marketplace rules.",
   },
   {
     key: "groups",
@@ -375,7 +375,7 @@ export default function CommunityDomainStructurePlanningPanels({
           </div>
         ) : null}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          Boundary: rollout planning only; no structure, membership, authority,
+          Rule: rollout planning only; no structure, membership, authority,
           billing, public-page, marketplace, money, or private-evidence changes.
         </div>
       </div>
@@ -388,7 +388,7 @@ export default function CommunityDomainStructurePlanningPanels({
           {activityMap
             ? `${cleanText(
                 activityMap.primary_next_action?.label,
-                "Review activity boundaries"
+                "Review activity rules"
               )}. ${activityMapReadyTotal} of ${visibleActivityMapLanes.length} activity checks are ready.`
             : "GSN could not load the activity map for this Community Domain."}
         </div>
@@ -447,7 +447,7 @@ export default function CommunityDomainStructurePlanningPanels({
           </div>
         ) : null}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          Boundary: activity planning only; no activities, payments,
+          Rule: activity planning only; no activities, payments,
           marketplace records, notifications, trust records, proof, money, or
           private member records.
         </div>
@@ -543,7 +543,7 @@ export default function CommunityDomainStructurePlanningPanels({
           </div>
         ) : null}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          Boundary: group planning only; no groups, ROSCA cycles, attendance,
+          Rule: group planning only; no groups, ROSCA cycles, attendance,
           payment records, marketplace records, notifications, trust records, or
           private member records.
         </div>
