@@ -37,7 +37,10 @@ import {
   readCreateEntryDraft,
   saveCreateEntryDraft,
 } from "../lib/entryDraft";
-import { buildIdentityEvidenceCompletion } from "../lib/identityEvidenceCompletion";
+import {
+  buildIdentityEvidenceCompletion,
+  identityEvidenceStageShort,
+} from "../lib/identityEvidenceCompletion";
 import {
   countryFromPhone,
   countryOptions,
@@ -2292,7 +2295,7 @@ export default function CreateEntryPage() {
       <div style={{ ...evidenceMeterCard(), gridTemplateColumns: compact ? "68px minmax(0, 1fr)" : "82px minmax(0, 1fr)" }}>
         <div style={evidenceDialStyle(founderEvidence.degrees)}>
           <span aria-hidden="true" style={evidenceDialBallStyle(founderEvidence.degrees)} />
-          <div style={evidenceDialInner()}>{founderEvidence.score}%</div>
+          <div style={evidenceDialInner()}>{identityEvidenceStageShort(founderEvidence)}</div>
         </div>
         <div style={{ display: "grid", gap: 8, minWidth: 0 }}>
           <div style={{ display: "grid", gap: 3 }}>

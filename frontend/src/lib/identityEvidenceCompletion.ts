@@ -36,6 +36,8 @@ export type IdentityEvidenceCompletion = {
   status: "not_started" | "light" | "medium" | "strong" | "high";
 };
 
+type IdentityEvidenceStatus = IdentityEvidenceCompletion["status"];
+
 const IDENTITY_EVENT_TYPES = {
   phoneRegistered: "identity.phone_registered",
   phoneVerified: "identity.phone_verified",
@@ -224,4 +226,63 @@ export function buildIdentityEvidenceCompletionFromTrustEvents(
       hasEvent(rows, IDENTITY_EVENT_TYPES.officialIdRecorded),
     countReadyAsProgress: false,
   });
+}
+
+function identityEvidenceStatusOf(
+  completionOrStatus: IdentityEvidenceCompletion | IdentityEvidenceStatus
+): IdentityEvidenceStatus {
+  return typeof completionOrStatus === "string"
+    ? completionOrStatus
+    : completionOrStatus.status;
+}
+
+export function identityEvidenceStageWord(
+  completionOrStatus: IdentityEvidenceCompletion | IdentityEvidenceStatus
+): string {
+  switch (identityEvidenceStatusOf(completionOrStatus)) {
+    case "high":
+      return "Ready";
+    case "strong":
+      return "Strong";
+    case "medium":
+      return "Building";
+    case "light":
+      return "Started";
+    default:
+      return "Start";
+  }
+}
+
+export function identityEvidenceStageShort(
+  completionOrStatus: IdentityEvidenceCompletion | IdentityEvidenceStatus
+): string {
+  switch (identityEvidenceStatusOf(completionOrStatus)) {
+    case "high":
+      return "Ready";
+    case "strong":
+      return "Strong";
+    case "medium":
+      return "Build";
+    case "light":
+      return "Start";
+    default:
+      return "Start";
+  }
+}
+
+export function identityEvidenceStagePhrase(
+  completionOrStatus: IdentityEvidenceCompletion | IdentityEvidenceStatus
+): string {
+  switch (identityEvidenceStatusOf(completionOrStatus)) {
+    case "high":
+      return "Evidence ready";
+    case "strong":
+      return "Strong evidence";
+    case "medium":
+      return "Evidence building";
+    case "light":
+      return "Evidence started";
+    default:
+      return "Evidence not started";
+  }
 }

@@ -288,8 +288,8 @@ assertNotContains(
 
 assertContains(
   "trust",
-  /const \[identityEvidenceOpen, setIdentityEvidenceOpen\][\s\S]*?buildIdentityEvidenceCompletion[\s\S]*?Complete ID checks[\s\S]*?Open public community record[\s\S]*?data-trust-passport-identity-evidence-meter="true"[\s\S]*?setIdentityEvidenceOpen\(\(open\) => !open\)[\s\S]*?stableHeight=\{isCompact \? 42 : 44\}[\s\S]*?fullWidth[\s\S]*?debugId="trust-score\.identity-evidence-meter\.toggle"[\s\S]*?isCompact \? "Evidence" : "Identity evidence"[\s\S]*?`\$\{identityEvidence\.score\}% ready`[\s\S]*?`\$\{identityEvidence\.score\}% \| \$\{identityEvidence\.label\}`[\s\S]*?identityEvidenceOpen \?[\s\S]*?Recorded helps\. Verified builds confidence\.[\s\S]*?Recorded evidence raises readiness\. Verified evidence raises confidence\./,
-  "Trust Passport Identity Overview must keep the reusable identity evidence meter collapsed behind a compact toggle after the snapshot actions with phone-safe and full recorded-vs-verified language."
+  /const \[identityEvidenceOpen, setIdentityEvidenceOpen\][\s\S]*?buildIdentityEvidenceCompletion[\s\S]*?Complete ID checks[\s\S]*?Open public community record[\s\S]*?data-trust-passport-identity-evidence-meter="true"[\s\S]*?setIdentityEvidenceOpen\(\(open\) => !open\)[\s\S]*?stableHeight=\{isCompact \? 42 : 44\}[\s\S]*?fullWidth[\s\S]*?debugId="trust-score\.identity-evidence-meter\.toggle"[\s\S]*?isCompact \? "Evidence" : "Identity evidence"[\s\S]*?identityEvidenceStageWord\(identityEvidence\)[\s\S]*?identityEvidenceStagePhrase\(identityEvidence\)[\s\S]*?identityEvidenceOpen \?[\s\S]*?identityEvidenceStageShort\(identityEvidence\)[\s\S]*?Recorded helps\. Verified builds confidence\.[\s\S]*?Recorded evidence raises readiness\. Verified evidence raises confidence\./,
+  "Trust Passport Identity Overview must keep the reusable identity evidence meter collapsed behind a compact toggle and must describe evidence posture without visible numeric scoring."
 );
 
 assertContains(

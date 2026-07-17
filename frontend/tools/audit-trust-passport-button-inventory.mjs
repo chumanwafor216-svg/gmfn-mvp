@@ -181,8 +181,8 @@ assertContains(
 );
 
 assertContains(
-  /const \[identityEvidenceOpen, setIdentityEvidenceOpen\][\s\S]*?data-trust-passport-identity-evidence-meter="true"[\s\S]*?marginTop: isCompact \? 8 : 10[\s\S]*?setIdentityEvidenceOpen\(\(open\) => !open\)[\s\S]*?stableHeight=\{isCompact \? 42 : 44\}[\s\S]*?fullWidth[\s\S]*?debugId="trust-score\.identity-evidence-meter\.toggle"[\s\S]*?isCompact \? "Evidence" : "Identity evidence"[\s\S]*?`\$\{identityEvidence\.score\}% ready`[\s\S]*?identityEvidenceOpen \?/,
-  "Trust Passport identity evidence meter must stay collapsed behind a compact stable toggle after the snapshot actions so the snapshot remains portable."
+  /const \[identityEvidenceOpen, setIdentityEvidenceOpen\][\s\S]*?data-trust-passport-identity-evidence-meter="true"[\s\S]*?marginTop: isCompact \? 8 : 10[\s\S]*?setIdentityEvidenceOpen\(\(open\) => !open\)[\s\S]*?stableHeight=\{isCompact \? 42 : 44\}[\s\S]*?fullWidth[\s\S]*?debugId="trust-score\.identity-evidence-meter\.toggle"[\s\S]*?isCompact \? "Evidence" : "Identity evidence"[\s\S]*?identityEvidenceStageWord\(identityEvidence\)[\s\S]*?identityEvidenceOpen \?/,
+  "Trust Passport identity evidence meter must stay collapsed behind a compact stable toggle and describe evidence posture without visible numeric scoring."
 );
 
 assertContains(

@@ -16,7 +16,10 @@ import {
   normalizeActionTargetPath,
   splitActionTargetSuffix as splitPathSuffix,
 } from "./actionTargetRoutes";
-import { buildIdentityEvidenceCompletionFromTrustEvents } from "./identityEvidenceCompletion";
+import {
+  buildIdentityEvidenceCompletionFromTrustEvents,
+  identityEvidenceStagePhrase,
+} from "./identityEvidenceCompletion";
 
 export type GuidanceSeverity = "normal" | "important" | "urgent";
 export type GuidanceInboxBucketKey =
@@ -1003,8 +1006,8 @@ function buildIdentityEvidenceNotices(params: {
       : "Add the next identity evidence";
   const detailLead =
     params.voice === "direct"
-      ? `${completion.label}: ${completion.score}%.`
-      : `${completion.label} so far: ${completion.score}%.`;
+      ? `${identityEvidenceStagePhrase(completion)}.`
+      : `${identityEvidenceStagePhrase(completion)} so far.`;
   const routeHint =
     primary === "bank"
       ? "Use payout details to record bank or wallet evidence."

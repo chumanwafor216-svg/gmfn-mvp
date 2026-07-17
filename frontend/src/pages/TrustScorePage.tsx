@@ -50,7 +50,12 @@ import {
 } from "../lib/trustDocumentSnapshots";
 import { TRUST_BAND_SHORT_LABELS } from "../lib/trustBandLanguage";
 import { buildTrustPassportViewModel } from "../lib/trustPassportViewModel";
-import { buildIdentityEvidenceCompletion } from "../lib/identityEvidenceCompletion";
+import {
+  buildIdentityEvidenceCompletion,
+  identityEvidenceStagePhrase,
+  identityEvidenceStageShort,
+  identityEvidenceStageWord,
+} from "../lib/identityEvidenceCompletion";
 import { revealElementWithoutJump } from "../lib/mobileRevealStability";
 
 type NoticeTone = "success" | "error";
@@ -3655,8 +3660,8 @@ export default function TrustScorePage() {
                 }}
               >
                 {isCompact
-                  ? `${identityEvidence.score}% ready`
-                  : `${identityEvidence.score}% | ${identityEvidence.label}`}
+                  ? identityEvidenceStageWord(identityEvidence)
+                  : identityEvidenceStagePhrase(identityEvidence)}
               </span>
             </SubtleButton>
 
@@ -3674,7 +3679,9 @@ export default function TrustScorePage() {
                 }}
               >
                 <div style={evidenceDialStyle(identityEvidence.degrees, isCompact)}>
-                  <div style={evidenceDialInnerStyle(isCompact)}>{identityEvidence.score}%</div>
+                  <div style={evidenceDialInnerStyle(isCompact)}>
+                    {identityEvidenceStageShort(identityEvidence)}
+                  </div>
                 </div>
                 <div style={{ display: "grid", gap: isCompact ? 5 : 6, minWidth: 0 }}>
                   <div
