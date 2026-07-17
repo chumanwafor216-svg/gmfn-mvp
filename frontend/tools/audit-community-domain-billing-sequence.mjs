@@ -25,6 +25,21 @@ function normalizeText(value) {
   return String(value || "").replace(/\s+/g, " ").trim();
 }
 
+async function clickCta(page, debugId, timeout = 10000) {
+  const locator = page.locator(`[data-cta-id="${debugId}"]`).first();
+  await locator.waitFor({ state: "visible", timeout });
+  await locator.click();
+}
+
+async function assertTextIncludes(findings, result, texts, context) {
+  const bodyText = normalizeText(result.bodyText);
+  for (const text of texts) {
+    if (!bodyText.includes(normalizeText(text))) {
+      findings.push(`Missing ${context} Billing text: ${text}`);
+    }
+  }
+}
+
 function json(data, status = 200) {
   return {
     status,
@@ -483,48 +498,50 @@ try {
     "Billing",
     "Code, account, proof.",
     "Billing jobs",
-    "Open one billing job",
+    "Current billing job: Code & proof",
+    "Change billing job",
     "Code & proof",
-    "Pay-in account",
-    "Steps",
-    "Readiness",
+    "Code & proof packets",
+    "Current packet: Code",
+    "Change code/proof packet",
+    "Code steps",
+    "Current step: Reference",
+    "Change Code step",
     "Latest payment code",
-    "Show credit link",
-    "Generate another code",
-    "Official GSN account for United Kingdom",
-    "Pilot UK Bank",
-    "GSN UK Pilot Account",
-    "Account number",
-    "Sort code",
     "Payment: Pending Authentication",
     "Proof: Not uploaded",
-    "Open proof upload",
   ];
 
-  for (const text of requiredDefaultText) {
-    if (!normalizeText(defaultResult.bodyText).includes(normalizeText(text))) {
-      findings.push(`Missing expected Billing text: ${text}`);
-    }
-  }
+  await assertTextIncludes(findings, defaultResult, requiredDefaultText, "default");
 
-  if (normalizeText(defaultResult.bodyText).includes("Review quote")) {
+  const defaultBody = normalizeText(defaultResult.bodyText);
+
+  if (defaultBody.includes("Review quote")) {
     findings.push("Billing steps are exposed before the user opens them.");
   }
 
-  if (normalizeText(defaultResult.bodyText).includes("Community pay-in account")) {
+  if (defaultBody.includes("Community pay-in account")) {
     findings.push("Pay-in account details are exposed before the user opens the account billing job.");
   }
 
-  if (normalizeText(defaultResult.bodyText).includes("Billing readiness details")) {
+  if (defaultBody.includes("Billing readiness details")) {
     findings.push("Billing readiness diagnostics are exposed before the user opens the readiness billing job.");
   }
 
-  if (normalizeText(defaultResult.bodyText).includes("Enter amount, area, and currency.")) {
+  if (defaultBody.includes("Enter amount, area, and currency.")) {
     findings.push("Payment-code form is exposed even though a latest code already exists.");
   }
 
-  if (normalizeText(defaultResult.bodyText).includes("GSN credit link")) {
+  if (defaultBody.includes("GSN credit link")) {
     findings.push("Credit-link details are exposed before the user opens them.");
+  }
+
+  if (defaultBody.includes("Official GSN account for United Kingdom")) {
+    findings.push("Official pay-account details are exposed before the user opens Settlement > Pay account.");
+  }
+
+  if (defaultBody.includes("Community Domain payment proof")) {
+    findings.push("Payment proof upload is exposed before the user opens the Proof packet.");
   }
 
   if (defaultResult.horizontalOverflow) {
@@ -550,7 +567,8 @@ try {
     );
   }
 
-  await page.locator('[data-cta-id="community-domain-dashboard.credit-link-toggle"]').first().click();
+  await clickCta(page, "community-domain-dashboard.billing-payment-group-toggle");
+  await clickCta(page, "community-domain-dashboard.billing-payment-group.settlement");
   await page.waitForTimeout(350);
 
   const detailResult = await pageAudit(page);
@@ -567,11 +585,7 @@ try {
     "official bank rail",
   ];
 
-  for (const text of requiredDetailText) {
-    if (!normalizeText(detailResult.bodyText).includes(normalizeText(text))) {
-      findings.push(`Missing expected Billing text: ${text}`);
-    }
-  }
+  await assertTextIncludes(findings, detailResult, requiredDetailText, "credit-link");
 
   for (const text of forbiddenText) {
     if (normalizeText(detailResult.bodyText).includes(normalizeText(text))) {
@@ -585,7 +599,29 @@ try {
     );
   }
 
-  await page.locator('[data-cta-id="community-domain-dashboard.payment-proof-toggle"]').first().click();
+  await clickCta(page, "community-domain-dashboard.billing-payment-step-toggle");
+  await clickCta(page, "community-domain-dashboard.billing-payment.pay_account");
+  await page.waitForTimeout(350);
+
+  const payAccountResult = await pageAudit(page);
+  const requiredPayAccountText = [
+    "Official GSN account for United Kingdom",
+    "Pilot UK Bank",
+    "GSN UK Pilot Account",
+    "Account number",
+    "Sort code",
+  ];
+
+  await assertTextIncludes(findings, payAccountResult, requiredPayAccountText, "official-account");
+
+  if (payAccountResult.horizontalOverflow) {
+    findings.push(
+      `Expanded official account horizontal overflow: scroll width ${payAccountResult.scrollW}px on ${payAccountResult.viewportW}px viewport`
+    );
+  }
+
+  await clickCta(page, "community-domain-dashboard.billing-payment-group-toggle");
+  await clickCta(page, "community-domain-dashboard.billing-payment-group.proof");
   await page.getByText("Community Domain payment proof", { exact: true }).waitFor({ timeout: 10000 });
   await page.waitForTimeout(350);
 
@@ -596,11 +632,7 @@ try {
     "Choose proof file",
   ];
 
-  for (const text of requiredProofText) {
-    if (!normalizeText(proofResult.bodyText).includes(normalizeText(text))) {
-      findings.push(`Missing expanded Billing text: ${text}`);
-    }
-  }
+  await assertTextIncludes(findings, proofResult, requiredProofText, "proof");
 
   if (proofResult.horizontalOverflow) {
     findings.push(
@@ -608,7 +640,8 @@ try {
     );
   }
 
-  await page.locator('[data-cta-id="community-domain-dashboard.billing-task.account"]').first().click();
+  await clickCta(page, "community-domain-dashboard.billing-task-toggle");
+  await clickCta(page, "community-domain-dashboard.billing-task.account");
   await page.getByText("Community pay-in account", { exact: true }).waitFor({ timeout: 10000 });
   await page.waitForTimeout(250);
 
@@ -617,15 +650,16 @@ try {
     "Community pay-in account",
     "Shown to payers. Locked for editing.",
     "Use this account with the generated code.",
+    "Current pay-in account packet: Summary",
+    "Change pay-in account packet",
     "Audit Society Bank",
     "Audit Community Pay-In",
-    "Edit account",
   ];
 
-  for (const text of requiredAccountText) {
-    if (!normalizeText(accountResult.bodyText).includes(normalizeText(text))) {
-      findings.push(`Missing account Billing text: ${text}`);
-    }
+  await assertTextIncludes(findings, accountResult, requiredAccountText, "account");
+
+  if (normalizeText(accountResult.bodyText).includes("Edit locked.")) {
+    findings.push("Pay-in account setup packet is exposed before the user opens it.");
   }
 
   if (normalizeText(accountResult.bodyText).includes("Latest payment code")) {
@@ -638,8 +672,8 @@ try {
     );
   }
 
-  await page.locator('[data-cta-id="community-domain-dashboard.billing-task.steps"]').first().click();
-  await page.locator('[data-cta-id="community-domain-dashboard.billing-sequence-toggle"]').first().click();
+  await clickCta(page, "community-domain-dashboard.billing-task-toggle");
+  await clickCta(page, "community-domain-dashboard.billing-task.steps");
   await page.waitForTimeout(350);
 
   const stepsResult = await pageAudit(page);
@@ -651,11 +685,7 @@ try {
     "Finance review",
   ];
 
-  for (const text of requiredStepsText) {
-    if (!normalizeText(stepsResult.bodyText).includes(normalizeText(text))) {
-      findings.push(`Missing steps Billing text: ${text}`);
-    }
-  }
+  await assertTextIncludes(findings, stepsResult, requiredStepsText, "steps");
 
   if (stepsResult.horizontalOverflow) {
     findings.push(
@@ -663,8 +693,8 @@ try {
     );
   }
 
-  await page.locator('[data-cta-id="community-domain-dashboard.billing-task.readiness"]').first().click();
-  await page.locator('[data-cta-id="community-domain-dashboard.billing-readiness-toggle"]').first().click();
+  await clickCta(page, "community-domain-dashboard.billing-task-toggle");
+  await clickCta(page, "community-domain-dashboard.billing-task.readiness");
   await page.getByText("Subscription lifecycle", { exact: true }).waitFor({ timeout: 10000 });
   await page.waitForTimeout(350);
 
@@ -676,11 +706,7 @@ try {
     "Pricing",
   ];
 
-  for (const text of requiredReadinessText) {
-    if (!normalizeText(readinessResult.bodyText).includes(normalizeText(text))) {
-      findings.push(`Missing readiness Billing text: ${text}`);
-    }
-  }
+  await assertTextIncludes(findings, readinessResult, requiredReadinessText, "readiness");
 
   if (normalizeText(readinessResult.bodyText).includes("Latest payment code")) {
     findings.push("Payment code details stayed visible after opening the readiness billing job.");
