@@ -4738,6 +4738,9 @@ export default function DashboardPage() {
   const demandRequesterTrust = safeStr(
     currentDemandItem?.requester_trust_band || ""
   );
+  const demandRequesterTrustPosture = demandRequesterTrust
+    ? getContextualEvidencePosture(null, demandRequesterTrust).shortLabel
+    : "";
   const demandPaymentMode = safeStr(currentDemandItem?.payment_mode || "");
   const demandArea = safeStr(currentDemandItem?.area || "");
   const demandGuideTitle = demandItems.length
@@ -10746,12 +10749,12 @@ export default function DashboardPage() {
                     },
                     {
                       icon: "trust" as const,
-                      label: "Trust reading",
-                      value: demandRequesterTrust
-                        ? safeStr(demandRequesterTrust).toLowerCase().startsWith("trust")
-                          ? demandRequesterTrust
-                          : `Trust ${demandRequesterTrust}`
-                        : "Not shown",
+                      label: "Trust posture",
+                      value:
+                        demandRequesterTrustPosture &&
+                        demandRequesterTrustPosture !== "Not shown"
+                          ? demandRequesterTrustPosture
+                          : "Not shown",
                     },
                     {
                       icon: "demand" as const,
