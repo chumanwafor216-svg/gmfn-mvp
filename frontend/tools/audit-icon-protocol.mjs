@@ -787,7 +787,7 @@ assertContains(
 
 assertContains(
   "frontend/src/pages/CCIReadingPage.tsx",
-  /cciIconBadge\("community", <>Class \{cci\.classText\}<\/>, true\)[\s\S]*?labelWithIcon\("community", "Reading"\)[\s\S]*?labelWithIcon\("evidence", "Open Trust Passport"\)/,
+  /cciIconBadge\("community", <>Posture \{cciPosture\.shortLabel\}<\/>, true\)[\s\S]*?cciIconBadge\("search", <>Evidence only<\/>\)[\s\S]*?labelWithIcon\("community", "Reading"\)[\s\S]*?labelWithIcon\("evidence", "Open Trust Passport"\)/,
   "CCI first viewport must use community/certificate icon meaning instead of finance-chart meaning."
 );
 

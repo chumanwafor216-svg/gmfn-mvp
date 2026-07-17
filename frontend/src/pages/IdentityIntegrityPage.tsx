@@ -41,6 +41,7 @@ import { buildTrustDocumentUseCaseItems } from "../lib/trustDocumentUseCases";
 import { buildIdentityIntegrityGuideItems } from "../lib/trustDocumentGuide";
 import { buildIdentityIntegritySnapshot } from "../lib/trustDocumentSnapshots";
 import {
+  getContextualEvidencePosture,
   getTrustBandLanguage,
   getTrustBandShortLabel,
   normalizeTrustBand,
@@ -1471,19 +1472,27 @@ export default function IdentityIntegrityPage() {
   );
   const cciBand = normalizeTrustBand(cci.classText);
   const cciBandLabel = cciBand
-    ? `${cciBand} - ${getTrustBandShortLabel(cciBand)}`
+    ? getTrustBandShortLabel(cciBand)
     : cci.classText;
   const cciBandMeaning = useMemo(
     () => getTrustBandLanguage(cci.classText),
     [cci.classText]
   );
+  const cciPosture = useMemo(
+    () => getContextualEvidencePosture(cci.scoreText, cci.classText),
+    [cci.classText, cci.scoreText]
+  );
   const openTrustBand = normalizeTrustBand(openTrust.classText);
   const openTrustBandLabel = openTrustBand
-    ? `${openTrustBand} - ${getTrustBandShortLabel(openTrustBand)}`
+    ? getTrustBandShortLabel(openTrustBand)
     : openTrust.classText;
   const openTrustBandMeaning = useMemo(
     () => getTrustBandLanguage(openTrust.classText),
     [openTrust.classText]
+  );
+  const openTrustPosture = useMemo(
+    () => getContextualEvidencePosture(openTrust.scoreText, openTrust.classText),
+    [openTrust.classText, openTrust.scoreText]
   );
 
   const cciTone = useMemo(() => {
@@ -2027,9 +2036,9 @@ export default function IdentityIntegrityPage() {
       communityLabel,
       trustSlipCode,
       openTrustClass: openTrust.classText,
-      openTrustScore: openTrust.scoreText,
+      openTrustScore: openTrustPosture.label,
       cciClass: cci.classText,
-      cciScore: cci.scoreText,
+      cciScore: cciPosture.label,
       continuityLabel: continuity.label,
       nextMoveLabel,
     });
@@ -3154,7 +3163,7 @@ export default function IdentityIntegrityPage() {
                   {openTrustBandLabel}
                 </div>
                 <div style={{ marginTop: 8, color: "#64748B", fontSize: 13 }}>
-                  Current score: {openTrust.scoreText}
+                  Evidence posture: {openTrustPosture.label}
                 </div>
                 <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                   {openTrust.statusText}
@@ -3177,7 +3186,7 @@ export default function IdentityIntegrityPage() {
                   {cciBandLabel}
                 </div>
                 <div style={{ marginTop: 8, color: "#64748B", fontSize: 13 }}>
-                  Current score: {cci.scoreText}
+                  Evidence posture: {cciPosture.label}
                 </div>
                 <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                   {cci.statusText}
@@ -3270,7 +3279,7 @@ export default function IdentityIntegrityPage() {
               }}
             >
               <div style={statTile(continuity.tone.bg, continuity.tone.border)}>
-                <div style={sectionLabel()}>Continuity score</div>
+                <div style={sectionLabel()}>Continuity posture</div>
                 <div
                   style={{
                     marginTop: 8,
@@ -3279,7 +3288,7 @@ export default function IdentityIntegrityPage() {
                     fontSize: 26,
                   }}
                 >
-                  {continuity.scoreText}
+                  {continuity.label}
                 </div>
               </div>
 

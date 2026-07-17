@@ -1,3 +1,5 @@
+import { getContextualEvidencePosture } from "../lib/trustBandLanguage";
+
 export default function TrustBadge({
   score,
   band,
@@ -6,6 +8,7 @@ export default function TrustBadge({
   band?: string | null;
 }) {
   const b = band ?? "-";
+  const posture = getContextualEvidencePosture(score, b);
 
   const bg =
     b === "A"
@@ -19,12 +22,11 @@ export default function TrustBadge({
       : "#f3f4f6";
 
   const tooltip =
-    `Trust band + score (explainable)\n` +
-    `Band: ${b}\n` +
-    `Score: ${score}/100\n\n` +
-    `Bands: A=80-100, B=60-79, C=30-59, D=0-29\n` +
+    `Trust evidence posture\n` +
+    `Posture: ${posture.label}\n\n` +
+    `${posture.boundary}\n` +
     `Computed from logged actions (TrustEvents): invites, support actions, repayments, participation.\n` +
-    `Not a black box; see breakdown on the Trust page.`;
+    `See the Trust page for the evidence behind this reading.`;
 
   return (
     <span
@@ -42,7 +44,7 @@ export default function TrustBadge({
         userSelect: "none",
       }}
     >
-      {b} ({score})
+      {posture.shortLabel}
       <span style={{ fontSize: 12, opacity: 0.7 }}>i</span>
     </span>
   );

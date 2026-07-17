@@ -4,10 +4,18 @@ import { useEffect, useState } from "react";
 import { getAccessToken } from "../lib/api";
 
 import { getGuarantorLeaderboard } from "../lib/leaderboard";
+import { getContextualEvidencePosture } from "../lib/trustBandLanguage";
 
 // If your leaderboard types are exported, keep this.
 // If you get a type error, we can inline the type later.
 import type { GuarantorLeaderboardRow } from "../lib/leaderboard.ts";
+
+function evidencePosture(value: unknown): string {
+  const raw = Number(value);
+  if (!Number.isFinite(raw)) return "Not shown";
+  const normalized = raw <= 1 ? raw * 100 : raw <= 10 ? raw * 10 : raw;
+  return getContextualEvidencePosture(normalized).shortLabel;
+}
 
 export function GuarantorLeaderboard(props: { clanId: number }) {
   const { clanId } = props;
@@ -46,7 +54,7 @@ export function GuarantorLeaderboard(props: { clanId: number }) {
                 User
               </th>
               <th style={{ textAlign: "left", borderBottom: "1px solid #ddd", padding: 8 }}>
-                Score
+                Evidence
               </th>
               <th style={{ textAlign: "left", borderBottom: "1px solid #ddd", padding: 8 }}>
                 Notes
@@ -61,7 +69,7 @@ export function GuarantorLeaderboard(props: { clanId: number }) {
                   {(row as any).name ?? (row as any).email ?? (row as any).user_id ?? "-"}
                 </td>
                 <td style={{ borderBottom: "1px solid #eee", padding: 8 }}>
-                  {(row as any).score ?? (row as any).trust_score ?? "-"}
+                  {evidencePosture((row as any).score ?? (row as any).trust_score)}
                 </td>
                 <td style={{ borderBottom: "1px solid #eee", padding: 8 }}>
                   {(row as any).notes ?? (row as any).reason ?? ""}

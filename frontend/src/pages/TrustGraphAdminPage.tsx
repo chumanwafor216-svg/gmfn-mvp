@@ -10,6 +10,7 @@ import TrustGraphSummaryCard from "../components/TrustGraphSummaryCard";
 import TrustGraphEdgeList from "../components/TrustGraphEdgeList";
 import { StableDisclosureSummary } from "../components/StableButton";
 import { Alert, Button, Card, PageHeader, Pill } from "../components/uiKit";
+import { getContextualEvidencePosture } from "../lib/trustBandLanguage";
 
 function safeStr(x: any): string {
   return (x ?? "").toString();
@@ -278,9 +279,9 @@ export default function TrustGraphAdminPage() {
                     background: "#fff",
                   }}
                 >
-                  <div style={{ fontSize: 11, color: "#64748b", fontWeight: 900 }}>Trust score</div>
+                  <div style={{ fontSize: 11, color: "#64748b", fontWeight: 900 }}>Trust posture</div>
                   <div style={{ marginTop: 6, fontSize: 22, fontWeight: 1000 }}>
-                    {safeStr(graph.trust_score ?? "-")}
+                    {getContextualEvidencePosture(graph.trust_score, graph.trust_band).label}
                   </div>
                 </div>
 

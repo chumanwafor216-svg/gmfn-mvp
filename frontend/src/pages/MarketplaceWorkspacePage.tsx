@@ -41,6 +41,7 @@ import {
   scrollElementToMarketplaceLanding,
   traceMarketplaceLanding,
 } from "../lib/marketplaceActionStability";
+import { getContextualEvidencePosture } from "../lib/trustBandLanguage";
 
 function safeStr(x: any): string {
   return String(x ?? "").trim();
@@ -722,6 +723,10 @@ export default function MarketplaceWorkspacePage() {
     () => communityToneStyles(communityTrust.tone),
     [communityTrust.tone]
   );
+  const communityTrustPosture = useMemo(
+    () => getContextualEvidencePosture(communityTrust.scoreText, communityTrust.classText),
+    [communityTrust.classText, communityTrust.scoreText]
+  );
 
   const communityHomeCta = useMemo(
     () =>
@@ -1330,7 +1335,7 @@ export default function MarketplaceWorkspacePage() {
                 color: trustTone.text,
               }}
             >
-              {communityTrust.classText}
+              {communityTrustPosture.shortLabel}
             </div>
 
             <div
@@ -1346,7 +1351,7 @@ export default function MarketplaceWorkspacePage() {
                 fontWeight: 900,
               }}
             >
-              Score: {communityTrust.scoreText}
+              Evidence posture
             </div>
 
             <div

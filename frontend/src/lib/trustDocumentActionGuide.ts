@@ -60,7 +60,7 @@ export function buildTrustPassportActionGuide(): TrustDocumentActionGuideContent
         id: "snapshot",
         title: "Copy the trust snapshot for the fuller explanation",
         detail:
-          "Use the trust snapshot when someone needs the short trust story with band, score, local trust, wider consistency, TrustSlip code, and the next clean step.",
+          "Use the trust snapshot when someone needs the short trust story with evidence posture, local trust, wider consistency, TrustSlip code, and the next clean step.",
       },
       {
         id: "verify",
@@ -122,7 +122,7 @@ export function buildTrustSlipVerifyActionGuide(): TrustDocumentActionGuideConte
         id: "snapshot",
         title: "Use the verification snapshot for a quick checked summary",
         detail:
-          "Copy the verification snapshot when you need a short record of visible band, visible score, validity, dates, and the current verification link.",
+          "Copy the verification snapshot when you need a short record of visible evidence posture, validity, dates, and the current verification link.",
       },
       {
         id: "passport",

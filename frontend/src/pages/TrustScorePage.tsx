@@ -2239,14 +2239,6 @@ export default function TrustScorePage() {
       safeStr(recompute?.breakdown?.computed_band || recompute?.band || "-"),
     ],
     [
-      "Computed score",
-      safeStr(recompute?.breakdown?.computed_score || recompute?.score || "-"),
-    ],
-    [
-      "Computed score int",
-      safeStr(recompute?.breakdown?.computed_score_int ?? "-"),
-    ],
-    [
       "Last event used",
       safeStr(
         recompute?.breakdown?.last_event_id_used ??
@@ -2705,7 +2697,7 @@ export default function TrustScorePage() {
     "Signed-in member view of current visible Trust Passport fields",
     "GSN ID and community context when recorded",
     "Phone, bank, ID, and community evidence status as recorded or verified",
-    "Current trust band, score, and evidence depth from available records",
+    "Current trust band, evidence posture, and evidence depth from available records",
     "TrustSlip status and verification path when available",
   ];
   const trustPassportDoesNotConfirmList = [
@@ -4302,7 +4294,7 @@ export default function TrustScorePage() {
                   What not to do
                 </div>
                 <p style={{ ...helperText(), margin: "8px 0 0" }}>
-                  Do not guess the repair path from the score alone. Open the
+                  Do not guess the repair path from one reading alone. Open the
                   next action only after reading the pressure notes below.
                 </p>
               </div>

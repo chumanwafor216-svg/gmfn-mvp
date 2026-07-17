@@ -2525,7 +2525,7 @@ export default function TrustSlipPage() {
       title: "What decision can this TrustSlip evidence support?",
       answer: hasBlockingTrustSlipState
         ? "Not from this TrustSlip alone. Ask for a fresh TrustSlip or the fuller Trust Passport before any risky decision."
-        : `The visible reading is ${merchantBand} (${merchantBandLabel}), with TrustSlip limit signal ${merchantTrustLimit} ${merchantCurrency} and cross-community evidence posture ${cciPosture.label}. This supports a careful decision; it is not an automatic approval.`,
+        : `The visible reading is ${merchantBandLabel}, with TrustSlip limit signal ${merchantTrustLimit} ${merchantCurrency} and cross-community evidence posture ${cciPosture.label}. This supports a careful decision; it is not an automatic approval.`,
     },
     {
       title: "Do they follow through?",
@@ -2562,7 +2562,7 @@ export default function TrustSlipPage() {
       label: "Trust decision",
       value: hasBlockingTrustSlipState
         ? "Do not rely yet. Ask for a refreshed TrustSlip before support, goods, money, work, or referral."
-        : `Use carefully. Reading ${merchantBand} (${merchantBandLabel}); trust-limit signal ${merchantTrustLimit} ${merchantCurrency}; cross-community evidence posture ${cciPosture.label}.`,
+        : `Use carefully. Reading ${merchantBandLabel}; trust-limit signal ${merchantTrustLimit} ${merchantCurrency}; cross-community evidence posture ${cciPosture.label}.`,
     },
     {
       label: "Follow-through",
@@ -4558,7 +4558,7 @@ export default function TrustSlipPage() {
                   {cciPosture.label}
                 </div>
                 <div style={{ marginTop: 6, ...helperText(), fontSize: 12.5, lineHeight: 1.45 }}>
-                  Band: {cciBand}. Internal index is available only in detailed review where authorised.
+                  Detailed band and index are available only in authorised review.
                 </div>
                 <div style={{ marginTop: 6, ...helperText(), fontSize: 12.5, lineHeight: 1.45 }}>
                   {cciPosture.boundary}
@@ -5182,7 +5182,7 @@ export default function TrustSlipPage() {
 
               <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
                 <div style={helperText()}>
-                  Graph score: {safeStr(summary?.graph_score || "Not stated")}
+                  Graph posture: {getContextualEvidencePosture(summary?.graph_score).shortLabel}
                 </div>
                 <div style={helperText()}>
                   Active community count: {countOrNotProvided(summary?.active_clan_count)}
@@ -5242,7 +5242,7 @@ export default function TrustSlipPage() {
                   Readiness: {safeStr(readinessContext?.recommendation || "Not stated")}
                 </div>
                 <div style={helperText()}>
-                  Readiness score: {safeStr(readinessContext?.readiness_score ?? "Not stated")}
+                  Readiness posture: {getContextualEvidencePosture(readinessContext?.readiness_score).shortLabel}
                 </div>
                 <div style={helperText()}>
                   Risk flags: {riskSignalText}

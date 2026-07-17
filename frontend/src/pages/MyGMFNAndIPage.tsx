@@ -589,7 +589,7 @@ const CAPABILITY_MAP_DETAILS: Record<number, CapabilityMapDetail> = {
     decision: "GSN surfaces weak evidence, missing renewal, inactive records, and boundary notes before people act.",
     tools: "Trust Reading -> TrustSlip Verify -> Community Member Verify -> Trust Passport boundary notes.",
     where: "Trust -> TrustSlip; Marketplace -> Members & Trade; Community -> Verify Member.",
-    evidence: "Visible score, grade, caution notes, missing evidence signals, and verification limits.",
+    evidence: "Visible posture, caution notes, missing evidence signals, and verification limits.",
     summary: "Moves caution to the front of the decision without pretending GSN can guarantee future behaviour.",
   },
   5: {
@@ -609,7 +609,7 @@ const CAPABILITY_MAP_DETAILS: Record<number, CapabilityMapDetail> = {
     decision: "GSN lets recorded reputation support reach while still showing the limits of the evidence.",
     tools: "Reputation signals -> Trust Reading -> Spotlight ranking -> Marketplace visibility.",
     where: "Dashboard -> Market Wisdom; Marketplace -> Public Shops; Trust -> Trust Passport.",
-    evidence: "Trust score band, activity trail, shop status, community context, and current public record.",
+    evidence: "Trust posture, activity trail, shop status, community context, and current public record.",
     summary: "Lets stronger recorded evidence influence visibility without confusing reach with certainty.",
   },
   7: {

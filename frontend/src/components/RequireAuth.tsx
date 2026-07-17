@@ -640,7 +640,8 @@ export default function RequireAuth({ children, requireRole }: Props) {
               Requested page: <b>{location.pathname}</b>
             </div>
             <div style={{ marginTop: 6 }}>
-              Continuity score: <b>{continuityBlock.score}</b>
+              Continuity posture:{" "}
+              <b>{isProtectedLock ? "Protected lock" : "Reverification required"}</b>
             </div>
             <div style={{ marginTop: 6 }}>{continuityBlock.reason}</div>
             <div style={{ marginTop: 6 }}>{continuityBlock.action}</div>

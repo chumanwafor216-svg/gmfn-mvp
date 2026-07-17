@@ -35,8 +35,8 @@ function assertNotContains(pattern, message) {
 }
 
 assertContains(
-  /function marketplaceTrustLabel[\s\S]*?return band \|\| score \|\| "No trust value yet";/,
-  "Marketplace trust fallback must be truthful when no local trust value is available."
+  /function marketplaceTrustLabel[\s\S]*?getContextualEvidencePosture\(score, band\)\.shortLabel[\s\S]*?return "No trust value yet";/,
+  "Marketplace trust fallback must show descriptive posture language and stay truthful when no local trust value is available."
 );
 
 assertContains(
@@ -45,8 +45,13 @@ assertContains(
 );
 
 assertContains(
-  /function marketplaceCciLabel\([\s\S]*?const cciValue = firstTruthy\([\s\S]*?me\?\.cci_score[\s\S]*?trustSlip\?\.cci_score[\s\S]*?trust\?\.cci_score[\s\S]*?\(row as any\)\?\.cci_score[\s\S]*?\);[\s\S]*?const cciBand = firstTruthy\([\s\S]*?me\?\.cci_class[\s\S]*?trustSlip\?\.cci_class[\s\S]*?trust\?\.cci_band[\s\S]*?\(row as any\)\?\.cci_band[\s\S]*?if \(cciBand && cciValue\) return `\$\{cciBand\} \/ \$\{cciValue\}`;[\s\S]*?return cciBand \|\| cciValue \|\| "Not shown yet";/,
-  "Marketplace CCI stat must read member, TrustSlip, trust, and community fields before falling back to honest not-shown-yet language."
+  /function marketplaceCciLabel\([\s\S]*?const cciValue = firstTruthy\([\s\S]*?me\?\.cci_score[\s\S]*?trustSlip\?\.cci_score[\s\S]*?trust\?\.cci_score[\s\S]*?\(row as any\)\?\.cci_score[\s\S]*?\);[\s\S]*?const cciBand = firstTruthy\([\s\S]*?me\?\.cci_class[\s\S]*?trustSlip\?\.cci_class[\s\S]*?trust\?\.cci_band[\s\S]*?\(row as any\)\?\.cci_band[\s\S]*?getContextualEvidencePosture\(cciValue, cciBand\)\.shortLabel[\s\S]*?return "Not shown yet";/,
+  "Marketplace CCI stat must read member, TrustSlip, trust, and community fields but display descriptive posture instead of numeric scoring."
+);
+
+assertNotContains(
+  /return `\$\{band\} \/ \$\{score\}`|return `\$\{cciBand\} \/ \$\{cciValue\}`/g,
+  "Marketplace trust and CCI stats must not expose raw numeric trust or CCI readings."
 );
 
 assertNotContains(

@@ -1,4 +1,5 @@
 import React from "react";
+import { getContextualEvidencePosture } from "../lib/trustBandLanguage";
 
 type Suggestion = {
   user_id: number;
@@ -114,12 +115,12 @@ export default function LoanSuggestionsPanel({
           <thead>
             <tr className="border-b text-slate-500">
               <th className="px-3 py-2">Candidate</th>
-              <th className="px-3 py-2">Band</th>
-              <th className="px-3 py-2">CCI</th>
-              <th className="px-3 py-2">Reliability</th>
+              <th className="px-3 py-2">Consistency</th>
+              <th className="px-3 py-2">CCI posture</th>
+              <th className="px-3 py-2">Evidence</th>
               <th className="px-3 py-2">Capacity</th>
               <th className="px-3 py-2">Support</th>
-              <th className="px-3 py-2">Suitability</th>
+              <th className="px-3 py-2">Fit</th>
               <th className="px-3 py-2">Risk</th>
             </tr>
           </thead>
@@ -142,14 +143,20 @@ export default function LoanSuggestionsPanel({
                 </td>
                 <td className="px-3 py-2">
                   <span className={`rounded-full px-2 py-1 text-xs font-medium ${bandPillClass(s.cci_band)}`}>
-                    {s.cci_band}
+                    {getContextualEvidencePosture(s.cci_score, s.cci_band).shortLabel}
                   </span>
                 </td>
-                <td className="px-3 py-2">{s.cci_score}</td>
-                <td className="px-3 py-2">{s.trust_graph_reliability}</td>
+                <td className="px-3 py-2">
+                  {getContextualEvidencePosture(s.cci_score, s.cci_band).label}
+                </td>
+                <td className="px-3 py-2">
+                  {getContextualEvidencePosture(s.trust_graph_reliability).shortLabel}
+                </td>
                 <td className="px-3 py-2">{s.available_guarantee_capacity}</td>
                 <td className="px-3 py-2 font-semibold">{s.suggested_pledge}</td>
-                <td className="px-3 py-2">{s.suitability_score}</td>
+                <td className="px-3 py-2">
+                  {getContextualEvidencePosture(s.suitability_score).shortLabel}
+                </td>
                 <td className="px-3 py-2">
                   <span className={`rounded-full px-2 py-1 text-xs font-medium ${riskPillClass(s.risk_level)}`}>
                     {s.risk_level}

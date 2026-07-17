@@ -239,8 +239,13 @@ assertContains(
 );
 
 assertContains(
-  /function cciDisplayText\(cci: ReadingState\)[\s\S]*?return `\$\{classText\} \/ \$\{scoreText\}`[\s\S]*?return scoreText/,
-  "Dashboard CCI display must write the real numeric reading when one exists."
+  /function cciDisplayText\(cci: ReadingState\)[\s\S]*?getContextualEvidencePosture\(scoreText, classText\)\.shortLabel[\s\S]*?return readableTrustStatus\(classText\)/,
+  "Dashboard CCI display must use descriptive evidence posture language instead of numeric human scoring."
+);
+
+assertNotContains(
+  /return `\$\{classText\} \/ \$\{scoreText\}`|return scoreText;/g,
+  "Dashboard CCI display must not expose raw numeric CCI readings."
 );
 
 assertNotContains(

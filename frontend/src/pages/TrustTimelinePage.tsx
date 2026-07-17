@@ -19,6 +19,7 @@ import {
 } from "../components/TrustDocumentLanguage";
 import { getSelectedClanId, safeCopy as copyWithFallback } from "../lib/api";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
+import { getContextualEvidencePosture } from "../lib/trustBandLanguage";
 
 type TimelineItem = {
   event_type: string;
@@ -84,6 +85,13 @@ function supportDisplayText(value: unknown, fallback = "-"): string {
     .replace(/guarantors/g, "supporters")
     .replace(/Guarantor/g, "Supporter")
     .replace(/guarantor/g, "supporter");
+}
+
+function trustTimelinePosture(value: unknown): string {
+  const raw = Number(value);
+  if (!Number.isFinite(raw)) return "Evidence not shown";
+  const normalized = raw <= 1 ? raw * 100 : raw <= 10 ? raw * 10 : raw;
+  return getContextualEvidencePosture(normalized).label;
 }
 
 async function parseError(res: Response): Promise<string> {
@@ -652,14 +660,14 @@ export default function TrustTimelinePage() {
               flexWrap: "wrap",
             }}
           >
-            <div style={sectionLabel()}>{sectionHeading("shield", "Trust Reading")}</div>
+            <div style={sectionLabel()}>{sectionHeading("shield", "Evidence Posture")}</div>
             <div style={{ fontSize: 12, ...helperText() }}>
               {totals.total} events - {totals.pos} positive - {totals.neg} negative
             </div>
           </div>
 
           <div style={{ fontSize: 46, fontWeight: 900, marginTop: 6 }}>
-            {scoreExplained?.score ?? "-"}
+            {trustTimelinePosture(scoreExplained?.score)}
           </div>
 
           <div

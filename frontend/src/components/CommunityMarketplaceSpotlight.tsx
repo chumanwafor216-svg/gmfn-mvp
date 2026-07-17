@@ -17,6 +17,7 @@ import {
   SPOTLIGHT_PILOT_ROTATION_MS,
 } from "../lib/spotlightPilot";
 import { publicShopPath, publicShopSharePath } from "../lib/publicLinks";
+import { getContextualEvidencePosture } from "../lib/trustBandLanguage";
 
 type MarketplaceFeedItem = {
   id?: number;
@@ -397,6 +398,11 @@ export default function CommunityMarketplaceSpotlight() {
           communityId: sourceClanId || selectedClanId,
           debugId: "community-marketplace-spotlight.broadcast-marketplace",
         });
+    const trustPostureLine = activeItem.feed?.trust_band
+      ? getContextualEvidencePosture(null, activeItem.feed.trust_band).shortLabel
+      : activeItem.feed?.trust_score
+        ? getContextualEvidencePosture(activeItem.feed.trust_score).shortLabel
+        : "Public visibility";
 
     return {
       kind: "broadcast" as const,
@@ -413,7 +419,7 @@ export default function CommunityMarketplaceSpotlight() {
         `Community: ${activeItem.feed?.source_clan_name || "Current community"}`,
         `Category: ${categoryLine}`,
         `Availability: ${availabilityLine}`,
-        `Trust: ${activeItem.feed?.trust_band || "Public visibility"}`,
+        `Evidence: ${trustPostureLine}`,
         `Posted: ${formatWhen(activeItem.feed?.created_at)}`,
       ],
       primaryLabel: gmfnId ? "Open seller shop" : "Open Marketplace",

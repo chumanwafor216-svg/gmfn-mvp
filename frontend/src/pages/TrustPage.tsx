@@ -13,6 +13,7 @@ import {
   safeCopy,
 } from "../lib/api";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
+import { getContextualEvidencePosture } from "../lib/trustBandLanguage";
 
 type Me = {
   id: number;
@@ -432,6 +433,7 @@ export default function TrustPage() {
   const scoreValue =
     (score?.trust_score ?? score?.score ?? "") !== "" ? String(score?.trust_score ?? score?.score) : "-";
   const band = score?.trust_band ?? score?.band ?? (score?.breakdown?.trust_band ?? null);
+  const trustPosture = getContextualEvidencePosture(scoreValue, band);
   const starterSummary =
     score?.starter_evidence_summary ??
     score?.breakdown?.starter_evidence_summary ??
@@ -477,7 +479,7 @@ export default function TrustPage() {
   const trustExplanation = supportDisplayText(
     score?.explanation ??
     score?.breakdown?.explanation ??
-    "The score is explainable. Verified onboarding evidence can establish a starter base before later transactions deepen or weaken it."
+    "The trust reading is explainable. Verified onboarding evidence can establish a starter base before later transactions deepen or weaken the visible posture."
   );
 
   return (
@@ -485,7 +487,7 @@ export default function TrustPage() {
       <PageTopNav
         sectionLabel="Trust Passport"
         title="Trust"
-        subtitle="Read the live trust score, starter trust base, reasoning, and record trail together."
+        subtitle="Read the live trust posture, starter evidence, reasoning, and record trail together."
         homeTo={routes.dashboard}
         homeLabel="Dashboard"
         backTo={routes.community}
@@ -531,9 +533,9 @@ export default function TrustPage() {
                 maxWidth: 760,
               }}
             >
-              This page keeps the trust score, the reason behind the score, and
-              the event trail in one place so people do not mistake one number
-              for the full trust story.
+              This page keeps the trust posture, the reason behind the reading,
+              and the event trail in one place so people do not mistake any one
+              signal for the full trust story.
             </div>
           </div>
         </div>
@@ -562,9 +564,9 @@ export default function TrustPage() {
       <div style={{ marginTop: 16 }}>
         <ExplainToggle
           label="What this screen does"
-          what="Trust shows your current trust score, trust band, supporting explanation, and the event trail behind it."
+          what="Trust shows your current trust posture, trust band, supporting explanation, and the event trail behind it."
           why="It helps you understand why your current trust position looks the way it does before you share it, challenge it, or rely on it."
-          next="Refresh when you need the latest reading, then review the score, explanation, and event history together instead of treating the score as a standalone number."
+          next="Refresh when you need the latest reading, then review the posture, explanation, and event history together instead of treating any signal as a standalone judgement."
           tone="light"
         />
       </div>
@@ -593,9 +595,12 @@ export default function TrustPage() {
       <div style={pageCard()}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
             <div>
-              <div style={sectionLabel()}>{trustIconLabel("shield", "Trust score", 22)}</div>
+              <div style={sectionLabel()}>{trustIconLabel("shield", "Trust reading", 22)}</div>
               <div style={{ marginTop: 6, fontSize: 22, fontWeight: 800 }}>
-                {scoreValue} {band ? <span style={{ ...pill("blue") }}>{String(band)}</span> : null}
+                {trustPosture.label}
+              </div>
+              <div style={{ marginTop: 6, ...helperText(), fontSize: 13 }}>
+                No public human score is shown here.
               </div>
             </div>
 

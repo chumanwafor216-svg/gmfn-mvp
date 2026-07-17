@@ -2104,11 +2104,24 @@ def create_entry(payload: CreateEntryIn, db: Session = Depends(get_db)):
         evidence_bits.append("matched region signals")
 
     evidence_text = ", ".join(evidence_bits) if evidence_bits else "starter identity evidence"
-    score_text = _clean_text(
-        trust_out.get("standing_score")
-        or trust_out.get("score")
-        or trust_out.get("trust_score")
-        or "0.00"
+    trust_band_text = _clean_text(
+        trust_out.get("trust_band")
+        or trust_out.get("band")
+        or trust_out.get("standing_band")
+        or ""
+    )
+    trust_band_label = {
+        "A": "strong evidence",
+        "B": "established evidence",
+        "C": "developing evidence",
+        "D": "emerging evidence",
+        "E": "insufficient confirmed evidence",
+        "F": "insufficient confirmed evidence",
+    }.get(trust_band_text[:1].upper(), trust_band_text)
+    trust_reading_text = (
+        f"Current trust reading: {trust_band_label}."
+        if trust_band_label
+        else "Your trust reading now has an evidence base."
     )
 
     create_notification(
@@ -2118,7 +2131,7 @@ def create_entry(payload: CreateEntryIn, db: Session = Depends(get_db)):
         title="Starter trust has been established",
         message=(
             f"Your current starter trust reflects your {evidence_text}. "
-            f"Current trust score: {score_text}. Open Trust or CCI to see why this score was given and what can strengthen it next."
+            f"{trust_reading_text} Open Trust or CCI to see the evidence and what can strengthen it next."
         ),
         action_url="/app/trust",
         action_label="Review Trust",

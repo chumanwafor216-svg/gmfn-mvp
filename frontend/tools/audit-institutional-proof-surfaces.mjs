@@ -1048,8 +1048,8 @@ assertNotContains(
 );
 assertContains(
   "trustSnapshots",
-  /function friendlyTrustBand[\s\S]*?Early, limited record[\s\S]*?use caution; ask for current evidence[\s\S]*?function friendlyScore[\s\S]*?signal only; not a character label/,
-  "Trust document snapshots must explain trust bands in concise humane growth language instead of sending bare A/B/C/D/E codes."
+  /function friendlyTrustBand[\s\S]*?Early, limited record[\s\S]*?use caution; ask for current evidence[\s\S]*?function friendlyScore[\s\S]*?No public human score is shown/,
+  "Trust document snapshots must explain trust bands in concise humane growth language and suppress public numeric human scores."
 );
 assertContains(
   "trustSnapshots",

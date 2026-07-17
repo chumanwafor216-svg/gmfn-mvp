@@ -70,7 +70,7 @@ assertOrderedSnippets(
     "First thing to check",
     "passportVm.reasons.createsPressure[0]",
     "What not to do",
-    "Do not guess the repair path from the score alone",
+    "Do not guess the repair path from one reading alone",
   ],
   "Repair lane must explain the pressure signal and warn against blind repair before the next-step action."
 );

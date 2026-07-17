@@ -1,5 +1,8 @@
 import { buildGsnSnapshotPaper } from "./gsnSnapshotPaper";
-import { normalizeTrustBand } from "./trustBandLanguage";
+import {
+  getContextualEvidencePosture,
+  normalizeTrustBand,
+} from "./trustBandLanguage";
 
 type IdentityIntegritySnapshotParams = {
   displayName: string;
@@ -116,16 +119,17 @@ function friendlyTrustBand(raw: string): string {
     F: "ask for stronger evidence first.",
   };
 
-  return `${languageByBand[band]} (${band}) - ${guidanceByBand[band]}`;
+  return `${languageByBand[band]} - ${guidanceByBand[band]}`;
 }
 
-function friendlyScore(raw: string): string {
+function friendlyScore(raw: string, band?: string): string {
   const text = String(raw || "").trim();
   if (!text || text === "-") {
     return "Not enough visible activity yet.";
   }
 
-  return `${text} - signal only; not a character label.`;
+  const posture = getContextualEvidencePosture(text, band);
+  return `${posture.label}. No public human score is shown.`;
 }
 
 function friendlyConsistency(raw: string): string {
@@ -158,11 +162,11 @@ export function buildIdentityIntegritySnapshot(
     bodyLines: [
       cleanLine(
         "Local community reading",
-        `${friendlyTrustBand(params.openTrustClass)} Score note: ${friendlyScore(params.openTrustScore)}`
+        `${friendlyTrustBand(params.openTrustClass)} Evidence posture: ${friendlyScore(params.openTrustScore, params.openTrustClass)}`
       ),
       cleanLine(
         "Cross-community reading",
-        `${friendlyConsistency(params.cciClass)} Score note: ${friendlyScore(params.cciScore)}`
+        `${friendlyConsistency(params.cciClass)} Evidence posture: ${friendlyScore(params.cciScore, params.cciClass)}`
       ),
       cleanLine("Continuity", params.continuityLabel),
       cleanLine("Next clean step", params.nextMoveLabel),
@@ -182,7 +186,7 @@ export function buildCciSnapshot(params: CciSnapshotParams) {
     context: [
       { label: "Member", value: params.memberLabel },
       { label: "Consistency reading", value: friendlyConsistency(params.classText) },
-      { label: "Score note", value: friendlyScore(params.scoreText) },
+      { label: "Evidence posture", value: friendlyScore(params.scoreText, params.classText) },
     ],
     bodyLines: [
       cleanLine("Reading", params.statusText),
@@ -281,7 +285,7 @@ export function buildTrustSlipVerifySnapshot(
         ? cleanLine("Witness route", params.witnessEvidence)
         : "",
       cleanLine("Visible trust reading", friendlyTrustBand(params.visibleBand)),
-      cleanLine("Score note", friendlyScore(params.visibleScore)),
+      cleanLine("Evidence posture", friendlyScore(params.visibleScore, params.visibleBand)),
       cleanLine("Verification", params.verificationStatus),
       cleanLine("Issued", params.issuedAt),
       cleanLine("Expires", params.expiresAt),
@@ -337,7 +341,7 @@ export function buildTrustPassportSnapshot(
         ? cleanLine("Known here as", `${params.holderRole} inside ${params.communityName}`)
         : "",
       cleanLine("Main reading", friendlyTrustBand(params.currentBand)),
-      cleanLine("Score", friendlyScore(params.currentScore)),
+      cleanLine("Evidence posture", friendlyScore(params.currentScore, params.currentBand)),
       cleanLine("Community reading", friendlyTrustBand(params.openTrustClass)),
       cleanLine("Wider-network reading", friendlyConsistency(params.cciClass)),
       cleanLine("Community activity", params.communityActivitySummary || "Not shown"),

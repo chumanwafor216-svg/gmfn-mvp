@@ -9,16 +9,31 @@ import {
   type GuarantorLeaderboardRow,
 } from "../lib/leaderboard";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
+import { getContextualEvidencePosture } from "../lib/trustBandLanguage";
 
 function safeText(value: unknown, fallback = "-"): string {
   const text = String(value ?? "").trim();
   return text || fallback;
 }
 
-function pct(value: unknown): string {
+function normalizeRatioOrScore(value: unknown): number | null {
   const n = Number(value);
-  if (!Number.isFinite(n)) return "0%";
-  return `${Math.round(n * 100)}%`;
+  if (!Number.isFinite(n)) return null;
+  return n <= 1 ? n * 100 : n;
+}
+
+function evidencePosture(value: unknown): string {
+  const normalized = normalizeRatioOrScore(value);
+  return getContextualEvidencePosture(normalized).shortLabel;
+}
+
+function outcomePattern(value: unknown): string {
+  const normalized = normalizeRatioOrScore(value);
+  if (normalized === null) return "Not shown";
+  if (normalized >= 80) return "Mostly approved";
+  if (normalized >= 50) return "Mixed approvals";
+  if (normalized > 0) return "Limited approvals";
+  return "No approvals yet";
 }
 
 function pageShell(): React.CSSProperties {
@@ -362,7 +377,7 @@ export default function GuarantorLeaderboardPage() {
           ["document", "Requests", String(summary.totalRequests)],
           ["check", "Approved", String(summary.approved)],
           ["alert", "Declined", String(summary.declined)],
-          ["chart", "Reliability", pct(summary.avgReliability)],
+          ["chart", "Evidence", evidencePosture(summary.avgReliability)],
         ].map(([icon, label, value]) => (
           <div key={label} style={statTile()}>
             <GsnLegacyIcon name={icon as GsnIconName} size={34} />
@@ -419,12 +434,12 @@ export default function GuarantorLeaderboardPage() {
                   <div style={cellValue()}>{row.approved}</div>
                 </div>
                 <div>
-                  <div style={cellLabel()}>Rate</div>
-                  <div style={cellValue()}>{pct(row.approval_rate)}</div>
+                  <div style={cellLabel()}>Outcome</div>
+                  <div style={cellValue()}>{outcomePattern(row.approval_rate)}</div>
                 </div>
                 <div>
-                  <div style={cellLabel()}>Reliability</div>
-                  <div style={cellValue()}>{pct(row.reliability_score)}</div>
+                  <div style={cellLabel()}>Evidence</div>
+                  <div style={cellValue()}>{evidencePosture(row.reliability_score)}</div>
                 </div>
               </div>
             ))}

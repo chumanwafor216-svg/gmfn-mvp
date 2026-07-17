@@ -21,6 +21,7 @@ import {
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 import { navigateWithOrigin } from "../lib/nav";
 import { revealElementWithoutJump } from "../lib/mobileRevealStability";
+import { getContextualEvidencePosture } from "../lib/trustBandLanguage";
 import { brandClampLines, brandSingleLine } from "../styles/gmfnBrand";
 
 type CollapseState = {
@@ -1361,6 +1362,10 @@ export default function FinancePage() {
     me?.trust_band,
     "Not ready"
   );
+  const trustPosture = getContextualEvidencePosture(
+    trustScore === "0" ? "" : trustScore,
+    trustBand
+  );
   const repaymentRecordCount = countTrustEvents(trustCounts, [
     "loan_fully_repaid",
     "loan_repaid",
@@ -1991,8 +1996,8 @@ export default function FinancePage() {
             },
             {
               icon: "shield" as FinanceGlyphName,
-              label: "Trust score",
-              value: safeStr(trustScore || "0"),
+              label: "Trust posture",
+              value: trustPosture.shortLabel,
               note: safeStr(trustBand || "Not ready"),
             },
           ].map((item) => (

@@ -254,7 +254,7 @@ export default function ExposurePage() {
       }
 
       setCciByUserId(next);
-      setMsg("Consistency scores loaded.");
+      setMsg("Consistency readings loaded.");
     } catch (e: any) {
       setErr(e?.message || String(e));
     } finally {

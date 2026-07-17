@@ -14,6 +14,7 @@ import {
 } from "../lib/institutionalSurface";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 import {
+  getContextualEvidencePosture,
   getTrustBandLanguage,
   getTrustBandShortLabel,
   normalizeTrustBand,
@@ -416,11 +417,15 @@ export default function OpenTrustPage() {
   );
   const openTrustBand = normalizeTrustBand(openTrust.classText);
   const openTrustBandLabel = openTrustBand
-    ? `${openTrustBand} - ${getTrustBandShortLabel(openTrustBand)}`
+    ? getTrustBandShortLabel(openTrustBand)
     : openTrust.classText;
   const openTrustBandMeaning = useMemo(
     () => getTrustBandLanguage(openTrust.classText),
     [openTrust.classText]
+  );
+  const openTrustPosture = useMemo(
+    () => getContextualEvidencePosture(openTrust.scoreText, openTrust.classText),
+    [openTrust.classText, openTrust.scoreText]
   );
   const tone = useMemo(() => toneMeta(openTrust.tone), [openTrust.tone]);
   const routeGuide = useMemo(
@@ -517,7 +522,7 @@ export default function OpenTrustPage() {
               {openTrustBandLabel}
             </div>
             <div style={{ marginTop: 10, color: "#475569", fontSize: 14, fontWeight: 800 }}>
-              {openTrustIconText("wallet", `Current score: ${openTrust.scoreText}`, 22)}
+              {openTrustIconText("wallet", `Evidence posture: ${openTrustPosture.label}`, 22)}
             </div>
             <div style={{ marginTop: 10, color: "#0B1F33", fontSize: 14, fontWeight: 800, lineHeight: 1.45 }}>
               {openTrust.statusText}

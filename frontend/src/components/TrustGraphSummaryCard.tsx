@@ -1,6 +1,7 @@
 import React from "react";
 import { Card, Pill } from "../components/uiKit";
 import type { TrustGraphSummaryOut } from "../lib/api";
+import { getContextualEvidencePosture } from "../lib/trustBandLanguage";
 
 function safeStr(x: any): string {
   return (x ?? "").toString();
@@ -48,10 +49,18 @@ export default function TrustGraphSummaryCard(props: {
         </div>
 
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <Pill kind="blue">CCI {safeStr(summary.cci_score)}</Pill>
-          <Pill kind="gold">Graph {safeStr(summary.graph_score)}</Pill>
+          <Pill kind="blue">
+            CCI {getContextualEvidencePosture(summary.cci_score).shortLabel}
+          </Pill>
+          <Pill kind="gold">
+            Graph {getContextualEvidencePosture(summary.graph_score).shortLabel}
+          </Pill>
           {trustBand ? <Pill kind="green">Band {safeStr(trustBand)}</Pill> : null}
-          {trustScore != null ? <Pill kind="gray">Trust {safeStr(trustScore)}</Pill> : null}
+          {trustScore != null ? (
+            <Pill kind="gray">
+              Trust {getContextualEvidencePosture(trustScore, trustBand).shortLabel}
+            </Pill>
+          ) : null}
         </div>
       </div>
 

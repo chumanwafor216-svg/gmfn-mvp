@@ -69,6 +69,7 @@ import {
   SPOTLIGHT_PILOT_REFRESH_MS,
   SPOTLIGHT_PILOT_ROTATION_MS,
 } from "../lib/spotlightPilot";
+import { getContextualEvidencePosture } from "../lib/trustBandLanguage";
 
 type SpotlightItem = {
   id?: number;
@@ -1202,15 +1203,9 @@ function formatReadingScore(rawScore: unknown, scoreNum: number | null): string 
 function cciDisplayText(cci: ReadingState): string {
   const classText = safeStr(cci.classText);
   const scoreText = safeStr(cci.scoreText);
-  const hasNumericScore =
-    scoreText !== "" && scoreText !== "-" && !Number.isNaN(Number(scoreText));
 
-  if (hasNumericScore) {
-    if (classText && classText !== "Not shown yet") {
-      return `${classText} / ${scoreText}`;
-    }
-
-    return scoreText;
+  if (scoreText || (classText && classText !== "Not shown yet")) {
+    return getContextualEvidencePosture(scoreText, classText).shortLabel;
   }
 
   return readableTrustStatus(classText);

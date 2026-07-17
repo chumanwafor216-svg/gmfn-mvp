@@ -8,6 +8,7 @@ import {
   institutionalSoftCard,
   institutionalStatTile,
 } from "../../lib/institutionalSurface";
+import { getContextualEvidencePosture } from "../../lib/trustBandLanguage";
 import TrustSlipVerifyResultCard from "./TrustSlipVerifyResultCard";
 
 type BannerStyle = {
@@ -339,6 +340,9 @@ export default function TrustSlipVerifyPrivateEvidence({
   riskFlags,
   verificationNote,
 }: TrustSlipVerifyPrivateEvidenceProps) {
+  const visiblePosture = getContextualEvidencePosture(visibleScore, visibleBand);
+  const cciPosture = getContextualEvidencePosture(cciReading, cciBand);
+
   return (
     <>
       <TrustSlipVerifyResultCard
@@ -480,7 +484,7 @@ export default function TrustSlipVerifyPrivateEvidence({
               </div>
 
               <div style={statTile()}>
-                <div style={sectionLabel()}>Visible score</div>
+                <div style={sectionLabel()}>Visible posture</div>
                 <div
                   style={{
                     marginTop: 8,
@@ -490,7 +494,7 @@ export default function TrustSlipVerifyPrivateEvidence({
                     lineHeight: 1.25,
                   }}
                 >
-                  {visibleScore === null ? "-" : String(Math.round(visibleScore))}
+                  {visiblePosture.label}
                 </div>
               </div>
 
@@ -517,8 +521,7 @@ export default function TrustSlipVerifyPrivateEvidence({
                 <div style={sectionLabel()}>Cross-community consistency / sponsor signal</div>
                 <div style={{ marginTop: 8, display: "grid", gap: 6 }}>
                   <div style={{ ...helperText(), color: "#0B1F33" }}>
-                    Consistency reading: {cciReading || "Not shown"}{" "}
-                    {cciBand ? `/ ${cciBand}` : ""}
+                    Consistency posture: {cciPosture.label}
                   </div>
                   <div style={{ ...helperText(), color: "#64748B" }}>
                     This wider reading compares trust signals across community records.

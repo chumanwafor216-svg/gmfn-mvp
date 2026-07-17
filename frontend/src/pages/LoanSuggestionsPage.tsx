@@ -18,6 +18,7 @@ import {
   institutionalStatTile,
 } from "../lib/institutionalSurface";
 import { buildGsnSupportEvidenceShareText } from "../lib/gsnSnapshotPaper";
+import { getContextualEvidencePosture } from "../lib/trustBandLanguage";
 import { brandClampLines } from "../styles/gmfnBrand";
 
 type LoanRow = {
@@ -106,6 +107,16 @@ function firstTruthy(...values: any[]): string {
     if (text) return text;
   }
   return "";
+}
+
+function supportEvidencePosture(score: unknown, band?: unknown): string {
+  const bandText = safeStr(band);
+  if (bandText) return getContextualEvidencePosture(null, bandText).shortLabel;
+
+  const raw = Number(score);
+  if (!Number.isFinite(raw)) return "";
+  const normalized = raw <= 1 ? raw * 100 : raw <= 10 ? raw * 10 : raw;
+  return getContextualEvidencePosture(normalized).shortLabel;
 }
 
 function normalizeMemberGmfnId(value: any): string {
@@ -1873,8 +1884,7 @@ export default function LoanSuggestionsPage() {
 
                         {safeStr(item.trustScore) ? (
                           <span style={badge(false)}>
-                            Trust: {safeStr(item.trustScore)}
-                            {safeStr(item.trustBand) ? ` / ${safeStr(item.trustBand)}` : ""}
+                            Evidence: {supportEvidencePosture(item.trustScore, item.trustBand)}
                           </span>
                         ) : null}
                       </div>

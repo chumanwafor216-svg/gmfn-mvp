@@ -36,6 +36,7 @@ import {
 } from "../lib/communityDomainFeaturePolicy";
 import { revealElementWithoutJump } from "../lib/mobileRevealStability";
 import { buildPhoneCallUrl, buildWhatsAppChatUrl } from "../lib/whatsappLinks";
+import { getContextualEvidencePosture } from "../lib/trustBandLanguage";
 
 type DemandRow = {
   id?: number;
@@ -405,12 +406,16 @@ function communityName(currentClan: any, selectedClanId: number): string {
 }
 
 function cciLabel(me: any): string {
-  return firstTruthy(
+  const band = firstTruthy(
     me?.cci_class,
     me?.cci_band,
     me?.cross_community_integrity_class,
     me?.cross_community_integrity_band
   );
+  if (band) return getContextualEvidencePosture(null, band).shortLabel;
+
+  const score = firstTruthy(me?.cci_score, me?.cross_community_integrity_score);
+  return score ? getContextualEvidencePosture(score).shortLabel : "";
 }
 
 function buildDemandDescription(
@@ -1394,7 +1399,7 @@ export default function DemandBoxPage() {
               <span style={badge(false)}>My open needs: {myOpenRows.length}</span>
               <span style={badge(false)}>Visible needs: {visibleRows.length}</span>
               {memberCciLabel ? (
-                <span style={badge(false)}>Trust: {memberCciLabel}</span>
+                <span style={badge(false)}>Evidence: {memberCciLabel}</span>
               ) : null}
             </div>
 
@@ -1781,7 +1786,7 @@ export default function DemandBoxPage() {
                 <span style={badge(false)}>GSN ID {safeStr(me?.gmfn_id)}</span>
               ) : null}
               {memberCciLabel ? (
-                <span style={badge(false)}>Wider consistency {memberCciLabel}</span>
+                <span style={badge(false)}>Wider evidence {memberCciLabel}</span>
               ) : null}
               <span style={badge(false)}>From {currentCommunityName}</span>
             </div>

@@ -5,6 +5,7 @@ import PageTopNav from "../components/PageTopNav";
 import { CardActionRow, StableCtaLink } from "../components/StableButton";
 import { getSelectedClanId } from "../lib/api";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
+import { getContextualEvidencePosture } from "../lib/trustBandLanguage";
 
 type TrustRow = {
   user_id: number;
@@ -231,16 +232,20 @@ export default function TrustLeaderboardPage() {
             <thead>
               <tr>
                 <th>User</th>
-                <th>Consistency score</th>
-                <th>Reliability</th>
+                <th>Consistency posture</th>
+                <th>Evidence status</th>
               </tr>
             </thead>
             <tbody>
               {items.map((row) => (
                 <tr key={row.user_id}>
                   <td>{row.email}</td>
-                  <td>{row.cci_score}</td>
-                  <td>{row.reliability_score ?? "-"}</td>
+                  <td>{getContextualEvidencePosture(row.cci_score).label}</td>
+                  <td>
+                    {row.reliability_score === null || row.reliability_score === undefined
+                      ? "Not shown"
+                      : getContextualEvidencePosture(row.reliability_score).shortLabel}
+                  </td>
                 </tr>
               ))}
             </tbody>

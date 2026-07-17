@@ -102,6 +102,7 @@ import {
   scrollElementToMarketplaceLanding,
   traceMarketplaceLanding,
 } from "../lib/marketplaceActionStability";
+import { getContextualEvidencePosture } from "../lib/trustBandLanguage";
 
 type CommunityRow = {
   id?: number;
@@ -1783,8 +1784,8 @@ function marketplaceTrustLabel(
     row?.community_standing?.trust_score
   );
 
-  if (band && score) return `${band} / ${score}`;
-  return band || score || "No trust value yet";
+  if (band || score) return getContextualEvidencePosture(score, band).shortLabel;
+  return "No trust value yet";
 }
 
 function marketplaceTrustEventCount(
@@ -1887,8 +1888,10 @@ function marketplaceCciLabel(
     (row as any)?.clan?.cci_band
   );
 
-  if (cciBand && cciValue) return `${cciBand} / ${cciValue}`;
-  return cciBand || cciValue || "Not shown yet";
+  if (cciBand || cciValue) {
+    return getContextualEvidencePosture(cciValue, cciBand).shortLabel;
+  }
+  return "Not shown yet";
 }
 
 function communityFinanceLabel(row: CommunityRow | null | undefined): string {

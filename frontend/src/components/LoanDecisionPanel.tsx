@@ -1,4 +1,5 @@
 import React from "react";
+import { getContextualEvidencePosture } from "../lib/trustBandLanguage";
 
 type DecisionResponse = {
   loan_id: number;
@@ -59,6 +60,15 @@ function recommendationClass(value?: string): string {
   }
 }
 
+function confidencePosture(value: string): string {
+  const raw = Number(value);
+  if (!Number.isFinite(raw)) return "Review only";
+  const normalized = raw <= 1 ? raw * 100 : raw;
+  if (normalized >= 80) return "High confidence";
+  if (normalized >= 50) return "Moderate confidence";
+  return "Low confidence";
+}
+
 export default function LoanDecisionPanel({
   data,
 }: {
@@ -101,8 +111,8 @@ export default function LoanDecisionPanel({
           </div>
         </div>
         <div className="rounded-xl bg-slate-50 p-3">
-          <div className="text-slate-500">Confidence</div>
-          <div className="font-bold">{data.decision.confidence_score}</div>
+          <div className="text-slate-500">Review confidence</div>
+          <div className="font-bold">{confidencePosture(data.decision.confidence_score)}</div>
         </div>
         <div className="rounded-xl bg-slate-50 p-3">
           <div className="text-slate-500">Remaining Gap</div>
@@ -160,8 +170,10 @@ export default function LoanDecisionPanel({
             <div className="font-bold">{data.clan_context.clan_exposure_ratio}</div>
           </div>
           <div className="rounded-xl bg-slate-50 p-3">
-            <div className="text-slate-500">Average CCI</div>
-            <div className="font-bold">{data.clan_context.average_cci_score}</div>
+            <div className="text-slate-500">Community evidence</div>
+            <div className="font-bold">
+              {getContextualEvidencePosture(data.clan_context.average_cci_score).shortLabel}
+            </div>
           </div>
         </div>
 

@@ -418,7 +418,7 @@ export default function TrustSlipReaderBlock({
             {cciPosture.label}
           </div>
           <div style={{ marginTop: 6, ...body(), color: "#64748B" }}>
-            Band: {clean(cciBand, "Not stated")}. Internal index is available only in detailed review where authorised.
+            Detailed band and index are available only in authorised review.
           </div>
           <div style={{ marginTop: 8, ...body() }}>
             {clean(

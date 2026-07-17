@@ -12,12 +12,12 @@ export const copy = {
     trustSlip: "TrustSlip",
   },
   trust: {
-    headline: "Your Trust Score",
+    headline: "Your Trust Record",
     sub: "Trust grows when you finish what you started — full repayment builds real confidence.",
     rule: "Trust only increases when a loan is fully repaid.",
     progressHeadline: "Progress (not a score)",
     progressSub:
-      "This is just encouragement. It does not change your Trust Score. It helps you stay consistent.",
+      "This is just encouragement. It does not change your Trust Record. It helps you stay consistent.",
   },
   payment: {
     headline: "How to Pay Back",

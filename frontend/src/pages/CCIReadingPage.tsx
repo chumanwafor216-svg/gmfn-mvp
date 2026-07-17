@@ -20,6 +20,7 @@ import { buildTrustDocumentFamilyItems } from "../lib/trustDocumentFamilyMap";
 import { buildTrustDocumentUseCaseItems } from "../lib/trustDocumentUseCases";
 import { buildCciGuideItems } from "../lib/trustDocumentGuide";
 import { buildCciSnapshot } from "../lib/trustDocumentSnapshots";
+import { getContextualEvidencePosture } from "../lib/trustBandLanguage";
 
 type ReadingState = {
   classText: string;
@@ -441,6 +442,10 @@ export default function CCIReadingPage() {
     () => getCciState(me, trustSlip, trustExplanation),
     [me, trustSlip, trustExplanation]
   );
+  const cciPosture = useMemo(
+    () => getContextualEvidencePosture(cci.scoreText, cci.classText),
+    [cci.classText, cci.scoreText]
+  );
   const tone = useMemo(() => toneMeta(cci.tone), [cci.tone]);
   const guideItems = useMemo(() => buildCciGuideItems(), []);
   const familyItems = useMemo(() => buildTrustDocumentFamilyItems(true), []);
@@ -469,7 +474,7 @@ export default function CCIReadingPage() {
       buildCciSnapshot({
         memberLabel,
         classText: cci.classText,
-        scoreText: cci.scoreText,
+        scoreText: cciPosture.label,
         statusText: cci.statusText,
         whyText: cci.whyText,
       })
@@ -497,8 +502,8 @@ export default function CCIReadingPage() {
           See how steady this member's visible trust signals look beyond one community.
         </div>
         <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
-          {cciIconBadge("community", <>Class {cci.classText}</>, true)}
-          {cciIconBadge("search", <>Score {cci.scoreText}</>)}
+          {cciIconBadge("community", <>Posture {cciPosture.shortLabel}</>, true)}
+          {cciIconBadge("search", <>Evidence only</>)}
         </div>
 
         <div
@@ -513,10 +518,10 @@ export default function CCIReadingPage() {
           <div style={{ ...innerCard(tone.bg), border: tone.border }}>
             <div style={sectionLabel()}>{labelWithIcon("community", "Reading")}</div>
             <div style={{ marginTop: 12, color: tone.text, fontWeight: 900, fontSize: 34, lineHeight: 1 }}>
-              Class {cci.classText}
+              {cciPosture.label}
             </div>
             <div style={{ marginTop: 10, color: "#475569", fontSize: 14, fontWeight: 800 }}>
-              Score {cci.scoreText}
+              No public human score is shown.
             </div>
             <div style={{ marginTop: 10, color: "#0B1F33", fontSize: 14, fontWeight: 800, lineHeight: 1.45 }}>
               {cci.statusText}
