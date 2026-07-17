@@ -165,8 +165,8 @@ assertContains(
 
 assertContains(
   "trustBandLanguage",
-  /This is not a character judgement[\s\S]*?Do not approve credit, release goods, accept responsibility, or make a serious referral from this record alone[\s\S]*?A thin record is not the same as bad trust[\s\S]*?Do not make a serious trust decision from the grade alone/,
-  "Trust band language must keep signal-only and non-character-judgement boundaries."
+  /This is not a character judgement[\s\S]*?Do not approve credit, release goods, accept responsibility, or make a serious referral from this record alone[\s\S]*?A thin record is not the same as bad trust[\s\S]*?Do not make a serious trust decision from the posture alone/,
+  "Trust posture language must keep signal-only and non-character-judgement boundaries."
 );
 
 assertContains(

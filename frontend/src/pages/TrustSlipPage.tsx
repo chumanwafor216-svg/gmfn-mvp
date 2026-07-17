@@ -909,6 +909,7 @@ function trustSlipRaisedGradeCell(active: boolean, grade: string): React.CSSProp
       ? "inset 0 0 0 3px rgba(214,170,69,0.52), 0 10px 20px rgba(154,104,23,0.12)"
       : "inset 0 1px 0 rgba(255,255,255,0.86), inset 0 -10px 16px rgba(7,23,44,0.04)",
     borderLeft: "1px solid rgba(216,227,238,0.9)",
+    minWidth: 0,
   };
 }
 
@@ -2069,10 +2070,11 @@ export default function TrustSlipPage() {
     summary?.band,
     summary?.level,
     (summary as any)?.level_label,
-    "Awaiting band"
+    "Awaiting posture"
   );
   const normalizedMerchantBand = normalizeTrustBand(merchantBand);
   const merchantBandLabel = getTrustBandShortLabel(merchantBand);
+  const merchantPostureLabel = getContextualEvidencePosture(null, merchantBand).shortLabel;
 
   const merchantTrustLimit = firstTruthy(
     summary?.merchant_view?.trust_limit,
@@ -2636,8 +2638,8 @@ export default function TrustSlipPage() {
     safeDateTime(summary?.expires_at) ||
     (trustSlipCode ? "No expiry stated yet" : "Not issued yet");
   const merchantBandDisplay = normalizedMerchantBand
-    ? `${normalizedMerchantBand} - ${merchantBandLabel}`
-    : "Awaiting band";
+    ? merchantPostureLabel
+    : "Awaiting posture";
   const decisionSummaryText = hasBlockingTrustSlipState
     ? "Do not rely on this TrustSlip until it is refreshed and checked again."
     : ["D", "E"].includes(trustSlipBandLetter)
@@ -2935,7 +2937,7 @@ export default function TrustSlipPage() {
     "Holder display name and GSN ID shown on this TrustSlip",
     "Community label and Community ID/reference shown on this TrustSlip",
     "Current TrustSlip status, code, issue window, and expiry window where available",
-    "Visible trust band, TrustSlip limit signal, and cross-community evidence posture",
+    "Visible trust posture, TrustSlip limit signal, and cross-community evidence posture",
     "QR, verify action, and copied verify link open the public TrustSlip reading when available",
   ];
   const trustSlipHolderDoesNotConfirmList = [
@@ -3512,7 +3514,7 @@ export default function TrustSlipPage() {
                     full: identityRecordSummary || "Phone verified; community membership recorded",
                     icon: "id" as GsnIconName,
                   },
-                  { label: "Band", value: merchantBandDisplay, icon: "certificate-seal" as GsnIconName },
+                  { label: "Trust posture", value: merchantBandDisplay, icon: "certificate-seal" as GsnIconName },
                   { label: "Community ID", value: communityRef, icon: "qr" as GsnIconName },
                   { label: "Issued", value: trustSlipIssuedLabel, icon: "calendar" as GsnIconName },
                   { label: "Expires", value: trustSlipExpiryLabel, icon: "refresh" as GsnIconName },
@@ -3948,7 +3950,7 @@ export default function TrustSlipPage() {
                 <span>{decisionSummaryText}</span>
               </div>
               {[
-                ["Trust band", merchantBandDisplay],
+                ["Trust posture", merchantBandDisplay],
                 ["Trust-limit signal", `${merchantTrustLimit} ${merchantCurrency}`],
                 ["Evidence depth", trustSlipEvidenceLanguage.label],
               ].map(([label, value]) => (
@@ -3984,10 +3986,15 @@ export default function TrustSlipPage() {
                       key={grade}
                       style={trustSlipRaisedGradeCell(active, grade)}
                     >
-                      <div style={{ color: active ? "#991B1B" : "#07172C", fontWeight: 1000 }}>
-                        {grade}
-                      </div>
-                      <div style={{ color: "#526579", fontSize: 11, fontWeight: 850 }}>
+                      <div
+                        style={{
+                          color: active ? "#991B1B" : "#07172C",
+                          fontWeight: 1000,
+                          fontSize: 12,
+                          lineHeight: 1.15,
+                          overflowWrap: "break-word",
+                        }}
+                      >
                         {label}
                       </div>
                     </div>
@@ -4495,7 +4502,7 @@ export default function TrustSlipPage() {
               label="What this does"
               what="This portable reading summarizes the trust state that other people can verify from your current TrustSlip."
               why="It keeps the main public trust signals, document codes, and issue window visible in one place before you share or verify anything."
-              next="Read the band, visible TrustSlip limit signal, cross-community consistency, and issue window here first, then use the TrustSlip code or verification link when needed."
+              next="Read the trust posture, visible TrustSlip limit signal, cross-community consistency, and issue window here first, then use the TrustSlip code or verification link when needed."
               tone="light"
               style={{ marginTop: 12 }}
             />
@@ -4509,7 +4516,7 @@ export default function TrustSlipPage() {
               }}
             >
               <div style={statTile()}>
-                <div style={sectionLabel()}>Band</div>
+                <div style={sectionLabel()}>Trust posture</div>
                 <div
                   style={{
                     marginTop: 8,
@@ -4519,7 +4526,7 @@ export default function TrustSlipPage() {
                     lineHeight: 1.25,
                   }}
                 >
-                  {merchantBand}
+                  {merchantBandDisplay}
                 </div>
                 <div style={{ marginTop: 6, ...helperText(), fontSize: 12.5, lineHeight: 1.45 }}>
                   {merchantBandLabel}
@@ -4558,7 +4565,7 @@ export default function TrustSlipPage() {
                   {cciPosture.label}
                 </div>
                 <div style={{ marginTop: 6, ...helperText(), fontSize: 12.5, lineHeight: 1.45 }}>
-                  Detailed band and index are available only in authorised review.
+                  Detailed evidence index is available only in authorised review.
                 </div>
                 <div style={{ marginTop: 6, ...helperText(), fontSize: 12.5, lineHeight: 1.45 }}>
                   {cciPosture.boundary}

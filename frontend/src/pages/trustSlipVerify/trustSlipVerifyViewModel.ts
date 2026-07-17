@@ -382,7 +382,7 @@ export function buildTrustSlipVerifyViewModel({
       title: "Support, finance, contribution, or trade?",
       answer: hasBlockingState
         ? "Not from this TrustSlip alone. Ask for a fresh slip or live community confirmation."
-        : `Use for low-risk decisions only. ${visibleBand} means: ${bandLanguage.nextStep}`,
+        : `Use for low-risk decisions only. ${visibleBandLabel} means: ${bandLanguage.nextStep}`,
     },
     {
       title: "Do they follow through?",

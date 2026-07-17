@@ -89,9 +89,9 @@ export default function TrustBandMeaningGuide({
 
   return (
     <section style={shell()}>
-      <div style={label()}>Grade meaning</div>
+      <div style={label()}>Evidence reading</div>
       <div style={{ marginTop: 9, ...body(), color: "#0B1F33" }}>
-        <b>{selected.band}: {selectedShortLabel}</b>. {selected.plainMeaning}
+        <b>{selectedShortLabel}</b>. {selected.plainMeaning}
       </div>
       <details style={{ marginTop: 12 }}>
         <StableDisclosureSummary
@@ -106,7 +106,7 @@ export default function TrustBandMeaningGuide({
             padding: "10px 12px",
           }}
         >
-          Open A-E grade guide
+          Open evidence guide
         </StableDisclosureSummary>
         <div
           style={{
@@ -129,20 +129,21 @@ export default function TrustBandMeaningGuide({
           }}
         >
           <div style={{ textAlign: "center" }}>
-            <div style={label()}>Current</div>
+            <div style={label()}>Current posture</div>
             <div
               style={{
                 marginTop: 8,
                 color: selectedColors.text,
-                fontSize: 56,
-                lineHeight: 0.9,
+                fontSize: compact ? 28 : 34,
+                lineHeight: 1.02,
                 fontWeight: 1000,
+                overflowWrap: "break-word",
               }}
             >
-              {selected.band}
+              {selectedShortLabel}
             </div>
             <div style={{ marginTop: 8, ...body(), fontWeight: 900 }}>
-              Explained grade
+              Evidence posture
             </div>
           </div>
         </div>
@@ -178,7 +179,8 @@ export default function TrustBandMeaningGuide({
         </div>
 
         <div style={{ marginTop: 14, ...body() }}>
-          Use this scale to read the letter. The letter is not approval. It only tells you how strong or weak the visible evidence is.
+          Use this guide to read the evidence posture. This is not approval,
+          a character label, or a permanent judgement.
         </div>
 
         <div
@@ -202,7 +204,7 @@ export default function TrustBandMeaningGuide({
                     fontSize: 14,
                   }}
                 >
-                  {item.band}: {itemShortLabel}
+                  {itemShortLabel}
                 </div>
                 <div style={{ marginTop: 6, ...body(), fontSize: 13 }}>
                   {item.nextStep}

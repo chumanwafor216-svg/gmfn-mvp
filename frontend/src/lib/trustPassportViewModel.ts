@@ -312,7 +312,7 @@ export function buildTrustPassportViewModel(
       meaning:
         supportStatus === "Evidence still building"
           ? "This screen does not yet show enough support history for serious reliance."
-          : "Use the grade, recent behaviour, and community confirmation before offering support.",
+          : "Use the evidence posture, recent behaviour, and community confirmation before offering support.",
     },
     {
       title: "Contribution / discipline",

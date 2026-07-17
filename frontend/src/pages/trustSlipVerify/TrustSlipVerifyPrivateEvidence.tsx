@@ -469,7 +469,7 @@ export default function TrustSlipVerifyPrivateEvidence({
 
             <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
               <div style={statTile()}>
-                <div style={sectionLabel()}>Visible band</div>
+                <div style={sectionLabel()}>Trust posture</div>
                 <div
                   style={{
                     marginTop: 8,
@@ -479,7 +479,7 @@ export default function TrustSlipVerifyPrivateEvidence({
                     lineHeight: 1.25,
                   }}
                 >
-                  {visibleBand}
+                  {visiblePosture.shortLabel}
                 </div>
               </div>
 

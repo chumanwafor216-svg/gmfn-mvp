@@ -179,8 +179,8 @@ assertContains(
 
 assertContains(
   "trustPassport",
-  /The trust band is a reading of available evidence, not a character judgement or permanent label/,
-  "Trust Passport page language must keep trust-band meaning as evidence reading, not character judgement."
+  /The evidence posture is a reading of available evidence, not a character judgement or permanent label/,
+  "Trust Passport page language must keep evidence posture meaning as evidence reading, not character judgement."
 );
 
 assertContains(

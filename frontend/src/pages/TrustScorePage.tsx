@@ -48,7 +48,10 @@ import {
   buildTrustPassportShareText,
   buildTrustPassportSnapshot,
 } from "../lib/trustDocumentSnapshots";
-import { TRUST_BAND_SHORT_LABELS } from "../lib/trustBandLanguage";
+import {
+  getContextualEvidencePosture,
+  TRUST_BAND_SHORT_LABELS,
+} from "../lib/trustBandLanguage";
 import { buildTrustPassportViewModel } from "../lib/trustPassportViewModel";
 import {
   buildIdentityEvidenceCompletion,
@@ -2240,8 +2243,8 @@ export default function TrustScorePage() {
     ["Precision", safeStr(ruleset?.precision || "-")],
     ["Ordering", safeStr(ruleset?.ordering || "-")],
     [
-      "Computed band",
-      safeStr(recompute?.breakdown?.computed_band || recompute?.band || "-"),
+      "Computed posture",
+      getContextualEvidencePosture(null, recompute?.breakdown?.computed_band || recompute?.band).shortLabel,
     ],
     [
       "Last event used",
@@ -2366,7 +2369,7 @@ export default function TrustScorePage() {
       .toUpperCase() || "GSN";
   const plainTrustVerdict = passportVm.verdict.lowData
     ? passportVm.verdict.interpretation
-    : `${passportVm.verdict.band} means ${passportVm.verdict.bandLanguage.title.toLowerCase()}. ${passportVm.verdict.bandLanguage.implication}`;
+    : `Current evidence posture means ${passportVm.verdict.bandLanguage.title.toLowerCase()}. ${passportVm.verdict.bandLanguage.implication}`;
   function openTrustRoute(to: string) {
     navigateWithOrigin(navigate, to, location);
   }
@@ -2614,6 +2617,12 @@ export default function TrustScorePage() {
     label,
   ]);
   const activeBand = safeStr(currentBand).toUpperCase().slice(0, 1);
+  const activePostureLabel =
+    firstTruthy(
+      passportVm.verdict.label,
+      gradeLegend.find(([band]) => band === activeBand)?.[1],
+      currentBand
+    ) || "Evidence posture";
   const trustPassportRecordFingerprint = trustPassportReferenceFingerprint(
     passportVm.identity.gmfnId,
     passportVm.identity.communityId,
@@ -2677,7 +2686,7 @@ export default function TrustScorePage() {
     {
       title: "Record-state reading",
       detail:
-        "The trust band is a reading of available evidence, not a character judgement or permanent label.",
+        "The evidence posture is a reading of available evidence, not a character judgement or permanent label.",
       tone: "good",
     },
     {
@@ -2702,7 +2711,7 @@ export default function TrustScorePage() {
     "Signed-in member view of current visible Trust Passport fields",
     "GSN ID and community context when recorded",
     "Phone, bank, ID, and community evidence status as recorded or verified",
-    "Current trust band, evidence posture, and evidence depth from available records",
+    "Current evidence posture and evidence depth from available records",
     "TrustSlip status and verification path when available",
   ];
   const trustPassportDoesNotConfirmList = [
@@ -3924,7 +3933,7 @@ export default function TrustScorePage() {
                         "0 14px 28px rgba(146,64,14,0.12), inset 0 1px 0 rgba(255,255,255,0.95), inset 0 -7px 16px rgba(245,158,11,0.12)",
                     }}
                   >
-                    {activeBand || currentBand}
+                    {activePostureLabel}
                   </div>
                   <div style={{ minWidth: 0 }}>
                     <div
@@ -4023,14 +4032,14 @@ export default function TrustScorePage() {
                   boxShadow:
                     "inset 0 1px 0 rgba(255,255,255,0.95), 0 12px 24px rgba(6,24,39,0.06)",
                 }}
-                aria-label="Trust grade rail"
+                aria-label="Evidence posture rail"
                 onClick={stopInertMeterTap}
               >
-                {gradeLegend.map(([grade, label]) => {
-                  const isActive = activeBand === grade;
+                {gradeLegend.map(([band, label]) => {
+                  const isActive = activeBand === band;
                   return (
                     <div
-                      key={grade}
+                      key={band}
                       style={{
                         flex: "1 1 0",
                         minHeight: isCompact ? 46 : 58,
@@ -4039,7 +4048,7 @@ export default function TrustScorePage() {
                         borderRadius: 13,
                         background: isActive
                           ? "linear-gradient(180deg, #FFF9EA 0%, #FFE7A8 100%)"
-                          : grade === "A" || grade === "B"
+                          : band === "A" || band === "B"
                             ? "linear-gradient(180deg, #F7FCF8 0%, #EAF7EE 100%)"
                             : "linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)",
                         border: isActive
@@ -4056,17 +4065,13 @@ export default function TrustScorePage() {
                         style={{
                           color: isActive ? "#92400E" : "#07172C",
                           fontWeight: 1000,
-                          fontSize: isCompact ? 19 : 23,
-                          lineHeight: 1,
+                          fontSize: isCompact ? 11.5 : 13,
+                          lineHeight: 1.15,
+                          overflowWrap: "break-word",
                         }}
                       >
-                        {grade}
+                        {label}
                       </div>
-                      {!isCompact ? (
-                        <div style={{ color: "#526579", fontSize: 11, fontWeight: 850 }}>
-                          {label}
-                        </div>
-                      ) : null}
                     </div>
                   );
                 })}

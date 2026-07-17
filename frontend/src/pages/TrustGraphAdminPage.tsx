@@ -293,9 +293,9 @@ export default function TrustGraphAdminPage() {
                     background: "#fff",
                   }}
                 >
-                  <div style={{ fontSize: 11, color: "#64748b", fontWeight: 900 }}>Trust band</div>
+                  <div style={{ fontSize: 11, color: "#64748b", fontWeight: 900 }}>Evidence posture</div>
                   <div style={{ marginTop: 6, fontSize: 22, fontWeight: 1000 }}>
-                    {safeStr(graph.trust_band ?? "-")}
+                    {getContextualEvidencePosture(graph.trust_score, graph.trust_band).shortLabel}
                   </div>
                 </div>
               </div>

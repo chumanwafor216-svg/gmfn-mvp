@@ -564,7 +564,7 @@ export default function TrustPage() {
       <div style={{ marginTop: 16 }}>
         <ExplainToggle
           label="What this screen does"
-          what="Trust shows your current trust posture, trust band, supporting explanation, and the event trail behind it."
+          what="Trust shows your current evidence posture, supporting explanation, and the event trail behind it."
           why="It helps you understand why your current trust position looks the way it does before you share it, challenge it, or rely on it."
           next="Refresh when you need the latest reading, then review the posture, explanation, and event history together instead of treating any signal as a standalone judgement."
           tone="light"

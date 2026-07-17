@@ -231,8 +231,8 @@ assertContains(
 );
 
 assertContains(
-  /aria-label="Trust grade rail"[\s\S]*?linear-gradient\(180deg, #FFF9EA 0%, #FFE7A8 100%\)[\s\S]*?boxShadow: isActive[\s\S]*?inset 0 -8px 18px rgba\(214,170,69,0\.20\)/,
-  "Trust Passport grade rail must render as a raised institutional rail, not a flat ABCDE strip."
+  /aria-label="Evidence posture rail"[\s\S]*?linear-gradient\(180deg, #FFF9EA 0%, #FFE7A8 100%\)[\s\S]*?boxShadow: isActive[\s\S]*?inset 0 -8px 18px rgba\(214,170,69,0\.20\)/,
+  "Trust Passport evidence posture rail must render as a raised institutional rail, not a flat ABCDE strip."
 );
 
 assertContains(

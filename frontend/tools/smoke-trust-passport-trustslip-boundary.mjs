@@ -416,7 +416,7 @@ async function runTrustPassportScenario(browser, baseURL) {
     })
   ).toBeVisible();
   await expect(
-    state.page.getByText("The trust band is a reading of available evidence, not a character judgement or permanent label.", {
+    state.page.getByText("The evidence posture is a reading of available evidence, not a character judgement or permanent label.", {
       exact: true,
     })
   ).toBeVisible();

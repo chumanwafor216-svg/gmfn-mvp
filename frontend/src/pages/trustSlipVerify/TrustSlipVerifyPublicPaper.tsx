@@ -897,9 +897,7 @@ export default function TrustSlipVerifyPublicPaper({
   const callbackNeedsConsent = callbackChannel !== "none" && safeText(callbackContact);
   const callbackBlocked = Boolean(callbackNeedsConsent && !callbackConsent);
   const requesterCallback = confirmationOutcome?.requester_callback || null;
-  const visibleBandReading = visibleBand.toLowerCase().includes("visible reading")
-    ? visibleBand
-    : `Grade ${visibleBand}`;
+  const visibleBandReading = visibleBandLabel || publicEvidencePosture || "Evidence posture";
   const isLite = variant === "lite";
   const recordFingerprint = referenceFingerprint(
     resolvedCode,
@@ -978,7 +976,7 @@ export default function TrustSlipVerifyPublicPaper({
   ];
   const trustSlipConfirmsList = [
     "Public TrustSlip code status",
-    "Visible evidence band and descriptive evidence posture",
+    "Visible trust posture and descriptive evidence posture",
     "Displayed holder and GSN ID from this paper",
     "Community label shown on this TrustSlip",
     "Verification path and QR destination when available",
@@ -1030,7 +1028,7 @@ export default function TrustSlipVerifyPublicPaper({
     {
       title: "Public result",
       rows: [
-        ["Visible band", visibleBand],
+        ["Trust posture", visibleBandLabel || publicEvidencePosture],
         ["Evidence posture", publicEvidencePosture],
         ["Trust-limit signal", compactTrustLimit],
         ["Validity", publicValidityLabel],

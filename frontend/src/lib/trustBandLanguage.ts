@@ -271,11 +271,11 @@ export function getTrustBandLanguage(raw: unknown): TrustBandLanguage {
   return (
     TRUST_BAND_LANGUAGE.find((item) => item.band === band) || {
       band: "Not shown",
-      title: "No clear grade is available",
+      title: "No clear evidence posture is available",
       plainMeaning:
-        "GSN does not have a clear grade to explain on this screen yet.",
+        "GSN does not have a clear evidence posture to explain on this screen yet.",
       implication:
-        "Do not make a serious trust decision from the grade alone. Ask for the evidence behind the record.",
+        "Do not make a serious trust decision from the posture alone. Ask for the evidence behind the record.",
       nextStep: "Ask for the fuller Trust Passport or recent Trust Events.",
       tone: "care",
     }

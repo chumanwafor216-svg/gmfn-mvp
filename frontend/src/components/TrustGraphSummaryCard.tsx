@@ -3,10 +3,6 @@ import { Card, Pill } from "../components/uiKit";
 import type { TrustGraphSummaryOut } from "../lib/api";
 import { getContextualEvidencePosture } from "../lib/trustBandLanguage";
 
-function safeStr(x: any): string {
-  return (x ?? "").toString();
-}
-
 function statLabel(label: string, value: React.ReactNode) {
   return (
     <div
@@ -55,7 +51,11 @@ export default function TrustGraphSummaryCard(props: {
           <Pill kind="gold">
             Graph {getContextualEvidencePosture(summary.graph_score).shortLabel}
           </Pill>
-          {trustBand ? <Pill kind="green">Band {safeStr(trustBand)}</Pill> : null}
+          {trustBand ? (
+            <Pill kind="green">
+              Local {getContextualEvidencePosture(null, trustBand).shortLabel}
+            </Pill>
+          ) : null}
           {trustScore != null ? (
             <Pill kind="gray">
               Trust {getContextualEvidencePosture(trustScore, trustBand).shortLabel}

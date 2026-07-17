@@ -104,7 +104,7 @@ CAPABILITY_EXPLANATIONS = {
         "noise while better evidence stays hidden. GSN changes the decision by "
         "letting recorded reputation support reach while showing limits. "
         "Tools: reputation signals, trust reading, Spotlight ranking, and "
-        "marketplace visibility. Evidence left: trust band, activity trail, "
+        "marketplace visibility. Evidence left: evidence posture, activity trail, "
         "shop status, community context, and public record."
     ),
     "Marketplace Presence Across Communities": (

@@ -710,7 +710,7 @@ export default function DemandBoxPage() {
         ? "Public contact path: WhatsApp contact is available from this Demand Box request."
         : "",
       row?.requester_trust_band
-        ? `Visible trust band: ${safeStr(row.requester_trust_band)}`
+        ? `Visible trust posture: ${getContextualEvidencePosture(null, row.requester_trust_band).shortLabel}`
         : "",
       row?.status ? `Request status: ${safeStr(row.status)}` : "",
       row?.created_at ? `Created: ${safeDateTime(row.created_at)}` : "",

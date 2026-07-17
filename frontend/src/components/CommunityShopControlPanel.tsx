@@ -12,6 +12,7 @@ import {
   type OwnerShopHandleId,
 } from "../lib/ownerShopHandles";
 import { publicShopDiariesPath, publicShopDiariesUrl } from "../lib/publicLinks";
+import { getContextualEvidencePosture } from "../lib/trustBandLanguage";
 
 type NoticeTone = "success" | "error";
 
@@ -812,7 +813,7 @@ export default function CommunityShopControlPanel({
                     </span>
                     <span style={badge(false)}>Selected community: {communityLabel}</span>
                     <span style={badge(false)}>
-                      Shop trust: {safeStr(shop?.trustBand || "Visible seller")}
+                      Shop posture: {getContextualEvidencePosture(null, shop?.trustBand).shortLabel || "Visible seller"}
                     </span>
                   </div>
 
