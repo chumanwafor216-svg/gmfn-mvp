@@ -1413,17 +1413,17 @@ try {
   if (await isDebugVisible(page, "community-domain-dashboard.service-detail.local")) {
     findings.push("Community Domain Services view buttons stay visible after a view is selected.");
   }
-  await page.getByText("Boundary view", { exact: true }).waitFor({ timeout: 10000 });
+  await page.getByText("Rules view", { exact: true }).waitFor({ timeout: 10000 });
   if (await isDebugVisible(page, "community-domain-service-boundary.focus.privacy")) {
-    findings.push("Community Domain Services boundary view buttons are visible before Change view is opened.");
+    findings.push("Community Domain Services rules view buttons are visible before Change view is opened.");
   }
   if (!(await isDebugVisible(page, "community-domain-service-boundary.focus-toggle"))) {
-    findings.push("Community Domain Services boundary view does not expose a Change view control.");
+    findings.push("Community Domain Services rules view does not expose a Change view control.");
   }
   await clickByDebugId(page, "community-domain-service-boundary.focus-toggle");
   await clickByDebugId(page, "community-domain-service-boundary.focus.privacy");
   if (await isDebugVisible(page, "community-domain-service-boundary.focus.exchange")) {
-    findings.push("Community Domain Services boundary view buttons stay visible after selecting a view.");
+    findings.push("Community Domain Services rules view buttons stay visible after selecting a view.");
   }
   await page.getByText("Record privacy readiness", { exact: true }).waitFor({ timeout: 10000 });
   await clickByDebugId(page, "community-domain-dashboard.service-stage-toggle");

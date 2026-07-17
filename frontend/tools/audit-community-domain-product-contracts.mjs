@@ -2452,12 +2452,12 @@ assertContains(
       String.raw`community-domain-dashboard\.service-packet-toggle`,
       String.raw`community-domain-dashboard\.service-detail\.boundaries`,
       String.raw`community-domain-service-boundary\.focus\.privacy`,
-      String.raw`Services boundary view buttons are visible before Change view is opened`,
+      String.raw`Services rules view buttons are visible before Change view is opened`,
       String.raw`community-domain-service-boundary\.focus-toggle`,
-      String.raw`Services boundary view does not expose a Change view control`,
+      String.raw`Services rules view does not expose a Change view control`,
       String.raw`community-domain-service-boundary\.focus\.privacy`,
       String.raw`community-domain-service-boundary\.focus\.exchange`,
-      String.raw`Services boundary view buttons stay visible after selecting a view`,
+      String.raw`Services rules view buttons stay visible after selecting a view`,
       String.raw`community-domain-dashboard\.service-group\.trust`,
       String.raw`community-domain-dashboard\.service-detail\.evidence`,
       String.raw`community-domain\.trust-evidence\.focus\.release`,
@@ -2709,48 +2709,48 @@ assertContains(
 assertContains(
   "src/pages/communityDomainDashboard/ServiceBoundaryPanels.tsx",
   /BOUNDARY_FOCUS_OPTIONS[\s\S]*key: "exchange"[\s\S]*key: "privacy"[\s\S]*key: "setup"[\s\S]*key: "compliance"[\s\S]*key: "appeals"[\s\S]*activeBoundaryFocus[\s\S]*boundaryFocusChooserOpen[\s\S]*community-domain-service-boundary\.focus-toggle[\s\S]*boundaryFocusChooserOpen \? "Close views" : "Change view"[\s\S]*boundaryFocusChooserOpen \? \([\s\S]*community-domain-service-boundary\.focus\.\$\{option\.key\}[\s\S]*setBoundaryFocusChooserOpen\(false\)[\s\S]*activeBoundaryFocus === "exchange"[\s\S]*Network exchange readiness[\s\S]*activeBoundaryFocus === "privacy"[\s\S]*Record privacy readiness[\s\S]*activeBoundaryFocus === "setup"[\s\S]*Setup map[\s\S]*activeBoundaryFocus === "compliance"[\s\S]*Compliance map[\s\S]*activeBoundaryFocus === "appeals"[\s\S]*Appeal readiness/,
-  "Community Domain Services boundary view must keep boundary sub-views behind Change view and expose one focused boundary sub-view at a time instead of stacking exchange, privacy, setup, compliance, and appeal readiness together.",
+  "Community Domain Services rules view must keep rule sub-views behind Change view and expose one focused rule sub-view at a time instead of stacking exchange, privacy, setup, compliance, and appeal readiness together.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/communityDomainDashboard/ServiceBoundaryPanels.tsx",
-  /Network exchange readiness[\s\S]*primary_next_action[\s\S]*domain_exchange_status[\s\S]*cross_domain_discovery_status[\s\S]*active_affiliations[\s\S]*external_finance_status[\s\S]*Boundary: outside-network planning only[\s\S]*no exchange, discovery,[\s\S]*finance, loans, money movement, or private records/,
+  /Network exchange readiness[\s\S]*primary_next_action[\s\S]*domain_exchange_status[\s\S]*cross_domain_discovery_status[\s\S]*active_affiliations[\s\S]*external_finance_status[\s\S]*Rule: outside-network planning only[\s\S]*no exchange, discovery,[\s\S]*finance, loans, money movement, or private records/,
   "Community Domain dashboard Services lane must keep outside-network planning copy concise while preserving exchange, finance, loan, money, and private-record boundaries.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/communityDomainDashboard/ServiceBoundaryPanels.tsx",
-  /Record privacy readiness[\s\S]*primary_next_action[\s\S]*public_url_status[\s\S]*marketplace_private_record_status[\s\S]*finance_private_record_status[\s\S]*cross_domain_record_sharing_status[\s\S]*Boundary: privacy planning only[\s\S]*no access changes, rosters, proof,[\s\S]*private-record sharing, or money movement/,
+  /Record privacy readiness[\s\S]*primary_next_action[\s\S]*public_url_status[\s\S]*marketplace_private_record_status[\s\S]*finance_private_record_status[\s\S]*cross_domain_record_sharing_status[\s\S]*Rule: privacy planning only[\s\S]*no access changes, rosters, proof,[\s\S]*private-record sharing, or money movement/,
   "Community Domain dashboard Services lane must keep record privacy copy concise while preserving access, roster, proof, private-record, and money boundaries.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/communityDomainDashboard/ServiceBoundaryPanels.tsx",
-  /Setup map[\s\S]*primary_next_action[\s\S]*configuration_mode[\s\S]*Special data model[\s\S]*custom_schema_status[\s\S]*Special billing[\s\S]*custom_billing_status[\s\S]*Services[\s\S]*default_modules[\s\S]*Dedicated setup[\s\S]*custom_tenant_status[\s\S]*Access rules[\s\S]*custom_permission_status[\s\S]*Boundary: setup planning only[\s\S]*no special builds, service settings,[\s\S]*payments, records, or private data/,
+  /Setup map[\s\S]*primary_next_action[\s\S]*configuration_mode[\s\S]*Special data model[\s\S]*custom_schema_status[\s\S]*Special billing[\s\S]*custom_billing_status[\s\S]*Services[\s\S]*default_modules[\s\S]*Dedicated setup[\s\S]*custom_tenant_status[\s\S]*Access rules[\s\S]*custom_permission_status[\s\S]*Rule: setup planning only[\s\S]*no special builds, service settings,[\s\S]*payments, records, or private data/,
   "Community Domain dashboard Services lane must keep setup map copy concise while preserving special-build, service-setting, payment, record, and privacy boundaries.",
   { frontend: true }
 );
 
 assertNotContains(
   "src/pages/communityDomainDashboard/ServiceBoundaryPanels.tsx",
-  /Review configuration boundaries|configuration checks are ready|read-only configuration map|Configuration checks needing attention|No blocked configuration check|template configuration|This configuration map is read-only configuration planning|module settings|appeal route/i,
+  /Review (configuration|setup|compliance and risk) boundaries|configuration checks are ready|read-only configuration map|Configuration checks needing attention|No blocked configuration check|template configuration|This configuration map is read-only configuration planning|module settings|appeal route/i,
   "Community Domain dashboard visible setup-boundary copy must use setup/service language instead of configuration/module language.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/communityDomainDashboard/ServiceBoundaryPanels.tsx",
-  /Compliance map[\s\S]*primary_next_action[\s\S]*compliance_engine_status[\s\S]*legal_advice_status[\s\S]*payment_compliance_status[\s\S]*cross_domain_record_sharing_status[\s\S]*Boundary: compliance planning only[\s\S]*not legal advice or certification,[\s\S]*and no compliance certification, money movement, or private records/,
+  /Compliance map[\s\S]*primary_next_action[\s\S]*compliance_engine_status[\s\S]*legal_advice_status[\s\S]*payment_compliance_status[\s\S]*cross_domain_record_sharing_status[\s\S]*Rule: compliance planning only[\s\S]*not legal advice or certification,[\s\S]*and no compliance certification, money movement, or private records/,
   "Community Domain dashboard Services lane must keep compliance copy concise while preserving legal-advice, certification, money, and private-record boundaries.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/communityDomainDashboard/ServiceBoundaryPanels.tsx",
-  /Appeal readiness[\s\S]*primary_next_action[\s\S]*appeal_engine_status[\s\S]*appeal_records_created[\s\S]*mediator_assignment_status[\s\S]*appeal_decision_status[\s\S]*Boundary: fairness planning only[\s\S]*no appeals, dispute decisions,[\s\S]*payment reversals, money movement, or private records/,
+  /Appeal readiness[\s\S]*primary_next_action[\s\S]*appeal_engine_status[\s\S]*appeal_records_created[\s\S]*mediator_assignment_status[\s\S]*appeal_decision_status[\s\S]*Rule: fairness planning only[\s\S]*no appeals, dispute decisions,[\s\S]*payment reversals, money movement, or private records/,
   "Community Domain dashboard Services lane must keep appeal readiness copy concise while preserving appeal, dispute, payment-reversal, money, and private-record boundaries.",
   { frontend: true }
 );

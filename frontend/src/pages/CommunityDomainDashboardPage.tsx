@@ -8036,7 +8036,7 @@ export default function CommunityDomainDashboardPage() {
                         data-debug-id="community-domain-dashboard.work-surface.notes-panel"
                         style={{ ...helperText(), fontSize: 12.5 }}
                       >
-                        Boundary:{" "}
+                        Rule:{" "}
                         {domainOperational
                           ? "Operating view only. It does not verify ownership, confirm new payments, grant paid features, or expose private records."
                           : "Setup view only. It does not confirm payment, activate the domain, verify ownership, or expose private records."}
@@ -11261,7 +11261,7 @@ export default function CommunityDomainDashboardPage() {
                       <Suspense
                         fallback={
                           <div style={{ ...helperText(), marginTop: 4 }}>
-                            Loading service boundary panels...
+                            Loading service rules...
                           </div>
                         }
                       >
@@ -11509,7 +11509,7 @@ export default function CommunityDomainDashboardPage() {
                       <Suspense
                         fallback={
                           <div style={{ ...helperText(), marginTop: 4 }}>
-                            Loading boundary view...
+                            Loading structure rules...
                           </div>
                         }
                       >

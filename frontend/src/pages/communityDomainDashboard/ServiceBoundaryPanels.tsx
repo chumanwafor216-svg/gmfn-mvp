@@ -20,7 +20,7 @@ const BOUNDARY_FOCUS_OPTIONS: Array<{
   {
     key: "exchange",
     label: "Exchange",
-    note: "Outside-network exchange, discovery, social bridge, and finance boundaries.",
+    note: "Outside-network exchange, discovery, social bridge, and finance rules.",
   },
   {
     key: "privacy",
@@ -35,12 +35,12 @@ const BOUNDARY_FOCUS_OPTIONS: Array<{
   {
     key: "compliance",
     label: "Compliance",
-    note: "Legal, payment, record-sharing, and certificate boundaries.",
+    note: "Legal, payment, record-sharing, and certificate rules.",
   },
   {
     key: "appeals",
     label: "Appeals",
-    note: "Fairness, mediator, decision, and dispute-readiness boundaries.",
+    note: "Fairness, mediator, decision, and dispute-review rules.",
   },
 ];
 
@@ -273,7 +273,7 @@ export default function CommunityDomainServiceBoundaryPanels({
           gap: 10,
         }}
       >
-        <div style={sectionLabel()}>Boundary view</div>
+        <div style={sectionLabel()}>Rules view</div>
         <div style={helperText()}>
           Current view: <strong>{selectedBoundaryFocus.label}</strong>.
         </div>
@@ -411,7 +411,7 @@ export default function CommunityDomainServiceBoundaryPanels({
           </div>
         ) : null}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          Boundary: outside-network planning only; no exchange, discovery,
+          Rule: outside-network planning only; no exchange, discovery,
           finance, loans, money movement, or private records.
         </div>
       </div>
@@ -492,7 +492,7 @@ export default function CommunityDomainServiceBoundaryPanels({
           </div>
         ) : null}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          Boundary: privacy planning only; no access changes, rosters, proof,
+          Rule: privacy planning only; no access changes, rosters, proof,
           private-record sharing, or money movement.
         </div>
       </div>
@@ -505,7 +505,7 @@ export default function CommunityDomainServiceBoundaryPanels({
           {configurationMap
             ? `${cleanText(
                 configurationMap.primary_next_action?.label,
-                "Review setup boundaries"
+                "Review setup rules"
               )}. ${configurationMapReadyTotal} of ${visibleConfigurationMapLanes.length} setup checks are ready.`
             : "GSN could not load the setup map for this Community Domain."}
         </div>
@@ -568,7 +568,7 @@ export default function CommunityDomainServiceBoundaryPanels({
           </div>
         ) : null}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          Boundary: setup planning only; no special builds, service settings,
+          Rule: setup planning only; no special builds, service settings,
           payments, records, or private data.
         </div>
       </div>
@@ -581,7 +581,7 @@ export default function CommunityDomainServiceBoundaryPanels({
           {complianceMap
             ? `${cleanText(
                 complianceMap.primary_next_action?.label,
-                "Review compliance and risk boundaries"
+                "Review compliance and risk rules"
               )}. ${complianceMapReadyTotal} of ${visibleComplianceMapLanes.length} compliance checks are ready.`
             : "GSN could not load the compliance map for this Community Domain."}
         </div>
@@ -589,7 +589,7 @@ export default function CommunityDomainServiceBoundaryPanels({
           ["Domain", compactStatus(complianceMapSummary.domain_status)],
           ["Verification", compactStatus(complianceMapSummary.verification_status)],
           [
-            "Compliance engine",
+            "Compliance review",
             compactStatus(complianceMapSummary.compliance_engine_status),
           ],
           ["Legal advice", compactStatus(complianceMapSummary.legal_advice_status)],
@@ -639,7 +639,7 @@ export default function CommunityDomainServiceBoundaryPanels({
                 cleanText(lane.label, "Compliance check"),
                 cleanText(
                   lane.next_step,
-                  "Keep this as compliance planning until a formal compliance engine exists."
+                  "Keep this as compliance planning until a formal compliance review exists."
                 ),
                 lane.status
               )
@@ -647,7 +647,7 @@ export default function CommunityDomainServiceBoundaryPanels({
           </div>
         ) : null}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          Boundary: compliance planning only; not legal advice or certification,
+          Rule: compliance planning only; not legal advice or certification,
           and no compliance certification, money movement, or private records.
         </div>
       </div>
@@ -667,7 +667,7 @@ export default function CommunityDomainServiceBoundaryPanels({
             : "GSN could not load the appeal readiness view for this Community Domain."}
         </div>
         {factGrid([
-          ["Appeal engine", compactStatus(appealReadinessSummary.appeal_engine_status)],
+          ["Appeal review", compactStatus(appealReadinessSummary.appeal_engine_status)],
           ["Appeals", countValue(appealReadinessSummary.appeal_records_created)],
           ["Mediator", compactStatus(appealReadinessSummary.mediator_assignment_status)],
           ["Decision", compactStatus(appealReadinessSummary.appeal_decision_status)],
@@ -716,7 +716,7 @@ export default function CommunityDomainServiceBoundaryPanels({
           </div>
         ) : null}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          Boundary: fairness planning only; no appeals, dispute decisions,
+          Rule: fairness planning only; no appeals, dispute decisions,
           payment reversals, money movement, or private records.
         </div>
       </div>
