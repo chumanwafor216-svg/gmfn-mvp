@@ -240,7 +240,7 @@ export default function IntroductionPage() {
 
           <FeatureCard
             title="Explainable trust growth"
-            text="Trust grows gradually through verified completion of commitments, rather than hidden manual scoring or unexplained adjustments."
+            text="Trust grows gradually through verified completion of commitments, rather than hidden manual labels or unexplained adjustments."
           />
 
           <FeatureCard

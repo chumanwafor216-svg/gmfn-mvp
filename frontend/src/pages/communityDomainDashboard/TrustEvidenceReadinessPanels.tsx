@@ -474,7 +474,7 @@ export default function CommunityDomainTrustEvidenceReadinessPanels({
         ) : null}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
           Rule: readiness only; no records, uploads, credentials, proof,
-          authority verification, trust scoring, money, or private evidence.
+          authority verification, trust reading, money, or private evidence.
         </div>
       </div>
       ) : null}
@@ -545,7 +545,7 @@ export default function CommunityDomainTrustEvidenceReadinessPanels({
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
           Rule: release readiness only; no evidence release, proof, public
           links, QR codes, credentials, sharing, permission changes, trust
-          scoring, money, or private evidence.
+          reading, money, or private evidence.
         </div>
       </div>
       ) : null}

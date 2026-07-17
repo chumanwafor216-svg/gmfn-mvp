@@ -11798,7 +11798,15 @@ export default function MarketplacePage() {
                           const reasons = Array.isArray(item.reasons)
                             ? item.reasons.filter(Boolean).slice(0, 2)
                             : [];
-                          const score = positiveNumber(item.score);
+                          const fitStrength = positiveNumber(item.score);
+                          const fitLabel =
+                            fitStrength >= 80
+                              ? "best fit"
+                              : fitStrength >= 50
+                                ? "good fit"
+                                : fitStrength > 0
+                                  ? "possible fit"
+                                  : "";
                           return (
                             <div
                               key={`marketplace-repost-target-${code || index}`}
@@ -11827,7 +11835,7 @@ export default function MarketplacePage() {
                                 </div>
                                 <div style={{ ...helperText(), fontSize: 12 }}>
                                   {code}
-                                  {score ? ` | fit ${score}%` : ""}
+                                  {fitLabel ? ` | ${fitLabel}` : ""}
                                 </div>
                                 {reasons.length ? (
                                   <div style={{ ...helperText(), fontSize: 12 }}>
