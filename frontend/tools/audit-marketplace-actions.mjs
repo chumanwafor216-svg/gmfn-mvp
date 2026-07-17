@@ -464,6 +464,12 @@ assertContains(
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
+  /function marketplaceHeroStatCellStyle\(isCompact: boolean\)[\s\S]*?minHeight: isCompact \? 82 : 82[\s\S]*?gridTemplateColumns: isCompact \? "30px minmax\(0, 1fr\)" : "40px minmax\(0, 1fr\)"[\s\S]*?overflow: "hidden"[\s\S]*?function marketplaceHeroStatValueStyle\([\s\S]*?compactLongValue = isCompact && text\.length > 8[\s\S]*?fontSize: isCompact \? \(compactLongValue \? 15 : 20\) : 24[\s\S]*?whiteSpace: "normal"[\s\S]*?overflowWrap: "anywhere"[\s\S]*?wordBreak: "break-word"[\s\S]*?marketplaceHeroStatValueStyle\(isCompact, item\.value\)/,
+  "Marketplace hero Trust/CCI metric cells must keep long posture words readable on phone instead of spilling across the grid."
+);
+
+assertContains(
+  "src/pages/MarketplacePage.tsx",
   /function marketplaceFrontTagRowStyle\(isCompact = false\)[\s\S]*?flexWrap: isCompact \? "nowrap" : "wrap"[\s\S]*?overflow: isCompact \? "hidden" : undefined[\s\S]*?function marketplaceFrontTagStyle[\s\S]*?padding: isCompact \? "4px 7px" : "6px 10px"[\s\S]*?whiteSpace: "nowrap"[\s\S]*?overflow: "hidden"[\s\S]*?textOverflow: "ellipsis"[\s\S]*?function marketplaceOsRowTextStackStyle[\s\S]*?overflow: "hidden"[\s\S]*?function marketplaceOsRowDetailStyle[\s\S]*?WebkitLineClamp: isCompact \? 3 : 2[\s\S]*?function marketplaceOsArrowStyle[\s\S]*?width: 18/,
   "Marketplace lane text must stay clamped with stable row arrows."
 );
