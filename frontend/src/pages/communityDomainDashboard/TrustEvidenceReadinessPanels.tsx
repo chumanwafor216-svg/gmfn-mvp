@@ -298,7 +298,7 @@ export default function CommunityDomainTrustEvidenceReadinessPanels({
           background: "rgba(255,249,225,0.72)",
         }}
       >
-        <div style={sectionLabel()}>Evidence and impact boundary</div>
+        <div style={sectionLabel()}>Evidence and impact rule</div>
         <div style={{ ...helperText(), marginTop: 7 }}>
           Attendance, payment, contribution, photograph, video, notice, and
           report records can show that activity happened. They do not, by
@@ -423,7 +423,7 @@ export default function CommunityDomainTrustEvidenceReadinessPanels({
         </div>
         {factGrid([
           [
-            "Record engine",
+            "Record review",
             compactStatus(evidenceRecordSummary.evidence_record_engine_status),
           ],
           ["Record types", countValue(evidenceRecordSummary.record_type_count)],
@@ -473,7 +473,7 @@ export default function CommunityDomainTrustEvidenceReadinessPanels({
           </div>
         ) : null}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          Boundary: readiness only; no records, uploads, credentials, proof,
+          Rule: readiness only; no records, uploads, credentials, proof,
           authority verification, trust scoring, money, or private evidence.
         </div>
       </div>
@@ -492,7 +492,7 @@ export default function CommunityDomainTrustEvidenceReadinessPanels({
         </div>
         {factGrid([
           [
-            "Release engine",
+            "Release review",
             compactStatus(evidenceReleaseSummary.evidence_release_engine_status),
           ],
           [
@@ -543,7 +543,7 @@ export default function CommunityDomainTrustEvidenceReadinessPanels({
           </div>
         ) : null}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          Boundary: release readiness only; no evidence release, proof, public
+          Rule: release readiness only; no evidence release, proof, public
           links, QR codes, credentials, sharing, permission changes, trust
           scoring, money, or private evidence.
         </div>
@@ -562,7 +562,7 @@ export default function CommunityDomainTrustEvidenceReadinessPanels({
             : "GSN could not load the trust relay readiness view for this Community Domain."}
         </div>
         {factGrid([
-          ["Relay engine", compactStatus(trustRelaySummary.trust_relay_engine_status)],
+          ["Relay review", compactStatus(trustRelaySummary.trust_relay_engine_status)],
           ["Relay paths", countValue(trustRelaySummary.relay_paths_created)],
           ["Bridge members", countValue(trustRelaySummary.bridge_member_candidates)],
           ["Open reviews", countValue(trustRelaySummary.open_relay_review_count)],
@@ -600,7 +600,7 @@ export default function CommunityDomainTrustEvidenceReadinessPanels({
           </div>
         ) : null}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          Boundary: relay readiness only; no relay paths, proof, reposts,
+          Rule: relay readiness only; no relay paths, proof, reposts,
           discovery, affiliations, private records, credentials, marketplace
           activity, billing, or money.
         </div>
@@ -620,7 +620,7 @@ export default function CommunityDomainTrustEvidenceReadinessPanels({
         </div>
         {factGrid([
           [
-            "Scope engine",
+            "Scope review",
             compactStatus(notificationScopeSummary.notification_scope_engine_status),
           ],
           ["Members", countValue(notificationScopeSummary.active_member_count)],
@@ -670,7 +670,7 @@ export default function CommunityDomainTrustEvidenceReadinessPanels({
           </div>
         ) : null}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          Boundary: audience readiness only; no messages, delivery jobs,
+          Rule: audience readiness only; no messages, delivery jobs,
           audience lists, announcements, member lists, marketplace records,
           money, trust records, or private records.
         </div>
@@ -730,7 +730,7 @@ export default function CommunityDomainTrustEvidenceReadinessPanels({
           </div>
         ) : null}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          Boundary: mobility readiness only; no trust records, credentials,
+          Rule: mobility readiness only; no trust records, credentials,
           relay paths, proof, outward links, marketplace activity, separate
           communities, money, or private records.
         </div>

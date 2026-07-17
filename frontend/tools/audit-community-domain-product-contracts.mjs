@@ -3044,7 +3044,7 @@ assertContains(
 
 assertContains(
   "src/pages/communityDomainDashboard/TrustEvidenceReadinessPanels.tsx",
-  /Evidence and impact boundary[\s\S]*Attendance, payment, contribution, photograph, video, notice, and\s+report records can show that activity happened[\s\S]*They do not, by\s+themselves, prove what changed in a participant's life[\s\S]*Outcome and impact\s+claims still need review, participant\/community confirmation, time\s+context, and appropriate privacy protection[\s\S]*APP_ROUTES\.COMMUNITY_CONFIRMATION_POLICY[\s\S]*Configure confirmation policy[\s\S]*APP_ROUTES\.COMMUNITY_CONFIRMATION_INBOX[\s\S]*Open confirmation inbox[\s\S]*These links only open the confirmation surfaces[\s\S]*do not create a\s+confirmation request, choose responders, expose private records, or\s+publish an outcome claim/,
+  /Evidence and impact rule[\s\S]*Attendance, payment, contribution, photograph, video, notice, and\s+report records can show that activity happened[\s\S]*They do not, by\s+themselves, prove what changed in a participant's life[\s\S]*Outcome and impact\s+claims still need review, participant\/community confirmation, time\s+context, and appropriate privacy protection[\s\S]*APP_ROUTES\.COMMUNITY_CONFIRMATION_POLICY[\s\S]*Configure confirmation policy[\s\S]*APP_ROUTES\.COMMUNITY_CONFIRMATION_INBOX[\s\S]*Open confirmation inbox[\s\S]*These links only open the confirmation surfaces[\s\S]*do not create a\s+confirmation request, choose responders, expose private records, or\s+publish an outcome claim/,
   "Community Domain Trust/Evidence readiness must distinguish activity evidence from outcome or life-change proof.",
   { frontend: true }
 );
@@ -3058,35 +3058,35 @@ assertContains(
 
 assertContains(
   "src/pages/communityDomainDashboard/TrustEvidenceReadinessPanels.tsx",
-  /Evidence record readiness[\s\S]*primary_next_action[\s\S]*evidence_record_engine_status[\s\S]*record_type_count[\s\S]*evidence_records_created[\s\S]*review_evidence_metadata_count[\s\S]*Boundary: readiness only[\s\S]*no records, uploads, credentials, proof,[\s\S]*authority verification, trust scoring, money, or private evidence/,
+  /Evidence record readiness[\s\S]*primary_next_action[\s\S]*evidence_record_engine_status[\s\S]*record_type_count[\s\S]*evidence_records_created[\s\S]*review_evidence_metadata_count[\s\S]*Rule: readiness only[\s\S]*no records, uploads, credentials, proof,[\s\S]*authority verification, trust scoring, money, or private evidence/,
   "Community Domain dashboard Services lane must show read-only evidence record readiness without implying durable evidence writes, file upload, storage-key exposure, validity calculation, visibility-policy persistence, credentials, TrustSlips, Trust Passport writes, public proof, legal verification, money movement, billing activation, marketplace activity, social Community creation, private evidence exposure, or trust scoring.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/communityDomainDashboard/TrustEvidenceReadinessPanels.tsx",
-  /Evidence release readiness[\s\S]*primary_next_action[\s\S]*evidence_release_engine_status[\s\S]*evidence_releases_created[\s\S]*public_proofs_published[\s\S]*release_evidence_count[\s\S]*Boundary: release readiness only[\s\S]*no evidence release, proof, public[\s\S]*links, QR codes, credentials, sharing, permission changes, trust[\s\S]*scoring, money, or private evidence/,
+  /Evidence release readiness[\s\S]*primary_next_action[\s\S]*evidence_release_engine_status[\s\S]*evidence_releases_created[\s\S]*public_proofs_published[\s\S]*release_evidence_count[\s\S]*Rule: release readiness only[\s\S]*no evidence release, proof, public[\s\S]*links, QR codes, credentials, sharing, permission changes, trust[\s\S]*scoring, money, or private evidence/,
   "Community Domain dashboard Services lane must show read-only evidence release readiness without implying evidence release, file or storage-key exposure, public proof publishing, public URL or QR creation, credentials, TrustSlips, Trust Passport writes, cross-domain sharing, trust relay paths, legal verification, money movement, billing activation, marketplace activity, social Community creation, permission changes, private evidence exposure, or trust scoring.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/communityDomainDashboard/TrustEvidenceReadinessPanels.tsx",
-  /Trust relay readiness[\s\S]*primary_next_action[\s\S]*trust_relay_engine_status[\s\S]*relay_paths_created[\s\S]*bridge_member_candidates[\s\S]*open_relay_review_count[\s\S]*Boundary: relay readiness only[\s\S]*no relay paths, proof, reposts,[\s\S]*discovery, affiliations, private records, credentials, marketplace[\s\S]*activity, billing, or money/,
+  /Trust relay readiness[\s\S]*primary_next_action[\s\S]*trust_relay_engine_status[\s\S]*relay_paths_created[\s\S]*bridge_member_candidates[\s\S]*open_relay_review_count[\s\S]*Rule: relay readiness only[\s\S]*no relay paths, proof, reposts,[\s\S]*discovery, affiliations, private records, credentials, marketplace[\s\S]*activity, billing, or money/,
   "Community Domain dashboard Services lane must show read-only trust relay readiness without implying relay path creation, Spotlight reposting, proof publishing, cross-domain discovery, private evidence access, TrustSlip issuing, Trust Passport writes, credentials, marketplace activity, affiliations, billing activation, or money movement.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/communityDomainDashboard/TrustEvidenceReadinessPanels.tsx",
-  /Notification scope readiness[\s\S]*primary_next_action[\s\S]*notification_scope_engine_status[\s\S]*notification_policy_count[\s\S]*notifications_sent[\s\S]*Boundary: audience readiness only[\s\S]*no messages, delivery jobs,[\s\S]*audience lists, announcements, member lists, marketplace records,[\s\S]*money, trust records, or private records/,
+  /Notification scope readiness[\s\S]*primary_next_action[\s\S]*notification_scope_engine_status[\s\S]*notification_policy_count[\s\S]*notifications_sent[\s\S]*Rule: audience readiness only[\s\S]*no messages, delivery jobs,[\s\S]*audience lists, announcements, member lists, marketplace records,[\s\S]*money, trust records, or private records/,
   "Community Domain dashboard Services lane must show read-only notification scope readiness without implying notification delivery, jobs, email/SMS/WhatsApp/push sending, audience-list creation, public announcements, cross-domain broadcasts, member-list exposure, marketplace records, money movement, TrustSlips, Trust Passport writes, or private record exposure.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/communityDomainDashboard/TrustEvidenceReadinessPanels.tsx",
-  /Trust mobility readiness[\s\S]*primary_next_action[\s\S]*verification_status[\s\S]*review_evidence_records[\s\S]*relay_paths[\s\S]*Boundary: mobility readiness only[\s\S]*no trust records, credentials,[\s\S]*relay paths, proof, outward links, marketplace activity, separate[\s\S]*communities, money, or private records/,
+  /Trust mobility readiness[\s\S]*primary_next_action[\s\S]*verification_status[\s\S]*review_evidence_records[\s\S]*relay_paths[\s\S]*Rule: mobility readiness only[\s\S]*no trust records, credentials,[\s\S]*relay paths, proof, outward links, marketplace activity, separate[\s\S]*communities, money, or private records/,
   "Community Domain dashboard Services lane must show read-only trust mobility readiness without implying TrustSlips, Trust Passport writes, credentials, relay paths, evidence release, file or storage-key exposure, legal verification, proof publishing, outward links, money movement, billing, activation, marketplace activity, social Community creation, or private record exposure.",
   { frontend: true }
 );
