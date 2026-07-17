@@ -360,7 +360,7 @@ export default function CommunityDomainGovernanceReadinessPanels({
           </div>
         )}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          Boundary: review pressure only; no decisions, membership changes,
+          Rule: review pressure only; no decisions, membership changes,
           role changes, private evidence, or policy bypass.
         </div>
       </div>
@@ -448,7 +448,7 @@ export default function CommunityDomainGovernanceReadinessPanels({
           </div>
         ) : null}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          Boundary: authority planning only; no roles, memberships, policies,
+          Rule: authority planning only; no roles, memberships, policies,
           review decisions, billing, proof, marketplace activity, money, or
           private member records.
         </div>
@@ -508,7 +508,7 @@ export default function CommunityDomainGovernanceReadinessPanels({
           </div>
         ) : null}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          Boundary: coverage only; no policy creation, role changes, review
+          Rule: coverage only; no policy creation, role changes, review
           decisions, authority verification, money, billing, public pages,
           marketplace activity, or private review records.
         </div>

@@ -469,7 +469,7 @@ export default function CommunityDomainIdentityReadinessPanels({
           </div>
         ) : null}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          Boundary: profile readiness only; no structures, members, policies,
+          Rule: profile readiness only; no structures, members, policies,
           reviews, evidence, billing, shops, payments, finance records,
           community links, verification, activation, public pages, or private
           records.
@@ -484,7 +484,7 @@ export default function CommunityDomainIdentityReadinessPanels({
           {socialBridge
             ? `${cleanText(
                 socialBridge.primary_next_action?.label,
-                "Review community bridge boundaries"
+                "Review community bridge rules"
               )}. ${socialBridgeReadyTotal} of ${visibleSocialBridgeLanes.length} bridge checks are ready.`
             : "GSN could not load the community bridge view for this Community Domain."}
         </div>
@@ -532,7 +532,7 @@ export default function CommunityDomainIdentityReadinessPanels({
           </div>
         ) : null}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          Boundary: bridge readiness only; no community creation or upgrade,
+          Rule: bridge readiness only; no community creation or upgrade,
           private-record connection, affiliation decisions, member copy or invite,
           marketplace movement, billing, authority verification, record merging,
           or private member records.
@@ -554,7 +554,7 @@ export default function CommunityDomainIdentityReadinessPanels({
         {factGrid([
           ["Bridge", compactStatus(affiliationSummary.bridge_status)],
           [
-            "Affiliation engine",
+            "Affiliation path",
             compactStatus(affiliationSummary.domain_affiliation_engine_status),
           ],
           [
@@ -605,7 +605,7 @@ export default function CommunityDomainIdentityReadinessPanels({
           </div>
         ) : null}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          Boundary: affiliation readiness only; no parent or child links,
+          Rule: affiliation readiness only; no parent or child links,
           approvals, community links, member copy or transfer, inherited policy,
           billing, authority verification, public links, marketplace activity,
           money, trust records, or private records.

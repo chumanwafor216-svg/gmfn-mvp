@@ -245,7 +245,7 @@ export default function CommunityDomainMemberReadinessPanels({
             </div>
           ) : null}
           <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-            Boundary: placement view only; admins still control placement, roles,
+            Rule: placement view only; admins still control placement, roles,
             and review decisions.
           </div>
         </div>
@@ -282,7 +282,7 @@ export default function CommunityDomainMemberReadinessPanels({
             Community Domain admin to review member placement.
           </div>
           <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-            Boundary: no private lists, role assignment, placement, review
+            Rule: no private lists, role assignment, placement, review
             decisions, or permission grants.
           </div>
         </div>
@@ -368,7 +368,7 @@ export default function CommunityDomainMemberReadinessPanels({
           </div>
         ) : null}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          Boundary: readiness only; no identity verification, credentials,
+          Rule: readiness only; no identity verification, credentials,
           member or role changes, review decisions, proof, trust records, money,
           or private member records.
         </div>

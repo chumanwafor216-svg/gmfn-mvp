@@ -3135,21 +3135,21 @@ assertContains(
 
 assertContains(
   "src/pages/communityDomainDashboard/IdentityReadinessPanels.tsx",
-  /Affiliation readiness[\s\S]*primary_next_action[\s\S]*bridge_status[\s\S]*domain_affiliation_engine_status[\s\S]*approved_affiliations[\s\S]*pending_affiliations[\s\S]*Boundary: affiliation readiness only[\s\S]*no parent or child links,[\s\S]*approvals, community links, member copy or transfer, inherited policy,[\s\S]*billing, authority verification, public links, marketplace activity,[\s\S]*money, trust records, or private records/,
-  "Community Domain dashboard Identity area must show concise affiliation readiness without implying domain-domain affiliation creation, parent/child domain creation, affiliation decisions, social Community linking, member transfer, inherited policy, billing, verification, public URLs, marketplace activity, money movement, TrustSlips, Trust Passport writes, or private record exposure.",
+  /Affiliation readiness[\s\S]*primary_next_action[\s\S]*bridge_status[\s\S]*Affiliation path[\s\S]*domain_affiliation_engine_status[\s\S]*approved_affiliations[\s\S]*pending_affiliations[\s\S]*Rule: affiliation readiness only[\s\S]*no parent or child links,[\s\S]*approvals, community links, member copy or transfer, inherited policy,[\s\S]*billing, authority verification, public links, marketplace activity,[\s\S]*money, trust records, or private records/,
+  "Community Domain dashboard Identity area must show concise affiliation readiness without exposing engine wording or implying domain-domain affiliation creation, parent/child domain creation, affiliation decisions, social Community linking, member transfer, inherited policy, billing, verification, public URLs, marketplace activity, money movement, TrustSlips, Trust Passport writes, or private record exposure.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/communityDomainDashboard/IdentityReadinessPanels.tsx",
-  /Community bridge readiness[\s\S]*primary_next_action[\s\S]*bridge_status[\s\S]*upgrade_path_status[\s\S]*linked_member_count[\s\S]*Boundary: bridge readiness only[\s\S]*no community creation or upgrade,[\s\S]*private-record connection, affiliation decisions, member copy or invite,[\s\S]*marketplace movement, billing, authority verification, record merging,[\s\S]*or private member records/,
+  /Community bridge readiness[\s\S]*primary_next_action[\s\S]*Review community bridge rules[\s\S]*bridge_status[\s\S]*upgrade_path_status[\s\S]*linked_member_count[\s\S]*Rule: bridge readiness only[\s\S]*no community creation or upgrade,[\s\S]*private-record connection, affiliation decisions, member copy or invite,[\s\S]*marketplace movement, billing, authority verification, record merging,[\s\S]*or private member records/,
   "Community Domain dashboard Identity area must show concise social bridge readiness without implying social Community creation, Community upgrade, clan_id linking, affiliation writes or decisions, member copying/invites, marketplace movement, billing activation, authority verification, record merging, or private member exposure.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/communityDomainDashboard/IdentityReadinessPanels.tsx",
-  /Institutional profile[\s\S]*primary_next_action[\s\S]*template_label[\s\S]*marketplace_role[\s\S]*active_member_count[\s\S]*active_policy_count[\s\S]*Boundary: profile readiness only[\s\S]*no structures, members, policies,[\s\S]*reviews, evidence, billing, shops, payments, finance records,[\s\S]*community links, verification, activation, public pages, or private[\s\S]*records/,
+  /Institutional profile[\s\S]*primary_next_action[\s\S]*template_label[\s\S]*marketplace_role[\s\S]*active_member_count[\s\S]*active_policy_count[\s\S]*Rule: profile readiness only[\s\S]*no structures, members, policies,[\s\S]*reviews, evidence, billing, shops, payments, finance records,[\s\S]*community links, verification, activation, public pages, or private[\s\S]*records/,
   "Community Domain dashboard Identity area must show concise institutional profile classification without implying custom schema, tenant, billing package, node/member/policy/review/evidence writes, marketplace/shop/payment/finance records, social Community links, verification, activation, publication, or private record exposure.",
   { frontend: true }
 );
@@ -3275,7 +3275,7 @@ assertContains(
 
 assertContains(
   "src/pages/communityDomainDashboard/MemberReadinessPanels.tsx",
-  /Member verification readiness[\s\S]*primary_next_action[\s\S]*active_member_count[\s\S]*members_with_gsn_id[\s\S]*members_without_unit_placement[\s\S]*open_member_review_count[\s\S]*credential_issuance_status[\s\S]*Boundary: readiness only[\s\S]*no identity verification, credentials,[\s\S]*member or role changes, review decisions, proof, trust records, money,[\s\S]*or private member records/,
+  /Member verification readiness[\s\S]*primary_next_action[\s\S]*active_member_count[\s\S]*members_with_gsn_id[\s\S]*members_without_unit_placement[\s\S]*open_member_review_count[\s\S]*credential_issuance_status[\s\S]*Rule: readiness only[\s\S]*no identity verification, credentials,[\s\S]*member or role changes, review decisions, proof, trust records, money,[\s\S]*or private member records/,
   "Community Domain dashboard Members lane must show read-only member verification readiness without implying KYC/credential/member/role/review/evidence/TrustSlip/Trust Passport writes or private record exposure.",
   { frontend: true }
 );
@@ -3310,35 +3310,35 @@ assertContains(
 
 assertContains(
   "src/pages/communityDomainDashboard/GovernanceReadinessPanels.tsx",
-  /reviewPulseRows[\s\S]*Needs review[\s\S]*Ready to apply[\s\S]*Access requests[\s\S]*Governance review pulse[\s\S]*Your open decisions show what you can handle now[\s\S]*Boundary: review pressure only[\s\S]*no decisions, membership changes,[\s\S]*role changes, private evidence, or policy bypass/,
+  /reviewPulseRows[\s\S]*Needs review[\s\S]*Ready to apply[\s\S]*Access requests[\s\S]*Governance review pulse[\s\S]*Your open decisions show what you can handle now[\s\S]*Rule: review pressure only[\s\S]*no decisions, membership changes,[\s\S]*role changes, private evidence, or policy bypass/,
   "Community Domain dashboard Governance lane must show a compact review pulse without deciding reviews, applying membership, or exposing private review evidence.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/communityDomainDashboard/GovernanceReadinessPanels.tsx",
-  /Governance coverage[\s\S]*primary_next_action[\s\S]*local admins and policy coverage[\s\S]*Domain policies[\s\S]*governanceCoverageCounts\.domain_policies[\s\S]*Needs admin[\s\S]*governanceCoverageCounts\.needs_local_admin[\s\S]*Needs policy[\s\S]*governanceCoverageCounts\.needs_policy[\s\S]*Boundary: coverage only[\s\S]*no policy creation, role changes, review[\s\S]*decisions, authority verification, money, billing, public pages,[\s\S]*marketplace activity, or private review records/,
+  /Governance coverage[\s\S]*primary_next_action[\s\S]*local admins and policy coverage[\s\S]*Domain policies[\s\S]*governanceCoverageCounts\.domain_policies[\s\S]*Needs admin[\s\S]*governanceCoverageCounts\.needs_local_admin[\s\S]*Needs policy[\s\S]*governanceCoverageCounts\.needs_policy[\s\S]*Rule: coverage only[\s\S]*no policy creation, role changes, review[\s\S]*decisions, authority verification, money, billing, public pages,[\s\S]*marketplace activity, or private review records/,
   "Community Domain dashboard Governance lane must show read-only governance coverage without implying policy creation, role assignment, review decisions, authority verification, billing, publishing, marketplace activity, social Community creation, or private review access.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/communityDomainDashboard/GovernanceReadinessPanels.tsx",
-  /Delegation map[\s\S]*primary_next_action[\s\S]*central_authority_count[\s\S]*operating_units_with_local_admin[\s\S]*active_policy_count[\s\S]*open_review_count[\s\S]*Boundary: authority planning only[\s\S]*no roles, memberships, policies,[\s\S]*review decisions, billing, proof, marketplace activity, money, or[\s\S]*private member records/,
+  /Delegation map[\s\S]*primary_next_action[\s\S]*central_authority_count[\s\S]*operating_units_with_local_admin[\s\S]*active_policy_count[\s\S]*open_review_count[\s\S]*Rule: authority planning only[\s\S]*no roles, memberships, policies,[\s\S]*review decisions, billing, proof, marketplace activity, money, or[\s\S]*private member records/,
   "Community Domain dashboard Governance lane must show read-only delegation authority without implying role assignment, node memberships, policy/review writes, inheritance changes, authority verification, billing, marketplace activity, social Community creation, proof publication, or private record exposure.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/communityDomainDashboard/MemberReadinessPanels.tsx",
-  /Your placement[\s\S]*Active operating-unit placements[\s\S]*Boundary: placement view only[\s\S]*admins still control placement, roles,[\s\S]*and review decisions/,
+  /Your placement[\s\S]*Active operating-unit placements[\s\S]*Rule: placement view only[\s\S]*admins still control placement, roles,[\s\S]*and review decisions/,
   "Community Domain dashboard Members lane must show the current viewer's read-only placement summary without implying self-service placement or role changes.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/communityDomainDashboard/MemberReadinessPanels.tsx",
-  /Member and role summary[\s\S]*safe domain-level counts[\s\S]*Active members[\s\S]*counts\.active_members[\s\S]*Role placements[\s\S]*counts\.active_node_memberships[\s\S]*Open reviews[\s\S]*counts\.open_reviews[\s\S]*refresh the dashboard[\s\S]*Boundary: no private lists[\s\S]*role assignment[\s\S]*placement[\s\S]*review[\s\S]*permission grants/,
+  /Member and role summary[\s\S]*safe domain-level counts[\s\S]*Active members[\s\S]*counts\.active_members[\s\S]*Role placements[\s\S]*counts\.active_node_memberships[\s\S]*Open reviews[\s\S]*counts\.open_reviews[\s\S]*refresh the dashboard[\s\S]*Rule: no private lists[\s\S]*role assignment[\s\S]*placement[\s\S]*review[\s\S]*permission grants/,
   "Community Domain dashboard Members lane must show a safe count-only fallback when the viewer placement view is not available.",
   { frontend: true }
 );
