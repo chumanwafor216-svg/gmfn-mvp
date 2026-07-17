@@ -2835,6 +2835,9 @@ export default function CommunityDomainDashboardPage() {
     useState(false);
   const [setupNoticeTaskChooserOpen, setSetupNoticeTaskChooserOpen] =
     useState(false);
+  const [setupLaunchProgressOpen, setSetupLaunchProgressOpen] = useState(false);
+  const [setupLaunchEditOpen, setSetupLaunchEditOpen] = useState(false);
+  const [setupEvidenceListOpen, setSetupEvidenceListOpen] = useState(false);
   const [activeOperatingSummaryTask, setActiveOperatingSummaryTask] =
     useState<OperatingSummaryTaskKey>("next_action");
   const [activeSetupWorkbenchTask, setActiveSetupWorkbenchTask] =
@@ -2845,6 +2848,17 @@ export default function CommunityDomainDashboardPage() {
     useState(false);
   const [setupAccessTaskChooserOpen, setSetupAccessTaskChooserOpen] =
     useState(false);
+  const [setupEditGroupChooserOpen, setSetupEditGroupChooserOpen] =
+    useState(false);
+  const [setupEditStepChooserOpen, setSetupEditStepChooserOpen] =
+    useState(false);
+  const [activeSetupFeaturePolicyRule, setActiveSetupFeaturePolicyRule] =
+    useState<DomainFeaturePolicyKey>("announcement_board");
+  const [setupFeaturePolicyRuleChooserOpen, setSetupFeaturePolicyRuleChooserOpen] =
+    useState(false);
+  const [setupFeaturePolicyNotesOpen, setSetupFeaturePolicyNotesOpen] =
+    useState(false);
+  const [setupSpotlightSlotsOpen, setSetupSpotlightSlotsOpen] = useState(false);
   const [showAdvancedTools, setShowAdvancedTools] = useState(false);
   const [operatingAreaPickerOpen, setOperatingAreaPickerOpen] = useState(false);
   const [commandGuidanceOpen, setCommandGuidanceOpen] = useState(false);
@@ -2856,6 +2870,7 @@ export default function CommunityDomainDashboardPage() {
     useState(false);
   const [serviceStageChooserOpen, setServiceStageChooserOpen] = useState(false);
   const [servicePacketChooserOpen, setServicePacketChooserOpen] = useState(false);
+  const [serviceRuleDetailsOpen, setServiceRuleDetailsOpen] = useState(false);
   const [structureStageChooserOpen, setStructureStageChooserOpen] = useState(false);
   const [structurePacketChooserOpen, setStructurePacketChooserOpen] = useState(false);
   const [memberStageChooserOpen, setMemberStageChooserOpen] = useState(false);
@@ -3126,10 +3141,19 @@ export default function CommunityDomainDashboardPage() {
     setActiveOperatingSummaryTask("next_action");
     setOperatingSummaryGroupChooserOpen(false);
     setOperatingSummaryTaskChooserOpen(false);
+    setSetupLaunchProgressOpen(false);
+    setSetupLaunchEditOpen(false);
+    setSetupEvidenceListOpen(false);
     setActiveSetupWorkbenchTask("step");
     setActiveSetupAccessTask("summary");
     setSetupWorkbenchChooserOpen(false);
     setSetupAccessTaskChooserOpen(false);
+    setSetupEditGroupChooserOpen(false);
+    setSetupEditStepChooserOpen(false);
+    setActiveSetupFeaturePolicyRule("announcement_board");
+    setSetupFeaturePolicyRuleChooserOpen(false);
+    setSetupFeaturePolicyNotesOpen(false);
+    setSetupSpotlightSlotsOpen(false);
     setActiveBillingTask("payment_code");
     setBillingPaymentGroupChooserOpen(false);
     setBillingPaymentStepChooserOpen(false);
@@ -4693,10 +4717,19 @@ export default function CommunityDomainDashboardPage() {
     setSetupOverviewGroupChooserOpen(false);
     setSetupOverviewTaskChooserOpen(false);
     setSetupNoticeTaskChooserOpen(false);
+    setSetupLaunchProgressOpen(false);
+    setSetupLaunchEditOpen(false);
+    setSetupEvidenceListOpen(false);
     setSetupWorkbenchChooserOpen(false);
     setSetupAccessTaskChooserOpen(false);
+    setSetupEditGroupChooserOpen(false);
+    setSetupEditStepChooserOpen(false);
+    setSetupFeaturePolicyRuleChooserOpen(false);
+    setSetupFeaturePolicyNotesOpen(false);
+    setSetupSpotlightSlotsOpen(false);
     setServiceStageChooserOpen(false);
     setServicePacketChooserOpen(false);
+    setServiceRuleDetailsOpen(false);
     setStructurePacketChooserOpen(false);
     setMemberPacketChooserOpen(false);
     setGovernanceGroupChooserOpen(false);
@@ -4727,6 +4760,51 @@ export default function CommunityDomainDashboardPage() {
     }
   }, [activeSetupWorkbenchTask]);
   useEffect(() => {
+    if (
+      activeLane !== "settings" ||
+      !setupWorkspaceOpen ||
+      activeSetupStep !== "evidence"
+    ) {
+      setSetupEvidenceListOpen(false);
+    }
+  }, [activeLane, activeSetupStep, setupWorkspaceOpen]);
+  useEffect(() => {
+    if (
+      activeLane !== "settings" ||
+      !setupWorkspaceOpen ||
+      activeSetupStep !== "launch"
+    ) {
+      setSetupLaunchProgressOpen(false);
+      setSetupLaunchEditOpen(false);
+    }
+  }, [activeLane, activeSetupStep, setupWorkspaceOpen]);
+  useEffect(() => {
+    if (
+      activeLane !== "settings" ||
+      !setupWorkspaceOpen ||
+      activeSetupStep !== "launch"
+    ) {
+      setSetupEditGroupChooserOpen(false);
+      setSetupEditStepChooserOpen(false);
+    }
+  }, [activeLane, activeSetupStep, setupWorkspaceOpen]);
+  useEffect(() => {
+    if (
+      activeLane !== "settings" ||
+      !setupWorkspaceOpen ||
+      activeSetupStep !== "services"
+    ) {
+      setSetupFeaturePolicyRuleChooserOpen(false);
+      setSetupFeaturePolicyNotesOpen(false);
+      setSetupSpotlightSlotsOpen(false);
+    }
+  }, [activeLane, activeSetupStep, setupWorkspaceOpen]);
+  useEffect(() => {
+    if (activeSetupFeaturePolicyRule !== "spotlight") {
+      setSetupSpotlightSlotsOpen(false);
+    }
+  }, [activeSetupFeaturePolicyRule]);
+  useEffect(() => {
     if (activeLane !== "members") {
       setMemberStageChooserOpen(false);
       setMemberPacketChooserOpen(false);
@@ -4742,8 +4820,14 @@ export default function CommunityDomainDashboardPage() {
     if (activeLane !== "modules") {
       setServiceStageChooserOpen(false);
       setServicePacketChooserOpen(false);
+      setServiceRuleDetailsOpen(false);
     }
   }, [activeLane]);
+  useEffect(() => {
+    if (activeServiceDetail !== "boundaries") {
+      setServiceRuleDetailsOpen(false);
+    }
+  }, [activeServiceDetail]);
   useEffect(() => {
     if (activeLane !== "structure") {
       setStructureStageChooserOpen(false);
@@ -5050,6 +5134,9 @@ export default function CommunityDomainDashboardPage() {
   const featurePolicySourceDetail = lockedFeaturePolicy
     ? "Actions use the active policy saved for this Community Domain. Edit the draft, then save and lock again to change live behaviour."
     : "Actions use this setup draft until the owner/admin locks a domain feature policy.";
+  const activeSetupFeaturePolicyRow =
+    DOMAIN_FEATURE_POLICY_ROWS.find((row) => row.key === activeSetupFeaturePolicyRule) ||
+    DOMAIN_FEATURE_POLICY_ROWS[0];
   const memberInvitesPolicyMode = effectiveFeaturePolicy.features.member_invites;
   const memberInvitesOff = domainFeatureIsOff(effectiveFeaturePolicy, "member_invites");
   const paymentsContributionsPolicyMode =
@@ -5412,10 +5499,18 @@ export default function CommunityDomainDashboardPage() {
     setOperatingSummaryNotesOpen(false);
     setOperatingSummaryGroupChooserOpen(false);
     setOperatingSummaryTaskChooserOpen(false);
+    setSetupLaunchProgressOpen(false);
+    setSetupLaunchEditOpen(false);
     setSetupWorkbenchChooserOpen(false);
     setSetupAccessTaskChooserOpen(false);
+    setSetupEditGroupChooserOpen(false);
+    setSetupEditStepChooserOpen(false);
+    setSetupFeaturePolicyRuleChooserOpen(false);
+    setSetupFeaturePolicyNotesOpen(false);
+    setSetupSpotlightSlotsOpen(false);
     setServiceStageChooserOpen(false);
     setServicePacketChooserOpen(false);
+    setServiceRuleDetailsOpen(false);
     setStructureStageChooserOpen(false);
     setStructurePacketChooserOpen(false);
     setMemberPacketChooserOpen(false);
@@ -5480,9 +5575,18 @@ export default function CommunityDomainDashboardPage() {
     setSetupOverviewGroupChooserOpen(false);
     setSetupOverviewTaskChooserOpen(false);
     setSetupNoticeTaskChooserOpen(false);
+    setSetupLaunchProgressOpen(false);
+    setSetupLaunchEditOpen(false);
+    setSetupEvidenceListOpen(false);
     setSetupWorkbenchChooserOpen(false);
     setSetupAccessTaskChooserOpen(false);
+    setSetupEditGroupChooserOpen(false);
+    setSetupEditStepChooserOpen(false);
+    setSetupFeaturePolicyRuleChooserOpen(false);
+    setSetupFeaturePolicyNotesOpen(false);
+    setSetupSpotlightSlotsOpen(false);
     setServicePacketChooserOpen(false);
+    setServiceRuleDetailsOpen(false);
     setStructurePacketChooserOpen(false);
     setMemberPacketChooserOpen(false);
     setGovernanceGroupChooserOpen(false);
@@ -5502,10 +5606,19 @@ export default function CommunityDomainDashboardPage() {
     setSetupOverviewGroupChooserOpen(false);
     setSetupOverviewTaskChooserOpen(false);
     setSetupNoticeTaskChooserOpen(false);
+    setSetupLaunchProgressOpen(false);
+    setSetupLaunchEditOpen(false);
+    setSetupEvidenceListOpen(false);
     setSetupWorkbenchChooserOpen(false);
     setSetupAccessTaskChooserOpen(false);
+    setSetupEditGroupChooserOpen(false);
+    setSetupEditStepChooserOpen(false);
+    setSetupFeaturePolicyRuleChooserOpen(false);
+    setSetupFeaturePolicyNotesOpen(false);
+    setSetupSpotlightSlotsOpen(false);
     setServiceStageChooserOpen(false);
     setServicePacketChooserOpen(false);
+    setServiceRuleDetailsOpen(false);
     setStructureStageChooserOpen(false);
     setStructurePacketChooserOpen(false);
     setMemberStageChooserOpen(false);
@@ -5572,9 +5685,18 @@ export default function CommunityDomainDashboardPage() {
     setSetupOverviewGroupChooserOpen(false);
     setSetupOverviewTaskChooserOpen(false);
     setSetupNoticeTaskChooserOpen(false);
+    setSetupLaunchProgressOpen(false);
+    setSetupLaunchEditOpen(false);
+    setSetupEvidenceListOpen(false);
     setSetupWorkbenchChooserOpen(false);
     setSetupAccessTaskChooserOpen(false);
+    setSetupEditGroupChooserOpen(false);
+    setSetupEditStepChooserOpen(false);
+    setSetupFeaturePolicyRuleChooserOpen(false);
+    setSetupFeaturePolicyNotesOpen(false);
+    setSetupSpotlightSlotsOpen(false);
     setServicePacketChooserOpen(false);
+    setServiceRuleDetailsOpen(false);
     setStructurePacketChooserOpen(false);
     setMemberPacketChooserOpen(false);
     setGovernanceGroupChooserOpen(false);
@@ -5681,8 +5803,14 @@ export default function CommunityDomainDashboardPage() {
     setCommandGuidanceOpen(false);
     setWorkSurfaceNotesOpen(false);
     setOperatingSummaryNotesOpen(false);
+    setSetupEvidenceListOpen(false);
     setSetupWorkbenchChooserOpen(false);
     setSetupAccessTaskChooserOpen(false);
+    setSetupEditGroupChooserOpen(false);
+    setSetupEditStepChooserOpen(false);
+    setSetupFeaturePolicyRuleChooserOpen(false);
+    setSetupFeaturePolicyNotesOpen(false);
+    setSetupSpotlightSlotsOpen(false);
     setServicePacketChooserOpen(false);
     setStructurePacketChooserOpen(false);
     setMemberPacketChooserOpen(false);
@@ -8302,6 +8430,12 @@ export default function CommunityDomainDashboardPage() {
                                   setActiveSetupWorkbenchTask(task.key);
                                   setSetupWorkbenchChooserOpen(false);
                                   setSetupAccessTaskChooserOpen(false);
+                                  setSetupEditGroupChooserOpen(false);
+                                  setSetupEditStepChooserOpen(false);
+                                  setSetupEvidenceListOpen(false);
+                                  setSetupFeaturePolicyRuleChooserOpen(false);
+                                  setSetupFeaturePolicyNotesOpen(false);
+                                  setSetupSpotlightSlotsOpen(false);
                                   if (task.key === "access") {
                                     setActiveSetupAccessTask("summary");
                                   }
@@ -8829,32 +8963,75 @@ export default function CommunityDomainDashboardPage() {
                           {busySetupEvidence ? "Submitting..." : "Submit evidence"}
                         </StableButton>
                         <div style={{ ...softCard(), display: "grid", gap: 8 }}>
-                          <div style={sectionLabel()}>Submitted setup evidence</div>
-                          {setupEvidenceItems.length ? (
-                            setupEvidenceItems.slice(0, 4).map((item: any) => (
-                              <div
-                                key={cleanText(item?.id || item?.storage_key || item?.title)}
-                                style={{
-                                  display: "grid",
-                                  gap: 4,
-                                  borderTop: "1px solid rgba(9,27,46,0.12)",
-                                  paddingTop: 8,
-                                }}
-                              >
-                                <strong>{cleanText(item?.title, "Evidence")}</strong>
-                                <span style={{ ...helperText(), fontSize: 13 }}>
-                                  {cleanText(item?.file_name || item?.external_reference, "Private setup record")}
-                                </span>
-                                <span style={{ ...helperText(), fontSize: 12 }}>
-                                  Status: {compactStatus(item?.status || "submitted")}
-                                </span>
+                          <div style={iconHeaderStyle()}>
+                            <span style={iconFrame(44)}>
+                              <GsnRealisticIcon name="records-folder" size={34} decorative />
+                            </span>
+                            <div style={{ minWidth: 0 }}>
+                              <div style={sectionLabel()}>Submitted setup evidence</div>
+                              <div style={{ ...helperText(), fontSize: 13 }}>
+                                {setupEvidenceItems.length
+                                  ? `${setupEvidenceItems.length} private setup record${
+                                      setupEvidenceItems.length === 1 ? "" : "s"
+                                    } submitted.`
+                                  : "No setup evidence has been submitted yet."}
                               </div>
-                            ))
-                          ) : (
-                            <div style={{ ...helperText(), fontSize: 13 }}>
-                              No setup evidence has been submitted for this domain yet.
                             </div>
-                          )}
+                          </div>
+                          <StableButton
+                            type="button"
+                            kind="secondary"
+                            fullWidth
+                            stableHeight={42}
+                            title="Review submitted setup evidence records."
+                            debugId="community-domain-dashboard.setup-evidence-list-toggle"
+                            aria-expanded={setupEvidenceListOpen}
+                            aria-controls="community-domain-setup-evidence-list"
+                            onClick={() =>
+                              setSetupEvidenceListOpen((current) => !current)
+                            }
+                            style={{ justifyContent: "center", fontSize: 13 }}
+                          >
+                            {setupEvidenceListOpen
+                              ? "Close submitted evidence"
+                              : "View submitted evidence"}
+                          </StableButton>
+                          {setupEvidenceListOpen ? (
+                            <div
+                              id="community-domain-setup-evidence-list"
+                              data-debug-id="community-domain-dashboard.setup-evidence-list-panel"
+                              style={{ display: "grid", gap: 8 }}
+                            >
+                              {setupEvidenceItems.length ? (
+                                setupEvidenceItems.slice(0, 4).map((item: any) => (
+                                  <div
+                                    key={cleanText(item?.id || item?.storage_key || item?.title)}
+                                    style={{
+                                      display: "grid",
+                                      gap: 4,
+                                      borderTop: "1px solid rgba(9,27,46,0.12)",
+                                      paddingTop: 8,
+                                    }}
+                                  >
+                                    <strong>{cleanText(item?.title, "Evidence")}</strong>
+                                    <span style={{ ...helperText(), fontSize: 13 }}>
+                                      {cleanText(
+                                        item?.file_name || item?.external_reference,
+                                        "Private setup record"
+                                      )}
+                                    </span>
+                                    <span style={{ ...helperText(), fontSize: 12 }}>
+                                      Status: {compactStatus(item?.status || "submitted")}
+                                    </span>
+                                  </div>
+                                ))
+                              ) : (
+                                <div style={{ ...helperText(), fontSize: 13 }}>
+                                  No setup evidence has been submitted for this domain yet.
+                                </div>
+                              )}
+                            </div>
+                          ) : null}
                         </div>
                       </div>
                     ) : null}
@@ -8926,99 +9103,156 @@ export default function CommunityDomainDashboardPage() {
                             </div>
                           </div>
                         </div>
-                        <div
-                          style={{
-                            borderRadius: 16,
-                            border: "1px solid rgba(214,170,69,0.30)",
-                            background: "rgba(255,249,225,0.72)",
-                            padding: 12,
-                          }}
+                        <StableButton
+                          type="button"
+                          kind="secondary"
+                          fullWidth
+                          stableHeight={42}
+                          title="Open the policy boundary and current source note."
+                          debugId="community-domain-dashboard.setup-feature-policy-notes-toggle"
+                          aria-expanded={setupFeaturePolicyNotesOpen}
+                          aria-controls="community-domain-setup-feature-policy-notes"
+                          onClick={() =>
+                            setSetupFeaturePolicyNotesOpen((current) => !current)
+                          }
+                          style={{ justifyContent: "center", fontSize: 13 }}
                         >
-                          <div style={sectionLabel()}>Enforcement boundary</div>
-                          <div style={{ ...helperText(), marginTop: 5, fontSize: 13 }}>
-                            Live enforcement exists for notices, member invites,
-                            marketplace shops, Shop Diary writes, payments and
-                            contributions, ROSCA cycle routes, Spotlight
-                            broadcast/payment routes, Demand Box posting, and
-                            private Vault publishing/link creation. Paid Vault
-                            slot entitlement, link expiry, and privacy controls
-                            stay on their separate service rails.
+                          {setupFeaturePolicyNotesOpen
+                            ? "Close policy notes"
+                            : "Open policy notes"}
+                        </StableButton>
+                        {setupFeaturePolicyNotesOpen ? (
+                          <div
+                            id="community-domain-setup-feature-policy-notes"
+                            data-debug-id="community-domain-dashboard.setup-feature-policy-notes-panel"
+                            style={{ display: "grid", gap: 10 }}
+                          >
+                            <div
+                              style={{
+                                borderRadius: 16,
+                                border: "1px solid rgba(214,170,69,0.30)",
+                                background: "rgba(255,249,225,0.72)",
+                                padding: 12,
+                              }}
+                            >
+                              <div style={sectionLabel()}>Enforcement boundary</div>
+                              <div style={{ ...helperText(), marginTop: 5, fontSize: 13 }}>
+                                Live enforcement exists for notices, member invites,
+                                marketplace shops, Shop Diary writes, payments and
+                                contributions, ROSCA cycle routes, Spotlight
+                                broadcast/payment routes, Demand Box posting, and
+                                private Vault publishing/link creation. Paid Vault
+                                slot entitlement, link expiry, and privacy controls
+                                stay on their separate service rails.
+                              </div>
+                            </div>
+                            <div
+                              style={{
+                                borderRadius: 16,
+                                border: "1px solid rgba(9,27,46,0.10)",
+                                background: "rgba(234,243,255,0.72)",
+                                padding: 12,
+                              }}
+                            >
+                              <div style={sectionLabel()}>Feature rule used</div>
+                              <div
+                                style={{ marginTop: 4, fontWeight: 900, color: "#07172C" }}
+                              >
+                                {featurePolicySourceLabel}
+                              </div>
+                              <div style={{ ...helperText(), marginTop: 5, fontSize: 13 }}>
+                                {featurePolicySourceDetail}
+                              </div>
+                              {lockedFeaturePolicyLoadedAt ? (
+                                <div
+                                  style={{
+                                    ...helperText(),
+                                    marginTop: 6,
+                                    fontSize: 12.5,
+                                    fontWeight: 820,
+                                  }}
+                                >
+                                  Last locked:{" "}
+                                  {setupDraftTimeLabel(lockedFeaturePolicyLoadedAt)}
+                                </div>
+                              ) : null}
+                            </div>
                           </div>
-                        </div>
+                        ) : null}
                         <div
                           style={{
+                            display: "grid",
+                            gap: 10,
                             borderRadius: 16,
                             border: "1px solid rgba(9,27,46,0.10)",
-                            background: "rgba(234,243,255,0.72)",
+                            background: "rgba(255,255,255,0.76)",
                             padding: 12,
                           }}
                         >
-                          <div style={sectionLabel()}>Feature rule used</div>
-                          <div style={{ marginTop: 4, fontWeight: 900, color: "#07172C" }}>
-                            {featurePolicySourceLabel}
+                          <div style={{ ...helperText(), fontSize: 13 }}>
+                            Current service rule:{" "}
+                            <strong>{activeSetupFeaturePolicyRow.label}</strong>.{" "}
+                            {activeSetupFeaturePolicyRow.note}
                           </div>
-                          <div style={{ ...helperText(), marginTop: 5, fontSize: 13 }}>
-                            {featurePolicySourceDetail}
+                          <div style={statusBadge("ready")}>
+                            {featurePolicyModeLabel(
+                              featurePolicyDraft.features[activeSetupFeaturePolicyRow.key]
+                            )}
                           </div>
-                          {lockedFeaturePolicyLoadedAt ? (
+                          <StableButton
+                            type="button"
+                            kind="secondary"
+                            fullWidth
+                            stableHeight={42}
+                            title="Choose one service rule to edit."
+                            debugId="community-domain-dashboard.setup-feature-policy-rule-toggle"
+                            disabled={setupEditingLocked}
+                            aria-expanded={setupFeaturePolicyRuleChooserOpen}
+                            aria-controls="community-domain-setup-feature-policy-rules"
+                            onClick={() =>
+                              setSetupFeaturePolicyRuleChooserOpen((current) => !current)
+                            }
+                            style={{ justifyContent: "center", fontSize: 13 }}
+                          >
+                            {setupFeaturePolicyRuleChooserOpen
+                              ? "Close service rules"
+                              : "Change service rule"}
+                          </StableButton>
+                          {setupFeaturePolicyRuleChooserOpen ? (
                             <div
-                              style={{
-                                ...helperText(),
-                                marginTop: 6,
-                                fontSize: 12.5,
-                                fontWeight: 820,
-                              }}
-                            >
-                              Last locked: {setupDraftTimeLabel(lockedFeaturePolicyLoadedAt)}
-                            </div>
-                          ) : null}
-                        </div>
-                        <div style={{ display: "grid", gap: 10 }}>
-                          {DOMAIN_FEATURE_POLICY_ROWS.map((row) => (
-                            <div
-                              key={row.key}
+                              id="community-domain-setup-feature-policy-rules"
+                              data-debug-id="community-domain-dashboard.setup-feature-policy-rule-panel"
                               style={{
                                 display: "grid",
+                                gridTemplateColumns:
+                                  "repeat(auto-fit, minmax(min(100%, 145px), 1fr))",
                                 gap: 8,
-                                padding: 12,
-                                borderRadius: 18,
-                                border: "1px solid rgba(9,27,46,0.1)",
-                                background: "rgba(255,255,255,0.72)",
                               }}
                             >
-                              <div style={iconHeaderStyle()}>
-                                <span style={iconFrame(42)}>
-                                  <GsnRealisticIcon name={row.icon} size={32} decorative />
-                                </span>
-                                <div style={{ minWidth: 0 }}>
-                                  <strong>{row.label}</strong>
-                                  <div style={{ ...helperText(), fontSize: 13 }}>
-                                    {row.note}
-                                  </div>
-                                </div>
-                              </div>
-                              <select
-                                value={featurePolicyDraft.features[row.key]}
-                                disabled={setupEditingLocked}
-                                onChange={(event) =>
-                                  updateFeaturePolicyMode(
-                                    row.key,
-                                    event.target.value as DomainFeaturePolicyMode
-                                  )
-                                }
-                                style={billingInputStyle()}
-                              >
-                                {FEATURE_POLICY_OPTIONS.map((option) => (
-                                  <option key={option.value} value={option.value}>
-                                    {option.label}
-                                  </option>
-                                ))}
-                              </select>
-                              <div style={{ ...helperText(), fontSize: 12.5, fontWeight: 820 }}>
-                                {domainFeatureRouteEffect(row.key)}
-                              </div>
+                              {DOMAIN_FEATURE_POLICY_ROWS.map((row) => {
+                                const selected = row.key === activeSetupFeaturePolicyRule;
+                                return (
+                                  <StableButton
+                                    key={row.key}
+                                    type="button"
+                                    kind={selected ? "primary" : "secondary"}
+                                    stableHeight={48}
+                                    title={row.note}
+                                    debugId={`community-domain-dashboard.setup-feature-policy-rule.${row.key}`}
+                                    disabled={setupEditingLocked}
+                                    aria-pressed={selected}
+                                    onClick={() => {
+                                      setActiveSetupFeaturePolicyRule(row.key);
+                                      setSetupFeaturePolicyRuleChooserOpen(false);
+                                      setSetupSpotlightSlotsOpen(false);
+                                    }}
+                                  >
+                                    {row.label}
+                                  </StableButton>
+                                );
+                              })}
                             </div>
-                          ))}
+                          ) : null}
                         </div>
                         <div
                           style={{
@@ -9026,104 +9260,206 @@ export default function CommunityDomainDashboardPage() {
                             gap: 10,
                             padding: 12,
                             borderRadius: 18,
-                            border: "1px solid rgba(214,170,69,0.34)",
-                            background: "rgba(255,249,225,0.72)",
+                            border: "1px solid rgba(9,27,46,0.1)",
+                            background: "rgba(255,255,255,0.72)",
                           }}
                         >
                           <div style={iconHeaderStyle()}>
                             <span style={iconFrame(42)}>
-                              <GsnRealisticIcon name="spotlight-megaphone" size={32} decorative />
+                              <GsnRealisticIcon
+                                name={activeSetupFeaturePolicyRow.icon}
+                                size={32}
+                                decorative
+                              />
                             </span>
                             <div style={{ minWidth: 0 }}>
-                              <strong>Spotlight slots</strong>
+                              <strong>{activeSetupFeaturePolicyRow.label}</strong>
                               <div style={{ ...helperText(), fontSize: 13 }}>
-                                Planning numbers for the domain's own Spotlight
-                                rotation. Broadcast/payment routes obey the
-                                feature switch; paid credit pricing stays
-                                separate.
+                                {activeSetupFeaturePolicyRow.note}
                               </div>
                             </div>
                           </div>
+                          <select
+                            value={featurePolicyDraft.features[activeSetupFeaturePolicyRow.key]}
+                            disabled={setupEditingLocked}
+                            onChange={(event) =>
+                              updateFeaturePolicyMode(
+                                activeSetupFeaturePolicyRow.key,
+                                event.target.value as DomainFeaturePolicyMode
+                              )
+                            }
+                            style={billingInputStyle()}
+                          >
+                            {FEATURE_POLICY_OPTIONS.map((option) => (
+                              <option key={option.value} value={option.value}>
+                                {option.label}
+                              </option>
+                            ))}
+                          </select>
+                          <div style={{ ...helperText(), fontSize: 12.5, fontWeight: 820 }}>
+                            {domainFeatureRouteEffect(activeSetupFeaturePolicyRow.key)}
+                          </div>
+                        </div>
+                        {activeSetupFeaturePolicyRow.key === "spotlight" ? (
                           <div
                             style={{
                               display: "grid",
-                              gridTemplateColumns:
-                                "repeat(auto-fit, minmax(min(100%, 130px), 1fr))",
-                              gap: 8,
+                              gap: 10,
+                              padding: 12,
+                              borderRadius: 18,
+                              border: "1px solid rgba(214,170,69,0.34)",
+                              background: "rgba(255,249,225,0.72)",
                             }}
                           >
-                            <label style={{ display: "grid", gap: 5 }}>
-                              <span style={sectionLabel()}>Free slots</span>
-                              <input
-                                type="number"
-                                min="1"
-                                value={featurePolicyDraft.spotlight.free_slots}
-                                disabled={setupEditingLocked}
-                                onChange={(event) =>
-                                  updateSpotlightPolicyNumber("free_slots", event.target.value)
-                                }
-                                style={billingInputStyle()}
-                              />
-                            </label>
-                            <label style={{ display: "grid", gap: 5 }}>
-                              <span style={sectionLabel()}>Paid after</span>
-                              <input
-                                type="number"
-                                min="1"
-                                value={featurePolicyDraft.spotlight.paid_after_slots}
-                                disabled={setupEditingLocked}
-                                onChange={(event) =>
-                                  updateSpotlightPolicyNumber(
-                                    "paid_after_slots",
-                                    event.target.value
-                                  )
-                                }
-                                style={billingInputStyle()}
-                              />
-                            </label>
-                            <label style={{ display: "grid", gap: 5 }}>
-                              <span style={sectionLabel()}>Rotation hours</span>
-                              <input
-                                type="number"
-                                min="1"
-                                value={featurePolicyDraft.spotlight.rotation_hours}
-                                disabled={setupEditingLocked}
-                                onChange={(event) =>
-                                  updateSpotlightPolicyNumber(
-                                    "rotation_hours",
-                                    event.target.value
-                                  )
-                                }
-                                style={billingInputStyle()}
-                              />
-                            </label>
+                            <div style={iconHeaderStyle()}>
+                              <span style={iconFrame(42)}>
+                                <GsnRealisticIcon
+                                  name="spotlight-megaphone"
+                                  size={32}
+                                  decorative
+                                />
+                              </span>
+                              <div style={{ minWidth: 0 }}>
+                                <strong>Spotlight slots</strong>
+                                <div style={{ ...helperText(), fontSize: 13 }}>
+                                  {featurePolicyDraft.spotlight.free_slots} free, paid after{" "}
+                                  {featurePolicyDraft.spotlight.paid_after_slots},{" "}
+                                  {featurePolicyDraft.spotlight.rotation_hours}h rotation.
+                                </div>
+                              </div>
+                            </div>
+                            <StableButton
+                              type="button"
+                              kind="secondary"
+                              fullWidth
+                              stableHeight={42}
+                              title="Edit Spotlight planning numbers."
+                              debugId="community-domain-dashboard.setup-spotlight-slots-toggle"
+                              disabled={setupEditingLocked}
+                              aria-expanded={setupSpotlightSlotsOpen}
+                              aria-controls="community-domain-setup-spotlight-slots"
+                              onClick={() =>
+                                setSetupSpotlightSlotsOpen((current) => !current)
+                              }
+                              style={{ justifyContent: "center", fontSize: 13 }}
+                            >
+                              {setupSpotlightSlotsOpen
+                                ? "Close slot numbers"
+                                : "Edit slot numbers"}
+                            </StableButton>
+                            {setupSpotlightSlotsOpen ? (
+                              <div
+                                id="community-domain-setup-spotlight-slots"
+                                data-debug-id="community-domain-dashboard.setup-spotlight-slots-panel"
+                                style={{
+                                  display: "grid",
+                                  gridTemplateColumns:
+                                    "repeat(auto-fit, minmax(min(100%, 130px), 1fr))",
+                                  gap: 8,
+                                }}
+                              >
+                                <label style={{ display: "grid", gap: 5 }}>
+                                  <span style={sectionLabel()}>Free slots</span>
+                                  <input
+                                    type="number"
+                                    min="1"
+                                    value={featurePolicyDraft.spotlight.free_slots}
+                                    disabled={setupEditingLocked}
+                                    onChange={(event) =>
+                                      updateSpotlightPolicyNumber(
+                                        "free_slots",
+                                        event.target.value
+                                      )
+                                    }
+                                    style={billingInputStyle()}
+                                  />
+                                </label>
+                                <label style={{ display: "grid", gap: 5 }}>
+                                  <span style={sectionLabel()}>Paid after</span>
+                                  <input
+                                    type="number"
+                                    min="1"
+                                    value={featurePolicyDraft.spotlight.paid_after_slots}
+                                    disabled={setupEditingLocked}
+                                    onChange={(event) =>
+                                      updateSpotlightPolicyNumber(
+                                        "paid_after_slots",
+                                        event.target.value
+                                      )
+                                    }
+                                    style={billingInputStyle()}
+                                  />
+                                </label>
+                                <label style={{ display: "grid", gap: 5 }}>
+                                  <span style={sectionLabel()}>Rotation hours</span>
+                                  <input
+                                    type="number"
+                                    min="1"
+                                    value={featurePolicyDraft.spotlight.rotation_hours}
+                                    disabled={setupEditingLocked}
+                                    onChange={(event) =>
+                                      updateSpotlightPolicyNumber(
+                                        "rotation_hours",
+                                        event.target.value
+                                      )
+                                    }
+                                    style={billingInputStyle()}
+                                  />
+                                </label>
+                              </div>
+                            ) : null}
+                            <div style={{ ...helperText(), fontSize: 12.5 }}>
+                              Broadcast/payment routes obey the feature rule; paid credit
+                              pricing stays separate.
+                            </div>
                           </div>
-                        </div>
+                        ) : null}
                       </div>
                     ) : null}
 
                     {activeSetupStep === "launch" ? (
                       <div style={{ display: "grid", gap: 10 }}>
-                        <div
-                          style={{
-                            display: "grid",
-                            gridTemplateColumns:
-                              "repeat(auto-fit, minmax(min(100%, 150px), 1fr))",
-                            gap: 8,
-                          }}
-                        >
-                          {setupProgress.labels.map(([label, ready]) => (
-                            <div key={label} style={statusBadge(ready ? "ready" : "needed")}>
-                              {label}: {ready ? "ready" : "needed"}
-                            </div>
-                          ))}
-                        </div>
                         <div style={helperText()}>
                           Setup progress: <strong>{setupProgress.ready}</strong> of{" "}
                           <strong>{setupProgress.total}</strong> checks ready.
                           Activation still requires confirmed payment; verification
                           still requires authority review.
                         </div>
+                        <StableButton
+                          type="button"
+                          kind="secondary"
+                          fullWidth
+                          stableHeight={42}
+                          debugId="community-domain-dashboard.setup-launch-progress-toggle"
+                          aria-expanded={setupLaunchProgressOpen}
+                          aria-controls="community-domain-setup-launch-progress"
+                          onClick={() =>
+                            setSetupLaunchProgressOpen((current) => !current)
+                          }
+                          style={{ justifyContent: "center", fontSize: 13 }}
+                        >
+                          {setupLaunchProgressOpen
+                            ? "Close setup checks"
+                            : "View setup checks"}
+                        </StableButton>
+                        {setupLaunchProgressOpen ? (
+                          <div
+                            id="community-domain-setup-launch-progress"
+                            data-debug-id="community-domain-dashboard.setup-launch-progress-panel"
+                            style={{
+                              display: "grid",
+                              gridTemplateColumns:
+                                "repeat(auto-fit, minmax(min(100%, 150px), 1fr))",
+                              gap: 8,
+                            }}
+                          >
+                            {setupProgress.labels.map(([label, ready]) => (
+                              <div key={label} style={statusBadge(ready ? "ready" : "needed")}>
+                                {label}: {ready ? "ready" : "needed"}
+                              </div>
+                            ))}
+                          </div>
+                        ) : null}
                         {setupCompletionSavedAt ? (
                           <div style={{ ...softCard(), display: "grid", gap: 8 }}>
                             <div style={iconHeaderStyle()}>
@@ -9149,72 +9485,165 @@ export default function CommunityDomainDashboardPage() {
                             </div>
                           </div>
                         ) : null}
-                        <div style={{ ...softCard(), display: "grid", gap: 10 }}>
-                          <div style={iconHeaderStyle()}>
-                            <span style={iconFrame(46)}>
-                              <GsnRealisticIcon name="identity-card" size={35} decorative />
-                            </span>
-                            <div style={{ minWidth: 0 }}>
-                              <div style={sectionLabel()}>Edit saved setup</div>
-                              <div style={{ ...helperText(), fontSize: 13 }}>
-                                If a mistake was made, reopen the step, correct it,
-                                then save again.
+                        <StableButton
+                          type="button"
+                          kind="secondary"
+                          fullWidth
+                          stableHeight={42}
+                          debugId="community-domain-dashboard.setup-launch-edit-toggle"
+                          aria-expanded={setupLaunchEditOpen}
+                          aria-controls="community-domain-setup-launch-edit"
+                          onClick={() => {
+                            setSetupLaunchEditOpen((current) => !current);
+                            setSetupEditGroupChooserOpen(false);
+                            setSetupEditStepChooserOpen(false);
+                          }}
+                          style={{ justifyContent: "center", fontSize: 13 }}
+                        >
+                          {setupLaunchEditOpen ? "Close correction" : "Correct setup"}
+                        </StableButton>
+                        {setupLaunchEditOpen ? (
+                          <div
+                            id="community-domain-setup-launch-edit"
+                            data-debug-id="community-domain-dashboard.setup-launch-edit-panel"
+                            style={{ ...softCard(), display: "grid", gap: 10 }}
+                          >
+                            <div style={iconHeaderStyle()}>
+                              <span style={iconFrame(46)}>
+                                <GsnRealisticIcon name="identity-card" size={35} decorative />
+                              </span>
+                              <div style={{ minWidth: 0 }}>
+                                <div style={sectionLabel()}>Edit saved setup</div>
+                                <div style={{ ...helperText(), fontSize: 13 }}>
+                                  If a mistake was made, reopen the step, correct it,
+                                  then save again.
+                                </div>
                               </div>
                             </div>
-                          </div>
-                          <div
-                            style={{
-                              display: "grid",
-                              gridTemplateColumns:
-                                "repeat(auto-fit, minmax(min(100%, 130px), 1fr))",
-                              gap: 8,
-                            }}
-                          >
-                            {SETUP_EDIT_GROUP_OPTIONS.map((group) => {
-                              const selected = group.key === activeSetupEditGroup;
-                              return (
-                                <StableButton
-                                  key={group.key}
-                                  type="button"
-                                  kind={selected ? "primary" : "secondary"}
-                                  stableHeight={46}
-                                  title={group.note}
-                                  debugId={`community-domain-dashboard.setup-edit-group.${group.key}`}
-                                  disabled={setupEditingLocked}
-                                  onClick={() => setActiveSetupStep(group.defaultStep)}
-                                >
-                                  {group.label}
-                                </StableButton>
-                              );
-                            })}
-                          </div>
-                          <div style={{ ...helperText(), fontSize: 13 }}>
-                            {activeSetupEditGroupOption.note}
-                          </div>
-                          <div
-                            style={{
-                              display: "grid",
-                              gridTemplateColumns:
-                                "repeat(auto-fit, minmax(min(100%, 130px), 1fr))",
-                              gap: 8,
-                            }}
-                          >
-                            {activeSetupEditGroupSteps.map((option) => (
-                              <StableButton
-                                key={option.key}
-                                type="button"
-                                kind={option.key === activeSetupStep ? "primary" : "secondary"}
-                                stableHeight={44}
-                                title={option.note}
-                                debugId={`community-domain-dashboard.setup-edit-step.${option.key}`}
-                                disabled={setupEditingLocked}
-                                onClick={() => setActiveSetupStep(option.key)}
+                            <div style={{ ...helperText(), fontSize: 13 }}>
+                              Edit area:{" "}
+                              <strong>{activeSetupEditGroupOption.label}</strong>.{" "}
+                              {activeSetupEditGroupOption.note}
+                            </div>
+                            <StableButton
+                              type="button"
+                              kind="secondary"
+                              fullWidth
+                              stableHeight={42}
+                              title="Choose which saved setup area to correct."
+                              debugId="community-domain-dashboard.setup-edit-group-toggle"
+                              disabled={setupEditingLocked}
+                              aria-expanded={setupEditGroupChooserOpen}
+                              aria-controls="community-domain-setup-edit-groups"
+                              onClick={() =>
+                                setSetupEditGroupChooserOpen((current) => !current)
+                              }
+                              style={{ justifyContent: "center", fontSize: 13 }}
+                            >
+                              {setupEditGroupChooserOpen
+                                ? "Close edit areas"
+                                : "Change edit area"}
+                            </StableButton>
+                            {setupEditGroupChooserOpen ? (
+                              <div
+                                id="community-domain-setup-edit-groups"
+                                data-debug-id="community-domain-dashboard.setup-edit-group-panel"
+                                style={{
+                                  display: "grid",
+                                  gridTemplateColumns:
+                                    "repeat(auto-fit, minmax(min(100%, 130px), 1fr))",
+                                  gap: 8,
+                                }}
                               >
-                                {option.label}
-                              </StableButton>
-                            ))}
+                                {SETUP_EDIT_GROUP_OPTIONS.map((group) => {
+                                  const selected = group.key === activeSetupEditGroup;
+                                  return (
+                                    <StableButton
+                                      key={group.key}
+                                      type="button"
+                                      kind={selected ? "primary" : "secondary"}
+                                      stableHeight={46}
+                                      title={group.note}
+                                      debugId={`community-domain-dashboard.setup-edit-group.${group.key}`}
+                                      disabled={setupEditingLocked}
+                                      aria-pressed={selected}
+                                      onClick={() => {
+                                        setActiveSetupStep(group.defaultStep);
+                                        setSetupLaunchEditOpen(false);
+                                        setSetupEditGroupChooserOpen(false);
+                                        setSetupEditStepChooserOpen(false);
+                                        setSetupFeaturePolicyRuleChooserOpen(false);
+                                        setSetupFeaturePolicyNotesOpen(false);
+                                        setSetupSpotlightSlotsOpen(false);
+                                      }}
+                                    >
+                                      {group.label}
+                                    </StableButton>
+                                  );
+                                })}
+                              </div>
+                            ) : null}
+                            <div style={{ ...helperText(), fontSize: 13 }}>
+                              Edit step: choose one{" "}
+                              <strong>{activeSetupEditGroupOption.label}</strong>{" "}
+                              step to reopen.
+                            </div>
+                            <StableButton
+                              type="button"
+                              kind="secondary"
+                              fullWidth
+                              stableHeight={42}
+                              title={`Choose one ${activeSetupEditGroupOption.label.toLowerCase()} setup step to correct.`}
+                              debugId="community-domain-dashboard.setup-edit-step-toggle"
+                              disabled={setupEditingLocked}
+                              aria-expanded={setupEditStepChooserOpen}
+                              aria-controls="community-domain-setup-edit-steps"
+                              onClick={() =>
+                                setSetupEditStepChooserOpen((current) => !current)
+                              }
+                              style={{ justifyContent: "center", fontSize: 13 }}
+                            >
+                              {setupEditStepChooserOpen
+                                ? "Close edit steps"
+                                : "Change edit step"}
+                            </StableButton>
+                            {setupEditStepChooserOpen ? (
+                              <div
+                                id="community-domain-setup-edit-steps"
+                                data-debug-id="community-domain-dashboard.setup-edit-step-panel"
+                                style={{
+                                  display: "grid",
+                                  gridTemplateColumns:
+                                    "repeat(auto-fit, minmax(min(100%, 130px), 1fr))",
+                                  gap: 8,
+                                }}
+                              >
+                                {activeSetupEditGroupSteps.map((option) => (
+                                  <StableButton
+                                    key={option.key}
+                                    type="button"
+                                    kind={option.key === activeSetupStep ? "primary" : "secondary"}
+                                    stableHeight={44}
+                                    title={option.note}
+                                    debugId={`community-domain-dashboard.setup-edit-step.${option.key}`}
+                                    disabled={setupEditingLocked}
+                                    aria-pressed={option.key === activeSetupStep}
+                                    onClick={() => {
+                                      setActiveSetupStep(option.key);
+                                      setSetupLaunchEditOpen(false);
+                                      setSetupEditStepChooserOpen(false);
+                                      setSetupFeaturePolicyRuleChooserOpen(false);
+                                      setSetupFeaturePolicyNotesOpen(false);
+                                      setSetupSpotlightSlotsOpen(false);
+                                    }}
+                                  >
+                                    {option.label}
+                                  </StableButton>
+                                ))}
+                              </div>
+                            ) : null}
                           </div>
-                        </div>
+                        ) : null}
                         <div style={{ ...softCard(), display: "grid", gap: 10 }}>
                           <div style={iconHeaderStyle()}>
                             <span style={iconFrame(46)}>
@@ -10555,6 +10984,7 @@ export default function CommunityDomainDashboardPage() {
                                   setActiveServiceDetail(group.defaultDetail);
                                   setServiceStageChooserOpen(false);
                                   setServicePacketChooserOpen(false);
+                                  setServiceRuleDetailsOpen(false);
                                   setStructurePacketChooserOpen(false);
                                   setMemberPacketChooserOpen(false);
                                   setGovernanceTaskChooserOpen(false);
@@ -10636,6 +11066,7 @@ export default function CommunityDomainDashboardPage() {
                                         setActiveServiceDetail(option.key);
                                         setServiceStageChooserOpen(false);
                                         setServicePacketChooserOpen(false);
+                                        setServiceRuleDetailsOpen(false);
                                         setStructurePacketChooserOpen(false);
                                         setMemberPacketChooserOpen(false);
                                         setGovernanceTaskChooserOpen(false);
@@ -10682,72 +11113,108 @@ export default function CommunityDomainDashboardPage() {
                             </h3>
                           </div>
                         </div>
-                        <div
+                        <div style={{ ...helperText(), fontSize: 13 }}>
+                          Domain owner/admin decides which shared Marketplace tools
+                          work inside this Community Domain.
+                        </div>
+                        <StableButton
+                          type="button"
+                          kind="secondary"
+                          fullWidth
+                          stableHeight={42}
+                          debugId="community-domain-dashboard.service-rule-details-toggle"
+                          aria-expanded={serviceRuleDetailsOpen}
+                          aria-controls="community-domain-service-rule-details"
+                          onClick={() =>
+                            setServiceRuleDetailsOpen((current) => !current)
+                          }
                           style={{
-                            display: "grid",
-                            gap: 8,
-                            padding: 12,
-                            borderRadius: 18,
-                            border: "1px solid rgba(9,27,46,0.1)",
-                            background: "rgba(255,255,255,0.7)",
+                            justifyContent: "center",
+                            fontSize: 13,
+                            textTransform: "none",
                           }}
                         >
-                          <div style={sectionLabel()}>Professional marketplace rule</div>
-                          <div style={{ ...helperText(), fontSize: 13 }}>
-                            Ordinary GSN marketplace behaviours stay available, but
-                            this domain decides who may use each one here.
-                          </div>
+                          {serviceRuleDetailsOpen
+                            ? "Close rule details"
+                            : "View rule details"}
+                        </StableButton>
+                        {serviceRuleDetailsOpen ? (
                           <div
+                            id="community-domain-service-rule-details"
+                            data-debug-id="community-domain-dashboard.service-rule-details-panel"
                             style={{
                               display: "grid",
-                              gridTemplateColumns:
-                                "repeat(auto-fit, minmax(min(100%, 150px), 1fr))",
-                              gap: 8,
+                              gap: 10,
                             }}
                           >
-                            {professionalMarketplaceFacts.map(([label, value]) => (
-                              <div key={label} style={statusBadge("domain rule")}>
-                                {label}: {value}
+                            <div
+                              style={{
+                                display: "grid",
+                                gap: 8,
+                                padding: 12,
+                                borderRadius: 18,
+                                border: "1px solid rgba(9,27,46,0.1)",
+                                background: "rgba(255,255,255,0.7)",
+                              }}
+                            >
+                              <div style={sectionLabel()}>Professional marketplace rule</div>
+                              <div style={{ ...helperText(), fontSize: 13 }}>
+                                Ordinary GSN marketplace behaviours stay available, but
+                                this domain decides who may use each one here.
                               </div>
-                            ))}
+                              <div
+                                style={{
+                                  display: "grid",
+                                  gridTemplateColumns:
+                                    "repeat(auto-fit, minmax(min(100%, 150px), 1fr))",
+                                  gap: 8,
+                                }}
+                              >
+                                {professionalMarketplaceFacts.map(([label, value]) => (
+                                  <div key={label} style={statusBadge("domain rule")}>
+                                    {label}: {value}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                            <div
+                              style={{
+                                display: "grid",
+                                gridTemplateColumns:
+                                  "repeat(auto-fit, minmax(min(100%, 120px), 1fr))",
+                                gap: 8,
+                              }}
+                            >
+                              {packageCapacityFacts.map(([label, value]) => (
+                                <div key={label} style={statusBadge("allowance")}>
+                                  {label}: {value}
+                                </div>
+                              ))}
+                            </div>
+                            <div style={{ ...helperText(), fontSize: 13 }}>
+                              {packageTariffBoundaryText}
+                            </div>
+                            <div
+                              style={{
+                                display: "grid",
+                                gridTemplateColumns:
+                                  "repeat(auto-fit, minmax(min(100%, 150px), 1fr))",
+                                gap: 8,
+                              }}
+                            >
+                              {packageBillingStatusFacts.map(([label, value]) => (
+                                <div key={label} style={statusBadge("manual review")}>
+                                  {label}: {value}
+                                </div>
+                              ))}
+                            </div>
+                            <div style={{ ...helperText(), fontSize: 13 }}>
+                              {packageBillingAdminAction} Feature policy controls who
+                              can use Spotlight, Demand Box, shops, Shop Diary, Vault,
+                              ROSCA, invites, and contribution tools here.
+                            </div>
                           </div>
-                        </div>
-                        <div
-                          style={{
-                            display: "grid",
-                            gridTemplateColumns:
-                              "repeat(auto-fit, minmax(min(100%, 120px), 1fr))",
-                            gap: 8,
-                          }}
-                        >
-                          {packageCapacityFacts.map(([label, value]) => (
-                            <div key={label} style={statusBadge("allowance")}>
-                              {label}: {value}
-                            </div>
-                          ))}
-                        </div>
-                        <div style={{ ...helperText(), fontSize: 13 }}>
-                          {packageTariffBoundaryText}
-                        </div>
-                        <div
-                          style={{
-                            display: "grid",
-                            gridTemplateColumns:
-                              "repeat(auto-fit, minmax(min(100%, 150px), 1fr))",
-                            gap: 8,
-                          }}
-                        >
-                          {packageBillingStatusFacts.map(([label, value]) => (
-                            <div key={label} style={statusBadge("manual review")}>
-                              {label}: {value}
-                            </div>
-                          ))}
-                        </div>
-                        <div style={{ ...helperText(), fontSize: 13 }}>
-                          {packageBillingAdminAction} Feature policy controls who
-                          can use Spotlight, Demand Box, shops, Shop Diary, Vault,
-                          ROSCA, invites, and contribution tools here.
-                        </div>
+                        ) : null}
                       </div>
                     ) : null}
 
@@ -15537,9 +16004,12 @@ export default function CommunityDomainDashboardPage() {
                         setCommandGuidanceOpen(false);
                         setWorkSurfaceNotesOpen(false);
                         setOperatingSummaryNotesOpen(false);
-                        setSetupOverviewGroupChooserOpen(false);
-                        setSetupOverviewTaskChooserOpen(false);
-                        setSetupNoticeTaskChooserOpen(false);
+    setSetupOverviewGroupChooserOpen(false);
+    setSetupOverviewTaskChooserOpen(false);
+    setSetupNoticeTaskChooserOpen(false);
+    setSetupLaunchProgressOpen(false);
+    setSetupLaunchEditOpen(false);
+    setSetupEvidenceListOpen(false);
                         setServicePacketChooserOpen(false);
                         setStructurePacketChooserOpen(false);
                         setMemberPacketChooserOpen(false);

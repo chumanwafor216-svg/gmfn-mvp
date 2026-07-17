@@ -1460,8 +1460,8 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /upsertCommunityDomainPolicy[\s\S]*DOMAIN_FEATURE_POLICY_ROWS[\s\S]*announcement_board[\s\S]*demand_box[\s\S]*spotlight[\s\S]*shop_diary[\s\S]*vault[\s\S]*marketplace_shops[\s\S]*member_invites[\s\S]*payments_contributions[\s\S]*rosca_cycles[\s\S]*domain\.feature_policy[\s\S]*domain\.features\.configure[\s\S]*Domain feature policy[\s\S]*governed marketplace[\s\S]*Enforcement boundary[\s\S]*Live enforcement exists for notices, member invites,[\s\S]*marketplace shops, Shop Diary writes, payments and[\s\S]*contributions, ROSCA cycle routes, Spotlight[\s\S]*broadcast\/payment routes, Demand Box posting, and[\s\S]*private Vault publishing\/link creation[\s\S]*Paid Vault[\s\S]*separate service rails/,
-  "Community Domain setup must keep marketplace/community feature families available under domain policy while clearly stating current route-enforcement boundaries.",
+  /upsertCommunityDomainPolicy[\s\S]*DOMAIN_FEATURE_POLICY_ROWS[\s\S]*announcement_board[\s\S]*demand_box[\s\S]*spotlight[\s\S]*shop_diary[\s\S]*vault[\s\S]*marketplace_shops[\s\S]*member_invites[\s\S]*payments_contributions[\s\S]*rosca_cycles[\s\S]*domain\.feature_policy[\s\S]*domain\.features\.configure[\s\S]*Domain feature policy[\s\S]*governed marketplace[\s\S]*community-domain-dashboard\.setup-feature-policy-notes-toggle[\s\S]*setupFeaturePolicyNotesOpen[\s\S]*Close policy notes[\s\S]*Open policy notes[\s\S]*Enforcement boundary[\s\S]*Live enforcement exists for notices, member invites,[\s\S]*marketplace shops, Shop Diary writes, payments and[\s\S]*contributions, ROSCA cycle routes, Spotlight[\s\S]*broadcast\/payment routes, Demand Box posting, and[\s\S]*private Vault publishing\/link creation[\s\S]*Paid Vault[\s\S]*separate service rails[\s\S]*Feature rule used[\s\S]*Current service rule[\s\S]*activeSetupFeaturePolicyRow[\s\S]*community-domain-dashboard\.setup-feature-policy-rule-toggle[\s\S]*setupFeaturePolicyRuleChooserOpen[\s\S]*Close service rules[\s\S]*Change service rule[\s\S]*setupFeaturePolicyRuleChooserOpen \? \([\s\S]*community-domain-dashboard\.setup-feature-policy-rule\.\$\{row\.key\}[\s\S]*featurePolicyDraft\.features\[activeSetupFeaturePolicyRow\.key\][\s\S]*activeSetupFeaturePolicyRow\.key === "spotlight"[\s\S]*community-domain-dashboard\.setup-spotlight-slots-toggle[\s\S]*setupSpotlightSlotsOpen[\s\S]*Close slot numbers[\s\S]*Edit slot numbers/,
+  "Community Domain setup must keep marketplace/community feature families available under domain policy while hiding enforcement notes, service-rule choices, and Spotlight slot numbers behind focused controls.",
   { frontend: true }
 );
 
@@ -1841,8 +1841,22 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /type SetupEditGroupKey = "foundation" \| "people" \| "services"[\s\S]*SETUP_EDIT_GROUP_OPTIONS[\s\S]*key: "foundation"[\s\S]*stepKeys: \["identity", "payment", "evidence"\][\s\S]*key: "people"[\s\S]*stepKeys: \["structure", "members", "governance"\][\s\S]*key: "services"[\s\S]*stepKeys: \["services"\][\s\S]*activeSetupEditGroup[\s\S]*activeSetupEditGroupSteps[\s\S]*Edit saved setup[\s\S]*community-domain-dashboard\.setup-edit-group\.\$\{group\.key\}[\s\S]*setActiveSetupStep\(group\.defaultStep\)[\s\S]*activeSetupEditGroupSteps\.map[\s\S]*community-domain-dashboard\.setup-edit-step\.\$\{option\.key\}[\s\S]*setActiveSetupStep\(option\.key\)/,
-  "Community Domain dashboard setup must provide an owner/admin edit path for correcting saved setup mistakes without exposing every saved setup step as equal first-level buttons.",
+  /setupLaunchProgressOpen[\s\S]*setSetupLaunchProgressOpen\(false\)[\s\S]*activeSetupStep === "launch"[\s\S]*Setup progress:[\s\S]*community-domain-dashboard\.setup-launch-progress-toggle[\s\S]*setupLaunchProgressOpen[\s\S]*Close setup checks[\s\S]*View setup checks[\s\S]*setupLaunchProgressOpen \? \([\s\S]*community-domain-dashboard\.setup-launch-progress-panel[\s\S]*setupProgress\.labels\.map/,
+  "Community Domain dashboard setup Launch step must keep individual setup checks behind a closed View setup checks control.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /setupEvidenceListOpen[\s\S]*Setup evidence[\s\S]*community-domain-dashboard\.setup-submit-evidence[\s\S]*Submitted setup evidence[\s\S]*community-domain-dashboard\.setup-evidence-list-toggle[\s\S]*setupEvidenceListOpen[\s\S]*Close submitted evidence[\s\S]*View submitted evidence[\s\S]*setupEvidenceListOpen \? \([\s\S]*community-domain-dashboard\.setup-evidence-list-panel[\s\S]*setupEvidenceItems\.slice\(0, 4\)\.map/,
+  "Community Domain dashboard setup Evidence step must keep submitted evidence records behind a closed View submitted evidence control.",
+  { frontend: true }
+);
+
+assertContains(
+  "src/pages/CommunityDomainDashboardPage.tsx",
+  /type SetupEditGroupKey = "foundation" \| "people" \| "services"[\s\S]*SETUP_EDIT_GROUP_OPTIONS[\s\S]*key: "foundation"[\s\S]*stepKeys: \["identity", "payment", "evidence"\][\s\S]*key: "people"[\s\S]*stepKeys: \["structure", "members", "governance"\][\s\S]*key: "services"[\s\S]*stepKeys: \["services"\][\s\S]*setupLaunchEditOpen[\s\S]*setupEditGroupChooserOpen[\s\S]*setupEditStepChooserOpen[\s\S]*activeSetupEditGroup[\s\S]*activeSetupEditGroupSteps[\s\S]*community-domain-dashboard\.setup-launch-edit-toggle[\s\S]*setupLaunchEditOpen[\s\S]*Close correction[\s\S]*Correct setup[\s\S]*setupLaunchEditOpen \? \([\s\S]*community-domain-dashboard\.setup-launch-edit-panel[\s\S]*Edit saved setup[\s\S]*Edit area[\s\S]*community-domain-dashboard\.setup-edit-group-toggle[\s\S]*Close edit areas[\s\S]*Change edit area[\s\S]*setupEditGroupChooserOpen \? \([\s\S]*community-domain-dashboard\.setup-edit-group\.\$\{group\.key\}[\s\S]*setActiveSetupStep\(group\.defaultStep\)[\s\S]*setSetupLaunchEditOpen\(false\)[\s\S]*setSetupEditGroupChooserOpen\(false\)[\s\S]*setSetupEditStepChooserOpen\(false\)[\s\S]*Edit step[\s\S]*community-domain-dashboard\.setup-edit-step-toggle[\s\S]*Close edit steps[\s\S]*Change edit step[\s\S]*setupEditStepChooserOpen \? \([\s\S]*activeSetupEditGroupSteps\.map[\s\S]*community-domain-dashboard\.setup-edit-step\.\$\{option\.key\}[\s\S]*setActiveSetupStep\(option\.key\)[\s\S]*setSetupLaunchEditOpen\(false\)[\s\S]*setSetupEditStepChooserOpen\(false\)/,
+  "Community Domain dashboard setup must keep saved setup correction behind a closed Correct setup control, then keep correction areas and steps behind closed Change edit controls instead of exposing every saved setup step as equal first-level buttons.",
   { frontend: true }
 );
 
@@ -2638,15 +2652,15 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /packageCapacityFacts[\s\S]*included_members[\s\S]*included_nodes[\s\S]*included_admins[\s\S]*included_shops[\s\S]*included_storage_gb[\s\S]*packageTariffBoundaryText[\s\S]*Current pilot package allowance only[\s\S]*packageBillingStatusFacts[\s\S]*pricing_model_status[\s\S]*paid_upgrade_status[\s\S]*member_band_status[\s\S]*feature_tariff_status[\s\S]*domain_tariff_status[\s\S]*packageBillingAdminAction[\s\S]*manual finance and capacity review[\s\S]*activeServiceDetail === "boundaries"[\s\S]*Marketplace rule[\s\S]*Shared services, governed here[\s\S]*manual review[\s\S]*Feature policy controls who\s+can use Spotlight, Demand Box, shops, Shop Diary, Vault,\s+ROSCA, invites, and contribution tools here/,
-  "Community Domain Services lane must keep package allowance, feature permission, and future tariff automation truth inside the Boundaries packet instead of repeating it across every service view.",
+  /serviceRuleDetailsOpen[\s\S]*packageCapacityFacts[\s\S]*included_members[\s\S]*included_nodes[\s\S]*included_admins[\s\S]*included_shops[\s\S]*included_storage_gb[\s\S]*packageTariffBoundaryText[\s\S]*Current pilot package allowance only[\s\S]*packageBillingStatusFacts[\s\S]*pricing_model_status[\s\S]*paid_upgrade_status[\s\S]*member_band_status[\s\S]*feature_tariff_status[\s\S]*domain_tariff_status[\s\S]*packageBillingAdminAction[\s\S]*manual finance and capacity review[\s\S]*activeServiceDetail === "boundaries"[\s\S]*Marketplace rule[\s\S]*Shared services, governed here[\s\S]*community-domain-dashboard\.service-rule-details-toggle[\s\S]*serviceRuleDetailsOpen[\s\S]*Close rule details[\s\S]*View rule details[\s\S]*community-domain-dashboard\.service-rule-details-panel[\s\S]*manual review[\s\S]*Feature policy controls who\s+can use Spotlight, Demand Box, shops, Shop Diary, Vault,\s+ROSCA, invites, and contribution tools here/,
+  "Community Domain Services lane must keep package allowance, feature permission, and future tariff automation truth inside the Boundaries packet behind the closed rule-details drawer instead of repeating it across every service view.",
   { frontend: true }
 );
 
 assertContains(
   "src/pages/CommunityDomainDashboardPage.tsx",
-  /professionalMarketplaceFacts[\s\S]*Governed professional marketplace[\s\S]*Domain owner\/admin decides what works here[\s\S]*Members use the normal marketplace tools this domain permits[\s\S]*Member identity and activity in other communities stay separate[\s\S]*Extra bands and paid features still need manual capacity review[\s\S]*Professional marketplace rule[\s\S]*Ordinary GSN marketplace behaviours stay available, but\s+this domain decides who may use each one here/,
-  "Community Domain Services lane must state the professional-marketplace rule without implying automated tariff, upgrade, membership, feature-switch, or cross-domain publishing behavior.",
+  /professionalMarketplaceFacts[\s\S]*Governed professional marketplace[\s\S]*Domain owner\/admin decides what works here[\s\S]*Members use the normal marketplace tools this domain permits[\s\S]*Member identity and activity in other communities stay separate[\s\S]*Extra bands and paid features still need manual capacity review[\s\S]*community-domain-dashboard\.service-rule-details-toggle[\s\S]*serviceRuleDetailsOpen \? \([\s\S]*Professional marketplace rule[\s\S]*Ordinary GSN marketplace behaviours stay available, but\s+this domain decides who may use each one here/,
+  "Community Domain Services lane must state the professional-marketplace rule behind the closed rule-details drawer without implying automated tariff, upgrade, membership, feature-switch, or cross-domain publishing behavior.",
   { frontend: true }
 );
 
