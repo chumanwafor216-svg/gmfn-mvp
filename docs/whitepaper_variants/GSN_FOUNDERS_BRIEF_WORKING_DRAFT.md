@@ -1,10 +1,77 @@
 # GSN Founder's Brief - Working Draft
 
-Last updated: 2026-07-17
+Last updated: 2026-07-18
 
 Status: internal working draft for founder, partner, sponsor, and early investor
 review. Do not send as a proof claim until discovery and pilot evidence support
 the answers below.
+
+Use this with `GSN_FOUNDERS_BRIEF_GAP_CLOSURE.md`. The gap sheet is the hard
+truth checklist; this draft is the readable brief.
+
+## Executive Front Page
+
+**What GSN is:** community trust infrastructure.
+
+**What it does first:** helps one community preserve specific evidence of
+participation, support, trade, responsibility, membership, or confirmation.
+
+**What it refuses to be:** a rating app, public reputation board, lender, bank,
+automated trust judge, or social-credit system.
+
+**First proof:** one real community uses one narrow trust-confirmation workflow
+for one real decision.
+
+**Likely first payer:** a community organiser, association, institution,
+diaspora group, church/charity, marketplace sponsor, or pilot sponsor, not
+ordinary members by default.
+
+**Current honest stage:** strong thesis, source-level MVP surfaces, active pilot
+preparation, but no proven revenue, no proven traction, and no completed pilot
+evidence pack yet.
+
+**Immediate ask:** help secure or sponsor a narrow Community Trust Confirmation
+pilot that proves evidence creation, consent/privacy, challenge/correction,
+expiry/currentness, and human-readable TrustSlip output.
+
+## Reader Route
+
+Use the brief in three layers:
+
+1. Read the Executive Front Page for the whole story.
+2. Use sections 1 to 8 for founder, sponsor, or partner explanation.
+3. Use sections 9 to 16 for diligence, safeguards, pilot proof, and investor
+   readiness.
+
+Do not send this as "GSN is proven." Send it only as "GSN has a clear thesis and
+is seeking the right narrow proof."
+
+## One-Page Version
+
+GSN helps communities preserve and communicate trust evidence they already
+recognise. The system should record what happened, who recorded it, which
+community owns the context, who confirmed or challenged it, what privacy rule
+applies, and what the evidence may support.
+
+The first product proof should not be a full marketplace rollout. It should be a
+Community Trust Confirmation pilot: one community, one organiser, one workflow,
+one evidence output. That pilot should show whether real members understand the
+privacy boundary, whether confirmation and challenge can be handled fairly, and
+whether a TrustSlip or Trust Passport excerpt helps one real human decision
+without pretending to decide for the reader.
+
+GSN may later generate revenue from Community Domain packages, community
+administration capacity, verification/evidence services, TrustSlip outputs,
+trusted marketplace/shop tools, and institutional pilot packages. None of that
+is proven until a budget holder accepts a narrow paid use case or sponsor path.
+
+The founder/investor conversation should therefore ask for proof support, not
+belief:
+
+```text
+What proof from discovery and one narrow pilot would make GSN a serious
+community trust infrastructure opportunity?
+```
 
 ## 1. Short Position
 
