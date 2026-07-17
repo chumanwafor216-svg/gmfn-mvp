@@ -2946,8 +2946,8 @@ assertContains(
 
 assertContains(
   "src/pages/communityDomainDashboard/NodeProjectionGroups.tsx",
-  /Unit boundary map[\s\S]*child_domain_candidate[\s\S]*affiliate_review_needed[\s\S]*public_urls_published[\s\S]*boundary snapshot only[\s\S]*does not create child domains, publish links, move members, or show private member data/,
-  "Community Domain dashboard Structure lane must keep node boundary public copy short while preserving child-domain, link, member-transfer, and privacy boundaries.",
+  /Unit rule map[\s\S]*child_domain_candidate[\s\S]*affiliate_review_needed[\s\S]*public_urls_published[\s\S]*rule snapshot only[\s\S]*does not create child domains, publish links, move members, or show private member data/,
+  "Community Domain dashboard Structure lane must keep node rule public copy short while preserving child-domain, link, member-transfer, and privacy limits.",
   { frontend: true }
 );
 

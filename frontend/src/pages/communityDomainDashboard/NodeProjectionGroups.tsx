@@ -609,23 +609,23 @@ export default function CommunityDomainNodeProjectionGroups(props: ProjectionGro
     );
 
     return renderNodeProjectionCard({
-      title: "Unit boundary map",
+      title: "Unit rule map",
       detail: props.nodeDomainBoundaryMap
         ? `${cleanText(
             props.nodeDomainBoundaryMap.primary_next_action?.label,
-            "Review unit boundaries"
+            "Review unit rules"
           )}. ${countValue(
             nodeDomainBoundaryCounts.child_domain_candidate
           )} possible child-domain candidate${
             Number(nodeDomainBoundaryCounts.child_domain_candidate || 0) === 1 ? "" : "s"
           } and ${countValue(
             nodeDomainBoundaryCounts.affiliate_review_needed
-          )} affiliate boundary review${
+          )} affiliate rule review${
             Number(nodeDomainBoundaryCounts.affiliate_review_needed || 0) === 1 ? "" : "s"
           } are visible.`
         : "",
       unloaded:
-        "GSN could not load the unit boundary map for this Community Domain.",
+        "GSN could not load the unit rule map for this Community Domain.",
       metrics: [
         ["Child candidates", countValue(nodeDomainBoundaryCounts.child_domain_candidate)],
         ["Affiliate review", countValue(nodeDomainBoundaryCounts.affiliate_review_needed)],
@@ -639,14 +639,14 @@ export default function CommunityDomainNodeProjectionGroups(props: ProjectionGro
         ],
         ["Public URLs", countValue(nodeDomainBoundaryCounts.public_urls_published)],
       ],
-      gapLabel: "Units needing domain-boundary review",
+      gapLabel: "Units needing domain-rule review",
       gapRows: nodeDomainBoundaryGaps,
       rows: visibleNodeDomainBoundaryRows,
       statusKey: "domain_boundary_status",
-      rowFallback: "Domain-boundary unit",
+      rowFallback: "Domain-rule unit",
       defaultNextStep: "Keep operating units inside the parent community until review is complete.",
       boundary:
-        "Use this as a boundary snapshot only. It does not create child domains, publish links, move members, or show private member data.",
+        "Use this as a rule snapshot only. It does not create child domains, publish links, move members, or show private member data.",
     });
   }
 

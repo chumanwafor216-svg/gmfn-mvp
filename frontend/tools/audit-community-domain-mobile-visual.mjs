@@ -433,7 +433,7 @@ function pathPayload(pathname) {
     return { node_activity_map: nodeMap("Unit activity", "activity_status") };
   }
   if (pathname.includes("/community-domains/13/node-domain-boundary-map")) {
-    return { node_domain_boundary_map: nodeMap("Unit boundary", "domain_boundary_status") };
+    return { node_domain_boundary_map: nodeMap("Unit rule", "domain_boundary_status") };
   }
   if (pathname.includes("/community-domains/13/node-scheduled-activity-map")) {
     return { node_scheduled_activity_map: nodeMap("Unit schedule", "schedule_status") };
