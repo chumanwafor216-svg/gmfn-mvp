@@ -177,7 +177,7 @@ export function buildTrustSlipVerifyViewModel({
     record?.cci_score === null || record?.cci_score === undefined
       ? ""
       : String(record.cci_score),
-    visibleScore === null ? "" : String(Math.round(visibleScore))
+    visibleScore === null ? "" : getContextualEvidencePosture(visibleScore, visibleBand).label
   );
   const cciBand = firstTruthy(record?.cci_band, visibleBand);
   const sponsorCount = firstNumberLike(record?.sponsor_count);
