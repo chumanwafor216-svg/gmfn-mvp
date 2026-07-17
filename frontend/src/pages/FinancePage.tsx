@@ -1998,7 +1998,7 @@ export default function FinancePage() {
               icon: "shield" as FinanceGlyphName,
               label: "Trust posture",
               value: trustPosture.shortLabel,
-              note: safeStr(trustBand || "Not ready"),
+              note: trustPosture.label,
             },
           ].map((item) => (
             <div
