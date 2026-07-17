@@ -418,6 +418,23 @@ function cciLabel(me: any): string {
   return score ? getContextualEvidencePosture(score).shortLabel : "";
 }
 
+function requesterTrustPostureLabel(row?: DemandRow | null): string {
+  const band = safeStr(row?.requester_trust_band);
+  const score =
+    row?.requester_trust_score === null || row?.requester_trust_score === undefined
+      ? ""
+      : safeStr(row?.requester_trust_score);
+
+  if (!band && !score) return "";
+
+  const label = getContextualEvidencePosture(
+    score || null,
+    band || undefined
+  ).shortLabel;
+
+  return label && label !== "Not shown" ? label : "";
+}
+
 function buildDemandDescription(
   description: string,
   responseEvidence: string
@@ -709,8 +726,8 @@ export default function DemandBoxPage() {
       row?.whatsapp_number
         ? "Public contact path: WhatsApp contact is available from this Demand Box request."
         : "",
-      row?.requester_trust_band
-        ? `Visible trust posture: ${getContextualEvidencePosture(null, row.requester_trust_band).shortLabel}`
+      requesterTrustPostureLabel(row)
+        ? `Visible trust posture: ${requesterTrustPostureLabel(row)}`
         : "",
       row?.status ? `Request status: ${safeStr(row.status)}` : "",
       row?.created_at ? `Created: ${safeDateTime(row.created_at)}` : "",
@@ -1794,7 +1811,7 @@ export default function DemandBoxPage() {
             <div style={demandActionRowStyle(isCompact, 54, 180, 14)}>
               <PrimaryButton
                 onClick={() => handleCreateDemand()}
-                disabled={creating || demandBoxFeatureOff}
+                disabled={creating}
                 busy={creating}
                 busyLabel="Posting..."
                 fullWidth
@@ -2218,9 +2235,9 @@ export default function DemandBoxPage() {
 
                     <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                       <span style={badge(true)}>{urgencyLabel(row?.urgency)}</span>
-                      {safeStr(row?.requester_trust_band) ? (
+                      {requesterTrustPostureLabel(row) ? (
                         <span style={badge(false)}>
-                          Trust {safeStr(row?.requester_trust_band)}
+                          Trust posture: {requesterTrustPostureLabel(row)}
                         </span>
                       ) : null}
                     </div>
@@ -2318,9 +2335,9 @@ export default function DemandBoxPage() {
                               <span style={badge(true)}>
                                 {urgencyLabel(row?.urgency)}
                               </span>
-                              {safeStr(row?.requester_trust_band) ? (
+                              {requesterTrustPostureLabel(row) ? (
                                 <span style={badge(false)}>
-                                  Trust {safeStr(row?.requester_trust_band)}
+                                  Trust posture: {requesterTrustPostureLabel(row)}
                                 </span>
                               ) : null}
                             </div>
