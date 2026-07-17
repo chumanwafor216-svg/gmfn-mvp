@@ -73,6 +73,18 @@ What proof from discovery and one narrow pilot would make GSN a serious
 community trust infrastructure opportunity?
 ```
 
+## Founder Brief Category Map
+
+| Area | What the brief says now | Honest status |
+| --- | --- | --- |
+| Entry | A person enters GSN first, then creates or joins a community. Founder/community setup should be guided and should not expose governance before there is a real community to govern. | Direction is clear; final route evidence and accepted phone screenshots are still needed. |
+| Operating model | Daily work and governance are separate. Features create value; governance controls behaviour. | Strong product principle; Community Domain UI still needs ongoing pruning so users are guided rather than dumped into every page. |
+| Adoption | Start with one wedge: student/diaspora trust, merchant/member verification, support/contribution evidence, or association/church/charity service records. | Not proven; requires 5 to 10 discovery conversations and one organiser willing to test a narrow workflow. |
+| Revenue | Possible revenue comes from Community Domain packages, evidence/verification services, TrustSlip outputs, trusted marketplace/shop tools, and institutional pilots. | Hypothesis only; first payer and willingness to pay are not proven. |
+| Safeguards | No global score, no public ranking, no automated trust judgement, no raw private details on public surfaces, and challenge/correction must exist. | Strong constitutional direction; route-by-route consent, privacy, challenge, and expiry proof is still required. |
+| Evidence | GSN preserves contextual Trust Events: what happened, who recorded it, which community owns it, who confirmed or challenged it, and what the evidence does not prove. | Source-level evidence surfaces exist; accepted pilot evidence capture is still incomplete. |
+| Pilot readiness | First pilot should be Community Trust Confirmation: one community, one organiser, one workflow, one evidence output. | Proposed, not completed; needs named pilot, participants, evidence path, screenshots, and review criteria. |
+
 ## 1. Short Position
 
 GSN is community trust infrastructure.
