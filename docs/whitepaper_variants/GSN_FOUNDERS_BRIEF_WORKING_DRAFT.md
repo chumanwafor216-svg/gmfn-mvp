@@ -406,6 +406,15 @@ proof from discovery and one narrow pilot would make this a serious trust
 infrastructure investment conversation.
 ```
 
+### Audience Ask Matrix
+
+| Audience | Use the brief to ask for | Do not ask for | Good response |
+| --- | --- | --- | --- |
+| Community organiser | Permission to test one narrow trust-confirmation workflow with real members and clear privacy boundaries. | Broad adoption of the whole GSN platform. | "This decision is painful enough to test, and I can name the people and event." |
+| Institutional sponsor | Support for a bounded pilot that measures whether community-recognised evidence improves one real decision. | A blank cheque, broad endorsement, or proof-free partnership language. | "We can sponsor this if the evidence, consent, challenge, and reporting boundaries are clear." |
+| Product/privacy reviewer | Stress-test consent, privacy, challenge, expiry, public/private evidence, and anti-social-credit boundaries. | Approval that the safeguards are complete before route-by-route review. | "These are the policy gaps to close before live pilot use." |
+| Investor or venture advisor | Advice on what proof would make GSN an investable trust-infrastructure thesis. | Product-market-fit belief or immediate investment confidence. | "Show me discovery pull, repeated pilot behaviour, buyer clarity, and non-scoring safeguards." |
+
 ## 15. What Is Not Proven Yet
 
 Do not hide these gaps:
