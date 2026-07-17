@@ -1,4 +1,5 @@
 import {
+  getContextualEvidencePosture,
   getTrustBandLanguage,
   getTrustBandShortLabel,
   getTrustEvidenceLanguage,
@@ -203,9 +204,11 @@ export function buildTrustPassportViewModel(
         ? "mixed"
         : "strong";
   const evidenceLanguage = getTrustEvidenceLanguage(evidenceStatus, { lowData });
+  const evidencePosture = getContextualEvidencePosture(input.score, band);
   const label = lowData
     ? evidenceLanguage.label
     : getTrustBandShortLabel(band);
+  const scoreDisplay = lowData ? "Not shown" : evidencePosture.label;
 
   const interpretation = lowData
     ? evidenceLanguage.plainMeaning
@@ -458,7 +461,7 @@ export function buildTrustPassportViewModel(
     },
     verdict: {
       band,
-      score: clean(input.score, "Not shown"),
+      score: scoreDisplay,
       label,
       interpretation,
       evidenceStatus,
@@ -485,7 +488,7 @@ export function buildTrustPassportViewModel(
         input.crossCommunityReason,
         "Cross-community consistency reason is not shown yet."
       ),
-      standingScore: clean(input.score, "Not shown"),
+      standingScore: scoreDisplay,
       eventCount: clean(input.eventCount, "0"),
       trustLimit: `${clean(input.trustLimit, "0.00")} ${clean(input.trustCurrency)}`.trim(),
       activeClans: clean(input.activeClans, "0"),
