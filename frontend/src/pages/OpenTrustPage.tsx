@@ -36,7 +36,7 @@ type TrustSlipRecord = {
 
 type ReadingState = {
   classText: string;
-  scoreText: string;
+  postureSource: string;
   tone: "green" | "yellow" | "red" | "neutral";
   statusText: string;
   whyText: string;
@@ -243,7 +243,7 @@ function getOpenTrustState(
     if (rawClass === "A" || rawClass === "A+") {
       return {
         classText: rawClass,
-        scoreText:
+        postureSource:
           rawScore === null || Number.isNaN(rawScore) ? "—" : String(Math.round(rawScore)),
         tone: "green",
         statusText: "Strong in your current community",
@@ -253,7 +253,7 @@ function getOpenTrustState(
     if (rawClass === "B") {
       return {
         classText: rawClass,
-        scoreText:
+        postureSource:
           rawScore === null || Number.isNaN(rawScore) ? "—" : String(Math.round(rawScore)),
         tone: "green",
         statusText: "Stable in your current community",
@@ -263,7 +263,7 @@ function getOpenTrustState(
     if (rawClass === "C") {
       return {
         classText: rawClass,
-        scoreText:
+        postureSource:
           rawScore === null || Number.isNaN(rawScore) ? "—" : String(Math.round(rawScore)),
         tone: "yellow",
         statusText: "Needs attention in your current community",
@@ -273,7 +273,7 @@ function getOpenTrustState(
     }
     return {
       classText: rawClass,
-      scoreText:
+      postureSource:
         rawScore === null || Number.isNaN(rawScore) ? "—" : String(Math.round(rawScore)),
       tone: "red",
       statusText: "At risk in your current community",
@@ -286,7 +286,7 @@ function getOpenTrustState(
     if (rawScore >= 75) {
       return {
         classText: "A",
-        scoreText: String(Math.round(rawScore)),
+        postureSource: String(Math.round(rawScore)),
         tone: "green",
         statusText: "Strong in your current community",
         whyText: rawWhy || "Your current community reading is strong.",
@@ -295,7 +295,7 @@ function getOpenTrustState(
     if (rawScore >= 55) {
       return {
         classText: "B",
-        scoreText: String(Math.round(rawScore)),
+        postureSource: String(Math.round(rawScore)),
         tone: "green",
         statusText: "Stable in your current community",
         whyText: rawWhy || "Your current community reading looks steady right now.",
@@ -304,7 +304,7 @@ function getOpenTrustState(
     if (rawScore >= 35) {
       return {
         classText: "C",
-        scoreText: String(Math.round(rawScore)),
+        postureSource: String(Math.round(rawScore)),
         tone: "yellow",
         statusText: "Needs attention in your current community",
         whyText:
@@ -313,7 +313,7 @@ function getOpenTrustState(
     }
     return {
       classText: "D",
-      scoreText: String(Math.round(rawScore)),
+      postureSource: String(Math.round(rawScore)),
       tone: "red",
       statusText: "At risk in your current community",
       whyText:
@@ -324,7 +324,7 @@ function getOpenTrustState(
   if (!hasSelectedCommunity) {
     return {
       classText: "Not shown yet",
-      scoreText: "-",
+      postureSource: "-",
       tone: "neutral",
       statusText: "Select a community to view local trust",
       whyText:
@@ -334,7 +334,7 @@ function getOpenTrustState(
 
   return {
     classText: "Not shown yet",
-    scoreText: "-",
+    postureSource: "-",
     tone: "neutral",
     statusText: "No local community reading yet",
     whyText:
@@ -424,8 +424,8 @@ export default function OpenTrustPage() {
     [openTrust.classText]
   );
   const openTrustPosture = useMemo(
-    () => getContextualEvidencePosture(openTrust.scoreText, openTrust.classText),
-    [openTrust.classText, openTrust.scoreText]
+    () => getContextualEvidencePosture(openTrust.postureSource, openTrust.classText),
+    [openTrust.classText, openTrust.postureSource]
   );
   const tone = useMemo(() => toneMeta(openTrust.tone), [openTrust.tone]);
   const routeGuide = useMemo(

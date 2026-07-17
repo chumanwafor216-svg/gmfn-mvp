@@ -310,7 +310,7 @@ function floatingNoticeCard(tone: "success" | "error"): React.CSSProperties {
 
 type CommunityTrustState = {
   classText: string;
-  scoreText: string;
+  postureSource: string;
   tone: "green" | "yellow" | "red" | "neutral";
   statusText: string;
 };
@@ -340,7 +340,7 @@ function getCommunityTrustState(source: any): CommunityTrustState {
   if (classText) {
     return {
       classText,
-      scoreText:
+      postureSource:
         scoreNum === null || Number.isNaN(scoreNum)
           ? "Not available yet"
           : String(Math.round(scoreNum)),
@@ -365,7 +365,7 @@ function getCommunityTrustState(source: any): CommunityTrustState {
     if (scoreNum >= 75) {
       return {
         classText: "A",
-        scoreText: String(Math.round(scoreNum)),
+        postureSource: String(Math.round(scoreNum)),
         tone: "green",
         statusText: "Healthy",
       };
@@ -373,7 +373,7 @@ function getCommunityTrustState(source: any): CommunityTrustState {
     if (scoreNum >= 55) {
       return {
         classText: "B",
-        scoreText: String(Math.round(scoreNum)),
+        postureSource: String(Math.round(scoreNum)),
         tone: "green",
         statusText: "Stable",
       };
@@ -381,14 +381,14 @@ function getCommunityTrustState(source: any): CommunityTrustState {
     if (scoreNum >= 35) {
       return {
         classText: "C",
-        scoreText: String(Math.round(scoreNum)),
+        postureSource: String(Math.round(scoreNum)),
         tone: "yellow",
         statusText: "Needs attention",
       };
     }
     return {
       classText: "D",
-      scoreText: String(Math.round(scoreNum)),
+      postureSource: String(Math.round(scoreNum)),
       tone: "red",
       statusText: "At risk",
     };
@@ -396,7 +396,7 @@ function getCommunityTrustState(source: any): CommunityTrustState {
 
   return {
     classText: "Awaiting reading",
-    scoreText: "Not available yet",
+    postureSource: "Not available yet",
     tone: "neutral",
     statusText: "No community trust reading yet",
   };
@@ -724,8 +724,8 @@ export default function MarketplaceWorkspacePage() {
     [communityTrust.tone]
   );
   const communityTrustPosture = useMemo(
-    () => getContextualEvidencePosture(communityTrust.scoreText, communityTrust.classText),
-    [communityTrust.classText, communityTrust.scoreText]
+    () => getContextualEvidencePosture(communityTrust.postureSource, communityTrust.classText),
+    [communityTrust.classText, communityTrust.postureSource]
   );
 
   const communityHomeCta = useMemo(
