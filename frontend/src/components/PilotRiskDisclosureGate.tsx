@@ -31,7 +31,7 @@ export default function PilotRiskDisclosureGate({ storageKey = DEFAULT_KEY, titl
           <ul style={{ margin: 0, paddingLeft: 18 }}>
             <li>This is <b>not</b> a bank guarantee.</li>
             <li>Supporters are <b>not automatically charged</b> during this pilot.</li>
-            <li>Breach triggers <b>reputation + network consequences</b> (visibility + reduced future access).</li>
+            <li>Breach triggers <b>record + network consequences</b> (visibility + reduced future access).</li>
             <li>Pilot status: use careful judgement and store reasons/notes honestly.</li>
           </ul>
 

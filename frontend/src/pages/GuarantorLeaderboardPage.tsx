@@ -332,7 +332,7 @@ export default function GuarantorLeaderboardPage() {
                   letterSpacing: 0,
                 }}
               >
-                Support records, not popularity.
+                Support records, not public judgement.
               </h1>
             </div>
             {guarantorLeaderboardStatusIcon(

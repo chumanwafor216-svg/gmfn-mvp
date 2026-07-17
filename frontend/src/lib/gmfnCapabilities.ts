@@ -60,7 +60,7 @@ export const GMFN_CAPABILITIES: readonly GmfnCapability[] = [
   {
     id: 2,
     title: "Evidence-Backed Buying and Selling",
-    proverb: "Evidence-Backed Buying and Selling turns reputation into clearer trade decisions.",
+    proverb: "Evidence-Backed Buying and Selling turns recorded evidence into clearer trade decisions.",
     gmfn:
       "GSN helps buyers and sellers act with more confidence because identity, trust evidence, and community context are visible in one flow.",
     category: "trade",
@@ -107,10 +107,10 @@ export const GMFN_CAPABILITIES: readonly GmfnCapability[] = [
   },
   {
     id: 6,
-    title: "Reputation-Based Visibility",
-    proverb: "Reputation-Based Visibility gives stronger trust more reach.",
+    title: "Evidence-Based Visibility",
+    proverb: "Evidence-Based Visibility gives stronger recorded trust more reach.",
     gmfn:
-      "GSN makes visibility depend on visible trust, not noise alone, so access improves while risk falls.",
+      "GSN makes visibility depend on visible evidence, not noise alone, so access improves while risk falls.",
     category: "visibility",
     tone: "spotlight",
     priority: 7,
@@ -233,15 +233,15 @@ export const GMFN_CAPABILITIES: readonly GmfnCapability[] = [
   },
   {
     id: 16,
-    title: "Reputation Mobility",
-    proverb: "Reputation Mobility stops trust from staying trapped in one place.",
+    title: "Evidence Mobility",
+    proverb: "Evidence Mobility stops trust from staying trapped in one place.",
     gmfn:
-      "GSN helps earned reputation stay usable across new spaces, which improves access without losing accountability.",
+      "GSN helps earned evidence stay usable across new spaces, which improves access without losing accountability.",
     category: "identity",
     tone: "focus",
     priority: 7,
     decisionGuideLine:
-      "Let earned reputation move with recorded behaviour, relationship evidence, community context, and current reading.",
+      "Let recorded behaviour move with relationship evidence, community context, and current reading.",
   },
   {
     id: 17,

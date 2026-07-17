@@ -769,7 +769,7 @@ export default function GuarantorEarningsPage() {
           "Supporting responsible members should not remain invisible. This keeps that contribution readable and measurable in your current community.",
         today: "Review your recent earnings and keep your support behaviour steady.",
         tomorrow:
-          "Consistent support can strengthen both visible value and visible reputation over time.",
+          "Consistent support can strengthen both visible value and visible evidence posture over time.",
         ctaLabel: "Open Community Home",
         ctaTo: routes.community,
       };
@@ -1347,7 +1347,7 @@ export default function GuarantorEarningsPage() {
                   >
                     As your supporter value grows, GSN should remind you that
                     standing behind responsible people can also create visible value
-                    and visible reputation for you.
+                    and visible evidence posture for you.
                   </div>
                 </div>
               </div>

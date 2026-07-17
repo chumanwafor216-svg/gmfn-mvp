@@ -782,8 +782,8 @@ export default function TrustTimelinePage() {
           >
             Follow events are attention records. They help you remember the
             communities and shops you want to keep close, but they do not prove
-            membership, endorsement, verification, payment evidence, or trust-score
-            growth.
+            membership, endorsement, verification, payment evidence, or evidence
+            posture growth.
           </div>
           {loading ? (
             <div style={helperText()}>Loading...</div>
