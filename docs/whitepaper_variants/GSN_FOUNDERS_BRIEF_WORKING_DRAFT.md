@@ -433,6 +433,116 @@ Do not hide these gaps:
 7. Decide whether the evidence supports a sponsor, partner, or investor
    conversation.
 
+## 17. Thirty-Day Proof Plan
+
+This plan is not a launch plan. It is a proof plan.
+
+### Days 1-7: Discovery Proof
+
+Goal:
+
+```text
+Find one painful trust decision that real people name without founder prompting.
+```
+
+Required output:
+
+- 5 to 10 interview notes or one structured session record;
+- one discovery evidence memo;
+- ranked first-use-case options;
+- exact participant language for value, refusal, privacy, authority, and
+  challenge concerns;
+- stop/go decision for pilot preparation.
+
+Stop signal:
+
+- people say the idea is interesting but cannot name a decision;
+- people experience GSN as scoring, surveillance, gossip, or public judgement;
+- no credible organiser wants a narrow workflow.
+
+### Days 8-14: Pilot Design Proof
+
+Goal:
+
+```text
+Turn the strongest decision into one workflow with one community, one organiser,
+one evidence output, and one privacy boundary.
+```
+
+Required output:
+
+- named pilot community or candidate community;
+- pilot owner/organiser;
+- workflow: record, confirm, challenge, output;
+- evidence fields;
+- private/public boundary;
+- currentness or expiry rule;
+- acceptance checklist for screenshots and evidence output.
+
+Stop signal:
+
+- the workflow needs too many pages to explain;
+- private evidence becomes public by default;
+- there is no clear challenge/correction path;
+- the output cannot explain what it does not prove.
+
+### Days 15-23: Product Evidence Proof
+
+Goal:
+
+```text
+Capture the working route or document evidence needed to show the pilot can be
+tested responsibly.
+```
+
+Required output:
+
+- phone screenshots for the chosen route path;
+- Trust Event or confirmation/witness evidence view;
+- TrustSlip or Trust Passport excerpt;
+- limitation/currentness note;
+- privacy-safe shareable output;
+- rejected or unresolved gaps recorded honestly.
+
+Stop signal:
+
+- route evidence is too confusing for a first-time organiser;
+- screenshots expose private data;
+- the public output looks like a score or guarantee;
+- stale, challenged, or expired evidence is not visible as such.
+
+### Days 24-30: Pilot Readiness Decision
+
+Goal:
+
+```text
+Decide whether to run the pilot, revise the workflow, or keep discovery open.
+```
+
+Required output:
+
+- pilot readiness memo;
+- named go/no-go decision;
+- exact sponsor/partner/investor ask if ready;
+- list of unresolved risks;
+- next product fixes before live use.
+
+Go signal:
+
+- one organiser understands the workflow;
+- members understand private versus shareable evidence;
+- at least one confirmation or challenge path is credible;
+- the evidence output helps one decision without pretending to decide for the
+  reader.
+
+No-go signal:
+
+- first decision remains unclear;
+- users read GSN as social scoring;
+- privacy/refusal dominates value;
+- product evidence cannot be captured cleanly;
+- there is no credible payer, sponsor, or organiser path.
+
 ## Final Founder Boundary
 
 GSN is not a rating app, social network, lender, bank, or automated trust
