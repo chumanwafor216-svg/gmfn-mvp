@@ -600,7 +600,7 @@ export default function TrustPage() {
                 {trustPosture.label}
               </div>
               <div style={{ marginTop: 6, ...helperText(), fontSize: 13 }}>
-                No public numeric human label is shown here.
+                Only descriptive evidence posture is shown here.
               </div>
             </div>
 

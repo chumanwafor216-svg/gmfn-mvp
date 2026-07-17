@@ -176,7 +176,7 @@ function publicTrustSlipPayload(scenario) {
       ? "This record is still building confirmed evidence."
       : "Confirmed evidence is deep and consistently positive across the current context.",
     cci_public_boundary:
-      "Descriptive evidence posture only; not a score of human worth, guarantee, or automatic approval.",
+      "Descriptive evidence posture only; guarantees and approvals remain separate decisions.",
     cci_explainer: minimal
       ? {}
       : {
@@ -189,7 +189,7 @@ function publicTrustSlipPayload(scenario) {
             ? "This record is still building confirmed evidence."
             : "Confirmed evidence is deep and consistently positive across the current context.",
           public_boundary:
-            "Descriptive evidence posture only; not a score of human worth, guarantee, or automatic approval.",
+            "Descriptive evidence posture only; guarantees and approvals remain separate decisions.",
         },
     trust_limit: "100",
     currency: "GBP",

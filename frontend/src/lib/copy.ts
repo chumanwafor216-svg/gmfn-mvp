@@ -15,7 +15,7 @@ export const copy = {
     headline: "Your Trust Record",
     sub: "Trust grows when you finish what you started — full repayment builds real confidence.",
     rule: "Trust only increases when a loan is fully repaid.",
-    progressHeadline: "Progress (not a score)",
+    progressHeadline: "Progress stage",
     progressSub:
       "This is just encouragement. It does not change your Trust Record. It helps you stay consistent.",
   },
