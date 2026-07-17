@@ -1650,33 +1650,33 @@ function domainFeatureIsOff(
 
 function domainFeatureRouteEffect(featureKey: DomainFeaturePolicyKey): string {
   if (featureKey === "announcement_board") {
-    return "Live route effect: Official Board posting is blocked when this is off.";
+    return "When off: Official Board posting cannot be used.";
   }
   if (featureKey === "member_invites") {
-    return "Live route effect: First Circle and member invite entry are blocked when this is off.";
+    return "When off: First Circle and member invites cannot be used.";
   }
   if (featureKey === "marketplace_shops") {
-    return "Live route effect: shop identity create/edit actions are blocked when this is off.";
+    return "When off: shop identity creation and editing are blocked.";
   }
   if (featureKey === "shop_diary") {
-    return "Live route effect: product, public gallery block, and shop content writes are blocked when this is off.";
+    return "When off: product, public gallery block, and shop content updates are blocked.";
   }
   if (featureKey === "payments_contributions") {
-    return "Live route effect: linked payment-instruction and money-in routes are blocked when this is off; Community Domain subscription billing stays separate.";
+    return "When off: linked payment instructions and money-in actions are blocked; Community Domain subscription billing stays separate.";
   }
   if (featureKey === "rosca_cycles") {
-    return "Live route effect: ROSCA cycle routes are blocked when this is off; paid ROSCA service access remains separate.";
+    return "When off: ROSCA cycle actions are blocked; paid ROSCA service access remains separate.";
   }
   if (featureKey === "spotlight") {
-    return "Live route effect: Spotlight broadcast and paid Spotlight payment routes are blocked when this is off; paid credit pricing stays separate.";
+    return "When off: Spotlight broadcast and paid Spotlight payment actions are blocked; paid credit pricing stays separate.";
   }
   if (featureKey === "demand_box") {
-    return "Live route effect: new Demand Box requests are blocked when this is off; existing requests can still be read or closed.";
+    return "When off: new Demand Box requests are blocked; existing requests can still be read or closed.";
   }
   if (featureKey === "vault") {
-    return "Live route effect: private Vault content and active Vault access-link creation are blocked when this is off; paid slot entitlement, expiry, and privacy rules stay separate.";
+    return "When off: private Vault content and active Vault access-link creation are blocked; paid slot entitlement, expiry, and privacy rules stay separate.";
   }
-  return "Planning rule only: recorded as the domain rule while this feature path is connected.";
+  return "Planning rule only: saved as the domain rule while this feature path is connected.";
 }
 
 function communityDomainSetupDraftKey(domainId: unknown): string {
@@ -9137,13 +9137,13 @@ export default function CommunityDomainDashboardPage() {
                             >
                               <div style={sectionLabel()}>What this controls</div>
                               <div style={{ ...helperText(), marginTop: 5, fontSize: 13 }}>
-                                Live enforcement exists for notices, member invites,
-                                marketplace shops, Shop Diary writes, payments and
-                                contributions, ROSCA cycle routes, Spotlight
-                                broadcast/payment routes, Demand Box posting, and
+                                This rule controls notices, member invites,
+                                marketplace shops, Shop Diary updates, payments and
+                                contributions, ROSCA cycle actions, Spotlight
+                                broadcast/payment actions, Demand Box posting, and
                                 private Vault publishing/link creation. Paid Vault
                                 slot entitlement, link expiry, and privacy controls
-                                stay on their separate service rails.
+                                stay in their separate service plans.
                               </div>
                             </div>
                             <div
