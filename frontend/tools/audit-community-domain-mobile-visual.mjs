@@ -1294,6 +1294,13 @@ try {
   await page.getByText("Operating areas", { exact: true }).waitFor({ timeout: 10000 });
   await clickByDebugId(page, "community-domain-dashboard.lane.modules");
   await page.getByText("Services focus", { exact: true }).waitFor({ timeout: 10000 });
+  if (await isDebugVisible(page, "community-domain-dashboard.service-group.local")) {
+    findings.push("Community Domain Services stage buttons are visible before Change stage is opened.");
+  }
+  if (!(await isDebugVisible(page, "community-domain-dashboard.service-stage-toggle"))) {
+    findings.push("Community Domain Services does not expose a Change stage control.");
+  }
+  await clickByDebugId(page, "community-domain-dashboard.service-stage-toggle");
   await clickByDebugId(page, "community-domain-dashboard.service-group.local");
   await page.getByText("Local service planning", { exact: true }).waitFor({ timeout: 10000 });
   if (await page.getByText("Marketplace rule", { exact: true }).isVisible().catch(() => false)) {
@@ -1316,6 +1323,7 @@ try {
   await page.getByText("Boundary packet", { exact: true }).waitFor({ timeout: 10000 });
   await clickByDebugId(page, "community-domain-service-boundary.focus.privacy");
   await page.getByText("Record privacy readiness", { exact: true }).waitFor({ timeout: 10000 });
+  await clickByDebugId(page, "community-domain-dashboard.service-stage-toggle");
   await clickByDebugId(page, "community-domain-dashboard.service-group.trust");
   await clickByDebugId(page, "community-domain-dashboard.service-packet-toggle");
   await clickByDebugId(page, "community-domain-dashboard.service-detail.evidence");

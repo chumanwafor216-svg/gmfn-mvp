@@ -239,6 +239,8 @@ export default function CommunityDomainBillingReadinessPanels({
   const capacityAttentionLanes = attentionCapacityLanes(visibleCapacityLanes);
   const [activeBillingDetail, setActiveBillingDetail] =
     useState<BillingDetailKey>("lifecycle");
+  const [billingDetailChooserOpen, setBillingDetailChooserOpen] =
+    useState(false);
   const selectedBillingDetail =
     BILLING_DETAIL_OPTIONS.find((option) => option.key === activeBillingDetail) ||
     BILLING_DETAIL_OPTIONS[0];
@@ -254,39 +256,62 @@ export default function CommunityDomainBillingReadinessPanels({
       >
         <div style={sectionLabel()}>Billing focus</div>
         <div style={helperText()}>
-          Current view: <strong>{selectedBillingDetail.label}</strong>.
+          Current packet: <strong>{selectedBillingDetail.label}</strong>.
         </div>
-        <div
+        <StableButton
+          type="button"
+          kind="secondary"
+          fullWidth
+          stableHeight={42}
+          debugId="community-domain-billing.detail-toggle"
+          aria-expanded={billingDetailChooserOpen}
+          aria-controls="community-domain-billing-detail-packets"
+          onClick={() => setBillingDetailChooserOpen((current) => !current)}
           style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 140px), 1fr))",
-            gap: 8,
+            justifyContent: "center",
+            fontSize: 13,
+            textTransform: "none",
           }}
         >
-          {BILLING_DETAIL_OPTIONS.map((option) => {
-            const selected = option.key === activeBillingDetail;
-            return (
-              <StableButton
-                key={option.key}
-                type="button"
-                kind={selected ? "primary" : "secondary"}
-                stableHeight={48}
-                fullWidth
-                aria-pressed={selected}
-                title={option.note}
-                debugId={`community-domain-billing.detail.${option.key}`}
-                onClick={() => setActiveBillingDetail(option.key)}
-                style={{
-                  justifyContent: "center",
-                  fontSize: 13,
-                  textTransform: "none",
-                }}
-              >
-                {option.label}
-              </StableButton>
-            );
-          })}
-        </div>
+          {billingDetailChooserOpen ? "Close packets" : "Change packet"}
+        </StableButton>
+        {billingDetailChooserOpen ? (
+          <div
+            id="community-domain-billing-detail-packets"
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 140px), 1fr))",
+              gap: 8,
+            }}
+          >
+            {BILLING_DETAIL_OPTIONS.map((option) => {
+              const selected = option.key === activeBillingDetail;
+              return (
+                <StableButton
+                  key={option.key}
+                  type="button"
+                  kind={selected ? "primary" : "secondary"}
+                  stableHeight={48}
+                  fullWidth
+                  aria-pressed={selected}
+                  title={option.note}
+                  debugId={`community-domain-billing.detail.${option.key}`}
+                  onClick={() => {
+                    setActiveBillingDetail(option.key);
+                    setBillingDetailChooserOpen(false);
+                  }}
+                  style={{
+                    justifyContent: "center",
+                    fontSize: 13,
+                    textTransform: "none",
+                  }}
+                >
+                  {option.label}
+                </StableButton>
+              );
+            })}
+          </div>
+        ) : null}
         <div style={{ ...helperText(), fontSize: 13 }}>
           {selectedBillingDetail.note}
         </div>

@@ -2149,6 +2149,32 @@ function officialBoardActionsStyle(): React.CSSProperties {
   };
 }
 
+function commandLaneGrid(): React.CSSProperties {
+  return {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 210px), 1fr))",
+    gap: 10,
+  };
+}
+
+function commandLaneCard(kind: "primary" | "secondary" = "secondary"): React.CSSProperties {
+  const primary = kind === "primary";
+  return {
+    minWidth: 0,
+    borderRadius: 18,
+    border: primary
+      ? "1px solid rgba(12,79,168,0.18)"
+      : "1px solid rgba(9,27,46,0.11)",
+    background: primary
+      ? "linear-gradient(180deg, rgba(240,247,255,0.98) 0%, rgba(248,251,255,0.995) 100%)"
+      : "linear-gradient(180deg, rgba(255,255,255,0.995) 0%, rgba(246,249,252,0.98) 100%)",
+    boxShadow: primary ? "0 14px 28px rgba(12,79,168,0.08)" : "none",
+    padding: 12,
+    display: "grid",
+    gap: 10,
+  };
+}
+
 function commandGuidanceGrid(): React.CSSProperties {
   return {
     display: "grid",
@@ -2729,6 +2755,7 @@ export default function CommunityDomainDashboardPage() {
     useState(false);
   const [operatingSummaryTaskChooserOpen, setOperatingSummaryTaskChooserOpen] =
     useState(false);
+  const [serviceStageChooserOpen, setServiceStageChooserOpen] = useState(false);
   const [servicePacketChooserOpen, setServicePacketChooserOpen] = useState(false);
   const [structurePacketChooserOpen, setStructurePacketChooserOpen] = useState(false);
   const [memberPacketChooserOpen, setMemberPacketChooserOpen] = useState(false);
@@ -4552,6 +4579,7 @@ export default function CommunityDomainDashboardPage() {
     setOperatingSummaryTaskChooserOpen(false);
     setSetupWorkbenchChooserOpen(false);
     setSetupAccessTaskChooserOpen(false);
+    setServiceStageChooserOpen(false);
     setServicePacketChooserOpen(false);
     setStructurePacketChooserOpen(false);
     setMemberPacketChooserOpen(false);
@@ -4592,6 +4620,12 @@ export default function CommunityDomainDashboardPage() {
       setMemberRosterTaskChooserOpen(false);
     }
   }, [activeMemberDetail]);
+  useEffect(() => {
+    if (activeLane !== "modules") {
+      setServiceStageChooserOpen(false);
+      setServicePacketChooserOpen(false);
+    }
+  }, [activeLane]);
   useEffect(() => {
     if (activeLane !== "governance") {
       setGovernanceGroupChooserOpen(false);
@@ -4826,6 +4860,7 @@ export default function CommunityDomainDashboardPage() {
   const activeBillingTaskOption =
     BILLING_TASK_OPTIONS.find((task) => task.key === activeBillingTask) ||
     BILLING_TASK_OPTIONS[0];
+  const subscriptionStatusMode = activeBillingTask === "readiness";
   const activeBillingAccountTaskOption =
     BILLING_ACCOUNT_TASK_OPTIONS.find((task) => task.key === activeBillingAccountTask) ||
     BILLING_ACCOUNT_TASK_OPTIONS[0];
@@ -5296,6 +5331,65 @@ export default function CommunityDomainDashboardPage() {
     setGovernanceTaskChooserOpen(false);
     setRealLifeRecordTypeChooserOpen(false);
     setActiveLane("governance");
+    setMessage("");
+  }
+
+  function closeDomainCommandDrawers() {
+    setOperatingAreaPickerOpen(false);
+    setCommandGuidanceOpen(false);
+    setWorkSurfaceNotesOpen(false);
+    setOperatingSummaryNotesOpen(false);
+    setOperatingSummaryGroupChooserOpen(false);
+    setOperatingSummaryTaskChooserOpen(false);
+    setSetupWorkbenchChooserOpen(false);
+    setSetupAccessTaskChooserOpen(false);
+    setServicePacketChooserOpen(false);
+    setStructurePacketChooserOpen(false);
+    setMemberPacketChooserOpen(false);
+    setMemberRosterTaskChooserOpen(false);
+    setGovernanceGroupChooserOpen(false);
+    setGovernanceTaskChooserOpen(false);
+    setBillingTaskChooserOpen(false);
+    setBillingPaymentGroupChooserOpen(false);
+    setBillingPaymentStepChooserOpen(false);
+    setBillingAccountTaskChooserOpen(false);
+    setRealLifeRecordTypeChooserOpen(false);
+    setActivityRecordStageChooserOpen(false);
+    setBeneficiaryOutcomeRecordStageChooserOpen(false);
+  }
+
+  function openDailyWorkLane() {
+    focusWorkSurfaceAfterOpenRef.current = true;
+    setSetupJourneyMode("setup");
+    setSetupWorkspaceOpen(false);
+    setShowAdvancedTools(true);
+    closeDomainCommandDrawers();
+    setActiveLane(operationalLaneKey);
+    setMessage("");
+  }
+
+  function openGovernanceLane() {
+    focusWorkSurfaceAfterOpenRef.current = true;
+    setSetupJourneyMode("setup");
+    setSetupWorkspaceOpen(false);
+    setShowAdvancedTools(true);
+    closeDomainCommandDrawers();
+    setActiveGovernanceTask("readiness");
+    setActiveRealLifeRecordTask(null);
+    setActiveLane("governance");
+    setMessage("");
+  }
+
+  function openSubscriptionLane() {
+    focusWorkSurfaceAfterOpenRef.current = true;
+    setSetupJourneyMode("setup");
+    setSetupWorkspaceOpen(false);
+    setShowAdvancedTools(true);
+    closeDomainCommandDrawers();
+    setActiveBillingTask("readiness");
+    setActiveBillingPaymentTask("reference");
+    setActiveBillingAccountTask("summary");
+    setActiveLane("billing");
     setMessage("");
   }
 
@@ -6742,42 +6836,82 @@ export default function CommunityDomainDashboardPage() {
                 </div>
               </div>
               {domainOperational ? (
-                <StableButton
-                  type="button"
-                  kind="primary"
-                  fullWidth
-                  debugId="community-domain-dashboard.open-marketplace"
-                  onClick={openDomainMarketplace}
-                >
-                  Open Marketplace
-                </StableButton>
-              ) : null}
-              {domainOperational ? (
-                <StableButton
-                  type="button"
-                  kind="secondary"
-                  fullWidth
-                  debugId="community-domain-dashboard.operational-focus"
-                  onClick={() => {
-                    focusWorkSurfaceAfterOpenRef.current = true;
-                    setSetupJourneyMode("setup");
-                    setSetupWorkspaceOpen(false);
-                    setShowAdvancedTools(true);
-                    setOperatingAreaPickerOpen(false);
-                    setCommandGuidanceOpen(false);
-                    setWorkSurfaceNotesOpen(false);
-                    setOperatingSummaryNotesOpen(false);
-                    setServicePacketChooserOpen(false);
-                    setStructurePacketChooserOpen(false);
-                    setMemberPacketChooserOpen(false);
-                    setGovernanceTaskChooserOpen(false);
-                    setRealLifeRecordTypeChooserOpen(false);
-                    setActiveLane(operationalLaneKey);
-                    setMessage("");
-                  }}
-                >
-                  Open {operationalLaneLabel}
-                </StableButton>
+                <div style={{ display: "grid", gap: 10 }}>
+                  <div style={commandLaneCard("primary")}>
+                    <div style={sectionLabel()}>Daily Work</div>
+                    <div style={{ ...helperText(), fontSize: 13, lineHeight: 1.45 }}>
+                      Open one live area. Finish the action. Return here.
+                    </div>
+                    <StableButton
+                      type="button"
+                      kind="primary"
+                      fullWidth
+                      debugId="community-domain-dashboard.open-marketplace"
+                      onClick={openDomainMarketplace}
+                    >
+                      Open Marketplace
+                    </StableButton>
+                    <StableButton
+                      type="button"
+                      kind="secondary"
+                      fullWidth
+                      debugId="community-domain-dashboard.operational-focus"
+                      onClick={() => {
+                        focusWorkSurfaceAfterOpenRef.current = true;
+                        setSetupWorkspaceOpen(false);
+                        openDailyWorkLane();
+                      }}
+                    >
+                      Open {operationalLaneLabel}
+                    </StableButton>
+                    {isAdmin ? (
+                      <StableButton
+                        type="button"
+                        kind="secondary"
+                        fullWidth
+                        stableHeight={46}
+                        debugId="community-domain-dashboard.real-life-record-shortcut"
+                        onClick={() => openRealLifeRecordTask("activity")}
+                      >
+                        Record activity
+                      </StableButton>
+                    ) : null}
+                  </div>
+                  <div style={commandLaneGrid()}>
+                    <div style={commandLaneCard()}>
+                      <div style={sectionLabel()}>Governance</div>
+                      <div style={{ ...helperText(), fontSize: 13, lineHeight: 1.45 }}>
+                        Rules, approvals, and evidence checks.
+                      </div>
+                      <StableButton
+                        type="button"
+                        kind="secondary"
+                        fullWidth
+                        stableHeight={44}
+                        debugId="community-domain-dashboard.open-governance"
+                        onClick={openGovernanceLane}
+                      >
+                        Open Governance
+                      </StableButton>
+                    </div>
+                    <div style={commandLaneCard()}>
+                      <div style={sectionLabel()}>Subscription</div>
+                      <div style={{ ...helperText(), fontSize: 13, lineHeight: 1.45 }}>
+                        Package, renewal, and billing status.
+                      </div>
+                      <StableButton
+                        type="button"
+                        kind="secondary"
+                        fullWidth
+                        stableHeight={44}
+                        debugId="community-domain-dashboard.open-subscription"
+                        onClick={openSubscriptionLane}
+                      >
+                        Open Subscription
+                      </StableButton>
+                    </div>
+                  </div>
+                </div>
               ) : (
                 <StableButton
                   type="button"
@@ -6789,18 +6923,6 @@ export default function CommunityDomainDashboardPage() {
                   Continue setup
                 </StableButton>
               )}
-              {domainOperational && isAdmin ? (
-                <StableButton
-                  type="button"
-                  kind="secondary"
-                  fullWidth
-                  stableHeight={46}
-                  debugId="community-domain-dashboard.real-life-record-shortcut"
-                  onClick={() => openRealLifeRecordTask("activity")}
-                >
-                  Record activity
-                </StableButton>
-              ) : null}
               <StableButton
                 type="button"
                 kind="secondary"
@@ -8968,12 +9090,18 @@ export default function CommunityDomainDashboardPage() {
                         <GsnRealisticIcon name="finance-bank-building" size={36} decorative />
                       </span>
                       <div style={{ minWidth: 0 }}>
-                        <div style={sectionLabel()}>Billing</div>
+                        <div style={sectionLabel()}>
+                          {subscriptionStatusMode ? "Subscription" : "Billing"}
+                        </div>
                         <h3 style={{ margin: "4px 0 0", fontSize: 20, lineHeight: 1.12 }}>
-                          Code, account, proof.
+                          {subscriptionStatusMode
+                            ? "Package and renewal status."
+                            : "Code, account, proof."}
                         </h3>
                         <div style={{ ...helperText(), marginTop: 7, fontSize: 13 }}>
-                          Generate one code, pay the shown account, then upload proof.
+                          {subscriptionStatusMode
+                            ? "Status only. Payment code, account, and proof stay in Billing jobs."
+                            : "Generate one code, pay the shown account, then upload proof."}
                         </div>
                       </div>
                     </div>
@@ -8985,23 +9113,48 @@ export default function CommunityDomainDashboardPage() {
                         marginTop: 12,
                       }}
                     >
-                      <span style={statusBadge(status.billing_status || selectedLane?.status)}>
-                        Billing: {compactStatus(status.billing_status || selectedLane?.status)}
-                      </span>
-                      <span style={statusBadge(quote?.pricing_status || quote?.quote_status)}>
-                        Quote: {compactStatus(quote?.pricing_status || quote?.quote_status)}
-                      </span>
-                      <span style={statusBadge(domainPaymentReference ? "code ready" : "code needed")}>
-                        {domainPaymentReference ? "Code ready" : "Code needed"}
-                      </span>
+                      {subscriptionStatusMode ? (
+                        <>
+                          <span style={statusBadge(quote?.package_name || "package pending")}>
+                            Package: {cleanText(quote?.package_name, "package pending")}
+                          </span>
+                          <span style={statusBadge(status.billing_status || selectedLane?.status)}>
+                            Billing: {compactStatus(status.billing_status || selectedLane?.status)}
+                          </span>
+                          <span style={statusBadge(quote?.renewal_policy?.status || "not set")}>
+                            Renewal: {compactStatus(quote?.renewal_policy?.status || "not set")}
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <span style={statusBadge(status.billing_status || selectedLane?.status)}>
+                            Billing: {compactStatus(status.billing_status || selectedLane?.status)}
+                          </span>
+                          <span style={statusBadge(quote?.pricing_status || quote?.quote_status)}>
+                            Quote: {compactStatus(quote?.pricing_status || quote?.quote_status)}
+                          </span>
+                          <span style={statusBadge(domainPaymentReference ? "code ready" : "code needed")}>
+                            {domainPaymentReference ? "Code ready" : "Code needed"}
+                          </span>
+                        </>
+                      )}
                     </div>
                     <div style={{ ...softCard(), marginTop: 12, display: "grid", gap: 10 }}>
-                      <div style={sectionLabel()}>Billing jobs</div>
-                      <div style={{ ...helperText(), fontSize: 13 }}>
-                        Current billing job:{" "}
-                        <strong>{activeBillingTaskOption.label}</strong>.{" "}
-                        {activeBillingTaskOption.note}
+                      <div style={sectionLabel()}>
+                        {subscriptionStatusMode ? "Payment jobs" : "Billing jobs"}
                       </div>
+                      {subscriptionStatusMode ? (
+                        <div style={{ ...helperText(), fontSize: 13 }}>
+                          Keep status reading here. Open a payment job only when you
+                          need code, account, proof, or the step list.
+                        </div>
+                      ) : (
+                        <div style={{ ...helperText(), fontSize: 13 }}>
+                          Current billing job:{" "}
+                          <strong>{activeBillingTaskOption.label}</strong>.{" "}
+                          {activeBillingTaskOption.note}
+                        </div>
+                      )}
                       <StableButton
                         type="button"
                         kind="secondary"
@@ -10065,9 +10218,8 @@ export default function CommunityDomainDashboardPage() {
                   <div style={softCard()}>
                     <div style={sectionLabel()}>Billing readiness details</div>
                     <div style={{ ...helperText(), marginTop: 7 }}>
-                      This selected job shows the deeper lifecycle and capacity
-                      diagnostics. Use the Code & proof or Pay-in account jobs
-                      for the normal owner payment workflow.
+                      Lifecycle and package capacity stay here. Payment code,
+                      account, proof, and steps stay behind Change billing job.
                     </div>
                     <div style={{ marginTop: 12 }}>
                       <Suspense
@@ -10100,45 +10252,68 @@ export default function CommunityDomainDashboardPage() {
                         Choose the service stage first. Current view:{" "}
                         <strong>{selectedServiceDetail.label}</strong>.
                       </div>
-                      <div
+                      <StableButton
+                        type="button"
+                        kind="secondary"
+                        fullWidth
+                        stableHeight={42}
+                        debugId="community-domain-dashboard.service-stage-toggle"
+                        aria-expanded={serviceStageChooserOpen}
+                        aria-controls="community-domain-service-stages"
+                        onClick={() =>
+                          setServiceStageChooserOpen((current) => !current)
+                        }
                         style={{
-                          display: "grid",
-                          gridTemplateColumns:
-                            "repeat(auto-fit, minmax(min(100%, 136px), 1fr))",
-                          gap: 8,
+                          justifyContent: "center",
+                          fontSize: 13,
+                          textTransform: "none",
                         }}
                       >
-                        {SERVICE_DETAIL_GROUP_OPTIONS.map((group) => {
-                          const selected = group.key === activeServiceDetailGroup;
-                          return (
-                            <StableButton
-                              key={group.key}
-                              type="button"
-                              kind={selected ? "primary" : "secondary"}
-                              stableHeight={48}
-                              fullWidth
-                              aria-pressed={selected}
-                              title={group.note}
-                              debugId={`community-domain-dashboard.service-group.${group.key}`}
-                              onClick={() => {
-                                setActiveServiceDetail(group.defaultDetail);
-                                setServicePacketChooserOpen(false);
-                                setStructurePacketChooserOpen(false);
-                                setMemberPacketChooserOpen(false);
-                                setGovernanceTaskChooserOpen(false);
-                                setRealLifeRecordTypeChooserOpen(false);
-                              }}
-                              style={{
-                                justifyContent: "center",
-                                fontSize: 13,
-                                textTransform: "none",
-                              }}
-                            >
-                              {group.label}
-                            </StableButton>
-                          );
-                        })}
-                      </div>
+                        {serviceStageChooserOpen ? "Close stages" : "Change stage"}
+                      </StableButton>
+                      {serviceStageChooserOpen ? (
+                        <div
+                          id="community-domain-service-stages"
+                          style={{
+                            display: "grid",
+                            gridTemplateColumns:
+                              "repeat(auto-fit, minmax(min(100%, 136px), 1fr))",
+                            gap: 8,
+                          }}
+                        >
+                          {SERVICE_DETAIL_GROUP_OPTIONS.map((group) => {
+                            const selected = group.key === activeServiceDetailGroup;
+                            return (
+                              <StableButton
+                                key={group.key}
+                                type="button"
+                                kind={selected ? "primary" : "secondary"}
+                                stableHeight={48}
+                                fullWidth
+                                aria-pressed={selected}
+                                title={group.note}
+                                debugId={`community-domain-dashboard.service-group.${group.key}`}
+                                onClick={() => {
+                                  setActiveServiceDetail(group.defaultDetail);
+                                  setServiceStageChooserOpen(false);
+                                  setServicePacketChooserOpen(false);
+                                  setStructurePacketChooserOpen(false);
+                                  setMemberPacketChooserOpen(false);
+                                  setGovernanceTaskChooserOpen(false);
+                                  setRealLifeRecordTypeChooserOpen(false);
+                                }}
+                                style={{
+                                  justifyContent: "center",
+                                  fontSize: 13,
+                                  textTransform: "none",
+                                }}
+                              >
+                                {group.label}
+                              </StableButton>
+                            );
+                          })}
+                        </div>
+                      ) : null}
                       {activeServiceGroupDetails.length > 1 ? (
                         <div
                           style={{
@@ -10201,6 +10376,7 @@ export default function CommunityDomainDashboardPage() {
                                       debugId={`community-domain-dashboard.service-detail.${option.key}`}
                                       onClick={() => {
                                         setActiveServiceDetail(option.key);
+                                        setServiceStageChooserOpen(false);
                                         setServicePacketChooserOpen(false);
                                         setStructurePacketChooserOpen(false);
                                         setMemberPacketChooserOpen(false);

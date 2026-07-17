@@ -234,6 +234,8 @@ export default function CommunityDomainGovernanceReadinessPanels({
   ];
   const [activeGovernanceDetail, setActiveGovernanceDetail] =
     useState<GovernanceDetailKey>("review");
+  const [governanceDetailChooserOpen, setGovernanceDetailChooserOpen] =
+    useState(false);
   const selectedGovernanceDetail =
     GOVERNANCE_DETAIL_OPTIONS.find((option) => option.key === activeGovernanceDetail) ||
     GOVERNANCE_DETAIL_OPTIONS[0];
@@ -249,40 +251,64 @@ export default function CommunityDomainGovernanceReadinessPanels({
       >
         <div style={sectionLabel()}>Governance focus</div>
         <div style={helperText()}>
-          Open one governance packet at a time. Current view:{" "}
+          Open one governance packet at a time. Current packet:{" "}
           <strong>{selectedGovernanceDetail.label}</strong>.
         </div>
-        <div
+        <StableButton
+          type="button"
+          kind="secondary"
+          fullWidth
+          stableHeight={42}
+          debugId="community-domain-governance.detail-toggle"
+          aria-expanded={governanceDetailChooserOpen}
+          aria-controls="community-domain-governance-packets"
+          onClick={() => setGovernanceDetailChooserOpen((current) => !current)}
           style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 140px), 1fr))",
-            gap: 8,
+            justifyContent: "center",
+            fontSize: 13,
+            textTransform: "none",
           }}
         >
-          {GOVERNANCE_DETAIL_OPTIONS.map((option) => {
-            const selected = option.key === activeGovernanceDetail;
-            return (
-              <StableButton
-                key={option.key}
-                type="button"
-                kind={selected ? "primary" : "secondary"}
-                stableHeight={48}
-                fullWidth
-                aria-pressed={selected}
-                title={option.note}
-                debugId={`community-domain-governance.detail.${option.key}`}
-                onClick={() => setActiveGovernanceDetail(option.key)}
-                style={{
-                  justifyContent: "center",
-                  fontSize: 13,
-                  textTransform: "none",
-                }}
-              >
-                {option.label}
-              </StableButton>
-            );
-          })}
-        </div>
+          {governanceDetailChooserOpen ? "Close packets" : "Change packet"}
+        </StableButton>
+        {governanceDetailChooserOpen ? (
+          <div
+            id="community-domain-governance-packets"
+            data-debug-id="community-domain-governance.detail-panel"
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 140px), 1fr))",
+              gap: 8,
+            }}
+          >
+            {GOVERNANCE_DETAIL_OPTIONS.map((option) => {
+              const selected = option.key === activeGovernanceDetail;
+              return (
+                <StableButton
+                  key={option.key}
+                  type="button"
+                  kind={selected ? "primary" : "secondary"}
+                  stableHeight={48}
+                  fullWidth
+                  aria-pressed={selected}
+                  title={option.note}
+                  debugId={`community-domain-governance.detail.${option.key}`}
+                  onClick={() => {
+                    setActiveGovernanceDetail(option.key);
+                    setGovernanceDetailChooserOpen(false);
+                  }}
+                  style={{
+                    justifyContent: "center",
+                    fontSize: 13,
+                    textTransform: "none",
+                  }}
+                >
+                  {option.label}
+                </StableButton>
+              );
+            })}
+          </div>
+        ) : null}
         <div style={{ ...helperText(), fontSize: 13 }}>
           {selectedGovernanceDetail.note}
         </div>

@@ -119,6 +119,94 @@ Community Settings must never modify:
 
 These remain global GSN engines.
 
+Community Settings must be understood as behavior policy, not feature
+ownership. It controls how the Community Domain uses global GSN capabilities;
+it does not create, fork, or remove those capabilities.
+
+### 3.1 Governance UI Rule
+
+Community Settings must feel like a settings surface, not a daily work surface.
+
+The owner should spend most of their time in operational features and only
+return to Governance when they deliberately want to change policy.
+
+Governance rows should follow one of two patterns:
+
+```text
+Setting Name
+ON / OFF
+Edit >
+```
+
+or:
+
+```text
+Setting Name
+View >
+Edit >
+```
+
+Use `ON`, `OFF`, `VIEW`, and `EDIT` as the mental model. Avoid exposing long
+paragraphs, raw policy structures, or many equal buttons on the first surface.
+
+Every governance setting may have collapsed help:
+
+```text
+Setting Name
+ON
+Info
+Edit >
+```
+
+Opening `Info` should explain the setting briefly, then close. The page must
+not leave all explanations open at once.
+
+Good governance rows include:
+
+- Allow member announcements;
+- Require admin approval;
+- Public community profile;
+- Allow public verification;
+- Allow reposts;
+- Allow external witnesses;
+- Automatic archive;
+- Privacy mode;
+- Evidence retention;
+- Membership approval;
+- Moderator permissions;
+- Operating units;
+- Role permissions.
+
+The settings page should not present Announcements, Spotlight, Demand Box,
+Marketplace, Shop Diary, or Reports as daily work buttons. Those belong in the
+operating area. Governance only defines their rules.
+
+### 3.2 One-Question Settings Pages
+
+When a setting requires deeper editing, the edit page should ask one question
+or one tightly related group of questions.
+
+Example:
+
+```text
+Announcements
+
+Who can post?
+Admin only
+Moderators
+Members
+
+Expires after
+1 day
+3 days
+Never
+
+Done
+```
+
+Do not mix billing, verification, trust, policy, visibility, and feature work on
+one settings page. Split, collapse, or guide instead.
+
 ---
 
 ## 4. Community Profile

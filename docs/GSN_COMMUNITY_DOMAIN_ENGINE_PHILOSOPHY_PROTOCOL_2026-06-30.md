@@ -108,6 +108,121 @@ protocol takes precedence for the Community Domain Engine.
 
 ---
 
+## 1.1 UX Constitutional Rule
+
+The Community Domain is not a collection of pages. It is a guided journey.
+
+Users should not need to understand GSN's internal architecture before they can
+use a Community Domain. GSN must understand where the user is in the journey and
+expose only the next useful decision.
+
+The user should never manage the platform. The platform should guide the user.
+
+Community Domain UX must therefore follow this lifecycle:
+
+```text
+Become a GSN Member
+-> Reserve Community Domain name
+-> Create Community
+-> Configure Governance
+-> Manage Subscription
+-> Run Daily Work
+```
+
+Each stage should expose only the action that belongs to that stage:
+
+- membership first: invitation, GSN ID, personal profile, and membership;
+- name reservation second: name, availability, reserve, pay, done;
+- community creation third: logo, description, category, country, visibility,
+  done;
+- governance fourth: policy controls only after the community exists;
+- subscription fifth: package, members, storage, renewal, upgrade;
+- daily work sixth: announcements, members, marketplace, demand, spotlight,
+  verification, and reports.
+
+The journey must not expose governance, billing, policy, reports, and operating
+features as equal first-screen choices before the user reaches the stage where
+they matter.
+
+First-time owners should see wizard behavior, not a settings console. A good
+first-owner flow looks like:
+
+```text
+Welcome Builder
+Step 1: Reserve your name
+Step 2: Create Community
+Step 3: Invite Members
+Step 4: Announcement Rules
+Step 5: Marketplace
+Done: Your Community is Live
+```
+
+Explanations must be collapsed by default. Use a small `Learn more`, `Info`, or
+similar disclosure for context that is useful but not required for the current
+decision.
+
+Every Community Domain page, lane, or panel must answer one question:
+
+```text
+What should this user do here now?
+```
+
+If a page asks the owner to decode many equal system choices at once, it fails
+the Community Domain UX constitution even if every button technically works.
+
+---
+
+## 1.2 Daily Work vs Governance
+
+Community Domain UI must separate value-creating features from rule-setting
+governance.
+
+Daily Work is where the community creates value:
+
+- Announcements / Notices;
+- Members;
+- Marketplace;
+- Demand Box;
+- Spotlight;
+- Shop Diary;
+- Vault;
+- Verification;
+- Trust Centre;
+- Reports.
+
+Governance is where owners define behavior:
+
+- permissions;
+- privacy;
+- verification;
+- confirmation;
+- membership;
+- moderation;
+- evidence;
+- visibility;
+- retention;
+- security.
+
+Features create value. Governance controls behavior. Never confuse the two.
+
+A Community Domain should not present Spotlight, Demand Box, Marketplace,
+Announcements, Shop Diary, or similar platform capabilities as feature modules
+that the owner must turn on before the product can make sense. They are work
+areas. A community may use them or ignore them.
+
+Governance may define who can use a feature, who approves it, where it appears,
+how long it remains active, whether it is public, and what evidence is retained.
+Governance must not make the owner feel that ordinary platform work is a
+technical module-management problem.
+
+When this rule conflicts with older references to service visibility or feature
+configuration, interpret those references as behavior policy, permission,
+scope, public/private visibility, approval, retention, or capacity settings,
+not as a requirement to expose feature ON/OFF switches on the main Community
+Domain surface.
+
+---
+
 ## 2. The Fundamental Assumption
 
 GSN begins with one assumption:
