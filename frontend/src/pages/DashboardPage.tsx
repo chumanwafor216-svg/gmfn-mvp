@@ -1211,6 +1211,22 @@ function cciDisplayText(cci: ReadingState): string {
   return readableTrustStatus(classText);
 }
 
+function spotlightEvidencePostureLabel(
+  item: SpotlightItem | null | undefined
+): string {
+  const bandText = safeStr(item?.trust_band);
+  const scoreText = safeStr(item?.trust_score);
+
+  if (!bandText && !scoreText) return "Member evidence";
+
+  const label = getContextualEvidencePosture(
+    scoreText || null,
+    bandText || undefined
+  ).shortLabel;
+
+  return label && label !== "Not shown" ? label : "Member evidence";
+}
+
 function spotlightPublishKey(item: SpotlightItem): string {
   const publishedParts = [
     item.author_gmfn_id,
@@ -9508,7 +9524,7 @@ export default function DashboardPage() {
                     }}
                   >
                     <span style={badge(true)}>
-                      {safeStr(activeSpotlight.trust_band || "Member evidence")}
+                      {spotlightEvidencePostureLabel(activeSpotlight)}
                     </span>
                     <span
                       style={{
@@ -9833,7 +9849,7 @@ export default function DashboardPage() {
                       backdropFilter: "blur(10px)",
                     }}
                   >
-                    {safeStr(activeSpotlight!.trust_band || "Member evidence")}
+                    {spotlightEvidencePostureLabel(activeSpotlight)}
                   </span>
 
                   <span
@@ -10053,7 +10069,7 @@ export default function DashboardPage() {
                       }}
                     >
                       <span style={badge(true)}>
-                        {safeStr(activeSpotlight.trust_band || "Member evidence")}
+                        {spotlightEvidencePostureLabel(activeSpotlight)}
                       </span>
                       <span
                         style={{

@@ -97,7 +97,7 @@ export function buildTrustSlipActionGuide(): TrustDocumentActionGuideContent {
         id: "snapshot",
         title: "Use the TrustSlip snapshot for a short portable summary",
         detail:
-          "Copy the TrustSlip snapshot when you need one clean text summary of the holder, band, trust-limit signal, wider consistency, expiry, and verify path.",
+          "Copy the TrustSlip snapshot when you need one clean text summary of the holder, evidence posture, trust-limit signal, wider consistency, expiry, and verify path.",
       },
     ],
     footer:
