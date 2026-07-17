@@ -1,6 +1,6 @@
 # GSN White Paper Audience Packet
 
-Last updated: 2026-07-09
+Last updated: 2026-07-18
 
 This folder contains the three audience-specific copies of the GSN Trust Infrastructure white paper, plus the send guidance needed to use them responsibly.
 
@@ -19,8 +19,8 @@ Use this minimum path:
 7. Use `GSN_FOUNDERS_BRIEF_GAP_CLOSURE.md` and
    `GSN_FOUNDERS_BRIEF_WORKING_DRAFT.md` before rewriting or sending any
    founder, partner, sponsor, or investor material.
-8. Use `GSN_FOUNDERS_BRIEF_SCREENSHOT_PACK.md` before capturing or attaching
-   founder-brief screenshots.
+8. Use `GSN_PRODUCT_EVIDENCE_CAPTURE_STANDARD.md` before capturing or attaching
+   founder-brief or product-evidence screenshots.
 
 The immediate next action is not investor outreach. It is the Chris/RGU send, after manual DOCX QA.
 
@@ -42,8 +42,8 @@ The immediate next action is not investor outreach. It is the Chris/RGU send, af
 | `GSN_DISCOVERY_INTERVIEW_LOG_TEMPLATE.md` | Internal use | Captures raw notes, exact phrases, refusal reasons, authority concerns, and pilot pull for each interview before synthesis. |
 | `GSN_DISCOVERY_EVIDENCE_MEMO_TEMPLATE.md` | Internal use | Turns interview/session notes into a decision memo with proof, risk, pilot, and investor-readiness ratings. |
 | `GSN_FOUNDERS_BRIEF_GAP_CLOSURE.md` | Internal use | Forces clear answers on first payer, first use case, first pilot, built proof, traction, safeguards, challenge, expiry, social-credit risk, and exact ask before the founder/investor brief is treated as ready. |
-| `GSN_FOUNDERS_BRIEF_SCREENSHOT_PACK.md` | Internal use | Defines the 12-screenshot founder brief proof sequence, caption template, protection rules, redaction log, and acceptance checklist. |
 | `GSN_FOUNDERS_BRIEF_WORKING_DRAFT.md` | Internal use | Draft founder brief that converts the gap answers into readable partner/investor language while preserving proof boundaries. |
+| `GSN_PRODUCT_EVIDENCE_CAPTURE_STANDARD.md` | Internal use | Defines the 12-step product-evidence capture sequence, product/proof state labels, caption template, protection rules, redaction log, and acceptance checklist. |
 | `GSN_INVESTOR_DILIGENCE_QA_AND_PROOF_ROADMAP.md` | Internal use | Prepares honest answers to investor diligence questions and separates the current thesis from proof still needed. |
 | `GSN_UN_SDG_ALIGNMENT_NOTE.md` | Internal use | Keeps the UN Sustainable Development Goals alignment language honest, measurable, and reusable across white paper, grant, policy, and investor conversations. |
 | `GSN_WHITEPAPER_PACKET_ACTION_PLAN.md` | Internal use | Converts the packet into a 7-day action checklist for Chris/RGU, discovery interviews, synthesis, and investor readiness. |

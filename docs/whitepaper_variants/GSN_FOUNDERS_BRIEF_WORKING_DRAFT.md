@@ -437,7 +437,7 @@ Do not hide these gaps:
 2. Produce a one-page discovery evidence memo.
 3. Select one first pilot workflow.
 4. Capture accepted phone screenshots and evidence outputs for that workflow
-   using `GSN_FOUNDERS_BRIEF_SCREENSHOT_PACK.md`.
+   using `GSN_PRODUCT_EVIDENCE_CAPTURE_STANDARD.md`.
 5. Run the pilot with one community and one organiser.
 6. Record confirmation, privacy, challenge, and currentness behaviour.
 7. Decide whether the evidence supports a sponsor, partner, or investor
@@ -508,7 +508,7 @@ tested responsibly.
 Required output:
 
 - phone screenshots for the chosen route path;
-- the 12-step founder brief screenshot sequence or a documented reason why a
+- the 12-step product-evidence capture sequence or a documented reason why a
   screenshot is intentionally deferred;
 - Trust Event or confirmation/witness evidence view;
 - TrustSlip or Trust Passport excerpt;
