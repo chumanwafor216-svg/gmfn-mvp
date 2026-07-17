@@ -1146,37 +1146,33 @@ function announcementBoardPillStyle(): React.CSSProperties {
 function announcementComposerStyle(isCompact: boolean): React.CSSProperties {
   return {
     display: "grid",
-    gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) minmax(150px, 194px)",
+    gridTemplateColumns: isCompact ? "1fr" : "minmax(154px, 190px) minmax(0, 1fr)",
     gap: 12,
-    alignItems: "stretch",
-    padding: isCompact ? "14px 16px" : "18px 28px",
-    borderBottom: "1px solid rgba(16,37,59,0.10)",
+    alignItems: "center",
+    padding: isCompact ? "0 16px 16px" : "0 28px 20px",
     background: "#FFFFFF",
   };
 }
 
 function announcementComposerPreviewStyle(): React.CSSProperties {
   return {
-    minHeight: 74,
-    borderRadius: 16,
-    border: "1px solid rgba(16,37,59,0.14)",
-    background: "#FFFFFF",
-    padding: "14px 16px",
+    borderRadius: 20,
+    border: "1px solid rgba(16,37,59,0.10)",
+    background:
+      "linear-gradient(180deg, #FFFFFF 0%, #F7FBFF 58%, #EEF6FF 100%)",
+    padding: "16px",
     display: "grid",
-    gridTemplateColumns: "minmax(0, 1fr) auto",
-    gap: 10,
-    alignItems: "end",
-    color: "#6B7A8F",
-    fontSize: 14,
-    fontWeight: 760,
-    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.86)",
+    gap: 12,
+    color: "#07172C",
+    boxShadow:
+      "0 14px 26px rgba(10,24,49,0.07), inset 0 1px 0 rgba(255,255,255,0.90)",
   };
 }
 
 function announcementListPanelStyle(isCompact: boolean): React.CSSProperties {
   return {
-    padding: isCompact ? "15px 16px 18px" : "20px 28px 24px",
-    background: "linear-gradient(180deg, #FAFCFF 0%, #F5F8FD 100%)",
+    padding: isCompact ? "15px 16px 12px" : "20px 28px 14px",
+    background: "#FFFFFF",
   };
 }
 
@@ -1684,6 +1680,8 @@ export default function CommunityHomePage() {
   const canManageCommunityNoticeSettings = Boolean(
     selectedClanId && isCommunityNoticeOfficer
   );
+  const primaryCommunityNotice = communityNotices[0] || null;
+  const communityNoticeLogItems = communityNotices.slice(1, 4);
 
   const routes = useMemo(
     () => ({
@@ -3653,22 +3651,109 @@ export default function CommunityHomePage() {
               </span>
             </div>
 
+            <div style={announcementListPanelStyle(isCompact)}>
+              {communityNoticesLoading ? (
+                <div style={announcementComposerPreviewStyle()}>
+                  <span style={{ color: "#617085", fontWeight: 850 }}>
+                    Loading board...
+                  </span>
+                </div>
+              ) : primaryCommunityNotice ? (
+                (() => {
+                  const title = wordLimit(
+                    firstTruthy(
+                      primaryCommunityNotice?.title,
+                      primaryCommunityNotice?.body,
+                      primaryCommunityNotice?.purpose,
+                      "Community notice"
+                    ),
+                    50
+                  );
+                  const when = compactDateLabel(
+                    firstTruthy(
+                      primaryCommunityNotice?.scheduled_at,
+                      primaryCommunityNotice?.created_at
+                    )
+                  );
+                  const expiry = noticeExpiryLabel(primaryCommunityNotice);
+                  const senderLabel = firstTruthy(
+                    primaryCommunityNotice?.sender_whatsapp_label,
+                    primaryCommunityNotice?.source,
+                    "Community"
+                  );
+
+                  return (
+                    <div style={announcementComposerPreviewStyle()}>
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "52px minmax(0, 1fr)",
+                          gap: 12,
+                          alignItems: "center",
+                        }}
+                      >
+                        <span style={announcementNoticeIconStyle(0)} aria-hidden="true">
+                          <GsnLegacyIcon name="megaphone" size={31} />
+                        </span>
+                        <span style={{ minWidth: 0 }}>
+                          <span
+                            style={{
+                              ...brandClampLines(3),
+                              color: "#07172C",
+                              fontSize: isCompact ? 18 : 21,
+                              fontWeight: 960,
+                              lineHeight: 1.18,
+                            }}
+                          >
+                            {title}
+                          </span>
+                          <span
+                            style={{
+                              ...brandClampLines(1),
+                              marginTop: 6,
+                              color: "#617085",
+                              fontSize: 12.5,
+                              fontWeight: 820,
+                            }}
+                          >
+                            {senderLabel}
+                            {when ? ` - ${when}` : ""}
+                            {expiry ? ` - ${expiry}` : ""}
+                          </span>
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })()
+              ) : (
+                <div style={announcementComposerPreviewStyle()}>
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "52px minmax(0, 1fr)",
+                      gap: 12,
+                      alignItems: "center",
+                    }}
+                  >
+                    <span style={announcementNoticeIconStyle(0)} aria-hidden="true">
+                      <GsnLegacyIcon name="megaphone" size={31} />
+                    </span>
+                    <span
+                      style={{
+                        color: "#617085",
+                        fontSize: 15,
+                        fontWeight: 850,
+                      }}
+                    >
+                      No community announcement is visible yet.
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {canPostCommunityNotice || canManageCommunityNoticeSettings ? (
             <div style={announcementComposerStyle(isCompact)}>
-              <div style={announcementComposerPreviewStyle()} aria-hidden="true">
-                <span style={{ ...brandClampLines(2), minWidth: 0 }}>
-                  What's happening in the community?
-                </span>
-                <span
-                  style={{
-                    color: "#48657D",
-                    fontSize: 13,
-                    fontWeight: 900,
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  0 / 50 words
-                </span>
-              </div>
               {canPostCommunityNotice ? (
                 <StableButton
                   type="button"
@@ -3679,125 +3764,85 @@ export default function CommunityHomePage() {
                   }}
                   style={{
                     ...communityActionStyle("primary"),
-                    minHeight: 74,
+                    minHeight: 54,
                     borderRadius: 16,
                     width: "100%",
                     gap: 10,
                     textTransform: "uppercase",
-                    fontSize: 15,
-                    boxShadow:
-                      "0 10px 20px rgba(10,24,49,0.18), inset 0 1px 0 rgba(255,255,255,0.12)",
+                    fontSize: 14,
                   }}
                 >
-                  <GsnLegacyIcon name="navigation" size={26} />
+                  <GsnLegacyIcon name="navigation" size={24} />
                   <span>Post Notice</span>
                 </StableButton>
               ) : null}
-            </div>
 
-            {canManageCommunityNoticeSettings ? (
-              <div
-                style={{
-                  display: "flex",
-                  gap: 8,
-                  flexWrap: "wrap",
-                  alignItems: "center",
-                  padding: isCompact ? "0 16px 14px" : "0 28px 18px",
-                  background: "#FFFFFF",
-                }}
-              >
-                <StableButton
-                  type="button"
-                  debugId="community-home.notice.policy.members"
-                  onClick={(event) => updateCommunityNoticePolicy(event, "members")}
-                  aria-disabled={
-                    communityNoticeSettingsSaving ||
-                    activeNoticePostingPolicy === "members"
-                      ? true
-                      : undefined
-                  }
-                  style={communityActionStyle(
-                    activeNoticePostingPolicy === "members" ? "primary" : "soft",
-                    communityNoticeSettingsSaving
-                  )}
+              {canManageCommunityNoticeSettings ? (
+                <div
+                  style={{
+                    display: "flex",
+                    gap: 8,
+                    flexWrap: "wrap",
+                    alignItems: "center",
+                    justifyContent: isCompact ? "flex-start" : "flex-end",
+                  }}
                 >
-                  Open to members
-                </StableButton>
-                <StableButton
-                  type="button"
-                  debugId="community-home.notice.policy.admins"
-                  onClick={(event) => updateCommunityNoticePolicy(event, "admins")}
-                  aria-disabled={
-                    communityNoticeSettingsSaving ||
-                    activeNoticePostingPolicy === "admins"
-                      ? true
-                      : undefined
-                  }
-                  style={communityActionStyle(
-                    activeNoticePostingPolicy === "admins" ? "primary" : "soft",
-                    communityNoticeSettingsSaving
-                  )}
-                >
-                  Admin only
-                </StableButton>
-                <span style={badge(false)}>50 words</span>
-              </div>
+                  <StableButton
+                    type="button"
+                    debugId="community-home.notice.policy.members"
+                    onClick={(event) => updateCommunityNoticePolicy(event, "members")}
+                    aria-disabled={
+                      communityNoticeSettingsSaving ||
+                      activeNoticePostingPolicy === "members"
+                        ? true
+                        : undefined
+                    }
+                    style={communityActionStyle(
+                      activeNoticePostingPolicy === "members" ? "primary" : "soft",
+                      communityNoticeSettingsSaving
+                    )}
+                  >
+                    Members
+                  </StableButton>
+                  <StableButton
+                    type="button"
+                    debugId="community-home.notice.policy.admins"
+                    onClick={(event) => updateCommunityNoticePolicy(event, "admins")}
+                    aria-disabled={
+                      communityNoticeSettingsSaving ||
+                      activeNoticePostingPolicy === "admins"
+                        ? true
+                        : undefined
+                    }
+                    style={communityActionStyle(
+                      activeNoticePostingPolicy === "admins" ? "primary" : "soft",
+                      communityNoticeSettingsSaving
+                    )}
+                  >
+                    Admin
+                  </StableButton>
+                  <span style={badge(false)}>50 words</span>
+                </div>
+              ) : null}
+            </div>
             ) : null}
 
-            <div style={announcementListPanelStyle(isCompact)}>
+            {communityNoticeLogItems.length > 0 ? (
               <div
                 style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  gap: 12,
-                  marginBottom: 8,
-                }}
-              >
-                <span
-                  style={{
-                    color: "#07172C",
-                    fontSize: 14,
-                    fontWeight: 950,
-                    textTransform: "uppercase",
-                  }}
-                >
-                  Latest notices
-                </span>
-                <span
-                  style={{
-                    color: "#0B4F8A",
-                    fontSize: 13,
-                    fontWeight: 900,
-                    whiteSpace: "nowrap",
-                  }}
-                  aria-hidden="true"
-                >
-                  Newest first
-                </span>
-              </div>
-
-              <div
-                style={{
-                  borderRadius: 18,
-                  overflow: "hidden",
+                  padding: isCompact ? "0 16px 18px" : "0 28px 24px",
                   background: "#FFFFFF",
-                  border: "1px solid rgba(16,37,59,0.08)",
                 }}
               >
-                {communityNoticesLoading ? (
-                  <div
-                    style={{
-                      ...announcementNoticeRowStyle(),
-                      gridTemplateColumns: "1fr",
-                      color: "#617085",
-                      fontWeight: 850,
-                    }}
-                  >
-                    Loading latest notices...
-                  </div>
-                ) : communityNotices.length > 0 ? (
-                  communityNotices.slice(0, 4).map((item, index) => {
+                <div
+                  style={{
+                    borderRadius: 18,
+                    overflow: "hidden",
+                    background: "#FAFCFF",
+                    border: "1px solid rgba(16,37,59,0.08)",
+                  }}
+                >
+                  {communityNoticeLogItems.map((item, index) => {
                     const title = wordLimit(
                       firstTruthy(item?.title, item?.body, item?.purpose, "Community notice"),
                       50
@@ -3815,7 +3860,6 @@ export default function CommunityHomePage() {
                       "calendar",
                       "home",
                       "certificate",
-                      "megaphone",
                     ];
 
                     return (
@@ -3823,7 +3867,7 @@ export default function CommunityHomePage() {
                         key={`${item?.notice_id || item?.meeting_id || index}`}
                         style={announcementNoticeRowStyle()}
                       >
-                        <span style={announcementNoticeIconStyle(index)} aria-hidden="true">
+                        <span style={announcementNoticeIconStyle(index + 1)} aria-hidden="true">
                           <GsnLegacyIcon name={noticeIcons[index % noticeIcons.length]} size={30} />
                         </span>
                         <span style={{ minWidth: 0 }}>
@@ -3847,7 +3891,7 @@ export default function CommunityHomePage() {
                               fontWeight: 780,
                             }}
                           >
-                            Posted by {senderLabel}
+                            {senderLabel}
                             {when ? ` - ${when}` : ""}
                             {expiry ? ` - ${expiry}` : ""}
                           </span>
@@ -3880,21 +3924,10 @@ export default function CommunityHomePage() {
                         )}
                       </div>
                     );
-                  })
-                ) : (
-                  <div
-                    style={{
-                      ...announcementNoticeRowStyle(),
-                      gridTemplateColumns: "1fr",
-                      color: "#617085",
-                      fontWeight: 850,
-                    }}
-                  >
-                    No community announcement is visible yet.
-                  </div>
-                )}
+                  })}
+                </div>
               </div>
-            </div>
+            ) : null}
           </div>
 
           <div style={contactCommunityCardStyle()}>

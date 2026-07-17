@@ -6958,8 +6958,7 @@ export default function CommunityDomainDashboardPage() {
                   </h2>
                   <div style={{ ...helperText(), marginTop: 8 }}>
                     Official notices are capped at 50 words, have no comments
-                    or reactions, and stay limited to active members of this
-                    selected Community Domain.
+                    or reactions, and are limited to active members of this selected Community Domain.
                   </div>
                 </div>
               </div>
