@@ -42,7 +42,7 @@ captured from the working system.
 | TrustSlip Verify | Public evidence and private evidence view | Not captured | Public paper is shareable without private overload; private evidence stays clearly separate. |
 | Evidence PDFs | Member, community, loan, TrustSlip, Trust Timeline, Loan Trust, Community Exposure | Not captured | Generated PDF opens visually with GSN title, watermark/header/footer, generated time, and a clear "not a bank guarantee" limitation statement. |
 | Admin readiness | Protocol status and pilot readiness partials | Not captured | Partial labels explain what is complete, what remains, why it matters, and the next route. |
-| Product evidence capture standard | 12-step sequence from Join GSN through recipient TrustSlip view and access record, with administrative review captured separately where required | Not captured | Must follow `docs/whitepaper_variants/GSN_PRODUCT_EVIDENCE_CAPTURE_STANDARD.md`, use one redacted demo account/community, separate product state from proof state, include caption limitations, and remove private identifiers plus personal CCI/trust-score numbers. |
+| Product evidence capture standard | 12-step sequence from Join GSN through recipient TrustSlip view and access record, with administrative review captured separately where required | Captured | Must follow `docs/whitepaper_variants/GSN_PRODUCT_EVIDENCE_CAPTURE_STANDARD.md`, use one redacted demo account/community, separate product state from proof state, include caption limitations, and remove private identifiers plus personal CCI/trust-score numbers. |
 
 ## Folder Shape
 
@@ -106,18 +106,26 @@ Each accepted item should record:
   `pilot_evidence_pack/12_product_evidence_capture/`. It contains the index,
   caption log, redaction log, route capture map, and limitations file for the
   12-step capture pass. This folder is intentionally ignored by git.
-- Fresh local candidate screenshots were captured on 2026-07-19 for Join GSN,
-  Create/Join Community, Community Domain operating area, and a partial
-  privacy/challenge/currentness state. They are listed in
+- Fresh local candidate screenshots were captured on 2026-07-19, using local
+  Playwright and synthetic demo state where required. There are 12 PNGs in the
+  local candidate folder, but they do not yet cover every required step cleanly:
+  steps 05, 06, and 07 still need proper captures, and steps 04 and 10 need
+  cleaner recapture. The candidates are listed in
   `pilot_evidence_pack/12_product_evidence_capture/candidate_capture_log.md`.
+- The reusable local capture tool is
+  `frontend/tools/capture-product-evidence-candidates.mjs` and can be run with
+  `npm --prefix frontend run capture:product-evidence-candidates` against the
+  local frontend.
 - Route-boundary smokes passed for Community Home Domain list, Trust Timeline,
   Community Confirmation Outcome, Trust Passport/TrustSlip holder boundaries,
   public TrustSlip verify states, TrustSlip private evidence boundaries, and the
   Community Domain mobile visual audit.
-- Accepted product evidence screenshots remain `0 of 12`. The older local
-  screenshots and the new candidate screenshots are not accepted under the
-  current standard until they are redacted, captioned, single-demo-context
-  aligned, and approved.
+- Accepted product evidence screenshots remain `0 of 12`. Several candidate
+  captures still need recapture before acceptance, especially source activity,
+  pending evidence, confirmation request, Community Domain operating area, and
+  privacy/challenge/currentness. The older local screenshots and the new
+  candidate screenshots are not accepted under the current standard until they
+  are redacted, captioned, single-demo-context aligned, and approved.
 - Current owner override for active pilot testing: completed verified fixes are
   pushed to `main` and a Render deploy is requested. Frontend deploy requests
   can be accepted by the existing hook; backend-impacting fixes are not

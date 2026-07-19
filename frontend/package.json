@@ -126,6 +126,7 @@
     "audit:gsn-visible-language": "node tools/audit-gsn-visible-language.mjs",
     "audit:capability-mirror": "node tools/audit-capability-mirror.mjs",
     "audit:protocol-readiness": "node tools/audit-protocol-readiness.mjs",
+    "capture:product-evidence-candidates": "node tools/capture-product-evidence-candidates.mjs",
     "audit:button-stability": "node tools/audit-button-stability.mjs",
     "audit:tap-stability": "node tools/audit-mobile-tap-stability.mjs",
     "audit:notice-board-phone-notifications": "node tools/audit-notice-board-phone-notifications.mjs",
