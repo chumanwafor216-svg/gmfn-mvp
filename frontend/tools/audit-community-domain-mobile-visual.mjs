@@ -2,7 +2,7 @@
 
 import { chromium } from "@playwright/test";
 import { mkdirSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const baseUrl = (process.env.GSN_AUDIT_BASE_URL || "http://127.0.0.1:5180").replace(
@@ -12,11 +12,31 @@ const baseUrl = (process.env.GSN_AUDIT_BASE_URL || "http://127.0.0.1:5180").repl
 const routePath = "/app/community-domain/13";
 const purchaseRoutePath = "/community-domain/purchase?demo=pillar-of-hope";
 const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
+const repoRoot = resolve(frontendRoot, "..");
 const screenshotDir = join(frontendRoot, "screenshots");
 mkdirSync(screenshotDir, { recursive: true });
+const productEvidenceCaptureEnabled = process.env.GSN_PRODUCT_EVIDENCE_CAPTURE === "1";
+const productEvidenceCandidateDir = join(
+  repoRoot,
+  "pilot_evidence_pack",
+  "12_product_evidence_capture",
+  "candidates"
+);
+if (productEvidenceCaptureEnabled) {
+  mkdirSync(productEvidenceCandidateDir, { recursive: true });
+}
 const handledApiPaths = [];
 let domainListScenario = "owned";
 let dashboardScenario = "active";
+
+async function captureProductEvidenceCandidate(page, fileName) {
+  if (!productEvidenceCaptureEnabled) return;
+  await page.waitForTimeout(350);
+  await page.screenshot({
+    path: join(productEvidenceCandidateDir, fileName),
+    fullPage: false,
+  });
+}
 
 function json(data, status = 200) {
   return {
@@ -1151,6 +1171,10 @@ try {
     path: join(screenshotDir, "community-domain-active-initial-390x844.png"),
     fullPage: false,
   });
+  await captureProductEvidenceCandidate(
+    page,
+    "candidate_04_community_operating_area_top_2026-07-19.png"
+  );
 
   await page.goto(`${baseUrl}${routePath}?lane=settings`, {
     waitUntil: "networkidle",
@@ -1598,6 +1622,10 @@ try {
     .getByTestId("community-domain-dashboard.work-surface")
     .getByText("Record from real life", { exact: true })
     .waitFor({ timeout: 10000 });
+  await captureProductEvidenceCandidate(
+    page,
+    "candidate_05_source_activity_entry_2026-07-19.png"
+  );
   if (
     await isDebugVisible(
       page,
@@ -1639,6 +1667,10 @@ try {
   await clickByDebugId(page, "community-domain-dashboard.activity-record-stage-toggle");
   await clickByDebugId(page, "community-domain-dashboard.activity-record-stage.evidence");
   await page.getByPlaceholder("Evidence reference").waitFor({ timeout: 10000 });
+  await captureProductEvidenceCandidate(
+    page,
+    "candidate_06_pending_evidence_record_2026-07-19.png"
+  );
   if (await isDebugVisible(page, "community-domain-dashboard.activity-record-stage.person")) {
     findings.push("Community Domain Activity record step buttons stay visible after selecting a step.");
   }
@@ -1793,6 +1825,10 @@ try {
     )
     .first()
     .waitFor({ state: "visible", timeout: 10000 });
+  await captureProductEvidenceCandidate(
+    page,
+    "candidate_07_confirmation_request_action_2026-07-19.png"
+  );
   await clickByDebugId(
     page,
     "community-domain-dashboard.beneficiary-outcome-recent-packet-toggle"

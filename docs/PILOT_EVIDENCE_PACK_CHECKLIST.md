@@ -107,10 +107,10 @@ Each accepted item should record:
   caption log, redaction log, route capture map, and limitations file for the
   12-step capture pass. This folder is intentionally ignored by git.
 - Fresh local candidate screenshots were captured on 2026-07-19, using local
-  Playwright and synthetic demo state where required. There are 12 PNGs in the
-  local candidate folder, but they do not yet cover every required step cleanly:
-  steps 05, 06, and 07 still need proper captures, and steps 04 and 10 need
-  cleaner recapture. The candidates are listed in
+  Playwright and synthetic demo state where required. There are 16 PNGs in the
+  local candidate folder and every required product evidence step now has at
+  least one candidate. Steps 04, 06, 07, and 10 still need cleaner recapture,
+  redaction, or caption caveats before acceptance. The candidates are listed in
   `pilot_evidence_pack/12_product_evidence_capture/candidate_capture_log.md`.
 - The reusable local capture tool is
   `frontend/tools/capture-product-evidence-candidates.mjs` and can be run with
@@ -121,8 +121,8 @@ Each accepted item should record:
   public TrustSlip verify states, TrustSlip private evidence boundaries, and the
   Community Domain mobile visual audit.
 - Accepted product evidence screenshots remain `0 of 12`. Several candidate
-  captures still need recapture before acceptance, especially source activity,
-  pending evidence, confirmation request, Community Domain operating area, and
+  captures still need recapture before acceptance, especially pending evidence,
+  confirmation request, Community Domain operating area, and
   privacy/challenge/currentness. The older local screenshots and the new
   candidate screenshots are not accepted under the current standard until they
   are redacted, captioned, single-demo-context aligned, and approved.
