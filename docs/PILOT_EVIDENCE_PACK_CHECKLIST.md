@@ -106,10 +106,18 @@ Each accepted item should record:
   `pilot_evidence_pack/12_product_evidence_capture/`. It contains the index,
   caption log, redaction log, route capture map, and limitations file for the
   12-step capture pass. This folder is intentionally ignored by git.
+- Fresh local candidate screenshots were captured on 2026-07-19 for Join GSN,
+  Create/Join Community, Community Domain operating area, and a partial
+  privacy/challenge/currentness state. They are listed in
+  `pilot_evidence_pack/12_product_evidence_capture/candidate_capture_log.md`.
+- Route-boundary smokes passed for Community Home Domain list, Trust Timeline,
+  Community Confirmation Outcome, Trust Passport/TrustSlip holder boundaries,
+  public TrustSlip verify states, TrustSlip private evidence boundaries, and the
+  Community Domain mobile visual audit.
 - Accepted product evidence screenshots remain `0 of 12`. The older local
-  screenshots in sibling folders are legacy candidates only and are not accepted
-  under the current standard until they are recaptured or reviewed, redacted,
-  captioned, and approved.
+  screenshots and the new candidate screenshots are not accepted under the
+  current standard until they are redacted, captioned, single-demo-context
+  aligned, and approved.
 - Current owner override for active pilot testing: completed verified fixes are
   pushed to `main` and a Render deploy is requested. Frontend deploy requests
   can be accepted by the existing hook; backend-impacting fixes are not
