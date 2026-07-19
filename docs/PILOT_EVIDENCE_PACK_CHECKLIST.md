@@ -1,6 +1,6 @@
 # GSN Pilot Evidence Pack Checklist
 
-Last updated: 2026-06-11
+Last updated: 2026-07-19
 
 ## Purpose
 
@@ -102,6 +102,14 @@ Each accepted item should record:
   defines the required 12-step story, product/proof state labels, caption
   template, redaction rules, and acceptance checklist before screenshots can be
   attached to the founder or investor material.
+- The local working scaffold for the product evidence sequence now exists at
+  `pilot_evidence_pack/12_product_evidence_capture/`. It contains the index,
+  caption log, redaction log, route capture map, and limitations file for the
+  12-step capture pass. This folder is intentionally ignored by git.
+- Accepted product evidence screenshots remain `0 of 12`. The older local
+  screenshots in sibling folders are legacy candidates only and are not accepted
+  under the current standard until they are recaptured or reviewed, redacted,
+  captioned, and approved.
 - Current owner override for active pilot testing: completed verified fixes are
   pushed to `main` and a Render deploy is requested. Frontend deploy requests
   can be accepted by the existing hook; backend-impacting fixes are not
