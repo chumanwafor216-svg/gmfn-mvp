@@ -29,18 +29,21 @@ async function installApiMocks(page, baseURL) {
   const clan = {
     id: 8,
     clan_id: 8,
-    name: "Homeland isa Marketplace",
-    display_name: "Homeland isa Marketplace",
-    community_name: "Homeland isa Marketplace",
-    marketplace_name: "Homeland isa Marketplace",
+    name: "Builders corporation Marketplace",
+    display_name: "Builders corporation Marketplace",
+    community_name: "Builders corporation Marketplace",
+    marketplace_name: "Builders corporation Marketplace",
     description: "Community-bound buying, selling, support, and evidence desk.",
     marketplace_description:
       "Community-bound buying, selling, support, and evidence desk.",
-    community_code: "GMFN-C-000008",
-    clan_code: "GMFN-C-000008",
-    gmfn_id: "GMFN-C-000008",
-    member_count: 7,
-    public_shop_count: 5,
+    community_code: "GSN-C-000011",
+    clan_code: "GSN-C-000011",
+    gmfn_id: "GSN-C-000011",
+    member_count: 1,
+    public_shop_count: 1,
+    trust_band: "E",
+    community_trust_band: "E",
+    cci_band: "E",
     marketplace_image_url:
       "https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=320&h=320&fit=crop",
   };
@@ -161,9 +164,25 @@ async function installApiMocks(page, baseURL) {
       );
     }
     if (/^\/loans/.test(path)) return route.fulfill(json({ items: [], loans: [] }));
+    if (/^\/trust-slips\/me/.test(path)) {
+      return route.fulfill(
+        json({
+          open_trust_class: "E",
+          open_trust_band: "E",
+          cross_community_integrity_class: "E",
+          cross_community_integrity_score: 12,
+        })
+      );
+    }
     if (/^\/trust-score\/clan/.test(path) || /^\/trust/.test(path)) {
       return route.fulfill(
-        json({ score: 76, grade: "B", reading: "Strong", events: 24 })
+        json({
+          score: 12,
+          grade: "E",
+          band: "E",
+          reading: "Thin",
+          counts: { recorded: 49 },
+        })
       );
     }
     if (/^\/protected-trades/.test(path)) {
@@ -244,11 +263,12 @@ async function run() {
     const result = await page.evaluate(() => {
       const text = document.body.textContent || "";
       const required = [
-        "Homeland isa Marketplace",
+        "Builders corporation Marketplace",
         "Finance Summary",
         "Finance details",
         "Trust",
         "Wider",
+        "Insufficient",
         "Money & Trust",
         "Community Members & Shops",
         "Marketplace Tools",
@@ -272,10 +292,35 @@ async function run() {
           text: (element.textContent || "").trim().slice(0, 80),
           right: Math.round(element.getBoundingClientRect().right),
         }));
-      return { missing, overflow };
+      const clippedHeroStats = Array.from(
+        document.querySelectorAll("[data-marketplace-hero-stat-value]")
+      )
+        .filter((element) => {
+          const rect = element.getBoundingClientRect();
+          const text = (element.textContent || "").trim();
+          return (
+            rect.width > 0 &&
+            (element.scrollWidth > element.clientWidth + 1 ||
+              (text.length > 8 &&
+                element.scrollHeight > element.clientHeight + 4))
+          );
+        })
+        .map((element) => ({
+          stat: element.getAttribute("data-marketplace-hero-stat-value"),
+          text: (element.textContent || "").trim(),
+          clientWidth: element.clientWidth,
+          scrollWidth: element.scrollWidth,
+          clientHeight: element.clientHeight,
+          scrollHeight: element.scrollHeight,
+        }));
+      return { missing, overflow, clippedHeroStats };
     });
 
-    if (result.missing.length || result.overflow.length) {
+    if (
+      result.missing.length ||
+      result.overflow.length ||
+      result.clippedHeroStats.length
+    ) {
       console.error("Marketplace hero smoke failed:", result);
       process.exit(1);
     }
@@ -360,7 +405,7 @@ async function run() {
     }
 
     console.log(
-      "Marketplace hero smoke passed: selected marketplace/domain scope verified; screenshot saved to screenshots/marketplace-hero-390x844.png"
+      "Marketplace hero smoke passed: selected marketplace/domain scope and mobile stat containment verified; screenshot saved to screenshots/marketplace-hero-390x844.png"
     );
   } finally {
     if (browser) await browser.close();

@@ -3534,6 +3534,10 @@ function marketplaceFrontTagStyle(
 function marketplaceHeroShellStyle(isCompact: boolean): React.CSSProperties {
   return {
     position: "relative",
+    width: "100%",
+    maxWidth: "100%",
+    minWidth: 0,
+    boxSizing: "border-box",
     borderRadius: isCompact ? 24 : 28,
     border: "1px solid rgba(214,170,69,0.24)",
     background:
@@ -3632,6 +3636,10 @@ function marketplaceHeroStatsStyle(isCompact: boolean): React.CSSProperties {
   return {
     position: "relative",
     zIndex: 1,
+    width: "100%",
+    maxWidth: "100%",
+    minWidth: 0,
+    boxSizing: "border-box",
     marginTop: isCompact ? 12 : 18,
     borderRadius: isCompact ? 18 : 20,
     background: "rgba(255,255,255,0.98)",
@@ -3650,11 +3658,11 @@ function marketplaceHeroStatsStyle(isCompact: boolean): React.CSSProperties {
 function marketplaceHeroStatCellStyle(isCompact: boolean): React.CSSProperties {
   return {
     minWidth: 0,
-    minHeight: isCompact ? 82 : 82,
-    padding: isCompact ? "9px 7px" : "13px 14px",
+    minHeight: isCompact ? 78 : 82,
+    padding: isCompact ? "8px 6px" : "13px 14px",
     display: "grid",
-    gridTemplateColumns: isCompact ? "30px minmax(0, 1fr)" : "40px minmax(0, 1fr)",
-    gap: isCompact ? 6 : 10,
+    gridTemplateColumns: isCompact ? "28px minmax(0, 1fr)" : "40px minmax(0, 1fr)",
+    gap: isCompact ? 5 : 10,
     alignItems: "center",
     borderRight: "1px solid rgba(16,37,59,0.08)",
     borderBottom: isCompact ? "1px solid rgba(16,37,59,0.06)" : undefined,
@@ -3668,9 +3676,19 @@ function marketplaceHeroStatIconStyle(
 ): React.CSSProperties {
   return {
     ...marketplaceFrontLaneIconStyle(bg, true),
-    width: isCompact ? 30 : 40,
-    height: isCompact ? 30 : 40,
+    width: isCompact ? 28 : 40,
+    height: isCompact ? 28 : 40,
     borderRadius: isCompact ? 10 : 14,
+  };
+}
+
+function marketplaceHeroStatTextStackStyle(): React.CSSProperties {
+  return {
+    display: "grid",
+    gap: 2,
+    minWidth: 0,
+    maxWidth: "100%",
+    overflow: "hidden",
   };
 }
 
@@ -3680,18 +3698,19 @@ function marketplaceHeroStatValueStyle(
 ): React.CSSProperties {
   const text = String(value || "");
   const compactLongValue = isCompact && text.length > 8;
+  const compactVeryLongValue = isCompact && text.length > 11;
 
   return {
     display: "block",
     marginTop: 3,
     color: "#07172C",
-    fontSize: isCompact ? (compactLongValue ? 15 : 20) : 24,
+    fontSize: isCompact ? (compactVeryLongValue ? 12.5 : compactLongValue ? 14 : 20) : 24,
     fontWeight: 950,
     lineHeight: compactLongValue ? 1.02 : 1.05,
     letterSpacing: 0,
     maxWidth: "100%",
     whiteSpace: "normal",
-    overflowWrap: "anywhere",
+    overflowWrap: compactLongValue ? "break-word" : "anywhere",
     wordBreak: "break-word",
   };
 }
@@ -8412,7 +8431,7 @@ export default function MarketplacePage() {
                 >
                   <MarketplaceGlyph name={item.glyph} size={isCompact ? 20 : 24} />
                 </span>
-                <span style={{ minWidth: 0 }}>
+                <span style={marketplaceHeroStatTextStackStyle()}>
                   <span
                     style={{
                       display: "block",
@@ -8424,11 +8443,15 @@ export default function MarketplacePage() {
                       maxWidth: "100%",
                       overflow: "hidden",
                       textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
                     }}
                   >
                     {item.label}
                   </span>
-                  <span style={marketplaceHeroStatValueStyle(isCompact, item.value)}>
+                  <span
+                    data-marketplace-hero-stat-value={item.label.toLowerCase()}
+                    style={marketplaceHeroStatValueStyle(isCompact, item.value)}
+                  >
                     {item.value}
                   </span>
                   <span
