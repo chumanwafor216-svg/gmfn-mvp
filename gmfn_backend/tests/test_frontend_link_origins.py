@@ -43,6 +43,16 @@ def test_frontend_origin_uses_configured_public_url_even_from_local_request(monk
     assert clans_route._frontend_origin(request) == "https://pilot.gsn.example"
 
 
+def test_frontend_origin_rejects_suspended_configured_public_host(monkeypatch):
+    monkeypatch.setenv("FRONTEND_BASE_URL", "https://frontend.onrender.com/")
+    monkeypatch.delenv("GMFN_FRONTEND_BASE_URL", raising=False)
+    monkeypatch.delenv("PUBLIC_FRONTEND_URL", raising=False)
+
+    request = _request_with_origin("https://frontend.onrender.com")
+
+    assert clans_route._frontend_origin(request) == "https://gmfn-frontend.onrender.com"
+
+
 def test_frontend_origin_can_use_public_request_origin_when_unconfigured(monkeypatch):
     monkeypatch.delenv("FRONTEND_BASE_URL", raising=False)
     monkeypatch.delenv("GMFN_FRONTEND_BASE_URL", raising=False)
@@ -71,3 +81,13 @@ def test_invites_service_join_link_uses_public_configured_frontend(monkeypatch):
     link = invites_service.frontend_join_link("abc")
 
     assert link == "https://pilot.gsn.example/start/join/abc"
+
+
+def test_invites_service_join_link_rejects_suspended_public_frontend(monkeypatch):
+    monkeypatch.setenv("PUBLIC_FRONTEND_URL", "https://frontend.onrender.com/")
+    monkeypatch.delenv("FRONTEND_BASE_URL", raising=False)
+    monkeypatch.delenv("GMFN_FRONTEND_BASE_URL", raising=False)
+
+    link = invites_service.frontend_join_link("abc")
+
+    assert link == "https://gmfn-frontend.onrender.com/start/join/abc"

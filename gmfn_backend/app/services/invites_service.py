@@ -21,6 +21,7 @@ from app.services.trust_service import log_invite_accepted_event
 _INVITE_CREATE_BUCKET: dict[tuple[int, int], list[float]] = {}
 _JOIN_BUCKET: dict[int, list[float]] = {}
 PUBLIC_FRONTEND_ORIGIN = "https://gmfn-frontend.onrender.com"
+SUSPENDED_PUBLIC_FRONTEND_HOSTS = {"frontend.onrender.com"}
 
 
 def _bucket_prune(ts_list: list[float], window_seconds: int) -> list[float]:
@@ -99,6 +100,10 @@ def _is_private_frontend_host(hostname: str) -> bool:
     return False
 
 
+def _is_suspended_public_frontend_host(hostname: str) -> bool:
+    return str(hostname or "").strip().lower() in SUSPENDED_PUBLIC_FRONTEND_HOSTS
+
+
 def _public_frontend_base_url() -> str:
     for key in ("FRONTEND_BASE_URL", "GMFN_FRONTEND_BASE_URL", "PUBLIC_FRONTEND_URL"):
         raw = str(os.getenv(key) or "").strip().rstrip("/")
@@ -112,6 +117,7 @@ def _public_frontend_base_url() -> str:
             parsed.scheme in {"http", "https"}
             and parsed.hostname
             and not _is_private_frontend_host(parsed.hostname)
+            and not _is_suspended_public_frontend_host(parsed.hostname)
         ):
             return raw
     return PUBLIC_FRONTEND_ORIGIN

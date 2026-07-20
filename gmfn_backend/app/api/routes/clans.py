@@ -2077,6 +2077,7 @@ def _resolve_public_join_clan(
     return None, None
 
 PUBLIC_FRONTEND_ORIGIN = "https://gmfn-frontend.onrender.com"
+SUSPENDED_PUBLIC_FRONTEND_HOSTS = {"frontend.onrender.com"}
 
 
 def _is_private_frontend_host(hostname: str) -> bool:
@@ -2095,6 +2096,10 @@ def _is_private_frontend_host(hostname: str) -> bool:
     return False
 
 
+def _is_suspended_public_frontend_host(hostname: str) -> bool:
+    return _safe_str(hostname).lower() in SUSPENDED_PUBLIC_FRONTEND_HOSTS
+
+
 def _is_public_frontend_origin(origin: str) -> bool:
     text = _safe_str(origin)
     if not text:
@@ -2107,6 +2112,7 @@ def _is_public_frontend_origin(origin: str) -> bool:
         parsed.scheme in {"http", "https"}
         and bool(parsed.hostname)
         and not _is_private_frontend_host(parsed.hostname)
+        and not _is_suspended_public_frontend_host(parsed.hostname)
     )
 
 
@@ -2116,7 +2122,7 @@ def _frontend_origin(request: Request) -> str:
         or os.getenv("GMFN_FRONTEND_BASE_URL")
         or os.getenv("PUBLIC_FRONTEND_URL")
     )
-    if configured:
+    if _is_public_frontend_origin(configured):
         return configured.rstrip("/")
 
     request_origin = _safe_str(request.headers.get("origin"))
