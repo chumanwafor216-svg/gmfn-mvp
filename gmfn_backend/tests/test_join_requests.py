@@ -1981,8 +1981,8 @@ def test_public_join_request_returns_approved_request_lineage_when_duplicate(cli
     assert detail["result_channel"] == "activation-ready"
     assert "activate-membership" in str(detail.get("result_path") or "")
     assert "activate-membership" in str(detail.get("activation_path") or "")
-    assert detail["activation_delivery_status"] == "opened"
-    assert detail["activation_delivered_at"] is not None
+    assert detail["activation_delivery_status"] is None
+    assert detail["activation_delivered_at"] is None
 
 
 def test_public_join_request_returns_rejected_request_lineage_when_duplicate(client):
@@ -2137,17 +2137,17 @@ def test_public_join_invite_request_status_returns_activation_lineage_when_appro
     assert data["result_channel"] == "activation-ready"
     assert "activate-membership" in str(data.get("result_path") or "")
     assert "activate-membership" in str(data.get("activation_path") or "")
-    assert data["activation_delivery_status"] == "opened"
-    assert data["activation_delivered_at"] is not None
+    assert data["activation_delivery_status"] is None
+    assert data["activation_delivered_at"] is None
 
     with SessionLocal() as db:
         refreshed = db.get(ClanJoinRequest, 1)
         assert refreshed is not None
-        assert refreshed.activation_delivery_status == "opened"
-        assert refreshed.activation_delivered_at is not None
+        assert refreshed.activation_delivery_status is None
+        assert refreshed.activation_delivered_at is None
 
 
-def test_direct_join_request_status_marks_activation_opened_when_approved(client):
+def test_direct_join_request_status_does_not_mark_activation_opened_when_approved(client):
     _seed_join_context()
 
     with SessionLocal() as db:
@@ -2178,6 +2178,58 @@ def test_direct_join_request_status_marks_activation_opened_when_approved(client
     assert res.status_code == 200, res.text
     data = res.json()
     assert data["status"] == "approved"
+    assert data["activation_delivery_status"] == "pending"
+    assert data["activation_delivered_at"] is None
+
+    with SessionLocal() as db:
+        refreshed = db.get(ClanJoinRequest, 1)
+        assert refreshed is not None
+        assert refreshed.activation_delivery_status == "pending"
+        assert refreshed.activation_delivered_at is None
+
+
+def test_activation_opened_marker_requires_matching_gsn_id(client):
+    _seed_join_context()
+
+    with SessionLocal() as db:
+        applicant = User(
+            id=2,
+            email="approved@example.com",
+            gmfn_id="GMFN-U-APPROVED1",
+            hashed_password="hashed",
+            role="user",
+        )
+        db.add(applicant)
+        db.flush()
+        db.add(
+            ClanJoinRequest(
+                id=1,
+                clan_id=1,
+                applicant_user_id=2,
+                invited_by_user_id=1,
+                status="approved",
+                activation_delivery_status="pending",
+                created_at=datetime.now(timezone.utc),
+            )
+        )
+        db.commit()
+
+    wrong = client.post(
+        "/clans/join-requests/1/activation-opened",
+        json={"gmfn_id": "GMFN-U-WRONG001"},
+    )
+    assert wrong.status_code == 404, wrong.text
+
+    res = client.post(
+        "/clans/join-requests/1/activation-opened",
+        json={"gmfn_id": "GSN-U-APPROVED1"},
+    )
+
+    assert res.status_code == 200, res.text
+    data = res.json()
+    assert data["ok"] is True
+    assert data["status"] == "approved"
+    assert data["gmfn_id"] == "GMFN-U-APPROVED1"
     assert data["activation_delivery_status"] == "opened"
     assert data["activation_delivered_at"] is not None
 

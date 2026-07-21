@@ -804,11 +804,15 @@ export async function activateMembership(payload: {
   gmfn_id: string;
   password: string;
   confirm_password: string;
+  request_id?: string | number | null;
 }) {
+  const requestId =
+    payload?.request_id == null ? "" : String(payload.request_id).trim();
   const cleaned = {
     gmfn_id: String(payload?.gmfn_id || "").trim().toUpperCase(),
     password: String(payload?.password || ""),
     confirm_password: String(payload?.confirm_password || ""),
+    ...(requestId ? { request_id: requestId } : {}),
   };
 
   const out = await httpJsonPaths(
@@ -821,6 +825,24 @@ export async function activateMembership(payload: {
   rememberGmfnIdFrom(out);
   rememberGmfnIdFrom(cleaned.gmfn_id);
   return out;
+}
+
+export async function markJoinRequestActivationOpened(
+  requestId: string | number,
+  gmfnId: string
+): Promise<any> {
+  const cleanedRequestId = String(requestId || "").trim();
+  const cleanedGmfnId = String(gmfnId || "").trim().toUpperCase();
+  if (!cleanedRequestId || !cleanedGmfnId) {
+    return { ok: false, skipped: true };
+  }
+
+  return httpJson(
+    `/clans/join-requests/${encodeURIComponent(cleanedRequestId)}/activation-opened`,
+    "POST",
+    { gmfn_id: cleanedGmfnId },
+    { quiet: true }
+  );
 }
 
 export async function getApprovedMemberStatus(gmfnId: string): Promise<any> {

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { EntryGuideLauncher } from "../components/EntryControls";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
@@ -6,6 +6,7 @@ import { CardActionRow, PrimaryButton, SecondaryButton } from "../components/Sta
 import { SubtleButton } from "../components/StableButton";
 import {
   activateMembership,
+  markJoinRequestActivationOpened,
   setAccessToken,
   setSelectedClanId,
   setStoredGmfnId,
@@ -304,6 +305,7 @@ export default function ActivateMembershipPage() {
   const [err, setErr] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
   const [guideOpen, setGuideOpen] = useState(false);
+  const activationOpenedKeyRef = useRef("");
   const innerRailWidth = "min(100%, 760px)";
 
   useEffect(() => {
@@ -321,6 +323,20 @@ export default function ActivateMembershipPage() {
     const safeGmfnId = cleanGmfnId(gmfnId);
     if (safeGmfnId) setStoredGmfnId(safeGmfnId);
   }, [gmfnId]);
+
+  useEffect(() => {
+    const safeGmfnId = cleanGmfnId(initialGmfnId || gmfnId);
+    const safeRequestId = String(requestId || "").trim();
+    if (!safeGmfnId || !safeRequestId) return;
+
+    const markerKey = `${safeRequestId}:${safeGmfnId}`;
+    if (activationOpenedKeyRef.current === markerKey) return;
+    activationOpenedKeyRef.current = markerKey;
+
+    void markJoinRequestActivationOpened(safeRequestId, safeGmfnId).catch(() => {
+      // Activation can continue even if telemetry cannot be recorded.
+    });
+  }, [gmfnId, initialGmfnId, requestId]);
 
   const canSubmit = Boolean(
     cleanGmfnId(gmfnId) &&
@@ -356,6 +372,7 @@ export default function ActivateMembershipPage() {
         gmfn_id: safeGmfnId,
         password: safePassword,
         confirm_password: safeConfirm,
+        request_id: requestId || null,
       });
 
       const accessToken = String(

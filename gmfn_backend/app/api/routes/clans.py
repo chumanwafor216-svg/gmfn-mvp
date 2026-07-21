@@ -438,6 +438,15 @@ class VoteJoinRequestIn(BaseModel):
         return value
 
 
+class ActivationOpenedIn(BaseModel):
+    gmfn_id: Optional[str] = Field(default=None, min_length=6, max_length=64)
+
+    @field_validator("gmfn_id", mode="before")
+    @classmethod
+    def _reject_non_text_gmfn_id(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_body_value(value, info.field_name)
+
+
 _DEFAULT_VOTE_REASON_TEXT = {
     "approve": "I know this person well enough to support the request.",
     "reject": "I have a concern and cannot support the request.",
@@ -1996,9 +2005,6 @@ def _existing_join_request_conflict_detail(
     *,
     req: ClanJoinRequest,
 ) -> dict[str, Any]:
-    if str(getattr(req, "status", "")).lower() == "approved":
-        req = _mark_activation_opened_if_needed(db, req=req)
-
     payload = _join_request_status_payload(db, request, req)
     safe_status = _safe_str(getattr(req, "status", None)).lower()
     message = (
@@ -2045,6 +2051,26 @@ def _mark_activation_opened_if_needed(
     db.commit()
     db.refresh(req)
     return req
+
+
+def _gmfn_id_matches_user(value: Any, user: Optional[User]) -> bool:
+    if user is None:
+        return False
+
+    raw = _safe_str(value).upper()
+    stored = _safe_str(getattr(user, "gmfn_id", None)).upper()
+    if not raw or not stored:
+        return False
+
+    if raw == stored:
+        return True
+
+    if raw.startswith("GSN-U-") and stored.startswith("GMFN-U-"):
+        return raw[6:] == stored[7:]
+    if raw.startswith("GMFN-U-") and stored.startswith("GSN-U-"):
+        return raw[7:] == stored[6:]
+
+    return False
 
 
 def _resolve_public_join_clan(
@@ -2288,10 +2314,21 @@ def _build_activation_package(
     lines.extend(
         [
             "",
-            "Use the link below to activate your GSN membership and create your password:",
+            "Important: your approval is not the final step. You still need to activate this GSN ID before normal sign-in will work.",
+            "",
+            "Next step:",
+            "1. Open the activation link below.",
+            "2. Enter your GSN ID exactly as shown above.",
+            "3. Create your own new password. Do not ask anyone else to choose or send a password for you.",
+            "4. After activation, use your GSN ID and the password you created to sign in.",
+            "",
+            "Activation link:",
             activation_link,
             "",
-            "Once activation is completed, you will be able to enter your workspace properly.",
+            "If the link does not open, go to https://gmfn-frontend.onrender.com/activate-membership and enter this GSN ID:",
+            gmfn_id,
+            "",
+            "You can now activate your GSN account. Once activation is completed, you will be able to enter your workspace properly.",
             "",
             "- Sent via GSN",
         ]
@@ -3434,8 +3471,6 @@ def get_join_invite_request_status(
             "marketplace_name": getattr(clan, "marketplace_name", None),
         }
 
-    join_request = _mark_activation_opened_if_needed(db, req=join_request)
-
     return {
         "ok": True,
         "found": True,
@@ -4236,8 +4271,36 @@ def get_join_request_status(
     if not req:
         raise HTTPException(status_code=404, detail="Join request not found")
 
-    req = _mark_activation_opened_if_needed(db, req=req)
     return _join_request_status_payload(db, request, req)
+
+
+@router.post("/join-requests/{join_request_id}/activation-opened", response_model=dict[str, Any])
+def mark_join_request_activation_opened(
+    join_request_id: int,
+    payload: ActivationOpenedIn,
+    db: Session = Depends(get_db),
+):
+    req = db.query(ClanJoinRequest).filter(ClanJoinRequest.id == int(join_request_id)).first()
+    if not req:
+        raise HTTPException(status_code=404, detail="Join request not found")
+
+    applicant = db.get(User, int(req.applicant_user_id))
+    if not _gmfn_id_matches_user(payload.gmfn_id, applicant):
+        raise HTTPException(status_code=404, detail="Join request not found")
+
+    req = _mark_activation_opened_if_needed(db, req=req)
+    return {
+        "ok": True,
+        "request_id": int(req.id),
+        "gmfn_id": _safe_str(getattr(applicant, "gmfn_id", None)) or None,
+        "status": req.status,
+        "activation_delivery_status": req.activation_delivery_status,
+        "activation_delivered_at": (
+            req.activation_delivered_at.isoformat()
+            if getattr(req, "activation_delivered_at", None)
+            else None
+        ),
+    }
 
 
 @router.get("/{clan_id}/member-verifications/summary", response_model=dict[str, Any])
