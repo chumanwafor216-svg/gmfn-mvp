@@ -10,6 +10,7 @@ Use this as the operating checklist for the next 7 days. The goal is to move fro
 2. Use Chris's response to sharpen the first customer discovery route.
 3. Run 5-10 customer discovery conversations before treating the investor copy as serious.
 4. Keep the investor material ready, but do not lead with it until discovery evidence exists.
+5. Update `GSN_ENDORSEMENT_EVIDENCE_LEDGER.md` after every real evidence action.
 
 ## Global Attachment Boundary
 
@@ -161,6 +162,18 @@ Decision rule:
 
 ```text
 If participants cannot name one painful trust decision, do not pitch investors yet.
+```
+
+Then update:
+
+- `GSN_ENDORSEMENT_EVIDENCE_LEDGER.md`
+
+Ledger rule:
+
+```text
+Record the evidence at the strength it actually deserves. Do not upgrade
+discovery notes into pilot proof, commercial proof, recipient-trust proof, or
+impact proof.
 ```
 
 ## Day 6-7: Investor Readiness Check

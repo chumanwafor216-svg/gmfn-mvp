@@ -20,11 +20,13 @@ Use this minimum path:
 4. After Chris or an organiser opens the door, use `GSN_CUSTOMER_DISCOVERY_ORGANISER_SEND_PACKAGE.md`.
 5. During interviews, use `GSN_DISCOVERY_INTERVIEW_LOG_TEMPLATE.md`.
 6. After interviews, use `GSN_DISCOVERY_EVIDENCE_MEMO_TEMPLATE.md`.
-7. Keep `GSN_INVESTOR_SEND_PACKAGE.md` closed until discovery evidence can answer the readiness gates.
-8. Use `GSN_FOUNDERS_BRIEF_GAP_CLOSURE.md` and
+7. After every discovery, pilot, payer, safeguard, technical, or external-review
+   action, update `GSN_ENDORSEMENT_EVIDENCE_LEDGER.md`.
+8. Keep `GSN_INVESTOR_SEND_PACKAGE.md` closed until discovery evidence can answer the readiness gates.
+9. Use `GSN_FOUNDERS_BRIEF_GAP_CLOSURE.md` and
    `GSN_FOUNDERS_BRIEF_WORKING_DRAFT.md` before rewriting or sending any
    founder, partner, sponsor, or investor material.
-9. Use `GSN_PRODUCT_EVIDENCE_CAPTURE_STANDARD.md` before capturing or attaching
+10. Use `GSN_PRODUCT_EVIDENCE_CAPTURE_STANDARD.md` before capturing or attaching
    founder-brief or product-evidence screenshots.
 
 The immediate next action is not investor outreach. It is the Chris/RGU send, after manual DOCX QA.
@@ -66,6 +68,7 @@ before sending.
 | `GSN_CUSTOMER_DISCOVERY_INTERVIEW_SCRIPT.md` | Internal use | Guides one-to-one or small-group discovery interviews so feedback becomes evidence instead of polite encouragement. |
 | `GSN_DISCOVERY_INTERVIEW_LOG_TEMPLATE.md` | Internal use | Captures raw notes, exact phrases, refusal reasons, authority concerns, and pilot pull for each interview before synthesis. |
 | `GSN_DISCOVERY_EVIDENCE_MEMO_TEMPLATE.md` | Internal use | Turns interview/session notes into a decision memo with proof, risk, pilot, and investor-readiness readings. |
+| `GSN_ENDORSEMENT_EVIDENCE_LEDGER.md` | Internal governance / endorsement readiness | Running proof ledger that separates preparation evidence from discovery, pilot, commercial, safeguard, technical, recipient-trust, and impact evidence. |
 | `GSN_FOUNDERS_BRIEF_GAP_CLOSURE.md` | Internal use | Forces clear answers on first payer, first use case, first pilot, built proof, traction, safeguards, challenge, expiry, social-credit risk, and exact ask before the founder/investor brief is treated as ready. |
 | `GSN_FOUNDERS_BRIEF_WORKING_DRAFT.md` | Internal use | Draft founder brief that converts the gap answers into readable partner/investor language while preserving proof boundaries. |
 | `GSN_PRODUCT_EVIDENCE_CAPTURE_STANDARD.md` | Internal use | Defines the 12-step product-evidence capture sequence, product/proof state labels, caption template, protection rules, redaction log, and acceptance checklist. |
