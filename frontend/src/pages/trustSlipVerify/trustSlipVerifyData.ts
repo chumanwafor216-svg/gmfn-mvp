@@ -74,6 +74,13 @@ export type TrustSlipVerifyRecord = {
   expires_at?: string | null;
   valid?: boolean | null;
   verified?: boolean | null;
+  recipient_access_record?: Record<string, any> | null;
+  access_recipient_label?: string | null;
+  access_purpose?: string | null;
+  access_scope?: string | null;
+  access_recorded_at?: string | null;
+  access_status?: string | null;
+  access_note?: string | null;
   message?: string | null;
   detail?: string | null;
   community_confirmation?: CommunityConfirmationSummary | null;
@@ -462,6 +469,70 @@ export function normalizeTrustSlipVerification(
         : typeof src?.is_verified === "boolean"
           ? src.is_verified
           : null,
+    recipient_access_record:
+      src?.recipient_access_record ||
+      src?.access_record ||
+      src?.share_access_record ||
+      src?.viewer_access_record ||
+      null,
+    access_recipient_label: firstTruthy(
+      src?.access_recipient_label,
+      src?.recipient_label,
+      src?.recipient,
+      src?.recipient_name,
+      src?.viewer_label,
+      src?.viewer_name,
+      src?.recipient_access_record?.recipient_label,
+      src?.access_record?.recipient_label,
+      src?.share_access_record?.recipient_label,
+      src?.viewer_access_record?.recipient_label
+    ),
+    access_purpose: firstTruthy(
+      src?.access_purpose,
+      src?.purpose,
+      src?.share_purpose,
+      src?.intended_purpose,
+      src?.recipient_access_record?.purpose,
+      src?.access_record?.purpose,
+      src?.share_access_record?.purpose,
+      src?.viewer_access_record?.purpose
+    ),
+    access_scope: firstTruthy(
+      src?.access_scope,
+      src?.scope,
+      src?.share_scope,
+      src?.visibility_level,
+      src?.recipient_access_record?.scope,
+      src?.access_record?.scope,
+      src?.share_access_record?.scope,
+      src?.viewer_access_record?.scope
+    ),
+    access_recorded_at: firstTruthy(
+      src?.access_recorded_at,
+      src?.accessed_at,
+      src?.viewed_at,
+      src?.last_accessed_at,
+      src?.recipient_access_record?.accessed_at,
+      src?.recipient_access_record?.viewed_at,
+      src?.access_record?.accessed_at,
+      src?.access_record?.viewed_at,
+      src?.share_access_record?.accessed_at,
+      src?.viewer_access_record?.accessed_at
+    ),
+    access_status: firstTruthy(
+      src?.access_status,
+      src?.recipient_access_record?.status,
+      src?.access_record?.status,
+      src?.share_access_record?.status,
+      src?.viewer_access_record?.status
+    ),
+    access_note: firstTruthy(
+      src?.access_note,
+      src?.recipient_access_record?.note,
+      src?.access_record?.note,
+      src?.share_access_record?.note,
+      src?.viewer_access_record?.note
+    ),
     message: firstTruthy(src?.message),
     detail: firstTruthy(src?.detail, src?.description),
     community_confirmation:

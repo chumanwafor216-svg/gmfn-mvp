@@ -1,6 +1,6 @@
 # GSN UN Sustainable Development Goals Alignment Note
 
-Last updated: 2026-07-12
+Last updated: 2026-07-19
 
 Use this note as the source wording for white paper, grant, policy,
 innovation, and investor conversations about GSN's relationship to the United
@@ -10,6 +10,11 @@ Nations Sustainable Development Goals (SDGs).
 
 GSN should not claim to fulfil the UN Sustainable Development Goals by
 declaration.
+
+Accepted local product-path screenshots may explain how GSN could collect and
+communicate community evidence, but they are not SDG impact evidence. They do
+not prove adoption, measured outcomes, revenue, external validation, recipient
+trust, product-market fit, or validated safeguards at scale.
 
 The responsible claim is:
 
@@ -96,6 +101,8 @@ Mention these only when a specific deployment or pilot creates direct evidence.
 ## Measurement Requirement
 
 The SDG case becomes stronger only when GSN can measure real-world use.
+Local screenshots, white paper language, and demo walkthroughs do not satisfy
+this requirement.
 
 Useful indicators include:
 

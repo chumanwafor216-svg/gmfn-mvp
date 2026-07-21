@@ -1,12 +1,19 @@
 # GSN Investor Diligence Q&A And Proof Roadmap
 
-Last updated: 2026-07-09
+Last updated: 2026-07-19
 
 Use this before investor conversations. It is not a pitch deck. It is a discipline sheet for answering hard questions without overclaiming.
 
 ## Investor Position
 
 GSN is an early Trust Infrastructure thesis. It is not yet a product-market-fit claim.
+
+Current product-evidence status: a local 12-step product-path screenshot
+sequence has been accepted for one synthetic demo path and is tracked in
+`pilot_evidence_pack/12_product_evidence_capture/accepted_sequence_manifest.md`.
+That helps show the current product story, but it does not prove traction,
+adoption, revenue, external validation, recipient trust, product-market fit, or
+validated safeguards at scale.
 
 The honest investor framing is:
 
@@ -49,12 +56,12 @@ say so instead of turning the vision into a claim.
 | Who exactly pays first? | Name the likely first payer or sponsor; do not assume ordinary members pay first. |
 | What is the first use case? | Pick one narrow decision, not "all community trust." |
 | What is the first pilot? | Name one community, one organiser, one workflow, and one evidence output before calling it pilot-ready. |
-| What has already been built? | Distinguish source-level MVP surfaces from accepted pilot evidence. |
+| What has already been built? | Distinguish source-level MVP surfaces and the accepted local synthetic screenshot path from accepted real pilot evidence. |
 | What traction exists? | Do not claim traction unless interviews, pilot usage, LOIs, payment, or repeated use exist. |
 | How is information verified? | Explain provenance, confirmation, timestamp, community context, and sharing purpose. |
-| How are consent and privacy protected? | State private-by-default, purpose-bound sharing, and no raw private details on public surfaces. |
-| How can somebody challenge inaccurate evidence? | Describe dispute, context, admin review, contested status, and correction history. |
-| How does information expire or become irrelevant? | Show currentness, expiry/review dates, replacement, withdrawal, revoked, or stale states. |
+| How are consent and privacy protected? | Describe private-by-default and purpose-bound sharing as the intended product rule, then name what still needs route-by-route proof: consent capture, refusal, withdrawal, and no raw private details on public surfaces. |
+| How can somebody challenge inaccurate evidence? | Describe the intended dispute, context, admin review, contested status, and correction-history behavior, then name the product proof still needed. |
+| How does information expire or become irrelevant? | Describe the intended currentness, expiry/review dates, replacement, withdrawal, revoked, and stale-state behavior, then name the route-by-route display proof still needed. |
 | How will GSN avoid becoming social credit? | Refuse global scores, public rankings, and permanent numerical human grades. |
 | What exact partnership or investment is requested? | Ask for a pilot partner, sponsor, technical/product review partner, or milestone-tied capital. |
 
@@ -247,9 +254,14 @@ Evidence to collect:
 
 - one pilot community;
 - one defined workflow;
+- the accepted local 12-step product-path screenshots used only as a demo
+  reference, not as proof that the pilot happened;
 - records created by real users;
 - member consent behaviour;
+- refusal or withdrawal behaviour for evidence sharing;
 - correction/challenge handling;
+- visible contested, corrected, expired, withdrawn, revoked, or stale states
+  where the workflow requires them;
 - at least one external or semi-external verification moment.
 
 Pass signal:
@@ -289,6 +301,8 @@ Pass signal:
 - Do not say GSN is a bank, lender, credit scorer, or risk-free verifier.
 - Do not pitch all communities at once.
 - Do not confuse app completeness with market proof.
+- Do not use accepted local product screenshots as a substitute for discovery,
+  pilot usage, recipient trust, revenue, or safeguards evidence.
 
 ## Best Investor Close
 

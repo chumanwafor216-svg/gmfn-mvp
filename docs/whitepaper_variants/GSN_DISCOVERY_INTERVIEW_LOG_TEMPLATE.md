@@ -1,6 +1,6 @@
 # GSN Discovery Interview Log Template
 
-Last updated: 2026-07-09
+Last updated: 2026-07-19
 
 Use this during or immediately after each interview. The evidence memo is for synthesis later; this log is for raw capture before memory edits the facts.
 
@@ -97,6 +97,7 @@ Who sees it:
 Who confirms it:
 Who should control it:
 Who may see it later:
+Can sharing be refused or withdrawn:
 Should it ever be public:
 ```
 
@@ -108,6 +109,7 @@ Who sees it:
 Who confirms it:
 Who should control it:
 Who may see it later:
+Can sharing be refused or withdrawn:
 Should it ever be public:
 ```
 
@@ -170,6 +172,7 @@ Trusted confirmer:
 Untrusted confirmer:
 Correction route expected:
 Appeal/challenge expectation:
+How contested/corrected/stale evidence should be shown:
 What could be abused:
 ```
 
@@ -200,6 +203,37 @@ Interpretation:
 [ ] Partly matches
 [ ] Solves wrong problem
 [ ] Still unclear
+```
+
+## Product Visuals Reaction
+
+Complete this only if the participant asked to see product visuals after the
+current-reality questions.
+
+```text
+Were screenshots or product visuals shown: yes / no
+If yes, which packet or file:
+Was the local external packet send-ready checklist checked first: yes / no / not applicable
+What the participant reacted to:
+[ ] underlying problem
+[ ] specific decision/workflow
+[ ] privacy or safeguard boundary
+[ ] visual polish only
+[ ] unclear
+
+Exact reaction:
+
+Does this count as discovery evidence:
+[ ] yes - because it names a problem, decision, evidence boundary, or pilot condition
+[ ] no - positive demo reaction only
+```
+
+Truth boundary:
+
+```text
+Accepted local product-path screenshots may help explanation. They do not count
+as adoption, traction, revenue, external validation, recipient trust,
+product-market fit, or validated safeguards.
 ```
 
 ## Exact Phrases Worth Preserving
@@ -260,7 +294,7 @@ What I still do not understand:
 What I should ask differently next time:
 ```
 
-## Signal Rating
+## Signal Reading
 
 ```text
 [ ] Green - clear problem, decision, evidence, risk, and possible pilot

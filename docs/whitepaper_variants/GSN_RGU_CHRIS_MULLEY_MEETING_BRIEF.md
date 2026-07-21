@@ -1,6 +1,6 @@
 # GSN RGU Meeting Brief For Chris Mulley
 
-Last updated: 2026-07-09
+Last updated: 2026-07-19
 
 Use this for the conversation with Chris Mulley. The goal is to get academic/customer-discovery guidance, not to make RGU bless the product.
 
@@ -31,7 +31,7 @@ GSN asks whether that community-recognised evidence can be preserved responsibly
 ## What To Ask Chris
 
 1. Does this read as a real research/customer-discovery problem, or only as founder logic?
-2. Which part is strongest: community trust evidence, behavioural continuity, diaspora/community mobility, marketplace trust, lending/support, or institutional verification?
+2. Which part is strongest: community trust evidence, behavioural continuity, diaspora/community mobility, marketplace trust, borrowing-readiness/support, or institutional verification?
 3. Which part is weakest or most dangerous?
 4. What would RGU need to see before treating this as a credible innovation/customer discovery project?
 5. Is the RGU Nigerian Society or another student/community group an appropriate first discovery context?
@@ -72,6 +72,35 @@ Red signal:
 If a student society, church, market association, or diaspora group already knows who contributes, helps, repays, leads, or can be trusted with responsibility, can that evidence be made portable enough to support future decisions without becoming a public score?
 ```
 
+## Product Visuals Boundary
+
+Do not lead the meeting with screenshots or a product tour. Use the meeting to
+ask what evidence would make customer discovery academically responsible.
+
+If Chris asks to see product visuals, use only the local screenshot packet after
+it passes:
+
+```text
+pilot_evidence_pack/12_product_evidence_capture/external_packet_send_ready_checklist.md
+```
+
+Frame any screenshots this way:
+
+```text
+These are local synthetic product-path screenshots. They show how the current
+workflow can represent entry, community evidence, confirmation, challenge, and
+selective sharing. They do not prove traction, adoption, revenue, external
+validation, recipient trust, product-market fit, or validated safeguards at
+scale.
+```
+
+Then ask:
+
+```text
+Which of these states would be useful evidence in customer discovery, and which
+should be held back until a real participant workflow exists?
+```
+
 ## Do Not Do In The Meeting
 
 - Do not ask for endorsement.
@@ -81,6 +110,9 @@ If a student society, church, market association, or diaspora group already know
 - Do not claim GSN has solved privacy or governance.
 - Do not call it a scoring system, reputation app, or social-credit alternative.
 - Do not show every scenario at once.
+- Do not describe local synthetic screenshots as pilot traction, adoption,
+  revenue, external validation, recipient trust, product-market fit, or
+  safeguards-at-scale proof.
 
 ## The Best Ask
 

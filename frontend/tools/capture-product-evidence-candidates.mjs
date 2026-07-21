@@ -19,6 +19,10 @@ const captureDate = "2026-07-19";
 const demoSlipCode = "TS-DEMO-001";
 const confirmationToken = "PUBLIC-DEMO-001";
 
+function isoMinutesFromNow(minutes) {
+  return new Date(Date.now() + minutes * 60 * 1000).toISOString();
+}
+
 const demoMember = {
   id: 101,
   user_id: 101,
@@ -112,6 +116,13 @@ function trustSlipPayload() {
     currency: "GBP",
     issued_at: "2026-07-19T08:00:00.000Z",
     expires_at: "2026-08-18T08:00:00.000Z",
+    access_recipient_label: "Demo Recipient A",
+    access_purpose: "Community Trust Confirmation pilot demonstration",
+    access_scope: "Public TrustSlip summary only",
+    access_recorded_at: "2026-07-19T08:20:00.000Z",
+    access_status: "Recipient view recorded",
+    access_note:
+      "Recipient saw the limited public TrustSlip only. Private Trust Passport details were not opened.",
     identity_status_label: "Identity evidence recorded",
     community_identity_label: "Community membership recorded",
     community_activity_count: 1,
@@ -165,7 +176,7 @@ function publicConfirmationPayload() {
   return {
     request_id: 301,
     public_token: confirmationToken,
-    status: "under_review",
+    status: "pending",
     mode: "instant_pulse",
     reason_type: "community_support_activity",
     risk_level: "medium",
@@ -174,8 +185,8 @@ function publicConfirmationPayload() {
     community_code: "DEMO-COMMUNITY-A",
     subject_public_reference: "Demo Member A",
     subject_reference_type: "demo_member",
-    created_at: "2026-07-19T08:10:00.000Z",
-    expires_at: "2026-07-19T09:10:00.000Z",
+    created_at: isoMinutesFromNow(-10),
+    expires_at: isoMinutesFromNow(50),
     review_case: {
       review_case_id: 302,
       status: "open",
@@ -450,9 +461,9 @@ async function main() {
       authContext,
       "/app/trust-timeline",
       `candidate_09_trust_event_detail_${captureDate}.png`,
-      "Trust Timeline Evidence Record",
+      "Latest event context",
       {
-        scrollSelector: "text=Trust Timeline Evidence Record",
+        scrollSelector: '[data-debug-id="trust-timeline.latest-event-context"]',
         scrollOffsetY: -84,
       }
     );

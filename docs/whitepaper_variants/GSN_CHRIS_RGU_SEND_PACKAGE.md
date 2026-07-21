@@ -1,6 +1,6 @@
 # GSN Chris/RGU Send Package
 
-Last updated: 2026-07-09
+Last updated: 2026-07-19
 
 Use this for the first external move to Chris Mulley. This is the cleanest immediate send path.
 
@@ -30,6 +30,37 @@ GSN_DISCOVERY_EVIDENCE_MEMO_TEMPLATE.md
 ```
 
 Those are internal support materials unless Chris specifically asks for more context.
+
+## Product Screenshot Packet Rule
+
+Do not attach the local product evidence screenshot packet to the first Chris/RGU
+email.
+
+If Chris asks for product visuals after the first send, use only the local
+packet draft at:
+
+```text
+pilot_evidence_pack/12_product_evidence_capture/external_packet_draft.md
+```
+
+Before sharing it, complete:
+
+```text
+pilot_evidence_pack/12_product_evidence_capture/external_packet_send_ready_checklist.md
+```
+
+Use this boundary if screenshots are shared later:
+
+```text
+These screenshots show a local synthetic product path for structured customer
+discovery discussion. They do not prove traction, adoption, revenue, external
+validation, recipient trust, product-market fit, or validated safeguards at
+scale.
+```
+
+Do not send raw screenshot files, backup/support screenshots, or internal
+evidence logs unless Chris specifically asks for working detail and the files
+have been separately reviewed.
 
 ## Subject
 
@@ -73,6 +104,7 @@ Use that line only if the email feels like it could be misunderstood as an endor
 [ ] Confirm no internal notes appear.
 [ ] Confirm the filename is exactly the RGU/Chris copy.
 [ ] Confirm no investor or internal guide file is attached.
+[ ] Confirm no product screenshot packet is attached to the first email.
 [ ] Confirm the email asks for guidance, not endorsement.
 [ ] Confirm the email does not mention product-market fit.
 [ ] Confirm the email does not lead with visa pressure.

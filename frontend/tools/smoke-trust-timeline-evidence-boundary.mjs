@@ -316,9 +316,9 @@ async function runTimelineScenario(browser, baseURL) {
   await expect(state.page.locator('[data-cta-id="trust-timeline.copy-pack-id"]')).toHaveCount(1);
   await expect(state.page.locator('[data-cta-id="trust-timeline.download-evidence-zip"]')).toHaveCount(1);
 
-  await expectVisibleText(state.page, "community_contribution");
+  await expectVisibleText(state.page, "community contribution");
   await expectVisibleText(state.page, "Support repayment noted");
-  await expectVisibleText(state.page, "supporter_repayment");
+  await expectVisibleText(state.page, "supporter repayment");
   await expectVisibleText(state.page, "Supporter wording should be softened for readers");
   await expect(state.page.getByText("Guarantor", { exact: false })).toHaveCount(0);
 

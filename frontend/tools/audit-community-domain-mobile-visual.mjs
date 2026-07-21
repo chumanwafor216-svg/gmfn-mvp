@@ -38,6 +38,53 @@ async function captureProductEvidenceCandidate(page, fileName) {
   });
 }
 
+async function alignProductEvidenceCapture(page, selector, targetTop = 144) {
+  const locator = page.locator(selector).first();
+  await locator.scrollIntoViewIfNeeded();
+  await page.evaluate(
+    ({ targetSelector, top }) => {
+      const element = document.querySelector(targetSelector);
+      if (!element) return;
+      element.scrollIntoView({ block: "start", inline: "nearest" });
+      let scrollParent = element.parentElement;
+      while (scrollParent) {
+        const style = window.getComputedStyle(scrollParent);
+        const canScroll =
+          scrollParent.scrollHeight > scrollParent.clientHeight + 2 &&
+          !["hidden", "clip"].includes(style.overflowY);
+        if (canScroll) break;
+        scrollParent = scrollParent.parentElement;
+      }
+      const rect = element.getBoundingClientRect();
+      if (scrollParent) {
+        const parentRect = scrollParent.getBoundingClientRect();
+        scrollParent.scrollTop += rect.top - parentRect.top - (top - parentRect.top);
+      } else {
+        window.scrollBy(0, rect.top - top);
+      }
+    },
+    { targetSelector: selector, top: targetTop }
+  );
+  await page.waitForTimeout(150);
+}
+
+async function alignProductEvidenceCaptureBottom(page, selector, targetBottom = 744) {
+  const locator = page.locator(selector).first();
+  await locator.scrollIntoViewIfNeeded();
+  await page.evaluate(
+    ({ targetSelector, bottom }) => {
+      const element = document.querySelector(targetSelector);
+      if (!element) return;
+      element.scrollIntoView({ block: "end", inline: "nearest" });
+      const rect = element.getBoundingClientRect();
+      const scrollingElement = document.scrollingElement || document.documentElement;
+      scrollingElement.scrollTop += rect.bottom - bottom;
+    },
+    { targetSelector: selector, bottom: targetBottom }
+  );
+  await page.waitForTimeout(150);
+}
+
 function json(data, status = 200) {
   return {
     status,
@@ -145,8 +192,8 @@ const dashboardPayload = {
   community_domain: {
     id: 13,
     clan_id: 1,
-    domain_name: "pillar-of-hope",
-    display_name: "Pillar of Hope",
+    domain_name: "gsn-demo-community-a",
+    display_name: "GSN Demo Community A",
     status: "active",
     verification_status: "verified",
     billing_status: "active",
@@ -435,12 +482,38 @@ function pathPayload(pathname) {
     return { subscription_lifecycle: readinessMap("Subscription") };
   }
   if (pathname.includes("/community-domains/13/rollout-tree")) {
-    return { items: [{ id: 1, name: "Pillar of Hope", children: [] }] };
+    return { items: [{ id: 1, name: "GSN Demo Community A", children: [] }] };
   }
   if (pathname.includes("/community-domains/13/rollout-plan")) return rolloutPlan;
   if (pathname.includes("/community-domains/13/activity-map")) return activityMap;
   if (pathname.includes("/community-domains/13/activity-group-readiness")) {
     return activityGroupReadiness;
+  }
+  if (pathname.includes("/community-domains/13/activities")) {
+    return {
+      items: [
+        {
+          event_id: "activity-audit-1",
+          event_type: "community_domain_activity_recorded",
+          subject_user_id: 7,
+          subject_public_reference: "Demo Member A",
+          activity_type: "project_participation",
+          activity_label: "Community Support Activity 001",
+          evidence_dimension: "project_work",
+          quantity: "1",
+          measurement_unit: "activity",
+          occurred_at: "2026-07-19T08:00:00.000Z",
+          evidence_strength: "self_reported",
+          visibility: "director_safe",
+          membership_status_snapshot: "active",
+          membership_role_snapshot: "member",
+          created_at: "2026-07-19T08:05:00.000Z",
+        },
+      ],
+      total: 1,
+      boundary:
+        "Activity records are admin-visible Trust Events for recorded community activities. They do not prove beneficiary outcomes without follow-up records.",
+    };
   }
 
   if (pathname.includes("/community-domains/13/node-autonomy-map")) {
@@ -570,7 +643,7 @@ function pathPayload(pathname) {
           linked_member_count: 12,
         },
         linked_community: {
-          name: "Pillar of Hope",
+          name: "GSN Demo Community A",
           clan_id: 1,
         },
       },
@@ -601,12 +674,23 @@ function pathPayload(pathname) {
         {
           event_id: "outcome-audit-1",
           subject_user_id: 7,
+          subject_public_reference: "Demo Member A",
           programme_label: "Skills support",
           outcome_indicator: "Training completion",
           outcome_state: "improved",
           beneficiary_confirmation: "beneficiary_confirmed",
+          privacy_position: "Private by default",
+          currentness_label: "Current window",
+          challenge_status: "under_review",
           baseline_value: "Not enrolled",
           after_value: "Completed first cohort",
+          latest_confirmation_response: {
+            event_id: "response-audit-1",
+            response_type: "partly_confirmed",
+            challenge_status: "under_review",
+            correction_note:
+              "Beneficiary added context for review before wider sharing.",
+          },
           latest_contact_consent_record: {
             event_id: "contact-audit-1",
             consent_basis: "beneficiary_consented",
@@ -1167,10 +1251,47 @@ try {
   if (audit.horizontalOverflow || audit.overflow.length) {
     findings.push(`Initial mobile overflow: ${JSON.stringify(audit.overflow)}`);
   }
+  await page.goto(`${baseUrl}${routePath}`, { waitUntil: "networkidle", timeout: 15000 });
+  await page.getByText("Domain command", { exact: true }).waitFor({ timeout: 10000 });
+  const activeHeroFinding = await viewportElementFinding(
+    page,
+    '[data-debug-id="community-domain-dashboard.identity-hero"]',
+    "Active Community Domain identity hero"
+  );
+  if (activeHeroFinding) findings.push(activeHeroFinding);
+  const operatingProofFinding = await page.evaluate(() => {
+    const proofTargets = [
+      ["Daily Work", '[data-debug-id="community-domain-dashboard.daily-work-card"]'],
+      ["Governance", '[data-debug-id="community-domain-dashboard.governance-card"]'],
+    ];
+    const missing = [];
+    for (const [label, selector] of proofTargets) {
+      const element = document.querySelector(selector);
+      if (!element) {
+        missing.push(`${label} proof card is missing.`);
+        continue;
+      }
+      const rect = element.getBoundingClientRect();
+      const visible =
+        rect.width > 0 &&
+        rect.height > 0 &&
+        rect.bottom > 0 &&
+        rect.top < window.innerHeight;
+      if (!visible) {
+        missing.push(`${label} proof card is not visible in the first viewport.`);
+      }
+    }
+    return missing.join(" ");
+  });
+  if (operatingProofFinding) findings.push(operatingProofFinding);
   await page.screenshot({
     path: join(screenshotDir, "community-domain-active-initial-390x844.png"),
     fullPage: false,
   });
+  await alignProductEvidenceCaptureBottom(
+    page,
+    '[data-debug-id="community-domain-dashboard.governance-card"]'
+  );
   await captureProductEvidenceCandidate(
     page,
     "candidate_04_community_operating_area_top_2026-07-19.png"
@@ -1622,6 +1743,15 @@ try {
     .getByTestId("community-domain-dashboard.work-surface")
     .getByText("Record from real life", { exact: true })
     .waitFor({ timeout: 10000 });
+  await clickByDebugId(page, "community-domain-dashboard.activity-record-next.activity");
+  await page.getByPlaceholder("Activity label").fill("Community Support Activity 001");
+  await page.getByPlaceholder("Quantity").fill("1");
+  await page.getByPlaceholder("Unit, e.g. hours").fill("activity");
+  await alignProductEvidenceCapture(
+    page,
+    "#community-domain-activity-record-panel",
+    80
+  );
   await captureProductEvidenceCandidate(
     page,
     "candidate_05_source_activity_entry_2026-07-19.png"
@@ -1667,13 +1797,24 @@ try {
   await clickByDebugId(page, "community-domain-dashboard.activity-record-stage-toggle");
   await clickByDebugId(page, "community-domain-dashboard.activity-record-stage.evidence");
   await page.getByPlaceholder("Evidence reference").waitFor({ timeout: 10000 });
+  if (await isDebugVisible(page, "community-domain-dashboard.activity-record-stage.person")) {
+    findings.push("Community Domain Activity record step buttons stay visible after selecting a step.");
+  }
+  await clickByDebugId(page, "community-domain-dashboard.activity-task-toggle");
+  await clickByDebugId(page, "community-domain-dashboard.activity-task.recent");
+  await page.getByText("Recent records", { exact: true }).waitFor({ timeout: 10000 });
+  await page.getByText("Community Support Activity 001", { exact: true }).waitFor({
+    timeout: 10000,
+  });
+  await alignProductEvidenceCapture(
+    page,
+    "#community-domain-activity-record-panel",
+    16
+  );
   await captureProductEvidenceCandidate(
     page,
     "candidate_06_pending_evidence_record_2026-07-19.png"
   );
-  if (await isDebugVisible(page, "community-domain-dashboard.activity-record-stage.person")) {
-    findings.push("Community Domain Activity record step buttons stay visible after selecting a step.");
-  }
   await clickByDebugId(page, "community-domain-dashboard.real-life-record.type-toggle");
   await clickByDebugId(
     page,
@@ -1787,6 +1928,16 @@ try {
       "Community Domain Summary view details stay visible after closing summary details."
     );
   }
+  await page
+    .locator(
+      '[data-debug-id="community-domain-dashboard.beneficiary-outcome-privacy-currentness-summary"]'
+    )
+    .first()
+    .waitFor({ state: "visible", timeout: 10000 });
+  await captureProductEvidenceCandidate(
+    page,
+    "candidate_10_privacy_challenge_currentness_2026-07-19.png"
+  );
   await clickByDebugId(
     page,
     "community-domain-dashboard.beneficiary-outcome-recent-packet-toggle"
@@ -1795,6 +1946,21 @@ try {
     page,
     "community-domain-dashboard.beneficiary-outcome-recent-packet.confirmation"
   );
+  if (
+    await isDebugVisible(
+      page,
+      "community-domain-dashboard.beneficiary-outcome-confirmation-action-toggle"
+    )
+  ) {
+    await clickByDebugId(
+      page,
+      "community-domain-dashboard.beneficiary-outcome-confirmation-action-toggle"
+    );
+    await clickByDebugId(
+      page,
+      "community-domain-dashboard.beneficiary-outcome-confirmation-action.link"
+    );
+  }
   if (
     await isDebugVisible(
       page,
@@ -1825,6 +1991,10 @@ try {
     )
     .first()
     .waitFor({ state: "visible", timeout: 10000 });
+  await alignProductEvidenceCapture(
+    page,
+    '[data-cta-id="community-domain-dashboard.beneficiary-outcome-confirmation-link"]'
+  );
   await captureProductEvidenceCandidate(
     page,
     "candidate_07_confirmation_request_action_2026-07-19.png"

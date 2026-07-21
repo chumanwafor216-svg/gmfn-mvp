@@ -8,7 +8,7 @@ import {
   institutionalSoftCard,
   institutionalStatTile,
 } from "../../lib/institutionalSurface";
-import { getContextualEvidencePosture } from "../../lib/trustBandLanguage";
+import { getTrustBandShortLabel } from "../../lib/trustBandLanguage";
 import TrustSlipVerifyResultCard from "./TrustSlipVerifyResultCard";
 
 type BannerStyle = {
@@ -320,7 +320,6 @@ export default function TrustSlipVerifyPrivateEvidence({
   readerVerdict,
   questions,
   visibleBand,
-  visibleScore,
   issuedAt,
   expiresAt,
   merchantVerifyActive,
@@ -340,8 +339,8 @@ export default function TrustSlipVerifyPrivateEvidence({
   riskFlags,
   verificationNote,
 }: TrustSlipVerifyPrivateEvidenceProps) {
-  const visiblePosture = getContextualEvidencePosture(visibleScore, visibleBand);
-  const cciPosture = getContextualEvidencePosture(cciReading, cciBand);
+  const visibleEvidenceStatus = getTrustBandShortLabel(visibleBand);
+  const consistencyEvidenceStatus = getTrustBandShortLabel(cciBand);
 
   return (
     <>
@@ -469,7 +468,7 @@ export default function TrustSlipVerifyPrivateEvidence({
 
             <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
               <div style={statTile()}>
-                <div style={sectionLabel()}>Trust posture</div>
+                <div style={sectionLabel()}>Evidence status</div>
                 <div
                   style={{
                     marginTop: 8,
@@ -479,12 +478,12 @@ export default function TrustSlipVerifyPrivateEvidence({
                     lineHeight: 1.25,
                   }}
                 >
-                  {visiblePosture.shortLabel}
+                  {visibleEvidenceStatus}
                 </div>
               </div>
 
               <div style={statTile()}>
-                <div style={sectionLabel()}>Visible posture</div>
+                <div style={sectionLabel()}>Visible evidence</div>
                 <div
                   style={{
                     marginTop: 8,
@@ -494,7 +493,7 @@ export default function TrustSlipVerifyPrivateEvidence({
                     lineHeight: 1.25,
                   }}
                 >
-                  {visiblePosture.label}
+                  {visibleEvidenceStatus}
                 </div>
               </div>
 
@@ -521,7 +520,7 @@ export default function TrustSlipVerifyPrivateEvidence({
                 <div style={sectionLabel()}>Cross-community consistency / sponsor signal</div>
                 <div style={{ marginTop: 8, display: "grid", gap: 6 }}>
                   <div style={{ ...helperText(), color: "#0B1F33" }}>
-                    Consistency posture: {cciPosture.label}
+                    Consistency evidence: {consistencyEvidenceStatus}
                   </div>
                   <div style={{ ...helperText(), color: "#64748B" }}>
                     This wider reading compares trust signals across community records.

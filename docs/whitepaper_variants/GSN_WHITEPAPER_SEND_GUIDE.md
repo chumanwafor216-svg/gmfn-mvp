@@ -1,6 +1,6 @@
 # GSN White Paper Variant Send Guide
 
-Last updated: 2026-07-09
+Last updated: 2026-07-19
 
 This guide separates the three white paper copies by audience. Do not send the same copy to everyone. Each version has a different job.
 
@@ -47,11 +47,20 @@ Kind regards,
 Nwafor Chuma
 ```
 
+First-send attachment rule:
+
+Attach only `GSN_Trust_Infrastructure_RGU_Academic_Copy_Chris_Mulley.docx`.
+Do not attach product screenshots, the product evidence packet, raw screenshot
+files, investor material, customer-discovery material, internal guides, or raw
+evidence logs to the first Chris/RGU email.
+
 What not to say:
 
 - Do not say RGU has endorsed GSN.
 - Do not imply the theory is already proven.
 - Do not lead with visa pressure inside the paper. If needed, mention timing politely in the email or meeting conversation.
+- Do not describe accepted local product screenshots as RGU evidence, pilot
+  evidence, adoption evidence, or external validation.
 
 ## 2. Customer Discovery Plain-Language Copy
 
@@ -94,12 +103,22 @@ Thank you,
 Chuma
 ```
 
+First-send attachment rule:
+
+Attach only `GSN_Customer_Discovery_Plain_Language_Copy.docx`. Do not attach
+product screenshots, the product evidence packet, raw screenshot files,
+investor material, academic material, internal guides, or discovery logs in the
+first organiser or participant message.
+
 What not to say:
 
 - Do not call it a reputation app.
 - Do not call it a scoring system.
 - Do not over-explain Behavioural Capital in the first conversation.
 - Do not ask people if they like the platform before asking whether the problem is real.
+- Do not use local accepted product screenshots as a substitute for listening
+  to the organiser's actual decision pain, refusal concerns, privacy boundaries,
+  or pilot pull.
 
 Session opener:
 
@@ -150,12 +169,24 @@ Kind regards,
 Nwafor Chuma
 ```
 
+First-send attachment rule:
+
+Attach only `GSN_Trust_Infrastructure_Investor_Brief.docx`. Do not attach
+product screenshots, the product evidence packet, raw screenshot files,
+academic material, customer discovery material, internal guides, or raw evidence
+logs in the first investor message.
+
 What not to say:
 
 - Do not claim investor readiness as if product-market fit is proven.
 - Do not pitch all communities at once.
 - Do not hide the social-credit objection.
 - Do not present Behavioural Capital as an accepted market category yet. Present it as a testable thesis.
+- Do not imply accepted local product screenshots prove traction, adoption,
+  revenue, external validation, recipient trust, product-market fit, or
+  validated safeguards at scale.
+- Do not describe GSN as approving credit, issuing loans, guaranteeing
+  repayment, holding funds, or automating financial decisions.
 
 Investor proof still needed:
 
@@ -165,6 +196,16 @@ Investor proof still needed:
 - Willingness to pay.
 - Governance and privacy validation.
 - A sharper answer to how GSN avoids becoming reputation scoring.
+
+Product visuals boundary:
+
+The local product evidence sequence is accepted for one synthetic demo path
+only. If a recipient asks for visuals after the first message, use the local
+packet only after checking
+`pilot_evidence_pack/12_product_evidence_capture/accepted_sequence_manifest.md`
+and
+`pilot_evidence_pack/12_product_evidence_capture/external_packet_send_ready_checklist.md`.
+Do not send raw screenshots or backup/support captures.
 
 ## Recommended Send Order
 

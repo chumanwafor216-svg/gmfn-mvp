@@ -105,6 +105,14 @@ type TrustSlipVerifyPublicPaperProps = {
   canRequestCommunityPulse: boolean;
   onRequestCommunityPulse: (draft?: CommunityConfirmationCallbackDraft) => void;
   publicActions: React.ReactNode;
+  recipientAccessRecord: {
+    recipientLabel: string;
+    purpose: string;
+    scope: string;
+    accessedAtLabel: string;
+    status: string;
+    note: string;
+  };
   variant?: "full" | "lite";
 };
 
@@ -772,6 +780,7 @@ export default function TrustSlipVerifyPublicPaper({
   canRequestCommunityPulse,
   onRequestCommunityPulse,
   publicActions,
+  recipientAccessRecord,
   variant = "full",
 }: TrustSlipVerifyPublicPaperProps) {
   const [requesterLabel, setRequesterLabel] = useState("");
@@ -897,7 +906,7 @@ export default function TrustSlipVerifyPublicPaper({
   const callbackNeedsConsent = callbackChannel !== "none" && safeText(callbackContact);
   const callbackBlocked = Boolean(callbackNeedsConsent && !callbackConsent);
   const requesterCallback = confirmationOutcome?.requester_callback || null;
-  const visibleBandReading = visibleBandLabel || publicEvidencePosture || "Evidence posture";
+  const visibleBandReading = visibleBandLabel || publicEvidencePosture || "Evidence status";
   const isLite = variant === "lite";
   const recordFingerprint = referenceFingerprint(
     resolvedCode,
@@ -976,7 +985,7 @@ export default function TrustSlipVerifyPublicPaper({
   ];
   const trustSlipConfirmsList = [
     "Public TrustSlip code status",
-    "Visible trust posture and descriptive evidence posture",
+    "Visible evidence status and descriptive evidence boundary",
     "Displayed holder and GSN ID from this paper",
     "Community label shown on this TrustSlip",
     "Verification path and QR destination when available",
@@ -1028,8 +1037,8 @@ export default function TrustSlipVerifyPublicPaper({
     {
       title: "Public result",
       rows: [
-        ["Trust posture", visibleBandLabel || publicEvidencePosture],
-        ["Evidence posture", publicEvidencePosture],
+        ["Evidence status", visibleBandLabel || publicEvidencePosture],
+        ["Evidence boundary", publicEvidencePosture],
         ["Trust-limit signal", compactTrustLimit],
         ["Validity", publicValidityLabel],
       ],
@@ -1233,6 +1242,109 @@ export default function TrustSlipVerifyPublicPaper({
         />
 
         <TrustDocumentConfidenceRibbon items={trustSlipConfidenceRibbonItems} />
+
+        <div
+          data-debug-id="trust-slip-verify.public.recipient-access-record"
+          style={{
+            ...publicVerifyPanel("#FFFDF7", compact),
+            border: "1px solid rgba(214,170,69,0.28)",
+            display: "grid",
+            gridTemplateColumns: compact ? "40px minmax(0, 1fr)" : "54px minmax(0, 1fr)",
+            gap: compact ? 8 : 14,
+            alignItems: "start",
+            padding: compact ? 9 : 14,
+          }}
+        >
+          <span
+            aria-hidden
+            style={{
+              width: compact ? 40 : 48,
+              height: compact ? 40 : 48,
+              borderRadius: compact ? 10 : 14,
+              display: "grid",
+              placeItems: "center",
+              background: "#FFFFFF",
+              border: "1px solid rgba(214,170,69,0.28)",
+              boxShadow: "0 8px 18px rgba(7,23,44,0.08)",
+            }}
+          >
+            <GsnRealisticIcon name="qr-record" size={compact ? 28 : 42} decorative />
+          </span>
+          <div style={{ minWidth: 0, display: "grid", gap: compact ? 6 : 9 }}>
+            <div>
+              <div style={{ ...sectionLabel(), color: "#7A4A00" }}>
+                Recipient access record
+              </div>
+              <div
+                style={{
+                  ...readableText(),
+                  marginTop: 3,
+                  color: "#07172C",
+                  fontSize: compact ? 14 : 17,
+                  fontWeight: 1000,
+                  lineHeight: 1.2,
+                }}
+              >
+                {recipientAccessRecord.status}
+              </div>
+            </div>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                gap: compact ? 6 : 8,
+              }}
+            >
+              {[
+                ["Recipient", recipientAccessRecord.recipientLabel],
+                ["Purpose", recipientAccessRecord.purpose],
+                ["Scope", recipientAccessRecord.scope],
+                ["Access date", recipientAccessRecord.accessedAtLabel],
+              ].map(([label, value]) => (
+                <div
+                  key={label}
+                  style={
+                    compact
+                      ? {
+                          borderRadius: 11,
+                          padding: "7px 8px",
+                          background: "#FFFFFF",
+                          border: "1px solid rgba(37,78,119,0.12)",
+                          minWidth: 0,
+                        }
+                      : documentMetaCard("#FFFFFF")
+                  }
+                >
+                  <div style={{ ...sectionLabel(), fontSize: compact ? 9 : 10 }}>
+                    {label}
+                  </div>
+                  <div
+                    style={{
+                      ...readableText(),
+                      marginTop: 3,
+                      color: "#07172C",
+                      fontSize: compact ? 10 : 12,
+                      fontWeight: 950,
+                      lineHeight: compact ? 1.15 : 1.22,
+                    }}
+                  >
+                    {value}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div
+              style={{
+                color: "#5F4100",
+                fontSize: compact ? 10 : 11,
+                fontWeight: 850,
+                lineHeight: compact ? 1.25 : 1.35,
+              }}
+            >
+              {recipientAccessRecord.note}
+            </div>
+          </div>
+        </div>
 
         <TrustDocumentDisclosureSection
           title="TrustSlip security and limits"
@@ -1561,7 +1673,7 @@ export default function TrustSlipVerifyPublicPaper({
                   </div>
                 </div>
                 <div style={statTile("#FFFFFF")}>
-                  <div style={sectionLabel()}>Evidence posture</div>
+                  <div style={sectionLabel()}>Evidence boundary</div>
                   <div style={{ ...readableText(), marginTop: 6, color: "#07172C", fontSize: compact ? 21 : 24, fontWeight: 1000 }}>
                     {publicEvidencePosture}
                   </div>

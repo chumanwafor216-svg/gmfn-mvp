@@ -561,6 +561,7 @@ export default function TrustSlipVerifyPage() {
     memberCredentialPath,
     issuedAtLabel,
     expiresAtLabel,
+    recipientAccessRecord,
   } = trustSlipView;
   const verifyCommunityActivityEvidence = communityActivityCount
     ? `${communityActivityCount} community activity event${
@@ -1206,6 +1207,7 @@ export default function TrustSlipVerifyPage() {
             void requestCommunityPulse(draft);
           }}
           publicActions={publicTrustSlipActions}
+          recipientAccessRecord={recipientAccessRecord}
           variant={isLiteRoute ? "lite" : "full"}
         />
       )}

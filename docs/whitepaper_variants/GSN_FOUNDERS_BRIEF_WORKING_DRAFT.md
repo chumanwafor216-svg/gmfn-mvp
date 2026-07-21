@@ -1,6 +1,6 @@
 # GSN Founder's Brief - Working Draft
 
-Last updated: 2026-07-18
+Last updated: 2026-07-19
 
 Status: internal working draft for founder, partner, sponsor, and early investor
 review. Do not send as a proof claim until discovery and pilot evidence support
@@ -27,8 +27,9 @@ diaspora group, church/charity, marketplace sponsor, or pilot sponsor, not
 ordinary members by default.
 
 **Current honest stage:** strong thesis, source-level MVP surfaces, active pilot
-preparation, but no proven revenue, no proven traction, and no completed pilot
-evidence pack yet.
+preparation, and an accepted local 12-step product-path screenshot sequence for
+one synthetic demo path, but no proven revenue, no proven traction, no external
+validation, and no completed real pilot evidence pack yet.
 
 **Immediate ask:** help secure or sponsor a narrow Community Trust Confirmation
 pilot that proves evidence creation, consent/privacy, challenge/correction,
@@ -77,20 +78,20 @@ community trust infrastructure opportunity?
 
 | Area | What the brief says now | Honest status |
 | --- | --- | --- |
-| Entry | A person enters GSN first, then creates or joins a community. Founder/community setup should be guided and should not expose governance before there is a real community to govern. | Direction is clear; final route evidence and accepted phone screenshots are still needed. |
+| Entry | A person enters GSN first, then creates or joins a community. Founder/community setup should be guided and should not expose governance before there is a real community to govern. | Direction is clear; a local 12-step synthetic product path is accepted, but broader route proof and real-user pilot evidence are still needed. |
 | Operating model | Daily work and governance are separate. Features create value; governance controls behaviour. | Strong product principle; Community Domain UI still needs ongoing pruning so users are guided rather than dumped into every page. |
 | Adoption | Start with one wedge: student/diaspora trust, merchant/member verification, support/contribution evidence, or association/church/charity service records. | Not proven; requires 5 to 10 discovery conversations and one organiser willing to test a narrow workflow. |
 | Revenue | Possible revenue comes from Community Domain packages, evidence/verification services, TrustSlip outputs, trusted marketplace/shop tools, and institutional pilots. | Hypothesis only; first payer and willingness to pay are not proven. |
 | Safeguards | No global score, no public ranking, no automated trust judgement, no raw private details on public surfaces, and challenge/correction must exist. | Strong constitutional direction; route-by-route consent, privacy, challenge, and expiry proof is still required. |
-| Evidence | GSN preserves contextual Trust Events: what happened, who recorded it, which community owns it, who confirmed or challenged it, and what the evidence does not prove. | Source-level evidence surfaces exist; accepted pilot evidence capture is still incomplete. |
-| Pilot readiness | First pilot should be Community Trust Confirmation: one community, one organiser, one workflow, one evidence output. | Proposed, not completed; needs named pilot, participants, evidence path, screenshots, and review criteria. |
+| Evidence | GSN preserves contextual Trust Events: what happened, who recorded it, which community owns it, who confirmed or challenged it, and what the evidence does not prove. | Source-level evidence surfaces exist; local product-path screenshots are accepted for one synthetic demo path; accepted real pilot evidence is still incomplete. |
+| Pilot readiness | First pilot should be Community Trust Confirmation: one community, one organiser, one workflow, one evidence output. | Proposed, not completed; needs named pilot, participants, real evidence path, live-route checks, and review criteria. |
 
 ## Claim Discipline Ledger
 
 | Claim area | Safe to say now | Do not say yet | Proof that unlocks stronger language |
 | --- | --- | --- | --- |
 | Thesis | GSN is a community trust infrastructure thesis with a clear first proof path. | GSN has proven product-market fit. | Discovery evidence plus repeated pilot use. |
-| Product | Source-level MVP surfaces exist across entry, community, marketplace, shop, Trust Passport, TrustSlip, confirmation, and pilot-readiness surfaces. | The whole product is pilot-complete or production-proven. | Accepted screenshots, reviewed PDFs, live route checks, and pilot evidence pack approval. |
+| Product | Source-level MVP surfaces exist across entry, community, marketplace, shop, Trust Passport, TrustSlip, confirmation, and pilot-readiness surfaces; one local 12-step product-path screenshot sequence is accepted for a synthetic demo path. | The whole product is pilot-complete, production-proven, externally validated, or revenue-ready. | Reviewed PDFs, live route checks, real-user pilot evidence, and pilot evidence pack approval. |
 | Adoption | Candidate wedges are identified and ready for discovery. | Communities are already adopting GSN at scale. | Interviews, named organiser interest, active pilot usage, or signed pilot intent. |
 | Revenue | Revenue may come from packages, evidence services, TrustSlip outputs, marketplace/shop tools, and institutional pilots. | Revenue is validated or the payer is proven. | Budget-holder interviews, paid pilot, LOI, sponsor commitment, or repeated paid use. |
 | Safeguards | GSN is designed to be private-by-default, purpose-bound, challengeable, and non-scoring. | Privacy, consent, correction, and retention are solved everywhere. | Route-by-route privacy review, active consent records, challenge workflow, expiry/currentness evidence, and rejected misuse cases. |
@@ -158,9 +159,13 @@ Source-level MVP surfaces exist for:
 
 Truth boundary:
 
-These surfaces are not the same as accepted pilot proof. Several routes and
-documents still need final phone screenshots, PDF review, live-route checks, and
-pilot evidence capture before they can be presented as completed proof.
+These surfaces are not the same as accepted pilot proof. One local 12-step
+product-path screenshot sequence has been accepted for a synthetic demo path,
+which means the product story can be shown. It does not prove traction,
+adoption, revenue, external validation, recipient trust, product-market fit, or
+validated safeguards at scale. Several routes and documents still need PDF
+review, live-route checks, broader route evidence, and real pilot evidence
+capture before they can be presented as completed proof.
 
 ## 5. First Use Case
 
@@ -424,6 +429,8 @@ Do not hide these gaps:
 - revenue is not proven;
 - traction is not proven;
 - pilot is not complete;
+- accepted local product screenshots do not prove adoption, revenue, external
+  validation, recipient trust, product-market fit, or validated safeguards;
 - consent and privacy need route-by-route proof;
 - challenge/correction needs product proof;
 - expiry/currentness needs route-by-route proof;
@@ -436,8 +443,9 @@ Do not hide these gaps:
    session.
 2. Produce a one-page discovery evidence memo.
 3. Select one first pilot workflow.
-4. Capture accepted phone screenshots and evidence outputs for that workflow
-   using `GSN_PRODUCT_EVIDENCE_CAPTURE_STANDARD.md`.
+4. Use the accepted 12-step local product-path screenshot sequence as demo-path
+   evidence only, then capture any remaining route/document evidence needed for
+   the chosen workflow using `GSN_PRODUCT_EVIDENCE_CAPTURE_STANDARD.md`.
 5. Run the pilot with one community and one organiser.
 6. Record confirmation, privacy, challenge, and currentness behaviour.
 7. Decide whether the evidence supports a sponsor, partner, or investor
@@ -507,9 +515,9 @@ tested responsibly.
 
 Required output:
 
-- phone screenshots for the chosen route path;
-- the 12-step product-evidence capture sequence or a documented reason why a
-  screenshot is intentionally deferred;
+- accepted local product-path screenshots for the chosen route path;
+- the 12-step product-evidence capture sequence, with limitations recorded for
+  any cropped or intentionally deferred screenshot;
 - Trust Event or confirmation/witness evidence view;
 - TrustSlip or Trust Passport excerpt;
 - limitation/currentness note;

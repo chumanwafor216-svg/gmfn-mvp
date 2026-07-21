@@ -1,6 +1,6 @@
 # GSN Investor Send Package
 
-Last updated: 2026-07-09
+Last updated: 2026-07-19
 
 Use this only after customer discovery produces enough evidence to justify an investor conversation. This is not the next step by default.
 
@@ -69,15 +69,23 @@ GSN_DISCOVERY_EVIDENCE_MEMO_TEMPLATE.md
 GSN_WHITEPAPER_SEND_GUIDE.md
 raw screenshots
 uncaptioned evidence captures
+product evidence screenshot packet unless separately cleared for the named
+investor context
 ```
 
 If you have real discovery evidence, you may later share a short synthesis memo. Do not attach raw interview logs.
 
-Do not attach screenshots unless they have passed
-`GSN_PRODUCT_EVIDENCE_CAPTURE_STANDARD.md`: redacted, captioned, same demo
-account/community, no private identifiers, no personal CCI/trust-score numbers,
-separate product state from proof state, and every screenshot states what it
-does not prove.
+Do not attach screenshots unless they have passed all of these gates:
+
+```text
+docs/whitepaper_variants/GSN_PRODUCT_EVIDENCE_CAPTURE_STANDARD.md
+pilot_evidence_pack/12_product_evidence_capture/accepted_sequence_manifest.md
+pilot_evidence_pack/12_product_evidence_capture/external_packet_send_ready_checklist.md
+```
+
+Even then, accepted local product screenshots are product-path evidence only.
+They do not prove traction, adoption, revenue, external validation, recipient
+trust, product-market fit, or validated safeguards at scale.
 
 ## Subject
 
@@ -137,6 +145,12 @@ Nwafor Chuma
 [ ] You can explain why GSN is not a reputation app.
 [ ] You can explain how GSN avoids social scoring.
 [ ] You do not claim product-market fit.
+[ ] You do not claim accepted local product screenshots prove traction,
+    adoption, revenue, external validation, recipient trust, product-market fit,
+    or validated safeguards at scale.
+[ ] You do not attach product screenshots unless they passed the product
+    evidence standard, accepted sequence manifest, and external packet
+    send-ready checklist for this named investor context.
 [ ] You do not claim automated credit, lending, or guaranteed trust.
 [ ] You do not hide privacy/governance risk.
 [ ] You ask for proof guidance, not immediate belief.
@@ -194,6 +208,8 @@ GSN_DISCOVERY_EVIDENCE_MEMO_TEMPLATE.md
 - Do not say GSN is investor-ready unless the conversation is explicitly about proof still needed.
 - Do not claim product-market fit.
 - Do not say the first wedge is proven before discovery supports it.
+- Do not use accepted local product screenshots as a substitute for discovery,
+  pilot, revenue, adoption, recipient-trust, or safeguards evidence.
 - Do not call GSN a credit scorer, lender, bank, guarantee engine, or reputation app.
 - Do not pitch all communities at once.
 - Do not hide the social-scoring objection.

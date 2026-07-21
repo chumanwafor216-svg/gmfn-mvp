@@ -1,6 +1,6 @@
 # GSN White Paper Packet Action Plan
 
-Last updated: 2026-07-09
+Last updated: 2026-07-21
 
 Use this as the operating checklist for the next 7 days. The goal is to move from prepared documents to real evidence.
 
@@ -10,6 +10,21 @@ Use this as the operating checklist for the next 7 days. The goal is to move fro
 2. Use Chris's response to sharpen the first customer discovery route.
 3. Run 5-10 customer discovery conversations before treating the investor copy as serious.
 4. Keep the investor material ready, but do not lead with it until discovery evidence exists.
+
+## Global Attachment Boundary
+
+For every first outbound message, attach exactly one audience-matched DOCX:
+
+```text
+Chris/RGU: GSN_Trust_Infrastructure_RGU_Academic_Copy_Chris_Mulley.docx
+Customer discovery: GSN_Customer_Discovery_Plain_Language_Copy.docx
+Investor/funder: GSN_Trust_Infrastructure_Investor_Brief.docx
+```
+
+Do not mix academic, customer-discovery, investor, internal, screenshot, raw
+evidence, or meeting-prep files in the same first send. If a recipient asks for
+more material later, treat that as a named follow-up and run the relevant
+send-ready checklist again before attaching anything else.
 
 ## Day 0: Final Document Check
 
@@ -21,6 +36,10 @@ Before sending:
 [ ] Check headings and bullets.
 [ ] Check that no internal/editorial notes appear.
 [ ] Confirm the right file is attached for the right audience.
+[ ] Confirm exactly one audience-matched DOCX is attached to the first
+    outbound message.
+[ ] Confirm no product screenshot packet is attached to the first Chris/RGU
+    email.
 [ ] Do not send the original source white paper.
 ```
 
@@ -35,6 +54,17 @@ Files to check first:
 Send:
 
 - `GSN_Trust_Infrastructure_RGU_Academic_Copy_Chris_Mulley.docx`
+
+Do not send:
+
+- the local product evidence screenshot packet;
+- raw screenshot files;
+- backup/support screenshots;
+- product evidence caption, redaction, route, or limitation logs.
+
+If Chris asks for product visuals after the first review request, use the local
+packet draft only after completing
+`pilot_evidence_pack/12_product_evidence_capture/external_packet_send_ready_checklist.md`.
 
 Use:
 
@@ -95,7 +125,7 @@ For every interview, capture:
 - strongest use case;
 - biggest risk;
 - exact phrase worth preserving;
-- pilot pull rating.
+- pilot pull reading.
 
 Do not ask first:
 
@@ -142,6 +172,15 @@ Use:
 - `GSN_Trust_Infrastructure_Investor_Brief.docx`
 - `GSN_INVESTOR_DILIGENCE_QA_AND_PROOF_ROADMAP.md`
 
+First investor send:
+
+```text
+[ ] Attach only GSN_Trust_Infrastructure_Investor_Brief.docx.
+[ ] Do not attach academic, customer-discovery, internal, screenshot, raw
+    evidence, or meeting-prep files.
+[ ] Do not attach raw discovery logs.
+```
+
 Only send the investor brief if you can answer:
 
 ```text
@@ -171,6 +210,9 @@ GSN is at the structured customer discovery stage. The theory is clear enough to
 - Do not say RGU endorsed GSN.
 - Do not say product-market fit exists.
 - Do not say the first wedge is proven.
+- Do not say accepted local product screenshots prove traction, adoption,
+  revenue, external validation, recipient trust, product-market fit, or
+  safeguards at scale.
 - Do not say GSN will approve credit or guarantee trust.
 - Do not say the privacy/governance model is solved.
 - Do not call Behavioural Capital an accepted market category yet.

@@ -1,8 +1,12 @@
 # GSN DOCX Send-Ready QA Checklist
 
-Last updated: 2026-07-09
+Last updated: 2026-07-19
 
 Use this before sending any white paper copy externally. This checklist exists because the generated DOCX files were structurally checked, but not visually rendered in this environment.
+
+For the Chris/RGU academic copy, local structural QA is recorded in
+`GSN_CHRIS_RGU_DOCX_LOCAL_QA_2026-07-19.md`. That note does not replace the
+manual Word or Google Docs visual checks below.
 
 ## Files To QA
 
@@ -39,6 +43,10 @@ If Word asks to repair the file, do not send it. Export a clean copy from Word o
 [ ] Mentions RGU as a review/discovery context, not an endorser.
 [ ] Explains safeguards: consent, correction, privacy, provenance, human judgement.
 [ ] Makes the ask clear: guidance on structured customer discovery.
+[ ] First Chris/RGU email attaches only `GSN_Trust_Infrastructure_RGU_Academic_Copy_Chris_Mulley.docx`.
+[ ] First Chris/RGU email does not attach product screenshots, the product
+    evidence packet, raw screenshot files, investor material, internal guides,
+    or discovery templates.
 [ ] Does not lead with visa pressure.
 ```
 
@@ -74,6 +82,9 @@ Search or manually scan for these risky claims.
 [ ] No claim that privacy/governance is solved.
 [ ] No claim that GSN approves credit or guarantees trust.
 [ ] No claim that Behavioural Capital is an accepted market category.
+[ ] No claim that accepted local product screenshots prove traction, adoption,
+    revenue, external validation, recipient trust, product-market fit, or
+    safeguards at scale.
 ```
 
 ## Internal Residue Check
@@ -124,8 +135,14 @@ Before pressing send:
 [ ] Correct recipient.
 [ ] Correct attachment.
 [ ] Correct email draft.
+[ ] First outbound message has exactly one audience-matched DOCX attached.
+[ ] No academic, customer-discovery, investor, internal, screenshot, raw
+    evidence, or meeting-prep files are mixed into the same first send.
 [ ] No investor brief attached to Chris/RGU email.
+[ ] No product screenshot packet attached to the first Chris/RGU email.
+[ ] No raw screenshot files attached to the first Chris/RGU email.
 [ ] No academic copy attached to normal participants.
+[ ] No customer-discovery copy attached to investor or Chris/RGU first send.
 [ ] No internal guide or meeting brief accidentally attached.
 [ ] Filename is professional and readable.
 ```

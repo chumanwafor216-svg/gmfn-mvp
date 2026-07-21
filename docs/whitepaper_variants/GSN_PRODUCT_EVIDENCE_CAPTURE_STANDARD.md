@@ -2,18 +2,22 @@
 
 Community Trust Confirmation Pilot
 
-Version 1.0 | 18 July 2026
+Version 1.1 | 19 July 2026
 
 Internal capture, redaction, captioning, and acceptance rules.
 
-Status: capture standard. This file does not contain accepted screenshots yet.
-It controls how screenshots and evidence images may be captured for the Product
-Evidence Pack, founder brief, sponsor brief, partner brief, or investor brief.
+Status: capture standard. This file does not embed the accepted screenshots.
+The current local accepted sequence is tracked in
+`pilot_evidence_pack/12_product_evidence_capture/accepted_sequence_manifest.md`.
+This standard controls how screenshots and evidence images may be captured,
+captioned, accepted, rejected, or used for the Product Evidence Pack, founder
+brief, sponsor brief, partner brief, or investor brief.
 
 Unabated truth: screenshots are not traction. They prove only that a working
-build, prototype, or planning surface can be shown honestly. They do not prove
-adoption, repeated use, revenue, external pilot validation, or product-market
-fit.
+build, prototype, or planning surface can be shown honestly. The accepted local
+12-step sequence proves a synthetic product path only. It does not prove
+adoption, repeated use, revenue, external pilot validation, recipient trust,
+validated safeguards at scale, or product-market fit.
 
 ## Purpose
 
@@ -425,6 +429,12 @@ Reject a screenshot if:
 The evidence images may support the founder brief only when they tell one
 clean, redacted, captioned story.
 
+As of 2026-07-19, the local ignored evidence pack contains an accepted 12-step
+sequence for one synthetic demo path. Step 06 requires its crop-limitation
+caption note to travel with the screenshot. The accepted sequence may be used
+only with the manifest and local external packet send-ready checklist; it is not
+a substitute for real pilot evidence.
+
 The pack should make this honest point:
 
 ```text
@@ -437,5 +447,6 @@ The next proof is repeated use within a real external pilot community.
 It must not imply:
 
 ```text
-GSN has proven adoption, revenue, external validation, or product-market fit.
+GSN has proven adoption, revenue, external validation, recipient trust,
+validated safeguards at scale, or product-market fit.
 ```

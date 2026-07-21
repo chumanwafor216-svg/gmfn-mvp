@@ -1,6 +1,6 @@
 # GSN Founder's Brief Gap Closure
 
-Last updated: 2026-07-17
+Last updated: 2026-07-19
 
 Use this as the missing-answer sheet before sending or rewriting the founder,
 partner, or investor brief.
@@ -8,6 +8,12 @@ partner, or investor brief.
 Unabated truth: this document does not prove traction, revenue, privacy
 completion, or pilot readiness. It defines the honest answers GSN can give now
 and the proof still required.
+
+Current product-evidence status: a local 12-step product-path screenshot
+sequence has been accepted for one synthetic demo path. That is useful evidence
+that the product story can be shown, but it is not traction, adoption, revenue,
+external validation, recipient trust, product-market fit, or validated
+safeguards at scale.
 
 ## One-Line Founder Position
 
@@ -24,7 +30,7 @@ score.
 | Who exactly pays first? | The first payer should be a community organiser, association, institution, diaspora group, church/charity, trusted marketplace sponsor, or pilot sponsor. Ordinary members should not be the first revenue assumption. | Identify one budget holder with a painful decision and willingness to fund a narrow pilot. |
 | What is the first use case? | Community trust confirmation for one real decision: participation, contribution, support, trade delivery, member responsibility, or trusted introduction. | Customer discovery must show which decision repeats without founder prompting. |
 | What is the first pilot? | One community, one organiser, one workflow: record a real participation/support/trade/responsibility event, request bounded confirmation where needed, create a Trust Event, and produce a private Trust Passport or shareable TrustSlip excerpt. | A named pilot community, named organiser, date, participant count, route path, evidence-capture plan, and acceptance criteria. |
-| What has already been built? | Source-level MVP surfaces exist for entry, community context, marketplace/shop, Demand Box, Spotlight, Trust Passport, TrustSlip, public verification, confirmation/witness flow, evidence-pack direction, and pilot-readiness/admin surfaces. | Accepted phone screenshots, reviewed PDFs, live route proof, and a clear "built but not accepted" boundary for each surface. |
+| What has already been built? | Source-level MVP surfaces exist for entry, community context, marketplace/shop, Demand Box, Spotlight, Trust Passport, TrustSlip, public verification, confirmation/witness flow, evidence-pack direction, and pilot-readiness/admin surfaces. A local 12-step product-path screenshot sequence is accepted for one synthetic demo path. | Reviewed PDFs, live route proof, broader route evidence, and a clear boundary between local synthetic product-path evidence and real pilot evidence. |
 | What traction exists? | Founder-led product validation, architecture work, discovery planning, and pilot preparation. Do not claim market traction yet. | Interviews, signed pilot interest, active pilot usage, LOIs, paid tests, or repeat usage from a real community. |
 | How is information verified? | Information is verified through event provenance: who recorded it, which community it belongs to, what action occurred, who confirmed it, when it was generated, and what privacy/sharing rule applies. | Pilot evidence that real users create records, confirmations are received, and external readers understand the evidence. |
 | How are consent and privacy protected? | Private evidence stays private by default. Public surfaces should show bounded outcomes and limitations, not raw private IDs, private contacts, full bank details, full phone numbers, or private votes. Sharing should be purpose-bound and consent-aware. | Final consent policy, contact preference storage, consent withdrawal handling on all relevant routes, and privacy review of every shareable surface. |
@@ -101,7 +107,9 @@ protect, challenge, and share selected evidence for one real decision.
 
 - Do not claim product-market fit.
 - Do not claim paying customers until payment or signed intent exists.
-- Do not claim the pilot is complete until accepted evidence is captured.
+- Do not claim the pilot is complete just because the local 12-step product-path
+  screenshot sequence is accepted; real pilot evidence still has to be
+  captured with real users, consent, challenge/currentness handling, and review.
 - Do not claim automated credit, lending approval, guaranteed trust, or bank
   replacement.
 - Do not claim privacy is solved; say the privacy model is a pilot-critical

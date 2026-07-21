@@ -1,10 +1,19 @@
 # GSN White Paper Email Drafts
 
-Last updated: 2026-07-09
+Last updated: 2026-07-19
 
 Use these as copy-paste starting points. Replace bracketed text before sending.
 
 ## 1. Chris Mulley / RGU Academic Copy
+
+First-send attachment rule:
+
+```text
+Attach only: GSN_Trust_Infrastructure_RGU_Academic_Copy_Chris_Mulley.docx
+Do not attach product screenshots, the product evidence packet, raw screenshot
+files, investor material, internal guides, or discovery templates in the first
+email.
+```
 
 Subject:
 
@@ -38,6 +47,15 @@ To be clear, I am not asking RGU to endorse GSN as proven. I am asking whether t
 ```
 
 ## 2. Customer Discovery Organiser
+
+Attachment rule:
+
+```text
+Attach only: GSN_Customer_Discovery_Plain_Language_Copy.docx
+Do not attach product screenshots, the product evidence packet, raw screenshot
+files, investor material, academic material, internal guides, or discovery logs
+in the first organiser message.
+```
 
 Subject:
 
@@ -78,6 +96,15 @@ Before we talk about GSN as an app, I want to understand your community. How do 
 
 ## 3. Customer Discovery Participant
 
+Attachment rule:
+
+```text
+Attach only: GSN_Customer_Discovery_Plain_Language_Copy.docx
+Do not attach product screenshots, the product evidence packet, raw screenshot
+files, investor material, academic material, internal guides, or discovery logs
+in the first participant message.
+```
+
 Subject:
 
 ```text
@@ -101,7 +128,7 @@ What I need from you is your real reaction:
 - Where would this be useful?
 - Where could it become dangerous or unfair?
 - What would make you refuse to use it?
-- What would make it trustworthy enough to test?
+- What would make it safe and credible enough to test?
 
 Attached: GSN_Customer_Discovery_Plain_Language_Copy.docx
 
@@ -110,6 +137,15 @@ Chuma
 ```
 
 ## 4. Investor Copy
+
+Attachment rule:
+
+```text
+Attach only: GSN_Trust_Infrastructure_Investor_Brief.docx
+Do not attach product screenshots, the product evidence packet, raw screenshot
+files, academic material, customer discovery material, internal guides, or raw
+discovery logs in the first investor message.
+```
 
 Subject:
 
@@ -126,7 +162,7 @@ I am sharing an early investor brief for GSN.
 
 GSN is not another social network, marketplace, or simple reputation app. The thesis is that communities already create valuable behavioural evidence through contribution, responsibility, trade, support, leadership, repayment, and participation, but that evidence is usually fragmented, informal, and lost across transitions.
 
-The opportunity is to build Trust Infrastructure: a community-first system for preserving provenance-rich behavioural evidence so it can support human judgement in membership, commerce, support, lending, verification, and institutional decisions.
+The opportunity is to build Trust Infrastructure: a community-first system for preserving provenance-rich behavioural evidence so it can support human judgement in membership, commerce, support, borrowing-readiness, verification, and institutional decisions.
 
 I want to be direct about the stage. This is not a product-market-fit claim yet. The next proof is customer discovery and a narrow pilot that shows which community use case has real pull, willingness to participate, and acceptable governance.
 
@@ -149,6 +185,11 @@ The biggest risk is not whether the idea sounds interesting. The real test is wh
 - Do not say RGU has endorsed GSN.
 - Do not say the theory is proven.
 - Do not say GSN is investor-ready unless the conversation is explicitly about what proof is still needed.
+- Do not say local accepted product screenshots prove traction, adoption,
+  revenue, external validation, recipient trust, product-market fit, or
+  validated safeguards at scale.
 - Do not call GSN a social-credit system.
 - Do not hide the social-credit objection if someone raises it.
 - Do not promise automated lending, guaranteed trust, or risk-free verification.
+- Do not describe GSN as approving credit, issuing loans, guaranteeing
+  repayment, holding funds, or automating financial decisions.

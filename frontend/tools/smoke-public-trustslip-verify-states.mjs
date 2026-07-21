@@ -171,25 +171,25 @@ function publicTrustSlipPayload(scenario) {
     cci_score: null,
     cci_score_visibility: "internal_index",
     cci_band: scenario.band ?? "A",
-    cci_public_label: scenario.noSnapshotOrEvents ? "Building history" : "Enduring record",
+    cci_public_label: scenario.noSnapshotOrEvents ? "Building history" : "Strong evidence",
     cci_public_meaning: scenario.noSnapshotOrEvents
       ? "This record is still building confirmed evidence."
       : "Confirmed evidence is deep and consistently positive across the current context.",
     cci_public_boundary:
-      "Descriptive evidence posture only; guarantees and approvals remain separate decisions.",
+      "Descriptive evidence status only; guarantees and approvals remain separate decisions.",
     cci_explainer: minimal
       ? {}
       : {
           score_visibility: "internal_index",
           internal_index_note:
             "Numeric indexes are retained for calibration and authorised detailed review.",
-          public_label: scenario.noSnapshotOrEvents ? "Building history" : "Enduring record",
-          public_short_label: scenario.noSnapshotOrEvents ? "Building" : "Enduring",
+          public_label: scenario.noSnapshotOrEvents ? "Building history" : "Strong evidence",
+          public_short_label: scenario.noSnapshotOrEvents ? "Building" : "Strong",
           public_meaning: scenario.noSnapshotOrEvents
             ? "This record is still building confirmed evidence."
             : "Confirmed evidence is deep and consistently positive across the current context.",
           public_boundary:
-            "Descriptive evidence posture only; guarantees and approvals remain separate decisions.",
+            "Descriptive evidence status only; guarantees and approvals remain separate decisions.",
         },
     trust_limit: "100",
     currency: "GBP",

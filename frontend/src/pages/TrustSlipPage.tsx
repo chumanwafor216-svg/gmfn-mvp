@@ -45,7 +45,6 @@ import {
   type MerchantLinkResponse,
 } from "../lib/merchantChannel";
 import {
-  getContextualEvidencePosture,
   getTrustBandShortLabel,
   getTrustEvidenceLanguage,
   normalizeTrustBand,
@@ -346,6 +345,33 @@ const TRUST_SLIP_MOBILE_SCROLL_CLEARANCE = 116;
 const FETCH_FIRST_JSON_TIMEOUT_MS = 30000;
 const TRUST_SLIP_SUMMARY_STARTUP_CACHE_MS = 2500;
 
+type TrustSlipPurposeKey =
+  | "community_confirmation"
+  | "support_decision"
+  | "trade_check";
+
+const TRUST_SLIP_PURPOSE_OPTIONS: Array<{
+  key: TrustSlipPurposeKey;
+  label: string;
+  shortLabel: string;
+}> = [
+  {
+    key: "community_confirmation",
+    label: "Community Trust Confirmation pilot demonstration",
+    shortLabel: "Community confirmation",
+  },
+  {
+    key: "support_decision",
+    label: "Support or finance readiness check",
+    shortLabel: "Support check",
+  },
+  {
+    key: "trade_check",
+    label: "Trade or service confidence check",
+    shortLabel: "Trade check",
+  },
+];
+
 type TrustSlipSummaryStartupCache = {
   key: string;
   value: any;
@@ -452,6 +478,39 @@ function countOrNotProvided(value: any): string {
   if (value === null || value === undefined || value === "") return "Not provided";
   const n = Number(value);
   return Number.isFinite(n) ? `${n} recorded` : safeStr(value);
+}
+
+function publicEvidenceStatusLabel(scoreOrBand: any, fallbackBand?: any): string {
+  const directBandLabel = getTrustBandShortLabel(scoreOrBand);
+  if (directBandLabel !== "Not shown") return directBandLabel;
+
+  const fallbackBandLabel = getTrustBandShortLabel(fallbackBand);
+  if (fallbackBandLabel !== "Not shown") return fallbackBandLabel;
+
+  const score = Number(scoreOrBand);
+  if (!Number.isFinite(score)) return "Evidence not shown";
+  if (score >= 80) return "Strong evidence";
+  if (score >= 60) return "Good evidence";
+  if (score >= 40) return "Mixed evidence";
+  if (score >= 20) return "Evidence building";
+  return "Insufficient evidence";
+}
+
+function compactEvidenceStatusLabel(labelText: string): string {
+  switch (safeStr(labelText).toLowerCase()) {
+    case "strong evidence":
+      return "Strong";
+    case "good evidence":
+      return "Good";
+    case "mixed evidence":
+      return "Mixed";
+    case "evidence building":
+      return "Building";
+    case "insufficient evidence":
+      return "Insufficient";
+    default:
+      return safeStr(labelText) || "Not shown";
+  }
 }
 
 function apiBase(): string {
@@ -1708,6 +1767,8 @@ export default function TrustSlipPage() {
     useState<CommunityConfirmationOutcome | null>(null);
   const [merchantRailBusy, setMerchantRailBusy] = useState(false);
   const [merchantRailLink, setMerchantRailLink] = useState<MerchantLinkResponse | null>(null);
+  const [selectedTrustSlipPurpose, setSelectedTrustSlipPurpose] =
+    useState<TrustSlipPurposeKey>("community_confirmation");
 
   const clearTrustSlipState = useCallback(() => {
     setMe(null);
@@ -2070,11 +2131,10 @@ export default function TrustSlipPage() {
     summary?.band,
     summary?.level,
     (summary as any)?.level_label,
-    "Awaiting posture"
+    "Evidence not shown"
   );
   const normalizedMerchantBand = normalizeTrustBand(merchantBand);
   const merchantBandLabel = getTrustBandShortLabel(merchantBand);
-  const merchantPostureLabel = getContextualEvidencePosture(null, merchantBand).shortLabel;
 
   const merchantTrustLimit = firstTruthy(
     summary?.merchant_view?.trust_limit,
@@ -2508,7 +2568,7 @@ export default function TrustSlipPage() {
     cciExplainer?.meaning,
     cciExplainer?.plain_language
   );
-  const cciPosture = getContextualEvidencePosture(cciScore, cciBand);
+  const cciEvidenceStatusLabel = publicEvidenceStatusLabel(cciScore, cciBand);
   const lastReleaseText = safeDateTime(summary?.last_release_at) || "Not shown";
   const lastFullRepaymentText =
     safeDateTime(summary?.last_full_repayment_at) || "Not shown";
@@ -2527,7 +2587,7 @@ export default function TrustSlipPage() {
       title: "What decision can this TrustSlip evidence support?",
       answer: hasBlockingTrustSlipState
         ? "Not from this TrustSlip alone. Ask for a fresh TrustSlip or the fuller Trust Passport before any risky decision."
-        : `The visible reading is ${merchantBandLabel}, with TrustSlip limit signal ${merchantTrustLimit} ${merchantCurrency} and cross-community evidence posture ${cciPosture.label}. This supports a careful decision; it is not an automatic approval.`,
+        : `The visible reading is ${merchantBandLabel}, with TrustSlip limit signal ${merchantTrustLimit} ${merchantCurrency} and cross-community evidence status ${cciEvidenceStatusLabel}. This supports a careful decision; it is not an automatic approval.`,
     },
     {
       title: "Do they follow through?",
@@ -2564,7 +2624,7 @@ export default function TrustSlipPage() {
       label: "Trust decision",
       value: hasBlockingTrustSlipState
         ? "Do not rely yet. Ask for a refreshed TrustSlip before support, goods, money, work, or referral."
-        : `Use carefully. Reading ${merchantBandLabel}; trust-limit signal ${merchantTrustLimit} ${merchantCurrency}; cross-community evidence posture ${cciPosture.label}.`,
+        : `Use carefully. Reading ${merchantBandLabel}; trust-limit signal ${merchantTrustLimit} ${merchantCurrency}; cross-community evidence status ${cciEvidenceStatusLabel}.`,
     },
     {
       label: "Follow-through",
@@ -2638,8 +2698,9 @@ export default function TrustSlipPage() {
     safeDateTime(summary?.expires_at) ||
     (trustSlipCode ? "No expiry stated yet" : "Not issued yet");
   const merchantBandDisplay = normalizedMerchantBand
-    ? merchantPostureLabel
-    : "Awaiting posture";
+    ? merchantBandLabel
+    : "Evidence not shown";
+  const merchantBandHeroDisplay = compactEvidenceStatusLabel(merchantBandDisplay);
   const decisionSummaryText = hasBlockingTrustSlipState
     ? "Do not rely on this TrustSlip until it is refreshed and checked again."
     : ["D", "E"].includes(trustSlipBandLetter)
@@ -2937,7 +2998,7 @@ export default function TrustSlipPage() {
     "Holder display name and GSN ID shown on this TrustSlip",
     "Community label and Community ID/reference shown on this TrustSlip",
     "Current TrustSlip status, code, issue window, and expiry window where available",
-    "Visible trust posture, TrustSlip limit signal, and cross-community evidence posture",
+    "Visible evidence status, TrustSlip limit signal, and cross-community evidence status",
     "QR, verify action, and copied verify link open the public TrustSlip reading when available",
   ];
   const trustSlipHolderDoesNotConfirmList = [
@@ -2946,6 +3007,37 @@ export default function TrustSlipPage() {
     "Future behaviour, future repayment, delivery, or marketplace outcome",
     "Authority to release goods, money, credit, or services",
     "Private Trust Passport history, private notes, private contacts, or admin records",
+  ];
+  const selectedPurposeOption =
+    TRUST_SLIP_PURPOSE_OPTIONS.find(
+      (option) => option.key === selectedTrustSlipPurpose
+    ) || TRUST_SLIP_PURPOSE_OPTIONS[0];
+  const purposeEvidenceSelectionRows = [
+    {
+      label: "Purpose selected",
+      value: selectedPurposeOption.label,
+      icon: "evidence" as GsnIconName,
+    },
+    {
+      label: "Evidence included",
+      value: firstTruthy(
+        communityActivityLabel,
+        identityRecordSummary,
+        heroEvidenceShort,
+        "Identity and community evidence"
+      ),
+      icon: "certificate-seal" as GsnIconName,
+    },
+    {
+      label: "Currentness",
+      value: firstTruthy(membershipCurrentnessLabel, trustSlipPublicStatus),
+      icon: "refresh" as GsnIconName,
+    },
+    {
+      label: "Private details excluded",
+      value: "Passport, contacts, bank details, raw notes",
+      icon: "vault" as GsnIconName,
+    },
   ];
 
   async function requestCommunityPulse() {
@@ -3179,6 +3271,148 @@ export default function TrustSlipPage() {
               <div style={noticeCard(notice.tone)}>{notice.text}</div>
             </div>
           ) : null}
+
+          <section
+            data-debug-id="trust-slip.purpose-selection"
+            style={{
+              ...trustSlipScrollClearance(isCompact),
+              gridColumn: "1 / -1",
+              borderRadius: 18,
+              border: "1px solid rgba(214,170,69,0.28)",
+              background:
+                "linear-gradient(180deg, rgba(255,253,247,0.99) 0%, rgba(248,251,255,0.97) 100%)",
+              boxShadow: "0 18px 38px rgba(15,23,42,0.08)",
+              padding: isCompact ? 12 : 16,
+              display: "grid",
+              gap: isCompact ? 10 : 12,
+            }}
+          >
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: isCompact ? "40px minmax(0, 1fr)" : "52px minmax(0, 1fr)",
+                gap: 10,
+                alignItems: "center",
+              }}
+            >
+              <span
+                aria-hidden
+                style={{
+                  width: isCompact ? 40 : 52,
+                  height: isCompact ? 40 : 52,
+                  borderRadius: 14,
+                  display: "grid",
+                  placeItems: "center",
+                  background: "#FFFFFF",
+                  border: "1px solid rgba(214,170,69,0.28)",
+                  boxShadow: "0 10px 20px rgba(7,23,44,0.08)",
+                }}
+              >
+                <GsnLegacyIcon name="evidence" size={isCompact ? 34 : 44} />
+              </span>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ ...sectionLabel(), color: "#7A4A00" }}>
+                  TrustSlip purpose selection
+                </div>
+                <div
+                  style={{
+                    marginTop: 3,
+                    color: "#07172C",
+                    fontSize: isCompact ? 17 : 22,
+                    fontWeight: 1000,
+                    lineHeight: 1.12,
+                  }}
+                >
+                  Choose the evidence for this purpose.
+                </div>
+                <div
+                  style={{
+                    marginTop: 3,
+                    color: "#526579",
+                    fontSize: isCompact ? 12 : 14,
+                    fontWeight: 850,
+                    lineHeight: 1.35,
+                  }}
+                >
+                  Only the selected public TrustSlip summary is prepared for sharing.
+                </div>
+              </div>
+            </div>
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: isCompact
+                  ? "repeat(3, minmax(0, 1fr))"
+                  : "repeat(3, minmax(0, 1fr))",
+                gap: 8,
+              }}
+            >
+              {TRUST_SLIP_PURPOSE_OPTIONS.map((option) => {
+                const active = option.key === selectedTrustSlipPurpose;
+                const ButtonComponent = active ? PrimaryButton : SecondaryButton;
+                return (
+                  <ButtonComponent
+                    key={option.key}
+                    type="button"
+                    onClick={() => setSelectedTrustSlipPurpose(option.key)}
+                    stableHeight={isCompact ? 48 : 52}
+                    debugId={`trust-slip.purpose-select.${option.key}`}
+                    style={{
+                      padding: isCompact ? "8px 6px" : "9px 10px",
+                      fontSize: isCompact ? 10 : 12,
+                      lineHeight: 1.08,
+                    }}
+                  >
+                    {option.shortLabel}
+                  </ButtonComponent>
+                );
+              })}
+            </div>
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                gap: 8,
+              }}
+            >
+              {purposeEvidenceSelectionRows.map((row) => (
+                <div
+                  key={row.label}
+                  style={{
+                    borderRadius: 13,
+                    padding: isCompact ? "8px 9px" : "10px 11px",
+                    background: "#FFFFFF",
+                    border: "1px solid rgba(37,78,119,0.12)",
+                    minWidth: 0,
+                    display: "grid",
+                    gridTemplateColumns: "28px minmax(0, 1fr)",
+                    gap: 7,
+                    alignItems: "center",
+                  }}
+                >
+                  <GsnLegacyIcon name={row.icon} size={26} />
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ ...sectionLabel(), fontSize: isCompact ? 9 : 10 }}>
+                      {row.label}
+                    </div>
+                    <div
+                      style={{
+                        marginTop: 2,
+                        color: "#07172C",
+                        fontSize: isCompact ? 10 : 12,
+                        fontWeight: 950,
+                        lineHeight: 1.15,
+                      }}
+                    >
+                      {row.value}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
 
           <header
             style={{
@@ -3514,7 +3748,12 @@ export default function TrustSlipPage() {
                     full: identityRecordSummary || "Phone verified; community membership recorded",
                     icon: "id" as GsnIconName,
                   },
-                  { label: "Trust posture", value: merchantBandDisplay, icon: "certificate-seal" as GsnIconName },
+                  {
+                    label: "Evidence status",
+                    value: merchantBandHeroDisplay,
+                    full: merchantBandDisplay,
+                    icon: "certificate-seal" as GsnIconName,
+                  },
                   { label: "Community ID", value: communityRef, icon: "qr" as GsnIconName },
                   { label: "Issued", value: trustSlipIssuedLabel, icon: "calendar" as GsnIconName },
                   { label: "Expires", value: trustSlipExpiryLabel, icon: "refresh" as GsnIconName },
@@ -3950,7 +4189,7 @@ export default function TrustSlipPage() {
                 <span>{decisionSummaryText}</span>
               </div>
               {[
-                ["Trust posture", merchantBandDisplay],
+                ["Evidence status", merchantBandDisplay],
                 ["Trust-limit signal", `${merchantTrustLimit} ${merchantCurrency}`],
                 ["Evidence depth", trustSlipEvidenceLanguage.label],
               ].map(([label, value]) => (
@@ -4502,7 +4741,7 @@ export default function TrustSlipPage() {
               label="What this does"
               what="This portable reading summarizes the trust state that other people can verify from your current TrustSlip."
               why="It keeps the main public trust signals, document codes, and issue window visible in one place before you share or verify anything."
-              next="Read the trust posture, visible TrustSlip limit signal, cross-community consistency, and issue window here first, then use the TrustSlip code or verification link when needed."
+              next="Read the evidence status, visible TrustSlip limit signal, cross-community consistency, and issue window here first, then use the TrustSlip code or verification link when needed."
               tone="light"
               style={{ marginTop: 12 }}
             />
@@ -4516,7 +4755,7 @@ export default function TrustSlipPage() {
               }}
             >
               <div style={statTile()}>
-                <div style={sectionLabel()}>Trust posture</div>
+                <div style={sectionLabel()}>Evidence status</div>
                 <div
                   style={{
                     marginTop: 8,
@@ -4562,13 +4801,13 @@ export default function TrustSlipPage() {
                     lineHeight: 1.25,
                   }}
                 >
-                  {cciPosture.label}
+                  {cciEvidenceStatusLabel}
                 </div>
                 <div style={{ marginTop: 6, ...helperText(), fontSize: 12.5, lineHeight: 1.45 }}>
                   Detailed evidence index is available only in authorised review.
                 </div>
                 <div style={{ marginTop: 6, ...helperText(), fontSize: 12.5, lineHeight: 1.45 }}>
-                  {cciPosture.boundary}
+                  Evidence status is a public reading of available records. It is not a character judgement, guarantee, approval, or payment instruction.
                 </div>
               </div>
             </div>
@@ -5189,7 +5428,7 @@ export default function TrustSlipPage() {
 
               <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
                 <div style={helperText()}>
-                  Graph posture: {getContextualEvidencePosture(summary?.graph_score).shortLabel}
+                  Graph evidence: {publicEvidenceStatusLabel(summary?.graph_score)}
                 </div>
                 <div style={helperText()}>
                   Active community count: {countOrNotProvided(summary?.active_clan_count)}
@@ -5249,7 +5488,7 @@ export default function TrustSlipPage() {
                   Readiness: {safeStr(readinessContext?.recommendation || "Not stated")}
                 </div>
                 <div style={helperText()}>
-                  Readiness posture: {getContextualEvidencePosture(readinessContext?.readiness_score).shortLabel}
+                  Readiness evidence: {publicEvidenceStatusLabel(readinessContext?.readiness_score)}
                 </div>
                 <div style={helperText()}>
                   Risk flags: {riskSignalText}

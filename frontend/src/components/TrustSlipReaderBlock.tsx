@@ -1,7 +1,7 @@
 import React from "react";
 import TrustBandMeaningGuide from "./TrustBandMeaningGuide";
 import { StableCtaLink } from "./StableButton";
-import { getContextualEvidencePosture } from "../lib/trustBandLanguage";
+import { getTrustBandShortLabel } from "../lib/trustBandLanguage";
 
 type TrustSlipQuestion = {
   title: string;
@@ -51,6 +51,22 @@ function clean(value: unknown, fallback = ""): string {
 function countLabel(value: unknown, fallback = "Not shown"): string {
   const text = clean(value);
   return text || fallback;
+}
+
+function publicEvidenceStatusLabel(scoreOrBand: unknown, fallbackBand?: unknown): string {
+  const directBandLabel = getTrustBandShortLabel(scoreOrBand);
+  if (directBandLabel !== "Not shown") return directBandLabel;
+
+  const fallbackBandLabel = getTrustBandShortLabel(fallbackBand);
+  if (fallbackBandLabel !== "Not shown") return fallbackBandLabel;
+
+  const score = Number(scoreOrBand);
+  if (!Number.isFinite(score)) return "Evidence not shown";
+  if (score >= 80) return "Strong evidence";
+  if (score >= 60) return "Good evidence";
+  if (score >= 40) return "Mixed evidence";
+  if (score >= 20) return "Evidence building";
+  return "Insufficient evidence";
 }
 
 function dateLabel(value: unknown): string {
@@ -221,7 +237,7 @@ export default function TrustSlipReaderBlock({
   ]
     .filter(Boolean)
     .join(" ");
-  const cciPosture = getContextualEvidencePosture(cciScore, cciBand);
+  const consistencyEvidenceStatus = publicEvidenceStatusLabel(cciScore, cciBand);
 
   return (
     <section style={shell()}>
@@ -415,7 +431,7 @@ export default function TrustSlipReaderBlock({
               lineHeight: 1.2,
             }}
           >
-            {cciPosture.label}
+            {consistencyEvidenceStatus}
           </div>
           <div style={{ marginTop: 6, ...body(), color: "#64748B" }}>
             Detailed evidence index is available only in authorised review.
@@ -423,11 +439,11 @@ export default function TrustSlipReaderBlock({
           <div style={{ marginTop: 8, ...body() }}>
             {clean(
               cciMeaning,
-              cciPosture.plainMeaning
+              "This public reading summarizes available cross-community evidence. It is evidence for judgement, not a character score."
             )}
           </div>
           <div style={{ marginTop: 8, ...body(), color: "#7A5B00" }}>
-            {cciPosture.boundary}
+            Evidence status is not a credit approval, guarantee, payment instruction, or prediction of future behaviour.
           </div>
           <div style={{ marginTop: 8, ...body() }}>
             Trust-limit signal:{" "}

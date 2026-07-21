@@ -1,6 +1,6 @@
 # GSN Customer Discovery Organiser Send Package
 
-Last updated: 2026-07-09
+Last updated: 2026-07-19
 
 Use this after the Chris/RGU route is clear, or when an organiser is already willing to help open a community conversation. This is for securing honest discovery participants, not pitching GSN.
 
@@ -26,9 +26,34 @@ GSN_RGU_CHRIS_MULLEY_MEETING_BRIEF.md
 GSN_DISCOVERY_EVIDENCE_MEMO_TEMPLATE.md
 GSN_DISCOVERY_INTERVIEW_LOG_TEMPLATE.md
 GSN_WHITEPAPER_SEND_GUIDE.md
+product evidence screenshot packet
+raw screenshot files
 ```
 
 Those are internal or audience-specific materials.
+
+## Product Visuals Boundary
+
+Do not attach product screenshots or the product evidence packet to the first
+organiser message.
+
+If the organiser asks to see product visuals before agreeing to help, share only
+after completing:
+
+```text
+pilot_evidence_pack/12_product_evidence_capture/external_packet_send_ready_checklist.md
+```
+
+Frame any visuals as local synthetic product-path examples, not proof that the
+community should join, endorse, or pilot GSN.
+
+Use this boundary:
+
+```text
+These screenshots show a local synthetic product path for discussion. They do
+not prove traction, adoption, revenue, external validation, recipient trust,
+product-market fit, or validated safeguards at scale.
+```
 
 ## Subject
 
@@ -101,6 +126,7 @@ It is not a financial, lending, or credit decision.
 ```text
 [ ] The plain-language DOCX opens cleanly in Word or Google Docs.
 [ ] The attachment is the customer discovery copy, not the academic or investor copy.
+[ ] No product screenshot packet or raw screenshot file is attached.
 [ ] The email asks for honest participants, not supporters.
 [ ] The email does not imply RGU/community endorsement.
 [ ] The email does not promise a pilot.

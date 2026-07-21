@@ -4,7 +4,6 @@ import {
   publicFrontendUrl,
 } from "../../lib/publicLinks";
 import {
-  getContextualEvidencePosture,
   getTrustBandLanguage,
   getTrustBandShortLabel,
   getTrustEvidenceLanguage,
@@ -103,6 +102,14 @@ export type TrustSlipVerifyViewModel = {
   systemNote: string;
   verificationState: string;
   verificationNote: string;
+  recipientAccessRecord: {
+    recipientLabel: string;
+    purpose: string;
+    scope: string;
+    accessedAtLabel: string;
+    status: string;
+    note: string;
+  };
 };
 
 function safeStr(x: any): string {
@@ -177,7 +184,7 @@ export function buildTrustSlipVerifyViewModel({
     record?.cci_score === null || record?.cci_score === undefined
       ? ""
       : String(record.cci_score),
-    visibleScore === null ? "" : getContextualEvidencePosture(visibleScore, visibleBand).label
+    visibleScore === null ? "" : getTrustBandShortLabel(visibleBand)
   );
   const cciBand = firstTruthy(record?.cci_band, visibleBand);
   const sponsorCount = firstNumberLike(record?.sponsor_count);
@@ -331,6 +338,51 @@ export function buildTrustSlipVerifyViewModel({
     record?.status,
     "Not stated"
   );
+  const rawAccessRecord =
+    record?.recipient_access_record ||
+    record?.access_record ||
+    record?.share_access_record ||
+    record?.viewer_access_record ||
+    {};
+  const accessRecipientLabel = firstTruthy(
+    record?.access_recipient_label,
+    rawAccessRecord?.recipient_label,
+    rawAccessRecord?.recipient,
+    rawAccessRecord?.viewer_label,
+    "Recipient not named"
+  );
+  const accessPurpose = firstTruthy(
+    record?.access_purpose,
+    rawAccessRecord?.purpose,
+    rawAccessRecord?.share_purpose,
+    "Purpose not recorded"
+  );
+  const accessScope = firstTruthy(
+    record?.access_scope,
+    rawAccessRecord?.scope,
+    rawAccessRecord?.visibility_level,
+    record?.visibility_level,
+    "Public TrustSlip only"
+  );
+  const accessStatus = firstTruthy(
+    record?.access_status,
+    rawAccessRecord?.status,
+    resolvedCode ? "Public code opened" : "Not recorded"
+  );
+  const accessRecordedAtLabel =
+    safeDateTime(
+      firstTruthy(
+        record?.access_recorded_at,
+        rawAccessRecord?.accessed_at,
+        rawAccessRecord?.viewed_at,
+        rawAccessRecord?.last_accessed_at
+      )
+    ) || "Not shown";
+  const accessNote = firstTruthy(
+    record?.access_note,
+    rawAccessRecord?.note,
+    "This records the public TrustSlip view only. Private Trust Passport access remains separate."
+  );
   const hasBlockingState =
     record?.is_current === false ||
     record?.merchant_verify_active === false ||
@@ -346,22 +398,8 @@ export function buildTrustSlipVerifyViewModel({
   const evidenceLanguage = getTrustEvidenceLanguage(evidenceStatus, {
     lowData: lowDataReading,
   });
-  const contextualPosture = getContextualEvidencePosture(visibleScore, visibleBand);
-  const backendPublicPostureLabel = firstTruthy(
-    record?.cci_public_label,
-    cciExplainer?.public_label
-  );
-  const backendPublicPostureMeaning = firstTruthy(
-    record?.cci_public_meaning,
-    cciExplainer?.public_meaning
-  );
-  const backendPublicPostureBoundary = firstTruthy(
-    record?.cci_public_boundary,
-    cciExplainer?.public_boundary
-  );
   const publicEvidencePosture = lowDataReading
     ? {
-        ...contextualPosture,
         label: "Building history",
         plainMeaning:
           "This record is still building confirmed evidence. Use it as an early identity and community signal only.",
@@ -369,10 +407,10 @@ export function buildTrustSlipVerifyViewModel({
           "A thin record is not a bad record. Ask for recent events or live community confirmation before a serious decision.",
       }
     : {
-        ...contextualPosture,
-        label: backendPublicPostureLabel || contextualPosture.label,
-        plainMeaning: backendPublicPostureMeaning || contextualPosture.plainMeaning,
-        boundary: backendPublicPostureBoundary || contextualPosture.boundary,
+        label: evidenceLanguage.label,
+        plainMeaning: evidenceLanguage.plainMeaning,
+        boundary:
+          "Evidence status only. Guarantees, approvals, payment decisions, and character judgements remain separate decisions.",
       };
   const visibleBandMeaning = hasBlockingState
     ? "This public check needs a fresh or safer verification before anyone relies on it."
@@ -590,5 +628,13 @@ export function buildTrustSlipVerifyViewModel({
     systemNote: firstTruthy(record?.message, record?.detail),
     verificationState,
     verificationNote: firstTruthy(record?.verification_note, record?.disclaimer),
+    recipientAccessRecord: {
+      recipientLabel: accessRecipientLabel,
+      purpose: accessPurpose,
+      scope: accessScope,
+      accessedAtLabel: accessRecordedAtLabel,
+      status: accessStatus,
+      note: accessNote,
+    },
   };
 }

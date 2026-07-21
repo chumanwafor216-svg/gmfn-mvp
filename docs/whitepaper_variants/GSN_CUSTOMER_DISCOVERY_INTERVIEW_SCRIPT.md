@@ -1,6 +1,6 @@
 # GSN Customer Discovery Interview Script
 
-Last updated: 2026-07-09
+Last updated: 2026-07-19
 
 Use this with the plain-language customer discovery copy. It is for one-to-one interviews or small groups of 2-4 people. For a full room workshop, use the RGU community discovery session pack.
 
@@ -48,6 +48,26 @@ Do not explain GSN before asking this. Let the participant describe the world as
 ```
 
 If time is short, skip the app explanation and keep the current-process questions.
+
+## Product Visuals Boundary
+
+Do not lead the interview with screenshots or a product tour. Ask current-reality
+questions first so the participant names the problem, decision, evidence,
+privacy concern, and refusal point in their own words.
+
+If the participant asks to see the app after the current-reality questions, use
+only the local accepted product-path packet after the send-ready checklist has
+passed for that context. Frame it this way:
+
+```text
+These are local synthetic product-path screenshots for discussion. They show
+how the current product story can be explained, but they do not prove adoption,
+traction, revenue, external validation, recipient trust, product-market fit, or
+validated safeguards.
+```
+
+Record whether the participant reacted to the underlying problem or only to the
+visual polish. Interest in screenshots is not the same as pilot pull.
 
 ## 45-Minute Interview Flow
 
@@ -218,12 +238,12 @@ Pilot pull:
 [ ] weak
 [ ] none
 
-Reason for rating:
+Reason for signal:
 
 Next person to interview:
 ```
 
-## Signal Scoring
+## Signal Reading
 
 Strong signal:
 
@@ -287,6 +307,8 @@ Condition:
 - Do not say GSN will approve loans, trades, jobs, or membership.
 - Do not promise the privacy model is solved.
 - Do not hide the score/social-credit concern.
+- Do not treat a positive reaction to screenshots as validation of the problem,
+  use case, buyer, pilot, or safeguards.
 - Do not argue with the participant if they reject the idea.
 
 ## Devil's Advocate

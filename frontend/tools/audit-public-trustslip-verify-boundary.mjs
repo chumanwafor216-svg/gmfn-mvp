@@ -173,20 +173,20 @@ assertContains(
 
 assertContains(
   "publicPaper",
-  /const trustSlipConfirmsList = \[[\s\S]*?Public TrustSlip code status[\s\S]*?Visible evidence band and descriptive evidence posture[\s\S]*?Displayed holder and GSN ID from this paper[\s\S]*?Community label shown on this TrustSlip[\s\S]*?Verification path and QR destination when available[\s\S]*?\];/,
+  /const trustSlipConfirmsList = \[[\s\S]*?Public TrustSlip code status[\s\S]*?Visible evidence status and descriptive evidence boundary[\s\S]*?Displayed holder and GSN ID from this paper[\s\S]*?Community label shown on this TrustSlip[\s\S]*?Verification path and QR destination when available[\s\S]*?\];/,
   "Public TrustSlip paper must keep a clear 'this confirms' boundary list."
 );
 
 assertContains(
   "publicPaper",
-  /Evidence posture[\s\S]*?\{publicEvidencePosture\}[\s\S]*?\{publicEvidencePostureMeaning\}[\s\S]*?\{publicEvidencePostureBoundary\}/,
-  "Public TrustSlip paper must translate numeric readings into descriptive evidence posture before outsider readers see them."
+  /Evidence boundary[\s\S]*?\{publicEvidencePosture\}[\s\S]*?\{publicEvidencePostureMeaning\}[\s\S]*?\{publicEvidencePostureBoundary\}/,
+  "Public TrustSlip paper must translate numeric readings into descriptive evidence-status language before outsider readers see them."
 );
 
 assertContains(
   "backend",
   /"cci_public_label": cci_public_label[\s\S]*?"cci_public_meaning": cci_public_meaning[\s\S]*?"cci_public_boundary": cci_public_boundary/,
-  "Backend public TrustSlip payload must expose descriptive CCI posture fields."
+  "Backend public TrustSlip payload must expose descriptive CCI public-reading fields."
 );
 
 assertContains(

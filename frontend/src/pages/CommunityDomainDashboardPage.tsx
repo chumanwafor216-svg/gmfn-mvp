@@ -1475,6 +1475,19 @@ function cleanText(value: unknown, fallback = ""): string {
   return text || fallback;
 }
 
+function subjectReferenceLabel(item: any): string {
+  const safeReference = cleanText(
+    item?.subject_public_reference ||
+      item?.subject_reference ||
+      item?.subject_display_name ||
+      item?.subject_user_display_name ||
+      item?.subject_profile?.display_name ||
+      item?.subject_profile?.gmfn_id
+  );
+  if (safeReference) return safeReference;
+  return `Subject ${cleanText(item?.subject_user_id, "not shown")}`;
+}
+
 function communityLinkClanId(row: any): number {
   return Number(row?.id || row?.clan_id || row?.community_id || 0);
 }
@@ -2131,13 +2144,13 @@ function pageShell(): React.CSSProperties {
 
 function heroCard(): React.CSSProperties {
   return {
-    borderRadius: 26,
+    borderRadius: 24,
     background:
       "radial-gradient(circle at 88% 10%, rgba(214,170,69,0.16) 0%, rgba(214,170,69,0.00) 30%), linear-gradient(180deg, #071424 0%, #0D2640 54%, #173A5C 100%)",
     border: "1px solid rgba(214,228,242,0.16)",
     boxShadow:
       "0 26px 56px rgba(2,12,27,0.24), inset 0 1px 0 rgba(255,255,255,0.06)",
-    padding: 18,
+    padding: 14,
     color: "#F8FBFF",
     overflow: "hidden",
   };
@@ -2262,9 +2275,9 @@ function commandLaneCard(kind: "primary" | "secondary" = "secondary"): React.CSS
       ? "linear-gradient(180deg, rgba(240,247,255,0.98) 0%, rgba(248,251,255,0.995) 100%)"
       : "linear-gradient(180deg, rgba(255,255,255,0.995) 0%, rgba(246,249,252,0.98) 100%)",
     boxShadow: primary ? "0 14px 28px rgba(12,79,168,0.08)" : "none",
-    padding: 12,
+    padding: 10,
     display: "grid",
-    gap: 10,
+    gap: 8,
   };
 }
 
@@ -2308,15 +2321,15 @@ function billingInputStyle(): React.CSSProperties {
 
 function factTile(): React.CSSProperties {
   return {
-    borderRadius: 999,
+    borderRadius: 18,
     background: "rgba(255,255,255,0.08)",
     border: "1px solid rgba(214,228,242,0.16)",
-    padding: "8px 10px",
-    minHeight: 42,
+    padding: "5px 8px",
+    minHeight: 30,
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
-    gap: 10,
+    gap: 8,
     minWidth: 0,
   };
 }
@@ -7009,7 +7022,10 @@ export default function CommunityDomainDashboardPage() {
 
       {!loading && communityDomainId && dashboard ? (
         <>
-          <section style={heroCard()}>
+          <section
+            data-debug-id="community-domain-dashboard.identity-hero"
+            style={heroCard()}
+          >
             <div
               style={{
                 display: "grid",
@@ -7023,7 +7039,7 @@ export default function CommunityDomainDashboardPage() {
                 <h1
                   style={{
                     margin: 0,
-                    fontSize: "clamp(28px, 5vw, 46px)",
+                    fontSize: 28,
                     lineHeight: 1.02,
                     fontWeight: 950,
                     letterSpacing: 0,
@@ -7032,15 +7048,15 @@ export default function CommunityDomainDashboardPage() {
                 >
                   {cleanText(domain.display_name, "Community Domain")}
                 </h1>
-                <div style={helperText(true)}>
+                  <div style={{ ...helperText(true), fontSize: 13, lineHeight: 1.35 }}>
                   Domain code: <strong>{cleanText(domain.domain_name, "not recorded")}</strong>
                 </div>
               </div>
               <div
                 style={{
-                  width: 76,
-                  height: 76,
-                  borderRadius: 24,
+                  width: 48,
+                  height: 48,
+                  borderRadius: 18,
                   display: "grid",
                   placeItems: "center",
                   background:
@@ -7049,7 +7065,7 @@ export default function CommunityDomainDashboardPage() {
                   boxShadow: "0 16px 30px rgba(0,8,18,0.22)",
                 }}
               >
-                <GsnRealisticIcon name="community-building" size={62} decorative />
+                <GsnRealisticIcon name="community-building" size={40} decorative />
               </div>
             </div>
 
@@ -7057,8 +7073,8 @@ export default function CommunityDomainDashboardPage() {
               style={{
                 display: "flex",
                 flexWrap: "wrap",
-                gap: 8,
-                marginTop: 14,
+                  gap: 6,
+                  marginTop: 10,
               }}
             >
               {[
@@ -7070,7 +7086,7 @@ export default function CommunityDomainDashboardPage() {
               ].map(([label, value]) => (
                 <div key={label} style={factTile()}>
                   <div style={sectionLabel(true)}>{label}</div>
-                  <div style={{ color: "#FFFFFF", fontSize: 14, fontWeight: 950, textTransform: "capitalize" }}>
+                  <div style={{ color: "#FFFFFF", fontSize: 12, fontWeight: 950, textTransform: "capitalize" }}>
                     {value}
                   </div>
                 </div>
@@ -7085,14 +7101,14 @@ export default function CommunityDomainDashboardPage() {
                   gridTemplateColumns:
                     "repeat(auto-fit, minmax(min(100%, 138px), 1fr))",
                   gap: 8,
-                  marginTop: 12,
+                  marginTop: 10,
                 }}
               >
                 <StableButton
                   type="button"
                   kind="secondary"
                   fullWidth
-                  stableHeight={40}
+                  stableHeight={34}
                   debugId="community-domain-dashboard.nav.dashboard"
                   style={{ fontSize: 13, borderColor: "rgba(255,255,255,0.28)" }}
                   onClick={openMemberDashboard}
@@ -7103,7 +7119,7 @@ export default function CommunityDomainDashboardPage() {
                   type="button"
                   kind="secondary"
                   fullWidth
-                  stableHeight={40}
+                  stableHeight={34}
                   debugId="community-domain-dashboard.nav.community-home"
                   style={{ fontSize: 13, borderColor: "rgba(255,255,255,0.28)" }}
                   onClick={openDomainCommunityHome}
@@ -7117,21 +7133,22 @@ export default function CommunityDomainDashboardPage() {
           <section
             ref={commandSurfaceRef}
             id="community-domain-official-board"
+            data-debug-id="community-domain-dashboard.command-surface"
             style={whiteCard()}
           >
             <div style={{ display: "grid", gap: 12 }}>
               <div style={iconHeaderStyle()}>
-                <span style={iconFrame(54)}>
-                  <GsnRealisticIcon name="records-folder" size={42} decorative />
+                  <span style={iconFrame(46)}>
+                  <GsnRealisticIcon name="records-folder" size={36} decorative />
                 </span>
                 <div style={{ minWidth: 0 }}>
                   <div style={sectionLabel()}>
                     Domain command
                   </div>
-                  <h2 style={{ margin: "6px 0 0", fontSize: 24, lineHeight: 1.12 }}>
+                  <h2 style={{ margin: "4px 0 0", fontSize: 22, lineHeight: 1.08 }}>
                     {operatingStateCopy.heading}
                   </h2>
-                  <div style={{ ...helperText(), marginTop: 8 }}>
+                  <div style={{ ...helperText(), marginTop: 6, fontSize: 13, lineHeight: 1.42 }}>
                     {domainOperational
                       ? "Run one operating area at a time. Setup stays quiet unless details or evidence need attention."
                       : "Complete the next setup step. Billing, activation, and verification stay separate."}
@@ -7140,7 +7157,10 @@ export default function CommunityDomainDashboardPage() {
               </div>
               {domainOperational ? (
                 <div style={{ display: "grid", gap: 10 }}>
-                  <div style={commandLaneCard("primary")}>
+                  <div
+                    data-debug-id="community-domain-dashboard.daily-work-card"
+                    style={commandLaneCard("primary")}
+                  >
                     <div style={sectionLabel()}>Daily Work</div>
                     <div style={{ ...helperText(), fontSize: 13, lineHeight: 1.45 }}>
                       Open one live area. Finish the action. Return here.
@@ -7149,39 +7169,52 @@ export default function CommunityDomainDashboardPage() {
                       type="button"
                       kind="primary"
                       fullWidth
+                      stableHeight={44}
                       debugId="community-domain-dashboard.open-marketplace"
                       onClick={openDomainMarketplace}
                     >
                       Open Marketplace
                     </StableButton>
-                    <StableButton
-                      type="button"
-                      kind="secondary"
-                      fullWidth
-                      debugId="community-domain-dashboard.operational-focus"
-                      onClick={() => {
-                        focusWorkSurfaceAfterOpenRef.current = true;
-                        setSetupWorkspaceOpen(false);
-                        openDailyWorkLane();
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                        gap: 8,
                       }}
                     >
-                      Open {operationalLaneLabel}
-                    </StableButton>
-                    {isAdmin ? (
                       <StableButton
                         type="button"
                         kind="secondary"
                         fullWidth
-                        stableHeight={46}
-                        debugId="community-domain-dashboard.real-life-record-shortcut"
-                        onClick={() => openRealLifeRecordTask("activity")}
+                        stableHeight={40}
+                        debugId="community-domain-dashboard.operational-focus"
+                        onClick={() => {
+                          focusWorkSurfaceAfterOpenRef.current = true;
+                          setSetupWorkspaceOpen(false);
+                          openDailyWorkLane();
+                        }}
                       >
-                        Record activity
+                        Open {operationalLaneLabel}
                       </StableButton>
-                    ) : null}
+                      {isAdmin ? (
+                        <StableButton
+                          type="button"
+                          kind="secondary"
+                          fullWidth
+                          stableHeight={40}
+                          debugId="community-domain-dashboard.real-life-record-shortcut"
+                          onClick={() => openRealLifeRecordTask("activity")}
+                        >
+                          Record activity
+                        </StableButton>
+                      ) : null}
+                    </div>
                   </div>
                   <div style={commandLaneGrid()}>
-                    <div style={commandLaneCard()}>
+                    <div
+                      data-debug-id="community-domain-dashboard.governance-card"
+                      style={commandLaneCard()}
+                    >
                       <div style={sectionLabel()}>Governance</div>
                       <div style={{ ...helperText(), fontSize: 13, lineHeight: 1.45 }}>
                         Rules, approvals, and evidence checks.
@@ -12988,6 +13021,99 @@ export default function CommunityDomainDashboardPage() {
                           </div>
                         </div>
 
+                        {activeActivityRecordTask === "record" &&
+                        activeActivityRecordStage === "activity" ? (
+                          <div
+                            data-debug-id="community-domain-dashboard.source-activity-draft-summary"
+                            style={{
+                              display: "grid",
+                              gridTemplateColumns:
+                                "repeat(auto-fit, minmax(min(100%, 132px), 1fr))",
+                              gap: 8,
+                            }}
+                          >
+                            {[
+                              [
+                                "Source activity",
+                                cleanText(
+                                  activityDraft.activity_label,
+                                  "No activity label selected yet"
+                                ),
+                              ],
+                              ["Evidence state", "Draft only"],
+                              ["Confirmation", "Not requested yet"],
+                              ["Boundary", "Not confirmed evidence"],
+                            ].map(([label, value]) => (
+                              <div
+                                key={label}
+                                style={{
+                                  borderRadius: 12,
+                                  border: "1px solid rgba(9,27,46,0.1)",
+                                  background: "#FFFFFF",
+                                  padding: "9px 10px",
+                                  minWidth: 0,
+                                }}
+                              >
+                                <div style={{ ...sectionLabel(), fontSize: 10 }}>
+                                  {label}
+                                </div>
+                                <div
+                                  style={{
+                                    color: "#091B2E",
+                                    fontSize: 13,
+                                    fontWeight: 900,
+                                    lineHeight: 1.2,
+                                    overflowWrap: "anywhere",
+                                  }}
+                                >
+                                  {value}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : null}
+
+                        {activeActivityRecordTask === "recent" ? (
+                          activityRows.length ? (
+                            <div
+                              data-debug-id="community-domain-dashboard.activity-recent-records"
+                              style={{ display: "grid", gap: 8 }}
+                            >
+                              <div style={sectionLabel()}>Recent records</div>
+                              <div style={{ ...helperText(), fontSize: 13 }}>
+                                Recorded activity evidence is kept separate from confirmation and beneficiary outcome proof.
+                              </div>
+                              {activityRows.slice(0, 5).map((item) => (
+                                <div
+                                  key={cleanText(item?.event_id)}
+                                  style={{
+                                    display: "flex",
+                                    flexWrap: "wrap",
+                                    gap: 8,
+                                    alignItems: "center",
+                                    padding: "8px 0",
+                                    borderTop: "1px solid rgba(9,27,46,0.1)",
+                                  }}
+                                >
+                                  <strong style={{ color: "#091B2E", fontSize: 14 }}>
+                                    {cleanText(item?.activity_label, item?.activity_type)}
+                                  </strong>
+                                  <span style={statusBadge(item?.evidence_strength)}>
+                                    {compactStatus(item?.evidence_strength)}
+                                  </span>
+                                  <span style={statusBadge("subject")}>
+                                    {subjectReferenceLabel(item)}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div style={helperText()}>
+                              No activity records are loaded for this Community Domain yet.
+                            </div>
+                          )
+                        ) : null}
+
                         <div style={{ ...helperText(), fontSize: 13 }}>
                           Current activity view:{" "}
                           <strong>{activeActivityRecordTaskOption.label}</strong>.{" "}
@@ -13225,7 +13351,7 @@ export default function CommunityDomainDashboardPage() {
                                       )
                                     }
                                     placeholder="Activity label"
-                                    style={billingInputStyle()}
+                                    style={{ ...billingInputStyle(), fontSize: 14 }}
                                   />
                                   <input
                                     value={activityDraft.quantity}
@@ -13369,40 +13495,6 @@ export default function CommunityDomainDashboardPage() {
                           </div>
                         ) : null}
 
-                        {activeActivityRecordTask === "recent" ? (
-                          activityRows.length ? (
-                          <div style={{ display: "grid", gap: 8 }}>
-                            <div style={sectionLabel()}>Recent records</div>
-                            {activityRows.slice(0, 5).map((item) => (
-                              <div
-                                key={cleanText(item?.event_id)}
-                                style={{
-                                  display: "flex",
-                                  flexWrap: "wrap",
-                                  gap: 8,
-                                  alignItems: "center",
-                                  padding: "8px 0",
-                                  borderTop: "1px solid rgba(9,27,46,0.1)",
-                                }}
-                              >
-                                <strong style={{ color: "#091B2E", fontSize: 14 }}>
-                                  {cleanText(item?.activity_label, item?.activity_type)}
-                                </strong>
-                                <span style={statusBadge(item?.evidence_strength)}>
-                                  {compactStatus(item?.evidence_strength)}
-                                </span>
-                                <span style={statusBadge("subject")}>
-                                  Subject {cleanText(item?.subject_user_id)}
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                          ) : (
-                          <div style={helperText()}>
-                            No activity records are loaded for this Community Domain yet.
-                          </div>
-                          )
-                        ) : null}
                       </div>
                       ) : null}
 
@@ -14107,6 +14199,32 @@ export default function CommunityDomainDashboardPage() {
                                     : localDeliveryPack && !latestDeliveryPreparation
                                       ? "GSN has prepared local delivery text in this session only."
                                       : "Use Confirm to create the private confirmation link and delivery text first.";
+                              const outcomePrivacyLabel = cleanText(
+                                item?.privacy_position ||
+                                  item?.privacy_status ||
+                                  item?.visibility,
+                                "Private by default"
+                              );
+                              const outcomeChallengeLabel = compactStatus(
+                                latestResponse?.challenge_status ||
+                                  item?.challenge_status ||
+                                  "No challenge recorded"
+                              );
+                              const outcomeCurrentnessLabel = cleanText(
+                                item?.currentness_label ||
+                                  item?.review_currentness_label ||
+                                  (item?.follow_up_due_at
+                                    ? `Review due ${noticeDateLabel(
+                                        item?.follow_up_due_at
+                                      )}`
+                                    : ""),
+                                "Current window"
+                              );
+                              const outcomeConsentLabel = compactStatus(
+                                contactConsentStatus?.status ||
+                                  latestContactConsent?.consent_basis ||
+                                  "Not recorded"
+                              );
                               return (
                               <div
                                 key={outcomeEventId}
@@ -14138,7 +14256,7 @@ export default function CommunityDomainDashboardPage() {
                                     {compactStatus(item?.beneficiary_confirmation)}
                                   </span>
                                   <span style={statusBadge("subject")}>
-                                    Subject {cleanText(item?.subject_user_id)}
+                                    {subjectReferenceLabel(item)}
                                   </span>
                                   {latestResponse ? (
                                     <span
@@ -14204,6 +14322,47 @@ export default function CommunityDomainDashboardPage() {
                                   {cleanText(item?.baseline_value, "Baseline not shown")}
                                   {" -> "}
                                   {cleanText(item?.after_value, "After value not shown")}
+                                </div>
+                                <div
+                                  data-debug-id="community-domain-dashboard.beneficiary-outcome-privacy-currentness-summary"
+                                  style={{
+                                    display: "grid",
+                                    gridTemplateColumns:
+                                      "repeat(auto-fit, minmax(min(100%, 132px), 1fr))",
+                                    gap: 8,
+                                  }}
+                                >
+                                  {[
+                                    ["Privacy", outcomePrivacyLabel],
+                                    ["Challenge", outcomeChallengeLabel],
+                                    ["Currentness", outcomeCurrentnessLabel],
+                                    ["Consent", outcomeConsentLabel],
+                                  ].map(([label, value]) => (
+                                    <div
+                                      key={label}
+                                      style={{
+                                        border: "1px solid rgba(9,27,46,0.1)",
+                                        borderRadius: 16,
+                                        padding: "8px 10px",
+                                        background: "rgba(255,255,255,0.76)",
+                                        minWidth: 0,
+                                      }}
+                                    >
+                                      <div style={{ ...sectionLabel(), fontSize: 11 }}>
+                                        {label}
+                                      </div>
+                                      <div
+                                        style={{
+                                          color: "#091B2E",
+                                          fontSize: 13,
+                                          fontWeight: 900,
+                                          lineHeight: 1.25,
+                                        }}
+                                      >
+                                        {value}
+                                      </div>
+                                    </div>
+                                  ))}
                                 </div>
                                 <div style={{ display: "grid", gap: 8 }}>
                                   <div style={{ ...helperText(), fontSize: 13 }}>

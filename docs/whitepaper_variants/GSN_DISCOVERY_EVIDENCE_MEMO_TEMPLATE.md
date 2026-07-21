@@ -1,6 +1,6 @@
 # GSN Discovery Evidence Memo Template
 
-Last updated: 2026-07-09
+Last updated: 2026-07-19
 
 Use this after the first 5-10 interviews or after one structured discovery session. The purpose is to separate evidence from excitement.
 
@@ -100,6 +100,7 @@ Who sees it happen:
 Who confirms it:
 Who controls it:
 Who can see it later:
+Can people refuse or withdraw sharing:
 Why it matters:
 ```
 
@@ -133,9 +134,14 @@ Who can challenge or correct a record?
 What happens if a leader/officer is wrong?
 
 What happens if someone refuses to share?
+
+What happens if someone first agrees, then withdraws or narrows permission?
+
+How should a reader see that evidence is challenged, corrected, expired,
+withdrawn, revoked, or stale?
 ```
 
-Risk rating:
+Risk level:
 
 ```text
 [ ] Low - participants saw a workable authority model.
@@ -192,7 +198,7 @@ What must change before a pilot:
 
 ```
 
-## Pilot Pull Rating
+## Pilot Pull Reading
 
 ```text
 [ ] Green - credible first pilot candidate
@@ -206,7 +212,7 @@ Reason:
 
 ```
 
-## Investor Readiness Rating
+## Investor Readiness Reading
 
 ```text
 [ ] Not ready - discovery still too vague
@@ -216,6 +222,9 @@ Reason:
 ```
 
 Do not mark the last option unless there is real pilot or commercial evidence.
+Accepted local product-path screenshots may support explanation, but they do
+not count as discovery evidence, pilot evidence, commercial proof, recipient
+trust, or validated safeguards.
 
 ## What To Tell Chris/RGU
 

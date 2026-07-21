@@ -33,6 +33,7 @@ For Marketplace page-composition work specifically, also read:
 For innovation-case, investor, policy, TrustSlip, merchant-verification, or
 development-finance explanation work, also read:
 
+- `docs/GSN_ENDORSEMENT_READINESS_AUDIT.md`
 - `docs/INNOVATION_POLICY_LOGIC_2026-04-20.md`
 
 For Trust Event, Trust Passport, TrustSlip, Community Domain settings,

@@ -81,6 +81,7 @@ function supportDisplayText(value: unknown, fallback = "-"): string {
   const text = String(value ?? "").trim();
   if (!text) return fallback;
   return text
+    .replace(/_/g, " ")
     .replace(/Guarantors/g, "Supporters")
     .replace(/guarantors/g, "supporters")
     .replace(/Guarantor/g, "Supporter")
@@ -397,6 +398,7 @@ export default function TrustTimelinePage() {
   }, [loadAll]);
 
   const lastChange = scoreExplained?.last_change || null;
+  const latestEvent = items[0] || null;
 
   const totals = useMemo(() => {
     let pos = 0;
@@ -612,6 +614,65 @@ export default function TrustTimelinePage() {
           subtitle="Signed-in GSN evidence timeline"
         />
         <div style={{ padding: "0 18px 18px", display: "grid", gap: 14 }}>
+          <div
+            data-debug-id="trust-timeline.latest-event-context"
+            style={{
+              ...innerCard("#F8FAFC"),
+              display: "grid",
+              gap: 10,
+            }}
+          >
+            <div style={sectionLabel()}>Latest event context</div>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 132px), 1fr))",
+                gap: 8,
+              }}
+            >
+              {[
+                ["When", fmtWhen(latestEvent?.created_at || lastChange?.created_at)],
+                [
+                  "Signal",
+                  supportDisplayText(
+                    latestEvent?.event_type || lastChange?.event_type || lastChange?.source
+                  ),
+                ],
+                ["Label", supportDisplayText(latestEvent?.label || lastChange?.reason)],
+                ["Status", latestEvent ? "Pending review" : loading ? "Loading" : "Not shown"],
+              ].map(([label, value]) => (
+                <div
+                  key={label}
+                  style={{
+                    borderRadius: 12,
+                    border: "1px solid rgba(15,23,42,0.08)",
+                    background: "#FFFFFF",
+                    padding: "9px 10px",
+                    minWidth: 0,
+                  }}
+                >
+                  <div style={{ ...sectionLabel(), fontSize: 10 }}>{label}</div>
+                  <div
+                    style={{
+                      color: "#091B2E",
+                      fontSize: 13,
+                      fontWeight: 900,
+                      lineHeight: 1.2,
+                      overflowWrap: "anywhere",
+                    }}
+                  >
+                    {value}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div style={{ ...helperText(), fontSize: 13 }}>
+              {supportDisplayText(
+                latestEvent?.note || latestEvent?.reason || lastChange?.note,
+                "This timeline records visible evidence only. It does not prove payment, release authority, or future behaviour."
+              )}
+            </div>
+          </div>
           <TrustDocumentConfidenceRibbon items={trustTimelineConfidenceRibbonItems} />
           <div
             style={{
@@ -782,8 +843,8 @@ export default function TrustTimelinePage() {
           >
             Follow events are attention records. They help you remember the
             communities and shops you want to keep close, but they do not prove
-            membership, endorsement, verification, payment evidence, or evidence
-            posture growth.
+            membership, endorsement, verification, payment evidence, or trust-score
+            growth.
           </div>
           {loading ? (
             <div style={helperText()}>Loading...</div>
