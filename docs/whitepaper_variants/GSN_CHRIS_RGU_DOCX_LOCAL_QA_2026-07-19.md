@@ -1,6 +1,6 @@
 # GSN Chris/RGU DOCX Local QA
 
-Last updated: 2026-07-19
+Last updated: 2026-07-21
 
 File reviewed:
 
@@ -37,6 +37,7 @@ Confirmed by local DOCX package inspection:
 - Footnotes part is absent.
 - Endnotes part is absent.
 - Standard `docProps` metadata parts are absent.
+- 2026-07-21 re-check: tracked-change insertion/deletion markers are absent.
 
 ## Local Text Review
 
@@ -80,12 +81,23 @@ guarantees trust
 
 ## Render Attempt
 
-The Documents skill render path could not complete in this environment:
+The Documents skill render path could not complete in this environment.
 
-- `render_docx.py` failed because the default Python environment is missing
+2026-07-19 result:
+
+- `render_docx.py` failed because the default Python environment was missing
   `pdf2image`.
 - `soffice` / LibreOffice was not available on PATH.
 - `pdftoppm` was not available on PATH.
+
+2026-07-21 re-check:
+
+- `render_docx.py` still fails because `pdf2image` is not installed in the
+  active Python environment.
+- `soffice`, `libreoffice`, `pdftoppm`, and `pandoc` are not available on PATH.
+- Microsoft Word COM automation was probed as a possible fallback, but it hung
+  and left a `WINWORD` process. That process was closed. Do not rely on Word COM
+  automation as a quiet local render path in this environment.
 
 This means no page PNGs were produced and no visual layout pass was completed.
 

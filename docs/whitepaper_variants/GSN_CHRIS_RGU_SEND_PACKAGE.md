@@ -4,6 +4,17 @@ Last updated: 2026-07-19
 
 Use this for the first external move to Chris Mulley. This is the cleanest immediate send path.
 
+## Current QA Status
+
+As of 2026-07-21, local structural QA for the attachment is clean, but local
+visual DOCX rendering still could not be completed in this environment. Do not
+send the attachment blind.
+
+Before sending, open the exact DOCX in Word or Google Docs and complete the
+ten-minute pre-send check below. If there is any repair warning, broken layout,
+awkward blank page, compressed text, or rough first page, hold the attachment
+and send a shorter email asking for a conversation instead.
+
 ## Send Goal
 
 Ask Chris for academic/customer-discovery guidance.
