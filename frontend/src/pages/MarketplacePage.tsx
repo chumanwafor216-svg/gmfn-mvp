@@ -49,6 +49,7 @@ import {
   createLoanRequest,
   createProtectedTrade,
   addProtectedTradeEvent,
+  getDailyInsight,
   getCommunityPackageStatus,
   getMarketplaceRepostTargetSuggestions,
   getMarketplaceShopSpotlightStatus,
@@ -80,6 +81,7 @@ import {
   listMyLoans,
   createCommunityNotice,
   updateCommunityNoticeSettings,
+  recordMarketWisdomExposure,
   safeCopy,
   type ClanInviteRelationshipEvidencePayload,
   type ProtectedTradeRecord,
@@ -102,6 +104,10 @@ import {
   scrollElementToMarketplaceLanding,
   traceMarketplaceLanding,
 } from "../lib/marketplaceActionStability";
+import {
+  marketWisdomPairFromDailyInsight,
+  type MarketWisdomPair,
+} from "../lib/marketWisdom";
 import { getContextualEvidencePosture } from "../lib/trustBandLanguage";
 
 type CommunityRow = {
@@ -539,6 +545,16 @@ type SectionState = {
   support: boolean;
 };
 
+type MarketplaceWisdomAction = {
+  key: keyof SectionState;
+  sectionId: string;
+  label: string;
+  detail: string;
+  glyph: MarketplaceGlyphName;
+  color: string;
+  background: string;
+};
+
 type SupportDeskMode = "choices" | "loan";
 
 type LinkCenterTool =
@@ -613,6 +629,18 @@ const DEFAULT_SECTION_STATE: SectionState = {
   trade: false,
   demand: false,
   support: false,
+};
+
+const MARKETPLACE_WISDOM_FALLBACK: MarketWisdomPair = {
+  id: "mw-marketplace-lens-fallback",
+  title: "Trust Before Trade",
+  proverb: "Before people buy, make the record easy to read.",
+  gmfn:
+    "Use one marketplace action to reduce uncertainty before the next conversation starts.",
+  category: "trade",
+  tone: "focus",
+  priority: 8,
+  actionPrompt: "Open one trade, shop, demand, or support lane and complete the clearest record.",
 };
 
 const MARKETPLACE_SECTION_ANCHORS: Record<keyof SectionState, string> = {
@@ -838,6 +866,193 @@ const WITHDRAWAL_TASK_STORAGE_KEY_PREFIXES = [
 
 function safeStr(x: any): string {
   return String(x ?? "").trim();
+}
+
+function safeTextParts(...values: any[]): string {
+  return values
+    .flatMap((value) => (Array.isArray(value) ? value : [value]))
+    .map((value) => safeStr(value).toLowerCase())
+    .filter(Boolean)
+    .join(" ");
+}
+
+function isMarketplaceRelevantWisdom(raw: any, pair: MarketWisdomPair): boolean {
+  const text = safeTextParts(
+    raw?.context_tags,
+    raw?.audience_tags,
+    raw?.related_gsn_modules,
+    raw?.category,
+    raw?.subcategory,
+    raw?.title,
+    raw?.short_message,
+    raw?.action_prompt,
+    pair.category,
+    pair.title,
+    pair.proverb
+  );
+
+  return [
+    "market",
+    "shop",
+    "trade",
+    "merchant",
+    "buyer",
+    "customer",
+    "delivery",
+    "service",
+    "demand",
+    "opportunity",
+    "spotlight",
+    "marketing",
+    "repost",
+    "loan",
+    "support",
+    "rosca",
+    "savings",
+    "contribution",
+  ].some((word) => text.includes(word));
+}
+
+function marketplaceWisdomActionFor(
+  raw: any,
+  pair: MarketWisdomPair,
+  opts: {
+    hasVisibleProducts: boolean;
+    hasVisibleShops: boolean;
+    hasActiveSupport: boolean;
+    hasRosca: boolean;
+  }
+): MarketplaceWisdomAction {
+  const text = safeTextParts(
+    raw?.context_tags,
+    raw?.audience_tags,
+    raw?.related_gsn_modules,
+    raw?.category,
+    raw?.subcategory,
+    raw?.title,
+    raw?.short_message,
+    raw?.action_prompt,
+    pair.category,
+    pair.title,
+    pair.proverb,
+    pair.actionPrompt
+  );
+
+  const makeAction = (
+    key: keyof SectionState,
+    sectionId: string,
+    label: string,
+    detail: string,
+    glyph: MarketplaceGlyphName,
+    color: string,
+    background: string
+  ): MarketplaceWisdomAction => ({
+    key,
+    sectionId,
+    label,
+    detail,
+    glyph,
+    color,
+    background,
+  });
+
+  if (
+    text.includes("support") ||
+    text.includes("loan") ||
+    opts.hasActiveSupport
+  ) {
+    return makeAction(
+      "support",
+      "marketplace-loans-support",
+      "Open Support",
+      "Use the support lane to make the need, amount, and backing evidence clear.",
+      "support",
+      "#1D6D46",
+      "#E5F4EC"
+    );
+  }
+
+  if (
+    text.includes("rosca") ||
+    text.includes("savings") ||
+    text.includes("contribution") ||
+    opts.hasRosca
+  ) {
+    return makeAction(
+      "rosca",
+      "marketplace-rosca",
+      "Open ROSCA",
+      "Keep contribution members, timing, and payout records explicit.",
+      "rosca",
+      "#805A0F",
+      "#F7EED8"
+    );
+  }
+
+  if (
+    text.includes("demand") ||
+    text.includes("buyer") ||
+    text.includes("request") ||
+    text.includes("opportunity")
+  ) {
+    return makeAction(
+      "demand",
+      "marketplace-demand-box",
+      "Open Demand Box",
+      "Turn the market need into one clear local request or offer.",
+      "demand",
+      "#8A5A08",
+      "#FFF4D7"
+    );
+  }
+
+  if (
+    text.includes("trade") ||
+    text.includes("delivery") ||
+    text.includes("dispute") ||
+    text.includes("negotiation")
+  ) {
+    return makeAction(
+      "trade",
+      "marketplace-trade-evidence",
+      "Open Trade Evidence",
+      "Record the item, agreement, and outcome before the story becomes unclear.",
+      "trade",
+      "#0B4EA2",
+      "#E7F1FE"
+    );
+  }
+
+  if (
+    text.includes("shop") ||
+    text.includes("merchant") ||
+    text.includes("customer") ||
+    text.includes("spotlight") ||
+    text.includes("marketing") ||
+    text.includes("repost") ||
+    opts.hasVisibleProducts ||
+    opts.hasVisibleShops
+  ) {
+    return makeAction(
+      "tools",
+      "marketplace-owned-links",
+      "Open Shop Tools",
+      "Use shop, link, or repost tools to make the marketplace offer easier to trust.",
+      "shop",
+      "#805A0F",
+      "#F7EED8"
+    );
+  }
+
+  return makeAction(
+    "members",
+    "marketplace-members-shops",
+    "View Members & Shops",
+    "Read the visible members and shops before choosing the next marketplace move.",
+    "members",
+    "#173750",
+    "#EEF3F7"
+  );
 }
 
 function firstTruthy(...values: any[]): string {
@@ -4450,6 +4665,11 @@ export default function MarketplacePage() {
   const [poolInfo, setPoolInfo] = useState<any>(null);
   const [marketplaceTrust, setMarketplaceTrust] = useState<any>(null);
   const [trustSlip, setTrustSlip] = useState<any>(null);
+  const [marketplaceWisdom, setMarketplaceWisdom] = useState<{
+    raw: any;
+    pair: MarketWisdomPair;
+    fallback: boolean;
+  } | null>(null);
   const [marketplaceNotices, setMarketplaceNotices] = useState<MarketplaceNoticeItem[]>([]);
   const [marketplaceNoticesLoading, setMarketplaceNoticesLoading] = useState(false);
   const [marketplaceNoticePostingPolicy, setMarketplaceNoticePostingPolicy] =
@@ -4603,6 +4823,7 @@ export default function MarketplacePage() {
   const routeHashLandingAppliedRef = useRef("");
   const withdrawalHandoffAppliedRef = useRef("");
   const publicShopPrepareInFlightRef = useRef(false);
+  const marketplaceWisdomExposureKeyRef = useRef("");
 
   const routeSelectedClanId = useMemo(() => {
     const query = new URLSearchParams(location.search);
@@ -4660,6 +4881,38 @@ export default function MarketplacePage() {
       selectedCommunity?.id || selectedCommunity?.clan_id || selectedClanId
     );
   }, [selectedCommunity, selectedClanId]);
+
+  useEffect(() => {
+    let alive = true;
+
+    if (!activeCommunityId) {
+      setMarketplaceWisdom(null);
+      return () => {
+        alive = false;
+      };
+    }
+
+    (async () => {
+      const raw = await getDailyInsight().catch(() => null);
+      const backendPair = marketWisdomPairFromDailyInsight(raw);
+      const pair =
+        backendPair && isMarketplaceRelevantWisdom(raw, backendPair)
+          ? backendPair
+          : MARKETPLACE_WISDOM_FALLBACK;
+
+      if (alive) {
+        setMarketplaceWisdom({
+          raw,
+          pair,
+          fallback: pair === MARKETPLACE_WISDOM_FALLBACK,
+        });
+      }
+    })();
+
+    return () => {
+      alive = false;
+    };
+  }, [activeCommunityId]);
 
   useEffect(() => {
     let alive = true;
@@ -7351,6 +7604,25 @@ export default function MarketplacePage() {
     scheduleMarketplaceSectionScroll(sectionId);
   }
 
+  function openMarketplaceWisdomLens(
+    event: React.SyntheticEvent<HTMLElement> | undefined
+  ) {
+    if (marketplaceWisdomPublicId && activeCommunityId) {
+      void recordMarketWisdomExposure({
+        public_id: marketplaceWisdomPublicId,
+        action: "acted_on",
+        clan_id: activeCommunityId,
+        outcome_signal: `marketplace_lens_${marketplaceWisdomAction.key}`,
+      }).catch(() => null);
+    }
+
+    openMarketplaceSection(
+      event,
+      marketplaceWisdomAction.key,
+      marketplaceWisdomAction.sectionId
+    );
+  }
+
   async function createRoscaYearlyInstruction() {
     if (!activeCommunityId) {
       showNotice("error", "Select a community first.");
@@ -8169,6 +8441,48 @@ export default function MarketplacePage() {
       tone: "linear-gradient(180deg, #B98921 0%, #6E4B08 100%)",
     },
   ];
+  const marketplaceWisdomPair =
+    marketplaceWisdom?.pair || MARKETPLACE_WISDOM_FALLBACK;
+  const marketplaceWisdomPublicId = marketplaceWisdom?.fallback
+    ? ""
+    : safeStr(marketplaceWisdom?.pair?.publicId || marketplaceWisdom?.raw?.public_id);
+  const marketplaceWisdomAction = useMemo(
+    () =>
+      marketplaceWisdomActionFor(
+        marketplaceWisdom?.raw,
+        marketplaceWisdomPair,
+        {
+          hasVisibleProducts: visibleRepostProducts.length > 0,
+          hasVisibleShops: shops.length > 0,
+          hasActiveSupport: activeLoanCount > 0,
+          hasRosca: roscaCycles.length > 0,
+        }
+      ),
+    [
+      activeLoanCount,
+      marketplaceWisdom?.raw,
+      marketplaceWisdomPair,
+      roscaCycles.length,
+      shops.length,
+      visibleRepostProducts.length,
+    ]
+  );
+
+  useEffect(() => {
+    if (!activeCommunityId || !marketplaceWisdomPublicId) return;
+
+    const key = `${activeCommunityId}:${marketplaceWisdomPublicId}:shown`;
+    if (marketplaceWisdomExposureKeyRef.current === key) return;
+
+    marketplaceWisdomExposureKeyRef.current = key;
+    void recordMarketWisdomExposure({
+      public_id: marketplaceWisdomPublicId,
+      action: "shown",
+      clan_id: activeCommunityId,
+      outcome_signal: "marketplace_lens_shown",
+    }).catch(() => null);
+  }, [activeCommunityId, marketplaceWisdomPublicId]);
+
   const marketplaceFinanceSummaryValue =
     moneySurface || visiblePoolAmount !== "-"
       ? signedFinanceText(localNetPosition, visiblePoolCurrency)
@@ -8827,6 +9141,126 @@ export default function MarketplacePage() {
                 </div>
               ))
             : null}
+        </div>
+
+        <div
+          data-marketplace-wisdom-lens="true"
+          style={{
+            marginTop: 14,
+            borderRadius: isCompact ? 18 : 20,
+            border: "1px solid rgba(214,170,69,0.22)",
+            background:
+              "linear-gradient(180deg, rgba(255,253,247,0.99) 0%, rgba(247,251,255,0.98) 100%)",
+            padding: isCompact ? 12 : 14,
+            display: "grid",
+            gridTemplateColumns: isCompact ? "40px minmax(0, 1fr)" : "46px minmax(0, 1fr) auto",
+            gap: isCompact ? 10 : 12,
+            alignItems: "center",
+            boxShadow:
+              "0 12px 24px rgba(10,24,49,0.07), inset 0 1px 0 rgba(255,255,255,0.92)",
+            overflow: "hidden",
+            overflowAnchor: "none",
+          }}
+        >
+          <span
+            aria-hidden="true"
+            style={{
+              ...marketplaceHeroStatIconStyle(
+                "linear-gradient(180deg, #B98921 0%, #6E4B08 100%)",
+                isCompact
+              ),
+              width: isCompact ? 38 : 44,
+              height: isCompact ? 38 : 44,
+              borderRadius: isCompact ? 13 : 15,
+            }}
+          >
+            <MarketplaceGlyph name="spark" size={isCompact ? 22 : 24} />
+          </span>
+
+          <div style={{ minWidth: 0 }}>
+            <div style={{ ...sectionLabel(), color: "#8A5A08" }}>
+              Marketplace Wisdom
+            </div>
+            <div
+              style={{
+                marginTop: 4,
+                color: "#07172C",
+                fontSize: isCompact ? 14 : 16,
+                fontWeight: 950,
+                lineHeight: 1.22,
+                overflowWrap: "break-word",
+              }}
+            >
+              {marketplaceWisdomPair.title}
+            </div>
+            <div
+              style={{
+                marginTop: 5,
+                color: "#42596F",
+                fontSize: isCompact ? 12.5 : 13.5,
+                fontWeight: 800,
+                lineHeight: 1.35,
+                overflowWrap: "break-word",
+              }}
+            >
+              {marketplaceWisdomPair.proverb}
+            </div>
+            <div
+              style={{
+                marginTop: 8,
+                display: "flex",
+                gap: 7,
+                flexWrap: "wrap",
+                alignItems: "center",
+              }}
+            >
+              <span
+                style={marketplaceFrontTagStyle(
+                  marketplaceWisdomAction.color,
+                  marketplaceWisdomAction.background,
+                  isCompact
+                )}
+              >
+                Best next move
+              </span>
+              <span
+                style={{
+                  color: "#173750",
+                  fontSize: isCompact ? 12 : 13,
+                  fontWeight: 850,
+                  lineHeight: 1.35,
+                  overflowWrap: "break-word",
+                }}
+              >
+                {marketplaceWisdomPair.actionPrompt || marketplaceWisdomAction.detail}
+              </span>
+            </div>
+          </div>
+
+          <StableButton
+            type="button"
+            debugId="marketplace.row.wisdom-action"
+            aria-label={`${marketplaceWisdomAction.label} from Marketplace Wisdom`}
+            onClick={openMarketplaceWisdomLens}
+            style={{
+              ...marketplaceActionStyle("primary"),
+              width: isCompact ? "100%" : 150,
+              gridColumn: isCompact ? "1 / -1" : undefined,
+            }}
+          >
+            <span
+              aria-hidden="true"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                marginRight: 7,
+              }}
+            >
+              <MarketplaceGlyph name={marketplaceWisdomAction.glyph} size={17} />
+            </span>
+            {marketplaceWisdomAction.label}
+          </StableButton>
         </div>
 
         <div style={marketplaceFrontSummaryGridStyle(isCompact)}>

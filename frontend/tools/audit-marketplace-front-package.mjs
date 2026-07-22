@@ -269,6 +269,13 @@ assertContains(
   "Marketplace front package must keep the one-lane focus guide."
 );
 
+assertContains(
+  marketplaceFile,
+  marketplaceSource,
+  /getDailyInsight[\s\S]*?marketWisdomPairFromDailyInsight[\s\S]*?isMarketplaceRelevantWisdom[\s\S]*?MARKETPLACE_WISDOM_FALLBACK[\s\S]*?recordMarketWisdomExposure[\s\S]*?data-marketplace-wisdom-lens="true"[\s\S]*?Marketplace Wisdom[\s\S]*?Best next move[\s\S]*?debugId="marketplace\.row\.wisdom-action"[\s\S]*?openMarketplaceWisdomLens/,
+  "Marketplace Wisdom Lens must reuse governed Market Wisdom, fall back safely for non-market daily entries, record exposure, and keep one compact front-package action."
+);
+
 [
   "audit:marketplace-money-pool-lane",
   "audit:marketplace-rosca-lane",

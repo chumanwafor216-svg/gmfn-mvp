@@ -19,10 +19,10 @@ const actionTargetRoutesSource = readFileSync(
   "utf8"
 );
 const findings = [];
-const expectedStableActionCount = 87;
+const expectedStableActionCount = 88;
 const expectedNativeFieldCount = 37;
 const expectedSourceBreakdown = {
-  front: 10,
+  front: 11,
   body: 77,
 };
 const expectedVisibleIntentActionCount = 5;
@@ -359,6 +359,11 @@ assertContains(
 assertContains(
   /Focus your work[\s\S]*?Open one lane at a time\. Everything else steps back\./,
   "Marketplace front door must keep the focus-your-work guide after the grouped lane cards."
+);
+
+assertContains(
+  /data-marketplace-wisdom-lens="true"[\s\S]*?Marketplace Wisdom[\s\S]*?Best next move[\s\S]*?debugId="marketplace\.row\.wisdom-action"[\s\S]*?openMarketplaceWisdomLens/,
+  "Marketplace Wisdom Lens must stay compact, visible in the front package, and open exactly one audited Marketplace lane."
 );
 
 assertContains(
@@ -860,6 +865,7 @@ const expectedOrder = [
   exactDebugId("marketplace.tile.official-board"),
   exactDebugId("marketplace.tile.support"),
   exactDebugId("marketplace.tile.marketing-tools"),
+  exactDebugId("marketplace.row.wisdom-action"),
   exactDebugId("marketplace.intent.submit"),
   dynamicDebugId(
     "marketplace.intent.${item.id}",

@@ -464,7 +464,7 @@ assertContains(
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
-  /function marketplaceHeroStatCellStyle\(isCompact: boolean\)[\s\S]*?minHeight: isCompact \? 82 : 82[\s\S]*?gridTemplateColumns: isCompact \? "30px minmax\(0, 1fr\)" : "40px minmax\(0, 1fr\)"[\s\S]*?overflow: "hidden"[\s\S]*?function marketplaceHeroStatValueStyle\([\s\S]*?compactLongValue = isCompact && text\.length > 8[\s\S]*?fontSize: isCompact \? \(compactLongValue \? 15 : 20\) : 24[\s\S]*?whiteSpace: "normal"[\s\S]*?overflowWrap: "anywhere"[\s\S]*?wordBreak: "break-word"[\s\S]*?marketplaceHeroStatValueStyle\(isCompact, item\.value\)/,
+  /function marketplaceHeroStatCellStyle\(isCompact: boolean\)[\s\S]*?minHeight: isCompact \? 78 : 82[\s\S]*?gridTemplateColumns: isCompact \? "28px minmax\(0, 1fr\)" : "40px minmax\(0, 1fr\)"[\s\S]*?overflow: "hidden"[\s\S]*?function marketplaceHeroStatValueStyle\([\s\S]*?compactLongValue = isCompact && text\.length > 8[\s\S]*?compactVeryLongValue = isCompact && text\.length > 11[\s\S]*?fontSize: isCompact \? \(compactVeryLongValue \? 12\.5 : compactLongValue \? 14 : 20\) : 24[\s\S]*?whiteSpace: "normal"[\s\S]*?overflowWrap: compactLongValue \? "break-word" : "anywhere"[\s\S]*?wordBreak: "break-word"[\s\S]*?marketplaceHeroStatValueStyle\(isCompact, item\.value\)/,
   "Marketplace hero Trust/CCI metric cells must keep long posture words readable on phone instead of spilling across the grid."
 );
 
