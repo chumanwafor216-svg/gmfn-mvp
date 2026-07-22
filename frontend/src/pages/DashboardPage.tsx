@@ -3370,7 +3370,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     (async () => {
-      const [meRes, clanRes, trustSlipRes, trustExplanationRes, insightRes] =
+      const [meRes, clanRes, trustSlipRes, trustExplanationRes] =
         await Promise.all([
           getMe().catch(() => null),
           getCurrentClan().catch(() => null),
@@ -3381,16 +3381,31 @@ export default function DashboardPage() {
                 limit: 8,
               }).catch(() => null)
             : Promise.resolve(null),
-          getDailyInsight().catch(() => null),
         ]);
 
       setMe(meRes);
       setCurrentClan(clanRes);
       setTrustSlip(trustSlipRes);
       setTrustExplanation(trustExplanationRes);
-      setInsight(insightRes);
     })();
   }, [selectedClanId]);
+
+  useEffect(() => {
+    let alive = true;
+
+    getDailyInsight()
+      .then((insightRes) => {
+        if (!alive) return;
+        if (marketWisdomPairFromDailyInsight(insightRes)) {
+          setInsight(insightRes);
+        }
+      })
+      .catch(() => undefined);
+
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   useEffect(() => {
     let alive = true;

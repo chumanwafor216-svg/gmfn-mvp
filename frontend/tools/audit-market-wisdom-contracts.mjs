@@ -113,6 +113,12 @@ assertContains(
 
 assertContains(
   "frontend/src/pages/DashboardPage.tsx",
+  /useEffect\(\(\) => \{[\s\S]*?let alive = true;[\s\S]*?getDailyInsight\(\)[\s\S]*?marketWisdomPairFromDailyInsight\(insightRes\)[\s\S]*?setInsight\(insightRes\)[\s\S]*?return \(\) => \{[\s\S]*?alive = false;[\s\S]*?\};[\s\S]*?\}, \[\]\);/,
+  "Dashboard daily Market Wisdom must load independently from heavier authenticated startup reads."
+);
+
+assertContains(
+  "frontend/src/pages/DashboardPage.tsx",
   /const marketWisdomSignals = useMemo\([\s\S]*?key: "market"[\s\S]*?detail: `\$\{activeWisdomCategoryLabel\} context is shaping this reading\.`[\s\S]*?key: "gsn"[\s\S]*?detail: "GSN translates the reading into a safer next decision\."[\s\S]*?key: "guide"[\s\S]*?detail: "The guide connects this reading to one GSN capability\."[\s\S]*?key: "now"[\s\S]*?detail: marketWisdomAttentionState\.detail[\s\S]*?const activeMarketWisdomSignal/,
   "Dashboard Market Wisdom must keep the four-signal presentation with signal-specific context: Market, GSN, Guide, and Now."
 );

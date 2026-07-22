@@ -9,6 +9,8 @@ const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const MAX_WARM_SHELL_MS = 6500;
 const MAX_WARM_DASHBOARD_MS = 7500;
 const MAX_RETRY_DASHBOARD_MS = 9000;
+const MOCK_DAILY_WISDOM_TEXT =
+  "Small trusted actions become larger market confidence.";
 
 function json(body, status = 200) {
   return {
@@ -81,7 +83,9 @@ async function installApiMocks(page, options = {}) {
         json({
           public_id: "mw-local-timing",
           date: "2026-07-22",
-          text: "Small trusted actions become larger market confidence.",
+          title: "Mocked Backend Market Wisdom",
+          text: MOCK_DAILY_WISDOM_TEXT,
+          short_message: MOCK_DAILY_WISDOM_TEXT,
           source: "GSN Market Wisdom",
           source_label: "GSN Market Wisdom",
           status: "approved",
@@ -206,6 +210,11 @@ async function measureDashboard(page, baseURL, label, options = {}) {
   await page.waitForFunction(
     () => (document.body.textContent || "").includes("Market Wisdom"),
     null,
+    { timeout: 12000 }
+  );
+  await page.waitForFunction(
+    (expectedText) => (document.body.textContent || "").includes(expectedText),
+    MOCK_DAILY_WISDOM_TEXT,
     { timeout: 12000 }
   );
   const dashboardMs = Date.now() - startedAt;
