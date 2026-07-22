@@ -1259,22 +1259,73 @@ def recommend_market_wisdom(
     if not entries:
         return {"ok": True, "recommendation": get_daily_market_wisdom(db)}
 
+    marketplace_request = any(
+        term in {"marketplace", "market", "shop", "trade", "merchant", "demand", "spotlight"}
+        for term in signal_terms
+    )
+
     def score(entry: MarketWisdomEntry) -> int:
         value = 0
+        behaviour_tags = _read_json_list(entry.behaviour_tags_json)
+        context_tags = _read_json_list(entry.context_tags_json)
+        related_modules = _read_json_list(entry.related_gsn_modules_json)
+        exact_tags = {
+            _normalise_text(item)
+            for item in [*behaviour_tags, *context_tags, *related_modules]
+            if _safe_str(item)
+        }
         searchable = " ".join(
             [
                 _safe_str(entry.category),
                 _safe_str(entry.subcategory),
-                " ".join(_read_json_list(entry.behaviour_tags_json)),
-                " ".join(_read_json_list(entry.context_tags_json)),
-                " ".join(_read_json_list(entry.related_gsn_modules_json)),
+                " ".join(behaviour_tags),
+                " ".join(context_tags),
+                " ".join(related_modules),
                 _safe_str(entry.title),
+                _safe_str(entry.principle),
+                _safe_str(entry.short_message),
+                _safe_str(entry.explanation),
+                _safe_str(entry.business_application),
+                _safe_str(entry.community_application),
+                _safe_str(entry.leadership_application),
+                _safe_str(entry.action_prompt),
+                _safe_str(entry.when_to_apply),
             ]
         ).lower()
         for term in signal_terms:
             for token in term.split():
                 if len(token) > 2 and token in searchable:
                     value += 4
+                if len(token) > 2 and token in exact_tags:
+                    value += 10
+        if marketplace_request:
+            marketplace_markers = {
+                "marketplace",
+                "shop",
+                "trade",
+                "merchant",
+                "buyer",
+                "seller",
+                "customer",
+                "delivery",
+                "demand",
+                "spotlight",
+                "marketing",
+                "repost",
+            }
+            marketplace_overlap = {
+                tag
+                for tag in exact_tags
+                for marker in marketplace_markers
+                if marker in tag
+            }
+            category_text = _normalise_text(
+                f"{entry.category} {entry.subcategory} {entry.title}"
+            )
+            if marketplace_overlap:
+                value += 8 + (4 * min(len(marketplace_overlap), 4))
+            if any(marker in category_text for marker in marketplace_markers):
+                value += 8
         if entry.id in exposed_ids:
             value -= 20
         if _safe_str(entry.ethical_risk_level) == "low":

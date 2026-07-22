@@ -154,6 +154,44 @@ def test_recommendation_returns_policy_and_no_character_scoring(
     assert "untrustworthy person" not in joined
 
 
+def test_marketplace_recommendation_prefers_marketplace_tagged_entries(
+    client,
+    override_current_user_user,
+    seed_clan_member_membership,
+):
+    res = client.get(
+        "/market-wisdom/recommendation"
+        "?context=marketplace"
+        "&signals=marketplace"
+        "&signals=shop"
+        "&signals=trade"
+        "&signals=support"
+        "&signals=demand"
+        "&signals=rosca"
+    )
+
+    assert res.status_code == 200
+    body = res.json()
+    recommendation = body["recommendation"]
+    searchable = " ".join(
+        [
+            recommendation.get("public_id", ""),
+            recommendation.get("title", ""),
+            recommendation.get("category", ""),
+            recommendation.get("subcategory", ""),
+            recommendation.get("short_message", ""),
+            recommendation.get("action_prompt", ""),
+        ]
+    ).lower()
+
+    assert recommendation["public_id"].startswith("MW-")
+    assert "negotiation" not in searchable
+    assert any(
+        marker in searchable
+        for marker in ("marketplace", "merchant", "shop", "trade", "demand", "spotlight")
+    )
+
+
 def test_exposure_and_feedback_are_recorded(
     client,
     override_current_user_user,
