@@ -1732,6 +1732,8 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
       const wasEditingProduct = Boolean(editingProductId);
       let nextImageUrl = safeStr(productImageUrlInput) || null;
       let nextVideoUrl = safeStr(productVideoUrlInput) || null;
+      const editingImageUrl = safeStr(editingProduct?.image_url);
+      const editingVideoUrl = safeStr(editingProduct?.video_url);
 
       if (productSelectedFile) {
         nextImageUrl = await uploadMarketplaceImageFile(productSelectedFile);
@@ -1763,6 +1765,18 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
           setSavingProduct(false);
           return;
         }
+      }
+
+      const pictureChangedWithoutNewVideo =
+        Boolean(editingProduct) &&
+        !productSelectedVideoFile &&
+        Boolean(editingVideoUrl) &&
+        safeStr(nextVideoUrl) === editingVideoUrl &&
+        (Boolean(productSelectedFile) ||
+          (Boolean(safeStr(productImageUrlInput)) &&
+            safeStr(productImageUrlInput) !== editingImageUrl));
+      if (pictureChangedWithoutNewVideo) {
+        nextVideoUrl = null;
       }
 
       const body = {

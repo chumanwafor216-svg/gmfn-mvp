@@ -401,8 +401,8 @@ assertContains(
 );
 
 assertContains(
-  /className="public-shop-section public-shop-spotlight"[\s\S]*?height: isCompact \? "auto" : undefined[\s\S]*?minHeight: isCompact \? 300 : undefined[\s\S]*?gridTemplateColumns: isCompact[\s\S]*?"1fr"[\s\S]*?gridRow: isCompact \? "2" : "1"[\s\S]*?!isCompact \? \([\s\S]*?WebkitLineClamp: 3[\s\S]*?: null\}[\s\S]*?debugId="shop-gallery\.spotlight\.whatsapp-chat"[\s\S]*?gridRow: "1"/,
-  "Public Shop Spotlight phone layout must keep a compact stacked product card, hide phone detail copy, and keep one WhatsApp action instead of restoring source/detail clutter."
+  /className="public-shop-section public-shop-spotlight"[\s\S]*?height: isCompact \? 300 : undefined[\s\S]*?minHeight: isCompact \? 300 : undefined[\s\S]*?gridTemplateColumns: isCompact[\s\S]*?"1fr"[\s\S]*?gridRow: isCompact \? "2" : "1"[\s\S]*?debugId="shop-gallery\.spotlight\.whatsapp-chat"[\s\S]*?!isCompact \? \([\s\S]*?WebkitLineClamp: 3[\s\S]*?: null\}[\s\S]*?minHeight: isCompact \? 196 : 178[\s\S]*?height: isCompact \? 196 : "auto"[\s\S]*?gridRow: "1"[\s\S]*?objectPosition: isCompact \? "center 35%" : "center"/,
+  "Public Shop Spotlight phone layout must keep a fixed-height compact stacked card, hide phone detail copy, keep one WhatsApp action in the badge row, reserve the taller media frame, and bias compact media upward for faces."
 );
 
 assertContains(

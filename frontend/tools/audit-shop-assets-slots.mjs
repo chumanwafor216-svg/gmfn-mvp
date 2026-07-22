@@ -154,6 +154,24 @@ assertContains(
 
 assertContains(
   "src/pages/ShopAssetsPage.tsx",
+  /const pictureChangedWithoutNewVideo =[\s\S]*?Boolean\(editingProduct\)[\s\S]*?!productSelectedVideoFile[\s\S]*?Boolean\(editingVideoUrl\)[\s\S]*?safeStr\(nextVideoUrl\) === editingVideoUrl[\s\S]*?safeStr\(productImageUrlInput\) !== editingImageUrl[\s\S]*?nextVideoUrl = null/,
+  "Shop Assets editing must clear a prefilled old video when the owner replaces the block picture without selecting or typing a new video."
+);
+
+assertContains(
+  "src/lib/shopProductMediaCache.ts",
+  /hasVideo = Object\.prototype\.hasOwnProperty\.call\(media, "video_url"\)[\s\S]*?video_url: hasVideo \? videoUrl \|\| null : current\.video_url \|\| null/,
+  "Shop product media cache must treat an explicitly provided null/empty video as a cleared video instead of resurrecting old cached media."
+);
+
+assertContains(
+  "src/pages/ShopGalleryPage.tsx",
+  /const productHasVideoTruth = hasOwnValue\(src, "video_url"\);[\s\S]*?src\?\.video_url \|\| \(!productHasVideoTruth \? cachedMedia\?\.video_url : ""\)[\s\S]*?const productMediaKey = \[[\s\S]*?productImageUrl,[\s\S]*?productVideoUrl,[\s\S]*?\]\.join\("\|"\)[\s\S]*?key=\{productMediaKey\}/,
+  "Public Shop Gallery must not revive cached old videos when backend product truth has an empty video_url, and media cards must remount when image/video URLs change."
+);
+
+assertContains(
+  "src/pages/ShopAssetsPage.tsx",
   /Public products: \{occupiedPublicSlotCount\} \/ 12[\s\S]*?occupiedPublicSlotCount > 0/,
   "Shop Assets header public-products badge must report visible occupied slots."
 );

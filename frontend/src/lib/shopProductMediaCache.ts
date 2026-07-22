@@ -44,15 +44,18 @@ export function rememberShopProductMedia(
   const id = safeStr(productId);
   if (!id) return;
 
+  const hasImage = Object.prototype.hasOwnProperty.call(media, "image_url");
+  const hasVideo = Object.prototype.hasOwnProperty.call(media, "video_url");
   const imageUrl = safeStr(media.image_url);
   const videoUrl = safeStr(media.video_url);
-  if (!imageUrl && !videoUrl) return;
+  if (!hasImage && !hasVideo) return;
 
   const cache = readCache();
+  const current = cache[id] || {};
   cache[id] = {
-    ...(cache[id] || {}),
-    image_url: imageUrl || cache[id]?.image_url || null,
-    video_url: videoUrl || cache[id]?.video_url || null,
+    ...current,
+    image_url: hasImage ? imageUrl || null : current.image_url || null,
+    video_url: hasVideo ? videoUrl || null : current.video_url || null,
     updated_at: new Date().toISOString(),
   };
   writeCache(cache);

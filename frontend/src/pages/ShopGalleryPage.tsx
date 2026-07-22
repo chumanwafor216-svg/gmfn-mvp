@@ -1051,6 +1051,10 @@ function stripProductLabel(description: any): string {
   return stripPublicBlockNumber(description).replace(/^\[LABEL:(.+?)\]\s*/i, "");
 }
 
+function hasOwnValue(source: any, key: string): boolean {
+  return Boolean(source) && Object.prototype.hasOwnProperty.call(source, key);
+}
+
 function normalizeProduct(raw: any, slotNumber: number): ShopProduct | null {
   if (!raw) return null;
 
@@ -1074,14 +1078,22 @@ function normalizeProduct(raw: any, slotNumber: number): ShopProduct | null {
 
   const productId = positiveNumber(src?.id) || undefined;
   const cachedMedia = productId ? getCachedShopProductMedia(productId) : null;
+  const productHasImageTruth =
+    hasOwnValue(src, "image_url") ||
+    hasOwnValue(src, "thumbnail_url") ||
+    hasOwnValue(src, "photo_url") ||
+    hasOwnValue(src, "cover_image_url");
+  const productHasVideoTruth = hasOwnValue(src, "video_url");
   const imageUrl = resolveImageSrc(
     src?.image_url ||
       src?.thumbnail_url ||
       src?.photo_url ||
       src?.cover_image_url ||
-      cachedMedia?.image_url
+      (!productHasImageTruth ? cachedMedia?.image_url : "")
   );
-  const videoUrl = resolveImageSrc(src?.video_url || cachedMedia?.video_url);
+  const videoUrl = resolveImageSrc(
+    src?.video_url || (!productHasVideoTruth ? cachedMedia?.video_url : "")
+  );
 
   return {
     id: productId,
@@ -4560,7 +4572,7 @@ export default function ShopGalleryPage() {
               overflow: "hidden",
               borderRadius: isCompact ? 18 : 26,
               padding: isCompact ? 8 : 22,
-              height: isCompact ? "auto" : undefined,
+              height: isCompact ? 300 : undefined,
               minHeight: isCompact ? 300 : undefined,
               border: "1px solid rgba(255,255,255,0.92)",
               background:
@@ -4580,7 +4592,7 @@ export default function ShopGalleryPage() {
                   : "minmax(0, 1fr) 310px",
                 gap: isCompact ? 8 : 18,
                 alignItems: "stretch",
-                height: undefined,
+                height: isCompact ? 284 : undefined,
                 minHeight: isCompact ? 284 : undefined,
                 padding: 0,
               }}
@@ -4595,43 +4607,87 @@ export default function ShopGalleryPage() {
                   overflow: "hidden",
                   display: "grid",
                   alignContent: "start",
-                  gap: isCompact ? 7 : 0,
-                  padding: isCompact ? "8px 6px 6px" : 0,
+                  gap: isCompact ? 5 : 0,
+                  padding: isCompact ? "5px 4px 0" : 0,
                   maxWidth: isCompact ? "none" : undefined,
                 }}
               >
                 <div
                   style={{
-                    width: "fit-content",
+                    width: isCompact ? "100%" : "fit-content",
                     maxWidth: "100%",
-                    display: "inline-flex",
+                    display: isCompact ? "flex" : "inline-flex",
                     alignItems: "center",
-                    gap: isCompact ? 4 : 6,
-                    minHeight: isCompact ? 22 : 32,
-                    padding: isCompact ? "3px 7px" : "6px 11px",
-                    borderRadius: isCompact ? 8 : 9,
-                    background: isCompact
-                      ? "rgba(237,245,233,0.94)"
-                      : "#EDF5E9",
-                    color: "#276E4A",
+                    justifyContent: isCompact ? "space-between" : "flex-start",
+                    gap: isCompact ? 6 : 6,
+                    minHeight: isCompact ? 34 : 52,
+                    padding: 0,
+                    borderRadius: 0,
+                    background: "transparent",
+                    color: isCompact ? "#FFFFFF" : "#276E4A",
                     fontSize: isCompact ? 9.5 : 12,
                     fontWeight: 950,
                     textTransform: "uppercase",
                     letterSpacing: 0,
                   }}
                 >
-                  {inlineShopIcon("spark", "#276E4A", isCompact ? 10 : 13)}
-                  {publicShopSpotlightActive
-                    ? firstMeaningful(miniSpotlightView.priceLabel, "Spotlight")
-                    : "Spotlight"}
+                  <span
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 4,
+                      minHeight: isCompact ? 28 : "auto",
+                      maxWidth: isCompact ? "calc(100% - 94px)" : "100%",
+                      padding: isCompact ? "4px 8px" : "6px 11px",
+                      borderRadius: isCompact ? 999 : 9,
+                      background: isCompact ? "rgba(237,245,233,0.94)" : "#EDF5E9",
+                      color: "#276E4A",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {inlineShopIcon("spark", "#276E4A", isCompact ? 10 : 13)}
+                    {publicShopSpotlightActive
+                      ? firstMeaningful(miniSpotlightView.priceLabel, "Spotlight")
+                      : "Spotlight"}
+                  </span>
+                  <PrimaryButton
+                    onClick={contactSpotlightOwnerByWhatsApp}
+                    minWidth={0}
+                    fullWidth={false}
+                    stableHeight={isCompact ? 34 : 52}
+                    debugId="shop-gallery.spotlight.whatsapp-chat"
+                    style={{
+                      ...primaryBtn(!publicShopSpotlightActive),
+                      borderRadius: 999,
+                      minHeight: isCompact ? 34 : 52,
+                      width: "fit-content",
+                      maxWidth: "100%",
+                      padding: isCompact ? "5px 9px" : "10px 16px",
+                      fontSize: isCompact ? 11 : 14,
+                      whiteSpace: "nowrap",
+                      background:
+                        "linear-gradient(180deg, #25D366 0%, #128C4A 100%)",
+                      border: "1px solid rgba(37,211,102,0.38)",
+                      boxShadow: isCompact
+                        ? "0 8px 14px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.18)"
+                        : undefined,
+                    }}
+                  >
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: isCompact ? 3 : 8 }}>
+                      {inlineShopIcon("phone", "#FFFFFF", isCompact ? 11 : 15)}
+                      WhatsApp
+                    </span>
+                  </PrimaryButton>
                 </div>
                 <div
                   style={{
-                    marginTop: isCompact ? 1 : 10,
+                    marginTop: isCompact ? 0 : 10,
                     color: isCompact ? "#FFFFFF" : "#07172C",
-                    fontSize: isCompact ? 24 : 34,
+                    fontSize: isCompact ? 20 : 34,
                     fontWeight: 950,
-                    lineHeight: isCompact ? 1.06 : 1.04,
+                    lineHeight: isCompact ? 1.04 : 1.04,
                     textTransform: "uppercase",
                     minWidth: 0,
                     overflow: "hidden",
@@ -4667,49 +4723,11 @@ export default function ShopGalleryPage() {
                       : "Fresh items, hot deals, and public shop updates."}
                   </div>
                 ) : null}
-                <div
-                  style={{
-                    display: "flex",
-                    gap: isCompact ? 8 : 10,
-                    alignItems: "center",
-                    marginTop: isCompact ? 6 : 16,
-                    maxWidth: isCompact ? "100%" : "100%",
-                  }}
-                >
-                  <PrimaryButton
-                    onClick={contactSpotlightOwnerByWhatsApp}
-                    minWidth={0}
-                    fullWidth={isCompact}
-                    stableHeight={isCompact ? 44 : 52}
-                    debugId="shop-gallery.spotlight.whatsapp-chat"
-                    style={{
-                      ...primaryBtn(!publicShopSpotlightActive),
-                      borderRadius: 999,
-                      minHeight: isCompact ? 44 : 52,
-                      width: isCompact ? "100%" : "fit-content",
-                      maxWidth: "100%",
-                      padding: isCompact ? "8px 10px" : "10px 16px",
-                      fontSize: isCompact ? 13 : 14,
-                      whiteSpace: "nowrap",
-                      background:
-                        "linear-gradient(180deg, #25D366 0%, #128C4A 100%)",
-                      border: "1px solid rgba(37,211,102,0.38)",
-                      boxShadow: isCompact
-                        ? "0 12px 20px rgba(0,0,0,0.24), inset 0 1px 0 rgba(255,255,255,0.18)"
-                        : undefined,
-                    }}
-                  >
-                    <span style={{ display: "inline-flex", alignItems: "center", gap: isCompact ? 4 : 8 }}>
-                      {inlineShopIcon("phone", "#FFFFFF", isCompact ? 13 : 15)}
-                      WhatsApp
-                    </span>
-                  </PrimaryButton>
-                </div>
               </div>
               <div
                 style={{
-                  minHeight: isCompact ? 158 : 178,
-                  height: isCompact ? 166 : "auto",
+                  minHeight: isCompact ? 196 : 178,
+                  height: isCompact ? 196 : "auto",
                   borderRadius: isCompact ? 18 : 20,
                   overflow: "hidden",
                   position: "relative",
@@ -4755,14 +4773,14 @@ export default function ShopGalleryPage() {
                     frameStyle={{
                       width: "100%",
                       height: isCompact ? "100%" : 178,
-                      minHeight: isCompact ? 166 : 178,
+                      minHeight: isCompact ? 196 : 178,
                       borderRadius: isCompact ? 18 : 20,
                     }}
                     mediaStyle={{
                       width: "100%",
                       height: "100%",
                       objectFit: "cover",
-                      objectPosition: "center",
+                      objectPosition: isCompact ? "center 35%" : "center",
                     }}
                   />
                 ) : heroImage ? (
@@ -4772,7 +4790,7 @@ export default function ShopGalleryPage() {
                     style={{
                       width: "100%",
                       height: isCompact ? "100%" : 178,
-                      minHeight: isCompact ? 166 : undefined,
+                      minHeight: isCompact ? 196 : undefined,
                       objectFit: "cover",
                       display: "block",
                     }}
@@ -4781,7 +4799,7 @@ export default function ShopGalleryPage() {
                   <div
                     style={{
                       height: isCompact ? "100%" : 178,
-                      minHeight: isCompact ? 166 : undefined,
+                      minHeight: isCompact ? 196 : undefined,
                       display: "grid",
                       placeItems: "center",
                       color: "#D7E3F1",
@@ -5092,6 +5110,12 @@ export default function ShopGalleryPage() {
                 );
                 const productOpenId = product.id ?? product.slotNumber;
                 const isProductOpen = openProductId === productOpenId;
+                const productMediaKey = [
+                  productOpenId,
+                  isProductOpen ? "open" : "closed",
+                  productImageUrl,
+                  productVideoUrl,
+                ].join("|");
                 const diaryActionHeight = isProductOpen
                   ? isCompact
                     ? 36
@@ -5177,7 +5201,7 @@ export default function ShopGalleryPage() {
                     >
                       {hasVideoStory ? (
                         <SpotlightMediaFrame
-                          key={`${productOpenId}-${isProductOpen ? "open" : "closed"}`}
+                          key={productMediaKey}
                           imageUrl={productImageUrl}
                           videoUrl={productVideoUrl}
                           videoPoster={productImageUrl}
