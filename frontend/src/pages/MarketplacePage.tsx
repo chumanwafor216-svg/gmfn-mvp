@@ -50,6 +50,7 @@ import {
   createProtectedTrade,
   addProtectedTradeEvent,
   getDailyInsight,
+  getMarketWisdomRecommendation,
   getCommunityPackageStatus,
   getMarketplaceRepostTargetSuggestions,
   getMarketplaceShopSpotlightStatus,
@@ -911,6 +912,12 @@ function isMarketplaceRelevantWisdom(raw: any, pair: MarketWisdomPair): boolean 
     "savings",
     "contribution",
   ].some((word) => text.includes(word));
+}
+
+function marketplaceWisdomRecommendationEntry(raw: any): any | null {
+  const candidate = raw?.recommendation || raw?.entry || raw?.market_wisdom || raw;
+  const pair = marketWisdomPairFromDailyInsight(candidate);
+  return pair ? candidate : null;
 }
 
 function marketplaceWisdomActionFor(
@@ -4895,16 +4902,43 @@ export default function MarketplacePage() {
     (async () => {
       const raw = await getDailyInsight().catch(() => null);
       const backendPair = marketWisdomPairFromDailyInsight(raw);
-      const pair =
+      let selectedRaw = raw;
+      let pair =
         backendPair && isMarketplaceRelevantWisdom(raw, backendPair)
           ? backendPair
-          : MARKETPLACE_WISDOM_FALLBACK;
+          : null;
+
+      if (!pair) {
+        const recommendation = await getMarketWisdomRecommendation({
+          context: "marketplace",
+          clan_id: activeCommunityId,
+          signals: [
+            "marketplace",
+            "shop",
+            "trade",
+            "support",
+            "demand",
+            "rosca",
+          ],
+        }).catch(() => null);
+        const recommendedRaw = marketplaceWisdomRecommendationEntry(recommendation);
+        const recommendedPair = marketWisdomPairFromDailyInsight(recommendedRaw);
+        if (
+          recommendedPair &&
+          isMarketplaceRelevantWisdom(recommendedRaw, recommendedPair)
+        ) {
+          selectedRaw = recommendedRaw;
+          pair = recommendedPair;
+        }
+      }
+
+      const resolvedPair = pair || MARKETPLACE_WISDOM_FALLBACK;
 
       if (alive) {
         setMarketplaceWisdom({
-          raw,
-          pair,
-          fallback: pair === MARKETPLACE_WISDOM_FALLBACK,
+          raw: selectedRaw,
+          pair: resolvedPair,
+          fallback: resolvedPair === MARKETPLACE_WISDOM_FALLBACK,
         });
       }
     })();

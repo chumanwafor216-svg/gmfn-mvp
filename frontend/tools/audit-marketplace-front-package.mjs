@@ -272,8 +272,8 @@ assertContains(
 assertContains(
   marketplaceFile,
   marketplaceSource,
-  /getDailyInsight[\s\S]*?marketWisdomPairFromDailyInsight[\s\S]*?isMarketplaceRelevantWisdom[\s\S]*?MARKETPLACE_WISDOM_FALLBACK[\s\S]*?recordMarketWisdomExposure[\s\S]*?data-marketplace-wisdom-lens="true"[\s\S]*?Marketplace Wisdom[\s\S]*?Best next move[\s\S]*?debugId="marketplace\.row\.wisdom-action"[\s\S]*?openMarketplaceWisdomLens/,
-  "Marketplace Wisdom Lens must reuse governed Market Wisdom, fall back safely for non-market daily entries, record exposure, and keep one compact front-package action."
+  /getDailyInsight[\s\S]*?marketWisdomPairFromDailyInsight[\s\S]*?isMarketplaceRelevantWisdom[\s\S]*?getMarketWisdomRecommendation\(\{[\s\S]*?context: "marketplace"[\s\S]*?signals: \[[\s\S]*?"marketplace"[\s\S]*?"shop"[\s\S]*?"trade"[\s\S]*?"support"[\s\S]*?"demand"[\s\S]*?"rosca"[\s\S]*?MARKETPLACE_WISDOM_FALLBACK[\s\S]*?recordMarketWisdomExposure[\s\S]*?data-marketplace-wisdom-lens="true"[\s\S]*?Marketplace Wisdom[\s\S]*?Best next move[\s\S]*?debugId="marketplace\.row\.wisdom-action"[\s\S]*?openMarketplaceWisdomLens/,
+  "Marketplace Wisdom Lens must reuse governed Market Wisdom, request a governed marketplace recommendation before static fallback, record exposure, and keep one compact front-package action."
 );
 
 [
