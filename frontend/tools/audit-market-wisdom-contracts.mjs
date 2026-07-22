@@ -70,6 +70,24 @@ assertContains(
 );
 
 assertContains(
+  "gmfn_backend/app/services/daily_insight_service.py",
+  /PILOT_WISDOM_DOMAIN_SEEDS[\s\S]*?PILOT_WISDOM_MOVE_SEEDS[\s\S]*?SEED_WISDOM_ENTRIES\.extend\([\s\S]*?for domain in PILOT_WISDOM_DOMAIN_SEEDS[\s\S]*?for move in PILOT_WISDOM_MOVE_SEEDS/,
+  "Backend Market Wisdom must keep the curated pilot library generator instead of shrinking back to the compact seed list."
+);
+
+assertContains(
+  "gmfn_backend/app/services/daily_insight_service.py",
+  /trusted_seed = _safe_str\(payload\.get\("generation_method"\)\) == "seeded_governed_library"[\s\S]*?if similar_entries and suggested_status == "approved" and not trusted_seed/,
+  "Curated governed seed entries must still pass exact/prohibited validation while avoiding accidental similarity demotion."
+);
+
+assertContains(
+  "gmfn_backend/app/services/daily_insight_service.py",
+  /existing_public_ids = \{[\s\S]*?missing_seed_payloads = \[[\s\S]*?if not missing_seed_payloads:[\s\S]*?return[\s\S]*?seeded\["generation_reason"\] = "Curated governed Market Wisdom pilot library\."/,
+  "Market Wisdom seeding must add missing curated entries by public_id without overwriting existing database rows."
+);
+
+assertContains(
   "gmfn_backend/app/db/models.py",
   /class MarketWisdomEntry\(Base\):[\s\S]*?__tablename__ = "market_wisdom_entries"[\s\S]*?originality_hash[\s\S]*?semantic_fingerprint[\s\S]*?class MarketWisdomExposure\(Base\):[\s\S]*?shown_at[\s\S]*?opened_at[\s\S]*?dismissed_at[\s\S]*?acted_on_at[\s\S]*?feedback/,
   "Market Wisdom must have governed entry storage and exposure/feedback storage."

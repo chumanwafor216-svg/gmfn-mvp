@@ -57,15 +57,41 @@ def test_admin_can_list_seeded_approved_market_wisdom(
     override_current_user,
     seed_clan_admin_membership,
 ):
-    res = client.get("/admin/market-wisdom/entries?status=approved")
+    res = client.get("/admin/market-wisdom/entries?status=approved&limit=250")
 
     assert res.status_code == 200
     body = res.json()
     assert body["ok"] is True
     assert body["items"]
+    assert len(body["items"]) >= 100
     assert body["items"][0]["status"] == "approved"
     assert body["items"][0]["originality_hash"]
     assert body["items"][0]["semantic_fingerprint"]
+
+
+def test_seeded_market_wisdom_library_has_pilot_depth(client):
+    client.get("/public/daily-insight")
+
+    with engine.begin() as conn:
+        total = conn.execute(text("SELECT COUNT(*) FROM market_wisdom_entries")).scalar_one()
+        approved = conn.execute(
+            text("SELECT COUNT(*) FROM market_wisdom_entries WHERE status = 'approved'")
+        ).scalar_one()
+        review_required = conn.execute(
+            text("SELECT COUNT(*) FROM market_wisdom_entries WHERE status = 'review_required'")
+        ).scalar_one()
+        pilot_entries = conn.execute(
+            text("SELECT COUNT(*) FROM market_wisdom_entries WHERE public_id LIKE 'MW-PILOT-%'")
+        ).scalar_one()
+        seeded_runs = conn.execute(
+            text("SELECT COUNT(*) FROM market_wisdom_generation_runs WHERE category = 'pilot-library'")
+        ).scalar_one()
+
+    assert total >= 100
+    assert approved >= 100
+    assert review_required == 0
+    assert pilot_entries >= 100
+    assert seeded_runs >= 1
 
 
 def test_admin_create_rejects_prohibited_or_character_judgement_language(

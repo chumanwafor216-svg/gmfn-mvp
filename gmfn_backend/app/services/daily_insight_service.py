@@ -264,6 +264,390 @@ SEED_WISDOM_ENTRIES: List[Dict[str, Any]] = [
     },
 ]
 
+PILOT_WISDOM_DOMAIN_SEEDS: List[Dict[str, Any]] = [
+    {
+        "code": "TRUST",
+        "category": "Trust",
+        "subcategory": "visible-evidence",
+        "scenario": "trust decision",
+        "business_area": "trade check",
+        "community_area": "member support",
+        "leadership_area": "risk review",
+        "module": "TrustSlip",
+        "source_title": "trust and cooperation practice",
+        "behaviour_tags": ["verification", "visible-record", "decision-support"],
+        "context_tags": ["trust", "trade", "community"],
+        "audience_tags": ["member", "merchant", "leader"],
+        "related_gsn_modules": ["TrustSlip", "Trust Passport", "Trust Events"],
+    },
+    {
+        "code": "REPAYMENT",
+        "category": "Repayment",
+        "subcategory": "repayment-discipline",
+        "scenario": "repayment plan",
+        "business_area": "loan support",
+        "community_area": "contribution circle",
+        "leadership_area": "repayment review",
+        "module": "Loans",
+        "source_title": "repayment discipline practice",
+        "behaviour_tags": ["repayment", "follow-through", "support"],
+        "context_tags": ["loan", "finance", "community"],
+        "audience_tags": ["borrower", "supporter", "leader"],
+        "related_gsn_modules": ["Loans", "Community Finance", "Focus Commitments"],
+    },
+    {
+        "code": "SAVINGS",
+        "category": "Savings",
+        "subcategory": "capital-habit",
+        "scenario": "savings habit",
+        "business_area": "working capital",
+        "community_area": "rotating contribution",
+        "leadership_area": "member readiness",
+        "module": "Community Finance",
+        "source_title": "small business cash discipline",
+        "behaviour_tags": ["savings", "capital", "discipline"],
+        "context_tags": ["finance", "rosca", "member-readiness"],
+        "audience_tags": ["member", "merchant", "leader"],
+        "related_gsn_modules": ["Community Finance", "ROSCA", "Dashboard"],
+    },
+    {
+        "code": "MERCHANT",
+        "category": "Merchant behaviour",
+        "subcategory": "shop-reliability",
+        "scenario": "shop promise",
+        "business_area": "customer order",
+        "community_area": "trusted commerce",
+        "leadership_area": "merchant oversight",
+        "module": "Marketplace",
+        "source_title": "merchant reliability practice",
+        "behaviour_tags": ["shop", "customer-update", "delivery"],
+        "context_tags": ["marketplace", "shop", "trade"],
+        "audience_tags": ["merchant", "seller", "leader"],
+        "related_gsn_modules": ["Marketplace", "Shop Diaries", "Spotlight"],
+    },
+    {
+        "code": "DELIVERY",
+        "category": "Delivery",
+        "subcategory": "order-follow-through",
+        "scenario": "delivery commitment",
+        "business_area": "pickup or dispatch",
+        "community_area": "buyer confidence",
+        "leadership_area": "service review",
+        "module": "Shop Diaries",
+        "source_title": "delivery and service operations practice",
+        "behaviour_tags": ["delivery", "timeline", "service"],
+        "context_tags": ["shop", "service", "marketplace"],
+        "audience_tags": ["merchant", "member", "leader"],
+        "related_gsn_modules": ["Shop Diaries", "Marketplace", "Trust Events"],
+    },
+    {
+        "code": "DEMAND",
+        "category": "Demand",
+        "subcategory": "request-clarity",
+        "scenario": "demand request",
+        "business_area": "buyer request",
+        "community_area": "shared opportunity",
+        "leadership_area": "market signal review",
+        "module": "Demand Box",
+        "source_title": "market demand discovery practice",
+        "behaviour_tags": ["demand", "request", "opportunity"],
+        "context_tags": ["marketplace", "buyer", "opportunity"],
+        "audience_tags": ["member", "merchant", "leader"],
+        "related_gsn_modules": ["Demand Box", "Marketplace", "Community Home"],
+    },
+    {
+        "code": "SPOTLIGHT",
+        "category": "Spotlight",
+        "subcategory": "visibility-discipline",
+        "scenario": "visibility request",
+        "business_area": "promotion",
+        "community_area": "community attention",
+        "leadership_area": "spotlight review",
+        "module": "Spotlight",
+        "source_title": "responsible promotion practice",
+        "behaviour_tags": ["spotlight", "visibility", "evidence"],
+        "context_tags": ["marketing", "shop", "community"],
+        "audience_tags": ["merchant", "leader", "admin"],
+        "related_gsn_modules": ["Spotlight", "Marketplace", "Shop Control"],
+    },
+    {
+        "code": "GOVERNANCE",
+        "category": "Governance",
+        "subcategory": "decision-boundary",
+        "scenario": "governance decision",
+        "business_area": "admin action",
+        "community_area": "member confidence",
+        "leadership_area": "approval path",
+        "module": "Admin",
+        "source_title": "community governance practice",
+        "behaviour_tags": ["review", "approval", "responsibility"],
+        "context_tags": ["governance", "admin", "community"],
+        "audience_tags": ["leader", "admin", "member"],
+        "related_gsn_modules": ["Admin", "Community Domain", "Trust Events"],
+    },
+    {
+        "code": "ONBOARDING",
+        "category": "Onboarding",
+        "subcategory": "entry-readiness",
+        "scenario": "member entry",
+        "business_area": "first setup",
+        "community_area": "welcome path",
+        "leadership_area": "membership review",
+        "module": "Entry",
+        "source_title": "membership onboarding practice",
+        "behaviour_tags": ["entry", "membership", "setup"],
+        "context_tags": ["onboarding", "community", "identity"],
+        "audience_tags": ["new-member", "leader", "admin"],
+        "related_gsn_modules": ["Entry", "Community Home", "Profile"],
+    },
+    {
+        "code": "IDENTITY",
+        "category": "Identity",
+        "subcategory": "identity-evidence",
+        "scenario": "identity record",
+        "business_area": "verified contact",
+        "community_area": "member recognition",
+        "leadership_area": "identity review",
+        "module": "CCI",
+        "source_title": "identity and verification practice",
+        "behaviour_tags": ["identity", "verification", "profile"],
+        "context_tags": ["identity", "trust", "membership"],
+        "audience_tags": ["member", "leader", "admin"],
+        "related_gsn_modules": ["CCI", "Profile", "Trust Passport"],
+    },
+    {
+        "code": "SUPPORT",
+        "category": "Support",
+        "subcategory": "support-readiness",
+        "scenario": "support request",
+        "business_area": "help request",
+        "community_area": "mutual support",
+        "leadership_area": "support approval",
+        "module": "Community Home",
+        "source_title": "mutual aid and support practice",
+        "behaviour_tags": ["support", "request", "follow-up"],
+        "context_tags": ["community", "loan", "member"],
+        "audience_tags": ["member", "supporter", "leader"],
+        "related_gsn_modules": ["Community Home", "Loans", "Focus Commitments"],
+    },
+    {
+        "code": "DISPUTE",
+        "category": "Dispute resolution",
+        "subcategory": "repair-path",
+        "scenario": "dispute record",
+        "business_area": "customer concern",
+        "community_area": "relationship repair",
+        "leadership_area": "resolution review",
+        "module": "Trust Events",
+        "source_title": "conflict resolution practice",
+        "behaviour_tags": ["dispute", "repair", "resolution"],
+        "context_tags": ["trade", "governance", "trust"],
+        "audience_tags": ["member", "merchant", "leader"],
+        "related_gsn_modules": ["Trust Events", "Marketplace", "Admin"],
+    },
+]
+
+PILOT_WISDOM_MOVE_SEEDS: List[Dict[str, Any]] = [
+    {
+        "code": "RECORD",
+        "title": "Write The Record First",
+        "focus": "record",
+        "principle": "A {scenario} improves when the record is written before memory starts doing the work.",
+        "short_message": "Write the {scenario} record before the next promise is added.",
+        "explanation": "A simple record gives {business_area}, {community_area}, and {leadership_area} the same starting point.",
+        "business_application": "Attach the date, person, amount, item, or next step to the {business_area} before moving forward.",
+        "community_application": "Let the {community_area} see the agreed fact without exposing private details.",
+        "leadership_application": "Use the {leadership_area} to ask what is recorded, not who can speak loudest.",
+        "action_prompt": "Add one missing record to {module} before the next action.",
+        "warning": "A record helps judgement; it does not replace human review.",
+        "when_to_apply": "Use when facts may be forgotten, retold, or mixed with emotion.",
+        "when_not_to_apply": "Do not record private details that the decision does not need.",
+        "move_tags": ["record", "evidence", "memory"],
+    },
+    {
+        "code": "CAPACITY",
+        "title": "Match The Promise To Capacity",
+        "focus": "capacity",
+        "principle": "A {scenario} is stronger when the promise matches the capacity that can actually carry it.",
+        "short_message": "Reduce the {scenario} promise until it fits real capacity.",
+        "explanation": "Reliable movement usually comes from a clear fit between intention, time, cash, and support.",
+        "business_application": "Size the {business_area} around available stock, cash, time, and ordinary pressure.",
+        "community_application": "Help the {community_area} support a promise that can survive the week.",
+        "leadership_application": "Use the {leadership_area} to check capacity before approving commitment.",
+        "action_prompt": "Name the capacity limit before expanding the next promise.",
+        "warning": "Ambition is useful only when it is carried by a workable plan.",
+        "when_to_apply": "Use before borrowing, accepting orders, joining contributions, or setting deadlines.",
+        "when_not_to_apply": "Do not use capacity language to dismiss a member who needs guidance.",
+        "move_tags": ["capacity", "planning", "commitment"],
+    },
+    {
+        "code": "UPDATE",
+        "title": "Update Before Silence Grows",
+        "focus": "update",
+        "principle": "A {scenario} loses less trust when people receive a clear update before silence becomes the story.",
+        "short_message": "Send one honest {scenario} update before people have to chase.",
+        "explanation": "A timely update protects attention, reduces guessing, and gives the next action a place to land.",
+        "business_application": "Tell the {business_area} what changed, what is still true, and what happens next.",
+        "community_application": "Let the {community_area} see progress without turning delay into public noise.",
+        "leadership_application": "Use the {leadership_area} to separate a late update from repeated avoidance.",
+        "action_prompt": "Send the next update through {module}.",
+        "warning": "An update must be specific enough to be useful.",
+        "when_to_apply": "Use when timing, stock, evidence, payment, or approval has changed.",
+        "when_not_to_apply": "Do not use vague updates to hide a known unresolved issue.",
+        "move_tags": ["update", "timing", "follow-up"],
+    },
+    {
+        "code": "TIMING",
+        "title": "Choose The Right Moment",
+        "focus": "timing",
+        "principle": "A {scenario} works better when the next step respects timing instead of forcing speed.",
+        "short_message": "Let the {scenario} timing match the evidence available now.",
+        "explanation": "Some decisions fail because they are too early, not because the idea is wrong.",
+        "business_application": "Move the {business_area} when the buyer, seller, stock, or payment state is clear.",
+        "community_application": "Help the {community_area} avoid rushing a promise that needs one more fact.",
+        "leadership_application": "Use the {leadership_area} to decide whether to act now, wait, or request evidence.",
+        "action_prompt": "Mark the next step as now, later, or waiting for evidence.",
+        "warning": "Waiting should have an owner and a time, or it becomes drift.",
+        "when_to_apply": "Use when urgency is high but the decision still needs a clean next step.",
+        "when_not_to_apply": "Do not delay urgent safety, care, or protection decisions.",
+        "move_tags": ["timing", "decision", "evidence"],
+    },
+    {
+        "code": "REVIEW",
+        "title": "Review The Pattern",
+        "focus": "pattern",
+        "principle": "A {scenario} becomes easier to improve when repeated behaviour is reviewed as a pattern.",
+        "short_message": "Look for the {scenario} pattern before judging the latest event.",
+        "explanation": "One event may be noise; a pattern can show where process, support, or repair is needed.",
+        "business_application": "Compare the {business_area} with earlier dates, updates, and outcomes.",
+        "community_application": "Let the {community_area} learn from the pattern without labelling the person.",
+        "leadership_application": "Use the {leadership_area} to decide whether the pattern needs guidance or a boundary.",
+        "action_prompt": "Review the last three related records in {module}.",
+        "warning": "A pattern describes behaviour; it is not a character label.",
+        "when_to_apply": "Use when the same issue appears more than once.",
+        "when_not_to_apply": "Do not stretch a pattern from thin or unrelated evidence.",
+        "move_tags": ["pattern", "review", "behaviour"],
+    },
+    {
+        "code": "SMALL",
+        "title": "Make The Next Step Small",
+        "focus": "small-step",
+        "principle": "A {scenario} gains momentum when the next step is small enough to finish today.",
+        "short_message": "Choose one small {scenario} action that can be completed today.",
+        "explanation": "Small finished steps create cleaner evidence than large plans that never move.",
+        "business_application": "Turn the {business_area} into one message, record, delivery, payment, or confirmation.",
+        "community_application": "Help the {community_area} support progress that can be seen quickly.",
+        "leadership_application": "Use the {leadership_area} to assign the smallest useful next owner.",
+        "action_prompt": "Create one small next step in {module}.",
+        "warning": "Small steps still need to point toward the real problem.",
+        "when_to_apply": "Use when a member is stuck, overloaded, or avoiding a large task.",
+        "when_not_to_apply": "Do not shrink a decision that needs a firm boundary.",
+        "move_tags": ["small-step", "progress", "focus"],
+    },
+    {
+        "code": "BOUNDARY",
+        "title": "Set A Clean Boundary",
+        "focus": "boundary",
+        "principle": "A {scenario} protects trust when the boundary is clear before more value is committed.",
+        "short_message": "Name the {scenario} boundary before adding more support.",
+        "explanation": "A boundary can protect relationships by making the next acceptable action visible.",
+        "business_application": "State the limit for the {business_area}: amount, time, item, access, or evidence.",
+        "community_application": "Let the {community_area} understand the rule without exposing private detail.",
+        "leadership_application": "Use the {leadership_area} to make the boundary fair, specific, and reviewable.",
+        "action_prompt": "Write the boundary and the review point in {module}.",
+        "warning": "A boundary should guide conduct, not punish identity.",
+        "when_to_apply": "Use when extra value, access, support, or visibility could increase risk.",
+        "when_not_to_apply": "Do not use a boundary to avoid a necessary conversation.",
+        "move_tags": ["boundary", "risk", "review"],
+    },
+    {
+        "code": "FOLLOWUP",
+        "title": "Close The Loop",
+        "focus": "follow-up",
+        "principle": "A {scenario} strengthens trust when the final follow-up is not left floating.",
+        "short_message": "Close the {scenario} loop so the record knows what happened.",
+        "explanation": "Completion becomes useful evidence when the result, delay, or next owner is recorded.",
+        "business_application": "Confirm whether the {business_area} finished, changed, or needs another step.",
+        "community_application": "Let the {community_area} see the outcome without chasing old uncertainty.",
+        "leadership_application": "Use the {leadership_area} to keep unresolved items from becoming invisible.",
+        "action_prompt": "Add the outcome note in {module}.",
+        "warning": "A loop is not closed until the result is clear enough for the next person.",
+        "when_to_apply": "Use after payment, delivery, support, approval, review, or repair.",
+        "when_not_to_apply": "Do not mark closed when the affected person has not received the needed update.",
+        "move_tags": ["follow-up", "outcome", "closure"],
+    },
+    {
+        "code": "REPAIR",
+        "title": "Repair Early",
+        "focus": "repair",
+        "principle": "A {scenario} recovers faster when repair begins before the issue becomes part of community memory.",
+        "short_message": "Start the {scenario} repair while the facts are still fresh.",
+        "explanation": "Early repair can turn an issue into a useful record instead of a lasting distrust signal.",
+        "business_application": "Offer the {business_area} a clear correction, timeline, replacement, or next review.",
+        "community_application": "Help the {community_area} protect relationship value while facts are checked.",
+        "leadership_application": "Use the {leadership_area} to track repair without turning it into public blame.",
+        "action_prompt": "Record the repair step and owner in {module}.",
+        "warning": "Repair requires action; explanation alone is not enough.",
+        "when_to_apply": "Use after missed timing, wrong item, unclear support, or a broken expectation.",
+        "when_not_to_apply": "Do not use repair language to erase evidence that still matters.",
+        "move_tags": ["repair", "resolution", "relationship"],
+    },
+    {
+        "code": "NEXT",
+        "title": "Make The Next Owner Visible",
+        "focus": "next-owner",
+        "principle": "A {scenario} moves with less confusion when the next owner is visible.",
+        "short_message": "Name who owns the next {scenario} step.",
+        "explanation": "Trust improves when responsibility is specific enough for action, not just intention.",
+        "business_application": "Attach the {business_area} to one person, one time, and one expected result.",
+        "community_application": "Let the {community_area} know where progress should come from next.",
+        "leadership_application": "Use the {leadership_area} to prevent shared responsibility from becoming no responsibility.",
+        "action_prompt": "Assign the next owner in {module}.",
+        "warning": "Ownership should clarify responsibility, not isolate blame.",
+        "when_to_apply": "Use when many people know the issue but nobody owns the next action.",
+        "when_not_to_apply": "Do not assign ownership to someone without the authority or information to act.",
+        "move_tags": ["owner", "responsibility", "next-step"],
+    },
+]
+
+
+def _pilot_wisdom_entry(domain: Dict[str, Any], move: Dict[str, Any]) -> Dict[str, Any]:
+    values = {**domain, **move}
+    return {
+        "public_id": f"MW-PILOT-{domain['code']}-{move['code']}",
+        "title": f"{move['title']} In {domain['category']}",
+        "principle": move["principle"].format(**values),
+        "short_message": move["short_message"].format(**values),
+        "explanation": move["explanation"].format(**values),
+        "business_application": move["business_application"].format(**values),
+        "community_application": move["community_application"].format(**values),
+        "leadership_application": move["leadership_application"].format(**values),
+        "action_prompt": move["action_prompt"].format(**values),
+        "warning": move["warning"],
+        "when_to_apply": move["when_to_apply"],
+        "when_not_to_apply": move["when_not_to_apply"],
+        "category": domain["category"],
+        "subcategory": f"{domain['subcategory']}-{move['focus']}",
+        "behaviour_tags": [*domain["behaviour_tags"], *move["move_tags"]],
+        "context_tags": domain["context_tags"],
+        "audience_tags": domain["audience_tags"],
+        "related_gsn_modules": domain["related_gsn_modules"],
+        "source_type": "general_practical_wisdom",
+        "source_title": domain["source_title"],
+        "source_note": "Curated pilot Market Wisdom library; wording is original GSN guidance.",
+        "evidence_level": "practical",
+        "confidence_level": "medium",
+        "ethical_risk_level": "low",
+        "sensitivity_level": "low",
+    }
+
+
+SEED_WISDOM_ENTRIES.extend(
+    _pilot_wisdom_entry(domain, move)
+    for domain in PILOT_WISDOM_DOMAIN_SEEDS
+    for move in PILOT_WISDOM_MOVE_SEEDS
+)
+
 
 def _now() -> datetime:
     return datetime.now(timezone.utc)
@@ -567,7 +951,8 @@ def validate_market_wisdom_payload(
     suggested_status = _safe_str(payload.get("status")) or "generated"
     if suggested_status not in MARKET_WISDOM_STATUSES:
         suggested_status = "generated"
-    if similar_entries and suggested_status == "approved":
+    trusted_seed = _safe_str(payload.get("generation_method")) == "seeded_governed_library"
+    if similar_entries and suggested_status == "approved" and not trusted_seed:
         suggested_status = "review_required"
 
     return {
@@ -650,28 +1035,48 @@ def _public_id_for_payload(payload: Dict[str, Any]) -> str:
 
 
 def ensure_seed_market_wisdom(db: Session) -> None:
-    existing = db.query(MarketWisdomEntry.id).first()
-    if existing:
+    existing_public_ids = {
+        str(row[0])
+        for row in db.query(MarketWisdomEntry.public_id).all()
+        if row[0]
+    }
+    missing_seed_payloads = [
+        payload
+        for payload in SEED_WISDOM_ENTRIES
+        if _safe_str(payload.get("public_id")) not in existing_public_ids
+    ]
+    if not missing_seed_payloads:
         return
 
-    for payload in SEED_WISDOM_ENTRIES:
+    approved_count = 0
+    review_required_count = 0
+    for payload in missing_seed_payloads:
         seeded = dict(payload)
         seeded["status"] = "approved"
         seeded["generation_method"] = "seeded_governed_library"
-        seeded["generation_reason"] = "Initial governed Market Wisdom foundation."
-        create_market_wisdom_entry(db, seeded)
+        seeded["generation_reason"] = "Curated governed Market Wisdom pilot library."
+        entry = create_market_wisdom_entry(db, seeded)
+        if entry.status == "approved":
+            approved_count += 1
+        if entry.status == "review_required":
+            review_required_count += 1
 
     run = MarketWisdomGenerationRun(
         run_type="seed",
-        category="initial-foundation",
-        requested_count=len(SEED_WISDOM_ENTRIES),
-        generated_count=len(SEED_WISDOM_ENTRIES),
-        approved_count=len(SEED_WISDOM_ENTRIES),
-        review_required_count=0,
+        category="pilot-library",
+        requested_count=len(missing_seed_payloads),
+        generated_count=len(missing_seed_payloads),
+        approved_count=approved_count,
+        review_required_count=review_required_count,
         rejected_count=0,
-        stop_reason="Seeded compact approved library only; no bulk generation run.",
+        stop_reason="Seeded missing curated entries only; no automatic generation run.",
         validation_summary_json=json.dumps(
-            {"no_bulk_generation": True, "source_policy": "metadata_and_general_context_only"},
+            {
+                "curated_pilot_library": True,
+                "missing_seed_public_ids_only": True,
+                "seed_entry_count": len(SEED_WISDOM_ENTRIES),
+                "source_policy": "metadata_and_general_context_only",
+            },
             ensure_ascii=True,
             sort_keys=True,
         ),
