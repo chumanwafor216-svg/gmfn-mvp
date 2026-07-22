@@ -17,6 +17,10 @@ export type MarketWisdomPair = {
   tone: MarketWisdomTone;
   capability?: number;
   priority?: number;
+  publicId?: string;
+  sourceAttribution?: string;
+  actionPrompt?: string;
+  warning?: string;
 };
 
 export type SmartMarketWisdomParams = {
@@ -310,5 +314,62 @@ export function getSmartMarketWisdomPair(
   }
 
   return topPool[0] || CAPABILITY_WISDOM[0];
+}
+
+function normaliseCategory(value: any): MarketWisdomCategory {
+  const raw = safeStr(value).toLowerCase();
+  if (raw.includes("finance")) return "finance";
+  if (raw.includes("loan") || raw.includes("support")) return "support";
+  if (raw.includes("merchant") || raw.includes("customer") || raw.includes("sales")) return "trade";
+  if (raw.includes("market") || raw.includes("visibility")) return "visibility";
+  if (raw.includes("identity") || raw.includes("trust") || raw.includes("reputation")) return "identity";
+  if (raw.includes("work") || raw.includes("productivity")) return "work";
+  if (raw.includes("community") || raw.includes("governance") || raw.includes("leadership")) {
+    return "community";
+  }
+  return "operating";
+}
+
+function toneForBackendWisdom(value: any): MarketWisdomTone {
+  const raw = safeStr(value).toLowerCase();
+  if (raw === "high" || raw === "alert") return "alert";
+  if (raw === "spotlight") return "spotlight";
+  if (raw === "low" || raw === "calm") return "calm";
+  return "focus";
+}
+
+export function marketWisdomPairFromDailyInsight(input: any): MarketWisdomPair | null {
+  const publicId = safeStr(input?.public_id || input?.publicId);
+  const title = safeStr(input?.title);
+  const message = safeStr(input?.short_message || input?.text || input?.message);
+
+  if (!publicId || !title || !message) return null;
+
+  const explanation = safeStr(
+    input?.explanation ||
+      input?.why_it_may_matter_now ||
+      input?.whyItMayMatterNow ||
+      input?.detail
+  );
+  const attribution = safeStr(input?.source_attribution || input?.source);
+  const actionPrompt = safeStr(input?.action_prompt || input?.actionPrompt);
+  const warning = safeStr(input?.warning);
+  const support = [explanation, attribution ? `Source: ${attribution}` : ""]
+    .filter(Boolean)
+    .join(" ");
+
+  return {
+    id: `mw-backend-${publicId}`,
+    publicId,
+    title,
+    proverb: message,
+    gmfn: support || "GSN selected this reading from the approved Market Wisdom library.",
+    category: normaliseCategory(input?.category),
+    tone: toneForBackendWisdom(input?.ethical_risk_level || input?.tone),
+    priority: 9,
+    sourceAttribution: attribution,
+    actionPrompt,
+    warning,
+  };
 }
 

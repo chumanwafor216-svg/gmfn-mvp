@@ -44,6 +44,8 @@ buttons, and type in the fields without being thrown elsewhere.
 The protected freeze band covers:
 
 - Dashboard route action contracts and phone button geometry.
+- Dashboard Market Wisdom source contract, smart weighting, four-signal display,
+  and frozen action scope.
 - Community Home route action contracts, compact rows, app-shell tap rescue, and
   phone button geometry.
 - Shop Control route action contracts, native field stability, and focused-task
@@ -90,7 +92,7 @@ Home, Dashboard, and Shop Control close enough for now, roughly usable enough to
 shield while the team turns to the next unstable page family.
 
 As of 2026-07-09, the authenticated mobile bottom rail is intentionally a
-five-anchor rail: Dashboard, Community Home, Marketplace, Shops, and Profile.
+five-anchor rail: Dashboard, Community Home, Marketplace, Shop, and Profile.
 Finance, Loans, Trust, Admin, Shop Control, Identity, and related detail tools
 remain reachable through the drawer and route-local task/action surfaces. Do not
 restore the old seven-plus-domain bottom rail unless the product owner

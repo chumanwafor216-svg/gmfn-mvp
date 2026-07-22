@@ -19,6 +19,7 @@ from app.api.routes.pool import router as pool_router
 from app.api.routes.loans_inbox import router as loans_inbox_router
 from app.api.routes.loan_hardening import router as loan_hardening_router
 from app.api.routes.marketplace_requests import router as marketplace_requests_router
+from app.api.routes.daily_insight import router as daily_insight_router
 
 # =========================
 # Trust Core
@@ -133,6 +134,7 @@ api_router.include_router(borrower_preflight_router)
 api_router.include_router(pool_router)
 api_router.include_router(loans_inbox_router)
 api_router.include_router(marketplace_requests_router)
+api_router.include_router(daily_insight_router)
 
 # TRUST CORE
 api_router.include_router(trust_router)

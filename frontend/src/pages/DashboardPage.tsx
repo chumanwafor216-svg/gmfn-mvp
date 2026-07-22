@@ -12,6 +12,7 @@ import {
   getClanTrustScoreExplained,
   getCurrentClan,
   getDailyInsight,
+  getMarketWisdomRecommendation,
   getMarketplaceBroadcasts,
   getMe,
   getMyNotifications,
@@ -23,6 +24,7 @@ import {
   setSelectedClanId,
   listMarketplaceRequests,
   removeMyProfileImage,
+  recordMarketWisdomExposure,
   recordFocusCommitmentTrustEvent,
   uploadMyProfileImageFile,
 } from "../lib/api";
@@ -39,6 +41,7 @@ import {
 } from "../lib/gmfnCapabilities";
 import {
   getSmartMarketWisdomPair,
+  marketWisdomPairFromDailyInsight,
   type MarketWisdomPair,
 } from "../lib/marketWisdom";
 import { publicShopPath, publicShopSharePath } from "../lib/publicLinks";
@@ -3187,6 +3190,8 @@ export default function DashboardPage() {
   const [activeWisdom, setActiveWisdom] = useState<MarketWisdomPair | null>(
     null
   );
+  const marketWisdomExposureRef = useRef<string>("");
+  const marketWisdomRecommendationKeyRef = useRef<string>("");
   const [sellerIdentityDockOpen, setSellerIdentityDockOpen] =
     useState<boolean>(true);
   const [demandGuideOpen, setDemandGuideOpen] = useState<boolean>(false);
@@ -3782,19 +3787,22 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const hour = new Date().getHours();
+    const backendWisdom = marketWisdomPairFromDailyInsight(insight);
 
     setActiveWisdom((prev) =>
+      backendWisdom ||
       getSmartMarketWisdomPair({
-        hour,
-        unread: notices.filter((n) => !n?.is_read).length,
-        pendingRequests: pendingRequests.length,
-        hasSpotlight: Boolean(activeSpotlight),
-        hasGmfnId: Boolean(me?.gmfn_id),
-        trustTone: cci.tone,
-        previousId: (prev as any)?.id,
-      })
+          hour,
+          unread: notices.filter((n) => !n?.is_read).length,
+          pendingRequests: pendingRequests.length,
+          hasSpotlight: Boolean(activeSpotlight),
+          hasGmfnId: Boolean(me?.gmfn_id),
+          trustTone: cci.tone,
+          previousId: (prev as any)?.id,
+        })
     );
   }, [
+    insight,
     marketWisdomIndex,
     notices,
     pendingRequests.length,
@@ -3802,6 +3810,19 @@ export default function DashboardPage() {
     me,
     cci.tone,
   ]);
+
+  useEffect(() => {
+    const publicId = safeStr(activeWisdom?.publicId);
+    if (!publicId) return;
+    if (marketWisdomExposureRef.current === publicId) return;
+    marketWisdomExposureRef.current = publicId;
+
+    recordMarketWisdomExposure({
+      public_id: publicId,
+      action: "shown",
+      clan_id: selectedClanId || undefined,
+    }).catch(() => undefined);
+  }, [activeWisdom?.publicId, selectedClanId]);
 
   const greetingName = useMemo(() => resolveUserName(me), [me]);
   const profileInitials = useMemo(
@@ -4836,6 +4857,59 @@ export default function DashboardPage() {
     };
   }, [demandItems.length, urgentDemandItems.length]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!me) return;
+
+    const unreadCount = notices.filter((n) => !n?.is_read).length;
+    const signals = [
+      unreadCount > 0 ? "unread-community-notices" : "",
+      pendingRequests.length > 0 ? "pending-community-review" : "",
+      activeSpotlight ? "active-spotlight" : "",
+      !me?.gmfn_id ? "missing-gsn-id" : "",
+      cci.tone === "yellow" || cci.tone === "red" ? `trust-${cci.tone}` : "",
+      demandItems.length > 0 ? "open-demand" : "",
+      urgentDemandItems.length > 0 ? "urgent-demand" : "",
+    ].filter(Boolean);
+    const context = [
+      "dashboard",
+      selectedClanId ? `community-${selectedClanId}` : "no-community",
+      signals.join(",") || "general",
+    ].join("|");
+    const key = `${context}|${unreadCount}|${pendingRequests.length}|${Boolean(
+      activeSpotlight
+    )}|${safeStr(cci.tone)}|${demandItems.length}|${urgentDemandItems.length}`;
+
+    if (marketWisdomRecommendationKeyRef.current === key) return;
+    marketWisdomRecommendationKeyRef.current = key;
+
+    const timer = window.setTimeout(() => {
+      getMarketWisdomRecommendation({
+        context,
+        clan_id: selectedClanId || undefined,
+        signals,
+      })
+        .then((res) => {
+          const recommendation = (res as any)?.recommendation || res;
+          if (marketWisdomPairFromDailyInsight(recommendation)) {
+            setInsight(recommendation);
+          }
+        })
+        .catch(() => undefined);
+    }, 1200);
+
+    return () => window.clearTimeout(timer);
+  }, [
+    activeSpotlight,
+    cci.tone,
+    demandItems.length,
+    me,
+    notices,
+    pendingRequests.length,
+    selectedClanId,
+    urgentDemandItems.length,
+  ]);
+
   const activeWisdomCapability = safeStr((activeWisdom as any)?.capability || "");
   const activeWisdomTitle = safeStr((activeWisdom as any)?.title || "");
 
@@ -5091,6 +5165,7 @@ export default function DashboardPage() {
         key: "market",
         label: "Market",
         title: activeWisdomTitle || "Market reading",
+        detail: `${activeWisdomCategoryLabel} context is shaping this reading.`,
         text: signalText,
         accent: "#1D4ED8",
         border: "rgba(29,78,216,0.16)",
@@ -5101,6 +5176,7 @@ export default function DashboardPage() {
         key: "gsn",
         label: "GSN",
         title: "GSN line",
+        detail: "GSN translates the reading into a safer next decision.",
         text:
           signalSupport ||
           "GSN keeps identity, trust, and community readable before movement.",
@@ -5113,6 +5189,7 @@ export default function DashboardPage() {
         key: "guide",
         label: "Guide",
         title: activeWisdomGuideCapability?.title || "My GSN and I",
+        detail: "The guide connects this reading to one GSN capability.",
         text: marketWisdomGuideLine,
         accent: DASHBOARD_BRAND.goldText,
         border: "rgba(184,137,45,0.18)",
@@ -5123,6 +5200,7 @@ export default function DashboardPage() {
         key: "now",
         label: "Now",
         title: marketWisdomAttentionState.label,
+        detail: marketWisdomAttentionState.detail,
         text: marketWisdomNowLine,
         accent: marketWisdomAttentionState.accent,
         border: marketWisdomAttentionState.border,
@@ -5131,6 +5209,7 @@ export default function DashboardPage() {
     ],
     [
       activeWisdomGuideCapability?.title,
+      activeWisdomCategoryLabel,
       activeWisdomTitle,
       marketWisdomAttentionState,
       marketWisdomGuideLine,
@@ -11511,7 +11590,7 @@ export default function DashboardPage() {
                     lineHeight: 1.55,
                   }}
                 >
-                  {marketWisdomAttentionState.detail}
+                  {activeMarketWisdomSignal.detail}
                 </div>
 
                 <div

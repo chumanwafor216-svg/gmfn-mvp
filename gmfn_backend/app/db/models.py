@@ -2923,6 +2923,155 @@ class MarketplaceProductRepost(Base):
     )
 
 
+class MarketWisdomSource(Base):
+    __tablename__ = "market_wisdom_sources"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+
+    source_type: Mapped[str] = mapped_column(String(40), nullable=False, index=True)
+    source_title: Mapped[Optional[str]] = mapped_column(String(240), nullable=True, index=True)
+    source_author: Mapped[Optional[str]] = mapped_column(String(160), nullable=True, index=True)
+    source_year: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    source_url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    source_note: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    verified_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=utcnow,
+        server_default=func.now(),
+        index=True,
+    )
+
+
+class MarketWisdomEntry(Base):
+    __tablename__ = "market_wisdom_entries"
+
+    __table_args__ = (
+        UniqueConstraint("public_id", name="uq_market_wisdom_entries_public_id"),
+        UniqueConstraint("originality_hash", name="uq_market_wisdom_entries_originality_hash"),
+        Index("ix_market_wisdom_status_category", "status", "category"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    public_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+
+    title: Mapped[str] = mapped_column(String(180), nullable=False)
+    principle: Mapped[str] = mapped_column(Text, nullable=False)
+    short_message: Mapped[str] = mapped_column(String(280), nullable=False)
+    explanation: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    business_application: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    community_application: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    leadership_application: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    action_prompt: Mapped[Optional[str]] = mapped_column(String(280), nullable=True)
+    warning: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    when_to_apply: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    when_not_to_apply: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    category: Mapped[str] = mapped_column(String(80), nullable=False, index=True)
+    subcategory: Mapped[Optional[str]] = mapped_column(String(120), nullable=True, index=True)
+    behaviour_tags_json: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    context_tags_json: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    audience_tags_json: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    related_gsn_modules_json: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    source_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("market_wisdom_sources.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    source_type: Mapped[str] = mapped_column(String(40), nullable=False, index=True)
+    source_title: Mapped[Optional[str]] = mapped_column(String(240), nullable=True)
+    source_author: Mapped[Optional[str]] = mapped_column(String(160), nullable=True)
+    source_year: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    source_url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    source_note: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    evidence_level: Mapped[str] = mapped_column(String(40), nullable=False, default="practical", server_default="practical")
+    confidence_level: Mapped[str] = mapped_column(String(40), nullable=False, default="medium", server_default="medium")
+    ethical_risk_level: Mapped[str] = mapped_column(String(40), nullable=False, default="low", server_default="low")
+    sensitivity_level: Mapped[str] = mapped_column(String(40), nullable=False, default="low", server_default="low")
+
+    originality_hash: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    semantic_fingerprint: Mapped[str] = mapped_column(Text, nullable=False)
+    generation_method: Mapped[str] = mapped_column(String(80), nullable=False, default="seeded", server_default="seeded")
+    generation_reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    validation_json: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    generated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    reviewed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    approved_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    status: Mapped[str] = mapped_column(String(40), nullable=False, default="draft", server_default="draft", index=True)
+    version: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
+    language: Mapped[str] = mapped_column(String(16), nullable=False, default="en", server_default="en", index=True)
+    created_by: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    reviewed_by: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=utcnow,
+        server_default=func.now(),
+        index=True,
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=utcnow,
+        server_default=func.now(),
+    )
+
+
+class MarketWisdomExposure(Base):
+    __tablename__ = "market_wisdom_exposures"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    wisdom_entry_id: Mapped[int] = mapped_column(
+        ForeignKey("market_wisdom_entries.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+    clan_id: Mapped[Optional[int]] = mapped_column(ForeignKey("clans.id", ondelete="SET NULL"), nullable=True, index=True)
+    shown_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True, index=True)
+    opened_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    dismissed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    acted_on_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    feedback: Mapped[Optional[str]] = mapped_column(String(40), nullable=True, index=True)
+    outcome_signal: Mapped[Optional[str]] = mapped_column(String(160), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=utcnow,
+        server_default=func.now(),
+        index=True,
+    )
+
+
+class MarketWisdomGenerationRun(Base):
+    __tablename__ = "market_wisdom_generation_runs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    run_type: Mapped[str] = mapped_column(String(60), nullable=False, index=True)
+    category: Mapped[Optional[str]] = mapped_column(String(80), nullable=True, index=True)
+    requested_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
+    generated_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
+    approved_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
+    review_required_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
+    rejected_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
+    stop_reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    validation_summary_json: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_by: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=utcnow,
+        server_default=func.now(),
+        index=True,
+    )
+
+
 class FeaturePlan(Base):
     __tablename__ = "feature_plans"
 

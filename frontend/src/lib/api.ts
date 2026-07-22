@@ -89,6 +89,8 @@ class HttpStatusError extends Error {
 const DEFAULT_JSON_TIMEOUT_MS = 30000;
 const DEFAULT_MULTIPART_TIMEOUT_MS = 60000;
 const STARTUP_READ_CACHE_MS = 2500;
+const STARTUP_SECTION_CACHE_MS = 5000;
+const DAILY_INSIGHT_CACHE_MS = 5 * 60 * 1000;
 
 type TimedCache<T> = {
   key: string;
@@ -98,17 +100,87 @@ type TimedCache<T> = {
 
 let getMeInFlight: Promise<any> | null = null;
 let getMeCache: TimedCache<any> | null = null;
+let getMeFreshInFlight:
+  | {
+      key: string;
+      promise: Promise<any>;
+    }
+  | null = null;
 let myClansInFlight: Promise<any> | null = null;
 let myClansCache: TimedCache<any> | null = null;
+let dailyInsightInFlight: Promise<any> | null = null;
+let dailyInsightCache: TimedCache<any> | null = null;
+const startupSectionInFlight = new Map<string, Promise<any>>();
+const startupSectionCache = new Map<string, TimedCache<any>>();
+
+function readTimedCacheWithin<T>(
+  cache: TimedCache<T> | null,
+  key: string,
+  maxAgeMs: number
+): T | null {
+  if (!cache || cache.key !== key) return null;
+  return Date.now() - cache.storedAt <= maxAgeMs ? cache.value : null;
+}
 
 function readTimedCache<T>(cache: TimedCache<T> | null, key: string): T | null {
-  if (!cache || cache.key !== key) return null;
-  return Date.now() - cache.storedAt <= STARTUP_READ_CACHE_MS ? cache.value : null;
+  return readTimedCacheWithin(cache, key, STARTUP_READ_CACHE_MS);
+}
+
+function stableCacheValue(value: unknown): string {
+  if (value === undefined) return "undefined";
+  if (value === null) return "null";
+  if (Array.isArray(value)) {
+    return `[${value.map((item) => stableCacheValue(item)).join(",")}]`;
+  }
+  if (typeof value === "object") {
+    const source = value as Record<string, unknown>;
+    return `{${Object.keys(source)
+      .sort()
+      .map((key) => `${key}:${stableCacheValue(source[key])}`)
+      .join(",")}}`;
+  }
+  return JSON.stringify(value);
+}
+
+function startupSectionCacheKey(label: string, payload?: unknown): string {
+  return `${label}:${stableCacheValue(payload ?? {})}`;
+}
+
+async function cachedStartupSectionRead<T>(
+  key: string,
+  loader: () => Promise<T>
+): Promise<T> {
+  const cached = readTimedCacheWithin(
+    startupSectionCache.get(key) || null,
+    key,
+    STARTUP_SECTION_CACHE_MS
+  );
+  if (cached) return cached as T;
+
+  const current = startupSectionInFlight.get(key);
+  if (current) return current as Promise<T>;
+
+  const next = loader()
+    .then((out) => {
+      startupSectionCache.set(key, {
+        key,
+        value: out,
+        storedAt: Date.now(),
+      });
+      return out;
+    })
+    .finally(() => {
+      startupSectionInFlight.delete(key);
+    });
+
+  startupSectionInFlight.set(key, next);
+  return next;
 }
 
 function clearStartupReadCache(): void {
   getMeInFlight = null;
   getMeCache = null;
+  getMeFreshInFlight = null;
   myClansInFlight = null;
   myClansCache = null;
 }
@@ -673,13 +745,15 @@ export async function resetPasswordWithRecovery(payload: {
   return out;
 }
 
-export async function getMe() {
+export async function getMe(options?: { timeoutMs?: number }) {
   const cacheKey = String(getAccessToken() || "");
   const cached = readTimedCache(getMeCache, cacheKey);
   if (cached) return cached;
 
   if (!getMeInFlight) {
-    getMeInFlight = httpJson("/auth/me", "GET")
+    getMeInFlight = httpJson("/auth/me", "GET", undefined, {
+      timeoutMs: options?.timeoutMs,
+    })
       .then((out) => {
         rememberGmfnIdFrom(out);
         rememberRoleFrom(out);
@@ -712,17 +786,23 @@ export async function updateMyProfile(payload: {
 
 export async function getMeWithToken(
   token: string,
-  options?: { fresh?: boolean }
+  options?: { fresh?: boolean; timeoutMs?: number }
 ) {
   const cleaned = String(token || "").trim();
   if (!cleaned) {
     throw new Error("Session token is missing.");
   }
 
+  const timeoutMs = options?.timeoutMs ?? DEFAULT_JSON_TIMEOUT_MS;
+  const freshKey = `${cleaned}:${timeoutMs}`;
+  if (options?.fresh && getMeFreshInFlight?.key === freshKey) {
+    return getMeFreshInFlight.promise;
+  }
+
   const path = options?.fresh
     ? `/auth/me?session_check=${encodeURIComponent(String(Date.now()))}`
     : "/auth/me";
-  const res = await fetchWithTimeout(
+  const request = fetchWithTimeout(
     buildUrl(path),
     {
       method: "GET",
@@ -731,14 +811,28 @@ export async function getMeWithToken(
         Authorization: `Bearer ${cleaned}`,
       },
     },
-    DEFAULT_JSON_TIMEOUT_MS
-  );
+    timeoutMs
+  )
+    .then(async (res) => {
+      if (!res.ok) throw new HttpStatusError(res.status, await parseError(res));
+      const out = await readJsonOrTextSafe(res);
+      rememberGmfnIdFrom(out);
+      rememberRoleFrom(out);
+      if (String(getAccessToken() || "") === cleaned) {
+        getMeCache = { key: cleaned, value: out, storedAt: Date.now() };
+      }
+      return out;
+    })
+    .finally(() => {
+      if (getMeFreshInFlight?.promise === request) {
+        getMeFreshInFlight = null;
+      }
+    });
 
-  if (!res.ok) throw new HttpStatusError(res.status, await parseError(res));
-  const out = await readJsonOrTextSafe(res);
-  rememberGmfnIdFrom(out);
-  rememberRoleFrom(out);
-  return out;
+  if (options?.fresh) {
+    getMeFreshInFlight = { key: freshKey, promise: request };
+  }
+  return request;
 }
 
 export async function uploadMyProfileImageFile(file: File): Promise<any> {
@@ -1220,13 +1314,15 @@ export async function getPendingApprovalStatus(
    CLANS / COMMUNITY
    ========================= */
 
-export async function listMyClans(): Promise<any> {
+export async function listMyClans(options?: { timeoutMs?: number }): Promise<any> {
   const cacheKey = String(getAccessToken() || "");
   const cached = readTimedCache(myClansCache, cacheKey);
   if (cached) return cached;
 
   if (!myClansInFlight) {
-    myClansInFlight = httpJson("/clans/me", "GET")
+    myClansInFlight = httpJson("/clans/me", "GET", undefined, {
+      timeoutMs: options?.timeoutMs,
+    })
       .then((res) => {
         const rows = Array.isArray(res) ? res : Array.isArray(res?.items) ? res.items : [];
         const normalizedRows = normalizeVisibleMyClans(rows);
@@ -1250,9 +1346,9 @@ export async function listMyClans(): Promise<any> {
   return myClansInFlight;
 }
 
-export async function getCurrentClan(): Promise<any> {
+export async function getCurrentClan(options?: { timeoutMs?: number }): Promise<any> {
   const selectedClanId = getSelectedClanId();
-  const res = await listMyClans().catch(() => ({ items: [] }));
+  const res = await listMyClans({ timeoutMs: options?.timeoutMs }).catch(() => ({ items: [] }));
   const rows = Array.isArray(res) ? res : Array.isArray(res?.items) ? res.items : [];
 
   if (!rows.length) return null;
@@ -1617,7 +1713,12 @@ export async function listMyLoans(options?: {
       ? { header_clan_id: options.clan_id ?? null }
       : undefined;
 
-  return httpJson("/loans", "GET", undefined, requestOptions);
+  return cachedStartupSectionRead(
+    startupSectionCacheKey("listMyLoans", {
+      clan_id: requestOptions?.header_clan_id ?? "implicit",
+    }),
+    () => httpJson("/loans", "GET", undefined, requestOptions)
+  );
 }
 
 export async function getLoan(loanId: number): Promise<any> {
@@ -2009,17 +2110,26 @@ export async function getLoanGuarantorInbox(params?: {
 
   const requestedStatus = String(params?.status || "").trim().toLowerCase();
 
-  return httpJson(
-    `/loans/guarantors/inbox${buildQuery({
-      status:
-        requestedStatus && requestedStatus !== "all"
-          ? requestedStatus
-          : undefined,
-      limit: params?.limit ?? 50,
-    })}`,
-    "GET",
-    undefined,
-    options
+  const queryParams = {
+    status:
+      requestedStatus && requestedStatus !== "all"
+        ? requestedStatus
+        : undefined,
+    limit: params?.limit ?? 50,
+  };
+
+  return cachedStartupSectionRead(
+    startupSectionCacheKey("getLoanGuarantorInbox", {
+      ...queryParams,
+      clan_id: options?.header_clan_id ?? "implicit",
+    }),
+    () =>
+      httpJson(
+        `/loans/guarantors/inbox${buildQuery(queryParams)}`,
+        "GET",
+        undefined,
+        options
+      )
   );
 }
 
@@ -2270,21 +2380,35 @@ export async function getClanTrustScoreExplained(params?: {
   limit?: number;
   include_global_events?: boolean;
 }): Promise<any> {
-  return httpJson(
-    `/trust/score/explained-clan${buildQuery({
+  const queryParams = {
       limit: params?.limit || 25,
       include_global_events: params?.include_global_events ? true : undefined,
-    })}`,
-    "GET",
-    undefined,
+    };
+  const options =
     params && Object.prototype.hasOwnProperty.call(params, "clan_id")
       ? { header_clan_id: params.clan_id ?? null }
-      : undefined
+      : undefined;
+
+  return cachedStartupSectionRead(
+    startupSectionCacheKey("getClanTrustScoreExplained", {
+      ...queryParams,
+      clan_id: options?.header_clan_id ?? "implicit",
+    }),
+    () =>
+      httpJson(
+        `/trust/score/explained-clan${buildQuery(queryParams)}`,
+        "GET",
+        undefined,
+        options
+      )
   );
 }
 
 export async function getMyTrustSlip(): Promise<any> {
-  return httpJson("/trust-slips/me", "GET");
+  return cachedStartupSectionRead(
+    startupSectionCacheKey("getMyTrustSlip"),
+    () => httpJson("/trust-slips/me", "GET")
+  );
 }
 
 export async function reissueMyTrustSlip(params?: {
@@ -4658,9 +4782,14 @@ export async function getMyNotifications(
   limit: number = 50,
   unreadOnly: boolean = false
 ): Promise<any> {
-  return httpJson(
-    `/notifications/me${buildQuery({ limit, unread_only: unreadOnly })}`,
-    "GET"
+  const queryParams = { limit, unread_only: unreadOnly };
+  return cachedStartupSectionRead(
+    startupSectionCacheKey("getMyNotifications", queryParams),
+    () =>
+      httpJson(
+        `/notifications/me${buildQuery(queryParams)}`,
+        "GET"
+      )
   );
 }
 
@@ -4928,15 +5057,20 @@ export async function getTrustEvents(params?: {
   limit?: number;
 }): Promise<any> {
   const limit = Number(params?.limit || 200);
+  const queryParams = {
+    limit,
+    clan_id: params?.clan_id,
+    user_id: params?.user_id,
+    loan_id: params?.loan_id,
+  };
 
-  return httpJson(
-    `/admin/trust-events/recent${buildQuery({
-      limit,
-      clan_id: params?.clan_id,
-      user_id: params?.user_id,
-      loan_id: params?.loan_id,
-    })}`,
-    "GET"
+  return cachedStartupSectionRead(
+    startupSectionCacheKey("getTrustEvents", queryParams),
+    () =>
+      httpJson(
+        `/admin/trust-events/recent${buildQuery(queryParams)}`,
+        "GET"
+      )
   );
 }
 
@@ -5661,39 +5795,50 @@ export async function getMarketplaceBroadcasts(params?: {
     },
   ];
 
-  let lastError: unknown = null;
+  return cachedStartupSectionRead(
+    startupSectionCacheKey("getMarketplaceBroadcasts", {
+      clan_id: effectiveClanId ?? "none",
+      active_only:
+        typeof params?.active_only === "boolean" ? params.active_only : "any",
+      limit: params?.limit ?? 100,
+      header_clan_id: options?.header_clan_id ?? "implicit",
+    }),
+    async () => {
+      let lastError: unknown = null;
 
-  for (const queryParams of attempts) {
-    try {
-      return await httpJson(
-        `/marketplace/broadcasts${buildQuery(queryParams)}`,
-        "GET",
-        undefined,
-        options
-      );
-    } catch (err) {
-      lastError = err;
-      const tryingClanScopedAttempt =
-        Object.prototype.hasOwnProperty.call(queryParams, "clan_id") &&
-        Number.isFinite(Number((queryParams as any)?.clan_id)) &&
-        Number((queryParams as any)?.clan_id) > 0;
-      const canRecoverFromImplicitStaleClan =
-        clanWasImplicit &&
-        tryingClanScopedAttempt &&
-        err instanceof HttpStatusError &&
-        err.status === 403;
+      for (const queryParams of attempts) {
+        try {
+          return await httpJson(
+            `/marketplace/broadcasts${buildQuery(queryParams)}`,
+            "GET",
+            undefined,
+            options
+          );
+        } catch (err) {
+          lastError = err;
+          const tryingClanScopedAttempt =
+            Object.prototype.hasOwnProperty.call(queryParams, "clan_id") &&
+            Number.isFinite(Number((queryParams as any)?.clan_id)) &&
+            Number((queryParams as any)?.clan_id) > 0;
+          const canRecoverFromImplicitStaleClan =
+            clanWasImplicit &&
+            tryingClanScopedAttempt &&
+            err instanceof HttpStatusError &&
+            err.status === 403;
 
-      if (
-        !(err instanceof HttpStatusError) ||
-        (err.status !== 400 && !canRecoverFromImplicitStaleClan)
-      ) {
-        throw err;
+          if (
+            !(err instanceof HttpStatusError) ||
+            (err.status !== 400 && !canRecoverFromImplicitStaleClan)
+          ) {
+            throw err;
+          }
+        }
       }
-    }
-  }
 
-  if (lastError instanceof Error) throw lastError;
-  throw new Error("Marketplace broadcasts request failed");
+      if (lastError instanceof Error) throw lastError;
+      throw new Error("Marketplace broadcasts request failed");
+    }
+  );
 }
 
 export async function createMarketplaceFeed(payload: {
@@ -5824,12 +5969,17 @@ export async function getMyRoscaObligations(payload?: {
   clan_id?: number | null;
   limit?: number;
 }): Promise<any> {
-  return httpJson(
-    `/rosca/obligations/me${buildQuery({
+  const queryParams = {
       clan_id: payload?.clan_id ?? undefined,
       limit: payload?.limit ?? 20,
-    })}`,
-    "GET"
+    };
+  return cachedStartupSectionRead(
+    startupSectionCacheKey("getMyRoscaObligations", queryParams),
+    () =>
+      httpJson(
+        `/rosca/obligations/me${buildQuery(queryParams)}`,
+        "GET"
+      )
   );
 }
 
@@ -5928,9 +6078,79 @@ export async function createMarketplaceReview(_payload: {
    ========================= */
 
 export async function getDailyInsight(): Promise<any> {
-  return {
-    text: "Stay consistent. Small positive actions strengthen long-term trust.",
-  };
+  const cacheKey = "public-daily-insight";
+  const cached = readTimedCacheWithin(
+    dailyInsightCache,
+    cacheKey,
+    DAILY_INSIGHT_CACHE_MS
+  );
+  if (cached) return cached;
+
+  if (!dailyInsightInFlight) {
+    dailyInsightInFlight = httpJsonPaths(
+      ["/public/daily-insight", "/daily-insight"],
+      "GET",
+      undefined,
+      {
+        includeAuth: false,
+        quiet: true,
+      }
+    )
+      .then((out) => {
+        dailyInsightCache = { key: cacheKey, value: out, storedAt: Date.now() };
+        return out;
+      })
+      .finally(() => {
+        dailyInsightInFlight = null;
+      });
+  }
+
+  try {
+    return await dailyInsightInFlight;
+  } catch {
+    return {
+      text: "Stay consistent. Small positive actions strengthen long-term trust.",
+      source: "GSN Market Wisdom",
+    };
+  }
+}
+
+export async function getMarketWisdomRecommendation(params: {
+  context?: string | null;
+  clan_id?: number | string | null;
+  signals?: string[];
+} = {}): Promise<any> {
+  const query = new URLSearchParams();
+  const context = String(params.context || "").trim();
+  const clanId = String(params.clan_id || "").trim();
+  if (context) query.set("context", context);
+  if (clanId) query.set("clan_id", clanId);
+  for (const signal of params.signals || []) {
+    const value = String(signal || "").trim();
+    if (value) query.append("signals", value);
+  }
+  const suffix = query.toString() ? `?${query.toString()}` : "";
+  return httpJson(`/market-wisdom/recommendation${suffix}`, "GET");
+}
+
+export async function recordMarketWisdomExposure(payload: {
+  public_id: string;
+  action?: "shown" | "opened" | "dismissed" | "acted_on";
+  clan_id?: number | string | null;
+  feedback?: string | null;
+  outcome_signal?: string | null;
+}): Promise<any> {
+  return httpJson("/market-wisdom/exposures", "POST", payload);
+}
+
+export async function sendMarketWisdomFeedback(payload: {
+  public_id: string;
+  action?: "shown" | "opened" | "dismissed" | "acted_on";
+  clan_id?: number | string | null;
+  feedback?: "helpful" | "not_helpful" | string | null;
+  outcome_signal?: string | null;
+}): Promise<any> {
+  return httpJson("/market-wisdom/feedback", "POST", payload);
 }
 
 /* =========================
@@ -6069,13 +6289,18 @@ export async function getTrustWhyMe(params?: {
   event_type?: string;
   include_policy_timeline?: boolean;
 }): Promise<any> {
-  return httpJson(
-    `/trust/me/why${buildQuery({
+  const queryParams = {
       limit: params?.limit,
       event_type: params?.event_type,
       include_policy_timeline: params?.include_policy_timeline,
-    })}`,
-    "GET"
+    };
+  return cachedStartupSectionRead(
+    startupSectionCacheKey("getTrustWhyMe", queryParams),
+    () =>
+      httpJson(
+        `/trust/me/why${buildQuery(queryParams)}`,
+        "GET"
+      )
   );
 }
 
@@ -6556,11 +6781,15 @@ export async function getJoinApprovalStatus(requestId: number | string) {
 }
 
 export async function getCommunityJoinRequests(clanId: number): Promise<any> {
-  return httpJson(
-    `/clans/${encodeURIComponent(String(clanId))}/join-requests`,
-    "GET",
-    undefined,
-    { header_clan_id: clanId }
+  return cachedStartupSectionRead(
+    startupSectionCacheKey("getCommunityJoinRequests", { clan_id: clanId }),
+    () =>
+      httpJson(
+        `/clans/${encodeURIComponent(String(clanId))}/join-requests`,
+        "GET",
+        undefined,
+        { header_clan_id: clanId }
+      )
   );
 }
 
@@ -6648,8 +6877,7 @@ export async function listMarketplaceRequests(params?: {
   const effectiveClanId =
     params?.clan_id === undefined ? getSelectedClanId() : params?.clan_id;
 
-  return httpJson(
-    `/marketplace/requests${buildQuery({
+  const queryParams = {
       status: params?.status,
       category: params?.category,
       urgency: params?.urgency,
@@ -6658,8 +6886,15 @@ export async function listMarketplaceRequests(params?: {
         typeof params?.mine_only === "boolean" ? params.mine_only : undefined,
       clan_id: effectiveClanId ?? undefined,
       limit: params?.limit ?? 100,
-    })}`,
-    "GET"
+    };
+
+  return cachedStartupSectionRead(
+    startupSectionCacheKey("listMarketplaceRequests", queryParams),
+    () =>
+      httpJson(
+        `/marketplace/requests${buildQuery(queryParams)}`,
+        "GET"
+      )
   );
 }
 

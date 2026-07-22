@@ -24,6 +24,10 @@ const protectedAudits = [
     script: "audit-global-raw-action-elements.mjs",
   },
   {
+    label: "startup root boundary",
+    script: "audit-startup-root-boundary.mjs",
+  },
+  {
     label: "dashboard action contracts",
     script: "audit-dashboard-actions.mjs",
   },
@@ -34,6 +38,10 @@ const protectedAudits = [
   {
     label: "dashboard phone buttons",
     script: "audit-dashboard-phone-buttons.mjs",
+  },
+  {
+    label: "dashboard market wisdom contracts",
+    script: "audit-market-wisdom-contracts.mjs",
   },
   {
     label: "community home button inventory",
@@ -122,5 +130,5 @@ if (failures.length > 0) {
 }
 
 console.log(
-  "\nProtected button freeze audit passed: Dashboard, Community Home, Shop Control, Marketplace touch blockers, existing-community invite line, Action Inbox, entry/auth, Trust/Admin mobile overflow, shared tap guard, and global stable-action hygiene are still caged."
+  "\nProtected button freeze audit passed: Dashboard, Market Wisdom, Community Home, Shop Control, Marketplace touch blockers, existing-community invite line, Action Inbox, entry/auth, Trust/Admin mobile overflow, shared tap guard, and global stable-action hygiene are still caged."
 );

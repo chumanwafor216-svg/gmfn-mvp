@@ -38,6 +38,7 @@ type ContinuityBlock = {
 const IDENTITY_CONTINUITY_ROUTE_BLOCK_ENABLED = false;
 const IDENTITY_CONTINUITY_OBSERVATION_ENABLED = false;
 const SLOW_SESSION_CHECK_MS = 8000;
+const SESSION_GATE_TIMEOUT_MS = 5000;
 
 const CONTINUITY_PROTECTED_PREFIXES = [
   "/app/finance",
@@ -201,11 +202,14 @@ function wait(ms: number): Promise<void> {
 
 async function getMeWithStoredTokenRetry(token: string): Promise<any> {
   try {
-    return await getMe();
+    return await getMe({ timeoutMs: SESSION_GATE_TIMEOUT_MS });
   } catch (error) {
     if (!isNetworkSessionError(error)) throw error;
     await wait(650);
-    return getMeWithToken(token, { fresh: true });
+    return getMeWithToken(token, {
+      fresh: true,
+      timeoutMs: SESSION_GATE_TIMEOUT_MS,
+    });
   }
 }
 
@@ -307,7 +311,11 @@ export default function RequireAuth({ children, requireRole }: Props) {
           meError = error;
         }
 
-        const currentClan = await getCurrentClan().catch(() => null);
+        const currentClan = me
+          ? await getCurrentClan({
+              timeoutMs: SESSION_GATE_TIMEOUT_MS,
+            }).catch(() => null)
+          : null;
 
         if (!me) {
           const status = httpStatus(meError);

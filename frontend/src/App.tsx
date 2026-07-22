@@ -8,15 +8,13 @@ import {
   useParams,
 } from "react-router-dom";
 
-import AppLayout from "./layout/AppLayout";
-import RequireAuth from "./components/RequireAuth";
 import {
   configuredPublicFrontendOrigin,
   isSuspendedPublicFrontendHost,
   publicShopPath,
 } from "./lib/publicLinks";
 import { APP_ROUTES } from "./lib/appRoutes";
-import { getAccessToken, logout } from "./lib/api";
+import { clearAuthSession, getAccessToken } from "./lib/authSession";
 import {
   peekPublishRecoveryTarget,
   publishRecoveryTarget,
@@ -151,6 +149,8 @@ const DemandBoxPage = React.lazy(() => import("./pages/DemandBoxPage"));
 const JoinRequestPendingPage = React.lazy(
   () => import("./pages/JoinRequestPendingPage")
 );
+const AppLayout = React.lazy(() => import("./layout/AppLayout"));
+const RequireAuth = React.lazy(() => import("./components/RequireAuth"));
 
 type EntryMode = "general" | "create" | "invite" | "approved" | "existing";
 
@@ -290,7 +290,7 @@ function hasSessionReset(search: string): boolean {
 
 function clearLocalBrowserSession(): void {
   try {
-    logout();
+    clearAuthSession();
   } catch {
     // Keep the reset route best-effort.
   }
