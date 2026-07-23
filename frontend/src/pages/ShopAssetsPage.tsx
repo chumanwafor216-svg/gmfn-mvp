@@ -1450,12 +1450,17 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
       let coverMessage = "";
 
       if (!safeStr(productImageUrlInput) && !safeStr(productPreviewUrl)) {
-        const cover = await createShopGalleryCoverFromVideo(prepared.file);
-        if (productVideoPrepJobRef.current === prepJob) {
+        try {
+          const cover = await createShopGalleryCoverFromVideo(prepared.file);
+          if (productVideoPrepJobRef.current !== prepJob) return;
           setProductSelectedFile(cover.file);
           const coverPreview = URL.createObjectURL(cover.file);
           setProductPreviewUrl(coverPreview);
           coverMessage = ` ${cover.message}`;
+        } catch {
+          if (productVideoPrepJobRef.current !== prepJob) return;
+          coverMessage =
+            " GSN kept your video. If the cover does not appear, add a picture as the cover before posting.";
         }
       }
 
@@ -1750,14 +1755,23 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
 
       if (!nextImageUrl) {
         if (productSelectedVideoFile) {
-          const cover = await createShopGalleryCoverFromVideo(productSelectedVideoFile);
-          if (!mountedRef.current) return;
-          nextImageUrl = await uploadMarketplaceImageFile(cover.file);
-          if (!mountedRef.current) return;
-          showProductFormNotice("info", cover.message);
+          try {
+            const cover = await createShopGalleryCoverFromVideo(productSelectedVideoFile);
+            if (!mountedRef.current) return;
+            nextImageUrl = await uploadMarketplaceImageFile(cover.file);
+            if (!mountedRef.current) return;
+            showProductFormNotice("info", cover.message);
+          } catch {
+            if (!mountedRef.current) return;
+            if (nextVideoUrl) {
+              nextImageUrl = nextVideoUrl;
+            }
+          }
         } else if (nextVideoUrl) {
           nextImageUrl = nextVideoUrl;
-        } else {
+        }
+
+        if (!nextImageUrl) {
           showProductFormNotice(
             "error",
             `Block #${selectedPublicSlot} needs a picture or a video before it can be posted.`

@@ -159,6 +159,18 @@ assertContains(
 );
 
 assertContains(
+  "src/pages/ShopAssetsPage.tsx",
+  /setProductSelectedVideoFile\(prepared\.file\);[\s\S]*?try \{[\s\S]*?createShopGalleryCoverFromVideo\(prepared\.file\)[\s\S]*?\} catch \{[\s\S]*?GSN kept your video/,
+  "Shop Assets video selection must survive automatic cover-frame failure so owners do not lose the selected file."
+);
+
+assertContains(
+  "src/pages/ShopAssetsPage.tsx",
+  /if \(productSelectedVideoFile\) \{[\s\S]*?try \{[\s\S]*?createShopGalleryCoverFromVideo\(productSelectedVideoFile\)[\s\S]*?\} catch \{[\s\S]*?if \(nextVideoUrl\) \{[\s\S]*?nextImageUrl = nextVideoUrl;/,
+  "Shop Assets video-only save must fall back to the uploaded video URL when the phone cannot prepare a cover frame."
+);
+
+assertContains(
   "src/lib/shopProductMediaCache.ts",
   /hasVideo = Object\.prototype\.hasOwnProperty\.call\(media, "video_url"\)[\s\S]*?video_url: hasVideo \? videoUrl \|\| null : current\.video_url \|\| null/,
   "Shop product media cache must treat an explicitly provided null/empty video as a cleared video instead of resurrecting old cached media."
