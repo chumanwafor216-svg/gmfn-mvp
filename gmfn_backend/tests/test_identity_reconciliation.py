@@ -349,3 +349,87 @@ def test_admin_identity_reconciliation_executes_owner_confirmed_merge(client):
             "identity.phone_verified",
             "identity.duplicate_reconciled",
         }
+
+
+def test_admin_identity_reconciliation_moves_verified_phone_when_canonical_empty(client):
+    os.environ["GMFN_SECRET_KEY"] = "pytest-secret"
+    _seed_confirmed_duplicate_pair()
+
+    with SessionLocal() as db:
+        canonical = db.query(User).filter(User.gmfn_id == "GMFN-U-CANONICAL").one()
+        canonical.phone_e164 = None
+        canonical.phone_verified_at = None
+        db.add(canonical)
+        db.commit()
+
+    res = client.post(
+        "/identity-risk/admin/reconcile-duplicate",
+        json={
+            "canonical_gmfn_id": "GMFN-U-CANONICAL",
+            "duplicate_gmfn_id": "GMFN-U-DUPLICATE",
+            "owner_confirmed": True,
+            "execute": True,
+            "reviewer_note": "Owner confirmed duplicate phone belongs to canonical account holder.",
+        },
+        headers=_headers("identity-reconcile-admin@example.com"),
+    )
+
+    assert res.status_code == 200, res.text
+    body = res.json()
+    phone_operation = next(
+        row
+        for row in body["operations"]
+        if row["table"] == "users" and row["column"] == "phone_e164"
+    )
+    verified_operation = next(
+        row
+        for row in body["operations"]
+        if row["table"] == "users" and row["column"] == "phone_verified_at"
+    )
+    assert phone_operation["action"] == "updated"
+    assert verified_operation["action"] == "updated"
+
+    with SessionLocal() as db:
+        canonical = db.query(User).filter(User.gmfn_id == "GMFN-U-CANONICAL").one()
+        duplicate = db.query(User).filter(User.email == "merged-user-3@merged.gmfn.local").one()
+        assert canonical.phone_e164 == "+447903165299"
+        assert canonical.phone_verified_at is not None
+        assert duplicate.phone_e164 is None
+        assert duplicate.phone_verified_at is None
+
+
+def test_admin_identity_reconciliation_keeps_different_canonical_phone(client):
+    os.environ["GMFN_SECRET_KEY"] = "pytest-secret"
+    _seed_confirmed_duplicate_pair()
+
+    with SessionLocal() as db:
+        canonical_before = db.query(User).filter(User.gmfn_id == "GMFN-U-CANONICAL").one()
+        canonical_verified_at = canonical_before.phone_verified_at
+
+    res = client.post(
+        "/identity-risk/admin/reconcile-duplicate",
+        json={
+            "canonical_gmfn_id": "GMFN-U-CANONICAL",
+            "duplicate_gmfn_id": "GMFN-U-DUPLICATE",
+            "owner_confirmed": True,
+            "execute": True,
+            "reviewer_note": "Owner confirmed duplicate record but canonical phone remains primary.",
+        },
+        headers=_headers("identity-reconcile-admin@example.com"),
+    )
+
+    assert res.status_code == 200, res.text
+    phone_operation = next(
+        row
+        for row in res.json()["operations"]
+        if row["table"] == "users" and row["column"] == "phone_e164"
+    )
+    assert phone_operation["action"] == "skipped_conflict"
+
+    with SessionLocal() as db:
+        canonical = db.query(User).filter(User.gmfn_id == "GMFN-U-CANONICAL").one()
+        duplicate = db.query(User).filter(User.email == "merged-user-3@merged.gmfn.local").one()
+        assert canonical.phone_e164 == "+447903165266"
+        assert canonical.phone_verified_at == canonical_verified_at
+        assert duplicate.phone_e164 is None
+        assert duplicate.phone_verified_at is None

@@ -439,6 +439,97 @@ def _merge_confirmation_contacts(
     )
 
 
+def _merge_user_phone_evidence(
+    *,
+    canonical: User,
+    duplicate: User,
+    execute: bool,
+    operations: list[dict[str, Any]],
+    duplicate_phone_override: str | None = None,
+    duplicate_verified_at_override: datetime | None = None,
+) -> None:
+    duplicate_phone = _safe_str(
+        duplicate_phone_override
+        if duplicate_phone_override is not None
+        else getattr(duplicate, "phone_e164", None)
+    )
+    duplicate_verified_at = (
+        duplicate_verified_at_override
+        if duplicate_verified_at_override is not None
+        else getattr(duplicate, "phone_verified_at", None)
+    )
+    canonical_phone = _safe_str(getattr(canonical, "phone_e164", None))
+    canonical_verified_at = getattr(canonical, "phone_verified_at", None)
+
+    if not duplicate_phone:
+        _operation(
+            operations,
+            table=User.__tablename__,
+            column="phone_e164",
+            count=0,
+            action="no_match",
+            note="Duplicate identity has no phone evidence to transfer.",
+        )
+        return
+
+    if canonical_phone and canonical_phone != duplicate_phone:
+        _operation(
+            operations,
+            table=User.__tablename__,
+            column="phone_e164",
+            count=1,
+            action="skipped_conflict",
+            note=(
+                "Canonical identity already has a different phone; duplicate "
+                "phone evidence was not moved."
+            ),
+        )
+        return
+
+    phone_changed = not canonical_phone
+    verified_changed = bool(duplicate_verified_at and not canonical_verified_at)
+    if execute:
+        if phone_changed:
+            canonical.phone_e164 = duplicate_phone
+        if verified_changed:
+            canonical.phone_verified_at = duplicate_verified_at
+
+    _operation(
+        operations,
+        table=User.__tablename__,
+        column="phone_e164",
+        count=1 if phone_changed else 0,
+        action=(
+            "updated"
+            if execute and phone_changed
+            else "would_update"
+            if phone_changed
+            else "already_aligned"
+        ),
+        note=(
+            "Owner-confirmed merge transfers duplicate phone evidence only "
+            "when the canonical identity has no conflicting phone."
+        ),
+    )
+    _operation(
+        operations,
+        table=User.__tablename__,
+        column="phone_verified_at",
+        count=1 if verified_changed else 0,
+        action=(
+            "updated"
+            if execute and verified_changed
+            else "would_update"
+            if verified_changed
+            else "already_aligned"
+        ),
+        note=(
+            "Verified timestamp is copied only when duplicate evidence exists "
+            "and canonical verification is empty."
+        ),
+    )
+
+
 SIMPLE_REFERENCES: tuple[tuple[Any, str], ...] = (
     (Clan, "created_by_user_id"),
     (Loan, "borrower_user_id"),
@@ -541,6 +632,13 @@ def reconcile_duplicate_identity(
         execute=execute,
         operations=operations,
     )
+    if not execute:
+        _merge_user_phone_evidence(
+            canonical=canonical_user,
+            duplicate=duplicate_user,
+            execute=False,
+            operations=operations,
+        )
 
     _merge_single_owner(
         db,
@@ -596,6 +694,12 @@ def reconcile_duplicate_identity(
     retire_payload: Optional[dict[str, Any]] = None
     audit_event_id: Optional[int] = None
     if execute:
+        duplicate_phone_before_retire = _safe_str(
+            getattr(duplicate_user, "phone_e164", None)
+        )
+        duplicate_verified_at_before_retire = getattr(
+            duplicate_user, "phone_verified_at", None
+        )
         retire_payload = _retire_duplicate_user(
             duplicate_user,
             canonical=canonical_user,
@@ -603,6 +707,16 @@ def reconcile_duplicate_identity(
             reviewer_note=reviewer_note,
         )
         db.add(duplicate_user)
+        db.flush()
+        _merge_user_phone_evidence(
+            canonical=canonical_user,
+            duplicate=duplicate_user,
+            execute=True,
+            operations=operations,
+            duplicate_phone_override=duplicate_phone_before_retire,
+            duplicate_verified_at_override=duplicate_verified_at_before_retire,
+        )
+        db.add(canonical_user)
         meta = build_trust_meta(
             reason="identity_duplicate_reconciled",
             note=(
