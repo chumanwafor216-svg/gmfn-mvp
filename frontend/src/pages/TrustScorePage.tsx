@@ -2619,10 +2619,9 @@ export default function TrustScorePage() {
   const activeBand = safeStr(currentBand).toUpperCase().slice(0, 1);
   const activePostureLabel =
     firstTruthy(
-      passportVm.verdict.label,
-      gradeLegend.find(([band]) => band === activeBand)?.[1],
-      currentBand
-    ) || "Evidence posture";
+      activeBand,
+      safeStr(currentBand).toUpperCase().slice(0, 2)
+    ) || "GSN";
   const trustPassportRecordFingerprint = trustPassportReferenceFingerprint(
     passportVm.identity.gmfnId,
     passportVm.identity.communityId,
@@ -3917,6 +3916,7 @@ export default function TrustScorePage() {
                   }}
                 >
                   <div
+                    data-trust-passport-verdict-marker="true"
                     style={{
                       minHeight: isCompact ? 58 : 78,
                       borderRadius: isCompact ? 16 : 20,
@@ -3931,6 +3931,7 @@ export default function TrustScorePage() {
                       fontWeight: 1000,
                       boxShadow:
                         "0 14px 28px rgba(146,64,14,0.12), inset 0 1px 0 rgba(255,255,255,0.95), inset 0 -7px 16px rgba(245,158,11,0.12)",
+                      overflow: "hidden",
                     }}
                   >
                     {activePostureLabel}
@@ -3955,6 +3956,8 @@ export default function TrustScorePage() {
                           minHeight: 24,
                           padding: "3px 8px",
                           fontSize: 11.5,
+                          whiteSpace: "normal",
+                          overflowWrap: "break-word",
                         }}
                       >
                         Depth: {passportVm.verdict.evidenceLabel}
@@ -3968,6 +3971,7 @@ export default function TrustScorePage() {
                     margin: 0,
                     fontSize: isCompact ? 14 : 14.5,
                     lineHeight: isCompact ? 1.5 : 1.65,
+                    overflowWrap: "break-word",
                   }}
                 >
                   {plainTrustVerdict}
@@ -4020,8 +4024,10 @@ export default function TrustScorePage() {
                 ) : null}
               </div>
               <div
+                data-trust-passport-evidence-rail="true"
                 style={{
-                  display: "flex",
+                  display: isCompact ? "grid" : "flex",
+                  gridTemplateColumns: isCompact ? "repeat(2, minmax(0, 1fr))" : undefined,
                   alignItems: "stretch",
                   gap: isCompact ? 5 : 7,
                   padding: isCompact ? 5 : 7,
@@ -4042,6 +4048,7 @@ export default function TrustScorePage() {
                       key={band}
                       style={{
                         flex: "1 1 0",
+                        minWidth: 0,
                         minHeight: isCompact ? 46 : 58,
                         padding: isCompact ? "7px 4px" : "9px 6px",
                         textAlign: "center",
@@ -4068,6 +4075,7 @@ export default function TrustScorePage() {
                           fontSize: isCompact ? 11.5 : 13,
                           lineHeight: 1.15,
                           overflowWrap: "break-word",
+                          wordBreak: "normal",
                         }}
                       >
                         {label}

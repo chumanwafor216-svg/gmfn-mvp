@@ -594,6 +594,21 @@ type MarketplaceNoticeItem = {
   sender_contact_ready?: boolean;
 };
 
+type MarketplaceDemandSignal = {
+  request_id?: number | null;
+  source?: string | null;
+  title?: string | null;
+  category?: string | null;
+  urgency?: string | null;
+  area?: string | null;
+  status?: string | null;
+  created_at?: string | null;
+  expires_at?: string | null;
+  requester_gmfn_id?: string | null;
+  requester_trust_score?: number | null;
+  requester_trust_band?: string | null;
+};
+
 type MarketplaceCommunityDomainRow = {
   key: string;
   id: number;
@@ -1088,6 +1103,29 @@ function noticeExpiryLabel(item: MarketplaceNoticeItem): string {
   if (safeStr(item?.expiry_policy).toLowerCase() === "pinned") return "Pinned";
   const expiresAt = safeDateLabel(item?.expires_at);
   return expiresAt ? `Visible until ${expiresAt}` : "";
+}
+
+function marketplaceDemandUrgencyLabel(value?: string | null): string {
+  const urgency = safeStr(value).toLowerCase();
+  if (urgency === "high") return "Urgent";
+  if (urgency === "low") return "Low pressure";
+  return "Normal";
+}
+
+function marketplaceDemandTrustLabel(signal?: MarketplaceDemandSignal | null): string {
+  const band = safeStr(signal?.requester_trust_band);
+  const score =
+    signal?.requester_trust_score === null ||
+    signal?.requester_trust_score === undefined
+      ? ""
+      : safeStr(signal?.requester_trust_score);
+  if (!band && !score) return "";
+
+  const label = getContextualEvidencePosture(
+    score || null,
+    band || undefined
+  ).shortLabel;
+  return label && label !== "Not shown" ? label : "";
 }
 
 function parsedMarketplaceErrorDetail(err: any): Record<string, any> | null {
@@ -4678,6 +4716,11 @@ export default function MarketplacePage() {
     fallback: boolean;
   } | null>(null);
   const [marketplaceNotices, setMarketplaceNotices] = useState<MarketplaceNoticeItem[]>([]);
+  const [marketplaceDemandSignals, setMarketplaceDemandSignals] = useState<
+    MarketplaceDemandSignal[]
+  >([]);
+  const [marketplaceDemandSignalCount, setMarketplaceDemandSignalCount] =
+    useState(0);
   const [marketplaceNoticesLoading, setMarketplaceNoticesLoading] = useState(false);
   const [marketplaceNoticePostingPolicy, setMarketplaceNoticePostingPolicy] =
     useState<"members" | "admins">("members");
@@ -5445,6 +5488,8 @@ export default function MarketplacePage() {
   const loadMarketplaceNotices = useCallback(async () => {
     if (!activeCommunityId) {
       setMarketplaceNotices([]);
+      setMarketplaceDemandSignals([]);
+      setMarketplaceDemandSignalCount(0);
       setMarketplaceNoticePostingPolicy("members");
       setMarketplaceNoticesLoading(false);
       return;
@@ -5457,7 +5502,12 @@ export default function MarketplacePage() {
         limit: 3,
       }).catch(() => null);
       const rows = Array.isArray(res?.notices) ? res.notices : [];
+      const demandSignals = Array.isArray(res?.demand_signals)
+        ? res.demand_signals
+        : [];
       setMarketplaceNotices(rows);
+      setMarketplaceDemandSignals(demandSignals);
+      setMarketplaceDemandSignalCount(Number(res?.demand_signal_count || demandSignals.length || 0));
       setMarketplaceNoticePostingPolicy(
         normalizeNoticePostingPolicy(
           firstTruthy(res?.posting_policy, selectedCommunity?.notice_posting_policy)
@@ -9732,6 +9782,144 @@ export default function MarketplacePage() {
                   </div>
                 </div>
               )}
+            </div>
+
+            <div
+              style={{
+                marginTop: 14,
+                borderTop: "1px solid rgba(23,55,80,0.1)",
+                paddingTop: 12,
+              }}
+            >
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) auto",
+                  gap: 10,
+                  alignItems: "start",
+                }}
+              >
+                <div style={{ minWidth: 0 }}>
+                  <div style={sectionLabel()}>Demand Box signals</div>
+                  <div style={{ marginTop: 6, ...helperText(), fontSize: 13 }}>
+                    Open needs from this community only. These are read-only
+                    pointers; responding, contact, terms, and closure stay
+                    inside Demand Box.
+                  </div>
+                </div>
+                <span style={stableStatusPillStyle(Boolean(marketplaceDemandSignalCount))}>
+                  {marketplaceDemandSignalCount
+                    ? `${marketplaceDemandSignalCount} open`
+                    : "No open demand"}
+                </span>
+              </div>
+
+              <div
+                style={{
+                  marginTop: 10,
+                  display: "grid",
+                  gap: 10,
+                }}
+              >
+                {marketplaceNoticesLoading ? (
+                  <div style={{ ...helperText(), fontSize: 13 }}>
+                    Checking Demand Box signals.
+                  </div>
+                ) : marketplaceDemandSignals.length ? (
+                  marketplaceDemandSignals.map((signal, index) => {
+                    const title = wordLimit(
+                      firstTruthy(signal?.title, "Community demand request"),
+                      18
+                    );
+                    const trustLabel = marketplaceDemandTrustLabel(signal);
+                    const when = safeDateLabel(signal?.created_at);
+                    const key = firstTruthy(signal?.request_id, signal?.created_at, index);
+
+                    return (
+                      <div
+                        key={key}
+                        style={{
+                          borderRadius: 16,
+                          border: "1px solid rgba(215,162,45,0.22)",
+                          background: "#FFFCF3",
+                          padding: isCompact ? 12 : 14,
+                        }}
+                      >
+                        <div
+                          style={{
+                            color: "#07172C",
+                            fontSize: isCompact ? 14 : 15,
+                            fontWeight: 950,
+                            lineHeight: 1.3,
+                            overflowWrap: "break-word",
+                          }}
+                        >
+                          {title}
+                        </div>
+                        <div
+                          style={{
+                            marginTop: 8,
+                            display: "flex",
+                            gap: 8,
+                            flexWrap: "wrap",
+                          }}
+                        >
+                          <span style={marketplaceFrontTagStyle("#805A0F", "#F7EED8", isCompact)}>
+                            {marketplaceDemandUrgencyLabel(signal?.urgency)}
+                          </span>
+                          {signal?.category ? (
+                            <span style={marketplaceFrontTagStyle("#27435F", "#F3F6FA", isCompact)}>
+                              {safeStr(signal.category)}
+                            </span>
+                          ) : null}
+                          {signal?.area ? (
+                            <span style={marketplaceFrontTagStyle("#27435F", "#F3F6FA", isCompact)}>
+                              {safeStr(signal.area)}
+                            </span>
+                          ) : null}
+                          {trustLabel ? (
+                            <span style={marketplaceFrontTagStyle("#0B5A34", "#EAF7EF", isCompact)}>
+                              {trustLabel}
+                            </span>
+                          ) : null}
+                          {when ? (
+                            <span style={marketplaceFrontTagStyle("#617085", "#F3F6FA", isCompact)}>
+                              {when}
+                            </span>
+                          ) : null}
+                          <span style={marketplaceFrontTagStyle("#173750", "#EEF3F7", isCompact)}>
+                            Respond in Demand Box
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div
+                    style={{
+                      borderRadius: 16,
+                      border: "1px solid rgba(23,55,80,0.12)",
+                      background: "#FFFFFF",
+                      padding: isCompact ? 12 : 14,
+                    }}
+                  >
+                    <div
+                      style={{
+                        color: "#07172C",
+                        fontSize: 14,
+                        fontWeight: 950,
+                        lineHeight: 1.3,
+                      }}
+                    >
+                      No open Demand Box signals.
+                    </div>
+                    <div style={{ marginTop: 6, ...helperText(), fontSize: 13 }}>
+                      When a member posts a need, the board can point to the
+                      Demand Box without becoming another response screen.
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         ) : null}

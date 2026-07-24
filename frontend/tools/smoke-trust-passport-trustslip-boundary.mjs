@@ -1,4 +1,4 @@
-/* global console, process, setTimeout, URL, localStorage */
+/* global console, process, setTimeout, URL, localStorage, document, window */
 
 import { chromium, expect } from "@playwright/test";
 import { dirname, join } from "node:path";
@@ -405,6 +405,37 @@ async function runTrustPassportScenario(browser, baseURL) {
   await expect(
     state.page.getByRole("heading", { name: "Identity Overview", exact: true })
   ).toBeVisible({ timeout: 30000 });
+  await state.page.locator('[data-trust-passport-verdict-marker="true"]').scrollIntoViewIfNeeded();
+  const mobileLayout = await state.page.evaluate(() => {
+    const marker = document.querySelector('[data-trust-passport-verdict-marker="true"]');
+    const rail = document.querySelector('[data-trust-passport-evidence-rail="true"]');
+    const markerRect = marker?.getBoundingClientRect();
+    const railRect = rail?.getBoundingClientRect();
+    return {
+      innerWidth: window.innerWidth,
+      documentScrollWidth: document.documentElement.scrollWidth,
+      bodyScrollWidth: document.body.scrollWidth,
+      markerText: marker?.textContent?.trim() || "",
+      markerRight: markerRect?.right || 0,
+      railRight: railRect?.right || 0,
+    };
+  });
+  const overflowWidth = Math.max(
+    mobileLayout.documentScrollWidth,
+    mobileLayout.bodyScrollWidth,
+    mobileLayout.markerRight,
+    mobileLayout.railRight
+  );
+  if (overflowWidth > mobileLayout.innerWidth + 2) {
+    throw new Error(
+      `Trust Passport mobile standing lane overflowed: ${JSON.stringify(mobileLayout)}`
+    );
+  }
+  if (mobileLayout.markerText.length > 2) {
+    throw new Error(
+      `Trust Passport verdict marker must stay compact, got "${mobileLayout.markerText}".`
+    );
+  }
   await expect(state.page.locator('[data-gsn-trust-document-certificate="trust-passport"]')).toHaveCount(1);
   await expect(state.page.locator('[data-gsn-trust-document-certificate="trustslip-holder"]')).toHaveCount(0);
   await expect(state.page.getByText("This passport confirms", { exact: true })).toHaveCount(1);

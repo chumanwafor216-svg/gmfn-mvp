@@ -4,7 +4,7 @@ import json
 from datetime import datetime, timedelta, timezone
 
 from app.db.database import SessionLocal
-from app.db.models import Clan, ClanMembership, TrustEvent, User
+from app.db.models import Clan, ClanMembership, MarketplaceRequest, TrustEvent, User
 from app.db.notification_models import Notification
 
 
@@ -127,6 +127,59 @@ def test_community_officer_can_post_and_members_can_read_notice(
         )
         assert notifications[0].action_label == "Open Official Board"
         assert notifications[0].is_read is False
+
+
+def test_community_notice_board_lists_demand_box_signals_without_response_thread(
+    client, override_current_user
+):
+    _seed_notice_community()
+
+    now = datetime.now(timezone.utc)
+    with SessionLocal() as db:
+        requester = db.get(User, 2)
+        requester.gmfn_id = "GSN-PLUMBER-NEED"
+        requester.trust_band = "good"
+        db.add(
+            MarketplaceRequest(
+                id=1,
+                clan_id=1,
+                user_id=2,
+                title="Need a plumber",
+                category="repairs",
+                urgency="high",
+                area="North side",
+                status="open",
+                created_at=now,
+                expires_at=now + timedelta(hours=24),
+            )
+        )
+        db.commit()
+
+    list_res = client.get("/community-notices", params={"clan_id": 1})
+    assert list_res.status_code == 200, list_res.text
+    body = list_res.json()
+
+    assert body["comments_enabled"] is False
+    assert body["reactions_enabled"] is False
+    assert body["thread_enabled"] is False
+    assert body["demand_signals_enabled"] is True
+    assert body["demand_signal_count"] == 1
+    assert "Responding stays in Demand Box" in body["demand_signal_boundary"]
+
+    signal = body["demand_signals"][0]
+    assert signal["source"] == "demand_box"
+    assert signal["request_id"] == 1
+    assert signal["title"] == "Need a plumber"
+    assert signal["category"] == "repairs"
+    assert signal["urgency"] == "high"
+    assert signal["area"] == "North side"
+    assert signal["requester_gmfn_id"] == "GSN-PLUMBER-NEED"
+    assert signal["requester_trust_band"] == "good"
+    assert "whatsapp_number" not in signal
+
+    with SessionLocal() as db:
+        notifications = db.query(Notification).all()
+        assert notifications == []
 
 
 def test_community_notice_rejects_more_than_fifty_words(

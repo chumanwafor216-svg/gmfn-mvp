@@ -11,7 +11,14 @@ from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user
 from app.db.database import get_db
-from app.db.models import Clan, ClanMembership, TrustEvent, User, UserSettings
+from app.db.models import (
+    Clan,
+    ClanMembership,
+    MarketplaceRequest,
+    TrustEvent,
+    User,
+    UserSettings,
+)
 from app.services.community_integrity_service import _user_settings_table_exists
 from app.services.notification_service import create_notification
 from app.services.web_push_service import dispatch_web_push_for_notifications
@@ -42,6 +49,7 @@ NOTICE_EXPIRY_POLICIES = {
 }
 NOTICE_STANDARD_VISIBLE_DAYS = 7
 NOTICE_URGENT_VISIBLE_HOURS = 48
+NOTICE_BOARD_DEMAND_SIGNAL_LIMIT = 3
 
 
 def _safe_str(value: Any, fallback: str = "") -> str:
@@ -395,6 +403,49 @@ def _meeting_to_notice(row: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _request_to_demand_signal(db: Session, row: MarketplaceRequest) -> dict[str, Any]:
+    requester = row.user or db.get(User, int(row.user_id))
+    trust_score = getattr(requester, "trust_score", None) if requester else None
+    return {
+        "request_id": int(row.id),
+        "source": "demand_box",
+        "title": _safe_str(getattr(row, "title", None), "Community demand request"),
+        "category": _safe_str(getattr(row, "category", None)) or None,
+        "urgency": _safe_str(getattr(row, "urgency", None), "medium"),
+        "area": _safe_str(getattr(row, "area", None)) or None,
+        "status": _safe_str(getattr(row, "status", None), "open"),
+        "created_at": _iso(getattr(row, "created_at", None)),
+        "expires_at": _iso(getattr(row, "expires_at", None)),
+        "requester_gmfn_id": _safe_str(getattr(requester, "gmfn_id", None)) or None,
+        "requester_trust_score": float(trust_score) if trust_score is not None else None,
+        "requester_trust_band": _safe_str(getattr(requester, "trust_band", None)) or None,
+    }
+
+
+def _notice_board_demand_signals(
+    db: Session,
+    *,
+    clan_id: int,
+    limit: int = NOTICE_BOARD_DEMAND_SIGNAL_LIMIT,
+) -> tuple[list[dict[str, Any]], int]:
+    now = datetime.now(timezone.utc)
+    active_query = db.query(MarketplaceRequest).filter(
+        MarketplaceRequest.clan_id == int(clan_id),
+        MarketplaceRequest.status == "open",
+        (
+            (MarketplaceRequest.expires_at.is_(None))
+            | (MarketplaceRequest.expires_at > now)
+        ),
+    )
+    active_count = active_query.count()
+    rows = (
+        active_query.order_by(MarketplaceRequest.created_at.desc())
+        .limit(max(1, int(limit)))
+        .all()
+    )
+    return [_request_to_demand_signal(db, row) for row in rows], int(active_count)
+
+
 class CommunityNoticeIn(BaseModel):
     clan_id: int = Field(..., ge=1)
     body: str = Field(..., min_length=2, max_length=500)
@@ -482,6 +533,11 @@ def list_notices(
         )
         notices.extend(_meeting_to_notice(row) for row in meetings)
 
+    demand_signals, demand_signal_count = _notice_board_demand_signals(
+        db,
+        clan_id=int(clan_id),
+    )
+
     return {
         "ok": True,
         "engine_ready": True,
@@ -498,6 +554,14 @@ def list_notices(
         "can_post_notice": posting_policy == NOTICE_POSTING_POLICY_MEMBERS
         or _is_notice_officer(membership, current_user),
         "notices": notices[: int(limit)],
+        "demand_signals_enabled": True,
+        "demand_signal_count": int(demand_signal_count),
+        "demand_signals": demand_signals,
+        "demand_signal_boundary": (
+            "Demand signals are read-only pointers from this community's Demand Box. "
+            "Responding stays in Demand Box; the Official Board does not create a "
+            "second request, response thread, payment approval, or release authority."
+        ),
     }
 
 

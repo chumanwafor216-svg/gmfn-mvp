@@ -196,6 +196,12 @@ assertContains(
 
 assertContains(
   files.communityNotices,
+  /MarketplaceRequest[\s\S]*?def _notice_board_demand_signals[\s\S]*?"demand_signals_enabled": True[\s\S]*?"demand_signal_count"[\s\S]*?"demand_signals"[\s\S]*?"Responding stays in Demand Box/,
+  "Marketplace/community notice-list responses must include read-only Demand Box signals without turning them into notices."
+);
+
+assertContains(
+  files.communityNotices,
   /NOTICE_EXPIRY_STANDARD = "standard"[\s\S]*?NOTICE_EXPIRY_URGENT = "urgent"[\s\S]*?NOTICE_EXPIRY_EVENT = "event"[\s\S]*?NOTICE_EXPIRY_PINNED = "pinned"[\s\S]*?def _notice_is_expired\([\s\S]*?archived_notice_count/,
   "Marketplace/community notices must keep active-board expiry metadata, active filtering, and Community Memory preservation."
 );
@@ -324,6 +330,12 @@ assertContains(
   files.marketplacePage,
   /id="marketplace-official-board"[\s\S]*?Official notices for this selected marketplace\/community only\.[\s\S]*?not broadcast to your other marketplaces/,
   "Marketplace must keep the Official Board anchored and scoped to the selected marketplace/community."
+);
+
+assertContains(
+  files.marketplacePage,
+  /Demand Box signals[\s\S]*?read-only\s+[\s\S]*?pointers[\s\S]*?responding, contact, terms, and closure stay[\s\S]*?inside Demand Box[\s\S]*?Respond in Demand Box/,
+  "Marketplace Official Board must show Demand Box signals as read-only pointers, not as a second response surface."
 );
 
 assertContains(

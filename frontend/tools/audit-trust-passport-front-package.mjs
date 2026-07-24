@@ -178,6 +178,24 @@ assertContains(
   assertContains(key, pattern, message);
 });
 
+assertContains(
+  "trust",
+  /const activePostureLabel =[\s\S]*?firstTruthy\([\s\S]*?activeBand[\s\S]*?safeStr\(currentBand\)\.toUpperCase\(\)\.slice\(0, 2\)[\s\S]*?\) \|\| "GSN"/,
+  "Trust Passport current verdict tile must use a compact band marker instead of the full verdict phrase."
+);
+
+assertNotContains(
+  "trust",
+  /const activePostureLabel =[\s\S]*?passportVm\.verdict\.label[\s\S]*?Evidence posture/,
+  "Trust Passport current verdict tile must not render the full verdict phrase inside the narrow mobile marker."
+);
+
+assertContains(
+  "trust",
+  /data-trust-passport-verdict-marker="true"[\s\S]*?overflow: "hidden"[\s\S]*?data-trust-passport-evidence-rail="true"[\s\S]*?display: isCompact \? "grid" : "flex"[\s\S]*?gridTemplateColumns: isCompact \? "repeat\(2, minmax\(0, 1fr\)\)" : undefined[\s\S]*?aria-label="Evidence posture rail"[\s\S]*?minWidth: 0[\s\S]*?wordBreak: "normal"/,
+  "Trust Passport evidence posture rail must wrap into a two-column mobile grid instead of forcing five long labels into one phone row."
+);
+
 [
   { key: "band", pattern: /"Limited evidence"|"Weak"|"Needs caution"|"Under pressure"/ },
   { key: "viewModel", pattern: /"Limited evidence"|"Weak"|"Needs caution"|"Under pressure"/ },
