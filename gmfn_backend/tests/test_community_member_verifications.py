@@ -11,6 +11,7 @@ from sqlalchemy.exc import IntegrityError
 from app.core.auth import PENDING_APPROVAL_SENTINEL, get_current_user
 from app.core.trust_event_types import TrustEventType
 from app.db.database import SessionLocal
+from app.db.notification_models import Notification
 from app.db.models import (
     Clan,
     ClanMembership,
@@ -1009,6 +1010,15 @@ def test_member_witness_request_requires_assigned_verifier_and_one_time_code(
         assert request_payload["verifier_user_id"] == 1
         assert "member_witness_request=" in request_payload["approval_path"]
 
+        with SessionLocal() as db:
+            request_notice = db.query(Notification).one()
+            assert request_notice.user_id == 1
+            assert request_notice.kind == "community_member_witness.request_to_respond"
+            assert request_notice.title == "Member witness request"
+            assert request_notice.action_url == request_payload["approval_path"]
+            assert request_notice.action_label == "Record witness"
+            assert request_notice.is_read is False
+
         subject_view = client.get(f"/clans/1/member-verification-requests/{token}")
         assert subject_view.status_code == 200, subject_view.text
         assert subject_view.json()["request"]["one_time_code"] == code
@@ -1063,6 +1073,18 @@ def test_member_witness_request_requires_assigned_verifier_and_one_time_code(
             verification_row = db.query(CommunityMemberVerification).one()
             assert verification_row.subject_user_id == 2
             assert verification_row.verifier_user_id == 1
+            notifications = db.query(Notification).order_by(Notification.id).all()
+            assert len(notifications) == 2
+            assert notifications[0].kind == "community_member_witness.request_to_respond"
+            assert notifications[0].user_id == 1
+            assert notifications[0].is_read is True
+            assert notifications[0].read_at is not None
+            assert notifications[0].action_url == request_payload["approval_path"]
+            assert notifications[1].kind == "community_member_witness.outcome_updated"
+            assert notifications[1].user_id == 2
+            assert notifications[1].is_read is False
+            assert notifications[1].action_url == request_payload["approval_path"]
+            assert notifications[1].action_label == "View witness result"
             event_types = [row.event_type for row in db.query(TrustEvent).order_by(TrustEvent.id).all()]
             assert event_types == [
                 "community_member_verification_requested",

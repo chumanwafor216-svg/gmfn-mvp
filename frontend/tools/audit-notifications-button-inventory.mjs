@@ -6,8 +6,13 @@ import { fileURLToPath } from "node:url";
 
 const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const notificationsFile = "src/pages/NotificationsPage.tsx";
+const guidanceFile = "src/lib/guidance.ts";const communityConfirmationPolicyFile = "src/pages/CommunityConfirmationPolicyPage.tsx";
 const appLayoutFile = "src/layout/AppLayout.tsx";
 const source = readFileSync(join(frontendRoot, notificationsFile), "utf8");
+const guidanceSource = readFileSync(join(frontendRoot, guidanceFile), "utf8");const communityConfirmationPolicySource = readFileSync(
+  join(frontendRoot, communityConfirmationPolicyFile),
+  "utf8"
+);
 const appLayoutSource = readFileSync(join(frontendRoot, appLayoutFile), "utf8");
 const findings = [];
 
@@ -15,7 +20,7 @@ const expectedSourceActions = {
   PrimaryButton: 3,
   SecondaryButton: 2,
   StableButton: 1,
-  StableCtaLink: 5,
+  StableCtaLink: 6,
   SubtleButton: 6,
 };
 const expectedSourceActionCount = Object.values(expectedSourceActions).reduce(
@@ -71,6 +76,34 @@ function assertLayoutContains(
   if (pattern.test(appLayoutSource)) return;
   findings.push({
     file: appLayoutFile,
+    line: 1,
+    message,
+    text,
+  });
+}
+
+function assertPolicyContains(
+  pattern,
+  message,
+  text = "Expected Community Confirmation Policy pattern was not found."
+) {
+  if (pattern.test(communityConfirmationPolicySource)) return;
+  findings.push({
+    file: communityConfirmationPolicyFile,
+    line: 1,
+    message,
+    text,
+  });
+}
+
+function assertGuidanceContains(
+  pattern,
+  message,
+  text = "Expected Action Inbox guidance pattern was not found."
+) {
+  if (pattern.test(guidanceSource)) return;
+  findings.push({
+    file: guidanceFile,
     line: 1,
     message,
     text,
@@ -187,6 +220,7 @@ const expectedOrder = [
   "notifications.notice.${notice.id}.open-page",
   "notifications.notice.${notice.id}.mark-read",
   "notifications.toggle-raw-feed",
+  "notifications.feed.${item.id}.open",
   "notifications.toggle-reading",
 ];
 let cursor = -1;
@@ -271,6 +305,45 @@ assertContains(
   "Notifications selected-bucket item actions must keep primary/open-page/mark-read action families."
 );
 
+assertContains(
+  /rawFeed\.map\(\(item\) =>[\s\S]*?<StableCtaLink[\s\S]*?to=\{item\.ctaTo\}[\s\S]*?stableHeight=\{isPhone \? 188 : 158\}[\s\S]*?debugId=\{`notifications\.feed\.\$\{item\.id\}\.open`\}/,
+  "Notifications recent-feed cards must stay actionable and route to each notice's normalized task target."
+);
+
+assertContains(
+  /function notificationKindLabel\(raw: any, fallback: string\): string \{[\s\S]*?community_verification\.request_confirmation[\s\S]*?Community verification[\s\S]*?community_confirmation\.request_to_respond[\s\S]*?Community confirmation/,
+  "Notifications recent-feed labels must not expose raw community confirmation event names."
+);
+
+assertContains(
+  /function policyTargetForCommunityVerificationRequest\(target: string\): string \{[\s\S]*?COMMUNITY_CONFIRMATION_POLICY[\s\S]*?community_verification\.request_confirmation[\s\S]*?COMMUNITY_CONFIRMATION_INBOX[\s\S]*?policyTargetForCommunityVerificationRequest\(explicit\)/,
+  "Community verification request notifications must route to responder policy focus instead of a generic inbox dead end."
+);
+
+assertPolicyContains(
+  /verificationRequestFocus[\s\S]*?verification_request[\s\S]*?community-confirmation-policy\.verification-request\.review-routing[\s\S]*?Review responders[\s\S]*?community-confirmation-policy\.verification-request\.open-inbox[\s\S]*?id="community-confirmation-policy-switches"/,
+  "Community Confirmation Policy must show a focused public verification request landing with immediate responder actions."
+);
+
+assertContains(
+  /community_member_witness\.request_to_respond[\s\S]*?Member witness[\s\S]*?community_member_witness\.outcome_updated[\s\S]*?Witness result/,
+  "Notifications recent-feed labels must translate member-witness event names."
+);
+
+assertContains(
+  /COMMUNITY_CONFIRMATION_POLICY[\s\S]*?member_witness_request=[\s\S]*?View witness result[\s\S]*?Record witness/,
+  "Member-witness notifications must keep task-specific Action Inbox labels."
+);
+
+assertGuidanceContains(
+  /COMMUNITY_CONFIRMATION_POLICY[\s\S]*?member_witness_request=[\s\S]*?View witness result[\s\S]*?Record witness/,
+  "Shared guidance must keep task-specific member-witness CTA labels."
+);
+
+assertGuidanceContains(
+  /community_member_witness\.request_to_respond[\s\S]*?community_member_witness\.outcome_updated[\s\S]*?member witness request[\s\S]*?member witness result/,
+  "Shared guidance must keep member-witness notifications in Act now."
+);
 assertContains(
   /const \[isPhone, setIsPhone\] = useState<boolean>\([\s\S]*?window\.innerWidth <= 640[\s\S]*?gridTemplateColumns: isPhone\s*\?\s*"1fr"/,
   "Notifications action rows must collapse to one-column phone controls."

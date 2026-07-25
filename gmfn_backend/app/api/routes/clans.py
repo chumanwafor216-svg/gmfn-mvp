@@ -27,6 +27,7 @@ from app.core.dev_guard import require_dev_mode
 from app.core.security import decode_token
 from app.core.trust_event_types import TrustEventType
 from app.db.database import get_db
+from app.db.notification_models import Notification
 from app.db.models import (
     Clan,
     ClanInvite,
@@ -902,6 +903,82 @@ def _member_verification_summary(
         ),
         "items": [_member_verification_payload(db, row) for row in rows],
     }
+
+
+def _member_witness_request_action_url(row: CommunityMemberVerificationRequest) -> str:
+    return (
+        f"/app/community-confirmations/policy?community_id={int(row.clan_id)}"
+        f"&member_witness_request={quote(row.public_token)}"
+    )
+
+
+def _notify_member_witness_request_created(
+    db: Session,
+    row: CommunityMemberVerificationRequest,
+) -> None:
+    subject = db.get(User, int(row.subject_user_id))
+    community = db.get(Clan, int(row.clan_id))
+    create_notification(
+        db,
+        user_id=int(row.verifier_user_id),
+        kind="community_member_witness.request_to_respond",
+        title="Member witness request",
+        message=(
+            f"{_member_display(subject)} asked you to witness their membership in "
+            f"{_safe_str(getattr(community, 'name', None), 'this community')}. "
+            "Respond only if you personally know them in this community."
+        ),
+        action_url=_member_witness_request_action_url(row),
+        action_label="Record witness",
+        commit=False,
+        refresh=False,
+    )
+
+
+def _mark_member_witness_request_notification_read(
+    db: Session,
+    row: CommunityMemberVerificationRequest,
+) -> None:
+    notification = (
+        db.query(Notification)
+        .filter(Notification.user_id == int(row.verifier_user_id))
+        .filter(Notification.kind == "community_member_witness.request_to_respond")
+        .filter(Notification.action_url == _member_witness_request_action_url(row))
+        .first()
+    )
+    if notification is None or notification.is_read:
+        return
+    notification.is_read = True
+    notification.read_at = datetime.now(timezone.utc)
+    db.add(notification)
+
+
+def _notify_member_witness_requester_result(
+    db: Session,
+    row: CommunityMemberVerificationRequest,
+    *,
+    status: str,
+) -> None:
+    recipient_id = int(row.requested_by_user_id or row.subject_user_id)
+    if recipient_id <= 0 or recipient_id == int(row.verifier_user_id):
+        return
+    verifier = db.get(User, int(row.verifier_user_id))
+    community = db.get(Clan, int(row.clan_id))
+    normalized_status = _safe_str(status, _safe_str(row.status, "updated")).lower()
+    create_notification(
+        db,
+        user_id=recipient_id,
+        kind="community_member_witness.outcome_updated",
+        title="Member witness result",
+        message=(
+            f"{_member_display(verifier)} {normalized_status} your member witness request "
+            f"in {_safe_str(getattr(community, 'name', None), 'this community')}."
+        ),
+        action_url=_member_witness_request_action_url(row),
+        action_label="View witness result",
+        commit=False,
+        refresh=False,
+    )
 
 
 def _member_verification_request_payload(
@@ -4501,6 +4578,7 @@ def create_member_verification_request(
         commit=False,
         refresh=False,
     )
+    _notify_member_witness_request_created(db, row)
     try:
         db.commit()
         db.refresh(row)
@@ -4676,6 +4754,8 @@ def decide_member_verification_request(
             commit=False,
             refresh=False,
         )
+        _mark_member_witness_request_notification_read(db, row)
+        _notify_member_witness_requester_result(db, row, status="declined")
         db.commit()
         db.refresh(row)
         return {
@@ -4720,6 +4800,8 @@ def decide_member_verification_request(
         commit=False,
         refresh=False,
     )
+    _mark_member_witness_request_notification_read(db, row)
+    _notify_member_witness_requester_result(db, row, status="approved")
     db.commit()
     db.refresh(row)
     db.refresh(verification)

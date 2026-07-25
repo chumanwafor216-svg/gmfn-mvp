@@ -243,8 +243,8 @@ lineForbid(
 
 wholeFileFind(
   "src/lib/actionTargetRoutes.ts",
-  /export const ACTION_TARGETS = \{[\s\S]*?TRUST_TIMELINE: APP_ROUTES\.TRUST_TIMELINE[\s\S]*?NOTIFICATIONS: APP_ROUTES\.NOTIFICATIONS[\s\S]*?FREE_SPOTLIGHT: APP_ROUTES\.FREE_SPOTLIGHT[\s\S]*?SUBSCRIPTION_SPOTLIGHT: APP_ROUTES\.SUBSCRIPTION_SPOTLIGHT[\s\S]*?\} as const;/,
-  "Shared action-target routes must own Trust Timeline, notification, free spotlight, and subscription spotlight targets."
+  /export const ACTION_TARGETS = \{[\s\S]*?TRUST_TIMELINE: APP_ROUTES\.TRUST_TIMELINE[\s\S]*?COMMUNITY_CONFIRMATION_INBOX: APP_ROUTES\.COMMUNITY_CONFIRMATION_INBOX[\s\S]*?NOTIFICATIONS: APP_ROUTES\.NOTIFICATIONS[\s\S]*?FREE_SPOTLIGHT: APP_ROUTES\.FREE_SPOTLIGHT[\s\S]*?SUBSCRIPTION_SPOTLIGHT: APP_ROUTES\.SUBSCRIPTION_SPOTLIGHT[\s\S]*?\} as const;/,
+  "Shared action-target routes must own Trust Timeline, Community Confirmation, notification, free spotlight, and subscription spotlight targets."
 );
 
 wholeFileFind(
@@ -257,6 +257,7 @@ wholeFileFind(
   ['"action-inbox"', "ACTION_TARGETS.NOTIFICATIONS"],
   ["market", "ACTION_TARGETS.MARKETPLACE"],
   ['"community-home"', "ACTION_TARGETS.COMMUNITY"],
+  ['"community-confirmations"', "ACTION_TARGETS.COMMUNITY_CONFIRMATION_INBOX"],
   ['"payment-rails"', "ACTION_TARGETS.PAYMENT_RAILS"],
   ['"trust-timeline"', "ACTION_TARGETS.TRUST_TIMELINE"],
   ['"shop-control/paid-spotlight"', "ACTION_TARGETS.SUBSCRIPTION_SPOTLIGHT"],

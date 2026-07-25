@@ -288,11 +288,23 @@ function containsAny(text: string, tokens: string[]): boolean {
   return tokens.some((token) => text.includes(token));
 }
 
+function policyTargetForCommunityVerificationRequest(target: string): string {
+  const suffix = splitPathSuffix(normalizeActionTargetPath(target)).suffix;
+  return `${NOTIFICATION_TARGETS.COMMUNITY_CONFIRMATION_POLICY}${suffix}`;
+}
+
 function resolveNoticeTarget(raw: any): string {
   const explicit = normalizeActionTargetPath(
     raw?.action_url || raw?.cta_to || raw?.ctaTo || raw?.to
   );
   if (explicit && explicit !== NOTIFICATION_TARGETS.NOTIFICATIONS) {
+    if (
+      safeStr(raw?.kind).toLowerCase() === "community_verification.request_confirmation" &&
+      splitPathSuffix(explicit).path === NOTIFICATION_TARGETS.COMMUNITY_CONFIRMATION_INBOX
+    ) {
+      return policyTargetForCommunityVerificationRequest(explicit);
+    }
+
     const explicitText = rawNotificationText(raw);
     if (
       explicit === NOTIFICATION_TARGETS.LOANS &&
@@ -429,6 +441,27 @@ function normalizeNotificationCtaLabel(
     return "Open Demand Box";
   }
 
+  if (
+    targetPath === NOTIFICATION_TARGETS.COMMUNITY_CONFIRMATION_INBOX &&
+    (genericLabel || /^(respond|respond now|review request|open request)$/i.test(direct))
+  ) {
+    return "Respond";
+  }
+
+  if (
+    targetPath === NOTIFICATION_TARGETS.COMMUNITY_CONFIRMATION_POLICY &&
+    normalizedTarget.includes("member_witness_request=") &&
+    (genericLabel || /^(record witness|view witness result|review request|open request|respond)$/i.test(direct))
+  ) {
+    return /result/i.test(direct) ? "View witness result" : "Record witness";
+  }
+
+  if (
+    targetPath === NOTIFICATION_TARGETS.COMMUNITY_CONFIRMATION_POLICY &&
+    (genericLabel || /^(review request|open request|respond)$/i.test(direct))
+  ) {
+    return "Review responders";
+  }
   if (/^\/app\/community\/[^/]+\/join-requests$/.test(targetPath) && genericLabel) {
     return "Review Join Request";
   }
@@ -452,6 +485,29 @@ function normalizeNotificationCtaLabel(
   }
 
   return direct || fallback;
+}
+
+function notificationKindLabel(raw: any, fallback: string): string {
+  const kind = safeStr(raw?.kind).toLowerCase();
+  if (kind === "community_verification.request_confirmation") {
+    return "Community verification";
+  }
+  if (kind === "community_confirmation.request_to_respond") {
+    return "Community confirmation";
+  }
+  if (kind === "community_confirmation.outcome_updated") {
+    return "Confirmation result";
+  }
+  if (kind === "community_confirmation.request_expired") {
+    return "Confirmation expired";
+  }
+  if (kind === "community_member_witness.request_to_respond") {
+    return "Member witness";
+  }
+  if (kind === "community_member_witness.outcome_updated") {
+    return "Witness result";
+  }
+  return fallback;
 }
 
 function normalizeSettings(raw: any): SettingsState {
@@ -533,7 +589,7 @@ function normalizeRawNotificationRow(raw: any): RawNotificationRow {
     return {
       id: firstTruthy(raw?.id, raw?.notification_id, raw?.title, raw?.message),
       kind: firstTruthy(raw?.kind, raw?.title, "approval_request"),
-      kindLabel: joinReviewKindLabel(raw),
+      kindLabel: notificationKindLabel(raw, joinReviewKindLabel(raw)),
       title: firstTruthy(
         raw?.title,
         isReview
@@ -567,7 +623,7 @@ function normalizeRawNotificationRow(raw: any): RawNotificationRow {
   return {
     id: firstTruthy(raw?.id, raw?.notification_id, raw?.title, raw?.message),
     kind: firstTruthy(raw?.kind, raw?.title, "update"),
-    kindLabel: firstTruthy(raw?.kind, raw?.title, "Update"),
+    kindLabel: notificationKindLabel(raw, firstTruthy(raw?.kind, raw?.title, "Update")),
     title: firstTruthy(raw?.title, raw?.kind, "Update"),
     detail: firstTruthy(
       raw?.message,
@@ -1859,11 +1915,40 @@ export default function NotificationsPage() {
               </div>
             ) : (
               rawFeed.map((item) => (
-                <div
+                <StableCtaLink
                   key={`feed-${item.id}-${item.createdAt}`}
-                  style={innerCard("#F8FBFF")}
+                  to={item.ctaTo}
+                  kind="secondary"
+                  fullWidth
+                  stableHeight={isPhone ? 188 : 158}
+                  debugId={`notifications.feed.${item.id}.open`}
+                  onClick={() => {
+                    if (item.unread && /^\d+$/.test(safeStr(item.id))) {
+                      void markAsRead(safeStr(item.id));
+                    }
+                  }}
+                  style={{
+                    ...innerCard("#F8FBFF"),
+                    display: "grid",
+                    alignItems: "start",
+                    justifyContent: "stretch",
+                    gap: 0,
+                    textAlign: "left",
+                    color: "#07172C",
+                    padding: 14,
+                  }}
                 >
-                  <div style={compactPanelTitle()}>{item.title}</div>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      gap: 10,
+                      alignItems: "start",
+                    }}
+                  >
+                    <div style={compactPanelTitle()}>{item.title}</div>
+                    <span style={{ ...badge(false), flexShrink: 0 }}>Open</span>
+                  </div>
                   <div style={{ marginTop: 8, ...helperText() }}>
                     {settings.notificationsMode === "detailed"
                       ? item.detail
@@ -1885,7 +1970,7 @@ export default function NotificationsPage() {
                     )}
                     <span style={badge(false)}>{safeDateTime(item.createdAt)}</span>
                   </div>
-                </div>
+                </StableCtaLink>
               ))
             )}
           </div>

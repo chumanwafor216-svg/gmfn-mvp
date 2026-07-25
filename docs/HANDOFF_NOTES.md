@@ -1,3 +1,171 @@
+## CURRENT LOCAL STATE - 2026-07-25 - Member witness requests now reach Action Inbox
+
+Owner trigger:
+- After the Action Inbox community verification fix, owner asked whether similar
+  improvements could be found and repaired for member witnessing, confirmation,
+  and community-rank confirmations.
+
+Unabated truth:
+- Normal Community Confirmation response notifications already create
+  `/app/community-confirmations?request_id=...` action URLs, and the previous
+  route-normalizer repair now lets those reach the inbox instead of blinking.
+- Public community verification requests now route to the focused responder
+  policy landing from the previous pass.
+- Member witness request response UI already existed at
+  `/app/community-confirmations/policy?community_id=...&member_witness_request=...`,
+  but creating a witness request did not notify the assigned verifier in Action
+  Inbox. That was a real missing action path.
+- A scan for `rank`, `ranking`, `community rank`, and `community_rank` found
+  internal ordering/scoring/readiness language, but no existing actionable
+  community-rank confirmation notification flow to repair. Do not invent that
+  product surface without owner-approved specs.
+
+Changed:
+- `gmfn_backend/app/api/routes/clans.py`
+  - Added member-witness notification helpers.
+  - Creating a pending member witness request now creates an unread
+    `community_member_witness.request_to_respond` notification for the assigned
+    verifier.
+  - The notification points to the focused policy response URL with
+    `community_id` and `member_witness_request` preserved, and uses
+    `Record witness` as the action label.
+  - When the verifier approves or declines, the request notification is marked
+    read and the requester receives `community_member_witness.outcome_updated`
+    pointing to the same witness result context.
+- `gmfn_backend/tests/test_community_member_verifications.py`
+  - Extended the member witness request flow test to prove the verifier notice,
+    read-state transition, and requester result notice.
+- `frontend/src/pages/NotificationsPage.tsx`
+  - Translates member-witness notification kinds to `Member witness` and
+    `Witness result` instead of raw event strings.
+  - Shows task-specific CTA labels: `Record witness` for pending witness
+    responses and `View witness result` for outcome notices.
+- `frontend/src/lib/guidance.ts`
+  - Shared guidance now keeps member-witness request/result notifications in
+    `Act now` and preserves the task-specific CTA labels.
+- `frontend/tools/audit-notifications-button-inventory.mjs`
+  - Added guards for member-witness labels, CTA routing language, and shared
+    guidance bucketing.
+
+Routes/screens affected:
+- `/app/notifications`: new member-witness notifications appear as actionable
+  cards/rows with user-facing labels.
+- `/app/community-confirmations/policy?community_id=...&member_witness_request=...`:
+  used as the focused response/result landing for member witness notifications.
+- No new ranking/Community Rank confirmation route or model was created.
+
+Verification:
+- Passed `python -m pytest gmfn_backend/tests/test_community_member_verifications.py -k member_witness_request`.
+- Passed `python -m py_compile gmfn_backend/app/api/routes/clans.py`.
+- Passed `npm exec -- eslint src/lib/guidance.ts src/pages/NotificationsPage.tsx tools/audit-notifications-button-inventory.mjs` from `frontend`.
+- Passed `npm --prefix frontend run audit:notifications-button-inventory`.
+- Passed `npm --prefix frontend run audit:route-fallthrough`.
+- Passed `npm --prefix frontend run audit:action-response-protocol`.
+- Passed `npm --prefix frontend run audit:protected-button-freeze`.
+- Passed `npm --prefix frontend run build`.
+- Passed `git diff --check` with only recurring Windows line-ending warnings.
+
+Operational notes:
+- Local only. Not committed, pushed, or deployed in this pass.
+- `git status` still reports a permission warning for `.pytest_tmp/shop-gallery-full/`; this was not touched by the fix.
+## CURRENT LOCAL STATE - 2026-07-25 - Action Inbox opens community verification tasks without blinking
+
+Owner trigger:
+- Owner shared a phone screenshot from `/app/notifications` showing a
+  `Community verification request` notification and reported that tapping the
+  notification did not open the place where the response/action must happen;
+  instead the Action Inbox page blinked/tripped the viewer.
+- Owner then shared the destination screenshot: `GSN Workspace` /
+  Community Confirmation Policy, where the page opened but still did not explain
+  that this public verification request needed responder-routing review.
+
+Unabated truth:
+- The backend was already creating useful action URLs for this path, such as
+  `/app/community-confirmations?community_id=...&verification_request=1` or
+  `/app/community-confirmations?request_id=...`.
+- The frontend shared action-target normalizer did not treat
+  `/app/community-confirmations` as a safe authenticated action target, so it
+  collapsed that valid destination back to `/app/notifications`. That explains
+  the visible blink/stay-on-page behavior.
+- The public `community_verification.request_confirmation` event is not a normal
+  member-response row. It is a public viewer asking the community to confirm its
+  record, so the honest immediate task is responder/routing review on the
+  Community Confirmation Policy page, with the inbox kept as a secondary path.
+- The recent-notification feed cards were display-only, so the screenshot
+  surface showed a notification without a direct card-level action.
+
+Changed:
+- `frontend/src/lib/actionTargetRoutes.ts`
+  - Added Community Confirmation inbox/policy to `ACTION_TARGETS`.
+  - Added aliases for `community-confirmations`,
+    `community-confirmation-inbox`, `community-confirmations/policy`, and
+    `community-confirmation-policy`.
+  - Allowed the authenticated community-confirmation app paths through the
+    shared normalizer so query strings like `request_id`, `community_id`, and
+    `verification_request` are preserved.
+- `frontend/src/lib/guidance.ts`
+  - Community verification/confirmation notifications now remain in `Act now`.
+  - Generic community-confirmation inbox CTAs normalize to `Respond`.
+  - Public `community_verification.request_confirmation` notifications that
+    point at `/app/community-confirmations?...` are redirected to
+    `/app/community-confirmations/policy?...`, preserving the query string, and
+    the CTA label becomes `Review responders`.
+- `frontend/src/pages/NotificationsPage.tsx`
+  - Recent notification cards now render as fixed-height `StableCtaLink` cards
+    to each notice's normalized task target.
+  - Numeric unread recent notifications are marked read when opened.
+  - Community confirmation/verification raw event names are translated into
+    user-facing chip labels.
+  - Public community verification request cards now deep-link to the policy
+    responder focus instead of a generic confirmation inbox.
+- `frontend/src/pages/CommunityConfirmationPolicyPage.tsx`
+  - Added a focused public-verification-request landing card when
+    `verification_request=1` is present.
+  - The first visible action is `Review responders`, which reveals the policy
+    switches using the shared no-jump reveal helper.
+  - A quieter secondary `Open inbox` action remains available, preserving the
+    same `community_id` and `verification_request` query context.
+- `frontend/tools/audit-notifications-button-inventory.mjs`
+  - Updated the Action Inbox action inventory for the new feed-card action.
+  - Added guards that recent feed cards stay actionable, hide raw confirmation
+    event names, public verification requests route to responder policy focus,
+    and the policy page keeps the focused landing/actions.
+- `frontend/tools/audit-route-fallthrough.mjs`
+  - Added a guard that Community Confirmation remains part of the shared
+    action-target route table/alias set.
+
+Routes/screens affected:
+- `/app/notifications`: recent notification cards and Action Inbox guidance for
+  community verification/confirmation notifications.
+- `/app/community-confirmations`: now reachable from notification action URLs
+  instead of being sanitized back to `/app/notifications`; kept as the secondary
+  inbox route where it is the right task surface.
+- `/app/community-confirmations/policy`: now receives public community
+  verification request notifications and starts with a focused explanation plus
+  immediate responder/routing action.
+- No backend notification creation, auth, database schema, app shell, bottom
+  navigation, Dashboard Market Wisdom, or Community Confirmation response logic
+  was changed.
+
+Verification:
+- Passed `npm exec -- eslint src/lib/actionTargetRoutes.ts src/lib/guidance.ts
+  src/pages/NotificationsPage.tsx src/pages/CommunityConfirmationPolicyPage.tsx
+  tools/audit-notifications-button-inventory.mjs tools/audit-route-fallthrough.mjs`
+  from `frontend`.
+- Passed `npm --prefix frontend run audit:notifications-button-inventory`.
+- Passed `npm --prefix frontend run audit:route-fallthrough`.
+- Passed `npm --prefix frontend run audit:action-response-protocol`.
+- Passed `npm --prefix frontend run audit:protected-button-freeze` after
+  replacing a raw smooth scroll with the shared no-jump reveal helper.
+- Passed `npm --prefix frontend run build`.
+- Passed `git diff --check` with only recurring Windows LF-to-CRLF warnings on
+  touched frontend files.
+
+Operational notes:
+- Local only. Not committed, pushed, or deployed in this pass.
+- Because current freeze policy says routine pilot work should not be pushed
+  without owner approval, a live phone pointed at Render will not show this fix
+  until the batch is approved and published/deployed.
 ## CURRENT LOCAL STATE - 2026-07-24 - Official Board reflects Demand Box signals without duplication
 
 Owner trigger:

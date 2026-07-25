@@ -956,6 +956,18 @@ function CommunityConfirmationPolicyPage() {
     return location.hash === "#member-witness" || Boolean(memberWitnessRequestToken);
   }, [location.hash, memberWitnessRequestToken]);
 
+  const verificationRequestFocus = useMemo(() => {
+    const params = new URLSearchParams(location.search);
+    const value = safeStr(params.get("verification_request")).toLowerCase();
+    return value === "1" || value === "true";
+  }, [location.search]);
+  const focusedInboxTarget = useMemo(() => {
+    const params = new URLSearchParams();
+    if (communityId) params.set("community_id", String(communityId));
+    if (verificationRequestFocus) params.set("verification_request", "1");
+    const query = params.toString();
+    return `${APP_ROUTES.COMMUNITY_CONFIRMATION_INBOX}${query ? `?${query}` : ""}`;
+  }, [communityId, verificationRequestFocus]);
   const copyText = useMemo(() => {
     return buildGsnSnapshotPaper({
       title: "GSN Community Confirmation Policy Summary",
@@ -1647,6 +1659,22 @@ function CommunityConfirmationPolicyPage() {
     return publicFrontendUrl(memberWitnessRequest.approvalPath);
   }, [memberWitnessRequest?.approvalPath]);
 
+  const scrollToPolicySwitches = useCallback(() => {
+    if (typeof document === "undefined") return;
+    const targetId = "community-confirmation-policy-switches";
+    const target = document.getElementById(targetId);
+    if (target) {
+      revealElementWithoutJump(target, {
+        surface: "community-confirmation-policy",
+        targetId,
+        reason: "verification-request",
+      });
+    }
+    setNotice({
+      tone: "success",
+      text: "Start here: confirm request routing is on and at least one trusted responder can answer.",
+    });
+  }, []);
   async function copyMemberCredentialLink() {
     if (!selectedMember?.gsnId) {
       setNotice({
@@ -1809,6 +1837,71 @@ function CommunityConfirmationPolicyPage() {
         backLabel={memberWitnessFocus ? "Trust Passport" : "Inbox"}
       />
 
+      {verificationRequestFocus && !memberWitnessFocus ? (
+        <section
+          style={{
+            marginTop: 14,
+            ...softCard("#FFF8E6"),
+            border: "2px solid rgba(214,170,69,0.40)",
+          }}
+        >
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) auto",
+              gap: 12,
+              alignItems: "center",
+            }}
+          >
+            <div>
+              <div style={sectionLabel()}>
+                {labelWithIcon("megaphone", "Public verification request", "gold")}
+              </div>
+              <h2
+                style={{
+                  margin: "8px 0 0",
+                  color: "#07172C",
+                  fontSize: isCompact ? 22 : 26,
+                  fontWeight: 1000,
+                  lineHeight: 1.12,
+                }}
+              >
+                A public viewer is asking this community to confirm its record.
+              </h2>
+              <p style={{ margin: "8px 0 0", ...helperText(), color: "#3D4E63" }}>
+                First confirm request routing is on and that trusted responders are available. Private member contacts stay protected.
+              </p>
+            </div>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: isCompact ? "1fr" : "1fr",
+                gap: 8,
+                minWidth: isCompact ? "auto" : 210,
+              }}
+            >
+              <PrimaryButton
+                type="button"
+                onClick={scrollToPolicySwitches}
+                stableHeight={52}
+                fullWidth
+                debugId="community-confirmation-policy.verification-request.review-routing"
+              >
+                {labelWithIcon("check", "Review responders", "gold")}
+              </PrimaryButton>
+              <SecondaryButton
+                type="button"
+                onClick={() => navigateWithOrigin(navigate, focusedInboxTarget, location)}
+                stableHeight={52}
+                fullWidth
+                debugId="community-confirmation-policy.verification-request.open-inbox"
+              >
+                {labelWithIcon("navigation", "Open inbox", "blue")}
+              </SecondaryButton>
+            </div>
+          </div>
+        </section>
+      ) : null}
       {!memberWitnessFocus ? (
         <ExplainToggle
           label="How this works"
@@ -2128,6 +2221,7 @@ function CommunityConfirmationPolicyPage() {
       ) : null}
 
       <section
+        id="community-confirmation-policy-switches"
         style={{
           display: memberWitnessFocus ? "none" : undefined,
           marginTop: 14,

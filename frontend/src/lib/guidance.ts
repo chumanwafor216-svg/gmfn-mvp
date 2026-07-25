@@ -478,6 +478,11 @@ function containsAny(text: string, tokens: string[]): boolean {
   return tokens.some((token) => text.includes(token));
 }
 
+function policyTargetForCommunityVerificationRequest(target: string): string {
+  const suffix = splitPathSuffix(normalizeActionTargetPath(target)).suffix;
+  return `${GUIDANCE_TARGETS.COMMUNITY_CONFIRMATION_POLICY}${suffix}`;
+}
+
 function resolveNoticeTarget(raw: any): string {
   const rawExplicit = raw?.action_url || raw?.cta_to || raw?.ctaTo || raw?.to;
   const text = [
@@ -493,6 +498,12 @@ function resolveNoticeTarget(raw: any): string {
 
   if (safeStr(rawExplicit)) {
     const explicit = normalizeActionTargetPath(rawExplicit);
+    if (
+      safeStr(raw?.kind).toLowerCase() === "community_verification.request_confirmation" &&
+      splitPathSuffix(explicit).path === GUIDANCE_TARGETS.COMMUNITY_CONFIRMATION_INBOX
+    ) {
+      return policyTargetForCommunityVerificationRequest(explicit);
+    }
     if (
       explicit === GUIDANCE_TARGETS.LOANS &&
       containsAny(text, [
@@ -800,6 +811,28 @@ function normalizeNoticeCtaLabel(ctaTo: string, rawLabel: any): string {
     return "Open Demand Box";
   }
 
+  if (
+    targetPath === GUIDANCE_TARGETS.COMMUNITY_CONFIRMATION_INBOX &&
+    (genericLabel || /^(respond|respond now|review request|open request)$/i.test(direct))
+  ) {
+    return "Respond";
+  }
+
+
+  if (
+    targetPath === GUIDANCE_TARGETS.COMMUNITY_CONFIRMATION_POLICY &&
+    normalizedTarget.includes("member_witness_request=") &&
+    (genericLabel || /^(record witness|view witness result|review request|open request|respond)$/i.test(direct))
+  ) {
+    return /result/i.test(direct) ? "View witness result" : "Record witness";
+  }
+
+  if (
+    targetPath === GUIDANCE_TARGETS.COMMUNITY_CONFIRMATION_POLICY &&
+    (genericLabel || /^(review request|open request|respond)$/i.test(direct))
+  ) {
+    return "Review responders";
+  }
   if (/^\/app\/community\/[^/]+\/join-requests$/.test(targetPath) && genericLabel) {
     return "Review Join Request";
   }
@@ -839,9 +872,15 @@ function bucketFromNotification(raw: any): GuidanceInboxBucketKey {
     text.includes("community_confirmation.request_to_respond") ||
     text.includes("community_confirmation.outcome_updated") ||
     text.includes("community_confirmation.request_expired") ||
+    text.includes("community_verification.request_confirmation") ||
+    text.includes("community_member_witness.request_to_respond") ||
+    text.includes("community_member_witness.outcome_updated") ||
     text.includes("community confirmation request") ||
     text.includes("community confirmation updated") ||
     text.includes("community confirmation expired") ||
+    text.includes("community verification request") ||
+    text.includes("member witness request") ||
+    text.includes("member witness result") ||
     text.includes("guarantor") ||
     text.includes("approve") ||
     text.includes("decline") ||
