@@ -1,3 +1,75 @@
+## CURRENT LOCAL STATE - 2026-07-25 - Community Proof layer extended to public member credential
+
+Owner trigger:
+- Owner selected `1=continue` after the first Community Proof layer pass on TrustSlip and TrustSlip Verify.
+
+Unabated truth:
+- This continuation still does not create a new backend proof engine, ranking, Community Proof QR, or shop trust score.
+- It extends the already-created shared proof layer to the public member credential page, using only public-safe credential fields already returned by the existing route.
+- Private verifier names, private contacts, private review notes, payment records, loan details, and the full Trust Passport remain outside the public page.
+
+Changed:
+- `frontend/src/pages/CommunityMemberVerifyPage.tsx`
+  - Imports `CommunityProofPanel`.
+  - Shows `Known by community` immediately after the member credential confidence ribbon.
+  - Uses existing public credential fields: community name, membership role/status, witness count/strength/currentness, next witness status, community activity, and credential boundary.
+- `frontend/tools/audit-community-verification-boundary.mjs`
+  - Added the shared Community Proof source files to the audit map.
+  - Added guards requiring the public member credential to keep the proof layer after the confidence ribbon and requiring the shared proof boundary language/markers.
+
+Routes/screens affected:
+- `/verify/community/:communityKey/member/:memberKey`: public member credential now shows the shared Community Proof layer.
+
+Verification:
+- Passed `npm exec -- eslint src/pages/CommunityMemberVerifyPage.tsx tools/audit-community-verification-boundary.mjs` from `frontend`.
+- Passed `npm --prefix frontend run audit:community-verification-boundary`.
+- Passed `npm --prefix frontend run audit:protected-button-freeze`.
+- Passed `npm --prefix frontend run build`.
+
+Recommended next step:
+- Start the shop/merchant trust pass: reuse `CommunityProofPanel` as the base for a `Why trust this shop?` evidence panel on public shop/marketplace merchant surfaces, without introducing ratings, ranks, or hidden scores.
+## CURRENT LOCAL STATE - 2026-07-25 - Community Proof layer started on TrustSlip surfaces
+
+Owner trigger:
+- Owner asked to start the strategic GSN capability strengthening list. The agreed first small/high-gain move was a shared Community Proof layer and Evidence Currentness language before broader Community Domain, Marketplace, or QR proof packaging work.
+
+Unabated truth:
+- This pass does not create a government ID wallet, ranking system, new backend proof engine, schema, QR proof type, or Community Domain template system.
+- It makes existing TrustSlip data more legible by packaging community-known, identity context, member witness, evidence currentness, community activity, and decision-boundary signals in a reusable frontend layer.
+- The panel deliberately says evidence supports judgement and is not government ID, payment approval, credit approval, or a guarantee of future behaviour.
+
+Changed:
+- `frontend/src/lib/communityProof.ts`
+  - Added shared Community Proof item builder and tone resolver.
+  - Produces stable proof rows: Known by community, Identity context, Member witness, Evidence currentness, Community activity, and Decision boundary.
+- `frontend/src/components/CommunityProofPanel.tsx`
+  - Added reusable mobile-safe proof panel using GSN 3D icons and `EvidenceMeter`.
+  - Adds `data-gsn-community-proof-layer` and per-item audit markers.
+- `frontend/src/pages/TrustSlipPage.tsx`
+  - Shows `Known by community` proof layer immediately after the holder TrustSlip confidence ribbon.
+  - Uses existing holder/community/witness/currentness/activity/status data only.
+- `frontend/src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx`
+  - Shows the same public-safe proof layer immediately after the public TrustSlip Verify confidence ribbon.
+  - Keeps private Trust Passport details protected and uses only props already available to the public paper.
+- `frontend/tools/audit-public-trustslip-verify-boundary.mjs`
+  - Cages the public proof layer placement and boundary wording.
+- `frontend/tools/audit-trust-passport-trustslip-boundary.mjs`
+  - Cages the holder proof layer placement and shared proof helper/component.
+  - Updated the signed-in TrustSlip API wrapper assertion to allow the current startup-cache wrapper while still requiring `/trust-slips/me`.
+
+Routes/screens affected:
+- `/app/trust-slip`: holder-facing TrustSlip now carries the first shared Community Proof layer.
+- Public TrustSlip Verify routes such as `/t/:code`, `/verify/trust-slip`, and `/trust-slips/verify/:code`: public paper now carries the same proof language without exposing private passport data.
+
+Verification:
+- Passed `npm exec -- eslint src/lib/communityProof.ts src/components/CommunityProofPanel.tsx src/pages/TrustSlipPage.tsx src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx tools/audit-public-trustslip-verify-boundary.mjs tools/audit-trust-passport-trustslip-boundary.mjs` from `frontend`.
+- Passed `npm --prefix frontend run audit:public-trustslip-verify-boundary`.
+- Passed `npm --prefix frontend run audit:trust-passport-trustslip-boundary`.
+- Passed `npm --prefix frontend run audit:protected-button-freeze`.
+- Passed `npm --prefix frontend run build`.
+
+Recommended next step:
+- Extend the same `CommunityProofPanel` to `CommunityMemberVerifyPage` and then to shop/merchant trust surfaces as `Why trust this shop?`, reusing the same proof items instead of creating a new scoring/ranking system.
 ## CURRENT LOCAL STATE - 2026-07-25 - Member witness requests now reach Action Inbox
 
 Owner trigger:
@@ -150713,3 +150785,30 @@ GSN-branded invite composer and invite-entry continuity.
     `python -m pytest -q gmfn_backend\tests\test_marketplace_public_shop.py --basetemp=.pytest-basetemp-marketplace-public-shop`.
 - Deployment:
   - local only; not pushed or deployed because owner selected `1`.
+
+## 2026-07-25 - Public Shop Community Proof Layer
+
+- Context:
+  - owner selected `1` to continue the GSN Second Engine proof/currentness upgrades after TrustSlip and public member credential surfaces;
+  - next smallest high-value public surface was Public Shop / Shop Gallery because shop trust can affect goods, credit, and money decisions.
+- Changed:
+  - `frontend/src/pages/ShopGalleryPage.tsx`
+    - imports shared `CommunityProofPanel`;
+    - derives shop proof currentness from the public shop verification payload;
+    - renders a `Why trust this shop?` proof panel inside the open Shop verification surface, after shop/community ID rows and before TrustSlip / scan / owner request actions;
+    - keeps the boundary honest: public shop/community IDs help match the owner, but current TrustSlip or community confirmation must still be requested before serious trade.
+  - `frontend/tools/audit-marketplace-shop-evidence-boundary.mjs`
+    - now reads the shared Community Proof component/library;
+    - asserts the Shop Gallery proof panel exists and uses member-witness/currentness/TrustSlip-request fields;
+    - asserts the shared proof boundary still says it is not government ID, payment approval, credit approval, or a guarantee of future behaviour.
+- Product note:
+  - backend public shop verification currently sets `trustslip_available: false` and `trustslip_request_required: true`, so this UI intentionally does not claim a shop is verified by TrustSlip;
+  - the panel is evidence guidance for judgement, not a rank, rating, credit authority, release authority, or hidden score.
+- Verification:
+  - passed `npm exec -- eslint src/pages/ShopGalleryPage.tsx tools/audit-marketplace-shop-evidence-boundary.mjs` from `frontend`;
+  - passed `npm --prefix frontend run audit:marketplace-shop-evidence-boundary`;
+  - passed `npm --prefix frontend run audit:community-shop-actions`;
+  - passed `npm --prefix frontend run audit:protected-button-freeze`;
+  - passed `npm --prefix frontend run build`.
+- Deployment:
+  - local only at time of note; owner has not yet asked to publish this continuation slice.

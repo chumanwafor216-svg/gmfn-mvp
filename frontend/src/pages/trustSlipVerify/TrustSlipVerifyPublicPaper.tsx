@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
+import CommunityProofPanel from "../../components/CommunityProofPanel";
 import GSNBrandMark from "../../components/GSNBrandMark";
 import { GsnRealisticIcon, type Gsn3DIconKey } from "../../components/GsnRealisticIcon";
 import { PrimaryButton, StableCtaLink } from "../../components/StableButton";
@@ -1242,6 +1243,24 @@ export default function TrustSlipVerifyPublicPaper({
         />
 
         <TrustDocumentConfidenceRibbon items={trustSlipConfidenceRibbonItems} />
+
+        <CommunityProofPanel
+          title="Known by community"
+          subtitle="Public-safe community proof from this TrustSlip. It supports judgement without exposing private Trust Passport details."
+          compact={compact}
+          communityName={communityLabel}
+          holderRole={holderRole}
+          identityLabel={validNow ? "TrustSlip currently valid" : publicValidityLabel}
+          memberWitnessCount={memberWitnessCount}
+          membershipStrengthLabel={membershipStrengthLabel}
+          membershipCurrentnessLabel={membershipCurrentnessLabel}
+          membershipCurrentnessScope={membershipCurrentnessScope}
+          nextWitnessRenewalStatusLabel={nextWitnessRenewalStatusLabel}
+          communityActivityCount={communityActivityCount}
+          communityActivityLabel={communityActivityLabel}
+          communityActivityCategories={communityActivityCategories}
+          trustSlipStatusLabel={publicValidityLabel}
+        />
 
         <div
           data-debug-id="trust-slip-verify.public.recipient-access-record"

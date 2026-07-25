@@ -11,6 +11,8 @@ const files = {
   targets: "src/lib/actionTargetRoutes.ts",
   marketplace: "src/pages/MarketplacePage.tsx",
   shopGallery: "src/pages/ShopGalleryPage.tsx",
+  communityProofPanel: "src/components/CommunityProofPanel.tsx",
+  communityProof: "src/lib/communityProof.ts",
   snapshotPaper: "src/lib/gsnSnapshotPaper.ts",
   package: "package.json",
   map: "../docs/GSN_EVIDENCE_DISPLAY_IMPLEMENTATION_MAP_DRAFT.md",
@@ -176,6 +178,24 @@ assertContains(
   "shopGallery",
   /Shop verification[\s\S]*?Verify this shop before you trade[\s\S]*?Request a[\s\S]*?live TrustSlip when you need current evidence from the owner[\s\S]*?Shop and community IDs do not show member-witness[\s\S]*?currentness[\s\S]*?by themselves/,
   "Shop Gallery visible verification panel must say IDs alone do not prove current member-witness trust."
+);
+
+assertContains(
+  "shopGallery",
+  /import CommunityProofPanel from "\.\.\/components\/CommunityProofPanel";[\s\S]*?const shopCommunityProofTrustSlipStatus =[\s\S]*?Current TrustSlip must be requested from the shop owner[\s\S]*?const shopCommunityProofCurrentness =[\s\S]*?Needs current TrustSlip[\s\S]*?title="Why trust this shop\?"[\s\S]*?memberWitnessCount=\{publicShopVerification\?\.member_witness_count\}[\s\S]*?membershipCurrentnessLabel=\{shopCommunityProofCurrentness\}[\s\S]*?trustSlipStatusLabel=\{shopCommunityProofTrustSlipStatus\}/,
+  "Shop Gallery verification panel must render the shared Community Proof layer for shop trust decisions."
+);
+
+assertContains(
+  "communityProofPanel",
+  /data-gsn-community-proof-layer="true"[\s\S]*?data-gsn-community-proof-item=\{item\.key\}/,
+  "Shared Community Proof panel must expose stable caged markers for verification surfaces."
+);
+
+assertContains(
+  "communityProof",
+  /This is not government ID, payment approval, credit approval, or a guarantee of future behaviour/,
+  "Shared Community Proof language must preserve the public decision boundary."
 );
 
 assertContains(

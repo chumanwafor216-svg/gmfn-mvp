@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { QRCodeSVG } from "qrcode.react";
 import { useLocation, useNavigate } from "react-router-dom";
 import ExplainToggle from "../components/ExplainToggle";
+import CommunityProofPanel from "../components/CommunityProofPanel";
 import NextActionGuide from "../components/NextActionGuide";
 import PageTopNav from "../components/PageTopNav";
 import {
@@ -3823,6 +3824,23 @@ export default function TrustSlipPage() {
             }}
           >
             <TrustDocumentConfidenceRibbon items={trustSlipHolderConfidenceRibbonItems} />
+            <CommunityProofPanel
+              title="Known by community"
+              subtitle="Portable community proof from this TrustSlip. Use it as evidence for judgement, not as automatic approval."
+              compact={isCompact}
+              communityName={communityName}
+              holderRole={holderRole}
+              identityLabel={identityRecordSummary}
+              memberWitnessCount={memberWitnessCount}
+              membershipStrengthLabel={membershipStrengthLabel}
+              membershipCurrentnessLabel={membershipCurrentnessLabel}
+              membershipCurrentnessScope={membershipCurrentnessScope}
+              nextWitnessRenewalStatusLabel={nextWitnessRenewalStatusLabel}
+              communityActivityCount={communityActivityCount}
+              communityActivityLabel={communityActivityLabel}
+              communityActivityCategories={communityActivityCategories}
+              trustSlipStatusLabel={trustSlipPublicStatus}
+            />
             <div
               style={{
                 display: "grid",

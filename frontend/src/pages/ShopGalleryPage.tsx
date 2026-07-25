@@ -3,6 +3,7 @@ import { QRCodeSVG } from "qrcode.react";
 import { useLocation, useParams } from "react-router-dom";
 import GsnInstallPrompt from "../components/GsnInstallPrompt";
 import GSNBrandMark from "../components/GSNBrandMark";
+import CommunityProofPanel from "../components/CommunityProofPanel";
 import { GsnRealisticIcon, type Gsn3DIconKey } from "../components/GsnRealisticIcon";
 import OwnerOnlySurfaceNav from "../components/OwnerOnlySurfaceNav";
 import SocialTagShareButton from "../components/SocialTagShareButton";
@@ -2660,6 +2661,20 @@ export default function ShopGalleryPage() {
   ] satisfies Array<{ icon: ShopIconName; text: string }>;
   const shopCommerceDecisionText =
     "Before credit, goods, or money move, read the shop ID, Community ID, current TrustSlip, and community confirmation together. This panel is evidence for judgement, not approval to release goods or credit.";
+  const shopCommunityProofTrustSlipStatus = publicShopVerification?.trustslip_available
+    ? "Current TrustSlip can be checked from this shop record"
+    : "Current TrustSlip must be requested from the shop owner";
+  const shopCommunityProofCurrentness = publicShopVerification?.trustslip_request_required
+    ? "Needs current TrustSlip"
+    : firstMeaningful(
+        publicShopVerification?.membership_currentness_label,
+        publicShopVerification?.community_evidence_currentness_label,
+        "Ask for current confirmation"
+      );
+  const shopCommunityProofScope = firstMeaningful(
+    publicShopVerification?.plain_language,
+    "Use the shop ID and Community ID to match the right owner, then ask for current TrustSlip or community confirmation before serious trade."
+  );
 
   function buildPublicShopMessage(link: string, itemName?: string): string {
     return buildGsnPublicShopLinkMessage({
@@ -4114,6 +4129,39 @@ export default function ShopGalleryPage() {
                 </div>
               </div>
             </div>
+
+            <CommunityProofPanel
+              title="Why trust this shop?"
+              subtitle="Community context helps you know what to ask for before goods, credit, or money move."
+              compact={isCompact}
+              communityName={firstMeaningful(
+                publicShopVerification?.community_name,
+                shopCommunityText,
+                shopLocationText
+              )}
+              holderRole="Shop owner"
+              identityLabel={shopGmfnText ? "Shop owner GSN ID shown" : "Shop owner ID not shown"}
+              memberWitnessCount={publicShopVerification?.member_witness_count}
+              membershipStrengthLabel={firstMeaningful(
+                publicShopVerification?.membership_strength_label,
+                "Ask for member-witness confirmation"
+              )}
+              membershipCurrentnessLabel={shopCommunityProofCurrentness}
+              membershipCurrentnessScope={shopCommunityProofScope}
+              nextWitnessRenewalStatusLabel={
+                publicShopVerification?.next_witness_renewal_status_label
+              }
+              communityActivityCount={publicShopVerification?.community_activity_count}
+              communityActivityLabel={publicShopVerification?.community_activity_label}
+              communityActivityCategories={
+                publicShopVerification?.community_activity_categories
+              }
+              trustSlipStatusLabel={shopCommunityProofTrustSlipStatus}
+              style={{
+                position: "relative",
+                boxShadow: "0 18px 36px rgba(2,12,27,0.20)",
+              }}
+            />
 
             <div
               style={{

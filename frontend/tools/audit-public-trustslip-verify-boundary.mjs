@@ -11,6 +11,8 @@ const files = {
   publicPaper: "src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx",
   privateEvidence: "src/pages/trustSlipVerify/TrustSlipVerifyPrivateEvidence.tsx",
   boundary: "src/pages/trustSlipVerify/TrustSlipVerifyBoundary.tsx",
+  communityProofPanel: "src/components/CommunityProofPanel.tsx",
+  communityProof: "src/lib/communityProof.ts",
   api: "src/lib/api.ts",
   backend: "../gmfn_backend/app/api/routes/trust_slips.py",
   package: "package.json",
@@ -169,6 +171,23 @@ assertContains(
   "publicPaper",
   /TrustDocumentConfidenceRibbon[\s\S]*TrustDocumentDisclosureSection[\s\S]*TrustDocumentSecurityPanel[\s\S]*TrustDocumentBoundaryPanel[\s\S]*TrustDocumentFingerprint/,
   "Public TrustSlip paper must keep core Trust Document Language primitives."
+);
+assertContains(
+  "publicPaper",
+  /<TrustDocumentConfidenceRibbon items=\{trustSlipConfidenceRibbonItems\} \/>[\s\S]*?<CommunityProofPanel[\s\S]*?title="Known by community"[\s\S]*?trustSlipStatusLabel=\{publicValidityLabel\}/,
+  "Public TrustSlip paper must show the shared Known by community proof layer immediately after the confidence ribbon."
+);
+
+assertContains(
+  "communityProofPanel",
+  /data-gsn-community-proof-layer="true"[\s\S]*?data-gsn-community-proof-item=\{item.key\}[\s\S]*?EvidenceMeter/,
+  "CommunityProofPanel must expose a caged proof layer with evidence meters and a decision boundary item."
+);
+
+assertContains(
+  "communityProof",
+  /Known by community[\s\S]*?Member witness[\s\S]*?Evidence currentness[\s\S]*?Decision boundary[\s\S]*?not government ID, payment approval, credit approval, or a guarantee of future behaviour/,
+  "Community proof helper must keep portable proof language and non-ID/non-approval boundary wording."
 );
 
 assertContains(

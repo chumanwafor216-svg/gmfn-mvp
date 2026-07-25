@@ -9,6 +9,8 @@ const files = {
   app: "src/App.tsx",
   community: "src/pages/CommunityVerifyPage.tsx",
   member: "src/pages/CommunityMemberVerifyPage.tsx",
+  communityProofPanel: "src/components/CommunityProofPanel.tsx",
+  communityProof: "src/lib/communityProof.ts",
   api: "src/lib/api.ts",
   publicLinks: "src/lib/publicLinks.ts",
   service: "../gmfn_backend/app/services/community_confirmation_service.py",
@@ -128,6 +130,23 @@ assertContains(
   "member",
   /TrustDocumentConfidenceRibbon[\s\S]*TrustDocumentBoundaryPanel[\s\S]*TrustDocumentSecurityPanel[\s\S]*TrustDocumentFingerprint/,
   "Community Member Credential must keep Trust Document Language primitives for scoped member evidence."
+);
+assertContains(
+  "member",
+  /<TrustDocumentConfidenceRibbon items=\{memberCredentialConfidenceRibbonItems\} \/>[\s\S]*?<CommunityProofPanel[\s\S]*?title="Known by community"[\s\S]*?trustSlipStatusLabel="Community member credential"/,
+  "Community Member Credential must show the shared Known by community proof layer immediately after the confidence ribbon."
+);
+
+assertContains(
+  "communityProofPanel",
+  /data-gsn-community-proof-layer="true"[\s\S]*?data-gsn-community-proof-item=\{item.key\}[\s\S]*?EvidenceMeter/,
+  "CommunityProofPanel must keep stable proof-layer and proof-item markers."
+);
+
+assertContains(
+  "communityProof",
+  /Known by community[\s\S]*?Member witness[\s\S]*?Evidence currentness[\s\S]*?Decision boundary[\s\S]*?not government ID, payment approval, credit approval, or a guarantee of future behaviour/,
+  "Community proof helper must keep portable proof and non-ID/non-approval boundary language."
 );
 
 assertContains(

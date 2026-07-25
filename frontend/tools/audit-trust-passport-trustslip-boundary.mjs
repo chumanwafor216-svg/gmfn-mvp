@@ -10,6 +10,8 @@ const files = {
   trustPassport: "src/pages/TrustScorePage.tsx",
   trustSlip: "src/pages/TrustSlipPage.tsx",
   reader: "src/components/TrustSlipReaderBlock.tsx",
+  communityProofPanel: "src/components/CommunityProofPanel.tsx",
+  communityProof: "src/lib/communityProof.ts",
   viewModel: "src/lib/trustPassportViewModel.ts",
   api: "src/lib/api.ts",
   package: "package.json",
@@ -125,7 +127,7 @@ assertContains(
 
 assertContains(
   "api",
-  /export async function getMyTrustSlip\(\): Promise<any> \{[\s\S]*?return httpJson\("\/trust-slips\/me", "GET"\);[\s\S]*?\}/,
+  /export async function getMyTrustSlip\(\): Promise<any> \{[\s\S]*?cachedStartupSectionRead[\s\S]*?startupSectionCacheKey\("getMyTrustSlip"\)[\s\S]*?httpJson\("\/trust-slips\/me", "GET"\)[\s\S]*?\}/,
   "Signed-in holder TrustSlip lookup must keep using the authenticated /trust-slips/me wrapper."
 );
 
@@ -205,6 +207,23 @@ assertContains(
   "trustSlip",
   /data-gsn-trust-document-certificate="trustslip-holder"[\s\S]*?<TrustDocumentConfidenceRibbon[\s\S]*?<TrustDocumentBoundaryPanel[\s\S]*?title="This TrustSlip confirms"[\s\S]*?<TrustDocumentBoundaryPanel[\s\S]*?title="This TrustSlip does not confirm"[\s\S]*?<TrustDocumentSecurityPanel[\s\S]*?<TrustDocumentFingerprint/,
   "TrustSlip holder page must keep core Trust Document Language primitives and confirms/does-not-confirm panels."
+);
+assertContains(
+  "trustSlip",
+  /data-gsn-trust-document-certificate="trustslip-holder"[\s\S]*?<TrustDocumentConfidenceRibbon items=\{trustSlipHolderConfidenceRibbonItems\} \/>[\s\S]*?<CommunityProofPanel[\s\S]*?title="Known by community"[\s\S]*?trustSlipStatusLabel=\{trustSlipPublicStatus\}/,
+  "TrustSlip holder page must show the shared Known by community proof layer after the confidence ribbon."
+);
+
+assertContains(
+  "communityProofPanel",
+  /data-gsn-community-proof-layer="true"[\s\S]*?data-gsn-community-proof-item=\{item.key\}[\s\S]*?EvidenceMeter/,
+  "CommunityProofPanel must expose the reusable proof layer and decision-boundary item."
+);
+
+assertContains(
+  "communityProof",
+  /Known by community[\s\S]*?Member witness[\s\S]*?Evidence currentness[\s\S]*?Decision boundary[\s\S]*?not government ID, payment approval, credit approval, or a guarantee of future behaviour/,
+  "Community proof helper must keep portable proof and non-ID/non-approval boundary language."
 );
 
 assertContains(

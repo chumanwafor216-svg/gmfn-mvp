@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { useParams } from "react-router-dom";
+import CommunityProofPanel from "../components/CommunityProofPanel";
 import { GsnRealisticIcon, type Gsn3DIconKey } from "../components/GsnRealisticIcon";
 import PageTopNav from "../components/PageTopNav";
 import { PrimaryButton, SecondaryButton } from "../components/StableButton";
@@ -712,6 +713,24 @@ export default function CommunityMemberVerifyPage() {
               </div>
 
               <TrustDocumentConfidenceRibbon items={memberCredentialConfidenceRibbonItems} />
+
+              <CommunityProofPanel
+                title="Known by community"
+                subtitle="Public-safe membership proof for this Community ID. It supports judgement without exposing private witnesses or the full Trust Passport."
+                compact
+                communityName={credential.community_name}
+                holderRole={credential.membership_role}
+                identityLabel={membershipStatusText}
+                memberWitnessCount={credential.member_witness_count}
+                membershipStrengthLabel={credential.membership_strength_label}
+                membershipCurrentnessLabel={currentnessLabel}
+                membershipCurrentnessScope={currentnessScope}
+                nextWitnessRenewalStatusLabel={credential.next_witness_renewal_status_label}
+                communityActivityCount={credential.community_activity_count}
+                communityActivityLabel={credential.community_activity_label}
+                communityActivityCategories={credential.community_activity_categories}
+                trustSlipStatusLabel="Community member credential"
+              />
 
               <TrustDocumentDisclosureSection
                 title="Credential security and limits"
