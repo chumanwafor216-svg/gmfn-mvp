@@ -83,14 +83,14 @@ assertContains(
 
 assertContains(
   "trust",
-  /setNotice\(\{[\s\S]*?Opening the next safe trust step now\.[\s\S]*?\}\);[\s\S]*?openTrustRoute\(nextStep\.ctaTo\)/,
+  /setNotice\(\{[\s\S]*?Opening the next safe evidence step now\.[\s\S]*?\}\);[\s\S]*?openTrustRoute\(nextStep\.ctaTo\)/,
   "Repair next-step action must visibly respond before routing."
 );
 
 assertContains(
   "trust",
   /activeTrustPassportLane === "repair"[\s\S]*?4\. Why the evidence reads this way[\s\S]*?6\. What changed in the evidence\?/,
-  "Repair lane must keep pressure notes and recent trust movement visible for repair context."
+  "Repair lane must keep pressure notes and recent evidence movement visible for repair context."
 );
 
 assertContains(

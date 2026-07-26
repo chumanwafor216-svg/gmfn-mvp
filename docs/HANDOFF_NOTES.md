@@ -152473,3 +152473,37 @@ GSN-branded invite composer and invite-entry continuity.
   - local only so far; do not push/deploy unless the owner explicitly selects `2` or says push/deploy.
 - Next recommended step:
   - commit this finance evidence-language slice locally, then either continue the next small Trust Passport evidence-language cleanup on `1` or push/deploy the accumulated local commits on `2`.
+## 2026-07-26 - Trust Passport Support Evidence Labels
+
+- Trigger:
+  - owner selected `1` after the Finance Discipline evidence-language slice was committed locally.
+- Unabated truth:
+  - this pass cleans private `/app/trust` visible support/trade/surface/repair wording only;
+  - it does not rename backend TrustEvent contracts, `Trust Passport`, `TrustSlip`, `Trust limit`, route names, debug IDs, or internal variable names such as `trustSurfaceCards`;
+  - this is not an Identity Profile route, Evidence Ledger route, Behavioural Placement schema, Decision Pack generator, verified-community model, scoring rewrite, approval engine, or finance/guarantee workflow.
+- Changed:
+  - `frontend/src/lib/trustPassportViewModel.ts`
+    - renames visible decision-use rows from `Support trust` to `Support evidence` and from `Trade / merchant trust` to `Trade / merchant evidence`;
+    - changes the fallback local reason from `Local community trust reason...` to local community evidence language.
+  - `frontend/src/pages/TrustScorePage.tsx`
+    - changes local-community fallback/status copy from trust wording to community evidence wording;
+    - changes surface cards from `Local community trust` and `trust signals` to evidence wording while preserving route targets and debug IDs;
+    - changes fallback latest movement/support/repair copy from trust movement/event/step wording to evidence movement/event/step wording;
+    - changes `trust record` and `trust evidence layer` phrasing to evidence-record/evidence-layer phrasing.
+  - `frontend/tools/audit-trust-passport-front-package.mjs` and `frontend/tools/audit-trust-passport-repair-lane.mjs`
+    - update source cages for the new evidence labels and repair notice copy.
+- Verification:
+  - passed `npm exec -- eslint src/pages/TrustScorePage.tsx src/lib/trustPassportViewModel.ts tools/audit-trust-passport-front-package.mjs tools/audit-trust-passport-repair-lane.mjs` from `frontend`;
+  - passed direct `node tools/audit-trust-passport-front-package.mjs` from `frontend`;
+  - passed direct `node tools/audit-trust-passport-repair-lane.mjs` from `frontend`;
+  - passed `npm --prefix frontend run audit:trust-passport-lane-map`;
+  - passed `npm --prefix frontend run audit:trust-passport-trustslip-boundary`;
+  - passed `npm --prefix frontend run audit:protected-button-freeze`;
+  - non-escalated `npm --prefix frontend run smoke:trust-passport-trustslip-boundary` hit sandbox `spawn EPERM` while starting Vite/esbuild;
+  - passed escalated `npm --prefix frontend run smoke:trust-passport-trustslip-boundary`;
+  - passed `npm --prefix frontend run build`;
+  - passed `git diff --check` before the handoff entry.
+- Deployment:
+  - local only so far; do not push/deploy unless the owner explicitly selects `2` or says push/deploy.
+- Next recommended step:
+  - commit this support evidence-label slice locally, then either continue another small Trust Passport wording cleanup on `1` or push/deploy the accumulated local commits on `2`.

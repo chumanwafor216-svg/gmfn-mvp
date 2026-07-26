@@ -307,7 +307,7 @@ export function buildTrustPassportViewModel(
           : "Identity is only partly visible. Ask for stronger identity evidence before relying on this record.",
     },
     {
-      title: "Support trust",
+      title: "Support evidence",
       status: supportStatus,
       meaning:
         supportStatus === "Evidence still building"
@@ -330,7 +330,7 @@ export function buildTrustPassportViewModel(
         : "Repayment or support follow-through is not complete enough on this screen. Ask for more evidence before money, credit, or goods.",
     },
     {
-      title: "Trade / merchant trust",
+      title: "Trade / merchant evidence",
       status: tradeStatus,
       meaning:
         tradeStatus === "Evidence still building"
@@ -483,7 +483,7 @@ export function buildTrustPassportViewModel(
       verifyUrl: clean(input.verifyUrl),
     },
     technicalDetail: {
-      localTrustReason: clean(input.localTrustReason, "Local community trust reason is not shown yet."),
+      localTrustReason: clean(input.localTrustReason, "Local community evidence reason is not shown yet."),
       crossCommunityReason: clean(
         input.crossCommunityReason,
         "Cross-community consistency reason is not shown yet."

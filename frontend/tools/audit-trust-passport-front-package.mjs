@@ -250,14 +250,14 @@ assertOrderedSnippets(
   "trust",
   [
     "const trustSurfaceCards = [",
-    "title: \"Local community trust\"",
+    "title: \"Local community evidence\"",
     "to: routes.openTrust",
     "debugId: \"trust-score.surface.local-community-trust\"",
     "title: \"Cross-community consistency\"",
     "to: routes.cciReading",
     "debugId: \"trust-score.surface.cross-community-consistency\"",
   ],
-  "Trust Passport local/cross-community trust surface cards must keep their route targets and stable debug IDs."
+  "Trust Passport local/cross-community evidence surface cards must keep their route targets and stable debug IDs."
 );
 
 assertOrderedSnippets(

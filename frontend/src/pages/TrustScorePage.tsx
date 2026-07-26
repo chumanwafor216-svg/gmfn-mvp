@@ -1413,9 +1413,9 @@ function getOpenTrustState(
       classText: "Not shown yet",
       postureSource: "-",
       tone: "neutral",
-      statusText: "Select a community to view local community trust",
+      statusText: "Select a community to view local community evidence",
       whyText:
-        "Local community trust belongs to the community you are using now, not the wider cross-community consistency reading.",
+        "Local community evidence belongs to the community you are using now, not the wider cross-community consistency reading.",
     };
   }
 
@@ -2869,7 +2869,7 @@ export default function TrustScorePage() {
           ? "Recorded"
           : "Open task",
       detail: passportVm.identity.passportVerified
-        ? "Official ID evidence is verified in the trust evidence layer."
+        ? "Official ID evidence is verified in the evidence layer."
         : passportVm.identity.officialIdRecorded
           ? "Official ID evidence is recorded for review. Provider verification is still pending."
           : "Open the focused ID task to record passport, national ID, or licence evidence.",
@@ -2961,12 +2961,12 @@ export default function TrustScorePage() {
 
   const trustQuestionIcons: Record<string, GsnIconName> = {
     "Identity evidence": "shield",
-    "Support trust": "community",
+    "Support evidence": "community",
     "Contribution / discipline": "chart",
     "Contribution discipline": "chart",
     "Finance discipline": "financeInstitution",
-    "Trade / merchant trust": "shop",
-    "Trade trust": "shop",
+    "Trade / merchant evidence": "shop",
+    "Trade evidence": "shop",
     "Follow-through": "check",
     "Community stability": "home",
     "Checkable history": "document",
@@ -2975,7 +2975,7 @@ export default function TrustScorePage() {
   const trustSurfaceCards = [
     {
       icon: "home" as GsnIconName,
-      title: "Local community trust",
+      title: "Local community evidence",
       detail: "How this member is currently reading inside the active community.",
       action: "View local reading",
       to: routes.openTrust,
@@ -2987,7 +2987,7 @@ export default function TrustScorePage() {
       icon: "globe" as GsnIconName,
       title: "Cross-community consistency",
       detail:
-        "How steady this member's trust signals appear across communities.",
+        "How steady this member's evidence appears across communities.",
       action: "View consistency reading",
       to: routes.cciReading,
       value: cci.classText,
@@ -3003,7 +3003,7 @@ export default function TrustScorePage() {
       openTrust.whyText,
       cci.whyText
     ) ||
-    "No recent trust movement is shown yet. When new events occur, the reason will appear here in plain language.";
+    "No recent evidence movement is shown yet. When new events occur, the reason will appear here in plain language.";
 
   const institutionalRows = [
     ["Trust-limit signal", `${trustLimit} ${trustCurrency}`],
@@ -3027,7 +3027,7 @@ export default function TrustScorePage() {
     [
       "Trust limit",
       `${trustLimit} ${trustCurrency}`,
-      "The current amount signal GSN can show from this trust record; it is not an approval limit.",
+      "The current amount signal GSN can show from this evidence record; it is not an approval limit.",
       "financeInstitution",
     ],
     [
@@ -4355,7 +4355,7 @@ export default function TrustScorePage() {
                 </div>
                 <p style={{ ...helperText(), margin: "8px 0 0" }}>
                   {passportVm.reasons.helpsTrust[0] ||
-                    "No supporting trust signal is visible yet."}
+                    "No supporting evidence signal is visible yet."}
                 </p>
               </div>
               <div style={{ ...innerCard("#FFF8F0"), border: "1px solid rgba(200,58,58,0.14)" }}>
@@ -4445,7 +4445,7 @@ export default function TrustScorePage() {
                 </div>
                 <p style={{ ...helperText(), margin: "8px 0 0" }}>
                   {passportVm.reasons.createsPressure[0] ||
-                    "No urgent pressure signal is visible yet. Keep the current record clean and watch the next trust event."}
+                    "No urgent pressure signal is visible yet. Keep the current record clean and watch the next evidence event."}
                 </p>
               </div>
               <div style={{ ...innerCard("#FFFFFF"), border: "1px solid rgba(216,227,238,0.9)" }}>
@@ -4463,7 +4463,7 @@ export default function TrustScorePage() {
               onClick={() => {
                 setNotice({
                   tone: "success",
-                  text: "Opening the next safe trust step now.",
+                  text: "Opening the next safe evidence step now.",
                 });
                 openTrustRoute(nextStep.ctaTo);
               }}
