@@ -1,3 +1,42 @@
+## CURRENT LOCAL STATE - 2026-07-26 - Trust Passport aggregate guard audits repaired locally
+
+Owner trigger:
+- Owner selected `1` after the Trust Passport mobile first viewport density pass was committed locally.
+
+Unabated truth:
+- The runtime `/app/trust` UI was already corrected and verified, but two older Trust Passport audit scripts still expected the previous `Decision first` and `Who? / Identity / Communities` first-card contract.
+- Those stale guards would fail if run directly, creating false negative test feedback after a valid aggregate-first UI change.
+- This slice changes audit expectations only. It does not change frontend runtime UI, backend routes, evidence logic, TrustSlip, Verify, scoring, permissions, or deployment behavior.
+
+Changed:
+- `frontend/tools/audit-trust-passport-button-inventory.mjs`
+  - Updated the first-viewport contract to require aggregate reading, primary anchor, Community Portfolio, and aggregate/primary boundary rows.
+  - Updated the render-order guard to require `Aggregate Passport reading` and the mobile `Decision Boundary / Open limits` disclosure while preserving the desktop full boundary path.
+- `frontend/tools/audit-trust-passport-front-package.mjs`
+  - Updated the first answer/action-line guard to the aggregate-first language.
+  - Updated the first-viewport render guard to match the compact mobile boundary disclosure split.
+
+Routes/screens affected:
+- No runtime route changed. Guard coverage applies to signed-in Trust Passport `/app/trust`.
+
+Verification:
+- First `npm --prefix frontend run audit:trust-passport-button-inventory` failed before this fix, proving the stale guard.
+- Passed `npm --prefix frontend run audit:trust-passport-button-inventory`.
+- Passed `npm --prefix frontend run audit:trust-passport-front-package`.
+- Passed `npm --prefix frontend run audit:trust-passport-lane-map`.
+- Passed `npm --prefix frontend run audit:trust-passport-trustslip-boundary`.
+- Passed `npm --prefix frontend run audit:trust-passport-community-confirmation-lane`.
+- Passed `npm --prefix frontend run audit:trust-passport-evidence-story-lane`.
+- Passed `npm --prefix frontend run audit:trust-passport-finance-discipline-lane`.
+- Passed `npm --prefix frontend run audit:trust-passport-repair-lane`.
+- Passed ESLint on the two touched audit files.
+- Passed `git diff --check`.
+
+Deployment:
+- Local only. Not pushed or deployed; owner must select `2` or explicitly say push/deploy.
+
+Recommended next step:
+- Run the public TrustSlip Verify audit/smoke set next if continuing locally, or select `2` to push/deploy the local Trust Passport batch.
 ## CURRENT LOCAL STATE - 2026-07-26 - Trust Passport mobile first viewport tightened locally
 
 Owner trigger:
