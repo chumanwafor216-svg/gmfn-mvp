@@ -25,9 +25,11 @@ from app.services.trust_slip_decision_packs import (
     build_decision_pack_evidence_extract,
     build_decision_pack_private_evidence_extract,
     build_decision_pack_profile,
+    decision_pack_consent_share_to_holder_row,
     list_decision_pack_accesses_for_holder,
     normalize_decision_pack_context,
     record_decision_pack_access,
+    record_decision_pack_consent_share,
 )
 from app.services.trust_slips_services import (
     backfill_missing_trustslip_snapshots,
@@ -759,6 +761,23 @@ class TrustSlipReissueIn(BaseModel):
         return _reject_non_bool_value(value, "force")
 
 
+class TrustSlipDecisionPackConsentShareIn(BaseModel):
+    decision_pack: str = Field(default="community_standing", min_length=1, max_length=64)
+    export_format: str = Field(default="summary", min_length=1, max_length=24)
+    category_count: int = Field(default=0, ge=0, le=1000)
+    event_ref_count: int = Field(default=0, ge=0, le=1000)
+
+    @field_validator("decision_pack", "export_format", mode="before")
+    @classmethod
+    def reject_non_text_values(cls, value: Any, info: Any) -> Any:
+        return _reject_non_text_value(value, str(info.field_name))
+
+    @field_validator("category_count", "event_ref_count", mode="before")
+    @classmethod
+    def reject_malformed_counts(cls, value: Any, info: Any) -> Any:
+        return _reject_int_boundary_value(value, str(info.field_name))
+
+
 @router.get("/ping")
 def ping() -> Dict[str, Any]:
     return {"ok": True, "service": "trust-slips"}
@@ -833,6 +852,41 @@ def get_my_trust_slip_decision_pack_evidence(
         "evidence_extract": extract,
         "privacy_note": "This is the signed-in holder's private Decision Pack preview. It is not returned by the public TrustSlip verification route.",
         "boundary_note": "Use this to prepare consented sharing or live confirmation. Do not treat it as a public evidence paper, a score, approval, guarantee, or payment instruction.",
+    }
+
+
+@router.post("/me/decision-pack-consent-shares")
+def record_my_trust_slip_decision_pack_consent_share(
+    payload: TrustSlipDecisionPackConsentShareIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Dict[str, Any]:
+    if getattr(current_user, "id", None) is None:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    slip = get_current_trust_slip_for_user(db, user_id=int(current_user.id))
+    if slip is None:
+        raise HTTPException(status_code=404, detail="No current TrustSlip found")
+
+    context = normalize_decision_pack_context(
+        {
+            "decision_pack": payload.decision_pack or "community_standing",
+            "access_scope": "holder_private_decision_pack",
+        }
+    )
+    row = record_decision_pack_consent_share(
+        db,
+        slip=slip,
+        context=context,
+        export_format=payload.export_format,
+        category_count=int(payload.category_count or 0),
+        event_ref_count=int(payload.event_ref_count or 0),
+    )
+    return {
+        "ok": True,
+        "item": decision_pack_consent_share_to_holder_row(row) if row else None,
+        "privacy_note": "This records that the signed-in holder copied a private Decision Pack export. It does not store recipient identity, copied text, raw TrustEvents, private notes, contacts, payment references, or bank details.",
+        "evidence_note": "A holder consent-share record is an audit marker only. It is separate from public TrustSlip reads and it is not behaviour evidence or a TrustEvent.",
     }
 
 

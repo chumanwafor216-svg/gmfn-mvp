@@ -3339,11 +3339,11 @@ export default function TrustSlipPage() {
     }));
   }
 
-  async function handleCopy(text: string, successText: string, emptyText: string) {
+  async function handleCopy(text: string, successText: string, emptyText: string): Promise<boolean> {
     const value = safeStr(text);
     if (!value) {
       showNotice("error", emptyText);
-      return;
+      return false;
     }
 
     const copied = await api.safeCopy(value);
@@ -3351,6 +3351,7 @@ export default function TrustSlipPage() {
       copied ? "success" : "error",
       copied ? successText : "Copy did not complete. Select the text and copy it manually."
     );
+    return copied;
   }
 
   function handleGuideSelect(item: { to?: string }) {
@@ -3455,20 +3456,46 @@ export default function TrustSlipPage() {
     );
   }
 
-  function copyDecisionPackConsentSummary() {
-    void handleCopy(
+  async function recordDecisionPackConsentShare(exportFormat: "summary" | "json") {
+    const rows = decisionPackEvidenceRowsForShare();
+    if (!rows.length) return;
+
+    const eventRefCount = rows.reduce((total, category) => total + category.eventRefs.length, 0);
+    try {
+      await api.recordMyTrustSlipDecisionPackConsentShare({
+        decision_pack: selectedPurposeOption.key,
+        export_format: exportFormat,
+        category_count: rows.length,
+        event_ref_count: eventRefCount,
+      });
+    } catch {
+      showNotice(
+        "error",
+        "Copied, but GSN could not record the consent trail. Keep the public verify link with this share."
+      );
+    }
+  }
+
+  async function copyDecisionPackConsentSummary() {
+    const copied = await handleCopy(
       buildDecisionPackConsentShareText(),
       "Decision Pack consent summary copied.",
       "No private evidence categories are ready for this Decision Pack yet."
     );
+    if (copied) {
+      await recordDecisionPackConsentShare("summary");
+    }
   }
 
-  function copyDecisionPackConsentJson() {
-    void handleCopy(
+  async function copyDecisionPackConsentJson() {
+    const copied = await handleCopy(
       buildDecisionPackConsentExportText(),
       "Decision Pack safe JSON copied.",
       "No private evidence categories are ready for export yet."
     );
+    if (copied) {
+      await recordDecisionPackConsentShare("json");
+    }
   }
 
   if (loading) {

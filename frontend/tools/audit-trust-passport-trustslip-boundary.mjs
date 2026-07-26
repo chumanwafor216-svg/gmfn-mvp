@@ -270,6 +270,17 @@ assertContains(
   /data-gsn-decision-pack-consent-export="holder"[\s\S]*?debugId="trust-slip\.private-decision-pack\.copy-summary"[\s\S]*?Copy consent summary[\s\S]*?debugId="trust-slip\.private-decision-pack\.copy-json"[\s\S]*?Copy safe JSON/,
   "TrustSlip holder private Decision Pack preview must expose explicit consent-copy controls."
 );
+assertContains(
+  "api",
+  /recordMyTrustSlipDecisionPackConsentShare[\s\S]*?\/trust-slips\/me\/decision-pack-consent-shares[\s\S]*?decision_pack[\s\S]*?export_format[\s\S]*?category_count[\s\S]*?event_ref_count/,
+  "TrustSlip holder consent-copy controls must record a bounded holder consent-share audit marker."
+);
+
+assertContains(
+  "trustSlip",
+  /async function handleCopy[\s\S]*?Promise<boolean>[\s\S]*?return false[\s\S]*?return copied[\s\S]*?recordDecisionPackConsentShare[\s\S]*?api\.recordMyTrustSlipDecisionPackConsentShare[\s\S]*?category_count: rows\.length[\s\S]*?event_ref_count: eventRefCount[\s\S]*?if \(copied\)[\s\S]*?recordDecisionPackConsentShare\("summary"\)[\s\S]*?if \(copied\)[\s\S]*?recordDecisionPackConsentShare\("json"\)/,
+  "TrustSlip holder consent-share audit marker must be recorded only after copy succeeds and must store counts, not copied text."
+);
 
 assertContains(
   "trustSlip",

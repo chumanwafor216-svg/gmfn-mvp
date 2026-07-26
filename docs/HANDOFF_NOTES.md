@@ -151577,3 +151577,49 @@ GSN-branded invite composer and invite-entry continuity.
   - local only so far; routine continuation publishing remains batch-frozen unless the product owner explicitly asks to push/deploy.
 - Next recommended step:
   - add a backend-recorded holder consent/share event for private Decision Pack exports if the product owner wants an auditable consent trail, keeping it separate from public verify reads and ordinary TrustEvents.
+
+## 2026-07-26 - Holder Decision Pack Consent Share Audit Trail
+
+- Trigger:
+  - owner selected `1` to continue after holder-side Decision Pack copy/export controls.
+- Unabated truth:
+  - the previous copy/export controls created useful consented summaries but did not leave a backend audit marker;
+  - this pass intentionally touches schema/migration because a durable consent-share trail cannot be represented honestly as a public read or ordinary behaviour TrustEvent;
+  - the new ledger records only the consent-export fact and bounded counts. It does not store copied text, recipient identity, raw TrustEvents, private notes, contacts, payment references, bank details, or exported JSON.
+- Changed:
+  - `gmfn_backend/app/db/models.py`
+    - added `TrustSlipDecisionPackConsentShare` table model, separate from `TrustSlipDecisionPackAccess` and `TrustEvent`.
+  - `gmfn_backend/alembic/versions/20260726_add_trust_slip_decision_pack_consent_share.py`
+    - added migration for `trust_slip_decision_pack_consent_share` with holder/slip/pack/time indexes.
+  - `gmfn_backend/app/services/trust_slip_decision_packs.py`
+    - added `record_decision_pack_consent_share` and safe holder row serializer;
+    - bounds export format and category/event-reference counts.
+  - `gmfn_backend/app/api/routes/trust_slips.py`
+    - added `POST /trust-slips/me/decision-pack-consent-shares`;
+    - validates text/count payloads before writing;
+    - scopes the record to the current user's current TrustSlip.
+  - `frontend/src/lib/api.ts`
+    - added `recordMyTrustSlipDecisionPackConsentShare`.
+  - `frontend/src/pages/TrustSlipPage.tsx`
+    - `handleCopy` now returns copy success;
+    - Decision Pack consent summary / safe JSON copy controls record the backend consent-share marker only after copy succeeds;
+    - failed audit recording shows a visible warning without pretending the trail was saved.
+  - `frontend/tools/audit-trust-passport-trustslip-boundary.mjs`
+    - caged the consent-share endpoint, payload counts, and after-copy-only sequencing.
+  - `gmfn_backend/tests/test_trust_slip_boundary_controls.py`
+    - added tests proving consent-share records do not create TrustEvents or public-read rows, do not store recipient/copied text fields, and reject malformed payloads before write.
+- Verification:
+  - passed `python -m py_compile gmfn_backend\app\db\models.py gmfn_backend\app\services\trust_slip_decision_packs.py gmfn_backend\app\api\routes\trust_slips.py gmfn_backend\tests\test_trust_slip_boundary_controls.py gmfn_backend\alembic\versions\20260726_add_trust_slip_decision_pack_consent_share.py`;
+  - passed `python -m pytest -q gmfn_backend\tests\test_trust_slip_boundary_controls.py` with 13 tests;
+  - passed `npm exec -- eslint src/lib/api.ts src/pages/TrustSlipPage.tsx tools/audit-trust-passport-trustslip-boundary.mjs` from `frontend`;
+  - passed `npm --prefix frontend run audit:trust-passport-trustslip-boundary`;
+  - passed `npm --prefix frontend run audit:public-trustslip-verify-boundary`;
+  - passed `npm --prefix frontend run audit:trust-actions`;
+  - passed `npm --prefix frontend run audit:proof-surfaces`;
+  - passed `npm --prefix frontend run audit:protected-button-freeze`;
+  - passed `npm --prefix frontend run build`;
+  - passed `git diff --check`.
+- Deployment:
+  - local only so far; routine continuation publishing remains batch-frozen unless the product owner explicitly asks to push/deploy.
+- Next recommended step:
+  - add a holder-visible recent consent-share list under the private Decision Pack preview so the holder can see what they copied/exported, still without recipient identity or copied text.

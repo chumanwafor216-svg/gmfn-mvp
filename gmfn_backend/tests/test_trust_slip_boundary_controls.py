@@ -4,7 +4,7 @@ from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
 from app.db.database import SessionLocal
-from app.db.models import TrustEvent, TrustSlip, TrustSlipDecisionPackAccess
+from app.db.models import TrustEvent, TrustSlip, TrustSlipDecisionPackAccess, TrustSlipDecisionPackConsentShare
 
 
 def _create_trust_slip(*, code: str, holder_user_id: int = 1) -> int:
@@ -469,3 +469,93 @@ def test_holder_private_decision_pack_evidence_is_holder_scoped(
     assert service["evidence_count"] == 0
     assert service["event_refs"] == []
     assert "belongs to user 2" not in str(response.json())
+
+
+def test_holder_records_decision_pack_consent_share_without_trust_event_or_public_access(
+    client,
+    seed_clan_admin_membership,
+    override_current_user,
+):
+    slip_id = _create_trust_slip(code="CONSENT-SHARE")
+
+    response = client.post(
+        "/trust-slips/me/decision-pack-consent-shares",
+        json={
+            "decision_pack": "business_partnership",
+            "export_format": "json",
+            "category_count": 2,
+            "event_ref_count": 3,
+        },
+    )
+
+    assert response.status_code == 200, response.text
+    payload = response.json()
+    assert payload["ok"] is True
+    assert "recipient identity" in payload["privacy_note"]
+    assert "not behaviour evidence" in payload["evidence_note"]
+    item = payload["item"]
+    assert item["trust_slip_id"] == slip_id
+    assert item["code"] == "CONSENT-SHARE"
+    assert item["decision_pack"] == "business_partnership"
+    assert item["access_purpose"] == "Business Partnership Decision Pack"
+    assert item["consent_scope"] == "holder_private_decision_pack"
+    assert item["source"] == "holder_private_preview"
+    assert item["export_format"] == "json"
+    assert item["category_count"] == 2
+    assert item["event_ref_count"] == 3
+    assert "recipient_name" not in item
+    assert "recipient_email" not in item
+    assert "copied_text" not in item
+    assert "raw_events" not in item
+
+    db = SessionLocal()
+    try:
+        row = db.query(TrustSlipDecisionPackConsentShare).one()
+        assert row.trust_slip_id == slip_id
+        assert row.holder_user_id == 1
+        assert row.clan_id == 1
+        assert row.code == "CONSENT-SHARE"
+        assert row.decision_pack_key == "business_partnership"
+        assert row.export_format == "json"
+        assert row.category_count == 2
+        assert row.event_ref_count == 3
+        assert not hasattr(row, "recipient_name")
+        assert not hasattr(row, "recipient_email")
+        assert not hasattr(row, "recipient_phone")
+        assert not hasattr(row, "copied_text")
+        assert db.query(TrustSlipDecisionPackAccess).count() == 0
+        assert db.query(TrustEvent).count() == 0
+    finally:
+        db.close()
+
+
+def test_holder_decision_pack_consent_share_rejects_malformed_payload_before_write(
+    client,
+    seed_clan_admin_membership,
+    override_current_user,
+):
+    _create_trust_slip(code="CONSENT-BAD")
+
+    response = client.post(
+        "/trust-slips/me/decision-pack-consent-shares",
+        json={
+            "decision_pack": {"bad": "x"},
+            "export_format": ["json"],
+            "category_count": True,
+            "event_ref_count": 1.5,
+        },
+    )
+
+    assert response.status_code == 422, response.text
+    assert "decision_pack must be text" in response.text
+    assert "export_format must be text" in response.text
+    assert "category_count must be an integer, not a boolean" in response.text
+    assert "event_ref_count must be an integer, not a float" in response.text
+
+    db = SessionLocal()
+    try:
+        assert db.query(TrustSlipDecisionPackConsentShare).count() == 0
+        assert db.query(TrustSlipDecisionPackAccess).count() == 0
+        assert db.query(TrustEvent).count() == 0
+    finally:
+        db.close()

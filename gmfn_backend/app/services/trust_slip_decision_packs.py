@@ -5,7 +5,7 @@ from typing import Any, Mapping, Optional
 
 from sqlalchemy.orm import Session
 
-from app.db.models import TrustEvent, TrustSlip, TrustSlipDecisionPackAccess
+from app.db.models import TrustEvent, TrustSlip, TrustSlipDecisionPackAccess, TrustSlipDecisionPackConsentShare
 
 
 @dataclass(frozen=True)
@@ -875,6 +875,75 @@ def build_decision_pack_profile(
         "basis_note": "Generated from public TrustSlip signals already visible to the recipient; no private Trust Passport contents are exposed.",
         "boundary_note": "This profile highlights relevant evidence and gaps. It does not score the person, guarantee future behaviour, or make the decision for the recipient.",
     }
+
+def _bounded_non_negative_count(value: Any, *, limit: int = 1000) -> int:
+    if isinstance(value, bool):
+        return 0
+    try:
+        number = int(value or 0)
+    except Exception:
+        return 0
+    return max(0, min(number, limit))
+
+
+def _safe_export_format(value: Any) -> str:
+    text = _clean(value, limit=24).lower().replace("-", "_").replace(" ", "_")
+    return text if text in {"summary", "json"} else "summary"
+
+
+def record_decision_pack_consent_share(
+    db: Session,
+    *,
+    slip: TrustSlip,
+    context: Optional[dict[str, str]],
+    export_format: str,
+    category_count: int = 0,
+    event_ref_count: int = 0,
+) -> Optional[TrustSlipDecisionPackConsentShare]:
+    if not context:
+        return None
+
+    row = TrustSlipDecisionPackConsentShare(
+        trust_slip_id=int(slip.id),
+        clan_id=int(slip.clan_id) if getattr(slip, "clan_id", None) else None,
+        holder_user_id=int(slip.holder_user_id) if getattr(slip, "holder_user_id", None) else None,
+        code=str(slip.code),
+        decision_pack_key=context["decision_pack_key"] or None,
+        access_purpose=context["access_purpose"],
+        recipient_question=context["recipient_question"],
+        decision_focus=context["decision_focus"],
+        consent_scope="holder_private_decision_pack",
+        source="holder_private_preview",
+        export_format=_safe_export_format(export_format),
+        category_count=_bounded_non_negative_count(category_count),
+        event_ref_count=_bounded_non_negative_count(event_ref_count),
+        status="recorded",
+    )
+    db.add(row)
+    db.commit()
+    db.refresh(row)
+    return row
+
+
+def decision_pack_consent_share_to_holder_row(row: TrustSlipDecisionPackConsentShare) -> dict[str, Any]:
+    created_at = getattr(row, "created_at", None)
+    return {
+        "id": int(row.id),
+        "trust_slip_id": int(row.trust_slip_id),
+        "code": _clean(row.code, limit=64),
+        "decision_pack": _clean(row.decision_pack_key, limit=64),
+        "access_purpose": _clean(row.access_purpose, limit=160),
+        "recipient_question": _clean(row.recipient_question, limit=280),
+        "decision_focus": _clean(row.decision_focus, limit=360),
+        "consent_scope": _clean(row.consent_scope, limit=64),
+        "source": _clean(row.source, limit=64),
+        "export_format": _clean(row.export_format, limit=24),
+        "category_count": int(getattr(row, "category_count", 0) or 0),
+        "event_ref_count": int(getattr(row, "event_ref_count", 0) or 0),
+        "status": _clean(row.status, limit=32),
+        "created_at": created_at.isoformat() if created_at else None,
+    }
+
 
 def record_decision_pack_access(
     db: Session,

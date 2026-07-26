@@ -2439,6 +2439,19 @@ export async function getMyTrustSlipDecisionPackEvidence(
     "GET"
   );
 }
+export async function recordMyTrustSlipDecisionPackConsentShare(params?: {
+  decision_pack?: string;
+  export_format?: "summary" | "json" | string;
+  category_count?: number;
+  event_ref_count?: number;
+}): Promise<any> {
+  return httpJson("/trust-slips/me/decision-pack-consent-shares", "POST", {
+    decision_pack: params?.decision_pack || "community_standing",
+    export_format: params?.export_format || "summary",
+    category_count: params?.category_count ?? 0,
+    event_ref_count: params?.event_ref_count ?? 0,
+  });
+}
 export async function verifyTrustSlip(
   code: string,
   level?: "minimal" | "standard" | "detailed"
