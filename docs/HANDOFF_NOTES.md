@@ -152930,3 +152930,29 @@ GSN-branded invite composer and invite-entry continuity.
   - local only so far; do not push/deploy unless the owner explicitly selects `2` or says push/deploy.
 - Next recommended step:
   - commit this Dashboard/Identity local-evidence-label slice locally, then either continue another small visible/shared wording cleanup on `1` or push/deploy the accumulated local commits on `2`.
+
+## 2026-07-26 - Dashboard Attention Evidence Concern Language
+
+- Trigger:
+  - owner selected `1` after the Dashboard and Identity local-evidence-label slice was committed locally.
+- Unabated truth:
+  - this pass cleans generated Dashboard attention copy only;
+  - it does not touch Dashboard layout, Market Wisdom presentation, button geometry, route targets, debug IDs, backend APIs, attention scoring/source selection, Trust Passport, TrustSlip, Open Trust, or CCI contracts;
+  - internal helper names may still include trust because they are existing technical contracts;
+  - this is not a Decision Pack generator, Evidence Ledger route, Behavioural Placement schema, route redesign, scoring rewrite, or approval workflow.
+- Changed:
+  - `frontend/src/lib/dashboardAttentionEngine.ts`
+    - reframes attention titles/intros/consequences from `trust issue`, `trust warning`, `trust problems`, and `trust can fall` wording to evidence-concern, evidence-warning, evidence-reading, and confidence wording.
+  - `frontend/tools/audit-dashboard-actions.mjs`
+    - adds attention-engine positive and negative guards so unresolved tasks stay framed as evidence concerns rather than trust verdicts.
+- Verification:
+  - passed `npm exec -- eslint src/lib/dashboardAttentionEngine.ts tools/audit-dashboard-actions.mjs tools/audit-trust-actions.mjs` from `frontend`;
+  - passed direct `node tools/audit-dashboard-actions.mjs` from `frontend`;
+  - passed direct `node tools/audit-trust-actions.mjs` from `frontend`;
+  - passed `npm --prefix frontend run audit:protected-button-freeze`;
+  - passed `npm --prefix frontend run build`;
+  - passed `git diff --check` before the handoff entry.
+- Deployment:
+  - local only so far; do not push/deploy unless the owner explicitly selects `2` or says push/deploy.
+- Next recommended step:
+  - commit this Dashboard attention evidence-concern slice locally, then either continue another small visible/shared wording cleanup on `1` or push/deploy the accumulated local commits on `2`.

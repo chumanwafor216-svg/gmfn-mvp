@@ -39,6 +39,16 @@ function assertEngineContains(pattern, message) {
   });
 }
 
+function assertEngineNotContains(pattern, message) {
+  if (!pattern.test(attentionEngineText)) return;
+  findings.push({
+    file: attentionEngineFile,
+    line: 1,
+    message,
+    text: "Forbidden Dashboard attention engine pattern was found.",
+  });
+}
+
 function assertNotContains(pattern, message) {
   const text = read(dashboardFile);
 
@@ -253,6 +263,14 @@ assertNotContains(
   "Dashboard CCI/Open Trust fallbacks must not make uncalculated evidence look like a pending identity state."
 );
 
+assertEngineContains(
+  /evidence concern[\s\S]*?affecting the evidence reading[\s\S]*?evidence warning[\s\S]*?the evidence reading can fall[\s\S]*?evidence concerns/,
+  "Dashboard attention engine must frame unresolved issues as evidence concerns, not trust verdicts."
+);
+assertEngineNotContains(
+  /trust issue|trust problems|affecting trust|weakening trust|hurting trust|trust warning|trust can fall|trust it can cost|hurt trust|live issue to trust/i,
+  "Dashboard attention engine must not frame unresolved tasks as trust issues or trust warnings."
+);
 assertContains(
   /classText: "Not shown yet"[\s\S]*?No cross-community consistency reading yet[\s\S]*?classText: "Not shown yet"[\s\S]*?Select your community to view local evidence[\s\S]*?classText: "Not shown yet"[\s\S]*?No local community reading yet/,
   "Dashboard CCI/Open Trust missing-reading states must use honest not-shown-yet language."

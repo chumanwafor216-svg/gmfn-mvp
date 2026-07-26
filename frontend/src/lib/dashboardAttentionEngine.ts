@@ -268,12 +268,12 @@ function buildAttentionCopy(
             ]
           : stage === "followup"
           ? [
-              "This missed commitment is now affecting trust.",
-              "This slipped commitment is now weakening trust.",
+              "This missed commitment is now affecting the evidence reading.",
+              "This slipped commitment is now weakening the evidence reading.",
             ]
           : [
-              "This missed commitment is still hurting trust.",
-              "The longer this commitment stays behind, the more trust it can cost.",
+              "This missed commitment is still hurting confidence.",
+              "The longer this commitment stays behind, the more confidence it can cost.",
             ],
         showCount
       ),
@@ -282,7 +282,7 @@ function buildAttentionCopy(
           ? "A deadline or review point has slipped. This is no longer only a reminder."
           : stage === "followup"
           ? "A missed promise is now becoming part of how people read your discipline."
-          : "This is now a repeated trust warning. The missed commitment is still open.",
+          : "This is now a repeated evidence warning. The missed commitment is still open.",
       ctaLabel: "Open commitments",
       ctaTo: input.focusRouteTo,
       secondaryCtaLabel: `Open ${nextRouteLabel}`,
@@ -301,11 +301,11 @@ function buildAttentionCopy(
           : stage === "followup"
           ? [
               "Your delay is now affecting people waiting on you.",
-              "The waiting request is now affecting trust.",
+              "The waiting request is now affecting the evidence reading.",
             ]
           : [
               "People are still stuck waiting on your answer.",
-              "This unanswered request is now a stronger trust issue.",
+              "This unanswered request is now a stronger evidence concern.",
             ],
         showCount
       ),
@@ -314,7 +314,7 @@ function buildAttentionCopy(
           ? "This is no longer only a notification. Someone is still waiting for your decision."
           : stage === "followup"
           ? "Repeated delay can make people doubt whether you will respond fairly."
-          : "The longer it stays unanswered, the more it can slow people down and hurt trust.",
+          : "The longer it stays unanswered, the more it can slow people down and weaken confidence.",
       ctaLabel: `Open ${nextRouteLabel}`,
       ctaTo: input.nextRouteTo,
       ...notificationsSecondary,
@@ -326,26 +326,26 @@ function buildAttentionCopy(
       title: pickByShowCount(
         stage === "early"
           ? [
-              "A trust issue needs your attention.",
-              "Something is now affecting trust.",
+              "An evidence concern needs your attention.",
+              "Something is now affecting the evidence reading.",
             ]
           : stage === "followup"
           ? [
-              "This trust issue is still open.",
-              "The trust issue is still waiting for a fix.",
+              "This evidence concern is still open.",
+              "The evidence concern is still waiting for a fix.",
             ]
           : [
-              "This trust issue is still hurting confidence.",
-              "People may keep holding back until this trust issue is fixed.",
+              "This evidence concern is still hurting confidence.",
+              "People may keep holding back until this evidence concern is fixed.",
             ],
         showCount
       ),
       intro:
         stage === "early"
-          ? "The app has linked a live issue to trust and is explaining it before it gets heavier."
+          ? "The app has linked a live issue to the evidence reading and is explaining it before it gets heavier."
           : stage === "followup"
-          ? "This is no longer only a warning. The same trust issue is still unresolved."
-          : "This is now a repeated trust warning because the same problem is still open.",
+          ? "This is no longer only a warning. The same evidence concern is still unresolved."
+          : "This is now a repeated evidence warning because the same problem is still open.",
       ctaLabel: `Open ${nextRouteLabel}`,
       ctaTo: input.nextRouteTo,
       ...notificationsSecondary,
@@ -397,7 +397,7 @@ function buildAttentionCopy(
               "The unanswered need is still open.",
             ]
           : [
-              "This unanswered need is still affecting trust.",
+              "This unanswered need is still affecting the evidence reading.",
               "A waiting need is still open and may now cost confidence.",
             ],
         showCount
@@ -429,7 +429,7 @@ function buildAttentionCopy(
             ]
           : [
               "These notifications are still affecting your next trust step.",
-              "The longer these notifications wait, the more they can hurt trust.",
+              "The longer these notifications wait, the more they can weaken confidence.",
             ],
         showCount
       ),
@@ -490,7 +490,7 @@ function buildAttentionDetailLines(
     return {
       problemText: sentence(input.nextRouteCopy.issueText),
       consequenceText:
-        "If you leave the waiting request unanswered, people stay stuck and trust can fall.",
+        "If you leave the waiting request unanswered, people stay stuck and the evidence reading can fall.",
       actionText:
         "Open the request now and give a clear answer instead of leaving people waiting.",
     };
@@ -500,7 +500,7 @@ function buildAttentionDetailLines(
     return {
       problemText: sentence(input.nextRouteCopy.issueText),
       consequenceText:
-        "If these notifications keep building up, small matters can turn into trust problems.",
+        "If these notifications keep building up, small matters can turn into evidence concerns.",
       actionText: sentence(input.nextRouteCopy.actionText),
     };
   }
