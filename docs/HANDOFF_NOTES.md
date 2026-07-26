@@ -152590,3 +152590,32 @@ GSN-branded invite composer and invite-entry continuity.
   - local only so far; do not push/deploy unless the owner explicitly selects `2` or says push/deploy.
 - Next recommended step:
   - commit this TrustSlip evidence-summary slice locally, then either continue another small visible/shared wording cleanup on `1` or push/deploy the accumulated local commits on `2`.
+## 2026-07-26 - Identity Integrity Evidence Consistency Language
+
+- Trigger:
+  - owner selected `1` after the TrustSlip evidence-summary slice was committed locally.
+- Unabated truth:
+  - this pass cleans signed-in `/app/identity` / Identity & Integrity presentation only;
+  - it does not rename CCI fields, TrustSlip fields, Trust Passport routes, Trust Document components, backend trust-score APIs, or identity verification contracts;
+  - Identity & Integrity still reads the existing consistency and local-community data; this is visible-language cleanup, not a model/schema rewrite;
+  - this is not a new Identity Profile route, Evidence Ledger route, Behavioural Placement schema, Decision Pack generator, verified-community model, scoring rewrite, or KYC/government-ID workflow.
+- Changed:
+  - `frontend/src/pages/IdentityIntegrityPage.tsx`
+    - reframes CCI fallback reasons from `trust position`, `standing`, and `trust strength` wording to visible identity/community evidence language;
+    - changes explanatory copy from identity/trust signals to identity/evidence signals;
+    - changes local community trust/standing copy to local community evidence/context;
+    - changes next-action and document-family/use-case intros from trust story/question/change wording to evidence surface/record/question/change wording.
+  - `frontend/tools/audit-identity-integrity-front-package.mjs`
+    - adds a source cage rejecting the old identity trust-position/trust-story phrases;
+    - asserts the new identity/evidence framing remains visible.
+- Verification:
+  - passed `npm exec -- eslint src/pages/IdentityIntegrityPage.tsx tools/audit-identity-integrity-front-package.mjs tools/audit-trust-actions.mjs` from `frontend`;
+  - passed direct `node tools/audit-identity-integrity-front-package.mjs` from `frontend`;
+  - passed direct `node tools/audit-trust-actions.mjs` from `frontend`;
+  - passed `npm --prefix frontend run audit:protected-button-freeze`;
+  - passed `npm --prefix frontend run build`;
+  - passed `git diff --check` before the handoff entry.
+- Deployment:
+  - local only so far; do not push/deploy unless the owner explicitly selects `2` or says push/deploy.
+- Next recommended step:
+  - commit this Identity evidence-consistency slice locally, then either continue another small visible/shared wording cleanup on `1` or push/deploy the accumulated local commits on `2`.

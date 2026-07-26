@@ -84,6 +84,15 @@ assertContains(
   /classText: "Not shown yet"[\s\S]*?No cross-community consistency reading yet[\s\S]*?classText: "Not shown yet"[\s\S]*?Select a community to view local trust[\s\S]*?classText: "Not shown yet"[\s\S]*?No local community reading yet/,
   "Identity Integrity CCI/Open Trust missing-reading states must use honest not-shown-yet language."
 );
+assertNotContains(
+  /Your trust position|trust strength|identity and trust signals|Local community trust shows|closest trust document surface|under the trust family|Trust Passport story|Which trust question should stay with identity first|trust changes|trust story/g,
+  "Identity Integrity must frame identity and consistency as evidence, not trust-position or trust-story language."
+);
+
+assertContains(
+  /visible identity and community evidence is steady[\s\S]*?identity and evidence signals[\s\S]*?Local community evidence shows your immediate community context[\s\S]*?closest evidence surface[\s\S]*?fuller Trust Passport evidence record[\s\S]*?Which evidence question should stay with identity first[\s\S]*?evidence changes[\s\S]*?evidence record/,
+  "Identity Integrity must keep the visible identity/evidence framing."
+);
 
 assertContains(
   /const identityContext = trustSlip\?\.identity_context \|\| \{\};[\s\S]*?trustSlip\?\.bank_details_recorded[\s\S]*?identityContext\?\.bank_details_recorded[\s\S]*?trustSlip\?\.official_id_recorded[\s\S]*?identityContext\?\.official_id_recorded/,

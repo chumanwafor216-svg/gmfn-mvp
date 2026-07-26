@@ -827,7 +827,7 @@ function getCciState(me: any): ReadingState {
             : String(Math.round(scoreNum)),
         tone: "green",
         statusText: "Healthy across visible communities",
-        whyText: String(rawWhy || "Your trust position is steady right now."),
+        whyText: String(rawWhy || "Your visible identity and community evidence is steady right now."),
       };
     }
 
@@ -856,7 +856,7 @@ function getCciState(me: any): ReadingState {
         tone: "yellow",
         statusText: "Needs attention",
         whyText: String(
-          rawWhy || "A few better actions can improve your standing."
+          rawWhy || "A few clearer recent actions can strengthen the visible evidence."
         ),
       };
     }
@@ -869,7 +869,7 @@ function getCciState(me: any): ReadingState {
           : String(Math.round(scoreNum)),
       tone: "red",
       statusText: "At risk",
-      whyText: String(rawWhy || "Your trust position needs action and repair."),
+      whyText: String(rawWhy || "The visible identity and community evidence needs action and repair."),
     };
   }
 
@@ -880,7 +880,7 @@ function getCciState(me: any): ReadingState {
         postureSource: String(Math.round(scoreNum)),
         tone: "green",
         statusText: "Healthy across visible communities",
-        whyText: String(rawWhy || "Your trust position is looking strong."),
+        whyText: String(rawWhy || "Visible identity and community evidence is looking strong."),
       };
     }
 
@@ -891,7 +891,7 @@ function getCciState(me: any): ReadingState {
         tone: "green",
         statusText: "Stable and growing",
         whyText: String(
-          rawWhy || "Keep consistent actions to strengthen your standing."
+          rawWhy || "Keep consistent actions to strengthen the visible evidence."
         ),
       };
     }
@@ -903,7 +903,7 @@ function getCciState(me: any): ReadingState {
         tone: "yellow",
         statusText: "Needs attention",
         whyText: String(
-          rawWhy || "Some recent actions may have reduced your trust strength."
+          rawWhy || "Some recent actions may have weakened the visible evidence."
         ),
       };
     }
@@ -913,7 +913,7 @@ function getCciState(me: any): ReadingState {
       postureSource: String(Math.round(scoreNum)),
       tone: "red",
       statusText: "At risk",
-      whyText: String(rawWhy || "Your trust position needs urgent improvement."),
+      whyText: String(rawWhy || "The visible identity and community evidence needs urgent improvement."),
     };
   }
 
@@ -3876,10 +3876,10 @@ export default function IdentityIntegrityPage() {
                   Identity is the stable layer. It should not split from one community to another.
                 </div>
                 <div style={helperText()}>
-                  Cross-community consistency helps you see how steadily your identity and trust signals hold across visible communities.
+                  Cross-community consistency helps you see how steadily your identity and evidence signals hold across visible communities.
                 </div>
                 <div style={helperText()}>
-                  Local community trust shows your immediate community standing.
+                  Local community evidence shows your immediate community context.
                 </div>
               </div>
             </div>
@@ -3891,7 +3891,7 @@ export default function IdentityIntegrityPage() {
         storageKey="gmfn.identityIntegrity.nextActionGuide.v1"
         compact={isCompact}
         items={guideItems}
-        intro="Say what you need next in plain words like open Trust Passport, check consistency, or open the portable record. GSN will carry you into the closest trust document surface."
+        intro="Say what you need next in plain words like open Trust Passport, check consistency, or open the portable record. GSN will carry you into the closest evidence surface."
         onSelect={handleGuideSelect}
       />
 
@@ -3901,14 +3901,14 @@ export default function IdentityIntegrityPage() {
         compact={isCompact}
         items={trustDocumentFamilyItems}
         title="How Identity & Integrity fits into the wider trust-document family"
-        intro="Identity & Integrity is the steady anchor under the trust family. Use this map when you need to separate stable identity and continuity from the fuller Trust Passport story, portable TrustSlip evidence, and public validity checks."
+        intro="Identity & Integrity is the steady anchor under the evidence family. Use this map when you need to separate stable identity and continuity from the fuller Trust Passport evidence record, portable TrustSlip evidence, and public validity checks."
       />
 
       <TrustDocumentUseCases
         compact={isCompact}
         items={trustDocumentUseCases}
-        title="Which trust question should stay with identity first?"
-        intro="Stay here when the question is who this person is, what holds steady across trust changes, or what narrower verification and consistency context sits behind the trust story."
+        title="Which evidence question should stay with identity first?"
+        intro="Stay here when the question is who this person is, what holds steady across evidence changes, or what narrower verification and consistency context sits behind the evidence record."
       />
     </div>
   );
