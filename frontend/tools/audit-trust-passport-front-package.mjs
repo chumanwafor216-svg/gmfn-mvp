@@ -229,6 +229,11 @@ assertContains(
   /Stability still depends on active membership status, role, member\/sponsor confirmation, and activity evidence\./,
   "Trust Passport community stability fallback must describe membership status and evidence, not active standing."
 );
+assertContains(
+  "viewModel",
+  /evidenceScope:[\s\S]*?readingScope: "aggregate_with_primary_anchor" \| "primary_anchor_only"[\s\S]*?communityFootprintCount\?: string \| number \| null[\s\S]*?activeCommunityEvidenceCount = Math\.max\(activeClans, communityFootprintCount\)[\s\S]*?Aggregate Passport reading supports a decision, but it is not proof that every community gives the same judgement/,
+  "Trust Passport view model must carry an explicit aggregate evidence-scope contract."
+);
 assertNotContains(
   "viewModel",
   /active standing/i,
@@ -318,8 +323,8 @@ assertOrderedSnippets(
 
 assertContains(
   "trust",
-  /community_footprint[\s\S]*?communityRoleCounts[\s\S]*?roleCountLabel\(label, count\)[\s\S]*?identityCommunitySummaryRows[\s\S]*?Recorded communities[\s\S]*?Current roles[\s\S]*?data-trust-passport-community-footprint="true"[\s\S]*?Community Portfolio[\s\S]*?Active Communities: \{communityFootprint\.length\}[\s\S]*?data-trust-passport-identity-community-summary="true"/,
-  "Trust Passport Identity & Community Overview must show a compact community portfolio, role counts, and identity/community summary."
+  /community_footprint[\s\S]*?communityRoleCounts[\s\S]*?roleCountLabel\(label, count\)[\s\S]*?identityCommunitySummaryRows[\s\S]*?Recorded communities[\s\S]*?Current roles[\s\S]*?data-trust-passport-community-footprint="true"[\s\S]*?Community Portfolio[\s\S]*?Active Communities: \{communityFootprint\.length\}[\s\S]*?passportVm\.evidenceScope\.boundary[\s\S]*?data-trust-passport-identity-community-summary="true"/,
+  "Trust Passport Identity & Community Overview must show a compact community portfolio, role counts, evidence-scope boundary, and identity/community summary."
 );
 
 assertContains(

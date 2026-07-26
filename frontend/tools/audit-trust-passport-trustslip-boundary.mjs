@@ -195,8 +195,8 @@ assertContains(
 );
 assertContains(
   "trustPassport",
-  /const trustPassportDecisionFacts:[\s\S]*?"Aggregate reading"[\s\S]*?"Primary anchor"[\s\S]*?"Community portfolio"[\s\S]*?"Next step"[\s\S]*?const trustPassportDecisionBoundaryRows:[\s\S]*?"Reading scope", "Aggregate"[\s\S]*?"Primary anchor", "Separate"/,
-  "Trust Passport first viewport facts must order aggregate reading, primary community anchor, Community Portfolio, and next step before the compact boundary."
+  /const communityPortfolioDetail = passportVm\.evidenceScope\.summary;[\s\S]*?const trustPassportDecisionFacts:[\s\S]*?"Aggregate reading"[\s\S]*?"Primary anchor"[\s\S]*?"Community portfolio"[\s\S]*?communityPortfolioDetail[\s\S]*?"Next step"[\s\S]*?const trustPassportDecisionBoundaryRows:[\s\S]*?passportVm\.evidenceScope\.readingScope[\s\S]*?"Aggregate \+ anchor"[\s\S]*?"Primary anchor", "Separate"/,
+  "Trust Passport first viewport facts must order aggregate reading, primary community anchor, Community Portfolio, and next step from an explicit evidence-scope contract."
 );
 assertContains(
   "trustPassport",

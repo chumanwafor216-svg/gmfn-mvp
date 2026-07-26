@@ -70,6 +70,14 @@ export type TrustPassportViewModel = {
     lowData: boolean;
     bandLanguage: TrustBandLanguage;
   };
+  evidenceScope: {
+    readingScope: "aggregate_with_primary_anchor" | "primary_anchor_only";
+    primaryAnchorLabel: string;
+    activeCommunityCount: string;
+    portfolioLabel: string;
+    summary: string;
+    boundary: string;
+  };
   trustQuestions: TrustQuestionLine[];
   reasons: {
     helpsTrust: string[];
@@ -144,6 +152,7 @@ export type TrustPassportViewModelInput = {
   trustSlipStatus?: string;
   trustSlipCode?: string;
   verifyUrl?: string;
+  communityFootprintCount?: string | number | null;
   lastFullRepaymentAt?: string | null;
   lastReleaseAt?: string | null;
   rawBreakdownRows?: Array<[string, string]>;
@@ -186,6 +195,20 @@ export function buildTrustPassportViewModel(
   const recentEventCount = numberValue(input.recentEventCount);
   const sponsorCount = numberValue(input.sponsorCount);
   const activeClans = numberValue(input.activeClans);
+  const communityFootprintCount = numberValue(input.communityFootprintCount);
+  const activeCommunityEvidenceCount = Math.max(activeClans, communityFootprintCount);
+  const primaryAnchorLabel = clean(input.communityName, "No current community");
+  const portfolioLabel = `${activeCommunityEvidenceCount} active ${
+    activeCommunityEvidenceCount === 1 ? "community" : "communities"
+  }`;
+  const evidenceReadingScope =
+    activeCommunityEvidenceCount > 1 ? "aggregate_with_primary_anchor" : "primary_anchor_only";
+  const evidenceScopeSummary =
+    activeCommunityEvidenceCount > 1
+      ? `Aggregate Passport reading draws from ${portfolioLabel}; ${primaryAnchorLabel} remains the primary anchor.`
+      : `Passport reading is anchored to ${primaryAnchorLabel}; wider community evidence is still building.`;
+  const evidenceScopeBoundary =
+    "Aggregate Passport reading supports a decision, but it is not proof that every community gives the same judgement.";
   const counterparties = numberValue(input.counterparties);
   const riskLevel = clean(input.riskLevel, "Unknown");
   const weakBand = ["D", "E", "F"].includes(normalizeTrustBand(band));
@@ -470,6 +493,14 @@ export function buildTrustPassportViewModel(
       evidenceLanguage,
       lowData,
       bandLanguage,
+    },
+    evidenceScope: {
+      readingScope: evidenceReadingScope,
+      primaryAnchorLabel,
+      activeCommunityCount: String(activeCommunityEvidenceCount),
+      portfolioLabel,
+      summary: evidenceScopeSummary,
+      boundary: evidenceScopeBoundary,
     },
     trustQuestions,
     reasons: {

@@ -2387,6 +2387,7 @@ export default function TrustScorePage() {
     trustLimit,
     trustCurrency,
     activeClans: activeClanCount,
+    communityFootprintCount: communityFootprint.length,
     counterparties: counterpartiesCount,
     sponsorCount: trustSlipSummary?.sponsor_count,
     riskLevel,
@@ -2800,10 +2801,8 @@ export default function TrustScorePage() {
     ["id", "Identity status", passportVm.identity.identityStatusLabel],
   ];
 
-  const activeCommunityTotal = positiveNumber(passportVm.technicalDetail.activeClans);
-  const activeCommunityCountLabel = `${activeClanCount} active ${
-    activeCommunityTotal === 1 ? "community" : "communities"
-  }`;
+  const activeCommunityTotal = positiveNumber(passportVm.evidenceScope.activeCommunityCount);
+  const activeCommunityCountLabel = passportVm.evidenceScope.portfolioLabel;
   const aggregatePassportReading = passportVm.verdict.lowData
     ? "Aggregate evidence building"
     : passportVm.verdict.label;
@@ -2814,10 +2813,7 @@ export default function TrustScorePage() {
     passportVm.identity.communityName === "Not stated"
       ? "Primary community anchor is not shown yet."
       : `${currentRoleSummary}; ${passportVm.identity.communityId}.`;
-  const communityPortfolioDetail =
-    activeCommunityTotal > 1
-      ? "Aggregate reading can draw from more than one community context."
-      : "Portfolio is still building beyond the primary community.";
+  const communityPortfolioDetail = passportVm.evidenceScope.summary;
   const trustPassportDecisionAnswer = !trustSlipCode
     ? "Evidence setup needed"
     : aggregatePassportReading;
@@ -2879,7 +2875,12 @@ export default function TrustScorePage() {
     ["evidence", "Next step", nextStep.ctaLabel, trustSlipCode ? "Use the evidence lanes below." : "Issue the public TrustSlip first.", Boolean(trustSlipCode), true],
   ];
   const trustPassportDecisionBoundaryRows: Array<[string, string]> = [
-    ["Reading scope", "Aggregate"],
+    [
+      "Reading scope",
+      passportVm.evidenceScope.readingScope === "aggregate_with_primary_anchor"
+        ? "Aggregate + anchor"
+        : "Primary anchor",
+    ],
     ["Primary anchor", "Separate"],
     ["Guarantee", "No"],
     ["Government ID", "No"],
@@ -3638,6 +3639,17 @@ export default function TrustScorePage() {
                     </span>
                   </div>
                 ))}
+              </div>
+              <div
+                style={{
+                  ...helperText(),
+                  fontSize: 11.5,
+                  margin: 0,
+                  color: "#5F4100",
+                  fontWeight: 850,
+                }}
+              >
+                {passportVm.evidenceScope.boundary}
               </div>
               {communityFootprint.length > (isCompact ? 3 : 4) ? (
                 <div style={{ ...helperText(), fontSize: 11.5, margin: 0 }}>

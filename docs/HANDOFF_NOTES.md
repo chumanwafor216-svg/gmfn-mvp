@@ -1,3 +1,49 @@
+## CURRENT LOCAL STATE - 2026-07-26 - Trust Passport evidence scope contract
+
+Owner trigger:
+- Owner selected `1` after the Decision Pack evidence footprint pass and asked to continue reviewing one-community judgement risk across TrustSlip, TrustSlip Verify, and Trust Passport.
+
+Unabated truth:
+- This is a frontend-only Trust Passport polish. It does not change backend aggregation, scoring, authentication, routing, or data permissions.
+- The Trust Passport page now has a structured view-model evidence scope, so its first-screen aggregate wording and Community Portfolio boundary no longer depend on scattered page strings.
+- Devil's advocate: this is not a full new Global Trust Passport architecture and it is not the final Decision Pack backend model. It makes the existing Trust Passport front package safer and clearer while preserving the current data contract.
+
+Changed:
+- `frontend/src/lib/trustPassportViewModel.ts`
+  - Added an explicit `evidenceScope` contract with reading scope, primary anchor, active community count, portfolio label, summary, and boundary wording.
+  - Accepts `communityFootprintCount` so aggregate wording can reflect the member's wider active community footprint.
+- `frontend/src/pages/TrustScorePage.tsx`
+  - Passes the Trust Passport community footprint into the view model.
+  - First-viewport facts now render aggregate/primary-anchor language from `passportVm.evidenceScope`.
+  - Community Portfolio now displays the explicit aggregate-boundary warning.
+- `frontend/tools/audit-trust-passport-front-package.mjs`
+  - Added guards for the Trust Passport evidence-scope view-model contract and page wiring.
+- `frontend/tools/audit-trust-passport-trustslip-boundary.mjs`
+  - Updated the first-viewport assertion to require `passportVm.evidenceScope` usage.
+- `frontend/tools/audit-trust-passport-button-inventory.mjs`
+  - Updated inventory checks for the new aggregate + anchor first-viewport evidence scope.
+
+Routes/screens affected:
+- `/app/trust` Trust Passport.
+- Frontend audit scripts only.
+- No backend route, database, auth, payment, or TrustEvent write behavior changed.
+
+Verification:
+- Passed `npm --prefix frontend run audit:trust-passport-front-package`.
+- Passed `npm --prefix frontend run audit:trust-passport-trustslip-boundary`.
+- Passed `npm --prefix frontend run audit:trust-passport-button-inventory`.
+- Passed `npm --prefix frontend run audit:trust-actions`.
+- Passed `npm --prefix frontend run audit:protected-button-freeze`.
+- Passed `node frontend\tools\audit-institutional-proof-surfaces.mjs`.
+- Passed `npm --prefix frontend run build`.
+- Passed `git diff --check`; Git still reports normal working-copy line-ending warnings on touched frontend files.
+
+Deployment:
+- Not pushed or deployed in this slice because owner selected `1`.
+- After commit, local `main` should be ahead of origin by 3 commits.
+
+Recommended next step:
+- Select `2` to push/deploy the local batch, or select `1` to continue another local pass.
 ## CURRENT LOCAL STATE - 2026-07-26 - Decision Pack evidence footprint expanded
 
 Owner trigger:
