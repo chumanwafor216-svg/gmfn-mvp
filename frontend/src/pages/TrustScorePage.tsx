@@ -3039,7 +3039,7 @@ export default function TrustScorePage() {
     [
       "Locked support",
       `${safeStr(capacityContext?.current_locked_guarantees || "0.00")} ${trustCurrency}`,
-      "Support already standing behind active commitments.",
+      "Support already allocated to active commitments.",
       "shield",
     ],
     [

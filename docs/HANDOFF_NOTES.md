@@ -1,4 +1,39 @@
-﻿## CURRENT LOCAL STATE - 2026-07-26 - Trust Passport fallback evidence-reading language added locally
+## CURRENT LOCAL STATE - 2026-07-26 - Trust Passport standing wording reduced locally
+
+Owner trigger:
+- Owner selected `1` to continue after the Trust Passport fallback evidence-reading slice was committed locally.
+
+Unabated truth:
+- This is another narrow copy and audit cage slice only. It does not rename internal `standingScore` contracts, alter scoring logic, add backend evidence fields, or implement Behavioural Placement.
+- The remaining internal lane key `standing` and API-shaped score fields are left untouched because changing those would be a data-contract migration, not a safe copy refinement.
+
+Changed:
+- `frontend/src/lib/trustPassportViewModel.ts`
+  - Replaced visible community-stability fallback wording from `active standing` to `active membership status` so the page frames the reading as membership/evidence context, not a blanket trust judgement.
+- `frontend/src/pages/TrustScorePage.tsx`
+  - Replaced the finance discipline detail `Support already standing behind active commitments` with `Support already allocated to active commitments`.
+- `frontend/tools/audit-trust-passport-front-package.mjs`
+  - Added positive and negative cages for the new membership-status and allocated-support wording.
+
+Routes/screens affected:
+- Frontend Trust Passport page only.
+- No TrustSlip public route, backend route, schema, permission, payment, or evidence extraction behavior changed.
+
+Verification:
+- Passed `npm exec -- eslint src/lib/trustPassportViewModel.ts src/pages/TrustScorePage.tsx tools/audit-trust-passport-front-package.mjs tools/audit-trust-actions.mjs tools/audit-trust-passport-trustslip-boundary.mjs` from `frontend`.
+- Passed `node tools/audit-trust-passport-front-package.mjs`.
+- Passed `node tools/audit-trust-actions.mjs`.
+- Passed `node tools/audit-trust-passport-trustslip-boundary.mjs`.
+- Passed `node tools/audit-trust-passport-finance-discipline-lane.mjs`.
+- Passed `npm --prefix frontend run audit:protected-button-freeze`.
+- Passed `npm --prefix frontend run build`.
+
+Deployment:
+- Local only. Not pushed or deployed; owner must select `2` or explicitly say push/deploy.
+
+Recommended next step:
+- Continue the same controlled language migration by scanning Trust Passport and evidence helper surfaces for remaining visible `trust score`/verdict copy while preserving internal contracts until a proper backend migration is designed.
+## CURRENT LOCAL STATE - 2026-07-26 - Trust Passport fallback evidence-reading language added locally
 
 Owner trigger:
 - Owner selected `1` to continue after the Community Home Trust Passport evidence-copy slice was committed locally.

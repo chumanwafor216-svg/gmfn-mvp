@@ -213,6 +213,26 @@ assertNotContains(
   "Trust Passport fallback reading copy must not use trust-position, standing, or trust-strength verdict wording."
 );
 assertContains(
+  "viewModel",
+  /Stability still depends on active membership status, role, member\/sponsor confirmation, and activity evidence\./,
+  "Trust Passport community stability fallback must describe membership status and evidence, not active standing."
+);
+assertNotContains(
+  "viewModel",
+  /active standing/i,
+  "Trust Passport view model must not present active standing as the basis of the evidence reading."
+);
+assertContains(
+  "trust",
+  /Support already allocated to active commitments\./,
+  "Trust Passport finance discipline card must describe locked support as allocated support, not standing behind commitments."
+);
+assertNotContains(
+  "trust",
+  /Support already standing behind active commitments/i,
+  "Trust Passport finance discipline card must not use standing wording for locked support."
+);
+assertContains(
   "trust",
   /data-trust-passport-verdict-marker="true"[\s\S]*?overflow: "hidden"[\s\S]*?data-trust-passport-evidence-rail="true"[\s\S]*?display: isCompact \? "grid" : "flex"[\s\S]*?gridTemplateColumns: isCompact \? "repeat\(2, minmax\(0, 1fr\)\)" : undefined[\s\S]*?aria-label="Evidence posture rail"[\s\S]*?minWidth: 0[\s\S]*?wordBreak: "normal"/,
   "Trust Passport evidence posture rail must wrap into a two-column mobile grid instead of forcing five long labels into one phone row."
