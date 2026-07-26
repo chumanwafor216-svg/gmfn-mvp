@@ -146,6 +146,15 @@ for (const debugId of expectedOrder) {
 }
 
 assertContains(
+  /const trustPassportDecisionAnswer = !trustSlipCode[\s\S]*?"Evidence setup needed"[\s\S]*?"Evidence record ready"[\s\S]*?"Evidence building"[\s\S]*?const trustPassportDecisionFacts: Array<[\s\S]*?"Who\?"[\s\S]*?"Identity"[\s\S]*?"Communities"[\s\S]*?"Next step"[\s\S]*?const trustPassportDecisionBoundaryRows: Array<\[string, string\]> = \[[\s\S]*?\["Private evidence", "Shown"\][\s\S]*?\["Public TrustSlip", trustSlipCode \? "Available" : "Pending"\][\s\S]*?\["Guarantee", "No"\][\s\S]*?\["Government ID", "No"\][\s\S]*?\["Final decision", "Yours"\]/,
+  "Trust Passport first viewport must compute one answer, four quick facts, and a compact Decision Boundary."
+);
+
+assertContains(
+  /data-trust-passport-decision-first="one-answer-four-facts"[\s\S]*?Decision first[\s\S]*?\{trustPassportDecisionAnswer\}[\s\S]*?Use this private passport to choose your next evidence step\.[\s\S]*?data-trust-passport-decision-facts="four-quick-facts"[\s\S]*?trustPassportDecisionFacts\.map[\s\S]*?data-trust-passport-decision-boundary="compact"[\s\S]*?Decision Boundary[\s\S]*?trustPassportDecisionBoundaryRows\.map[\s\S]*?<section[\s\S]*?ref=\{laneSelectorRef\}[\s\S]*?id="trust-passport-lanes"/,
+  "Trust Passport must lead with decision support before lane navigation and deeper passport details."
+);
+assertContains(
   /debugId: "trust-score\.surface\.local-community-trust"[\s\S]*?debugId: "trust-score\.surface\.cross-community-consistency"[\s\S]*?debugId=\{item\.debugId\}/,
   "Trust Passport surface-card actions must use explicit stable debug IDs, not titles that can change with copy."
 );

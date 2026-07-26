@@ -1,3 +1,38 @@
+## CURRENT LOCAL STATE - 2026-07-26 - Trust Passport decision-first overview added locally
+
+Owner trigger:
+- Owner selected `1` to continue the decision-first enhancement after the public TrustSlip Decision Pack details were collapsed.
+
+Unabated truth:
+- This is a signed-in Trust Passport hierarchy slice, not a full Trust Passport redesign.
+- The private Trust Passport now opens with one big answer, four quick facts, and a compact Decision Boundary before the lane selector and deeper passport evidence sections.
+- This improves the first 5-10 second read, but it has not yet been visually inspected in a real phone/browser viewport in this slice.
+- No backend route, schema, evidence extraction, scoring, TrustEvent, permission, or deployment behavior changed.
+
+Changed:
+- `frontend/src/pages/TrustScorePage.tsx`
+  - Added `trustPassportDecisionAnswer`, `trustPassportDecisionFacts`, and `trustPassportDecisionBoundaryRows` for the first-read passport summary.
+  - Added `data-trust-passport-decision-first="one-answer-four-facts"` before the lane selector.
+  - Kept the new panel non-actionable so the protected Trust Passport button inventory remains unchanged.
+- `frontend/tools/audit-trust-passport-button-inventory.mjs`
+  - Added cages requiring the Trust Passport to compute and render one answer, four quick facts, and a compact Decision Boundary before lane navigation and deeper details.
+
+Routes/screens affected:
+- Signed-in Trust Passport / TrustScore route.
+- No public TrustSlip route behavior changed in this slice.
+
+Verification:
+- Passed `npm exec -- eslint src/pages/TrustScorePage.tsx tools/audit-trust-passport-button-inventory.mjs tools/audit-trust-actions.mjs` from `frontend`.
+- Passed `npm --prefix frontend run audit:trust-passport-button-inventory`.
+- Passed `npm --prefix frontend run audit:trust-actions`.
+- Passed `npm --prefix frontend run audit:protected-button-freeze`.
+- Passed `npm --prefix frontend run build`.
+
+Deployment:
+- Local only. Not pushed or deployed; owner must select `2` or explicitly say push/deploy.
+
+Recommended next step:
+- Visually test the signed-in Trust Passport first viewport on a phone-width browser, then continue collapsing lower Trust Passport sections that still feel like equal-weight document detail.
 ## CURRENT LOCAL STATE - 2026-07-26 - Public TrustSlip Decision Pack details collapsed locally
 
 Owner trigger:

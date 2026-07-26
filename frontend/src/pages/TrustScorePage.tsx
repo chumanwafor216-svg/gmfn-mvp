@@ -2790,6 +2790,50 @@ export default function TrustScorePage() {
     ["id", "Identity status", passportVm.identity.identityStatusLabel],
   ];
 
+  const trustPassportDecisionAnswer = !trustSlipCode
+    ? "Evidence setup needed"
+    : identityEvidence.score >= 60 && positiveNumber(passportVm.technicalDetail.activeClans) > 0
+      ? "Evidence record ready"
+      : "Evidence building";
+  const trustPassportDecisionTone = !trustSlipCode
+    ? "warn"
+    : identityEvidence.score >= 60
+      ? "good"
+      : "info";
+  const trustPassportDecisionFacts: Array<[
+    GsnIconName,
+    string,
+    string,
+    string,
+    boolean,
+    boolean,
+  ]> = [
+    ["id", "Who?", memberName, passportVm.identity.gmfnId, true, true],
+    [
+      "shield",
+      "Identity",
+      identityEvidenceStageWord(identityEvidence),
+      passportVm.identity.identityStatusLabel,
+      identityEvidence.score >= 60,
+      identityEvidence.score >= 35,
+    ],
+    [
+      "community",
+      "Communities",
+      activeClanCount,
+      currentRoleSummary,
+      positiveNumber(passportVm.technicalDetail.activeClans) > 0,
+      true,
+    ],
+    ["evidence", "Next step", nextStep.ctaLabel, trustSlipCode ? "Use the evidence lanes below." : "Issue the public TrustSlip first.", Boolean(trustSlipCode), true],
+  ];
+  const trustPassportDecisionBoundaryRows: Array<[string, string]> = [
+    ["Private evidence", "Shown"],
+    ["Public TrustSlip", trustSlipCode ? "Available" : "Pending"],
+    ["Guarantee", "No"],
+    ["Government ID", "No"],
+    ["Final decision", "Yours"],
+  ];
   const identityCompletionRows: Array<{
     icon: GsnIconName;
     label: string;
@@ -3128,6 +3172,170 @@ export default function TrustScorePage() {
       >
         {noticeNode}
 
+        <section
+          data-trust-passport-decision-first="one-answer-four-facts"
+          style={{
+            ...pageCard(trustPassportDecisionTone === "warn" ? "#FFF8E8" : "#FFFFFF"),
+            border: trustPassportDecisionTone === "warn"
+              ? "1px solid rgba(214,170,69,0.30)"
+              : "1px solid rgba(37,78,119,0.14)",
+            boxShadow: "0 14px 36px rgba(7,23,44,0.08)",
+            padding: isCompact ? 12 : 16,
+            display: "grid",
+            gap: isCompact ? 10 : 12,
+          }}
+        >
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: isCompact ? "44px minmax(0, 1fr)" : "58px minmax(0, 1fr) auto",
+              gap: isCompact ? 9 : 13,
+              alignItems: "center",
+            }}
+          >
+            <span style={overviewIconBox(isCompact)}>
+              <GsnLegacyIcon name={trustPassportDecisionTone === "warn" ? "alert" : "shield"} size={isCompact ? 34 : 44} decorative />
+            </span>
+            <div style={{ minWidth: 0 }}>
+              <div
+                style={{
+                  color: trustPassportDecisionTone === "warn" ? "#8A4D08" : "#0B63D1",
+                  fontSize: isCompact ? 10.5 : 12,
+                  letterSpacing: 0,
+                  textTransform: "uppercase",
+                  fontWeight: 1000,
+                  lineHeight: 1.1,
+                }}
+              >
+                Decision first
+              </div>
+              <h1
+                style={{
+                  margin: "4px 0 0",
+                  color: "#07172C",
+                  fontSize: isCompact ? 24 : 32,
+                  lineHeight: 1.04,
+                  fontWeight: 1000,
+                  letterSpacing: 0,
+                }}
+              >
+                {trustPassportDecisionAnswer}
+              </h1>
+              <p style={{ ...helperText(), margin: "5px 0 0", lineHeight: 1.32 }}>
+                Use this private passport to choose your next evidence step.
+              </p>
+            </div>
+            {!isCompact ? (
+              <span style={overviewStatusBox(Boolean(trustSlipCode), true)}>
+                <span style={overviewBadge(Boolean(trustSlipCode), true)}>
+                  <GsnLegacyIcon name="document" size={22} decorative />
+                </span>
+                TrustSlip {trustSlipCode ? "available" : "pending"}
+              </span>
+            ) : null}
+          </div>
+
+          <div
+            data-trust-passport-decision-facts="four-quick-facts"
+            style={{
+              display: "grid",
+              gridTemplateColumns: isCompact ? "repeat(2, minmax(0, 1fr))" : "repeat(4, minmax(0, 1fr))",
+              gap: isCompact ? 7 : 9,
+            }}
+          >
+            {trustPassportDecisionFacts.map(([icon, label, title, detail, ok, muted]) => (
+              <div
+                key={label}
+                style={{
+                  minHeight: isCompact ? 72 : 88,
+                  borderRadius: isCompact ? 14 : 16,
+                  border: "1px solid rgba(216,227,238,0.72)",
+                  background: "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(241,247,255,0.96) 100%)",
+                  padding: isCompact ? "8px 9px" : "10px 12px",
+                  overflow: "hidden",
+                  display: "grid",
+                  alignContent: "start",
+                  gap: 5,
+                }}
+              >
+                <span
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    color: "#617085",
+                    fontSize: isCompact ? 10.5 : 11.5,
+                    fontWeight: 1000,
+                    lineHeight: 1.12,
+                  }}
+                >
+                  <span style={overviewBadge(ok, muted)}>
+                    <GsnLegacyIcon name={icon} size={20} decorative />
+                  </span>
+                  {label}
+                </span>
+                <span
+                  style={{
+                    color: "#07172C",
+                    fontSize: isCompact ? 13 : 14.5,
+                    lineHeight: 1.12,
+                    fontWeight: 1000,
+                    overflowWrap: "break-word",
+                    wordBreak: "normal",
+                  }}
+                >
+                  {title}
+                </span>
+                <span style={{ ...helperText(), margin: 0, fontSize: isCompact ? 10.5 : 11.5, lineHeight: 1.24 }}>
+                  {detail}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          <div
+            data-trust-passport-decision-boundary="compact"
+            style={{
+              borderRadius: isCompact ? 12 : 16,
+              border: "1px solid rgba(214,170,69,0.28)",
+              background: "#FFFDF7",
+              padding: isCompact ? 9 : 11,
+              display: "grid",
+              gap: 8,
+            }}
+          >
+            <div
+              style={{
+                color: "#7A4A00",
+                fontSize: isCompact ? 10.5 : 12,
+                letterSpacing: 0,
+                textTransform: "uppercase",
+                fontWeight: 1000,
+                lineHeight: 1.1,
+              }}
+            >
+              Decision Boundary
+            </div>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: isCompact ? "repeat(2, minmax(0, 1fr))" : "repeat(5, minmax(0, 1fr))",
+                gap: 6,
+              }}
+            >
+              {trustPassportDecisionBoundaryRows.map(([label, value]) => (
+                <div key={label} style={{ minWidth: 0 }}>
+                  <div style={{ color: "#5F4100", fontSize: isCompact ? 9.5 : 10.5, fontWeight: 1000, lineHeight: 1.1 }}>
+                    {label}
+                  </div>
+                  <div style={{ marginTop: 2, color: "#07172C", fontSize: isCompact ? 11 : 12, fontWeight: 950, lineHeight: 1.15 }}>
+                    {value}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
         <section
           ref={laneSelectorRef}
           id="trust-passport-lanes"
