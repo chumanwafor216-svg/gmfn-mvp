@@ -9,6 +9,7 @@ const files = {
   app: "src/App.tsx",
   trustPassport: "src/pages/TrustScorePage.tsx",
   trustSlip: "src/pages/TrustSlipPage.tsx",
+  smoke: "tools/smoke-trust-passport-trustslip-boundary.mjs",
   reader: "src/components/TrustSlipReaderBlock.tsx",
   communityProofPanel: "src/components/CommunityProofPanel.tsx",
   communityProof: "src/lib/communityProof.ts",
@@ -191,6 +192,36 @@ assertContains(
   "trustPassport",
   /This is an evidence reading only\. It is not a character judgement, universal trust label, or decision about the person\./,
   "Trust Passport page language must keep evidence reading meaning separate from character judgement or decision support."
+);
+
+assertContains(
+  "smoke",
+  /Decision support details[\s\S]*?3\. What this evidence helps you decide[\s\S]*?toHaveCount\(0\)[\s\S]*?data-cta-id="trust-score\.standing-decision-details\.toggle"[\s\S]*?What this evidence helps you decide[\s\S]*?These lines show what this record can and cannot support before a recipient asks for live confirmation\./,
+  "Trust Passport browser smoke must verify decision-support rows stay collapsed until the stable details toggle opens."
+);
+
+assertContains(
+  "smoke",
+  /Evidence movement details[\s\S]*?Recent evidence events[\s\S]*?toHaveCount\(0\)[\s\S]*?data-cta-id="trust-score\.evidence-movement-details\.toggle"[\s\S]*?Recent evidence events[\s\S]*?toBeVisible\(\)/,
+  "Trust Passport browser smoke must verify Evidence Story movement details stay collapsed until opened."
+);
+
+assertContains(
+  "smoke",
+  /Community evidence details[\s\S]*?Community evidence before relying[\s\S]*?toHaveCount\(0\)[\s\S]*?data-cta-id="trust-score\.community-lane\.evidence-details\.toggle"[\s\S]*?Community evidence before relying[\s\S]*?toBeVisible\(\)/,
+  "Trust Passport browser smoke must verify Community Confirmation details stay collapsed until opened."
+);
+
+assertLineAbsent(
+  "smoke",
+  /These lines do not make the decision/,
+  "Trust Passport browser smoke must not restore the old decision-support explanation copy."
+);
+
+assertLineAbsent(
+  "smoke",
+  /getByText\("3\. What this evidence helps you decide", \{ exact: true \}\)\)\.toBeVisible/,
+  "Trust Passport browser smoke must not expect the old numbered decision-support heading to be visible by default."
 );
 
 assertContains(

@@ -1,3 +1,41 @@
+## CURRENT LOCAL STATE - 2026-07-26 - Trust Passport boundary smoke aligned locally
+
+Owner trigger:
+- Owner selected `1` after the Trust Passport mobile visual sweep passed locally.
+
+Unabated truth:
+- This was a browser-smoke and audit-cage maintenance slice, not a runtime UI feature.
+- `frontend/tools/smoke-trust-passport-trustslip-boundary.mjs` still expected several Trust Passport detail sections to be visible by default.
+- The current UI intentionally keeps those sections collapsed behind stable details toggles: `Decision support details`, `Evidence movement details`, and `Community evidence details`.
+- Updated the smoke to first verify the details are collapsed, then click the stable toggle and verify the detail content appears.
+- Tightened `audit:trust-passport-trustslip-boundary` so it reads the smoke file and cages the collapsed-detail browser assertions.
+- No frontend runtime code, backend route, schema, evidence extraction, scoring, TrustEvent, permission, deployment behavior, or public TrustSlip behavior changed.
+
+Changed:
+- `frontend/tools/smoke-trust-passport-trustslip-boundary.mjs`
+  - Updated Trust Passport browser assertions for collapsed decision-support, evidence-movement, and community-evidence details.
+- `frontend/tools/audit-trust-passport-trustslip-boundary.mjs`
+  - Added the smoke file to the audit input set.
+  - Added source guards that prevent the browser smoke from restoring old always-visible detail expectations.
+
+Routes/screens affected:
+- Browser smoke coverage for signed-in Trust Passport / TrustScore and TrustSlip holder routes only.
+- No public TrustSlip route behavior changed in this slice.
+
+Verification:
+- Passed `npm --prefix frontend run smoke:trust-passport-trustslip-boundary` with escalation for local Vite/Chromium process launch.
+- Passed `npm --prefix frontend run audit:trust-passport-trustslip-boundary`.
+- Passed `npm --prefix frontend run audit:trust-passport-front-package`.
+- Passed `npm --prefix frontend run audit:trust-passport-button-inventory`.
+- Passed `npm exec -- eslint tools/smoke-trust-passport-trustslip-boundary.mjs tools/audit-trust-passport-trustslip-boundary.mjs` from `frontend`.
+- Passed `git diff --check`.
+
+Deployment:
+- Local only. Not pushed or deployed; owner must select `2` or explicitly say push/deploy.
+
+Recommended next step:
+- The Trust Passport source, visual sweep, and browser smoke cages now agree on the collapsed details model. Next local step can be a human phone review or another narrow decision-first improvement, but avoid adding more toggles before visual/product review.
+
 ## CURRENT LOCAL STATE - 2026-07-26 - Trust Passport mobile visual sweep passed after first decision action
 
 Owner trigger:

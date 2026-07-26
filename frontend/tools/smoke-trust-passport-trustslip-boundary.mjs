@@ -442,9 +442,17 @@ async function runTrustPassportScenario(browser, baseURL) {
   await expect(state.page.getByText("Active passport lane", { exact: true })).toBeVisible();
   await expect(state.page.getByText("Identity & Evidence Reading", { exact: true }).first()).toBeVisible();
   await expect(state.page.getByText("2. Current evidence reading", { exact: true })).toBeVisible();
-  await expect(state.page.getByText("3. What this evidence helps you decide", { exact: true })).toBeVisible();
+  await expect(state.page.getByText("Decision support details", { exact: true })).toBeVisible();
+  await expect(state.page.getByText("3. What this evidence helps you decide", { exact: true })).toHaveCount(0);
   await expect(
-    state.page.getByText("These lines do not make the decision. They show what this record can and cannot support before a recipient asks for live confirmation.", {
+    state.page.getByText("These lines show what this record can and cannot support before a recipient asks for live confirmation.", {
+      exact: true,
+    })
+  ).toHaveCount(0);
+  await state.page.locator('[data-cta-id="trust-score.standing-decision-details.toggle"]').click();
+  await expect(state.page.getByText("What this evidence helps you decide", { exact: true })).toBeVisible();
+  await expect(
+    state.page.getByText("These lines show what this record can and cannot support before a recipient asks for live confirmation.", {
       exact: true,
     })
   ).toBeVisible();
@@ -498,6 +506,9 @@ async function runTrustPassportScenario(browser, baseURL) {
   await expect(state.page.getByText("4. Why the evidence reads this way", { exact: true })).toBeVisible();
   await expect(state.page.getByText("What supports this reading", { exact: true })).toBeVisible();
   await expect(state.page.getByText("6. What changed in the evidence?", { exact: true })).toBeVisible();
+  await expect(state.page.getByText("Evidence movement details", { exact: true })).toBeVisible();
+  await expect(state.page.getByText("Recent evidence events", { exact: true })).toHaveCount(0);
+  await state.page.locator('[data-cta-id="trust-score.evidence-movement-details.toggle"]').click();
   await expect(state.page.getByText("Recent evidence events", { exact: true })).toBeVisible();
   await expect(state.page.getByText("4. Why this reading looks like this", { exact: true })).toHaveCount(0);
   await expect(state.page.getByText("What helps trust", { exact: true })).toHaveCount(0);
@@ -505,6 +516,9 @@ async function runTrustPassportScenario(browser, baseURL) {
 
   await state.page.getByText("Community Confirmation", { exact: true }).first().click();
   await expect(state.page.getByText("Can this evidence be tied to a real community?", { exact: true })).toBeVisible();
+  await expect(state.page.getByText("Community evidence details", { exact: true })).toBeVisible();
+  await expect(state.page.getByText("Community evidence before relying", { exact: true })).toHaveCount(0);
+  await state.page.locator('[data-cta-id="trust-score.community-lane.evidence-details.toggle"]').click();
   await expect(state.page.getByText("Community evidence before relying", { exact: true })).toBeVisible();
   await expect(state.page.getByText("5. Evidence surfaces", { exact: true })).toBeVisible();
   await expect(state.page.getByText("Can this trust story be tied to a real community?", { exact: true })).toHaveCount(0);
