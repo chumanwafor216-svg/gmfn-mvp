@@ -1928,6 +1928,29 @@ assertContains(
 );
 
 [
+  "src/lib/trustBandLanguage.ts",
+  "src/lib/trustDocumentSnapshots.ts",
+].forEach((file) => {
+  assertNotContains(
+    file,
+    /recorded trust signals|some trust evidence|careful trust decision|why the trust reading|useful trust signal|usable trust history|bad trust|early identity and community signal only|serious trust decision|portable GSN trust summary|Short trust summary|Portable trust reading|Visible trust reading/i,
+    "Trust band and snapshot copy must frame decision support as evidence readings and evidence summaries, not trust signals or trust decisions."
+  );
+});
+
+assertContains(
+  "src/lib/trustBandLanguage.ts",
+  /recorded evidence signals[\s\S]*?some evidence[\s\S]*?careful decision[\s\S]*?why the evidence reading[\s\S]*?useful evidence signal[\s\S]*?usable evidence history[\s\S]*?bad behaviour[\s\S]*?early identity and community evidence only[\s\S]*?serious decision from the posture alone/,
+  "Trust band language must keep evidence-signal and decision-support wording."
+);
+
+assertContains(
+  "src/lib/trustDocumentSnapshots.ts",
+  /portable GSN evidence summary[\s\S]*?Portable evidence reading[\s\S]*?Visible evidence reading[\s\S]*?Short evidence summary for your decision/,
+  "Trust document snapshots must keep evidence-summary and evidence-reading wording."
+);
+
+[
   "src/lib/marketWisdom.ts",
   "src/lib/trustDocumentActionGuide.ts",
   "src/lib/trustDocumentFamilyMap.ts",

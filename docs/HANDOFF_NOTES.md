@@ -152778,3 +152778,34 @@ GSN-branded invite composer and invite-entry continuity.
   - local only so far; do not push/deploy unless the owner explicitly selects `2` or says push/deploy.
 - Next recommended step:
   - commit this Community Confirmation Outcome evidence-check label slice locally, then either continue another small visible/shared wording cleanup on `1` or push/deploy the accumulated local commits on `2`.
+## 2026-07-26 - Trust Band Evidence Decision Language
+
+- Trigger:
+  - owner selected `1` after the Community Confirmation Outcome evidence-check slice was committed locally.
+- Unabated truth:
+  - this pass cleans shared trust-band and copied snapshot language only;
+  - it does not rename TypeScript types, Trust Passport, TrustSlip, trust-band fields, trust-score fields, backend APIs, route contracts, or scoring logic;
+  - visible labels such as TrustSlip and Trust Passport remain unchanged; the change is limited to reader-facing decision-support copy;
+  - this is not a Decision Pack generator, Evidence Ledger route, Behavioural Placement schema, scoring rewrite, or approval workflow.
+- Changed:
+  - `frontend/src/lib/trustBandLanguage.ts`
+    - reframes trust-signal/trust-evidence/trust-history/trust-decision wording to evidence-signal/evidence-history/evidence-reading/careful-decision wording;
+    - changes thin-record language from `bad trust` to `bad behaviour` to avoid treating thin evidence as a character verdict;
+    - changes low-data guidance from early identity/community signal to early identity/community evidence.
+  - `frontend/src/lib/trustDocumentSnapshots.ts`
+    - changes TrustSlip/Trust Passport snapshot purposes from trust summaries to evidence summaries;
+    - changes portable/visible trust reading row labels to portable/visible evidence reading.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - adds scoped guards rejecting the old trust-signal/trust-summary/trust-decision wording in trust-band and snapshot helpers;
+    - asserts the new evidence-signal/evidence-summary/evidence-reading language remains present.
+- Verification:
+  - passed `npm exec -- eslint src/lib/trustBandLanguage.ts src/lib/trustDocumentSnapshots.ts tools/audit-trust-actions.mjs tools/audit-trust-passport-trustslip-boundary.mjs` from `frontend`;
+  - passed direct `node tools/audit-trust-actions.mjs` from `frontend`;
+  - passed direct `node tools/audit-trust-passport-trustslip-boundary.mjs` from `frontend`;
+  - passed `npm --prefix frontend run audit:protected-button-freeze`;
+  - passed `npm --prefix frontend run build`;
+  - passed `git diff --check` before the handoff entry.
+- Deployment:
+  - local only so far; do not push/deploy unless the owner explicitly selects `2` or says push/deploy.
+- Next recommended step:
+  - commit this trust-band evidence-decision language slice locally, then either continue another small visible/shared wording cleanup on `1` or push/deploy the accumulated local commits on `2`.

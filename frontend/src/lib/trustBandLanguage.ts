@@ -30,7 +30,7 @@ export const TRUST_BAND_LANGUAGE: TrustBandLanguage[] = [
     band: "A",
     title: "Strong visible evidence",
     plainMeaning:
-      "The record has strong visible evidence from community behaviour, follow-through, and recorded trust signals.",
+      "The record has strong visible evidence from community behaviour, follow-through, and recorded evidence signals.",
     implication:
       "Normal low-to-medium risk support, trade, or referral decisions may be considered, while still checking the current details and expiry.",
     nextStep: "Proceed carefully and match the size of the decision to the evidence shown.",
@@ -50,7 +50,7 @@ export const TRUST_BAND_LANGUAGE: TrustBandLanguage[] = [
     band: "C",
     title: "Mixed evidence; verify before larger decisions",
     plainMeaning:
-      "There is some trust evidence, but it may not be deep, recent, or consistent enough for a confident decision.",
+      "There is some evidence, but it may not be deep, recent, or consistent enough for a confident decision.",
     implication:
       "Keep the decision small, ask what changed, and look for contribution, repayment, commitment, or sponsor evidence.",
     nextStep: "Ask for more context before taking a risk.",
@@ -80,7 +80,7 @@ export const TRUST_BAND_LANGUAGE: TrustBandLanguage[] = [
     band: "F",
     title: "No usable evidence basis yet",
     plainMeaning:
-      "The record is missing usable evidence or has a negative reading. You cannot make a careful trust decision from this alone.",
+      "The record is missing usable evidence or has a negative reading. You cannot make a careful decision from this alone.",
     implication:
       "Do not approve credit, release goods, accept responsibility, or make a serious referral from this record alone.",
     nextStep: "Ask the person to rebuild visible evidence before relying on the record.",
@@ -107,9 +107,9 @@ export const TRUST_EVIDENCE_LANGUAGE: Record<
     status: "strong",
     label: "Strong evidence",
     plainMeaning:
-      "There is enough visible history to understand why the trust reading looks this way.",
+      "There is enough visible history to understand why the evidence reading looks this way.",
     implication:
-      "You can use the record as a useful trust signal, while still matching the decision to the risk.",
+      "You can use the record as a useful evidence signal, while still matching the decision to the risk.",
     tone: "strong",
   },
   mixed: {
@@ -125,7 +125,7 @@ export const TRUST_EVIDENCE_LANGUAGE: Record<
     status: "limited",
     label: "Evidence still building",
     plainMeaning:
-      "Only a small amount of usable trust history is visible so far. The record can still become stronger as more current evidence is added.",
+      "Only a small amount of usable evidence history is visible so far. The record can still become stronger as more current evidence is added.",
     implication:
       "This does not mean bad behaviour. It means you should reduce the risk or ask for more evidence before relying on the record.",
     tone: "care",
@@ -258,9 +258,9 @@ export function getTrustEvidenceLanguage(
       ...TRUST_EVIDENCE_LANGUAGE.limited,
       label: "Building history",
       plainMeaning:
-        "This record is still building evidence. A thin record is not the same as bad trust.",
+        "This record is still building evidence. A thin record is not the same as bad behaviour.",
       implication:
-        "Use this as an early identity and community signal only. Ask for recent events or live community confirmation before a serious decision.",
+        "Use this as early identity and community evidence only. Ask for recent events or live community confirmation before a serious decision.",
     };
   }
   return TRUST_EVIDENCE_LANGUAGE[normalizeTrustEvidenceStatus(raw)];
@@ -275,7 +275,7 @@ export function getTrustBandLanguage(raw: unknown): TrustBandLanguage {
       plainMeaning:
         "GSN does not have a clear evidence posture to explain on this screen yet.",
       implication:
-        "Do not make a serious trust decision from the posture alone. Ask for the evidence behind the record.",
+        "Do not make a serious decision from the posture alone. Ask for the evidence behind the record.",
       nextStep: "Ask for the fuller Trust Passport or recent Trust Events.",
       tone: "care",
     }

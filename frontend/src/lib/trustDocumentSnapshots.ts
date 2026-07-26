@@ -208,7 +208,7 @@ export function buildCciSnapshot(params: CciSnapshotParams) {
 export function buildTrustSlipSnapshot(params: TrustSlipSnapshotParams) {
   return buildGsnSnapshotPaper({
     title: "GSN TrustSlip Snapshot",
-    purpose: "Check this portable GSN trust summary before relying on it.",
+    purpose: "Check this portable GSN evidence summary before relying on it.",
     reference: params.trustSlipCode || params.gmfnId,
     link: params.verifyUrl,
     context: [
@@ -228,7 +228,7 @@ export function buildTrustSlipSnapshot(params: TrustSlipSnapshotParams) {
       params.witnessEvidence
         ? cleanLine("Witness route", params.witnessEvidence)
         : "",
-      cleanLine("Portable trust reading", friendlyTrustBand(params.merchantBand)),
+      cleanLine("Portable evidence reading", friendlyTrustBand(params.merchantBand)),
       cleanLine(
         "Trust-limit signal",
         `${params.merchantCurrency} ${params.merchantTrustLimit}`
@@ -290,7 +290,7 @@ export function buildTrustSlipVerifySnapshot(
       params.witnessEvidence
         ? cleanLine("Witness route", params.witnessEvidence)
         : "",
-      cleanLine("Visible trust reading", friendlyTrustBand(params.visibleBand)),
+      cleanLine("Visible evidence reading", friendlyTrustBand(params.visibleBand)),
       cleanLine(
         "Evidence posture",
         friendlyEvidencePosture(params.visiblePosture, params.visibleBand)
@@ -336,7 +336,7 @@ export function buildTrustPassportSnapshot(
 ) {
   return buildGsnSnapshotPaper({
     title: "GSN Trust Passport Snapshot",
-    purpose: "Short trust summary for your decision.",
+    purpose: "Short evidence summary for your decision.",
     reference: params.gmfnId,
     link: params.verifyUrl,
     context: [
