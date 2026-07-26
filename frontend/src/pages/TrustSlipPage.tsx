@@ -3437,6 +3437,30 @@ export default function TrustSlipPage() {
     );
   }
 
+  function buildPublicDecisionPackShareText() {
+    if (!verifyUrl) return "";
+
+    return [
+      "GSN public Decision Pack link",
+      `Decision Pack: ${selectedPurposeOption.label}`,
+      `Recipient question: ${selectedPurposeOption.recipientQuestion}`,
+      `Evidence focus: ${selectedPurposeOption.focus}`,
+      `Public TrustSlip check: ${verifyUrl}`,
+      "This is public decision support. It reduces uncertainty, does not eliminate risk, does not expose private Trust Passport contents, and does not make the decision for the recipient.",
+    ]
+      .map((line) => safeStr(line))
+      .filter(Boolean)
+      .join("\n");
+  }
+
+  function copyPublicDecisionPackShareNote() {
+    void handleCopy(
+      buildPublicDecisionPackShareText(),
+      "Public Decision Pack note copied.",
+      "Selected Decision Pack link is not ready yet."
+    );
+  }
+
   function decisionPackEvidenceRowsForShare() {
     return privateDecisionPackEvidenceCategories.filter((category) => category.evidenceCount > 0);
   }
@@ -3777,6 +3801,107 @@ export default function TrustSlipPage() {
                   </div>
                 </div>
               ))}
+            </div>
+
+            <div
+              data-gsn-public-decision-pack-share="holder"
+              style={{
+                borderRadius: 14,
+                border: "1px solid rgba(37,78,119,0.12)",
+                background: "#FFFFFF",
+                padding: isCompact ? 11 : 13,
+                display: "grid",
+                gap: 9,
+              }}
+            >
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "32px minmax(0, 1fr)",
+                  gap: 9,
+                  alignItems: "center",
+                }}
+              >
+                <GsnLegacyIcon name="public-globe" size={30} />
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ ...sectionLabel(), fontSize: isCompact ? 9 : 10 }}>
+                    Public Decision Pack link
+                  </div>
+                  <div
+                    style={{
+                      marginTop: 2,
+                      color: "#07172C",
+                      fontSize: isCompact ? 13 : 15,
+                      fontWeight: 1000,
+                      lineHeight: 1.16,
+                    }}
+                  >
+                    Share the selected public evidence lens
+                  </div>
+                </div>
+              </div>
+
+              <div
+                style={{
+                  color: "#526579",
+                  fontSize: isCompact ? 11 : 12,
+                  fontWeight: 850,
+                  lineHeight: 1.35,
+                }}
+              >
+                Copies the selected Decision Pack question, evidence focus, and public verify link only. Private preview categories stay separate unless you use the holder consent export below.
+              </div>
+
+              <CardActionRow>
+                <PrimaryButton
+                  onClick={copyPublicDecisionPackShareNote}
+                  disabled={!verifyUrl}
+                  stableHeight={isCompact ? 50 : 48}
+                  minWidth={isCompact ? undefined : 176}
+                  debugId="trust-slip.public-decision-pack.copy-note"
+                  style={{ fontSize: isCompact ? 11 : 12 }}
+                >
+                  Copy pack note
+                </PrimaryButton>
+                {verifyPath ? (
+                  <StableCtaLink
+                    to={verifyPath}
+                    target="_blank"
+                    rel="noreferrer"
+                    kind="soft"
+                    stableHeight={isCompact ? 50 : 48}
+                    fullWidth={isCompact}
+                    minWidth={isCompact ? undefined : 158}
+                    debugId="trust-slip.public-decision-pack.open"
+                  >
+                    Open public pack
+                  </StableCtaLink>
+                ) : (
+                  <SubtleButton
+                    type="button"
+                    onClick={() =>
+                      showNotice("error", "Selected Decision Pack link is not ready yet.")
+                    }
+                    stableHeight={isCompact ? 50 : 48}
+                    minWidth={isCompact ? undefined : 158}
+                    debugId="trust-slip.public-decision-pack.open"
+                    style={{ fontSize: isCompact ? 11 : 12 }}
+                  >
+                    Open public pack
+                  </SubtleButton>
+                )}
+              </CardActionRow>
+
+              <div
+                style={{
+                  color: "#7A4A00",
+                  fontSize: isCompact ? 10 : 11,
+                  fontWeight: 900,
+                  lineHeight: 1.35,
+                }}
+              >
+                Public pack links are decision support only: no score, approval, guarantee, payment instruction, recipient identity record, or private Trust Passport disclosure.
+              </div>
             </div>
 
             <div

@@ -230,6 +230,18 @@ assertContains(
   "TrustSlip holder verify links and QR must carry the selected public Decision Pack context."
 );
 assertContains(
+  "trustSlip",
+  /buildPublicDecisionPackShareText[\s\S]*?GSN public Decision Pack link[\s\S]*?selectedPurposeOption\.label[\s\S]*?selectedPurposeOption\.recipientQuestion[\s\S]*?selectedPurposeOption\.focus[\s\S]*?Public TrustSlip check: \$\{verifyUrl\}[\s\S]*?reduces uncertainty[\s\S]*?does not expose private Trust Passport contents[\s\S]*?does not make the decision/,
+  "TrustSlip holder public Decision Pack share note must copy only public decision-support context."
+);
+
+assertContains(
+  "trustSlip",
+  /data-gsn-public-decision-pack-share="holder"[\s\S]*?Public Decision Pack link[\s\S]*?Share the selected public evidence lens[\s\S]*?debugId="trust-slip\.public-decision-pack\.copy-note"[\s\S]*?Copy pack note[\s\S]*?debugId="trust-slip\.public-decision-pack\.open"[\s\S]*?Open public pack[\s\S]*?Public pack links are decision support only[\s\S]*?no score, approval, guarantee, payment instruction, recipient identity record, or private Trust Passport disclosure/,
+  "TrustSlip holder page must expose a selected public Decision Pack link without private Passport disclosure or approval language."
+);
+
+assertContains(
   "api",
   /getMyTrustSlipDecisionPackAccesses[\s\S]*?\/trust-slips\/me\/decision-pack-accesses/,
   "TrustSlip holder page must use the signed-in holder Decision Pack access endpoint, not a public or admin feed."

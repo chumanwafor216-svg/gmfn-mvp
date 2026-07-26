@@ -151663,3 +151663,30 @@ GSN-branded invite composer and invite-entry continuity.
   - local only so far; routine continuation publishing remains batch-frozen unless the product owner explicitly asks to push/deploy.
 - Next recommended step:
   - add recipient-named consent-share creation only if the product owner explicitly wants named recipient accountability, because that would change the privacy model and needs a deliberate consent design.
+## 2026-07-26 - Holder Public Decision Pack Share Note
+
+- Trigger:
+  - owner selected `1` to continue after holder-visible Decision Pack consent-share history.
+- Unabated truth:
+  - the selected public Decision Pack context already traveled through the verify URL and QR, but the holder page still made the obvious share action look like a generic TrustSlip link;
+  - this pass is frontend-only and public-only. It does not expose private holder evidence categories, does not create a named recipient record, does not record a consent-share audit marker, and does not change backend public verification behavior.
+- Changed:
+  - `frontend/src/pages/TrustSlipPage.tsx`
+    - added `buildPublicDecisionPackShareText` and `copyPublicDecisionPackShareNote`;
+    - added a compact `Public Decision Pack link` block under Decision Pack selection;
+    - the copied note includes selected pack label, recipient question, evidence focus, public verify link, and decision-boundary text;
+    - added `Open public pack` for the selected public Decision Pack verify path.
+  - `frontend/tools/audit-trust-passport-trustslip-boundary.mjs`
+    - cages the public Decision Pack share note and UI boundary so it cannot become private Passport disclosure, score, approval, guarantee, payment instruction, or recipient identity recording.
+- Verification:
+  - passed `npm exec -- eslint src/pages/TrustSlipPage.tsx tools/audit-trust-passport-trustslip-boundary.mjs` from `frontend`;
+  - passed `npm --prefix frontend run audit:trust-passport-trustslip-boundary`;
+  - passed `npm --prefix frontend run audit:public-trustslip-verify-boundary`;
+  - passed `npm --prefix frontend run audit:trust-actions`;
+  - passed `npm --prefix frontend run audit:proof-surfaces`;
+  - passed `npm --prefix frontend run audit:protected-button-freeze`;
+  - passed `npm --prefix frontend run build`.
+- Deployment:
+  - local only so far; routine continuation publishing remains batch-frozen unless the product owner explicitly asks to push/deploy.
+- Next recommended step:
+  - add a small recipient-facing `why this record can be trusted` grouping to the public verify paper if needed, reusing existing QR/code/expiry/live-confirmation evidence without adding new claims.
