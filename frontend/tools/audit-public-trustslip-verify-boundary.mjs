@@ -190,8 +190,8 @@ assertContains(
 );
 assertContains(
   "publicPaper",
-  /<TrustDocumentConfidenceRibbon items=\{trustSlipConfidenceRibbonItems\} \/>[\s\S]*?<CommunityProofPanel[\s\S]*?title="Known by community"[\s\S]*?trustSlipStatusLabel=\{publicValidityLabel\}/,
-  "Public TrustSlip paper must show the shared Known by community proof layer immediately after the confidence ribbon."
+  /data-debug-id="trust-slip-verify\.public\.decision-pack-reading"[\s\S]*?<TrustPaperAuthorityStrip[\s\S]*?<TrustDocumentConfidenceRibbon items=\{trustSlipConfidenceRibbonItems\} \/>[\s\S]*?<CommunityProofPanel[\s\S]*?title="Known by community"[\s\S]*?trustSlipStatusLabel=\{publicValidityLabel\}/,
+  "Public TrustSlip paper must keep the shared Known by community proof layer after the recipient decision-first panels."
 );
 assertContains(
   "publicPaper",

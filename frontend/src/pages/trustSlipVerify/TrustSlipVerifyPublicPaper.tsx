@@ -1415,34 +1415,6 @@ export default function TrustSlipVerifyPublicPaper({
           alignItems: "stretch",
         }}
       >
-        <TrustPaperAuthorityStrip
-          title="GSN TrustSlip Verification Paper"
-          reference={resolvedCode || verifyPath || "TrustSlip verify record"}
-          generatedAt={issuedAtLabel || undefined}
-          classification={validNow ? "Current public evidence" : "Caution public evidence"}
-          compact={compact}
-        />
-
-        <TrustDocumentConfidenceRibbon items={trustSlipConfidenceRibbonItems} />
-
-        <CommunityProofPanel
-          title="Known by community"
-          subtitle="Public-safe community evidence from this TrustSlip. It supports judgement without exposing private Trust Passport details."
-          compact={compact}
-          communityName={communityLabel}
-          holderRole={holderRole}
-          identityLabel={validNow ? "TrustSlip currently valid" : publicValidityLabel}
-          memberWitnessCount={memberWitnessCount}
-          membershipStrengthLabel={membershipStrengthLabel}
-          membershipCurrentnessLabel={membershipCurrentnessLabel}
-          membershipCurrentnessScope={membershipCurrentnessScope}
-          nextWitnessRenewalStatusLabel={nextWitnessRenewalStatusLabel}
-          communityActivityCount={communityActivityCount}
-          communityActivityLabel={communityActivityLabel}
-          communityActivityCategories={communityActivityCategories}
-          trustSlipStatusLabel={publicValidityLabel}
-        />
-
         <div
           data-debug-id="trust-slip-verify.public.recipient-access-record"
           style={{
@@ -1826,6 +1798,34 @@ export default function TrustSlipVerifyPublicPaper({
             </div>
           </div>
         </div>
+
+        <TrustPaperAuthorityStrip
+          title="GSN TrustSlip Verification Paper"
+          reference={resolvedCode || verifyPath || "TrustSlip verify record"}
+          generatedAt={issuedAtLabel || undefined}
+          classification={validNow ? "Current public evidence" : "Caution public evidence"}
+          compact={compact}
+        />
+
+        <TrustDocumentConfidenceRibbon items={trustSlipConfidenceRibbonItems} />
+
+        <CommunityProofPanel
+          title="Known by community"
+          subtitle="Public-safe community evidence from this TrustSlip. It supports judgement without exposing private Trust Passport details."
+          compact={compact}
+          communityName={communityLabel}
+          holderRole={holderRole}
+          identityLabel={validNow ? "TrustSlip currently valid" : publicValidityLabel}
+          memberWitnessCount={memberWitnessCount}
+          membershipStrengthLabel={membershipStrengthLabel}
+          membershipCurrentnessLabel={membershipCurrentnessLabel}
+          membershipCurrentnessScope={membershipCurrentnessScope}
+          nextWitnessRenewalStatusLabel={nextWitnessRenewalStatusLabel}
+          communityActivityCount={communityActivityCount}
+          communityActivityLabel={communityActivityLabel}
+          communityActivityCategories={communityActivityCategories}
+          trustSlipStatusLabel={publicValidityLabel}
+        />
 
         <TrustDocumentDisclosureSection
           title="TrustSlip security and limits"

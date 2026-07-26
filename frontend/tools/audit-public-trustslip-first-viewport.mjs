@@ -71,15 +71,15 @@ assertOrder(
   "publicPaper",
   [
     { label: "public decision pack hero", pattern: /<header style=\{publicVerifyHero\(compact\)\}>[\s\S]*?Public Decision Pack/ },
-    { label: "authority strip", pattern: /<TrustPaperAuthorityStrip/ },
-    { label: "confidence ribbon", pattern: /<TrustDocumentConfidenceRibbon items=\{trustSlipConfidenceRibbonItems\} \/>/ },
-    { label: "community proof", pattern: /<CommunityProofPanel[\s\S]*?title="Known by community"/ },
     { label: "why received", pattern: /data-debug-id="trust-slip-verify\.public\.recipient-access-record"/ },
     { label: "why trusted", pattern: /data-gsn-public-record-trust-reasons="decision-pack"/ },
     { label: "decision reading", pattern: /data-debug-id="trust-slip-verify\.public\.decision-pack-reading"/ },
+    { label: "authority strip", pattern: /<TrustPaperAuthorityStrip/ },
+    { label: "confidence ribbon", pattern: /<TrustDocumentConfidenceRibbon items=\{trustSlipConfidenceRibbonItems\} \/>/ },
+    { label: "community proof", pattern: /<CommunityProofPanel[\s\S]*?title="Known by community"/ },
     { label: "security disclosure", pattern: /<TrustDocumentDisclosureSection[\s\S]*?title="TrustSlip security and limits"/ },
   ],
-  "Public TrustSlip first viewport must stay recipient-first before deeper security disclosure."
+  "Public TrustSlip first viewport must lead with recipient decision support before heavier proof and security disclosure."
 );
 
 assertContains(

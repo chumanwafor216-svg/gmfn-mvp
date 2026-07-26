@@ -151773,3 +151773,40 @@ GSN-branded invite composer and invite-entry continuity.
   - local only so far; routine continuation publishing remains batch-frozen unless the product owner explicitly asks to push/deploy.
 - Next recommended step:
   - if continuing the Decision Pack line, run a phone screenshot pass of `/t/:code` with a Decision Pack URL context to confirm the first viewport feels dense but not cramped.
+
+## 2026-07-26 - Public Verify Decision-First Mobile Reorder
+
+- Trigger:
+  - owner selected `1` after the source-level public TrustSlip first-viewport audit.
+- Unabated truth:
+  - the audit name said first viewport, but the real phone render disproved the assumption: on a `390x844` viewport, `Why you received this` started around `1483px`, `Why this record can be trusted` around `1693px`, and `Decision Pack reading` around `2052px` because the heavy community proof block came first;
+  - this pass changes presentation order only. It does not change backend verification, public payloads, Decision Pack semantics, private Trust Passport boundaries, scores, approvals, guarantees, or payment behavior.
+- Changed:
+  - `frontend/src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx`
+    - moved the public authority strip, confidence ribbon, and `Known by community` proof block below the recipient decision-support panels;
+    - keeps `Why you received this`, `Why this record can be trusted`, and `Decision Pack reading` directly after the hero so the public paper behaves as decision support first;
+    - keeps the shared proof/security primitives on the page, just after the decision-first reading instead of before it.
+  - `frontend/tools/audit-public-trustslip-first-viewport.mjs`
+    - updated the source order contract to require recipient decision support before heavier proof/security disclosure.
+  - `frontend/tools/audit-public-trustslip-verify-boundary.mjs`
+    - updated the public verify boundary cage so community proof remains present but no longer blocks the recipient-first reading.
+- Local visual verification:
+  - started local Vite on `127.0.0.1:5173` and local FastAPI on `127.0.0.1:8012`;
+  - local DB was migrated with Alembic and workshop seed refreshed for `GSNAMARA2026`;
+  - direct backend `GET /trust-slips/verify/GSNAMARA2026?decision_pack=employment` returned `200` after migration/seed;
+  - Playwright mobile check opened `/t/GSNAMARA2026?decision_pack=employment&recipient=RGU%20pilot%20reviewer&access_scope=public_decision_pack` at `390x844`;
+  - after the fix: recipient panel top `260px`, trustability panel top `469px`, Decision Pack reading top `829px`, document scroll width `390px`, viewport width `390px`, no horizontal overflow.
+- Verification:
+  - passed `npm exec -- eslint src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx tools/audit-public-trustslip-first-viewport.mjs tools/audit-public-trustslip-verify-boundary.mjs` from `frontend`;
+  - passed `npm --prefix frontend run audit:public-trustslip-first-viewport`;
+  - passed `npm --prefix frontend run audit:public-trustslip-verify-boundary`;
+  - passed `npm --prefix frontend run audit:trust-passport-trustslip-boundary`;
+  - passed `npm --prefix frontend run audit:trust-actions`;
+  - passed `npm --prefix frontend run audit:proof-surfaces`;
+  - passed `npm --prefix frontend run audit:protected-button-freeze`;
+  - passed `npm --prefix frontend run build`;
+  - passed `git diff --check`.
+- Deployment:
+  - local only so far; routine continuation publishing remains batch-frozen unless the product owner explicitly asks to push/deploy.
+- Next recommended step:
+  - if continuing before deploy, consider making the public recipient access record show the human selected pack purpose instead of raw `public_context_from_link` as its status line.
