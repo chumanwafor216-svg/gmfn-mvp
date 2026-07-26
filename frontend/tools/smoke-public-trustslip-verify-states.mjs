@@ -75,7 +75,7 @@ const scenarios = {
     expectedStatusText: "VALID NOW",
     expectedReadingTitle: "Current public slip",
     expectedText: [
-      "Use this as an early identity and community signal only. Ask for recent events or live community confirmation before a serious decision.",
+      "Use this as early identity and community evidence only. Ask for recent events or live community confirmation before a serious decision.",
       "Not stated issued",
       "Not stated expires",
     ],

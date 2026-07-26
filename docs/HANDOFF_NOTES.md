@@ -1,3 +1,59 @@
+## CURRENT LOCAL STATE - 2026-07-26 - Trust evidence scope clarified locally
+
+Owner trigger:
+- Owner observed that TrustSlip, TrustSlip Verify, and Trust Passport judgement/inference language appeared to emanate from one community instead of the aggregate communities a member belongs to.
+
+Unabated truth:
+- The observation was correct. The copied/snapshot and first-read UI language blurred the line between the primary community anchor and wider/aggregate evidence.
+- This change does not create new aggregate evidence, scores, TrustEvents, backend routes, or Passport math.
+- Where only the primary community is visible, the UI now says so instead of implying a full aggregate judgement.
+- Where aggregate/wider context exists, the UI now labels it separately as active community contexts, Aggregate Passport reading, or aggregate/wider reading.
+
+Changed:
+- `frontend/src/lib/trustDocumentSnapshots.ts`
+  - Reframed TrustSlip, TrustSlip Verify, and Trust Passport copied papers around `Primary community`, `Primary community role`, and `Primary community evidence`.
+  - Added `Active community contexts` to TrustSlip, Verify, and Passport snapshot/share text where available.
+  - Replaced Trust Passport `Main reading`/`Community reading`/`Wider-network reading` copy with `Aggregate Passport reading`, `Primary community reading`, and `Aggregate/wider reading`.
+- `frontend/src/lib/share.ts`
+  - Compact share captions now recognize `Aggregate Passport reading` when reducing official paper text.
+- `frontend/src/pages/TrustSlipPage.tsx`
+  - Added an Aggregate scope row to the practical summary.
+  - Renamed holder proof panel to `Primary community evidence` and clarified that aggregate/wider readings are separate.
+- `frontend/src/pages/trustSlipVerify/trustSlipVerifyData.ts`
+  - Preserved top-level `active_clan_count` from public verify payloads.
+- `frontend/src/pages/trustSlipVerify/trustSlipVerifyViewModel.ts`
+  - Quick answers now ask `What evidence scope is shown?` and explain primary community plus active community contexts.
+- `frontend/src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx`
+  - Decision-first facts now show `Evidence scope`, `Primary community`, or multi-community context.
+  - Decision Boundary now says `Primary shown` or `Primary + wider` instead of generic `Community evidence`.
+  - The proof panel now says `Primary community evidence`.
+- `frontend/src/pages/TrustSlipVerifyPage.tsx` and `frontend/src/pages/TrustScorePage.tsx`
+  - Wired active community count into Verify and Passport snapshot/share builders.
+- Updated related audits and smoke assertions so the new scope distinction is protected.
+
+Routes/screens affected:
+- Signed-in Trust Passport route `/app/trust`.
+- Signed-in TrustSlip holder route `/app/trust-slip`.
+- Public TrustSlip Verify routes such as `/t/:code` and `/trust-slips/verify/:code`.
+- Copied/shareable TrustSlip, TrustSlip Verify, and Trust Passport snapshot text.
+
+Verification:
+- Passed `npm --prefix frontend run audit:trust-passport-trustslip-boundary`.
+- Passed `npm --prefix frontend run audit:trust-actions`.
+- Passed `npm --prefix frontend run audit:public-trustslip-first-viewport`.
+- Passed `npm --prefix frontend run audit:public-trustslip-verify-boundary`.
+- Passed `npm --prefix frontend run audit:share-tag-actions`.
+- Passed `npm --prefix frontend run audit:protected-button-freeze`.
+- Passed ESLint on touched source, audit, and smoke files.
+- Passed `npm --prefix frontend run build`.
+- Passed `npm --prefix frontend run smoke:trust-passport-trustslip-boundary` with escalation for local Vite/Chromium process launch.
+- Passed `npm --prefix frontend run smoke:public-trustslip-verify-states` with escalation for local Vite/Chromium process launch.
+
+Deployment:
+- Local only. Not pushed or deployed; owner must select `2` or explicitly say push/deploy.
+
+Recommended next step:
+- Review the live phone Trust Passport screenshot after local reload. If the first viewport still feels single-community, the next honest fix is a visual hierarchy change on `/app/trust`: `Aggregate Passport reading` first, `Primary community anchor` second, `Community Portfolio` third.
 ## CURRENT LOCAL STATE - 2026-07-26 - TrustSlip Decision Boundary consolidated locally
 
 Owner trigger:

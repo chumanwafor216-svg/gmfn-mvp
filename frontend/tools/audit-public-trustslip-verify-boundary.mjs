@@ -207,12 +207,12 @@ assertContains(
 );
 assertContains(
   "publicPaper",
-  /data-debug-id="trust-slip-verify\.public\.decision-pack-reading"[\s\S]*?<TrustDocumentDisclosureSection[\s\S]*?title="Decision evidence details"[\s\S]*?summary="Open for purpose-filtered signals, categories, gaps, checks, and evidence boundaries\."[\s\S]*?data-gsn-decision-pack-profile="public-purpose-filter"[\s\S]*?<TrustDocumentDisclosureSection[\s\S]*?title="More details and evidence"[\s\S]*?summary="Open for record authority, evidence status, community evidence, security, and limits\."[\s\S]*?data-gsn-public-more-details="authority-evidence-limits"[\s\S]*?<TrustPaperAuthorityStrip[\s\S]*?<TrustDocumentConfidenceRibbon items=\{trustSlipConfidenceRibbonItems\} \/>[\s\S]*?<CommunityProofPanel[\s\S]*?title="Known by community"[\s\S]*?trustSlipStatusLabel=\{publicValidityLabel\}[\s\S]*?<TrustDocumentDisclosureSection[\s\S]*?title="TrustSlip security and limits"/,
+  /data-debug-id="trust-slip-verify\.public\.decision-pack-reading"[\s\S]*?<TrustDocumentDisclosureSection[\s\S]*?title="Decision evidence details"[\s\S]*?summary="Open for purpose-filtered signals, categories, gaps, checks, and evidence boundaries\."[\s\S]*?data-gsn-decision-pack-profile="public-purpose-filter"[\s\S]*?<TrustDocumentDisclosureSection[\s\S]*?title="More details and evidence"[\s\S]*?summary="Open for record authority, evidence status, community evidence, security, and limits\."[\s\S]*?data-gsn-public-more-details="authority-evidence-limits"[\s\S]*?<TrustPaperAuthorityStrip[\s\S]*?<TrustDocumentConfidenceRibbon items=\{trustSlipConfidenceRibbonItems\} \/>[\s\S]*?<CommunityProofPanel[\s\S]*?title="Primary community evidence"[\s\S]*?trustSlipStatusLabel=\{publicValidityLabel\}[\s\S]*?<TrustDocumentDisclosureSection[\s\S]*?title="TrustSlip security and limits"/,
   "Public TrustSlip Decision Pack details and heavier authority/evidence/security layers must stay behind disclosures after the recipient decision-first panels."
 );
 assertContains(
   "publicPaper",
-  /const decisionFirstAnswer = !validNow[\s\S]*?"Verification required"[\s\S]*?"Known by community"[\s\S]*?"Evidence still building"[\s\S]*?const decisionFirstFacts:[\s\S]*?label: "Who\?"[\s\S]*?label: "Known for"[\s\S]*?label: "Evidence"[\s\S]*?label: "Next step"[\s\S]*?const decisionBoundaryRows:[\s\S]*?\["Community evidence", "Shown"\][\s\S]*?\["Guarantee", "No"\][\s\S]*?\["Government ID", "No"\][\s\S]*?\["Credit approval", "No"\][\s\S]*?\["Final decision", "Yours"\]/,
+  /const decisionFirstAnswer = !validNow[\s\S]*?"Verification required"[\s\S]*?"Known across evidence contexts"[\s\S]*?"Known by community"[\s\S]*?"Evidence still building"[\s\S]*?const decisionFirstFacts:[\s\S]*?label: "Who\?"[\s\S]*?label: "Evidence scope"[\s\S]*?label: "Evidence"[\s\S]*?label: "Next step"[\s\S]*?const decisionBoundaryRows:[\s\S]*?\["Evidence scope", activeCommunityContexts > 1 \? "Primary \+ wider" : "Primary shown"\][\s\S]*?\["Guarantee", "No"\][\s\S]*?\["Government ID", "No"\][\s\S]*?\["Credit approval", "No"\][\s\S]*?\["Final decision", "Yours"\]/,
   "Public TrustSlip paper must compute one answer, four quick facts, and compact boundary rows before rendering."
 );
 
@@ -248,7 +248,7 @@ assertContains(
 
 assertContains(
   "publicPaper",
-  /const trustSlipConfirmsList = \[[\s\S]*?Public TrustSlip code status[\s\S]*?Visible evidence status and descriptive evidence boundary[\s\S]*?Displayed holder and GSN ID from this paper[\s\S]*?Community label shown on this TrustSlip[\s\S]*?Verification path and QR destination when available[\s\S]*?\];/,
+  /const trustSlipConfirmsList = \[[\s\S]*?Public TrustSlip code status[\s\S]*?Visible evidence status and descriptive evidence boundary[\s\S]*?Displayed holder and GSN ID from this paper[\s\S]*?Primary community label shown on this TrustSlip[\s\S]*?Verification path and QR destination when available[\s\S]*?\];/,
   "Public TrustSlip paper must keep a clear 'this confirms' boundary list."
 );
 

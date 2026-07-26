@@ -30,6 +30,7 @@ export type TrustSlipVerifyRecord = {
   cci_public_meaning?: string | null;
   cci_public_boundary?: string | null;
   sponsor_count?: string | number | null;
+  active_clan_count?: string | number | null;
   profile_image_url?: string | null;
   identity_context?: Record<string, any> | null;
   community_context?: Record<string, any> | null;
@@ -291,6 +292,12 @@ export function normalizeTrustSlipVerification(
       src?.sponsor_count,
       merchantView?.sponsor_count,
       merchantSummary?.sponsor_count
+    ),
+    active_clan_count: firstNumberLike(
+      src?.active_clan_count,
+      merchantView?.active_clan_count,
+      merchantSummary?.active_clan_count,
+      communityContext?.active_community_count
     ),
     profile_image_url: firstTruthy(
       src?.profile_image_url,

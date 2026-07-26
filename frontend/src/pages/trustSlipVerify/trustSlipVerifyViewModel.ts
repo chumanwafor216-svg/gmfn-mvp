@@ -376,7 +376,10 @@ function normalizeDecisionPackProfile(
     record?.community_member_count,
     communityContext?.active_member_count
   );
-  const activeCommunityCount = firstTruthy(communityContext?.active_community_count);
+  const activeCommunityCount = firstTruthy(
+    record?.active_clan_count,
+    communityContext?.active_community_count
+  );
   const memberWitnessCount = firstTruthy(
     record?.member_witness_count,
     communityContext?.member_witness_count
@@ -662,14 +665,14 @@ function normalizeDecisionPackProfile(
   const quickTrustAnswers: TrustSlipVerifyQuickAnswer[] = [
     [
       "identity-card",
-      "What are they known for here?",
+      "What evidence scope is shown?",
       relationshipEvidenceCount && relationshipEvidenceLabel
         ? `${relationshipEvidenceLabel}. Raw inviter notes are not shown.`
         : holderRole && holderRole.toLowerCase() !== "member"
-        ? `${holderRole} inside ${communityLabel}.`
+        ? `Primary role: ${holderRole} inside ${communityLabel}. Active community contexts: ${activeCommunityCount || "primary only shown"}.`
         : communityActivityCount
-          ? `Community activity is visible inside ${communityLabel}.`
-          : "This paper shows identity and community scope, not a full profession record.",
+          ? `Primary community activity is visible inside ${communityLabel}. Active community contexts: ${activeCommunityCount || "primary only shown"}.`
+          : "This paper shows identity, primary community scope, and wider evidence context when available; not a full profession record.",
     ],
     [
       "trust-shield",

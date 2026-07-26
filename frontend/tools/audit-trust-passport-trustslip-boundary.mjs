@@ -249,8 +249,8 @@ assertContains(
 );
 assertContains(
   "trustSlip",
-  /data-gsn-trust-document-certificate="trustslip-holder"[\s\S]*?<TrustDocumentConfidenceRibbon items=\{trustSlipHolderConfidenceRibbonItems\} \/>[\s\S]*?<CommunityProofPanel[\s\S]*?title="Known by community"[\s\S]*?trustSlipStatusLabel=\{trustSlipPublicStatus\}/,
-  "TrustSlip holder page must show the shared Known by community proof layer after the confidence ribbon."
+  /data-gsn-trust-document-certificate="trustslip-holder"[\s\S]*?<TrustDocumentConfidenceRibbon items=\{trustSlipHolderConfidenceRibbonItems\} \/>[\s\S]*?<CommunityProofPanel[\s\S]*?title="Primary community evidence"[\s\S]*?trustSlipStatusLabel=\{trustSlipPublicStatus\}/,
+  "TrustSlip holder page must show the shared primary community evidence proof layer after the confidence ribbon."
 );
 
 assertContains(

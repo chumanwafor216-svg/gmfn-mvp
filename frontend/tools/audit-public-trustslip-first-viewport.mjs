@@ -83,7 +83,7 @@ assertOrder(
     { label: "more details cage", pattern: /data-gsn-public-more-details="authority-evidence-limits"/ },
     { label: "authority strip", pattern: /<TrustPaperAuthorityStrip/ },
     { label: "confidence ribbon", pattern: /<TrustDocumentConfidenceRibbon items=\{trustSlipConfidenceRibbonItems\} \/>/ },
-    { label: "community proof", pattern: /<CommunityProofPanel[\s\S]*?title="Known by community"/ },
+    { label: "primary community proof", pattern: /<CommunityProofPanel[\s\S]*?title="Primary community evidence"/ },
     { label: "security disclosure", pattern: /<TrustDocumentDisclosureSection[\s\S]*?title="TrustSlip security and limits"/ },
   ],
   "Public TrustSlip first viewport must lead with recipient decision support before heavier proof and security disclosure."
@@ -91,7 +91,7 @@ assertOrder(
 
 assertContains(
   "publicPaper",
-  /<TrustDocumentDisclosureSection[\s\S]*?title="More details and evidence"[\s\S]*?summary="Open for record authority, evidence status, community evidence, security, and limits\."[\s\S]*?data-gsn-public-more-details="authority-evidence-limits"[\s\S]*?<TrustPaperAuthorityStrip[\s\S]*?<TrustDocumentConfidenceRibbon items=\{trustSlipConfidenceRibbonItems\} \/>[\s\S]*?<CommunityProofPanel[\s\S]*?title="Known by community"[\s\S]*?<TrustDocumentDisclosureSection[\s\S]*?title="TrustSlip security and limits"/,
+  /<TrustDocumentDisclosureSection[\s\S]*?title="More details and evidence"[\s\S]*?summary="Open for record authority, evidence status, community evidence, security, and limits\."[\s\S]*?data-gsn-public-more-details="authority-evidence-limits"[\s\S]*?<TrustPaperAuthorityStrip[\s\S]*?<TrustDocumentConfidenceRibbon items=\{trustSlipConfidenceRibbonItems\} \/>[\s\S]*?<CommunityProofPanel[\s\S]*?title="Primary community evidence"[\s\S]*?<TrustDocumentDisclosureSection[\s\S]*?title="TrustSlip security and limits"/,
   "Public TrustSlip heavier authority, evidence-status, community-evidence, and limit layers must live behind one More details disclosure."
 );
 
@@ -109,7 +109,7 @@ assertContains(
 
 assertContains(
   "publicPaper",
-  /const decisionFirstAnswer = !validNow[\s\S]*?"Verification required"[\s\S]*?"Known by community"[\s\S]*?"Evidence still building"[\s\S]*?const decisionFirstFacts:[\s\S]*?label: "Who\?"[\s\S]*?label: "Known for"[\s\S]*?label: "Evidence"[\s\S]*?label: "Next step"[\s\S]*?const decisionBoundaryRows:[\s\S]*?\["Community evidence", "Shown"\][\s\S]*?\["Guarantee", "No"\][\s\S]*?\["Government ID", "No"\][\s\S]*?\["Credit approval", "No"\][\s\S]*?\["Final decision", "Yours"\]/,
+  /const decisionFirstAnswer = !validNow[\s\S]*?"Verification required"[\s\S]*?"Known across evidence contexts"[\s\S]*?"Known by community"[\s\S]*?"Evidence still building"[\s\S]*?const decisionFirstFacts:[\s\S]*?label: "Who\?"[\s\S]*?label: "Evidence scope"[\s\S]*?label: "Evidence"[\s\S]*?label: "Next step"[\s\S]*?const decisionBoundaryRows:[\s\S]*?\["Evidence scope", activeCommunityContexts > 1 \? "Primary \+ wider" : "Primary shown"\][\s\S]*?\["Guarantee", "No"\][\s\S]*?\["Government ID", "No"\][\s\S]*?\["Credit approval", "No"\][\s\S]*?\["Final decision", "Yours"\]/,
   "Public TrustSlip first viewport must compute one big answer, four quick facts, and a compact Decision Boundary."
 );
 

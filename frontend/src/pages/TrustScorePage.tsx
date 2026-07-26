@@ -2501,8 +2501,10 @@ export default function TrustScorePage() {
         nextStepLabel: nextStep.ctaLabel,
         verifyUrl,
         memberCredentialUrl,
+        activeCommunityCount: activeClanCount,
       }),
     [
+      activeClanCount,
       cci.classText,
       communityCode,
       communityName,
@@ -2550,8 +2552,10 @@ export default function TrustScorePage() {
         nextStepLabel: nextStep.ctaLabel,
         verifyUrl,
         memberCredentialUrl,
+        activeCommunityCount: activeClanCount,
       }),
     [
+      activeClanCount,
       cci.classText,
       communityCode,
       communityName,

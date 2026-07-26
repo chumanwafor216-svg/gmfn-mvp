@@ -2510,6 +2510,9 @@ export default function TrustSlipPage() {
     summary?.active_clan_count,
     communityContext?.active_community_count
   );
+  const aggregateCommunityScope = numericCount(activeCommunityCount) > 1
+    ? `${activeCommunityCount} active community contexts are visible to this TrustSlip.`
+    : "Primary community is shown; wider-network reading remains a separate evidence signal.";
   const memberWitnessCount = firstTruthy(
     summary?.member_witness_count,
     summary?.merchant_view?.member_witness_count,
@@ -3015,17 +3018,22 @@ export default function TrustSlipPage() {
   const trustSlipKnownAsRows: Array<[GsnIconName, string, string]> = [
     [
       "id",
-      "Community role",
+      "Primary community role",
       holderRole && holderRole.toLowerCase() !== "member"
         ? `${holderRole} inside ${communityName}.`
         : `Community member inside ${communityName}.`,
     ],
     [
       "community",
-      "Community signals",
+      "Primary community signals",
       communityActivityCount
         ? `${communityActivitySignal}.`
         : "No activity labels are shown on this TrustSlip yet.",
+    ],
+    [
+      "globe",
+      "Aggregate scope",
+      aggregateCommunityScope,
     ],
     [
       "briefcase",
@@ -3049,7 +3057,7 @@ export default function TrustSlipPage() {
     rows: Array<[GsnIconName, string, string]>;
   }> = [
     {
-      title: "Known here as",
+      title: "Primary + wider evidence",
       tone: "blue",
       icon: "id",
       rows: trustSlipKnownAsRows,
@@ -3227,9 +3235,9 @@ export default function TrustSlipPage() {
   ];
   const trustSlipHolderConfirmsList = [
     "Holder display name and GSN ID shown on this TrustSlip",
-    "Community label and Community ID/reference shown on this TrustSlip",
+    "Primary community label and Community ID/reference shown on this TrustSlip",
     "Current TrustSlip status, code, issue window, and expiry window where available",
-    "Visible evidence status, TrustSlip limit signal, and cross-community evidence posture",
+    "Visible evidence status, TrustSlip limit signal, primary community anchor, and wider evidence posture",
     "QR, verify action, and copied verify link open the public TrustSlip reading when available",
   ];
   const trustSlipHolderDoesNotConfirmList = [
@@ -3457,6 +3465,7 @@ export default function TrustSlipPage() {
         expiresAt: safeDateTime(summary?.expires_at) || "Not stated",
         verifyUrl,
         memberCredentialUrl,
+        activeCommunityCount,
       }),
       "TrustSlip snapshot copied.",
       "TrustSlip snapshot is not ready yet."
@@ -4866,8 +4875,8 @@ export default function TrustSlipPage() {
           >
             <TrustDocumentConfidenceRibbon items={trustSlipHolderConfidenceRibbonItems} />
             <CommunityProofPanel
-              title="Known by community"
-              subtitle="Portable community evidence from this TrustSlip. Use it as evidence for judgement, not as automatic approval."
+              title="Primary community evidence"
+              subtitle="This panel shows the TrustSlip primary community anchor. Use aggregate/wider readings separately where they are shown."
               compact={isCompact}
               communityName={communityName}
               holderRole={holderRole}
@@ -5383,7 +5392,7 @@ export default function TrustSlipPage() {
                   lineHeight: 1.45,
                 }}
               >
-                Use this paper to see how the holder is known in this community, what evidence is visible, and where the record stops.
+                This section separates the primary community anchor from wider evidence context, so the recipient does not mistake one community label for the whole judgement.
               </p>
               <div
                 style={{

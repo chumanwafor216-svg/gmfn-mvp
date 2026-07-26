@@ -52,7 +52,7 @@ function assertNotContains(file, pattern, message) {
   ],
   [
     "src/lib/share.ts",
-    /function compactPaperMessage[\s\S]*valueFor\("Title"\)[\s\S]*valueFor\([\s\S]*"Main reading"[\s\S]*"Visible trust reading"[\s\S]*"Portable trust reading"[\s\S]*"Verification"[\s\S]*"Status"[\s\S]*"Trade status"[\s\S]*"Evidence only\. Open the link to check the current public GSN record\."/,
+    /function compactPaperMessage[\s\S]*valueFor\("Title"\)[\s\S]*valueFor\([\s\S]*"Main reading"[\s\S]*"Aggregate Passport reading"[\s\S]*"Visible trust reading"[\s\S]*"Portable trust reading"[\s\S]*"Verification"[\s\S]*"Status"[\s\S]*"Trade status"[\s\S]*"Evidence only\. Open the link to check the current public GSN record\."/,
     "Official paper share captions must keep only the useful title/context/reading and move full detail to the link.",
   ],
   [
@@ -62,7 +62,7 @@ function assertNotContains(file, pattern, message) {
   ],
   [
     "src/lib/trustDocumentSnapshots.ts",
-    /buildTrustSlipShareText[\s\S]*Known here as[\s\S]*Evidence only\. Open the link to check the current public GSN record\.[\s\S]*buildTrustSlipVerifyShareText[\s\S]*Known here as[\s\S]*Evidence only\. Open the link to check the current public GSN record\.[\s\S]*buildTrustPassportShareText[\s\S]*Known here as[\s\S]*Community evidence[\s\S]*Evidence only\. Open the link to check the current public GSN record\./,
+    /function activeCommunityContextLine[\s\S]*Active community contexts[\s\S]*buildTrustSlipShareText[\s\S]*Primary community role[\s\S]*activeCommunityContextLine\(params\.activeCommunityCount\)[\s\S]*Evidence only\. Open the link to check the current public GSN record\.[\s\S]*buildTrustSlipVerifyShareText[\s\S]*Primary community role[\s\S]*activeCommunityContextLine\(params\.activeCommunityCount\)[\s\S]*Evidence only\. Open the link to check the current public GSN record\.[\s\S]*buildTrustPassportShareText[\s\S]*Primary community role[\s\S]*Aggregate Passport reading[\s\S]*activeCommunityContextLine\(params\.activeCommunityCount\)[\s\S]*Primary community evidence[\s\S]*Evidence only\. Open the link to check the current public GSN record\./,
     "Trust document public share text must stay compact and let the verification link carry the full record.",
   ],
   ["src/lib/share.ts", /buildXIntentShareUrl/, "X intent share URL helper is missing."],

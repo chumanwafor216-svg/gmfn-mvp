@@ -80,6 +80,7 @@ type TrustSlipVerifyPublicPaperProps = {
   communityActivityLatestAt?: string | null;
   communityActivityCategories?: string[] | null;
   communityActivityLabel?: string | null;
+  activeCommunityCount?: string | number | null;
   relationshipEvidenceSummary?: Record<string, any> | null;
   visibleBand: string;
   visibleBandLabel: string;
@@ -852,6 +853,7 @@ export default function TrustSlipVerifyPublicPaper({
   communityActivityLatestAt,
   communityActivityCategories,
   communityActivityLabel,
+  activeCommunityCount,
   relationshipEvidenceSummary,
   visibleBand,
   visibleBandLabel,
@@ -925,6 +927,11 @@ export default function TrustSlipVerifyPublicPaper({
     "This Community ID resolves to an active GSN community record. Parent community acknowledgement and member-level evidence still need separate current scoped evidence."
   );
   const communityActivityCountLabel = firstTruthy(communityActivityCount, "0");
+  const activeCommunityCountLabel = firstTruthy(activeCommunityCount);
+  const activeCommunityContexts = positiveNumber(activeCommunityCountLabel);
+  const aggregateScopeText = activeCommunityContexts > 1
+    ? `${activeCommunityCountLabel} active community contexts referenced.`
+    : "Only the primary community is shown on this public TrustSlip.";
   const communityActivityCategoriesLabel = Array.isArray(communityActivityCategories)
     ? communityActivityCategories.map((item) => safeText(item)).filter(Boolean).join(", ")
     : "";
@@ -962,14 +969,14 @@ export default function TrustSlipVerifyPublicPaper({
   }> = [
     {
       icon: "identity-card",
-      label: "Community role",
+      label: "Primary community role",
       value: holderRoleLabel,
       note: `Shown inside ${communityLabel || "this community record"}.`,
       tone: holderRoleLabel.toLowerCase().includes("member") ? "neutral" : "trust",
     },
     {
       icon: "community-building",
-      label: "Community signals",
+      label: "Primary community signals",
       value:
         positiveNumber(communityActivityCountLabel) > 0
           ? `${communityActivityCountLabel} recorded event${
@@ -1020,10 +1027,10 @@ export default function TrustSlipVerifyPublicPaper({
   );
   const decisionKnownFor =
     positiveNumber(communityActivityCountLabel) > 0
-      ? `${holderRoleLabel} inside ${communityLabel || "this community"}, with ${communityActivityCountLabel} recorded community event${
+      ? `Primary role: ${holderRoleLabel} inside ${communityLabel || "this community"}. ${communityActivityCountLabel} recorded primary-community event${
           communityActivityCountLabel === "1" ? "" : "s"
-        }${knownAsCategoryLabel ? ` across ${knownAsCategoryLabel}` : ""}.`
-      : `${holderRoleLabel} inside ${communityLabel || "this community"}. Activity evidence is still building on this paper.`;
+        }${knownAsCategoryLabel ? ` across ${knownAsCategoryLabel}` : ""}. ${aggregateScopeText}`
+      : `Primary role: ${holderRoleLabel} inside ${communityLabel || "this community"}. Activity evidence is still building on this paper. ${aggregateScopeText}`;
   const decisionNextStep = validNow
     ? "For important decisions, request instant community confirmation before relying on this paper."
     : "Ask the holder for a fresh TrustSlip before relying on this paper.";
@@ -1034,7 +1041,9 @@ export default function TrustSlipVerifyPublicPaper({
   const decisionFirstAnswer = !validNow
     ? "Verification required"
     : hasCommunityEvidence || hasWitnessEvidence
-      ? "Known by community"
+      ? activeCommunityContexts > 1
+        ? "Known across evidence contexts"
+        : "Known by community"
       : "Evidence still building";
   const decisionFirstTone: "trust" | "warning" | "neutral" = !validNow
     ? "warning"
@@ -1057,9 +1066,9 @@ export default function TrustSlipVerifyPublicPaper({
     },
     {
       icon: "community-building",
-      label: "Known for",
-      title: holderRoleLabel,
-      text: communityLabel || "Community record not shown.",
+      label: "Evidence scope",
+      title: activeCommunityContexts > 1 ? `${activeCommunityCountLabel} communities` : "Primary community",
+      text: `${holderRoleLabel} inside ${communityLabel || "this community"}.`,
       tone: holderRoleLabel.toLowerCase().includes("member") ? "neutral" : "trust",
     },
     {
@@ -1080,7 +1089,7 @@ export default function TrustSlipVerifyPublicPaper({
     },
   ];
   const decisionBoundaryRows: Array<[string, string]> = [
-    ["Community evidence", "Shown"],
+    ["Evidence scope", activeCommunityContexts > 1 ? "Primary + wider" : "Primary shown"],
     ["Guarantee", "No"],
     ["Government ID", "No"],
     ["Credit approval", "No"],
@@ -1228,7 +1237,7 @@ export default function TrustSlipVerifyPublicPaper({
     "Public TrustSlip code status",
     "Visible evidence status and descriptive evidence boundary",
     "Displayed holder and GSN ID from this paper",
-    "Community label shown on this TrustSlip",
+    "Primary community label shown on this TrustSlip, with wider context only when active community count or consistency evidence is present",
     "Verification path and QR destination when available",
   ];
   const trustSlipDoesNotConfirmList = [
@@ -1294,9 +1303,9 @@ export default function TrustSlipVerifyPublicPaper({
       ],
     },
     {
-      title: "Community evidence",
+      title: "Primary community evidence",
       rows: [
-        ["Community record", communityRecordCurrentness],
+        ["Primary community record", communityRecordCurrentness],
         ["Community activity", communityActivityEvidence],
         ["Activity categories", communityActivityCategoriesLabel || "Not shown"],
         ["Latest activity", communityActivityLatest || "Not shown"],
@@ -1818,8 +1827,8 @@ export default function TrustSlipVerifyPublicPaper({
             />
             <PublicReadingTile
               icon="community-building"
-              label="Known for"
-              title="Community evidence"
+              label="Evidence scope"
+              title="Primary + wider context"
               text={decisionKnownFor}
               compact={compact}
               tone={positiveNumber(communityActivityCountLabel) > 0 ? "trust" : "warning"}
@@ -2008,8 +2017,8 @@ export default function TrustSlipVerifyPublicPaper({
             <TrustDocumentConfidenceRibbon items={trustSlipConfidenceRibbonItems} />
 
             <CommunityProofPanel
-              title="Known by community"
-              subtitle="Public-safe community evidence from this TrustSlip. It supports judgement without exposing private Trust Passport details."
+              title="Primary community evidence"
+              subtitle="This panel shows the TrustSlip primary community anchor. Use aggregate/wider readings separately where they are shown."
               compact={compact}
               communityName={communityLabel}
               holderRole={holderRole}

@@ -347,7 +347,7 @@ assertContains(
 
 assertContains(
   "src/pages/TrustSlipPage.tsx",
-  /const trustSlipKnownAsRows[\s\S]*?Community role[\s\S]*?Community signals[\s\S]*?Witness route[\s\S]*?const trustSlipEvidenceSummaryCards[\s\S]*?Known here as[\s\S]*?Evidence basis[\s\S]*?Good for[\s\S]*?Not proof of[\s\S]*?data-gsn-trustslip-holder-practical-evidence="true"[\s\S]*?Practical evidence summary[\s\S]*?how the holder is known in this community[\s\S]*?where the record stops/,
+  /const trustSlipKnownAsRows[\s\S]*?Primary community role[\s\S]*?Primary community signals[\s\S]*?Aggregate scope[\s\S]*?Witness route[\s\S]*?const trustSlipEvidenceSummaryCards[\s\S]*?Primary \+ wider evidence[\s\S]*?Evidence basis[\s\S]*?Good for[\s\S]*?Not proof of[\s\S]*?data-gsn-trustslip-holder-practical-evidence="true"[\s\S]*?Practical evidence summary[\s\S]*?separates the primary community anchor from wider evidence context[\s\S]*?whole judgement/,
   "Signed-in TrustSlip holder paper must condense known-as evidence, evidence basis, use cases, and limits into one practical summary instead of repeating long panels."
 );
 
@@ -636,13 +636,13 @@ assertContains(
 
 assertContains(
   "src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx",
-  /const communityKnownAsRows[\s\S]*?Community role[\s\S]*?Community signals[\s\S]*?Witness route[\s\S]*?data-gsn-community-known-as-evidence="true"[\s\S]*?Community known-as evidence[\s\S]*?communityKnownAsRows\.map[\s\S]*?community-scoped evidence[\s\S]*?not a licence, certificate, or guarantee of future work/,
+  /const communityKnownAsRows[\s\S]*?Primary community role[\s\S]*?Primary community signals[\s\S]*?Witness route[\s\S]*?data-gsn-community-known-as-evidence="true"[\s\S]*?Community known-as evidence[\s\S]*?community-scoped evidence[\s\S]*?not a licence, certificate, or guarantee of future work/,
   "TrustSlip Verify public paper must add compact community known-as evidence without overclaiming certification or guarantees."
 );
 
 assertContains(
   "src/pages/trustSlipVerify/trustSlipVerifyViewModel.ts",
-  /What are they known for here\?[\s\S]*?This paper shows identity and community scope, not a full profession record[\s\S]*?What should you do next\?[\s\S]*?request live community confirmation/,
+  /What evidence scope is shown\?[\s\S]*?Primary role[\s\S]*?Active community contexts[\s\S]*?primary community scope, and wider evidence context when available[\s\S]*?What should you do next\?[\s\S]*?request live community confirmation/,
   "TrustSlip Verify quick answers must give real-world known-as and next-step meaning without pretending to certify a profession."
 );
 

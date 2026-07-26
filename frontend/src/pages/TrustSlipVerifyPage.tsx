@@ -601,6 +601,7 @@ export default function TrustSlipVerifyPage() {
     communityActivityLatestAt,
     communityActivityCategories,
     communityActivityLabel,
+    activeCommunityCount,
     verifyPath,
     verifyUrl,
     compactTrustLimit,
@@ -788,6 +789,7 @@ export default function TrustSlipVerifyPage() {
         issuedAt: issuedAtLabel,
         expiresAt: expiresAtLabel,
         verifyUrl,
+        activeCommunityCount,
       }),
       "Verification snapshot copied.",
       "Verification snapshot is not ready yet."
@@ -944,6 +946,7 @@ export default function TrustSlipVerifyPage() {
             issuedAt: issuedAtLabel,
             expiresAt: expiresAtLabel,
             verifyUrl,
+            activeCommunityCount,
           }),
           url: verifyUrl,
         }}
@@ -1242,6 +1245,7 @@ export default function TrustSlipVerifyPage() {
           communityActivityLatestAt={communityActivityLatestAt}
           communityActivityCategories={communityActivityCategories}
           communityActivityLabel={communityActivityLabel}
+          activeCommunityCount={activeCommunityCount}
           visibleBand={visibleBand}
           visibleBandLabel={visibleBandLabel}
           visibleBandMeaning={visibleBandMeaning}

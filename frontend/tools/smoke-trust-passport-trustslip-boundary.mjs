@@ -656,7 +656,7 @@ async function runTrustSlipScenario(browser, baseURL) {
     })
   ).toBeVisible();
   await expect(
-    state.page.getByText("Use this paper to see how the holder is known in this community, what evidence is visible, and where the record stops.", {
+    state.page.getByText("This section separates the primary community anchor from wider evidence context, so the recipient does not mistake one community label for the whole judgement.", {
       exact: false,
     })
   ).toBeVisible();
