@@ -79,11 +79,11 @@ assertOrder(
     { label: "decision reading", pattern: /data-debug-id="trust-slip-verify\.public\.decision-pack-reading"/ },
     { label: "decision evidence details", pattern: /<TrustDocumentDisclosureSection[\s\S]*?title="Decision evidence details"/ },
     { label: "decision profile cage", pattern: /data-gsn-decision-pack-profile="public-purpose-filter"/ },
-    { label: "more details disclosure", pattern: /<TrustDocumentDisclosureSection[\s\S]*?title="More details and evidence"/ },
+    { label: "audit details disclosure", pattern: /<TrustDocumentDisclosureSection[\s\S]*?title="Audit Details"/ },
     { label: "more details cage", pattern: /data-gsn-public-more-details="authority-evidence-limits"/ },
     { label: "authority strip", pattern: /<TrustPaperAuthorityStrip/ },
     { label: "confidence ribbon", pattern: /<TrustDocumentConfidenceRibbon items=\{trustSlipConfidenceRibbonItems\} \/>/ },
-    { label: "primary community proof", pattern: /<CommunityProofPanel[\s\S]*?title="Primary community evidence"/ },
+    { label: "community evidence checked", pattern: /<CommunityProofPanel[\s\S]*?title="Community evidence checked"/ },
     { label: "security disclosure", pattern: /<TrustDocumentDisclosureSection[\s\S]*?title="TrustSlip security and limits"/ },
   ],
   "Public TrustSlip first viewport must lead with recipient decision support before heavier proof and security disclosure."
@@ -91,8 +91,8 @@ assertOrder(
 
 assertContains(
   "publicPaper",
-  /<TrustDocumentDisclosureSection[\s\S]*?title="More details and evidence"[\s\S]*?summary="Open for record authority, evidence status, community evidence, security, and limits\."[\s\S]*?data-gsn-public-more-details="authority-evidence-limits"[\s\S]*?<TrustPaperAuthorityStrip[\s\S]*?<TrustDocumentConfidenceRibbon items=\{trustSlipConfidenceRibbonItems\} \/>[\s\S]*?<CommunityProofPanel[\s\S]*?title="Primary community evidence"[\s\S]*?<TrustDocumentDisclosureSection[\s\S]*?title="TrustSlip security and limits"/,
-  "Public TrustSlip heavier authority, evidence-status, community-evidence, and limit layers must live behind one More details disclosure."
+  /<TrustDocumentDisclosureSection[\s\S]*?title="Audit Details"[\s\S]*?summary="Open for technical record checks, community evidence, security, and limits\."[\s\S]*?data-gsn-public-more-details="authority-evidence-limits"[\s\S]*?<TrustPaperAuthorityStrip[\s\S]*?<TrustDocumentConfidenceRibbon items=\{trustSlipConfidenceRibbonItems\} \/>[\s\S]*?<CommunityProofPanel[\s\S]*?title="Community evidence checked"[\s\S]*?<TrustDocumentDisclosureSection[\s\S]*?title="TrustSlip security and limits"/,
+  "Public TrustSlip heavier authority, community-evidence, security, and limit layers must live behind one Audit Details disclosure."
 );
 
 assertContains(
@@ -109,14 +109,14 @@ assertContains(
 
 assertContains(
   "publicPaper",
-  /const decisionFirstAnswer = !validNow[\s\S]*?"Verification required"[\s\S]*?"Known across evidence contexts"[\s\S]*?"Known by community"[\s\S]*?"Evidence still building"[\s\S]*?const decisionFirstFacts:[\s\S]*?label: "Who\?"[\s\S]*?label: "Evidence scope"[\s\S]*?label: "Evidence"[\s\S]*?label: "Next step"[\s\S]*?const decisionBoundaryRows:[\s\S]*?\["Evidence scope", activeCommunityContexts > 1 \? "Primary \+ wider" : "Primary shown"\][\s\S]*?\["Guarantee", "No"\][\s\S]*?\["Government ID", "No"\][\s\S]*?\["Credit approval", "No"\][\s\S]*?\["Final decision", "Yours"\]/,
-  "Public TrustSlip first viewport must compute one big answer, four quick facts, and a compact Decision Boundary."
+  /const decisionFirstAnswer = !validNow[\s\S]*?"Verification required"[\s\S]*?"Known across evidence contexts"[\s\S]*?"Known by community"[\s\S]*?"Evidence still building"[\s\S]*?const decisionFirstFacts:[\s\S]*?label: "Who\?"[\s\S]*?label: "What we checked"[\s\S]*?label: "Evidence"[\s\S]*?label: "Next step"[\s\S]*?const decisionBoundaryRows:[\s\S]*?\["What we checked", activeCommunityContexts > 1 \? "Primary \+ wider" : "Primary shown"\][\s\S]*?\["Guarantee", "No"\][\s\S]*?\["Government ID", "No"\][\s\S]*?\["Credit approval", "No"\][\s\S]*?\["Final decision", "Yours"\]/,
+  "Public TrustSlip first viewport must compute one big answer, four quick facts, and a compact decision boundary."
 );
 
 assertContains(
   "publicPaper",
-  /data-gsn-public-decision-first="one-answer-four-facts"[\s\S]*?Decision first[\s\S]*?\{decisionFirstAnswer\}[\s\S]*?Use this as decision support for \{decisionPackPurpose\}[\s\S]*?data-gsn-public-decision-first-facts="four-quick-facts"[\s\S]*?decisionFirstFacts\.map[\s\S]*?data-gsn-public-decision-boundary="compact"[\s\S]*?Decision Boundary[\s\S]*?decisionBoundaryRows\.map/,
-  "Public TrustSlip first viewport must render the answer, four facts, and compact Decision Boundary before supporting details."
+  /data-gsn-public-decision-first="one-answer-four-facts"[\s\S]*?Decision Summary[\s\S]*?\{decisionFirstAnswer\}[\s\S]*?Use this as decision support for \{decisionPackPurpose\}[\s\S]*?data-gsn-public-decision-first-facts="four-quick-facts"[\s\S]*?decisionFirstFacts\.map[\s\S]*?data-gsn-public-decision-boundary="compact"[\s\S]*?What this cannot prove[\s\S]*?decisionBoundaryRows\.map/,
+  "Public TrustSlip first viewport must render the answer, four facts, and compact decision boundary before supporting details."
 );
 
 assertContains(
@@ -133,8 +133,8 @@ assertContains(
 );
 assertContains(
   "publicPaper",
-  /const recordTrustReasonTiles = \[[\s\S]*?Public code[\s\S]*?Current window[\s\S]*?Verification path[\s\S]*?Live confirmation[\s\S]*?\];[\s\S]*?data-gsn-public-record-trust-reasons="decision-pack"[\s\S]*?Why this record can be trusted[\s\S]*?current, traceable, and limited[\s\S]*?do not guarantee the holder or replace your own judgement[\s\S]*?data-gsn-public-record-trust-reasons-grid="compact-two-by-two"[\s\S]*?gridTemplateColumns: compact \? "repeat\(2, minmax\(0, 1fr\)\)" : "repeat\(4, minmax\(0, 1fr\)\)"/,
-  "Trustability reasons must stay grouped as code/currentness/link/live-confirmation signals without overclaiming."
+  /const recordTrustReasonTiles = \[[\s\S]*?Public code[\s\S]*?Current window[\s\S]*?Check path[\s\S]*?Live confirmation[\s\S]*?\];[\s\S]*?data-gsn-public-record-trust-reasons="decision-pack"[\s\S]*?Why this record can be trusted[\s\S]*?current, traceable, and limited[\s\S]*?do not guarantee the holder or replace your own judgement[\s\S]*?data-gsn-public-record-trust-reasons-grid="compact-two-by-two"[\s\S]*?gridTemplateColumns: compact \? "repeat\(2, minmax\(0, 1fr\)\)" : "repeat\(4, minmax\(0, 1fr\)\)"/,
+  "Trustability reasons must stay grouped as code/currentness/check-path/live-confirmation signals without overclaiming."
 );
 
 assertContains(

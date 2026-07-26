@@ -1012,7 +1012,7 @@ export default function TrustSlipVerifyPublicPaper({
   const callbackNeedsConsent = callbackChannel !== "none" && safeText(callbackContact);
   const callbackBlocked = Boolean(callbackNeedsConsent && !callbackConsent);
   const requesterCallback = confirmationOutcome?.requester_callback || null;
-  const visibleBandReading = visibleBandLabel || publicEvidencePosture || "Evidence status";
+  const visibleBandReading = visibleBandLabel || publicEvidencePosture || "Evidence strength";
   const decisionPackPurpose = firstTruthy(
     recipientAccessRecord.purpose,
     "General Decision Pack"
@@ -1033,7 +1033,7 @@ export default function TrustSlipVerifyPublicPaper({
       : `Primary role: ${holderRoleLabel} inside ${communityLabel || "this community"}. Activity evidence is still building on this paper. ${aggregateScopeText}`;
   const decisionNextStep = validNow
     ? "For important decisions, request instant community confirmation before relying on this paper."
-    : "Ask the holder for a fresh TrustSlip before relying on this paper.";
+    : "Request a new TrustSlip.";
   const hasCommunityEvidence = positiveNumber(communityActivityCountLabel) > 0;
   const hasWitnessEvidence =
     positiveNumber(memberWitnessCountLabel) > 0 &&
@@ -1066,7 +1066,7 @@ export default function TrustSlipVerifyPublicPaper({
     },
     {
       icon: "community-building",
-      label: "Evidence scope",
+      label: "What we checked",
       title: activeCommunityContexts > 1 ? `${activeCommunityCountLabel} communities` : "Primary community",
       text: `${holderRoleLabel} inside ${communityLabel || "this community"}.`,
       tone: holderRoleLabel.toLowerCase().includes("member") ? "neutral" : "trust",
@@ -1081,7 +1081,7 @@ export default function TrustSlipVerifyPublicPaper({
     {
       icon: "certificate-seal",
       label: "Next step",
-      title: validNow ? "Request live confirmation" : "Refresh first",
+      title: validNow ? "Request live confirmation" : "Request new TrustSlip",
       text: validNow
         ? "Ask the community before relying on this paper."
         : "Use a fresh code before deciding.",
@@ -1089,7 +1089,7 @@ export default function TrustSlipVerifyPublicPaper({
     },
   ];
   const decisionBoundaryRows: Array<[string, string]> = [
-    ["Evidence scope", activeCommunityContexts > 1 ? "Primary + wider" : "Primary shown"],
+    ["What we checked", activeCommunityContexts > 1 ? "Primary + wider" : "Primary shown"],
     ["Guarantee", "No"],
     ["Government ID", "No"],
     ["Credit approval", "No"],
@@ -1108,13 +1108,13 @@ export default function TrustSlipVerifyPublicPaper({
     {
       icon: "certificate-seal" as Gsn3DIconKey,
       label: "Current window",
-      title: validNow ? "Valid now" : "Refresh first",
+      title: validNow ? "Valid now" : "Request new TrustSlip",
       text: `Status: ${publicValidityLabel}. Expires: ${expiresAtLabel || "not shown"}.`,
       tone: validNow ? "trust" : "warning",
     },
     {
       icon: "public-globe" as Gsn3DIconKey,
-      label: "Verification path",
+      label: "Check path",
       title: verifyUrl ? "Link and QR available" : "Link unavailable",
       text: verifyUrl
         ? "Use the live link or QR instead of relying on an old screenshot."
@@ -1172,28 +1172,28 @@ export default function TrustSlipVerifyPublicPaper({
   );
   const trustSlipConfidenceRibbonItems: TrustDocumentRibbonItem[] = [
     {
-      label: "TrustSlip status",
+      label: "Paper status",
       value: publicValidityLabel,
       tone: validNow ? "good" : "warn",
     },
     {
-      label: "Record integrity",
+      label: "Can this be checked?",
       value: resolvedCode && verifyPath ? "Public code resolved" : "Limited",
       tone: resolvedCode && verifyPath ? "good" : "warn",
     },
     {
-      label: "Evidence chain",
+      label: "Evidence source",
       value: "Scoped evidence",
       tone: "info",
       detail: "Private passport stays protected.",
     },
     {
-      label: "Verification path",
+      label: "Check path",
       value: verifyUrl ? "Available" : "Unavailable",
       tone: verifyUrl ? "good" : "warn",
     },
     {
-      label: "Valid until",
+      label: "Use before",
       value: expiresAtLabel || "Not shown",
       tone: expiresAtLabel ? "info" : "warn",
     },
@@ -1235,7 +1235,7 @@ export default function TrustSlipVerifyPublicPaper({
   ];
   const trustSlipConfirmsList = [
     "Public TrustSlip code status",
-    "Visible evidence status and descriptive evidence boundary",
+    "Visible evidence strength and what the paper cannot prove",
     "Displayed holder and GSN ID from this paper",
     "Primary community label shown on this TrustSlip, with wider context only when active community count or consistency evidence is present",
     "Verification path and QR destination when available",
@@ -1287,32 +1287,32 @@ export default function TrustSlipVerifyPublicPaper({
     {
       title: "Public result",
       rows: [
-        ["Evidence status", visibleBandLabel || publicEvidencePosture],
-        ["Evidence boundary", publicEvidencePosture],
-        ["Trust-limit signal", compactTrustLimit],
-        ["Validity", publicValidityLabel],
+        ["Evidence strength", visibleBandLabel || publicEvidencePosture],
+        ["What this cannot prove", publicEvidencePosture],
+        ["Risk limit", compactTrustLimit],
+        ["Current status", publicValidityLabel],
       ],
     },
     {
-      title: "Evidence currentness",
+      title: "Are witnesses up to date?",
       rows: [
-        ["Member witness", memberWitnessEvidence],
-        ["Witness renewal", memberWitnessRenewal],
-        ["Witness valid until", memberWitnessValidity || "Not shown"],
-        ["Next witness status", nextWitnessRenewalStatus],
+        ["Community witnesses", memberWitnessEvidence],
+        ["Witness update", memberWitnessRenewal],
+        ["Witnesses valid until", memberWitnessValidity || "Not shown"],
+        ["Next witness check", nextWitnessRenewalStatus],
       ],
     },
     {
-      title: "Primary community evidence",
+      title: "Community evidence checked",
       rows: [
-        ["Primary community record", communityRecordCurrentness],
+        ["Community record", communityRecordCurrentness],
         ["Community activity", communityActivityEvidence],
         ["Activity categories", communityActivityCategoriesLabel || "Not shown"],
         ["Latest activity", communityActivityLatest || "Not shown"],
       ],
     },
     {
-      title: "Document reference",
+      title: "Paper reference",
       rows: [
         ["Issued", issuedAtLabel],
         ["Expires", expiresAtLabel],
@@ -1523,7 +1523,7 @@ export default function TrustSlipVerifyPublicPaper({
             </span>
             <div style={{ minWidth: 0 }}>
               <div style={{ ...sectionLabel(), color: decisionFirstTone === "warning" ? "#92400E" : "#0B63D1" }}>
-                Decision first
+                Decision Summary
               </div>
               <h2
                 style={{
@@ -1587,7 +1587,7 @@ export default function TrustSlipVerifyPublicPaper({
               gap: 8,
             }}
           >
-            <div style={{ ...sectionLabel(), color: "#7A4A00" }}>Decision Boundary</div>
+            <div style={{ ...sectionLabel(), color: "#7A4A00" }}>What this cannot prove</div>
             <div
               style={{
                 display: "grid",
@@ -1827,7 +1827,7 @@ export default function TrustSlipVerifyPublicPaper({
             />
             <PublicReadingTile
               icon="community-building"
-              label="Evidence scope"
+              label="What we checked"
               title="Primary + wider context"
               text={decisionKnownFor}
               compact={compact}
@@ -1844,7 +1844,7 @@ export default function TrustSlipVerifyPublicPaper({
             <PublicReadingTile
               icon="certificate-seal"
               label="Next safe step"
-              title={validNow ? "Check live confirmation" : "Refresh first"}
+              title={validNow ? "Check live confirmation" : "Request new TrustSlip"}
               text={decisionNextStep}
               compact={compact}
               tone={validNow ? "trust" : "warning"}
@@ -1999,8 +1999,8 @@ export default function TrustSlipVerifyPublicPaper({
         </div>
 
         <TrustDocumentDisclosureSection
-          title="More details and evidence"
-          summary="Open for record authority, evidence status, community evidence, security, and limits."
+          title="Audit Details"
+          summary="Open for technical record checks, community evidence, security, and limits."
         >
           <div
             data-gsn-public-more-details="authority-evidence-limits"
@@ -2017,7 +2017,7 @@ export default function TrustSlipVerifyPublicPaper({
             <TrustDocumentConfidenceRibbon items={trustSlipConfidenceRibbonItems} />
 
             <CommunityProofPanel
-              title="Primary community evidence"
+              title="Community evidence checked"
               subtitle="This panel shows the TrustSlip primary community anchor. Use aggregate/wider readings separately where they are shown."
               compact={compact}
               communityName={communityLabel}
@@ -2342,7 +2342,7 @@ export default function TrustSlipVerifyPublicPaper({
                 }}
               >
                 <div style={statTile("#FFFFFF")}>
-                  <div style={sectionLabel()}>Trust reading</div>
+                  <div style={sectionLabel()}>Community confidence</div>
                   <div
                     style={{
                       ...readableText(),
@@ -2363,7 +2363,7 @@ export default function TrustSlipVerifyPublicPaper({
                   </div>
                 </div>
                 <div style={statTile("#FFFFFF")}>
-                  <div style={sectionLabel()}>Evidence boundary</div>
+                  <div style={sectionLabel()}>What this cannot prove</div>
                   <div style={{ ...readableText(), marginTop: 6, color: "#07172C", fontSize: compact ? 21 : 24, fontWeight: 1000 }}>
                     {publicEvidencePosture}
                   </div>
@@ -2378,13 +2378,13 @@ export default function TrustSlipVerifyPublicPaper({
                   </div>
                 </div>
                 <div style={statTile("#FFFFFF")}>
-                  <div style={sectionLabel()}>Trust-limit signal</div>
+                  <div style={sectionLabel()}>Risk limit</div>
                   <div style={{ ...readableText(), marginTop: 6, color: "#07172C", fontSize: compact ? 17 : 18, fontWeight: 1000 }}>
                     {compactTrustLimit}
                   </div>
                 </div>
                 <div style={statTile("#FFFFFF")}>
-                  <div style={sectionLabel()}>Validity</div>
+                  <div style={sectionLabel()}>Current status</div>
                   <div style={{ ...readableText(), marginTop: 6, color: "#07172C", fontSize: 13, fontWeight: 950 }}>
                     {issuedAtLabel} issued
                   </div>

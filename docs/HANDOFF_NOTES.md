@@ -1,3 +1,46 @@
+## CURRENT LOCAL STATE - 2026-07-26 - Public TrustSlip decision summary wording tightened
+
+Owner trigger:
+- Owner pasted fresh feedback that the improved GSN public papers are now decision-first, but still repeat conclusions, expose spreadsheet-like audit rows, and use technical headings such as `Evidence scope`, `Trust reading`, `Evidence boundary`, `Trust-limit signal`, and `Refresh first`.
+
+Unabated truth:
+- Runtime frontend code changed in this slice, but only for the public TrustSlip Verify/Public Decision Pack paper and the audits that lock that contract.
+- This pass does not yet rewrite every listed customer-facing paper such as Public Member Credential, Community Membership Verification Paper, Member Witness Confirmation Record, or Community Domain Credential.
+- The Trust Passport/TrustSlip boundary audits still pass, so this change did not collapse the private Passport, holder TrustSlip, and public verification responsibilities.
+
+Changed:
+- `frontend/src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx`
+  - Renamed the first public panel from `Decision first` to `Decision Summary`.
+  - Replaced `Evidence scope` with `What we checked`.
+  - Replaced `Decision Boundary` heading with `What this cannot prove` while keeping the compact boundary rows.
+  - Replaced invalid-state `Refresh first` language with `Request new TrustSlip` / `Request a new TrustSlip.`.
+  - Renamed the heavy disclosure from `More details and evidence` to `Audit Details` and simplified its summary.
+  - Translated spreadsheet-like detail labels, including evidence strength, risk limit, community confidence, witness update, and community evidence checked.
+- `frontend/tools/audit-public-trustslip-first-viewport.mjs`
+- `frontend/tools/audit-public-trustslip-verify-boundary.mjs`
+- `frontend/tools/audit-trust-actions.mjs`
+  - Updated contract audits so the public paper stays locked to the plainer wording.
+
+Routes/screens affected:
+- Public TrustSlip Verify / Public Decision Pack: `/trustslip/verify`, `/trust-slip/verify`, and generated public TrustSlip paper variants that use `TrustSlipVerifyPublicPaper`.
+- No backend route changed.
+
+Verification:
+- Passed `npm --prefix frontend run audit:public-trustslip-first-viewport`.
+- Passed `npm --prefix frontend run audit:public-trustslip-verify-boundary`.
+- Passed `npm --prefix frontend run audit:trust-actions`.
+- Passed `npm --prefix frontend run audit:trust-passport-trustslip-boundary`.
+- Passed `npm --prefix frontend run audit:trust-passport-button-inventory`.
+- Passed `npm --prefix frontend run audit:protected-button-freeze`.
+- Passed `npm --prefix frontend run build`.
+- Passed `npm --prefix frontend run smoke:public-trustslip-verify-states` with escalation after the sandbox blocked Vite/esbuild spawn with `EPERM`.
+- Passed `git diff --check`; Git still reports normal LF-to-CRLF working-copy warnings on touched files.
+
+Deployment:
+- Local runtime/docs change only at this point. Not pushed or deployed until owner selects `2` or explicitly says push/deploy.
+
+Recommended next step:
+- Continue the same decision-summary/audit-details reduction across the remaining customer-facing papers listed in the feedback, starting with Public Member Credential and Community Membership Verification Paper.
 ## CURRENT LOCAL STATE - 2026-07-26 - Live deployed aggregate markers verified
 
 Owner trigger:

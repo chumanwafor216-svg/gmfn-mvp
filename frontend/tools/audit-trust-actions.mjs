@@ -648,7 +648,7 @@ assertContains(
 
 assertContains(
   "src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx",
-  /TrustDocumentConfidenceRibbon[\s\S]*?trustSlipConfidenceRibbonItems[\s\S]*?TrustSlip status[\s\S]*?Record integrity[\s\S]*?Evidence chain[\s\S]*?Verification path[\s\S]*?Valid until/,
+  /TrustDocumentConfidenceRibbon[\s\S]*?trustSlipConfidenceRibbonItems[\s\S]*?Paper status[\s\S]*?Can this be checked\?[\s\S]*?Evidence source[\s\S]*?Check path[\s\S]*?Use before/,
   "TrustSlip Verify public paper must expose the Trust Document Language confidence ribbon."
 );
 
