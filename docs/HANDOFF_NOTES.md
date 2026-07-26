@@ -151546,3 +151546,34 @@ GSN-branded invite composer and invite-entry continuity.
   - local only so far; routine continuation publishing remains batch-frozen unless the product owner explicitly asks to push/deploy.
 - Next recommended step:
   - add consented sharing/export controls for selected private Decision Pack evidence, still separate from public TrustSlip verification and still scrubbed by policy.
+
+## 2026-07-26 - Holder Decision Pack Consent Copy Controls
+
+- Trigger:
+  - owner selected `1` to continue after the holder-private Decision Pack evidence preview.
+- Unabated truth:
+  - the holder preview showed the right evidence categories but still lacked an explicit consent action for sharing them;
+  - this pass adds copy/export controls only. It does not create a public Decision Pack URL, does not expose raw TrustEvents, and does not record recipient consent/audit beyond the holder's local copy action.
+- Changed:
+  - `frontend/src/pages/TrustSlipPage.tsx`
+    - added `Copy consent summary` inside the private Decision Pack preview;
+    - added `Copy safe JSON` for a structured holder-consent summary;
+    - both exports use the selected Decision Pack and include holder/community/TrustSlip context, category counts, latest dates, and scrubbed event reference labels/scope only;
+    - exports exclude raw metadata, private notes, contacts, bank/payment references, and raw event timelines;
+    - copy success/failure uses the existing visible TrustSlip notice path.
+  - `frontend/tools/audit-trust-passport-trustslip-boundary.mjs`
+    - caged the consent summary text, safe JSON shape, button debug IDs, and non-public/non-score/non-approval boundary language.
+- Verification:
+  - passed `npm exec -- eslint src/pages/TrustSlipPage.tsx tools/audit-trust-passport-trustslip-boundary.mjs` from `frontend`;
+  - passed `npm --prefix frontend run audit:trust-passport-trustslip-boundary`;
+  - passed `npm --prefix frontend run audit:trust-actions`;
+  - passed `npm --prefix frontend run audit:public-trustslip-verify-boundary`;
+  - passed `npm --prefix frontend run audit:proof-surfaces`;
+  - passed `npm --prefix frontend run audit:protected-button-freeze`;
+  - passed `python -m pytest -q gmfn_backend\tests\test_trust_slip_boundary_controls.py` with 11 tests;
+  - passed `npm --prefix frontend run build`;
+  - passed `git diff --check`.
+- Deployment:
+  - local only so far; routine continuation publishing remains batch-frozen unless the product owner explicitly asks to push/deploy.
+- Next recommended step:
+  - add a backend-recorded holder consent/share event for private Decision Pack exports if the product owner wants an auditable consent trail, keeping it separate from public verify reads and ordinary TrustEvents.

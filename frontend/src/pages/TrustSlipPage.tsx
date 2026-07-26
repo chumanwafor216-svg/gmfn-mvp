@@ -3382,6 +3382,95 @@ export default function TrustSlipPage() {
     );
   }
 
+  function decisionPackEvidenceRowsForShare() {
+    return privateDecisionPackEvidenceCategories.filter((category) => category.evidenceCount > 0);
+  }
+
+  function buildDecisionPackConsentShareText() {
+    const rows = decisionPackEvidenceRowsForShare();
+    if (!rows.length) return "";
+
+    return [
+      "GSN Decision Pack holder consent summary",
+      `Holder: ${holderName || gmfnId}`,
+      gmfnId ? `GSN ID: ${gmfnId}` : "",
+      communityName ? `Community: ${communityName}` : "",
+      trustSlipCode ? `TrustSlip code: ${trustSlipCode}` : "",
+      `Decision Pack: ${selectedPurposeOption.label}`,
+      `Recipient question: ${selectedPurposeOption.recipientQuestion}`,
+      "Evidence categories:",
+      ...rows.map((category) => {
+        const latest = safeDateTime(category.latestAt) || "not recorded";
+        const sample = category.eventRefs[0]?.label ? `; sample ${category.eventRefs[0].label}` : "";
+        return `- ${category.label}: ${category.evidenceCount} event${category.evidenceCount === 1 ? "" : "s"}; latest ${latest}${sample}`;
+      }),
+      verifyUrl ? `Public TrustSlip check: ${verifyUrl}` : "",
+      "Shared by holder consent from a private preview. Evidence only; ask for live community confirmation before important risk.",
+      "Not a public evidence paper, score, approval, guarantee, payment instruction, raw event timeline, or private note disclosure.",
+    ]
+      .map((line) => safeStr(line))
+      .filter(Boolean)
+      .join("\n");
+  }
+
+  function buildDecisionPackConsentExportText() {
+    const rows = decisionPackEvidenceRowsForShare();
+    if (!rows.length) return "";
+
+    return JSON.stringify(
+      {
+        document_type: "gsn_decision_pack_holder_consent_summary",
+        generated_at: new Date().toISOString(),
+        holder: {
+          display_name: holderName || null,
+          gsn_id: gmfnId || null,
+          community: communityName || null,
+          community_reference: communityRefValue || null,
+          trust_slip_code: trustSlipCode || null,
+          public_trust_slip_check: verifyUrl || null,
+        },
+        decision_pack: {
+          key: selectedPurposeOption.key,
+          label: selectedPurposeOption.label,
+          recipient_question: selectedPurposeOption.recipientQuestion,
+          focus: selectedPurposeOption.focus,
+        },
+        evidence_categories: rows.map((category) => ({
+          key: category.key,
+          label: category.label,
+          evidence_count: category.evidenceCount,
+          latest_at: category.latestAt || null,
+          event_refs: category.eventRefs.map((eventRef) => ({
+            id: eventRef.id,
+            label: eventRef.label,
+            created_at: eventRef.createdAt || null,
+            scope: eventRef.scope || null,
+          })),
+        })),
+        consent_boundary:
+          "Copied by the signed-in holder from a private preview. Evidence only; not a public evidence paper, score, approval, guarantee, payment instruction, raw event timeline, or private note disclosure.",
+      },
+      null,
+      2
+    );
+  }
+
+  function copyDecisionPackConsentSummary() {
+    void handleCopy(
+      buildDecisionPackConsentShareText(),
+      "Decision Pack consent summary copied.",
+      "No private evidence categories are ready for this Decision Pack yet."
+    );
+  }
+
+  function copyDecisionPackConsentJson() {
+    void handleCopy(
+      buildDecisionPackConsentExportText(),
+      "Decision Pack safe JSON copied.",
+      "No private evidence categories are ready for export yet."
+    );
+  }
+
   if (loading) {
     return (
       <div
@@ -3725,6 +3814,29 @@ export default function TrustSlipPage() {
                   "Holder-only preview. It is not a public evidence paper, score, approval, guarantee, or payment instruction."
                 )}
               </div>
+
+              <CardActionRow data-gsn-decision-pack-consent-export="holder">
+                <SecondaryButton
+                  onClick={copyDecisionPackConsentSummary}
+                  disabled={!privateDecisionPackEvidenceAvailable || decisionPackEvidenceLoading}
+                  stableHeight={isCompact ? 50 : 48}
+                  minWidth={isCompact ? undefined : 176}
+                  debugId="trust-slip.private-decision-pack.copy-summary"
+                  style={{ fontSize: isCompact ? 11 : 12 }}
+                >
+                  Copy consent summary
+                </SecondaryButton>
+                <SubtleButton
+                  onClick={copyDecisionPackConsentJson}
+                  disabled={!privateDecisionPackEvidenceAvailable || decisionPackEvidenceLoading}
+                  stableHeight={isCompact ? 50 : 48}
+                  minWidth={isCompact ? undefined : 154}
+                  debugId="trust-slip.private-decision-pack.copy-json"
+                  style={{ fontSize: isCompact ? 11 : 12 }}
+                >
+                  Copy safe JSON
+                </SubtleButton>
+              </CardActionRow>
             </div>
             <div
               data-gsn-decision-pack-access-ledger="holder"

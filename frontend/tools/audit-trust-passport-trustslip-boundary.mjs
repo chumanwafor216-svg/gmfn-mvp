@@ -252,6 +252,25 @@ assertContains(
   /data-gsn-holder-private-decision-pack-evidence="true"[\s\S]*?Private holder preview[\s\S]*?Evidence behind this Decision Pack[\s\S]*?not a public evidence paper[\s\S]*?score[\s\S]*?approval[\s\S]*?guarantee[\s\S]*?payment instruction/,
   "TrustSlip holder private evidence preview must remain holder-only and preserve non-score/non-approval boundaries."
 );
+
+assertContains(
+  "trustSlip",
+  /buildDecisionPackConsentShareText[\s\S]*?GSN Decision Pack holder consent summary[\s\S]*?Shared by holder consent from a private preview[\s\S]*?live community confirmation[\s\S]*?Not a public evidence paper, score, approval, guarantee, payment instruction, raw event timeline, or private note disclosure/,
+  "TrustSlip holder consent summary must copy bounded evidence language, not approval or raw private records."
+);
+
+assertContains(
+  "trustSlip",
+  /buildDecisionPackConsentExportText[\s\S]*?gsn_decision_pack_holder_consent_summary[\s\S]*?evidence_categories[\s\S]*?event_refs[\s\S]*?label: eventRef\.label[\s\S]*?scope: eventRef\.scope[\s\S]*?consent_boundary[\s\S]*?raw event timeline, or private note disclosure/,
+  "TrustSlip holder safe JSON export must include scrubbed event references only and carry the consent boundary."
+);
+
+assertContains(
+  "trustSlip",
+  /data-gsn-decision-pack-consent-export="holder"[\s\S]*?debugId="trust-slip\.private-decision-pack\.copy-summary"[\s\S]*?Copy consent summary[\s\S]*?debugId="trust-slip\.private-decision-pack\.copy-json"[\s\S]*?Copy safe JSON/,
+  "TrustSlip holder private Decision Pack preview must expose explicit consent-copy controls."
+);
+
 assertContains(
   "trustSlip",
   /data-gsn-decision-pack-access-ledger="holder"[\s\S]*?Recent public reads[\s\S]*?Decision Pack access ledger[\s\S]*?Access records show public read context only[\s\S]*?not TrustEvents[\s\S]*?recipient identity[\s\S]*?private Passport disclosure/,
