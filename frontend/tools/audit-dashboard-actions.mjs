@@ -257,6 +257,15 @@ assertContains(
   /classText: "Not shown yet"[\s\S]*?No cross-community consistency reading yet[\s\S]*?classText: "Not shown yet"[\s\S]*?Select your community to view local trust[\s\S]*?classText: "Not shown yet"[\s\S]*?No local community reading yet/,
   "Dashboard CCI/Open Trust missing-reading states must use honest not-shown-yet language."
 );
+assertNotContains(
+  /Your trust position|trust strength|current trust position|Fix trust first|Open your Trust"|trust pressure|Trust pressure|Trust warning|trust signals around this seller|GSN trust signal|weakening trust|weakens trust|TrustSlip story|Local trust is how/g,
+  "Dashboard must frame early trust/CCI warnings as evidence readings, not trust-position or trust-signal verdicts."
+);
+
+assertContains(
+  /Your visible community evidence is steady[\s\S]*?Fix evidence first[\s\S]*?current evidence reading is under pressure[\s\S]*?Open Trust Passport[\s\S]*?evidence pressure in your community[\s\S]*?Evidence pressure should be handled before new exposure[\s\S]*?evidence signals around this seller[\s\S]*?GSN evidence signal[\s\S]*?Evidence warning[\s\S]*?Evidence pressure is shaping the current reading[\s\S]*?Local evidence is how[\s\S]*?weakens the evidence reading now[\s\S]*?TrustSlip evidence look less steady/,
+  "Dashboard must keep evidence-reading language across CCI fallback, repair notice, spotlight, demand, and warning cards."
+);
 
 assertContains(
   /label: "Wider"[\s\S]*?value: cciDisplayText\(cci\)[\s\S]*?detail: "Cross-community signal"[\s\S]*?label: "TrustSlip"[\s\S]*?value: trustSlipCode \|\| "Not issued yet"/,

@@ -1917,7 +1917,7 @@ function getCciState(me: any, trustSlip?: any, trust?: any): ReadingState {
             : formatReadingScore(rawScore, scoreNum),
         tone: "green",
         statusText: "Healthy across visible communities",
-        whyText: String(rawWhy || "Your trust position is steady right now."),
+        whyText: String(rawWhy || "Your visible community evidence is steady right now."),
       };
     }
 
@@ -1946,7 +1946,7 @@ function getCciState(me: any, trustSlip?: any, trust?: any): ReadingState {
         tone: "yellow",
         statusText: "Needs attention",
         whyText: String(
-          rawWhy || "A few better actions can improve your standing."
+          rawWhy || "A few clearer recent actions can strengthen the visible evidence."
         ),
       };
     }
@@ -1959,7 +1959,7 @@ function getCciState(me: any, trustSlip?: any, trust?: any): ReadingState {
           : formatReadingScore(rawScore, scoreNum),
       tone: "red",
       statusText: "At risk",
-      whyText: String(rawWhy || "Your trust position needs action and repair."),
+      whyText: String(rawWhy || "The visible community evidence needs action and repair."),
     };
   }
 
@@ -1970,7 +1970,7 @@ function getCciState(me: any, trustSlip?: any, trust?: any): ReadingState {
         postureSource: formatReadingScore(rawScore, scoreNum),
         tone: "green",
         statusText: "Healthy across visible communities",
-        whyText: String(rawWhy || "Your trust position is looking strong."),
+        whyText: String(rawWhy || "Visible cross-community evidence is looking strong."),
       };
     }
 
@@ -1981,7 +1981,7 @@ function getCciState(me: any, trustSlip?: any, trust?: any): ReadingState {
         tone: "green",
         statusText: "Stable and growing",
         whyText: String(
-          rawWhy || "Keep consistent actions to strengthen your standing."
+          rawWhy || "Keep consistent actions to strengthen the visible evidence."
         ),
       };
     }
@@ -1993,7 +1993,7 @@ function getCciState(me: any, trustSlip?: any, trust?: any): ReadingState {
         tone: "yellow",
         statusText: "Needs attention",
         whyText: String(
-          rawWhy || "Some recent actions may have reduced your trust strength."
+          rawWhy || "Some recent actions may have weakened the visible evidence."
         ),
       };
     }
@@ -2003,7 +2003,7 @@ function getCciState(me: any, trustSlip?: any, trust?: any): ReadingState {
       postureSource: formatReadingScore(rawScore, scoreNum),
       tone: "red",
       statusText: "At risk",
-      whyText: String(rawWhy || "Your trust position needs urgent improvement."),
+      whyText: String(rawWhy || "The visible community evidence needs urgent improvement."),
     };
   }
 
@@ -2759,16 +2759,16 @@ function buildPriorityRoutes(params: {
     const trustPrimary = params.openTrustTone === "red";
 
     return {
-      title: "Fix trust first",
+      title: "Fix evidence first",
       detail:
-        "Your current trust position is under pressure. Protect tomorrow’s options before chasing more visibility or movement.",
+        "Your current evidence reading is under pressure. Protect tomorrow’s options before chasing more visibility or movement.",
       primaryRoute: trustPrimary
         ? {
             key: "trust",
-            label: "Open your Trust",
-            detail: "Review the trust pressure in your community.",
+            label: "Open Trust Passport",
+            detail: "Review the evidence pressure in your community.",
             to: DASHBOARD_TARGETS.TRUST,
-            reason: "Trust pressure should be handled before new exposure.",
+            reason: "Evidence pressure should be handled before new exposure.",
           }
         : {
             key: "cci",
@@ -2787,8 +2787,8 @@ function buildPriorityRoutes(params: {
             }
           : {
               key: "trust",
-              label: "Open your Trust",
-              detail: "Read what is weakening trust now.",
+              label: "Open Trust Passport",
+              detail: "Read what is weakening the evidence reading now.",
               to: DASHBOARD_TARGETS.TRUST,
             },
         {
@@ -2835,7 +2835,7 @@ function buildPriorityRoutes(params: {
         },
         {
           key: "trust",
-          label: "Open your Trust",
+          label: "Open Trust Passport",
           detail: "Protect the credibility of your response discipline.",
           to: DASHBOARD_TARGETS.TRUST,
         },
@@ -4267,7 +4267,7 @@ export default function DashboardPage() {
           detail: safeStr(
               activeSpotlight.body ||
               activeSpotlight.message ||
-              "Your Spotlight is live in the marketplace. Watch the visibility, demand, and trust signals around this seller."
+              "Your Spotlight is live in the marketplace. Watch the visibility, demand, and evidence signals around this seller."
           ),
           ctaLabel: "Open your Marketplace",
           ctaTo: spotlightMarketplaceTo(activeSpotlight),
@@ -4783,7 +4783,7 @@ export default function DashboardPage() {
     ? "A person's request is live in your community."
     : "Create your demand when you need help.";
   const demandGuideBody =
-    "Your Demand Box is personal: you say what you need, and your GSN trust signal shows who is asking. Your community name shows where you are sending it from. Payment terms and TrustSlip expectations help both sides agree before work starts.";
+    "Your Demand Box is personal: you say what you need, and your GSN evidence signal shows who is asking. Your community name shows where you are sending it from. Payment terms and TrustSlip expectations help both sides agree before work starts.";
 
   const demandSurfaceChrome = useMemo(() => {
     if (urgentDemandItems.length > 0) {
@@ -5136,8 +5136,8 @@ export default function DashboardPage() {
 
     if (openTrust.tone === "red" || cci.tone === "red") {
       return {
-        label: "Trust warning",
-        detail: "Trust pressure is shaping the current reading.",
+        label: "Evidence warning",
+        detail: "Evidence pressure is shaping the current reading.",
         accent: "#B91C1C",
         border: "rgba(220,38,38,0.18)",
         background:
@@ -6520,10 +6520,10 @@ export default function DashboardPage() {
     fontFamily: "inherit",
   });
   const attentionConnectionText = isPhone
-    ? "Focus shows follow-through. Local trust is how your community reads it. Wider consistency is how outsiders may read it. TrustSlip keeps later evidence."
+    ? "Focus shows follow-through. Local evidence is how your community reads it. Wider consistency is how outsiders may read it. TrustSlip keeps later evidence."
     : trustAttentionCore.connectionText;
   const attentionConsequenceText = isPhone
-    ? "Leaving it waiting weakens trust now. If it stays open, it can affect wider consistency and make your TrustSlip story look less steady."
+    ? "Leaving it waiting weakens the evidence reading now. If it stays open, it can affect wider consistency and make your TrustSlip evidence look less steady."
     : attentionDisplaySignal.consequenceText;
   const attentionPopupLabelStyle = (
     color = DASHBOARD_BRAND.label

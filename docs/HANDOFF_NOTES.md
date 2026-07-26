@@ -152619,3 +152619,34 @@ GSN-branded invite composer and invite-entry continuity.
   - local only so far; do not push/deploy unless the owner explicitly selects `2` or says push/deploy.
 - Next recommended step:
   - commit this Identity evidence-consistency slice locally, then either continue another small visible/shared wording cleanup on `1` or push/deploy the accumulated local commits on `2`.
+## 2026-07-26 - Dashboard Evidence Reading Language
+
+- Trigger:
+  - owner selected `1` after the Identity Integrity evidence-consistency slice was committed locally.
+- Unabated truth:
+  - this pass cleans signed-in `/app/dashboard` presentation only;
+  - it intentionally avoids restyling or restructuring the frozen Market Wisdom section;
+  - it does not rename Trust Passport, TrustSlip, CCI/trust-score fields, route contracts, dashboard data contracts, backend APIs, spotlight/demand models, or debug IDs;
+  - this is visible-language cleanup, not a Dashboard redesign, Evidence Ledger route, Behavioural Placement schema, Decision Pack generator, verified-community model, scoring rewrite, or approval workflow.
+- Changed:
+  - `frontend/src/pages/DashboardPage.tsx`
+    - reframes Dashboard CCI fallback reasons from `trust position`, `standing`, and `trust strength` wording to visible community/cross-community evidence language;
+    - changes the repair priority card from `Fix trust first` / trust pressure wording to evidence-reading/evidence-pressure wording while preserving Trust Passport routing;
+    - changes Spotlight helper copy from trust signals to evidence signals;
+    - changes Demand Box helper copy from GSN trust signal to GSN evidence signal;
+    - changes the dashboard warning tile from `Trust warning` / trust pressure to evidence warning/evidence pressure;
+    - changes phone attention copy from local trust / weakens trust / TrustSlip story to local evidence / weakens evidence reading / TrustSlip evidence.
+  - `frontend/tools/audit-dashboard-actions.mjs`
+    - adds a source cage rejecting the old Dashboard trust-position/trust-signal phrasing;
+    - asserts the new evidence-reading wording remains present across CCI fallback, repair, Spotlight, Demand Box, and attention warning copy.
+- Verification:
+  - passed `npm exec -- eslint src/pages/DashboardPage.tsx tools/audit-dashboard-actions.mjs tools/audit-trust-actions.mjs` from `frontend`;
+  - passed direct `node tools/audit-dashboard-actions.mjs` from `frontend`;
+  - passed direct `node tools/audit-trust-actions.mjs` from `frontend`;
+  - passed `npm --prefix frontend run audit:protected-button-freeze`;
+  - passed `npm --prefix frontend run build`;
+  - passed `git diff --check` before the handoff entry.
+- Deployment:
+  - local only so far; do not push/deploy unless the owner explicitly selects `2` or says push/deploy.
+- Next recommended step:
+  - commit this Dashboard evidence-reading slice locally, then either continue another small visible/shared wording cleanup on `1` or push/deploy the accumulated local commits on `2`.
