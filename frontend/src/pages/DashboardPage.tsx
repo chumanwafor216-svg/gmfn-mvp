@@ -2170,9 +2170,9 @@ function getOpenTrustState(
       classText: "Not shown yet",
       postureSource: "-",
       tone: "neutral",
-      statusText: "Select your community to view local trust",
+      statusText: "Select your community to view local evidence",
       whyText:
-        "Your local community trust belongs to the community you are using right now. It is separate from the wider cross-community consistency reading.",
+        "Your local community evidence belongs to the community you are using right now. It is separate from the wider cross-community consistency reading.",
     };
   }
 
@@ -2182,7 +2182,7 @@ function getOpenTrustState(
     tone: "neutral",
     statusText: "No local community reading yet",
     whyText:
-      "Your local community trust reflects your standing in the community you are using now. Select or use a community first, then this reading will appear here.",
+      "Your local community evidence reflects the record in the community you are using now. Select or use a community first, then this reading will appear here.",
   };
 }
 
@@ -2861,7 +2861,7 @@ function buildPriorityRoutes(params: {
         {
           key: "trust",
           label: "Open your Trust Passport",
-          detail: "Understand the trust path clearly.",
+          detail: "Understand the evidence path clearly.",
           to: DASHBOARD_TARGETS.TRUST,
         },
         {

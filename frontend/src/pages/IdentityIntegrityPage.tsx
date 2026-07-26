@@ -1077,9 +1077,9 @@ function getOpenTrustState(
       classText: "Not shown yet",
       postureSource: "-",
       tone: "neutral",
-      statusText: "Select a community to view local trust",
+      statusText: "Select a community to view local evidence",
       whyText:
-        "Local community trust belongs to the community you are using right now. It is separate from the wider cross-community consistency reading.",
+        "Local community evidence belongs to the community you are using right now. It is separate from the wider cross-community consistency reading.",
     };
   }
 
@@ -1089,7 +1089,7 @@ function getOpenTrustState(
     tone: "neutral",
     statusText: "No local community reading yet",
     whyText:
-      "Local community trust reflects your standing in your current community. Select or use a community first, then this reading will appear here.",
+      "Local community evidence reflects the record in your current community. Select or use a community first, then this reading will appear here.",
   };
 }
 
@@ -3151,7 +3151,7 @@ export default function IdentityIntegrityPage() {
               }}
             >
               <div style={statTile(openTrustTone.bg, openTrustTone.border)}>
-                <div style={sectionLabel()}>Local community trust</div>
+                <div style={sectionLabel()}>Local community evidence</div>
                 <div
                   style={{
                     marginTop: 8,

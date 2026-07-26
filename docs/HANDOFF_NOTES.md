@@ -152897,3 +152897,36 @@ GSN-branded invite composer and invite-entry continuity.
   - local only so far; do not push/deploy unless the owner explicitly selects `2` or says push/deploy.
 - Next recommended step:
   - commit this shared guidance local-evidence-path slice locally, then either continue another small visible/shared wording cleanup on `1` or push/deploy the accumulated local commits on `2`.
+
+## 2026-07-26 - Dashboard and Identity Local Evidence Labels
+
+- Trigger:
+  - owner selected `1` after the shared guidance local-evidence-path slice was committed locally.
+- Unabated truth:
+  - this pass cleans visible Dashboard and Identity Integrity labels/helper text only;
+  - it does not touch Dashboard Market Wisdom presentation, button geometry, route targets, debug IDs, backend APIs, trust/CCI fields, scoring logic, Open Trust data, or Identity Integrity task behavior;
+  - internal keys and product route names may still use trust because they are existing contracts;
+  - this is not a Decision Pack generator, Evidence Ledger route, Behavioural Placement schema, route redesign, scoring rewrite, or approval workflow.
+- Changed:
+  - `frontend/src/pages/DashboardPage.tsx`
+    - changes missing local-reading fallback from `local trust` to `local evidence` wording;
+    - changes Trust Passport setup guidance from `trust path` to `evidence path`.
+  - `frontend/src/pages/IdentityIntegrityPage.tsx`
+    - changes missing local-reading fallback from `local trust` to `local evidence` wording;
+    - changes the visible stat label from `Local community trust` to `Local community evidence`.
+  - `frontend/tools/audit-dashboard-actions.mjs`
+    - updates Dashboard missing-reading and setup-route cages to require local-evidence/evidence-path wording.
+  - `frontend/tools/audit-identity-integrity-front-package.mjs`
+    - updates Identity missing-reading and visible-label cages to require local-evidence wording.
+- Verification:
+  - passed `npm exec -- eslint src/pages/DashboardPage.tsx src/pages/IdentityIntegrityPage.tsx tools/audit-dashboard-actions.mjs tools/audit-identity-integrity-front-package.mjs tools/audit-trust-actions.mjs` from `frontend`;
+  - passed direct `node tools/audit-dashboard-actions.mjs` from `frontend`;
+  - passed direct `node tools/audit-identity-integrity-front-package.mjs` from `frontend`;
+  - passed direct `node tools/audit-trust-actions.mjs` from `frontend`;
+  - passed `npm --prefix frontend run audit:protected-button-freeze`;
+  - passed `npm --prefix frontend run build`;
+  - passed `git diff --check` before the handoff entry.
+- Deployment:
+  - local only so far; do not push/deploy unless the owner explicitly selects `2` or says push/deploy.
+- Next recommended step:
+  - commit this Dashboard/Identity local-evidence-label slice locally, then either continue another small visible/shared wording cleanup on `1` or push/deploy the accumulated local commits on `2`.

@@ -81,11 +81,15 @@ assertNotContains(
 );
 
 assertContains(
-  /classText: "Not shown yet"[\s\S]*?No cross-community consistency reading yet[\s\S]*?classText: "Not shown yet"[\s\S]*?Select a community to view local trust[\s\S]*?classText: "Not shown yet"[\s\S]*?No local community reading yet/,
+  /classText: "Not shown yet"[\s\S]*?No cross-community consistency reading yet[\s\S]*?classText: "Not shown yet"[\s\S]*?Select a community to view local evidence[\s\S]*?classText: "Not shown yet"[\s\S]*?No local community reading yet/,
   "Identity Integrity CCI/Open Trust missing-reading states must use honest not-shown-yet language."
 );
+assertContains(
+  /Local community evidence belongs to the community you are using right now[\s\S]*?Local community evidence reflects the record in your current community[\s\S]*?Local community evidence<\/div>/,
+  "Identity Integrity local-reading fallback and visible label must use local evidence language."
+);
 assertNotContains(
-  /Your trust position|trust strength|identity and trust signals|Local community trust shows|closest trust document surface|under the trust family|Trust Passport story|Which trust question should stay with identity first|trust changes|trust story/g,
+  /Your trust position|trust strength|identity and trust signals|Local community trust shows|Local community trust belongs|Local community trust reflects|Local community trust<\/div>|local community trust|closest trust document surface|under the trust family|Trust Passport story|Which trust question should stay with identity first|trust changes|trust story/g,
   "Identity Integrity must frame identity and consistency as evidence, not trust-position or trust-story language."
 );
 
