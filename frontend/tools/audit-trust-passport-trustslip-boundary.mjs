@@ -236,6 +236,23 @@ assertContains(
 );
 
 assertContains(
+  "api",
+  /getMyTrustSlipDecisionPackEvidence[\s\S]*?\/trust-slips\/me\/decision-pack-evidence/,
+  "TrustSlip holder page must use the signed-in holder private Decision Pack evidence endpoint."
+);
+
+assertContains(
+  "trustSlip",
+  /getMyTrustSlipDecisionPackEvidence[\s\S]*?selectedPurposeOption\.key[\s\S]*?normalizeTrustSlipDecisionPackEvidence/,
+  "TrustSlip holder page must fetch the private evidence preview from the selected Decision Pack, not from public verify data."
+);
+
+assertContains(
+  "trustSlip",
+  /data-gsn-holder-private-decision-pack-evidence="true"[\s\S]*?Private holder preview[\s\S]*?Evidence behind this Decision Pack[\s\S]*?not a public evidence paper[\s\S]*?score[\s\S]*?approval[\s\S]*?guarantee[\s\S]*?payment instruction/,
+  "TrustSlip holder private evidence preview must remain holder-only and preserve non-score/non-approval boundaries."
+);
+assertContains(
   "trustSlip",
   /data-gsn-decision-pack-access-ledger="holder"[\s\S]*?Recent public reads[\s\S]*?Decision Pack access ledger[\s\S]*?Access records show public read context only[\s\S]*?not TrustEvents[\s\S]*?recipient identity[\s\S]*?private Passport disclosure/,
   "TrustSlip holder page must show recent Decision Pack accesses as bounded public-read context only."

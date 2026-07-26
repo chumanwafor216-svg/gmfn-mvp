@@ -631,6 +631,150 @@ def _event_category_row(category: str, rows: list[TrustEvent]) -> dict[str, Any]
     }
 
 
+PRIVATE_META_ALLOWLIST = {
+    "status",
+    "role",
+    "source",
+    "category",
+    "community_id",
+    "community_code",
+    "shop_id",
+    "product_id",
+    "trust_slip_id",
+    "confirmation_status",
+    "visibility",
+    "reason_code",
+}
+
+PRIVATE_META_BLOCK_TOKENS = (
+    "address",
+    "bank",
+    "contact",
+    "email",
+    "ip",
+    "location",
+    "note",
+    "payment",
+    "phone",
+    "private",
+    "reference",
+    "secret",
+    "token",
+)
+
+
+def _private_event_label(event_type: Any) -> str:
+    text = _clean(event_type, limit=96).replace(".", " ").replace("_", " ").replace("-", " ")
+    text = " ".join(text.split())
+    return text.title() if text else "Trust Event"
+
+
+def _scrub_private_event_meta(meta: Any) -> dict[str, str]:
+    if not isinstance(meta, Mapping):
+        return {}
+
+    safe: dict[str, str] = {}
+    for raw_key, raw_value in meta.items():
+        key = _clean(raw_key, limit=64).lower()
+        if not key:
+            continue
+        if key not in PRIVATE_META_ALLOWLIST:
+            continue
+        if any(token in key for token in PRIVATE_META_BLOCK_TOKENS):
+            continue
+
+        value = _clean(raw_value, limit=96)
+        if not value:
+            continue
+        if any(token in value.lower() for token in ("secret", "private", "password", "token")):
+            continue
+        safe[key] = value
+
+    return safe
+
+
+def _private_event_reference(row: TrustEvent, *, slip: TrustSlip) -> dict[str, Any]:
+    created_at = getattr(row, "created_at", None)
+    same_community = bool(getattr(slip, "clan_id", None)) and getattr(row, "clan_id", None) == getattr(slip, "clan_id", None)
+    return {
+        "id": int(row.id),
+        "label": _private_event_label(getattr(row, "event_type", None)),
+        "created_at": created_at.isoformat() if created_at else None,
+        "scope": "same_community" if same_community else "holder_record",
+        "safe_meta": _scrub_private_event_meta(getattr(row, "meta", None)),
+    }
+
+
+def _private_event_category_row(category: str, rows: list[TrustEvent], *, slip: TrustSlip) -> dict[str, Any]:
+    latest = max((getattr(row, "created_at", None) for row in rows), default=None)
+    label = PUBLIC_EVENT_CATEGORY_LABELS.get(category) or SENSITIVE_EVENT_CATEGORY_LABELS.get(category) or "Private evidence category"
+    return {
+        "key": category,
+        "label": label,
+        "status": "available" if rows else "gap",
+        "evidence_count": len(rows),
+        "latest_at": latest.isoformat() if latest else None,
+        "source": "holder_private_trust_events",
+        "event_refs": [_private_event_reference(row, slip=slip) for row in rows[:3]],
+        "decision_use": PUBLIC_EVENT_CATEGORY_USES.get(
+            category,
+            "Use this as holder-side provenance only; share through consented Trust Passport or live confirmation.",
+        ),
+    }
+
+
+def build_decision_pack_private_evidence_extract(
+    db: Session,
+    *,
+    slip: TrustSlip,
+    context: Optional[dict[str, str]],
+    limit: int = 80,
+) -> dict[str, Any]:
+    if not context:
+        return {}
+
+    holder_user_id = getattr(slip, "holder_user_id", None)
+    if holder_user_id is None:
+        return {}
+
+    pack_key = context.get("decision_pack_key") or "community_standing"
+    category_filter = PACK_EVENT_CATEGORY_FILTERS.get(pack_key) or (
+        "identity_membership",
+        "community_participation",
+        "relationship_path",
+        "trust_document_activity",
+    )
+
+    query = db.query(TrustEvent).filter(TrustEvent.subject_user_id == int(holder_user_id))
+    if getattr(slip, "clan_id", None):
+        query = query.filter((TrustEvent.clan_id == int(slip.clan_id)) | (TrustEvent.clan_id.is_(None)))
+    rows = (
+        query.order_by(TrustEvent.created_at.desc(), TrustEvent.id.desc())
+        .limit(max(1, min(int(limit or 80), 200)))
+        .all()
+    )
+
+    grouped: dict[str, list[TrustEvent]] = {category: [] for category in category_filter}
+    for row in rows:
+        category = _public_event_category(getattr(row, "event_type", None))
+        if category in grouped:
+            grouped[category].append(row)
+
+    categories = [
+        _private_event_category_row(category, grouped.get(category, []), slip=slip)
+        for category in category_filter
+    ]
+    return {
+        "source": "holder_private_decision_pack_extract",
+        "decision_pack": pack_key,
+        "access_purpose": context.get("access_purpose") or "Decision Pack",
+        "recipient_question": context.get("recipient_question") or "Can I make a better decision with this evidence?",
+        "categories": categories,
+        "privacy_note": "Authenticated holder preview only. Event references are provenance pointers for consented review, not a public evidence paper.",
+        "boundary_note": "This private preview is not a score, approval, guarantee, payment instruction, dispute disclosure, or public TrustSlip output.",
+    }
+
+
 def build_decision_pack_evidence_extract(
     db: Session,
     *,

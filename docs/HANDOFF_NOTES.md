@@ -151504,3 +151504,45 @@ GSN-branded invite composer and invite-entry continuity.
   - passed `npm --prefix frontend run build`.
 - Deployment:
   - local only; not committed, pushed, or deployed because routine continuation publishing is currently batch-frozen unless the owner explicitly asks to publish.
+
+## 2026-07-26 - Holder Private Decision Pack Evidence Preview
+
+- Trigger:
+  - owner selected `1` to continue the Decision Pack enhancement after the public redacted TrustEvent extract.
+- Unabated truth:
+  - the public Decision Pack extract already shows only public-safe aggregate categories;
+  - the next missing layer was holder-side visibility into which private TrustEvent categories support the selected Decision Pack;
+  - this pass does not expose raw TrustEvent records publicly, does not create a Trust Passport scoring engine, and does not make any pack an approval, guarantee, payment instruction, or dispute disclosure.
+- Changed:
+  - `gmfn_backend/app/services/trust_slip_decision_packs.py`
+    - added `build_decision_pack_private_evidence_extract` as a separate authenticated/private builder from the public redacted extractor;
+    - returns category counts and up to three scrubbed event references per category for the selected Decision Pack;
+    - allows only a small safe metadata allowlist and blocks notes, payment references, bank/contact/address/location/private/reference/token-like fields.
+  - `gmfn_backend/app/api/routes/trust_slips.py`
+    - added signed-in holder route `GET /trust-slips/me/decision-pack-evidence`;
+    - scopes the preview to the current user's current TrustSlip and labels it as holder/private only.
+  - `frontend/src/lib/api.ts`
+    - added `getMyTrustSlipDecisionPackEvidence`.
+  - `frontend/src/pages/TrustSlipPage.tsx`
+    - added a compact `Private holder preview` card under Decision Pack selection;
+    - fetches holder-private evidence for the selected pack and shows category count/latest/sample event label only;
+    - preserves the public-read access ledger as separate from behaviour evidence.
+  - `frontend/tools/audit-trust-passport-trustslip-boundary.mjs`
+    - caged the holder-private endpoint, selected-pack fetch, and non-public/non-score/non-approval language.
+  - `gmfn_backend/tests/test_trust_slip_boundary_controls.py`
+    - added holder-private redaction and holder-scope tests.
+- Verification:
+  - passed `python -m py_compile gmfn_backend\app\services\trust_slip_decision_packs.py gmfn_backend\app\api\routes\trust_slips.py gmfn_backend\tests\test_trust_slip_boundary_controls.py`;
+  - passed `python -m pytest -q gmfn_backend\tests\test_trust_slip_boundary_controls.py` with 11 tests;
+  - passed `npm exec -- eslint src/lib/api.ts src/pages/TrustSlipPage.tsx tools/audit-trust-passport-trustslip-boundary.mjs` from `frontend`;
+  - passed `npm --prefix frontend run audit:trust-passport-trustslip-boundary`;
+  - passed `npm --prefix frontend run audit:public-trustslip-verify-boundary`;
+  - passed `npm --prefix frontend run audit:trust-actions`;
+  - passed `npm --prefix frontend run audit:proof-surfaces`;
+  - passed `npm --prefix frontend run audit:protected-button-freeze`;
+  - passed `npm --prefix frontend run build`;
+  - passed `git diff --check`.
+- Deployment:
+  - local only so far; routine continuation publishing remains batch-frozen unless the product owner explicitly asks to push/deploy.
+- Next recommended step:
+  - add consented sharing/export controls for selected private Decision Pack evidence, still separate from public TrustSlip verification and still scrubbed by policy.

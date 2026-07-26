@@ -2427,6 +2427,18 @@ export async function getMyTrustSlipDecisionPackAccesses(limit = 12): Promise<an
     "GET"
   );
 }
+export async function getMyTrustSlipDecisionPackEvidence(
+  decisionPack = "community_standing",
+  limit = 80
+): Promise<any> {
+  return httpJson(
+    `/trust-slips/me/decision-pack-evidence${buildQuery({
+      decision_pack: decisionPack,
+      limit,
+    })}`,
+    "GET"
+  );
+}
 export async function verifyTrustSlip(
   code: string,
   level?: "minimal" | "standard" | "detailed"

@@ -23,6 +23,7 @@ from app.services.trust_events_services import log_trust_event
 from app.services.trust_slip_decision_packs import (
     build_decision_pack_access_payload,
     build_decision_pack_evidence_extract,
+    build_decision_pack_private_evidence_extract,
     build_decision_pack_profile,
     list_decision_pack_accesses_for_holder,
     normalize_decision_pack_context,
@@ -798,6 +799,40 @@ def get_my_trust_slip_decision_pack_accesses(
         "items": items,
         "privacy_note": "Decision Pack access records show public TrustSlip read context only. They do not store recipient name, email, phone, IP address, private notes, or private Trust Passport contents.",
         "evidence_note": "A public read is an access record, not behaviour evidence and not a TrustEvent.",
+    }
+
+
+@router.get("/me/decision-pack-evidence")
+def get_my_trust_slip_decision_pack_evidence(
+    decision_pack: str = Query(default="community_standing", min_length=1, max_length=64),
+    limit: int = Query(default=80, ge=1, le=200),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Dict[str, Any]:
+    if getattr(current_user, "id", None) is None:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    slip = get_current_trust_slip_for_user(db, user_id=int(current_user.id))
+    if slip is None:
+        raise HTTPException(status_code=404, detail="No current TrustSlip found")
+
+    context = normalize_decision_pack_context(
+        {
+            "decision_pack": decision_pack or "community_standing",
+            "access_scope": "holder_private_decision_pack",
+        }
+    )
+    extract = build_decision_pack_private_evidence_extract(
+        db,
+        slip=slip,
+        context=context,
+        limit=int(limit),
+    )
+    return {
+        "ok": True,
+        "evidence_extract": extract,
+        "privacy_note": "This is the signed-in holder's private Decision Pack preview. It is not returned by the public TrustSlip verification route.",
+        "boundary_note": "Use this to prepare consented sharing or live confirmation. Do not treat it as a public evidence paper, a score, approval, guarantee, or payment instruction.",
     }
 
 

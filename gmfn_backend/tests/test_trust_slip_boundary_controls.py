@@ -361,3 +361,111 @@ def test_holder_decision_pack_accesses_are_holder_scoped(
     payload = response.json()
     assert payload["ok"] is True
     assert payload["items"] == []
+
+def test_holder_private_decision_pack_evidence_shows_redacted_event_refs(
+    client,
+    seed_clan_admin_membership,
+    override_current_user,
+):
+    _create_trust_slip(code="PRIVATE-EVIDENCE")
+
+    db = SessionLocal()
+    try:
+        now = datetime.now(timezone.utc)
+        db.add_all(
+            [
+                TrustEvent(
+                    event_type="merchant.delivery_confirmed",
+                    clan_id=1,
+                    actor_user_id=1,
+                    subject_user_id=1,
+                    created_at=now,
+                    meta={
+                        "status": "confirmed",
+                        "payment_reference": "SECRET-REF",
+                        "private_note": "Delivered to private address",
+                        "customer_phone": "08000000000",
+                    },
+                ),
+                TrustEvent(
+                    event_type="loan_repaid",
+                    clan_id=1,
+                    actor_user_id=1,
+                    subject_user_id=1,
+                    created_at=now,
+                    meta={
+                        "status": "settled",
+                        "bank_account": "0123456789",
+                        "note": "Private repayment note",
+                    },
+                ),
+            ]
+        )
+        db.commit()
+    finally:
+        db.close()
+
+    response = client.get(
+        "/trust-slips/me/decision-pack-evidence",
+        params={"decision_pack": "business_partnership"},
+    )
+
+    assert response.status_code == 200, response.text
+    payload = response.json()
+    assert payload["ok"] is True
+    assert "private Decision Pack preview" in payload["privacy_note"]
+    extract = payload["evidence_extract"]
+    assert extract["source"] == "holder_private_decision_pack_extract"
+    categories = {row["key"]: row for row in extract["categories"]}
+    assert categories["service_trade"]["evidence_count"] == 1
+    assert categories["finance_repayment"]["evidence_count"] == 1
+    assert categories["service_trade"]["event_refs"][0]["label"] == "Merchant Delivery Confirmed"
+    assert categories["finance_repayment"]["event_refs"][0]["label"] == "Loan Repaid"
+    assert categories["service_trade"]["event_refs"][0]["safe_meta"] == {"status": "confirmed"}
+    assert categories["finance_repayment"]["event_refs"][0]["safe_meta"] == {"status": "settled"}
+    payload_text = str(payload)
+    assert "SECRET-REF" not in payload_text
+    assert "private address" not in payload_text
+    assert "08000000000" not in payload_text
+    assert "0123456789" not in payload_text
+    assert "Private repayment note" not in payload_text
+    assert "score" in extract["boundary_note"]
+    assert "approval" in extract["boundary_note"]
+
+
+def test_holder_private_decision_pack_evidence_is_holder_scoped(
+    client,
+    seed_clan_admin_membership,
+    seed_user2_non_member,
+    override_current_user,
+):
+    _create_trust_slip(code="PRIVATE-HOLDER-ONE", holder_user_id=1)
+    _create_trust_slip(code="PRIVATE-HOLDER-TWO", holder_user_id=2)
+
+    db = SessionLocal()
+    try:
+        db.add(
+            TrustEvent(
+                event_type="merchant.delivery_confirmed",
+                clan_id=1,
+                actor_user_id=2,
+                subject_user_id=2,
+                created_at=datetime.now(timezone.utc),
+                meta={"status": "confirmed", "private_note": "belongs to user 2"},
+            )
+        )
+        db.commit()
+    finally:
+        db.close()
+
+    response = client.get(
+        "/trust-slips/me/decision-pack-evidence",
+        params={"decision_pack": "business_partnership"},
+    )
+
+    assert response.status_code == 200, response.text
+    extract = response.json()["evidence_extract"]
+    service = next(row for row in extract["categories"] if row["key"] == "service_trade")
+    assert service["evidence_count"] == 0
+    assert service["event_refs"] == []
+    assert "belongs to user 2" not in str(response.json())

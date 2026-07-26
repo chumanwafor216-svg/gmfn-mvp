@@ -340,6 +340,35 @@ type TrustSlipDecisionPackAccessRow = {
   status: string;
   createdAt: string;
 };
+type TrustSlipDecisionPackEvidenceRef = {
+  id: string;
+  label: string;
+  createdAt: string;
+  scope: string;
+  safeMeta: Record<string, string>;
+};
+
+type TrustSlipDecisionPackEvidenceCategory = {
+  key: string;
+  label: string;
+  status: string;
+  evidenceCount: number;
+  latestAt: string;
+  source: string;
+  decisionUse: string;
+  eventRefs: TrustSlipDecisionPackEvidenceRef[];
+};
+
+type TrustSlipDecisionPackEvidenceExtract = {
+  source: string;
+  decisionPack: string;
+  accessPurpose: string;
+  recipientQuestion: string;
+  categories: TrustSlipDecisionPackEvidenceCategory[];
+  privacyNote: string;
+  boundaryNote: string;
+};
+
 type CommunityConfirmationOutcome = {
   public_token?: string | null;
   status?: string | null;
@@ -1621,6 +1650,55 @@ function normalizeTrustSlipDecisionPackAccesses(raw: any): TrustSlipDecisionPack
     .filter((row: TrustSlipDecisionPackAccessRow) => row.code || row.accessPurpose || row.createdAt)
     .slice(0, 12);
 }
+function normalizeTrustSlipDecisionPackEvidence(raw: any): TrustSlipDecisionPackEvidenceExtract | null {
+  const extract = raw?.evidence_extract || raw?.extract || raw;
+  if (!extract || typeof extract !== "object") return null;
+
+  const categories = Array.isArray(extract?.categories)
+    ? extract.categories
+        .map((row: any) => ({
+          key: firstTruthy(row?.key),
+          label: firstTruthy(row?.label, "Evidence category"),
+          status: firstTruthy(row?.status),
+          evidenceCount: Number(row?.evidence_count ?? row?.evidenceCount ?? 0) || 0,
+          latestAt: firstTruthy(row?.latest_at, row?.latestAt),
+          source: firstTruthy(row?.source),
+          decisionUse: firstTruthy(row?.decision_use, row?.decisionUse),
+          eventRefs: Array.isArray(row?.event_refs)
+            ? row.event_refs
+                .map((eventRef: any) => ({
+                  id: firstTruthy(eventRef?.id),
+                  label: firstTruthy(eventRef?.label, "Trust Event"),
+                  createdAt: firstTruthy(eventRef?.created_at, eventRef?.createdAt),
+                  scope: firstTruthy(eventRef?.scope),
+                  safeMeta:
+                    eventRef?.safe_meta && typeof eventRef.safe_meta === "object"
+                      ? Object.fromEntries(
+                          Object.entries(eventRef.safe_meta)
+                            .map(([key, value]) => [safeStr(key), safeStr(value)])
+                            .filter(([key, value]) => key && value)
+                        )
+                      : {},
+                }))
+                .filter((eventRef: TrustSlipDecisionPackEvidenceRef) => eventRef.id || eventRef.label)
+                .slice(0, 3)
+            : [],
+        }))
+        .filter((row: TrustSlipDecisionPackEvidenceCategory) => row.key || row.label)
+    : [];
+
+  if (!categories.length && !firstTruthy(extract?.source)) return null;
+
+  return {
+    source: firstTruthy(extract?.source),
+    decisionPack: firstTruthy(extract?.decision_pack, extract?.decisionPack),
+    accessPurpose: firstTruthy(extract?.access_purpose, extract?.accessPurpose),
+    recipientQuestion: firstTruthy(extract?.recipient_question, extract?.recipientQuestion),
+    categories,
+    privacyNote: firstTruthy(extract?.privacy_note, raw?.privacy_note),
+    boundaryNote: firstTruthy(extract?.boundary_note, raw?.boundary_note),
+  };
+}
 async function fetchTrustSlipPageData(
   selectedClanId: number,
   options: { forceFresh?: boolean; networkFirst?: boolean } = {}
@@ -1765,6 +1843,7 @@ export default function TrustSlipPage() {
   const trustSlipLoadSeqRef = useRef(0);
   const communityPulseSeqRef = useRef(0);
   const merchantRailSeqRef = useRef(0);
+  const decisionPackEvidenceSeqRef = useRef(0);
   trustSlipContextRef.current = trustSlipContextKey;
   const routes = useMemo(
     () => ({
@@ -1806,6 +1885,9 @@ export default function TrustSlipPage() {
   const [currentClan, setCurrentClan] = useState<any>(null);
   const [summary, setSummary] = useState<TrustSlipSummary | null>(null);
   const [decisionPackAccesses, setDecisionPackAccesses] = useState<TrustSlipDecisionPackAccessRow[]>([]);
+  const [decisionPackEvidenceExtract, setDecisionPackEvidenceExtract] =
+    useState<TrustSlipDecisionPackEvidenceExtract | null>(null);
+  const [decisionPackEvidenceLoading, setDecisionPackEvidenceLoading] = useState(false);
   const [confirmationBusy, setConfirmationBusy] = useState(false);
   const [confirmationOutcome, setConfirmationOutcome] =
     useState<CommunityConfirmationOutcome | null>(null);
@@ -1952,6 +2034,38 @@ export default function TrustSlipPage() {
     };
   }, [applyTrustSlipPageData, clearTrustSlipState, selectedClanId, trustSlipContextKey]);
 
+  useEffect(() => {
+    let alive = true;
+    const evidenceSeq = decisionPackEvidenceSeqRef.current + 1;
+    decisionPackEvidenceSeqRef.current = evidenceSeq;
+
+    (async () => {
+      setDecisionPackEvidenceLoading(true);
+      try {
+        const raw =
+          typeof (api as any).getMyTrustSlipDecisionPackEvidence === "function"
+            ? await (api as any).getMyTrustSlipDecisionPackEvidence(
+                selectedPurposeOption.key,
+                80
+              )
+            : null;
+
+        if (!alive || evidenceSeq !== decisionPackEvidenceSeqRef.current) return;
+        setDecisionPackEvidenceExtract(normalizeTrustSlipDecisionPackEvidence(raw));
+      } catch {
+        if (!alive || evidenceSeq !== decisionPackEvidenceSeqRef.current) return;
+        setDecisionPackEvidenceExtract(null);
+      } finally {
+        if (alive && evidenceSeq === decisionPackEvidenceSeqRef.current) {
+          setDecisionPackEvidenceLoading(false);
+        }
+      }
+    })();
+
+    return () => {
+      alive = false;
+    };
+  }, [selectedPurposeOption.key]);
   useEffect(() => {
     let alive = true;
 
@@ -3108,6 +3222,10 @@ export default function TrustSlipPage() {
       icon: "vault" as GsnIconName,
     },
   ];
+  const privateDecisionPackEvidenceCategories = (decisionPackEvidenceExtract?.categories || []).slice(0, 4);
+  const privateDecisionPackEvidenceAvailable = privateDecisionPackEvidenceCategories.some(
+    (row) => row.evidenceCount > 0
+  );
 
   async function requestCommunityPulse() {
     if (!trustSlipCode) {
@@ -3482,6 +3600,132 @@ export default function TrustSlipPage() {
               ))}
             </div>
 
+            <div
+              data-gsn-holder-private-decision-pack-evidence="true"
+              style={{
+                borderRadius: 14,
+                border: "1px solid rgba(214,170,69,0.24)",
+                background: "linear-gradient(180deg, #FFFDF7 0%, #F8FBFF 100%)",
+                padding: isCompact ? 11 : 13,
+                display: "grid",
+                gap: 9,
+              }}
+            >
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "32px minmax(0, 1fr)",
+                  gap: 9,
+                  alignItems: "center",
+                }}
+              >
+                <GsnLegacyIcon name="vault" size={30} />
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ ...sectionLabel(), fontSize: isCompact ? 9 : 10 }}>
+                    Private holder preview
+                  </div>
+                  <div
+                    style={{
+                      marginTop: 2,
+                      color: "#07172C",
+                      fontSize: isCompact ? 13 : 15,
+                      fontWeight: 1000,
+                      lineHeight: 1.16,
+                    }}
+                  >
+                    Evidence behind this Decision Pack
+                  </div>
+                </div>
+              </div>
+
+              {decisionPackEvidenceLoading ? (
+                <div
+                  style={{
+                    color: "#526579",
+                    fontSize: isCompact ? 11 : 12,
+                    fontWeight: 850,
+                    lineHeight: 1.35,
+                  }}
+                >
+                  Checking your private evidence categories...
+                </div>
+              ) : privateDecisionPackEvidenceAvailable ? (
+                <div style={{ display: "grid", gap: 7 }}>
+                  {privateDecisionPackEvidenceCategories.map((category) => (
+                    <div
+                      key={category.key || category.label}
+                      style={{
+                        display: "grid",
+                        gap: 5,
+                        borderTop: "1px solid rgba(37,78,119,0.08)",
+                        paddingTop: 7,
+                        minWidth: 0,
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "minmax(0, 1fr) auto",
+                          gap: 8,
+                          alignItems: "center",
+                        }}
+                      >
+                        <div
+                          style={{
+                            color: "#07172C",
+                            fontSize: isCompact ? 12 : 13,
+                            fontWeight: 950,
+                            lineHeight: 1.15,
+                            overflowWrap: "anywhere",
+                          }}
+                        >
+                          {category.label}
+                        </div>
+                        <span style={{ ...badge(category.evidenceCount > 0), fontSize: isCompact ? 10 : 11 }}>
+                          {category.evidenceCount} event{category.evidenceCount === 1 ? "" : "s"}
+                        </span>
+                      </div>
+                      <div
+                        style={{
+                          color: "#526579",
+                          fontSize: isCompact ? 10 : 11,
+                          fontWeight: 800,
+                          lineHeight: 1.28,
+                        }}
+                      >
+                        Latest: {safeDateTime(category.latestAt) || "Not recorded"}
+                        {category.eventRefs[0]?.label ? ` | Sample: ${category.eventRefs[0].label}` : ""}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div
+                  style={{
+                    color: "#526579",
+                    fontSize: isCompact ? 11 : 12,
+                    fontWeight: 850,
+                    lineHeight: 1.35,
+                  }}
+                >
+                  No private TrustEvent categories are ready for this pack yet.
+                </div>
+              )}
+
+              <div
+                style={{
+                  color: "#7A4A00",
+                  fontSize: isCompact ? 10 : 11,
+                  fontWeight: 900,
+                  lineHeight: 1.35,
+                }}
+              >
+                {firstTruthy(
+                  decisionPackEvidenceExtract?.boundaryNote,
+                  "Holder-only preview. It is not a public evidence paper, score, approval, guarantee, or payment instruction."
+                )}
+              </div>
+            </div>
             <div
               data-gsn-decision-pack-access-ledger="holder"
               style={{
