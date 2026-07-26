@@ -2695,7 +2695,7 @@ export default function TrustScorePage() {
       detail: "Signed-in view only.",
     },
     {
-      label: "Identity standing",
+      label: "Identity evidence",
       value:
         passportVm.identity.identityVerified === true
           ? "Verified evidence"
@@ -2710,7 +2710,7 @@ export default function TrustScorePage() {
             : "info",
     },
     {
-      label: "Evidence chain",
+      label: "Evidence record",
       value: passportVm.verdict.evidenceLabel,
       tone:
         passportVm.verdict.evidenceStatus === "strong"
@@ -2738,14 +2738,14 @@ export default function TrustScorePage() {
       tone: "info",
     },
     {
-      title: "Record-state reading",
+      title: "Evidence reading",
       detail:
-        "The evidence posture is a reading of available evidence, not a character judgement or permanent label.",
+        "This is an evidence reading only. It is not a character judgement, universal trust label, or decision about the person.",
       tone: "good",
     },
     {
-      title: "Evidence chain",
-      detail: `Visible reading uses ${passportVm.technicalDetail.eventCount} trust events where available.`,
+      title: "Evidence record",
+      detail: `Visible reading uses ${passportVm.technicalDetail.eventCount} evidence events where available.`,
       tone: passportVm.verdict.evidenceStatus === "limited" ? "warn" : "good",
     },
     {

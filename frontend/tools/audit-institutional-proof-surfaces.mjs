@@ -1143,7 +1143,7 @@ assertContains(
 );
 assertContains(
   "trustPassport",
-  /TrustDocumentConfidenceRibbon[\s\S]*?trustPassportConfidenceRibbonItems[\s\S]*?Passport status[\s\S]*?Identity standing[\s\S]*?Evidence chain[\s\S]*?Community history[\s\S]*?Verification path/,
+  /TrustDocumentConfidenceRibbon[\s\S]*?trustPassportConfidenceRibbonItems[\s\S]*?Passport status[\s\S]*?Identity evidence[\s\S]*?Evidence record[\s\S]*?Community history[\s\S]*?Verification path/,
   "Trust Passport must carry the Trust Document Language confidence ribbon."
 );
 assertContains(

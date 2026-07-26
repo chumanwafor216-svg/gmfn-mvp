@@ -482,13 +482,15 @@ async function runTrustPassportScenario(browser, baseURL) {
   await expect(state.page.getByText("This passport confirms", { exact: true })).toHaveCount(1);
   await expect(state.page.getByText("This passport does not confirm", { exact: true })).toHaveCount(1);
   await expect(state.page.getByText("Private passport surface", { exact: true })).toBeVisible();
+  await expect(state.page.getByText("Identity evidence", { exact: true }).first()).toBeVisible();
+  await expect(state.page.getByText("Evidence record", { exact: true }).first()).toBeVisible();
   await expect(
     state.page.getByText("This Trust Passport is shown inside the signed-in app and is not the public TrustSlip.", {
       exact: true,
     })
   ).toBeVisible();
   await expect(
-    state.page.getByText("The evidence posture is a reading of available evidence, not a character judgement or permanent label.", {
+    state.page.getByText("This is an evidence reading only. It is not a character judgement, universal trust label, or decision about the person.", {
       exact: true,
     })
   ).toBeVisible();

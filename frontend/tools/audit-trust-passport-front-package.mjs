@@ -137,7 +137,7 @@ assertContains(
 );
 
 [
-  "Identity Overview",
+  "Identity & Community Overview",
   "2. Current trust verdict",
   "3. What this reading says",
   "4. Why this reading looks like this",
@@ -264,8 +264,8 @@ assertOrderedSnippets(
 
 assertContains(
   "trust",
-  /community_footprint[\s\S]*?communityRoleCounts[\s\S]*?roleLabel\(item\.role\)[\s\S]*?data-trust-passport-community-footprint="true"[\s\S]*?Community footprint[\s\S]*?communityFootprint\.length/,
-  "Trust Passport Identity Overview must show a compact multi-community footprint with community IDs and member roles."
+  /community_footprint[\s\S]*?communityRoleCounts[\s\S]*?roleCountLabel\(label, count\)[\s\S]*?identityCommunitySummaryRows[\s\S]*?Recorded communities[\s\S]*?Current roles[\s\S]*?data-trust-passport-community-footprint="true"[\s\S]*?Community Portfolio[\s\S]*?Active Communities: \{communityFootprint\.length\}[\s\S]*?data-trust-passport-identity-community-summary="true"/,
+  "Trust Passport Identity & Community Overview must show a compact community portfolio, role counts, and identity/community summary."
 );
 
 assertContains(
@@ -307,12 +307,12 @@ assertNotContains(
 assertContains(
   "trust",
   /const \[identityEvidenceOpen, setIdentityEvidenceOpen\][\s\S]*?buildIdentityEvidenceCompletion[\s\S]*?Complete ID checks[\s\S]*?Open public community record[\s\S]*?data-trust-passport-identity-evidence-meter="true"[\s\S]*?setIdentityEvidenceOpen\(\(open\) => !open\)[\s\S]*?stableHeight=\{isCompact \? 42 : 44\}[\s\S]*?fullWidth[\s\S]*?debugId="trust-score\.identity-evidence-meter\.toggle"[\s\S]*?isCompact \? "Evidence" : "Identity evidence"[\s\S]*?identityEvidenceStageWord\(identityEvidence\)[\s\S]*?identityEvidenceStagePhrase\(identityEvidence\)[\s\S]*?identityEvidenceOpen \?[\s\S]*?identityEvidenceStageShort\(identityEvidence\)[\s\S]*?Recorded helps\. Verified builds confidence\.[\s\S]*?Recorded evidence raises readiness\. Verified evidence raises confidence\./,
-  "Trust Passport Identity Overview must keep the reusable identity evidence meter collapsed behind a compact toggle and must describe evidence posture without visible numeric scoring."
+  "Trust Passport Identity & Community Overview must keep the reusable identity evidence meter collapsed behind a compact toggle and must describe evidence posture without visible numeric scoring."
 );
 
 assertContains(
   "trust",
-  /TrustDocumentConfidenceRibbon[\s\S]*?trustPassportConfidenceRibbonItems[\s\S]*?Passport status[\s\S]*?Identity standing[\s\S]*?Evidence chain[\s\S]*?Community history[\s\S]*?Verification path/,
+  /TrustDocumentConfidenceRibbon[\s\S]*?trustPassportConfidenceRibbonItems[\s\S]*?Passport status[\s\S]*?Identity evidence[\s\S]*?Evidence record[\s\S]*?Community history[\s\S]*?Verification path/,
   "Trust Passport front package must expose a Trust Document Language confidence ribbon."
 );
 

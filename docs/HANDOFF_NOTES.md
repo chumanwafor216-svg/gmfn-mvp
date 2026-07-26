@@ -152257,3 +152257,36 @@ GSN-branded invite composer and invite-entry continuity.
   - local only so far; do not push/deploy unless the owner explicitly selects `2` or says push/deploy.
 - Next recommended step:
   - commit this Identity & Community Overview slice locally, then either continue the next small identity/evidence separation slice on `1` or push/deploy on `2`.
+## 2026-07-26 - Trust Passport Identity Evidence Ribbon Copy
+
+- Trigger:
+  - owner selected `1` after the Identity & Community Overview slice was committed locally.
+- Unabated truth:
+  - `/app/trust` is still the signed-in Trust Passport route, and the first lane is still the broader Trust Passport `Current Trust Standing` lane by existing lane-map contract;
+  - the identity-adjacent Trust Passport ribbon/security copy still used `Identity standing`, `Evidence chain`, and `Record-state reading`, which kept too much verdict-style language directly under the Identity & Community Overview;
+  - this pass is copy/audit/smoke alignment only. It does not add a new Identity Profile route, Evidence Ledger route, Behavioural Placement schema, Decision Pack data model, Trust Passport generator, scoring engine, approval engine, backend evidence model, or verified-community model.
+- Changed:
+  - `frontend/src/pages/TrustScorePage.tsx`
+    - changes the Trust Passport confidence ribbon labels from `Identity standing` to `Identity evidence` and `Evidence chain` to `Evidence record`;
+    - changes the security item from `Record-state reading` to `Evidence reading`;
+    - changes the boundary sentence to `This is an evidence reading only. It is not a character judgement, universal trust label, or decision about the person.`;
+    - changes the evidence detail from `trust events` to `evidence events` in that identity-adjacent security panel.
+  - `frontend/tools/smoke-trust-passport-trustslip-boundary.mjs`
+    - asserts the rendered Trust Passport page shows the new `Identity evidence`, `Evidence record`, and evidence-reading boundary copy.
+  - `frontend/tools/audit-trust-passport-trustslip-boundary.mjs`, `frontend/tools/audit-institutional-proof-surfaces.mjs`, `frontend/tools/audit-trust-actions.mjs`, and `frontend/tools/audit-trust-passport-front-package.mjs`
+    - update Trust Passport-only source cages for the new identity/evidence ribbon wording while leaving other document surfaces on their existing `Evidence chain` wording.
+- Verification:
+  - passed `npm exec -- eslint src/pages/TrustScorePage.tsx tools/smoke-trust-passport-trustslip-boundary.mjs tools/audit-trust-passport-trustslip-boundary.mjs tools/audit-institutional-proof-surfaces.mjs tools/audit-trust-actions.mjs tools/audit-trust-passport-front-package.mjs` from `frontend`;
+  - passed `npm --prefix frontend run audit:trust-passport-trustslip-boundary`;
+  - passed `npm --prefix frontend run audit:trust-actions`;
+  - passed direct `node tools/audit-institutional-proof-surfaces.mjs` from `frontend`;
+  - passed direct `node tools/audit-trust-passport-front-package.mjs` from `frontend` after updating its stale Identity Overview expectations;
+  - passed `git diff --check` before the handoff entry;
+  - non-escalated `npm --prefix frontend run smoke:trust-passport-trustslip-boundary` hit sandbox `spawn EPERM` while starting Vite/esbuild;
+  - passed escalated `npm --prefix frontend run smoke:trust-passport-trustslip-boundary`;
+  - passed `npm --prefix frontend run audit:protected-button-freeze`;
+  - passed `npm --prefix frontend run build`.
+- Deployment:
+  - local only so far; do not push/deploy unless the owner explicitly selects `2` or says push/deploy.
+- Next recommended step:
+  - commit this identity/evidence ribbon copy slice locally, then either continue another small identity/evidence separation slice on `1` or push/deploy on `2`.

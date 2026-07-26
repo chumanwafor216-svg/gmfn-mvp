@@ -183,8 +183,8 @@ assertContains(
 
 assertContains(
   "trustPassport",
-  /The evidence posture is a reading of available evidence, not a character judgement or permanent label/,
-  "Trust Passport page language must keep evidence posture meaning as evidence reading, not character judgement."
+  /This is an evidence reading only\. It is not a character judgement, universal trust label, or decision about the person\./,
+  "Trust Passport page language must keep evidence reading meaning separate from character judgement or decision support."
 );
 
 assertContains(
