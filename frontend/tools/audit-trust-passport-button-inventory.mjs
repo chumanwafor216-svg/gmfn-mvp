@@ -59,8 +59,8 @@ while ((match = actionPattern.exec(source))) {
   });
 }
 
-const expectedSourceActions = 21;
-const expectedRenderedActions = 29;
+const expectedSourceActions = 22;
+const expectedRenderedActions = 30;
 
 if (actions.length !== expectedSourceActions) {
   findings.push({
@@ -121,6 +121,7 @@ const expectedOrder = [
   "trust-score.export",
   "trust-score.documents-lane.preview-details.toggle",
   "trust-score.snapshot-open-trust-slip",
+  "trust-score.institutional-context-details.toggle",
 ];
 
 let cursor = -1;
@@ -279,6 +280,10 @@ assertContains(
   /gridTemplateColumns: isCompact \? "repeat\(2, minmax\(0, 1fr\)\)" : "repeat\(3, minmax\(0, 1fr\)\)"[\s\S]*?gridTemplateColumns: isCompact \? "1fr" : "minmax\(0, 1fr\) auto"[\s\S]*?textAlign: isCompact \? "left" : "right"[\s\S]*?overflowWrap: "break-word"/,
   "Trust Passport institutional evidence rows must stack values on phone instead of squeezing right-aligned text."
 );
+assertContains(
+  /const \[institutionalContextDetailsOpen, setInstitutionalContextDetailsOpen\][\s\S]*?Evidence & institutional context[\s\S]*?data-trust-passport-institutional-context-details="collapsed"[\s\S]*?debugId="trust-score\.institutional-context-details\.toggle"[\s\S]*?aria-expanded=\{institutionalContextDetailsOpen\}[\s\S]*?Institutional context details[\s\S]*?institutionalContextDetailsOpen \?[\s\S]*?institutionalRows\.map[\s\S]*?<TrustPaperSecurityFooter/,
+  "Trust Passport institutional context must stay collapsed behind a stable details toggle on Evidence and Finance lanes."
+);
 
 assertNotContains(
   /overflowWrap: "anywhere"/g,
@@ -301,5 +306,5 @@ if (findings.length > 0) {
 }
 
 console.log(
-  `Trust Passport button inventory audit passed: ${actions.length} stable source actions, ${expectedRenderedActions} expected rendered action roots including the lane selector, evidence reading note toggle, standing decision detail toggle, community evidence detail toggle, document preview detail toggle, and two evidence-surface cards.`
+  `Trust Passport button inventory audit passed: ${actions.length} stable source actions, ${expectedRenderedActions} expected rendered action roots including the lane selector, evidence reading note toggle, standing decision detail toggle, community evidence detail toggle, document preview detail toggle, institutional context detail toggle, and two evidence-surface cards.`
 );
