@@ -1626,7 +1626,7 @@ export default function TrustSlipVerifyPublicPaper({
               gap: 8,
             }}
           >
-            <div style={{ ...sectionLabel(), color: "#7A4A00" }}>What this cannot prove</div>
+            <div style={{ ...sectionLabel(), color: "#7A4A00" }}>Decision Boundary</div>
             <div
               style={{
                 display: "grid",

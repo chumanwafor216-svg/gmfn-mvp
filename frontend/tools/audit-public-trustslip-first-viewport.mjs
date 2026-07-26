@@ -115,7 +115,7 @@ assertContains(
 
 assertContains(
   "publicPaper",
-  /data-gsn-public-decision-first="one-answer-four-facts"[\s\S]*?Decision Summary[\s\S]*?\{decisionFirstAnswer\}[\s\S]*?Use this as decision support for \{decisionPackPurpose\}[\s\S]*?data-gsn-public-decision-first-facts="four-quick-facts"[\s\S]*?decisionFirstFacts\.map[\s\S]*?data-gsn-public-decision-boundary="compact"[\s\S]*?What this cannot prove[\s\S]*?decisionBoundaryRows\.map/,
+  /data-gsn-public-decision-first="one-answer-four-facts"[\s\S]*?Decision Summary[\s\S]*?\{decisionFirstAnswer\}[\s\S]*?Use this as decision support for \{decisionPackPurpose\}[\s\S]*?data-gsn-public-decision-first-facts="four-quick-facts"[\s\S]*?decisionFirstFacts\.map[\s\S]*?data-gsn-public-decision-boundary="compact"[\s\S]*?Decision Boundary[\s\S]*?decisionBoundaryRows\.map/,
   "Public TrustSlip first viewport must render the answer, four facts, and compact decision boundary before supporting details."
 );
 

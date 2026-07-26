@@ -1,3 +1,41 @@
+## CURRENT LOCAL STATE - 2026-07-26 - Public TrustSlip Verify Decision Boundary label
+
+Owner trigger:
+- Owner selected `1` after the signed-in TrustSlip holder compact boundary pass.
+
+Unabated truth:
+- This is a tiny frontend copy-contract pass on the public TrustSlip Verify paper. It does not change backend payloads, evidence aggregation, auth, routes, or permissions.
+- The public first-viewport compact boundary now uses the product-law heading `Decision Boundary` instead of the older `What this cannot prove` heading.
+- The deeper audit/details disclosure still uses `What this cannot prove`, because that supporting section is specifically about detailed limitations after the decision-first read.
+- Devil's advocate: this improves naming consistency, not document density. It does not remove repeated deeper explanations.
+
+Changed:
+- `frontend/src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx`
+  - Changed the top compact public decision-boundary heading to `Decision Boundary`.
+- `frontend/tools/audit-public-trustslip-first-viewport.mjs`
+  - Updated the first-viewport guard to require `Decision Boundary` in the compact boundary.
+- `frontend/tools/audit-public-trustslip-verify-boundary.mjs`
+  - Updated the public Verify boundary guard to require `Decision Boundary` before recipient/access and trust-reason sections.
+
+Routes/screens affected:
+- Public TrustSlip Verify / Public Decision Pack paper (`/t/{code}` / TrustSlipVerify public paper component).
+- No signed-in TrustSlip holder page, Trust Passport, backend route, database, auth, payment, or TrustEvent write behavior changed.
+
+Verification:
+- Passed `npm --prefix frontend run audit:public-trustslip-first-viewport`.
+- Passed `npm --prefix frontend run audit:public-trustslip-verify-boundary`.
+- Passed `npm --prefix frontend run audit:trust-actions`.
+- Passed `npm --prefix frontend run audit:protected-button-freeze`.
+- Passed `node frontend\tools\audit-institutional-proof-surfaces.mjs`.
+- Passed `npm --prefix frontend run build`.
+- Passed `git diff --check`; Git still reports normal working-copy line-ending warnings on touched frontend files.
+
+Deployment:
+- Not pushed or deployed in this slice because owner selected `1`.
+- After commit, local `main` should be ahead of origin by 5 commits.
+
+Recommended next step:
+- Select `2` to push/deploy the local batch, or select `1` to continue another local pass.
 ## CURRENT LOCAL STATE - 2026-07-26 - TrustSlip holder compact decision boundary
 
 Owner trigger:
