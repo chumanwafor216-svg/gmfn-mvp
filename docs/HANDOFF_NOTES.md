@@ -152052,3 +152052,38 @@ GSN-branded invite composer and invite-entry continuity.
   - local only so far; routine continuation publishing remains batch-frozen unless the product owner explicitly asks to push/deploy.
 - Next recommended step:
   - run `git diff --check`, commit this smoke-proof correction, then push/deploy only when the owner explicitly asks.
+
+## 2026-07-26 - Decision Pack Batch Pushed And Deployed
+
+- Trigger:
+  - owner selected `2` after the Decision Pack recipient-card, parity, and context-only status fixes accumulated locally.
+- Unabated truth:
+  - the previous handoff entries correctly described each fix as local-only at the time they were written, but that became stale after this deployment;
+  - this checkpoint records publication status only. It does not add runtime behavior, backend evidence, scoring, approvals, guarantees, payments, private Trust Passport disclosure, or recipient identity handling.
+- Published commit:
+  - `3d998b2457242b2c4ade9fb9bd6ba03f02ccb768` (`3d998b24 Prove backend-only Decision Pack status copy`).
+- Included pushed local commits:
+  - `307f7677 Humanize public TrustSlip access status`;
+  - `cd2d3660 Humanize public TrustSlip access scope`;
+  - `a0751852 Smoke public TrustSlip recipient card copy`;
+  - `0f7ada84 Cage public TrustSlip smoke in evidence suite`;
+  - `eade144b Canonicalize backend Decision Pack short labels`;
+  - `8c995e33 Canonicalize frontend Decision Pack keys`;
+  - `0c13698b Humanize Decision Pack context-only status`;
+  - `3d998b24 Prove backend-only Decision Pack status copy`.
+- Deployment verification:
+  - pushed `main` to GitHub successfully;
+  - triggered `.github/workflows/render-deploy.yml` manually with `deploy_api=true`;
+  - GitHub Actions run `30200680326` completed with conclusion `success`;
+  - workflow URL: `https://github.com/chumanwafor216-svg/gmfn-mvp/actions/runs/30200680326`;
+  - run started `2026-07-26T11:43:45Z` and completed `2026-07-26T11:45:27Z`;
+  - workflow verified the frontend public URL had the Decision Pack build marker;
+  - workflow triggered API deploy because the batch included backend changes;
+  - workflow passed live API identity checks.
+- Warnings observed:
+  - GitHub warned that Node.js 20 is deprecated for `actions/checkout@v4` under the forced Node 24 runner;
+  - Render API response did not initially include a frontend deploy id, so the workflow looked up recent frontend deploys and still completed successfully.
+- Local state after deploy:
+  - `main...origin/main` was clean and synced at `3d998b24` immediately after the deployment check.
+- Next recommended step:
+  - continue with small Decision Pack parity/risk-reduction slices only if they expose a real recipient, holder, or backend boundary gap; otherwise move toward the next product layer, such as a holder-visible Decision Pack explanation or consented private evidence review path.
