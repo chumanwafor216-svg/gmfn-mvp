@@ -127,6 +127,12 @@ scenarios.backendContextOnly = {
   backendDecisionPackContextOnly: true,
 };
 
+scenarios.backendRecordedAccess = {
+  ...scenarios.current,
+  code: "TS-BACKEND-RECORDED-ACCESS",
+  backendDecisionPackRecorded: true,
+};
+
 function json(body, status = 200) {
   return {
     status,
@@ -275,7 +281,11 @@ async function installApiMocks(page, requestLog) {
       }
       const payload = publicTrustSlipPayload(scenario);
       const requestUrl = new URL(url);
-      if (scenario.backendDecisionPackContextOnly || requestUrl.searchParams.has("decision_pack")) {
+      if (
+        scenario.backendDecisionPackContextOnly ||
+        scenario.backendDecisionPackRecorded ||
+        requestUrl.searchParams.has("decision_pack")
+      ) {
         payload.decision_pack = "employment_decision";
         payload.access_purpose = "Employment Decision Pack";
         payload.access_scope = "public_decision_pack";
@@ -288,7 +298,9 @@ async function installApiMocks(page, requestLog) {
           scope: "public_decision_pack",
           note: "Is there enough evidence to continue an employment conversation?",
           focus: "Role, consistency, contribution, leadership or service signals, and the next verification step.",
-          status: "backend_access_context_only",
+          status: scenario.backendDecisionPackRecorded
+            ? "backend_access_recorded"
+            : "backend_access_context_only",
         };
         payload.decision_pack_profile = {
           decision_pack: "employment_decision",
@@ -515,6 +527,7 @@ async function expectDecisionPackRecipientCard(page, { expectRedactedExtract = f
 
   await expect(recipientCard).not.toContainText("public_context_from_link");
   await expect(recipientCard).not.toContainText("backend_access_context_only");
+  await expect(recipientCard).not.toContainText("backend_access_recorded");
   await expect(recipientCard).not.toContainText("public_decision_pack");
 
   const recipientCardFacts = await recipientCard.evaluate((node) => {
@@ -572,9 +585,24 @@ async function runDecisionPackRecipientCardScenario(browser, baseURL) {
     );
   }
 
+  const backendRecordedLogStart = requestLog.length;
+  await page.goto(`${baseURL}/t/${encodeURIComponent(scenarios.backendRecordedAccess.code)}?level=standard`, {
+    waitUntil: "domcontentloaded",
+    timeout: 60000,
+  });
+  await expectDecisionPackRecipientCard(page, { expectRedactedExtract: true });
+  const backendRecordedRequests = requestLog.slice(backendRecordedLogStart);
+  if (backendRecordedRequests.some((entry) => entry.path.includes("decision_pack"))) {
+    throw new Error(
+      `Backend recorded-access recipient-card route should not rely on Decision Pack URL query: ${JSON.stringify(
+        backendRecordedRequests
+      )}`
+    );
+  }
+
   const verifyRequests = publicVerifyRequests(requestLog);
-  if (verifyRequests.length < 2) {
-    throw new Error("Decision Pack recipient-card route did not call public verify for both URL and backend-only paths.");
+  if (verifyRequests.length < 3) {
+    throw new Error("Decision Pack recipient-card route did not call public verify for URL, backend-only, and backend-recorded paths.");
   }
   const viewerContextRequests = requestLog.filter((entry) => entry.authPresent || entry.clanPresent);
   if (viewerContextRequests.length > 0) {
@@ -660,7 +688,7 @@ async function main() {
         "no-code stayed on the public code checker without API calls;",
         "current and minimal records rendered public evidence without private/app chrome;",
         "expired, revoked, frozen, merchant-inactive, low-data, missing-window, no-relay, and unknown-code states stayed honest;",
-        "Decision Pack recipient-card, reading, and redacted evidence extract stayed human, decision-first, and hid raw machine/private context;",
+        "Decision Pack recipient-card, reading, and redacted evidence extract stayed human, decision-first, and hid raw machine/private context across URL, backend-only, and backend-recorded paths;",
         "public verify requests carried no auth or selected-clan headers, even with signed-in local state.",
       ].join(" ")
     );

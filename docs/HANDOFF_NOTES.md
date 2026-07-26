@@ -152194,3 +152194,32 @@ GSN-branded invite composer and invite-entry continuity.
   - local only so far; do not push/deploy unless the owner explicitly selects `2` or says push/deploy.
 - Next recommended step:
   - commit this smoke-proof slice locally, then either continue another small Decision Pack proof gap on `1` or push/deploy the accumulated local commits on `2`.
+
+## 2026-07-26 - Backend Recorded Decision Pack Status Smoke Guard
+
+- Trigger:
+  - owner selected `1` after the public Decision Pack redacted-extract smoke guard was committed locally.
+- Unabated truth:
+  - source audits and backend tests already covered the `backend_access_recorded` Decision Pack access status;
+  - the browser smoke only exercised the URL-context path and the backend context-only path, so a rendered public TrustSlip could theoretically regress and expose the recorded-access machine label without this smoke catching it;
+  - this pass adds proof only. It does not change runtime UI, backend evidence, access-ledger persistence, Decision Pack profile logic, scores, approvals, guarantees, payment authority, private Trust Passport disclosure, or recipient identity handling.
+- Changed:
+  - `frontend/tools/smoke-public-trustslip-verify-states.mjs`
+    - adds a backend-recorded Decision Pack scenario using `backend_access_recorded`;
+    - asserts the public recipient card still renders human Decision Pack copy and never exposes `backend_access_recorded`, `backend_access_context_only`, `public_context_from_link`, or `public_decision_pack`;
+    - proves the backend-recorded path does not rely on a Decision Pack URL query.
+  - `frontend/tools/audit-evidence-display-boundary-suite.mjs`
+    - cages the backend-recorded browser smoke scenario and hidden machine-status assertions.
+- Verification:
+  - passed `npm exec -- eslint tools/smoke-public-trustslip-verify-states.mjs tools/audit-evidence-display-boundary-suite.mjs` from `frontend`;
+  - passed `npm --prefix frontend run audit:evidence-display-boundary-suite`;
+  - passed `npm --prefix frontend run audit:public-trustslip-verify-boundary`;
+  - non-escalated `npm --prefix frontend run smoke:public-trustslip-verify-states` hit sandbox `spawn EPERM` while starting Vite/esbuild;
+  - passed escalated `npm --prefix frontend run smoke:public-trustslip-verify-states`;
+  - passed `npm --prefix frontend run audit:protected-button-freeze`;
+  - passed `npm --prefix frontend run build`;
+  - passed `git diff --check` before the handoff entry.
+- Deployment:
+  - local only so far; do not push/deploy unless the owner explicitly selects `2` or says push/deploy.
+- Next recommended step:
+  - commit this smoke-proof slice locally, then either continue another small Decision Pack proof gap on `1` or push/deploy the accumulated local commits on `2`.
