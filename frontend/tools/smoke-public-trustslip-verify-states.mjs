@@ -294,7 +294,7 @@ async function assertPublicPaperBasics(page) {
   await expect(page.getByText("This paper does not confirm", { exact: true })).toHaveCount(1);
   await expect(page.getByText("Public paper ends here")).toBeVisible();
   await expect(page.getByText("Private review area below")).toBeVisible();
-  await expect(page.getByText("Evidence, not approval")).toBeVisible();
+  await expect(page.getByText("Evidence, not approval", { exact: true })).toBeVisible();
   await expect(page.getByText("does not open the holder's private Trust Passport")).toBeVisible();
   await assertNoPublicPrivateLeaks(page);
 }
@@ -399,6 +399,71 @@ async function runCodedScenario(browser, baseURL, scenario, options = {}) {
   await context.close();
 }
 
+async function runDecisionPackRecipientCardScenario(browser, baseURL) {
+  const requestLog = [];
+  const context = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+    deviceScaleFactor: 2,
+    isMobile: true,
+  });
+  await context.addInitScript(() => localStorage.clear());
+  const page = await context.newPage();
+  await installApiMocks(page, requestLog);
+
+  await page.goto(
+    `${baseURL}/t/${encodeURIComponent(
+      scenarios.current.code
+    )}?level=standard&decision_pack=employment&access_scope=public_decision_pack`,
+    {
+      waitUntil: "domcontentloaded",
+      timeout: 60000,
+    }
+  );
+
+  await assertPublicPaperBasics(page);
+  const recipientCard = page.locator(
+    '[data-debug-id="trust-slip-verify.public.recipient-access-record"]'
+  );
+  await expect(recipientCard).toBeVisible({ timeout: 30000 });
+  await expect(recipientCard).toContainText("Shared to support Employment Decision Pack.");
+  await expect(recipientCard).toContainText("Employment Decision Pack");
+  await expect(recipientCard).toContainText("Public Decision Pack");
+  await expect(recipientCard).not.toContainText("public_context_from_link");
+  await expect(recipientCard).not.toContainText("public_decision_pack");
+
+  const recipientCardFacts = await recipientCard.evaluate((node) => {
+    const rect = node.getBoundingClientRect();
+    return {
+      text: node.textContent || "",
+      top: Math.round(rect.top),
+      bottom: Math.round(rect.bottom),
+      viewportHeight: node.ownerDocument.defaultView?.innerHeight || 0,
+    };
+  });
+  if (recipientCardFacts.top >= recipientCardFacts.viewportHeight) {
+    throw new Error(
+      `Decision Pack recipient card started below the first phone viewport: ${JSON.stringify(
+        recipientCardFacts
+      )}`
+    );
+  }
+
+  const verifyRequests = publicVerifyRequests(requestLog);
+  if (verifyRequests.length < 1) {
+    throw new Error("Decision Pack recipient-card route did not call public verify.");
+  }
+  const viewerContextRequests = requestLog.filter((entry) => entry.authPresent || entry.clanPresent);
+  if (viewerContextRequests.length > 0) {
+    throw new Error(
+      `Decision Pack recipient-card route sent viewer context: ${JSON.stringify(
+        viewerContextRequests
+      )}`
+    );
+  }
+
+  await context.close();
+}
+
 async function runUnknownCodeScenario(browser, baseURL) {
   const requestLog = [];
   const context = await browser.newContext({
@@ -462,6 +527,7 @@ async function main() {
       await runCodedScenario(browser, baseURL, scenario);
     }
     await runUnknownCodeScenario(browser, baseURL);
+    await runDecisionPackRecipientCardScenario(browser, baseURL);
     await runCodedScenario(browser, baseURL, scenarios.current, { signedInPublicState: true });
 
     console.log(
@@ -470,6 +536,7 @@ async function main() {
         "no-code stayed on the public code checker without API calls;",
         "current and minimal records rendered public evidence without private/app chrome;",
         "expired, revoked, frozen, merchant-inactive, low-data, missing-window, no-relay, and unknown-code states stayed honest;",
+        "Decision Pack recipient-card wording stayed human and hid raw machine context;",
         "public verify requests carried no auth or selected-clan headers, even with signed-in local state.",
       ].join(" ")
     );

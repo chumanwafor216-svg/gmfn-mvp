@@ -151867,3 +151867,33 @@ GSN-branded invite composer and invite-entry continuity.
   - local only so far; routine continuation publishing remains batch-frozen unless the product owner explicitly asks to push/deploy.
 - Next recommended step:
   - if continuing before push/deploy, consider a tiny public verify smoke script that asserts the rendered first-viewport text contains `Shared to support Employment Decision Pack` and `Public Decision Pack` while excluding `public_context_from_link` and `public_decision_pack` from the visible recipient-card text.
+
+## 2026-07-26 - Public Verify Recipient Card Smoke
+
+- Trigger:
+  - owner selected `1` after the public TrustSlip recipient scope copy fix.
+- Unabated truth:
+  - source audits proved the intended mapping existed, but they did not prove the actual mocked browser route rendered the human recipient-card wording in a phone viewport;
+  - this pass is smoke coverage only. It does not change UI, backend verification, public payload categories, private Trust Passport boundaries, scoring, approvals, guarantees, access logging, URL semantics, or deployment state.
+- Changed:
+  - `frontend/tools/smoke-public-trustslip-verify-states.mjs`
+    - added a Decision Pack recipient-card scenario for `/t/:code?decision_pack=employment&access_scope=public_decision_pack`;
+    - asserts the card shows `Shared to support Employment Decision Pack.`, `Employment Decision Pack`, and `Public Decision Pack`;
+    - asserts the card does not show raw `public_context_from_link` or `public_decision_pack`;
+    - asserts the recipient card starts inside the `390x844` phone viewport;
+    - tightened the existing `Evidence, not approval` assertion to exact text because newer Decision Pack copy made the loose selector ambiguous.
+- Verification:
+  - passed `npm exec -- eslint tools/smoke-public-trustslip-verify-states.mjs` from `frontend`;
+  - passed `npm --prefix frontend run smoke:public-trustslip-verify-states` with sandbox escalation for Vite/Playwright process launch;
+  - passed `npm exec -- eslint tools/smoke-public-trustslip-verify-states.mjs tools/audit-public-trustslip-first-viewport.mjs tools/audit-public-trustslip-verify-boundary.mjs` from `frontend`;
+  - passed `npm --prefix frontend run audit:public-trustslip-first-viewport`;
+  - passed `npm --prefix frontend run audit:public-trustslip-verify-boundary`;
+  - passed `npm --prefix frontend run audit:trust-passport-trustslip-boundary`;
+  - passed `npm --prefix frontend run audit:trust-actions`;
+  - passed `npm --prefix frontend run audit:proof-surfaces`;
+  - passed `npm --prefix frontend run audit:protected-button-freeze`;
+  - passed `npm --prefix frontend run build`.
+- Deployment:
+  - local only so far; routine continuation publishing remains batch-frozen unless the product owner explicitly asks to push/deploy.
+- Next recommended step:
+  - if continuing before push/deploy, consider adding the public first-viewport smoke to the broader evidence-display smoke batch, or push/deploy the accumulated local Decision Pack copy/smoke commits.
