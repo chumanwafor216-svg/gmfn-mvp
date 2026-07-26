@@ -290,6 +290,65 @@ async function installApiMocks(page, requestLog) {
           focus: "Role, consistency, contribution, leadership or service signals, and the next verification step.",
           status: "backend_access_context_only",
         };
+        payload.decision_pack_profile = {
+          decision_pack: "employment_decision",
+          access_purpose: "Employment Decision Pack",
+          recipient_question: "Can I make a better decision with this evidence?",
+          evidence_filter: ["community_activity", "leadership_responsibility"],
+          relevant_signals: [
+            {
+              key: "community_activity",
+              label: "Community activity",
+              status: "context",
+              value: "Public activity evidence is visible.",
+              decision_use: "Use this as a pointer, not as automatic approval.",
+            },
+          ],
+          gaps_to_check: [
+            {
+              key: "live_confirmation",
+              label: "Live confirmation",
+              reason: "Important decisions still need a live check.",
+              next_step: "Ask for live community confirmation before relying on this paper.",
+            },
+          ],
+          recommended_checks: [
+            "Match the visible holder, GSN ID, community, and expiry with the person presenting the TrustSlip.",
+            "Ask for live community confirmation before relying on this paper for important risk.",
+          ],
+          evidence_extract: {
+            source: "trust_events_redacted_extract",
+            source_note:
+              "Aggregated from TrustEvent categories only. Raw TrustEvents, actor details, notes, metadata, payment references, and private contacts are not exposed publicly.",
+            categories: [
+              {
+                key: "community_participation",
+                label: "Community participation evidence",
+                status: "shown_as_count",
+                evidence_count: 2,
+                latest_at: "2026-07-05T08:00:00.000Z",
+                decision_use: "Use the count as a public pointer only.",
+                private_note: "Delivered to private address SHOULD NOT RENDER",
+              },
+            ],
+            private_review_required: [
+              {
+                key: "finance_repayment",
+                label: "Finance or repayment evidence",
+                status: "private_review_required",
+                decision_use:
+                  "Ask the holder for the full Trust Passport or live community confirmation if this sensitive evidence matters.",
+                payment_reference: "SECRET-REF-SHOULD-NOT-RENDER",
+              },
+            ],
+            boundary_note:
+              "This extract shows public-safe category counts only. It is not a raw event timeline, score, approval, guarantee, repayment history, or dispute disclosure.",
+          },
+          basis_note:
+            "Generated from public TrustSlip signals already visible to the recipient; no private Trust Passport contents are exposed.",
+          boundary_note:
+            "This profile highlights relevant evidence and gaps. It does not score the person, guarantee future behaviour, or make the decision for the recipient.",
+        };
       }
       await route.fulfill(json(payload));
       return;
@@ -423,7 +482,7 @@ async function runCodedScenario(browser, baseURL, scenario, options = {}) {
   await context.close();
 }
 
-async function expectDecisionPackRecipientCard(page) {
+async function expectDecisionPackRecipientCard(page, { expectRedactedExtract = false } = {}) {
   await assertPublicPaperBasics(page);
   const recipientCard = page.locator(
     '[data-debug-id="trust-slip-verify.public.recipient-access-record"]'
@@ -441,6 +500,18 @@ async function expectDecisionPackRecipientCard(page) {
   await expect(decisionReading).toContainText("Evidence focus");
   await expect(decisionReading).toContainText("Next safe step");
   await expect(decisionReading).toContainText("Check live confirmation");
+  await expect(decisionReading).toContainText("Purpose-filtered evidence");
+  if (expectRedactedExtract) {
+    await expect(decisionReading).toContainText("Evidence categories");
+    await expect(decisionReading).toContainText("Community participation evidence");
+    await expect(decisionReading).toContainText("2 public-safe records");
+    await expect(decisionReading).toContainText("Private review needed");
+    await expect(decisionReading).toContainText("Finance or repayment evidence");
+    await expect(decisionReading).toContainText("Ask the holder for the full Trust Passport or live community confirmation if this sensitive evidence matters.");
+    await expect(decisionReading).toContainText("Raw TrustEvents, actor details, notes, metadata, payment references, and private contacts are not exposed publicly.");
+    await expect(decisionReading).not.toContainText("SECRET-REF-SHOULD-NOT-RENDER");
+    await expect(decisionReading).not.toContainText("Delivered to private address");
+  }
 
   await expect(recipientCard).not.toContainText("public_context_from_link");
   await expect(recipientCard).not.toContainText("backend_access_context_only");
@@ -491,7 +562,7 @@ async function runDecisionPackRecipientCardScenario(browser, baseURL) {
     waitUntil: "domcontentloaded",
     timeout: 60000,
   });
-  await expectDecisionPackRecipientCard(page);
+  await expectDecisionPackRecipientCard(page, { expectRedactedExtract: true });
   const backendOnlyRequests = requestLog.slice(backendOnlyLogStart);
   if (backendOnlyRequests.some((entry) => entry.path.includes("decision_pack"))) {
     throw new Error(
@@ -589,7 +660,7 @@ async function main() {
         "no-code stayed on the public code checker without API calls;",
         "current and minimal records rendered public evidence without private/app chrome;",
         "expired, revoked, frozen, merchant-inactive, low-data, missing-window, no-relay, and unknown-code states stayed honest;",
-        "Decision Pack recipient-card and reading stayed human, decision-first, and hid raw machine context;",
+        "Decision Pack recipient-card, reading, and redacted evidence extract stayed human, decision-first, and hid raw machine/private context;",
         "public verify requests carried no auth or selected-clan headers, even with signed-in local state.",
       ].join(" ")
     );

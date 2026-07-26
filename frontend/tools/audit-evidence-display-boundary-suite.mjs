@@ -274,14 +274,14 @@ assertContains(
 );
 assertContains(
   "publicTrustSlipSmoke",
-  /async function expectDecisionPackRecipientCard[\s\S]*?Shared to support Employment Decision Pack\.[\s\S]*?Employment Decision Pack[\s\S]*?Public Decision Pack[\s\S]*?decisionReading[\s\S]*?Can I make a better decision with this evidence\?[\s\S]*?reduce uncertainty, not eliminate risk[\s\S]*?recipient remains responsible for the decision[\s\S]*?Evidence focus[\s\S]*?Next safe step[\s\S]*?Check live confirmation[\s\S]*?not\.toContainText\("public_context_from_link"\)[\s\S]*?not\.toContainText\("backend_access_context_only"\)[\s\S]*?not\.toContainText\("public_decision_pack"\)[\s\S]*?recipientCardFacts\.top >= recipientCardFacts\.viewportHeight[\s\S]*?async function runDecisionPackRecipientCardScenario[\s\S]*?decision_pack=Employment_Decision&access_scope=public_decision_pack[\s\S]*?scenarios\.backendContextOnly\.code[\s\S]*?Backend context-only recipient-card route should not rely on Decision Pack URL query/,
-  "Public TrustSlip smoke must keep the Decision Pack recipient-card human-copy, decision reading, and first-viewport guard."
+  /async function expectDecisionPackRecipientCard[\s\S]*?Shared to support Employment Decision Pack\.[\s\S]*?Employment Decision Pack[\s\S]*?Public Decision Pack[\s\S]*?decisionReading[\s\S]*?Can I make a better decision with this evidence\?[\s\S]*?reduce uncertainty, not eliminate risk[\s\S]*?recipient remains responsible for the decision[\s\S]*?Evidence focus[\s\S]*?Next safe step[\s\S]*?Check live confirmation[\s\S]*?Purpose-filtered evidence[\s\S]*?Evidence categories[\s\S]*?Community participation evidence[\s\S]*?2 public-safe records[\s\S]*?Private review needed[\s\S]*?Finance or repayment evidence[\s\S]*?Raw TrustEvents, actor details, notes, metadata, payment references, and private contacts are not exposed publicly[\s\S]*?not\.toContainText\("SECRET-REF-SHOULD-NOT-RENDER"\)[\s\S]*?not\.toContainText\("Delivered to private address"\)[\s\S]*?not\.toContainText\("public_context_from_link"\)[\s\S]*?not\.toContainText\("backend_access_context_only"\)[\s\S]*?not\.toContainText\("public_decision_pack"\)[\s\S]*?recipientCardFacts\.top >= recipientCardFacts\.viewportHeight[\s\S]*?async function runDecisionPackRecipientCardScenario[\s\S]*?decision_pack=Employment_Decision&access_scope=public_decision_pack[\s\S]*?scenarios\.backendContextOnly\.code[\s\S]*?Backend context-only recipient-card route should not rely on Decision Pack URL query/,
+  "Public TrustSlip smoke must keep the Decision Pack recipient-card human-copy, redacted evidence extract, decision reading, and first-viewport guard."
 );
 
 assertContains(
   "publicTrustSlipSmoke",
-  /Decision Pack recipient-card and reading stayed human, decision-first, and hid raw machine context/,
-  "Public TrustSlip smoke summary must report the Decision Pack recipient-card and reading guard."
+  /Decision Pack recipient-card, reading, and redacted evidence extract stayed human, decision-first, and hid raw machine\/private context/,
+  "Public TrustSlip smoke summary must report the Decision Pack recipient-card, reading, and redacted evidence guard."
 );
 
 assertContains(

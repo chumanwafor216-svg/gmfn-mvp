@@ -152164,3 +152164,33 @@ GSN-branded invite composer and invite-entry continuity.
   - local only so far; do not push/deploy unless the owner explicitly selects `2` or says push/deploy.
 - Next recommended step:
   - commit this backend proof slice locally, then either continue another small Decision Pack proof gap on `1` or push/deploy the accumulated local commits on `2`.
+## 2026-07-26 - Public Decision Pack Redacted Extract Smoke Guard
+
+- Trigger:
+  - owner selected `1` after the holder consent export-format boundary test was committed locally.
+- Unabated truth:
+  - backend tests already proved public Decision Pack evidence extracts are redacted and do not expose raw TrustEvent types, private notes, or payment references;
+  - the browser smoke did not prove the live React public verifier rendered backend `decision_pack_profile.evidence_extract` safe category counts or private-review guidance;
+  - first attempt wrongly expected the URL-context Decision Pack path to render the backend profile. That failed usefully: URL context overlays a share-safe fallback and shows `No public-safe category`; the corrected smoke now asserts redacted extract rendering only on the backend-profile path;
+  - this pass strengthens proof only. It does not change runtime UI, backend evidence, access-ledger persistence, Decision Pack profile logic, scores, approvals, guarantees, payment authority, private Trust Passport disclosure, or recipient identity handling.
+- Changed:
+  - `frontend/tools/smoke-public-trustslip-verify-states.mjs`
+    - adds a backend-shaped `decision_pack_profile` mock with public-safe evidence category counts, private-review-required guidance, and fake raw private fields (`SECRET-REF-SHOULD-NOT-RENDER`, `Delivered to private address SHOULD NOT RENDER`);
+    - keeps URL-driven Decision Pack assertions focused on human public context and first-viewport placement;
+    - asserts the backend-only Decision Pack path renders safe category counts, private-review guidance, source/boundary copy, and does not render the fake raw private fields.
+  - `frontend/tools/audit-evidence-display-boundary-suite.mjs`
+    - cages the stronger smoke assertions for redacted evidence extract rendering and private-field non-rendering.
+- Verification:
+  - passed `npm exec -- eslint tools/smoke-public-trustslip-verify-states.mjs tools/audit-evidence-display-boundary-suite.mjs` from `frontend`;
+  - passed `npm --prefix frontend run audit:evidence-display-boundary-suite`;
+  - passed `npm --prefix frontend run audit:public-trustslip-verify-boundary`;
+  - first non-escalated `npm --prefix frontend run smoke:public-trustslip-verify-states` attempt hit sandbox `spawn EPERM` while starting Vite/esbuild;
+  - first escalated smoke attempt failed because the URL-context path correctly rendered fallback Decision Pack profile copy instead of the backend evidence extract;
+  - passed corrected `npm --prefix frontend run smoke:public-trustslip-verify-states` with sandbox escalation;
+  - passed `npm --prefix frontend run audit:protected-button-freeze`;
+  - passed `npm --prefix frontend run build`;
+  - passed `git diff --check` before the handoff entry.
+- Deployment:
+  - local only so far; do not push/deploy unless the owner explicitly selects `2` or says push/deploy.
+- Next recommended step:
+  - commit this smoke-proof slice locally, then either continue another small Decision Pack proof gap on `1` or push/deploy the accumulated local commits on `2`.
