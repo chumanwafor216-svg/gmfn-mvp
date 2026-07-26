@@ -1486,6 +1486,7 @@ export default function TrustScorePage() {
   const [communityEvidenceDetailsOpen, setCommunityEvidenceDetailsOpen] = useState(false);
   const [documentPreviewDetailsOpen, setDocumentPreviewDetailsOpen] = useState(false);
   const [institutionalContextDetailsOpen, setInstitutionalContextDetailsOpen] = useState(false);
+  const [evidenceMovementDetailsOpen, setEvidenceMovementDetailsOpen] = useState(false);
 
   const [me, setMe] = useState<any>(null);
   const [currentClan, setCurrentClan] = useState<any>(null);
@@ -5125,29 +5126,79 @@ export default function TrustScorePage() {
               <div style={{ color: "#07172C", fontWeight: 1000, fontSize: 20 }}>
                 6. What changed in the evidence?
               </div>
-              <div style={{ color: "#0B63D1", fontWeight: 1000, marginTop: 10 }}>
-                Latest explanation
-              </div>
-              <p style={{ ...helperText(), margin: "6px 0 0" }}>{latestExplanation}</p>
-              <div style={{ color: "#5542A8", fontWeight: 1000, marginTop: 14 }}>
-                Recent evidence events
-              </div>
-                {recentEvents.length > 0 ? (
-                <div style={{ marginTop: 8, display: "grid", gap: 8 }}>
-                  {recentEvents.slice(0, isCompact ? 2 : 3).map((event, index) => (
-                    <div key={event.id || index} style={innerCard("#F8FBFF")}>
-                      <b>{firstTruthy(event.event_type, "Evidence event")}</b>
-                      <div style={helperText()}>
-                        {firstTruthy(event.reason, event.note, safeDateTime(event.created_at), "No detail shown")}
-                      </div>
+              <div
+                data-trust-passport-evidence-movement-details="collapsed"
+                style={{
+                  ...innerCard("#FFFFFF"),
+                  border: "1px solid rgba(216,227,238,0.9)",
+                  display: "grid",
+                  gap: evidenceMovementDetailsOpen ? (isCompact ? 9 : 12) : 0,
+                  marginTop: 10,
+                }}
+              >
+                <SubtleButton
+                  debugId="trust-score.evidence-movement-details.toggle"
+                  stableHeight={isCompact ? 42 : 44}
+                  onClick={() => setEvidenceMovementDetailsOpen((open) => !open)}
+                  aria-expanded={evidenceMovementDetailsOpen}
+                  fullWidth
+                  style={{
+                    justifyContent: "space-between",
+                    borderRadius: 13,
+                    background: evidenceMovementDetailsOpen ? "#F8FBFF" : "#FFFFFF",
+                    border: "1px solid rgba(11,99,209,0.14)",
+                    color: "#24415C",
+                    boxShadow: "none",
+                    fontSize: 12.5,
+                    fontWeight: 1000,
+                  }}
+                >
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+                    <GsnLegacyIcon name="evidence" size={24} decorative />
+                    <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      Evidence movement details
+                    </span>
+                  </span>
+                  <span aria-hidden="true" style={{ color: "#617085", fontSize: 18 }}>
+                    {evidenceMovementDetailsOpen ? "-" : "+"}
+                  </span>
+                </SubtleButton>
+
+                {evidenceMovementDetailsOpen ? (
+                  <div
+                    style={{
+                      display: "grid",
+                      gap: isCompact ? 8 : 10,
+                      paddingTop: isCompact ? 8 : 10,
+                      borderTop: "1px solid rgba(216,227,238,0.62)",
+                    }}
+                  >
+                    <div style={{ color: "#0B63D1", fontWeight: 1000 }}>
+                      Latest explanation
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <div style={{ ...innerCard("#F8FBFF"), marginTop: 8, color: "#526579" }}>
-                  No recent evidence events are visible.
-                </div>
-              )}
+                    <p style={{ ...helperText(), margin: 0 }}>{latestExplanation}</p>
+                    <div style={{ color: "#5542A8", fontWeight: 1000 }}>
+                      Recent evidence events
+                    </div>
+                    {recentEvents.length > 0 ? (
+                      <div style={{ display: "grid", gap: 8 }}>
+                        {recentEvents.slice(0, isCompact ? 2 : 3).map((event, index) => (
+                          <div key={event.id || index} style={innerCard("#F8FBFF")}>
+                            <b>{firstTruthy(event.event_type, "Evidence event")}</b>
+                            <div style={helperText()}>
+                              {firstTruthy(event.reason, event.note, safeDateTime(event.created_at), "No detail shown")}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div style={{ ...innerCard("#F8FBFF"), color: "#526579" }}>
+                        No recent evidence events are visible.
+                      </div>
+                    )}
+                  </div>
+                ) : null}
+              </div>
             </div>
 
             <div

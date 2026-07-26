@@ -1,3 +1,41 @@
+## CURRENT LOCAL STATE - 2026-07-26 - Trust Passport evidence movement details collapsed locally
+
+Owner trigger:
+- Owner selected `1` to continue the decision-first Trust Passport enhancement after the institutional context table was collapsed locally.
+
+Unabated truth:
+- This is a narrow Evidence Story lane hierarchy cleanup, not a full Trust Passport redesign.
+- `What changed in the evidence?` now keeps the section visible but moves latest explanation and recent event detail behind `Evidence movement details`.
+- This reduces report-dump pressure in the Evidence Story lane while preserving the existing evidence-surface action cards above it.
+- The honest caveat: Trust Passport now has many collapsible detail controls; source checks say they are stable, but a phone-browser visual pass is still needed to decide whether the page feels calm or overly segmented.
+- No backend route, schema, evidence extraction, scoring, TrustEvent, permission, or deployment behavior changed.
+- This slice passed source/build checks, but it has not yet been visually inspected in a real phone/browser viewport.
+
+Changed:
+- `frontend/src/pages/TrustScorePage.tsx`
+  - Added `evidenceMovementDetailsOpen` state.
+  - Collapsed `latestExplanation` and recent evidence event rows behind a stable `Evidence movement details` disclosure.
+  - Kept the Evidence Story section and existing evidence-surface action cards visible.
+- `frontend/tools/audit-trust-passport-button-inventory.mjs`
+  - Updated the Trust Passport stable action baseline from 22 to 23 source actions and 30 to 31 expected rendered action roots.
+  - Added a cage requiring Evidence Story movement details to stay collapsed behind `trust-score.evidence-movement-details.toggle`.
+
+Routes/screens affected:
+- Signed-in Trust Passport / TrustScore route.
+- No public TrustSlip route behavior changed in this slice.
+
+Verification:
+- Passed `npm exec -- eslint src/pages/TrustScorePage.tsx tools/audit-trust-passport-button-inventory.mjs tools/audit-trust-actions.mjs` from `frontend`.
+- Passed `npm --prefix frontend run audit:trust-passport-button-inventory`.
+- Passed `npm --prefix frontend run audit:trust-actions`.
+- Passed `npm --prefix frontend run audit:protected-button-freeze`.
+- Passed `npm --prefix frontend run build`.
+
+Deployment:
+- Local only. Not pushed or deployed; owner must select `2` or explicitly say push/deploy.
+
+Recommended next step:
+- Stop adding Trust Passport collapses until a phone-width visual review confirms the screen is not becoming too toggle-heavy; then either publish the current batch or tune the first viewport spacing.
 ## CURRENT LOCAL STATE - 2026-07-26 - Trust Passport institutional context collapsed locally
 
 Owner trigger:
