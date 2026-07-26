@@ -1,3 +1,37 @@
+## CURRENT LOCAL STATE - 2026-07-26 - Public TrustSlip Verify disclosure wording tightened
+
+Owner trigger:
+- Owner selected `1` after the holder TrustSlip wording commit.
+
+Unabated truth:
+- Runtime frontend code changed for the public TrustSlip Verify paper only.
+- This pass is a very small copy/label tightening only. It does not change public verification requests, QR/link handling, Decision Pack extraction, evidence visibility, private evidence gating, backend routes, schemas, permissions, or deployment config.
+- Public TrustSlip Verify already had the main `Audit Details` wrapper; this slice only removed the remaining nested `TrustSlip security and limits` wording.
+
+Changed:
+- `frontend/src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx`
+  - Renamed nested disclosure `TrustSlip security and limits` to `What this cannot prove`.
+  - Reworded its helper from `Open for what this paper confirms, limits, security, and record reference.` to `Open for what this paper confirms, what it cannot prove, security, and record reference.`
+  - Renamed nested security panel `Digital security` to `Can this be checked?`.
+- `frontend/tools/audit-trust-actions.mjs`
+  - Updated the TrustSlip Verify audit contract for the clearer public disclosure wording.
+
+Routes/screens affected:
+- Public TrustSlip Verify paper: `/t/:code` and `/trust-slips/verify/:code` redirect/compat paths that render the public paper.
+- No backend route changed.
+
+Verification:
+- Passed `npm --prefix frontend run audit:trust-actions`.
+- Passed `npm --prefix frontend run audit:protected-button-freeze`.
+- Passed `npm --prefix frontend run smoke:public-trustslip-verify-states` with escalation after sandbox `spawn EPERM`.
+- Passed `npm --prefix frontend run build`.
+- Passed `git diff --check`; Git still reports normal LF-to-CRLF working-copy warnings on touched files.
+
+Deployment:
+- Local runtime/docs change only at this point. Not pushed or deployed until owner selects `2` or explicitly says push/deploy.
+
+Recommended next step:
+- The trust-document wording pass is now broad enough for a phone visual pass, or the owner can select `2` to push/deploy the accumulated local commits.
 ## CURRENT LOCAL STATE - 2026-07-26 - Holder TrustSlip wording tightened
 
 Owner trigger:

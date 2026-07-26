@@ -666,7 +666,7 @@ assertContains(
 
 assertContains(
   "src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx",
-  /TrustDocumentDisclosureSection[\s\S]*?title="TrustSlip security and limits"[\s\S]*?Open for what this paper confirms, limits, security, and record reference\.[\s\S]*?data-gsn-trustslip-verify-security-limits="true"[\s\S]*?TrustDocumentSecurityPanel[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?TrustDocumentFingerprint/,
+  /TrustDocumentDisclosureSection[\s\S]*?title="What this cannot prove"[\s\S]*?Open for what this paper confirms, what it cannot prove, security, and record reference\.[\s\S]*?data-gsn-trustslip-verify-security-limits="true"[\s\S]*?TrustDocumentSecurityPanel[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?TrustDocumentFingerprint/,
   "TrustSlip Verify public paper must keep security, limits, and record-reference detail collapsed behind one disclosure."
 );
 

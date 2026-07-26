@@ -2035,8 +2035,8 @@ export default function TrustSlipVerifyPublicPaper({
             />
 
             <TrustDocumentDisclosureSection
-              title="TrustSlip security and limits"
-              summary="Open for what this paper confirms, limits, security, and record reference."
+              title="What this cannot prove"
+              summary="Open for what this paper confirms, what it cannot prove, security, and record reference."
             >
               <div
                 data-gsn-trust-document-certificate="trustslip-verify"
@@ -2048,7 +2048,7 @@ export default function TrustSlipVerifyPublicPaper({
                 }}
               >
                 <TrustDocumentSecurityPanel
-                  title="Digital security"
+                  title="Can this be checked?"
                   items={trustSlipSecurityItems}
                 />
                 <div style={{ display: "grid", gap: 12 }}>
