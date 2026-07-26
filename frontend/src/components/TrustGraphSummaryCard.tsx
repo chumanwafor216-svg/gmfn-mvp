@@ -40,7 +40,7 @@ export default function TrustGraphSummaryCard(props: {
         <div>
           <div style={{ fontSize: 16, fontWeight: 1000, color: "#0B1F33" }}>TrustGraph Summary</div>
           <div style={{ marginTop: 4, fontSize: 12, color: "#64748b" }}>
-            Internal command-centre analysis of cross-community trust structure.
+            Internal command-centre analysis of cross-community evidence structure.
           </div>
         </div>
 

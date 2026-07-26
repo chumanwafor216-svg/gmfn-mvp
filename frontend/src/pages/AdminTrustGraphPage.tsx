@@ -543,7 +543,7 @@ function fallbackSignalsFromEvents(events: TrustEventRow[]): GraphSignal[] {
           row?.detail,
           row?.kind,
           row?.event_type,
-          "Relationship signal"
+          "Relationship evidence signal"
         )
       ),
       detail: supportDisplayText(
@@ -551,7 +551,7 @@ function fallbackSignalsFromEvents(events: TrustEventRow[]): GraphSignal[] {
           row?.detail,
           row?.description,
           row?.message,
-          "A relationship-related trust signal is visible."
+          "A relationship-related evidence signal is visible."
         )
       ),
       level,
@@ -769,16 +769,16 @@ export default function AdminTrustGraphPage() {
     const centralityPressure =
       topNodes.length > 0 ? (topNodes[0].degree || 0) : 0;
 
-    let structureTitle = "The visible trust structure looks fairly distributed.";
+    let structureTitle = "The visible evidence structure looks fairly distributed.";
     let structureDetail =
-      "No strong central concentration signal is dominating the visible graph reading right now.";
+      "No strong central concentration signal is dominating the visible evidence graph right now.";
 
     if (centralityPressure >= 8 || flaggedSignals >= 4) {
-      structureTitle = "The visible trust structure shows concentration pressure.";
+      structureTitle = "The visible evidence structure shows concentration pressure.";
       structureDetail =
-        "A central node or a cluster of flagged relationship signals is standing out in the current graph reading.";
+        "A central node or a cluster of flagged relationship evidence signals is standing out in the current graph reading.";
     } else if (centralityPressure >= 4 || watchSignals >= 3) {
-      structureTitle = "The visible trust structure needs watchful reading.";
+      structureTitle = "The visible evidence structure needs watchful reading.";
       structureDetail =
         "The current graph reading is not yet critical, but some clusters or central relationships deserve watchful attention.";
     }
@@ -844,7 +844,7 @@ export default function AdminTrustGraphPage() {
       <PageTopNav
         sectionLabel="Trust Graph"
         title="Trust Graph"
-        subtitle="Read connectedness, concentration, and relationship trust shape."
+        subtitle="Read connectedness, concentration, and relationship evidence shape."
         homeTo={routes.dashboard}
         homeLabel="Dashboard"
         backTo={routes.commandCenter}
@@ -853,8 +853,8 @@ export default function AdminTrustGraphPage() {
 
       <ExplainToggle
         label="What this screen does"
-        what="This screen reads connectedness, clusters, centrality, and flagged relationship signals."
-        why="It helps you see when a trust issue is structural, not only an event or exposure issue."
+        what="This screen reads connectedness, clusters, centrality, and flagged relationship evidence signals."
+        why="It helps you see when an evidence concern is structural, not only an event or exposure issue."
         next="Start with the current graph reading, then check overview, structure, and signals."
         tone="light"
       />

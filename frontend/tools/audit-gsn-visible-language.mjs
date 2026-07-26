@@ -238,7 +238,7 @@ const required = [
   ["frontend/src/components/TrustGraphEdgeList.tsx", ">Community</div>"],
   ["frontend/src/components/TrustGraphEdgeList.tsx", "Private member reference"],
   ["frontend/src/components/TrustGraphEdgeList.tsx", "Private member reference hidden"],
-  ["frontend/src/components/TrustGraphSummaryCard.tsx", "cross-community trust structure"],
+  ["frontend/src/components/TrustGraphSummaryCard.tsx", "cross-community evidence structure"],
   ["frontend/src/components/TrustGraphSummaryCard.tsx", "Active communities"],
   ["frontend/src/pages/JoinEntryPage.tsx", "GSN member"],
   ["frontend/src/pages/ShopGalleryPage.tsx", "GSN ID"],

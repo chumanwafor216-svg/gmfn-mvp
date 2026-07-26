@@ -100,7 +100,7 @@ export default function TrustGraphAdminPage() {
     <div style={{ padding: 18, maxWidth: 1200 }}>
       <PageHeader
         title="Trust Graph Admin"
-        subtitle="Protected cross-community trust reading for support teams, showing consistency, relationship evidence, and reasons in plain language."
+        subtitle="Protected cross-community evidence reading for support teams, showing consistency, relationship evidence, and reasons in plain language."
         right={
           <Button onClick={loadAll} disabled={loading || busy}>
             {loading ? "Loading..." : busy ? "Working..." : "Refresh"}
@@ -252,7 +252,7 @@ export default function TrustGraphAdminPage() {
                     background: "#fff",
                   }}
                 >
-                  <div style={{ fontSize: 11, color: "#64748b", fontWeight: 900 }}>Trust posture</div>
+                  <div style={{ fontSize: 11, color: "#64748b", fontWeight: 900 }}>Evidence posture</div>
                   <div style={{ marginTop: 6, fontSize: 22, fontWeight: 1000 }}>
                     {getContextualEvidencePosture(graph.trust_score, graph.trust_band).label}
                   </div>

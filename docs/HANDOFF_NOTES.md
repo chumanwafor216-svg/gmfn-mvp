@@ -1,3 +1,47 @@
+## CURRENT LOCAL STATE - 2026-07-26 - Trust Graph evidence-language slice added locally
+
+Owner trigger:
+- Owner selected `1` to continue after the local community evidence-reading label slice was committed locally.
+
+Unabated truth:
+- This is a visible copy and audit cage slice only. It does not rename Trust Graph, TrustEvent, trust-score API fields, graph metrics, admin permissions, backend services, or the route contract.
+- Trust Graph remains the screen/product name. The change is limited to explanatory language that should not imply GSN is measuring universal trust or declaring a trust structure.
+
+Changed:
+- `frontend/src/pages/AdminTrustGraphPage.tsx`
+  - Reframed fallback graph labels from relationship `trust signal`/`visible trust structure` language to relationship evidence signal and visible evidence structure language.
+  - Reframed the hero helper from relationship trust shape / structural trust issue to relationship evidence shape / structural evidence concern.
+- `frontend/src/pages/TrustAnalyticsPage.tsx`
+  - Reframed the explanation from `trust signals` to `evidence signals`.
+- `frontend/src/components/TrustGraphSummaryCard.tsx`
+  - Reframed summary helper copy from cross-community trust structure to cross-community evidence structure.
+- `frontend/src/components/TrustGraphAdminPage.tsx`
+  - Kept the older component copy aligned with evidence-reading/evidence-posture language even though the routed app currently lazy-loads `pages/AdminTrustGraphPage.tsx`.
+- `frontend/tools/audit-trust-actions.mjs`
+  - Added positive and negative cages for Admin Trust Graph, Trust Analytics, Trust Graph Summary, and the legacy Trust Graph admin component evidence wording.
+- `frontend/tools/audit-gsn-visible-language.mjs`
+  - Updated the expected Trust Graph Summary visible phrase to `cross-community evidence structure`.
+
+Routes/screens affected:
+- `/app/command-center/trust-graph` admin graph copy.
+- `/app/command-center/trust-analytics` explanation copy.
+- Legacy Trust Graph admin component copy remains aligned if reused later.
+- No backend, schema, permission, payment, TrustSlip public verification, or evidence extraction behavior changed.
+
+Verification:
+- Passed `npm exec -- eslint src/pages/AdminTrustGraphPage.tsx src/pages/TrustAnalyticsPage.tsx src/components/TrustGraphSummaryCard.tsx src/components/TrustGraphAdminPage.tsx tools/audit-trust-actions.mjs tools/audit-gsn-visible-language.mjs tools/audit-admin-ops-actions.mjs` from `frontend`.
+- Passed `node tools/audit-trust-actions.mjs`.
+- Passed `node tools/audit-gsn-visible-language.mjs`.
+- Passed `node tools/audit-admin-ops-actions.mjs`.
+- Passed `git diff --check` before handoff with only recurring LF/CRLF warnings.
+- Passed `npm --prefix frontend run audit:protected-button-freeze`.
+- Passed `npm --prefix frontend run build`.
+
+Deployment:
+- Local only. Not pushed or deployed; owner must select `2` or explicitly say push/deploy.
+
+Recommended next step:
+- Continue with live routed surfaces that still expose `trust story`, `trust signal`, or broad `community trust` language, but keep Trust Graph/TrustEvent/internal API names intact until there is a deliberate contract migration.
 ## CURRENT LOCAL STATE - 2026-07-26 - Local community evidence-reading labels added locally
 
 Owner trigger:

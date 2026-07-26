@@ -244,6 +244,53 @@ assertContains(
   "Trust Graph admin component must show not-issued-yet language for missing member IDs."
 );
 
+assertContains(
+  "src/pages/AdminTrustGraphPage.tsx",
+  /Relationship evidence signal[\s\S]*?relationship-related evidence signal[\s\S]*?visible evidence structure looks fairly distributed[\s\S]*?visible evidence structure shows concentration pressure[\s\S]*?visible evidence structure needs watchful reading/,
+  "Admin Trust Graph page must frame graph fallbacks and structure readings as evidence, not trust signals or trust structure."
+);
+
+assertNotContains(
+  "src/pages/AdminTrustGraphPage.tsx",
+  /Relationship signal|relationship-related trust signal|visible trust structure/i,
+  "Admin Trust Graph page must not label graph evidence as trust signals or visible trust structure."
+);
+
+assertContains(
+  "src/pages/TrustAnalyticsPage.tsx",
+  /This reading turns the evidence signals into one practical direction\./,
+  "Trust Analytics explanation must frame inputs as evidence signals, not trust signals."
+);
+
+assertNotContains(
+  "src/pages/TrustAnalyticsPage.tsx",
+  /trust signals/i,
+  "Trust Analytics visible explanation must not use trust-signal wording."
+);
+
+assertContains(
+  "src/components/TrustGraphSummaryCard.tsx",
+  /cross-community evidence structure/,
+  "Trust Graph summary card must describe graph analysis as evidence structure, not trust structure."
+);
+
+assertNotContains(
+  "src/components/TrustGraphSummaryCard.tsx",
+  /cross-community trust structure/i,
+  "Trust Graph summary card must not use cross-community trust-structure wording."
+);
+
+assertContains(
+  "src/components/TrustGraphAdminPage.tsx",
+  /Protected cross-community evidence reading[\s\S]*?Evidence posture/,
+  "Legacy Trust Graph admin component must keep evidence-reading and evidence-posture wording."
+);
+
+assertNotContains(
+  "src/components/TrustGraphAdminPage.tsx",
+  /cross-community trust reading|Trust posture/i,
+  "Legacy Trust Graph admin component must not reintroduce trust-reading or trust-posture display copy."
+);
 assertNotContains(
   "src/components/RequireAuth.tsx",
   /Number\.isFinite\(rawScore\)[^\n]*"Pending"/,

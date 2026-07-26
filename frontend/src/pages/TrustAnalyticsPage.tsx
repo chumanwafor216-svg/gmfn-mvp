@@ -777,7 +777,7 @@ export default function TrustAnalyticsPage() {
 
         <ExplainToggle
           label="What this does"
-          what="This reading turns the trust signals into one practical direction."
+          what="This reading turns the evidence signals into one practical direction."
           why="It helps you avoid heavier action before you understand the pattern."
           next="Use the sections below to see why the pattern looks this way."
           tone="light"
