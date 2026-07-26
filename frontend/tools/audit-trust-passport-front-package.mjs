@@ -139,7 +139,7 @@ assertContains(
 [
   "Identity & Community Overview",
   "2. Current evidence reading",
-  "3. What this reading says",
+  "3. What this evidence helps you decide",
   "4. Why this reading looks like this",
   "5. Trust surfaces",
   "6. Why did my trust change?",
@@ -152,6 +152,18 @@ assertContains(
     `Trust Passport current front package must keep the ${label} section until a deliberate lane redesign replaces it.`
   );
 });
+
+assertContains(
+  "trust",
+  /3\. What this evidence helps you decide[\s\S]*?These lines do not make the decision[\s\S]*?cannot support before a recipient asks for live confirmation[\s\S]*?passportVm\.trustQuestions\.map[\s\S]*?\{item\.meaning\}/,
+  "Trust Passport decision-use summary must show plain meaning lines, not status labels alone."
+);
+
+assertNotContains(
+  "trust",
+  /3\. What this reading says/,
+  "Trust Passport first lane must not return to generic reading commentary where decision-use evidence belongs."
+);
 
 [
   {

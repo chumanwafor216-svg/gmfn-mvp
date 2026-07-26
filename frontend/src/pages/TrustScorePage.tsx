@@ -2406,7 +2406,7 @@ export default function TrustScorePage() {
       .slice(0, 2)
       .join("")
       .toUpperCase() || "GSN";
-  const plainTrustVerdict = passportVm.verdict.lowData
+  const plainEvidenceReading = passportVm.verdict.lowData
     ? passportVm.verdict.interpretation
     : `Current evidence posture means ${passportVm.verdict.bandLanguage.title.toLowerCase()}. ${passportVm.verdict.bandLanguage.implication}`;
   function openTrustRoute(to: string) {
@@ -4095,7 +4095,7 @@ export default function TrustScorePage() {
                     overflowWrap: "break-word",
                   }}
                 >
-                  {plainTrustVerdict}
+                  {plainEvidenceReading}
                 </p>
                 <SecondaryButton
                   debugId="trust-score.verdict-note.toggle"
@@ -4214,8 +4214,12 @@ export default function TrustScorePage() {
               }}
             >
               <div style={{ color: "#07172C", fontWeight: 1000, fontSize: 20 }}>
-                3. What this reading says
+                3. What this evidence helps you decide
               </div>
+              <p style={{ ...helperText(), margin: "8px 0 0" }}>
+                These lines do not make the decision. They show what this record can and
+                cannot support before a recipient asks for live confirmation.
+              </p>
               <div style={{ marginTop: 12, display: "grid", gap: 6 }}>
                 {passportVm.trustQuestions.map((item) => (
                   <div
@@ -4223,9 +4227,9 @@ export default function TrustScorePage() {
                     style={{
                       display: "grid",
                       gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) auto",
-                      gap: isCompact ? 6 : 10,
+                      gap: isCompact ? 7 : 10,
                       alignItems: isCompact ? "start" : "center",
-                      padding: "8px 0",
+                      padding: "9px 0",
                       borderBottom: "1px solid rgba(216,227,238,0.72)",
                     }}
                   >
@@ -4233,9 +4237,11 @@ export default function TrustScorePage() {
                       style={{
                         color: "#334155",
                         fontWeight: 900,
-                        display: "inline-flex",
-                        alignItems: "center",
+                        display: "grid",
+                        gridTemplateColumns: "30px minmax(0, 1fr)",
                         gap: 8,
+                        alignItems: "start",
+                        minWidth: 0,
                       }}
                     >
                       <GsnLegacyIcon
@@ -4243,7 +4249,19 @@ export default function TrustScorePage() {
                         size={30}
                         decorative
                       />
-                      {item.title}
+                      <span style={{ minWidth: 0, display: "grid", gap: 3 }}>
+                        <span>{item.title}</span>
+                        <span
+                          style={{
+                            color: "#617085",
+                            fontSize: isCompact ? 11.5 : 12.5,
+                            lineHeight: 1.35,
+                            fontWeight: 800,
+                          }}
+                        >
+                          {item.meaning}
+                        </span>
+                      </span>
                     </span>
                     <EvidenceMeter status={item.status}>{item.status}</EvidenceMeter>
                   </div>

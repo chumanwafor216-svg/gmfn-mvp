@@ -152326,3 +152326,38 @@ GSN-branded invite composer and invite-entry continuity.
   - local only so far; do not push/deploy unless the owner explicitly selects `2` or says push/deploy.
 - Next recommended step:
   - commit this lane rename slice locally, then either continue the next small identity/evidence separation slice on `1` or push/deploy the accumulated local commits on `2`.
+## 2026-07-26 - Trust Passport Decision-Use Evidence Summary
+
+- Trigger:
+  - owner selected `1` after the Identity Evidence Lane Rename slice was committed locally.
+- Unabated truth:
+  - `/app/trust` still uses the existing Trust Passport view model fields `verdict` and `trustQuestions`; those names remain technical debt and were not renamed in this slice because they are shared presentation contracts;
+  - the first lane still had a generic `3. What this reading says` block that showed only title/status rows even though the view model already carried plain-English meaning text for each line;
+  - this pass is presentation-only. It does not add an Identity Profile route, Evidence Ledger route, Behavioural Placement schema, Decision Pack generator, scoring rewrite, approval engine, backend evidence model, or verified-community model.
+- Changed:
+  - `frontend/src/pages/TrustScorePage.tsx`
+    - renames the first-lane third section from `3. What this reading says` to `3. What this evidence helps you decide`;
+    - adds a short boundary sentence that the lines do not make the decision and should be followed by live confirmation when needed;
+    - surfaces each decision-use line's existing `item.meaning` text under the title instead of showing only a status badge;
+    - renames the local `plainTrustVerdict` variable to `plainEvidenceReading` without changing the underlying view-model contract.
+  - `frontend/tools/smoke-trust-passport-trustslip-boundary.mjs`
+    - asserts the rendered Trust Passport page shows the new decision-use heading, boundary helper, and one surfaced meaning line;
+    - asserts the old `3. What this reading says` title does not render.
+  - `frontend/tools/audit-trust-passport-front-package.mjs` and `frontend/tools/audit-trust-passport-lane-map.mjs`
+    - cage the new decision-use heading and require the first-lane summary to render `{item.meaning}` so it cannot regress to status-only rows.
+  - `docs/SCREEN_SPECS.md` and `docs/GSN_TRUST_PASSPORT_PURPOSE_AUDIT.md`
+    - update the current Trust Passport mapping from generic reading commentary to decision-use evidence lines.
+- Verification:
+  - passed `npm exec -- eslint src/pages/TrustScorePage.tsx tools/audit-trust-passport-front-package.mjs tools/audit-trust-passport-lane-map.mjs tools/smoke-trust-passport-trustslip-boundary.mjs` from `frontend`;
+  - passed direct `node tools/audit-trust-passport-front-package.mjs` from `frontend`;
+  - passed `npm --prefix frontend run audit:trust-passport-lane-map`;
+  - passed `npm --prefix frontend run audit:trust-passport-trustslip-boundary`;
+  - non-escalated `npm --prefix frontend run smoke:trust-passport-trustslip-boundary` hit sandbox `spawn EPERM` while starting Vite/esbuild;
+  - passed escalated `npm --prefix frontend run smoke:trust-passport-trustslip-boundary`;
+  - passed `npm --prefix frontend run audit:protected-button-freeze`;
+  - passed `npm --prefix frontend run build`;
+  - passed `git diff --check` before the handoff entry.
+- Deployment:
+  - local only so far; do not push/deploy unless the owner explicitly selects `2` or says push/deploy.
+- Next recommended step:
+  - commit this decision-use summary slice locally, then either continue the next small Trust Passport evidence-language cleanup on `1` or push/deploy the accumulated local commits on `2`.

@@ -123,7 +123,7 @@ assertContains(
 
 assertContains(
   "trust",
-  /activeTrustPassportLane === "standing" \? "grid" : "none"[\s\S]*?2\. Current evidence reading[\s\S]*?3\. What this reading says/,
+  /activeTrustPassportLane === "standing" \? "grid" : "none"[\s\S]*?2\. Current evidence reading[\s\S]*?3\. What this evidence helps you decide/,
   "Identity & Evidence Reading must be the only default open work lane instead of exposing every trust section at once."
 );
 
@@ -138,9 +138,9 @@ assertOrderedSnippets(
   [
     "Identity & Community Overview",
     "2. Current evidence reading",
-    "3. What this reading says",
+    "3. What this evidence helps you decide",
   ],
-  "Identity & Evidence Reading lane must map to identity, evidence reading, and plain reading-question sections before redesign."
+  "Identity & Evidence Reading lane must map to identity, evidence reading, and decision-use evidence sections before redesign."
 );
 
 assertOrderedSnippets(

@@ -88,7 +88,7 @@ Confirmed from `frontend/src/pages/TrustScorePage.tsx` and
 `frontend/src/lib/trustPassportViewModel.ts`:
 
 - `/app/trust` presents itself as `Trust Passport`.
-- The view model groups identity, evidence reading, trust questions, reasons, outputs,
+- The view model groups identity, evidence reading, decision-use evidence lines, reasons, outputs,
   and technical detail.
 - The page already has the pre-redesign lane mapping:
   - Identity & Evidence Reading

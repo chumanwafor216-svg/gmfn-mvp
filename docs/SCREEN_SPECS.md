@@ -584,8 +584,7 @@ Rules:
   Trust Passport section to make sense.
 
 Current pre-redesign Trust Passport section mapping:
-- Identity & Evidence Reading: Identity & Community Overview, Current evidence reading, and What
-  this reading says.
+- Identity & Evidence Reading: Identity & Community Overview, Current evidence reading, and what this evidence helps the recipient decide.
 - Evidence Story: Why this reading looks like this, Why did my trust change?,
   and Evidence & institutional context.
 - Community Confirmation: public community record and confirmation readiness.

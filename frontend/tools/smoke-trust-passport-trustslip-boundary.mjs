@@ -442,9 +442,17 @@ async function runTrustPassportScenario(browser, baseURL) {
   await expect(state.page.getByText("Active passport lane", { exact: true })).toBeVisible();
   await expect(state.page.getByText("Identity & Evidence Reading", { exact: true }).first()).toBeVisible();
   await expect(state.page.getByText("2. Current evidence reading", { exact: true })).toBeVisible();
+  await expect(state.page.getByText("3. What this evidence helps you decide", { exact: true })).toBeVisible();
+  await expect(
+    state.page.getByText("These lines do not make the decision. They show what this record can and cannot support before a recipient asks for live confirmation.", {
+      exact: true,
+    })
+  ).toBeVisible();
+  await expect(state.page.getByText("The phone is verified. Recorded bank or ID evidence can strengthen this identity, but provider verification still matters for serious decisions.", { exact: true })).toBeVisible();
   await expect(state.page.getByText("Current Trust Standing", { exact: true })).toHaveCount(0);
   await expect(state.page.getByText("Active trust lane", { exact: true })).toHaveCount(0);
   await expect(state.page.getByText("2. Current trust verdict", { exact: true })).toHaveCount(0);
+  await expect(state.page.getByText("3. What this reading says", { exact: true })).toHaveCount(0);
   await expect(state.page.getByText("Community Portfolio", { exact: true })).toBeVisible();
   await expect(state.page.getByText("Active Communities: 5", { exact: true }).first()).toBeVisible();
   await expect(state.page.getByText("Recorded communities", { exact: true })).toBeVisible();
