@@ -1915,6 +1915,18 @@ assertNotContains(
   );
 });
 
+assertNotContains(
+  "src/lib/dashboardUserGuidance.ts",
+  /why they should trust it|Your trust position is still okay|When your trust record is not ready|confirm your trust story|review your trust position|evidence that your trust story|your trust record is not yet easy|full trust path/i,
+  "Dashboard shared guidance must present TrustSlip and route guidance as evidence records, not broad trust-story verdicts."
+);
+
+assertContains(
+  "src/lib/dashboardUserGuidance.ts",
+  /what evidence supports it[\s\S]*?Your evidence reading is still okay[\s\S]*?Local evidence shows how your community reads it[\s\S]*?When your evidence record is not ready[\s\S]*?confirm your evidence summary[\s\S]*?review your evidence reading[\s\S]*?TrustSlip is the record people can check when they want evidence backed by a visible record[\s\S]*?evidence path/,
+  "Dashboard shared guidance must keep the evidence-record framing for shop, TrustSlip, and Trust Passport helper copy."
+);
+
 [
   "src/lib/marketWisdom.ts",
   "src/lib/trustDocumentActionGuide.ts",

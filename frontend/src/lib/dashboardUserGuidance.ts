@@ -96,8 +96,8 @@ function toPlainLanguage(value: string): string {
   const replacements: Array<[RegExp, string]> = [
     [/current community reading/gi, "what people in your community are seeing"],
     [/community reading/gi, "what people in your community are seeing"],
-    [/trust reading/gi, "trust"],
-    [/trust position/gi, "trust"],
+    [/trust reading/gi, "evidence reading"],
+    [/trust position/gi, "evidence reading"],
     [/cross-community integrity/gi, "how people outside your community see you"],
     [/integrity reading/gi, "how people outside your community see you"],
     [/integrity pressure/gi, "a problem with how people outside your community see you"],
@@ -494,7 +494,7 @@ export function buildDashboardNextRouteCopy(params: {
         "People may be seeing your goods or services, so your main seller page should be clear and ready first.",
       consequenceText:
         "If your page is not clear, people may move on or doubt what they see.",
-      actionText: `Open ${params.primaryLabel} now and make sure people can clearly see what you sell and why they should trust it.`,
+      actionText: `Open ${params.primaryLabel} now and make sure people can clearly see what you sell and what evidence supports it.`,
       supportHint: "More help shows the pages around this selling step.",
     };
   }
@@ -563,7 +563,7 @@ export function buildDashboardTrustNoticeCopy(params: {
         toPlainLanguage(source.whyText),
         weakenText,
         trustPrimary
-          ? "Your trust position is still okay, but some areas need attention before they get worse."
+          ? "Your evidence reading is still okay, but some areas need attention before they get worse."
           : "Your wider identity position is still okay, but some areas need attention before they get worse.",
       ]),
       ctaLabel: trustPrimary ? "Open trust status" : "Open identity check",
@@ -601,7 +601,7 @@ export function buildDashboardTrustAttentionCore(params: {
   const bothUnderPressure =
     params.openTrust.tone === "red" && params.cci.tone === "red";
   const baseConnectionText =
-    "Focus shows visible follow-through. Local trust shows how your community reads it. Cross-community consistency shows how people outside your community may read the same behaviour. TrustSlip is the record they may later check when they want supporting evidence.";
+    "Focus shows visible follow-through. Local evidence shows how your community reads it. Cross-community consistency shows how people outside your community may read the same behaviour. TrustSlip is the record they may later check when they want supporting evidence.";
 
   let helpingText = "";
 
@@ -640,11 +640,11 @@ export function buildDashboardTrustAttentionCore(params: {
         "Your TrustSlip is still pending. Until it is ready, people cannot see your verification clearly, and that can hold back both trust and wider identity confidence.",
       problemText: "Your TrustSlip is still pending or not complete.",
       consequenceText:
-        "When your trust record is not ready, people cannot see your verification clearly. That can hold back trust in your community and also weaken your wider consistency outside your community.",
+        "When your evidence record is not ready, people cannot see your verification clearly. That can slow confidence in your community and also weaken your wider consistency outside your community.",
       actionText:
         nextPlain ||
         `Open ${routeLabel} now and finish the missing verification step.`,
-      connectionText: `${baseConnectionText} Right now the missing part is TrustSlip, so even if some other areas look better, people still cannot easily confirm your trust story.`,
+      connectionText: `${baseConnectionText} Right now the missing part is TrustSlip, so even if some other areas look better, people still cannot easily confirm your evidence summary.`,
     };
   }
 
@@ -810,7 +810,7 @@ export function buildDashboardTrustAttentionCore(params: {
     problemText: "No major trust problem is showing right now.",
     consequenceText:
       "Keeping your replies, commitments, and record steady helps trust stay healthy.",
-    actionText: `Open ${routeLabel} if you want to review your trust position.`,
+    actionText: `Open ${routeLabel} if you want to review your evidence reading.`,
     connectionText:
       `${baseConnectionText} Right now they are not showing a major break, so the main job is to keep your follow-through steady and your record clear.`,
   };
@@ -850,8 +850,8 @@ export function buildDashboardTrustJourneyCopy(params: {
       : "Cross-community consistency shows how people outside your community may read the same behaviour.";
 
   const trustSlipDetail = cleanText(params.trustSlipCode)
-    ? "TrustSlip is the record people can check when they want evidence that your trust story is backed by a visible record."
-    : "TrustSlip is still not ready. That means your trust record is not yet easy to share when people ask for evidence.";
+    ? "TrustSlip is the record people can check when they want evidence backed by a visible record."
+    : "TrustSlip is still not ready. That means your evidence record is not yet easy to share when people ask for evidence.";
 
   let focusDetail =
     "Focus shows whether the targets you set are being met, watched, or missed in a visible way.";
@@ -877,10 +877,10 @@ export function buildDashboardTrustJourneyCopy(params: {
   }
 
   const passportDetail =
-    "Trust Passport helps you read the full trust path in simple steps, while TrustSlip is the record people may later check for supporting evidence.";
+    "Trust Passport helps you read the full evidence path in simple steps, while TrustSlip is the record people may later check for supporting evidence.";
 
   let connectionSummary =
-    "These five work together: Focus shows visible follow-through, local trust shows how your community reads it, cross-community consistency shows how people outside your community may read it, TrustSlip carries the record, and Trust Passport helps you understand the whole path.";
+    "These five work together: Focus shows visible follow-through, local evidence shows how your community reads it, cross-community consistency shows how people outside your community may read it, TrustSlip carries the record, and Trust Passport helps you understand the evidence path.";
 
   if (params.focusBehindCount > 0) {
     connectionSummary =
@@ -893,7 +893,7 @@ export function buildDashboardTrustJourneyCopy(params: {
       "Right now the waiting notification or reply is the visible problem. If you do not answer, trust can weaken, wider consistency can also drop, and your record stops looking steady.";
   } else if (!cleanText(params.trustSlipCode)) {
     connectionSummary =
-      "Right now the missing TrustSlip is the visible gap. Without that record, people cannot easily confirm your trust story even if some other parts look healthy.";
+      "Right now the missing TrustSlip is the visible gap. Without that record, people cannot easily confirm your evidence summary even if some other parts look healthy.";
   } else if (params.urgentDemandCount > 0) {
     connectionSummary =
       "Right now the waiting need is the visible problem. If you leave it there, people may feel ignored, trust can weaken, and wider consistency can also become more careful.";

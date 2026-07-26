@@ -152650,3 +152650,33 @@ GSN-branded invite composer and invite-entry continuity.
   - local only so far; do not push/deploy unless the owner explicitly selects `2` or says push/deploy.
 - Next recommended step:
   - commit this Dashboard evidence-reading slice locally, then either continue another small visible/shared wording cleanup on `1` or push/deploy the accumulated local commits on `2`.
+
+## 2026-07-26 - Dashboard Shared Guidance Evidence Copy
+
+- Trigger:
+  - owner selected `1` after the Dashboard evidence-reading slice was committed locally.
+- Unabated truth:
+  - this pass cleans shared dashboard guidance helper copy used by Dashboard route guidance and Trust journey explainers;
+  - it does not rename Trust, TrustSlip, Trust Passport, CCI/trust-score fields, route contracts, backend APIs, or evidence models;
+  - the file still recognises legacy incoming phrases such as trust position/trust reading so it can translate them into plainer evidence-reading language;
+  - this is visible/shared copy cleanup, not a new Identity Profile, Evidence Ledger route, Behavioural Placement schema, Decision Pack generator, scoring rewrite, or permissions change.
+- Changed:
+  - `frontend/src/lib/dashboardUserGuidance.ts`
+    - changes seller route guidance from why buyers should trust a shop to what evidence supports it;
+    - maps legacy `trust reading` / `trust position` helper text into `evidence reading` wording;
+    - reframes TrustSlip pending and journey guidance from trust-record/trust-story/full-trust-path wording to evidence-record/evidence-summary/evidence-path wording;
+    - changes local journey connector copy from local trust to local evidence while preserving Trust/TrustSlip product names.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - adds a source cage rejecting the old dashboard shared guidance trust-story/trust-record phrases;
+    - asserts the new evidence-record/evidence-summary/evidence-path wording remains present.
+- Verification:
+  - passed `npm exec -- eslint src/lib/dashboardUserGuidance.ts tools/audit-trust-actions.mjs` from `frontend`;
+  - passed direct `node tools/audit-trust-actions.mjs` from `frontend`;
+  - passed direct `node tools/audit-dashboard-actions.mjs` from `frontend`;
+  - passed `npm --prefix frontend run audit:protected-button-freeze`;
+  - passed `npm --prefix frontend run build`;
+  - passed `git diff --check` before the handoff entry.
+- Deployment:
+  - local only so far; do not push/deploy unless the owner explicitly selects `2` or says push/deploy.
+- Next recommended step:
+  - commit this Dashboard shared-guidance evidence-copy slice locally, then either continue another small visible/shared wording cleanup on `1` or push/deploy the accumulated local commits on `2`.
