@@ -1484,6 +1484,7 @@ export default function TrustScorePage() {
   const [evidenceReadingNoteOpen, setEvidenceReadingNoteOpen] = useState(false);
   const [standingDecisionDetailsOpen, setStandingDecisionDetailsOpen] = useState(false);
   const [communityEvidenceDetailsOpen, setCommunityEvidenceDetailsOpen] = useState(false);
+  const [documentPreviewDetailsOpen, setDocumentPreviewDetailsOpen] = useState(false);
 
   const [me, setMe] = useState<any>(null);
   const [currentClan, setCurrentClan] = useState<any>(null);
@@ -5286,25 +5287,72 @@ export default function TrustScorePage() {
                 <EvidenceMeter status="Limited">Expires: {expiresText}</EvidenceMeter>
               </div>
               {trustPassportSnapshotReady ? (
-                <>
-                  <GsnSnapshotPaperCard
-                    paperText={trustPassportPaper}
-                    compact={isCompact}
-                    icon="shield"
-                    maxBodyLines={isCompact ? 6 : undefined}
-                    style={{ marginTop: 14 }}
-                  />
-                  <p
+                <div
+                  data-trust-passport-document-preview-details="collapsed"
+                  style={{
+                    ...innerCard("#FFFFFF"),
+                    border: "1px solid rgba(216,227,238,0.9)",
+                    display: "grid",
+                    gap: documentPreviewDetailsOpen ? (isCompact ? 9 : 12) : 0,
+                    marginTop: 14,
+                  }}
+                >
+                  <SubtleButton
+                    debugId="trust-score.documents-lane.preview-details.toggle"
+                    stableHeight={isCompact ? 42 : 44}
+                    onClick={() => setDocumentPreviewDetailsOpen((open) => !open)}
+                    aria-expanded={documentPreviewDetailsOpen}
+                    fullWidth
                     style={{
-                      ...helperText(),
-                      margin: "8px 0 0",
-                      fontSize: isCompact ? 12 : 13,
+                      justifyContent: "space-between",
+                      borderRadius: 13,
+                      background: documentPreviewDetailsOpen ? "#F8FBFF" : "#FFFFFF",
+                      border: "1px solid rgba(11,99,209,0.14)",
+                      color: "#24415C",
+                      boxShadow: "none",
+                      fontSize: 12.5,
+                      fontWeight: 1000,
                     }}
                   >
-                    Copy gives a short text summary. Use screenshot or print to share
-                    the official GSN paper background.
-                  </p>
-                </>
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+                      <GsnLegacyIcon name="document" size={24} decorative />
+                      <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        Document preview details
+                      </span>
+                    </span>
+                    <span aria-hidden="true" style={{ color: "#617085", fontSize: 18 }}>
+                      {documentPreviewDetailsOpen ? "-" : "+"}
+                    </span>
+                  </SubtleButton>
+
+                  {documentPreviewDetailsOpen ? (
+                    <div
+                      style={{
+                        display: "grid",
+                        gap: isCompact ? 8 : 10,
+                        paddingTop: isCompact ? 8 : 10,
+                        borderTop: "1px solid rgba(216,227,238,0.62)",
+                      }}
+                    >
+                      <GsnSnapshotPaperCard
+                        paperText={trustPassportPaper}
+                        compact={isCompact}
+                        icon="shield"
+                        maxBodyLines={isCompact ? 6 : undefined}
+                      />
+                      <p
+                        style={{
+                          ...helperText(),
+                          margin: 0,
+                          fontSize: isCompact ? 12 : 13,
+                        }}
+                      >
+                        Copy gives a short text summary. Use screenshot or print to share
+                        the official GSN paper background.
+                      </p>
+                    </div>
+                  ) : null}
+                </div>
               ) : (
                 <div
                   style={{

@@ -59,8 +59,8 @@ while ((match = actionPattern.exec(source))) {
   });
 }
 
-const expectedSourceActions = 20;
-const expectedRenderedActions = 28;
+const expectedSourceActions = 21;
+const expectedRenderedActions = 29;
 
 if (actions.length !== expectedSourceActions) {
   findings.push({
@@ -119,6 +119,7 @@ const expectedOrder = [
   "trust-score.verify",
   "trust-score.review-care",
   "trust-score.export",
+  "trust-score.documents-lane.preview-details.toggle",
   "trust-score.snapshot-open-trust-slip",
 ];
 
@@ -179,6 +180,10 @@ assertContains(
 assertContains(
   /gridTemplateColumns: isCompact \? "repeat\(2, minmax\(0, 1fr\)\)" : "repeat\(4, minmax\(0, 1fr\)\)"[\s\S]*?stableHeight=\{isCompact \? 48 : 58\}[\s\S]*?debugId="trust-score\.refresh"[\s\S]*?stableHeight=\{isCompact \? 48 : 58\}[\s\S]*?debugId="trust-score\.copy-snapshot"[\s\S]*?stableHeight=\{isCompact \? 48 : 58\}[\s\S]*?debugId="trust-score\.open-trust-slip"[\s\S]*?stableHeight=\{isCompact \? 48 : 58\}[\s\S]*?debugId="trust-score\.verify"/,
   "Trust Passport shareable tools must keep shorter fixed phone heights while preserving the larger desktop paper controls."
+);
+assertContains(
+  /const \[documentPreviewDetailsOpen, setDocumentPreviewDetailsOpen\][\s\S]*?activeTrustPassportLane === "documents" \? "block" : "none"[\s\S]*?7\. Shareable trust tools[\s\S]*?debugId="trust-score\.export"[\s\S]*?data-trust-passport-document-preview-details="collapsed"[\s\S]*?debugId="trust-score\.documents-lane\.preview-details\.toggle"[\s\S]*?aria-expanded=\{documentPreviewDetailsOpen\}[\s\S]*?Document preview details[\s\S]*?documentPreviewDetailsOpen \?[\s\S]*?<GsnSnapshotPaperCard[\s\S]*?debugId="trust-score\.snapshot-open-trust-slip"/,
+  "Trust Passport Documents lane must keep the share/verify actions visible and collapse the full paper preview behind a stable details toggle."
 );
 
 assertContains(
@@ -296,5 +301,5 @@ if (findings.length > 0) {
 }
 
 console.log(
-  `Trust Passport button inventory audit passed: ${actions.length} stable source actions, ${expectedRenderedActions} expected rendered action roots including the lane selector, evidence reading note toggle, standing decision detail toggle, community evidence detail toggle, and two evidence-surface cards.`
+  `Trust Passport button inventory audit passed: ${actions.length} stable source actions, ${expectedRenderedActions} expected rendered action roots including the lane selector, evidence reading note toggle, standing decision detail toggle, community evidence detail toggle, document preview detail toggle, and two evidence-surface cards.`
 );
