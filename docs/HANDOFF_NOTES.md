@@ -1,3 +1,55 @@
+## CURRENT LOCAL STATE - 2026-07-26 - Decision Pack evidence footprint expanded
+
+Owner trigger:
+- Owner selected `1` after the TrustSlip evidence-scope separation and asked to keep reviewing TrustSlip, TrustSlip Verify, and Trust Passport for one-community judgement risk.
+
+Unabated truth:
+- The deeper Decision Pack extract had a real scope weakness: it still queried only the TrustSlip primary `clan_id` plus holder-level events.
+- This pass fixes that extract-level issue by including TrustEvents from the holder's active community memberships while excluding events from communities where the holder is not active.
+- Private event references now mark whether evidence came from the primary community, another active community, holder-level records, or an outside active footprint.
+- Devil's advocate: this is still evidence aggregation, not endorsement aggregation. GSN must not imply every community gives the same judgement just because records from multiple active communities are included.
+
+Changed:
+- `gmfn_backend/app/services/trust_slip_decision_packs.py`
+  - Added active membership lookup through `ClanMembership`.
+  - Public and private Decision Pack evidence extracts now filter to the holder's active community footprint plus holder-level records.
+  - Added `evidence_scope` to Decision Pack extracts with `reading_scope`, `included_active_community_count`, holder-level inclusion, public summary, and boundary wording.
+  - Private event refs now use explicit scopes: `primary_community`, `other_active_community`, `holder_record`, or `outside_active_community`.
+- `gmfn_backend/tests/test_trust_slip_boundary_controls.py`
+  - Added tests proving public extract includes primary + second active community records and excludes outside-community records.
+  - Added tests proving private refs label primary and other-active community scope while keeping private notes scrubbed.
+- `frontend/src/pages/trustSlipVerify/trustSlipVerifyViewModel.ts`
+  - Preserves Decision Pack extract `evidence_scope` from backend.
+- `frontend/src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx`
+  - Adds a compact `Evidence footprint` table inside Decision evidence details before category counts.
+- `frontend/src/pages/TrustSlipPage.tsx`
+  - Holder-side private Decision Pack preview now keeps the evidence footprint and includes it in holder consent summary / safe JSON export.
+- `frontend/tools/audit-public-trustslip-verify-boundary.mjs`
+  - Added guards for active-community-footprint extraction, private scope marking, frontend scope preservation, and public footprint rendering.
+
+Routes/screens affected:
+- Backend public verify Decision Pack profile: `/trust-slips/verify/{code}?decision_pack=...`.
+- Backend signed-in private Decision Pack preview: `/trust-slips/me/decision-pack-evidence`.
+- Public TrustSlip Verify paper Decision evidence details.
+- Signed-in holder TrustSlip / private Decision Pack preview and consent copy/export.
+- No auth, payment, release, database migration, raw private note exposure, or TrustEvent write behavior changed.
+
+Verification:
+- Passed `python -m pytest gmfn_backend\tests\test_trust_slip_boundary_controls.py -q` (`19 passed`).
+- Passed `npm --prefix frontend run audit:public-trustslip-verify-boundary`.
+- Passed `npm --prefix frontend run audit:trust-actions`.
+- Passed `npm --prefix frontend run audit:trust-passport-trustslip-boundary`.
+- Passed `npm --prefix frontend run audit:protected-button-freeze`.
+- Passed `node frontend\tools\audit-institutional-proof-surfaces.mjs`.
+- Passed `npm --prefix frontend run build`.
+- Passed `git diff --check`; Git still reports normal working-copy line-ending warnings on touched files.
+
+Deployment:
+- Local committed/pushed state before this pass is still one commit ahead of origin: `de3f3e92 Separate TrustSlip evidence scope`.
+- This new Decision Pack footprint pass is not committed, pushed, or deployed yet. Select `2` to push/deploy after commit.
+
+Recommended next step:
+- Select `2` to push/deploy the two local slices, or continue with Trust Passport front-page aggregation polish if owner wants one more local pass first.
 ## CURRENT LOCAL STATE - 2026-07-26 - TrustSlip evidence scope separated
 
 Owner trigger:

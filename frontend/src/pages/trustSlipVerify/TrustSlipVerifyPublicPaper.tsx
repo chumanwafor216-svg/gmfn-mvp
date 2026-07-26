@@ -130,6 +130,13 @@ type TrustSlipVerifyPublicPaperProps = {
     evidenceExtract: {
       source: string;
       sourceNote: string;
+      evidenceScope: {
+        readingScope: string;
+        includedActiveCommunityCount: number | null;
+        includesHolderLevelRecords: boolean;
+        publicSummary: string;
+        boundary: string;
+      };
       categories: Array<{
         key: string;
         label: string;
@@ -1147,6 +1154,23 @@ export default function TrustSlipVerifyPublicPaper({
   const decisionPackProfileSignals = decisionPackProfile.relevantSignals.slice(0, 4);
   const decisionPackProfileGaps = decisionPackProfile.gapsToCheck.slice(0, 3);
   const decisionPackProfileChecks = decisionPackProfile.recommendedChecks.slice(0, 3);
+  const decisionPackEvidenceScope = decisionPackProfile.evidenceExtract.evidenceScope;
+  const decisionPackEvidenceScopeRows: Array<[string, string]> = [
+    [
+      "Footprint",
+      firstTruthy(
+        decisionPackEvidenceScope.publicSummary,
+        "Purpose evidence is currently anchored to the primary community plus holder-level records."
+      ),
+    ],
+    [
+      "Boundary",
+      firstTruthy(
+        decisionPackEvidenceScope.boundary,
+        "This Decision Pack does not mean every community gives the same judgement."
+      ),
+    ],
+  ];
   const decisionPackEvidenceCategories = decisionPackProfile.evidenceExtract.categories.slice(0, 4);
   const decisionPackPrivateReview = decisionPackProfile.evidenceExtract.privateReviewRequired.slice(0, 3);
   const decisionPackEvidenceRows: Array<[string, string]> = (decisionPackEvidenceCategories.length
@@ -1946,6 +1970,12 @@ export default function TrustSlipVerifyPublicPaper({
                 </div>
               ))}
             </div>
+
+            <OfficialResultTable
+              title="Evidence footprint"
+              rows={decisionPackEvidenceScopeRows}
+              compact={compact}
+            />
 
             <div
               data-gsn-decision-pack-evidence-extract="redacted-trust-events"

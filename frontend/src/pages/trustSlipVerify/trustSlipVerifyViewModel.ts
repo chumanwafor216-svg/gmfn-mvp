@@ -33,6 +33,13 @@ type DecisionPackPrivateReviewCategory = {
 export type DecisionPackEvidenceExtractView = {
   source: string;
   sourceNote: string;
+  evidenceScope: {
+    readingScope: string;
+    includedActiveCommunityCount: number | null;
+    includesHolderLevelRecords: boolean;
+    publicSummary: string;
+    boundary: string;
+  };
   categories: DecisionPackEvidenceCategory[];
   privateReviewRequired: DecisionPackPrivateReviewCategory[];
   boundaryNote: string;
@@ -218,12 +225,26 @@ function normalizeDecisionPackEvidenceExtract(raw: any): DecisionPackEvidenceExt
   const privateReviewRequired = Array.isArray(source.private_review_required)
     ? source.private_review_required
     : [];
+  const evidenceScope = source.evidence_scope && typeof source.evidence_scope === "object" ? source.evidence_scope : {};
   return {
     source: firstTruthy(source.source, "trust_events_redacted_extract"),
     sourceNote: firstTruthy(
       source.source_note,
       "Aggregated from public-safe TrustEvent categories only. Raw TrustEvents are not exposed."
     ),
+    evidenceScope: {
+      readingScope: firstTruthy(evidenceScope.reading_scope, "primary_only"),
+      includedActiveCommunityCount: firstNumberLike(evidenceScope.included_active_community_count),
+      includesHolderLevelRecords: evidenceScope.includes_holder_level_records === true,
+      publicSummary: firstTruthy(
+        evidenceScope.public_summary,
+        "Purpose evidence is currently anchored to the primary community plus holder-level records."
+      ),
+      boundary: firstTruthy(
+        evidenceScope.boundary,
+        "This Decision Pack may include holder-level records, but it does not mean every community gives the same judgement."
+      ),
+    },
     categories: categories
       .map((category: any) => ({
         key: firstTruthy(category?.key, category?.label),

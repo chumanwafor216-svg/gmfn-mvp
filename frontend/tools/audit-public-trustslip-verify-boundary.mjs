@@ -332,6 +332,30 @@ assertContains(
   /PACK_RELEVANCE_SIGNALS[\s\S]*?PACK_EVENT_CATEGORY_FILTERS[\s\S]*?build_decision_pack_evidence_extract[\s\S]*?private_review_required[\s\S]*?build_decision_pack_profile[\s\S]*?evidence_extract[\s\S]*?does not score the person/,
   "Backend Decision Pack profile must remain a purpose-filtered evidence relevance profile with a redacted event extract, not a score or decision engine."
 );
+assertContains(
+  "backendDecisionPacks",
+  /_holder_active_community_ids[\s\S]*?ClanMembership\.user_id[\s\S]*?ClanMembership\.left_at\.is_\(None\)[\s\S]*?included_active_community_count[\s\S]*?other_active_community[\s\S]*?_filter_query_to_holder_active_footprint[\s\S]*?TrustEvent\.clan_id\.in_\(active_community_ids\)/,
+  "Backend Decision Pack extracts must use the holder's active community footprint, not only the TrustSlip primary clan."
+);
+
+assertContains(
+  "backendDecisionPackTests",
+  /test_public_verify_decision_pack_extract_uses_holder_active_community_footprint[\s\S]*?included_active_community_count[\s\S]*?service\["evidence_count"\] == 2[\s\S]*?test_holder_private_decision_pack_evidence_marks_primary_and_other_active_community_refs[\s\S]*?"other-active": "other_active_community"/,
+  "Backend tests must prove Decision Pack evidence includes active wider communities while marking private event scope."
+);
+
+assertContains(
+  "viewModel",
+  /normalizeDecisionPackEvidenceExtract[\s\S]*?const evidenceScope = source\.evidence_scope[\s\S]*?includedActiveCommunityCount[\s\S]*?includesHolderLevelRecords[\s\S]*?This Decision Pack may include holder-level records/,
+  "Public TrustSlip Verify view model must preserve Decision Pack evidence scope from the backend."
+);
+
+assertContains(
+  "publicPaper",
+  /decisionPackEvidenceScopeRows[\s\S]*?Footprint[\s\S]*?Boundary[\s\S]*?title="Evidence footprint"[\s\S]*?data-gsn-decision-pack-evidence-extract="redacted-trust-events"/,
+  "Public TrustSlip paper must explain the Decision Pack evidence footprint before category counts."
+);
+
 
 assertContains(
   "backend",

@@ -4,7 +4,7 @@ from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
 from app.db.database import SessionLocal
-from app.db.models import TrustEvent, TrustSlip, TrustSlipDecisionPackAccess, TrustSlipDecisionPackConsentShare, User
+from app.db.models import Clan, ClanMembership, TrustEvent, TrustSlip, TrustSlipDecisionPackAccess, TrustSlipDecisionPackConsentShare, User
 
 
 def _create_trust_slip(*, code: str, holder_user_id: int = 1) -> int:
@@ -26,6 +26,34 @@ def _create_trust_slip(*, code: str, holder_user_id: int = 1) -> int:
         db.commit()
         db.refresh(slip)
         return int(slip.id)
+    finally:
+        db.close()
+
+def _add_active_membership(*, clan_id: int, user_id: int = 1, role: str = "member") -> None:
+    db = SessionLocal()
+    try:
+        now = datetime.now(timezone.utc)
+        db.add(
+            Clan(
+                id=clan_id,
+                name=f"Test Clan {clan_id}",
+                invite_code=f"test-invite-{clan_id}",
+                community_code=f"GMFN-C-{clan_id:06d}",
+                status="active",
+                invite_uses=0,
+                created_at=now,
+            )
+        )
+        db.add(
+            ClanMembership(
+                clan_id=clan_id,
+                user_id=user_id,
+                role=role,
+                personal_pool_balance=Decimal("0.00"),
+                created_at=now,
+            )
+        )
+        db.commit()
     finally:
         db.close()
 
@@ -340,6 +368,72 @@ def test_public_verify_decision_pack_extracts_redacted_event_categories(
     assert "SECRET-REF" not in profile_text
     assert "private address" not in profile_text
 
+def test_public_verify_decision_pack_extract_uses_holder_active_community_footprint(
+    client,
+    seed_clan_admin_membership,
+):
+    _create_trust_slip(code="ACCESS-WIDER-EVIDENCE")
+    _add_active_membership(clan_id=2)
+
+    db = SessionLocal()
+    try:
+        now = datetime.now(timezone.utc)
+        db.add(
+            Clan(
+                id=3,
+                name="Outside Clan",
+                invite_code="test-invite-3",
+                community_code="GMFN-C-000003",
+                status="active",
+                invite_uses=0,
+                created_at=now,
+            )
+        )
+        db.add_all(
+            [
+                TrustEvent(
+                    event_type="merchant.delivery_confirmed",
+                    clan_id=1,
+                    actor_user_id=1,
+                    subject_user_id=1,
+                    created_at=now,
+                    meta={"status": "primary"},
+                ),
+                TrustEvent(
+                    event_type="merchant.service_completed",
+                    clan_id=2,
+                    actor_user_id=1,
+                    subject_user_id=1,
+                    created_at=now,
+                    meta={"status": "other-active"},
+                ),
+                TrustEvent(
+                    event_type="merchant.delivery_confirmed",
+                    clan_id=3,
+                    actor_user_id=1,
+                    subject_user_id=1,
+                    created_at=now,
+                    meta={"status": "outside-active-footprint"},
+                ),
+            ]
+        )
+        db.commit()
+    finally:
+        db.close()
+
+    response = client.get(
+        "/trust-slips/verify/ACCESS-WIDER-EVIDENCE",
+        params={"decision_pack": "business_partnership"},
+    )
+
+    assert response.status_code == 200, response.text
+    extract = response.json()["decision_pack_profile"]["evidence_extract"]
+    assert extract["evidence_scope"]["reading_scope"] == "primary_plus_wider"
+    assert extract["evidence_scope"]["included_active_community_count"] == 2
+    service = next(row for row in extract["categories"] if row["key"] == "service_trade")
+    assert service["evidence_count"] == 2
+    assert "outside-active-footprint" not in str(extract)
+
 def test_holder_can_read_recent_decision_pack_accesses_without_recipient_identity(
     client,
     seed_clan_admin_membership,
@@ -460,6 +554,81 @@ def test_holder_private_decision_pack_evidence_shows_redacted_event_refs(
     assert "score" in extract["boundary_note"]
     assert "approval" in extract["boundary_note"]
 
+
+def test_holder_private_decision_pack_evidence_marks_primary_and_other_active_community_refs(
+    client,
+    seed_clan_admin_membership,
+    override_current_user,
+):
+    _create_trust_slip(code="PRIVATE-WIDER-EVIDENCE")
+    _add_active_membership(clan_id=2)
+
+    db = SessionLocal()
+    try:
+        now = datetime.now(timezone.utc)
+        db.add(
+            Clan(
+                id=3,
+                name="Outside Private Clan",
+                invite_code="test-invite-3-private",
+                community_code="GMFN-C-000103",
+                status="active",
+                invite_uses=0,
+                created_at=now,
+            )
+        )
+        db.add_all(
+            [
+                TrustEvent(
+                    event_type="merchant.delivery_confirmed",
+                    clan_id=1,
+                    actor_user_id=1,
+                    subject_user_id=1,
+                    created_at=now,
+                    meta={"status": "primary", "private_note": "primary private note"},
+                ),
+                TrustEvent(
+                    event_type="merchant.service_completed",
+                    clan_id=2,
+                    actor_user_id=1,
+                    subject_user_id=1,
+                    created_at=now,
+                    meta={"status": "other-active", "private_note": "other active private note"},
+                ),
+                TrustEvent(
+                    event_type="merchant.delivery_confirmed",
+                    clan_id=3,
+                    actor_user_id=1,
+                    subject_user_id=1,
+                    created_at=now,
+                    meta={"status": "outside", "private_note": "outside private note"},
+                ),
+            ]
+        )
+        db.commit()
+    finally:
+        db.close()
+
+    response = client.get(
+        "/trust-slips/me/decision-pack-evidence",
+        params={"decision_pack": "business_partnership"},
+    )
+
+    assert response.status_code == 200, response.text
+    extract = response.json()["evidence_extract"]
+    assert extract["evidence_scope"]["reading_scope"] == "primary_plus_wider"
+    assert extract["evidence_scope"]["included_active_community_count"] == 2
+    service = next(row for row in extract["categories"] if row["key"] == "service_trade")
+    assert service["evidence_count"] == 2
+    scopes = {row["safe_meta"]["status"]: row["scope"] for row in service["event_refs"]}
+    assert scopes == {
+        "primary": "primary_community",
+        "other-active": "other_active_community",
+    }
+    payload_text = str(response.json())
+    assert "outside private note" not in payload_text
+    assert "primary private note" not in payload_text
+    assert "other active private note" not in payload_text
 
 def test_holder_private_decision_pack_evidence_is_holder_scoped(
     client,

@@ -381,6 +381,13 @@ type TrustSlipDecisionPackEvidenceExtract = {
   decisionPack: string;
   accessPurpose: string;
   recipientQuestion: string;
+  evidenceScope: {
+    readingScope: string;
+    includedActiveCommunityCount: number | null;
+    includesHolderLevelRecords: boolean;
+    publicSummary: string;
+    boundary: string;
+  };
   categories: TrustSlipDecisionPackEvidenceCategory[];
   privacyNote: string;
   boundaryNote: string;
@@ -1700,6 +1707,7 @@ function normalizeTrustSlipDecisionPackEvidence(raw: any): TrustSlipDecisionPack
   const extract = raw?.evidence_extract || raw?.extract || raw;
   if (!extract || typeof extract !== "object") return null;
 
+  const evidenceScope = extract?.evidence_scope && typeof extract.evidence_scope === "object" ? extract.evidence_scope : {};
   const categories = Array.isArray(extract?.categories)
     ? extract.categories
         .map((row: any) => ({
@@ -1740,6 +1748,22 @@ function normalizeTrustSlipDecisionPackEvidence(raw: any): TrustSlipDecisionPack
     decisionPack: firstTruthy(extract?.decision_pack, extract?.decisionPack),
     accessPurpose: firstTruthy(extract?.access_purpose, extract?.accessPurpose),
     recipientQuestion: firstTruthy(extract?.recipient_question, extract?.recipientQuestion),
+    evidenceScope: {
+      readingScope: firstTruthy(evidenceScope?.reading_scope, "primary_only"),
+      includedActiveCommunityCount:
+        evidenceScope?.included_active_community_count === null || evidenceScope?.included_active_community_count === undefined
+          ? null
+          : numericCount(evidenceScope?.included_active_community_count),
+      includesHolderLevelRecords: evidenceScope?.includes_holder_level_records === true,
+      publicSummary: firstTruthy(
+        evidenceScope?.public_summary,
+        "Purpose evidence is currently anchored to the primary community plus holder-level records."
+      ),
+      boundary: firstTruthy(
+        evidenceScope?.boundary,
+        "This Decision Pack may include holder-level records, but it does not mean every community gives the same judgement."
+      ),
+    },
     categories,
     privacyNote: firstTruthy(extract?.privacy_note, raw?.privacy_note),
     boundaryNote: firstTruthy(extract?.boundary_note, raw?.boundary_note),
@@ -3285,6 +3309,15 @@ export default function TrustSlipPage() {
     },
   ];
   const privateDecisionPackEvidenceCategories = (decisionPackEvidenceExtract?.categories || []).slice(0, 4);
+  const privateDecisionPackEvidenceScope = decisionPackEvidenceExtract?.evidenceScope;
+  const privateDecisionPackEvidenceScopeSummary = firstTruthy(
+    privateDecisionPackEvidenceScope?.publicSummary,
+    "Purpose evidence is currently anchored to the primary community plus holder-level records."
+  );
+  const privateDecisionPackEvidenceScopeBoundary = firstTruthy(
+    privateDecisionPackEvidenceScope?.boundary,
+    "This Decision Pack does not mean every community gives the same judgement."
+  );
   const privateDecisionPackEvidenceAvailable = privateDecisionPackEvidenceCategories.some(
     (row) => row.evidenceCount > 0
   );
@@ -3512,6 +3545,8 @@ export default function TrustSlipPage() {
       trustSlipCode ? `TrustSlip code: ${trustSlipCode}` : "",
       `Decision Pack: ${selectedPurposeOption.label}`,
       `Recipient question: ${selectedPurposeOption.recipientQuestion}`,
+      `Evidence footprint: ${privateDecisionPackEvidenceScopeSummary}`,
+      `Evidence boundary: ${privateDecisionPackEvidenceScopeBoundary}`,
       "Evidence categories:",
       ...rows.map((category) => {
         const latest = safeDateTime(category.latestAt) || "not recorded";
@@ -3550,6 +3585,15 @@ export default function TrustSlipPage() {
           recipient_question: selectedPurposeOption.recipientQuestion,
           focus: selectedPurposeOption.focus,
         },
+        evidence_scope: privateDecisionPackEvidenceScope
+          ? {
+              reading_scope: privateDecisionPackEvidenceScope.readingScope || null,
+              included_active_community_count: privateDecisionPackEvidenceScope.includedActiveCommunityCount,
+              includes_holder_level_records: privateDecisionPackEvidenceScope.includesHolderLevelRecords,
+              public_summary: privateDecisionPackEvidenceScope.publicSummary || null,
+              boundary: privateDecisionPackEvidenceScope.boundary || null,
+            }
+          : null,
         evidence_categories: rows.map((category) => ({
           key: category.key,
           label: category.label,
@@ -4148,6 +4192,20 @@ export default function TrustSlipPage() {
                 </div>
               ) : privateDecisionPackEvidenceAvailable ? (
                 <div style={{ display: "grid", gap: 7 }}>
+                  <div
+                    style={{
+                      border: "1px solid rgba(37,78,119,0.10)",
+                      borderRadius: 12,
+                      background: "#F8FBFF",
+                      padding: "8px 9px",
+                      color: "#526579",
+                      fontSize: isCompact ? 10.5 : 11.5,
+                      fontWeight: 850,
+                      lineHeight: 1.35,
+                    }}
+                  >
+                    {privateDecisionPackEvidenceScopeSummary} {privateDecisionPackEvidenceScopeBoundary}
+                  </div>
                   {privateDecisionPackEvidenceCategories.map((category) => (
                     <div
                       key={category.key || category.label}

@@ -5,7 +5,7 @@ from typing import Any, Mapping, Optional
 
 from sqlalchemy.orm import Session
 
-from app.db.models import TrustEvent, TrustSlip, TrustSlipDecisionPackAccess, TrustSlipDecisionPackConsentShare
+from app.db.models import ClanMembership, TrustEvent, TrustSlip, TrustSlipDecisionPackAccess, TrustSlipDecisionPackConsentShare
 
 
 @dataclass(frozen=True)
@@ -708,19 +708,115 @@ def _scrub_private_event_meta(meta: Any) -> dict[str, str]:
     return safe
 
 
-def _private_event_reference(row: TrustEvent, *, slip: TrustSlip) -> dict[str, Any]:
+def _coerce_positive_int(value: Any) -> Optional[int]:
+    try:
+        parsed = int(value)
+    except (TypeError, ValueError):
+        return None
+    return parsed if parsed > 0 else None
+
+
+def _holder_active_community_ids(
+    db: Session,
+    *,
+    holder_user_id: int,
+    primary_clan_id: Any = None,
+) -> set[int]:
+    community_ids: set[int] = set()
+    primary_id = _coerce_positive_int(primary_clan_id)
+    if primary_id is not None:
+        community_ids.add(primary_id)
+
+    rows = (
+        db.query(ClanMembership.clan_id)
+        .filter(ClanMembership.user_id == int(holder_user_id))
+        .filter(ClanMembership.left_at.is_(None))
+        .all()
+    )
+    for row in rows:
+        raw_id = row[0] if isinstance(row, tuple) else getattr(row, "clan_id", None)
+        community_id = _coerce_positive_int(raw_id)
+        if community_id is not None:
+            community_ids.add(community_id)
+
+    return community_ids
+
+
+def _decision_pack_evidence_scope(
+    *,
+    active_community_ids: set[int],
+    primary_clan_id: Any = None,
+) -> dict[str, Any]:
+    primary_id = _coerce_positive_int(primary_clan_id)
+    active_count = len(active_community_ids)
+    reading_scope = "primary_plus_wider" if active_count > 1 else "primary_only"
+    return {
+        "reading_scope": reading_scope,
+        "primary_community_id": primary_id,
+        "included_active_community_count": active_count,
+        "includes_holder_level_records": True,
+        "public_summary": (
+            f"Purpose evidence may include holder records from {active_count} active community contexts."
+            if active_count > 1
+            else "Purpose evidence is currently anchored to the primary community plus holder-level records."
+        ),
+        "boundary": (
+            "This Decision Pack may include records from the holder's active community footprint, "
+            "but it does not mean every community gives the same judgement."
+        ),
+    }
+
+
+def _private_event_scope(
+    row: TrustEvent,
+    *,
+    primary_clan_id: Any = None,
+    active_community_ids: set[int],
+) -> str:
+    row_clan_id = _coerce_positive_int(getattr(row, "clan_id", None))
+    primary_id = _coerce_positive_int(primary_clan_id)
+    if row_clan_id is None:
+        return "holder_record"
+    if primary_id is not None and row_clan_id == primary_id:
+        return "primary_community"
+    if row_clan_id in active_community_ids:
+        return "other_active_community"
+    return "outside_active_community"
+
+
+def _filter_query_to_holder_active_footprint(query: Any, *, active_community_ids: set[int]) -> Any:
+    if active_community_ids:
+        return query.filter((TrustEvent.clan_id.in_(active_community_ids)) | (TrustEvent.clan_id.is_(None)))
+    return query.filter(TrustEvent.clan_id.is_(None))
+
+
+def _private_event_reference(
+    row: TrustEvent,
+    *,
+    slip: TrustSlip,
+    active_community_ids: set[int],
+) -> dict[str, Any]:
     created_at = getattr(row, "created_at", None)
-    same_community = bool(getattr(slip, "clan_id", None)) and getattr(row, "clan_id", None) == getattr(slip, "clan_id", None)
     return {
         "id": int(row.id),
         "label": _private_event_label(getattr(row, "event_type", None)),
         "created_at": created_at.isoformat() if created_at else None,
-        "scope": "same_community" if same_community else "holder_record",
+        "scope": _private_event_scope(
+            row,
+            primary_clan_id=getattr(slip, "clan_id", None),
+            active_community_ids=active_community_ids,
+        ),
         "safe_meta": _scrub_private_event_meta(getattr(row, "meta", None)),
     }
 
 
-def _private_event_category_row(category: str, rows: list[TrustEvent], *, slip: TrustSlip) -> dict[str, Any]:
+def _private_event_category_row(
+    category: str,
+    rows: list[TrustEvent],
+    *,
+    slip: TrustSlip,
+    active_community_ids: set[int],
+) -> dict[str, Any]:
     latest = max((getattr(row, "created_at", None) for row in rows), default=None)
     label = PUBLIC_EVENT_CATEGORY_LABELS.get(category) or SENSITIVE_EVENT_CATEGORY_LABELS.get(category) or "Private evidence category"
     return {
@@ -730,7 +826,10 @@ def _private_event_category_row(category: str, rows: list[TrustEvent], *, slip: 
         "evidence_count": len(rows),
         "latest_at": latest.isoformat() if latest else None,
         "source": "holder_private_trust_events",
-        "event_refs": [_private_event_reference(row, slip=slip) for row in rows[:3]],
+        "event_refs": [
+            _private_event_reference(row, slip=slip, active_community_ids=active_community_ids)
+            for row in rows[:3]
+        ],
         "decision_use": PUBLIC_EVENT_CATEGORY_USES.get(
             category,
             "Use this as holder-side provenance only; share through consented Trust Passport or live confirmation.",
@@ -760,9 +859,15 @@ def build_decision_pack_private_evidence_extract(
         "trust_document_activity",
     )
 
-    query = db.query(TrustEvent).filter(TrustEvent.subject_user_id == int(holder_user_id))
-    if getattr(slip, "clan_id", None):
-        query = query.filter((TrustEvent.clan_id == int(slip.clan_id)) | (TrustEvent.clan_id.is_(None)))
+    active_community_ids = _holder_active_community_ids(
+        db,
+        holder_user_id=int(holder_user_id),
+        primary_clan_id=getattr(slip, "clan_id", None),
+    )
+    query = _filter_query_to_holder_active_footprint(
+        db.query(TrustEvent).filter(TrustEvent.subject_user_id == int(holder_user_id)),
+        active_community_ids=active_community_ids,
+    )
     rows = (
         query.order_by(TrustEvent.created_at.desc(), TrustEvent.id.desc())
         .limit(max(1, min(int(limit or 80), 200)))
@@ -776,7 +881,12 @@ def build_decision_pack_private_evidence_extract(
             grouped[category].append(row)
 
     categories = [
-        _private_event_category_row(category, grouped.get(category, []), slip=slip)
+        _private_event_category_row(
+            category,
+            grouped.get(category, []),
+            slip=slip,
+            active_community_ids=active_community_ids,
+        )
         for category in category_filter
     ]
     return {
@@ -784,6 +894,10 @@ def build_decision_pack_private_evidence_extract(
         "decision_pack": pack_key,
         "access_purpose": context.get("access_purpose") or "Decision Pack",
         "recipient_question": context.get("recipient_question") or "Can I make a better decision with this evidence?",
+        "evidence_scope": _decision_pack_evidence_scope(
+            active_community_ids=active_community_ids,
+            primary_clan_id=getattr(slip, "clan_id", None),
+        ),
         "categories": categories,
         "privacy_note": "Authenticated holder preview only. Event references are provenance pointers for consented review, not a public evidence paper.",
         "boundary_note": "This private preview is not a score, approval, guarantee, payment instruction, dispute disclosure, or public TrustSlip output.",
@@ -814,9 +928,15 @@ def build_decision_pack_evidence_extract(
     public_categories = [category for category in category_filter if category in PUBLIC_EVENT_CATEGORY_LABELS]
     sensitive_categories = [category for category in category_filter if category in SENSITIVE_EVENT_CATEGORY_LABELS]
 
-    query = db.query(TrustEvent).filter(TrustEvent.subject_user_id == int(holder_user_id))
-    if getattr(slip, "clan_id", None):
-        query = query.filter((TrustEvent.clan_id == int(slip.clan_id)) | (TrustEvent.clan_id.is_(None)))
+    active_community_ids = _holder_active_community_ids(
+        db,
+        holder_user_id=int(holder_user_id),
+        primary_clan_id=getattr(slip, "clan_id", None),
+    )
+    query = _filter_query_to_holder_active_footprint(
+        db.query(TrustEvent).filter(TrustEvent.subject_user_id == int(holder_user_id)),
+        active_community_ids=active_community_ids,
+    )
     rows = (
         query.order_by(TrustEvent.created_at.desc(), TrustEvent.id.desc())
         .limit(max(1, min(int(limit or 250), 500)))
@@ -833,6 +953,10 @@ def build_decision_pack_evidence_extract(
     return {
         "source": "trust_events_redacted_extract",
         "source_note": "Aggregated from TrustEvent categories only. Raw TrustEvents, actor details, notes, metadata, payment references, and private contacts are not exposed publicly.",
+        "evidence_scope": _decision_pack_evidence_scope(
+            active_community_ids=active_community_ids,
+            primary_clan_id=getattr(slip, "clan_id", None),
+        ),
         "categories": categories,
         "private_review_required": [
             {
