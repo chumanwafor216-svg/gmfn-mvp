@@ -805,17 +805,17 @@ export default function CommunityConfirmationOutcomePage() {
   );
   const outcomeConfidenceRibbonItems: TrustDocumentRibbonItem[] = [
     {
-      label: "Outcome status",
+      label: "Outcome now",
       value: labelize(status),
       tone: outcomeStatusTone,
     },
     {
-      label: "Response window",
+      label: "Can people still respond?",
       value: liveWindowOpen ? "Live" : status === "expired" ? "Expired" : "Closed or waiting",
       tone: responseWindowTone,
     },
     {
-      label: "Response evidence",
+      label: "Community responses",
       value:
         requestsSent > 0
           ? `${responsesReceived} of ${requestsSent} contacts`
@@ -824,12 +824,12 @@ export default function CommunityConfirmationOutcomePage() {
       detail: "Requested contacts only",
     },
     {
-      label: "Privacy boundary",
+      label: "Contacts private",
       value: response.private_contacts_exposed ? "Check privacy" : "Contacts hidden",
       tone: response.private_contacts_exposed ? "warn" : "good",
     },
     {
-      label: "Verification path",
+      label: "Check path",
       value: verificationPathValue,
       tone: memberCredentialPath ? "good" : "info",
     },
@@ -859,7 +859,7 @@ export default function CommunityConfirmationOutcomePage() {
       tone: "info",
     },
     {
-      title: "Your decision boundary",
+      title: "What this cannot decide",
       detail:
         "Use this as community response evidence beside current TrustSlip, member credential, and community record where available.",
       tone: "info",
@@ -1336,15 +1336,15 @@ export default function CommunityConfirmationOutcomePage() {
             ) : outcome ? (
               <>
                 <TrustDocumentDisclosureSection
-                  title="Outcome signals"
-                  summary="Open for the full status, response-window, evidence, privacy, and verification signal checks."
+                  title="Outcome check"
+                  summary="Open for status, response window, community responses, privacy, and check path."
                 >
                   <TrustDocumentConfidenceRibbon items={outcomeConfidenceRibbonItems} />
                 </TrustDocumentDisclosureSection>
 
                 <TrustDocumentDisclosureSection
-                  title="Outcome security and limits"
-                  summary="Open for what this outcome confirms, limits, security, and record reference."
+                  title="Audit Details"
+                  summary="Open for what this outcome confirms, what it cannot prove, security, and record reference."
                 >
                   <section
                     data-gsn-trust-document-certificate="community-confirmation-outcome"
@@ -1482,7 +1482,7 @@ export default function CommunityConfirmationOutcomePage() {
 
                 <section
                   data-gsn-community-confirmation-outcome-fast-reading="true"
-                  aria-label="Fast outcome reading"
+                  aria-label="Decision Summary"
                   style={{
                     ...sectionCard("#FFFFFF"),
                     display: "grid",
@@ -1501,7 +1501,7 @@ export default function CommunityConfirmationOutcomePage() {
                     {outcomeIconBadge("shield", 38, "blue")}
                     <div style={{ minWidth: 0, display: "grid", gap: 3 }}>
                       <h2 style={{ ...sectionTitle(), fontSize: 21 }}>
-                        Fast outcome reading
+                        Decision Summary
                       </h2>
                       <p style={{ ...helperText(), lineHeight: 1.36 }}>
                         Use this first. Open the full outcome sections only when you need the
@@ -1693,7 +1693,7 @@ export default function CommunityConfirmationOutcomePage() {
                 </section>
 
                 <TrustDocumentDisclosureSection
-                  title="Full outcome reading"
+                  title="Outcome evidence details"
                   summary="Open for the simple reading, privacy boundary, decision note, return channel, QR, and screenshot security detail."
                 >
                 <section
@@ -1845,7 +1845,7 @@ export default function CommunityConfirmationOutcomePage() {
                 </TrustDocumentDisclosureSection>
 
                 <TrustDocumentDisclosureSection
-                  title="Decision boundaries"
+                  title="What this cannot decide"
                   summary="Open for when this public outcome may help and what it must never be treated as."
                 >
                 <section

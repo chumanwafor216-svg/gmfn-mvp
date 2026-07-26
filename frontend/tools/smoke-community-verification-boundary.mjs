@@ -680,7 +680,7 @@ async function runConfirmationOutcomeScenario(browser, baseURL) {
   await expect(state.page.getByText("This outcome does not confirm", { exact: true })).toHaveCount(1);
   await expect(
     state.page
-      .locator('section[aria-label="Fast outcome reading"]')
+      .locator('section[aria-label="Decision Summary"]')
       .getByText("Private contacts stay hidden.")
   ).toBeVisible();
 

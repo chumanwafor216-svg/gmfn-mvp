@@ -1273,7 +1273,7 @@ assertContains(
 );
 assertContains(
   "communityConfirmationOutcome",
-  /TrustDocumentConfidenceRibbon[\s\S]*?outcomeConfidenceRibbonItems[\s\S]*?Outcome status[\s\S]*?Response window[\s\S]*?Response evidence[\s\S]*?Privacy boundary[\s\S]*?Verification path/,
+  /TrustDocumentConfidenceRibbon[\s\S]*?outcomeConfidenceRibbonItems[\s\S]*?Outcome now[\s\S]*?Can people still respond\?[\s\S]*?Community responses[\s\S]*?Contacts private[\s\S]*?Check path/,
   "Public Community Confirmation Outcome must carry the Trust Document Language confidence ribbon."
 );
 assertContains(
@@ -1283,7 +1283,7 @@ assertContains(
 );
 assertContains(
   "communityConfirmationOutcome",
-  /TrustDocumentDisclosureSection[\s\S]*?title="Outcome security and limits"[\s\S]*?Open for what this outcome confirms, limits, security, and record reference\.[\s\S]*?data-gsn-community-confirmation-outcome-security-limits="true"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?TrustDocumentSecurityPanel[\s\S]*?TrustDocumentFingerprint/,
+  /TrustDocumentDisclosureSection[\s\S]*?title="Audit Details"[\s\S]*?Open for what this outcome confirms, what it cannot prove, security, and record reference\.[\s\S]*?data-gsn-community-confirmation-outcome-security-limits="true"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?TrustDocumentSecurityPanel[\s\S]*?TrustDocumentFingerprint/,
   "Public Community Confirmation Outcome must keep security, limits, and record-reference detail collapsed behind one disclosure."
 );
 assertContains(

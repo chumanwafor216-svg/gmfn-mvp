@@ -1,3 +1,47 @@
+## CURRENT LOCAL STATE - 2026-07-26 - Public confirmation outcome wording tightened
+
+Owner trigger:
+- Owner selected `1` after the Public Member Credential / Community Verification wording pass.
+
+Unabated truth:
+- Runtime frontend code changed for the public Community Confirmation Outcome paper only.
+- This pass is label/disclosure wording only. It does not change response counts, privacy filtering, signed-in decision evidence reads, public API payloads, backend routes, schemas, or permissions.
+- This covers the closest existing surface to the requested Member Witness Confirmation Record. It still does not complete Community Domain Credential/Verification Paper, merchant/release evidence, TrustTimeline, or holder-side TrustSlip copy.
+
+Changed:
+- `frontend/src/pages/CommunityConfirmationOutcomePage.tsx`
+  - Renamed ribbon labels from `Outcome status`, `Response window`, `Response evidence`, `Privacy boundary`, and `Verification path` to `Outcome now`, `Can people still respond?`, `Community responses`, `Contacts private`, and `Check path`.
+  - Renamed `Outcome signals` to `Outcome check`.
+  - Renamed the top quick-read panel from `Fast outcome reading` to `Decision Summary` and updated its aria label.
+  - Renamed `Outcome security and limits` to `Audit Details`.
+  - Renamed `Full outcome reading` to `Outcome evidence details`.
+  - Renamed `Decision boundaries` / `Your decision boundary` surfaces to `What this cannot decide`.
+- `frontend/tools/audit-community-confirmation-outcome-boundary.mjs`
+- `frontend/tools/audit-trust-actions.mjs`
+- `frontend/tools/audit-institutional-proof-surfaces.mjs`
+- `frontend/tools/smoke-community-confirmation-outcome-boundary.mjs`
+- `frontend/tools/smoke-community-verification-boundary.mjs`
+  - Updated audit/smoke contracts for the new public confirmation outcome labels.
+
+Routes/screens affected:
+- Public Community Confirmation Outcome: `/community-confirmations/public/:token`.
+- No backend route changed.
+
+Verification:
+- Passed `npm --prefix frontend run audit:community-confirmation-outcome-boundary`.
+- Passed `npm --prefix frontend run audit:trust-actions`.
+- Passed `node frontend\tools\audit-institutional-proof-surfaces.mjs`.
+- Passed `npm --prefix frontend run audit:protected-button-freeze`.
+- Passed `npm --prefix frontend run smoke:community-confirmation-outcome-boundary` with escalation after sandbox `spawn EPERM`.
+- Passed `npm --prefix frontend run smoke:community-verification-boundary` with escalation after sandbox `spawn EPERM`.
+- Passed `npm --prefix frontend run build`.
+- Passed `git diff --check`; Git still reports normal LF-to-CRLF working-copy warnings on touched files.
+
+Deployment:
+- Local runtime/docs change only at this point. Not pushed or deployed until owner selects `2` or explicitly says push/deploy.
+
+Recommended next step:
+- Continue with Community Domain Credential/Verification Paper and then a real phone visual pass across TrustSlip Verify, Member Credential, Community Verification, and Confirmation Outcome.
 ## CURRENT LOCAL STATE - 2026-07-26 - Public member/community verification wording tightened
 
 Owner trigger:

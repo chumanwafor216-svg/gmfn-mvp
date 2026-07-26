@@ -207,7 +207,7 @@ async function runScenario(browser, baseURL, { signedIn }) {
   });
   await expect(page.getByText("This outcome confirms", { exact: true })).toHaveCount(1);
   await expect(page.getByText("This outcome does not confirm", { exact: true })).toHaveCount(1);
-  const fastReading = page.locator('section[aria-label="Fast outcome reading"]');
+  const fastReading = page.locator('section[aria-label="Decision Summary"]');
   await expect(fastReading.getByText("Private contacts stay hidden.")).toBeVisible();
   await expect(
     fastReading.getByText("not a guarantee, payment instruction, or automatic approval")

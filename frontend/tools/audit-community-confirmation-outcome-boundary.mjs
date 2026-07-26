@@ -135,7 +135,7 @@ assertContains(
 
 assertContains(
   "outcome",
-  /import CommunityProofPanel from "\.\.\/components\/CommunityProofPanel";[\s\S]*?const confirmationProofResponseLabel = requestsSent > 0[\s\S]*?requested contacts responded[\s\S]*?const confirmationProofCurrentnessLabel = liveWindowOpen[\s\S]*?const confirmationProofIdentityLabel = firstTruthy[\s\S]*?Fast outcome reading[\s\S]*?<CommunityProofPanel[\s\S]*?title="Community evidence behind this outcome"[\s\S]*?memberWitnessLabel="Confirmation response"[\s\S]*?not a whole-community vote or separate member-witness credential count[\s\S]*?membershipCurrentnessScope=\{[\s\S]*?responseCountScope[\s\S]*?privacyLimitText[\s\S]*?trustSlipStatusLabel=\{decisionNoteText\}[\s\S]*?Who is being confirmed\?/,
+  /import CommunityProofPanel from "\.\.\/components\/CommunityProofPanel";[\s\S]*?const confirmationProofResponseLabel = requestsSent > 0[\s\S]*?requested contacts responded[\s\S]*?const confirmationProofCurrentnessLabel = liveWindowOpen[\s\S]*?const confirmationProofIdentityLabel = firstTruthy[\s\S]*?Decision Summary[\s\S]*?<CommunityProofPanel[\s\S]*?title="Community evidence behind this outcome"[\s\S]*?memberWitnessLabel="Confirmation response"[\s\S]*?not a whole-community vote or separate member-witness credential count[\s\S]*?membershipCurrentnessScope=\{[\s\S]*?responseCountScope[\s\S]*?privacyLimitText[\s\S]*?trustSlipStatusLabel=\{decisionNoteText\}[\s\S]*?Who is being confirmed\?/,
   "Community Confirmation Outcome must render shared proof after fast reading and before identity details."
 );
 

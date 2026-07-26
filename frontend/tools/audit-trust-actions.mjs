@@ -780,13 +780,13 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityConfirmationOutcomePage.tsx",
-  /TrustDocumentConfidenceRibbon[\s\S]*?outcomeConfidenceRibbonItems[\s\S]*?Outcome status[\s\S]*?Response window[\s\S]*?Response evidence[\s\S]*?Privacy boundary[\s\S]*?Verification path/,
+  /TrustDocumentConfidenceRibbon[\s\S]*?outcomeConfidenceRibbonItems[\s\S]*?Outcome now[\s\S]*?Can people still respond\?[\s\S]*?Community responses[\s\S]*?Contacts private[\s\S]*?Check path/,
   "Public Community Confirmation Outcome must retain the Trust Document Language confidence ribbon."
 );
 
 assertContains(
   "src/pages/CommunityConfirmationOutcomePage.tsx",
-  /TrustDocumentDisclosureSection[\s\S]*?title="Outcome signals"[\s\S]*?TrustDocumentConfidenceRibbon[\s\S]*?data-gsn-community-confirmation-outcome-fast-reading="true"[\s\S]*?Fast outcome reading[\s\S]*?What this shows[\s\S]*?What it does not mean[\s\S]*?Next safe action[\s\S]*?Public actions[\s\S]*?TrustDocumentDisclosureSection[\s\S]*?title="Full outcome reading"[\s\S]*?TrustDocumentDisclosureSection[\s\S]*?title="Decision boundaries"/,
+  /TrustDocumentDisclosureSection[\s\S]*?title="Outcome check"[\s\S]*?TrustDocumentConfidenceRibbon[\s\S]*?data-gsn-community-confirmation-outcome-fast-reading="true"[\s\S]*?Decision Summary[\s\S]*?What this shows[\s\S]*?What it does not mean[\s\S]*?Next safe action[\s\S]*?Public actions[\s\S]*?TrustDocumentDisclosureSection[\s\S]*?title="Outcome evidence details"[\s\S]*?TrustDocumentDisclosureSection[\s\S]*?title="What this cannot decide"/,
   "Public Community Confirmation Outcome must show a fast decision reading before collapsed full outcome and decision-boundary details."
 );
 
@@ -798,7 +798,7 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityConfirmationOutcomePage.tsx",
-  /TrustDocumentDisclosureSection[\s\S]*?title="Outcome security and limits"[\s\S]*?Open for what this outcome confirms, limits, security, and record reference\.[\s\S]*?data-gsn-community-confirmation-outcome-security-limits="true"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?TrustDocumentSecurityPanel[\s\S]*?TrustDocumentFingerprint/,
+  /TrustDocumentDisclosureSection[\s\S]*?title="Audit Details"[\s\S]*?Open for what this outcome confirms, what it cannot prove, security, and record reference\.[\s\S]*?data-gsn-community-confirmation-outcome-security-limits="true"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?TrustDocumentSecurityPanel[\s\S]*?TrustDocumentFingerprint/,
   "Public Community Confirmation Outcome must keep security, limits, and record-reference detail collapsed behind one disclosure."
 );
 
@@ -816,7 +816,7 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityConfirmationOutcomePage.tsx",
-  /title: "Your decision boundary"[\s\S]*?Use this as community response evidence beside current TrustSlip, member credential, and community record where available[\s\S]*?label="Your decision note"[\s\S]*?title="Use as evidence"/,
+  /title: "What this cannot decide"[\s\S]*?Use this as community response evidence beside current TrustSlip, member credential, and community record where available[\s\S]*?label="Your decision note"[\s\S]*?title="Use as evidence"/,
   "Public Community Confirmation Outcome must use direct user decision language instead of reader-facing document-author wording."
 );
 
