@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import ExplainToggle from "../components/ExplainToggle";
+import CommunityProofPanel from "../components/CommunityProofPanel";
 import PageTopNav from "../components/PageTopNav";
 import {
   PrimaryButton,
@@ -570,6 +571,18 @@ function subjectName(row: ConfirmationRow): string {
   );
 }
 
+function requestWindowLabel(row: ConfirmationRow): string {
+  const raw = safeStr(row.expiresAt);
+  if (!raw) return "Expiry not shown";
+  const expiry = new Date(raw);
+  if (!Number.isFinite(expiry.getTime())) return "Check expiry";
+  return expiry.getTime() > Date.now() ? "Response window open" : "Response window expired";
+}
+
+function requestWindowScope(row: ConfirmationRow): string {
+  return `${safeDateTime(row.createdAt)} to ${safeDateTime(row.expiresAt)}. Answer only from what you personally know for this request.`;
+}
+
 function reviewStatusLabel(row: ReviewCaseRow): string {
   const status = safeStr(row.status).replace(/_/g, " ");
   return status ? status[0].toUpperCase() + status.slice(1) : "Review case";
@@ -622,7 +635,7 @@ function buildReviewCasePaper(row: ReviewCaseRow): string {
     privacyNote:
       "Privacy: private contacts, responder notes, phone numbers, and protected witness details are not included in this copied review paper.",
     limitationNote:
-      "Limitation: protected review coordination only. Not a bank guarantee, credit approval, release authority, payout approval, or proof that every underlying claim is true.",
+      "Limitation: protected review coordination only. Not a bank guarantee, credit approval, release authority, payout approval, or confirmation that every underlying claim is true.",
   });
 }
 
@@ -717,21 +730,18 @@ function CommunityConfirmationInboxPage() {
   const pendingCount = rows.length;
   const instantCount = rows.filter((row) => row.mode === "instant_pulse").length;
   const relayCount = rows.filter((row) => row.mode !== "instant_pulse").length;
+  const isRequestFocusMode = Boolean(focusedRequestId);
+  const isReviewCaseFocusMode = Boolean(focusedReviewCaseId);
   const focusedRows = useMemo(() => {
     if (!focusedRequestId) return rows;
-    return [...rows].sort((a, b) => {
-      const aMatch = a.id === focusedRequestId ? 0 : 1;
-      const bMatch = b.id === focusedRequestId ? 0 : 1;
-      return aMatch - bMatch;
-    });
+    return rows.filter((row) => row.id === focusedRequestId);
   }, [focusedRequestId, rows]);
+  const focusedRequestMissing = Boolean(
+    focusedRequestId && !loading && focusedRows.length === 0
+  );
   const visibleReviewCases = useMemo(() => {
     if (!focusedReviewCaseId) return reviewCases;
-    return [...reviewCases].sort((a, b) => {
-      const aMatch = a.reviewCaseId === focusedReviewCaseId ? 0 : 1;
-      const bMatch = b.reviewCaseId === focusedReviewCaseId ? 0 : 1;
-      return aMatch - bMatch;
-    });
+    return reviewCases.filter((row) => row.reviewCaseId === focusedReviewCaseId);
   }, [focusedReviewCaseId, reviewCases]);
   const reviewCaseCount = reviewCases.length;
   const visibleReviewCaseCount = visibleReviewCases.length;
@@ -1428,7 +1438,17 @@ function CommunityConfirmationInboxPage() {
         </div>
       </section>
 
-      <details style={{ marginTop: 14, ...softCard("#FFFFFF") }} open={!isCompact && reviewCaseCount > 0}>
+      {isRequestFocusMode ? (
+        <section style={{ marginTop: 14, ...softCard("#FFF8E6") }}>
+          <div style={sectionLabel()}>{sectionLabelWithIcon("navigation", "Opened from notification")}</div>
+          <div style={{ marginTop: 6, ...helperText(), color: "#07172C", fontWeight: 850 }}>
+            GSN is showing only the confirmation request from the alert so you can answer without searching the full inbox.
+          </div>
+        </section>
+      ) : null}
+
+      {!isRequestFocusMode ? (
+      <details style={{ marginTop: 14, ...softCard("#FFFFFF") }} open={!isCompact && (isReviewCaseFocusMode || reviewCaseCount > 0)}>
         <StableDisclosureSummary
           debugId="community-confirmation-inbox.review-cases.toggle"
           stableHeight={56}
@@ -2375,7 +2395,9 @@ function CommunityConfirmationInboxPage() {
           )}
         </div>
       </details>
+      ) : null}
 
+      {!isRequestFocusMode ? (
       <section style={{ marginTop: 14, ...softCard("#FFFFFF") }}>
         <div
           style={{
@@ -2518,11 +2540,21 @@ function CommunityConfirmationInboxPage() {
           )}
         </div>
       </section>
+      ) : null}
 
       <section style={{ marginTop: 14, display: "grid", gap: 12 }}>
         {loading ? (
           <div style={innerCard("#FFFFFF")}>
             <div style={{ color: "#07172C", fontWeight: 1000 }}>Loading community confirmation requests...</div>
+          </div>
+        ) : focusedRequestMissing ? (
+          <div style={innerCard("#FFF8E6")}>
+            <div style={{ color: "#07172C", fontSize: 20, fontWeight: 1000 }}>
+              This notification is no longer waiting for your answer.
+            </div>
+            <p style={{ margin: "8px 0 0", ...helperText() }}>
+              It may already be answered, expired, or moved into review. Refresh the inbox if you need the latest queue.
+            </p>
           </div>
         ) : rows.length === 0 ? (
           <div style={innerCard("#FFFFFF")}>
@@ -2536,6 +2568,15 @@ function CommunityConfirmationInboxPage() {
         ) : (
           focusedRows.map((row) => {
             const counts = row.currentResponseCounts || {};
+            const positiveCount = Number(counts.positive_count || 0);
+            const cautionCount = Number(counts.caution_count || 0);
+            const objectionCount = Number(counts.objection_count || 0);
+            const currentResponseTotal = positiveCount + cautionCount + objectionCount;
+            const subjectRole = firstTruthy(
+              row.subjectProfile?.membership_role,
+              row.subjectProfile?.membership_status,
+              "Member"
+            );
             const isFocusedRequest = focusedRequestId === row.id;
             return (
               <article
@@ -2627,9 +2668,26 @@ function CommunityConfirmationInboxPage() {
                       <span>Created: {safeDateTime(row.createdAt)}</span>
                       <span>Expires: {safeDateTime(row.expiresAt)}</span>
                       <span>
-                        Current aggregate: {counts.positive_count || 0} positive, {counts.caution_count || 0} caution, {counts.objection_count || 0} objection
+                        Current aggregate: {positiveCount} positive, {cautionCount} caution, {objectionCount} objection
                       </span>
                     </div>
+                    <CommunityProofPanel
+                      title="Before you answer"
+                      subtitle="Your response is personal community evidence for this request, not a vote or approval."
+                      compact
+                      communityName={firstTruthy(row.communityName, row.communityId, "Community not shown")}
+                      holderRole={subjectRole}
+                      identityLabel={firstTruthy(row.subjectProfile?.gmfn_id, "GSN ID not shown")}
+                      memberWitnessLabel="Your witness response"
+                      memberWitnessCount={currentResponseTotal}
+                      memberWitnessDetail={`Current aggregate: ${positiveCount} positive, ${cautionCount} caution, ${objectionCount} objection. Your answer adds what you personally know; it is not a whole-community vote.`}
+                      membershipStrengthLabel={row.readerNote || "Answer only if you genuinely know"}
+                      membershipCurrentnessLabel={requestWindowLabel(row)}
+                      membershipCurrentnessScope={requestWindowScope(row)}
+                      communityActivityLabel={reasonLabel(row.reasonType)}
+                      trustSlipStatusLabel="This response is evidence for judgement, not parent community certification, payment approval, credit approval, or release authority"
+                      style={{ marginTop: 12 }}
+                    />
                     <div style={{ marginTop: 12, ...innerCard("#F8FBFF") }}>
                       <label
                         htmlFor={`community-confirmation-note-${row.id}`}

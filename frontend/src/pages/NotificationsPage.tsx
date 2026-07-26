@@ -293,16 +293,69 @@ function policyTargetForCommunityVerificationRequest(target: string): string {
   return `${NOTIFICATION_TARGETS.COMMUNITY_CONFIRMATION_POLICY}${suffix}`;
 }
 
+function isCommunityConfirmationOutcomeNotice(raw: any): boolean {
+  const kind = safeStr(raw?.kind).toLowerCase();
+  return (
+    kind === "community_confirmation.outcome_updated" ||
+    kind === "community_confirmation.request_expired"
+  );
+}
+
+function trustPassportNotificationTarget(target: string, raw: any): string {
+  const normalizedTarget = normalizeActionTargetPath(target);
+  const { path, suffix } = splitPathSuffix(normalizedTarget);
+
+  if (path !== NOTIFICATION_TARGETS.TRUST) {
+    return normalizedTarget;
+  }
+
+  const parsed = new URL(`${path}${suffix}`, "http://local");
+  if (!parsed.searchParams.has("focus")) {
+    const text = rawNotificationText(raw);
+    parsed.searchParams.set(
+      "focus",
+      containsAny(text, ["repair", "weaken", "weakened", "pressure", "follow-up"])
+        ? "repair"
+        : "evidence"
+    );
+  }
+  return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+}
+
+function communityConfirmationOutcomeDecisionTarget(target: string): string {
+  const normalizedTarget = normalizeActionTargetPath(target);
+  const { path, suffix } = splitPathSuffix(normalizedTarget);
+
+  if (!/^\/community-confirmations\/public\/[^/?#]+$/.test(path)) {
+    return normalizedTarget;
+  }
+
+  const parsed = new URL(`${path}${suffix}`, "http://local");
+  if (!parsed.searchParams.has("focus")) {
+    parsed.searchParams.set("focus", "decision");
+  }
+  return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+}
+
 function resolveNoticeTarget(raw: any): string {
+  const kind = safeStr(raw?.kind).toLowerCase();
   const explicit = normalizeActionTargetPath(
     raw?.action_url || raw?.cta_to || raw?.ctaTo || raw?.to
   );
   if (explicit && explicit !== NOTIFICATION_TARGETS.NOTIFICATIONS) {
     if (
-      safeStr(raw?.kind).toLowerCase() === "community_verification.request_confirmation" &&
+      kind === "community_verification.request_confirmation" &&
       splitPathSuffix(explicit).path === NOTIFICATION_TARGETS.COMMUNITY_CONFIRMATION_INBOX
     ) {
       return policyTargetForCommunityVerificationRequest(explicit);
+    }
+
+    if (isCommunityConfirmationOutcomeNotice(raw)) {
+      return communityConfirmationOutcomeDecisionTarget(explicit);
+    }
+
+    if (splitPathSuffix(explicit).path === NOTIFICATION_TARGETS.TRUST) {
+      return trustPassportNotificationTarget(explicit, raw);
     }
 
     const explicitText = rawNotificationText(raw);
@@ -441,11 +494,27 @@ function normalizeNotificationCtaLabel(
     return "Open Demand Box";
   }
 
+  if (targetPath === NOTIFICATION_TARGETS.TRUST && normalizedTarget.includes("focus=repair")) {
+    return "Open trust repair";
+  }
+
+  if (targetPath === NOTIFICATION_TARGETS.TRUST && normalizedTarget.includes("focus=evidence")) {
+    return "Open trust evidence";
+  }
+
   if (
     targetPath === NOTIFICATION_TARGETS.COMMUNITY_CONFIRMATION_INBOX &&
     (genericLabel || /^(respond|respond now|review request|open request)$/i.test(direct))
   ) {
     return "Respond";
+  }
+
+  if (
+    /^\/community-confirmations\/public\/[^/]+$/.test(targetPath) &&
+    normalizedTarget.includes("focus=decision") &&
+    (genericLabel || /^(open result|open expired result|view result)$/i.test(direct))
+  ) {
+    return "Record decision";
   }
 
   if (
@@ -1025,7 +1094,7 @@ export default function NotificationsPage() {
           safeStr(onboardingTrustNotice.detail) ||
           "Your starter trust record was saved and your trust page is ready to review.",
         ctaLabel: safeStr(onboardingTrustNotice.ctaLabel) || "Open Trust Passport",
-        ctaTo: safeStr(onboardingTrustNotice.ctaTo) || NOTIFICATION_TARGETS.TRUST,
+        ctaTo: trustPassportNotificationTarget(safeStr(onboardingTrustNotice.ctaTo) || NOTIFICATION_TARGETS.TRUST, onboardingTrustNotice),
         bucket: "actNow" as GuidanceInboxBucketKey,
         unread: Boolean(onboardingTrustNotice.unread),
       });
@@ -1085,18 +1154,18 @@ export default function NotificationsPage() {
 
   async function handlePrimaryNoticeAction(notice: GuidanceNotice) {
     const normalizedNotice = normalizeGuidanceNotice(notice);
-
-    if (safeStr(normalizedNotice.id)) {
-      void markAsRead(safeStr(normalizedNotice.id));
-    }
+    const noticeId = safeStr(normalizedNotice.id);
 
     if (settings.openActionsDirectly) {
-      setActionNotice({
-        tone: "info",
-        text: `Opening ${normalizedNotice.ctaLabel || "the next page"} now.`,
-      });
+      if (/^\d+$/.test(noticeId)) {
+        void markNotificationRead(Number(noticeId)).catch(() => null);
+      }
       navigateWithOrigin(navigate, normalizedNotice.ctaTo, location);
       return;
+    }
+
+    if (noticeId) {
+      void markAsRead(noticeId);
     }
 
     setSelectedNotice(normalizedNotice);

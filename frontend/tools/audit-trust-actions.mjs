@@ -1027,7 +1027,7 @@ assertNotContains(
 
 assertContains(
   "src/pages/CommunityMemberVerifyPage.tsx",
-  /const trustReadingScope = firstTruthy\([\s\S]*?active membership, witness strength, renewal status, and broad community activity together[\s\S]*?not a universal trust score, guarantee, credit approval, or transaction permission/,
+  /const trustReadingScope = firstTruthy\([\s\S]*?active membership, witness strength, renewal status, and broad community activity together[\s\S]*?not a universal person label, guarantee, credit approval, or transaction permission/,
   "Community member public credential must read the member trust picture as community-scoped evidence, not a universal score or approval."
 );
 
@@ -1351,14 +1351,20 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityConfirmationPolicyPage.tsx",
-  /sectionLabel=\{memberWitnessFocus \? "GSN" : "Community confirmation"\}[\s\S]*?title=\{memberWitnessFocus \? "Workspace" : "Instant Confirmation Policy"\}[\s\S]*?memberWitnessFocus && memberWitnessRequest && canShareMemberWitnessRequest[\s\S]*?<WitnessCodePackage[\s\S]*?memberWitnessFocus \? \([\s\S]*?<WitnessAfterResponseCard[\s\S]*?: \([\s\S]*?Current witness strength/,
-  "Community confirmation policy focused member-witness Workspace must use the compact code package plus after-response card instead of exposing the witness-strength workbench first."
+  /sectionLabel=\{memberWitnessFocus \|\| verificationRequestFocus \? "GSN evidence" : "Community confirmation"\}[\s\S]*?title=\{memberWitnessFocus \? "Member Witness" : verificationRequestFocus \? "Verification Request" : "Instant Confirmation Policy"\}[\s\S]*?memberWitnessFocus && memberWitnessRequest && canShareMemberWitnessRequest[\s\S]*?<WitnessCodePackage[\s\S]*?memberWitnessFocus \? \([\s\S]*?<WitnessAfterResponseCard[\s\S]*?: \([\s\S]*?Current witness strength/,
+  "Community confirmation policy focused Member Witness page must use the compact code package plus after-response card instead of exposing the witness-strength workbench first."
+);
+
+assertContains(
+  "src/pages/CommunityConfirmationPolicyPage.tsx",
+  /import CommunityProofPanel from "\.\.\/components\/CommunityProofPanel";[\s\S]*?Witness request review[\s\S]*?<CommunityProofPanel[\s\S]*?title="Before you record witness"[\s\S]*?one member's community witness response[\s\S]*?memberWitnessLabel="Assigned witness"[\s\S]*?Record only what you personally know; this is not a whole-community vote\.[\s\S]*?membershipCurrentnessLabel=\{expiryWindowLabel\(memberWitnessRequest\.expiresAt\)\}[\s\S]*?trustSlipStatusLabel="This response is evidence for judgement, not parent community certification, payment approval, credit approval, or release authority"[\s\S]*?One-time witness response code[\s\S]*?Record witness/,
+  "Community confirmation policy focused Member Witness response must show evidence/currentness boundaries before code entry and answer actions."
 );
 
 assertContains(
   "src/pages/CommunityConfirmationPolicyPage.tsx",
   /display: memberWitnessFocus \? "none" : undefined,[\s\S]*?Eligible response pool[\s\S]*?display: memberWitnessFocus \? "none" : undefined,[\s\S]*?Privacy rule/,
-  "Community confirmation policy must keep Eligible response pool and Privacy rule outside the focused member-witness Workspace."
+  "Community confirmation policy must keep Eligible response pool and Privacy rule outside the focused member-witness page."
 );
 
 assertContains(
@@ -2298,6 +2304,12 @@ assertContains(
   "src/pages/CommunityConfirmationInboxPage.tsx",
   /debugId=\{`community-confirmation-inbox\.review-cases\.\$\{row\.reviewCaseId\}\.assignment-claim`\}[\s\S]*?debugId=\{`community-confirmation-inbox\.review-cases\.\$\{row\.reviewCaseId\}\.assignment-release`\}[\s\S]*?debugId=\{`community-confirmation-inbox\.review-cases\.\$\{row\.reviewCaseId\}\.assignment-manual`\}/,
   "Community confirmation review assignment actions must stay separately traceable."
+);
+
+assertContains(
+  "src/pages/CommunityConfirmationInboxPage.tsx",
+  /import CommunityProofPanel from "\.\.\/components\/CommunityProofPanel";[\s\S]*?function requestWindowLabel\(row: ConfirmationRow\)[\s\S]*?function requestWindowScope\(row: ConfirmationRow\)[\s\S]*?const isRequestFocusMode = Boolean\(focusedRequestId\);[\s\S]*?return rows\.filter\(\(row\) => row\.id === focusedRequestId\);[\s\S]*?focusedRequestMissing[\s\S]*?Opened from notification[\s\S]*?!isRequestFocusMode \? \([\s\S]*?Review cases[\s\S]*?!isRequestFocusMode \? \([\s\S]*?Relay availability[\s\S]*?This notification is no longer waiting for your answer[\s\S]*?const currentResponseTotal = positiveCount \+ cautionCount \+ objectionCount[\s\S]*?title="Before you answer"[\s\S]*?not a vote or approval[\s\S]*?memberWitnessLabel="Your witness response"[\s\S]*?it is not a whole-community vote[\s\S]*?trustSlipStatusLabel="This response is evidence for judgement, not parent community certification, payment approval, credit approval, or release authority"[\s\S]*?Private context for GSN review/,
+  "Community confirmation inbox request rows must show focused responder evidence boundary before private notes and answer actions."
 );
 
 assertContains(

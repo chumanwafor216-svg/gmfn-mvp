@@ -7,6 +7,8 @@ import { fileURLToPath } from "node:url";
 const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const files = {
   trust: "src/pages/TrustScorePage.tsx",
+  communityProofPanel: "src/components/CommunityProofPanel.tsx",
+  communityProof: "src/lib/communityProof.ts",
   package: "package.json",
   protocol: "../docs/GUIDED_WORK_SURFACE_PROTOCOL.md",
 };
@@ -49,6 +51,24 @@ assertContains(
   "trust",
   /activeTrustPassportLane === "community" \? "block" : "none"[\s\S]*?Community Confirmation[\s\S]*?Can this trust story be tied to a real community\?/,
   "Community Confirmation lane must open with a plain-language lead gated to the community lane."
+);
+
+assertContains(
+  "trust",
+  /import CommunityProofPanel from "\.\.\/components\/CommunityProofPanel";[\s\S]*?const communityMemberWitnessCount = firstTruthy\([\s\S]*?member_witness_count[\s\S]*?const communityMembershipStrengthLabel = firstTruthy\([\s\S]*?membership_strength_label[\s\S]*?Community Confirmation[\s\S]*?Community evidence before trust reading[\s\S]*?before relying on this reading[\s\S]*?memberWitnessCount=\{communityMemberWitnessCount\}[\s\S]*?membershipStrengthLabel=\{communityMembershipStrengthLabel\}[\s\S]*?trustSlipStatusLabel=\{passportVm\.outputs\.trustSlipStatus\}[\s\S]*?communityConfirmationCards\.map/,
+  "Community Confirmation lane must place community proof before rank/score readiness cards."
+);
+
+assertContains(
+  "communityProofPanel",
+  /buildCommunityProofItems\(input\)[\s\S]*?data-gsn-community-proof-layer="true"[\s\S]*?data-gsn-community-proof-item=\{item\.key\}/,
+  "Community Proof panel must keep stable markers and render the shared proof item model."
+);
+
+assertContains(
+  "communityProof",
+  /Known by community[\s\S]*?Member witness[\s\S]*?Evidence currentness[\s\S]*?Decision boundary[\s\S]*?Evidence for judgement[\s\S]*?not government ID, payment approval, credit approval, or a guarantee of future behaviour/,
+  "Community Proof decision boundary must remain evidence-for-judgement, not rank authority."
 );
 
 assertContains(

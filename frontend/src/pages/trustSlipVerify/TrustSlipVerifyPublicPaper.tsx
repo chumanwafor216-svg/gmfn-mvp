@@ -824,7 +824,7 @@ export default function TrustSlipVerifyPublicPaper({
   );
   const communityRecordCurrentnessScope = firstTruthy(
     communityEvidenceCurrentnessScope,
-    "This Community ID resolves to an active GSN community record. Parent community acknowledgement and member-level proof still need separate current scoped evidence."
+    "This Community ID resolves to an active GSN community record. Parent community acknowledgement and member-level evidence still need separate current scoped evidence."
   );
   const communityActivityCountLabel = firstTruthy(communityActivityCount, "0");
   const communityActivityCategoriesLabel = Array.isArray(communityActivityCategories)
@@ -1246,7 +1246,7 @@ export default function TrustSlipVerifyPublicPaper({
 
         <CommunityProofPanel
           title="Known by community"
-          subtitle="Public-safe community proof from this TrustSlip. It supports judgement without exposing private Trust Passport details."
+          subtitle="Public-safe community evidence from this TrustSlip. It supports judgement without exposing private Trust Passport details."
           compact={compact}
           communityName={communityLabel}
           holderRole={holderRole}

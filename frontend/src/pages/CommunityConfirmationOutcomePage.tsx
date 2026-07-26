@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
-import { useParams } from "react-router-dom";
+import { useLocation, useParams } from "react-router-dom";
 import { PrimaryButton, SecondaryButton, StableCtaLink, StableDisclosureSummary } from "../components/StableButton";
+import CommunityProofPanel from "../components/CommunityProofPanel";
 import { GsnLegacyIcon, type GsnIconName } from "../components/GsnLegacyIcon";
 import {
   TrustPaperAuthorityStrip,
@@ -32,6 +33,7 @@ import {
   updateCommunityConfirmationRequestStatus,
 } from "../lib/api";
 import { publicCommunityMemberCredentialPath, publicFrontendUrl } from "../lib/publicLinks";
+import { revealElementWithoutJump } from "../lib/mobileRevealStability";
 
 type CommunityResponse = {
   requests_sent?: number | null;
@@ -492,6 +494,7 @@ function decisionFromResult(result: any): DecisionSnapshot | null {
 
 export default function CommunityConfirmationOutcomePage() {
   const { token } = useParams<{ token: string }>();
+  const location = useLocation();
   const [outcome, setOutcome] = useState<PublicOutcome | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -516,8 +519,19 @@ export default function CommunityConfirmationOutcomePage() {
   const reviewEvidenceLoadSeqRef = useRef(0);
   const reviewEvidenceLoadContextRef = useRef("");
   const outcomeContextRef = useRef("");
+  const decisionActionRef = useRef<HTMLDetailsElement | null>(null);
 
   const tokenText = safeStr(token);
+  const notificationDecisionFocus = useMemo(() => {
+    const focus = safeStr(new URLSearchParams(location.search).get("focus")).toLowerCase();
+    const hash = safeStr(location.hash).replace(/^#/, "").toLowerCase();
+    return (
+      focus === "decision" ||
+      focus === "record-decision" ||
+      hash === "record-decision" ||
+      hash === "community-confirmation-outcome-record-decision"
+    );
+  }, [location.hash, location.search]);
   const outcomeContextKey = [
     tokenText,
     firstTruthy(outcome?.request_id),
@@ -649,6 +663,23 @@ export default function CommunityConfirmationOutcomePage() {
   }, [notice]);
 
   useEffect(() => {
+    if (!notificationDecisionFocus || !outcome || loading || typeof window === "undefined") {
+      return undefined;
+    }
+    const timer = window.setTimeout(() => {
+      const target = decisionActionRef.current;
+      if (!target) return;
+      target.open = true;
+      revealElementWithoutJump(target, {
+        surface: "community-confirmation-outcome",
+        targetId: "community-confirmation-outcome-record-decision",
+        reason: "notification-decision-focus",
+      });
+    }, 140);
+    return () => window.clearTimeout(timer);
+  }, [notificationDecisionFocus, outcomeContextKey, outcome, loading]);
+
+  useEffect(() => {
     const reviewCaseId = outcome?.review_case?.reviewCaseId;
     if (!reviewCaseId || !getAccessToken()) {
       setReviewEvidence([]);
@@ -722,6 +753,21 @@ export default function CommunityConfirmationOutcomePage() {
   const privacyLimitText =
     outcome?.privacy_note ||
     "This public outcome shows aggregate response evidence only. It does not expose private responder contacts, verifier names, phone numbers, shop details, payment records, or credit approval.";
+  const confirmationProofResponseLabel = requestsSent > 0
+    ? `${responsesReceived} of ${requestsSent} requested contacts responded`
+    : "No requested contacts shown";
+  const confirmationProofCurrentnessLabel = liveWindowOpen
+    ? "Live response window"
+    : status === "expired"
+      ? "Expired response window"
+      : status === "closed"
+        ? "Closed outcome"
+        : "Outcome waiting";
+  const confirmationProofIdentityLabel = firstTruthy(
+    outcome?.subject_public_reference,
+    outcome?.subject_reference_type === "protected" ? "Protected member reference" : "",
+    "Protected member reference"
+  );
   const responseTone =
     objectionCount > 0 || confidence === "caution"
       ? "warn"
@@ -1459,7 +1505,7 @@ export default function CommunityConfirmationOutcomePage() {
                       </h2>
                       <p style={{ ...helperText(), lineHeight: 1.36 }}>
                         Use this first. Open the full outcome sections only when you need the
-                        complete proof trail, limits, QR, or return details.
+                        complete evidence trail, limits, QR, or return details.
                       </p>
                     </div>
                   </div>
@@ -1490,6 +1536,27 @@ export default function CommunityConfirmationOutcomePage() {
                     />
                   </div>
                 </section>
+                <CommunityProofPanel
+                  title="Community evidence behind this outcome"
+                  subtitle="Read the response evidence beside community identity, privacy limits, and the next safe action."
+                  compact={isCompactPaper}
+                  communityName={outcome.community_name}
+                  holderRole="Confirmation subject"
+                  identityLabel={confirmationProofIdentityLabel}
+                  memberWitnessLabel="Confirmation response"
+                  memberWitnessCount={responsesReceived}
+                  memberWitnessDetail={`${confirmationProofResponseLabel}. This is controlled confirmation response evidence, not a whole-community vote or separate member-witness credential count.`}
+                  membershipStrengthLabel={outcomeTitle(status, confidence)}
+                  membershipCurrentnessLabel={confirmationProofCurrentnessLabel}
+                  membershipCurrentnessScope={`${responseCountScope} ${privacyLimitText}`}
+                  communityActivityLabel="Outcome record only"
+                  trustSlipStatusLabel={decisionNoteText}
+                  style={{
+                    marginTop: isCompactPaper ? 0 : 2,
+                    boxShadow: "0 14px 34px rgba(6,24,39,0.07)",
+                  }}
+                />
+
 
                 <section
                   style={{
@@ -1812,7 +1879,44 @@ export default function CommunityConfirmationOutcomePage() {
                 </section>
                 </TrustDocumentDisclosureSection>
 
-                <details style={sectionCard("#F7FAFF")}>
+                {notificationDecisionFocus ? (
+                  <div
+                    data-gsn-community-confirmation-outcome-notification-focus="true"
+                    style={{
+                      ...sectionCard("#EFF6FF"),
+                      display: "grid",
+                      gap: 8,
+                      border: "1px solid rgba(11,99,209,0.20)",
+                      boxShadow: "0 14px 34px rgba(6,24,39,0.07)",
+                    }}
+                  >
+                    <div
+                      style={{
+                        color: "#0B63D1",
+                        fontSize: 12,
+                        fontWeight: 1000,
+                        letterSpacing: 1.4,
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      Opened from notification
+                    </div>
+                    <h2 style={{ ...sectionTitle(), fontSize: 20 }}>
+                      Decide what to do with this result
+                    </h2>
+                    <p style={helperText()}>
+                      The notification brought you to the action area for this public outcome.
+                      Check the evidence above, then record your decision or close the request
+                      when you are signed in.
+                    </p>
+                  </div>
+                ) : null}
+
+                <details
+                  id="community-confirmation-outcome-record-decision"
+                  ref={decisionActionRef}
+                  style={sectionCard("#F7FAFF")}
+                >
                   <StableDisclosureSummary
                     debugId="community-confirmation-outcome.record-decision"
                     stableHeight={52}

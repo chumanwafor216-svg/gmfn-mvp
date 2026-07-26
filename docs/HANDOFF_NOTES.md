@@ -150812,3 +150812,270 @@ GSN-branded invite composer and invite-entry continuity.
   - passed `npm --prefix frontend run build`.
 - Deployment:
   - local only at time of note; owner has not yet asked to publish this continuation slice.
+
+## 2026-07-25 - Trust Passport Community Evidence Before Reading
+
+- Trigger:
+  - owner selected `1` to continue the GSN Second Engine proof/currentness upgrade sequence after the shared proof layer reached TrustSlip, public member credential, and public shop verification surfaces.
+- Unabated truth:
+  - the Trust Passport Community Confirmation lane already showed community record, activity, witness currentness, renewal, public record, and member credential readiness;
+  - it did not yet put the shared proof/currentness layer before rank-like readings, so a user could still read the trust score/rank posture without first seeing the community evidence limits behind it;
+  - this pass does not create new backend trust or verification; it makes the existing reading harder to over-trust.
+- Changed:
+  - `frontend/src/pages/TrustScorePage.tsx`
+    - imports shared `CommunityProofPanel`;
+    - adds typed optional `member_witness_count` and `membership_strength_label` fields for TrustSlip and merchant summaries;
+    - derives `communityMemberWitnessCount` and `communityMembershipStrengthLabel` from TrustSlip summary, merchant summary, or community context;
+    - renders `Community evidence before trust reading` in the Community Confirmation lane before readiness cards and action buttons;
+    - copy explicitly says to use community evidence, witness currentness, activity, and TrustSlip status before relying on the reading.
+  - `frontend/tools/audit-trust-passport-community-confirmation-lane.mjs`
+    - reads the shared Community Proof component/library;
+    - asserts the Community Confirmation lane places shared proof before the rank/score readiness cards;
+    - asserts the shared proof decision boundary remains evidence-for-judgement, not rank authority.
+- Verification:
+  - passed `npm exec -- eslint src/pages/TrustScorePage.tsx tools/audit-trust-passport-community-confirmation-lane.mjs` from `frontend`;
+  - passed `npm --prefix frontend run audit:trust-passport-community-confirmation-lane`;
+  - passed `npm --prefix frontend run audit:trust-passport-button-inventory`;
+  - passed `npm --prefix frontend run audit:protected-button-freeze`;
+  - passed `npm --prefix frontend run build`.
+- Deployment:
+  - local only; not committed, pushed, or deployed in this `1` continuation pass because `docs/FREEZE_POLICY.md` currently freezes routine continuation publishing into explicit owner-approved batches.
+
+## 2026-07-25 - Deployment correction for public shop proof note
+
+- Correction:
+  - the previous `Public Shop Community Proof Layer` note said local-only at the time it was written;
+  - after that note, commit `6d1ead9a` was created and pushed to `main`;
+  - GitHub Actions run `30161134283` completed successfully for that exact commit;
+  - the frontend Render deploy hook accepted deploy id `dep-d9ic7sj7uimc73bb5280`;
+  - backend/API deploy was not triggered (`deploy_api=false`) because the batch was frontend/docs/audit only.
+- Precise status:
+  - frontend deploy request was accepted by Render for `6d1ead9a`;
+  - no independent live-browser post-deploy QA was performed in this session.
+
+## 2026-07-25 - Public Confirmation Outcome Evidence Layer
+
+- Trigger:
+  - owner selected `1` again to continue the GSN Second Engine proof/currentness upgrade sequence.
+- Unabated truth:
+  - the public Community Confirmation outcome already had strong boundary language, aggregate counts, privacy notes, and signed-in gates;
+  - it still needed the same compact proof layer used elsewhere so the reader sees community identity, response evidence, currentness/window, and decision boundary together before drilling into details;
+  - confirmation responses are not the same thing as the separate member-witness credential rail, so the shared proof helper had to allow a route to rename the witness tile honestly.
+- Changed:
+  - `frontend/src/lib/communityProof.ts`
+    - added optional `memberWitnessLabel` and `memberWitnessDetail` inputs;
+    - default behavior remains `Member witness` for TrustSlip/member/shop surfaces;
+    - confirmation outcome can now label the tile as `Confirmation response` and explain requested-contact response evidence without pretending it is a whole-community vote or separate credential witness count.
+  - `frontend/src/pages/CommunityConfirmationOutcomePage.tsx`
+    - imports `CommunityProofPanel`;
+    - derives `confirmationProofResponseLabel`, `confirmationProofCurrentnessLabel`, and `confirmationProofIdentityLabel`;
+    - renders `Community evidence behind this outcome` after `Fast outcome reading` and before the identity/request detail cards;
+    - panel states that response evidence is controlled confirmation evidence, not a whole-community vote, not a member-witness credential count, and not release/credit/payment authority.
+  - `frontend/tools/audit-community-confirmation-outcome-boundary.mjs`
+    - now reads the shared proof component/library;
+    - asserts the proof panel appears after fast reading and before identity details;
+    - asserts the shared proof helper supports honest confirmation-response wording while preserving the non-ID/non-approval decision boundary.
+- Verification:
+  - passed `npm exec -- eslint src/lib/communityProof.ts src/pages/CommunityConfirmationOutcomePage.tsx tools/audit-community-confirmation-outcome-boundary.mjs` from `frontend`;
+  - passed `npm --prefix frontend run audit:community-confirmation-outcome-boundary`;
+  - passed `npm --prefix frontend run audit:trust-passport-trustslip-boundary`;
+  - passed `npm --prefix frontend run audit:public-trustslip-verify-boundary`;
+  - passed `npm --prefix frontend run audit:community-verification-boundary`;
+  - passed `npm --prefix frontend run audit:marketplace-shop-evidence-boundary`;
+  - passed `npm --prefix frontend run audit:trust-passport-community-confirmation-lane`;
+  - passed `npm --prefix frontend run audit:protected-button-freeze`;
+  - passed `npm --prefix frontend run build`.
+- Deployment:
+  - local only; not committed, pushed, or deployed in this `1` continuation pass because routine continuation publishing is currently batch-frozen unless the owner explicitly asks to publish.
+
+## 2026-07-25 - Community Confirmation Inbox Responder Evidence Boundary
+
+- Trigger:
+  - owner selected `1` to continue the GSN Second Engine proof/currentness upgrade sequence into notification-answer and member-witnessing behavior.
+- Unabated truth:
+  - clicking the confirmation notification can already route a user to the Community Confirmation Inbox action area;
+  - the responder row still needed a compact boundary before private notes and answer actions so the responder understands their answer is personal community evidence, not a vote, approval, rank, payment authority, credit authority, or parent-community certification;
+  - this pass improves responder comprehension only; it does not create a new backend witness model, notification transport, or production delivery guarantee.
+- Changed:
+  - `frontend/src/pages/CommunityConfirmationInboxPage.tsx`
+    - imports shared `CommunityProofPanel`;
+    - adds response-window helpers for open/expired request currentness;
+    - derives positive/caution/objection counts and a current response total for each focused row;
+    - renders a `Before you answer` evidence panel before `Private context for GSN review` and before answer controls;
+    - clarifies that the current aggregate is evidence for judgement and not a whole-community vote.
+  - `frontend/src/pages/TrustScorePage.tsx`
+    - renames the Trust Passport lane wording from community proof to community evidence and removes rank/score reliance language from the subtitle.
+  - `frontend/src/pages/CommunityConfirmationOutcomePage.tsx`
+    - renames the public outcome panel to `Community evidence behind this outcome`.
+  - `frontend/src/pages/TrustSlipPage.tsx` and `frontend/src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx`
+    - rename public TrustSlip helper copy from community proof to community evidence.
+  - `frontend/tools/audit-trust-actions.mjs`, `frontend/tools/audit-trust-passport-community-confirmation-lane.mjs`, and `frontend/tools/audit-community-confirmation-outcome-boundary.mjs`
+    - assert the stricter evidence wording and the responder boundary placement.
+  - `docs/PILOT_EVIDENCE_PACK_CHECKLIST.md`
+    - replaces narrow `proof state`/`proof blocker` shorthand with evidence-state language so doctrine docs do not undermine the public copy standard.
+- Verification:
+  - passed `npm exec -- eslint src/pages/CommunityConfirmationInboxPage.tsx src/pages/TrustScorePage.tsx src/pages/CommunityConfirmationOutcomePage.tsx src/pages/TrustSlipPage.tsx src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx src/lib/communityProof.ts tools/audit-trust-actions.mjs tools/audit-trust-passport-community-confirmation-lane.mjs tools/audit-community-confirmation-outcome-boundary.mjs tools/audit-trust-passport-trustslip-boundary.mjs tools/audit-public-trustslip-verify-boundary.mjs` from `frontend`;
+  - passed `npm --prefix frontend run audit:trust-actions`;
+  - passed `npm --prefix frontend run audit:trust-passport-community-confirmation-lane`;
+  - passed `npm --prefix frontend run audit:community-confirmation-outcome-boundary`;
+  - passed `npm --prefix frontend run audit:trust-passport-trustslip-boundary`;
+  - passed `npm --prefix frontend run audit:public-trustslip-verify-boundary`;
+  - passed `npm --prefix frontend run audit:community-verification-boundary`;
+  - passed `npm --prefix frontend run audit:button-stability`;
+  - passed `npm --prefix frontend run audit:protected-button-freeze`;
+  - passed `npm --prefix frontend run build`.
+- Deployment:
+  - local only; not committed, pushed, or deployed because routine continuation publishing is currently batch-frozen unless the owner explicitly asks to publish.
+## 2026-07-25 - Action Inbox Direct Confirmation Landing Repair
+
+- Trigger:
+  - owner selected `1` after the responder evidence-boundary pass, returning to the original complaint that confirmation notifications should take the user directly to the action without making the Action Inbox blink or forcing a search.
+- Unabated truth:
+  - the backend already creates responder notification action URLs as `/app/community-confirmations?request_id=<id>`;
+  - the frontend target normalizer already preserves that query string;
+  - the weak spot was frontend behavior: primary notification taps repainted local Action Inbox state before navigating, and the destination inbox still rendered review/settings sections above the focused request.
+- Changed:
+  - `frontend/src/pages/NotificationsPage.tsx`
+    - direct-open primary notice actions now navigate immediately;
+    - numeric server notices are marked read quietly in the background instead of showing an `Opening...` local notice before route change;
+    - review-first mode still opens the notice locally and marks it read with visible feedback.
+  - `frontend/src/pages/CommunityConfirmationInboxPage.tsx`
+    - `request_id` focus mode now filters to the exact pending request instead of sorting the full queue around it;
+    - hides review cases and relay availability above the answer card during focused request mode;
+    - adds a small `Opened from notification` landing note;
+    - adds an honest focused-missing state when an old alert points to a request that is already answered, expired, or moved into review.
+  - `frontend/tools/audit-notifications-button-inventory.mjs`
+    - asserts direct-open notification action routing happens before local review-state repaint.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - asserts focused confirmation-request mode, focused-missing copy, and responder evidence boundary placement stay intact.
+- Verification:
+  - passed `npm exec -- eslint src/pages/NotificationsPage.tsx src/pages/CommunityConfirmationInboxPage.tsx tools/audit-notifications-button-inventory.mjs tools/audit-trust-actions.mjs` from `frontend`;
+  - passed `npm --prefix frontend run audit:notifications-button-inventory`;
+  - passed `npm --prefix frontend run audit:trust-actions`;
+  - passed `npm --prefix frontend run audit:button-stability`;
+  - passed `npm --prefix frontend run audit:protected-button-freeze`;
+  - passed `npm --prefix frontend run build`.
+- Deployment:
+  - local only; not committed, pushed, or deployed because routine continuation publishing is currently batch-frozen unless the owner explicitly asks to publish.
+## 2026-07-25 - Focused Member Witness Response Evidence Boundary
+
+- Trigger:
+  - owner selected `1` to continue the notification/confirmation repair sequence into member witnessing.
+- Unabated truth:
+  - member-witness notification routing and focused mode already existed through `member_witness_request`;
+  - the focused page still used a generic `Workspace` title and did not show the shared evidence/currentness boundary before the responder entered the one-time code and recorded the witness response;
+  - this pass improves the responder-facing witness decision surface only; it does not create a new backend witness engine, delivery guarantee, or cross-community rank system.
+- Changed:
+  - `frontend/src/pages/CommunityConfirmationPolicyPage.tsx`
+    - imports shared `CommunityProofPanel`;
+    - focused member-witness mode now labels the page as `GSN evidence` / `Member Witness`;
+    - focused witness request review now renders `Before you record witness` before the one-time code, note, and Record witness / Decline / Copy link actions;
+    - the panel frames the response as one assigned member's community witness evidence, not a vote, approval, parent-community certification, payment approval, credit approval, or release authority.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - updates the focused member-witness page assertion from generic `Workspace` to `Member Witness`;
+    - asserts the evidence/currentness boundary stays before code entry and answer actions.
+- Verification:
+  - passed `npm exec -- eslint src/pages/CommunityConfirmationPolicyPage.tsx tools/audit-trust-actions.mjs` from `frontend`;
+  - passed `npm --prefix frontend run audit:trust-actions`;
+  - passed `npm --prefix frontend run audit:notifications-button-inventory`;
+  - passed `npm --prefix frontend run audit:button-stability`;
+  - passed `npm --prefix frontend run audit:protected-button-freeze`;
+  - passed `npm --prefix frontend run build`.
+- Deployment:
+  - local only; not committed, pushed, or deployed because routine continuation publishing is currently batch-frozen unless the owner explicitly asks to publish.
+## 2026-07-25 - Public Verification Request Focus Landing Tightened
+
+- Trigger:
+  - owner selected `1` to continue repairing notification-driven confirmation and witnessing paths.
+- Unabated truth:
+  - public community-verification request notifications were already rerouted from generic confirmation inbox to the confirmation policy focus route;
+  - the focused route still opened with a generic policy title/explainer/hero below the request card, which could make the notification feel like it landed in the wrong workspace;
+  - this pass changes only focused frontend presentation. It does not add responder delivery, backend queue logic, or public verification authority.
+- Changed:
+  - `frontend/src/pages/CommunityConfirmationPolicyPage.tsx`
+    - public verification-request focus now labels the top nav as `GSN evidence` / `Verification Request`;
+    - subtitle says to review responder readiness before the public request continues;
+    - focused verification-request mode skips the generic `How this works` explainer and large `Who can answer for this community?` hero;
+    - the first focused card still gives the immediate `Review responders` and `Open inbox` actions, then moves straight into policy switches.
+  - `frontend/tools/audit-notifications-button-inventory.mjs`
+    - now asserts verification-request focus keeps the focused title/subtitle, immediate actions, and generic hero/explainer gating before policy switches.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - updates the member-witness title assertion to tolerate the new verification-request title branch.
+- Verification:
+  - passed `npm exec -- eslint src/pages/CommunityConfirmationPolicyPage.tsx tools/audit-notifications-button-inventory.mjs tools/audit-trust-actions.mjs` from `frontend`;
+  - passed `npm --prefix frontend run audit:notifications-button-inventory`;
+  - passed `npm --prefix frontend run audit:trust-actions`;
+  - passed `npm --prefix frontend run audit:button-stability`;
+  - passed `npm --prefix frontend run audit:protected-button-freeze`;
+  - passed `npm --prefix frontend run build`.
+- Deployment:
+  - local only; not committed, pushed, or deployed because routine continuation publishing is currently batch-frozen unless the owner explicitly asks to publish.
+## 2026-07-25 - Confirmation Outcome Notification Decision Focus
+
+- Trigger:
+  - owner selected `1` to continue repairing notification-driven confirmation paths after responder, member-witness, and verification-request focus fixes.
+- Unabated truth:
+  - backend requester outcome and expiry notices already point to the public confirmation outcome link;
+  - the weak spot was frontend landing behavior: `community_confirmation.outcome_updated` and `community_confirmation.request_expired` opened the top of the public paper instead of the action area where the requester records a decision or closes/reviews/cancels the request;
+  - this pass does not expose private responders, change backend delivery, or turn the confirmation paper into payment/credit/release approval.
+- Changed:
+  - `frontend/src/pages/NotificationsPage.tsx`
+    - detects confirmation outcome/expiry notification kinds;
+    - normalizes their public outcome link to include `focus=decision`;
+    - labels focused public outcome notices as `Record decision` when the server label is generic.
+  - `frontend/src/pages/CommunityConfirmationOutcomePage.tsx`
+    - recognizes `?focus=decision`, `?focus=record-decision`, `#record-decision`, and `#community-confirmation-outcome-record-decision`;
+    - adds an `Opened from notification` note above the signed-in action section;
+    - opens and reveals the `Record your decision` disclosure using the shared mobile reveal helper after the public paper loads.
+  - `frontend/tools/audit-notifications-button-inventory.mjs`
+    - asserts outcome/expiry notifications keep routing to decision focus.
+  - `frontend/tools/audit-community-confirmation-outcome-boundary.mjs`
+    - asserts the public outcome page keeps notification focus, reveal behavior, and signed-in decision boundaries caged.
+- Verification:
+  - passed `npm exec -- eslint src/pages/NotificationsPage.tsx src/pages/CommunityConfirmationOutcomePage.tsx tools/audit-notifications-button-inventory.mjs tools/audit-community-confirmation-outcome-boundary.mjs` from `frontend`;
+  - passed `npm --prefix frontend run audit:notifications-button-inventory`;
+  - passed `npm --prefix frontend run audit:community-confirmation-outcome-boundary`;
+  - passed `npm --prefix frontend run audit:trust-actions`;
+  - passed `npm --prefix frontend run audit:button-stability`;
+  - passed `npm --prefix frontend run audit:protected-button-freeze`;
+  - passed `npm --prefix frontend run build`.
+- Deployment:
+  - local only; not committed, pushed, or deployed because routine continuation publishing is currently batch-frozen unless the owner explicitly asks to publish.
+
+## 2026-07-25 - Trust Passport Notification Lane Focus
+
+- Trigger:
+  - owner selected `1` to continue the notification/confirmation/rank-reading repair sequence.
+- Unabated truth:
+  - there is no separate backend `community rank confirmation` notification engine visible in this pass;
+  - the existing trust/rank behavior is a signed-in Trust Passport reading surface, and confirmation-review events can affect that reading;
+  - the weak spot was that trust guidance and raw trust notifications still opened broad `/app/trust` instead of the specific evidence or repair lane.
+- Changed:
+  - `frontend/src/pages/TrustScorePage.tsx`
+    - adds URL lane focus for `?focus=evidence`, `?focus=repair`, `?focus=community`, `?focus=finance`, `?focus=documents`, and matching hash aliases;
+    - initializes the active Trust Passport lane from the URL;
+    - reacts to query/hash changes by opening the focused lane and revealing either the lane selector or pressure notes with the shared mobile reveal helper;
+    - adds a stable `trust-passport-lanes` target on the lane selector only.
+  - `frontend/src/lib/guidance.ts`
+    - adds `guidanceTrustPassportTarget`;
+    - routes trust-score/trust-passport guidance and identity-evidence guidance to `?focus=evidence`;
+    - routes trust-repair and recovery-week guidance to `?focus=repair`.
+  - `frontend/src/pages/NotificationsPage.tsx`
+    - converts plain raw `/app/trust` notification targets to focused Trust Passport targets;
+    - chooses `?focus=repair` for repair/weakened/pressure/follow-up wording and `?focus=evidence` otherwise;
+    - labels focused trust notices as `Open trust repair` or `Open trust evidence`.
+  - `frontend/tools/audit-trust-passport-button-inventory.mjs`
+    - asserts Trust Passport URL lane focus support remains caged.
+  - `frontend/tools/audit-notifications-button-inventory.mjs`
+    - asserts Action Inbox and shared guidance keep focused Trust Passport evidence/repair targets.
+- Verification:
+  - passed `npm exec -- eslint src/pages/TrustScorePage.tsx src/pages/NotificationsPage.tsx src/lib/guidance.ts tools/audit-trust-passport-button-inventory.mjs tools/audit-notifications-button-inventory.mjs` from `frontend`;
+  - passed `npm --prefix frontend run audit:trust-passport-button-inventory`;
+  - passed `npm --prefix frontend run audit:notifications-button-inventory`;
+  - passed `npm --prefix frontend run audit:trust-passport-community-confirmation-lane`;
+  - passed `npm --prefix frontend run audit:trust-actions`;
+  - passed `npm --prefix frontend run audit:button-stability`;
+  - passed `npm --prefix frontend run audit:protected-button-freeze`;
+  - passed `npm --prefix frontend run build`.
+- Deployment:
+  - local only; not committed, pushed, or deployed because routine continuation publishing is currently batch-frozen unless the owner explicitly asks to publish.

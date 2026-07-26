@@ -8,6 +8,8 @@ const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const files = {
   app: "src/App.tsx",
   outcome: "src/pages/CommunityConfirmationOutcomePage.tsx",
+  communityProofPanel: "src/components/CommunityProofPanel.tsx",
+  communityProof: "src/lib/communityProof.ts",
   service: "../gmfn_backend/app/services/community_confirmation_service.py",
   package: "package.json",
   protectedFreeze: "tools/audit-protected-button-freeze.mjs",
@@ -103,6 +105,24 @@ assertContains(
 
 assertContains(
   "outcome",
+  /import CommunityProofPanel from "\.\.\/components\/CommunityProofPanel";[\s\S]*?const confirmationProofResponseLabel = requestsSent > 0[\s\S]*?requested contacts responded[\s\S]*?const confirmationProofCurrentnessLabel = liveWindowOpen[\s\S]*?const confirmationProofIdentityLabel = firstTruthy[\s\S]*?Fast outcome reading[\s\S]*?<CommunityProofPanel[\s\S]*?title="Community evidence behind this outcome"[\s\S]*?memberWitnessLabel="Confirmation response"[\s\S]*?not a whole-community vote or separate member-witness credential count[\s\S]*?membershipCurrentnessScope=\{[\s\S]*?responseCountScope[\s\S]*?privacyLimitText[\s\S]*?trustSlipStatusLabel=\{decisionNoteText\}[\s\S]*?Who is being confirmed\?/,
+  "Community Confirmation Outcome must render shared proof after fast reading and before identity details."
+);
+
+assertContains(
+  "communityProofPanel",
+  /data-gsn-community-proof-layer="true"[\s\S]*?data-gsn-community-proof-item=\{item\.key\}/,
+  "Community Confirmation Outcome must use the shared Community Proof panel markers."
+);
+
+assertContains(
+  "communityProof",
+  /memberWitnessLabel\?: unknown;[\s\S]*?memberWitnessDetail\?: unknown;[\s\S]*?label: memberWitnessLabel[\s\S]*?memberWitnessDetail \|\|[\s\S]*?Evidence for judgement[\s\S]*?not government ID, payment approval, credit approval, or a guarantee of future behaviour/,
+  "Shared Community Proof must support honest confirmation-response wording while preserving the decision boundary."
+);
+
+assertContains(
+  "outcome",
   /response\.private_contacts_exposed \? "Check privacy" : "Contacts hidden"/,
   "The visible privacy badge must still surface the private_contacts_exposed boundary."
 );
@@ -131,6 +151,11 @@ assertContains(
   "Private review evidence must clear and stop loading when the public visitor has no access token."
 );
 
+assertContains(
+  "outcome",
+  /import \{ useLocation, useParams \} from "react-router-dom";[\s\S]*?import \{ revealElementWithoutJump \} from "\.\.\/lib\/mobileRevealStability";[\s\S]*?notificationDecisionFocus[\s\S]*?focus === "decision"[\s\S]*?decisionActionRef\.current[\s\S]*?target\.open = true;[\s\S]*?revealElementWithoutJump\(target,[\s\S]*?community-confirmation-outcome-record-decision[\s\S]*?data-gsn-community-confirmation-outcome-notification-focus="true"/,
+  "Outcome notification focus must open and reveal the signed-in decision section without changing the public paper route."
+);
 assertContains(
   "outcome",
   /debugId="community-confirmation-outcome\.record-decision"[\s\S]*?Record your decision[\s\S]*?Signed-in action/,

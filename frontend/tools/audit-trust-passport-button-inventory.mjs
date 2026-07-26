@@ -156,6 +156,11 @@ assertContains(
 );
 
 assertContains(
+  /function trustPassportLaneFromLocation\(locationLike: Pick<Location, "search" \| "hash">\): TrustPassportLaneKey[\s\S]*?community-confirmation[\s\S]*?return "community"[\s\S]*?trust-repair[\s\S]*?return "repair"[\s\S]*?rank[\s\S]*?return "evidence"[\s\S]*?const laneSelectorRef = useRef<HTMLElement \| null>\(null\)[\s\S]*?useState<TrustPassportLaneKey>\(\(\) => trustPassportLaneFromLocation\(location\)\)[\s\S]*?reason: `url-focus-\$\{focusedLane\}`[\s\S]*?ref=\{laneSelectorRef\}[\s\S]*?id="trust-passport-lanes"/,
+  "Trust Passport must support URL-focused evidence, community, and repair lane landings for trust/rank notifications."
+);
+
+assertContains(
   /gridTemplateColumns: isCompact[\s\S]*?\? "repeat\(2, minmax\(0, 1fr\)\)"[\s\S]*?: "repeat\(3, minmax\(0, 1fr\)\)"[\s\S]*?gap: isCompact \? 8 : 10[\s\S]*?trustPassportLanes\.map\(\(lane\) =>[\s\S]*?stableHeight=\{isCompact \? 58 : 66\}[\s\S]*?debugId=\{`trust-score\.lane\.\$\{lane\.key\}`\}[\s\S]*?fontSize: isCompact \? 11\.5 : 14[\s\S]*?<GsnLegacyIcon name=\{lane\.icon\} size=\{isCompact \? 24 : 32\} decorative/,
   "Trust Passport lane selector must stay compact enough on phone for all six lanes to clear the bottom rail."
 );

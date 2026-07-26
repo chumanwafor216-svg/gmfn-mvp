@@ -3826,7 +3826,7 @@ export default function TrustSlipPage() {
             <TrustDocumentConfidenceRibbon items={trustSlipHolderConfidenceRibbonItems} />
             <CommunityProofPanel
               title="Known by community"
-              subtitle="Portable community proof from this TrustSlip. Use it as evidence for judgement, not as automatic approval."
+              subtitle="Portable community evidence from this TrustSlip. Use it as evidence for judgement, not as automatic approval."
               compact={isCompact}
               communityName={communityName}
               holderRole={holderRole}

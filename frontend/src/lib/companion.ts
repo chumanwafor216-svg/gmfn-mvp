@@ -4,6 +4,11 @@ import type {
   GuidanceSnapshot,
 } from "./guidance";
 
+import {
+  ACTION_TARGETS as COMPANION_TARGETS,
+  normalizeActionTargetPath,
+  splitActionTargetSuffix,
+} from "./actionTargetRoutes";
 export type CompanionMode = "off" | "light" | "active";
 export type AudibleNudgeLevel =
   | "off"
@@ -105,6 +110,62 @@ const DEFAULT_COMPANION_SETTINGS: CompanionSettings = {
 
 function safeStr(x: any): string {
   return String(x ?? "").trim();
+}
+
+function companionContainsAny(text: string, tokens: string[]): boolean {
+  return tokens.some((token) => text.includes(token));
+}
+
+function companionNotificationText(notification: UrgentCompanionNotificationInput): string {
+  return [
+    safeStr(notification.kind),
+    safeStr(notification.title),
+    safeStr(notification.detail),
+    safeStr(notification.message),
+    safeStr(notification.ctaLabel),
+    safeStr(notification.actionLabel),
+    safeStr(notification.ctaTo),
+    safeStr(notification.actionUrl),
+  ]
+    .join(" ")
+    .toLowerCase();
+}
+
+function normalizeCompanionNotificationTarget(
+  target: string,
+  notification: UrgentCompanionNotificationInput
+): string {
+  const normalizedTarget = normalizeActionTargetPath(target);
+  const { path, suffix } = splitActionTargetSuffix(normalizedTarget);
+  const kind = safeStr(notification.kind).toLowerCase();
+
+  if (
+    (kind === "community_confirmation.outcome_updated" ||
+      kind === "community_confirmation.request_expired") &&
+    /^\/community-confirmations\/public\/[^/?#]+$/.test(path)
+  ) {
+    const parsed = new URL(`${path}${suffix}`, "http://local");
+    if (!parsed.searchParams.has("focus")) {
+      parsed.searchParams.set("focus", "decision");
+    }
+    return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+  }
+
+  if (path === COMPANION_TARGETS.TRUST) {
+    const parsed = new URL(`${path}${suffix}`, "http://local");
+    if (!parsed.searchParams.has("focus")) {
+      const text = companionNotificationText(notification);
+      parsed.searchParams.set(
+        "focus",
+        companionContainsAny(text, ["repair", "weaken", "weakened", "pressure", "follow-up"])
+          ? "repair"
+          : "evidence"
+      );
+    }
+    return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+  }
+
+  return normalizedTarget;
 }
 
 function coerceBool(value: any, fallback: boolean): boolean {
@@ -799,6 +860,12 @@ function showBrowserNotification(
       } catch {
         // focusing an existing tab is best-effort
       }
+
+      const target = safeStr(decision.ctaTo);
+      if (target) {
+        window.location.assign(target);
+      }
+      notification.close();
     };
 
     return true;
@@ -879,11 +946,14 @@ export function buildUrgentCompanionNotificationDecision(
       options?.fallbackCtaLabel ||
       "Respond now"
   );
-  const ctaTo = safeStr(
-    notification.ctaTo ||
-      notification.actionUrl ||
-      options?.fallbackCtaTo ||
-      "/app/community-confirmations"
+  const ctaTo = normalizeCompanionNotificationTarget(
+    safeStr(
+      notification.ctaTo ||
+        notification.actionUrl ||
+        options?.fallbackCtaTo ||
+        "/app/community-confirmations"
+    ),
+    notification
   );
   const source = safeStr(options?.source || "urgent-community-confirmation");
   const notificationId = safeStr(notification.id || "");

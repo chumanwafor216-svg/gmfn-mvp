@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { useLocation, useNavigate } from "react-router-dom";
+import CommunityProofPanel from "../components/CommunityProofPanel";
 import ExplainToggle from "../components/ExplainToggle";
 import PageTopNav from "../components/PageTopNav";
 import { PrimaryButton, SecondaryButton } from "../components/StableButton";
@@ -1824,12 +1825,14 @@ function CommunityConfirmationPolicyPage() {
   return (
     <div style={{ maxWidth: 1120, margin: "0 auto", paddingBottom: isCompact ? 36 : 56 }}>
       <PageTopNav
-        sectionLabel={memberWitnessFocus ? "GSN" : "Community confirmation"}
-        title={memberWitnessFocus ? "Workspace" : "Instant Confirmation Policy"}
+        sectionLabel={memberWitnessFocus || verificationRequestFocus ? "GSN evidence" : "Community confirmation"}
+        title={memberWitnessFocus ? "Member Witness" : verificationRequestFocus ? "Verification Request" : "Instant Confirmation Policy"}
         subtitle={
           memberWitnessFocus
             ? ""
-            : "Choose who may answer live community confirmation requests."
+            : verificationRequestFocus
+              ? "Review responder readiness before this public request continues."
+              : "Choose who may answer live community confirmation requests."
         }
         homeTo={APP_ROUTES.DASHBOARD}
         homeLabel="Dashboard"
@@ -1902,7 +1905,7 @@ function CommunityConfirmationPolicyPage() {
           </div>
         </section>
       ) : null}
-      {!memberWitnessFocus ? (
+      {!memberWitnessFocus && !verificationRequestFocus ? (
         <ExplainToggle
           label="How this works"
           what="A TrustSlip may say community confirmation is available."
@@ -1926,7 +1929,7 @@ function CommunityConfirmationPolicyPage() {
         </div>
       ) : null}
 
-      {!memberWitnessFocus ? (
+      {!memberWitnessFocus && !verificationRequestFocus ? (
       <section
         style={{
           marginTop: 16,
@@ -2136,6 +2139,40 @@ function CommunityConfirmationPolicyPage() {
                   </div>
                 </div>
               </div>
+
+              <CommunityProofPanel
+                title="Before you record witness"
+                subtitle="This is one member's community witness response for this request, not a vote or approval."
+                compact
+                communityName={firstTruthy(
+                  community?.name,
+                  memberWitnessRequest.communityCode,
+                  memberWitnessRequest.communityId,
+                  "Community not shown"
+                )}
+                holderRole="Member witness request"
+                identityLabel={firstTruthy(memberWitnessRequest.subjectGsnId, "GSN ID not shown")}
+                memberWitnessLabel="Assigned witness"
+                memberWitnessCount={memberWitnessRequest.verifierUserId ? 1 : 0}
+                memberWitnessDetail={`Assigned to ${firstTruthy(
+                  memberWitnessRequest.verifierDisplayName,
+                  memberWitnessRequest.verifierGsnId,
+                  "this member"
+                )}. Record only what you personally know; this is not a whole-community vote.`}
+                membershipStrengthLabel={firstTruthy(
+                  memberWitnessRequest.claimLabel,
+                  memberWitnessRequest.requestNote,
+                  "Known active community member"
+                )}
+                membershipCurrentnessLabel={expiryWindowLabel(memberWitnessRequest.expiresAt)}
+                membershipCurrentnessScope={`Request status: ${firstTruthy(
+                  memberWitnessRequest.status,
+                  "pending"
+                )}. Expires: ${dateLabel(memberWitnessRequest.expiresAt)}.`}
+                communityActivityLabel="One-time response"
+                trustSlipStatusLabel="This response is evidence for judgement, not parent community certification, payment approval, credit approval, or release authority"
+                style={{ marginTop: 10 }}
+              />
 
               {memberWitnessRequest.status === "pending" ? (
                 <>

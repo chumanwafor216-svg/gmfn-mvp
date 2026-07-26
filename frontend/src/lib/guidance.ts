@@ -148,6 +148,12 @@ const FINAL_LOAN_STATUSES = new Set([
   "defaulted",
 ]);
 
+function guidanceTrustPassportTarget(focus: "evidence" | "repair" | "community" | "standing" = "evidence"): string {
+  const base = GUIDANCE_TARGETS.TRUST;
+  const separator = base.includes("?") ? "&" : "?";
+  return `${base}${separator}focus=${encodeURIComponent(focus)}`;
+}
+
 function safeStr(x: any): string {
   return String(x ?? "").trim();
 }
@@ -700,7 +706,7 @@ function resolveNoticeTarget(raw: any): string {
   }
 
   if (containsAny(text, ["trust", "trust passport", "trust score"])) {
-    return GUIDANCE_TARGETS.TRUST;
+    return guidanceTrustPassportTarget("evidence");
   }
 
   if (
@@ -1033,7 +1039,7 @@ function buildIdentityEvidenceNotices(params: {
   const primary = completion.primaryMissingKey;
   const isRepair = primary === "review";
   const ctaTo =
-    primary === "bank" ? GUIDANCE_TARGETS.PAYOUT_DETAILS : GUIDANCE_TARGETS.TRUST;
+    primary === "bank" ? GUIDANCE_TARGETS.PAYOUT_DETAILS : guidanceTrustPassportTarget("evidence");
   const ctaLabel =
     primary === "bank"
       ? "Open payout details"
@@ -1514,7 +1520,7 @@ function buildRecoveryPath(params: {
         trustChangeExplainer.next[0] ||
         "A trust repair step is needed now. Review what weakened your trust path and fix the next visible issue.",
       ctaLabel: "Open Trust Passport",
-      ctaTo: GUIDANCE_TARGETS.TRUST,
+      ctaTo: guidanceTrustPassportTarget("repair"),
       severity: "important",
       todayText: pickVariant(
         voice === "warm"
@@ -2305,7 +2311,7 @@ function buildWeeklyFocus(params: {
         params.voice
       ),
       ctaLabel: "Open Trust Passport",
-      ctaTo: GUIDANCE_TARGETS.TRUST,
+      ctaTo: guidanceTrustPassportTarget("repair"),
     };
   }
 

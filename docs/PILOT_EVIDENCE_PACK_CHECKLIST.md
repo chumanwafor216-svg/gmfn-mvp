@@ -42,7 +42,7 @@ captured from the working system.
 | TrustSlip Verify | Public evidence and private evidence view | Not captured | Public paper is shareable without private overload; private evidence stays clearly separate. |
 | Evidence PDFs | Member, community, loan, TrustSlip, Trust Timeline, Loan Trust, Community Exposure | Not captured | Generated PDF opens visually with GSN title, watermark/header/footer, generated time, and a clear "not a bank guarantee" limitation statement. |
 | Admin readiness | Protocol status and pilot readiness partials | Not captured | Partial labels explain what is complete, what remains, why it matters, and the next route. |
-| Product evidence capture standard | 12-step sequence from Join GSN through recipient TrustSlip view and access record, with administrative review captured separately where required | Accepted for required 12-step sequence | Must follow `docs/whitepaper_variants/GSN_PRODUCT_EVIDENCE_CAPTURE_STANDARD.md`, use one redacted demo account/community, separate product state from proof state, include caption limitations, and remove private identifiers plus personal CCI/trust-score numbers. |
+| Product evidence capture standard | 12-step sequence from Join GSN through recipient TrustSlip view and access record, with administrative review captured separately where required | Accepted for required 12-step sequence | Must follow `docs/whitepaper_variants/GSN_PRODUCT_EVIDENCE_CAPTURE_STANDARD.md`, use one redacted demo account/community, separate product state from evidence state, include caption limitations, and remove private identifiers plus personal CCI/trust-score numbers. |
 
 ## Folder Shape
 
@@ -99,7 +99,7 @@ Each accepted item should record:
   captured and reviewed.
 - The product evidence capture standard is
   `docs/whitepaper_variants/GSN_PRODUCT_EVIDENCE_CAPTURE_STANDARD.md`. It
-  defines the required 12-step story, product/proof state labels, caption
+  defines the required 12-step story, product/evidence state labels, caption
   template, redaction rules, and acceptance checklist before screenshots can be
   attached to the founder or investor material.
 - The local working scaffold for the product evidence sequence now exists at
@@ -110,11 +110,10 @@ Each accepted item should record:
   Playwright and synthetic demo state where required. There are 16 PNGs in the
   local candidate folder and every required product evidence step now has at
   least one candidate. Formal local review found no privacy, score,
-  route/session, or mandatory proof blocker. Cleaner recaptures cleared the
+  route/session, or mandatory evidence blocker. Cleaner recaptures cleared the
   step 04 and step 05 presentation caveats. Owner selected option `1` on
   2026-07-19 and accepted step 06 with a required crop-limitation caption note:
-  the short Recent state starts mid previous panel before the recent-record
-  proof. Owner selected option `1` again on 2026-07-19 and accepted step 01 as
+  the short Recent state starts mid previous panel before the recent-record evidence. Owner selected option `1` again on 2026-07-19 and accepted step 01 as
   a clear GSN entry screenshot; it does not prove completed onboarding or pilot
   adoption. Owner selected option `2` on 2026-07-19 and accepted step 02 as a
   clear synthetic personal GSN identity/account screenshot; it does not prove
@@ -175,9 +174,8 @@ Each accepted item should record:
   Step 04 was recaptured from the top-of-state Community Domain package and now
   shows the synthetic `GSN Demo Community A` identity, active operating state,
   Daily Work, and Governance separation in one phone viewport. Step 05 was
-  cleaner-recaptured after moving the draft-only proof state before activity
-  controls and now has clear source-activity proof. Step 06 has a clear proof
-  area and is accepted with a caption note about the adjacent previous-panel
+  cleaner-recaptured after moving the draft-only evidence state before activity
+  controls and now has clear source-activity evidence. Step 06 has a clear evidence area and is accepted with a caption note about the adjacent previous-panel
   text.
   The candidates are listed in
   `pilot_evidence_pack/12_product_evidence_capture/candidate_capture_log.md`.

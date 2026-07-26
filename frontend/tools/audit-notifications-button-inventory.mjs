@@ -320,9 +320,23 @@ assertContains(
   "Community verification request notifications must route to responder policy focus instead of a generic inbox dead end."
 );
 
+assertContains(
+  /function isCommunityConfirmationOutcomeNotice\(raw: any\): boolean \{[\s\S]*?community_confirmation\.outcome_updated[\s\S]*?community_confirmation\.request_expired[\s\S]*?function communityConfirmationOutcomeDecisionTarget\(target: string\): string \{[\s\S]*?community-confirmations\\\/public[\s\S]*?searchParams\.set\("focus", "decision"\)[\s\S]*?if \(isCommunityConfirmationOutcomeNotice\(raw\)\) \{[\s\S]*?return communityConfirmationOutcomeDecisionTarget\(explicit\);[\s\S]*?Record decision/,
+  "Community confirmation outcome and expiry notifications must land on the public outcome decision focus, not the top of the public paper."
+);
+
+assertContains(
+  /function trustPassportNotificationTarget\(target: string, raw: any\): string \{[\s\S]*?path !== NOTIFICATION_TARGETS\.TRUST[\s\S]*?searchParams\.set\([\s\S]*?"focus"[\s\S]*?"repair"[\s\S]*?: "evidence"[\s\S]*?splitPathSuffix\(explicit\)\.path === NOTIFICATION_TARGETS\.TRUST[\s\S]*?trustPassportNotificationTarget\(explicit, raw\)[\s\S]*?Open trust repair[\s\S]*?Open trust evidence[\s\S]*?trustPassportNotificationTarget\(safeStr\(onboardingTrustNotice\.ctaTo\) \|\| NOTIFICATION_TARGETS\.TRUST, onboardingTrustNotice\)/,
+  "Trust Passport notifications must focus evidence or repair lanes instead of opening the broad passport top."
+);
+assertContains(
+  /async function handlePrimaryNoticeAction\(notice: GuidanceNotice\)[\s\S]*?const noticeId = safeStr\(normalizedNotice\.id\);[\s\S]*?if \(settings\.openActionsDirectly\) \{[\s\S]*?void markNotificationRead\(Number\(noticeId\)\)\.catch\(\(\) => null\);[\s\S]*?navigateWithOrigin\(navigate, normalizedNotice\.ctaTo, location\);[\s\S]*?return;[\s\S]*?if \(noticeId\) \{[\s\S]*?void markAsRead\(noticeId\);/,
+  "Notifications primary action must navigate directly before local review-state repaint when direct-open mode is on."
+);
+
 assertPolicyContains(
-  /verificationRequestFocus[\s\S]*?verification_request[\s\S]*?community-confirmation-policy\.verification-request\.review-routing[\s\S]*?Review responders[\s\S]*?community-confirmation-policy\.verification-request\.open-inbox[\s\S]*?id="community-confirmation-policy-switches"/,
-  "Community Confirmation Policy must show a focused public verification request landing with immediate responder actions."
+  /verificationRequestFocus[\s\S]*?verification_request[\s\S]*?sectionLabel=\{memberWitnessFocus \|\| verificationRequestFocus \? "GSN evidence" : "Community confirmation"\}[\s\S]*?title=\{memberWitnessFocus \? "Member Witness" : verificationRequestFocus \? "Verification Request" : "Instant Confirmation Policy"\}[\s\S]*?Review responder readiness before this public request continues\.[\s\S]*?community-confirmation-policy\.verification-request\.review-routing[\s\S]*?Review responders[\s\S]*?community-confirmation-policy\.verification-request\.open-inbox[\s\S]*?!memberWitnessFocus && !verificationRequestFocus \? \([\s\S]*?<ExplainToggle[\s\S]*?!memberWitnessFocus && !verificationRequestFocus \? \([\s\S]*?Who can answer for this community\?[\s\S]*?id="community-confirmation-policy-switches"/,
+  "Community Confirmation Policy must show a focused public verification request landing with immediate responder actions before the policy switches, without the generic policy hero in focused mode."
 );
 
 assertContains(
@@ -343,6 +357,11 @@ assertGuidanceContains(
 assertGuidanceContains(
   /community_member_witness\.request_to_respond[\s\S]*?community_member_witness\.outcome_updated[\s\S]*?member witness request[\s\S]*?member witness result/,
   "Shared guidance must keep member-witness notifications in Act now."
+);
+
+assertGuidanceContains(
+  /function guidanceTrustPassportTarget\(focus: "evidence" \| "repair"[\s\S]*?focus=\$\{encodeURIComponent\(focus\)\}[\s\S]*?trust score[\s\S]*?guidanceTrustPassportTarget\("evidence"\)[\s\S]*?primary === "bank" \? GUIDANCE_TARGETS\.PAYOUT_DETAILS : guidanceTrustPassportTarget\("evidence"\)[\s\S]*?ctaTo: guidanceTrustPassportTarget\("repair"\)/,
+  "Shared guidance must route trust evidence and repair notices to focused Trust Passport lanes."
 );
 assertContains(
   /const \[isPhone, setIsPhone\] = useState<boolean>\([\s\S]*?window\.innerWidth <= 640[\s\S]*?gridTemplateColumns: isPhone\s*\?\s*"1fr"/,

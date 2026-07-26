@@ -105,6 +105,44 @@ self.addEventListener("fetch", (event) => {
   }
 });
 
+function normalizePushActionUrl(rawTarget, kind, payload) {
+  const target = String(rawTarget || "/app/notifications");
+  const eventKind = String(kind || "").trim().toLowerCase();
+  let url;
+
+  try {
+    url = new URL(target, self.location.origin);
+  } catch {
+    return "/app/notifications";
+  }
+
+  if (
+    (eventKind === "community_confirmation.outcome_updated" ||
+      eventKind === "community_confirmation.request_expired") &&
+    /^\/community-confirmations\/public\/[^/?#]+$/.test(url.pathname)
+  ) {
+    if (!url.searchParams.has("focus")) {
+      url.searchParams.set("focus", "decision");
+    }
+  }
+
+  if (url.pathname === "/app/trust" && !url.searchParams.has("focus")) {
+    const text = [
+      eventKind,
+      String(payload?.title || ""),
+      String(payload?.body || ""),
+      String(payload?.action_label || ""),
+    ]
+      .join(" ")
+      .toLowerCase();
+    url.searchParams.set(
+      "focus",
+      /repair|weaken|weakened|pressure|follow-up/.test(text) ? "repair" : "evidence",
+    );
+  }
+
+  return `${url.pathname}${url.search}${url.hash}`;
+}
 self.addEventListener("push", (event) => {
   let payload = {};
   try {
@@ -115,9 +153,9 @@ self.addEventListener("push", (event) => {
 
   const title = String(payload.title || "GSN notification");
   const body = String(payload.body || "A GSN update is waiting.");
-  const actionUrl = String(payload.action_url || "/app/notifications");
-  const actionLabel = String(payload.action_label || "Open");
   const kind = String(payload.kind || "gsn.notification");
+  const actionUrl = normalizePushActionUrl(payload.action_url, kind, payload);
+  const actionLabel = String(payload.action_label || "Open");
   const notificationId = String(payload.notification_id || Date.now());
 
   event.waitUntil(

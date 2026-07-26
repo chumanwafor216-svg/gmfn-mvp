@@ -16,6 +16,8 @@ export type CommunityProofInput = {
   holderRole?: unknown;
   identityLabel?: unknown;
   memberWitnessCount?: unknown;
+  memberWitnessLabel?: unknown;
+  memberWitnessDetail?: unknown;
   membershipStrengthLabel?: unknown;
   membershipCurrentnessLabel?: unknown;
   membershipCurrentnessScope?: unknown;
@@ -90,6 +92,8 @@ export function buildCommunityProofItems(input: CommunityProofInput): CommunityP
   const holderRole = firstText(input.holderRole, "Member");
   const identityLabel = firstText(input.identityLabel, "Identity evidence building");
   const witnessCount = numberValue(input.memberWitnessCount);
+  const memberWitnessLabel = firstText(input.memberWitnessLabel, "Member witness");
+  const memberWitnessDetail = firstText(input.memberWitnessDetail);
   const membershipStrength = firstText(
     input.membershipStrengthLabel,
     witnessCount > 0 ? "Witness evidence present" : "No current witness shown"
@@ -130,12 +134,13 @@ export function buildCommunityProofItems(input: CommunityProofInput): CommunityP
     },
     {
       key: "member-witness",
-      label: "Member witness",
+      label: memberWitnessLabel || "Member witness",
       value: membershipStrength,
       detail:
-        witnessCount > 0
+        memberWitnessDetail ||
+        (witnessCount > 0
           ? `${witnessCount} member witness${witnessCount === 1 ? "" : "es"} shown for this community scope.`
-          : "No active member witness count is shown yet.",
+          : "No active member witness count is shown yet."),
       tone: hasPositiveCount(input.memberWitnessCount) ? communityProofTone(membershipStrength) : "warn",
       icon: "certificate-seal",
     },

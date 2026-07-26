@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import GsnSnapshotPaperCard from "../components/GsnSnapshotPaperCard";
+import CommunityProofPanel from "../components/CommunityProofPanel";
 import EvidenceMeter, {
   evidenceMeterStyle,
   stopInertMeterTap,
@@ -153,6 +154,8 @@ type MerchantSummary = {
   official_id_label?: string | null;
   community_identity_confirmed?: boolean | null;
   community_identity_label?: string | null;
+  member_witness_count?: string | number | null;
+  membership_strength_label?: string | null;
   identity_evidence_summary?: Record<string, any> | null;
   community_role_counts?: Record<string, number> | null;
   community_activity_count?: string | number | null;
@@ -197,6 +200,8 @@ type TrustSlipSummary = {
   official_id_label?: string | null;
   community_identity_confirmed?: boolean | null;
   community_identity_label?: string | null;
+  member_witness_count?: string | number | null;
+  membership_strength_label?: string | null;
   identity_verified?: boolean | null;
   identity_status_label?: string | null;
   identity_context?: Record<string, any> | null;
@@ -1095,6 +1100,18 @@ function frontendAbsoluteUrl(pathOrUrl: string): string {
   }
 }
 
+function trustPassportLaneFromLocation(locationLike: Pick<Location, "search" | "hash">): TrustPassportLaneKey {
+  const focus = safeStr(new URLSearchParams(locationLike.search).get("focus")).toLowerCase();
+  const hash = safeStr(locationLike.hash).replace(/^#/, "").toLowerCase();
+  const target = focus || hash;
+
+  if (["community", "community-confirmation", "confirmation"].includes(target)) return "community";
+  if (["repair", "next-step", "pressure", "trust-repair"].includes(target)) return "repair";
+  if (["evidence", "story", "reading", "rank", "standing-reading"].includes(target)) return "evidence";
+  if (["finance", "finance-discipline"].includes(target)) return "finance";
+  if (["documents", "trustslip", "trust-slip"].includes(target)) return "documents";
+  return "standing";
+}
 function getCciState(me: any, trustSlip: any): TrustReadingState {
   const rawScore =
     me?.cci_score ??
@@ -1408,6 +1425,7 @@ export default function TrustScorePage() {
   const navigate = useNavigate();
   const location = useLocation();
   const pressureSectionRef = useRef<HTMLElement | null>(null);
+  const laneSelectorRef = useRef<HTMLElement | null>(null);
   const selectedClanId = Number((api as any).getSelectedClanId?.() || 0);
   const trustScoreContextKey = String(selectedClanId || 0);
   const trustScoreContextRef = useRef(trustScoreContextKey);
@@ -1451,7 +1469,7 @@ export default function TrustScorePage() {
     text: string;
   } | null>(null);
   const [activeTrustPassportLane, setActiveTrustPassportLane] =
-    useState<TrustPassportLaneKey>("standing");
+    useState<TrustPassportLaneKey>(() => trustPassportLaneFromLocation(location));
   const [showIdentityCompletionPaths, setShowIdentityCompletionPaths] =
     useState(false);
   const [identityEvidenceOpen, setIdentityEvidenceOpen] = useState(false);
@@ -1997,6 +2015,19 @@ export default function TrustScorePage() {
     communityContext?.next_witness_renewal_status_label,
     "Not Started"
   );
+  const communityMemberWitnessCount = firstTruthy(
+    trustSlipSummary?.member_witness_count,
+    trustSlipSummary?.merchant_summary?.member_witness_count,
+    communityContext?.member_witness_count
+  );
+  const communityMembershipStrengthLabel = firstTruthy(
+    trustSlipSummary?.membership_strength_label,
+    trustSlipSummary?.merchant_summary?.membership_strength_label,
+    communityContext?.membership_strength_label,
+    membershipCurrentnessLabel.toLowerCase().includes("current")
+      ? "Witness evidence current"
+      : "Ask for member-witness confirmation"
+  );
   const membershipCurrentnessReady =
     membershipCurrentnessLabel.toLowerCase().includes("current");
 
@@ -2379,6 +2410,22 @@ export default function TrustScorePage() {
     return `${routes.identity}${separator}task=${encodeURIComponent(task)}&mode=complete`;
   }
 
+  useEffect(() => {
+    const focusedLane = trustPassportLaneFromLocation(location);
+    setActiveTrustPassportLane(focusedLane);
+
+    if (typeof window === "undefined") return undefined;
+    const timer = window.setTimeout(() => {
+      const target = focusedLane === "repair" ? pressureSectionRef.current : laneSelectorRef.current;
+      if (!target) return;
+      revealElementWithoutJump(target, {
+        surface: "trust-passport",
+        targetId: focusedLane === "repair" ? "pressure-notes" : "trust-passport-lanes",
+        reason: `url-focus-${focusedLane}`,
+      });
+    }, 120);
+    return () => window.clearTimeout(timer);
+  }, [location, location.hash, location.search]);
   function scrollToPressureNotes() {
     setNotice({
       tone: "success",
@@ -3067,6 +3114,8 @@ export default function TrustScorePage() {
         {noticeNode}
 
         <section
+          ref={laneSelectorRef}
+          id="trust-passport-lanes"
           style={{
             ...pageCard("#FFFFFF"),
             border: "1px solid rgba(37,78,119,0.14)",
@@ -4459,6 +4508,25 @@ export default function TrustScorePage() {
                 This lane checks the community identity behind the member's
                 trust story before showing local and cross-community readings.
               </p>
+
+              <CommunityProofPanel
+                title="Community evidence before trust reading"
+                subtitle="Use community evidence, witness currentness, activity, and TrustSlip status before relying on this reading."
+                compact={isCompact}
+                communityName={passportVm.identity.communityName}
+                holderRole={roleLabel(passportVm.identity.holderRole)}
+                identityLabel={passportVm.identity.communityIdentityLabel}
+                memberWitnessCount={communityMemberWitnessCount}
+                membershipStrengthLabel={communityMembershipStrengthLabel}
+                membershipCurrentnessLabel={passportVm.identity.membershipCurrentnessLabel}
+                membershipCurrentnessScope={passportVm.identity.membershipCurrentnessScope}
+                nextWitnessRenewalStatusLabel={passportVm.identity.nextWitnessRenewalStatusLabel}
+                communityActivityCount={passportVm.identity.communityActivityCount}
+                communityActivityLabel={passportVm.identity.communityActivityLabel}
+                communityActivityCategories={passportVm.identity.communityActivityCategories}
+                trustSlipStatusLabel={passportVm.outputs.trustSlipStatus}
+                style={{ marginTop: 14 }}
+              />
 
               <div
                 style={{
