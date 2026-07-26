@@ -77,6 +77,8 @@ assertOrder(
     { label: "why received", pattern: /data-debug-id="trust-slip-verify\.public\.recipient-access-record"/ },
     { label: "why trusted", pattern: /data-gsn-public-record-trust-reasons="decision-pack"/ },
     { label: "decision reading", pattern: /data-debug-id="trust-slip-verify\.public\.decision-pack-reading"/ },
+    { label: "decision evidence details", pattern: /<TrustDocumentDisclosureSection[\s\S]*?title="Decision evidence details"/ },
+    { label: "decision profile cage", pattern: /data-gsn-decision-pack-profile="public-purpose-filter"/ },
     { label: "more details disclosure", pattern: /<TrustDocumentDisclosureSection[\s\S]*?title="More details and evidence"/ },
     { label: "more details cage", pattern: /data-gsn-public-more-details="authority-evidence-limits"/ },
     { label: "authority strip", pattern: /<TrustPaperAuthorityStrip/ },
@@ -143,8 +145,8 @@ assertContains(
 
 assertContains(
   "publicPaper",
-  /Decision Pack reading[\s\S]*?Can I make a better decision with this evidence\?[\s\S]*?This document exists to reduce uncertainty, not eliminate risk\.[\s\S]*?GSN provides trustworthy evidence; the recipient remains responsible for the decision\.[\s\S]*?Opened by \$\{decisionPackRecipient\}\. Read this as decision support, not a private investigation report\./,
-  "Decision Pack reading must keep the uncertainty, risk, responsibility, and non-investigation boundaries in the first viewport."
+  /Decision Pack reading[\s\S]*?Can I make a better decision with this evidence\?[\s\S]*?This document exists to reduce uncertainty, not eliminate risk\.[\s\S]*?GSN provides trustworthy evidence; the recipient remains responsible for the decision\.[\s\S]*?Opened by \$\{decisionPackRecipient\}\. Read this as decision support, not a private investigation report\.[\s\S]*?<TrustDocumentDisclosureSection[\s\S]*?title="Decision evidence details"[\s\S]*?summary="Open for purpose-filtered signals, categories, gaps, checks, and evidence boundaries\."[\s\S]*?data-gsn-decision-pack-profile="public-purpose-filter"/,
+  "Decision Pack reading must keep the quick judgement read visible while purpose-filtered categories, gaps, checks, and boundaries stay collapsed."
 );
 
 if (findings.length) {

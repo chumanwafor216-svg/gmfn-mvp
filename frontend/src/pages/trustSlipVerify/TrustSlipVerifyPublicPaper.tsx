@@ -1841,8 +1841,12 @@ export default function TrustSlipVerifyPublicPaper({
               tone={validNow ? "trust" : "warning"}
             />
           </div>
-          <div
-            data-gsn-decision-pack-profile="public-purpose-filter"
+          <TrustDocumentDisclosureSection
+            title="Decision evidence details"
+            summary="Open for purpose-filtered signals, categories, gaps, checks, and evidence boundaries."
+          >
+            <div
+              data-gsn-decision-pack-profile="public-purpose-filter"
             style={{
               borderRadius: compact ? 12 : 16,
               border: "1px solid rgba(37,78,119,0.12)",
@@ -1982,6 +1986,7 @@ export default function TrustSlipVerifyPublicPaper({
               {decisionPackProfile.boundaryNote}
             </div>
           </div>
+        </TrustDocumentDisclosureSection>
         </div>
 
         <TrustDocumentDisclosureSection

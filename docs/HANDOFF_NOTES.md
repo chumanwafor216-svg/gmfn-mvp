@@ -1,3 +1,41 @@
+## CURRENT LOCAL STATE - 2026-07-26 - Public TrustSlip Decision Pack details collapsed locally
+
+Owner trigger:
+- Owner selected `1` to continue the decision-first TrustSlip enhancement after the heavier evidence layers were collapsed.
+
+Unabated truth:
+- This is another hierarchy cleanup slice, not a backend or product-model redesign.
+- The public TrustSlip paper now keeps the Decision Pack reading's decision question and four quick tiles visible, while the deeper purpose-filtered signals, categories, gaps, checks, and evidence boundaries are collapsed behind `Decision evidence details`.
+- The route still has several document sections below the first read because Trust Document Language requires authority, evidence status, security, boundaries, QR/reference, and registry notices. The direction is now right: quick decision first, deeper record detail by disclosure.
+- No backend route, schema, evidence extraction, scoring, TrustEvent, permission, or deployment behavior changed.
+
+Changed:
+- `frontend/src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx`
+  - Wrapped `data-gsn-decision-pack-profile="public-purpose-filter"` inside a `Decision evidence details` disclosure.
+  - Left the quick `Decision Pack reading` question and four decision tiles visible.
+- `frontend/tools/audit-public-trustslip-first-viewport.mjs`
+  - Added order/assertion cages requiring `Decision evidence details` and the purpose-filtered profile to sit behind disclosure before the heavier public record details.
+- `frontend/tools/audit-public-trustslip-verify-boundary.mjs`
+  - Updated TrustSlip boundary cages so Decision Pack detail and heavier authority/evidence/security details both remain behind disclosures after the first decision panels.
+
+Routes/screens affected:
+- Public TrustSlip Verify / Decision Pack paper routes such as `/t/:code`, `/verify/trust-slip`, and `/trust-slips/verify/:code`.
+- Signed-in TrustSlip Verify inherits this public paper when showing a public code.
+
+Verification:
+- Passed `npm exec -- eslint src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx tools/audit-public-trustslip-first-viewport.mjs tools/audit-public-trustslip-verify-boundary.mjs` from `frontend`.
+- Passed `npm --prefix frontend run audit:public-trustslip-first-viewport`.
+- Passed `npm --prefix frontend run audit:public-trustslip-verify-boundary`.
+- Passed `npm --prefix frontend run audit:trust-actions`.
+- Passed `npm --prefix frontend run audit:protected-button-freeze`.
+- Passed `npm --prefix frontend run build`.
+- Passed `git diff --check` before handoff with only recurring LF/CRLF warnings.
+
+Deployment:
+- Local only. Not pushed or deployed; owner must select `2` or explicitly say push/deploy.
+
+Recommended next step:
+- Move the same decision-first structure to signed-in Trust Passport / TrustScore first viewport, or visually test public TrustSlip on a phone viewport before changing more of the document stack.
 ## CURRENT LOCAL STATE - 2026-07-26 - Public TrustSlip heavier evidence layers collapsed locally
 
 Owner trigger:

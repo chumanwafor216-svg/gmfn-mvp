@@ -207,8 +207,8 @@ assertContains(
 );
 assertContains(
   "publicPaper",
-  /data-debug-id="trust-slip-verify\.public\.decision-pack-reading"[\s\S]*?<TrustDocumentDisclosureSection[\s\S]*?title="More details and evidence"[\s\S]*?summary="Open for record authority, evidence status, community evidence, security, and limits\."[\s\S]*?data-gsn-public-more-details="authority-evidence-limits"[\s\S]*?<TrustPaperAuthorityStrip[\s\S]*?<TrustDocumentConfidenceRibbon items=\{trustSlipConfidenceRibbonItems\} \/>[\s\S]*?<CommunityProofPanel[\s\S]*?title="Known by community"[\s\S]*?trustSlipStatusLabel=\{publicValidityLabel\}[\s\S]*?<TrustDocumentDisclosureSection[\s\S]*?title="TrustSlip security and limits"/,
-  "Public TrustSlip heavier authority, evidence-status, community-evidence, and limit layers must stay behind one More details disclosure after the recipient decision-first panels."
+  /data-debug-id="trust-slip-verify\.public\.decision-pack-reading"[\s\S]*?<TrustDocumentDisclosureSection[\s\S]*?title="Decision evidence details"[\s\S]*?summary="Open for purpose-filtered signals, categories, gaps, checks, and evidence boundaries\."[\s\S]*?data-gsn-decision-pack-profile="public-purpose-filter"[\s\S]*?<TrustDocumentDisclosureSection[\s\S]*?title="More details and evidence"[\s\S]*?summary="Open for record authority, evidence status, community evidence, security, and limits\."[\s\S]*?data-gsn-public-more-details="authority-evidence-limits"[\s\S]*?<TrustPaperAuthorityStrip[\s\S]*?<TrustDocumentConfidenceRibbon items=\{trustSlipConfidenceRibbonItems\} \/>[\s\S]*?<CommunityProofPanel[\s\S]*?title="Known by community"[\s\S]*?trustSlipStatusLabel=\{publicValidityLabel\}[\s\S]*?<TrustDocumentDisclosureSection[\s\S]*?title="TrustSlip security and limits"/,
+  "Public TrustSlip Decision Pack details and heavier authority/evidence/security layers must stay behind disclosures after the recipient decision-first panels."
 );
 assertContains(
   "publicPaper",
@@ -218,8 +218,8 @@ assertContains(
 
 assertContains(
   "publicPaper",
-  /Public Decision Pack[\s\S]*?Public Decision Pack for a safer next decision[\s\S]*?data-gsn-public-decision-first="one-answer-four-facts"[\s\S]*?Decision first[\s\S]*?\{decisionFirstAnswer\}[\s\S]*?data-gsn-public-decision-first-facts="four-quick-facts"[\s\S]*?data-gsn-public-decision-boundary="compact"[\s\S]*?Decision Boundary[\s\S]*?Why you received this[\s\S]*?Why this record can be trusted[\s\S]*?Check the live paper, then decide[\s\S]*?current, traceable, and limited[\s\S]*?do not guarantee the holder or replace your own judgement[\s\S]*?Decision Pack reading[\s\S]*?Can I make a better decision with this evidence\?[\s\S]*?This document exists to reduce uncertainty, not eliminate risk[\s\S]*?GSN provides trustworthy evidence; the recipient remains responsible for the decision[\s\S]*?Evidence focus[\s\S]*?What to inspect[\s\S]*?More details and evidence[\s\S]*?data-gsn-public-more-details="authority-evidence-limits"/,
-  "Public TrustSlip paper must lead with decision support before collapsing heavier authority, evidence-status, community-evidence, and security details."
+  /Public Decision Pack[\s\S]*?Public Decision Pack for a safer next decision[\s\S]*?data-gsn-public-decision-first="one-answer-four-facts"[\s\S]*?Decision first[\s\S]*?\{decisionFirstAnswer\}[\s\S]*?data-gsn-public-decision-first-facts="four-quick-facts"[\s\S]*?data-gsn-public-decision-boundary="compact"[\s\S]*?Decision Boundary[\s\S]*?Why you received this[\s\S]*?Why this record can be trusted[\s\S]*?Check the live paper, then decide[\s\S]*?current, traceable, and limited[\s\S]*?do not guarantee the holder or replace your own judgement[\s\S]*?Decision Pack reading[\s\S]*?Can I make a better decision with this evidence\?[\s\S]*?This document exists to reduce uncertainty, not eliminate risk[\s\S]*?GSN provides trustworthy evidence; the recipient remains responsible for the decision[\s\S]*?Evidence focus[\s\S]*?What to inspect[\s\S]*?Decision evidence details[\s\S]*?data-gsn-decision-pack-profile="public-purpose-filter"[\s\S]*?More details and evidence[\s\S]*?data-gsn-public-more-details="authority-evidence-limits"/,
+  "Public TrustSlip paper must lead with decision support before collapsing purpose-filtered evidence details and heavier authority/evidence/security details."
 );
 
 assertContains(
