@@ -186,8 +186,20 @@ assertNotContains(
 
 assertContains(
   "src/pages/OpenTrustPage.tsx",
-  /classText: "Not shown yet"[\s\S]*?Select a community to view local trust[\s\S]*?classText: "Not shown yet"[\s\S]*?No local community reading yet/,
+  /classText: "Not shown yet"[\s\S]*?Select a community to view local evidence[\s\S]*?classText: "Not shown yet"[\s\S]*?No local community reading yet/,
   "Open Trust missing-reading states must say the reading is not shown yet."
+);
+
+assertNotContains(
+  "src/pages/OpenTrustPage.tsx",
+  /Local community trust|local trust reading|immediate community trust reading|fuller trust story|trust surface|fuller trust record|longer trust record|trust reading is being formed/i,
+  "Open Trust page must frame the local reading as community evidence and evidence views, not trust-story or trust-surface language."
+);
+
+assertContains(
+  "src/pages/OpenTrustPage.tsx",
+  /Local community evidence[\s\S]*?fuller evidence record[\s\S]*?evidence views[\s\S]*?immediate community evidence reading[\s\S]*?Local evidence reading[\s\S]*?right evidence view for the right question/,
+  "Open Trust page must keep the local community evidence-view framing."
 );
 
 assertNotContains(

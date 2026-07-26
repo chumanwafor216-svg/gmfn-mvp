@@ -152809,3 +152809,34 @@ GSN-branded invite composer and invite-entry continuity.
   - local only so far; do not push/deploy unless the owner explicitly selects `2` or says push/deploy.
 - Next recommended step:
   - commit this trust-band evidence-decision language slice locally, then either continue another small visible/shared wording cleanup on `1` or push/deploy the accumulated local commits on `2`.
+## 2026-07-26 - Open Trust Local Evidence View Language
+
+- Trigger:
+  - owner selected `1` after the trust-band evidence-decision language slice was committed locally.
+- Unabated truth:
+  - this pass cleans `/app/open-trust` / `OpenTrustPage` visible copy only;
+  - it does not rename the Open Trust route, Trust Passport route, CTA targets, debug IDs, selected-community handling, trust/open-trust data fields, backend APIs, or scoring logic;
+  - product names such as Trust Passport remain visible where they identify the destination route;
+  - this is not a Decision Pack generator, Evidence Ledger route, Behavioural Placement schema, route redesign, scoring rewrite, or approval workflow.
+- Changed:
+  - `frontend/src/pages/OpenTrustPage.tsx`
+    - reframes missing-state and hero copy from local community trust to local community evidence;
+    - changes `Local trust reading` to `Local evidence reading`;
+    - changes route guidance from fuller trust story/trust surface/longer trust record to fuller evidence record/evidence view/longer evidence record;
+    - changes community route guidance from where trust reading is formed to where evidence reading is formed.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - updates the Open Trust missing-state assertion to expect local evidence wording;
+    - adds scoped guards rejecting old Open Trust trust-story/trust-surface phrasing;
+    - asserts the new local community evidence-view framing remains present.
+- Verification:
+  - passed `npm exec -- eslint src/pages/OpenTrustPage.tsx tools/audit-trust-actions.mjs` from `frontend`;
+  - passed direct `node tools/audit-trust-actions.mjs` from `frontend`;
+  - passed direct `node tools/audit-dashboard-actions.mjs` from `frontend` during focused rerun;
+  - passed direct `node tools/audit-identity-integrity-front-package.mjs` from `frontend` during focused rerun;
+  - passed `npm --prefix frontend run audit:protected-button-freeze`;
+  - passed `npm --prefix frontend run build`;
+  - passed `git diff --check` before the handoff entry.
+- Deployment:
+  - local only so far; do not push/deploy unless the owner explicitly selects `2` or says push/deploy.
+- Next recommended step:
+  - commit this Open Trust local evidence-view slice locally, then either continue another small visible/shared wording cleanup on `1` or push/deploy the accumulated local commits on `2`.

@@ -326,9 +326,9 @@ function getOpenTrustState(
       classText: "Not shown yet",
       postureSource: "-",
       tone: "neutral",
-      statusText: "Select a community to view local trust",
+      statusText: "Select a community to view local evidence",
       whyText:
-        "Local community trust belongs to the community you are using right now. It is separate from the wider cross-community consistency reading.",
+        "Local community evidence belongs to the community you are using right now. It is separate from the wider cross-community consistency reading.",
     };
   }
 
@@ -338,7 +338,7 @@ function getOpenTrustState(
     tone: "neutral",
     statusText: "No local community reading yet",
     whyText:
-      "Local community trust reflects your standing in your current community. Select or use a community first, then this reading will appear here.",
+      "Local community evidence reflects the current record in your community. Select or use a community first, then this reading will appear here.",
   };
 }
 
@@ -434,19 +434,19 @@ export default function OpenTrustPage() {
         label: "Stay here when",
         title: "You only need the immediate community read",
         body:
-          "Local community trust answers the narrower question: how are you reading inside the community you are in right now?",
+          "Local community evidence answers the narrower question: what does this community record show right now?",
       },
       {
         label: "Move to Trust Passport when",
-        title: "You need the fuller trust story",
+        title: "You need the fuller evidence record",
         body:
-          "Trust Passport carries the wider explanation, document surfaces, and longer trust record beyond this one community snapshot.",
+          "Trust Passport carries the wider explanation, evidence views, and longer evidence record beyond this one community snapshot.",
       },
       {
         label: "Move to Community when",
         title: "You need to act inside the current group",
         body:
-          "Open Community if the next step is member activity, coordination, or checking the place where this trust reading is being formed.",
+          "Open Community if the next step is member activity, coordination, or checking the place where this evidence reading is being formed.",
       },
     ],
     []
@@ -466,9 +466,9 @@ export default function OpenTrustPage() {
   return (
     <div style={{ maxWidth: 980, margin: "0 auto", display: "grid", gap: 18 }}>
       <PageTopNav
-        sectionLabel="Local community trust"
-        title="Local community trust"
-        subtitle="Your immediate community reading without the wider Trust Passport bundle."
+        sectionLabel="Local community evidence"
+        title="Local community evidence"
+        subtitle="Your immediate community evidence reading without the wider Trust Passport bundle."
         homeTo={routes.dashboard}
         homeLabel="Dashboard"
         backTo={routes.dashboard}
@@ -477,7 +477,7 @@ export default function OpenTrustPage() {
 
       <section style={pageCard("#FFFFFF")}>
         <div style={sectionLabel()}>
-          {openTrustIconText("shield", "Local trust reading", 22)}
+          {openTrustIconText("shield", "Local evidence reading", 22)}
         </div>
         <div
           style={{
@@ -494,7 +494,7 @@ export default function OpenTrustPage() {
           </div>
         </div>
         <div style={{ marginTop: 8, ...helperText(), maxWidth: 760 }}>
-          Use this page when you want the immediate community trust reading only.
+          Use this page when you want the immediate community evidence reading only.
         </div>
         <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
           <span style={badge(true)}>
@@ -564,10 +564,10 @@ export default function OpenTrustPage() {
             lineHeight: 1.15,
           }}
         >
-          Use the right trust surface for the right question
+          Use the right evidence view for the right question
         </div>
         <div style={{ marginTop: 8, ...helperText(), maxWidth: 760 }}>
-          Local community trust is the narrow community reading. If you need the fuller trust record or
+          Local community evidence is the narrow community reading. If you need the fuller evidence record or
           the place where this reading is being shaped, move there directly from here.
         </div>
 
