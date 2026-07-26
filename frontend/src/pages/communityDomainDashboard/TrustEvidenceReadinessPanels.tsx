@@ -473,8 +473,8 @@ export default function CommunityDomainTrustEvidenceReadinessPanels({
           </div>
         ) : null}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          Rule: readiness only; no records, uploads, credentials, proof,
-          authority verification, trust reading, money, or private evidence.
+          Boundary: readiness only; no records, uploads, credentials, proof,
+          authority verification, trust scoring, money, or private evidence.
         </div>
       </div>
       ) : null}
@@ -543,9 +543,9 @@ export default function CommunityDomainTrustEvidenceReadinessPanels({
           </div>
         ) : null}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          Rule: release readiness only; no evidence release, proof, public
+          Boundary: release readiness only; no evidence release, proof, public
           links, QR codes, credentials, sharing, permission changes, trust
-          reading, money, or private evidence.
+          scoring, money, or private evidence.
         </div>
       </div>
       ) : null}
@@ -600,7 +600,7 @@ export default function CommunityDomainTrustEvidenceReadinessPanels({
           </div>
         ) : null}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          Rule: relay readiness only; no relay paths, proof, reposts,
+          Boundary: relay readiness only; no relay paths, proof, reposts,
           discovery, affiliations, private records, credentials, marketplace
           activity, billing, or money.
         </div>
@@ -670,7 +670,7 @@ export default function CommunityDomainTrustEvidenceReadinessPanels({
           </div>
         ) : null}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          Rule: audience readiness only; no messages, delivery jobs,
+          Boundary: audience readiness only; no messages, delivery jobs,
           audience lists, announcements, member lists, marketplace records,
           money, trust records, or private records.
         </div>
@@ -730,7 +730,7 @@ export default function CommunityDomainTrustEvidenceReadinessPanels({
           </div>
         ) : null}
         <div style={{ ...helperText(), marginTop: 10, fontSize: 13 }}>
-          Rule: mobility readiness only; no trust records, credentials,
+          Boundary: mobility readiness only; no trust records, credentials,
           relay paths, proof, outward links, marketplace activity, separate
           communities, money, or private records.
         </div>

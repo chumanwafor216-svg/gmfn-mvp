@@ -151897,3 +151897,34 @@ GSN-branded invite composer and invite-entry continuity.
   - local only so far; routine continuation publishing remains batch-frozen unless the product owner explicitly asks to push/deploy.
 - Next recommended step:
   - if continuing before push/deploy, consider adding the public first-viewport smoke to the broader evidence-display smoke batch, or push/deploy the accumulated local Decision Pack copy/smoke commits.
+
+## 2026-07-26 - Public Verify Recipient Smoke Suite Cage
+
+- Trigger:
+  - owner selected `1` after the public TrustSlip recipient-card smoke was committed locally.
+- Unabated truth:
+  - the broader evidence-display smoke batch already included `smoke-public-trustslip-verify-states.mjs`, so the real missing piece was discoverability/source guarding inside the evidence-display boundary suite;
+  - the full static batch also exposed an unrelated Community Domain evidence readiness copy drift: the component said `Rule:` and `trust reading` while the existing audit required the stronger frozen `Boundary:` / `trust scoring` wording;
+  - this pass changes audit coverage and readiness boundary copy only. It does not change backend verification, public payload categories, private Trust Passport boundaries, scoring, approvals, guarantees, access logging, payment behavior, or deployment state.
+- Changed:
+  - `frontend/tools/audit-evidence-display-boundary-suite.mjs`
+    - registers `frontend/tools/smoke-public-trustslip-verify-states.mjs` as a suite source;
+    - cages the Decision Pack recipient-card smoke scenario for `decision_pack=employment&access_scope=public_decision_pack`;
+    - requires the smoke to assert human wording (`Shared to support Employment Decision Pack.`, `Employment Decision Pack`, `Public Decision Pack`), hide raw machine context (`public_context_from_link`, `public_decision_pack`), and keep the card in the phone first viewport.
+  - `frontend/src/pages/communityDomainDashboard/TrustEvidenceReadinessPanels.tsx`
+    - restored the five evidence readiness guardrail sentences to the audited `Boundary:` wording;
+    - changed the two trust-readable phrases back to `trust scoring` so the Community Domain evidence readiness audit and full evidence-display batch pass again.
+- Verification:
+  - passed `npm exec -- eslint tools/audit-evidence-display-boundary-suite.mjs tools/smoke-evidence-display-boundary-batch.mjs tools/smoke-public-trustslip-verify-states.mjs tools/audit-community-domain-evidence-readiness-boundary.mjs` from `frontend`;
+  - passed `npm --prefix frontend run audit:community-domain-evidence-readiness-boundary`;
+  - passed `npm --prefix frontend run audit:evidence-display-boundary-suite`;
+  - passed `npm --prefix frontend run audit:public-trustslip-verify-boundary`;
+  - passed `npm --prefix frontend run audit:evidence-display-boundary-batch`;
+  - passed `npm --prefix frontend run smoke:evidence-display-boundary-batch` with sandbox escalation for the Vite/Playwright process launch;
+  - passed `npm --prefix frontend run audit:protected-button-freeze`;
+  - passed `npm --prefix frontend run build`;
+  - passed `git diff --check`.
+- Deployment:
+  - local only so far; routine continuation publishing remains batch-frozen unless the product owner explicitly asks to push/deploy.
+- Next recommended step:
+  - commit this suite cage, then push/deploy the accumulated local commits only when the product owner explicitly asks.
