@@ -42,25 +42,64 @@ jobs:
       - name: Trigger frontend deploy hook
         if: ${{ env.RENDER_FRONTEND_DEPLOY_HOOK_URL != '' }}
         run: |
-          echo "Triggering Render deploy for gmfn-frontend at ${GITHUB_SHA}."
+          echo "Triggering Render deploy hook for gmfn-frontend at ${GITHUB_SHA}."
           frontend_deploy_hook_url="$(printf '%s' "$RENDER_FRONTEND_DEPLOY_HOOK_URL" | tr -d '[:space:]')"
           if [ -z "$frontend_deploy_hook_url" ]; then
             echo "::error::RENDER_FRONTEND_DEPLOY_HOOK_URL is configured but empty after trimming whitespace."
             exit 1
           fi
-          curl -fsS -X POST "$frontend_deploy_hook_url"
-          echo "gmfn-frontend deploy hook accepted the request."
+          separator="?"
+          case "$frontend_deploy_hook_url" in
+            *\?*) separator="&" ;;
+          esac
+          curl -fsS -X POST "${frontend_deploy_hook_url}${separator}ref=${GITHUB_SHA}"
+          echo "gmfn-frontend deploy hook accepted the exact commit request."
 
       - name: Trigger exact frontend deploy through Render API
         if: ${{ env.RENDER_API_KEY != '' && env.RENDER_FRONTEND_SERVICE_ID != '' }}
         run: |
+          set -euo pipefail
           echo "Triggering exact Render API deploy for gmfn-frontend service ${RENDER_FRONTEND_SERVICE_ID} at ${GITHUB_SHA}."
-          curl -fsS -X POST "https://api.render.com/v1/services/${RENDER_FRONTEND_SERVICE_ID}/deploys" \
+          deploy_json="$(curl -fsS -X POST "https://api.render.com/v1/services/${RENDER_FRONTEND_SERVICE_ID}/deploys" \
             -H "accept: application/json" \
             -H "authorization: Bearer ${RENDER_API_KEY}" \
             -H "content-type: application/json" \
-            --data "{\"commitId\":\"${GITHUB_SHA}\"}"
-          echo "gmfn-frontend exact Render API deploy accepted the request."
+            --data "{\"commitId\":\"${GITHUB_SHA}\"}")"
+          deploy_id="$(printf '%s' "$deploy_json" | node -e 'let input=""; process.stdin.on("data", c => input += c); process.stdin.on("end", () => { try { const row = JSON.parse(input || "{}"); process.stdout.write(row?.deploy?.id || row?.id || ""); } catch { process.stdout.write(""); } });')"
+          if [ -z "$deploy_id" ]; then
+            echo "::warning::Render API response did not include a deploy id. Looking up recent gmfn-frontend deploys."
+            deploys_json="$(curl -fsS "https://api.render.com/v1/services/${RENDER_FRONTEND_SERVICE_ID}/deploys?limit=10" \
+              -H "accept: application/json" \
+              -H "authorization: Bearer ${RENDER_API_KEY}")"
+            deploy_id="$(printf '%s' "$deploys_json" | GITHUB_SHA="$GITHUB_SHA" node -e 'let input=""; process.stdin.on("data", c => input += c); process.stdin.on("end", () => { try { const rows = JSON.parse(input || "[]"); const match = rows.find((row) => ((row?.deploy || row)?.commit?.id || "").startsWith(process.env.GITHUB_SHA)); const fallback = rows[0]?.deploy || rows[0] || {}; process.stdout.write((match?.deploy || match || fallback)?.id || ""); } catch { process.stdout.write(""); } });')"
+          fi
+          if [ -z "$deploy_id" ]; then
+            echo "::error::Could not resolve a gmfn-frontend Render deploy id. The workflow cannot verify live deployment."
+            exit 1
+          fi
+          echo "gmfn-frontend Render deploy id: ${deploy_id}"
+
+          terminal_failures="build_failed update_failed canceled pre_deploy_failed deactivated"
+          for attempt in $(seq 1 36); do
+            status_json="$(curl -fsS "https://api.render.com/v1/services/${RENDER_FRONTEND_SERVICE_ID}/deploys/${deploy_id}" \
+              -H "accept: application/json" \
+              -H "authorization: Bearer ${RENDER_API_KEY}")"
+            status="$(printf '%s' "$status_json" | node -e 'let input=""; process.stdin.on("data", c => input += c); process.stdin.on("end", () => { try { const row = JSON.parse(input || "{}"); const deploy = row?.deploy || row || {}; process.stdout.write(deploy.status || "unknown"); } catch { process.stdout.write("unknown"); } });')"
+            echo "gmfn-frontend Render deploy ${deploy_id} status: ${status} (${attempt}/36)."
+            if [ "$status" = "live" ]; then
+              echo "gmfn-frontend exact Render API deploy is live."
+              exit 0
+            fi
+            for failure in $terminal_failures; do
+              if [ "$status" = "$failure" ]; then
+                echo "::error::gmfn-frontend Render deploy ${deploy_id} ended with status ${status}."
+                exit 1
+              fi
+            done
+            sleep 20
+          done
+          echo "::error::Timed out waiting for gmfn-frontend Render deploy ${deploy_id} to become live."
+          exit 1
 
       - name: Note missing frontend deploy credentials
         if: ${{ env.RENDER_FRONTEND_DEPLOY_HOOK_URL == '' && (env.RENDER_API_KEY == '' || env.RENDER_FRONTEND_SERVICE_ID == '') }}

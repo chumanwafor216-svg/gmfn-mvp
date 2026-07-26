@@ -1,3 +1,28 @@
+## CURRENT LOCAL STATE - 2026-07-26 - Render frontend deploy workflow now polls live deploy status
+
+Owner trigger:
+- Continued after exact frontend Render API deploy was accepted but the public frontend still served the old index asset after repeated no-cache checks.
+
+Unabated truth:
+- A successful GitHub workflow and a successful Render trigger request are still not the same thing as the public site serving the new build.
+- Render's documented deploy flow can queue/build before the service becomes live, and failed deploys leave the previous live service running. Therefore the workflow must wait for a terminal deploy state before we call it deployed.
+
+Changed:
+- `.github/workflows/render-deploy.yml`
+  - Frontend deploy hook now appends `ref=${GITHUB_SHA}` so the hook requests the exact commit rather than an implicit branch state.
+  - Exact frontend Render API deploy now captures the deploy id, falls back to the recent deploy list when the API response has no id, and polls `GET /v1/services/{serviceId}/deploys/{deployId}` until the deploy reaches `live` or a terminal failure.
+  - Terminal failure statuses currently treated as failures: `build_failed`, `update_failed`, `canceled`, `pre_deploy_failed`, and `deactivated`.
+  - Backend deploy behaviour remains unchanged and still respects `deploy_api=false`.
+
+Routes/screens affected:
+- None directly. This is deployment verification reliability only.
+
+Verification:
+- Inspected the generated workflow block locally.
+- Used official Render docs while making the workflow decision: deploy hooks support a specific `ref`, the API trigger endpoint accepts `commitId`, deploys can be retrieved by service/deploy id, and Render deploys only become production after the deploy reaches live.
+
+Recommended next step:
+- Commit and push this polling workflow change, rerun `render-deploy.yml --ref main -f deploy_api=false`, and trust the workflow result only if the frontend deploy reaches `live`.
 ## CURRENT LOCAL STATE - 2026-07-26 - Frontend Render deploy now requests exact commit through API
 
 Owner trigger:
