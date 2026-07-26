@@ -1,3 +1,39 @@
+## CURRENT LOCAL STATE - 2026-07-26 - Mobile visual sweep verified locally
+
+Owner trigger:
+- Owner selected `1` after the combined local readiness verification was committed locally.
+
+Unabated truth:
+- No runtime code changed in this slice. This was a broad mobile visual guardrail check after the Trust Passport aggregate/density work.
+- `audit:gsn-visible-language` and `audit:protected-button-freeze` passed immediately.
+- The first non-escalated `audit:mobile-visual-sweep` attempt hit Chromium `spawn EPERM` in the sandbox.
+- The escalated sweep initially failed with `ERR_CONNECTION_REFUSED` because no local server was running on the sweep's expected `http://127.0.0.1:5180`.
+- A temporary Vite server was started on `http://127.0.0.1:5180`; the mobile visual sweep then passed.
+- The temporary Vite listener on port `5180` was stopped afterward. Port `5180` was clear at final check.
+- This still does not prove real-device browser chrome, touch feel, production Render state, live payload depth, or installed PWA cache refresh.
+
+Changed:
+- `docs/HANDOFF_NOTES.md`
+  - Recorded the mobile visual sweep verification and the sandbox/server-start retry truth.
+
+Routes/screens affected:
+- No runtime route changed.
+- Verification covered the mobile visual sweep route list, including `/cover`, `/login`, entry routes, authenticated dashboard/community/marketplace/shop/finance/trust-passport/loans/payment routes, plus protected action and visible-language guard suites.
+
+Verification:
+- Passed `npm --prefix frontend run audit:gsn-visible-language`.
+- Passed `npm --prefix frontend run audit:protected-button-freeze`.
+- Non-escalated `npm --prefix frontend run audit:mobile-visual-sweep` failed on sandbox Chromium `spawn EPERM`.
+- Escalated `npm --prefix frontend run audit:mobile-visual-sweep` failed before server startup with `ERR_CONNECTION_REFUSED` on `http://127.0.0.1:5180`.
+- Started temporary local Vite with `npm --prefix frontend run dev -- --host 127.0.0.1 --port 5180`.
+- Passed `GSN_AUDIT_BASE_URL=http://127.0.0.1:5180 npm --prefix frontend run audit:mobile-visual-sweep` with escalation.
+- Stopped the temporary Node/Vite listener on port `5180`.
+
+Deployment:
+- Local only. Not pushed or deployed; owner must select `2` or explicitly say push/deploy.
+
+Recommended next step:
+- The local Trust Passport/evidence batch has now passed build, route-state smokes, evidence readiness, protected action, visible-language, and mobile visual sweep checks. If the owner wants pilot review, select `2` to push/deploy.
 ## CURRENT LOCAL STATE - 2026-07-26 - Combined local readiness verified locally
 
 Owner trigger:
