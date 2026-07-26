@@ -264,14 +264,14 @@ assertContains(
   "Backend public verify route must attach public-safe Decision Pack access context and record it without changing TrustEvent evidence."
 );assertContains(
   "backendDecisionPacks",
-  /PACK_RELEVANCE_SIGNALS[\s\S]*?build_decision_pack_profile[\s\S]*?relevant_signals[\s\S]*?gaps_to_check[\s\S]*?does not score the person/,
-  "Backend Decision Pack profile must remain a purpose-filtered evidence relevance profile, not a score or decision engine."
+  /PACK_RELEVANCE_SIGNALS[\s\S]*?PACK_EVENT_CATEGORY_FILTERS[\s\S]*?build_decision_pack_evidence_extract[\s\S]*?private_review_required[\s\S]*?build_decision_pack_profile[\s\S]*?evidence_extract[\s\S]*?does not score the person/,
+  "Backend Decision Pack profile must remain a purpose-filtered evidence relevance profile with a redacted event extract, not a score or decision engine."
 );
 
 assertContains(
   "backend",
-  /response_payload\["decision_pack_profile"\] = build_decision_pack_profile\([\s\S]*?public_payload=response_payload/,
-  "Backend public verify route must attach the Decision Pack profile from the already public payload."
+  /build_decision_pack_evidence_extract\([\s\S]*?slip=slip[\s\S]*?context=decision_pack_context[\s\S]*?response_payload\["decision_pack_profile"\] = build_decision_pack_profile\([\s\S]*?evidence_extract=decision_pack_evidence_extract/,
+  "Backend public verify route must attach a redacted Decision Pack evidence extract before building the profile."
 );
 
 assertContains(
@@ -282,14 +282,14 @@ assertContains(
 
 assertContains(
   "viewModel",
-  /normalizeDecisionPackProfile[\s\S]*?relevantSignals[\s\S]*?gapsToCheck[\s\S]*?It does not score the person[\s\S]*?decisionPackProfile,/,
-  "Public TrustSlip Verify view model must translate the Decision Pack profile without inventing a score."
+  /normalizeDecisionPackEvidenceExtract[\s\S]*?privateReviewRequired[\s\S]*?normalizeDecisionPackProfile[\s\S]*?evidenceExtract[\s\S]*?It does not score the person[\s\S]*?decisionPackProfile,/,
+  "Public TrustSlip Verify view model must translate the Decision Pack profile and redacted event extract without inventing a score."
 );
 
 assertContains(
   "publicPaper",
-  /data-gsn-decision-pack-profile="public-purpose-filter"[\s\S]*?Purpose-filtered evidence[\s\S]*?Gaps to check[\s\S]*?Recommended checks[\s\S]*?decisionPackProfile\.boundaryNote/,
-  "Public TrustSlip paper must render purpose-filtered evidence, gaps, checks, and the non-decision boundary."
+  /data-gsn-decision-pack-profile="public-purpose-filter"[\s\S]*?Purpose-filtered evidence[\s\S]*?data-gsn-decision-pack-evidence-extract="redacted-trust-events"[\s\S]*?Evidence categories[\s\S]*?Private review needed[\s\S]*?Gaps to check[\s\S]*?Recommended checks[\s\S]*?decisionPackProfile\.boundaryNote/,
+  "Public TrustSlip paper must render purpose-filtered evidence, redacted event categories, private-review prompts, gaps, checks, and the non-decision boundary."
 );
 assertContains(
   "backendDecisionPacks",

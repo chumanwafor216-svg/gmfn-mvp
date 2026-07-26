@@ -123,6 +123,25 @@ type TrustSlipVerifyPublicPaperProps = {
       nextStep: string;
     }>;
     recommendedChecks: string[];
+    evidenceExtract: {
+      source: string;
+      sourceNote: string;
+      categories: Array<{
+        key: string;
+        label: string;
+        status: string;
+        evidenceCount: number | null;
+        latestAt: string;
+        decisionUse: string;
+      }>;
+      privateReviewRequired: Array<{
+        key: string;
+        label: string;
+        status: string;
+        decisionUse: string;
+      }>;
+      boundaryNote: string;
+    };
     basisNote: string;
     boundaryNote: string;
   };
@@ -954,6 +973,23 @@ export default function TrustSlipVerifyPublicPaper({
   const decisionPackProfileSignals = decisionPackProfile.relevantSignals.slice(0, 4);
   const decisionPackProfileGaps = decisionPackProfile.gapsToCheck.slice(0, 3);
   const decisionPackProfileChecks = decisionPackProfile.recommendedChecks.slice(0, 3);
+  const decisionPackEvidenceCategories = decisionPackProfile.evidenceExtract.categories.slice(0, 4);
+  const decisionPackPrivateReview = decisionPackProfile.evidenceExtract.privateReviewRequired.slice(0, 3);
+  const decisionPackEvidenceRows: Array<[string, string]> = (decisionPackEvidenceCategories.length
+    ? decisionPackEvidenceCategories.map((category): [string, string] => [
+        category.label,
+        `${category.evidenceCount ?? 0} public-safe record${category.evidenceCount === 1 ? "" : "s"}${
+          category.latestAt ? `; latest ${category.latestAt}` : ""
+        }`,
+      ])
+    : [["No public-safe category", "Ask for live confirmation or the full Trust Passport if more evidence is needed."] as [string, string]]
+  ).slice(0, 4);
+  const decisionPackPrivateReviewRows: Array<[string, string]> = decisionPackPrivateReview.map(
+    (category): [string, string] => [category.label, category.decisionUse]
+  );
+  const decisionPackPrivateReviewDisplayRows: Array<[string, string]> = decisionPackPrivateReviewRows.length
+    ? decisionPackPrivateReviewRows
+    : [["No sensitive category requested", "This public pack still remains evidence, not approval."]];
   const decisionPackGapRows: Array<[string, string]> = (decisionPackProfileGaps.length
     ? decisionPackProfileGaps.map((gap): [string, string] => [gap.label, gap.nextStep])
     : [["No major gap shown", "Still match the evidence to your own decision risk."] as [string, string]]
@@ -1574,6 +1610,26 @@ export default function TrustSlipVerifyPublicPaper({
               ))}
             </div>
 
+            <div
+              data-gsn-decision-pack-evidence-extract="redacted-trust-events"
+              style={{
+                display: "grid",
+                gridTemplateColumns: compact ? "1fr" : "minmax(0, 1fr) minmax(0, 1fr)",
+                gap: 8,
+              }}
+            >
+              <OfficialResultTable
+                title="Evidence categories"
+                rows={decisionPackEvidenceRows}
+                compact={compact}
+              />
+              <OfficialResultTable
+                title="Private review needed"
+                rows={decisionPackPrivateReviewDisplayRows}
+                compact={compact}
+              />
+            </div>
+
             {decisionPackProfileGaps.length || decisionPackProfileChecks.length ? (
               <div
                 style={{
@@ -1594,6 +1650,17 @@ export default function TrustSlipVerifyPublicPaper({
                 />
               </div>
             ) : null}
+
+            <div
+              style={{
+                color: "#5F4100",
+                fontSize: compact ? 10.5 : 11.5,
+                fontWeight: 850,
+                lineHeight: 1.35,
+              }}
+            >
+              {decisionPackProfile.evidenceExtract.sourceNote} {decisionPackProfile.evidenceExtract.boundaryNote}
+            </div>
 
             <div
               style={{

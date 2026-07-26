@@ -5,7 +5,7 @@ from typing import Any, Mapping, Optional
 
 from sqlalchemy.orm import Session
 
-from app.db.models import TrustSlip, TrustSlipDecisionPackAccess
+from app.db.models import TrustEvent, TrustSlip, TrustSlipDecisionPackAccess
 
 
 @dataclass(frozen=True)
@@ -487,10 +487,210 @@ def _decision_signal(payload: Mapping[str, Any], key: str) -> dict[str, str]:
     }
 
 
+
+PUBLIC_EVENT_CATEGORY_LABELS: dict[str, str] = {
+    "identity_membership": "Identity and membership evidence",
+    "community_participation": "Community participation evidence",
+    "service_trade": "Service or trade evidence",
+    "trust_document_activity": "Trust document activity",
+    "relationship_path": "Relationship path evidence",
+}
+
+PUBLIC_EVENT_CATEGORY_USES: dict[str, str] = {
+    "identity_membership": "Use this to check whether the holder has a visible identity/community anchor.",
+    "community_participation": "Use this to check whether the holder has repeated community activity, not only a profile claim.",
+    "service_trade": "Use this to ask who observed the service, trade, fulfilment, or marketplace behaviour.",
+    "trust_document_activity": "Use this to confirm that the public trust-document trail exists and remains current.",
+    "relationship_path": "Use this to ask who brought the holder into the community and in what capacity.",
+}
+
+SENSITIVE_EVENT_CATEGORY_LABELS: dict[str, str] = {
+    "finance_repayment": "Financial or repayment evidence",
+    "guarantor_support": "Guarantor or support-risk evidence",
+    "bank_payment": "Bank, payment, payout, or withdrawal evidence",
+    "dispute_caution": "Dispute, rejection, default, or caution evidence",
+}
+
+PACK_EVENT_CATEGORY_FILTERS: dict[str, tuple[str, ...]] = {
+    "community_standing": (
+        "identity_membership",
+        "community_participation",
+        "relationship_path",
+        "trust_document_activity",
+    ),
+    "referral_decision": (
+        "relationship_path",
+        "identity_membership",
+        "community_participation",
+        "trust_document_activity",
+    ),
+    "guarantor_decision": (
+        "identity_membership",
+        "community_participation",
+        "relationship_path",
+        "finance_repayment",
+        "guarantor_support",
+        "bank_payment",
+        "dispute_caution",
+    ),
+    "employment_decision": (
+        "identity_membership",
+        "community_participation",
+        "service_trade",
+        "relationship_path",
+        "trust_document_activity",
+    ),
+    "housing_decision": (
+        "identity_membership",
+        "community_participation",
+        "relationship_path",
+        "finance_repayment",
+        "dispute_caution",
+    ),
+    "trade_check": (
+        "service_trade",
+        "community_participation",
+        "relationship_path",
+        "trust_document_activity",
+        "dispute_caution",
+    ),
+    "supplier_decision": (
+        "service_trade",
+        "community_participation",
+        "relationship_path",
+        "bank_payment",
+        "dispute_caution",
+    ),
+    "volunteer_decision": (
+        "identity_membership",
+        "community_participation",
+        "relationship_path",
+        "dispute_caution",
+    ),
+    "business_partnership": (
+        "service_trade",
+        "community_participation",
+        "relationship_path",
+        "finance_repayment",
+        "guarantor_support",
+        "bank_payment",
+        "dispute_caution",
+    ),
+    "community_membership": (
+        "identity_membership",
+        "community_participation",
+        "relationship_path",
+        "trust_document_activity",
+        "dispute_caution",
+    ),
+}
+
+
+def _event_text(value: Any) -> str:
+    return _clean(value, limit=96).lower().replace("-", "_").replace(".", "_")
+
+
+def _public_event_category(event_type: Any) -> Optional[str]:
+    text = _event_text(event_type)
+    if not text:
+        return None
+    if any(token in text for token in ("default", "missed", "overdue", "declined", "rejected", "revoked", "frozen", "dispute", "complaint")):
+        return "dispute_caution"
+    if any(token in text for token in ("bank", "payment", "payout", "withdrawal", "deposit", "vault_payment")):
+        return "bank_payment"
+    if any(token in text for token in ("repayment", "repaid", "loan_", "loan")):
+        return "finance_repayment"
+    if "guarantor" in text:
+        return "guarantor_support"
+    if any(token in text for token in ("identity", "phone", "photo", "member_verified", "community_member_verified")):
+        return "identity_membership"
+    if any(token in text for token in ("invite", "clan_join", "joined", "membership")):
+        return "relationship_path" if "invite" in text else "identity_membership"
+    if any(token in text for token in ("marketplace", "merchant", "shop", "delivery", "service", "trade", "vault_order")):
+        return "service_trade"
+    if any(token in text for token in ("community", "contribution", "participation", "role", "leader", "committee")):
+        return "community_participation"
+    if "trust_slip" in text or "trustslip" in text:
+        return "trust_document_activity"
+    return None
+
+
+def _event_category_row(category: str, rows: list[TrustEvent]) -> dict[str, Any]:
+    latest = max((getattr(row, "created_at", None) for row in rows), default=None)
+    return {
+        "key": category,
+        "label": PUBLIC_EVENT_CATEGORY_LABELS.get(category, "Public evidence category"),
+        "status": "available" if rows else "gap",
+        "evidence_count": len(rows),
+        "latest_at": latest.isoformat() if latest else None,
+        "source": "redacted_trust_events",
+        "decision_use": PUBLIC_EVENT_CATEGORY_USES.get(
+            category,
+            "Use this as a public pointer only; ask for direct confirmation before relying on it.",
+        ),
+    }
+
+
+def build_decision_pack_evidence_extract(
+    db: Session,
+    *,
+    slip: TrustSlip,
+    context: Optional[dict[str, str]],
+    limit: int = 250,
+) -> dict[str, Any]:
+    if not context:
+        return {}
+
+    holder_user_id = getattr(slip, "holder_user_id", None)
+    if holder_user_id is None:
+        return {}
+
+    pack_key = context.get("decision_pack_key") or "general_decision_pack"
+    category_filter = PACK_EVENT_CATEGORY_FILTERS.get(pack_key) or (
+        "identity_membership",
+        "community_participation",
+        "relationship_path",
+        "trust_document_activity",
+    )
+    public_categories = [category for category in category_filter if category in PUBLIC_EVENT_CATEGORY_LABELS]
+    sensitive_categories = [category for category in category_filter if category in SENSITIVE_EVENT_CATEGORY_LABELS]
+
+    query = db.query(TrustEvent).filter(TrustEvent.subject_user_id == int(holder_user_id))
+    if getattr(slip, "clan_id", None):
+        query = query.filter((TrustEvent.clan_id == int(slip.clan_id)) | (TrustEvent.clan_id.is_(None)))
+    rows = (
+        query.order_by(TrustEvent.created_at.desc(), TrustEvent.id.desc())
+        .limit(max(1, min(int(limit or 250), 500)))
+        .all()
+    )
+
+    grouped: dict[str, list[TrustEvent]] = {category: [] for category in public_categories}
+    for row in rows:
+        category = _public_event_category(getattr(row, "event_type", None))
+        if category in grouped:
+            grouped[category].append(row)
+
+    categories = [_event_category_row(category, grouped.get(category, [])) for category in public_categories]
+    return {
+        "source": "trust_events_redacted_extract",
+        "source_note": "Aggregated from TrustEvent categories only. Raw TrustEvents, actor details, notes, metadata, payment references, and private contacts are not exposed publicly.",
+        "categories": categories,
+        "private_review_required": [
+            {
+                "key": category,
+                "label": SENSITIVE_EVENT_CATEGORY_LABELS[category],
+                "status": "private_review_required",
+                "decision_use": "Ask the holder for the full Trust Passport or live community confirmation if this sensitive evidence matters.",
+            }
+            for category in sensitive_categories
+        ],
+        "boundary_note": "This extract shows public-safe category counts only. It is not a raw event timeline, score, approval, guarantee, repayment history, or dispute disclosure.",
+    }
 def build_decision_pack_profile(
     context: Optional[dict[str, str]],
     *,
     public_payload: Mapping[str, Any],
+    evidence_extract: Optional[dict[str, Any]] = None,
 ) -> dict[str, Any]:
     if not context:
         return {}
@@ -527,6 +727,7 @@ def build_decision_pack_profile(
             for signal in gaps[:4]
         ],
         "recommended_checks": checks,
+        "evidence_extract": evidence_extract or {},
         "basis_note": "Generated from public TrustSlip signals already visible to the recipient; no private Trust Passport contents are exposed.",
         "boundary_note": "This profile highlights relevant evidence and gaps. It does not score the person, guarantee future behaviour, or make the decision for the recipient.",
     }

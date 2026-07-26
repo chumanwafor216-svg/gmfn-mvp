@@ -22,6 +22,7 @@ from app.services.community_confirmation_service import build_community_confirma
 from app.services.trust_events_services import log_trust_event
 from app.services.trust_slip_decision_packs import (
     build_decision_pack_access_payload,
+    build_decision_pack_evidence_extract,
     build_decision_pack_profile,
     list_decision_pack_accesses_for_holder,
     normalize_decision_pack_context,
@@ -1261,9 +1262,15 @@ def verify_trust_slip_public(
                 recorded=decision_pack_access_recorded,
             )
         )
+        decision_pack_evidence_extract = build_decision_pack_evidence_extract(
+            db,
+            slip=slip,
+            context=decision_pack_context,
+        )
         response_payload["decision_pack_profile"] = build_decision_pack_profile(
             decision_pack_context,
             public_payload=response_payload,
+            evidence_extract=decision_pack_evidence_extract,
         )
 
     return response_payload

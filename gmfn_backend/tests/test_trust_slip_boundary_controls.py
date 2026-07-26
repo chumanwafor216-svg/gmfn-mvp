@@ -258,6 +258,60 @@ def test_public_verify_decision_pack_access_bounds_unknown_public_context(
     finally:
         db.close()
 
+def test_public_verify_decision_pack_extracts_redacted_event_categories(
+    client,
+    seed_clan_admin_membership,
+):
+    _create_trust_slip(code="ACCESS-EVIDENCE")
+
+    db = SessionLocal()
+    try:
+        now = datetime.now(timezone.utc)
+        db.add_all(
+            [
+                TrustEvent(
+                    event_type="merchant.delivery_confirmed",
+                    clan_id=1,
+                    actor_user_id=1,
+                    subject_user_id=1,
+                    created_at=now,
+                    meta={"private_note": "Delivered to private address"},
+                ),
+                TrustEvent(
+                    event_type="loan_repaid",
+                    clan_id=1,
+                    actor_user_id=1,
+                    subject_user_id=1,
+                    created_at=now,
+                    meta={"payment_reference": "SECRET-REF"},
+                ),
+            ]
+        )
+        db.commit()
+    finally:
+        db.close()
+
+    response = client.get(
+        "/trust-slips/verify/ACCESS-EVIDENCE",
+        params={"decision_pack": "business_partnership"},
+    )
+
+    assert response.status_code == 200, response.text
+    profile = response.json()["decision_pack_profile"]
+    extract = profile["evidence_extract"]
+    assert extract["source"] == "trust_events_redacted_extract"
+    service = next(row for row in extract["categories"] if row["key"] == "service_trade")
+    assert service["evidence_count"] == 1
+    assert service["source"] == "redacted_trust_events"
+    private_review = {row["key"]: row for row in extract["private_review_required"]}
+    assert private_review["finance_repayment"]["status"] == "private_review_required"
+    assert "evidence_count" not in private_review["finance_repayment"]
+    profile_text = str(profile)
+    assert "merchant.delivery_confirmed" not in profile_text
+    assert "loan_repaid" not in profile_text
+    assert "SECRET-REF" not in profile_text
+    assert "private address" not in profile_text
+
 def test_holder_can_read_recent_decision_pack_accesses_without_recipient_identity(
     client,
     seed_clan_admin_membership,

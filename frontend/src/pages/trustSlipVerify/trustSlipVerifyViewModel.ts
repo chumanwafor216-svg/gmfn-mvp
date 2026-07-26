@@ -14,6 +14,30 @@ import type { TrustSlipVerifyQuickAnswer } from "./TrustSlipVerifyPublicPaper";
 type VerifyBannerTone = "success" | "warning" | "error" | "info";
 
 
+type DecisionPackEvidenceCategory = {
+  key: string;
+  label: string;
+  status: string;
+  evidenceCount: number | null;
+  latestAt: string;
+  decisionUse: string;
+};
+
+type DecisionPackPrivateReviewCategory = {
+  key: string;
+  label: string;
+  status: string;
+  decisionUse: string;
+};
+
+export type DecisionPackEvidenceExtractView = {
+  source: string;
+  sourceNote: string;
+  categories: DecisionPackEvidenceCategory[];
+  privateReviewRequired: DecisionPackPrivateReviewCategory[];
+  boundaryNote: string;
+};
+
 type DecisionPackProfileSignal = {
   key: string;
   label: string;
@@ -33,9 +57,12 @@ export type DecisionPackProfileView = {
     nextStep: string;
   }>;
   recommendedChecks: string[];
+  evidenceExtract: DecisionPackEvidenceExtractView;
   basisNote: string;
   boundaryNote: string;
-};type BuildTrustSlipVerifyViewModelArgs = {
+};
+
+type BuildTrustSlipVerifyViewModelArgs = {
   record: any;
   me: any;
   isAppRoute: boolean;
@@ -181,6 +208,50 @@ function stringList(value: any): string[] {
   return Array.isArray(value) ? value.map((item) => safeStr(item)).filter(Boolean) : [];
 }
 
+function normalizeDecisionPackEvidenceExtract(raw: any): DecisionPackEvidenceExtractView {
+  const source = raw && typeof raw === "object" ? raw : {};
+  const categories = Array.isArray(source.categories) ? source.categories : [];
+  const privateReviewRequired = Array.isArray(source.private_review_required)
+    ? source.private_review_required
+    : [];
+  return {
+    source: firstTruthy(source.source, "trust_events_redacted_extract"),
+    sourceNote: firstTruthy(
+      source.source_note,
+      "Aggregated from public-safe TrustEvent categories only. Raw TrustEvents are not exposed."
+    ),
+    categories: categories
+      .map((category: any) => ({
+        key: firstTruthy(category?.key, category?.label),
+        label: firstTruthy(category?.label, "Evidence category"),
+        status: firstTruthy(category?.status, "not_shown"),
+        evidenceCount: firstNumberLike(category?.evidence_count),
+        latestAt: safeDateTime(category?.latest_at),
+        decisionUse: firstTruthy(
+          category?.decision_use,
+          "Use this as a public pointer only; ask for direct confirmation before relying on it."
+        ),
+      }))
+      .filter((category: DecisionPackEvidenceCategory) => category.key || category.label)
+      .slice(0, 6),
+    privateReviewRequired: privateReviewRequired
+      .map((category: any) => ({
+        key: firstTruthy(category?.key, category?.label),
+        label: firstTruthy(category?.label, "Private evidence category"),
+        status: firstTruthy(category?.status, "private_review_required"),
+        decisionUse: firstTruthy(
+          category?.decision_use,
+          "Ask for the full Trust Passport or live community confirmation if this sensitive evidence matters."
+        ),
+      }))
+      .filter((category: DecisionPackPrivateReviewCategory) => category.key || category.label)
+      .slice(0, 6),
+    boundaryNote: firstTruthy(
+      source.boundary_note,
+      "This extract shows public-safe category counts only. It is not a raw event timeline, score, approval, guarantee, repayment history, or dispute disclosure."
+    ),
+  };
+}
 function normalizeDecisionPackProfile(
   raw: any,
   fallbackPurpose: string,
@@ -234,6 +305,7 @@ function normalizeDecisionPackProfile(
         ],
     gapsToCheck,
     recommendedChecks: stringList(source.recommended_checks).slice(0, 4),
+    evidenceExtract: normalizeDecisionPackEvidenceExtract(source.evidence_extract),
     basisNote: firstTruthy(
       source.basis_note,
       "Generated from public TrustSlip signals already visible to the recipient; no private Trust Passport contents are exposed."

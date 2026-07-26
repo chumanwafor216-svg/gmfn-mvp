@@ -1,3 +1,51 @@
+## CURRENT LOCAL STATE - 2026-07-26 - Redacted Decision Pack TrustEvent extract added locally
+
+Owner trigger:
+- Owner selected `1` to continue after the public Decision Pack relevance profile.
+
+Unabated truth:
+- This slice starts real TrustEvent-backed extraction, but it is still not the complete Evidence Ledger architecture, not Behavioural Placement, not a scoring engine, and not raw pack-specific evidence disclosure.
+- Public Decision Packs now get redacted TrustEvent category counts only. Raw TrustEvents, actor identities, notes, metadata, payment references, private contacts, repayment histories, bank/payment details, and dispute details are not exposed on the unauthenticated paper.
+- Finance, guarantor, payment, and dispute/caution categories are intentionally shown only as `private_review_required` prompts. This avoids pretending that a public link is safe enough for sensitive evidence.
+
+Changed:
+- `gmfn_backend/app/services/trust_slip_decision_packs.py`
+  - Added public event category labels and pack event category filters.
+  - Added `build_decision_pack_evidence_extract()` to read TrustEvents for the TrustSlip holder and return public-safe aggregated categories.
+  - Added sensitive category handling for finance/repayment, guarantor/support risk, bank/payment/payout/withdrawal, and dispute/caution evidence.
+  - Attached the extract into `build_decision_pack_profile()` as `evidence_extract`.
+- `gmfn_backend/app/api/routes/trust_slips.py`
+  - Public `/trust-slips/verify/{code}` now builds the redacted TrustEvent extract before constructing the Decision Pack profile.
+- `gmfn_backend/tests/test_trust_slip_boundary_controls.py`
+  - Added a public verify test proving safe trade evidence is aggregated while finance event type, payment reference, private note, and raw event labels stay out of the public profile.
+- `frontend/src/pages/trustSlipVerify/trustSlipVerifyViewModel.ts`
+  - Normalizes `evidence_extract` into typed category rows and private-review rows.
+- `frontend/src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx`
+  - Adds an `Evidence categories` table and a `Private review needed` table inside the existing `Purpose-filtered evidence` panel.
+- `frontend/tools/audit-public-trustslip-verify-boundary.mjs`
+  - Cages the backend redacted extractor, route attachment, view model extract normalizer, and public evidence/private-review tables.
+
+Routes/screens affected:
+- Backend public route `/trust-slips/verify/{code}` now includes `decision_pack_profile.evidence_extract` when Decision Pack context is present.
+- Frontend public TrustSlip Verify shows redacted evidence category counts and private-review prompts inside the Decision Pack reading area.
+
+Verification:
+- Passed `python -m py_compile gmfn_backend\app\services\trust_slip_decision_packs.py gmfn_backend\app\api\routes\trust_slips.py gmfn_backend\tests\test_trust_slip_boundary_controls.py`.
+- Passed `python -m pytest -q gmfn_backend\tests\test_trust_slip_boundary_controls.py`.
+- Passed `npm exec -- eslint src/pages/TrustSlipVerifyPage.tsx src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx src/pages/trustSlipVerify/trustSlipVerifyViewModel.ts src/pages/trustSlipVerify/trustSlipVerifyData.ts tools/audit-public-trustslip-verify-boundary.mjs` from `frontend`.
+- Passed `npm --prefix frontend run audit:public-trustslip-verify-boundary`.
+- Passed `npm --prefix frontend run audit:trust-passport-trustslip-boundary`.
+- Passed `npm --prefix frontend run audit:trust-actions`.
+- Passed `npm --prefix frontend run audit:proof-surfaces`.
+- Passed `npm --prefix frontend run audit:protected-button-freeze`.
+- Passed `npm --prefix frontend run build`.
+- Passed `git diff --check` with only recurring LF/CRLF warnings.
+
+Deployment:
+- Local only. Not pushed or deployed because the current pilot protocol says routine continuation work should be batched locally and published only when the owner explicitly approves.
+
+Recommended next step:
+- Add an authenticated holder/private Passport view of the same Decision Pack extract that can show stronger provenance and selected raw TrustEvent references under consent. Keep public and private extract policies separate.
 ## CURRENT LOCAL STATE - 2026-07-26 - Public Decision Pack relevance profile added locally
 
 Owner trigger:
