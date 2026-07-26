@@ -152392,3 +152392,48 @@ GSN-branded invite composer and invite-entry continuity.
   - local only so far; do not push/deploy unless the owner explicitly selects `2` or says push/deploy.
 - Next recommended step:
   - commit this evidence-reading note label slice locally, then either continue the next small Trust Passport evidence-language cleanup on `1` or push/deploy the accumulated local commits on `2`.
+## 2026-07-26 - Trust Passport Evidence Story Surface Language
+
+- Trigger:
+  - owner selected `1` after the evidence-reading note label slice was committed locally.
+- Unabated truth:
+  - this pass cleans private `/app/trust` Trust Passport lane copy only;
+  - unrelated public TrustSlip Verify, public community credential, PDF-generator, and broader TrustEvent model wording still contain some `trust reading` terms and were intentionally not changed in this slice;
+  - internal arrays such as `trustSurfaceCards` and backend/source concepts such as TrustEvents remain technical debt. Renaming those safely would be a broader contract/refactor pass;
+  - this is presentation/test-language cleanup only. It does not add an Identity Profile route, Evidence Ledger route, Behavioural Placement schema, Decision Pack generator, scoring rewrite, approval engine, backend evidence model, or verified-community model.
+- Changed:
+  - `frontend/src/pages/TrustScorePage.tsx`
+    - changes the Evidence Story lane detail from `why trust moved` to evidence movement language;
+    - changes Community Confirmation lane detail from `trust surfaces` to community-scoped evidence and live confirmation;
+    - renames `4. Why this reading looks like this` to `4. Why the evidence reads this way`;
+    - renames `What helps trust` to `What supports this reading`;
+    - changes the Community Confirmation lead from `Can this trust story...` to `Can this evidence...`;
+    - renames `Community evidence before trust reading` to `Community evidence before relying`;
+    - renames `5. Trust surfaces` to `5. Evidence surfaces`;
+    - renames `6. Why did my trust change?` to `6. What changed in the evidence?`;
+    - renames visible recent-event and refresh/footer copy to evidence-reading language.
+  - `frontend/tools/smoke-trust-passport-trustslip-boundary.mjs`
+    - clicks the Evidence Story and Community Confirmation lanes and asserts the new visible headings render;
+    - asserts the old `Why this reading looks like this`, `What helps trust`, `Why did my trust change?`, `Can this trust story...`, `Community evidence before trust reading`, and `5. Trust surfaces` headings do not render.
+  - `frontend/tools/audit-trust-passport-lane-map.mjs`, `frontend/tools/audit-trust-passport-evidence-story-lane.mjs`, `frontend/tools/audit-trust-passport-community-confirmation-lane.mjs`, `frontend/tools/audit-trust-passport-front-package.mjs`, `frontend/tools/audit-trust-passport-repair-lane.mjs`, and `frontend/tools/audit-trust-passport-button-inventory.mjs`
+    - update source cages and audit messages for evidence-story/evidence-surface wording.
+  - `docs/SCREEN_SPECS.md` and `docs/GSN_TRUST_PASSPORT_PURPOSE_AUDIT.md`
+    - update the current Trust Passport lane mapping from trust movement wording to evidence movement wording.
+- Verification:
+  - passed `npm exec -- eslint src/pages/TrustScorePage.tsx tools/audit-trust-passport-lane-map.mjs tools/audit-trust-passport-evidence-story-lane.mjs tools/audit-trust-passport-community-confirmation-lane.mjs tools/audit-trust-passport-front-package.mjs tools/audit-trust-passport-repair-lane.mjs tools/audit-trust-passport-button-inventory.mjs tools/smoke-trust-passport-trustslip-boundary.mjs` from `frontend`;
+  - passed `npm --prefix frontend run audit:trust-passport-lane-map`;
+  - passed direct `node tools/audit-trust-passport-evidence-story-lane.mjs` from `frontend`;
+  - passed direct `node tools/audit-trust-passport-community-confirmation-lane.mjs` from `frontend`;
+  - passed direct `node tools/audit-trust-passport-repair-lane.mjs` from `frontend`;
+  - passed direct `node tools/audit-trust-passport-front-package.mjs` from `frontend`;
+  - passed direct `node tools/audit-trust-passport-button-inventory.mjs` from `frontend`;
+  - passed `npm --prefix frontend run audit:trust-passport-trustslip-boundary`;
+  - non-escalated `npm --prefix frontend run smoke:trust-passport-trustslip-boundary` hit sandbox `spawn EPERM` while starting Vite/esbuild;
+  - passed escalated `npm --prefix frontend run smoke:trust-passport-trustslip-boundary`;
+  - passed `npm --prefix frontend run audit:protected-button-freeze`;
+  - passed `npm --prefix frontend run build`;
+  - passed `git diff --check` before the handoff entry.
+- Deployment:
+  - local only so far; do not push/deploy unless the owner explicitly selects `2` or says push/deploy.
+- Next recommended step:
+  - commit this evidence-story surface-language slice locally, then either continue the next small Trust Passport evidence-language cleanup on `1` or push/deploy the accumulated local commits on `2`.

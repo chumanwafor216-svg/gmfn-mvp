@@ -1423,9 +1423,9 @@ function getOpenTrustState(
     classText: "Not shown yet",
     postureSource: "-",
     tone: "neutral",
-    statusText: "No local community trust reading yet",
+    statusText: "No local community evidence reading yet",
     whyText:
-      "Local community trust reflects your standing in the community you are using now. Use the community first, then this reading will appear here.",
+      "Local community evidence reflects what is visible in the community you are using now. Use the community first, then this reading will appear here.",
   };
 }
 
@@ -2896,7 +2896,7 @@ export default function TrustScorePage() {
     [
       "Community",
       passportVm.identity.communityName,
-      "The active community tied to this trust reading.",
+      "The active community tied to this evidence reading.",
       "community",
       passportVm.identity.communityName === "Not stated" ? "Limited" : "Ready",
     ],
@@ -3072,13 +3072,13 @@ export default function TrustScorePage() {
       key: "evidence",
       icon: "evidence",
       label: "Evidence Story",
-      detail: "What helped, what pressured, and why trust moved.",
+      detail: "What supports the reading, what creates pressure, and what changed.",
     },
     {
       key: "community",
       icon: "community",
       label: "Community Confirmation",
-      detail: "Local and cross-community trust surfaces.",
+      detail: "Community-scoped evidence and live confirmation.",
     },
     {
       key: "finance",
@@ -4326,7 +4326,7 @@ export default function TrustScorePage() {
                 margin: "8px 0 0",
               }}
             >
-              This lane explains the visible signals behind the trust reading
+              This lane explains the visible signals behind the evidence reading
               before showing the deeper record. Start with the plain story, then
               use the evidence rows only when you need supporting evidence.
             </p>
@@ -4497,7 +4497,7 @@ export default function TrustScorePage() {
             }}
           >
             <div style={{ color: "#07172C", fontWeight: 1000, fontSize: 20 }}>
-              4. Why this reading looks like this
+              4. Why the evidence reads this way
             </div>
             <div
               style={{
@@ -4511,7 +4511,7 @@ export default function TrustScorePage() {
                 <TrustPaperWatermark name="shield" color="#166534" size={130} opacity={0.065} />
                 <div style={{ color: "#166534", fontWeight: 1000, fontSize: 17, display: "flex", alignItems: "center", gap: 8 }}>
                   <GsnLegacyIcon name="shield" size={32} decorative />
-                  What helps trust
+                  What supports this reading
                 </div>
                 <ul style={{ ...helperText(), margin: "10px 0 0", paddingLeft: 18 }}>
                   {passportVm.reasons.helpsTrust.map((item) => (
@@ -4586,7 +4586,7 @@ export default function TrustScorePage() {
                   marginTop: 8,
                 }}
               >
-                Can this trust story be tied to a real community?
+                Can this evidence be tied to a real community?
               </div>
               <p
                 style={{
@@ -4596,11 +4596,11 @@ export default function TrustScorePage() {
                 }}
               >
                 This lane checks the community identity behind the member's
-                trust story before showing local and cross-community readings.
+                evidence record before showing local and cross-community readings.
               </p>
 
               <CommunityProofPanel
-                title="Community evidence before trust reading"
+                title="Community evidence before relying"
                 subtitle="Use community evidence, witness currentness, activity, and TrustSlip status before relying on this reading."
                 compact={isCompact}
                 communityName={passportVm.identity.communityName}
@@ -4748,7 +4748,7 @@ export default function TrustScorePage() {
             </div>
 
             <div style={{ color: "#07172C", fontWeight: 1000, fontSize: 20 }}>
-              5. Trust surfaces
+              5. Evidence surfaces
             </div>
             <div
               style={{
@@ -4820,20 +4820,20 @@ export default function TrustScorePage() {
               }}
             >
               <div style={{ color: "#07172C", fontWeight: 1000, fontSize: 20 }}>
-                6. Why did my trust change?
+                6. What changed in the evidence?
               </div>
               <div style={{ color: "#0B63D1", fontWeight: 1000, marginTop: 10 }}>
                 Latest explanation
               </div>
               <p style={{ ...helperText(), margin: "6px 0 0" }}>{latestExplanation}</p>
               <div style={{ color: "#5542A8", fontWeight: 1000, marginTop: 14 }}>
-                Recent trust events
+                Recent evidence events
               </div>
                 {recentEvents.length > 0 ? (
                 <div style={{ marginTop: 8, display: "grid", gap: 8 }}>
                   {recentEvents.slice(0, isCompact ? 2 : 3).map((event, index) => (
                     <div key={event.id || index} style={innerCard("#F8FBFF")}>
-                      <b>{firstTruthy(event.event_type, "Trust event")}</b>
+                      <b>{firstTruthy(event.event_type, "Evidence event")}</b>
                       <div style={helperText()}>
                         {firstTruthy(event.reason, event.note, safeDateTime(event.created_at), "No detail shown")}
                       </div>
@@ -4842,7 +4842,7 @@ export default function TrustScorePage() {
                 </div>
               ) : (
                 <div style={{ ...innerCard("#F8FBFF"), marginTop: 8, color: "#526579" }}>
-                  No recent trust events are visible.
+                  No recent evidence events are visible.
                 </div>
               )}
             </div>
@@ -4883,7 +4883,7 @@ export default function TrustScorePage() {
                   }}
                 >
                   {trustIconBadge("refresh", isCompact ? 26 : 28, "navy")}
-                  Refresh trust reading
+                  Refresh evidence reading
                 </PrimaryButton>
                 <SecondaryButton
                   onClick={copyTrustSnapshot}
@@ -5256,10 +5256,10 @@ export default function TrustScorePage() {
               ))}
             </div>
             <p style={{ ...helperText(), margin: "10px 0 0" }}>
-              Human-first trust reading: identity first, explanation second,
+              Human-first evidence reading: identity first, explanation second,
               evidence third, technical detail last.
             </p>
-            <TrustPaperSecurityFooter text="Human-first trust reading: identity first, explanation second, evidence third, technical detail last." />
+            <TrustPaperSecurityFooter text="Human-first evidence reading: identity first, explanation second, evidence third, technical detail last." />
           </section>
         </section>
       </div>

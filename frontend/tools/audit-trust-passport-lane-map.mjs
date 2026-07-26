@@ -129,7 +129,7 @@ assertContains(
 
 assertContains(
   "trust",
-  /activeTrustPassportLane === "evidence"[\s\S]*?activeTrustPassportLane === "repair"[\s\S]*?4\. Why this reading looks like this[\s\S]*?activeTrustPassportLane === "community"[\s\S]*?5\. Trust surfaces/,
+  /activeTrustPassportLane === "evidence"[\s\S]*?activeTrustPassportLane === "repair"[\s\S]*?4\. Why the evidence reads this way[\s\S]*?activeTrustPassportLane === "community"[\s\S]*?5\. Evidence surfaces/,
   "Trust Passport secondary lanes must be shielded behind active-lane visibility gates."
 );
 
@@ -146,15 +146,15 @@ assertOrderedSnippets(
 assertOrderedSnippets(
   "trust",
   [
-    "4. Why this reading looks like this",
-    "What helps trust",
+    "4. Why the evidence reads this way",
+    "What supports this reading",
     "What creates pressure",
-    "6. Why did my trust change?",
+    "6. What changed in the evidence?",
     "Latest explanation",
-    "Recent trust events",
+    "Recent evidence events",
     "8. Evidence & institutional context",
   ],
-  "Evidence Story lane must map to trust reasons, latest explanation, recent events, and evidence context before redesign."
+  "Evidence Story lane must map to evidence reasons, latest explanation, recent events, and evidence context before redesign."
 );
 
 assertOrderedSnippets(

@@ -89,7 +89,7 @@ assertContains(
 
 assertContains(
   "trust",
-  /activeTrustPassportLane === "repair"[\s\S]*?4\. Why this reading looks like this[\s\S]*?6\. Why did my trust change\?/,
+  /activeTrustPassportLane === "repair"[\s\S]*?4\. Why the evidence reads this way[\s\S]*?6\. What changed in the evidence\?/,
   "Repair lane must keep pressure notes and recent trust movement visible for repair context."
 );
 

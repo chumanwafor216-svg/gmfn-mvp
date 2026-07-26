@@ -247,7 +247,7 @@ assertContains(
 
 assertContains(
   /display: isCompact \? "grid" : "flex"[\s\S]*?fullWidth=\{isCompact\}[\s\S]*?debugId=\{item\.debugId\}/,
-  "Trust Passport trust-surface actions must expand to full-width fixed controls on phone."
+  "Trust Passport evidence-surface actions must expand to full-width fixed controls on phone."
 );
 
 assertContains(
@@ -276,5 +276,5 @@ if (findings.length > 0) {
 }
 
 console.log(
-  `Trust Passport button inventory audit passed: ${actions.length} stable source actions, ${expectedRenderedActions} expected rendered action roots including the lane selector, evidence reading note toggle, and two trust-surface cards.`
+  `Trust Passport button inventory audit passed: ${actions.length} stable source actions, ${expectedRenderedActions} expected rendered action roots including the lane selector, evidence reading note toggle, and two evidence-surface cards.`
 );

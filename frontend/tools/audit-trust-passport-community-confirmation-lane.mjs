@@ -49,13 +49,13 @@ assertContains(
 
 assertContains(
   "trust",
-  /activeTrustPassportLane === "community" \? "block" : "none"[\s\S]*?Community Confirmation[\s\S]*?Can this trust story be tied to a real community\?/,
+  /activeTrustPassportLane === "community" \? "block" : "none"[\s\S]*?Community Confirmation[\s\S]*?Can this evidence be tied to a real community\?/,
   "Community Confirmation lane must open with a plain-language lead gated to the community lane."
 );
 
 assertContains(
   "trust",
-  /import CommunityProofPanel from "\.\.\/components\/CommunityProofPanel";[\s\S]*?const communityMemberWitnessCount = firstTruthy\([\s\S]*?member_witness_count[\s\S]*?const communityMembershipStrengthLabel = firstTruthy\([\s\S]*?membership_strength_label[\s\S]*?Community Confirmation[\s\S]*?Community evidence before trust reading[\s\S]*?before relying on this reading[\s\S]*?memberWitnessCount=\{communityMemberWitnessCount\}[\s\S]*?membershipStrengthLabel=\{communityMembershipStrengthLabel\}[\s\S]*?trustSlipStatusLabel=\{passportVm\.outputs\.trustSlipStatus\}[\s\S]*?communityConfirmationCards\.map/,
+  /import CommunityProofPanel from "\.\.\/components\/CommunityProofPanel";[\s\S]*?const communityMemberWitnessCount = firstTruthy\([\s\S]*?member_witness_count[\s\S]*?const communityMembershipStrengthLabel = firstTruthy\([\s\S]*?membership_strength_label[\s\S]*?Community Confirmation[\s\S]*?Community evidence before relying[\s\S]*?before relying on this reading[\s\S]*?memberWitnessCount=\{communityMemberWitnessCount\}[\s\S]*?membershipStrengthLabel=\{communityMembershipStrengthLabel\}[\s\S]*?trustSlipStatusLabel=\{passportVm\.outputs\.trustSlipStatus\}[\s\S]*?communityConfirmationCards\.map/,
   "Community Confirmation lane must place community proof before rank/score readiness cards."
 );
 
@@ -91,8 +91,8 @@ assertContains(
 
 assertContains(
   "trust",
-  /5\. Trust surfaces[\s\S]*?trustSurfaceCards\.map[\s\S]*?debugId=\{item\.debugId\}/,
-  "Community Confirmation lane must keep local and cross-community trust-surface actions behind the community lane."
+  /5\. Evidence surfaces[\s\S]*?trustSurfaceCards\.map[\s\S]*?debugId=\{item\.debugId\}/,
+  "Community Confirmation lane must keep local and cross-community evidence-surface actions behind the community lane."
 );
 
 assertContains(

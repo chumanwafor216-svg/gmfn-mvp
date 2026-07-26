@@ -61,7 +61,7 @@ assertContains(
 assertOrderedSnippets(
   "trust",
   [
-    "This lane explains the visible signals behind the trust reading",
+    "This lane explains the visible signals behind the evidence reading",
     "What GSN sees now",
     "{latestExplanation}",
     "Strongest support",
@@ -74,14 +74,14 @@ assertOrderedSnippets(
 
 assertContains(
   "trust",
-  /activeTrustPassportLane === "evidence"[\s\S]*?4\. Why this reading looks like this[\s\S]*?6\. Why did my trust change\?[\s\S]*?8\. Evidence & institutional context/,
+  /activeTrustPassportLane === "evidence"[\s\S]*?4\. Why the evidence reads this way[\s\S]*?6\. What changed in the evidence\?[\s\S]*?8\. Evidence & institutional context/,
   "Evidence Story lane must keep the support/pressure reasons, latest movement, recent events, and evidence context in the same lane."
 );
 
 assertContains(
   "trust",
-  /activeTrustPassportLane === "community" \? "block" : "none"[\s\S]*?5\. Trust surfaces/,
-  "Evidence Story lane must not absorb Community Confirmation trust-surface responsibilities."
+  /activeTrustPassportLane === "community" \? "block" : "none"[\s\S]*?5\. Evidence surfaces/,
+  "Evidence Story lane must not absorb Community Confirmation evidence-surface responsibilities."
 );
 
 assertContains(

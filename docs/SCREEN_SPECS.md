@@ -567,7 +567,7 @@ Rules:
   `trust limit signal` or equivalent evidence language, not as an approved
   limit.
 - Marketplace-local trust may be summarized when the user arrived from one
-  marketplace, but the full carried trust story belongs here.
+  marketplace, but the full carried evidence story belongs here.
 - Identity & Community Overview is the first One-Screen Snapshot Protocol application. It
   must fit its title, four identity facts, six compact status signals, and the
   public community record action inside one 390x844 phone snapshot without
@@ -585,8 +585,7 @@ Rules:
 
 Current pre-redesign Trust Passport section mapping:
 - Identity & Evidence Reading: Identity & Community Overview, Current evidence reading, and what this evidence helps the recipient decide.
-- Evidence Story: Why this reading looks like this, Why did my trust change?,
-  and Evidence & institutional context.
+- Evidence Story: Why the evidence reads this way, What changed in the evidence, and Evidence & institutional context.
 - Community Confirmation: public community record and confirmation readiness.
 - Finance Discipline: finance-discipline question, trust limit signal, guarantee
   capacity, locked guarantees, overexposure ratio, and risk context.

@@ -493,6 +493,24 @@ async function runTrustPassportScenario(browser, baseURL) {
       `Trust Passport evidence posture marker must stay compact, got "${mobileLayout.markerText}".`
     );
   }
+
+  await state.page.getByText("Evidence Story", { exact: true }).first().click();
+  await expect(state.page.getByText("4. Why the evidence reads this way", { exact: true })).toBeVisible();
+  await expect(state.page.getByText("What supports this reading", { exact: true })).toBeVisible();
+  await expect(state.page.getByText("6. What changed in the evidence?", { exact: true })).toBeVisible();
+  await expect(state.page.getByText("Recent evidence events", { exact: true })).toBeVisible();
+  await expect(state.page.getByText("4. Why this reading looks like this", { exact: true })).toHaveCount(0);
+  await expect(state.page.getByText("What helps trust", { exact: true })).toHaveCount(0);
+  await expect(state.page.getByText("6. Why did my trust change?", { exact: true })).toHaveCount(0);
+
+  await state.page.getByText("Community Confirmation", { exact: true }).first().click();
+  await expect(state.page.getByText("Can this evidence be tied to a real community?", { exact: true })).toBeVisible();
+  await expect(state.page.getByText("Community evidence before relying", { exact: true })).toBeVisible();
+  await expect(state.page.getByText("5. Evidence surfaces", { exact: true })).toBeVisible();
+  await expect(state.page.getByText("Can this trust story be tied to a real community?", { exact: true })).toHaveCount(0);
+  await expect(state.page.getByText("Community evidence before trust reading", { exact: true })).toHaveCount(0);
+  await expect(state.page.getByText("5. Trust surfaces", { exact: true })).toHaveCount(0);
+
   await expect(state.page.locator('[data-gsn-trust-document-certificate="trust-passport"]')).toHaveCount(1);
   await expect(state.page.locator('[data-gsn-trust-document-certificate="trustslip-holder"]')).toHaveCount(0);
   await expect(state.page.getByText("This passport confirms", { exact: true })).toHaveCount(1);

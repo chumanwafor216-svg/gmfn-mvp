@@ -140,9 +140,9 @@ assertContains(
   "Identity & Community Overview",
   "2. Current evidence reading",
   "3. What this evidence helps you decide",
-  "4. Why this reading looks like this",
-  "5. Trust surfaces",
-  "6. Why did my trust change?",
+  "4. Why the evidence reads this way",
+  "5. Evidence surfaces",
+  "6. What changed in the evidence?",
   "7. Shareable trust tools",
   "8. Evidence & institutional context",
 ].forEach((label) => {
