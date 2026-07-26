@@ -1929,7 +1929,7 @@ assertNotContains(
 
 assertNotContains(
   "src/lib/dashboardUserGuidance.ts",
-  /why they should trust it|Your trust position is still okay|When your trust record is not ready|confirm your trust story|review your trust position|evidence that your trust story|your trust record is not yet easy|full trust path/i,
+  /why they should trust it|Your trust position is still okay|When your trust record is not ready|confirm your trust story|review your trust position|evidence that your trust story|your trust record is not yet easy|full trust path|helps trust|local trust|TrustSlip story|trust issue|weaken trust|weakens trust|trust problem|trust or identity reading|community trust|trust can weaken|affecting trust|Trust is giving|Trust shows how/i,
   "Dashboard shared guidance must present TrustSlip and route guidance as evidence records, not broad trust-story verdicts."
 );
 
@@ -1964,7 +1964,7 @@ assertContains(
 
 assertNotContains(
   "src/lib/guidance.ts",
-  /trust strength|trust confidence|trust signal|trust repair step|weakened your trust path|trust path needs|trust path is showing/i,
+  /trust strength|trust confidence|trust signal|trust repair step|weakened your trust path|trust path needs|trust path is showing|trust path is steady|strengthening trust|building trust|helping your trust path|trust path grow|trust path active/i,
   "Shared guidance must frame repair prompts as evidence readings and evidence repair, not trust strength or trust-signal verdicts."
 );
 

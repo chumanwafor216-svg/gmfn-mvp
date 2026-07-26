@@ -1176,7 +1176,7 @@ function buildTrustJourneySummary(
     trend = "building";
   }
 
-  let heading = "Your trust path is steady.";
+  let heading = "Your evidence path is steady.";
   let detail =
     "Steady participation, prompt response, and disciplined follow-up protect tomorrow’s options.";
 
@@ -1184,17 +1184,17 @@ function buildTrustJourneySummary(
     heading = pickVariant(
       voice === "warm"
         ? [
-            "Your recent activity is strengthening trust.",
-            "Your recent movement is helping your trust path grow.",
+            "Your recent activity is strengthening the evidence reading.",
+            "Your recent movement is helping your evidence path grow.",
           ]
         : voice === "direct"
         ? [
-            "Recent activity is building trust.",
+            "Recent activity is building evidence.",
             "Your visible conduct is improving the evidence reading.",
           ]
         : [
-            "Your recent activity is building trust.",
-            "Recent visible conduct is strengthening your trust path.",
+            "Your recent activity is building evidence.",
+            "Recent visible conduct is strengthening your evidence path.",
           ],
       "journey-heading-building",
       builtCount,
@@ -1214,7 +1214,7 @@ function buildTrustJourneySummary(
             "Visible consistency is improving your path.",
           ]
         : [
-            "Recent signals suggest that visible participation and reliability are helping your trust path.",
+            "Recent signals suggest that visible participation and reliability are helping your evidence path.",
             "Visible consistency and follow-through are supporting your current standing.",
           ],
       "journey-detail-building",
@@ -1403,16 +1403,16 @@ function buildTrustChangeExplainer(
       pickVariant(
         voice === "warm"
           ? [
-              "Recent visible participation is helping your trust path.",
-              "Steady follow-through is giving your trust path more strength.",
+              "Recent visible participation is helping your evidence path.",
+              "Steady follow-through is giving your evidence path more strength.",
             ]
           : voice === "direct"
           ? [
-              "Visible consistency is helping trust.",
+              "Visible consistency is helping the evidence reading.",
               "Reliable participation is supporting your standing.",
             ]
           : [
-              "Recent visible participation is helping your trust path.",
+              "Recent visible participation is helping your evidence path.",
               "Consistent follow-through is strengthening your current standing.",
             ],
         "explainer-helps",
@@ -2416,7 +2416,7 @@ function buildWeeklyFocus(params: {
             "Consistency this week is enough.",
           ]
         : [
-            "Keep your trust path active through calm follow-up, visible activity, and prompt response where needed.",
+            "Keep your evidence path active through calm follow-up, visible activity, and prompt response where needed.",
             "This week is for visible consistency, not scattered effort.",
           ],
       "weekly-steady-detail",

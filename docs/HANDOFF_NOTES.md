@@ -152868,4 +152868,32 @@ GSN-branded invite composer and invite-entry continuity.
 - Deployment:
   - local only so far; do not push/deploy unless the owner explicitly selects `2` or says push/deploy.
 - Next recommended step:
-  - commit this shared guidance evidence-repair slice locally, then either continue another small visible/shared wording cleanup on `1` or push/deploy the accumulated local commits on `2`.
+  - commit this shared guidance evidence-repair slice locally, then either continue another small visible/shared wording cleanup on `1` or push/deploy the accumulated local commits on 2.
+## 2026-07-26 - Shared Guidance Local Evidence Path Language
+
+- Trigger:
+  - owner selected `1` after the shared guidance evidence-repair slice was pushed/deployed.
+- Unabated truth:
+  - this pass cleans shared guidance wording only;
+  - it does not rename Trust, Trust Passport, TrustSlip, Open Trust, route targets, debug IDs, backend APIs, trust/CCI fields, scoring logic, or data contracts;
+  - internal helper names and keys may still include trust because they are existing technical contracts;
+  - this is not a Decision Pack generator, Evidence Ledger route, Behavioural Placement schema, route redesign, scoring rewrite, or approval workflow.
+- Changed:
+  - `frontend/src/lib/dashboardUserGuidance.ts`
+    - reframes remaining attention/journey copy from `helps trust`, `local trust`, `TrustSlip story`, `trust issue`, and `trust problem` wording to evidence-reading, local-evidence, TrustSlip-evidence, and evidence-concern wording;
+    - changes the journey connection item title from visible `Trust` to `Local evidence` while preserving the existing internal key.
+  - `frontend/src/lib/guidance.ts`
+    - reframes remaining generated journey/focus variants from trust-path/building-trust wording to evidence-path/evidence-reading wording.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - extends the shared guidance cage to reject the old local-trust, TrustSlip-story, trust-path, and building-trust wording in these helpers.
+- Verification:
+  - passed `npm exec -- eslint src/lib/dashboardUserGuidance.ts src/lib/guidance.ts tools/audit-trust-actions.mjs tools/audit-dashboard-actions.mjs` from `frontend`;
+  - passed direct `node tools/audit-trust-actions.mjs` from `frontend`;
+  - passed direct `node tools/audit-dashboard-actions.mjs` from `frontend`;
+  - passed `npm --prefix frontend run audit:protected-button-freeze`;
+  - passed `npm --prefix frontend run build`;
+  - passed `git diff --check` before the handoff entry.
+- Deployment:
+  - local only so far; do not push/deploy unless the owner explicitly selects `2` or says push/deploy.
+- Next recommended step:
+  - commit this shared guidance local-evidence-path slice locally, then either continue another small visible/shared wording cleanup on `1` or push/deploy the accumulated local commits on `2`.
