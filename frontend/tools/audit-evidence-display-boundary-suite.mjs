@@ -274,7 +274,7 @@ assertContains(
 );
 assertContains(
   "publicTrustSlipSmoke",
-  /async function runDecisionPackRecipientCardScenario[\s\S]*?decision_pack=employment&access_scope=public_decision_pack[\s\S]*?Shared to support Employment Decision Pack\.[\s\S]*?Employment Decision Pack[\s\S]*?Public Decision Pack[\s\S]*?not\.toContainText\("public_context_from_link"\)[\s\S]*?not\.toContainText\("public_decision_pack"\)[\s\S]*?recipientCardFacts\.top >= recipientCardFacts\.viewportHeight/,
+  /async function runDecisionPackRecipientCardScenario[\s\S]*?decision_pack=Employment_Decision&access_scope=public_decision_pack[\s\S]*?Shared to support Employment Decision Pack\.[\s\S]*?Employment Decision Pack[\s\S]*?Public Decision Pack[\s\S]*?not\.toContainText\("public_context_from_link"\)[\s\S]*?not\.toContainText\("public_decision_pack"\)[\s\S]*?recipientCardFacts\.top >= recipientCardFacts\.viewportHeight/,
   "Public TrustSlip smoke must keep the Decision Pack recipient-card human-copy and first-viewport guard."
 );
 

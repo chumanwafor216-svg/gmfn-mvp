@@ -112,6 +112,12 @@ assertContains(
 );
 
 assertContains(
+  "decisionPacks",
+  /function decisionPackComparable[\s\S]*?export function findDecisionPack[\s\S]*?decisionPackComparable\(pack\.key\) === comparable[\s\S]*?decisionPackComparable\(pack\.shortLabel\) === comparable/,
+  "Frontend Decision Pack lookup must canonicalize keys and short labels with the same comparable path."
+);
+
+assertContains(
   "viewModel",
   /const rawAccessScope = firstTruthy\([\s\S]*?record\?\.access_scope[\s\S]*?machineAccessScopeLabels = new Map\(\[[\s\S]*?\["public_decision_pack", "Public Decision Pack"\][\s\S]*?\["public_trustslip", "Public TrustSlip"\][\s\S]*?const accessScope = firstTruthy\([\s\S]*?machineAccessScopeLabels\.get\(rawAccessScope\.toLowerCase\(\)\)[\s\S]*?rawAccessScope/,
   "Public TrustSlip recipient access scope must translate known machine scopes into human metadata labels."

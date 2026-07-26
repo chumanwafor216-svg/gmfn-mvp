@@ -413,7 +413,7 @@ async function runDecisionPackRecipientCardScenario(browser, baseURL) {
   await page.goto(
     `${baseURL}/t/${encodeURIComponent(
       scenarios.current.code
-    )}?level=standard&decision_pack=employment&access_scope=public_decision_pack`,
+    )}?level=standard&decision_pack=Employment_Decision&access_scope=public_decision_pack`,
     {
       waitUntil: "domcontentloaded",
       timeout: 60000,

@@ -151958,3 +151958,35 @@ GSN-branded invite composer and invite-entry continuity.
   - local only so far; routine continuation publishing remains batch-frozen unless the product owner explicitly asks to push/deploy.
 - Next recommended step:
   - push/deploy the accumulated local commits only when the owner explicitly asks, or continue with another small Decision Pack parity/risk-reduction slice.
+
+## 2026-07-26 - Frontend Decision Pack Key Parity
+
+- Trigger:
+  - owner selected `1` after the backend Decision Pack short-label parity slice was committed locally.
+- Unabated truth:
+  - the backend now canonicalizes Decision Pack keys and short labels case-insensitively, but the frontend shared catalog still compared pack keys case-sensitively;
+  - because public URL Decision Pack context is overlaid onto the backend verify response before normalization, a mixed-case key such as `Employment_Decision` could override the backend's canonical answer and degrade the public recipient card;
+  - this pass fixes frontend URL canonicalization only. It does not change backend evidence, private Trust Passport disclosure, Decision Pack profile logic, scores, approvals, guarantees, payments, or recipient identity handling.
+- Changed:
+  - `frontend/src/lib/decisionPacks.ts`
+    - `findDecisionPack` now canonicalizes pack keys through `decisionPackComparable(pack.key)` just like labels and short labels.
+  - `frontend/tools/smoke-public-trustslip-verify-states.mjs`
+    - upgraded the Decision Pack recipient-card smoke URL from `decision_pack=employment` to mixed-case `decision_pack=Employment_Decision` while still expecting the human `Employment Decision Pack` recipient card.
+  - `frontend/tools/audit-public-trustslip-verify-boundary.mjs`
+    - added a source guard requiring frontend Decision Pack key and short-label lookup to share the comparable path.
+  - `frontend/tools/audit-evidence-display-boundary-suite.mjs`
+    - updated the suite cage to require the mixed-case Decision Pack smoke URL.
+- Verification:
+  - passed `npm exec -- eslint src/lib/decisionPacks.ts tools/smoke-public-trustslip-verify-states.mjs tools/audit-public-trustslip-verify-boundary.mjs tools/audit-evidence-display-boundary-suite.mjs` from `frontend`;
+  - passed `npm --prefix frontend run audit:public-trustslip-verify-boundary`;
+  - passed `npm --prefix frontend run audit:evidence-display-boundary-suite`;
+  - passed `npm --prefix frontend run smoke:public-trustslip-verify-states` with sandbox escalation for Vite/Playwright process launch;
+  - passed `npm --prefix frontend run audit:evidence-display-boundary-batch`;
+  - passed `npm --prefix frontend run audit:trust-passport-trustslip-boundary`;
+  - passed `npm --prefix frontend run audit:protected-button-freeze`;
+  - passed `npm --prefix frontend run build`;
+  - passed `git diff --check`.
+- Deployment:
+  - local only so far; routine continuation publishing remains batch-frozen unless the product owner explicitly asks to push/deploy.
+- Next recommended step:
+  - push/deploy the accumulated local commits only when the owner explicitly asks, or continue with another small Decision Pack parity/risk-reduction slice.

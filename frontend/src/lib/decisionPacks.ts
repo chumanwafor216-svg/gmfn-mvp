@@ -113,7 +113,7 @@ export function findDecisionPack(value: unknown): DecisionPackDefinition | null 
   return (
     GSN_DECISION_PACKS.find(
       (pack) =>
-        pack.key === text ||
+        decisionPackComparable(pack.key) === comparable ||
         decisionPackComparable(pack.label) === comparable ||
         decisionPackComparable(pack.shortLabel) === comparable
     ) || null
