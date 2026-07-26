@@ -1,3 +1,36 @@
+## CURRENT LOCAL STATE - 2026-07-26 - Trust Passport mobile visual sweep passed after first decision action
+
+Owner trigger:
+- Owner selected `1` after the Trust Passport first decision action was added locally.
+
+Unabated truth:
+- This was a verification slice, not a new UI feature.
+- The local Vite server initially failed inside the sandbox with `spawn EPERM`; rerunning the dev server with escalation worked.
+- Playwright Chromium also failed inside the sandbox with `spawn EPERM`; rerunning the visual sweep with escalation worked.
+- The mocked 390x844 mobile visual sweep passed across the route list, including `/app/trust-passport`, after the new first-card primary next-step action.
+- The sweep checks horizontal overflow, visible elements outside viewport, possible low-contrast text, and oversized visible blocks.
+- The honest caveat: this is automated mocked-data evidence, not a real product-owner phone review with live signed-in Trust Passport data.
+- While inspecting visual-test options, `frontend/tools/smoke-trust-passport-trustslip-boundary.mjs` was found to contain stale Trust Passport assertions for the old always-visible `3. What this evidence helps you decide` section. Do not treat that smoke as current truth until it is updated to the collapsed `Decision support details` contract.
+- No backend route, schema, evidence extraction, scoring, TrustEvent, permission, deployment behavior, or frontend runtime code changed in this slice.
+
+Changed:
+- `docs/HANDOFF_NOTES.md` only.
+
+Routes/screens affected:
+- Verified by sweep: `/app/trust-passport` among the broader mobile visual route list.
+- No public TrustSlip route behavior changed in this slice.
+
+Verification:
+- Started local Vite dev server on `http://127.0.0.1:5180`.
+- Passed `GSN_AUDIT_BASE_URL=http://127.0.0.1:5180 npm --prefix frontend run audit:mobile-visual-sweep`.
+- Stopped the local Vite/Node dev-server processes after the sweep.
+
+Deployment:
+- Local only. Not pushed or deployed; owner must select `2` or explicitly say push/deploy.
+
+Recommended next step:
+- Update the stale Trust Passport / TrustSlip smoke assertions so browser-level Trust Passport checks match the current collapsed Decision support details contract, then run that smoke before more Trust Passport UI changes.
+
 ## CURRENT LOCAL STATE - 2026-07-26 - Trust Passport first decision action added locally
 
 Owner trigger:
@@ -86,6 +119,7 @@ Deployment:
 
 Recommended next step:
 - The local Trust Passport batch is now better caged. Either publish/deploy the batch, or do a human phone pass on real signed-in Trust Passport data before more Trust Passport UI changes.
+
 ## CURRENT LOCAL STATE - 2026-07-26 - Trust Passport mobile visual sweep passed locally
 
 Owner trigger:
