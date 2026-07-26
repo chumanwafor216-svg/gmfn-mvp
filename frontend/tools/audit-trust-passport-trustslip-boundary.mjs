@@ -491,6 +491,11 @@ assertContains(
   "Trust Passport / TrustSlip boundary audit must stay registered in package scripts."
 );
 
+assertContains(
+  "trustSlip",
+  /const trustSlipHolderDecisionBoundaryRows: Array<\[string, string\]> = \[[\s\S]*?\["Evidence scope", numericCount\(activeCommunityCount\) > 1 \? "Primary \+ wider" : "Primary shown"\][\s\S]*?\["Guarantee", "No"\][\s\S]*?\["Government ID", "No"\][\s\S]*?\["Credit approval", "No"\][\s\S]*?\["Final decision", "Yours"\][\s\S]*?TrustDocumentConfidenceRibbon items=\{trustSlipHolderConfidenceRibbonItems\} \/>[\s\S]*?data-gsn-trustslip-holder-decision-boundary="compact"[\s\S]*?What this cannot decide[\s\S]*?<CommunityProofPanel/,
+  "TrustSlip holder page must place a compact decision boundary between the confidence ribbon and primary community evidence."
+);
 if (findings.length > 0) {
   console.error("Trust Passport / TrustSlip boundary audit failed:");
   for (const finding of findings) {

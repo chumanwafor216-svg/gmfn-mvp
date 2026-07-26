@@ -3271,6 +3271,13 @@ export default function TrustSlipPage() {
     "Authority to release goods, money, credit, or services",
     "Private Trust Passport history, private notes, private contacts, or admin records",
   ];
+  const trustSlipHolderDecisionBoundaryRows: Array<[string, string]> = [
+    ["Evidence scope", numericCount(activeCommunityCount) > 1 ? "Primary + wider" : "Primary shown"],
+    ["Guarantee", "No"],
+    ["Government ID", "No"],
+    ["Credit approval", "No"],
+    ["Final decision", "Yours"],
+  ];
   const purposeEvidenceSelectionRows = [
     {
       label: "Decision Pack selected",
@@ -4932,6 +4939,55 @@ export default function TrustSlipPage() {
             }}
           >
             <TrustDocumentConfidenceRibbon items={trustSlipHolderConfidenceRibbonItems} />
+            <div
+              data-gsn-trustslip-holder-decision-boundary="compact"
+              style={{
+                borderRadius: 18,
+                border: "1px solid rgba(214,170,69,0.30)",
+                background: "#FFFDF7",
+                boxShadow: "0 10px 22px rgba(6,24,39,0.05)",
+                padding: isCompact ? 10 : 12,
+                display: "grid",
+                gap: 8,
+              }}
+            >
+              <div style={{ ...sectionLabel(), color: "#7A4A00" }}>What this cannot decide</div>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: isCompact
+                    ? "repeat(2, minmax(0, 1fr))"
+                    : "repeat(5, minmax(0, 1fr))",
+                  gap: 7,
+                }}
+              >
+                {trustSlipHolderDecisionBoundaryRows.map(([label, value]) => (
+                  <div key={label} style={{ minWidth: 0 }}>
+                    <div
+                      style={{
+                        color: "#5F4100",
+                        fontSize: isCompact ? 9.5 : 10.5,
+                        fontWeight: 1000,
+                        lineHeight: 1.1,
+                      }}
+                    >
+                      {label}
+                    </div>
+                    <div
+                      style={{
+                        marginTop: 2,
+                        color: "#07172C",
+                        fontSize: isCompact ? 11 : 12,
+                        fontWeight: 950,
+                        lineHeight: 1.15,
+                      }}
+                    >
+                      {value}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
             <CommunityProofPanel
               title="Primary community evidence"
               subtitle="This panel shows the TrustSlip primary community anchor. Use aggregate/wider readings separately where they are shown."

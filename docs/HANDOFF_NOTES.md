@@ -1,3 +1,43 @@
+## CURRENT LOCAL STATE - 2026-07-26 - TrustSlip holder compact decision boundary
+
+Owner trigger:
+- Owner selected `1` after the Trust Passport evidence-scope contract pass.
+
+Unabated truth:
+- This is a frontend-only holder TrustSlip readability pass. It does not change TrustSlip issuance, public verification payloads, backend evidence aggregation, auth, payments, routes, or data permissions.
+- The signed-in holder TrustSlip now shows one compact `What this cannot decide` boundary immediately after the confidence ribbon and before the primary community proof panel.
+- The boundary compresses the repeated legal/evidence limits into five quick facts: evidence scope, guarantee, government ID, credit approval, and final decision.
+- Devil's advocate: this does not remove all deeper repetition from the document. The official confirms/does-not-confirm panels remain because current audits treat them as part of the Trust Document Language sequence. This pass improves the first read without weakening the legal/evidence boundary.
+
+Changed:
+- `frontend/src/pages/TrustSlipPage.tsx`
+  - Added `trustSlipHolderDecisionBoundaryRows`.
+  - Renders `data-gsn-trustslip-holder-decision-boundary="compact"` between the holder confidence ribbon and `CommunityProofPanel`.
+- `frontend/tools/audit-trust-actions.mjs`
+  - Added a guard requiring the compact holder decision boundary before deeper community proof details.
+- `frontend/tools/audit-trust-passport-trustslip-boundary.mjs`
+  - Added a guard requiring the compact boundary between TrustSlip confidence ribbon and primary community evidence.
+- `frontend/tools/audit-institutional-proof-surfaces.mjs`
+  - Added a guard requiring the compact top boundary for signed-in TrustSlip holder papers.
+
+Routes/screens affected:
+- `/app/trust-slip` signed-in holder TrustSlip only.
+- No public TrustSlip Verify route, Trust Passport page, backend route, database, auth, payment, or TrustEvent write behavior changed.
+
+Verification:
+- Passed `npm --prefix frontend run audit:trust-actions`.
+- Passed `npm --prefix frontend run audit:trust-passport-trustslip-boundary`.
+- Passed `node frontend\tools\audit-institutional-proof-surfaces.mjs`.
+- Passed `npm --prefix frontend run audit:protected-button-freeze`.
+- Passed `npm --prefix frontend run build`.
+- Passed `git diff --check`; Git still reports normal working-copy line-ending warnings on touched frontend files.
+
+Deployment:
+- Not pushed or deployed in this slice because owner selected `1`.
+- After commit, local `main` should be ahead of origin by 4 commits.
+
+Recommended next step:
+- Select `2` to push/deploy the local batch, or select `1` to continue another local pass.
 ## CURRENT LOCAL STATE - 2026-07-26 - Trust Passport evidence scope contract
 
 Owner trigger:
