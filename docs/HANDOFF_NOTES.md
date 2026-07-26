@@ -151744,3 +151744,32 @@ GSN-branded invite composer and invite-entry continuity.
   - local only so far; routine continuation publishing remains batch-frozen unless the product owner explicitly asks to push/deploy.
 - Next recommended step:
   - if continuing the Decision Pack line, add a small source audit for the public verify first-viewport sequence/density as a named route-local contract instead of growing the generic public boundary audit further.
+
+## 2026-07-26 - Public Verify First-Viewport Audit
+
+- Trigger:
+  - owner selected `1` after public verify mobile density compacting.
+- Unabated truth:
+  - the public verify first surface now carries the right recipient-first content, but without a named route-local guard it would be easy for future changes to quietly push the decision support or boundary language below heavier security/detail sections;
+  - this pass is audit-only. It does not change UI, backend verification, public payloads, private evidence visibility, Decision Pack semantics, or deployment state.
+- Changed:
+  - `frontend/tools/audit-public-trustslip-first-viewport.mjs`
+    - added a source audit for the public TrustSlip first-viewport order: hero, authority strip, confidence ribbon, community proof, recipient access record, trustability grouping, Decision Pack reading, then deeper security disclosure;
+    - cages compact phone density for the hero, recipient access record, trustability grid, and public reading tiles;
+    - cages the recipient-facing boundary language: reduce uncertainty, do not eliminate risk, recipient remains responsible, and this is not a private investigation report.
+  - `frontend/package.json`
+    - added `audit:public-trustslip-first-viewport`.
+- Verification:
+  - passed `npm exec -- eslint tools/audit-public-trustslip-first-viewport.mjs tools/audit-public-trustslip-verify-boundary.mjs src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx` from `frontend`;
+  - passed `npm --prefix frontend run audit:public-trustslip-first-viewport`;
+  - passed `npm --prefix frontend run audit:public-trustslip-verify-boundary`;
+  - passed `npm --prefix frontend run audit:trust-passport-trustslip-boundary`;
+  - passed `npm --prefix frontend run audit:trust-actions`;
+  - passed `npm --prefix frontend run audit:proof-surfaces`;
+  - passed `npm --prefix frontend run audit:protected-button-freeze`;
+  - passed `npm --prefix frontend run build`;
+  - passed `git diff --check`.
+- Deployment:
+  - local only so far; routine continuation publishing remains batch-frozen unless the product owner explicitly asks to push/deploy.
+- Next recommended step:
+  - if continuing the Decision Pack line, run a phone screenshot pass of `/t/:code` with a Decision Pack URL context to confirm the first viewport feels dense but not cramped.

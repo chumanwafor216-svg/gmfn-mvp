@@ -43,6 +43,7 @@
     "audit:loans-actions": "node tools/audit-loans-actions.mjs",
     "audit:trust-actions": "node tools/audit-trust-actions.mjs",
     "audit:public-trustslip-verify-boundary": "node tools/audit-public-trustslip-verify-boundary.mjs",
+    "audit:public-trustslip-first-viewport": "node tools/audit-public-trustslip-first-viewport.mjs",
     "audit:trust-passport-trustslip-boundary": "node tools/audit-trust-passport-trustslip-boundary.mjs",
     "audit:trust-timeline-evidence-boundary": "node tools/audit-trust-timeline-evidence-boundary.mjs",
     "audit:evidence-display-boundary-batch": "node tools/audit-evidence-display-boundary-batch.mjs",
