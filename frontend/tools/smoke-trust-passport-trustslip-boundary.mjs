@@ -607,6 +607,15 @@ async function runTrustSlipScenario(browser, baseURL) {
     "Is there enough evidence to continue an employment conversation?"
   );
   await expect(selectedPackSummary).toContainText("Role, consistency");
+  const decisionBoundary = state.page.locator(
+    '[data-gsn-trustslip-decision-boundary="compact"]'
+  );
+  await expect(decisionBoundary).toContainText("Decision Boundary");
+  await expect(decisionBoundary).toContainText("Public link");
+  await expect(decisionBoundary).toContainText("Private preview");
+  await expect(decisionBoundary).toContainText("Consent log");
+  await expect(decisionBoundary).toContainText("Final decision");
+  await expect(decisionBoundary).toContainText("does not remove risk");
   await expect(state.page.getByText("This TrustSlip confirms", { exact: true })).toHaveCount(1);
   await expect(state.page.getByText("This TrustSlip does not confirm", { exact: true })).toHaveCount(1);
   await state.page.locator("summary").filter({ hasText: "More security details" }).first().click();

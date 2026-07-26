@@ -1,3 +1,44 @@
+## CURRENT LOCAL STATE - 2026-07-26 - TrustSlip Decision Boundary consolidated locally
+
+Owner trigger:
+- Owner selected `1` after the mobile Decision Pack selector was simplified locally.
+
+Unabated truth:
+- This was a narrow consolidation pass inside the signed-in TrustSlip Decision Pack/share area, not a full TrustSlip redesign.
+- The screen still contains the formal Trust Document `This TrustSlip confirms` and `This TrustSlip does not confirm` panels later in the document; those remain intentionally visible because they are part of the certificate boundary.
+- The repeated issue was inside the Decision Pack preparation area: public-link, private-preview, and consent-export limitations were shown as separate caution paragraphs after their cards.
+- Those limitations now live in one compact `Decision Boundary` box before share/export controls.
+- Safety wording was not removed from copied/exported text; outbound share/export text still carries its bounded evidence language.
+- No backend route, schema, evidence extraction, scoring, TrustEvent, permission, deployment behavior, public verify behavior, or Trust Passport runtime behavior changed.
+
+Changed:
+- `frontend/src/pages/TrustSlipPage.tsx`
+  - Added centralized `decisionPackBoundaryRows` for public link, private preview, consent log, and final recipient decision limits.
+  - Rendered one compact `data-gsn-trustslip-decision-boundary="compact"` box between selected-pack facts and public/private share controls.
+  - Removed duplicate visible footnote paragraphs from the public Decision Pack link card and private holder preview card.
+- `frontend/tools/audit-trust-passport-trustslip-boundary.mjs`
+  - Updated TrustSlip guards to require the compact Decision Boundary box and prevent the old scattered caution-footnote model from becoming the contract again.
+- `frontend/tools/smoke-trust-passport-trustslip-boundary.mjs`
+  - Added mobile smoke assertions that the compact Decision Boundary renders after selecting the Employment pack.
+
+Routes/screens affected:
+- Signed-in TrustSlip holder route `/app/trust-slip`.
+- Public TrustSlip verify behavior unchanged.
+- Trust Passport behavior unchanged.
+
+Verification:
+- Passed `npm --prefix frontend run audit:trust-passport-trustslip-boundary`.
+- Passed `npm --prefix frontend run audit:trust-actions`.
+- Passed `npm exec -- eslint src/pages/TrustSlipPage.tsx tools/audit-trust-passport-trustslip-boundary.mjs tools/smoke-trust-passport-trustslip-boundary.mjs` from `frontend`.
+- Passed `npm --prefix frontend run audit:protected-button-freeze`.
+- Passed `npm --prefix frontend run build`.
+- Passed `npm --prefix frontend run smoke:trust-passport-trustslip-boundary` with escalation for local Vite/Chromium process launch.
+
+Deployment:
+- Local only. Not pushed or deployed; owner must select `2` or explicitly say push/deploy.
+
+Recommended next step:
+- Stop changing `/app/trust-slip` without a real phone review unless a specific bug appears. The next useful local pass should move to another high-value first-read surface, or publish the current local batch for pilot review.
 ## CURRENT LOCAL STATE - 2026-07-26 - TrustSlip Decision Pack selector simplified on mobile
 
 Owner trigger:

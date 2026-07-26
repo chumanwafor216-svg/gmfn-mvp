@@ -278,10 +278,16 @@ assertContains(
   "trustSlip",
   /GSN_DECISION_PACKS[\s\S]*?Decision Pack selection[\s\S]*?Each pack is a focused view of the same evidence[\s\S]*?does not remove risk or make the decision for the recipient/,
   "TrustSlip holder page must frame share preparation as a broad Decision Pack catalog, not generic purpose labels or automatic decisions."
-);assertContains(
+);
+assertContains(
   "trustSlip",
   /data-gsn-trustslip-purpose-mobile-select="true"[\s\S]*?<select[\s\S]*?value=\{selectedTrustSlipPurpose\}[\s\S]*?setSelectedTrustSlipPurpose\(event\.target\.value as DecisionPackKey\)[\s\S]*?fontSize: 16[\s\S]*?GSN_DECISION_PACKS\.map\(\(option\) => \([\s\S]*?<option key=\{option\.key\} value=\{option\.key\}>[\s\S]*?\{option\.label\}[\s\S]*?data-gsn-trustslip-purpose-selected-summary="true"[\s\S]*?\{selectedPurposeOption\.label\}[\s\S]*?\{selectedPurposeOption\.recipientQuestion\}[\s\S]*?\{selectedPurposeOption\.focus\}[\s\S]*?data-gsn-trustslip-purpose-desktop-buttons="true"[\s\S]*?GSN_DECISION_PACKS\.map/,
   "TrustSlip holder mobile Decision Pack selection must use one menu with the selected-pack summary instead of exposing every pack as mobile buttons."
+);
+assertContains(
+  "trustSlip",
+  /const decisionPackBoundaryRows = \[[\s\S]*?label: "Public link"[\s\S]*?Selected question, evidence focus, and public verify link only[\s\S]*?label: "Private preview"[\s\S]*?not a public evidence paper, score, approval, guarantee, or payment instruction[\s\S]*?label: "Consent log"[\s\S]*?does not store recipient identity, copied text, raw TrustEvents[\s\S]*?label: "Final decision"[\s\S]*?does not remove risk or make the decision for the recipient[\s\S]*?data-gsn-trustslip-decision-boundary="compact"[\s\S]*?Decision Boundary[\s\S]*?decisionPackBoundaryRows\.map/,
+  "TrustSlip holder Decision Pack area must compress repeated public/private/consent limitations into one compact Decision Boundary box."
 );
 assertContains(
   "trustSlip",
@@ -296,8 +302,8 @@ assertContains(
 
 assertContains(
   "trustSlip",
-  /data-gsn-public-decision-pack-share="holder"[\s\S]*?Public Decision Pack link[\s\S]*?Share the selected public evidence lens[\s\S]*?debugId="trust-slip\.public-decision-pack\.copy-note"[\s\S]*?Copy pack note[\s\S]*?debugId="trust-slip\.public-decision-pack\.open"[\s\S]*?Open public pack[\s\S]*?Public pack links are decision support only[\s\S]*?no score, approval, guarantee, payment instruction, recipient identity record, or private Trust Passport disclosure/,
-  "TrustSlip holder page must expose a selected public Decision Pack link without private Passport disclosure or approval language."
+  /data-gsn-trustslip-decision-boundary="compact"[\s\S]*?data-gsn-public-decision-pack-share="holder"[\s\S]*?Public Decision Pack link[\s\S]*?Share the selected public evidence lens[\s\S]*?Copies the selected Decision Pack question, evidence focus, and public verify link only[\s\S]*?debugId="trust-slip\.public-decision-pack\.copy-note"[\s\S]*?Copy pack note[\s\S]*?debugId="trust-slip\.public-decision-pack\.open"[\s\S]*?Open public pack/,
+  "TrustSlip holder page must expose a selected public Decision Pack link after the compact Decision Boundary without repeating private Passport or approval caveats as a separate footnote."
 );
 
 assertContains(
@@ -320,8 +326,8 @@ assertContains(
 
 assertContains(
   "trustSlip",
-  /data-gsn-holder-private-decision-pack-evidence="true"[\s\S]*?Private holder preview[\s\S]*?Evidence behind this Decision Pack[\s\S]*?not a public evidence paper[\s\S]*?score[\s\S]*?approval[\s\S]*?guarantee[\s\S]*?payment instruction[\s\S]*?Copy\/export records a holder consent marker only[\s\S]*?does not store recipient identity[\s\S]*?copied text[\s\S]*?raw TrustEvents/,
-  "TrustSlip holder private evidence preview must remain holder-only and preserve non-score/non-approval boundaries."
+  /const decisionPackBoundaryRows = \[[\s\S]*?Private preview[\s\S]*?not a public evidence paper[\s\S]*?score[\s\S]*?approval[\s\S]*?guarantee[\s\S]*?payment instruction[\s\S]*?Consent log[\s\S]*?does not store recipient identity[\s\S]*?copied text[\s\S]*?raw TrustEvents[\s\S]*?data-gsn-trustslip-decision-boundary="compact"[\s\S]*?decisionPackBoundaryRows\.map[\s\S]*?data-gsn-holder-private-decision-pack-evidence="true"[\s\S]*?Private holder preview[\s\S]*?Evidence behind this Decision Pack/,
+  "TrustSlip holder private evidence preview must rely on the compact Decision Boundary for holder-only, non-score, non-approval, and consent-storage limits."
 );
 
 assertContains(
@@ -338,8 +344,8 @@ assertContains(
 
 assertContains(
   "trustSlip",
-  /Copy\/export records a holder consent marker only[\s\S]*?data-gsn-decision-pack-consent-export="holder"[\s\S]*?debugId="trust-slip\.private-decision-pack\.copy-summary"[\s\S]*?Copy consent summary[\s\S]*?debugId="trust-slip\.private-decision-pack\.copy-json"[\s\S]*?Copy safe JSON/,
-  "TrustSlip holder private Decision Pack preview must explain marker-only consent storage before explicit consent-copy controls."
+  /const decisionPackBoundaryRows = \[[\s\S]*?Copy\/export records a holder consent marker only[\s\S]*?data-gsn-trustslip-decision-boundary="compact"[\s\S]*?decisionPackBoundaryRows\.map[\s\S]*?data-gsn-holder-private-decision-pack-evidence="true"[\s\S]*?data-gsn-decision-pack-consent-export="holder"[\s\S]*?debugId="trust-slip\.private-decision-pack\.copy-summary"[\s\S]*?Copy consent summary[\s\S]*?debugId="trust-slip\.private-decision-pack\.copy-json"[\s\S]*?Copy safe JSON/,
+  "TrustSlip holder private Decision Pack preview must show marker-only consent storage in the compact Decision Boundary before explicit consent-copy controls."
 );
 assertContains(
   "api",

@@ -3280,6 +3280,32 @@ export default function TrustSlipPage() {
   const privateDecisionPackEvidenceAvailable = privateDecisionPackEvidenceCategories.some(
     (row) => row.evidenceCount > 0
   );
+  const decisionPackBoundaryRows = [
+    {
+      label: "Public link",
+      value: "Selected question, evidence focus, and public verify link only.",
+      tone: "yes",
+    },
+    {
+      label: "Private preview",
+      value: firstTruthy(
+        decisionPackEvidenceExtract?.boundaryNote,
+        "Holder-only preview. It is not a public evidence paper, score, approval, guarantee, or payment instruction."
+      ),
+      tone: "no",
+    },
+    {
+      label: "Consent log",
+      value:
+        "Copy/export records a holder consent marker only; GSN does not store recipient identity, copied text, raw TrustEvents, private notes, contacts, payment references, or bank details.",
+      tone: "info",
+    },
+    {
+      label: "Final decision",
+      value: "This Decision Pack reduces uncertainty; it does not remove risk or make the decision for the recipient.",
+      tone: "info",
+    },
+  ];
 
   async function requestCommunityPulse() {
     if (!trustSlipCode) {
@@ -3886,6 +3912,92 @@ export default function TrustSlipPage() {
             </div>
 
             <div
+              data-gsn-trustslip-decision-boundary="compact"
+              style={{
+                borderRadius: 14,
+                border: "1px solid rgba(214,170,69,0.28)",
+                background: "rgba(255,253,247,0.98)",
+                padding: isCompact ? 10 : 12,
+                display: "grid",
+                gap: 8,
+              }}
+            >
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "30px minmax(0, 1fr)",
+                  gap: 8,
+                  alignItems: "center",
+                }}
+              >
+                <GsnLegacyIcon name="certificate-seal" size={28} />
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ ...sectionLabel(), fontSize: isCompact ? 9 : 10 }}>
+                    Decision Boundary
+                  </div>
+                  <div
+                    style={{
+                      marginTop: 2,
+                      color: "#07172C",
+                      fontSize: isCompact ? 13 : 15,
+                      fontWeight: 1000,
+                      lineHeight: 1.16,
+                    }}
+                  >
+                    Evidence first. Explanation only where it changes the decision.
+                  </div>
+                </div>
+              </div>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: isCompact ? "minmax(0, 1fr)" : "repeat(2, minmax(0, 1fr))",
+                  gap: 7,
+                }}
+              >
+                {decisionPackBoundaryRows.map((row) => (
+                  <div
+                    key={row.label}
+                    style={{
+                      borderRadius: 12,
+                      border: "1px solid rgba(37,78,119,0.1)",
+                      background:
+                        row.tone === "yes"
+                          ? "rgba(240,253,244,0.92)"
+                          : row.tone === "no"
+                            ? "rgba(255,247,237,0.92)"
+                            : "#FFFFFF",
+                      padding: "8px 9px",
+                      minWidth: 0,
+                    }}
+                  >
+                    <div
+                      style={{
+                        color: row.tone === "yes" ? "#166534" : row.tone === "no" ? "#9A3412" : "#7A4A00",
+                        fontSize: isCompact ? 9 : 10,
+                        fontWeight: 1000,
+                        lineHeight: 1.1,
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      {row.label}
+                    </div>
+                    <div
+                      style={{
+                        marginTop: 3,
+                        color: "#334155",
+                        fontSize: isCompact ? 10 : 11,
+                        fontWeight: 850,
+                        lineHeight: 1.3,
+                      }}
+                    >
+                      {row.value}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div
               data-gsn-public-decision-pack-share="holder"
               style={{
                 borderRadius: 14,
@@ -3974,16 +4086,6 @@ export default function TrustSlipPage() {
                 )}
               </CardActionRow>
 
-              <div
-                style={{
-                  color: "#7A4A00",
-                  fontSize: isCompact ? 10 : 11,
-                  fontWeight: 900,
-                  lineHeight: 1.35,
-                }}
-              >
-                Public pack links are decision support only: no score, approval, guarantee, payment instruction, recipient identity record, or private Trust Passport disclosure.
-              </div>
             </div>
 
             <div
@@ -4098,30 +4200,6 @@ export default function TrustSlipPage() {
                 </div>
               )}
 
-              <div
-                style={{
-                  color: "#7A4A00",
-                  fontSize: isCompact ? 10 : 11,
-                  fontWeight: 900,
-                  lineHeight: 1.35,
-                }}
-              >
-                {firstTruthy(
-                  decisionPackEvidenceExtract?.boundaryNote,
-                  "Holder-only preview. It is not a public evidence paper, score, approval, guarantee, or payment instruction."
-                )}
-              </div>
-
-              <div
-                style={{
-                  color: "#7A4A00",
-                  fontSize: isCompact ? 10 : 11,
-                  fontWeight: 900,
-                  lineHeight: 1.35,
-                }}
-              >
-                Copy/export records a holder consent marker only. GSN does not store recipient identity, copied text, raw TrustEvents, private notes, contacts, payment references, or bank details.
-              </div>
 
               <CardActionRow data-gsn-decision-pack-consent-export="holder">
                 <SecondaryButton
