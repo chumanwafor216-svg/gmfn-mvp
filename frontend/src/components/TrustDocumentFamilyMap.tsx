@@ -104,8 +104,8 @@ function iconTile(disabled = false): React.CSSProperties {
 }
 
 export default function TrustDocumentFamilyMap({
-  title = "How these trust surfaces fit together",
-  intro = "Use this map when you need to understand the difference between the stable identity layer, the fuller trust story, the portable record, and the public verification check.",
+  title = "How these evidence views fit together",
+  intro = "Use this map when you need to understand the difference between the stable identity layer, the fuller Trust Passport evidence record, the portable record, and the public verification check.",
   items,
   compact = false,
 }: Props) {

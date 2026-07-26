@@ -114,14 +114,14 @@ function iconTile(active = false, disabled = false): React.CSSProperties {
 }
 
 export default function TrustDocumentUseCases({
-  title = "Which trust surface answers which question?",
-  intro = "Use this guide when you know the question in normal language but are not yet sure which trust surface is the right one.",
+  title = "Which evidence view answers which question?",
+  intro = "Use this guide when you know the question in normal language but are not yet sure which evidence view is the right one.",
   items,
   compact = false,
 }: Props) {
   return (
     <section style={wrapperStyle()}>
-      <div style={eyebrowStyle()}>Trust surface chooser</div>
+      <div style={eyebrowStyle()}>Evidence view chooser</div>
       <div
         style={{
           marginTop: 8,
@@ -168,7 +168,7 @@ export default function TrustDocumentUseCases({
 
             {item.active ? (
               <div style={{ marginTop: 12, ...helperStyle(), color: "#0B63D1", fontWeight: 800 }}>
-                You are already on this trust surface.
+                You are already on this evidence view.
               </div>
             ) : item.to && !item.disabled ? (
               <div style={{ marginTop: 12 }}>

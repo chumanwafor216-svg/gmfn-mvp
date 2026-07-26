@@ -17,7 +17,7 @@ export function buildTrustDocumentFamilyItems(
       label: "Stable identity",
       title: "Identity & Integrity",
       detail:
-        "This is the steady identity layer. It keeps the owner, continuity, local trust, wider consistency, and next clean repair path together.",
+        "This is the steady identity layer. It keeps the owner, continuity, local evidence, wider consistency, and next clean repair path together.",
       to: isAppRoute ? "/app/identity" : undefined,
       disabled: !isAppRoute,
       disabledReason: !isAppRoute
@@ -29,7 +29,7 @@ export function buildTrustDocumentFamilyItems(
       label: "Cross-community reading",
       title: "Cross-community consistency",
       detail:
-        "This is the narrower cross-community consistency read. It helps you see how visible trust behaviour looks outside one immediate community.",
+        "This is the narrower cross-community consistency read. It helps you see how visible behaviour evidence looks outside one immediate community.",
       to: isAppRoute ? "/app/cci-reading" : undefined,
       disabled: !isAppRoute,
       disabledReason: !isAppRoute
@@ -38,10 +38,10 @@ export function buildTrustDocumentFamilyItems(
     },
     {
       id: "passport",
-      label: "Personal trust story",
+      label: "Personal evidence record",
       title: "Trust Passport",
       detail:
-        "Trust Passport is the fuller personal record. It explains what is helping, what needs care, what evidence supports the reading, and what repair comes next.",
+        "Trust Passport is the fuller personal evidence record. It explains what is helping, what needs care, what evidence supports the reading, and what repair comes next.",
       to: isAppRoute ? "/app/trust" : undefined,
       disabled: !isAppRoute,
       disabledReason: !isAppRoute
@@ -53,7 +53,7 @@ export function buildTrustDocumentFamilyItems(
       label: "Portable record",
       title: "TrustSlip",
       detail:
-        "TrustSlip is the portable trust document. It carries the outward-facing trust summary, code, expiry, and verification link in one shareable surface.",
+        "TrustSlip is the portable evidence document. It carries the outward-facing evidence summary, code, expiry, and verification link in one shareable surface.",
       to: isAppRoute ? "/app/trust-slip" : undefined,
       disabled: !isAppRoute,
       disabledReason: !isAppRoute

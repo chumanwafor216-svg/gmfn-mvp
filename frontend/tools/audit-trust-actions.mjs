@@ -2017,6 +2017,51 @@ assertNotContains(
   );
 });
 
+[
+  "src/lib/trustDocumentActionGuide.ts",
+  "src/lib/trustDocumentFamilyMap.ts",
+  "src/lib/trustDocumentGuide.ts",
+  "src/lib/trustDocumentUseCases.ts",
+  "src/components/TrustDocumentFamilyMap.tsx",
+  "src/components/TrustDocumentUseCases.tsx",
+].forEach((file) => {
+  assertNotContains(
+    file,
+    /trust surfaces fit together|trust surface answers|Trust surface chooser|already on this trust surface|fuller trust story|personal trust story|trust behaviour|passport story|trust changes|behind trust|Why does trust look|private trust story|current trust posture|trust summary|visible trust reading|trust journey|portable trust check|short trust story|trust-limit signal|fuller trust explanation|trust reading looks|fuller personal trust story|portable trust document|outward-facing trust summary/i,
+    "Trust document guide/map copy must frame surfaces as evidence views and evidence records, not broad trust-story language."
+  );
+});
+
+assertContains(
+  "src/components/TrustDocumentFamilyMap.tsx",
+  /How these evidence views fit together[\s\S]*?fuller Trust Passport evidence record/,
+  "Trust document family map defaults must use evidence-view language."
+);
+
+assertContains(
+  "src/components/TrustDocumentUseCases.tsx",
+  /Which evidence view answers which question\?[\s\S]*?Evidence view chooser[\s\S]*?already on this evidence view/,
+  "Trust document use-case defaults must use evidence-view language."
+);
+
+assertContains(
+  "src/lib/trustDocumentActionGuide.ts",
+  /portable evidence check[\s\S]*?fuller personal evidence record[\s\S]*?short evidence summary[\s\S]*?evidence boundary signal[\s\S]*?fuller evidence explanation/,
+  "Trust document action guidance must keep evidence-record and evidence-summary language."
+);
+
+assertContains(
+  "src/lib/trustDocumentUseCases.ts",
+  /visible behaviour read across communities[\s\S]*?evidence changes[\s\S]*?fuller personal evidence record[\s\S]*?fuller private evidence record/,
+  "Trust document use cases must keep evidence-record decision questions."
+);
+
+assertContains(
+  "src/lib/trustDocumentGuide.ts",
+  /current evidence posture[\s\S]*?outward-facing evidence summary[\s\S]*?personal evidence explanation[\s\S]*?visible evidence reading[\s\S]*?same evidence record/,
+  "Trust document next-action guide must keep evidence-reading language."
+);
+
 assertNotContains(
   "src/lib/gsnIconAssets.ts",
   /certificate proof icon|QR proof record/i,

@@ -152680,3 +152680,41 @@ GSN-branded invite composer and invite-entry continuity.
   - local only so far; do not push/deploy unless the owner explicitly selects `2` or says push/deploy.
 - Next recommended step:
   - commit this Dashboard shared-guidance evidence-copy slice locally, then either continue another small visible/shared wording cleanup on `1` or push/deploy the accumulated local commits on `2`.
+## 2026-07-26 - Trust Document Evidence View Language
+
+- Trigger:
+  - owner selected `1` after the Dashboard shared-guidance evidence-copy slice was committed locally.
+- Unabated truth:
+  - this pass cleans shared Trust Document guide/map/use-case copy only;
+  - it does not rename Trust Passport, TrustSlip, CCI/trust-score fields, route contracts, backend APIs, verification payloads, or document component contracts;
+  - it keeps the existing document family/navigation structure and only reframes public helper language from trust-story/trust-surface wording to evidence-view/evidence-record wording;
+  - this is not a new Identity Profile, Evidence Ledger route, Behavioural Placement schema, Decision Pack generator, scoring rewrite, or permissions change.
+- Changed:
+  - `frontend/src/lib/trustDocumentActionGuide.ts`
+    - reframes action guidance from personal trust story/trust posture/trust-limit/full trust explanation wording to personal evidence record/evidence posture/evidence boundary/fuller evidence explanation wording;
+    - changes identity and TrustSlip helper copy from local trust / portable trust check / quick outside trust check to local evidence / portable evidence check / outside evidence check.
+  - `frontend/src/lib/trustDocumentUseCases.ts`
+    - reframes use-case questions from trust behaviour, trust changes, and trust story language to visible behaviour, evidence changes, and evidence-record language.
+  - `frontend/src/lib/trustDocumentGuide.ts`
+    - reframes next-action guidance from trust summaries/readings/journey/story to evidence summaries/readings/journey/record.
+  - `frontend/src/lib/trustDocumentFamilyMap.ts`
+    - changes family item copy from personal trust story and portable trust document wording to personal evidence record and portable evidence document wording.
+  - `frontend/src/components/TrustDocumentFamilyMap.tsx`
+    - changes default heading/intro from trust surfaces/full trust story to evidence views/full Trust Passport evidence record.
+  - `frontend/src/components/TrustDocumentUseCases.tsx`
+    - changes default chooser copy from trust surface to evidence view.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - adds scoped guards rejecting the old trust-story/trust-surface wording in the shared Trust Document guide/map files;
+    - asserts the new evidence-view/evidence-record wording remains present.
+- Verification:
+  - passed `npm exec -- eslint src/lib/trustDocumentActionGuide.ts src/lib/trustDocumentUseCases.ts src/lib/trustDocumentGuide.ts src/lib/trustDocumentFamilyMap.ts src/components/TrustDocumentFamilyMap.tsx src/components/TrustDocumentUseCases.tsx tools/audit-trust-actions.mjs` from `frontend`;
+  - passed direct `node tools/audit-trust-actions.mjs` from `frontend`;
+  - passed direct `node tools/audit-trust-passport-trustslip-boundary.mjs` from `frontend`;
+  - passed direct `node tools/audit-identity-integrity-front-package.mjs` from `frontend`;
+  - passed `npm --prefix frontend run audit:protected-button-freeze`;
+  - passed `npm --prefix frontend run build`;
+  - passed `git diff --check` before the handoff entry.
+- Deployment:
+  - local only so far; do not push/deploy unless the owner explicitly selects `2` or says push/deploy.
+- Next recommended step:
+  - commit this Trust Document evidence-view slice locally, then either continue another small visible/shared wording cleanup on `1` or push/deploy the accumulated local commits on `2`.
