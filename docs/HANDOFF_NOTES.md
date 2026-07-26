@@ -152751,3 +152751,30 @@ GSN-branded invite composer and invite-entry continuity.
   - local only so far; do not push/deploy unless the owner explicitly selects `2` or says push/deploy.
 - Next recommended step:
   - commit this Community Confirmation evidence-signal slice locally, then either continue another small visible/shared wording cleanup on `1` or push/deploy the accumulated local commits on `2`.
+## 2026-07-26 - Community Confirmation Outcome Evidence Check Labels
+
+- Trigger:
+  - owner selected `1` after the Community Confirmation evidence-signal slice was committed locally.
+- Unabated truth:
+  - this pass cleans public Community Confirmation Outcome reason/meaning labels only;
+  - it does not change public route contracts, API reason codes, response confidence logic, responder eligibility, privacy boundaries, or decision-record state;
+  - internal reason values such as `merchant_trust_check` remain unchanged for compatibility; only user-visible labels changed;
+  - this is not a Decision Pack generator, Evidence Ledger route, Behavioural Placement schema, scoring rewrite, or approval workflow.
+- Changed:
+  - `frontend/src/pages/CommunityConfirmationOutcomePage.tsx`
+    - changes strong outcome meaning from a low-risk first trust check to a low-risk first evidence check;
+    - changes merchant/small-trade and service/home-entry reason labels from trust checks to evidence checks.
+  - `frontend/tools/audit-community-confirmation-outcome-boundary.mjs`
+    - extends the community confirmation source cage to reject the old trust-check labels;
+    - asserts the new evidence-check labels remain present.
+- Verification:
+  - passed `npm exec -- eslint src/pages/CommunityConfirmationOutcomePage.tsx tools/audit-community-confirmation-outcome-boundary.mjs tools/audit-trust-actions.mjs` from `frontend`;
+  - passed direct `node tools/audit-community-confirmation-outcome-boundary.mjs` from `frontend`;
+  - passed direct `node tools/audit-trust-actions.mjs` from `frontend`;
+  - passed `npm --prefix frontend run audit:protected-button-freeze`;
+  - passed `npm --prefix frontend run build`;
+  - passed `git diff --check` before the handoff entry.
+- Deployment:
+  - local only so far; do not push/deploy unless the owner explicitly selects `2` or says push/deploy.
+- Next recommended step:
+  - commit this Community Confirmation Outcome evidence-check label slice locally, then either continue another small visible/shared wording cleanup on `1` or push/deploy the accumulated local commits on `2`.

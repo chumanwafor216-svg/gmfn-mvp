@@ -98,7 +98,7 @@ assertContains(
 ].forEach((key) => {
   assertNotContains(
     key,
-    /No trust change|Positive trust signal|negative trust signal|clear trust signal|public trust signal|specific trust decision|changes GSN's trust reading|without changing trust|moving the trust reading/i,
+    /No trust change|Positive trust signal|negative trust signal|clear trust signal|public trust signal|specific trust decision|first trust check|trade trust check|entry trust check|changes GSN's trust reading|without changing trust|moving the trust reading/i,
     "Community confirmation surfaces must frame responses as evidence and decision support, not broad trust signals or trust decisions."
   );
 });
@@ -113,6 +113,12 @@ assertContains(
   "outcome",
   /privacy-safe community response for this specific decision-support request/i,
   "Community Confirmation Outcome subtitle must frame the public paper as decision support, not a trust decision."
+);
+
+assertContains(
+  "outcome",
+  /low-risk first evidence check[\s\S]*?Merchant or small trade evidence check[\s\S]*?Service or home-entry evidence check/,
+  "Community Confirmation Outcome reason labels must frame public responses as evidence checks, not trust checks."
 );
 
 assertContains(

@@ -458,7 +458,7 @@ function outcomeMeaning(status: string, confidence: string): string {
     return "The response window has passed. No valid responses were received.";
   }
   if (confidence === "strong") {
-    return "Enough approved community contacts have confirmed this person for a low-risk first trust check.";
+    return "Enough approved community contacts have confirmed this person for a low-risk first evidence check.";
   }
   if (confidence === "moderate") {
     return "The community response is useful, but you should still keep your decision proportionate.";
@@ -473,11 +473,11 @@ function outcomeMeaning(status: string, confidence: string): string {
 }
 
 function reasonMeaning(reason: string): string {
-  if (reason === "merchant_trust_check") return "Merchant or small trade trust check";
+  if (reason === "merchant_trust_check") return "Merchant or small trade evidence check";
   if (reason === "support_verification") return "Support or emergency-help verification";
   if (reason === "job_opportunity") return "Work or opportunity reference check";
   if (reason === "community_joining") return "Community joining or acceptance check";
-  if (reason === "service_home_entry") return "Service or home-entry trust check";
+  if (reason === "service_home_entry") return "Service or home-entry evidence check";
   return labelize(reason);
 }
 
