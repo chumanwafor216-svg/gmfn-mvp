@@ -355,21 +355,25 @@ const TRUST_SLIP_PURPOSE_OPTIONS: Array<{
   key: TrustSlipPurposeKey;
   label: string;
   shortLabel: string;
+  recipientQuestion: string;
 }> = [
   {
     key: "community_confirmation",
-    label: "Community Trust Confirmation pilot demonstration",
-    shortLabel: "Community confirmation",
+    label: "Community Standing Decision Pack",
+    shortLabel: "Standing",
+    recipientQuestion: "How is this person known where people actually know them?",
   },
   {
     key: "support_decision",
-    label: "Support or finance readiness check",
-    shortLabel: "Support check",
+    label: "Guarantor or Support Decision Pack",
+    shortLabel: "Support",
+    recipientQuestion: "Is there enough evidence to stand for or support this person?",
   },
   {
     key: "trade_check",
-    label: "Trade or service confidence check",
-    shortLabel: "Trade check",
+    label: "Trade or Skilled Work Decision Pack",
+    shortLabel: "Trade",
+    recipientQuestion: "Who has seen this person trade, serve, or complete work?",
   },
 ];
 
@@ -580,6 +584,26 @@ function trustSlipVerifyFrontendPath(code: string, fallback = ""): string {
   }
 
   return rawFallback.startsWith("/t/") ? rawFallback : "";
+}
+
+function withPublicDecisionPackQuery(
+  pathOrUrl: string,
+  params: Record<string, string>
+): string {
+  const raw = safeStr(pathOrUrl);
+  if (!raw) return "";
+
+  try {
+    const isAbsolute = /^https?:\/\//i.test(raw);
+    const url = new URL(raw, "https://gsn.local");
+    Object.entries(params).forEach(([key, value]) => {
+      const cleanValue = safeStr(value);
+      if (cleanValue) url.searchParams.set(key, cleanValue);
+    });
+    return isAbsolute ? url.toString() : `${url.pathname}${url.search}${url.hash}`;
+  } catch {
+    return raw;
+  }
 }
 
 async function fetchFirstJson(
@@ -1770,7 +1794,22 @@ export default function TrustSlipPage() {
   const [merchantRailLink, setMerchantRailLink] = useState<MerchantLinkResponse | null>(null);
   const [selectedTrustSlipPurpose, setSelectedTrustSlipPurpose] =
     useState<TrustSlipPurposeKey>("community_confirmation");
-
+  const selectedPurposeOption = useMemo(
+    () =>
+      TRUST_SLIP_PURPOSE_OPTIONS.find(
+        (option) => option.key === selectedTrustSlipPurpose
+      ) || TRUST_SLIP_PURPOSE_OPTIONS[0],
+    [selectedTrustSlipPurpose]
+  );
+  const publicDecisionPackQuery = useMemo(
+    () => ({
+      decision_pack: selectedPurposeOption.key,
+      access_purpose: selectedPurposeOption.label,
+      recipient_question: selectedPurposeOption.recipientQuestion,
+      access_scope: "public_decision_pack",
+    }),
+    [selectedPurposeOption]
+  );
   const clearTrustSlipState = useCallback(() => {
     setMe(null);
     setCurrentClan(null);
@@ -2105,11 +2144,12 @@ export default function TrustSlipPage() {
   );
 
   const verifyPath = useMemo(() => {
-    return trustSlipVerifyFrontendPath(
+    const basePath = trustSlipVerifyFrontendPath(
       trustSlipCode,
       summary?.public_verify_url || ""
     );
-  }, [summary, trustSlipCode]);
+    return withPublicDecisionPackQuery(basePath, publicDecisionPackQuery);
+  }, [publicDecisionPackQuery, summary, trustSlipCode]);
   const verifyUrl = useMemo(() => toFrontendAbsoluteUrl(verifyPath), [verifyPath]);
   const merchantRailReleasePath = useMemo(
     () => (merchantRailLink?.path ? merchantReleaseDeskPath(merchantRailLink.path) : ""),
@@ -3009,15 +3049,16 @@ export default function TrustSlipPage() {
     "Authority to release goods, money, credit, or services",
     "Private Trust Passport history, private notes, private contacts, or admin records",
   ];
-  const selectedPurposeOption =
-    TRUST_SLIP_PURPOSE_OPTIONS.find(
-      (option) => option.key === selectedTrustSlipPurpose
-    ) || TRUST_SLIP_PURPOSE_OPTIONS[0];
   const purposeEvidenceSelectionRows = [
     {
-      label: "Purpose selected",
+      label: "Decision Pack selected",
       value: selectedPurposeOption.label,
       icon: "evidence" as GsnIconName,
+    },
+    {
+      label: "Recipient question",
+      value: selectedPurposeOption.recipientQuestion,
+      icon: "certificate-seal" as GsnIconName,
     },
     {
       label: "Evidence included",
@@ -3027,7 +3068,7 @@ export default function TrustSlipPage() {
         heroEvidenceShort,
         "Identity and community evidence"
       ),
-      icon: "certificate-seal" as GsnIconName,
+      icon: "document" as GsnIconName,
     },
     {
       label: "Currentness",
@@ -3313,7 +3354,7 @@ export default function TrustSlipPage() {
               </span>
               <div style={{ minWidth: 0 }}>
                 <div style={{ ...sectionLabel(), color: "#7A4A00" }}>
-                  TrustSlip purpose selection
+                  Decision Pack selection
                 </div>
                 <div
                   style={{
@@ -3324,7 +3365,7 @@ export default function TrustSlipPage() {
                     lineHeight: 1.12,
                   }}
                 >
-                  Choose the evidence for this purpose.
+                  Choose the Decision Pack for this recipient.
                 </div>
                 <div
                   style={{
@@ -3335,7 +3376,7 @@ export default function TrustSlipPage() {
                     lineHeight: 1.35,
                   }}
                 >
-                  Only the selected public TrustSlip summary is prepared for sharing.
+                  Each pack is a focused view of the same evidence. GSN reduces uncertainty; it does not remove risk or make the decision for the recipient.
                 </div>
               </div>
             </div>

@@ -237,13 +237,52 @@ export default function TrustSlipVerifyPage() {
     const params = new URLSearchParams(location.search);
     return safeStr(params.get("code"));
   }, [location.search]);
+  const publicDecisionPackContext = useMemo(() => {
+    const search = new URLSearchParams(location.search);
+    const accessPurpose = firstTruthy(
+      search.get("access_purpose"),
+      search.get("purpose"),
+      search.get("decision_pack")
+    );
+    const recipientQuestion = firstTruthy(
+      search.get("recipient_question"),
+      search.get("decision_question")
+    );
+    const accessScope = firstTruthy(search.get("access_scope"), "public_decision_pack");
+    if (!accessPurpose && !recipientQuestion) return null;
+
+    return {
+      access_purpose: accessPurpose,
+      share_purpose: accessPurpose,
+      access_scope: accessScope,
+      access_note: recipientQuestion,
+      share_access_record: {
+        recipient_label: "TrustSlip recipient",
+        purpose: accessPurpose,
+        scope: accessScope,
+        note: recipientQuestion,
+        status: "public_context_from_link",
+      },
+    };
+  }, [location.search]);
+  const publicDecisionPackContextKey = useMemo(
+    () =>
+      publicDecisionPackContext
+        ? [
+            publicDecisionPackContext.access_purpose,
+            publicDecisionPackContext.access_scope,
+            publicDecisionPackContext.access_note,
+          ].join(":")
+        : "none",
+    [publicDecisionPackContext]
+  );
 
   const requestedCode = useMemo(() => {
     return firstTruthy(params.code, queryCode);
   }, [params.code, queryCode]);
   const verifyContextKey = `${isAppRoute ? "app" : "public"}:${selectedClanId || 0}:${
     requestedCode || "auto"
-  }`;
+  }:${publicDecisionPackContextKey}`;
   verifyContextRef.current = verifyContextKey;
   const isLiteRoute = useMemo(() => {
     const params = new URLSearchParams(location.search);
@@ -369,7 +408,12 @@ export default function TrustSlipVerifyPage() {
           return;
         }
 
-        const normalized = normalizeTrustSlipVerification(verifyResult, codeToUse);
+        const normalized = normalizeTrustSlipVerification(
+          verifyResult && publicDecisionPackContext
+            ? { ...verifyResult, ...publicDecisionPackContext }
+            : verifyResult,
+          codeToUse
+        );
         setRecord(normalized);
         const mySlipCode = firstTruthy(
           mySlip?.code,
@@ -403,7 +447,13 @@ export default function TrustSlipVerifyPage() {
     return () => {
       alive = false;
     };
-  }, [requestedCode, isAppRoute, selectedClanId, verifyContextKey]);
+  }, [
+    requestedCode,
+    isAppRoute,
+    selectedClanId,
+    verifyContextKey,
+    publicDecisionPackContext,
+  ]);
 
   const communityLabel = useMemo(() => {
     return (

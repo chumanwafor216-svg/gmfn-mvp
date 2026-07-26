@@ -213,6 +213,15 @@ assertContains(
   /data-gsn-trust-document-certificate="trustslip-holder"[\s\S]*?<TrustDocumentConfidenceRibbon items=\{trustSlipHolderConfidenceRibbonItems\} \/>[\s\S]*?<CommunityProofPanel[\s\S]*?title="Known by community"[\s\S]*?trustSlipStatusLabel=\{trustSlipPublicStatus\}/,
   "TrustSlip holder page must show the shared Known by community proof layer after the confidence ribbon."
 );
+assertContains(
+  "trustSlip",
+  /Community Standing Decision Pack[\s\S]*?Guarantor or Support Decision Pack[\s\S]*?Trade or Skilled Work Decision Pack[\s\S]*?Decision Pack selection[\s\S]*?Each pack is a focused view of the same evidence[\s\S]*?does not remove risk or make the decision for the recipient/,
+  "TrustSlip holder page must frame share preparation as Decision Packs, not generic purpose labels or automatic decisions."
+);assertContains(
+  "trustSlip",
+  /withPublicDecisionPackQuery[\s\S]*?decision_pack: selectedPurposeOption\.key[\s\S]*?access_purpose: selectedPurposeOption\.label[\s\S]*?recipient_question: selectedPurposeOption\.recipientQuestion[\s\S]*?const verifyPath = useMemo[\s\S]*?withPublicDecisionPackQuery\(basePath, publicDecisionPackQuery\)/,
+  "TrustSlip holder verify links and QR must carry the selected public Decision Pack context."
+);
 
 assertContains(
   "communityProofPanel",

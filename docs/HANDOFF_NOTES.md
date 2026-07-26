@@ -1,3 +1,91 @@
+## CURRENT LOCAL STATE - 2026-07-26 - Decision Pack context now travels through TrustSlip verify links
+
+Owner trigger:
+- Owner selected `1=continue` after the first Decision Pack wording pass.
+
+Unabated truth:
+- This continuation still does not create a backend Decision Pack table, recipient access ledger, purpose-specific evidence filtering engine, Global TrustSlip, or Behavioural Placement data contract.
+- The selected pack is carried as share-safe public URL context only. Anything placed in the URL is visible to the recipient and anyone they forward the link to.
+- This is deliberately limited to safe pack labels, the recipient decision question, and public access scope. It must not carry private notes, private contacts, bank details, raw evidence, or private Trust Passport content.
+
+Changed:
+- `frontend/src/pages/TrustSlipPage.tsx`
+  - Added `withPublicDecisionPackQuery` for appending safe Decision Pack metadata to the public verify path.
+  - Moved selected Decision Pack derivation near the holder state so QR, copy, and open actions share one selected-pack context.
+  - The holder verify URL now carries `decision_pack`, `access_purpose`, `recipient_question`, and `access_scope=public_decision_pack`.
+- `frontend/src/pages/TrustSlipVerifyPage.tsx`
+  - Reads the safe Decision Pack query fields from public verify URLs.
+  - Converts them into the existing normalized public access record shape before rendering the public paper.
+  - Includes the pack context in the verify reload key so changing the URL pack context updates the public paper.
+- `frontend/tools/audit-trust-passport-trustslip-boundary.mjs`
+  - Added a guard requiring holder verify links and QR to carry selected Decision Pack context.
+- `frontend/tools/audit-public-trustslip-verify-boundary.mjs`
+  - Added a guard requiring public TrustSlip Verify to normalize share-safe Decision Pack URL context.
+
+Routes/screens affected:
+- `/app/trust-slip`: selected Decision Pack now affects the public verify link and QR URL.
+- Public TrustSlip Verify routes such as `/t/:code`, `/verify/trust-slip`, and `/trust-slips/verify/:code`: query-carried Decision Pack context now appears in the existing "Why you received this" / Decision Pack reading layer.
+
+Verification:
+- Passed `npm exec -- eslint src/pages/TrustSlipPage.tsx src/pages/TrustSlipVerifyPage.tsx src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx src/pages/trustSlipVerify/trustSlipVerifyViewModel.ts tools/audit-public-trustslip-verify-boundary.mjs tools/audit-trust-passport-trustslip-boundary.mjs` from `frontend`.
+- Passed `npm --prefix frontend run audit:public-trustslip-verify-boundary`.
+- Passed `npm --prefix frontend run audit:trust-passport-trustslip-boundary`.
+- Passed `npm --prefix frontend run audit:trust-actions`.
+- Passed `npm --prefix frontend run audit:proof-surfaces`.
+- Passed `npm --prefix frontend run audit:protected-button-freeze`.
+- Passed `git diff --check` with only recurring CRLF/LF warnings on touched files.
+- Passed `npm --prefix frontend run build`.
+
+Recommended next step:
+- If owner wants this in pilot, commit/push/deploy this frontend-only Decision Pack batch. The next deeper product slice would be a real backend recipient access ledger or purpose-specific evidence filtering contract.
+## CURRENT LOCAL STATE - 2026-07-26 - TrustSlip reframed as recipient Decision Pack
+
+Owner trigger:
+- Owner said "now we can continue with enhencement" after the verified push/deploy checkpoint, using the email feedback that GSN should stop making the TrustSlip system-centred and instead help a recipient answer: "Do I have enough trustworthy evidence to make my next decision?"
+
+Unabated truth:
+- This is a frontend language, ordering, and audit-boundary enhancement only.
+- It does not create a new backend `DecisionPack` model, a purpose-specific filtering engine, a Global TrustSlip, a multi-community Evidence Ledger schema, or new private Trust Passport disclosure rules.
+- The public TrustSlip still uses existing public-safe TrustSlip fields and must not be described as a guarantee, score, ranking, or automated trust decision.
+- The accurate current claim is: GSN presents a public Decision Pack view that reduces uncertainty and supports the recipient's judgement; the recipient remains responsible for the decision.
+
+Changed:
+- `frontend/src/pages/TrustSlipPage.tsx`
+  - Reframed the holder purpose selector as Decision Pack selection.
+  - Renamed available views to Community Standing, Guarantor or Support, and Trade or Skilled Work Decision Packs.
+  - Added recipient-question language so the holder sees what decision each pack helps the recipient consider.
+  - Added explicit risk-boundary copy: GSN reduces uncertainty; it does not remove risk or decide for the recipient.
+- `frontend/src/pages/trustSlipVerify/trustSlipVerifyViewModel.ts`
+  - Changed the missing purpose fallback from "Purpose not recorded" to "General Decision Pack".
+  - Replaced the default access note with decision-support language that keeps private Trust Passport access separate.
+- `frontend/src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx`
+  - Reframed the public paper badge from "Public verification paper" to "Public Decision Pack".
+  - Renamed the recipient access section to "Why you received this".
+  - Added a first-page Decision Pack reading panel that answers why received, what the person is known for, what to do next, and why the record reduces uncertainty without eliminating risk.
+  - Updated the footer to say the recipient decides with the record in front of them.
+- `frontend/tools/audit-public-trustslip-verify-boundary.mjs`
+  - Added guards requiring the public Decision Pack wording, "Why you received this", the decision-first panel, reduce-uncertainty language, and recipient-responsibility language.
+- `frontend/tools/audit-trust-passport-trustslip-boundary.mjs`
+  - Added holder-side guards requiring Decision Pack selection and boundary copy.
+- `frontend/tools/audit-institutional-proof-surfaces.mjs`
+  - Updated public proof surface assertions for the new public Decision Pack framing and footer language.
+
+Routes/screens affected:
+- `/app/trust-slip`: holder-facing TrustSlip preparation now uses Decision Pack language.
+- Public TrustSlip Verify routes such as `/t/:code`, `/verify/trust-slip`, and `/trust-slips/verify/:code`: public paper now presents the first page as recipient decision support while preserving the existing public/private boundary.
+
+Verification:
+- Passed `npm --prefix frontend run audit:public-trustslip-verify-boundary`.
+- Passed `npm --prefix frontend run audit:trust-passport-trustslip-boundary`.
+- Passed `npm --prefix frontend run audit:trust-actions`.
+- Passed `npm --prefix frontend run audit:proof-surfaces`.
+- Passed `npm exec -- eslint src/pages/TrustSlipPage.tsx src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx src/pages/trustSlipVerify/trustSlipVerifyViewModel.ts tools/audit-public-trustslip-verify-boundary.mjs tools/audit-trust-passport-trustslip-boundary.mjs tools/audit-institutional-proof-surfaces.mjs` from `frontend`.
+- Passed `npm --prefix frontend run audit:protected-button-freeze`.
+- Passed `git diff --check` with only recurring CRLF/LF warnings on touched files.
+- Passed `npm --prefix frontend run build`.
+
+Recommended next step:
+- If owner wants real Decision Packs beyond language and layout, add backend-supported `access_purpose` capture and purpose-specific evidence filtering next. Do not claim Global TrustSlip, Behavioural Placement, or Evidence Ledger architecture is complete until those data contracts exist.
 ## CURRENT LOCAL STATE - 2026-07-25 - Community Proof layer extended to public member credential
 
 Owner trigger:

@@ -355,7 +355,7 @@ export function buildTrustSlipVerifyViewModel({
     record?.access_purpose,
     rawAccessRecord?.purpose,
     rawAccessRecord?.share_purpose,
-    "Purpose not recorded"
+    "General Decision Pack"
   );
   const accessScope = firstTruthy(
     record?.access_scope,
@@ -381,7 +381,7 @@ export function buildTrustSlipVerifyViewModel({
   const accessNote = firstTruthy(
     record?.access_note,
     rawAccessRecord?.note,
-    "This records the public TrustSlip view only. Private Trust Passport access remains separate."
+    "This public Decision Pack reduces uncertainty; it does not eliminate risk or make the decision for the recipient. Private Trust Passport access remains separate."
   );
   const hasBlockingState =
     record?.is_current === false ||

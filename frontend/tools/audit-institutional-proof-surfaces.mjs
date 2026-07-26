@@ -755,8 +755,8 @@ assertContains(
 );
 assertContains(
   "publicPaper",
-  /Public verification paper[\s\S]*?TrustSlip Verify/,
-  "Public TrustSlip paper must present itself as an institutional verification paper."
+  /Public Decision Pack[\s\S]*?TrustSlip Verify/,
+  "Public TrustSlip paper must present itself as an institutional public Decision Pack while preserving TrustSlip Verify identity."
 );
 assertContains(
   "trustSlipRoute",
@@ -805,8 +805,8 @@ assertContains(
 );
 assertContains(
   "publicPaper",
-  /GSN Trust Evidence[\s\S]*?public evidence first, private details protected, you decide with the record in front of you/,
-  "Public TrustSlip paper footer must keep the direct user decision limitation."
+  /GSN Trust Evidence[\s\S]*?decision evidence first, private details protected, the recipient decides with the record in front of them/,
+  "Public TrustSlip paper footer must keep the direct recipient decision limitation."
 );
 assertNotContains(
   "publicPaper",

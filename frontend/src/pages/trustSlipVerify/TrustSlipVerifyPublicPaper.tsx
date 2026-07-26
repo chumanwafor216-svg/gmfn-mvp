@@ -908,6 +908,23 @@ export default function TrustSlipVerifyPublicPaper({
   const callbackBlocked = Boolean(callbackNeedsConsent && !callbackConsent);
   const requesterCallback = confirmationOutcome?.requester_callback || null;
   const visibleBandReading = visibleBandLabel || publicEvidencePosture || "Evidence status";
+  const decisionPackPurpose = firstTruthy(
+    recipientAccessRecord.purpose,
+    "General Decision Pack"
+  );
+  const decisionPackRecipient = firstTruthy(
+    recipientAccessRecord.recipientLabel,
+    "Recipient not named"
+  );
+  const decisionKnownFor =
+    positiveNumber(communityActivityCountLabel) > 0
+      ? `${holderRoleLabel} inside ${communityLabel || "this community"}, with ${communityActivityCountLabel} recorded community event${
+          communityActivityCountLabel === "1" ? "" : "s"
+        }${knownAsCategoryLabel ? ` across ${knownAsCategoryLabel}` : ""}.`
+      : `${holderRoleLabel} inside ${communityLabel || "this community"}. Activity evidence is still building on this paper.`;
+  const decisionNextStep = validNow
+    ? "For important decisions, request instant community confirmation before relying on this paper."
+    : "Ask the holder for a fresh TrustSlip before relying on this paper.";
   const isLite = variant === "lite";
   const recordFingerprint = referenceFingerprint(
     resolvedCode,
@@ -1174,7 +1191,7 @@ export default function TrustSlipVerifyPublicPaper({
               textTransform: "uppercase",
             }}
           >
-            Public verification paper
+            Public Decision Pack
           </div>
           <h1
             style={{
@@ -1200,7 +1217,7 @@ export default function TrustSlipVerifyPublicPaper({
               fontWeight: 760,
             }}
           >
-            A public GSN trust check for identity, support, trade, and careful decision-making.
+            A public GSN Decision Pack for checking current evidence before identity, support, referral, trade, or service decisions.
           </p>
           <div
             style={{
@@ -1292,7 +1309,7 @@ export default function TrustSlipVerifyPublicPaper({
           <div style={{ minWidth: 0, display: "grid", gap: compact ? 6 : 9 }}>
             <div>
               <div style={{ ...sectionLabel(), color: "#7A4A00" }}>
-                Recipient access record
+                Why you received this
               </div>
               <div
                 style={{
@@ -1316,7 +1333,7 @@ export default function TrustSlipVerifyPublicPaper({
             >
               {[
                 ["Recipient", recipientAccessRecord.recipientLabel],
-                ["Purpose", recipientAccessRecord.purpose],
+                ["Decision Pack", decisionPackPurpose],
                 ["Scope", recipientAccessRecord.scope],
                 ["Access date", recipientAccessRecord.accessedAtLabel],
               ].map(([label, value]) => (
@@ -1362,6 +1379,77 @@ export default function TrustSlipVerifyPublicPaper({
             >
               {recipientAccessRecord.note}
             </div>
+          </div>
+        </div>
+
+        <div
+          data-debug-id="trust-slip-verify.public.decision-pack-reading"
+          style={{
+            ...publicVerifyPanel("#F8FBFF", compact),
+            display: "grid",
+            gap: compact ? 9 : 12,
+          }}
+        >
+          <div>
+            <div style={{ ...sectionLabel(), color: "#0B63D1" }}>
+              Decision Pack reading
+            </div>
+            <h2
+              style={{
+                ...readableText(),
+                margin: "5px 0 0",
+                color: "#07172C",
+                fontSize: compact ? 18 : 24,
+                lineHeight: 1.12,
+                fontWeight: 1000,
+              }}
+            >
+              Can I make a better decision with this evidence?
+            </h2>
+            <p
+              style={{
+                ...readableText(),
+                margin: "7px 0 0",
+                color: "#334155",
+                fontSize: compact ? 12.5 : 14,
+                lineHeight: 1.45,
+                fontWeight: 850,
+              }}
+            >
+              This document exists to reduce uncertainty, not eliminate risk. GSN provides trustworthy evidence; the recipient remains responsible for the decision.
+            </p>
+          </div>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: compact ? "1fr" : "repeat(3, minmax(0, 1fr))",
+              gap: 8,
+            }}
+          >
+            <PublicReadingTile
+              icon="qr-record"
+              label="Why received"
+              title={decisionPackPurpose}
+              text={`Opened by ${decisionPackRecipient}. Read this as decision support, not a private investigation report.`}
+              compact={compact}
+              tone="neutral"
+            />
+            <PublicReadingTile
+              icon="community-building"
+              label="Known for"
+              title="Community evidence"
+              text={decisionKnownFor}
+              compact={compact}
+              tone={positiveNumber(communityActivityCountLabel) > 0 ? "trust" : "warning"}
+            />
+            <PublicReadingTile
+              icon="certificate-seal"
+              label="Next safe step"
+              title={validNow ? "Check live confirmation" : "Refresh first"}
+              text={decisionNextStep}
+              compact={compact}
+              tone={validNow ? "trust" : "warning"}
+            />
           </div>
         </div>
 
@@ -2245,7 +2333,7 @@ export default function TrustSlipVerifyPublicPaper({
             GSN Trust Evidence
           </div>
           <div style={{ marginTop: 4, color: "#DCE8F4", fontSize: compact ? 13 : 16, lineHeight: 1.35, fontWeight: 780 }}>
-            public evidence first, private details protected, you decide with the record in front of you.
+            decision evidence first, private details protected, the recipient decides with the record in front of them.
           </div>
         </div>
         {!compact ? <GsnRealisticIcon name="public-globe" size={66} decorative /> : null}
