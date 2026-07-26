@@ -169,7 +169,7 @@ Trust Passport must not expose the whole evidence universe at once.
 
 Trust Passport should guide through major lanes such as:
 
-- Current Trust Standing
+- Identity & Evidence Reading
 - Evidence Story
 - Community Confirmation
 - Finance Discipline

@@ -439,6 +439,12 @@ async function runTrustPassportScenario(browser, baseURL) {
   await expect(
     state.page.getByRole("heading", { name: "Identity & Community Overview", exact: true })
   ).toBeVisible({ timeout: 30000 });
+  await expect(state.page.getByText("Active passport lane", { exact: true })).toBeVisible();
+  await expect(state.page.getByText("Identity & Evidence Reading", { exact: true }).first()).toBeVisible();
+  await expect(state.page.getByText("2. Current evidence reading", { exact: true })).toBeVisible();
+  await expect(state.page.getByText("Current Trust Standing", { exact: true })).toHaveCount(0);
+  await expect(state.page.getByText("Active trust lane", { exact: true })).toHaveCount(0);
+  await expect(state.page.getByText("2. Current trust verdict", { exact: true })).toHaveCount(0);
   await expect(state.page.getByText("Community Portfolio", { exact: true })).toBeVisible();
   await expect(state.page.getByText("Active Communities: 5", { exact: true }).first()).toBeVisible();
   await expect(state.page.getByText("Recorded communities", { exact: true })).toBeVisible();

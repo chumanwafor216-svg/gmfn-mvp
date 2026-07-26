@@ -88,10 +88,10 @@ Confirmed from `frontend/src/pages/TrustScorePage.tsx` and
 `frontend/src/lib/trustPassportViewModel.ts`:
 
 - `/app/trust` presents itself as `Trust Passport`.
-- The view model groups identity, verdict, trust questions, reasons, outputs,
+- The view model groups identity, evidence reading, trust questions, reasons, outputs,
   and technical detail.
 - The page already has the pre-redesign lane mapping:
-  - Current Trust Standing
+  - Identity & Evidence Reading
   - Evidence Story
   - Community Confirmation
   - Finance Discipline
@@ -214,8 +214,8 @@ Avoid:
 
 | Passport Lane | Owns | Reads From | Links Out To | Boundary |
 | --- | --- | --- | --- | --- |
-| Identity Overview | GSN ID, display name, photo/status, community context, identity evidence state. | `me`, TrustSlip identity context, community/member evidence. | Identity & Integrity, public member credential where safe. | Identity is not trust. |
-| Current Trust Standing | Current band, score, evidence depth, simple interpretation. | Trust score/explanation, TrustSlip summary, Trust Passport VM. | CCI Reading, Trust Timeline. | Score/class is not approval. |
+| Identity & Community Overview | GSN ID, display name, photo/status, community context, identity evidence state. | `me`, TrustSlip identity context, community/member evidence. | Identity & Integrity, public member credential where safe. | Identity is not trust. |
+| Identity & Evidence Reading | Current evidence posture, evidence depth, and simple interpretation. | Trust score/explanation, TrustSlip summary, Trust Passport VM. | CCI Reading, Trust Timeline. | Reading is not approval. |
 | Evidence Story | Why trust moved, helpful evidence, pressure signals. | Trust Events, trust why/explainability, timeline. | Trust Timeline, evidence pack. | Event count is not proof by itself. |
 | Community Confirmation | Community record, membership/currentness, witness strength, live confirmation readiness. | TrustSlip community context, confirmation policy, public community/member records. | Community record, member credential, confirmation policy. | Membership/witness evidence is scoped. |
 | Finance Discipline | Trust-limit signal, repayment/support/guarantee evidence, exposure context. | Finance/loan/support records and Trust Events. | Finance, Loans, Guarantor Inbox. | Not a bank, lender, guarantee, or approved limit. |

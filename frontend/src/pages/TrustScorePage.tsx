@@ -3065,8 +3065,8 @@ export default function TrustScorePage() {
     {
       key: "standing",
       icon: "shield",
-      label: "Current Trust Standing",
-      detail: "Identity, verdict, and what this reading says.",
+      label: "Identity & Evidence Reading",
+      detail: "Identity, evidence state, and what this reading says.",
     },
     {
       key: "evidence",
@@ -3157,7 +3157,7 @@ export default function TrustScorePage() {
                   fontWeight: 1000,
                 }}
               >
-                Active trust lane
+                Active passport lane
               </div>
               <div
                 style={{
@@ -4018,7 +4018,7 @@ export default function TrustScorePage() {
               }}
             >
               <div style={{ color: "#07172C", fontWeight: 1000, fontSize: 20 }}>
-                2. Current trust verdict
+                2. Current evidence reading
               </div>
               <div
                 style={{

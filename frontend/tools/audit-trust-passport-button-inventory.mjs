@@ -171,13 +171,13 @@ assertContains(
 );
 
 assertContains(
-  /padding: isCompact \? 12 : 24[\s\S]*?minHeight: isCompact \? "min\(720px, calc\(100svh - 132px\)\)" : undefined[\s\S]*?gridTemplateColumns: isCompact \? "88px minmax\(0, 1fr\)" : "132px minmax\(0, 1fr\)"[\s\S]*?width: isCompact \? 88 : 132[\s\S]*?height: isCompact \? 88 : 132[\s\S]*?overflow: "hidden"[\s\S]*?Identity Overview[\s\S]*?Community-backed identity snapshot[\s\S]*?gridTemplateColumns: isCompact[\s\S]*?\? "repeat\(2, minmax\(0, 1fr\)\)"[\s\S]*?: "repeat\(2, minmax\(0, 1fr\)\)"[\s\S]*?gridTemplateColumns: isCompact[\s\S]*?\? "36px minmax\(0, 1fr\)"[\s\S]*?: "46px minmax\(0, 1fr\)"[\s\S]*?overviewIconBox\(isCompact\)/,
-  "Trust Passport identity overview must keep the portable snapshot package boundary and two-column fact grid without decorative status chips above the title."
+  /padding: isCompact \? 12 : 24[\s\S]*?minHeight: isCompact \? "min\(720px, calc\(100svh - 132px\)\)" : undefined[\s\S]*?gridTemplateColumns: isCompact \? "88px minmax\(0, 1fr\)" : "132px minmax\(0, 1fr\)"[\s\S]*?width: isCompact \? 88 : 132[\s\S]*?height: isCompact \? 88 : 132[\s\S]*?overflow: "hidden"[\s\S]*?Identity & Community Overview[\s\S]*?Who this person is, their GSN ID, and where they belong.[\s\S]*?gridTemplateColumns: isCompact[\s\S]*?\? "repeat\(2, minmax\(0, 1fr\)\)"[\s\S]*?: "repeat\(2, minmax\(0, 1fr\)\)"[\s\S]*?gridTemplateColumns: isCompact[\s\S]*?\? "36px minmax\(0, 1fr\)"[\s\S]*?: "46px minmax\(0, 1fr\)"[\s\S]*?overviewIconBox\(isCompact\)/,
+  "Trust Passport identity and community overview must keep the portable snapshot package boundary and two-column fact grid without decorative status chips above the title."
 );
 
 assertNotContains(
   /Snapshot 1|Photo clear/,
-  "Trust Passport identity overview must not restore the old decorative Snapshot 1 or Photo clear chips above the title."
+  "Trust Passport identity and community overview must not restore the old decorative Snapshot 1 or Photo clear chips above the title."
 );
 
 assertContains(
@@ -191,7 +191,7 @@ assertContains(
 );
 
 assertContains(
-  /function overviewStatusBox\(ok: boolean, muted = false\)[\s\S]*?minHeight: 36[\s\S]*?display: "inline-grid"[\s\S]*?gridTemplateColumns: "24px minmax\(0, 1fr\)"[\s\S]*?whiteSpace: "nowrap"[\s\S]*?verificationBadges\.map\(\(item\) =>[\s\S]*?overviewStatusBox\(item\.ok, item\.muted\)[\s\S]*?<GsnLegacyIcon name=\{item\.icon\} size=\{22\} decorative[\s\S]*?Active in \{passportVm\.technicalDetail\.activeClans\}/,
+  /function overviewStatusBox\(ok: boolean, muted = false\)[\s\S]*?minHeight: 36[\s\S]*?display: "inline-grid"[\s\S]*?gridTemplateColumns: "24px minmax\(0, 1fr\)"[\s\S]*?whiteSpace: "nowrap"[\s\S]*?verificationBadges\.map\(\(item\) =>[\s\S]*?overviewStatusBox\(item\.ok, item\.muted\)[\s\S]*?<GsnLegacyIcon name=\{item\.icon\} size=\{22\} decorative[\s\S]*?Active Communities: \{passportVm\.technicalDetail\.activeClans\}/,
   "Trust Passport verification badges must stay as compact one-line snapshot status chips."
 );
 

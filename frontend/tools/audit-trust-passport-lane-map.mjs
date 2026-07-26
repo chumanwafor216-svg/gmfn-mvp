@@ -63,7 +63,7 @@ function flexibleTextRegex(text) {
 }
 
 [
-  "Current Trust Standing",
+  "Identity & Evidence Reading",
   "Evidence Story",
   "Community Confirmation",
   "Finance Discipline",
@@ -84,7 +84,7 @@ function flexibleTextRegex(text) {
 
 assertContains(
   "specs",
-  /Current pre-redesign Trust Passport section mapping[\s\S]*?Current Trust Standing[\s\S]*?Evidence Story[\s\S]*?Community Confirmation[\s\S]*?Finance Discipline[\s\S]*?Documents \/ TrustSlip[\s\S]*?Repair or Next Step/,
+  /Current pre-redesign Trust Passport section mapping[\s\S]*?Identity & Evidence Reading[\s\S]*?Evidence Story[\s\S]*?Community Confirmation[\s\S]*?Finance Discipline[\s\S]*?Documents \/ TrustSlip[\s\S]*?Repair or Next Step/,
   "Trust Passport screen spec must record the current section-to-lane map before visual lane replacement work."
 );
 
@@ -96,12 +96,12 @@ assertContains(
 
 assertContains(
   "trust",
-  /useState<TrustPassportLaneKey>\("standing"\)/,
-  "Trust Passport page must default to Current Trust Standing so the first view is guided, not a content dump."
+  /function trustPassportLaneFromLocation[\s\S]*?return "standing";[\s\S]*?useState<TrustPassportLaneKey>\(\(\) => trustPassportLaneFromLocation\(location\)\)/,
+  "Trust Passport page must default to Identity & Evidence Reading so the first view is guided, not a content dump."
 );
 
 [
-  ["standing", "Current Trust Standing"],
+  ["standing", "Identity & Evidence Reading"],
   ["evidence", "Evidence Story"],
   ["community", "Community Confirmation"],
   ["finance", "Finance Discipline"],
@@ -123,8 +123,8 @@ assertContains(
 
 assertContains(
   "trust",
-  /activeTrustPassportLane === "standing" \? "grid" : "none"[\s\S]*?2\. Current trust verdict[\s\S]*?3\. What this reading says/,
-  "Current Trust Standing must be the only default open work lane instead of exposing every trust section at once."
+  /activeTrustPassportLane === "standing" \? "grid" : "none"[\s\S]*?2\. Current evidence reading[\s\S]*?3\. What this reading says/,
+  "Identity & Evidence Reading must be the only default open work lane instead of exposing every trust section at once."
 );
 
 assertContains(
@@ -136,11 +136,11 @@ assertContains(
 assertOrderedSnippets(
   "trust",
   [
-    "Identity Overview",
-    "2. Current trust verdict",
+    "Identity & Community Overview",
+    "2. Current evidence reading",
     "3. What this reading says",
   ],
-  "Current Trust Standing lane must map to identity, verdict, and plain trust-question sections before redesign."
+  "Identity & Evidence Reading lane must map to identity, evidence reading, and plain reading-question sections before redesign."
 );
 
 assertOrderedSnippets(

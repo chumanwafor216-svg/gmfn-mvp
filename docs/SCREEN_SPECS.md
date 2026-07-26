@@ -568,23 +568,23 @@ Rules:
   limit.
 - Marketplace-local trust may be summarized when the user arrived from one
   marketplace, but the full carried trust story belongs here.
-- Identity Overview is the first One-Screen Snapshot Protocol application. It
+- Identity & Community Overview is the first One-Screen Snapshot Protocol application. It
   must fit its title, four identity facts, six compact status signals, and the
   public community record action inside one 390x844 phone snapshot without
   tall warning cards or decorative height.
-- Identity Overview must keep the member photo unobstructed, dock any trust
+- Identity & Community Overview must keep the member photo unobstructed, dock any trust
   seal away from the face/evidence image, and include a direct `Complete ID
   checks` path when the snapshot is showing unfinished identity requirements.
 - `Complete ID checks` must open real completion paths or a compact chooser
   that says which missing evidence can be completed now. It must not route to a
   general identity-explanation page while implying phone, community, bank, or
   official-ID checks can be finished there.
-- Identity Overview should behave as a portable official package: screenshot,
+- Identity & Community Overview should behave as a portable official package: screenshot,
   print, or PDF framing must not require visible pieces of the previous or next
   Trust Passport section to make sense.
 
 Current pre-redesign Trust Passport section mapping:
-- Current Trust Standing: Identity Overview, Current trust verdict, and What
+- Identity & Evidence Reading: Identity & Community Overview, Current evidence reading, and What
   this reading says.
 - Evidence Story: Why this reading looks like this, Why did my trust change?,
   and Evidence & institutional context.

@@ -152290,3 +152290,39 @@ GSN-branded invite composer and invite-entry continuity.
   - local only so far; do not push/deploy unless the owner explicitly selects `2` or says push/deploy.
 - Next recommended step:
   - commit this identity/evidence ribbon copy slice locally, then either continue another small identity/evidence separation slice on `1` or push/deploy on `2`.
+## 2026-07-26 - Trust Passport Identity Evidence Lane Rename
+
+- Trigger:
+  - owner selected `1` after the Identity Evidence Ribbon Copy slice was committed locally.
+- Unabated truth:
+  - `/app/trust` still uses the internal `standing` lane key so focus links, route state, and debug IDs do not churn for a wording change;
+  - the visible first lane was still named `Current Trust Standing`, and its first inner section still said `Current trust verdict`, which contradicted the new identity/evidence separation direction;
+  - this pass renames visible reading language only. It does not add an Identity Profile route, Evidence Ledger route, Behavioural Placement route/schema, Decision Pack generator, Trust Passport scoring rewrite, approval engine, backend evidence model, or verified-community model.
+- Changed:
+  - `frontend/src/pages/TrustScorePage.tsx`
+    - renames the first visible Trust Passport lane from `Current Trust Standing` to `Identity & Evidence Reading`;
+    - renames the lane eyebrow from `Active trust lane` to `Active passport lane`;
+    - changes the lane detail from `Identity, verdict...` to `Identity, evidence state...`;
+    - renames the first inner section from `2. Current trust verdict` to `2. Current evidence reading`.
+  - `frontend/tools/smoke-trust-passport-trustslip-boundary.mjs`
+    - asserts `/app/trust` renders `Active passport lane`, `Identity & Evidence Reading`, and `2. Current evidence reading`;
+    - asserts the old `Current Trust Standing`, `Active trust lane`, and `2. Current trust verdict` labels do not render.
+  - `frontend/tools/audit-trust-passport-lane-map.mjs`, `frontend/tools/audit-trust-passport-front-package.mjs`, and `frontend/tools/audit-trust-passport-button-inventory.mjs`
+    - update the lane/front-package/button inventory cages for the new wording and for the current `trustPassportLaneFromLocation(location)` default path.
+  - `docs/GUIDED_WORK_SURFACE_PROTOCOL.md`, `docs/SCREEN_SPECS.md`, and `docs/GSN_TRUST_PASSPORT_PURPOSE_AUDIT.md`
+    - update the current Trust Passport lane/spec language from standing/verdict wording to identity/evidence reading wording.
+- Verification:
+  - passed `npm exec -- eslint src/pages/TrustScorePage.tsx tools/audit-trust-passport-lane-map.mjs tools/audit-trust-passport-front-package.mjs tools/audit-trust-passport-button-inventory.mjs tools/smoke-trust-passport-trustslip-boundary.mjs` from `frontend`;
+  - passed `npm --prefix frontend run audit:trust-passport-lane-map`;
+  - passed direct `node tools/audit-trust-passport-front-package.mjs` from `frontend`;
+  - passed direct `node tools/audit-trust-passport-button-inventory.mjs` from `frontend`;
+  - passed `npm --prefix frontend run audit:trust-passport-trustslip-boundary`;
+  - non-escalated `npm --prefix frontend run smoke:trust-passport-trustslip-boundary` hit sandbox `spawn EPERM` while starting Vite/esbuild;
+  - passed escalated `npm --prefix frontend run smoke:trust-passport-trustslip-boundary`;
+  - passed `npm --prefix frontend run audit:protected-button-freeze`;
+  - passed `npm --prefix frontend run build`;
+  - passed `git diff --check` before the handoff entry.
+- Deployment:
+  - local only so far; do not push/deploy unless the owner explicitly selects `2` or says push/deploy.
+- Next recommended step:
+  - commit this lane rename slice locally, then either continue the next small identity/evidence separation slice on `1` or push/deploy the accumulated local commits on `2`.

@@ -138,7 +138,7 @@ assertContains(
 
 [
   "Identity & Community Overview",
-  "2. Current trust verdict",
+  "2. Current evidence reading",
   "3. What this reading says",
   "4. Why this reading looks like this",
   "5. Trust surfaces",
@@ -172,7 +172,7 @@ assertContains(
     pattern:
       /Record state, not character judgement\. Add current evidence to strengthen this reading\./,
     message:
-      "Current trust verdict must explain that the reading is about the record state, not character judgement.",
+      "Current evidence reading must explain that the reading is about the record state, not character judgement.",
   },
 ].forEach(({ key, pattern, message }) => {
   assertContains(key, pattern, message);
@@ -215,7 +215,7 @@ assertContains(
 });
 
 [
-  "Current Trust Standing",
+  "Identity & Evidence Reading",
   "Evidence Story",
   "Community Confirmation",
   "Finance Discipline",
