@@ -3730,36 +3730,117 @@ export default function TrustSlipPage() {
               </div>
             </div>
 
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: isCompact
-                  ? "repeat(3, minmax(0, 1fr))"
-                  : "repeat(3, minmax(0, 1fr))",
-                gap: 8,
-              }}
-            >
-              {GSN_DECISION_PACKS.map((option) => {
-                const active = option.key === selectedTrustSlipPurpose;
-                const ButtonComponent = active ? PrimaryButton : SecondaryButton;
-                return (
-                  <ButtonComponent
-                    key={option.key}
-                    type="button"
-                    onClick={() => setSelectedTrustSlipPurpose(option.key)}
-                    stableHeight={isCompact ? 48 : 52}
-                    debugId={`trust-slip.purpose-select.${option.key}`}
+            {isCompact ? (
+              <div
+                data-gsn-trustslip-purpose-mobile-select="true"
+                style={{
+                  display: "grid",
+                  gap: 8,
+                }}
+              >
+                <select
+                  aria-label="Choose Decision Pack"
+                  value={selectedTrustSlipPurpose}
+                  onChange={(event) =>
+                    setSelectedTrustSlipPurpose(event.target.value as DecisionPackKey)
+                  }
+                  style={{
+                    width: "100%",
+                    minHeight: 48,
+                    borderRadius: 14,
+                    border: "1px solid rgba(37,78,119,0.2)",
+                    background: "#FFFFFF",
+                    color: "#07172C",
+                    fontSize: 16,
+                    fontWeight: 900,
+                    lineHeight: 1.2,
+                    padding: "0 40px 0 12px",
+                    boxShadow: "0 10px 20px rgba(7,23,44,0.06)",
+                  }}
+                >
+                  {GSN_DECISION_PACKS.map((option) => (
+                    <option key={option.key} value={option.key}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+                <div
+                  data-gsn-trustslip-purpose-selected-summary="true"
+                  style={{
+                    borderRadius: 14,
+                    padding: "10px 11px",
+                    background: "#FFFFFF",
+                    border: "1px solid rgba(214,170,69,0.22)",
+                    display: "grid",
+                    gap: 6,
+                  }}
+                >
+                  <div style={{ ...sectionLabel(), color: "#7A4A00" }}>
+                    Selected pack
+                  </div>
+                  <div
                     style={{
-                      padding: isCompact ? "8px 6px" : "9px 10px",
-                      fontSize: isCompact ? 10 : 12,
-                      lineHeight: 1.08,
+                      color: "#07172C",
+                      fontSize: 14,
+                      fontWeight: 1000,
+                      lineHeight: 1.18,
                     }}
                   >
-                    {option.shortLabel}
-                  </ButtonComponent>
-                );
-              })}
-            </div>
+                    {selectedPurposeOption.label}
+                  </div>
+                  <div
+                    style={{
+                      color: "#526579",
+                      fontSize: 12,
+                      fontWeight: 850,
+                      lineHeight: 1.3,
+                    }}
+                  >
+                    {selectedPurposeOption.recipientQuestion}
+                  </div>
+                  <div
+                    style={{
+                      color: "#254E77",
+                      fontSize: 11,
+                      fontWeight: 900,
+                      lineHeight: 1.28,
+                    }}
+                  >
+                    {selectedPurposeOption.focus}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div
+                data-gsn-trustslip-purpose-desktop-buttons="true"
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+                  gap: 8,
+                }}
+              >
+                {GSN_DECISION_PACKS.map((option) => {
+                  const active = option.key === selectedTrustSlipPurpose;
+                  const ButtonComponent = active ? PrimaryButton : SecondaryButton;
+                  return (
+                    <ButtonComponent
+                      key={option.key}
+                      type="button"
+                      onClick={() => setSelectedTrustSlipPurpose(option.key)}
+                      stableHeight={52}
+                      debugId={`trust-slip.purpose-select.${option.key}`}
+                      style={{
+                        padding: "9px 10px",
+                        fontSize: 12,
+                        lineHeight: 1.08,
+                      }}
+                    >
+                      {option.shortLabel}
+                    </ButtonComponent>
+                  );
+                })}
+              </div>
+            )}
 
             <div
               style={{

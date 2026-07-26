@@ -591,6 +591,22 @@ async function runTrustSlipScenario(browser, baseURL) {
   });
   await expect(state.page.locator('[data-gsn-trust-document-certificate="trustslip-holder"]')).toHaveCount(1);
   await expect(state.page.locator('[data-gsn-trust-document-certificate="trust-passport"]')).toHaveCount(0);
+  const mobilePackSelect = state.page.locator(
+    '[data-gsn-trustslip-purpose-mobile-select="true"] select'
+  );
+  await expect(mobilePackSelect).toHaveCount(1);
+  await expect(mobilePackSelect).toBeVisible();
+  await expect(state.page.locator('[data-gsn-trustslip-purpose-desktop-buttons="true"]')).toHaveCount(0);
+  await expect(mobilePackSelect.locator("option")).toHaveCount(10);
+  await mobilePackSelect.selectOption("employment_decision");
+  const selectedPackSummary = state.page.locator(
+    '[data-gsn-trustslip-purpose-selected-summary="true"]'
+  );
+  await expect(selectedPackSummary).toContainText("Employment Decision Pack");
+  await expect(selectedPackSummary).toContainText(
+    "Is there enough evidence to continue an employment conversation?"
+  );
+  await expect(selectedPackSummary).toContainText("Role, consistency");
   await expect(state.page.getByText("This TrustSlip confirms", { exact: true })).toHaveCount(1);
   await expect(state.page.getByText("This TrustSlip does not confirm", { exact: true })).toHaveCount(1);
   await state.page.locator("summary").filter({ hasText: "More security details" }).first().click();

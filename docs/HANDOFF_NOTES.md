@@ -1,3 +1,45 @@
+## CURRENT LOCAL STATE - 2026-07-26 - TrustSlip Decision Pack selector simplified on mobile
+
+Owner trigger:
+- Owner selected `1` after the TrustSlip holder mobile hero was reduced locally.
+
+Unabated truth:
+- This was a narrow signed-in TrustSlip holder mobile UX improvement, not a Decision Pack architecture redesign.
+- The Decision Pack selector still correctly offers the full shared `GSN_DECISION_PACKS` catalog.
+- The mobile problem was presentation: ten Decision Pack buttons were exposed at once in a compressed three-column grid, which violated the new rule that users should not have to scan a wall of controls before knowing what to do.
+- Mobile now uses one native menu for the option set and shows one compact selected-pack summary: label, recipient question, and focus.
+- Desktop still keeps the visible button grid for faster scanning on wider screens.
+- No backend route, schema, evidence extraction, scoring, TrustEvent, permission, deployment behavior, public verify behavior, or Trust Passport runtime behavior changed.
+- The broad `audit:mobile-visual-sweep` route list does not currently include `/app/trust-slip`; direct mobile coverage for this slice is now in the Trust Passport / TrustSlip boundary smoke.
+
+Changed:
+- `frontend/src/pages/TrustSlipPage.tsx`
+  - Replaced the compact/mobile Decision Pack button grid with a native `<select>` menu.
+  - Added a selected-pack summary under the menu so the holder sees the chosen pack's decision question and evidence focus immediately.
+  - Kept the desktop Decision Pack button grid unchanged except for making it desktop-only.
+- `frontend/tools/audit-trust-passport-trustslip-boundary.mjs`
+  - Added a guard requiring the mobile menu, selected-pack summary, and desktop-only button grid split.
+- `frontend/tools/smoke-trust-passport-trustslip-boundary.mjs`
+  - Added 390px mobile assertions for `/app/trust-slip`: one visible mobile select, ten menu options, no desktop button grid, and selected-pack summary updates after selecting Employment.
+
+Routes/screens affected:
+- Signed-in TrustSlip holder route `/app/trust-slip`.
+- Public TrustSlip verify behavior unchanged.
+- Trust Passport behavior unchanged.
+
+Verification:
+- Passed `npm --prefix frontend run audit:trust-passport-trustslip-boundary`.
+- Passed `npm --prefix frontend run audit:trust-actions`.
+- Passed `npm exec -- eslint src/pages/TrustSlipPage.tsx tools/audit-trust-passport-trustslip-boundary.mjs tools/smoke-trust-passport-trustslip-boundary.mjs` from `frontend`.
+- Passed `npm --prefix frontend run audit:protected-button-freeze`.
+- Passed `npm --prefix frontend run build`.
+- Passed `npm --prefix frontend run smoke:trust-passport-trustslip-boundary` with escalation for local Vite/Chromium process launch.
+
+Deployment:
+- Local only. Not pushed or deployed; owner must select `2` or explicitly say push/deploy.
+
+Recommended next step:
+- Stop adding TrustSlip controls and do a real phone review of `/app/trust-slip`. If continuing locally before review, the next honest target is reducing repeated legal/explanation text into one compact Decision Boundary box where the current screen repeats the same caution in multiple places.
 ## CURRENT LOCAL STATE - 2026-07-26 - TrustSlip holder mobile hero reduced locally
 
 Owner trigger:

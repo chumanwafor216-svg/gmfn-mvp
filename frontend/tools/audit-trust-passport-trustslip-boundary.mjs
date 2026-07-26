@@ -278,6 +278,10 @@ assertContains(
   "trustSlip",
   /GSN_DECISION_PACKS[\s\S]*?Decision Pack selection[\s\S]*?Each pack is a focused view of the same evidence[\s\S]*?does not remove risk or make the decision for the recipient/,
   "TrustSlip holder page must frame share preparation as a broad Decision Pack catalog, not generic purpose labels or automatic decisions."
+);assertContains(
+  "trustSlip",
+  /data-gsn-trustslip-purpose-mobile-select="true"[\s\S]*?<select[\s\S]*?value=\{selectedTrustSlipPurpose\}[\s\S]*?setSelectedTrustSlipPurpose\(event\.target\.value as DecisionPackKey\)[\s\S]*?fontSize: 16[\s\S]*?GSN_DECISION_PACKS\.map\(\(option\) => \([\s\S]*?<option key=\{option\.key\} value=\{option\.key\}>[\s\S]*?\{option\.label\}[\s\S]*?data-gsn-trustslip-purpose-selected-summary="true"[\s\S]*?\{selectedPurposeOption\.label\}[\s\S]*?\{selectedPurposeOption\.recipientQuestion\}[\s\S]*?\{selectedPurposeOption\.focus\}[\s\S]*?data-gsn-trustslip-purpose-desktop-buttons="true"[\s\S]*?GSN_DECISION_PACKS\.map/,
+  "TrustSlip holder mobile Decision Pack selection must use one menu with the selected-pack summary instead of exposing every pack as mobile buttons."
 );
 assertContains(
   "trustSlip",
