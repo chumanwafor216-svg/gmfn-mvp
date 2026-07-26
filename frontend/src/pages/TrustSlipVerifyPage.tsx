@@ -271,7 +271,7 @@ export default function TrustSlipVerifyPage() {
         scope: decisionPack.scope,
         note: decisionPack.recipientQuestion,
         focus: decisionPack.focus,
-        status: "public_context_from_link",
+        status: `Shared to support ${decisionPack.label}.`,
       },
     };
   }, [location.search]);

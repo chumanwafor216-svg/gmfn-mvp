@@ -527,11 +527,15 @@ function normalizeDecisionPackProfile(
     record?.visibility_level,
     "Public TrustSlip only"
   );
-  const accessStatus = firstTruthy(
-    record?.access_status,
-    rawAccessRecord?.status,
-    resolvedCode ? "Public code opened" : "Not recorded"
-  );
+  const rawAccessStatus = firstTruthy(record?.access_status, rawAccessRecord?.status);
+  const machineAccessStatuses = new Set([
+    "public_context_from_link",
+    "backend_access_recorded",
+    "access_recorded",
+  ]);
+  const accessStatus = machineAccessStatuses.has(rawAccessStatus.toLowerCase())
+    ? `Shared to support ${accessPurpose}.`
+    : firstTruthy(rawAccessStatus, resolvedCode ? "Public code opened" : "Not recorded");
   const accessRecordedAtLabel =
     safeDateTime(
       firstTruthy(

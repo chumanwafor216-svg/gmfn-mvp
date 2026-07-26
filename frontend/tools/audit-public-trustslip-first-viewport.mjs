@@ -96,10 +96,16 @@ assertContains(
 
 assertContains(
   "publicPaper",
-  /data-debug-id="trust-slip-verify\.public\.recipient-access-record"[\s\S]*?gridTemplateColumns: compact \? "40px minmax\(0, 1fr\)" : "54px minmax\(0, 1fr\)"[\s\S]*?padding: compact \? 9 : 14[\s\S]*?Why you received this[\s\S]*?gridTemplateColumns: "repeat\(2, minmax\(0, 1fr\)\)"[\s\S]*?\["Recipient", recipientAccessRecord\.recipientLabel\][\s\S]*?\["Decision Pack", decisionPackPurpose\][\s\S]*?\["Scope", recipientAccessRecord\.scope\][\s\S]*?\["Access date", recipientAccessRecord\.accessedAtLabel\]/,
+  /data-debug-id="trust-slip-verify\.public\.recipient-access-record"[\s\S]*?gridTemplateColumns: compact \? "40px minmax\(0, 1fr\)" : "54px minmax\(0, 1fr\)"[\s\S]*?padding: compact \? 9 : 14[\s\S]*?Why you received this[\s\S]*?\{recipientAccessRecord\.status\}[\s\S]*?gridTemplateColumns: "repeat\(2, minmax\(0, 1fr\)\)"[\s\S]*?\["Recipient", recipientAccessRecord\.recipientLabel\][\s\S]*?\["Decision Pack", decisionPackPurpose\][\s\S]*?\["Scope", recipientAccessRecord\.scope\][\s\S]*?\["Access date", recipientAccessRecord\.accessedAtLabel\]/,
   "Recipient access record must remain compact, decision-scoped, and readable in the first viewport."
 );
 
+
+assertContains(
+  "publicPaper",
+  /Why you received this[\s\S]*?\{recipientAccessRecord\.status\}/,
+  "Recipient access record must render the human status supplied by the view model."
+);
 assertContains(
   "publicPaper",
   /const recordTrustReasonTiles = \[[\s\S]*?Public code[\s\S]*?Current window[\s\S]*?Verification path[\s\S]*?Live confirmation[\s\S]*?\];[\s\S]*?data-gsn-public-record-trust-reasons="decision-pack"[\s\S]*?Why this record can be trusted[\s\S]*?current, traceable, and limited[\s\S]*?do not guarantee the holder or replace your own judgement[\s\S]*?data-gsn-public-record-trust-reasons-grid="compact-two-by-two"[\s\S]*?gridTemplateColumns: compact \? "repeat\(2, minmax\(0, 1fr\)\)" : "repeat\(4, minmax\(0, 1fr\)\)"/,

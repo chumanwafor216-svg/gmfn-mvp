@@ -151810,3 +151810,32 @@ GSN-branded invite composer and invite-entry continuity.
   - local only so far; routine continuation publishing remains batch-frozen unless the product owner explicitly asks to push/deploy.
 - Next recommended step:
   - if continuing before deploy, consider making the public recipient access record show the human selected pack purpose instead of raw `public_context_from_link` as its status line.
+## 2026-07-26 - Public Verify Recipient Status Copy
+
+- Trigger:
+  - owner selected `1` after the public TrustSlip decision-first mobile reorder was pushed.
+- Unabated truth:
+  - the phone viewport was structurally fixed, but the `Why you received this` status line still exposed machine wording such as `public_context_from_link` instead of explaining the selected Decision Pack purpose to a first-time recipient;
+  - this pass is frontend copy normalization only. It does not change backend verification, public payload categories, private Trust Passport boundaries, scoring, approvals, guarantees, access logging, or deployment state.
+- Changed:
+  - `frontend/src/pages/TrustSlipVerifyPage.tsx`
+    - URL-provided Decision Pack context now sets share access status to `Shared to support ${decisionPack.label}.` instead of `public_context_from_link`.
+  - `frontend/src/pages/trustSlipVerify/trustSlipVerifyViewModel.ts`
+    - translates known machine statuses such as `public_context_from_link`, `backend_access_recorded`, and `access_recorded` into `Shared to support ${accessPurpose}.` before the paper renders them.
+  - `frontend/tools/audit-public-trustslip-first-viewport.mjs`
+    - cages that the first viewport renders the view-model recipient status line.
+  - `frontend/tools/audit-public-trustslip-verify-boundary.mjs`
+    - cages the human status generation and machine-status fallback translation.
+- Verification:
+  - passed `npm exec -- eslint src/pages/TrustSlipVerifyPage.tsx src/pages/trustSlipVerify/trustSlipVerifyViewModel.ts tools/audit-public-trustslip-first-viewport.mjs tools/audit-public-trustslip-verify-boundary.mjs` from `frontend`;
+  - passed `npm --prefix frontend run audit:public-trustslip-first-viewport`;
+  - passed `npm --prefix frontend run audit:public-trustslip-verify-boundary`;
+  - passed `npm --prefix frontend run audit:trust-passport-trustslip-boundary`;
+  - passed `npm --prefix frontend run audit:trust-actions`;
+  - passed `npm --prefix frontend run audit:proof-surfaces`;
+  - passed `npm --prefix frontend run audit:protected-button-freeze`;
+  - passed `npm --prefix frontend run build`.
+- Deployment:
+  - local only so far; routine continuation publishing remains batch-frozen unless the product owner explicitly asks to push/deploy.
+- Next recommended step:
+  - if continuing the Decision Pack line, add a tiny test/audit that prevents raw access scopes like `public_decision_pack` from being the primary visible wording on the recipient card while still allowing them in metadata.

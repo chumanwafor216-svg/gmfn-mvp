@@ -111,8 +111,13 @@ assertContains(
 );
 
 assertContains(
+  "viewModel",
+  /const rawAccessStatus = firstTruthy\(record\?\.access_status, rawAccessRecord\?\.status\);[\s\S]*?machineAccessStatuses[\s\S]*?public_context_from_link[\s\S]*?backend_access_recorded[\s\S]*?`Shared to support \$\{accessPurpose\}\.`/,
+  "Public TrustSlip recipient access status must translate machine statuses into human Decision Pack copy."
+);
+assertContains(
   "verify",
-  /const publicDecisionPackContext = useMemo[\s\S]*?decisionPackKey[\s\S]*?normalizeDecisionPackPublicContext[\s\S]*?decision_pack: decisionPack\.key[\s\S]*?decision_pack_focus: decisionPack\.focus[\s\S]*?share_access_record[\s\S]*?focus: decisionPack\.focus[\s\S]*?public_context_from_link[\s\S]*?normalizeTrustSlipVerification\([\s\S]*?\.\.\.verifyResult, \.\.\.publicDecisionPackContext/,
+  /const publicDecisionPackContext = useMemo[\s\S]*?decisionPackKey[\s\S]*?normalizeDecisionPackPublicContext[\s\S]*?decision_pack: decisionPack\.key[\s\S]*?decision_pack_focus: decisionPack\.focus[\s\S]*?share_access_record[\s\S]*?focus: decisionPack\.focus[\s\S]*?Shared to support \$\{decisionPack\.label\}[\s\S]*?normalizeTrustSlipVerification\([\s\S]*?\.\.\.verifyResult, \.\.\.publicDecisionPackContext/,
   "Public TrustSlip Verify must canonicalize share-safe Decision Pack URL context into the normalized access record."
 );
 
