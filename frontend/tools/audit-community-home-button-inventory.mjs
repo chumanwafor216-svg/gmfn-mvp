@@ -52,6 +52,15 @@ function assertContains(pattern, message, text = "Expected pattern was not found
   });
 }
 
+function assertNotContains(pattern, message, text = "Forbidden pattern was found.") {
+  if (!pattern.test(source)) return;
+  findings.push({
+    file: communityFile,
+    line: 1,
+    message,
+    text,
+  });
+}
 function assertLayoutContains(
   pattern,
   message,
@@ -81,6 +90,14 @@ function countIdsInBlock(pattern, label) {
   return (block.match(/\bid:\s*(?:"|ownerShopHandle\()/g) || []).length;
 }
 
+assertContains(
+  /Open Trust Passport for your wider evidence record across communities[\s\S]*?wider evidence record so you can review the evidence pattern across communities[\s\S]*?Review evidence strength across your GSN record/,
+  "Community Home Trust Passport copy must frame the destination as an evidence record, not a trust-story verdict."
+);
+assertNotContains(
+  /wider trust record|trust story|trust strength/i,
+  "Community Home must not frame Trust Passport navigation as a trust story or trust-strength verdict."
+);
 const actionPattern = /<StableButton\b[\s\S]*?(?:\/>|<\/StableButton>)/g;
 const actions = [];
 let match;

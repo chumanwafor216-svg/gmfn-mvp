@@ -152956,3 +152956,30 @@ GSN-branded invite composer and invite-entry continuity.
   - local only so far; do not push/deploy unless the owner explicitly selects `2` or says push/deploy.
 - Next recommended step:
   - commit this Dashboard attention evidence-concern slice locally, then either continue another small visible/shared wording cleanup on `1` or push/deploy the accumulated local commits on `2`.
+
+## 2026-07-26 - Community Home Trust Passport Evidence Copy
+
+- Trigger:
+  - owner selected `1` after the Dashboard attention evidence-concern slice was committed locally.
+- Unabated truth:
+  - this pass cleans Community Home Trust Passport navigation copy only;
+  - it does not change Community Home button targets, action counts, row geometry, mobile shell controls, marketplace routing, selected-community logic, backend APIs, Trust Passport route contracts, TrustSlip, Open Trust, CCI, scoring logic, or Market Wisdom;
+  - `Trust Passport` remains the product name; the copy now describes what it carries as an evidence record rather than a trust story or trust-strength verdict;
+  - this is not a Decision Pack generator, Evidence Ledger route, Behavioural Placement schema, route redesign, scoring rewrite, or approval workflow.
+- Changed:
+  - `frontend/src/pages/CommunityHomePage.tsx`
+    - changes Trust Passport route helper copy from wider trust record/trust story/trust strength wording to wider evidence record/evidence pattern/evidence strength wording.
+  - `frontend/tools/audit-community-home-button-inventory.mjs`
+    - adds route-local guards requiring the new evidence-record Trust Passport copy and rejecting `wider trust record`, `trust story`, and `trust strength` wording on Community Home.
+- Verification:
+  - passed `npm exec -- eslint src/pages/CommunityHomePage.tsx tools/audit-community-home-button-inventory.mjs tools/audit-community-home-phone-buttons.mjs` from `frontend`;
+  - passed direct `node tools/audit-community-home-button-inventory.mjs` from `frontend`;
+  - passed direct `node tools/audit-community-home-phone-buttons.mjs` from `frontend`;
+  - passed direct `node tools/audit-trust-actions.mjs` from `frontend`;
+  - passed `npm --prefix frontend run audit:protected-button-freeze`;
+  - passed `npm --prefix frontend run build`;
+  - passed `git diff --check` before the handoff entry.
+- Deployment:
+  - local only so far; do not push/deploy unless the owner explicitly selects `2` or says push/deploy.
+- Next recommended step:
+  - commit this Community Home Trust Passport evidence-copy slice locally, then either continue another small visible/shared wording cleanup on `1` or push/deploy the accumulated local commits on `2`.

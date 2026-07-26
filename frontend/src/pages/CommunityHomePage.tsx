@@ -1964,7 +1964,7 @@ export default function CommunityHomePage() {
       {
         id: "trust",
         label: "Review Trust Passport",
-        detail: "Open Trust Passport for your wider trust record across communities.",
+        detail: "Open Trust Passport for your wider evidence record across communities.",
         technical: "Trust Passport",
         keywords: ["trust", "passport", "integrity", "cci", "identity"],
       },
@@ -2373,7 +2373,7 @@ export default function CommunityHomePage() {
         return {
           title: "Open your Trust Passport",
           detail:
-            "GSN will open your wider trust record so you can review your trust story across communities.",
+            "GSN will open your wider evidence record so you can review the evidence pattern across communities.",
           firstStep: "Open Trust Passport.",
           continueLabel: "Open Trust Passport",
           continueTone: "primary",
@@ -3602,7 +3602,7 @@ export default function CommunityHomePage() {
                       lineHeight: 1.35,
                     }}
                   >
-                    Trust strength across all communities.
+                    Evidence strength across all communities.
                   </span>
                 </span>
                 <span aria-hidden="true" style={{ color: "#0B2D4A", fontSize: 24 }}>
@@ -4697,7 +4697,7 @@ export default function CommunityHomePage() {
                       icon: "shield",
                       id: "trust",
                       title: "Trust Passport",
-                      detail: "Review trust strength across your GSN record.",
+                      detail: "Review evidence strength across your GSN record.",
                       onClick: (event: React.SyntheticEvent<HTMLElement>) =>
                         openCommunityNextAction(event, "trust"),
                     },
