@@ -1,3 +1,49 @@
+## CURRENT LOCAL STATE - 2026-07-26 - TrustSlip holder mobile hero reduced locally
+
+Owner trigger:
+- Owner selected `1` after the Trust Passport boundary smoke was aligned locally.
+
+Unabated truth:
+- This was a narrow TrustSlip holder first-viewport density improvement, not a TrustSlip redesign.
+- The signed-in TrustSlip holder hero still exposed a 12-item fact grid on mobile, which contradicted the new decision-first/four-quick-facts rule.
+- The hero already shows holder name, community, GSN ID, community record anchor, issued date, expiry date, status/security mark, and two identity/community evidence rows above the lower grid.
+- Mobile now keeps the lower hero grid to four quick facts: Security, Status, Evidence status, and Holder check.
+- Desktop still keeps the fuller lower fact set, including identity check, community ID, issued, expiry, phone, bank, ID evidence, and evidence summary.
+- This avoids adding another disclosure toggle; it removes first-viewport noise instead.
+- No backend route, schema, evidence extraction, scoring, TrustEvent, permission, deployment behavior, TrustSlip public verify behavior, or Trust Passport runtime behavior changed.
+
+Changed:
+- `frontend/src/pages/TrustSlipPage.tsx`
+  - Added `data-gsn-trustslip-holder-primary-facts="compact-four"` to the holder hero fact grid.
+  - Reordered the first four hero facts to Security, Status, Evidence status, Holder check.
+  - Filtered the lower hero fact grid to four facts on compact/mobile only.
+- `frontend/tools/audit-trust-passport-trustslip-boundary.mjs`
+  - Added a TrustSlip holder guard requiring the mobile compact-four fact grid while preserving the fuller desktop set.
+- `frontend/tools/audit-trust-actions.mjs`
+  - Updated the holder-check doctrine guard to the new compact-four ordering.
+
+Routes/screens affected:
+- Signed-in TrustSlip holder route `/app/trust-slip`.
+- Browser smoke still covers signed-in Trust Passport and TrustSlip holder boundaries.
+- Public TrustSlip Verify behavior unchanged.
+
+Verification:
+- Passed `npm --prefix frontend run audit:trust-passport-trustslip-boundary`.
+- Passed `npm exec -- eslint src/pages/TrustSlipPage.tsx tools/audit-trust-passport-trustslip-boundary.mjs` from `frontend`.
+- Passed `npm --prefix frontend run audit:protected-button-freeze`.
+- Passed `npm --prefix frontend run build`.
+- Passed `npm --prefix frontend run audit:trust-actions` after updating its stale fact-order cage.
+- Passed `npm exec -- eslint src/pages/TrustSlipPage.tsx tools/audit-trust-passport-trustslip-boundary.mjs tools/audit-trust-actions.mjs` from `frontend`.
+- Passed `npm --prefix frontend run smoke:trust-passport-trustslip-boundary` with escalation for local Vite/Chromium process launch.
+- Passed `GSN_AUDIT_BASE_URL=http://127.0.0.1:5180 npm --prefix frontend run audit:mobile-visual-sweep` with escalation for local Chromium.
+- Stopped the local Vite/Node dev-server processes after the sweep; port `5180` was clear.
+
+Deployment:
+- Local only. Not pushed or deployed; owner must select `2` or explicitly say push/deploy.
+
+Recommended next step:
+- Do not add more TrustSlip or Trust Passport toggles before a real phone review. The better next local improvement is to make the selected Decision Pack area less button-heavy on mobile, or publish the current batch if pilot testers need it.
+
 ## CURRENT LOCAL STATE - 2026-07-26 - Trust Passport boundary smoke aligned locally
 
 Owner trigger:

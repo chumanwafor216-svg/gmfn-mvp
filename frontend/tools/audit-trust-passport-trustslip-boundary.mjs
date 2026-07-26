@@ -252,6 +252,12 @@ assertContains(
   /data-gsn-trust-document-certificate="trustslip-holder"[\s\S]*?<TrustDocumentConfidenceRibbon items=\{trustSlipHolderConfidenceRibbonItems\} \/>[\s\S]*?<CommunityProofPanel[\s\S]*?title="Known by community"[\s\S]*?trustSlipStatusLabel=\{trustSlipPublicStatus\}/,
   "TrustSlip holder page must show the shared Known by community proof layer after the confidence ribbon."
 );
+
+assertContains(
+  "trustSlip",
+  /data-gsn-trustslip-holder-primary-facts="compact-four"[\s\S]*?label: "Security"[\s\S]*?label: "Status"[\s\S]*?label: "Evidence status"[\s\S]*?label: "Holder check"[\s\S]*?label: "Identity check"[\s\S]*?label: "Community ID"[\s\S]*?label: "Issued"[\s\S]*?label: "Expires"[\s\S]*?\.filter\(\(_, index\) => !isCompact \|\| index < 4\)[\s\S]*?\.map\(\(\{ label, value, full, icon \}\) =>/,
+  "TrustSlip holder hero must keep mobile to four quick facts while preserving the fuller desktop fact set."
+);
 assertNotContains(
   "trustSlip",
   /Trust decision|Support trust|Trade trust|public trust story|public trust summary|Portable trust summary|public trust paper|public trust signals|trust state|public-facing trust summary|trust story|trust signals|trust checks|trust screening|Which trust question should stay in TrustSlip|full trust story/i,

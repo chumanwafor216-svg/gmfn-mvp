@@ -2390,8 +2390,8 @@ assertNotContains(
 
 assertContains(
   "src/pages/TrustSlipPage.tsx",
-  /Identity check[\s\S]*?Phone verified[\s\S]*?Phone verified; community membership recorded/,
-  "TrustSlip must describe the holder check as phone identity plus recorded community membership, not full member verification."
+  /data-gsn-trustslip-holder-primary-facts="compact-four"[\s\S]*?label: "Security"[\s\S]*?label: "Status"[\s\S]*?label: "Evidence status"[\s\S]*?label: "Holder check"[\s\S]*?Phone verified; community membership recorded[\s\S]*?label: "Identity check"[\s\S]*?Phone verified[\s\S]*?\.filter\(\(_, index\) => !isCompact \|\| index < 4\)/,
+  "TrustSlip must describe the holder check as phone identity plus recorded community membership and keep mobile to four quick facts."
 );
 
 assertFunctionNotContains(

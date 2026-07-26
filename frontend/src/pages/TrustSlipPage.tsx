@@ -4619,6 +4619,7 @@ export default function TrustSlipPage() {
                 </div>
               </div>
               <div
+                data-gsn-trustslip-holder-primary-facts="compact-four"
                 style={{
                   display: "grid",
                   gridTemplateColumns: isCompact
@@ -4631,19 +4632,9 @@ export default function TrustSlipPage() {
                 {[
                   { label: "Security", value: trustSlipSecurityLabel, icon: "shield" as GsnIconName },
                   { label: "Status", value: trustSlipPublicStatus, icon: "evidence" as GsnIconName },
+                  { label: "Evidence status", value: merchantBandHeroDisplay, full: merchantBandDisplay, icon: "certificate-seal" as GsnIconName },
+                  { label: "Holder check", value: heroHolderCheckShort, full: identityRecordSummary || "Phone verified; community membership recorded", icon: "id" as GsnIconName },
                   { label: "Identity check", value: identityCheckLabel || "Phone verified", icon: "phone" as GsnIconName },
-                  {
-                    label: "Holder check",
-                    value: heroHolderCheckShort,
-                    full: identityRecordSummary || "Phone verified; community membership recorded",
-                    icon: "id" as GsnIconName,
-                  },
-                  {
-                    label: "Evidence status",
-                    value: merchantBandHeroDisplay,
-                    full: merchantBandDisplay,
-                    icon: "certificate-seal" as GsnIconName,
-                  },
                   { label: "Community ID", value: communityRef, icon: "qr" as GsnIconName },
                   { label: "Issued", value: trustSlipIssuedLabel, icon: "calendar" as GsnIconName },
                   { label: "Expires", value: trustSlipExpiryLabel, icon: "refresh" as GsnIconName },
@@ -4651,7 +4642,9 @@ export default function TrustSlipPage() {
                   { label: "Bank", value: heroBankDisplay, icon: "bank" as GsnIconName },
                   { label: "ID evidence", value: heroIdDisplay, icon: "id" as GsnIconName },
                   { label: "Evidence", value: heroEvidenceShort, icon: "evidence" as GsnIconName },
-                ].map(({ label, value, full, icon }) => (
+                ]
+                  .filter((_, index) => !isCompact || index < 4)
+                  .map(({ label, value, full, icon }) => (
                   <div
                     key={label}
                     title={full || value}
