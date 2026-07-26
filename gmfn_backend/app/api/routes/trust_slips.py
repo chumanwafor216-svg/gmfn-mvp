@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import io
 import re
@@ -20,6 +20,11 @@ from app.db.models import Clan, ClanMembership, MarketplaceShop, TrustSlip, User
 from app.services.feature_entitlements_service import has_active_feature
 from app.services.community_confirmation_service import build_community_confirmation_summary
 from app.services.trust_events_services import log_trust_event
+from app.services.trust_slip_decision_packs import (
+    build_decision_pack_access_payload,
+    normalize_decision_pack_context,
+    record_decision_pack_access,
+)
 from app.services.trust_slips_services import (
     backfill_missing_trustslip_snapshots,
     build_trust_slip_visibility_view,
@@ -1140,7 +1145,9 @@ def verify_trust_slip_public(
             "plain_language": "Community confirmation could not be loaded for this TrustSlip.",
         }
 
-    return {
+    decision_pack_context = normalize_decision_pack_context(request.query_params)
+
+    response_payload: Dict[str, Any] = {
         "code": slip.code,
         "token": slip.code,
         "verification_token": slip.code,
@@ -1210,6 +1217,28 @@ def verify_trust_slip_public(
         "superseded_by_trust_slip_id": getattr(slip, "superseded_by_trust_slip_id", None),
         "merchant_view": merchant_view_out,
     }
+
+    if decision_pack_context:
+        decision_pack_access_recorded = False
+        try:
+            record_decision_pack_access(
+                db,
+                slip=slip,
+                context=decision_pack_context,
+                visibility_level=visibility_level,
+                status=effective,
+            )
+            decision_pack_access_recorded = True
+        except Exception:
+            db.rollback()
+        response_payload.update(
+            build_decision_pack_access_payload(
+                decision_pack_context,
+                recorded=decision_pack_access_recorded,
+            )
+        )
+
+    return response_payload
 
 
 @router.get("/verify/{code}/share-text")

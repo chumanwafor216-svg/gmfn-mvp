@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from datetime import datetime, timezone
 from decimal import Decimal
@@ -2654,6 +2654,62 @@ class TrustSlip(Base):
         nullable=True,
     )
 
+
+class TrustSlipDecisionPackAccess(Base):
+    __tablename__ = "trust_slip_decision_pack_access"
+
+    __table_args__ = (
+        Index("ix_trust_slip_decision_pack_access_slip_created", "trust_slip_id", "created_at"),
+        Index("ix_trust_slip_decision_pack_access_holder_created", "holder_user_id", "created_at"),
+        Index("ix_trust_slip_decision_pack_access_pack_created", "decision_pack_key", "created_at"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+
+    trust_slip_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("trust_slips.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    clan_id: Mapped[Optional[int]] = mapped_column(
+        Integer,
+        ForeignKey("clans.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    holder_user_id: Mapped[Optional[int]] = mapped_column(
+        Integer,
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+
+    code: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    decision_pack_key: Mapped[Optional[str]] = mapped_column(String(64), nullable=True, index=True)
+    access_purpose: Mapped[Optional[str]] = mapped_column(String(160), nullable=True)
+    recipient_question: Mapped[Optional[str]] = mapped_column(String(280), nullable=True)
+    decision_focus: Mapped[Optional[str]] = mapped_column(String(360), nullable=True)
+    access_scope: Mapped[str] = mapped_column(
+        String(64),
+        nullable=False,
+        default="public_decision_pack",
+        server_default="public_decision_pack",
+    )
+    source: Mapped[str] = mapped_column(
+        String(64),
+        nullable=False,
+        default="public_verify",
+        server_default="public_verify",
+    )
+    visibility_level: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    status: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        index=True,
+    )
 
 class MarketplaceShop(Base):
     __tablename__ = "marketplace_shops"

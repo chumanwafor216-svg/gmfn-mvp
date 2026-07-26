@@ -16,6 +16,8 @@ const files = {
   decisionPacks: "src/lib/decisionPacks.ts",
   api: "src/lib/api.ts",
   backend: "../gmfn_backend/app/api/routes/trust_slips.py",
+  backendDecisionPacks: "../gmfn_backend/app/services/trust_slip_decision_packs.py",
+  backendModels: "../gmfn_backend/app/db/models.py",
   package: "package.json",
 };
 
@@ -241,6 +243,23 @@ assertContains(
   "backend",
   /"cci_score": None,[\s\S]*?"cci_score_visibility": "internal_index"[\s\S]*?"cci_band": top_level_cci_band/,
   "Backend public TrustSlip payload must not send raw CCI score to outsider readers."
+);
+assertContains(
+  "backendModels",
+  /class TrustSlipDecisionPackAccess\(Base\):[\s\S]*?__tablename__ = "trust_slip_decision_pack_access"[\s\S]*?decision_pack_key[\s\S]*?recipient_question[\s\S]*?decision_focus[\s\S]*?source[\s\S]*?created_at/,
+  "Backend must keep Decision Pack access in a separate bounded access ledger, not inside TrustEvents."
+);
+
+assertContains(
+  "backendDecisionPacks",
+  /DECISION_PACKS[\s\S]*?Referral Decision Pack[\s\S]*?normalize_decision_pack_context[\s\S]*?record_decision_pack_access[\s\S]*?TrustSlipDecisionPackAccess/,
+  "Backend must normalize and record public Decision Pack context through the bounded access ledger service."
+);
+
+assertContains(
+  "backend",
+  /normalize_decision_pack_context\(request\.query_params\)[\s\S]*?response_payload: Dict\[str, Any\][\s\S]*?record_decision_pack_access[\s\S]*?build_decision_pack_access_payload[\s\S]*?return response_payload/,
+  "Backend public verify route must attach public-safe Decision Pack access context and record it without changing TrustEvent evidence."
 );
 
 assertContains(

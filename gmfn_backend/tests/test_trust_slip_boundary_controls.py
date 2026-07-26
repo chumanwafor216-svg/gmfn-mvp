@@ -4,7 +4,7 @@ from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
 from app.db.database import SessionLocal
-from app.db.models import TrustEvent, TrustSlip
+from app.db.models import TrustEvent, TrustSlip, TrustSlipDecisionPackAccess
 
 
 def _create_trust_slip(*, code: str, holder_user_id: int = 1) -> int:
@@ -170,3 +170,80 @@ def test_trust_slip_reissue_rejects_malformed_payload_before_new_slip_or_event(
     assert "force must be boolean" in response.text
     assert _trust_slip_count() == 1
     assert _trust_event_count() == 0
+
+
+def test_public_verify_records_decision_pack_access_without_trust_event(
+    client,
+    seed_clan_admin_membership,
+):
+    slip_id = _create_trust_slip(code="ACCESS-DP")
+
+    response = client.get(
+        "/trust-slips/verify/ACCESS-DP",
+        params={"decision_pack": "referral_decision"},
+    )
+
+    assert response.status_code == 200, response.text
+    payload = response.json()
+    assert payload["decision_pack"] == "referral_decision"
+    assert payload["access_purpose"] == "Referral Decision Pack"
+    assert payload["access_note"] == "Can this person be referred without damaging my credibility?"
+    assert payload["decision_pack_focus"].startswith("Who knows the person")
+    assert payload["share_access_record"]["status"] == "backend_access_recorded"
+
+    db = SessionLocal()
+    try:
+        rows = db.query(TrustSlipDecisionPackAccess).all()
+        assert len(rows) == 1
+        access = rows[0]
+        assert access.trust_slip_id == slip_id
+        assert access.code == "ACCESS-DP"
+        assert access.holder_user_id == 1
+        assert access.clan_id == 1
+        assert access.decision_pack_key == "referral_decision"
+        assert access.access_purpose == "Referral Decision Pack"
+        assert access.access_scope == "public_decision_pack"
+        assert access.source == "public_verify"
+        assert db.query(TrustEvent).count() == 0
+    finally:
+        db.close()
+
+
+def test_public_verify_decision_pack_access_bounds_unknown_public_context(
+    client,
+    seed_clan_admin_membership,
+):
+    _create_trust_slip(code="ACCESS-UNKNOWN")
+    long_focus = "x" * 800
+
+    response = client.get(
+        "/trust-slips/verify/ACCESS-UNKNOWN",
+        params={
+            "decision_pack": "future_pack",
+            "purpose": "Future private-looking pack label",
+            "decision_question": "Can this evidence help?",
+            "focus": long_focus,
+            "access_scope": "public_decision_pack",
+        },
+    )
+
+    assert response.status_code == 200, response.text
+    payload = response.json()
+    assert payload["decision_pack"] == "future_pack"
+    assert payload["access_purpose"] == "Future private-looking pack label"
+    assert payload["access_note"] == "Can this evidence help?"
+    assert len(payload["decision_pack_focus"]) == 360
+
+    db = SessionLocal()
+    try:
+        access = db.query(TrustSlipDecisionPackAccess).one()
+        assert access.decision_pack_key == "future_pack"
+        assert access.access_purpose == "Future private-looking pack label"
+        assert access.recipient_question == "Can this evidence help?"
+        assert access.decision_focus == "x" * 360
+        assert not hasattr(access, "recipient_name")
+        assert not hasattr(access, "recipient_email")
+        assert not hasattr(access, "recipient_phone")
+        assert db.query(TrustEvent).count() == 0
+    finally:
+        db.close()

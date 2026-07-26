@@ -1,3 +1,50 @@
+## CURRENT LOCAL STATE - 2026-07-26 - Backend Decision Pack access ledger added locally
+
+Owner trigger:
+- Owner selected `1` to continue after the shared frontend Decision Pack contract checkpoint.
+
+Unabated truth:
+- This slice creates a bounded backend access ledger for public TrustSlip Decision Pack reads, but it still does not implement purpose-specific evidence filtering, a Decision Pack scoring engine, Global TrustSlip, Behavioural Placement schema, or the full Evidence Ledger architecture.
+- The ledger records public-safe context about why a TrustSlip was opened. It deliberately does not store recipient name, recipient email, recipient phone, requester IP, private contacts, private Trust Passport contents, raw verifier identity, bank details, or private notes.
+- Public verification access is not written as a TrustEvent because anonymous recipient reads are not the holder's behaviour evidence. This separation protects the TrustEvent spine from becoming a traffic/access log.
+
+Changed:
+- `gmfn_backend/app/db/models.py`
+  - Added `TrustSlipDecisionPackAccess` mapped to `trust_slip_decision_pack_access`.
+  - Stored bounded public fields: TrustSlip id/code, holder/community ids for internal traceability, pack key, access purpose, recipient question, decision focus, access scope, source, visibility level, status, and created time.
+- `gmfn_backend/alembic/versions/20260726_add_trust_slip_decision_pack_access.py`
+  - Added the idempotent migration and indexes for slip, holder, pack, code, and created-time access lookup.
+- `gmfn_backend/app/services/trust_slip_decision_packs.py`
+  - Added backend Decision Pack catalog, safe query normalization, public response payload builder, and ledger writer.
+- `gmfn_backend/app/api/routes/trust_slips.py`
+  - Public `/trust-slips/verify/{code}` now normalizes Decision Pack query context, records a bounded access row best-effort, and includes backend-generated public Decision Pack access fields in the response.
+  - Logging failure does not block public verification.
+- `gmfn_backend/tests/test_trust_slip_boundary_controls.py`
+  - Added tests proving known pack keys are canonicalized, a ledger row is written, unknown/future context is bounded, and no TrustEvent is created for public Decision Pack reads.
+- `frontend/tools/audit-public-trustslip-verify-boundary.mjs`
+  - Added guards requiring the backend model/service/route path to keep Decision Pack access separate from TrustEvents and keep public payload boundaries.
+
+Routes/screens affected:
+- Backend public route `/trust-slips/verify/{code}` now records public Decision Pack access context when safe query parameters are present.
+- Existing frontend public TrustSlip Verify can already consume these fields through its existing normalizer.
+
+Verification:
+- Passed `python -m py_compile gmfn_backend\app\services\trust_slip_decision_packs.py gmfn_backend\app\api\routes\trust_slips.py gmfn_backend\app\db\models.py gmfn_backend\alembic\versions\20260726_add_trust_slip_decision_pack_access.py gmfn_backend\tests\test_trust_slip_boundary_controls.py`.
+- Passed `python -m pytest -q gmfn_backend\tests\test_trust_slip_boundary_controls.py`.
+- Passed `python -m pytest -q gmfn_backend\tests\test_trust_slip_boundary_controls.py gmfn_backend\tests\test_trust_slip_display_name_recovery.py`.
+- Passed `cd gmfn_backend; python -m alembic heads` and confirmed `20260726_trustslip_decision_pack_access (head)`.
+- Passed `npm --prefix frontend run audit:public-trustslip-verify-boundary`.
+- Passed `npm --prefix frontend run audit:trust-passport-trustslip-boundary`.
+- Passed `npm --prefix frontend run audit:trust-actions`.
+- Passed `npm --prefix frontend run audit:protected-button-freeze`.
+- Passed `npm --prefix frontend run build`.
+- Passed `git diff --check` with only recurring LF/CRLF warnings.
+
+Deployment:
+- Local only. Not pushed or deployed because the current pilot protocol says routine continuation work should be batched locally and published only when the owner explicitly approves.
+
+Recommended next step:
+- Add a signed-in holder/admin read surface for recent Decision Pack accesses, showing only pack, purpose, scope, time, and status. Keep recipient identity absent unless a later consented recipient workflow is explicitly designed.
 ## CURRENT LOCAL STATE - 2026-07-26 - Decision Pack catalog moved into shared frontend contract
 
 Owner trigger:
