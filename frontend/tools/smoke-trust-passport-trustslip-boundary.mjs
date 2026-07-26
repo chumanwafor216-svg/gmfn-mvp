@@ -143,7 +143,41 @@ function trustSlipSummaryPayload(overrides = {}) {
     cci_score: "81",
     cci_band: "B",
     graph_score: "81",
-    active_clan_count: 2,
+    active_clan_count: 5,
+    community_footprint: [
+      {
+        community_name: "Boundary Evidence Community",
+        community_code: "GMFN-C-TRUST-BOUNDARY",
+        role: "member",
+      },
+      {
+        community_name: "Homeland Marketplace",
+        community_code: "GMFN-C-HOMELAND",
+        role: "admin",
+      },
+      {
+        community_name: "St Peter's Church",
+        community_code: "GMFN-C-ST-PETERS",
+        role: "committee_member",
+      },
+      {
+        community_name: "Nigerian Society",
+        community_code: "GMFN-C-NIGERIAN-SOCIETY",
+        role: "volunteer_leader",
+      },
+      {
+        community_name: "Business Association",
+        community_code: "GMFN-C-BUSINESS-ASSOCIATION",
+        role: "trader",
+      },
+    ],
+    community_role_counts: {
+      member: 1,
+      admin: 1,
+      committee_member: 1,
+      volunteer_leader: 1,
+      trader: 1,
+    },
     sponsor_count: 3,
     unique_counterparties: 4,
     risk_flags: [],
@@ -403,8 +437,15 @@ async function runTrustPassportScenario(browser, baseURL) {
   });
 
   await expect(
-    state.page.getByRole("heading", { name: "Identity Overview", exact: true })
+    state.page.getByRole("heading", { name: "Identity & Community Overview", exact: true })
   ).toBeVisible({ timeout: 30000 });
+  await expect(state.page.getByText("Community Portfolio", { exact: true })).toBeVisible();
+  await expect(state.page.getByText("Active Communities: 5", { exact: true }).first()).toBeVisible();
+  await expect(state.page.getByText("Recorded communities", { exact: true })).toBeVisible();
+  await expect(state.page.getByText("Current roles", { exact: true })).toBeVisible();
+  await expect(state.page.getByText("Administrator (1)").first()).toBeVisible();
+  await expect(state.page.getByText("Committee Member (1)").first()).toBeVisible();
+  await expect(state.page.getByText("Active in", { exact: false })).toHaveCount(0);
   await state.page.locator('[data-trust-passport-verdict-marker="true"]').scrollIntoViewIfNeeded();
   const mobileLayout = await state.page.evaluate(() => {
     const marker = document.querySelector('[data-trust-passport-verdict-marker="true"]');

@@ -152223,3 +152223,37 @@ GSN-branded invite composer and invite-entry continuity.
   - local only so far; do not push/deploy unless the owner explicitly selects `2` or says push/deploy.
 - Next recommended step:
   - commit this smoke-proof slice locally, then either continue another small Decision Pack proof gap on `1` or push/deploy the accumulated local commits on `2`.
+## 2026-07-26 - Trust Passport Identity Community Overview Slice
+
+- Trigger:
+  - owner pasted the Identity Overview architecture note after the Decision Pack batch was pushed/deployed.
+- Unabated truth:
+  - the current `/app/trust` page is still the signed-in Trust Passport route, not a separate Identity Profile route;
+  - the pasted direction is architecturally right: identity, community membership, evidence, behavioural placement, and decision support should stay distinct;
+  - this pass is a conservative route-local UX alignment only. It does not add a new Identity Profile route, Evidence Ledger route, Behavioural Placement schema, Decision Pack schema, Trust Passport generator, scoring engine, approval engine, payment behavior, backend membership model, or verified-community data model;
+  - the page now says `Recorded communities`, not `Verified communities`, because the current payload proves recorded/active community footprint and role counts, not formal verification for every community.
+- Changed:
+  - `frontend/src/pages/TrustScorePage.tsx`
+    - renames the identity package heading from `Identity Overview` to `Identity & Community Overview`;
+    - changes the subtitle to answer `who this person is, their GSN ID, and where they belong`;
+    - renames `Community footprint` to `Community Portfolio`;
+    - replaces `Active in X` shorthand with `Active Communities: X`;
+    - changes identity fact labels to `Primary community`, `Primary Community ID`, and `Community roles`;
+    - formats role counts as reader-friendly labels such as `Administrator (1)` and `Committee Member (1)`;
+    - adds a compact identity/community summary row for recorded communities, current roles, community activity, and identity status.
+  - `frontend/tools/smoke-trust-passport-trustslip-boundary.mjs`
+    - expands the Trust Passport smoke fixture to five community footprint records and role counts;
+    - asserts the rendered Trust Passport page shows `Identity & Community Overview`, `Community Portfolio`, `Active Communities: 5`, `Recorded communities`, role-count labels, and no `Active in` copy.
+- Verification:
+  - passed `npm exec -- eslint src/pages/TrustScorePage.tsx tools/smoke-trust-passport-trustslip-boundary.mjs` from `frontend`;
+  - passed `npm --prefix frontend run audit:trust-passport-trustslip-boundary`;
+  - passed `git diff --check` before the handoff entry;
+  - non-escalated `npm --prefix frontend run smoke:trust-passport-trustslip-boundary` hit sandbox `spawn EPERM` while starting Vite/esbuild;
+  - first escalated smoke attempts failed usefully on duplicate valid text assertions and one remaining `Active in` label;
+  - passed corrected escalated `npm --prefix frontend run smoke:trust-passport-trustslip-boundary`;
+  - passed `npm --prefix frontend run audit:protected-button-freeze`;
+  - passed `npm --prefix frontend run build`.
+- Deployment:
+  - local only so far; do not push/deploy unless the owner explicitly selects `2` or says push/deploy.
+- Next recommended step:
+  - commit this Identity & Community Overview slice locally, then either continue the next small identity/evidence separation slice on `1` or push/deploy on `2`.

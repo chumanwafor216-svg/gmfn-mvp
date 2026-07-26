@@ -790,8 +790,16 @@ function titleCaseWords(value: string): string {
 function roleLabel(value: string): string {
   const role = safeStr(value).toLowerCase();
   if (role === "user" || role === "member") return "Member";
-  if (role === "admin" || role === "owner") return "Admin";
-  return titleCaseWords(role || "member");
+  if (role === "admin" || role === "owner") return "Administrator";
+  if (role === "committee_member") return "Committee Member";
+  if (role === "volunteer_leader") return "Volunteer Leader";
+  if (role === "trader" || role === "merchant") return "Trader";
+  return titleCaseWords(role.replace(/[_-]+/g, " ") || "member");
+}
+
+function roleCountLabel(label: string, count: number): string {
+  const friendly = roleLabel(label);
+  return `${friendly} (${count})`;
 }
 
 function overviewIconBox(isCompact = false): React.CSSProperties {
@@ -1950,7 +1958,7 @@ export default function TrustScorePage() {
 
     return Array.from(counts.entries())
       .filter(([, count]) => count > 0)
-      .map(([label, count]) => `${label} ${count}`)
+      .map(([label, count]) => roleCountLabel(label, count))
       .join(" / ");
   }, [
     communityFootprint,
@@ -2713,7 +2721,7 @@ export default function TrustScorePage() {
     },
     {
       label: "Community history",
-      value: `Active in ${passportVm.technicalDetail.activeClans}`,
+      value: `Active Communities: ${passportVm.technicalDetail.activeClans}`,
       tone: positiveNumber(passportVm.technicalDetail.activeClans) > 0 ? "good" : "warn",
     },
     {
@@ -2768,11 +2776,18 @@ export default function TrustScorePage() {
     "That a public TrustSlip exposes the full private Trust Passport",
   ];
 
+  const currentRoleSummary = communityRoleCounts || roleCountLabel(passportVm.identity.holderRole, 1);
   const identityRows: Array<[GsnIconName, string, string]> = [
     ["id", "GSN ID", passportVm.identity.gmfnId],
-    ["community", "Community", passportVm.identity.communityName],
-    ["hash", "Community ID", passportVm.identity.communityId],
-    ["shield", "Roles", communityRoleCounts || roleLabel(passportVm.identity.holderRole)],
+    ["community", "Primary community", passportVm.identity.communityName],
+    ["hash", "Primary Community ID", passportVm.identity.communityId],
+    ["shield", "Community roles", currentRoleSummary],
+  ];
+  const identityCommunitySummaryRows: Array<[GsnIconName, string, string]> = [
+    ["community", "Recorded communities", activeClanCount],
+    ["shield", "Current roles", currentRoleSummary],
+    ["evidence", "Community activity", passportVm.identity.communityActivityCount],
+    ["id", "Identity status", passportVm.identity.identityStatusLabel],
   ];
 
   const identityCompletionRows: Array<{
@@ -3212,13 +3227,13 @@ export default function TrustScorePage() {
                     textTransform: "uppercase",
                   }}
                 >
-                  Community footprint
+                  Community Portfolio
                 </span>
                 <span style={overviewStatusBox(true, true)}>
                   <span style={overviewBadge(true, true)}>
                     <GsnLegacyIcon name="community" size={22} decorative />
                   </span>
-                  {communityFootprint.length} active
+                  Active Communities: {communityFootprint.length}
                 </span>
               </div>
               <div
@@ -3420,7 +3435,7 @@ export default function TrustScorePage() {
                   letterSpacing: 0,
                 }}
               >
-                Identity Overview
+                Identity & Community Overview
               </h1>
               <p
                 style={{
@@ -3432,7 +3447,7 @@ export default function TrustScorePage() {
                   lineHeight: 1.25,
                 }}
               >
-                Community-backed identity snapshot
+                Who this person is, their GSN ID, and where they belong.
               </p>
             </div>
           </section>
@@ -3505,6 +3520,63 @@ export default function TrustScorePage() {
           </div>
 
           <div
+            data-trust-passport-identity-community-summary="true"
+            style={{
+              display: "grid",
+              gridTemplateColumns: isCompact ? "repeat(2, minmax(0, 1fr))" : "repeat(4, minmax(0, 1fr))",
+              gap: isCompact ? 8 : 10,
+              marginTop: isCompact ? 12 : 16,
+              position: "relative",
+              zIndex: 1,
+            }}
+          >
+            {identityCommunitySummaryRows.map(([icon, label, value]) => (
+              <div
+                key={label}
+                style={{
+                  minHeight: isCompact ? 68 : 78,
+                  borderRadius: isCompact ? 14 : 16,
+                  border: "1px solid rgba(216,227,238,0.72)",
+                  background: "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(241,247,255,0.96) 100%)",
+                  padding: isCompact ? "8px 9px" : "10px 12px",
+                  overflow: "hidden",
+                  display: "grid",
+                  alignContent: "start",
+                  gap: 5,
+                }}
+              >
+                <span
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    color: "#617085",
+                    fontSize: isCompact ? 10.5 : 11.5,
+                    fontWeight: 1000,
+                    lineHeight: 1.12,
+                  }}
+                >
+                  <span style={overviewBadge(true, true)}>
+                    <GsnLegacyIcon name={icon} size={20} decorative />
+                  </span>
+                  {label}
+                </span>
+                <span
+                  style={{
+                    color: "#07172C",
+                    fontSize: isCompact ? 13 : 14.5,
+                    lineHeight: 1.12,
+                    fontWeight: 1000,
+                    overflowWrap: "break-word",
+                    wordBreak: "normal",
+                  }}
+                >
+                  {value}
+                </span>
+              </div>
+            ))}
+          </div>
+          <div
             style={{
               display: "flex",
               flexWrap: "wrap",
@@ -3541,7 +3613,7 @@ export default function TrustScorePage() {
                   textOverflow: "ellipsis",
                 }}
               >
-                Active in {passportVm.technicalDetail.activeClans}
+                Active Communities: {passportVm.technicalDetail.activeClans}
               </span>
             </span>
           </div>
