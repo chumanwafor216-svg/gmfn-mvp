@@ -1481,7 +1481,7 @@ export default function TrustScorePage() {
   const [showIdentityCompletionPaths, setShowIdentityCompletionPaths] =
     useState(false);
   const [identityEvidenceOpen, setIdentityEvidenceOpen] = useState(false);
-  const [verdictNoteOpen, setVerdictNoteOpen] = useState(false);
+  const [evidenceReadingNoteOpen, setEvidenceReadingNoteOpen] = useState(false);
 
   const [me, setMe] = useState<any>(null);
   const [currentClan, setCurrentClan] = useState<any>(null);
@@ -4100,11 +4100,11 @@ export default function TrustScorePage() {
                 <SecondaryButton
                   debugId="trust-score.verdict-note.toggle"
                   stableHeight={isCompact ? 42 : 44}
-                  onClick={() => setVerdictNoteOpen((open) => !open)}
+                  onClick={() => setEvidenceReadingNoteOpen((open) => !open)}
                   style={{
                     justifyContent: "space-between",
                     borderRadius: 13,
-                    background: verdictNoteOpen ? "#F8FBFF" : "#FFFFFF",
+                    background: evidenceReadingNoteOpen ? "#F8FBFF" : "#FFFFFF",
                     border: "1px solid rgba(11,99,209,0.14)",
                     color: "#24415C",
                     boxShadow: "none",
@@ -4114,13 +4114,13 @@ export default function TrustScorePage() {
                 >
                   <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
                     <GsnLegacyIcon name="document" size={24} decorative />
-                    Record state note
+                    Evidence reading note
                   </span>
                   <span aria-hidden="true" style={{ color: "#617085", fontSize: 18 }}>
-                    {verdictNoteOpen ? "-" : "+"}
+                    {evidenceReadingNoteOpen ? "-" : "+"}
                   </span>
                 </SecondaryButton>
-                {verdictNoteOpen ? (
+                {evidenceReadingNoteOpen ? (
                   <div
                     style={{
                       display: "grid",

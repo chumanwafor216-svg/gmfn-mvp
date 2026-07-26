@@ -152361,3 +152361,34 @@ GSN-branded invite composer and invite-entry continuity.
   - local only so far; do not push/deploy unless the owner explicitly selects `2` or says push/deploy.
 - Next recommended step:
   - commit this decision-use summary slice locally, then either continue the next small Trust Passport evidence-language cleanup on `1` or push/deploy the accumulated local commits on `2`.
+## 2026-07-26 - Trust Passport Evidence Reading Note Label
+
+- Trigger:
+  - owner selected `1` after the decision-use evidence summary slice was committed locally.
+- Unabated truth:
+  - `/app/trust` still uses the existing Trust Passport `verdict` view-model field and stable `trust-score.verdict-note.toggle` debug ID; this slice intentionally does not rename those contracts because they are used as route-local automation hooks;
+  - the visible first-lane note still said `Record state note`, which was accurate but less aligned with the new `Identity & Evidence Reading` language;
+  - this is a presentation/test-language cleanup only. It does not add an Identity Profile route, Evidence Ledger route, Behavioural Placement schema, Decision Pack generator, scoring rewrite, approval engine, backend evidence model, or verified-community model.
+- Changed:
+  - `frontend/src/pages/TrustScorePage.tsx`
+    - renames the visible note control from `Record state note` to `Evidence reading note`;
+    - renames the local React state from `verdictNoteOpen` to `evidenceReadingNoteOpen` while preserving the stable debug ID.
+  - `frontend/tools/smoke-trust-passport-trustslip-boundary.mjs`
+    - asserts the rendered Trust Passport page shows `Evidence reading note` and no longer shows `Record state note`.
+  - `frontend/tools/audit-trust-passport-button-inventory.mjs` and `frontend/tools/audit-trust-passport-front-package.mjs`
+    - update audit messages and source cages from verdict-note wording to evidence-reading wording while preserving stable marker/debug hooks.
+- Verification:
+  - passed `npm exec -- eslint src/pages/TrustScorePage.tsx tools/audit-trust-passport-button-inventory.mjs tools/audit-trust-passport-front-package.mjs tools/smoke-trust-passport-trustslip-boundary.mjs` from `frontend`;
+  - passed direct `node tools/audit-trust-passport-button-inventory.mjs` from `frontend`;
+  - passed direct `node tools/audit-trust-passport-front-package.mjs` from `frontend`;
+  - passed `npm --prefix frontend run audit:trust-passport-lane-map`;
+  - passed `npm --prefix frontend run audit:trust-passport-trustslip-boundary`;
+  - non-escalated `npm --prefix frontend run smoke:trust-passport-trustslip-boundary` hit sandbox `spawn EPERM` while starting Vite/esbuild;
+  - passed escalated `npm --prefix frontend run smoke:trust-passport-trustslip-boundary`;
+  - passed `npm --prefix frontend run audit:protected-button-freeze`;
+  - passed `npm --prefix frontend run build`;
+  - passed `git diff --check` before the handoff entry.
+- Deployment:
+  - local only so far; do not push/deploy unless the owner explicitly selects `2` or says push/deploy.
+- Next recommended step:
+  - commit this evidence-reading note label slice locally, then either continue the next small Trust Passport evidence-language cleanup on `1` or push/deploy the accumulated local commits on `2`.

@@ -193,13 +193,13 @@ assertNotContains(
 assertContains(
   "trust",
   /const activePostureLabel =[\s\S]*?firstTruthy\([\s\S]*?activeBand[\s\S]*?safeStr\(currentBand\)\.toUpperCase\(\)\.slice\(0, 2\)[\s\S]*?\) \|\| "GSN"/,
-  "Trust Passport current verdict tile must use a compact band marker instead of the full verdict phrase."
+  "Trust Passport current evidence tile must use a compact band marker instead of the full reading phrase."
 );
 
 assertNotContains(
   "trust",
   /const activePostureLabel =[\s\S]*?passportVm\.verdict\.label[\s\S]*?Evidence posture/,
-  "Trust Passport current verdict tile must not render the full verdict phrase inside the narrow mobile marker."
+  "Trust Passport current evidence tile must not render the full reading phrase inside the narrow mobile marker."
 );
 
 assertContains(
@@ -220,7 +220,7 @@ assertContains(
       files[key],
       source,
       match.index,
-      "Trust Passport current verdict surfaces must not reintroduce morally loaded low-evidence labels.",
+      "Trust Passport current evidence surfaces must not reintroduce morally loaded low-evidence labels.",
       match[0]
     );
   }

@@ -451,6 +451,8 @@ async function runTrustPassportScenario(browser, baseURL) {
   await expect(state.page.getByText("The phone is verified. Recorded bank or ID evidence can strengthen this identity, but provider verification still matters for serious decisions.", { exact: true })).toBeVisible();
   await expect(state.page.getByText("Current Trust Standing", { exact: true })).toHaveCount(0);
   await expect(state.page.getByText("Active trust lane", { exact: true })).toHaveCount(0);
+  await expect(state.page.getByText("Evidence reading note", { exact: true })).toBeVisible();
+  await expect(state.page.getByText("Record state note", { exact: true })).toHaveCount(0);
   await expect(state.page.getByText("2. Current trust verdict", { exact: true })).toHaveCount(0);
   await expect(state.page.getByText("3. What this reading says", { exact: true })).toHaveCount(0);
   await expect(state.page.getByText("Community Portfolio", { exact: true })).toBeVisible();
@@ -488,7 +490,7 @@ async function runTrustPassportScenario(browser, baseURL) {
   }
   if (mobileLayout.markerText.length > 2) {
     throw new Error(
-      `Trust Passport verdict marker must stay compact, got "${mobileLayout.markerText}".`
+      `Trust Passport evidence posture marker must stay compact, got "${mobileLayout.markerText}".`
     );
   }
   await expect(state.page.locator('[data-gsn-trust-document-certificate="trust-passport"]')).toHaveCount(1);

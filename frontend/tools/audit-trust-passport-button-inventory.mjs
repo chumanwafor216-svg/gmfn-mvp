@@ -226,13 +226,13 @@ assertNotContains(
 );
 
 assertContains(
-  /debugId="trust-score\.verdict-note\.toggle"[\s\S]*?Record state note[\s\S]*?Record state, not character judgement\. Add current evidence to strengthen this reading\./,
-  "Trust Passport verdict note must stay behind a stable open/close control so the screenshot surface stays compact."
+  /debugId="trust-score\.verdict-note\.toggle"[\s\S]*?Evidence reading note[\s\S]*?Record state, not character judgement\. Add current evidence to strengthen this reading\./,
+  "Trust Passport evidence reading note must stay behind a stable open/close control so the screenshot surface stays compact."
 );
 
 assertContains(
   /gridTemplateColumns: isCompact[\s\S]*?"58px minmax\(0, 1fr\)"[\s\S]*?"78px minmax\(0, 1fr\)"[\s\S]*?minHeight: isCompact \? 58 : 78[\s\S]*?fontSize: isCompact \? 34 : 46/,
-  "Trust Passport verdict seal must stay compact on phone so the verdict text no longer sits beside a tall empty tile."
+  "Trust Passport evidence posture marker must stay compact on phone so the reading text no longer sits beside a tall empty tile."
 );
 
 assertContains(
@@ -276,5 +276,5 @@ if (findings.length > 0) {
 }
 
 console.log(
-  `Trust Passport button inventory audit passed: ${actions.length} stable source actions, ${expectedRenderedActions} expected rendered action roots including the lane selector, verdict note toggle, and two trust-surface cards.`
+  `Trust Passport button inventory audit passed: ${actions.length} stable source actions, ${expectedRenderedActions} expected rendered action roots including the lane selector, evidence reading note toggle, and two trust-surface cards.`
 );
