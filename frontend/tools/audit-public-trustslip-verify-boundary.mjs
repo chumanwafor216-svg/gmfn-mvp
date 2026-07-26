@@ -124,7 +124,7 @@ assertContains(
 );
 assertContains(
   "viewModel",
-  /const rawAccessStatus = firstTruthy\(record\?\.access_status, rawAccessRecord\?\.status\);[\s\S]*?machineAccessStatuses[\s\S]*?public_context_from_link[\s\S]*?backend_access_recorded[\s\S]*?`Shared to support \$\{accessPurpose\}\.`/,
+  /const rawAccessStatus = firstTruthy\(record\?\.access_status, rawAccessRecord\?\.status\);[\s\S]*?machineAccessStatuses[\s\S]*?public_context_from_link[\s\S]*?backend_access_recorded[\s\S]*?backend_access_context_only[\s\S]*?`Shared to support \$\{accessPurpose\}\.`/,
   "Public TrustSlip recipient access status must translate machine statuses into human Decision Pack copy."
 );
 assertContains(

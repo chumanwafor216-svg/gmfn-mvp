@@ -267,7 +267,25 @@ async function installApiMocks(page, requestLog) {
         await route.fulfill(json({ detail: "TrustSlip not found" }, 404));
         return;
       }
-      await route.fulfill(json(publicTrustSlipPayload(scenario)));
+      const payload = publicTrustSlipPayload(scenario);
+      const requestUrl = new URL(url);
+      if (requestUrl.searchParams.has("decision_pack")) {
+        payload.decision_pack = "employment_decision";
+        payload.access_purpose = "Employment Decision Pack";
+        payload.access_scope = "public_decision_pack";
+        payload.access_note = "Is there enough evidence to continue an employment conversation?";
+        payload.decision_pack_focus =
+          "Role, consistency, contribution, leadership or service signals, and the next verification step.";
+        payload.share_access_record = {
+          recipient_label: "TrustSlip recipient",
+          purpose: "Employment Decision Pack",
+          scope: "public_decision_pack",
+          note: "Is there enough evidence to continue an employment conversation?",
+          focus: "Role, consistency, contribution, leadership or service signals, and the next verification step.",
+          status: "backend_access_context_only",
+        };
+      }
+      await route.fulfill(json(payload));
       return;
     }
 
@@ -429,6 +447,7 @@ async function runDecisionPackRecipientCardScenario(browser, baseURL) {
   await expect(recipientCard).toContainText("Employment Decision Pack");
   await expect(recipientCard).toContainText("Public Decision Pack");
   await expect(recipientCard).not.toContainText("public_context_from_link");
+  await expect(recipientCard).not.toContainText("backend_access_context_only");
   await expect(recipientCard).not.toContainText("public_decision_pack");
 
   const recipientCardFacts = await recipientCard.evaluate((node) => {

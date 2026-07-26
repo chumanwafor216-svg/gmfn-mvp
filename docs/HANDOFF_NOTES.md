@@ -151990,3 +151990,36 @@ GSN-branded invite composer and invite-entry continuity.
   - local only so far; routine continuation publishing remains batch-frozen unless the product owner explicitly asks to push/deploy.
 - Next recommended step:
   - push/deploy the accumulated local commits only when the owner explicitly asks, or continue with another small Decision Pack parity/risk-reduction slice.
+
+## 2026-07-26 - Public Decision Pack Context-Only Status Copy
+
+- Trigger:
+  - owner selected `1` after the frontend Decision Pack key parity slice was committed locally.
+- Unabated truth:
+  - the backend can return `backend_access_context_only` when a Decision Pack context is attached but the access ledger write is not recorded;
+  - the public recipient card already translated `backend_access_recorded`, but not this context-only fallback, so an error-path backend machine status could leak into the public TrustSlip reading;
+  - this pass fixes fallback status wording only. It does not change access ledger persistence, backend evidence, private Trust Passport disclosure, Decision Pack profile logic, scores, approvals, guarantees, payments, or recipient identity handling.
+- Changed:
+  - `frontend/src/pages/trustSlipVerify/trustSlipVerifyViewModel.ts`
+    - added `backend_access_context_only` to the machine access statuses translated into `Shared to support ${accessPurpose}.`.
+  - `frontend/tools/smoke-public-trustslip-verify-states.mjs`
+    - made the Decision Pack smoke mock return backend-shaped Decision Pack fields with `share_access_record.status = backend_access_context_only`;
+    - asserts the recipient card hides both `public_context_from_link` and `backend_access_context_only` while still showing human Decision Pack wording.
+  - `frontend/tools/audit-public-trustslip-verify-boundary.mjs`
+    - cages the context-only status translation in the public TrustSlip boundary audit.
+  - `frontend/tools/audit-evidence-display-boundary-suite.mjs`
+    - cages the smoke assertion that context-only backend status cannot appear in the visible recipient card.
+- Verification:
+  - passed `npm exec -- eslint src/pages/trustSlipVerify/trustSlipVerifyViewModel.ts tools/smoke-public-trustslip-verify-states.mjs tools/audit-public-trustslip-verify-boundary.mjs tools/audit-evidence-display-boundary-suite.mjs` from `frontend`;
+  - passed `npm --prefix frontend run audit:public-trustslip-verify-boundary`;
+  - passed `npm --prefix frontend run audit:evidence-display-boundary-suite`;
+  - passed `npm --prefix frontend run smoke:public-trustslip-verify-states` with sandbox escalation for Vite/Playwright process launch;
+  - passed `npm --prefix frontend run audit:evidence-display-boundary-batch`;
+  - passed `npm --prefix frontend run audit:trust-passport-trustslip-boundary`;
+  - passed `npm --prefix frontend run audit:protected-button-freeze`;
+  - passed `npm --prefix frontend run build`;
+  - passed `git diff --check`.
+- Deployment:
+  - local only so far; routine continuation publishing remains batch-frozen unless the product owner explicitly asks to push/deploy.
+- Next recommended step:
+  - push/deploy the accumulated local commits only when the owner explicitly asks, or continue with another small Decision Pack parity/risk-reduction slice.

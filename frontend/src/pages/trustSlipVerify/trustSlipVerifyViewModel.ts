@@ -542,6 +542,7 @@ function normalizeDecisionPackProfile(
   const machineAccessStatuses = new Set([
     "public_context_from_link",
     "backend_access_recorded",
+    "backend_access_context_only",
     "access_recorded",
   ]);
   const accessStatus = machineAccessStatuses.has(rawAccessStatus.toLowerCase())
