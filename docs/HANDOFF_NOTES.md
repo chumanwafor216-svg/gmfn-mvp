@@ -1,3 +1,38 @@
+## CURRENT LOCAL STATE - 2026-07-26 - Evidence boundary batch wording guard repaired locally
+
+Owner trigger:
+- Owner selected `1` after the aggregate Trust Passport audit guards were repaired locally.
+
+Unabated truth:
+- The public TrustSlip Verify audits and browser smoke already passed.
+- The broader `audit:evidence-display-boundary-batch` failed because `audit-evidence-field-mapping-decision-log.mjs` still expected older trust-posture wording: `bad trust`, `serious trust decision`, and `portable trust document`.
+- The source language had already moved in the better direction: `bad behaviour`, evidence posture, fuller personal evidence record, and portable evidence document.
+- This slice updates audit expectations only. It does not change runtime UI, backend routes, evidence logic, TrustSlip/Verify behavior, scoring, permissions, or deployment behavior.
+
+Changed:
+- `frontend/tools/audit-evidence-field-mapping-decision-log.mjs`
+  - Updated the Trust Band Language guard to protect evidence-posture/non-character-judgement language using `bad behaviour` wording.
+  - Updated the Trust Document Family Map guard to require `fuller personal evidence record` and `portable evidence document` rather than trust-as-score wording.
+
+Routes/screens affected:
+- No runtime route changed. Guard coverage applies across evidence-display language primitives used by Trust Passport, TrustSlip, TrustSlip Verify, and related evidence surfaces.
+
+Verification:
+- Passed `npm --prefix frontend run audit:public-trustslip-first-viewport`.
+- Passed `npm --prefix frontend run audit:public-trustslip-verify-boundary`.
+- Passed `npm --prefix frontend run audit:trust-actions`.
+- Passed `npm --prefix frontend run smoke:public-trustslip-verify-states` with escalation for local Vite/Chromium process launch.
+- `npm --prefix frontend run audit:evidence-display-boundary-batch` failed before this fix on the stale evidence field mapping guard.
+- Passed `npm --prefix frontend run audit:evidence-field-mapping-decision-log`.
+- Passed `npm --prefix frontend run audit:evidence-display-boundary-batch`.
+- Passed ESLint on `tools/audit-evidence-field-mapping-decision-log.mjs`.
+- Passed `git diff --check`.
+
+Deployment:
+- Local only. Not pushed or deployed; owner must select `2` or explicitly say push/deploy.
+
+Recommended next step:
+- If continuing locally, run the publish-readiness/nonmutating evidence batch next; otherwise select `2` to push/deploy the accumulated local fixes.
 ## CURRENT LOCAL STATE - 2026-07-26 - Trust Passport aggregate guard audits repaired locally
 
 Owner trigger:

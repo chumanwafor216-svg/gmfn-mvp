@@ -165,8 +165,8 @@ assertContains(
 
 assertContains(
   "trustBandLanguage",
-  /This is not a character judgement[\s\S]*?Do not approve credit, release goods, accept responsibility, or make a serious referral from this record alone[\s\S]*?A thin record is not the same as bad trust[\s\S]*?Do not make a serious trust decision from the posture alone/,
-  "Trust posture language must keep signal-only and non-character-judgement boundaries."
+  /This is not a character judgement[\s\S]*?Do not approve credit, release goods, accept responsibility, or make a serious referral from this record alone[\s\S]*?This does not mean bad behaviour[\s\S]*?A thin record is not the same as bad behaviour/,
+  "Evidence posture language must keep signal-only and non-character-judgement boundaries."
 );
 
 assertContains(
@@ -177,8 +177,8 @@ assertContains(
 
 assertContains(
   "trustDocumentFamilyMap",
-  /Identity & Integrity[\s\S]*?steady identity layer[\s\S]*?Cross-community consistency[\s\S]*?narrower cross-community consistency read[\s\S]*?Trust Passport[\s\S]*?fuller personal record[\s\S]*?TrustSlip[\s\S]*?portable trust document[\s\S]*?TrustSlip Verify[\s\S]*?current public reading/,
-  "Trust document family map must keep Identity, CCI, Trust Passport, TrustSlip, and TrustSlip Verify distinct."
+  /Identity & Integrity[\s\S]*?steady identity layer[\s\S]*?Cross-community consistency[\s\S]*?narrower cross-community consistency read[\s\S]*?Trust Passport[\s\S]*?fuller personal evidence record[\s\S]*?TrustSlip[\s\S]*?portable evidence document[\s\S]*?TrustSlip Verify[\s\S]*?current public reading/,
+  "Trust document family map must keep Identity, CCI, Trust Passport, TrustSlip, and TrustSlip Verify distinct without reverting to trust-as-score wording."
 );
 
 assertContains(
