@@ -1930,7 +1930,7 @@ assertOrdered(
 
 assertContains(
   "trustSlip",
-  /const trustSlipHolderDecisionBoundaryRows: Array<\[string, string\]> = \[[\s\S]*?\["Evidence scope", numericCount\(activeCommunityCount\) > 1 \? "Primary \+ wider" : "Primary shown"\][\s\S]*?\["Guarantee", "No"\][\s\S]*?\["Government ID", "No"\][\s\S]*?\["Credit approval", "No"\][\s\S]*?\["Final decision", "Yours"\][\s\S]*?data-gsn-trustslip-holder-decision-boundary="compact"[\s\S]*?What this cannot decide[\s\S]*?trustSlipHolderDecisionBoundaryRows\.map/,
+  /const trustSlipHolderDecisionBoundaryRows: Array<\[string, string\]> = \[[\s\S]*?\["Evidence scope", numericCount\(activeCommunityCount\) > 1 \? "Primary \+ wider" : "Primary shown"\][\s\S]*?\["Guarantee", "No"\][\s\S]*?\["Government ID", "No"\][\s\S]*?\["Credit approval", "No"\][\s\S]*?\["Final decision", "Yours"\][\s\S]*?data-gsn-trustslip-holder-decision-boundary="compact"[\s\S]*?Decision Boundary[\s\S]*?trustSlipHolderDecisionBoundaryRows\.map/,
   "Signed-in TrustSlip holder paper must compress repeated legal/evidence limits into a compact top boundary."
 );
 if (findings.length > 0) {

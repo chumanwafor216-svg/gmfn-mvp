@@ -3993,7 +3993,7 @@ export default function TrustSlipPage() {
                 <GsnLegacyIcon name="certificate-seal" size={28} />
                 <div style={{ minWidth: 0 }}>
                   <div style={{ ...sectionLabel(), fontSize: isCompact ? 9 : 10 }}>
-                    What this cannot decide
+                    Decision Boundary
                   </div>
                   <div
                     style={{
@@ -4951,7 +4951,7 @@ export default function TrustSlipPage() {
                 gap: 8,
               }}
             >
-              <div style={{ ...sectionLabel(), color: "#7A4A00" }}>What this cannot decide</div>
+              <div style={{ ...sectionLabel(), color: "#7A4A00" }}>Decision Boundary</div>
               <div
                 style={{
                   display: "grid",

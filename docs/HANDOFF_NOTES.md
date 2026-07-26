@@ -1,3 +1,43 @@
+## CURRENT LOCAL STATE - 2026-07-26 - TrustSlip compact Decision Boundary labels
+
+Owner trigger:
+- Owner selected `1` after the deployed TrustSlip/Trust Passport evidence-scope batch.
+
+Unabated truth:
+- This is a tiny frontend copy-contract pass on signed-in TrustSlip compact boundary labels. It does not change backend payloads, evidence aggregation, auth, routes, permissions, TrustSlip issuance, Decision Pack data, or TrustEvent behavior.
+- The signed-in TrustSlip Decision Pack sharing boundary and holder-paper boundary now use the product-law heading `Decision Boundary` instead of `What this cannot decide`.
+- Deeper Community Confirmation and CommunityProof helper sections still use `What this cannot decide` where they are explanatory/supporting sections, not first-read compact boundary labels.
+- Devil's advocate: this is consistency work, not density reduction. It does not remove repeated deeper legal/evidence sections.
+
+Changed:
+- `frontend/src/pages/TrustSlipPage.tsx`
+  - Renamed the Decision Pack compact boundary heading to `Decision Boundary`.
+  - Renamed the holder-paper compact boundary heading to `Decision Boundary`.
+- `frontend/tools/audit-trust-passport-trustslip-boundary.mjs`
+  - Updated TrustSlip holder/Decision Pack boundary guards and messages to require the compact `Decision Boundary` label.
+- `frontend/tools/audit-trust-actions.mjs`
+  - Updated the holder-paper compact boundary guard.
+- `frontend/tools/audit-institutional-proof-surfaces.mjs`
+  - Updated the institutional holder-paper compact boundary guard.
+
+Routes/screens affected:
+- `/app/trust-slip` signed-in holder TrustSlip and Decision Pack sharing surface only.
+- No public TrustSlip Verify paper, Trust Passport, backend route, database, auth, payment, or TrustEvent write behavior changed.
+
+Verification:
+- Passed `npm --prefix frontend run audit:trust-passport-trustslip-boundary`.
+- Passed `npm --prefix frontend run audit:trust-actions`.
+- Passed `node frontend\tools\audit-institutional-proof-surfaces.mjs`.
+- Passed `npm --prefix frontend run audit:protected-button-freeze`.
+- Passed `npm --prefix frontend run build`.
+- Passed `git diff --check`; Git still reports normal working-copy line-ending warnings on touched frontend files.
+
+Deployment:
+- Not pushed or deployed in this slice because owner selected `1`.
+- After commit, local `main` should be ahead of origin by 1 commit.
+
+Recommended next step:
+- Select `2` to push/deploy this local slice, or select `1` to continue another local pass.
 ## CURRENT LOCAL STATE - 2026-07-26 - Trust Passport Decision Boundary label
 
 Owner trigger:
