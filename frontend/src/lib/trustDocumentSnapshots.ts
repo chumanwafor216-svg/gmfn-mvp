@@ -239,7 +239,7 @@ export function buildTrustSlipSnapshot(params: TrustSlipSnapshotParams) {
         : "",
       cleanLine("Portable evidence reading", friendlyTrustBand(params.merchantBand)),
       cleanLine(
-        "Trust-limit signal",
+        "Support limit signal",
         `${params.merchantCurrency} ${params.merchantTrustLimit}`
       ),
       activeCommunityContextLine(params.activeCommunityCount),
@@ -378,11 +378,11 @@ export function buildTrustPassportSnapshot(
         ? cleanLine("Latest primary community activity", params.communityActivityLatest)
         : "",
       cleanLine(
-        "Witness currentness",
+        "Are witnesses up to date?",
         params.membershipCurrentnessLabel || "Witness renewal not started"
       ),
       params.membershipCurrentnessScope
-        ? cleanLine("Currentness note", params.membershipCurrentnessScope)
+        ? cleanLine("Evidence currentness note", params.membershipCurrentnessScope)
         : "",
       params.nextWitnessRenewalAt
         ? cleanLine(
@@ -415,7 +415,7 @@ export function buildTrustPassportShareText(
       ? cleanLine("Primary community evidence", params.communityActivitySummary)
       : "",
     cleanLine(
-      "Witness currentness",
+      "Are witnesses up to date?",
       params.membershipCurrentnessLabel || "Witness renewal not started"
     ),
     "Evidence only. Open the link to check the current public GSN record.",

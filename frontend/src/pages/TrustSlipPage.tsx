@@ -2874,7 +2874,7 @@ export default function TrustSlipPage() {
         activeMemberCount || "not shown"
       }. Member witnesses: ${memberWitnessSignal}. Sponsors: ${
         summary?.sponsor_count ?? summary?.merchant_summary?.sponsor_count ?? "not shown"
-      }. Currentness: ${membershipCurrentnessLabel}. Next witness renewal: ${
+      }. Evidence currentness: ${membershipCurrentnessLabel}. Next witness renewal: ${
         safeDateTime(nextWitnessRenewalAt) || nextWitnessRenewalAt || "not shown"
       } (${nextWitnessRenewalStatusLabel}).`,
     },

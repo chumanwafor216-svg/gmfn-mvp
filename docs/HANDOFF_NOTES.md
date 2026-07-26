@@ -1,3 +1,51 @@
+## CURRENT LOCAL STATE - 2026-07-26 - Shared TrustSlip reader wording tightened
+
+Owner trigger:
+- Owner selected `1` after the public TrustSlip Verify disclosure wording commit.
+
+Unabated truth:
+- Runtime frontend code changed in shared TrustSlip reader/private-evidence/copy text only.
+- This pass is copy/label tightening only. It does not change TrustSlip reader data, private evidence authorization, public verify requests, snapshot generation data sources, backend routes, schemas, permissions, or deployment config.
+- The purpose is to remove remaining technical phrasing that still appeared after the main TrustSlip/Verify/Passport papers were simplified.
+
+Changed:
+- `frontend/src/components/TrustSlipReaderBlock.tsx`
+  - Renamed `Currentness` to `Evidence currentness`.
+  - Renamed `Trust-limit signal` to `Support limit signal`.
+- `frontend/src/pages/trustSlipVerify/TrustSlipVerifyPrivateEvidence.tsx`
+  - Renamed `Trust-limit signal` to `Support limit signal`.
+- `frontend/src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx`
+  - Renamed `Witness currentness note` to `Witness update note`.
+  - Reworded `Witness currentness: ...` to `Are witnesses up to date? ...`.
+- `frontend/src/pages/TrustSlipPage.tsx`
+  - Reworded one holder evidence sentence from `Currentness` to `Evidence currentness`.
+- `frontend/src/lib/trustDocumentSnapshots.ts`
+  - Renamed copied snapshot/share labels from `Trust-limit signal` to `Support limit signal`, `Witness currentness` to `Are witnesses up to date?`, and `Currentness note` to `Evidence currentness note`.
+- `frontend/tools/audit-trust-actions.mjs`
+  - Updated audit contracts for the clearer shared reader/snapshot wording.
+
+Routes/screens affected:
+- Signed-in holder TrustSlip: `/app/trust-slip`.
+- Public TrustSlip Verify paper: `/t/:code`.
+- Signed-in TrustSlip Verify private evidence panel for the holder's own visible TrustSlip.
+- Snapshot/share text generated from TrustSlip and Trust Passport visible fields.
+- No backend route changed.
+
+Verification:
+- Passed `npm --prefix frontend run audit:trust-actions`.
+- Passed `npm --prefix frontend run audit:trust-passport-trustslip-boundary`.
+- Passed `npm --prefix frontend run audit:protected-button-freeze`.
+- Passed `npm --prefix frontend run smoke:public-trustslip-verify-states` with escalation after sandbox `spawn EPERM`.
+- Passed `npm --prefix frontend run smoke:trust-passport-trustslip-boundary` with escalation after sandbox `spawn EPERM`.
+- Passed `npm --prefix frontend run smoke:trustslip-verify-private-evidence-boundary` with escalation after sandbox `spawn EPERM`.
+- Passed `npm --prefix frontend run build`.
+- Passed `git diff --check`; Git still reports normal LF-to-CRLF working-copy warnings on touched files.
+
+Deployment:
+- Local runtime/docs change only at this point. Not pushed or deployed until owner selects `2` or explicitly says push/deploy.
+
+Recommended next step:
+- The TrustSlip/Verify/Trust Passport wording pass is now ready for a phone visual pass or push/deploy.
 ## CURRENT LOCAL STATE - 2026-07-26 - Public TrustSlip Verify disclosure wording tightened
 
 Owner trigger:

@@ -630,7 +630,7 @@ assertContains(
 
 assertContains(
   "src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx",
-  /membershipCurrentnessLabel[\s\S]*?memberWitnessCurrentnessScope[\s\S]*?communityEvidenceCurrentnessLabel[\s\S]*?communityRecordCurrentnessScope[\s\S]*?label="Supporting evidence"[\s\S]*?title=\{memberWitnessCurrentness\}[\s\S]*?Witness currentness: \$\{memberWitnessCurrentnessScope\}[\s\S]*?Community record: \$\{communityRecordCurrentness\}/,
+  /membershipCurrentnessLabel[\s\S]*?memberWitnessCurrentnessScope[\s\S]*?communityEvidenceCurrentnessLabel[\s\S]*?communityRecordCurrentnessScope[\s\S]*?label="Supporting evidence"[\s\S]*?title=\{memberWitnessCurrentness\}[\s\S]*?Are witnesses up to date\? \$\{memberWitnessCurrentnessScope\}[\s\S]*?Community record: \$\{communityRecordCurrentness\}/,
   "TrustSlip Verify public paper must show membership evidence currentness inside supporting community evidence."
 );
 
@@ -684,13 +684,13 @@ assertContains(
 
 assertContains(
   "src/pages/TrustSlipPage.tsx",
-  /const membershipCurrentnessLabel = firstTruthy\([\s\S]*?membership_currentness_label[\s\S]*?Witness renewal not started[\s\S]*?const membershipCurrentnessScope = firstTruthy\([\s\S]*?membership_currentness_scope[\s\S]*?Evidence currentness: \$\{membershipCurrentnessLabel\}[\s\S]*?Currentness: \$\{membershipCurrentnessLabel\}[\s\S]*?membershipCurrentnessLabel=\{membershipCurrentnessLabel\}[\s\S]*?membershipCurrentnessScope=\{membershipCurrentnessScope\}/,
+  /const membershipCurrentnessLabel = firstTruthy\([\s\S]*?membership_currentness_label[\s\S]*?Witness renewal not started[\s\S]*?const membershipCurrentnessScope = firstTruthy\([\s\S]*?membership_currentness_scope[\s\S]*?Evidence currentness: \$\{membershipCurrentnessLabel\}[\s\S]*?Evidence currentness: \$\{membershipCurrentnessLabel\}[\s\S]*?membershipCurrentnessLabel=\{membershipCurrentnessLabel\}[\s\S]*?membershipCurrentnessScope=\{membershipCurrentnessScope\}/,
   "Signed-in TrustSlip page must carry member-witness evidence currentness into the holder and reader views."
 );
 
 assertContains(
   "src/components/TrustSlipReaderBlock.tsx",
-  /membershipCurrentnessLabel[\s\S]*?membershipCurrentnessScope[\s\S]*?Currentness: \{currentnessText\}[\s\S]*?Evidence currentness: \{currentnessScopeText\}/,
+  /membershipCurrentnessLabel[\s\S]*?membershipCurrentnessScope[\s\S]*?Evidence currentness: \{currentnessText\}[\s\S]*?Evidence currentness: \{currentnessScopeText\}/,
   "Signed-in TrustSlip reader block must show membership evidence currentness beside community witness evidence."
 );
 
@@ -708,7 +708,7 @@ assertContains(
 
 assertContains(
   "src/lib/trustDocumentSnapshots.ts",
-  /membershipCurrentnessLabel[\s\S]*?membershipCurrentnessScope[\s\S]*?cleanLine\([\s\S]*?"Witness currentness"[\s\S]*?cleanLine\("Currentness note", params\.membershipCurrentnessScope\)/,
+  /membershipCurrentnessLabel[\s\S]*?membershipCurrentnessScope[\s\S]*?cleanLine\([\s\S]*?"Are witnesses up to date\?"[\s\S]*?cleanLine\("Evidence currentness note", params\.membershipCurrentnessScope\)/,
   "Copied Trust Passport snapshots must include witness currentness beside community evidence."
 );
 

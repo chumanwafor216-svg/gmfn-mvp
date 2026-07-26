@@ -2522,7 +2522,7 @@ export default function TrustSlipVerifyPublicPaper({
                     }}
                   >
                     <div style={{ color: "#92400E", fontWeight: 1000, fontSize: 12 }}>
-                      Witness currentness note
+                      Witness update note
                     </div>
                     <p
                       style={{
@@ -2534,7 +2534,7 @@ export default function TrustSlipVerifyPublicPaper({
                         lineHeight: 1.42,
                       }}
                     >
-                      {`Witness currentness: ${memberWitnessCurrentnessScope}`}
+                      {`Are witnesses up to date? ${memberWitnessCurrentnessScope}`}
                     </p>
                   </div>
                   <div style={documentMetaCard("#F8FBFF")}>

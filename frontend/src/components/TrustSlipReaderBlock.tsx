@@ -365,7 +365,7 @@ export default function TrustSlipReaderBlock({
               Next witness: {nextRenewal || "Not shown"}
             </span>
             <span style={pill(currentnessText.toLowerCase().includes("current"))}>
-              Currentness: {currentnessText}
+              Evidence currentness: {currentnessText}
             </span>
             <span style={pill(clean(communityActivityCount) !== "" && clean(communityActivityCount) !== "0")}>
               Activity: {activityCount}
@@ -446,7 +446,7 @@ export default function TrustSlipReaderBlock({
             Evidence status is not a credit approval, guarantee, payment instruction, or prediction of future behaviour.
           </div>
           <div style={{ marginTop: 8, ...body() }}>
-            Trust-limit signal:{" "}
+            Support limit signal:{" "}
             <b>
               {clean(trustLimit, "0.00")} {clean(currency)}
             </b>
