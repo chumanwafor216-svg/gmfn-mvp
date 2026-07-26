@@ -3486,6 +3486,7 @@ export default function TrustSlipPage() {
       verifyUrl ? `Public TrustSlip check: ${verifyUrl}` : "",
       "Shared by holder consent from a private preview. Evidence only; ask for live community confirmation before important risk.",
       "Not a public evidence paper, score, approval, guarantee, payment instruction, raw event timeline, or private note disclosure.",
+      "GSN records only that the holder copied/exported this consent share. It does not store recipient identity, copied text, raw TrustEvents, private notes, contacts, payment references, or bank details.",
     ]
       .map((line) => safeStr(line))
       .filter(Boolean)
@@ -3527,7 +3528,7 @@ export default function TrustSlipPage() {
           })),
         })),
         consent_boundary:
-          "Copied by the signed-in holder from a private preview. Evidence only; not a public evidence paper, score, approval, guarantee, payment instruction, raw event timeline, or private note disclosure.",
+          "Copied by the signed-in holder from a private preview. Evidence only; not a public evidence paper, score, approval, guarantee, payment instruction, raw event timeline, or private note disclosure. GSN records only the holder copy/export marker and does not store recipient identity, copied text, raw TrustEvents, private notes, contacts, payment references, or bank details.",
       },
       null,
       2
@@ -4028,6 +4029,17 @@ export default function TrustSlipPage() {
                   decisionPackEvidenceExtract?.boundaryNote,
                   "Holder-only preview. It is not a public evidence paper, score, approval, guarantee, or payment instruction."
                 )}
+              </div>
+
+              <div
+                style={{
+                  color: "#7A4A00",
+                  fontSize: isCompact ? 10 : 11,
+                  fontWeight: 900,
+                  lineHeight: 1.35,
+                }}
+              >
+                Copy/export records a holder consent marker only. GSN does not store recipient identity, copied text, raw TrustEvents, private notes, contacts, payment references, or bank details.
               </div>
 
               <CardActionRow data-gsn-decision-pack-consent-export="holder">

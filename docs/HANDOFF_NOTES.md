@@ -152087,3 +152087,28 @@ GSN-branded invite composer and invite-entry continuity.
   - `main...origin/main` was clean and synced at `3d998b24` immediately after the deployment check.
 - Next recommended step:
   - continue with small Decision Pack parity/risk-reduction slices only if they expose a real recipient, holder, or backend boundary gap; otherwise move toward the next product layer, such as a holder-visible Decision Pack explanation or consented private evidence review path.
+## 2026-07-26 - Holder Decision Pack Consent Storage Boundary
+
+- Trigger:
+  - owner selected `1` after the Decision Pack deployment checkpoint, asking to continue enhancement rather than push/deploy.
+- Unabated truth:
+  - the backend already limited holder Decision Pack consent-share audit records to marker/count metadata and explicitly avoided recipient identity, copied text, raw TrustEvents, private notes, contacts, payment references, and bank details;
+  - the holder UI showed a consent-share history warning after the copy/export controls, but the holder did not see that storage boundary immediately before copying private Decision Pack evidence;
+  - this pass fixes that decision moment only. It does not change backend storage, public verify behavior, Decision Pack scoring, approvals, guarantees, payment authority, raw event disclosure, private Trust Passport disclosure, or recipient identity handling.
+- Changed:
+  - `frontend/src/pages/TrustSlipPage.tsx`
+    - adds a visible pre-button warning in the private holder Decision Pack preview: copy/export records a holder consent marker only and does not store recipient identity, copied text, raw TrustEvents, private notes, contacts, payment references, or bank details;
+    - adds the same marker-only storage boundary to the copied consent summary;
+    - extends the safe JSON `consent_boundary` with the marker-only storage limit.
+  - `frontend/tools/audit-trust-passport-trustslip-boundary.mjs`
+    - cages the holder private preview, copied summary, safe JSON export, and consent-copy controls so the marker-only storage warning stays before the holder acts.
+- Verification:
+  - passed `npm --prefix frontend run audit:trust-passport-trustslip-boundary`;
+  - passed `npm --prefix frontend run audit:protected-button-freeze`;
+  - passed `npm exec -- eslint src/pages/TrustSlipPage.tsx tools/audit-trust-passport-trustslip-boundary.mjs` from `frontend`;
+  - passed `npm --prefix frontend run build`;
+  - passed `git diff --check`.
+- Deployment:
+  - local only so far; do not push/deploy unless the owner explicitly selects `2` or says push/deploy.
+- Next recommended step:
+  - commit this holder consent-boundary slice locally, then either continue another small holder/recipient Decision Pack proof gap on `1` or push/deploy the accumulated local commits on `2`.
