@@ -71,6 +71,9 @@ assertOrder(
   "publicPaper",
   [
     { label: "public decision pack hero", pattern: /<header style=\{publicVerifyHero\(compact\)\}>[\s\S]*?Public Decision Pack/ },
+    { label: "decision first answer", pattern: /data-gsn-public-decision-first="one-answer-four-facts"/ },
+    { label: "four quick facts", pattern: /data-gsn-public-decision-first-facts="four-quick-facts"/ },
+    { label: "compact decision boundary", pattern: /data-gsn-public-decision-boundary="compact"/ },
     { label: "why received", pattern: /data-debug-id="trust-slip-verify\.public\.recipient-access-record"/ },
     { label: "why trusted", pattern: /data-gsn-public-record-trust-reasons="decision-pack"/ },
     { label: "decision reading", pattern: /data-debug-id="trust-slip-verify\.public\.decision-pack-reading"/ },
@@ -90,14 +93,26 @@ assertContains(
 
 assertContains(
   "publicPaper",
-  /Public Decision Pack[\s\S]*?fontSize: compact \? 34 : 58[\s\S]*?fontSize: compact \? 14 : 20[\s\S]*?A public GSN Decision Pack for checking current evidence before identity, support, referral, trade, or service decisions\./,
-  "Public verify hero must keep compact mobile headline/body sizing and the Decision Pack framing."
+  /Public Decision Pack[\s\S]*?fontSize: compact \? 34 : 58[\s\S]*?fontSize: compact \? 14 : 20[\s\S]*?Public Decision Pack for a safer next decision\./,
+  "Public verify hero must keep compact mobile headline/body sizing and a short Decision Pack framing."
+);
+
+assertContains(
+  "publicPaper",
+  /const decisionFirstAnswer = !validNow[\s\S]*?"Verification required"[\s\S]*?"Known by community"[\s\S]*?"Evidence still building"[\s\S]*?const decisionFirstFacts:[\s\S]*?label: "Who\?"[\s\S]*?label: "Known for"[\s\S]*?label: "Evidence"[\s\S]*?label: "Next step"[\s\S]*?const decisionBoundaryRows:[\s\S]*?\["Community evidence", "Shown"\][\s\S]*?\["Guarantee", "No"\][\s\S]*?\["Government ID", "No"\][\s\S]*?\["Credit approval", "No"\][\s\S]*?\["Final decision", "Yours"\]/,
+  "Public TrustSlip first viewport must compute one big answer, four quick facts, and a compact Decision Boundary."
+);
+
+assertContains(
+  "publicPaper",
+  /data-gsn-public-decision-first="one-answer-four-facts"[\s\S]*?Decision first[\s\S]*?\{decisionFirstAnswer\}[\s\S]*?Use this as decision support for \{decisionPackPurpose\}[\s\S]*?data-gsn-public-decision-first-facts="four-quick-facts"[\s\S]*?decisionFirstFacts\.map[\s\S]*?data-gsn-public-decision-boundary="compact"[\s\S]*?Decision Boundary[\s\S]*?decisionBoundaryRows\.map/,
+  "Public TrustSlip first viewport must render the answer, four facts, and compact Decision Boundary before supporting details."
 );
 
 assertContains(
   "publicPaper",
   /data-debug-id="trust-slip-verify\.public\.recipient-access-record"[\s\S]*?gridTemplateColumns: compact \? "40px minmax\(0, 1fr\)" : "54px minmax\(0, 1fr\)"[\s\S]*?padding: compact \? 9 : 14[\s\S]*?Why you received this[\s\S]*?\{recipientAccessRecord\.status\}[\s\S]*?gridTemplateColumns: "repeat\(2, minmax\(0, 1fr\)\)"[\s\S]*?\["Recipient", recipientAccessRecord\.recipientLabel\][\s\S]*?\["Decision Pack", decisionPackPurpose\][\s\S]*?\["Scope", recipientAccessRecord\.scope\][\s\S]*?\["Access date", recipientAccessRecord\.accessedAtLabel\]/,
-  "Recipient access record must remain compact, decision-scoped, and fed by view-model labels in the first viewport."
+  "Recipient access record must remain compact, decision-scoped, and fed by view-model labels after the first answer."
 );
 
 

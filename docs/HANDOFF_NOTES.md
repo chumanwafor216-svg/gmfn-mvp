@@ -1,3 +1,44 @@
+## CURRENT LOCAL STATE - 2026-07-26 - Public TrustSlip decision-first first viewport added locally
+
+Owner trigger:
+- Owner selected `1` after codifying the decision-first UX law from the wife/Nwafor observation.
+
+Unabated truth:
+- This is the first runtime application of the new UX law, not a full TrustSlip/Decision Pack redesign.
+- The public TrustSlip Verify paper now opens with one answer, four quick facts, and a compact Decision Boundary, but deeper existing panels still remain below. Future slices should continue collapsing and reducing repeated detail instead of only adding more panels.
+- No backend evidence extraction, scoring, TrustEvent model, public route contract, permission, or deployment behavior changed.
+
+Changed:
+- `frontend/src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx`
+  - Shortened the public paper subtitle to `Public Decision Pack for a safer next decision.`
+  - Added `decisionFirstAnswer` with honest first-read states: `Verification required`, `Known by community`, or `Evidence still building`.
+  - Added four quick fact tiles: `Who?`, `Known for`, `Evidence`, and `Next step`.
+  - Added a compact `Decision Boundary` box: community evidence shown; guarantee, government ID, and credit approval are no; final decision remains the recipient's.
+  - Placed the new first-read panel before `Why you received this`, record-checkability reasons, and deeper Decision Pack reading.
+- `frontend/tools/audit-public-trustslip-first-viewport.mjs`
+  - Updated the first-viewport order so the public paper must render the decision-first answer, four facts, and compact boundary before supporting details.
+  - Updated the hero subtitle cage to require the shorter framing.
+- `frontend/tools/audit-public-trustslip-verify-boundary.mjs`
+  - Added/updated cages so public verify computes and renders one answer, four quick facts, and the compact boundary before heavier verification and evidence details.
+
+Routes/screens affected:
+- Public TrustSlip Verify / Decision Pack paper routes such as `/t/:code`, `/verify/trust-slip`, and `/trust-slips/verify/:code`.
+- Signed-in TrustSlip Verify still uses the same public paper component when showing a public code, so it inherits the first-read panel.
+
+Verification:
+- Passed `npm exec -- eslint src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx tools/audit-public-trustslip-first-viewport.mjs tools/audit-public-trustslip-verify-boundary.mjs tools/audit-trust-actions.mjs` from `frontend`.
+- Passed `npm --prefix frontend run audit:public-trustslip-first-viewport`.
+- Passed `npm --prefix frontend run audit:public-trustslip-verify-boundary`.
+- Passed `npm --prefix frontend run audit:trust-actions`.
+- Passed `npm --prefix frontend run audit:protected-button-freeze`.
+- Passed `npm --prefix frontend run build`.
+- Passed `git diff --check` before handoff with only recurring LF/CRLF warnings.
+
+Deployment:
+- Local only. Not pushed or deployed; owner must select `2` or explicitly say push/deploy.
+
+Recommended next step:
+- Continue applying the decision-first law by collapsing the remaining public TrustSlip detail layers into fewer `More details` sections, then repeat the same pattern on the signed-in Trust Passport first viewport.
 ## CURRENT LOCAL STATE - 2026-07-26 - Decision-first UX law codified locally
 
 Owner trigger:

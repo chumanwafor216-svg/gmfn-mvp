@@ -1027,6 +1027,65 @@ export default function TrustSlipVerifyPublicPaper({
   const decisionNextStep = validNow
     ? "For important decisions, request instant community confirmation before relying on this paper."
     : "Ask the holder for a fresh TrustSlip before relying on this paper.";
+  const hasCommunityEvidence = positiveNumber(communityActivityCountLabel) > 0;
+  const hasWitnessEvidence =
+    positiveNumber(memberWitnessCountLabel) > 0 &&
+    !memberWitnessCurrentness.toLowerCase().includes("not");
+  const decisionFirstAnswer = !validNow
+    ? "Verification required"
+    : hasCommunityEvidence || hasWitnessEvidence
+      ? "Known by community"
+      : "Evidence still building";
+  const decisionFirstTone: "trust" | "warning" | "neutral" = !validNow
+    ? "warning"
+    : hasCommunityEvidence || hasWitnessEvidence
+      ? "trust"
+      : "neutral";
+  const decisionFirstFacts: Array<{
+    icon: Gsn3DIconKey;
+    label: string;
+    title: string;
+    text: string;
+    tone: "trust" | "warning" | "neutral";
+  }> = [
+    {
+      icon: "identity-card",
+      label: "Who?",
+      title: holderName,
+      text: gsnId ? `GSN ID: ${gsnId}` : "GSN ID not shown on this paper.",
+      tone: "neutral",
+    },
+    {
+      icon: "community-building",
+      label: "Known for",
+      title: holderRoleLabel,
+      text: communityLabel || "Community record not shown.",
+      tone: holderRoleLabel.toLowerCase().includes("member") ? "neutral" : "trust",
+    },
+    {
+      icon: "records-folder",
+      label: "Evidence",
+      title: visibleBandReading,
+      text: visibleEvidenceLabel || publicEvidencePostureMeaning,
+      tone: decisionFirstTone,
+    },
+    {
+      icon: "certificate-seal",
+      label: "Next step",
+      title: validNow ? "Request live confirmation" : "Refresh first",
+      text: validNow
+        ? "Ask the community before relying on this paper."
+        : "Use a fresh code before deciding.",
+      tone: validNow ? "trust" : "warning",
+    },
+  ];
+  const decisionBoundaryRows: Array<[string, string]> = [
+    ["Community evidence", "Shown"],
+    ["Guarantee", "No"],
+    ["Government ID", "No"],
+    ["Credit approval", "No"],
+    ["Final decision", "Yours"],
+  ];
   const recordTrustReasonTiles = [
     {
       icon: "qr-record" as Gsn3DIconKey,
@@ -1381,7 +1440,7 @@ export default function TrustSlipVerifyPublicPaper({
               fontWeight: 760,
             }}
           >
-            A public GSN Decision Pack for checking current evidence before identity, support, referral, trade, or service decisions.
+            Public Decision Pack for a safer next decision.
           </p>
           <div
             style={{
@@ -1415,6 +1474,132 @@ export default function TrustSlipVerifyPublicPaper({
           alignItems: "stretch",
         }}
       >
+        <div
+          data-gsn-public-decision-first="one-answer-four-facts"
+          style={{
+            ...publicVerifyPanel(decisionFirstTone === "warning" ? "#FFF8E8" : "#F8FBFF", compact),
+            border: decisionFirstTone === "warning"
+              ? "1px solid rgba(245,158,11,0.28)"
+              : "1px solid rgba(37,78,119,0.14)",
+            display: "grid",
+            gap: compact ? 9 : 12,
+          }}
+        >
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: compact ? "44px minmax(0, 1fr)" : "60px minmax(0, 1fr) auto",
+              gap: compact ? 9 : 13,
+              alignItems: "center",
+            }}
+          >
+            <span
+              aria-hidden
+              style={{
+                width: compact ? 44 : 56,
+                height: compact ? 44 : 56,
+                borderRadius: compact ? 12 : 16,
+                display: "grid",
+                placeItems: "center",
+                background: "#FFFFFF",
+                border: "1px solid rgba(214,170,69,0.30)",
+                boxShadow: "0 8px 18px rgba(7,23,44,0.08)",
+              }}
+            >
+              <GsnRealisticIcon
+                name={decisionFirstTone === "warning" ? "vault-safe" : "community-building"}
+                size={compact ? 34 : 48}
+                decorative
+              />
+            </span>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ ...sectionLabel(), color: decisionFirstTone === "warning" ? "#92400E" : "#0B63D1" }}>
+                Decision first
+              </div>
+              <h2
+                style={{
+                  ...readableText(),
+                  margin: "4px 0 0",
+                  color: "#07172C",
+                  fontSize: compact ? 24 : 34,
+                  lineHeight: 1.02,
+                  fontWeight: 1000,
+                }}
+              >
+                {decisionFirstAnswer}
+              </h2>
+              <div
+                style={{
+                  ...readableText(),
+                  marginTop: 5,
+                  color: "#334155",
+                  fontSize: compact ? 12 : 13.5,
+                  lineHeight: 1.28,
+                  fontWeight: 850,
+                }}
+              >
+                Use this as decision support for {decisionPackPurpose}.
+              </div>
+            </div>
+            {!compact ? (
+              <div style={paperStatusPill(publicValidityLabel)}>{publicValidityLabel}</div>
+            ) : null}
+          </div>
+
+          <div
+            data-gsn-public-decision-first-facts="four-quick-facts"
+            style={{
+              display: "grid",
+              gridTemplateColumns: compact ? "repeat(2, minmax(0, 1fr))" : "repeat(4, minmax(0, 1fr))",
+              gap: compact ? 6 : 8,
+            }}
+          >
+            {decisionFirstFacts.map((fact) => (
+              <PublicReadingTile
+                key={fact.label}
+                icon={fact.icon}
+                label={fact.label}
+                title={fact.title}
+                text={fact.text}
+                compact={compact}
+                tone={fact.tone}
+              />
+            ))}
+          </div>
+
+          <div
+            data-gsn-public-decision-boundary="compact"
+            style={{
+              borderRadius: compact ? 12 : 16,
+              border: "1px solid rgba(214,170,69,0.28)",
+              background: "#FFFDF7",
+              padding: compact ? 9 : 11,
+              display: "grid",
+              gap: 8,
+            }}
+          >
+            <div style={{ ...sectionLabel(), color: "#7A4A00" }}>Decision Boundary</div>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: compact ? "repeat(2, minmax(0, 1fr))" : "repeat(5, minmax(0, 1fr))",
+                gap: 6,
+              }}
+            >
+              {decisionBoundaryRows.map(([label, value]) => (
+                <div key={label} style={{ minWidth: 0 }}>
+                  <div style={{ color: "#5F4100", fontSize: compact ? 9.5 : 10.5, fontWeight: 1000, lineHeight: 1.1 }}>
+                    {label}
+                  </div>
+                  <div style={{ marginTop: 2, color: "#07172C", fontSize: compact ? 11 : 12, fontWeight: 950, lineHeight: 1.15 }}>
+                    {value}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
         <div
           data-debug-id="trust-slip-verify.public.recipient-access-record"
           style={{
