@@ -1,3 +1,40 @@
+## CURRENT LOCAL STATE - 2026-07-26 - Trust Passport community evidence details collapsed locally
+
+Owner trigger:
+- Owner selected `1` to continue the decision-first Trust Passport enhancement after the standing lane details were collapsed and deployed.
+
+Unabated truth:
+- This is a focused hierarchy cleanup inside the signed-in Trust Passport Community Confirmation lane, not a full Trust Passport redesign.
+- The lane now keeps the decision question and three real next actions visible while member, witness, activity, and TrustSlip evidence details sit behind `Community evidence details`.
+- This makes the Community Confirmation lane less intimidating, but the route still has deeper Evidence Story, Documents, Finance, and shareable trust-tool sections that may need the same treatment.
+- No backend route, schema, evidence extraction, scoring, TrustEvent, permission, or deployment behavior changed.
+- This slice passed source/build checks, but it has not yet been visually inspected in a real phone/browser viewport.
+
+Changed:
+- `frontend/src/pages/TrustScorePage.tsx`
+  - Added `communityEvidenceDetailsOpen` state.
+  - Collapsed `CommunityProofPanel` and the member/witness/activity/TrustSlip evidence cards behind a stable `Community evidence details` disclosure.
+  - Kept `Open public community record`, `Open member credential`, and `Ask for witness confirmation` visible as the lane's next actions.
+- `frontend/tools/audit-trust-passport-button-inventory.mjs`
+  - Updated the Trust Passport stable action baseline from 19 to 20 source actions and 27 to 28 expected rendered action roots.
+  - Added a cage requiring Community Confirmation evidence details to remain collapsed before the community action row.
+
+Routes/screens affected:
+- Signed-in Trust Passport / TrustScore route.
+- No public TrustSlip route behavior changed in this slice.
+
+Verification:
+- Passed `npm exec -- eslint src/pages/TrustScorePage.tsx tools/audit-trust-passport-button-inventory.mjs tools/audit-trust-actions.mjs` from `frontend`.
+- Passed `npm --prefix frontend run audit:trust-passport-button-inventory`.
+- Passed `npm --prefix frontend run audit:trust-actions`.
+- Passed `npm --prefix frontend run audit:protected-button-freeze`.
+- Passed `npm --prefix frontend run build`.
+
+Deployment:
+- Local only. Not pushed or deployed; owner must select `2` or explicitly say push/deploy.
+
+Recommended next step:
+- Phone-width visual review of the Trust Passport Community Confirmation lane, then continue with the next heaviest lower section if it still feels like equal-weight report detail.
 ## CURRENT LOCAL STATE - 2026-07-26 - Trust Passport standing lane details collapsed locally
 
 Owner trigger:

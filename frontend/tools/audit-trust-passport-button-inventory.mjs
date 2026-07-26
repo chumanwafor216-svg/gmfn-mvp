@@ -59,8 +59,8 @@ while ((match = actionPattern.exec(source))) {
   });
 }
 
-const expectedSourceActions = 19;
-const expectedRenderedActions = 27;
+const expectedSourceActions = 20;
+const expectedRenderedActions = 28;
 
 if (actions.length !== expectedSourceActions) {
   findings.push({
@@ -108,6 +108,7 @@ const expectedOrder = [
   "debugId={item.debugId}",
   "trust-score.standing-decision-details.toggle",
   "trust-score.repair-next-step",
+  "trust-score.community-lane.evidence-details.toggle",
   "trust-score.community-lane.open-public-community-record",
   "trust-score.community-lane.open-member-credential",
   "trust-score.community-lane.ask-for-witness",
@@ -243,6 +244,10 @@ assertContains(
   /const \[standingDecisionDetailsOpen, setStandingDecisionDetailsOpen\][\s\S]*?activeTrustPassportLane === "standing" \? "grid" : "none"[\s\S]*?gridTemplateColumns: "1fr"[\s\S]*?data-trust-passport-standing-decision-details="collapsed"[\s\S]*?debugId="trust-score\.standing-decision-details\.toggle"[\s\S]*?aria-expanded=\{standingDecisionDetailsOpen\}[\s\S]*?Decision support details[\s\S]*?standingDecisionDetailsOpen \?[\s\S]*?What this evidence helps you decide[\s\S]*?passportVm\.trustQuestions\.map/,
   "Trust Passport standing lane must show the evidence reading first and keep decision-support rows collapsed behind a stable toggle."
 );
+assertContains(
+  /const \[communityEvidenceDetailsOpen, setCommunityEvidenceDetailsOpen\][\s\S]*?Community Confirmation[\s\S]*?Can this evidence be tied to a real community\?[\s\S]*?data-trust-passport-community-evidence-details="collapsed"[\s\S]*?debugId="trust-score\.community-lane\.evidence-details\.toggle"[\s\S]*?aria-expanded=\{communityEvidenceDetailsOpen\}[\s\S]*?Community evidence details[\s\S]*?communityEvidenceDetailsOpen \?[\s\S]*?<CommunityProofPanel[\s\S]*?communityConfirmationCards\.map[\s\S]*?debugId="trust-score\.community-lane\.open-public-community-record"/,
+  "Trust Passport community lane must keep member, witness, activity, and TrustSlip evidence details collapsed before showing the community action row."
+);
 
 
 assertContains(
@@ -291,5 +296,5 @@ if (findings.length > 0) {
 }
 
 console.log(
-  `Trust Passport button inventory audit passed: ${actions.length} stable source actions, ${expectedRenderedActions} expected rendered action roots including the lane selector, evidence reading note toggle, standing decision detail toggle, and two evidence-surface cards.`
+  `Trust Passport button inventory audit passed: ${actions.length} stable source actions, ${expectedRenderedActions} expected rendered action roots including the lane selector, evidence reading note toggle, standing decision detail toggle, community evidence detail toggle, and two evidence-surface cards.`
 );

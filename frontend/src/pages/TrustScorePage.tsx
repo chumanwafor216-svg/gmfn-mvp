@@ -1483,6 +1483,7 @@ export default function TrustScorePage() {
   const [identityEvidenceOpen, setIdentityEvidenceOpen] = useState(false);
   const [evidenceReadingNoteOpen, setEvidenceReadingNoteOpen] = useState(false);
   const [standingDecisionDetailsOpen, setStandingDecisionDetailsOpen] = useState(false);
+  const [communityEvidenceDetailsOpen, setCommunityEvidenceDetailsOpen] = useState(false);
 
   const [me, setMe] = useState<any>(null);
   const [currentClan, setCurrentClan] = useState<any>(null);
@@ -4849,86 +4850,136 @@ export default function TrustScorePage() {
                 evidence record before showing local and cross-community readings.
               </p>
 
-              <CommunityProofPanel
-                title="Community evidence before relying"
-                subtitle="Use community evidence, witness currentness, activity, and TrustSlip status before relying on this reading."
-                compact={isCompact}
-                communityName={passportVm.identity.communityName}
-                holderRole={roleLabel(passportVm.identity.holderRole)}
-                identityLabel={passportVm.identity.communityIdentityLabel}
-                memberWitnessCount={communityMemberWitnessCount}
-                membershipStrengthLabel={communityMembershipStrengthLabel}
-                membershipCurrentnessLabel={passportVm.identity.membershipCurrentnessLabel}
-                membershipCurrentnessScope={passportVm.identity.membershipCurrentnessScope}
-                nextWitnessRenewalStatusLabel={passportVm.identity.nextWitnessRenewalStatusLabel}
-                communityActivityCount={passportVm.identity.communityActivityCount}
-                communityActivityLabel={passportVm.identity.communityActivityLabel}
-                communityActivityCategories={passportVm.identity.communityActivityCategories}
-                trustSlipStatusLabel={passportVm.outputs.trustSlipStatus}
-                style={{ marginTop: 14 }}
-              />
-
               <div
+                data-trust-passport-community-evidence-details="collapsed"
                 style={{
+                  ...innerCard("#FFFFFF"),
+                  border: "1px solid rgba(216,227,238,0.9)",
                   display: "grid",
-                  gridTemplateColumns: isCompact
-                    ? "1fr"
-                    : "repeat(4, minmax(0, 1fr))",
-                  gap: 10,
+                  gap: communityEvidenceDetailsOpen ? (isCompact ? 9 : 12) : 0,
                   marginTop: 14,
+                  position: "relative",
+                  zIndex: 1,
                 }}
               >
-                {communityConfirmationCards.map(([label, value, detail, icon, status]) => (
+                <SubtleButton
+                  debugId="trust-score.community-lane.evidence-details.toggle"
+                  stableHeight={isCompact ? 42 : 44}
+                  onClick={() => setCommunityEvidenceDetailsOpen((open) => !open)}
+                  aria-expanded={communityEvidenceDetailsOpen}
+                  fullWidth
+                  style={{
+                    justifyContent: "space-between",
+                    borderRadius: 13,
+                    background: communityEvidenceDetailsOpen ? "#F8FBFF" : "#FFFFFF",
+                    border: "1px solid rgba(11,99,209,0.14)",
+                    color: "#24415C",
+                    boxShadow: "none",
+                    fontSize: 12.5,
+                    fontWeight: 1000,
+                  }}
+                >
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+                    <GsnLegacyIcon name="community" size={24} decorative />
+                    <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      Community evidence details
+                    </span>
+                  </span>
+                  <span aria-hidden="true" style={{ color: "#617085", fontSize: 18 }}>
+                    {communityEvidenceDetailsOpen ? "-" : "+"}
+                  </span>
+                </SubtleButton>
+
+                {communityEvidenceDetailsOpen ? (
                   <div
-                    key={label}
                     style={{
-                      ...innerCard("#FFFFFF"),
-                      border:
-                        status === "Ready"
-                          ? "1px solid rgba(46,155,98,0.16)"
-                          : "1px solid rgba(200,58,58,0.14)",
-                      minHeight: isCompact ? 0 : 144,
+                      display: "grid",
+                      gap: isCompact ? 10 : 14,
+                      paddingTop: isCompact ? 8 : 10,
+                      borderTop: "1px solid rgba(216,227,238,0.62)",
                     }}
                   >
+                    <CommunityProofPanel
+                      title="Community evidence before relying"
+                      subtitle="Use community evidence, witness currentness, activity, and TrustSlip status before relying on this reading."
+                      compact={isCompact}
+                      communityName={passportVm.identity.communityName}
+                      holderRole={roleLabel(passportVm.identity.holderRole)}
+                      identityLabel={passportVm.identity.communityIdentityLabel}
+                      memberWitnessCount={communityMemberWitnessCount}
+                      membershipStrengthLabel={communityMembershipStrengthLabel}
+                      membershipCurrentnessLabel={passportVm.identity.membershipCurrentnessLabel}
+                      membershipCurrentnessScope={passportVm.identity.membershipCurrentnessScope}
+                      nextWitnessRenewalStatusLabel={passportVm.identity.nextWitnessRenewalStatusLabel}
+                      communityActivityCount={passportVm.identity.communityActivityCount}
+                      communityActivityLabel={passportVm.identity.communityActivityLabel}
+                      communityActivityCategories={passportVm.identity.communityActivityCategories}
+                      trustSlipStatusLabel={passportVm.outputs.trustSlipStatus}
+                    />
+
                     <div
                       style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        gap: 8,
+                        display: "grid",
+                        gridTemplateColumns: isCompact
+                          ? "1fr"
+                          : "repeat(4, minmax(0, 1fr))",
+                        gap: 10,
                       }}
                     >
-                      <span
-                        style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: 8,
-                          color: status === "Ready" ? "#166534" : "#991B1B",
-                          fontWeight: 1000,
-                        }}
-                      >
-                        {trustIconBadge(icon, 28, status === "Ready" ? "green" : "red")}
-                        {label}
-                      </span>
-                      <EvidenceMeter status={status}>{status}</EvidenceMeter>
+                      {communityConfirmationCards.map(([label, value, detail, icon, status]) => (
+                        <div
+                          key={label}
+                          style={{
+                            ...innerCard("#FFFFFF"),
+                            border:
+                              status === "Ready"
+                                ? "1px solid rgba(46,155,98,0.16)"
+                                : "1px solid rgba(200,58,58,0.14)",
+                            minHeight: isCompact ? 0 : 144,
+                          }}
+                        >
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "space-between",
+                              gap: 8,
+                            }}
+                          >
+                            <span
+                              style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: 8,
+                                color: status === "Ready" ? "#166534" : "#991B1B",
+                                fontWeight: 1000,
+                              }}
+                            >
+                              {trustIconBadge(icon, 28, status === "Ready" ? "green" : "red")}
+                              {label}
+                            </span>
+                            <EvidenceMeter status={status}>{status}</EvidenceMeter>
+                          </div>
+                          <div
+                            style={{
+                              color: "#07172C",
+                              fontSize: isCompact ? 18 : 20,
+                              lineHeight: 1.1,
+                              fontWeight: 1000,
+                              marginTop: 8,
+                              overflowWrap: "break-word",
+                            }}
+                          >
+                            {value}
+                          </div>
+                          <p style={{ ...helperText(), margin: "8px 0 0", lineHeight: 1.45 }}>
+                            {detail}
+                          </p>
+                        </div>
+                      ))}
                     </div>
-                    <div
-                      style={{
-                        color: "#07172C",
-                        fontSize: isCompact ? 18 : 20,
-                        lineHeight: 1.1,
-                        fontWeight: 1000,
-                        marginTop: 8,
-                        overflowWrap: "break-word",
-                      }}
-                    >
-                      {value}
-                    </div>
-                    <p style={{ ...helperText(), margin: "8px 0 0", lineHeight: 1.45 }}>
-                      {detail}
-                    </p>
                   </div>
-                ))}
+                ) : null}
               </div>
               <div
                 style={{
