@@ -147,7 +147,7 @@ assertContains(
 
 assertContains(
   "communityProof",
-  /memberWitnessLabel\?: unknown;[\s\S]*?memberWitnessDetail\?: unknown;[\s\S]*?label: memberWitnessLabel[\s\S]*?memberWitnessDetail \|\|[\s\S]*?Evidence for judgement[\s\S]*?not government ID, payment approval, credit approval, or a guarantee of future behaviour/,
+  /memberWitnessLabel\?: unknown;[\s\S]*?memberWitnessDetail\?: unknown;[\s\S]*?label: memberWitnessLabel[\s\S]*?memberWitnessDetail \|\|[\s\S]*?Evidence for your decision[\s\S]*?not government ID, payment approval, credit approval, or a guarantee of future behaviour/,
   "Shared Community Proof must support honest confirmation-response wording while preserving the decision boundary."
 );
 

@@ -84,14 +84,14 @@ assertOrder(
     { label: "authority strip", pattern: /<TrustPaperAuthorityStrip/ },
     { label: "confidence ribbon", pattern: /<TrustDocumentConfidenceRibbon items=\{trustSlipConfidenceRibbonItems\} \/>/ },
     { label: "community evidence checked", pattern: /<CommunityProofPanel[\s\S]*?title="Community evidence checked"/ },
-    { label: "security disclosure", pattern: /<TrustDocumentDisclosureSection[\s\S]*?title="TrustSlip security and limits"/ },
+    { label: "security disclosure", pattern: /<TrustDocumentDisclosureSection[\s\S]*?title="What this cannot prove"/ },
   ],
   "Public TrustSlip first viewport must lead with recipient decision support before heavier proof and security disclosure."
 );
 
 assertContains(
   "publicPaper",
-  /<TrustDocumentDisclosureSection[\s\S]*?title="Audit Details"[\s\S]*?summary="Open for technical record checks, community evidence, security, and limits\."[\s\S]*?data-gsn-public-more-details="authority-evidence-limits"[\s\S]*?<TrustPaperAuthorityStrip[\s\S]*?<TrustDocumentConfidenceRibbon items=\{trustSlipConfidenceRibbonItems\} \/>[\s\S]*?<CommunityProofPanel[\s\S]*?title="Community evidence checked"[\s\S]*?<TrustDocumentDisclosureSection[\s\S]*?title="TrustSlip security and limits"/,
+  /<TrustDocumentDisclosureSection[\s\S]*?title="Audit Details"[\s\S]*?summary="Open for technical record checks, community evidence, security, and limits\."[\s\S]*?data-gsn-public-more-details="authority-evidence-limits"[\s\S]*?<TrustPaperAuthorityStrip[\s\S]*?<TrustDocumentConfidenceRibbon items=\{trustSlipConfidenceRibbonItems\} \/>[\s\S]*?<CommunityProofPanel[\s\S]*?title="Community evidence checked"[\s\S]*?<TrustDocumentDisclosureSection[\s\S]*?title="What this cannot prove"/,
   "Public TrustSlip heavier authority, community-evidence, security, and limit layers must live behind one Audit Details disclosure."
 );
 

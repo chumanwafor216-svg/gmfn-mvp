@@ -860,7 +860,7 @@ assertContains(
 );
 assertContains(
   "publicPaper",
-  /TrustDocumentDisclosureSection[\s\S]*?title="TrustSlip security and limits"[\s\S]*?Open for what this paper confirms, limits, security, and record reference\.[\s\S]*?data-gsn-trustslip-verify-security-limits="true"[\s\S]*?TrustDocumentSecurityPanel[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?TrustDocumentFingerprint/,
+  /TrustDocumentDisclosureSection[\s\S]*?title="What this cannot prove"[\s\S]*?Open for what this paper confirms, what it cannot prove, security, and record reference\.[\s\S]*?data-gsn-trustslip-verify-security-limits="true"[\s\S]*?TrustDocumentSecurityPanel[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?TrustDocumentFingerprint/,
   "Public TrustSlip paper must keep security, limits, and record-reference detail collapsed behind one disclosure."
 );
 assertContains(
@@ -891,13 +891,13 @@ assertContains(
 );
 assertContains(
   "privateEvidence",
-  /Trust-limit signal/,
-  "Private TrustSlip evidence must use the institution-grade trust-limit label."
+  /Support limit signal/,
+  "Private TrustSlip evidence must use the reader-facing support-limit label."
 );
 assertNotContains(
   "privateEvidence",
-  /Trust limit signal|Trust Limit Signal/,
-  "Private TrustSlip evidence must not regress to the older trust limit label."
+  /Trust-limit signal|Trust limit signal|Trust Limit Signal/,
+  "Private TrustSlip evidence must not regress to older trust-limit labels."
 );
 assertContains(
   "trustSlipRoute",
@@ -1153,12 +1153,12 @@ assertContains(
 );
 assertContains(
   "trustPassport",
-  /TrustDocumentConfidenceRibbon[\s\S]*?trustPassportConfidenceRibbonItems[\s\S]*?Passport status[\s\S]*?Identity evidence[\s\S]*?Evidence record[\s\S]*?Community history[\s\S]*?Verification path/,
+  /TrustDocumentConfidenceRibbon[\s\S]*?trustPassportConfidenceRibbonItems[\s\S]*?Passport view[\s\S]*?Identity evidence[\s\S]*?What we checked[\s\S]*?Community history[\s\S]*?Check path/,
   "Trust Passport must carry the Trust Document Language confidence ribbon."
 );
 assertContains(
   "trustPassport",
-  /data-gsn-trust-document-certificate="trust-passport"[\s\S]*?TrustDocumentSecurityPanel[\s\S]*?title="Trust Passport security"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This passport confirms"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This passport does not confirm"[\s\S]*?TrustDocumentFingerprint[\s\S]*?Trust Passport record reference/,
+  /data-gsn-trust-document-certificate="trust-passport"[\s\S]*?TrustDocumentSecurityPanel[\s\S]*?title="Audit Details"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This passport confirms"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This passport does not confirm"[\s\S]*?TrustDocumentFingerprint[\s\S]*?Trust Passport record reference/,
   "Trust Passport must implement the Trust Document Language sequence with security, confirms/does-not-confirm panels, and record reference."
 );
 assertContains(
@@ -1688,8 +1688,8 @@ assertContains(
 );
 assertContains(
   "trustSlip",
-  /Trust-limit signal/,
-  "TrustSlip page must use the institution-grade trust-limit label."
+  /Support limit signal/,
+  "TrustSlip page must use the reader-facing support-limit label."
 );
 assertContains(
   "trustSlip",
@@ -1698,12 +1698,12 @@ assertContains(
 );
 assertContains(
   "trustSlip",
-  /TrustDocumentConfidenceRibbon[\s\S]*?trustSlipHolderConfidenceRibbonItems[\s\S]*?TrustSlip status[\s\S]*?Record integrity[\s\S]*?Evidence chain[\s\S]*?Verification path[\s\S]*?Valid until/,
+  /TrustDocumentConfidenceRibbon[\s\S]*?trustSlipHolderConfidenceRibbonItems[\s\S]*?TrustSlip now[\s\S]*?Can this be checked\?[\s\S]*?Evidence source[\s\S]*?Check path[\s\S]*?Use before/,
   "Signed-in TrustSlip holder paper must carry the Trust Document Language confidence ribbon."
 );
 assertContains(
   "trustSlip",
-  /data-gsn-trust-document-certificate="trustslip-holder"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This TrustSlip confirms"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This TrustSlip does not confirm"[\s\S]*?TrustDocumentSecurityPanel[\s\S]*?title="TrustSlip security"[\s\S]*?TrustDocumentFingerprint[\s\S]*?TrustSlip holder record reference/,
+  /data-gsn-trust-document-certificate="trustslip-holder"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This TrustSlip confirms"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This TrustSlip does not confirm"[\s\S]*?TrustDocumentSecurityPanel[\s\S]*?title="Audit Details"[\s\S]*?TrustDocumentFingerprint[\s\S]*?TrustSlip holder record reference/,
   "Signed-in TrustSlip holder paper must implement the Trust Document Language sequence with security, boundary, and record reference panels."
 );
 assertContains(
@@ -1718,12 +1718,12 @@ assertContains(
 );
 assertContains(
   "trustTimeline",
-  /TrustDocumentConfidenceRibbon[\s\S]*?trustTimelineConfidenceRibbonItems[\s\S]*?Timeline status[\s\S]*?Record integrity[\s\S]*?Evidence chain[\s\S]*?Verification path[\s\S]*?Last registry update/,
+  /TrustDocumentConfidenceRibbon[\s\S]*?trustTimelineConfidenceRibbonItems[\s\S]*?Timeline view[\s\S]*?Can this be checked\?[\s\S]*?Visible events[\s\S]*?Check path[\s\S]*?Last update/,
   "Signed-in Trust Timeline must carry the Trust Document Language confidence ribbon."
 );
 assertContains(
   "trustTimeline",
-  /data-gsn-trust-document-certificate="trust-timeline"[\s\S]*?TrustDocumentRegistryMasthead[\s\S]*?title="Trust Timeline Evidence Record"[\s\S]*?TrustDocumentConfidenceRibbon[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This timeline confirms"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This timeline does not confirm"[\s\S]*?TrustDocumentSecurityPanel[\s\S]*?title="Trust Timeline security"[\s\S]*?TrustDocumentFingerprint[\s\S]*?Trust Timeline record reference/,
+  /data-gsn-trust-document-certificate="trust-timeline"[\s\S]*?TrustDocumentRegistryMasthead[\s\S]*?title="Trust Timeline Evidence Record"[\s\S]*?TrustDocumentConfidenceRibbon[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This timeline confirms"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This timeline does not confirm"[\s\S]*?TrustDocumentSecurityPanel[\s\S]*?title="Audit Details"[\s\S]*?TrustDocumentFingerprint[\s\S]*?Trust Timeline record reference/,
   "Signed-in Trust Timeline must implement the Trust Document Language sequence with visible masthead record title, confidence, boundary, security, and record reference panels."
 );
 assertContains(
@@ -1773,33 +1773,33 @@ assertContains(
 );
 assertContains(
   "trustPassport",
-  /Trust-limit signal/,
-  "Trust Passport must use the institution-grade trust-limit label."
+  /Support limit signal/,
+  "Trust Passport must use the reader-facing support-limit label."
 );
 assertNotContains(
   "trustPassport",
-  /Trust limit signal|Trust Limit Signal/,
-  "Trust Passport must not regress to the older trust limit label."
+  /Trust-limit signal|Trust limit signal|Trust Limit Signal/,
+  "Trust Passport must not regress to older trust-limit labels."
 );
 assertContains(
   "trustSlipReader",
-  /Trust-limit signal/,
-  "TrustSlip reader block must use the institution-grade trust-limit label."
+  /Support limit signal/,
+  "TrustSlip reader block must use the reader-facing support-limit label."
 );
 assertNotContains(
   "trustSlipReader",
-  /Trust limit signal|Trust Limit Signal/,
-  "TrustSlip reader block must not regress to the older trust limit label."
+  /Trust-limit signal|Trust limit signal|Trust Limit Signal/,
+  "TrustSlip reader block must not regress to older trust-limit labels."
 );
 assertContains(
   "trustSnapshots",
-  /Trust-limit signal/,
-  "Copied TrustSlip snapshots must use the institution-grade trust-limit label."
+  /Support limit signal/,
+  "Copied TrustSlip snapshots must use the reader-facing support-limit label."
 );
 assertNotContains(
   "trustSnapshots",
-  /Trust limit signal|Trust Limit Signal/,
-  "Copied TrustSlip snapshots must not regress to the older trust limit label."
+  /Trust-limit signal|Trust limit signal|Trust Limit Signal/,
+  "Copied TrustSlip snapshots must not regress to older trust-limit labels."
 );
 
 [

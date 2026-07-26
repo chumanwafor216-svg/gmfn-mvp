@@ -207,7 +207,7 @@ assertContains(
 );
 assertContains(
   "publicPaper",
-  /data-debug-id="trust-slip-verify\.public\.decision-pack-reading"[\s\S]*?<TrustDocumentDisclosureSection[\s\S]*?title="Decision evidence details"[\s\S]*?summary="Open for purpose-filtered signals, categories, gaps, checks, and evidence boundaries\."[\s\S]*?data-gsn-decision-pack-profile="public-purpose-filter"[\s\S]*?<TrustDocumentDisclosureSection[\s\S]*?title="Audit Details"[\s\S]*?summary="Open for technical record checks, community evidence, security, and limits\."[\s\S]*?data-gsn-public-more-details="authority-evidence-limits"[\s\S]*?<TrustPaperAuthorityStrip[\s\S]*?<TrustDocumentConfidenceRibbon items=\{trustSlipConfidenceRibbonItems\} \/>[\s\S]*?<CommunityProofPanel[\s\S]*?title="Community evidence checked"[\s\S]*?trustSlipStatusLabel=\{publicValidityLabel\}[\s\S]*?<TrustDocumentDisclosureSection[\s\S]*?title="TrustSlip security and limits"/,
+  /data-debug-id="trust-slip-verify\.public\.decision-pack-reading"[\s\S]*?<TrustDocumentDisclosureSection[\s\S]*?title="Decision evidence details"[\s\S]*?summary="Open for purpose-filtered signals, categories, gaps, checks, and evidence boundaries\."[\s\S]*?data-gsn-decision-pack-profile="public-purpose-filter"[\s\S]*?<TrustDocumentDisclosureSection[\s\S]*?title="Audit Details"[\s\S]*?summary="Open for technical record checks, community evidence, security, and limits\."[\s\S]*?data-gsn-public-more-details="authority-evidence-limits"[\s\S]*?<TrustPaperAuthorityStrip[\s\S]*?<TrustDocumentConfidenceRibbon items=\{trustSlipConfidenceRibbonItems\} \/>[\s\S]*?<CommunityProofPanel[\s\S]*?title="Community evidence checked"[\s\S]*?trustSlipStatusLabel=\{publicValidityLabel\}[\s\S]*?<TrustDocumentDisclosureSection[\s\S]*?title="What this cannot prove"/,
   "Public TrustSlip Decision Pack details and heavier authority/evidence/security layers must stay behind disclosures after the recipient decision-first panels."
 );
 assertContains(
@@ -242,7 +242,7 @@ assertContains(
 
 assertContains(
   "communityProof",
-  /Known by community[\s\S]*?Member witness[\s\S]*?Evidence currentness[\s\S]*?Decision boundary[\s\S]*?not government ID, payment approval, credit approval, or a guarantee of future behaviour/,
+  /Known by community[\s\S]*?Member witness[\s\S]*?Are witnesses up to date\?[\s\S]*?What this cannot decide[\s\S]*?not government ID, payment approval, credit approval, or a guarantee of future behaviour/,
   "Community proof helper must keep portable proof language and non-ID/non-approval boundary wording."
 );
 

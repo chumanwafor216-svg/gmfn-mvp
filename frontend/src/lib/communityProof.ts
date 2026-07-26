@@ -146,7 +146,7 @@ export function buildCommunityProofItems(input: CommunityProofInput): CommunityP
     },
     {
       key: "evidence-currentness",
-      label: "Evidence currentness",
+      label: "Are witnesses up to date?",
       value: currentnessLabel,
       detail: currentnessScope,
       tone: communityProofTone(currentnessLabel),
@@ -164,8 +164,8 @@ export function buildCommunityProofItems(input: CommunityProofInput): CommunityP
     },
     {
       key: "decision-boundary",
-      label: "Decision boundary",
-      value: "Evidence for judgement",
+      label: "What this cannot decide",
+      value: "Evidence for your decision",
       detail: `${trustSlipStatus}. This is not government ID, payment approval, credit approval, or a guarantee of future behaviour.`,
       tone: "info",
       icon: "trust-shield",

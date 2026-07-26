@@ -43,8 +43,8 @@ function assertContains(key, pattern, message, text) {
 
 assertContains(
   "trust",
-  /const communityConfirmationCards:[\s\S]*?"Community"[\s\S]*?"Community ID"[\s\S]*?"Community record"[\s\S]*?"Activity evidence"[\s\S]*?"Witness currentness"[\s\S]*?"Next witness renewal"[\s\S]*?"Public record"[\s\S]*?"Member credential"/,
-  "Community Confirmation lane must keep a plain card model for community, Community ID, activity, witness currentness, renewal, public record, and member credential readiness."
+  /const communityConfirmationCards:[\s\S]*?"Community"[\s\S]*?"Community ID"[\s\S]*?"Community record"[\s\S]*?"Activity evidence"[\s\S]*?"Are witnesses up to date\?"[\s\S]*?"Next witness renewal"[\s\S]*?"Public record"[\s\S]*?"Member credential"/,
+  "Community Confirmation lane must keep a plain card model for community, Community ID, activity, witness currentness/currentness-question, renewal, public record, and member credential readiness."
 );
 
 assertContains(
@@ -67,7 +67,7 @@ assertContains(
 
 assertContains(
   "communityProof",
-  /Known by community[\s\S]*?Member witness[\s\S]*?Evidence currentness[\s\S]*?Decision boundary[\s\S]*?Evidence for judgement[\s\S]*?not government ID, payment approval, credit approval, or a guarantee of future behaviour/,
+  /Known by community[\s\S]*?Member witness[\s\S]*?Are witnesses up to date\?[\s\S]*?What this cannot decide[\s\S]*?Evidence for your decision[\s\S]*?not government ID, payment approval, credit approval, or a guarantee of future behaviour/,
   "Community Proof decision boundary must remain evidence-for-judgement, not rank authority."
 );
 

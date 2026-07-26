@@ -418,7 +418,7 @@ assertContains(
 
 assertContains(
   "communityProof",
-  /Known by community[\s\S]*?Member witness[\s\S]*?Evidence currentness[\s\S]*?Decision boundary[\s\S]*?not government ID, payment approval, credit approval, or a guarantee of future behaviour/,
+  /Known by community[\s\S]*?Member witness[\s\S]*?Are witnesses up to date\?[\s\S]*?What this cannot decide[\s\S]*?not government ID, payment approval, credit approval, or a guarantee of future behaviour/,
   "Community proof helper must keep portable proof and non-ID/non-approval boundary language."
 );
 

@@ -66,7 +66,7 @@ function proofItemStyle(item: CommunityProofItem, compact: boolean): React.CSSPr
 }
 
 export default function CommunityProofPanel({
-  title = "Community proof layer",
+  title = "Community evidence checked",
   subtitle = "What this record can safely show before a person relies on it.",
   compact = false,
   className,

@@ -1,3 +1,48 @@
+## CURRENT LOCAL STATE - 2026-07-26 - Shared community proof wording tightened
+
+Owner trigger:
+- Owner selected `1` after the shared TrustSlip reader wording commit.
+
+Unabated truth:
+- Runtime frontend code changed in the shared community proof helper/panel only, plus audit contracts that protect the new wording.
+- This pass is copy/label tightening only. It does not change TrustSlip/Trust Passport evidence aggregation, community lookup logic, witness calculations, backend routes, schemas, permissions, or deployment config.
+- Devil's advocate: this improves how aggregate/community proof is explained, but it does not by itself prove the underlying data model is fully aggregating every community. That remains a separate backend/data audit if needed.
+
+Changed:
+- `frontend/src/lib/communityProof.ts`
+  - Renamed `Evidence currentness` to `Are witnesses up to date?`.
+  - Renamed `Decision boundary` to `What this cannot decide`.
+  - Renamed `Evidence for judgement` to `Evidence for your decision`.
+- `frontend/src/components/CommunityProofPanel.tsx`
+  - Renamed the default panel title from `Community proof layer` to `Community evidence checked`.
+- Trust-document audit guards were updated so TrustSlip, TrustSlip Verify, Trust Passport, community verification, and confirmation outcome checks expect the clearer labels.
+- `frontend/tools/audit-institutional-proof-surfaces.mjs`
+  - Updated frontend expectations for the recent reader-facing wording: `Support limit signal`, `Passport view`, `What we checked`, `Check path`, `TrustSlip now`, `Can this be checked?`, `Evidence source`, `Use before`, `Timeline view`, `Visible events`, `Last update`, and `Audit Details`.
+
+Routes/screens affected:
+- Shared community proof sections wherever `CommunityProofPanel` and `communityProof` facts are rendered.
+- Public Community Verification, TrustSlip Verify, Trust Passport, holder TrustSlip, Trust Timeline, and Community Confirmation Outcome audit coverage.
+- No backend route changed.
+
+Verification:
+- Passed `node frontend\\tools\\audit-institutional-proof-surfaces.mjs`.
+- Passed `npm --prefix frontend run audit:community-verification-boundary`.
+- Passed `npm --prefix frontend run audit:trust-passport-trustslip-boundary`.
+- Passed `npm --prefix frontend run audit:public-trustslip-verify-boundary`.
+- Passed `npm --prefix frontend run audit:trust-passport-community-confirmation-lane`.
+- Passed `npm --prefix frontend run audit:public-trustslip-first-viewport`.
+- Passed `npm --prefix frontend run audit:community-confirmation-outcome-boundary`.
+- Passed `npm --prefix frontend run audit:trust-actions`.
+- Passed `npm --prefix frontend run audit:marketplace-shop-evidence-boundary`.
+- Passed `npm --prefix frontend run audit:protected-button-freeze`.
+- Passed `npm --prefix frontend run build`.
+- Passed `git diff --check`; Git still reports normal LF-to-CRLF working-copy warnings on touched files.
+
+Deployment:
+- Local runtime/docs change only at this point. Not pushed or deployed until owner selects `2` or explicitly says push/deploy.
+
+Recommended next step:
+- Continue the TrustSlip/Verify/Trust Passport aggregate-community audit, or select `2` to push/deploy the accumulated local commits.
 ## CURRENT LOCAL STATE - 2026-07-26 - Shared TrustSlip reader wording tightened
 
 Owner trigger:
