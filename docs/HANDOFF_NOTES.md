@@ -1,3 +1,37 @@
+## CURRENT LOCAL STATE - 2026-07-26 - Live deployed aggregate markers verified
+
+Owner trigger:
+- Owner selected `1` after the live API identity contract verification was committed locally.
+
+Unabated truth:
+- No runtime code changed in this slice. This was a deployed-bundle marker check for the Trust Passport aggregate-first and evidence-first wording.
+- A first shallow asset check falsely reported missing markers because it fetched only direct `index.html` assets and appended query strings to asset URLs; Render served the app shell for those queried asset paths.
+- Rechecking deployed JS assets without query strings and following live chunk references proved the important markers are present in the deployed frontend bundle.
+- Live `index.html` referenced `assets/index-DSoEhWob.js`; that main chunk references `assets/TrustScorePage-BXyDzFmP.js` for the Trust Passport route.
+- The deployed Trust Passport chunk contains `Aggregate Passport reading`, `Primary anchor`, `Community portfolio`, and `Open limits`.
+- The deployed shared language chunks contain `A thin record is not the same as bad behaviour` and `portable evidence document`.
+- This proves those strings are in deployed frontend assets. It still does not prove a real signed-in user account sees every state, that backend payload depth is sufficient, or that installed PWA caches have refreshed.
+
+Changed:
+- `docs/HANDOFF_NOTES.md`
+  - Recorded the deployed bundle marker verification and the query-string/app-shell false-start.
+
+Routes/screens affected:
+- No runtime route changed.
+- Verification applies to deployed Trust Passport `/app/trust`/`/app/trust-passport` chunks and shared Trust Document language chunks.
+
+Verification:
+- Confirmed live `index.html` referenced `assets/index-DSoEhWob.js`.
+- Confirmed live main JS referenced `assets/TrustScorePage-BXyDzFmP.js`.
+- Confirmed `assets/TrustScorePage-BXyDzFmP.js` contains `Aggregate Passport reading`, `Primary anchor`, `Community portfolio`, and `Open limits`.
+- Confirmed `assets/trustBandLanguage-CkeGNKLs.js` contains `A thin record is not the same as bad behaviour`.
+- Confirmed `assets/trustDocumentActionGuide-DwFUMi9h.js` and `assets/trustDocumentGuide-BZLO1BkX.js` contain `portable evidence document`.
+
+Deployment:
+- Documentation-only local note. Not pushed or deployed; owner must select `2` or explicitly say push/deploy.
+
+Recommended next step:
+- A real phone pass remains the only way to judge the final hand-feel of `/app/trust`, `/app/trust-slip`, and public TrustSlip Verify after cache refresh.
 ## CURRENT LOCAL STATE - 2026-07-26 - Live API identity contracts verified after deploy
 
 Owner trigger:
