@@ -2699,7 +2699,7 @@ export default function TrustScorePage() {
   );
   const trustPassportConfidenceRibbonItems: TrustDocumentRibbonItem[] = [
     {
-      label: "Passport status",
+      label: "Passport view",
       value: "Private member record",
       tone: "info",
       detail: "Signed-in view only.",
@@ -2720,7 +2720,7 @@ export default function TrustScorePage() {
             : "info",
     },
     {
-      label: "Evidence record",
+      label: "What we checked",
       value: passportVm.verdict.evidenceLabel,
       tone:
         passportVm.verdict.evidenceStatus === "strong"
@@ -2735,7 +2735,7 @@ export default function TrustScorePage() {
       tone: positiveNumber(passportVm.technicalDetail.activeClans) > 0 ? "good" : "warn",
     },
     {
-      label: "Verification path",
+      label: "Check path",
       value: passportVm.outputs.trustSlipCode ? "TrustSlip available" : "TrustSlip pending",
       tone: passportVm.outputs.trustSlipCode ? "good" : "warn",
     },
@@ -2754,7 +2754,7 @@ export default function TrustScorePage() {
       tone: "good",
     },
     {
-      title: "Evidence record",
+      title: "What we checked",
       detail: `Visible reading uses ${passportVm.technicalDetail.eventCount} evidence events where available.`,
       tone: passportVm.verdict.evidenceStatus === "limited" ? "warn" : "good",
     },
@@ -2776,7 +2776,7 @@ export default function TrustScorePage() {
     "GSN ID and community context when recorded",
     "Phone, bank, ID, and community evidence status as recorded or verified",
     "Current evidence posture and evidence depth from available records",
-    "TrustSlip status and verification path when available",
+    "TrustSlip status and check path when available",
   ];
   const trustPassportDoesNotConfirmList = [
     "Government registration or legal identity beyond recorded evidence",
@@ -2789,8 +2789,8 @@ export default function TrustScorePage() {
   const currentRoleSummary = communityRoleCounts || roleCountLabel(passportVm.identity.holderRole, 1);
   const identityRows: Array<[GsnIconName, string, string]> = [
     ["id", "GSN ID", passportVm.identity.gmfnId],
-    ["community", "Primary community", passportVm.identity.communityName],
-    ["hash", "Primary Community ID", passportVm.identity.communityId],
+    ["community", "Primary anchor", passportVm.identity.communityName],
+    ["hash", "Primary anchor ID", passportVm.identity.communityId],
     ["shield", "Community roles", currentRoleSummary],
   ];
   const identityCommunitySummaryRows: Array<[GsnIconName, string, string]> = [
@@ -3017,7 +3017,7 @@ export default function TrustScorePage() {
       Number(passportVm.identity.communityActivityCount || 0) > 0 ? "Ready" : "Limited",
     ],
     [
-      "Witness currentness",
+      "Are witnesses up to date?",
       passportVm.identity.membershipCurrentnessLabel,
       passportVm.identity.membershipCurrentnessScope,
       "check",
@@ -3101,7 +3101,7 @@ export default function TrustScorePage() {
     "No recent evidence movement is shown yet. When new events occur, the reason will appear here in plain language.";
 
   const institutionalRows = [
-    ["Trust-limit signal", `${trustLimit} ${trustCurrency}`],
+    ["Support limit signal", `${trustLimit} ${trustCurrency}`],
     ["Event count", eventCount],
     ["Counterparties", counterpartiesCount],
     [
@@ -3389,7 +3389,7 @@ export default function TrustScorePage() {
                   textTransform: "uppercase",
                 }}
               >
-                <span>Decision Boundary</span>
+                <span>What this cannot decide</span>
                 <span style={{ color: "#07172C", fontSize: 10, textTransform: "none" }}>
                   Open limits
                 </span>
@@ -3437,7 +3437,7 @@ export default function TrustScorePage() {
                   lineHeight: 1.1,
                 }}
               >
-                Decision Boundary
+                What this cannot decide
               </div>
               <div
                 style={{
@@ -4027,7 +4027,7 @@ export default function TrustScorePage() {
               }}
             >
               <TrustDocumentSecurityPanel
-                title="Trust Passport security"
+                title="Audit Details"
                 items={trustPassportSecurityItems}
               />
               <div style={{ display: "grid", gap: isCompact ? 10 : 12 }}>

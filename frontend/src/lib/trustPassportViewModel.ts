@@ -352,8 +352,8 @@ export function buildTrustPassportViewModel(
           ? communityActivityCount > 0
             ? `This person has ${communityActivityCount} broad community activity event${
                 communityActivityCount === 1 ? "" : "s"
-              } recorded inside this community. Witness currentness: ${membershipCurrentnessLabel}.${nextWitnessRenewalText} Activity depth supports judgement, but it is not a guarantee.`
-            : `A community link is visible. Witness currentness: ${membershipCurrentnessLabel}.${nextWitnessRenewalText} Stability still depends on active membership status, role, member/sponsor confirmation, and activity evidence.`
+              } recorded across visible community evidence. Are witnesses up to date? ${membershipCurrentnessLabel}.${nextWitnessRenewalText} Activity depth supports judgement, but it is not a guarantee.`
+            : `At least one community link is visible. Are witnesses up to date? ${membershipCurrentnessLabel}.${nextWitnessRenewalText} Stability still depends on active membership status, role, member/sponsor confirmation, and activity evidence.`
           : "A stable active community base is not visible enough yet.",
     },
     {
@@ -375,7 +375,7 @@ export function buildTrustPassportViewModel(
     communityActivityCount > 0
       ? `${communityActivityCount} community activity event${
           communityActivityCount === 1 ? "" : "s"
-        } recorded in this community`
+        } recorded across visible community evidence`
       : "",
     communityActivityCategories.length
       ? `community activity categories: ${communityActivityCategories.join(", ")}`

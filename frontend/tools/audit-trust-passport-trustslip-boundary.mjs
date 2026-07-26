@@ -172,7 +172,7 @@ assertContains(
 
 assertContains(
   "trustPassport",
-  /const trustPassportConfirmsList = \[[\s\S]*?Signed-in member view of current visible Trust Passport fields[\s\S]*?TrustSlip status and verification path when available[\s\S]*?\];/,
+  /const trustPassportConfirmsList = \[[\s\S]*?Signed-in member view of current visible Trust Passport fields[\s\S]*?TrustSlip status and check path when available[\s\S]*?\];/,
   "Trust Passport confirms list must keep signed-in/full-record and TrustSlip-output boundaries."
 );
 
@@ -206,7 +206,7 @@ assertContains(
 assertContains(
   "trustPassport",
   /isCompact \? \([\s\S]*?<details[\s\S]*?data-trust-passport-decision-boundary="compact"[\s\S]*?<StableDisclosureSummary[\s\S]*?debugId="trust-score\.decision-boundary\.toggle"[\s\S]*?stableHeight=\{38\}[\s\S]*?Open limits[\s\S]*?: \([\s\S]*?<div[\s\S]*?data-trust-passport-decision-boundary="compact"/,
-  "Trust Passport mobile first viewport must keep the Decision Boundary as a stable disclosure while desktop keeps the full boundary box."
+  "Trust Passport mobile first viewport must keep the compact limits disclosure while desktop keeps the full limits box."
 );
 
 assertContains(

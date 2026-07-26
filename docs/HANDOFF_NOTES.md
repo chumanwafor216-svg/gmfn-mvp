@@ -1,3 +1,45 @@
+## CURRENT LOCAL STATE - 2026-07-26 - Trust Passport aggregate wording tightened
+
+Owner trigger:
+- Owner selected `1` after the Merchant Release evidence wording commit.
+
+Unabated truth:
+- Runtime frontend code changed for the signed-in Trust Passport wording only.
+- This pass does not add a new aggregate evidence model, change scoring, change backend payloads, or merge community data differently. It corrects visible interpretation language so the Passport does not imply the judgement comes from only one community when the available record is meant to be read as an aggregate evidence view.
+- Public TrustSlip, public TrustSlip Verify, and public member/community papers were not changed in this slice.
+
+Changed:
+- `frontend/src/lib/trustPassportViewModel.ts`
+  - Reworded community stability/help text from `inside this community` / `recorded in this community` to `across visible community evidence`.
+  - Reworded witness-currentness phrasing as `Are witnesses up to date?`.
+- `frontend/src/pages/TrustScorePage.tsx`
+  - Renamed Trust Passport confidence labels: `Passport status` -> `Passport view`, `Evidence record` -> `What we checked`, `Verification path` -> `Check path`.
+  - Renamed identity anchor rows: `Primary community` -> `Primary anchor`, `Primary Community ID` -> `Primary anchor ID`.
+  - Renamed `Witness currentness` to `Are witnesses up to date?` and `Trust-limit signal` to `Support limit signal`.
+  - Renamed the Trust Passport limits box from `Decision Boundary` to `What this cannot decide`.
+  - Renamed `Trust Passport security` to `Audit Details`.
+- `frontend/tools/audit-trust-actions.mjs`
+- `frontend/tools/audit-trust-passport-trustslip-boundary.mjs`
+- `frontend/tools/smoke-trust-passport-trustslip-boundary.mjs`
+  - Updated guards/smoke expectations for the new language and added a guard against restoring single-community aggregate wording in the Trust Passport view model.
+
+Routes/screens affected:
+- Signed-in Trust Passport: `/app/trust`.
+- No backend route changed.
+
+Verification:
+- Passed `npm --prefix frontend run audit:trust-passport-trustslip-boundary`.
+- Passed `npm --prefix frontend run audit:trust-actions`.
+- Passed `npm --prefix frontend run audit:protected-button-freeze`.
+- Passed `npm --prefix frontend run smoke:trust-passport-trustslip-boundary` with escalation after sandbox `spawn EPERM`.
+- Passed `npm --prefix frontend run build`.
+- Passed `git diff --check`; Git still reports normal LF-to-CRLF working-copy warnings on touched files.
+
+Deployment:
+- Local runtime/docs change only at this point. Not pushed or deployed until owner selects `2` or explicitly says push/deploy.
+
+Recommended next step:
+- Continue by tightening Trust Timeline audit labels, or do a phone visual pass on Trust Passport/TrustSlip/Verify before pushing.
 ## CURRENT LOCAL STATE - 2026-07-26 - Merchant release evidence wording tightened
 
 Owner trigger:

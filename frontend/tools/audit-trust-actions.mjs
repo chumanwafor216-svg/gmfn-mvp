@@ -407,13 +407,13 @@ assertContains(
 
 assertContains(
   "src/pages/TrustScorePage.tsx",
-  /TrustDocumentConfidenceRibbon[\s\S]*?trustPassportConfidenceRibbonItems[\s\S]*?Passport status[\s\S]*?Identity evidence[\s\S]*?Evidence record[\s\S]*?Community history[\s\S]*?Verification path/,
+  /TrustDocumentConfidenceRibbon[\s\S]*?trustPassportConfidenceRibbonItems[\s\S]*?Passport view[\s\S]*?Identity evidence[\s\S]*?What we checked[\s\S]*?Community history[\s\S]*?Check path/,
   "Trust Passport must expose the Trust Document Language confidence ribbon."
 );
 
 assertContains(
   "src/pages/TrustScorePage.tsx",
-  /data-gsn-trust-document-certificate="trust-passport"[\s\S]*?TrustDocumentSecurityPanel[\s\S]*?title="Trust Passport security"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This passport confirms"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This passport does not confirm"[\s\S]*?TrustDocumentFingerprint[\s\S]*?label="Trust Passport record reference"/,
+  /data-gsn-trust-document-certificate="trust-passport"[\s\S]*?TrustDocumentSecurityPanel[\s\S]*?title="Audit Details"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This passport confirms"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This passport does not confirm"[\s\S]*?TrustDocumentFingerprint[\s\S]*?label="Trust Passport record reference"/,
   "Trust Passport must render the Trust Document Language sequence with security, confirms/does-not-confirm panels, and record reference."
 );
 
@@ -696,13 +696,13 @@ assertContains(
 
 assertContains(
   "src/pages/TrustScorePage.tsx",
-  /const membershipCurrentnessLabel = firstTruthy\([\s\S]*?membership_currentness_label[\s\S]*?Witness renewal not started[\s\S]*?membershipCurrentnessScope[\s\S]*?Witness currentness[\s\S]*?passportVm\.identity\.membershipCurrentnessLabel[\s\S]*?passportVm\.identity\.membershipCurrentnessScope/,
+  /const membershipCurrentnessLabel = firstTruthy\([\s\S]*?membership_currentness_label[\s\S]*?Witness renewal not started[\s\S]*?membershipCurrentnessScope[\s\S]*?Are witnesses up to date\?[\s\S]*?passportVm\.identity\.membershipCurrentnessLabel[\s\S]*?passportVm\.identity\.membershipCurrentnessScope/,
   "Trust Passport Community Confirmation lane must show member-witness evidence currentness from TrustSlip context."
 );
 
 assertContains(
   "src/lib/trustPassportViewModel.ts",
-  /membershipCurrentnessLabel[\s\S]*?membershipCurrentnessScope[\s\S]*?Witness renewal not started[\s\S]*?Witness currentness: \$\{membershipCurrentnessLabel\}[\s\S]*?witness currentness: \$\{membershipCurrentnessLabel\}/,
+  /membershipCurrentnessLabel[\s\S]*?membershipCurrentnessScope[\s\S]*?Witness renewal not started[\s\S]*?Are witnesses up to date\? \$\{membershipCurrentnessLabel\}[\s\S]*?Are witnesses up to date\? \$\{membershipCurrentnessLabel\}/,
   "Trust Passport view model must carry witness currentness through the community stability reading."
 );
 
@@ -2091,6 +2091,11 @@ assertNotContains(
   "src/lib/trustPassportViewModel.ts",
   /Phone and community membership are verified|Identity confirmed by active community membership|Identity verified|verified history|some proof is not verified|identity proof|more proof|risk to the proof/,
   "Trust Passport view-model fallbacks must treat active community membership as recorded evidence, not identity verification."
+);
+assertNotContains(
+  "src/lib/trustPassportViewModel.ts",
+  /recorded inside this community|recorded in this community|A community link is visible\. Witness currentness/i,
+  "Trust Passport view-model must not make aggregate judgement copy sound like it comes from only one community."
 );
 
 assertNotContains(
