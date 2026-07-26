@@ -355,28 +355,28 @@ export default function MerchantReleasePage() {
   );
   const merchantConfidenceRibbonItems: TrustDocumentRibbonItem[] = [
     {
-      label: "Merchant rail status",
+      label: "Rail checked?",
       value: checking ? "Checking" : verifyResult?.verified ? "Signed rail checked" : "Not checked",
       tone: checking ? "info" : verifyResult?.verified ? "good" : "warn",
     },
     {
-      label: "Record integrity",
+      label: "Can this be checked?",
       value: verifyResult?.verification_link_id ? "Link ID resolved" : "Limited",
       tone: verifyResult?.verification_link_id ? "good" : "warn",
     },
     {
-      label: "Evidence chain",
+      label: "Evidence source",
       value: releaseResult ? "Trade packet recorded" : "Enter release evidence",
       tone: releaseResult ? "good" : "info",
       detail: "Keep your full conversation outside this public paper.",
     },
     {
-      label: "Verification path",
+      label: "Check path",
       value: verifyResult?.verified ? "Available" : "Unavailable",
       tone: verifyResult?.verified ? "good" : "warn",
     },
     {
-      label: "Link expiry",
+      label: "Use before",
       value: dateTimeLabel(verifyResult?.expires_at) || "Not shown",
       tone: verifyResult?.expires_at ? "info" : "warn",
     },
@@ -403,7 +403,7 @@ export default function MerchantReleasePage() {
       tone: releaseResult ? "good" : "info",
     },
     {
-      title: "Privacy boundary",
+      title: "What stays private",
       detail:
         "The full WhatsApp conversation, unnecessary private chat, bank details, and unrelated personal information stay outside this paper.",
       tone: "good",
@@ -549,8 +549,8 @@ export default function MerchantReleasePage() {
         <div style={{ position: "relative", zIndex: 1, marginTop: 16, display: "grid", gap: 12 }}>
           <TrustDocumentConfidenceRibbon items={merchantConfidenceRibbonItems} />
           <TrustDocumentDisclosureSection
-            title="Merchant record security and limits"
-            summary="Open for what this page confirms, limits, security, and record reference."
+            title="Audit Details"
+            summary="Open for what this page confirms, what it cannot prove, security, and record reference."
           >
             <div
               data-gsn-trust-document-certificate="merchant-release"
@@ -619,7 +619,7 @@ export default function MerchantReleasePage() {
         {!releaseResult ? (
           <section style={{ position: "relative", zIndex: 1, marginTop: 18, display: "grid", gap: 12 }}>
             <div>
-              <div style={sectionLabel()}>Release note</div>
+              <div style={sectionLabel()}>What to record</div>
               <p style={{ margin: "6px 0 0", ...helperText() }}>
                 Enter the minimum final evidence. WhatsApp can hold the conversation; GSN keeps the
                 timestamped reference packet for judgement later.

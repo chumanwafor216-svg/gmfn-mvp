@@ -1128,7 +1128,7 @@ assertContains(
 );
 assertContains(
   "merchantRelease",
-  /TrustDocumentConfidenceRibbon[\s\S]*?merchantConfidenceRibbonItems[\s\S]*?Merchant rail status[\s\S]*?Record integrity[\s\S]*?Evidence chain[\s\S]*?Verification path[\s\S]*?Link expiry/,
+  /TrustDocumentConfidenceRibbon[\s\S]*?merchantConfidenceRibbonItems[\s\S]*?Rail checked\?[\s\S]*?Can this be checked\?[\s\S]*?Evidence source[\s\S]*?Check path[\s\S]*?Use before/,
   "Merchant Release must carry the Trust Document Language confidence ribbon."
 );
 assertContains(
@@ -1138,7 +1138,7 @@ assertContains(
 );
 assertContains(
   "merchantRelease",
-  /TrustDocumentDisclosureSection[\s\S]*?title="Merchant record security and limits"[\s\S]*?Open for what this page confirms, limits, security, and record reference\.[\s\S]*?data-gsn-merchant-release-security-limits="true"[\s\S]*?TrustDocumentSecurityPanel[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?TrustDocumentFingerprint/,
+  /TrustDocumentDisclosureSection[\s\S]*?title="Audit Details"[\s\S]*?Open for what this page confirms, what it cannot prove, security, and record reference\.[\s\S]*?data-gsn-merchant-release-security-limits="true"[\s\S]*?TrustDocumentSecurityPanel[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?TrustDocumentFingerprint/,
   "Merchant Release must keep security, limits, and record-reference detail collapsed behind one disclosure."
 );
 assertContains(

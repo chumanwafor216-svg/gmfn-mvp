@@ -1,3 +1,42 @@
+## CURRENT LOCAL STATE - 2026-07-26 - Merchant release evidence wording tightened
+
+Owner trigger:
+- Owner selected `1` after the public confirmation outcome wording pass.
+
+Unabated truth:
+- I did not find an obvious standalone public Community Domain Credential route in the frontend. Existing domain-related code appears focused on readiness/dashboard surfaces rather than a shareable public trust-document paper.
+- Runtime frontend code changed for the public Merchant Release evidence paper only.
+- This pass is label/disclosure wording only. It does not change release-token verification, payment/release logic, public API payloads, backend routes, schemas, permissions, or deployment config.
+
+Changed:
+- `frontend/src/pages/MerchantReleasePage.tsx`
+  - Renamed merchant confidence ribbon labels from `Merchant rail status`, `Record integrity`, `Evidence chain`, `Verification path`, and `Link expiry` to `Rail checked?`, `Can this be checked?`, `Evidence source`, `Check path`, and `Use before`.
+  - Renamed `Privacy boundary` to `What stays private`.
+  - Renamed the detailed disclosure from `Merchant record security and limits` to `Audit Details`.
+  - Reworded the disclosure helper to say it covers what the page confirms, what it cannot prove, security, and record reference.
+  - Renamed the note field from `Release note` to `What to record`.
+- `frontend/tools/audit-trust-actions.mjs`
+- `frontend/tools/audit-institutional-proof-surfaces.mjs`
+  - Updated audit contracts for the new Merchant Release labels.
+
+Routes/screens affected:
+- Public Merchant Release Evidence: `/merchant-release/:token`.
+- No backend route changed.
+
+Verification:
+- Passed `npm --prefix frontend run audit:trust-actions`.
+- Passed `node frontend\tools\audit-institutional-proof-surfaces.mjs`.
+- Passed `npm --prefix frontend run audit:marketplace-shop-evidence-boundary`.
+- Passed `npm --prefix frontend run audit:shop-control-button-inventory`.
+- Passed `npm --prefix frontend run audit:protected-button-freeze`.
+- Passed `npm --prefix frontend run build`.
+- Passed `git diff --check`; Git still reports normal LF-to-CRLF working-copy warnings on touched files.
+
+Deployment:
+- Local runtime/docs change only at this point. Not pushed or deployed until owner selects `2` or explicitly says push/deploy.
+
+Recommended next step:
+- Either inspect the non-public Community Domain readiness/dashboard copy for the same decision-first wording risk, or run a real phone visual pass across the already-tightened public trust papers before pushing.
 ## CURRENT LOCAL STATE - 2026-07-26 - Public confirmation outcome wording tightened
 
 Owner trigger:
