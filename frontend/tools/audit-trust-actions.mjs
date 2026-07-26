@@ -317,13 +317,13 @@ assertContains(
 
 assertContains(
   "src/pages/TrustSlipPage.tsx",
-  /TrustDocumentConfidenceRibbon[\s\S]*?trustSlipHolderConfidenceRibbonItems[\s\S]*?TrustSlip status[\s\S]*?Record integrity[\s\S]*?Evidence chain[\s\S]*?Verification path[\s\S]*?Valid until/,
+  /TrustDocumentConfidenceRibbon[\s\S]*?trustSlipHolderConfidenceRibbonItems[\s\S]*?TrustSlip now[\s\S]*?Can this be checked\?[\s\S]*?Evidence source[\s\S]*?Check path[\s\S]*?Use before/,
   "Signed-in TrustSlip holder paper must expose the Trust Document Language confidence ribbon."
 );
 
 assertContains(
   "src/pages/TrustSlipPage.tsx",
-  /data-gsn-trust-document-certificate="trustslip-holder"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This TrustSlip confirms"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This TrustSlip does not confirm"[\s\S]*?TrustDocumentSecurityPanel[\s\S]*?title="TrustSlip security"[\s\S]*?TrustDocumentFingerprint[\s\S]*?label="TrustSlip holder record reference"/,
+  /data-gsn-trust-document-certificate="trustslip-holder"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This TrustSlip confirms"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This TrustSlip does not confirm"[\s\S]*?TrustDocumentSecurityPanel[\s\S]*?title="Audit Details"[\s\S]*?TrustDocumentFingerprint[\s\S]*?label="TrustSlip holder record reference"/,
   "Signed-in TrustSlip holder paper must render the Trust Document Language sequence with security, confirms/does-not-confirm panels, and holder record reference."
 );
 

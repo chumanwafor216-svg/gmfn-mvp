@@ -643,7 +643,7 @@ async function runTrustSlipScenario(browser, baseURL) {
   const decisionBoundary = state.page.locator(
     '[data-gsn-trustslip-decision-boundary="compact"]'
   );
-  await expect(decisionBoundary).toContainText("Decision Boundary");
+  await expect(decisionBoundary).toContainText("What this cannot decide");
   await expect(decisionBoundary).toContainText("Public link");
   await expect(decisionBoundary).toContainText("Private preview");
   await expect(decisionBoundary).toContainText("Consent log");
@@ -772,7 +772,7 @@ async function main() {
       visibleText: [
         "Needs refresh",
         "Refresh before anyone relies on it",
-        "Current TrustSlip status",
+        "Current TrustSlip state",
         "Do not rely on this TrustSlip until it is refreshed and checked again.",
       ],
     });

@@ -3172,29 +3172,29 @@ export default function TrustSlipPage() {
   const trustSlipVerifyTone: TrustDocumentRibbonItem["tone"] = verifyPath ? "good" : "warn";
   const trustSlipHolderConfidenceRibbonItems: TrustDocumentRibbonItem[] = [
     {
-      label: "TrustSlip status",
+      label: "TrustSlip now",
       value: trustSlipPublicStatus,
       tone: trustSlipDocumentTone,
     },
     {
-      label: "Record integrity",
+      label: "Can this be checked?",
       value: trustSlipCode && verifyPath ? "Checkable" : "Limited",
       tone: trustSlipRecordIntegrityTone,
       detail: trustSlipCode ? "Visible code present" : "Code not ready",
     },
     {
-      label: "Evidence chain",
+      label: "Evidence source",
       value: trustSlipEvidenceLanguage.label,
       tone: trustSlipEvidenceTone,
       detail: trustSlipEvidenceStatus === "limited" ? "Use with caution" : "Visible evidence summarized",
     },
     {
-      label: "Verification path",
+      label: "Check path",
       value: verifyPath ? "Available" : "Unavailable",
       tone: trustSlipVerifyTone,
     },
     {
-      label: "Valid until",
+      label: "Use before",
       value: trustSlipExpiryLabel,
       tone: trustSlipSecurityTone === "expired" ? "warn" : trustSlipCode ? "good" : "info",
     },
@@ -3215,7 +3215,7 @@ export default function TrustSlipPage() {
       tone: verifyPath ? "good" : "warn",
     },
     {
-      title: "Privacy boundary",
+      title: "What stays private",
       detail:
         "This TrustSlip is a short portable summary. It does not expose the holder's private Trust Passport, private notes, contacts, or admin records.",
       tone: "good",
@@ -3236,7 +3236,7 @@ export default function TrustSlipPage() {
   const trustSlipHolderConfirmsList = [
     "Holder display name and GSN ID shown on this TrustSlip",
     "Primary community label and Community ID/reference shown on this TrustSlip",
-    "Current TrustSlip status, code, issue window, and expiry window where available",
+    "Current TrustSlip state, code, issue window, and expiry window where available",
     "Visible evidence status, TrustSlip limit signal, primary community anchor, and wider evidence posture",
     "QR, verify action, and copied verify link open the public TrustSlip reading when available",
   ];
@@ -3942,7 +3942,7 @@ export default function TrustSlipPage() {
                 <GsnLegacyIcon name="certificate-seal" size={28} />
                 <div style={{ minWidth: 0 }}>
                   <div style={{ ...sectionLabel(), fontSize: isCompact ? 9 : 10 }}>
-                    Decision Boundary
+                    What this cannot decide
                   </div>
                   <div
                     style={{
@@ -4915,7 +4915,7 @@ export default function TrustSlipPage() {
               </div>
               <div style={{ display: "grid", gap: 12 }}>
                 <TrustDocumentSecurityPanel
-                  title="TrustSlip security"
+                  title="Audit Details"
                   items={trustSlipHolderSecurityItems}
                 />
                 <TrustDocumentFingerprint
@@ -5131,7 +5131,7 @@ export default function TrustSlipPage() {
                     fontWeight: 1000,
                   }}
                 >
-                  Current TrustSlip status
+                  Current TrustSlip state
                 </div>
               <div
                 style={{
@@ -5258,7 +5258,7 @@ export default function TrustSlipPage() {
               </div>
               {[
                 ["Evidence status", merchantBandDisplay],
-                ["Trust-limit signal", `${merchantTrustLimit} ${merchantCurrency}`],
+                ["Support limit signal", `${merchantTrustLimit} ${merchantCurrency}`],
                 ["Evidence depth", trustSlipEvidenceLanguage.label],
               ].map(([label, value]) => (
                 <div

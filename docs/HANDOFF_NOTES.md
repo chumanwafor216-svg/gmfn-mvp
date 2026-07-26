@@ -1,3 +1,41 @@
+## CURRENT LOCAL STATE - 2026-07-26 - Holder TrustSlip wording tightened
+
+Owner trigger:
+- Owner selected `1` after the Trust Timeline wording commit.
+
+Unabated truth:
+- Runtime frontend code changed for the signed-in holder TrustSlip page only.
+- This pass is copy/label tightening only. It does not change TrustSlip issue/refresh logic, QR/link generation, public verify routing, validity/expiry calculation, Decision Pack access, backend routes, schemas, permissions, or deployment config.
+- Public TrustSlip Verify still has its own public-paper disclosure wording and was not changed in this slice.
+
+Changed:
+- `frontend/src/pages/TrustSlipPage.tsx`
+  - Renamed holder confidence ribbon labels: `TrustSlip status` -> `TrustSlip now`, `Record integrity` -> `Can this be checked?`, `Evidence chain` -> `Evidence source`, `Verification path` -> `Check path`, `Valid until` -> `Use before`.
+  - Renamed holder security/private boundary wording: `Privacy boundary` -> `What stays private`, `TrustSlip security` -> `Audit Details`.
+  - Renamed holder Decision Pack compact limit title: `Decision Boundary` -> `What this cannot decide`.
+  - Renamed `Current TrustSlip status` to `Current TrustSlip state` and `Trust-limit signal` to `Support limit signal`.
+- `frontend/tools/audit-trust-actions.mjs`
+- `frontend/tools/audit-trust-passport-trustslip-boundary.mjs`
+- `frontend/tools/smoke-trust-passport-trustslip-boundary.mjs`
+  - Updated audit/smoke contracts for the new holder TrustSlip wording.
+
+Routes/screens affected:
+- Signed-in holder TrustSlip: `/app/trust-slip`.
+- No backend route changed.
+
+Verification:
+- Passed `npm --prefix frontend run audit:trust-passport-trustslip-boundary`.
+- Passed `npm --prefix frontend run audit:trust-actions`.
+- Passed `npm --prefix frontend run audit:protected-button-freeze`.
+- Passed `npm --prefix frontend run smoke:trust-passport-trustslip-boundary` with escalation after sandbox `spawn EPERM`.
+- Passed `npm --prefix frontend run build`.
+- Passed `git diff --check`; Git still reports normal LF-to-CRLF working-copy warnings on touched files.
+
+Deployment:
+- Local runtime/docs change only at this point. Not pushed or deployed until owner selects `2` or explicitly says push/deploy.
+
+Recommended next step:
+- Either continue with public TrustSlip Verify disclosure wording, or pause for a phone visual pass across holder TrustSlip, TrustSlip Verify, Trust Passport, and Trust Timeline before push/deploy.
 ## CURRENT LOCAL STATE - 2026-07-26 - Trust Timeline wording tightened
 
 Owner trigger:
