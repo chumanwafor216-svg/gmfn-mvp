@@ -1,3 +1,54 @@
+## CURRENT LOCAL STATE - 2026-07-26 - Holder Decision Pack access ledger surface added locally
+
+Owner trigger:
+- Owner selected `1` to continue after the backend Decision Pack access ledger checkpoint.
+
+Unabated truth:
+- This slice exposes recent public Decision Pack reads to the signed-in TrustSlip holder, but it still does not implement purpose-specific evidence filtering, a Decision Pack scoring engine, Global TrustSlip, Behavioural Placement schema, or the full Evidence Ledger architecture.
+- The holder read surface is access metadata only. It is not a TrustEvent, not behaviour evidence, not recipient identity, and not private Trust Passport disclosure.
+- The backend deliberately returns only bounded public-read context: code, pack, purpose, recipient question, focus, scope, source, visibility, status, and timestamp.
+
+Changed:
+- `gmfn_backend/app/services/trust_slip_decision_packs.py`
+  - Added public row mapping for Decision Pack access records.
+  - Added holder-scoped recent access lookup with a bounded limit.
+- `gmfn_backend/app/api/routes/trust_slips.py`
+  - Added authenticated `/trust-slips/me/decision-pack-accesses`.
+  - Returns privacy and evidence-boundary notes with the access rows.
+- `gmfn_backend/tests/test_trust_slip_boundary_controls.py`
+  - Added tests proving the holder can read recent access rows without recipient identity.
+  - Added tests proving access rows remain scoped to the signed-in holder.
+- `frontend/src/lib/api.ts`
+  - Added `getMyTrustSlipDecisionPackAccesses`.
+- `frontend/src/pages/TrustSlipPage.tsx`
+  - Fetches recent access rows for `/app/trust-slip`.
+  - Shows a compact "Recent public reads" ledger under the Decision Pack controls.
+  - Keeps the boundary note visible: access records are not TrustEvents, behaviour evidence, recipient identity, or private Passport disclosure.
+- `frontend/tools/audit-public-trustslip-verify-boundary.mjs`
+  - Added guards for the holder access route and public row shape.
+- `frontend/tools/audit-trust-passport-trustslip-boundary.mjs`
+  - Added guards for the holder-facing access ledger UI and boundary copy.
+
+Routes/screens affected:
+- Backend authenticated route `/trust-slips/me/decision-pack-accesses` now returns the signed-in holder's recent public Decision Pack access rows.
+- Frontend `/app/trust-slip` now shows recent public reads beneath the Decision Pack share controls.
+- Public `/trust-slips/verify/{code}` behavior remains bounded from the previous slice; this slice only adds the holder readback surface.
+
+Verification:
+- Passed `python -m pytest -q gmfn_backend\tests\test_trust_slip_boundary_controls.py`.
+- Passed `npm exec -- eslint src/pages/TrustSlipPage.tsx src/lib/api.ts tools/audit-public-trustslip-verify-boundary.mjs tools/audit-trust-passport-trustslip-boundary.mjs` from `frontend`.
+- Passed `npm --prefix frontend run audit:trust-passport-trustslip-boundary`.
+- Passed `npm --prefix frontend run audit:public-trustslip-verify-boundary`.
+- Passed `npm --prefix frontend run audit:trust-actions`.
+- Passed `npm --prefix frontend run audit:proof-surfaces`.
+- Passed `npm --prefix frontend run audit:protected-button-freeze`.
+- Passed `npm --prefix frontend run build`.
+
+Deployment:
+- Local only. Not pushed or deployed because the current pilot protocol says routine continuation work should be batched locally and published only when the owner explicitly approves.
+
+Recommended next step:
+- Design the actual evidence-filtering layer for Decision Packs before adding more UI. The access ledger shows who opened what kind of public pack; it does not yet decide which ledger evidence belongs in Employment, Housing, Guarantor, Supplier, or other packs.
 ## CURRENT LOCAL STATE - 2026-07-26 - Backend Decision Pack access ledger added locally
 
 Owner trigger:

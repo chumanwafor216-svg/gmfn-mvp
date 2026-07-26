@@ -211,3 +211,38 @@ def record_decision_pack_access(
     db.commit()
     db.refresh(access)
     return access
+
+
+def decision_pack_access_to_public_row(access: TrustSlipDecisionPackAccess) -> dict[str, Any]:
+    created_at = getattr(access, "created_at", None)
+    return {
+        "id": int(access.id),
+        "trust_slip_id": int(access.trust_slip_id),
+        "code": _clean(access.code, limit=64),
+        "decision_pack": _clean(access.decision_pack_key, limit=64),
+        "access_purpose": _clean(access.access_purpose, limit=160),
+        "recipient_question": _clean(access.recipient_question, limit=280),
+        "decision_focus": _clean(access.decision_focus, limit=360),
+        "access_scope": _clean(access.access_scope, limit=64),
+        "source": _clean(access.source, limit=64),
+        "visibility_level": _clean(access.visibility_level, limit=20),
+        "status": _clean(access.status, limit=32),
+        "created_at": created_at.isoformat() if created_at else None,
+    }
+
+
+def list_decision_pack_accesses_for_holder(
+    db: Session,
+    *,
+    holder_user_id: int,
+    limit: int = 12,
+) -> list[dict[str, Any]]:
+    bounded_limit = max(1, min(int(limit or 12), 50))
+    rows = (
+        db.query(TrustSlipDecisionPackAccess)
+        .filter(TrustSlipDecisionPackAccess.holder_user_id == int(holder_user_id))
+        .order_by(TrustSlipDecisionPackAccess.created_at.desc(), TrustSlipDecisionPackAccess.id.desc())
+        .limit(bounded_limit)
+        .all()
+    )
+    return [decision_pack_access_to_public_row(row) for row in rows]

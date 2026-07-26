@@ -22,6 +22,7 @@ from app.services.community_confirmation_service import build_community_confirma
 from app.services.trust_events_services import log_trust_event
 from app.services.trust_slip_decision_packs import (
     build_decision_pack_access_payload,
+    list_decision_pack_accesses_for_holder,
     normalize_decision_pack_context,
     record_decision_pack_access,
 )
@@ -774,6 +775,28 @@ def get_my_trust_slip_summary(
     current_user: User = Depends(get_current_user),
 ) -> Dict[str, Any]:
     return _ensure_my_trust_slip_payload(db, current_user=current_user)
+
+
+@router.get("/me/decision-pack-accesses")
+def get_my_trust_slip_decision_pack_accesses(
+    limit: int = Query(default=12, ge=1, le=50),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Dict[str, Any]:
+    if getattr(current_user, "id", None) is None:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    items = list_decision_pack_accesses_for_holder(
+        db,
+        holder_user_id=int(current_user.id),
+        limit=int(limit),
+    )
+    return {
+        "ok": True,
+        "items": items,
+        "privacy_note": "Decision Pack access records show public TrustSlip read context only. They do not store recipient name, email, phone, IP address, private notes, or private Trust Passport contents.",
+        "evidence_note": "A public read is an access record, not behaviour evidence and not a TrustEvent.",
+    }
 
 
 @router.post("/me/issue")

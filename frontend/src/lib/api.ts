@@ -2421,6 +2421,12 @@ export async function reissueMyTrustSlip(params?: {
   });
 }
 
+export async function getMyTrustSlipDecisionPackAccesses(limit = 12): Promise<any> {
+  return httpJson(
+    `/trust-slips/me/decision-pack-accesses${buildQuery({ limit })}`,
+    "GET"
+  );
+}
 export async function verifyTrustSlip(
   code: string,
   level?: "minimal" | "standard" | "detailed"

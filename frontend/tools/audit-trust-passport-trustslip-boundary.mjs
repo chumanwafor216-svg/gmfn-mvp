@@ -229,6 +229,17 @@ assertContains(
   /withPublicDecisionPackQuery[\s\S]*?decision_pack: selectedPurposeOption\.key[\s\S]*?access_purpose: selectedPurposeOption\.label[\s\S]*?recipient_question: selectedPurposeOption\.recipientQuestion[\s\S]*?decision_focus: selectedPurposeOption\.focus[\s\S]*?const verifyPath = useMemo[\s\S]*?withPublicDecisionPackQuery\(basePath, publicDecisionPackQuery\)/,
   "TrustSlip holder verify links and QR must carry the selected public Decision Pack context."
 );
+assertContains(
+  "api",
+  /getMyTrustSlipDecisionPackAccesses[\s\S]*?\/trust-slips\/me\/decision-pack-accesses/,
+  "TrustSlip holder page must use the signed-in holder Decision Pack access endpoint, not a public or admin feed."
+);
+
+assertContains(
+  "trustSlip",
+  /data-gsn-decision-pack-access-ledger="holder"[\s\S]*?Recent public reads[\s\S]*?Decision Pack access ledger[\s\S]*?Access records show public read context only[\s\S]*?not TrustEvents[\s\S]*?recipient identity[\s\S]*?private Passport disclosure/,
+  "TrustSlip holder page must show recent Decision Pack accesses as bounded public-read context only."
+);
 
 assertContains(
   "communityProofPanel",

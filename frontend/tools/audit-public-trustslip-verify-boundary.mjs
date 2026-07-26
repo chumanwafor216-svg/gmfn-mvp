@@ -261,6 +261,17 @@ assertContains(
   /normalize_decision_pack_context\(request\.query_params\)[\s\S]*?response_payload: Dict\[str, Any\][\s\S]*?record_decision_pack_access[\s\S]*?build_decision_pack_access_payload[\s\S]*?return response_payload/,
   "Backend public verify route must attach public-safe Decision Pack access context and record it without changing TrustEvent evidence."
 );
+assertContains(
+  "backendDecisionPacks",
+  /decision_pack_access_to_public_row[\s\S]*?"decision_pack"[\s\S]*?"access_purpose"[\s\S]*?"recipient_question"[\s\S]*?"decision_focus"[\s\S]*?list_decision_pack_accesses_for_holder[\s\S]*?holder_user_id/,
+  "Backend Decision Pack access read helper must stay holder-scoped and document absence of recipient identity fields."
+);
+
+assertContains(
+  "backend",
+  /@router\.get\("\/me\/decision-pack-accesses"\)[\s\S]*?get_current_user[\s\S]*?list_decision_pack_accesses_for_holder[\s\S]*?privacy_note[\s\S]*?recipient name[\s\S]*?not behaviour evidence/,
+  "Backend signed-in Decision Pack access endpoint must expose holder-scoped access metadata only."
+);
 
 assertContains(
   "publicPaper",

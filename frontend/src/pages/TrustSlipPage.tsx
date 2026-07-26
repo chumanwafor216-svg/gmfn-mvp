@@ -324,8 +324,22 @@ type TrustSlipPageData = {
   me: any | null;
   clan: any | null;
   summary: TrustSlipSummary | null;
+  decisionPackAccesses: TrustSlipDecisionPackAccessRow[];
 };
 
+type TrustSlipDecisionPackAccessRow = {
+  id: string;
+  code: string;
+  decisionPack: string;
+  accessPurpose: string;
+  recipientQuestion: string;
+  decisionFocus: string;
+  accessScope: string;
+  source: string;
+  visibilityLevel: string;
+  status: string;
+  createdAt: string;
+};
 type CommunityConfirmationOutcome = {
   public_token?: string | null;
   status?: string | null;
@@ -1581,6 +1595,32 @@ async function fetchCanonicalTrustSlipSummary(
   return promise;
 }
 
+function normalizeTrustSlipDecisionPackAccesses(raw: any): TrustSlipDecisionPackAccessRow[] {
+  const rows = Array.isArray(raw?.items)
+    ? raw.items
+    : Array.isArray(raw?.accesses)
+    ? raw.accesses
+    : Array.isArray(raw)
+    ? raw
+    : [];
+
+  return rows
+    .map((row: any, index: number) => ({
+      id: firstTruthy(row?.id, `${index}`),
+      code: firstTruthy(row?.code, row?.trust_slip_code, row?.verification_code),
+      decisionPack: firstTruthy(row?.decision_pack, row?.decision_pack_key),
+      accessPurpose: firstTruthy(row?.access_purpose, row?.purpose, "Decision Pack"),
+      recipientQuestion: firstTruthy(row?.recipient_question, row?.access_note),
+      decisionFocus: firstTruthy(row?.decision_focus, row?.focus),
+      accessScope: firstTruthy(row?.access_scope, "public_decision_pack"),
+      source: firstTruthy(row?.source, "public_verify"),
+      visibilityLevel: firstTruthy(row?.visibility_level),
+      status: firstTruthy(row?.status),
+      createdAt: firstTruthy(row?.created_at, row?.accessed_at),
+    }))
+    .filter((row: TrustSlipDecisionPackAccessRow) => row.code || row.accessPurpose || row.createdAt)
+    .slice(0, 12);
+}
 async function fetchTrustSlipPageData(
   selectedClanId: number,
   options: { forceFresh?: boolean; networkFirst?: boolean } = {}
@@ -1602,7 +1642,7 @@ async function fetchTrustSlipPageData(
       clanHeaders
     );
 
-  const [meRes, clanRes, summaryRes] = await Promise.all([
+  const [meRes, clanRes, summaryRes, decisionPackAccessRes] = await Promise.all([
     typeof (api as any).getMe === "function"
       ? (api as any).getMe().catch(() => null)
       : Promise.resolve(null),
@@ -1645,12 +1685,16 @@ async function fetchTrustSlipPageData(
 
       return fetchLegacySummaryFallback();
     })(),
+    typeof (api as any).getMyTrustSlipDecisionPackAccesses === "function"
+      ? (api as any).getMyTrustSlipDecisionPackAccesses(12).catch(() => null)
+      : Promise.resolve(null),
   ]);
 
   return {
     me: meRes || null,
     clan: clanRes || null,
     summary: normalizeTrustSlipSummary(summaryRes),
+    decisionPackAccesses: normalizeTrustSlipDecisionPackAccesses(decisionPackAccessRes),
   };
 }
 
@@ -1761,6 +1805,7 @@ export default function TrustSlipPage() {
   const [me, setMe] = useState<any>(null);
   const [currentClan, setCurrentClan] = useState<any>(null);
   const [summary, setSummary] = useState<TrustSlipSummary | null>(null);
+  const [decisionPackAccesses, setDecisionPackAccesses] = useState<TrustSlipDecisionPackAccessRow[]>([]);
   const [confirmationBusy, setConfirmationBusy] = useState(false);
   const [confirmationOutcome, setConfirmationOutcome] =
     useState<CommunityConfirmationOutcome | null>(null);
@@ -1789,6 +1834,7 @@ export default function TrustSlipPage() {
     setMe(null);
     setCurrentClan(null);
     setSummary(null);
+    setDecisionPackAccesses([]);
     setConfirmationOutcome(null);
     setMerchantRailLink(null);
   }, []);
@@ -1797,6 +1843,7 @@ export default function TrustSlipPage() {
     setMe(data.me);
     setCurrentClan(data.clan);
     setSummary(data.summary);
+    setDecisionPackAccesses(data.decisionPackAccesses);
   }, []);
 
   const guideItems = useMemo(() => buildTrustSlipGuideItems(), []);
@@ -3433,6 +3480,125 @@ export default function TrustSlipPage() {
                   </div>
                 </div>
               ))}
+            </div>
+
+            <div
+              data-gsn-decision-pack-access-ledger="holder"
+              style={{
+                borderRadius: 14,
+                border: "1px solid rgba(37,78,119,0.12)",
+                background: "linear-gradient(180deg, #FFFFFF 0%, #F7FAFF 100%)",
+                padding: isCompact ? 11 : 13,
+                display: "grid",
+                gap: 9,
+              }}
+            >
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "32px minmax(0, 1fr)",
+                  gap: 9,
+                  alignItems: "center",
+                }}
+              >
+                <GsnLegacyIcon name="document" size={30} />
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ ...sectionLabel(), fontSize: isCompact ? 9 : 10 }}>
+                    Recent public reads
+                  </div>
+                  <div
+                    style={{
+                      marginTop: 2,
+                      color: "#07172C",
+                      fontSize: isCompact ? 13 : 15,
+                      fontWeight: 1000,
+                      lineHeight: 1.16,
+                    }}
+                  >
+                    Decision Pack access ledger
+                  </div>
+                </div>
+              </div>
+
+              {decisionPackAccesses.length ? (
+                <div style={{ display: "grid", gap: 7 }}>
+                  {decisionPackAccesses.slice(0, 3).map((access) => (
+                    <div
+                      key={access.id}
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: isCompact
+                          ? "minmax(0, 1fr)"
+                          : "minmax(0, 1fr) minmax(120px, auto)",
+                        gap: 6,
+                        alignItems: "center",
+                        borderTop: "1px solid rgba(37,78,119,0.08)",
+                        paddingTop: 7,
+                        minWidth: 0,
+                      }}
+                    >
+                      <div style={{ minWidth: 0 }}>
+                        <div
+                          style={{
+                            color: "#07172C",
+                            fontSize: isCompact ? 12 : 13,
+                            fontWeight: 950,
+                            lineHeight: 1.15,
+                            overflowWrap: "anywhere",
+                          }}
+                        >
+                          {access.accessPurpose}
+                        </div>
+                        <div
+                          style={{
+                            marginTop: 2,
+                            color: "#526579",
+                            fontSize: isCompact ? 10 : 11,
+                            fontWeight: 800,
+                            lineHeight: 1.25,
+                            overflowWrap: "anywhere",
+                          }}
+                        >
+                          {access.code || "TrustSlip code hidden"} | {access.accessScope || "public decision pack"}
+                        </div>
+                      </div>
+                      <div
+                        style={{
+                          color: "#39526C",
+                          fontSize: isCompact ? 10 : 11,
+                          fontWeight: 900,
+                          textAlign: isCompact ? "left" : "right",
+                          lineHeight: 1.2,
+                        }}
+                      >
+                        {safeDateTime(access.createdAt) || "Time not shown"}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div
+                  style={{
+                    color: "#526579",
+                    fontSize: isCompact ? 11 : 12,
+                    fontWeight: 850,
+                    lineHeight: 1.35,
+                  }}
+                >
+                  No public Decision Pack reads are recorded yet.
+                </div>
+              )}
+
+              <div
+                style={{
+                  color: "#7A4A00",
+                  fontSize: isCompact ? 10 : 11,
+                  fontWeight: 900,
+                  lineHeight: 1.35,
+                }}
+              >
+                Access records show public read context only. They are not TrustEvents, behaviour evidence, recipient identity, or private Passport disclosure.
+              </div>
             </div>
           </section>
 
@@ -5793,7 +5959,4 @@ export default function TrustSlipPage() {
     </div>
   );
 }
-
-
-
 

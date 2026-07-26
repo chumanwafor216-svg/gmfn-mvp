@@ -247,3 +247,53 @@ def test_public_verify_decision_pack_access_bounds_unknown_public_context(
         assert db.query(TrustEvent).count() == 0
     finally:
         db.close()
+
+def test_holder_can_read_recent_decision_pack_accesses_without_recipient_identity(
+    client,
+    seed_clan_admin_membership,
+    override_current_user,
+):
+    _create_trust_slip(code="ACCESS-HOLDER")
+    client.get(
+        "/trust-slips/verify/ACCESS-HOLDER",
+        params={"decision_pack": "housing_decision"},
+    )
+
+    response = client.get("/trust-slips/me/decision-pack-accesses")
+
+    assert response.status_code == 200, response.text
+    payload = response.json()
+    assert payload["ok"] is True
+    assert "recipient name" in payload["privacy_note"].lower()
+    assert "not behaviour evidence" in payload["evidence_note"]
+    assert len(payload["items"]) == 1
+    item = payload["items"][0]
+    assert item["code"] == "ACCESS-HOLDER"
+    assert item["decision_pack"] == "housing_decision"
+    assert item["access_purpose"] == "Housing Decision Pack"
+    assert item["access_scope"] == "public_decision_pack"
+    assert item["source"] == "public_verify"
+    assert "recipient_name" not in item
+    assert "recipient_email" not in item
+    assert "recipient_phone" not in item
+    assert "ip_address" not in item
+
+
+def test_holder_decision_pack_accesses_are_holder_scoped(
+    client,
+    seed_clan_admin_membership,
+    seed_user2_non_member,
+    override_current_user,
+):
+    _create_trust_slip(code="ACCESS-USER2", holder_user_id=2)
+    client.get(
+        "/trust-slips/verify/ACCESS-USER2",
+        params={"decision_pack": "supplier_decision"},
+    )
+
+    response = client.get("/trust-slips/me/decision-pack-accesses")
+
+    assert response.status_code == 200, response.text
+    payload = response.json()
+    assert payload["ok"] is True
+    assert payload["items"] == []
