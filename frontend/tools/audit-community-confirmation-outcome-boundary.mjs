@@ -8,6 +8,7 @@ const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const files = {
   app: "src/App.tsx",
   outcome: "src/pages/CommunityConfirmationOutcomePage.tsx",
+  inbox: "src/pages/CommunityConfirmationInboxPage.tsx",
   communityProofPanel: "src/components/CommunityProofPanel.tsx",
   communityProof: "src/lib/communityProof.ts",
   service: "../gmfn_backend/app/services/community_confirmation_service.py",
@@ -89,6 +90,29 @@ assertContains(
   "outcome",
   /TrustDocumentBoundaryPanel[\s\S]*TrustDocumentConfidenceRibbon[\s\S]*TrustDocumentDisclosureSection[\s\S]*TrustDocumentFingerprint[\s\S]*TrustDocumentSecurityPanel/,
   "Community Confirmation Outcome must keep the trust-document primitives that frame the paper as evidence, not as approval."
+);
+
+[
+  "inbox",
+  "outcome",
+].forEach((key) => {
+  assertNotContains(
+    key,
+    /No trust change|Positive trust signal|negative trust signal|clear trust signal|public trust signal|specific trust decision|changes GSN's trust reading|without changing trust|moving the trust reading/i,
+    "Community confirmation surfaces must frame responses as evidence and decision support, not broad trust signals or trust decisions."
+  );
+});
+
+assertContains(
+  "inbox",
+  /No evidence-reading change[\s\S]*?Positive evidence signal[\s\S]*?Negative evidence signal[\s\S]*?clear community evidence[\s\S]*?public evidence signal[\s\S]*?changes GSN's evidence reading only/,
+  "Community Confirmation Inbox must keep evidence-reading and evidence-signal wording."
+);
+
+assertContains(
+  "outcome",
+  /privacy-safe community response for this specific decision-support request/i,
+  "Community Confirmation Outcome subtitle must frame the public paper as decision support, not a trust decision."
 );
 
 assertContains(

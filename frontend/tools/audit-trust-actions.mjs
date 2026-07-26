@@ -1417,8 +1417,8 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityConfirmationInboxPage.tsx",
-  /A review resolution changes GSN's trust reading only; it is not parent community[\s\S]*?certification, legal approval, or permission to release goods, credit, or money\./,
-  "Community confirmation inbox review cases must separate internal trust-reading decisions from parent community or transaction authority."
+  /A review resolution changes GSN's evidence reading only; it is not parent community[\s\S]*?certification, legal approval, or permission to release goods, credit, or money\./,
+  "Community confirmation inbox review cases must separate internal evidence-reading decisions from parent community or transaction authority."
 );
 
 assertNotContains(

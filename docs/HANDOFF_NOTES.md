@@ -152718,3 +152718,36 @@ GSN-branded invite composer and invite-entry continuity.
   - local only so far; do not push/deploy unless the owner explicitly selects `2` or says push/deploy.
 - Next recommended step:
   - commit this Trust Document evidence-view slice locally, then either continue another small visible/shared wording cleanup on `1` or push/deploy the accumulated local commits on `2`.
+## 2026-07-26 - Community Confirmation Evidence Signal Language
+
+- Trigger:
+  - owner selected `1` after the Trust Document evidence-view slice was committed locally.
+- Unabated truth:
+  - this pass cleans Community Confirmation Inbox and public Outcome wording only;
+  - it does not change community confirmation API payloads, request/response state values, public route contracts, responder eligibility, privacy boundaries, or Trust Document components;
+  - internal values such as `positive`, `negative`, and `none` remain unchanged; only visible labels/helper text changed;
+  - this is not a new Decision Pack generator, Evidence Ledger route, Behavioural Placement schema, scoring rewrite, or approval workflow.
+- Changed:
+  - `frontend/src/pages/CommunityConfirmationInboxPage.tsx`
+    - reframes review resolution/impact copy from trust-reading/trust-change/trust-signal language to evidence-reading/evidence-signal language;
+    - changes the answer helper from needing a clear trust signal to needing clear community evidence;
+    - changes review-case warning copy from public trust signal to public evidence signal while preserving parent-community, legal, transaction, and money-release boundaries.
+  - `frontend/src/pages/CommunityConfirmationOutcomePage.tsx`
+    - changes the public paper subtitle from a specific trust decision to a decision-support request.
+  - `frontend/tools/audit-community-confirmation-outcome-boundary.mjs`
+    - adds the inbox source to the audit boundary and cages the new evidence-signal/evidence-reading wording;
+    - rejects old community confirmation trust-signal/trust-decision phrasing in inbox/outcome surfaces.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - updates the broader inbox boundary assertion to expect evidence-reading language.
+- Verification:
+  - passed `npm exec -- eslint src/pages/CommunityConfirmationInboxPage.tsx src/pages/CommunityConfirmationOutcomePage.tsx tools/audit-community-confirmation-outcome-boundary.mjs tools/audit-trust-actions.mjs` from `frontend`;
+  - passed direct `node tools/audit-community-confirmation-outcome-boundary.mjs` from `frontend`;
+  - passed direct `node tools/audit-trust-actions.mjs` from `frontend`;
+  - passed direct `node tools/audit-institutional-proof-surfaces.mjs` from `frontend`;
+  - passed `npm --prefix frontend run audit:protected-button-freeze`;
+  - passed `npm --prefix frontend run build`;
+  - passed `git diff --check` before the handoff entry.
+- Deployment:
+  - local only so far; do not push/deploy unless the owner explicitly selects `2` or says push/deploy.
+- Next recommended step:
+  - commit this Community Confirmation evidence-signal slice locally, then either continue another small visible/shared wording cleanup on `1` or push/deploy the accumulated local commits on `2`.

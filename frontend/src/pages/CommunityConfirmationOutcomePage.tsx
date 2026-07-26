@@ -1286,7 +1286,7 @@ export default function CommunityConfirmationOutcomePage() {
                   lineHeight: 1.35,
                 }}
               >
-                A privacy-safe community response for this specific trust decision.
+                A privacy-safe community response for this specific decision-support request.
               </p>
             </div>
           </header>

@@ -233,25 +233,25 @@ const REVIEW_RESOLUTIONS = [
   {
     value: "concern_upheld",
     label: "Concern upheld",
-    meaning: "Use when a real issue should affect the trust reading.",
+    meaning: "Use when a real issue should affect the evidence reading.",
   },
   {
     value: "dismissed",
     label: "Dismissed",
-    meaning: "Use when the review should close without changing trust.",
+    meaning: "Use when the review should close without changing the evidence reading.",
   },
 ];
 
 const REVIEW_TRUST_IMPACTS = [
   {
     value: "none",
-    label: "No trust change",
-    meaning: "Closes the review without moving the trust reading.",
+    label: "No evidence-reading change",
+    meaning: "Closes the review without moving the evidence reading.",
   },
   {
     value: "positive",
-    label: "Positive trust signal",
-    meaning: "Use only when review evidence supports a positive trust signal.",
+    label: "Positive evidence signal",
+    meaning: "Use only when review evidence supports a positive evidence signal.",
   },
   {
     value: "caution",
@@ -260,7 +260,7 @@ const REVIEW_TRUST_IMPACTS = [
   },
   {
     value: "negative",
-    label: "Negative trust signal",
+    label: "Negative evidence signal",
     meaning: "Use only when a real concern is upheld.",
   },
 ];
@@ -1303,7 +1303,7 @@ function CommunityConfirmationInboxPage() {
       <ExplainToggle
         label="How to answer"
         what="Eligible members answer live community checks here."
-        why="A reader needs a clear trust signal without seeing private community contacts."
+        why="A reader needs clear community evidence without seeing private community contacts."
         next="Choose the true answer. GSN shares the result pattern, not your private contact."
         tone="blue"
         style={{ marginTop: 16 }}
@@ -1485,8 +1485,8 @@ function CommunityConfirmationInboxPage() {
             }}
           >
             <p style={{ margin: 0, ...helperText() }}>
-              Check cases here before they become a public trust signal. Sensitive review work stays inside GSN.
-              A review resolution changes GSN's trust reading only; it is not parent community
+              Check cases here before they become a public evidence signal. Sensitive review work stays inside GSN.
+              A review resolution changes GSN's evidence reading only; it is not parent community
               certification, legal approval, or permission to release goods, credit, or money.
             </p>
             <SecondaryButton
@@ -2268,7 +2268,7 @@ function CommunityConfirmationInboxPage() {
                     </StableDisclosureSummary>
                     <div style={{ marginTop: 12, display: "grid", gap: 12 }}>
                       <p style={{ margin: 0, ...helperText() }}>
-                        Resolve only when the evidence is clear. Dismissed cases should use no trust change.
+                        Resolve only when the evidence is clear. Dismissed cases should use no evidence-reading change.
                       </p>
                       <div
                         style={{
