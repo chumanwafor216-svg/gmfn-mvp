@@ -19,6 +19,7 @@ const files = {
   api: "src/lib/api.ts",
   backend: "../gmfn_backend/app/api/routes/trust_slips.py",
   backendDecisionPacks: "../gmfn_backend/app/services/trust_slip_decision_packs.py",
+  backendDecisionPackTests: "../gmfn_backend/tests/test_trust_slip_boundary_controls.py",
   backendModels: "../gmfn_backend/app/db/models.py",
   package: "package.json",
 };
@@ -284,7 +285,21 @@ assertContains(
   "backend",
   /normalize_decision_pack_context\(request\.query_params\)[\s\S]*?response_payload: Dict\[str, Any\][\s\S]*?record_decision_pack_access[\s\S]*?build_decision_pack_access_payload[\s\S]*?return response_payload/,
   "Backend public verify route must attach public-safe Decision Pack access context and record it without changing TrustEvent evidence."
-);assertContains(
+);
+
+assertContains(
+  "backendDecisionPacks",
+  /class DecisionPackDefinition:[\s\S]*?short_label: str[\s\S]*?short_label="Employment"[\s\S]*?def find_decision_pack[\s\S]*?_comparable\(pack\.short_label\)/,
+  "Backend Decision Pack catalog must canonicalize the same short labels used by the frontend selector."
+);
+
+assertContains(
+  "backendDecisionPackTests",
+  /test_public_verify_decision_pack_short_label_canonicalizes_like_frontend[\s\S]*?params=\{"decision_pack": "Employment"\}[\s\S]*?payload\["decision_pack"\] == "employment_decision"/,
+  "Backend tests must prove human short labels canonicalize to the existing Decision Pack key."
+);
+
+assertContains(
   "backendDecisionPacks",
   /PACK_RELEVANCE_SIGNALS[\s\S]*?PACK_EVENT_CATEGORY_FILTERS[\s\S]*?build_decision_pack_evidence_extract[\s\S]*?private_review_required[\s\S]*?build_decision_pack_profile[\s\S]*?evidence_extract[\s\S]*?does not score the person/,
   "Backend Decision Pack profile must remain a purpose-filtered evidence relevance profile with a redacted event extract, not a score or decision engine."

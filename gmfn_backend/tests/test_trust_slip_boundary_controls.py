@@ -218,6 +218,34 @@ def test_public_verify_records_decision_pack_access_without_trust_event(
     finally:
         db.close()
 
+def test_public_verify_decision_pack_short_label_canonicalizes_like_frontend(
+    client,
+    seed_clan_admin_membership,
+):
+    _create_trust_slip(code="ACCESS-SHORT-LABEL")
+
+    response = client.get(
+        "/trust-slips/verify/ACCESS-SHORT-LABEL",
+        params={"decision_pack": "Employment"},
+    )
+
+    assert response.status_code == 200, response.text
+    payload = response.json()
+    assert payload["decision_pack"] == "employment_decision"
+    assert payload["access_purpose"] == "Employment Decision Pack"
+    assert payload["access_note"] == "Is there enough evidence to continue an employment conversation?"
+    assert payload["decision_pack_profile"]["decision_pack"] == "employment_decision"
+    assert "community_activity" in payload["decision_pack_profile"]["evidence_filter"]
+
+    db = SessionLocal()
+    try:
+        access = db.query(TrustSlipDecisionPackAccess).one()
+        assert access.decision_pack_key == "employment_decision"
+        assert access.access_purpose == "Employment Decision Pack"
+        assert access.recipient_question == "Is there enough evidence to continue an employment conversation?"
+        assert db.query(TrustEvent).count() == 0
+    finally:
+        db.close()
 
 def test_public_verify_decision_pack_access_bounds_unknown_public_context(
     client,

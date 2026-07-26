@@ -12,6 +12,7 @@ from app.db.models import TrustEvent, TrustSlip, TrustSlipDecisionPackAccess, Tr
 class DecisionPackDefinition:
     key: str
     label: str
+    short_label: str
     recipient_question: str
     focus: str
 
@@ -20,12 +21,14 @@ DECISION_PACKS: tuple[DecisionPackDefinition, ...] = (
     DecisionPackDefinition(
         key="community_standing",
         label="Community Standing Decision Pack",
+        short_label="Standing",
         recipient_question="How is this person known where people actually know them?",
         focus="Community role, activity history, witness currentness, and unresolved public cautions.",
     ),
     DecisionPackDefinition(
         key="referral_decision",
         label="Referral Decision Pack",
+        short_label="Referral",
         recipient_question="Can this person be referred without damaging my credibility?",
         focus=(
             "Who knows the person, how they are placed in community, and whether live "
@@ -35,6 +38,7 @@ DECISION_PACKS: tuple[DecisionPackDefinition, ...] = (
     DecisionPackDefinition(
         key="guarantor_decision",
         label="Guarantor or Support Decision Pack",
+        short_label="Guarantor",
         recipient_question="Is there enough evidence to stand for or support this person?",
         focus=(
             "Responsibility signals, reliability evidence, support boundary, and community "
@@ -44,12 +48,14 @@ DECISION_PACKS: tuple[DecisionPackDefinition, ...] = (
     DecisionPackDefinition(
         key="employment_decision",
         label="Employment Decision Pack",
+        short_label="Employment",
         recipient_question="Is there enough evidence to continue an employment conversation?",
         focus="Role, consistency, contribution, leadership or service signals, and the next verification step.",
     ),
     DecisionPackDefinition(
         key="housing_decision",
         label="Housing Decision Pack",
+        short_label="Housing",
         recipient_question="Is there enough community evidence to continue a housing decision?",
         focus=(
             "Community standing, reliability posture, witness currentness, and the need for "
@@ -59,6 +65,7 @@ DECISION_PACKS: tuple[DecisionPackDefinition, ...] = (
     DecisionPackDefinition(
         key="trade_check",
         label="Trade or Skilled Work Decision Pack",
+        short_label="Trade",
         recipient_question="Who has seen this person trade, serve, or complete work?",
         focus=(
             "Observed service activity, community evidence, visible disputes or cautions, "
@@ -68,6 +75,7 @@ DECISION_PACKS: tuple[DecisionPackDefinition, ...] = (
     DecisionPackDefinition(
         key="supplier_decision",
         label="Supplier Decision Pack",
+        short_label="Supplier",
         recipient_question="Is there enough evidence to continue a supplier or contractor decision?",
         focus=(
             "Business reliability posture, fulfilment evidence where visible, community "
@@ -77,12 +85,14 @@ DECISION_PACKS: tuple[DecisionPackDefinition, ...] = (
     DecisionPackDefinition(
         key="volunteer_decision",
         label="Volunteer Decision Pack",
+        short_label="Volunteer",
         recipient_question="Is there enough evidence to accept this person into a volunteer role?",
         focus="Participation, consistency, service posture, witness currentness, and safeguarding caution before placement.",
     ),
     DecisionPackDefinition(
         key="business_partnership",
         label="Business Partnership Decision Pack",
+        short_label="Partner",
         recipient_question="Is there enough evidence to continue a business partnership discussion?",
         focus=(
             "Community reliability, responsibility signals, public verification status, and "
@@ -92,6 +102,7 @@ DECISION_PACKS: tuple[DecisionPackDefinition, ...] = (
     DecisionPackDefinition(
         key="community_membership",
         label="Community Membership Decision Pack",
+        short_label="Membership",
         recipient_question="Is there enough evidence to admit or connect this person to a community?",
         focus="Identity context, community route, witness currentness, standing, and first live confirmation step.",
     ),
@@ -116,7 +127,11 @@ def find_decision_pack(value: Any) -> Optional[DecisionPackDefinition]:
         return None
     comparable = _comparable(text)
     for pack in DECISION_PACKS:
-        if pack.key == text or _comparable(pack.label) == comparable:
+        if comparable in {
+            _comparable(pack.key),
+            _comparable(pack.label),
+            _comparable(pack.short_label),
+        }:
             return pack
     return None
 

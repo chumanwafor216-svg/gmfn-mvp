@@ -151928,3 +151928,33 @@ GSN-branded invite composer and invite-entry continuity.
   - local only so far; routine continuation publishing remains batch-frozen unless the product owner explicitly asks to push/deploy.
 - Next recommended step:
   - commit this suite cage, then push/deploy the accumulated local commits only when the product owner explicitly asks.
+
+## 2026-07-26 - Backend Decision Pack Short Label Parity
+
+- Trigger:
+  - owner selected `1` after the public TrustSlip recipient smoke suite cage was committed locally.
+- Unabated truth:
+  - the frontend Decision Pack catalog accepted short human labels such as `Employment`, but the backend public verify normalizer only recognized canonical keys and full labels;
+  - a human-readable public URL could therefore degrade to an unknown/future pack instead of canonicalizing to the intended Decision Pack key;
+  - this pass fixes catalog parity only. It does not create a new Decision Pack table, Global TrustSlip, Behavioural Placement schema, scoring engine, approval engine, payment behavior, private Trust Passport disclosure, or broader Evidence Ledger architecture.
+- Changed:
+  - `gmfn_backend/app/services/trust_slip_decision_packs.py`
+    - added `short_label` to backend `DecisionPackDefinition` entries, matching the frontend selector's short labels;
+    - `find_decision_pack` now canonicalizes known short labels such as `Employment`, `Housing`, `Supplier`, and `Membership` to the existing backend Decision Pack keys.
+  - `gmfn_backend/tests/test_trust_slip_boundary_controls.py`
+    - added a public verify regression proving `decision_pack=Employment` returns and records `employment_decision`, `Employment Decision Pack`, and the employment recipient question without creating a TrustEvent.
+  - `frontend/tools/audit-public-trustslip-verify-boundary.mjs`
+    - added backend service/test source guards requiring short-label canonicalization to remain discoverable in the public TrustSlip boundary audit.
+- Verification:
+  - passed `python -m pytest gmfn_backend/tests/test_trust_slip_boundary_controls.py -q`;
+  - passed `python -m py_compile gmfn_backend/app/services/trust_slip_decision_packs.py gmfn_backend/tests/test_trust_slip_boundary_controls.py`;
+  - passed `npm exec -- eslint tools/audit-public-trustslip-verify-boundary.mjs` from `frontend`;
+  - passed `npm --prefix frontend run audit:public-trustslip-verify-boundary`;
+  - passed `npm --prefix frontend run audit:evidence-display-boundary-batch`;
+  - passed `npm --prefix frontend run audit:protected-button-freeze`;
+  - passed `npm --prefix frontend run build`;
+  - passed `git diff --check`.
+- Deployment:
+  - local only so far; routine continuation publishing remains batch-frozen unless the product owner explicitly asks to push/deploy.
+- Next recommended step:
+  - push/deploy the accumulated local commits only when the owner explicitly asks, or continue with another small Decision Pack parity/risk-reduction slice.
