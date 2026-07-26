@@ -1,3 +1,30 @@
+## CURRENT LOCAL STATE - 2026-07-26 - Trust Passport mobile visual sweep passed locally
+
+Owner trigger:
+- Owner selected `1` after the Trust Passport evidence movement details collapse.
+
+Unabated truth:
+- This was a verification slice, not a new UI feature or redesign.
+- The repo's mocked mobile visual sweep passed against a local Vite server at `http://127.0.0.1:5180`, including the Trust Passport route alias `/app/trust-passport`.
+- The sweep checks 390x844 mobile rendering for horizontal overflow, visibly oversized blocks, and low-contrast text across its route list.
+- This is useful evidence that the collapse batch did not create obvious automated mobile layout failures, but it is not the same as a human product-owner phone review of the real signed-in Trust Passport data.
+- No backend route, schema, evidence extraction, scoring, TrustEvent, permission, or deployment behavior changed.
+- No frontend code changed in this slice; only this handoff note records the verification result.
+
+Routes/screens affected:
+- Verified by sweep: `/app/trust-passport` among the broader mobile visual route list.
+- No public TrustSlip route behavior changed in this slice.
+
+Verification:
+- Started local Vite dev server on `127.0.0.1:5180` with `npm --prefix frontend run dev -- --host 127.0.0.1 --port 5180`.
+- Passed `GSN_AUDIT_BASE_URL=http://127.0.0.1:5180 npm --prefix frontend run audit:mobile-visual-sweep`.
+- Stopped the local Vite process after the sweep.
+
+Deployment:
+- Local only. Not pushed or deployed; owner must select `2` or explicitly say push/deploy.
+
+Recommended next step:
+- Since automated mobile visual review passed, either publish the current local batch or do one human phone pass on the live/dev Trust Passport before adding more Trust Passport toggles.
 ## CURRENT LOCAL STATE - 2026-07-26 - Trust Passport evidence movement details collapsed locally
 
 Owner trigger:
