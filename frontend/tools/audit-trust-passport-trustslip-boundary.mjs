@@ -205,7 +205,7 @@ assertContains(
 );
 assertContains(
   "trustPassport",
-  /isCompact \? \([\s\S]*?<details[\s\S]*?data-trust-passport-decision-boundary="compact"[\s\S]*?<StableDisclosureSummary[\s\S]*?debugId="trust-score\.decision-boundary\.toggle"[\s\S]*?stableHeight=\{38\}[\s\S]*?Open limits[\s\S]*?: \([\s\S]*?<div[\s\S]*?data-trust-passport-decision-boundary="compact"/,
+  /isCompact \? \([\s\S]*?<details[\s\S]*?data-trust-passport-decision-boundary="compact"[\s\S]*?<StableDisclosureSummary[\s\S]*?debugId="trust-score\.decision-boundary\.toggle"[\s\S]*?stableHeight=\{38\}[\s\S]*?Decision Boundary[\s\S]*?Open limits[\s\S]*?: \([\s\S]*?<div[\s\S]*?data-trust-passport-decision-boundary="compact"[\s\S]*?Decision Boundary/,
   "Trust Passport mobile first viewport must keep the compact limits disclosure while desktop keeps the full limits box."
 );
 

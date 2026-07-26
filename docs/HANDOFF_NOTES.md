@@ -1,3 +1,44 @@
+## CURRENT LOCAL STATE - 2026-07-26 - Trust Passport Decision Boundary label
+
+Owner trigger:
+- Owner selected `1` after the public TrustSlip Verify Decision Boundary label pass.
+
+Unabated truth:
+- This is a tiny frontend copy-contract pass on the signed-in Trust Passport first-read surface. It does not change backend evidence aggregation, scoring, auth, routes, permissions, TrustSlip issuance, or TrustEvent behavior.
+- The Trust Passport first-viewport compact boundary now uses the product-law heading `Decision Boundary` instead of `What this cannot decide` on both mobile and desktop variants.
+- The existing boundary rows remain unchanged: reading scope, primary anchor, guarantee, government ID, and final decision.
+- Devil's advocate: this is consistency work, not density reduction. It makes the first read clearer but does not remove deeper Passport detail sections.
+
+Changed:
+- `frontend/src/pages/TrustScorePage.tsx`
+  - Renamed the Trust Passport first-read boundary heading to `Decision Boundary` in mobile disclosure and desktop box variants.
+- `frontend/tools/audit-trust-passport-button-inventory.mjs`
+  - Updated the first-viewport audit to require the visible `Decision Boundary` label.
+- `frontend/tools/audit-trust-passport-front-package.mjs`
+  - Tightened the front-package audit to require the same label in the compact boundary surface.
+- `frontend/tools/audit-trust-passport-trustslip-boundary.mjs`
+  - Tightened the Trust Passport / TrustSlip separation audit to require the same label.
+
+Routes/screens affected:
+- `/app/trust` Trust Passport first-read surface only.
+- No public TrustSlip Verify paper, signed-in TrustSlip holder paper, backend route, database, auth, payment, or TrustEvent write behavior changed.
+
+Verification:
+- Passed `npm --prefix frontend run audit:trust-passport-button-inventory`.
+- Passed `npm --prefix frontend run audit:trust-passport-front-package`.
+- Passed `npm --prefix frontend run audit:trust-passport-trustslip-boundary`.
+- Passed `npm --prefix frontend run audit:trust-actions`.
+- Passed `npm --prefix frontend run audit:protected-button-freeze`.
+- Passed `node frontend\tools\audit-institutional-proof-surfaces.mjs`.
+- Passed `npm --prefix frontend run build`.
+- Passed `git diff --check`; Git still reports normal working-copy line-ending warnings on touched frontend files.
+
+Deployment:
+- Not pushed or deployed in this slice because owner selected `1`.
+- After commit, local `main` should be ahead of origin by 6 commits.
+
+Recommended next step:
+- Select `2` to push/deploy the local batch, or select `1` to continue another local pass.
 ## CURRENT LOCAL STATE - 2026-07-26 - Public TrustSlip Verify Decision Boundary label
 
 Owner trigger:

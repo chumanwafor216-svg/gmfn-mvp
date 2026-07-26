@@ -3390,7 +3390,7 @@ export default function TrustScorePage() {
                   textTransform: "uppercase",
                 }}
               >
-                <span>What this cannot decide</span>
+                <span>Decision Boundary</span>
                 <span style={{ color: "#07172C", fontSize: 10, textTransform: "none" }}>
                   Open limits
                 </span>
@@ -3438,7 +3438,7 @@ export default function TrustScorePage() {
                   lineHeight: 1.1,
                 }}
               >
-                What this cannot decide
+                Decision Boundary
               </div>
               <div
                 style={{

@@ -161,7 +161,7 @@ assertContains(
 
 assertContains(
   "trust",
-  /data-trust-passport-decision-first="one-answer-four-facts"[\s\S]*?Aggregate Passport reading[\s\S]*?\{trustPassportDecisionAnswer\}[\s\S]*?\{trustPassportDecisionLine\}[\s\S]*?data-trust-passport-decision-facts="four-quick-facts"[\s\S]*?trustPassportDecisionFacts\.map[\s\S]*?debugId="trust-score\.decision-primary-next-step"[\s\S]*?trustPassportPrimaryAction\.label[\s\S]*?isCompact \? \([\s\S]*?<details[\s\S]*?data-trust-passport-decision-boundary="compact"[\s\S]*?<StableDisclosureSummary[\s\S]*?debugId="trust-score\.decision-boundary\.toggle"[\s\S]*?: \([\s\S]*?<div[\s\S]*?data-trust-passport-decision-boundary="compact"/,
+  /data-trust-passport-decision-first="one-answer-four-facts"[\s\S]*?Aggregate Passport reading[\s\S]*?\{trustPassportDecisionAnswer\}[\s\S]*?\{trustPassportDecisionLine\}[\s\S]*?data-trust-passport-decision-facts="four-quick-facts"[\s\S]*?trustPassportDecisionFacts\.map[\s\S]*?debugId="trust-score\.decision-primary-next-step"[\s\S]*?trustPassportPrimaryAction\.label[\s\S]*?isCompact \? \([\s\S]*?<details[\s\S]*?data-trust-passport-decision-boundary="compact"[\s\S]*?<StableDisclosureSummary[\s\S]*?debugId="trust-score\.decision-boundary\.toggle"[\s\S]*?Decision Boundary[\s\S]*?Open limits[\s\S]*?: \([\s\S]*?<div[\s\S]*?data-trust-passport-decision-boundary="compact"[\s\S]*?Decision Boundary/,
   "Trust Passport first viewport must show aggregate Passport reading, four facts, one primary next-step button, then the compact mobile boundary disclosure."
 );
 
