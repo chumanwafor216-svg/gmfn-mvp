@@ -615,7 +615,7 @@ async function runMemberCredentialScenario(browser, baseURL, member = memberKey,
     state.page,
     "Private verifier names, contacts, review notes, payment records, and the full Trust Passport stay hidden."
   );
-  await openDisclosure(state.page, "Full public reading");
+  await openDisclosure(state.page, "Audit Details");
   await expectVisibleText(
     state.page,
     "This credential does not expose verifier names, private notes, phone numbers, shop details, payment records, loan details, or credit approval."
@@ -625,7 +625,7 @@ async function runMemberCredentialScenario(browser, baseURL, member = memberKey,
     expected.fullReadingText ||
       "Check the Community ID, witness strength, renewal, activity summary, TrustSlip, and live community confirmation together. If one is missing or stale, ask for fresh evidence first."
   );
-  await openDisclosure(state.page, "Evidence notes and privacy");
+  await openDisclosure(state.page, "Evidence and privacy notes");
   await expectVisibleText(state.page, "Private verifier names and private member contact details are not shown.");
 
   const path = `/verify/community/${encodeURIComponent(communityKey)}/member/${encodeURIComponent(member)}`;

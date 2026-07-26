@@ -1,3 +1,46 @@
+## CURRENT LOCAL STATE - 2026-07-26 - Public member/community verification wording tightened
+
+Owner trigger:
+- Owner selected `1` after the public TrustSlip decision-summary wording pass.
+
+Unabated truth:
+- Runtime frontend code changed for Public Member Credential and Community Verification Paper wording only.
+- This pass continues the decision-first/plain-language direction, but it still does not complete every listed paper in the feedback. Remaining obvious candidates include Member Witness Confirmation Record, Community Domain Credential/Verification Paper, merchant/release evidence, and confirmation outcome papers.
+- No backend route, payload contract, auth rule, schema, or deployment config changed.
+
+Changed:
+- `frontend/src/pages/CommunityMemberVerifyPage.tsx`
+  - Renamed the first credential block from `Community-scoped credential` to `Decision Summary`.
+  - Replaced technical labels: `Witness evidence` -> `Community witnesses`, `Evidence currentness` / `Witness currentness` -> `Are witnesses up to date?`, `Verification path` -> `Check path`.
+  - Translated the collapsed public reading to `Audit Details` and retitled secondary sections to `Credential facts` and `Evidence and privacy notes`.
+  - Reworded renewal rows as witness-facing labels: `Witness update`, `Witnesses valid until`, and `Next witness check`.
+- `frontend/src/pages/CommunityVerifyPage.tsx`
+  - Replaced registry ribbon labels with plainer labels: `Can this be checked?`, `Checked now`, `Evidence source`, and `Check path`.
+  - Renamed `Registry signals` to `Registry check` and `Fast reading` to `Decision Summary`.
+- `frontend/tools/audit-trust-actions.mjs`
+- `frontend/tools/audit-institutional-proof-surfaces.mjs`
+- `frontend/tools/smoke-community-verification-boundary.mjs`
+  - Updated audit/smoke contracts for the new public paper labels.
+
+Routes/screens affected:
+- Public Community Verification: `/verify/community/:communityKey`.
+- Public Member Credential: `/verify/community/:communityKey/member/:memberKey`.
+- No backend route changed.
+
+Verification:
+- Passed `npm --prefix frontend run audit:community-verification-boundary`.
+- Passed `npm --prefix frontend run audit:trust-actions`.
+- Passed `node frontend\tools\audit-institutional-proof-surfaces.mjs`.
+- Passed `npm --prefix frontend run audit:protected-button-freeze`.
+- Passed `npm --prefix frontend run build`.
+- Passed `npm --prefix frontend run smoke:community-verification-boundary` with escalation after the sandbox blocked Vite/esbuild spawn with `EPERM`.
+- Passed `git diff --check`; Git still reports normal LF-to-CRLF working-copy warnings on touched files.
+
+Deployment:
+- Local runtime/docs change only at this point. Not pushed or deployed until owner selects `2` or explicitly says push/deploy.
+
+Recommended next step:
+- Continue the same label simplification on Member Witness Confirmation Record and Community Domain Credential/Verification Paper, then consider one visual phone pass across TrustSlip Verify, Community Verification, and Member Credential.
 ## CURRENT LOCAL STATE - 2026-07-26 - Public TrustSlip decision summary wording tightened
 
 Owner trigger:

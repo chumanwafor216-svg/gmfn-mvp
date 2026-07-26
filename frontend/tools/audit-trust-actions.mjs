@@ -431,7 +431,7 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityMemberVerifyPage.tsx",
-  /TrustDocumentConfidenceRibbon[\s\S]*?memberCredentialConfidenceRibbonItems[\s\S]*?Member status[\s\S]*?Community record[\s\S]*?Witness evidence[\s\S]*?Evidence currentness[\s\S]*?Verification path/,
+  /TrustDocumentConfidenceRibbon[\s\S]*?memberCredentialConfidenceRibbonItems[\s\S]*?Member status[\s\S]*?Community record[\s\S]*?Community witnesses[\s\S]*?Are witnesses up to date\?[\s\S]*?Check path/,
   "Public Community Member Credential must expose the Trust Document Language confidence ribbon."
 );
 
@@ -449,13 +449,13 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityMemberVerifyPage.tsx",
-  /TrustDocumentDisclosureSection[\s\S]*title="Full public reading"[\s\S]*Open for currentness, evidence, and decision guidance\./,
+  /TrustDocumentDisclosureSection[\s\S]*title="Audit Details"[\s\S]*Open for witness checks, community record, evidence notes, and limits\./,
   "Public Community Member Credential must keep deeper public-reading guidance collapsed behind a clear institutional disclosure."
 );
 
 assertContains(
   "src/pages/CommunityMemberVerifyPage.tsx",
-  /data-gsn-member-credential-primary-facts="true"[\s\S]*?Member GSN ID[\s\S]*?Community ID[\s\S]*?Status[\s\S]*?Witness strength[\s\S]*?TrustDocumentDisclosureSection[\s\S]*?title="All credential facts"[\s\S]*?data-gsn-member-credential-secondary-facts="true"[\s\S]*?Next witness status[\s\S]*?TrustDocumentDisclosureSection[\s\S]*?title="Evidence notes and privacy"/,
+  /data-gsn-member-credential-primary-facts="true"[\s\S]*?Member GSN ID[\s\S]*?Community ID[\s\S]*?Status[\s\S]*?Witness strength[\s\S]*?TrustDocumentDisclosureSection[\s\S]*?title="Credential facts"[\s\S]*?data-gsn-member-credential-secondary-facts="true"[\s\S]*?Next witness check[\s\S]*?TrustDocumentDisclosureSection[\s\S]*?title="Evidence and privacy notes"/,
   "Public Community Member Credential must expose only the core facts first and collapse secondary facts plus evidence/privacy notes."
 );
 
@@ -888,13 +888,13 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityVerifyPage.tsx",
-  /Community Verification[\s\S]*?Registry signals[\s\S]*?Public community record[\s\S]*?This confirms the community identity in GSN[\s\S]*?does not verify every member, shop, line, or subgroup[\s\S]*?data-gsn-community-verify-decision-summary="true"[\s\S]*?Fast reading[\s\S]*?What this shows[\s\S]*?What it does not prove[\s\S]*?Ask for next evidence[\s\S]*?community-verify\.copy-link[\s\S]*?Copy record link[\s\S]*?community-verify\.request-confirmation[\s\S]*?Request scoped confirmation[\s\S]*?Private by design[\s\S]*?Community record security and limits[\s\S]*?What are you checking\?[\s\S]*?Verification snapshot[\s\S]*?Community following[\s\S]*?Verification details[\s\S]*?Share this record/,
+  /Community Verification[\s\S]*?Registry check[\s\S]*?Public community record[\s\S]*?This confirms the community identity in GSN[\s\S]*?does not verify every member, shop, line, or subgroup[\s\S]*?data-gsn-community-verify-decision-summary="true"[\s\S]*?Decision Summary[\s\S]*?What this shows[\s\S]*?What it does not prove[\s\S]*?Ask for next evidence[\s\S]*?community-verify\.copy-link[\s\S]*?Copy record link[\s\S]*?community-verify\.request-confirmation[\s\S]*?Request scoped confirmation[\s\S]*?Private by design[\s\S]*?Community record security and limits[\s\S]*?What are you checking\?[\s\S]*?Verification snapshot[\s\S]*?Community following[\s\S]*?Verification details[\s\S]*?Share this record/,
   "CommunityVerifyPage must present an official record card, fast decision summary, collapsed registry/snapshot/details sections, and a privacy boundary."
 );
 
 assertContains(
   "src/pages/CommunityVerifyPage.tsx",
-  /const confidenceRibbonItems:[\s\S]*?Registry status[\s\S]*?Record integrity[\s\S]*?Last registry update[\s\S]*?Evidence chain[\s\S]*?Verification path/,
+  /const confidenceRibbonItems:[\s\S]*?Registry status[\s\S]*?Can this be checked\?[\s\S]*?Checked now[\s\S]*?Evidence source[\s\S]*?Check path/,
   "CommunityVerifyPage confidence ribbon must expose registry status, record integrity, last registry update, evidence chain, and verification path."
 );
 
@@ -1122,13 +1122,13 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityMemberVerifyPage.tsx",
-  /const memberAnchor = firstTruthy\(credential\?\.member_gsn_id, cleanMemberKey, "Not shown"\);[\s\S]*?const communityAnchor = firstTruthy\([\s\S]*?credential\?\.community_code[\s\S]*?credential\?\.community_id[\s\S]*?cleanCommunityKey[\s\S]*?"Not shown"[\s\S]*?Community-scoped credential[\s\S]*?Use only for this Community ID[\s\S]*?Not universal trust, payment[\s\S]*?approval, or parent community membership[\s\S]*?\{fact\("Member GSN ID", memberAnchor\)\}[\s\S]*?\{fact\("Community ID", communityAnchor\)\}/,
+  /const memberAnchor = firstTruthy\(credential\?\.member_gsn_id, cleanMemberKey, "Not shown"\);[\s\S]*?const communityAnchor = firstTruthy\([\s\S]*?credential\?\.community_code[\s\S]*?credential\?\.community_id[\s\S]*?cleanCommunityKey[\s\S]*?"Not shown"[\s\S]*?Decision Summary[\s\S]*?Recognised inside this Community ID[\s\S]*?Not universal trust, payment[\s\S]*?approval, or parent community membership[\s\S]*?\{fact\("Member GSN ID", memberAnchor\)\}[\s\S]*?\{fact\("Community ID", communityAnchor\)\}/,
   "Community member public credential must visibly anchor the member GSN ID to one Community ID before any wider trust reading."
 );
 
 assertContains(
   "src/pages/CommunityMemberVerifyPage.tsx",
-  /title: "Trust inside this community"[\s\S]*?body: `\$\{trustReadingLabel\}\. \$\{trustReadingScope\}`/,
+  /title: "Community confidence"[\s\S]*?body: `\$\{trustReadingLabel\}\. \$\{trustReadingScope\}`/,
   "Community member public credential must render the community-scoped trust reading."
 );
 
@@ -1140,7 +1140,7 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityMemberVerifyPage.tsx",
-  /const witnessStrengthBoundary =[\s\S]*?Low, missing, expired, withdrawn, or disputed witness evidence[\s\S]*?weaker evidence until renewed[\s\S]*?title: "Evidence currentness"[\s\S]*?body: `\$\{currentnessLabel\}\. \$\{currentnessScope\} \$\{witnessStrengthBoundary\}`/,
+  /const witnessStrengthBoundary =[\s\S]*?Low, missing, expired, withdrawn, or disputed witness evidence[\s\S]*?weaker evidence until renewed[\s\S]*?title: "Are witnesses up to date\?"[\s\S]*?body: `\$\{currentnessLabel\}\. \$\{currentnessScope\} \$\{witnessStrengthBoundary\}`/,
   "Community member public credential must render evidence currentness and keep weak, missing, expired, withdrawn, or disputed witness evidence visibly weaker."
 );
 

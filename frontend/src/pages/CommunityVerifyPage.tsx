@@ -780,23 +780,23 @@ export default function CommunityVerifyPage() {
       tone: active ? "good" : "warn",
     },
     {
-      label: "Record integrity",
+      label: "Can this be checked?",
       value: communityAnchor && record ? "Public record resolved" : "Limited",
       tone: communityAnchor && record ? "good" : "warn",
     },
     {
-      label: "Last registry update",
+      label: "Checked now",
       value: loading ? "Checking" : "Live check loaded",
       tone: loading ? "info" : "good",
     },
     {
-      label: "Evidence chain",
+      label: "Evidence source",
       value: "Community-scoped",
       tone: "info",
       detail: "Member and shop proof stays separate.",
     },
     {
-      label: "Verification path",
+      label: "Check path",
       value: requestConfirmationAvailable ? "Available" : "Public record only",
       tone: requestConfirmationAvailable ? "good" : "warn",
     },
@@ -987,8 +987,8 @@ export default function CommunityVerifyPage() {
             />
 
             <TrustDocumentDisclosureSection
-              title="Registry signals"
-              summary={`${active ? "Active registry status" : "Registry status available"} - record integrity, update status, evidence chain, and verification path.`}
+              title="Registry check"
+              summary={`${active ? "Active registry status" : "Registry status available"} - record check, update status, evidence source, and check path.`}
             >
               <TrustDocumentConfidenceRibbon items={confidenceRibbonItems} />
             </TrustDocumentDisclosureSection>
@@ -1180,7 +1180,7 @@ export default function CommunityVerifyPage() {
                       {communityVerifyIconBadge("certificate-seal", 40, "blue")}
                       <div style={{ minWidth: 0, display: "grid", gap: 3 }}>
                         <h2 style={{ ...sectionTitle(), fontSize: 21 }}>
-                          Fast reading
+                          Decision Summary
                         </h2>
                         <p style={{ ...helperText(), lineHeight: 1.36 }}>
                           Use this as the community anchor. Open the registry

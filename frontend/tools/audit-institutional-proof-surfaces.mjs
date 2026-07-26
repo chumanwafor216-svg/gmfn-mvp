@@ -835,8 +835,8 @@ assertNotContains(
 );
 assertContains(
   "publicPaper",
-  /Trust-limit signal/,
-  "Public TrustSlip paper must use the institution-grade trust-limit label."
+  /Risk limit/,
+  "Public TrustSlip paper must use the plain-language risk-limit label."
 );
 assertNotContains(
   "publicPaper",
@@ -845,7 +845,7 @@ assertNotContains(
 );
 assertContains(
   "publicPaper",
-  /TrustDocumentConfidenceRibbon[\s\S]*?trustSlipConfidenceRibbonItems[\s\S]*?TrustSlip status[\s\S]*?Record integrity[\s\S]*?Evidence chain[\s\S]*?Verification path[\s\S]*?Valid until/,
+  /TrustDocumentConfidenceRibbon[\s\S]*?trustSlipConfidenceRibbonItems[\s\S]*?Paper status[\s\S]*?Can this be checked\?[\s\S]*?Evidence source[\s\S]*?Check path[\s\S]*?Use before/,
   "Public TrustSlip paper must carry the Trust Document Language confidence ribbon."
 );
 assertContains(
@@ -1183,7 +1183,7 @@ assertContains(
 );
 assertContains(
   "communityMemberVerify",
-  /TrustDocumentConfidenceRibbon[\s\S]*?memberCredentialConfidenceRibbonItems[\s\S]*?Member status[\s\S]*?Community record[\s\S]*?Witness evidence[\s\S]*?Evidence currentness[\s\S]*?Verification path/,
+  /TrustDocumentConfidenceRibbon[\s\S]*?memberCredentialConfidenceRibbonItems[\s\S]*?Member status[\s\S]*?Community record[\s\S]*?Community witnesses[\s\S]*?Are witnesses up to date\?[\s\S]*?Check path/,
   "Public Community Member Credential must carry the Trust Document Language confidence ribbon."
 );
 assertContains(
@@ -1198,12 +1198,12 @@ assertContains(
 );
 assertContains(
   "communityMemberVerify",
-  /TrustDocumentDisclosureSection[\s\S]*title="Full public reading"[\s\S]*Open for currentness, evidence, and decision guidance\./,
+  /TrustDocumentDisclosureSection[\s\S]*title="Audit Details"[\s\S]*Open for witness checks, community record, evidence notes, and limits\./,
   "Public Community Member Credential must keep deeper public-reading guidance collapsed behind a clear institutional disclosure."
 );
 assertContains(
   "communityMemberVerify",
-  /data-gsn-member-credential-primary-facts="true"[\s\S]*?Member GSN ID[\s\S]*?Community ID[\s\S]*?Status[\s\S]*?Witness strength[\s\S]*?TrustDocumentDisclosureSection[\s\S]*?title="All credential facts"[\s\S]*?data-gsn-member-credential-secondary-facts="true"[\s\S]*?Next witness status[\s\S]*?TrustDocumentDisclosureSection[\s\S]*?title="Evidence notes and privacy"/,
+  /data-gsn-member-credential-primary-facts="true"[\s\S]*?Member GSN ID[\s\S]*?Community ID[\s\S]*?Status[\s\S]*?Witness strength[\s\S]*?TrustDocumentDisclosureSection[\s\S]*?title="Credential facts"[\s\S]*?data-gsn-member-credential-secondary-facts="true"[\s\S]*?Next witness check[\s\S]*?TrustDocumentDisclosureSection[\s\S]*?title="Evidence and privacy notes"/,
   "Public Community Member Credential must expose only the core facts first and collapse secondary facts plus evidence/privacy notes."
 );
 assertNotContains(

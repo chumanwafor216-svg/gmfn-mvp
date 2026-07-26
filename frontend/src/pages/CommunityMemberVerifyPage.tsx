@@ -483,17 +483,17 @@ export default function CommunityMemberVerifyPage() {
       tone: communityRecordTone,
     },
     {
-      label: "Witness evidence",
+      label: "Community witnesses",
       value: witnessCountText,
       tone: Number.isFinite(witnessCountNumber) && witnessCountNumber > 0 ? "good" : "warn",
     },
     {
-      label: "Evidence currentness",
+      label: "Are witnesses up to date?",
       value: currentnessLabel,
       tone: currentnessTone,
     },
     {
-      label: "Verification path",
+      label: "Check path",
       value:
         memberAnchor !== "Not shown" && communityAnchor !== "Not shown"
           ? "Community + member IDs present"
@@ -520,7 +520,7 @@ export default function CommunityMemberVerifyPage() {
       tone: "info",
     },
     {
-      title: "Witness currentness",
+      title: "Are witnesses up to date?",
       detail: currentnessScope,
       tone: currentnessTone,
     },
@@ -548,22 +548,22 @@ export default function CommunityMemberVerifyPage() {
   const memberReading = credential
     ? [
         {
-          title: "Trust inside this community",
+          title: "Community confidence",
           body: `${trustReadingLabel}. ${trustReadingScope}`,
           tone: "info" as const,
         },
         {
-          title: "Evidence currentness",
+          title: "Are witnesses up to date?",
           body: `${currentnessLabel}. ${currentnessScope} ${witnessStrengthBoundary}`,
           tone: currentnessTone,
         },
         {
-          title: "Community record currentness",
+          title: "Community record",
           body: `${communityRecordCurrentnessLabel}. ${communityRecordCurrentnessScope}`,
           tone: communityRecordTone,
         },
         {
-          title: "Record shown",
+          title: "What we checked",
           body: firstTruthy(
             credential.evidence_scope,
             credential.proof_scope,
@@ -674,7 +674,7 @@ export default function CommunityMemberVerifyPage() {
                   {evidenceIcon("trust-shield", "gold")}
                   <div style={{ minWidth: 0 }}>
                     <div style={{ color: "#F2C766", fontSize: 12, fontWeight: 1000 }}>
-                      Community-scoped credential
+                      Decision Summary
                     </div>
                     <p
                       style={{
@@ -685,7 +685,7 @@ export default function CommunityMemberVerifyPage() {
                         lineHeight: 1.5,
                       }}
                     >
-                      Use only for this Community ID. Not universal trust, payment
+                      Recognised inside this Community ID. Not universal trust, payment
                       approval, or parent community membership.
                     </p>
                   </div>
@@ -788,8 +788,8 @@ export default function CommunityMemberVerifyPage() {
                 </div>
                 <div style={{ marginTop: 12 }}>
                   <TrustDocumentDisclosureSection
-                    title="Full public reading"
-                    summary="Open for currentness, evidence, and decision guidance."
+                    title="Audit Details"
+                    summary="Open for witness checks, community record, evidence notes, and limits."
                   >
                     <div
                       style={{
@@ -813,8 +813,8 @@ export default function CommunityMemberVerifyPage() {
               </div>
 
               <TrustDocumentDisclosureSection
-                title="All credential facts"
-                summary="Open for role, renewal, activity, and currentness facts."
+                title="Credential facts"
+                summary="Open for role, renewal, activity, and witness facts."
               >
                 <div
                   data-gsn-member-credential-secondary-facts="true"
@@ -835,19 +835,19 @@ export default function CommunityMemberVerifyPage() {
                   {fact("Member witnesses", witnessCount)}
                   {fact("Activity events", activityCount)}
                   {fact("Latest activity", dateLabel(credential.community_activity_latest_at))}
-                  {fact("Renewal", firstTruthy(credential.membership_renewal_status_label, "Not Started"))}
-                  {fact("Valid until", dateLabel(credential.membership_valid_until))}
+                  {fact("Witness update", firstTruthy(credential.membership_renewal_status_label, "Not Started"))}
+                  {fact("Witnesses valid until", dateLabel(credential.membership_valid_until))}
                   {fact("Next witness renewal", dateLabel(credential.next_witness_renewal_at))}
                   {fact(
-                    "Next witness status",
+                    "Next witness check",
                     firstTruthy(credential.next_witness_renewal_status_label, "Not Started")
                   )}
                 </div>
               </TrustDocumentDisclosureSection>
 
               <TrustDocumentDisclosureSection
-                title="Evidence notes and privacy"
-                summary="Open for activity summary, evidence scope, and private-data boundary."
+                title="Evidence and privacy notes"
+                summary="Open for activity summary, what was checked, and private-data boundary."
               >
                 <div style={{ display: "grid", gap: 10 }}>
                   <div style={innerCard("#F8FBFF")}>
