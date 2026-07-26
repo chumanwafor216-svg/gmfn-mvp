@@ -51,16 +51,16 @@ jobs:
           curl -fsS -X POST "$frontend_deploy_hook_url"
           echo "gmfn-frontend deploy hook accepted the request."
 
-      - name: Trigger frontend deploy through Render API
-        if: ${{ env.RENDER_FRONTEND_DEPLOY_HOOK_URL == '' && env.RENDER_API_KEY != '' && env.RENDER_FRONTEND_SERVICE_ID != '' }}
+      - name: Trigger exact frontend deploy through Render API
+        if: ${{ env.RENDER_API_KEY != '' && env.RENDER_FRONTEND_SERVICE_ID != '' }}
         run: |
-          echo "Triggering Render API deploy for gmfn-frontend service ${RENDER_FRONTEND_SERVICE_ID} at ${GITHUB_SHA}."
+          echo "Triggering exact Render API deploy for gmfn-frontend service ${RENDER_FRONTEND_SERVICE_ID} at ${GITHUB_SHA}."
           curl -fsS -X POST "https://api.render.com/v1/services/${RENDER_FRONTEND_SERVICE_ID}/deploys" \
             -H "accept: application/json" \
             -H "authorization: Bearer ${RENDER_API_KEY}" \
             -H "content-type: application/json" \
             --data "{\"commitId\":\"${GITHUB_SHA}\"}"
-          echo "gmfn-frontend Render API deploy accepted the request."
+          echo "gmfn-frontend exact Render API deploy accepted the request."
 
       - name: Note missing frontend deploy credentials
         if: ${{ env.RENDER_FRONTEND_DEPLOY_HOOK_URL == '' && (env.RENDER_API_KEY == '' || env.RENDER_FRONTEND_SERVICE_ID == '') }}

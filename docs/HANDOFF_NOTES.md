@@ -1,3 +1,29 @@
+## CURRENT LOCAL STATE - 2026-07-26 - Frontend Render deploy now requests exact commit through API
+
+Owner trigger:
+- Owner selected `1=continue` after the Decision Pack commit was pushed and the deploy workflow succeeded, but repeated live checks still showed the old frontend asset `assets/index-D2l6cO9i.js` instead of the newly built Decision Pack frontend.
+
+Unabated truth:
+- The previous deploy workflow was not lying at the GitHub step level: the frontend deploy hook accepted the request and returned a Render deploy id.
+- But accepting a deploy hook is weaker than verifying that Render cut the public site over to the exact pushed commit.
+- The live frontend did not show the new Decision Pack JavaScript markers after repeated no-cache checks, so the hook-only path was not strong enough evidence of deployment.
+
+Changed:
+- `.github/workflows/render-deploy.yml`
+  - Keeps the existing frontend deploy hook step for compatibility.
+  - Changes the frontend Render API deploy step so it runs whenever `RENDER_API_KEY` and `RENDER_FRONTEND_SERVICE_ID` are configured, instead of only when the deploy hook URL is missing.
+  - The API deploy request includes `commitId=${GITHUB_SHA}`, making the workflow request deployment of the exact checked-out commit.
+  - Backend deploy detection and `deploy_api=false` behaviour are unchanged.
+
+Routes/screens affected:
+- None directly. This is deployment workflow reliability only.
+
+Verification:
+- Inspected the edited workflow block locally.
+- `git diff` confirms only the frontend Render API step condition/name/messages changed.
+
+Recommended next step:
+- Commit and push this workflow fix, rerun `render-deploy.yml --ref main -f deploy_api=false`, confirm the Render API step accepts the exact frontend commit, then verify the live frontend serves the new Decision Pack build.
 ## CURRENT LOCAL STATE - 2026-07-26 - Decision Pack context now travels through TrustSlip verify links
 
 Owner trigger:
