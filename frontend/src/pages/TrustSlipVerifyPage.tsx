@@ -249,18 +249,21 @@ export default function TrustSlipVerifyPage() {
       search.get("decision_question")
     );
     const accessScope = firstTruthy(search.get("access_scope"), "public_decision_pack");
-    if (!accessPurpose && !recipientQuestion) return null;
+    const decisionFocus = firstTruthy(search.get("decision_focus"), search.get("focus"));
+    if (!accessPurpose && !recipientQuestion && !decisionFocus) return null;
 
     return {
       access_purpose: accessPurpose,
       share_purpose: accessPurpose,
       access_scope: accessScope,
       access_note: recipientQuestion,
+      decision_pack_focus: decisionFocus,
       share_access_record: {
         recipient_label: "TrustSlip recipient",
         purpose: accessPurpose,
         scope: accessScope,
         note: recipientQuestion,
+        focus: decisionFocus,
         status: "public_context_from_link",
       },
     };
@@ -272,6 +275,7 @@ export default function TrustSlipVerifyPage() {
             publicDecisionPackContext.access_purpose,
             publicDecisionPackContext.access_scope,
             publicDecisionPackContext.access_note,
+            publicDecisionPackContext.decision_pack_focus,
           ].join(":")
         : "none",
     [publicDecisionPackContext]

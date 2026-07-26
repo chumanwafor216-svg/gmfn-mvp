@@ -1,3 +1,48 @@
+## CURRENT LOCAL STATE - 2026-07-26 - Decision Pack catalog expanded with evidence focus
+
+Owner trigger:
+- Owner selected `1` to continue after the verified live Decision Pack deployment.
+
+Unabated truth:
+- This pass still does not create a backend Decision Pack table, recipient access ledger, purpose-specific evidence filter, Global TrustSlip, Behavioural Placement schema, or Evidence Ledger architecture.
+- The holder can now choose from a broader public Decision Pack catalog, and the selected pack carries a safe `decision_focus` string through the public verify URL.
+- The focus text is public URL context, so it must remain generic and safe. It does not expose private Trust Passport content, private notes, contacts, bank details, raw records, or private verifier identity.
+
+Changed:
+- `frontend/src/pages/TrustSlipPage.tsx`
+  - Expanded holder Decision Pack options from 3 to 10: Community Standing, Referral, Guarantor/Support, Employment, Housing, Trade/Skilled Work, Supplier, Volunteer, Business Partnership, and Community Membership.
+  - Added a `focus` field to each pack and included it in holder evidence selection rows.
+  - Public verify links now carry `decision_focus` alongside `decision_pack`, `access_purpose`, `recipient_question`, and `access_scope=public_decision_pack`.
+- `frontend/src/pages/TrustSlipVerifyPage.tsx`
+  - Reads `decision_focus` / `focus` from public verify query parameters and normalizes it into the public access record context.
+- `frontend/src/pages/trustSlipVerify/trustSlipVerifyData.ts`
+  - Added `decision_pack_focus` to the public verification record shape and normalizer.
+- `frontend/src/pages/trustSlipVerify/trustSlipVerifyViewModel.ts`
+  - Carries the normalized Decision Pack focus into `recipientAccessRecord.focus` with a safe fallback.
+- `frontend/src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx`
+  - Adds an `Evidence focus` tile to the first-page Decision Pack reading panel.
+- `frontend/tools/audit-trust-passport-trustslip-boundary.mjs`
+  - Requires the broader Decision Pack catalog and `decision_focus` URL propagation.
+- `frontend/tools/audit-public-trustslip-verify-boundary.mjs`
+  - Requires public verify normalization of `decision_pack_focus` and the public paper `Evidence focus` tile.
+
+Routes/screens affected:
+- `/app/trust-slip`: holder can choose a broader Decision Pack catalog and see each pack's safe evidence focus.
+- Public TrustSlip Verify routes such as `/t/:code`, `/verify/trust-slip`, and `/trust-slips/verify/:code`: public paper now shows what the selected pack asks the recipient to inspect.
+
+Verification:
+- Passed `npm exec -- eslint src/pages/TrustSlipPage.tsx src/pages/TrustSlipVerifyPage.tsx src/pages/trustSlipVerify/trustSlipVerifyData.ts src/pages/trustSlipVerify/trustSlipVerifyViewModel.ts src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx` from `frontend`.
+- Passed `npm exec -- eslint src/pages/TrustSlipPage.tsx src/pages/TrustSlipVerifyPage.tsx src/pages/trustSlipVerify/trustSlipVerifyData.ts src/pages/trustSlipVerify/trustSlipVerifyViewModel.ts src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx tools/audit-public-trustslip-verify-boundary.mjs tools/audit-trust-passport-trustslip-boundary.mjs` from `frontend`.
+- Passed `npm --prefix frontend run audit:trust-passport-trustslip-boundary`.
+- Passed `npm --prefix frontend run audit:public-trustslip-verify-boundary`.
+- Passed `npm --prefix frontend run audit:trust-actions`.
+- Passed `npm --prefix frontend run audit:proof-surfaces`.
+- Passed `npm --prefix frontend run audit:protected-button-freeze`.
+- Passed `git diff --check` with only recurring LF/CRLF warnings.
+- Passed `npm --prefix frontend run build`.
+
+Recommended next step:
+- If owner wants a true Decision Pack engine, the next backend slice should persist recipient access purpose and pack key in a bounded access ledger, then add backend-owned purpose-specific evidence inclusion rules. Until then, describe this as public Decision Pack context and focus, not filtered evidence certification.
 ## CURRENT LOCAL STATE - 2026-07-26 - Render frontend deploy workflow now polls live deploy status
 
 Owner trigger:

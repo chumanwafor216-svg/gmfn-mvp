@@ -113,6 +113,7 @@ type TrustSlipVerifyPublicPaperProps = {
     accessedAtLabel: string;
     status: string;
     note: string;
+    focus: string;
   };
   variant?: "full" | "lite";
 };
@@ -916,6 +917,10 @@ export default function TrustSlipVerifyPublicPaper({
     recipientAccessRecord.recipientLabel,
     "Recipient not named"
   );
+  const decisionPackFocus = firstTruthy(
+    recipientAccessRecord.focus,
+    "Current public identity, community standing, evidence currentness, and the next verification step."
+  );
   const decisionKnownFor =
     positiveNumber(communityActivityCountLabel) > 0
       ? `${holderRoleLabel} inside ${communityLabel || "this community"}, with ${communityActivityCountLabel} recorded community event${
@@ -1422,7 +1427,7 @@ export default function TrustSlipVerifyPublicPaper({
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: compact ? "1fr" : "repeat(3, minmax(0, 1fr))",
+              gridTemplateColumns: compact ? "1fr" : "repeat(4, minmax(0, 1fr))",
               gap: 8,
             }}
           >
@@ -1441,6 +1446,14 @@ export default function TrustSlipVerifyPublicPaper({
               text={decisionKnownFor}
               compact={compact}
               tone={positiveNumber(communityActivityCountLabel) > 0 ? "trust" : "warning"}
+            />
+            <PublicReadingTile
+              icon="records-folder"
+              label="Evidence focus"
+              title="What to inspect"
+              text={decisionPackFocus}
+              compact={compact}
+              tone="neutral"
             />
             <PublicReadingTile
               icon="certificate-seal"
@@ -1711,7 +1724,7 @@ export default function TrustSlipVerifyPublicPaper({
                 <div
                   style={{
                     display: "grid",
-                    gridTemplateColumns: compact ? "1fr" : "repeat(3, minmax(0, 1fr))",
+                    gridTemplateColumns: compact ? "1fr" : "repeat(4, minmax(0, 1fr))",
                     gap: 8,
                   }}
                 >
@@ -1892,7 +1905,7 @@ export default function TrustSlipVerifyPublicPaper({
                   style={{
                     marginTop: 10,
                     display: "grid",
-                    gridTemplateColumns: compact ? "1fr" : "repeat(3, minmax(0, 1fr))",
+                    gridTemplateColumns: compact ? "1fr" : "repeat(4, minmax(0, 1fr))",
                     gap: 8,
                   }}
                 >

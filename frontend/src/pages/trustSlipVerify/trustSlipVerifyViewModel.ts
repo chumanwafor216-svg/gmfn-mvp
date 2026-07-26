@@ -109,6 +109,7 @@ export type TrustSlipVerifyViewModel = {
     accessedAtLabel: string;
     status: string;
     note: string;
+    focus: string;
   };
 };
 
@@ -383,6 +384,11 @@ export function buildTrustSlipVerifyViewModel({
     rawAccessRecord?.note,
     "This public Decision Pack reduces uncertainty; it does not eliminate risk or make the decision for the recipient. Private Trust Passport access remains separate."
   );
+  const accessFocus = firstTruthy(
+    record?.decision_pack_focus,
+    rawAccessRecord?.focus,
+    "Current public identity, community standing, evidence currentness, and the next verification step."
+  );
   const hasBlockingState =
     record?.is_current === false ||
     record?.merchant_verify_active === false ||
@@ -635,6 +641,7 @@ export function buildTrustSlipVerifyViewModel({
       accessedAtLabel: accessRecordedAtLabel,
       status: accessStatus,
       note: accessNote,
+      focus: accessFocus,
     },
   };
 }

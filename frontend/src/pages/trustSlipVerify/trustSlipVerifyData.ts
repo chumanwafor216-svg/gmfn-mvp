@@ -81,6 +81,7 @@ export type TrustSlipVerifyRecord = {
   access_recorded_at?: string | null;
   access_status?: string | null;
   access_note?: string | null;
+  decision_pack_focus?: string | null;
   message?: string | null;
   detail?: string | null;
   community_confirmation?: CommunityConfirmationSummary | null;
@@ -532,6 +533,14 @@ export function normalizeTrustSlipVerification(
       src?.access_record?.note,
       src?.share_access_record?.note,
       src?.viewer_access_record?.note
+    ),
+    decision_pack_focus: firstTruthy(
+      src?.decision_pack_focus,
+      src?.access_focus,
+      src?.recipient_access_record?.focus,
+      src?.access_record?.focus,
+      src?.share_access_record?.focus,
+      src?.viewer_access_record?.focus
     ),
     message: firstTruthy(src?.message),
     detail: firstTruthy(src?.detail, src?.description),

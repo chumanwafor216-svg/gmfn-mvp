@@ -100,7 +100,7 @@ assertContains(
   "Public no-code state must stay public-only and not fall through to signed-in lookup behavior."
 );assertContains(
   "verify",
-  /const publicDecisionPackContext = useMemo[\s\S]*?access_purpose[\s\S]*?recipient_question[\s\S]*?share_access_record[\s\S]*?public_context_from_link[\s\S]*?normalizeTrustSlipVerification\([\s\S]*?\.\.\.verifyResult, \.\.\.publicDecisionPackContext/,
+  /const publicDecisionPackContext = useMemo[\s\S]*?access_purpose[\s\S]*?recipient_question[\s\S]*?decision_pack_focus[\s\S]*?share_access_record[\s\S]*?focus: decisionFocus[\s\S]*?public_context_from_link[\s\S]*?normalizeTrustSlipVerification\([\s\S]*?\.\.\.verifyResult, \.\.\.publicDecisionPackContext/,
   "Public TrustSlip Verify must convert share-safe Decision Pack URL context into the normalized access record."
 );
 
@@ -183,7 +183,7 @@ assertContains(
 );
 assertContains(
   "publicPaper",
-  /Public Decision Pack[\s\S]*?Why you received this[\s\S]*?Decision Pack reading[\s\S]*?Can I make a better decision with this evidence\?[\s\S]*?This document exists to reduce uncertainty, not eliminate risk[\s\S]*?GSN provides trustworthy evidence; the recipient remains responsible for the decision/,
+  /Public Decision Pack[\s\S]*?Why you received this[\s\S]*?Decision Pack reading[\s\S]*?Can I make a better decision with this evidence\?[\s\S]*?This document exists to reduce uncertainty, not eliminate risk[\s\S]*?GSN provides trustworthy evidence; the recipient remains responsible for the decision[\s\S]*?Evidence focus[\s\S]*?What to inspect/,
   "Public TrustSlip paper must answer the recipient decision question before deeper security details."
 );
 
