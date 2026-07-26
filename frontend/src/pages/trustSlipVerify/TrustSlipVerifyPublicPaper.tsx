@@ -1984,68 +1984,78 @@ export default function TrustSlipVerifyPublicPaper({
           </div>
         </div>
 
-        <TrustPaperAuthorityStrip
-          title="GSN TrustSlip Verification Paper"
-          reference={resolvedCode || verifyPath || "TrustSlip verify record"}
-          generatedAt={issuedAtLabel || undefined}
-          classification={validNow ? "Current public evidence" : "Caution public evidence"}
-          compact={compact}
-        />
-
-        <TrustDocumentConfidenceRibbon items={trustSlipConfidenceRibbonItems} />
-
-        <CommunityProofPanel
-          title="Known by community"
-          subtitle="Public-safe community evidence from this TrustSlip. It supports judgement without exposing private Trust Passport details."
-          compact={compact}
-          communityName={communityLabel}
-          holderRole={holderRole}
-          identityLabel={validNow ? "TrustSlip currently valid" : publicValidityLabel}
-          memberWitnessCount={memberWitnessCount}
-          membershipStrengthLabel={membershipStrengthLabel}
-          membershipCurrentnessLabel={membershipCurrentnessLabel}
-          membershipCurrentnessScope={membershipCurrentnessScope}
-          nextWitnessRenewalStatusLabel={nextWitnessRenewalStatusLabel}
-          communityActivityCount={communityActivityCount}
-          communityActivityLabel={communityActivityLabel}
-          communityActivityCategories={communityActivityCategories}
-          trustSlipStatusLabel={publicValidityLabel}
-        />
-
         <TrustDocumentDisclosureSection
-          title="TrustSlip security and limits"
-          summary="Open for what this paper confirms, limits, security, and record reference."
+          title="More details and evidence"
+          summary="Open for record authority, evidence status, community evidence, security, and limits."
         >
           <div
-            data-gsn-trust-document-certificate="trustslip-verify"
-            data-gsn-trustslip-verify-security-limits="true"
-            style={{
-              display: "grid",
-              gridTemplateColumns: compact ? "1fr" : "minmax(280px, 0.9fr) minmax(0, 1fr)",
-              gap: 12,
-            }}
+            data-gsn-public-more-details="authority-evidence-limits"
+            style={{ display: "grid", gap: 12 }}
           >
-            <TrustDocumentSecurityPanel
-              title="Digital security"
-              items={trustSlipSecurityItems}
+            <TrustPaperAuthorityStrip
+              title="GSN TrustSlip Verification Paper"
+              reference={resolvedCode || verifyPath || "TrustSlip verify record"}
+              generatedAt={issuedAtLabel || undefined}
+              classification={validNow ? "Current public evidence" : "Caution public evidence"}
+              compact={compact}
             />
-            <div style={{ display: "grid", gap: 12 }}>
-              <TrustDocumentBoundaryPanel
-                title="This paper confirms"
-                tone="good"
-                items={trustSlipConfirmsList}
-              />
-              <TrustDocumentBoundaryPanel
-                title="This paper does not confirm"
-                tone="warn"
-                items={trustSlipDoesNotConfirmList}
-              />
-              <TrustDocumentFingerprint
-                label="TrustSlip record reference"
-                value={recordFingerprint}
-                detail="Record reference for this visible public TrustSlip paper. It helps match this page with its GSN record; it is not legal proof or payment approval."
-              />
-            </div>
+
+            <TrustDocumentConfidenceRibbon items={trustSlipConfidenceRibbonItems} />
+
+            <CommunityProofPanel
+              title="Known by community"
+              subtitle="Public-safe community evidence from this TrustSlip. It supports judgement without exposing private Trust Passport details."
+              compact={compact}
+              communityName={communityLabel}
+              holderRole={holderRole}
+              identityLabel={validNow ? "TrustSlip currently valid" : publicValidityLabel}
+              memberWitnessCount={memberWitnessCount}
+              membershipStrengthLabel={membershipStrengthLabel}
+              membershipCurrentnessLabel={membershipCurrentnessLabel}
+              membershipCurrentnessScope={membershipCurrentnessScope}
+              nextWitnessRenewalStatusLabel={nextWitnessRenewalStatusLabel}
+              communityActivityCount={communityActivityCount}
+              communityActivityLabel={communityActivityLabel}
+              communityActivityCategories={communityActivityCategories}
+              trustSlipStatusLabel={publicValidityLabel}
+            />
+
+            <TrustDocumentDisclosureSection
+              title="TrustSlip security and limits"
+              summary="Open for what this paper confirms, limits, security, and record reference."
+            >
+              <div
+                data-gsn-trust-document-certificate="trustslip-verify"
+                data-gsn-trustslip-verify-security-limits="true"
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: compact ? "1fr" : "minmax(280px, 0.9fr) minmax(0, 1fr)",
+                  gap: 12,
+                }}
+              >
+                <TrustDocumentSecurityPanel
+                  title="Digital security"
+                  items={trustSlipSecurityItems}
+                />
+                <div style={{ display: "grid", gap: 12 }}>
+                  <TrustDocumentBoundaryPanel
+                    title="This paper confirms"
+                    tone="good"
+                    items={trustSlipConfirmsList}
+                  />
+                  <TrustDocumentBoundaryPanel
+                    title="This paper does not confirm"
+                    tone="warn"
+                    items={trustSlipDoesNotConfirmList}
+                  />
+                  <TrustDocumentFingerprint
+                    label="TrustSlip record reference"
+                    value={recordFingerprint}
+                    detail="Record reference for this visible public TrustSlip paper. It helps match this page with its GSN record; it is not legal proof or payment approval."
+                  />
+                </div>
+              </div>
+            </TrustDocumentDisclosureSection>
           </div>
         </TrustDocumentDisclosureSection>
 
