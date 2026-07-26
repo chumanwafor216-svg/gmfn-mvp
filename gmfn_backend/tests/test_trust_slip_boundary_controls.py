@@ -557,6 +557,43 @@ def test_holder_records_decision_pack_consent_share_without_trust_event_or_publi
         db.close()
 
 
+def test_holder_consent_share_unknown_export_format_falls_back_to_summary_without_extra_records(
+    client,
+    seed_clan_admin_membership,
+    override_current_user,
+):
+    slip_id = _create_trust_slip(code="CONSENT-FORMAT")
+
+    response = client.post(
+        "/trust-slips/me/decision-pack-consent-shares",
+        json={
+            "decision_pack": "employment_decision",
+            "export_format": "recipient_pdf",
+            "category_count": 5,
+            "event_ref_count": 6,
+        },
+    )
+
+    assert response.status_code == 200, response.text
+    payload = response.json()
+    item = payload["item"]
+    assert item["trust_slip_id"] == slip_id
+    assert item["export_format"] == "summary"
+    assert "recipient_pdf" not in str(payload)
+    assert "recipient identity" in payload["privacy_note"]
+    assert "not behaviour evidence" in payload["evidence_note"]
+
+    db = SessionLocal()
+    try:
+        row = db.query(TrustSlipDecisionPackConsentShare).one()
+        assert row.export_format == "summary"
+        assert row.category_count == 5
+        assert row.event_ref_count == 6
+        assert db.query(TrustSlipDecisionPackAccess).count() == 0
+        assert db.query(TrustEvent).count() == 0
+    finally:
+        db.close()
+
 def test_holder_reads_recent_decision_pack_consent_shares_without_recipient_or_copied_text(
     client,
     seed_clan_admin_membership,

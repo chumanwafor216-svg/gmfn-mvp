@@ -152139,3 +152139,28 @@ GSN-branded invite composer and invite-entry continuity.
   - local only so far; do not push/deploy unless the owner explicitly selects `2` or says push/deploy.
 - Next recommended step:
   - commit this smoke-proof slice locally, then either continue another small Decision Pack proof gap on `1` or push/deploy the accumulated local commits on `2`.
+## 2026-07-26 - Holder Consent Export Format Boundary Test
+
+- Trigger:
+  - owner selected `1` after the public Decision Pack reading smoke guard was committed locally.
+- Unabated truth:
+  - the holder consent-share backend already stored marker/count metadata only and already tested no recipient identity, copied text, raw TrustEvents, TrustEvents, or public-read rows;
+  - one smaller edge was not explicitly proved: an arbitrary `export_format` string from a crafted request should not become durable audit metadata;
+  - this pass adds proof only. It does not change runtime API behavior, frontend UI, backend storage shape, public verify behavior, Decision Pack scoring, approvals, guarantees, payment authority, private Trust Passport disclosure, or recipient identity handling.
+- Changed:
+  - `gmfn_backend/tests/test_trust_slip_boundary_controls.py`
+    - adds `test_holder_consent_share_unknown_export_format_falls_back_to_summary_without_extra_records`;
+    - proves a request with `export_format: recipient_pdf` records `summary`, does not echo `recipient_pdf`, preserves safe counts, and creates neither `TrustSlipDecisionPackAccess` nor `TrustEvent` rows.
+  - `frontend/tools/audit-trust-passport-trustslip-boundary.mjs`
+    - reads the backend TrustSlip boundary tests and cages the unknown-export-format proof.
+- Verification:
+  - passed `python -m pytest gmfn_backend/tests/test_trust_slip_boundary_controls.py -q` (`17 passed`);
+  - passed `npm --prefix frontend run audit:trust-passport-trustslip-boundary`;
+  - passed `npm exec -- eslint tools/audit-trust-passport-trustslip-boundary.mjs` from `frontend`;
+  - passed `git diff --check` before the handoff entry;
+  - passed `npm --prefix frontend run audit:protected-button-freeze`;
+  - passed `npm --prefix frontend run build`.
+- Deployment:
+  - local only so far; do not push/deploy unless the owner explicitly selects `2` or says push/deploy.
+- Next recommended step:
+  - commit this backend proof slice locally, then either continue another small Decision Pack proof gap on `1` or push/deploy the accumulated local commits on `2`.

@@ -15,6 +15,7 @@ const files = {
   decisionPacks: "src/lib/decisionPacks.ts",
   viewModel: "src/lib/trustPassportViewModel.ts",
   api: "src/lib/api.ts",
+  backendBoundaryTests: "../gmfn_backend/tests/test_trust_slip_boundary_controls.py",
   package: "package.json",
   map: "../docs/GSN_EVIDENCE_DISPLAY_IMPLEMENTATION_MAP_DRAFT.md",
   protocol: "../docs/TRUST_DOCUMENT_LANGUAGE_PROTOCOL.md",
@@ -292,6 +293,12 @@ assertContains(
   "trustSlip",
   /async function handleCopy[\s\S]*?Promise<boolean>[\s\S]*?return false[\s\S]*?return copied[\s\S]*?recordDecisionPackConsentShare[\s\S]*?api\.recordMyTrustSlipDecisionPackConsentShare[\s\S]*?category_count: rows\.length[\s\S]*?event_ref_count: eventRefCount[\s\S]*?if \(copied\)[\s\S]*?recordDecisionPackConsentShare\("summary"\)[\s\S]*?if \(copied\)[\s\S]*?recordDecisionPackConsentShare\("json"\)/,
   "TrustSlip holder consent-share audit marker must be recorded only after copy succeeds and must store counts, not copied text."
+);
+
+assertContains(
+  "backendBoundaryTests",
+  /test_holder_consent_share_unknown_export_format_falls_back_to_summary_without_extra_records[\s\S]*?"export_format": "recipient_pdf"[\s\S]*?item\["export_format"\] == "summary"[\s\S]*?"recipient_pdf" not in str\(payload\)[\s\S]*?row\.export_format == "summary"[\s\S]*?TrustSlipDecisionPackAccess\)\.count\(\) == 0[\s\S]*?TrustEvent\)\.count\(\) == 0/,
+  "Backend consent-share tests must prove unknown export formats are normalized to summary without public access rows or TrustEvents."
 );
 
 assertContains(
