@@ -1,3 +1,51 @@
+## CURRENT LOCAL STATE - 2026-07-26 - Trust Passport first decision action added locally
+
+Owner trigger:
+- Owner selected `1` to continue the decision-first Trust Passport enhancement after audit cages were aligned locally.
+
+Unabated truth:
+- This is a narrow first-viewport UX improvement, not a full Trust Passport redesign.
+- The Trust Passport first card already had one big answer, four facts, and a compact Decision Boundary, but the actual next step was only a fact tile.
+- Added one stable primary action in the first decision card so the page now answers and acts before lane navigation.
+- The first-card helper line now states the immediate action plainly: issue TrustSlip, use lanes only when more detail is needed, or add/confirm evidence before relying on the passport.
+- The primary button label is bounded: long guidance labels fall back to `Open next step` while the detailed guidance remains in the fact tile.
+- No backend route, schema, evidence extraction, scoring, TrustEvent, permission, deployment behavior, or TrustSlip public/private boundary changed.
+
+Changed:
+- `frontend/src/pages/TrustScorePage.tsx`
+  - Added `trustPassportDecisionLine`, `trustPassportPrimaryActionLabel`, and `trustPassportPrimaryAction`.
+  - Replaced the generic first-card helper text with decision-specific action copy.
+  - Added stable first-card `trust-score.decision-primary-next-step` primary button before the compact Decision Boundary.
+- `frontend/tools/audit-trust-passport-button-inventory.mjs`
+  - Updated the Trust Passport action inventory from 23 to 24 source actions and from 31 to 32 expected rendered action roots.
+  - Added the new first-card primary next-step action to the protected front-to-inner action order.
+  - Tightened the first-viewport decision-first regex to require the action line and primary action.
+- `frontend/tools/audit-trust-passport-front-package.mjs`
+  - Added front-package guards for the action line, bounded primary action label, and first-card primary next-step button.
+
+Routes/screens affected:
+- Signed-in Trust Passport / TrustScore route only.
+- Public TrustSlip and public TrustSlip Verify behavior unchanged.
+
+Verification:
+- Passed `npm --prefix frontend run audit:trust-passport-front-package`.
+- Passed `npm --prefix frontend run audit:trust-passport-button-inventory`.
+- Passed `npm --prefix frontend run audit:trust-passport-lane-map`.
+- Passed `npm exec -- eslint src/pages/TrustScorePage.tsx tools/audit-trust-passport-front-package.mjs tools/audit-trust-passport-button-inventory.mjs` from `frontend`.
+- Passed `npm --prefix frontend run audit:trust-passport-evidence-story-lane`.
+- Passed `npm --prefix frontend run audit:trust-passport-finance-discipline-lane`.
+- Passed `npm --prefix frontend run audit:trust-passport-community-confirmation-lane`.
+- Passed `npm --prefix frontend run audit:trust-passport-repair-lane`.
+- Passed `npm --prefix frontend run audit:trust-passport-trustslip-boundary`.
+- Passed `npm --prefix frontend run audit:protected-button-freeze`.
+- Passed `npm --prefix frontend run build`.
+
+Deployment:
+- Local only. Not pushed or deployed; owner must select `2` or explicitly say push/deploy.
+
+Recommended next step:
+- Do a phone-width visual pass on the Trust Passport first viewport before adding more Trust Passport controls; the source/build cage is clean, but visual calm still needs human confirmation.
+
 ## CURRENT LOCAL STATE - 2026-07-26 - Trust Passport audit cages aligned locally
 
 Owner trigger:

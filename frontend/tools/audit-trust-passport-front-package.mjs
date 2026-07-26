@@ -155,6 +155,18 @@ assertContains(
 
 assertContains(
   "trust",
+  /const trustPassportDecisionLine = !trustSlipCode[\s\S]*?Issue the public TrustSlip before sharing evidence\.[\s\S]*?Use the evidence lanes only when more detail is needed\.[\s\S]*?Add or confirm evidence before relying on this passport\.[\s\S]*?const trustPassportPrimaryActionLabel =[\s\S]*?safeStr\(nextStep\.ctaLabel\)\.length <= 24 \? nextStep\.ctaLabel : "Open next step"[\s\S]*?const trustPassportPrimaryAction = !trustSlipCode[\s\S]*?label: "Issue TrustSlip"[\s\S]*?to: routes\.trustSlip[\s\S]*?label: trustPassportPrimaryActionLabel[\s\S]*?to: nextStep\.ctaTo/,
+  "Trust Passport first answer must include a plain action line and a real primary next-step target."
+);
+
+assertContains(
+  "trust",
+  /data-trust-passport-decision-first="one-answer-four-facts"[\s\S]*?\{trustPassportDecisionAnswer\}[\s\S]*?\{trustPassportDecisionLine\}[\s\S]*?data-trust-passport-decision-facts="four-quick-facts"[\s\S]*?trustPassportDecisionFacts\.map[\s\S]*?debugId="trust-score\.decision-primary-next-step"[\s\S]*?trustPassportPrimaryAction\.label[\s\S]*?data-trust-passport-decision-boundary="compact"/,
+  "Trust Passport first viewport must show one big answer, four facts, one primary next-step button, then the compact boundary."
+);
+
+assertContains(
+  "trust",
   /data-trust-passport-standing-decision-details="collapsed"[\s\S]*?debugId="trust-score\.standing-decision-details\.toggle"[\s\S]*?aria-expanded=\{standingDecisionDetailsOpen\}[\s\S]*?Decision support details[\s\S]*?standingDecisionDetailsOpen \?[\s\S]*?What this evidence helps you decide[\s\S]*?These lines show what this record can and cannot support before a recipient asks for live confirmation\.[\s\S]*?passportVm\.trustQuestions\.map[\s\S]*?\{item\.meaning\}/,
   "Trust Passport decision-use summary must stay behind the stable Decision support details disclosure and show plain meaning lines, not status labels alone."
 );

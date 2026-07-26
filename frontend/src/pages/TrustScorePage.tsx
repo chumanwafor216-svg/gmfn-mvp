@@ -2805,6 +2805,24 @@ export default function TrustScorePage() {
     : identityEvidence.score >= 60
       ? "good"
       : "info";
+  const trustPassportDecisionLine = !trustSlipCode
+    ? "Issue the public TrustSlip before sharing evidence."
+    : identityEvidence.score >= 60 && positiveNumber(passportVm.technicalDetail.activeClans) > 0
+      ? "Use the evidence lanes only when more detail is needed."
+      : "Add or confirm evidence before relying on this passport.";
+  const trustPassportPrimaryActionLabel =
+    safeStr(nextStep.ctaLabel).length <= 24 ? nextStep.ctaLabel : "Open next step";
+  const trustPassportPrimaryAction = !trustSlipCode
+    ? {
+        icon: "document" as GsnIconName,
+        label: "Issue TrustSlip",
+        to: routes.trustSlip,
+      }
+    : {
+        icon: "evidence" as GsnIconName,
+        label: trustPassportPrimaryActionLabel,
+        to: nextStep.ctaTo,
+      };
   const trustPassportDecisionFacts: Array<[
     GsnIconName,
     string,
@@ -3227,7 +3245,7 @@ export default function TrustScorePage() {
                 {trustPassportDecisionAnswer}
               </h1>
               <p style={{ ...helperText(), margin: "5px 0 0", lineHeight: 1.32 }}>
-                Use this private passport to choose your next evidence step.
+                {trustPassportDecisionLine}
               </p>
             </div>
             {!isCompact ? (
@@ -3297,6 +3315,22 @@ export default function TrustScorePage() {
               </div>
             ))}
           </div>
+
+          <PrimaryButton
+            onClick={() => openTrustRoute(trustPassportPrimaryAction.to)}
+            stableHeight={isCompact ? 48 : 54}
+            fullWidth={isCompact}
+            debugId="trust-score.decision-primary-next-step"
+            style={{
+              justifySelf: isCompact ? "stretch" : "start",
+              minWidth: isCompact ? undefined : 220,
+              borderRadius: 999,
+              boxShadow: "0 10px 24px rgba(8,35,58,0.16)",
+            }}
+          >
+            <GsnLegacyIcon name={trustPassportPrimaryAction.icon} size={isCompact ? 22 : 24} decorative />
+            {trustPassportPrimaryAction.label}
+          </PrimaryButton>
 
           <div
             data-trust-passport-decision-boundary="compact"

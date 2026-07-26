@@ -59,8 +59,8 @@ while ((match = actionPattern.exec(source))) {
   });
 }
 
-const expectedSourceActions = 23;
-const expectedRenderedActions = 31;
+const expectedSourceActions = 24;
+const expectedRenderedActions = 32;
 
 if (actions.length !== expectedSourceActions) {
   findings.push({
@@ -101,6 +101,7 @@ for (const action of actions) {
 }
 
 const expectedOrder = [
+  "trust-score.decision-primary-next-step",
   "trust-score.lane.${lane.key}",
   "trust-score.complete-identification",
   "trust-score.open-public-community-record",
@@ -151,13 +152,13 @@ for (const debugId of expectedOrder) {
 }
 
 assertContains(
-  /const trustPassportDecisionAnswer = !trustSlipCode[\s\S]*?"Evidence setup needed"[\s\S]*?"Evidence record ready"[\s\S]*?"Evidence building"[\s\S]*?const trustPassportDecisionFacts: Array<[\s\S]*?"Who\?"[\s\S]*?"Identity"[\s\S]*?"Communities"[\s\S]*?"Next step"[\s\S]*?const trustPassportDecisionBoundaryRows: Array<\[string, string\]> = \[[\s\S]*?\["Private evidence", "Shown"\][\s\S]*?\["Public TrustSlip", trustSlipCode \? "Available" : "Pending"\][\s\S]*?\["Guarantee", "No"\][\s\S]*?\["Government ID", "No"\][\s\S]*?\["Final decision", "Yours"\]/,
-  "Trust Passport first viewport must compute one answer, four quick facts, and a compact Decision Boundary."
+  /const trustPassportDecisionAnswer = !trustSlipCode[\s\S]*?"Evidence setup needed"[\s\S]*?"Evidence record ready"[\s\S]*?"Evidence building"[\s\S]*?const trustPassportDecisionLine = !trustSlipCode[\s\S]*?Issue the public TrustSlip before sharing evidence\.[\s\S]*?Use the evidence lanes only when more detail is needed\.[\s\S]*?Add or confirm evidence before relying on this passport\.[\s\S]*?const trustPassportPrimaryActionLabel =[\s\S]*?safeStr\(nextStep\.ctaLabel\)\.length <= 24 \? nextStep\.ctaLabel : "Open next step"[\s\S]*?const trustPassportPrimaryAction = !trustSlipCode[\s\S]*?label: "Issue TrustSlip"[\s\S]*?to: routes\.trustSlip[\s\S]*?label: trustPassportPrimaryActionLabel[\s\S]*?to: nextStep\.ctaTo[\s\S]*?const trustPassportDecisionFacts: Array<[\s\S]*?"Who\?"[\s\S]*?"Identity"[\s\S]*?"Communities"[\s\S]*?"Next step"[\s\S]*?const trustPassportDecisionBoundaryRows: Array<\[string, string\]> = \[[\s\S]*?\["Private evidence", "Shown"\][\s\S]*?\["Public TrustSlip", trustSlipCode \? "Available" : "Pending"\][\s\S]*?\["Guarantee", "No"\][\s\S]*?\["Government ID", "No"\][\s\S]*?\["Final decision", "Yours"\]/,
+  "Trust Passport first viewport must compute one answer, one plain action line, four quick facts, one primary next-step action, and a compact Decision Boundary."
 );
 
 assertContains(
-  /data-trust-passport-decision-first="one-answer-four-facts"[\s\S]*?Decision first[\s\S]*?\{trustPassportDecisionAnswer\}[\s\S]*?Use this private passport to choose your next evidence step\.[\s\S]*?data-trust-passport-decision-facts="four-quick-facts"[\s\S]*?trustPassportDecisionFacts\.map[\s\S]*?data-trust-passport-decision-boundary="compact"[\s\S]*?Decision Boundary[\s\S]*?trustPassportDecisionBoundaryRows\.map[\s\S]*?<section[\s\S]*?ref=\{laneSelectorRef\}[\s\S]*?id="trust-passport-lanes"/,
-  "Trust Passport must lead with decision support before lane navigation and deeper passport details."
+  /data-trust-passport-decision-first="one-answer-four-facts"[\s\S]*?Decision first[\s\S]*?\{trustPassportDecisionAnswer\}[\s\S]*?\{trustPassportDecisionLine\}[\s\S]*?data-trust-passport-decision-facts="four-quick-facts"[\s\S]*?trustPassportDecisionFacts\.map[\s\S]*?debugId="trust-score\.decision-primary-next-step"[\s\S]*?trustPassportPrimaryAction\.label[\s\S]*?data-trust-passport-decision-boundary="compact"[\s\S]*?Decision Boundary[\s\S]*?trustPassportDecisionBoundaryRows\.map[\s\S]*?<section[\s\S]*?ref=\{laneSelectorRef\}[\s\S]*?id="trust-passport-lanes"/,
+  "Trust Passport must lead with one answer, four facts, one primary next-step action, and boundary before lane navigation or deeper passport details."
 );
 assertContains(
   /debugId: "trust-score\.surface\.local-community-trust"[\s\S]*?debugId: "trust-score\.surface\.cross-community-consistency"[\s\S]*?debugId=\{item\.debugId\}/,
