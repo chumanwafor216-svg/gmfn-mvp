@@ -18,6 +18,7 @@ const files = {
   decisionPacks: "src/lib/decisionPacks.ts",
   api: "src/lib/api.ts",
   backend: "../gmfn_backend/app/api/routes/trust_slips.py",
+  backendTrustSlipService: "../gmfn_backend/app/services/trust_slips_services.py",
   backendDecisionPacks: "../gmfn_backend/app/services/trust_slip_decision_packs.py",
   backendDecisionPackTests: "../gmfn_backend/tests/test_trust_slip_boundary_controls.py",
   backendModels: "../gmfn_backend/app/db/models.py",
@@ -212,8 +213,23 @@ assertContains(
 );
 assertContains(
   "publicPaper",
-  /const decisionFirstAnswer = !validNow[\s\S]*?"Verification required"[\s\S]*?"Known across evidence contexts"[\s\S]*?"Known by community"[\s\S]*?"Evidence still building"[\s\S]*?const decisionFirstFacts:[\s\S]*?label: "Who\?"[\s\S]*?label: "What we checked"[\s\S]*?label: "Evidence"[\s\S]*?label: "Next step"[\s\S]*?const decisionBoundaryRows:[\s\S]*?\["What we checked", activeCommunityContexts > 1 \? "Primary \+ wider" : "Primary shown"\][\s\S]*?\["Guarantee", "No"\][\s\S]*?\["Government ID", "No"\][\s\S]*?\["Credit approval", "No"\][\s\S]*?\["Final decision", "Yours"\]/,
+  /const decisionFirstAnswer = !validNow[\s\S]*?"Verification required"[\s\S]*?"Known across evidence contexts"[\s\S]*?"Known by community"[\s\S]*?"Evidence still building"[\s\S]*?const decisionFirstFacts:[\s\S]*?label: "Who\?"[\s\S]*?label: "What we checked"[\s\S]*?label: "Evidence"[\s\S]*?label: "Next step"[\s\S]*?const decisionBoundaryRows:[\s\S]*?\["What we checked", evidenceScopeIsWider \? "Primary \+ wider" : "Primary shown"\][\s\S]*?\["Guarantee", "No"\][\s\S]*?\["Government ID", "No"\][\s\S]*?\["Credit approval", "No"\][\s\S]*?\["Final decision", "Yours"\]/,
   "Public TrustSlip paper must compute one answer, four quick facts, and compact boundary rows before rendering."
+);
+assertContains(
+  "backendTrustSlipService",
+  /def _evidence_scope_summary\([\s\S]*?community_footprint[\s\S]*?primary_plus_wider[\s\S]*?primary_only[\s\S]*?"reading_scope": scope[\s\S]*?one primary community anchor[\s\S]*?not as proof that every community gives the same judgement/,
+  "Backend TrustSlip payload must derive an explicit primary-anchor versus wider-context evidence scope."
+);
+assertContains(
+  "backend",
+  /"evidence_scope": merchant_view\.get\("evidence_scope"\)[\s\S]*?"evidence_scope": evidence_scope[\s\S]*?"active_community_count": evidence_scope\.get\("active_community_count"\)/,
+  "Public TrustSlip Verify JSON must publish the explicit evidence scope and active community count."
+);
+assertContains(
+  "viewModel",
+  /const evidenceScope =[\s\S]*?record\?\.evidence_scope[\s\S]*?evidenceScopeReadingScope[\s\S]*?evidenceScopeSummary[\s\S]*?evidenceScopeBoundary[\s\S]*?one primary community anchor/,
+  "TrustSlip Verify view model must consume the explicit backend evidence scope before rendering public wording."
 );
 
 assertContains(

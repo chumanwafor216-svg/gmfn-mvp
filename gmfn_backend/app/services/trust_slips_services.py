@@ -1209,6 +1209,42 @@ def _community_role_counts(footprint: list[dict[str, Any]]) -> Dict[str, int]:
     return counts
 
 
+def _evidence_scope_summary(
+    *,
+    community_name: str,
+    community_code: str,
+    active_community_count: Any,
+    community_footprint: list[dict[str, Any]],
+) -> Dict[str, Any]:
+    footprint_count = len(community_footprint or [])
+    visible_count = max(_safe_positive_int(active_community_count), footprint_count)
+    has_wider_context = visible_count > 1
+    portfolio_label = (
+        f"{visible_count} active community context{'' if visible_count == 1 else 's'}"
+        if visible_count > 0
+        else "No active community context shown"
+    )
+    scope = "primary_plus_wider" if has_wider_context else "primary_only"
+    summary = (
+        f"Primary anchor: {community_name}. Wider context: {portfolio_label}."
+        if has_wider_context
+        else f"Primary anchor: {community_name}. Wider context is still building."
+    )
+    return {
+        "reading_scope": scope,
+        "primary_anchor_label": community_name,
+        "primary_anchor_id": community_code,
+        "active_community_count": visible_count,
+        "community_footprint_count": footprint_count,
+        "community_portfolio_label": portfolio_label,
+        "has_wider_context": has_wider_context,
+        "public_summary": summary,
+        "boundary": (
+            "The TrustSlip has one primary community anchor. Wider-network or aggregate readings must be read as supporting context, not as proof that every community gives the same judgement."
+        ),
+    }
+
+
 def _safe_positive_int(value: Any) -> int:
     try:
         parsed = int(value or 0)
@@ -1600,6 +1636,7 @@ def build_trust_slip_visibility_view(payload: Dict[str, Any], *, level: Optional
     community_context = dict(payload.get("community_context") or {})
     relationship_evidence_summary = dict(payload.get("relationship_evidence_summary") or {})
     cci_explainer = dict(payload.get("cci_explainer") or {})
+    evidence_scope = dict(payload.get("evidence_scope") or {})
 
     base: Dict[str, Any] = {
         "visibility_level": safe_level,
@@ -1614,6 +1651,7 @@ def build_trust_slip_visibility_view(payload: Dict[str, Any], *, level: Optional
         "identity_context": identity_context,
         "community_context": community_context,
         "relationship_evidence_summary": relationship_evidence_summary,
+        "evidence_scope": evidence_scope,
         "cci_explainer": cci_explainer,
         "band": payload.get("band"),
         "trust_limit": payload.get("trust_limit") or payload.get("trust_slip_limit"),
@@ -1654,6 +1692,7 @@ def build_trust_slip_visibility_view(payload: Dict[str, Any], *, level: Optional
             "community_evidence_currentness_status": merchant_summary.get("community_evidence_currentness_status"),
             "community_evidence_currentness_label": merchant_summary.get("community_evidence_currentness_label"),
             "community_evidence_currentness_scope": merchant_summary.get("community_evidence_currentness_scope"),
+            "evidence_scope": merchant_summary.get("evidence_scope") or evidence_scope,
         }
         base.pop("profile_image_url", None)
         base.pop("identity_context", None)
@@ -1706,6 +1745,7 @@ def build_trust_slip_visibility_view(payload: Dict[str, Any], *, level: Optional
             "community_activity_latest_at": merchant_summary.get("community_activity_latest_at"),
             "community_activity_categories": merchant_summary.get("community_activity_categories"),
             "community_activity_label": merchant_summary.get("community_activity_label"),
+            "evidence_scope": merchant_summary.get("evidence_scope") or evidence_scope,
             "membership_currentness_label": merchant_summary.get("membership_currentness_label"),
             "membership_currentness_scope": merchant_summary.get("membership_currentness_scope"),
             "next_witness_renewal_at": merchant_summary.get("next_witness_renewal_at"),
@@ -1910,6 +1950,12 @@ def get_trust_slip_payload(db: Session, *, user_id: int) -> Dict[str, Any]:
     )
     community_footprint = _community_footprint(db, user_id=uid)
     community_role_counts = _community_role_counts(community_footprint)
+    evidence_scope = _evidence_scope_summary(
+        community_name=community,
+        community_code=_safe_str(community_context.get("community_code")),
+        active_community_count=active_community_count,
+        community_footprint=community_footprint,
+    )
     phone_recorded = bool(
         (
             getattr(user, "phone_e164", None)
@@ -2107,6 +2153,7 @@ def get_trust_slip_payload(db: Session, *, user_id: int) -> Dict[str, Any]:
         "identity_context": identity_context,
         "community_context": community_context,
         "relationship_evidence_summary": relationship_evidence_summary,
+        "evidence_scope": evidence_scope,
         "community_footprint": community_footprint,
         "community_role_counts": community_role_counts,
         "identity_evidence_summary": identity_evidence_summary,
@@ -2219,6 +2266,7 @@ def get_trust_slip_payload(db: Session, *, user_id: int) -> Dict[str, Any]:
             "active_community_count": active_community_count,
             "community_footprint": community_footprint,
             "community_role_counts": community_role_counts,
+            "evidence_scope": evidence_scope,
             "identity_evidence_summary": identity_evidence_summary,
             "expiry_policy": "weekly",
             "expires_at": effective_expiry,

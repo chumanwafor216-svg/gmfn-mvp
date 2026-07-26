@@ -168,6 +168,15 @@ def test_trust_passport_identity_context_uses_signed_in_payout_and_membership(
     }
     assert {item["role"] for item in footprint} == {"user", "admin"}
     assert payload["community_role_counts"] == {"member": 1, "admin": 1}
+    scope = payload["evidence_scope"]
+    assert scope["reading_scope"] == "primary_plus_wider"
+    assert scope["primary_anchor_label"] == "Test Clan"
+    assert scope["active_community_count"] == 2
+    assert scope["community_footprint_count"] == 2
+    assert scope["has_wider_context"] is True
+    assert "Primary anchor: Test Clan" in scope["public_summary"]
+    assert "Wider context: 2 active community contexts" in scope["public_summary"]
+    assert "one primary community anchor" in scope["boundary"]
 
 
 def test_trust_passport_identity_context_uses_bank_recorded_trust_event(
@@ -824,6 +833,22 @@ def test_public_trustslip_verify_uses_holder_name_separate_from_gsn_id(
         user.gmfn_id = "GMFN-U-9867079C"
         user.phone_e164 = "+2348000000000"
         user.phone_verified_at = issued_at
+        db.add(
+            Clan(
+                id=2,
+                name="Second Circle",
+                marketplace_name="Second Circle Marketplace",
+                community_code="GMFN-C-000002",
+                invite_code="second-circle-public-verify",
+            )
+        )
+        db.add(
+            ClanMembership(
+                clan_id=2,
+                user_id=1,
+                role="admin",
+            )
+        )
         slip = TrustSlip(
             code="PUBLIC-HOLDER-NAME",
             clan_id=1,
@@ -846,6 +871,16 @@ def test_public_trustslip_verify_uses_holder_name_separate_from_gsn_id(
     assert data["display_name"] == "GSMIT"
     assert data["gmfn_id"] == "GMFN-U-9867079C"
     assert data["holder_name"] != data["gmfn_id"]
+    assert data["active_community_count"] == 2
+    assert data["active_clan_count"] == 2
+    scope = data["evidence_scope"]
+    assert scope["reading_scope"] == "primary_plus_wider"
+    assert scope["primary_anchor_label"] == "Test Clan"
+    assert scope["active_community_count"] == 2
+    assert scope["has_wider_context"] is True
+    assert "Primary anchor: Test Clan" in scope["public_summary"]
+    assert "Wider context: 2 active community contexts" in scope["public_summary"]
+    assert "not as proof that every community gives the same judgement" in scope["boundary"]
     assert datetime.fromisoformat(data["issued_at"]).replace(tzinfo=timezone.utc) == issued_at
 
 

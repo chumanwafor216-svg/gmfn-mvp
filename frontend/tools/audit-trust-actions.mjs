@@ -642,7 +642,7 @@ assertContains(
 
 assertContains(
   "src/pages/trustSlipVerify/trustSlipVerifyViewModel.ts",
-  /What evidence scope is shown\?[\s\S]*?Primary role[\s\S]*?Active community contexts[\s\S]*?primary community scope, and wider evidence context when available[\s\S]*?What should you do next\?[\s\S]*?request live community confirmation/,
+  /What evidence scope is shown\?[\s\S]*?Primary role[\s\S]*?evidenceScopeSummary[\s\S]*?This paper is not a full profession record[\s\S]*?What should you do next\?[\s\S]*?request live community confirmation/,
   "TrustSlip Verify quick answers must give real-world known-as and next-step meaning without pretending to certify a profession."
 );
 

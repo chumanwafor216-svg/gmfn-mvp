@@ -81,6 +81,9 @@ type TrustSlipVerifyPublicPaperProps = {
   communityActivityCategories?: string[] | null;
   communityActivityLabel?: string | null;
   activeCommunityCount?: string | number | null;
+  evidenceScopeSummary?: string | null;
+  evidenceScopeBoundary?: string | null;
+  evidenceScopeReadingScope?: string | null;
   relationshipEvidenceSummary?: Record<string, any> | null;
   visibleBand: string;
   visibleBandLabel: string;
@@ -854,6 +857,9 @@ export default function TrustSlipVerifyPublicPaper({
   communityActivityCategories,
   communityActivityLabel,
   activeCommunityCount,
+  evidenceScopeSummary,
+  evidenceScopeBoundary,
+  evidenceScopeReadingScope,
   relationshipEvidenceSummary,
   visibleBand,
   visibleBandLabel,
@@ -929,9 +935,18 @@ export default function TrustSlipVerifyPublicPaper({
   const communityActivityCountLabel = firstTruthy(communityActivityCount, "0");
   const activeCommunityCountLabel = firstTruthy(activeCommunityCount);
   const activeCommunityContexts = positiveNumber(activeCommunityCountLabel);
-  const aggregateScopeText = activeCommunityContexts > 1
-    ? `${activeCommunityCountLabel} active community contexts referenced.`
-    : "Only the primary community is shown on this public TrustSlip.";
+  const evidenceScopeSummaryText = firstTruthy(
+    evidenceScopeSummary,
+    activeCommunityContexts > 1
+      ? `Primary anchor: ${communityLabel || "this community"}. Wider context: ${activeCommunityCountLabel} active community contexts.`
+      : `Primary anchor: ${communityLabel || "this community"}. Wider context is still building.`
+  );
+  const evidenceScopeBoundaryText = firstTruthy(
+    evidenceScopeBoundary,
+    "The TrustSlip has one primary community anchor. Wider-network or aggregate readings must be read as supporting context, not as proof that every community gives the same judgement."
+  );
+  const evidenceScopeIsWider = firstTruthy(evidenceScopeReadingScope).toLowerCase() === "primary_plus_wider" || activeCommunityContexts > 1;
+  const aggregateScopeText = `${evidenceScopeSummaryText} ${evidenceScopeBoundaryText}`;
   const communityActivityCategoriesLabel = Array.isArray(communityActivityCategories)
     ? communityActivityCategories.map((item) => safeText(item)).filter(Boolean).join(", ")
     : "";
@@ -1067,8 +1082,8 @@ export default function TrustSlipVerifyPublicPaper({
     {
       icon: "community-building",
       label: "What we checked",
-      title: activeCommunityContexts > 1 ? `${activeCommunityCountLabel} communities` : "Primary community",
-      text: `${holderRoleLabel} inside ${communityLabel || "this community"}.`,
+      title: evidenceScopeIsWider ? `${activeCommunityCountLabel || "Multiple"} communities` : "Primary community",
+      text: evidenceScopeSummaryText,
       tone: holderRoleLabel.toLowerCase().includes("member") ? "neutral" : "trust",
     },
     {
@@ -1089,7 +1104,7 @@ export default function TrustSlipVerifyPublicPaper({
     },
   ];
   const decisionBoundaryRows: Array<[string, string]> = [
-    ["What we checked", activeCommunityContexts > 1 ? "Primary + wider" : "Primary shown"],
+    ["What we checked", evidenceScopeIsWider ? "Primary + wider" : "Primary shown"],
     ["Guarantee", "No"],
     ["Government ID", "No"],
     ["Credit approval", "No"],

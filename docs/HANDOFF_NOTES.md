@@ -1,3 +1,55 @@
+## CURRENT LOCAL STATE - 2026-07-26 - TrustSlip evidence scope separated
+
+Owner trigger:
+- Owner selected `1` after the frontend deployment of the shared community proof wording.
+
+Unabated truth:
+- Backend and frontend runtime code changed to make TrustSlip evidence scope explicit.
+- This pass does not invent a new trust score, change the TrustSlip issue community, alter permissions, or aggregate private verifier notes across communities.
+- The TrustSlip still has one issued primary community anchor (`clan_id`). The improvement is that the backend now publishes a separate `evidence_scope` object so public Verify and holder views can distinguish the primary anchor from wider community context.
+- Devil's advocate: this is the correct first technical fix for the observation, but it is not the final Global TrustSlip/Decision Pack architecture. Purpose-specific aggregation still needs a later data/model pass if GSN wants recipient-selected evidence packs generated across all communities.
+
+Changed:
+- `gmfn_backend/app/services/trust_slips_services.py`
+  - Added `_evidence_scope_summary(...)`.
+  - Adds `evidence_scope` to full TrustSlip payloads and merchant/public visibility views.
+  - `evidence_scope` includes `reading_scope`, `primary_anchor_label`, `primary_anchor_id`, `active_community_count`, `community_footprint_count`, `community_portfolio_label`, `has_wider_context`, `public_summary`, and a boundary warning.
+- `gmfn_backend/app/api/routes/trust_slips.py`
+  - Public TrustSlip Verify JSON now returns `evidence_scope`, `active_clan_count`, and `active_community_count` from the explicit scope object.
+- `frontend/src/pages/trustSlipVerify/trustSlipVerifyViewModel.ts`
+  - TrustSlip Verify now consumes `evidence_scope` first, falling back to active-community counts only when the backend object is absent.
+- `frontend/src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx`
+  - The first-page `What we checked` fact and boundary row now render from explicit evidence scope, not just an inferred count.
+- `frontend/src/pages/TrustSlipVerifyPage.tsx`
+  - Passes the new evidence-scope summary/boundary into the public paper.
+- Audit guards updated for public TrustSlip Verify, public first viewport, Trust actions, and Trust Passport audit wording drift.
+- `gmfn_backend/tests/test_focus_commitment_trust_events.py`
+  - Added backend payload and public verify assertions for a two-community holder.
+
+Routes/screens affected:
+- Backend public JSON: `/trust-slips/verify/{code}`.
+- Public frontend TrustSlip Verify: `/t/:code` and compatibility verify routes.
+- Signed-in TrustSlip payload generation because the same payload now carries `evidence_scope`.
+- No database migration, auth, payment, release, or private evidence permission change.
+
+Verification:
+- Passed `python -m pytest gmfn_backend\\tests\\test_focus_commitment_trust_events.py -q` (`20 passed`).
+- Passed `npm --prefix frontend run audit:public-trustslip-verify-boundary`.
+- Passed `npm --prefix frontend run audit:public-trustslip-first-viewport`.
+- Passed `npm --prefix frontend run audit:trust-actions`.
+- Passed `npm --prefix frontend run audit:trust-passport-trustslip-boundary`.
+- Passed `node frontend\\tools\\audit-institutional-proof-surfaces.mjs`.
+- Passed `npm --prefix frontend run audit:trust-passport-front-package`.
+- Passed `npm --prefix frontend run audit:trust-passport-button-inventory`.
+- Passed `npm --prefix frontend run audit:protected-button-freeze`.
+- Passed `npm --prefix frontend run build`.
+- Passed `git diff --check`; Git still reports normal LF-to-CRLF working-copy warnings on touched files.
+
+Deployment:
+- Local runtime/docs/test/audit change only at this point. Not pushed or deployed until owner selects `2` or explicitly says push/deploy.
+
+Recommended next step:
+- Continue with a deeper Decision Pack aggregation pass, or select `2` to push/deploy this completed evidence-scope fix.
 ## CURRENT LOCAL STATE - 2026-07-26 - Shared community proof wording tightened
 
 Owner trigger:

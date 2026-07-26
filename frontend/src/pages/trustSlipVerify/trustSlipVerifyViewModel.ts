@@ -93,6 +93,10 @@ export type TrustSlipVerifyViewModel = {
   holderRole: string;
   activeMemberCount: string;
   activeCommunityCount: string;
+  evidenceScope: Record<string, any>;
+  evidenceScopeSummary: string;
+  evidenceScopeBoundary: string;
+  evidenceScopeReadingScope: string;
   memberWitnessCount: string;
   membershipStrengthLabel: string;
   membershipRenewalStatusLabel: string;
@@ -354,6 +358,13 @@ function normalizeDecisionPackProfile(
   const identityContext = record?.identity_context || {};
   const communityContext = record?.community_context || {};
   const merchantSummary = record?.merchant_summary || {};
+  const merchantView = record?.merchant_view || {};
+  const evidenceScope =
+    record?.evidence_scope ||
+    merchantView?.evidence_scope ||
+    merchantSummary?.evidence_scope ||
+    merchantView?.merchant_summary?.evidence_scope ||
+    {};
   const relationshipEvidenceSummary =
     record?.relationship_evidence_summary ||
     merchantSummary?.relationship_evidence_summary ||
@@ -378,7 +389,24 @@ function normalizeDecisionPackProfile(
   );
   const activeCommunityCount = firstTruthy(
     record?.active_clan_count,
+    record?.active_community_count,
+    evidenceScope?.active_community_count,
     communityContext?.active_community_count
+  );
+  const activeCommunityNumber = firstNumberLike(activeCommunityCount) || 0;
+  const evidenceScopeReadingScope = firstTruthy(
+    evidenceScope?.reading_scope,
+    activeCommunityNumber > 1 ? "primary_plus_wider" : "primary_only"
+  );
+  const evidenceScopeSummary = firstTruthy(
+    evidenceScope?.public_summary,
+    activeCommunityNumber > 1
+      ? `Primary anchor: ${communityLabel}. Wider context: ${activeCommunityCount} active community contexts.`
+      : `Primary anchor: ${communityLabel}. Wider context is still building.`
+  );
+  const evidenceScopeBoundary = firstTruthy(
+    evidenceScope?.boundary,
+    "The TrustSlip has one primary community anchor. Wider-network or aggregate readings must be read as supporting context, not as proof that every community gives the same judgement."
   );
   const memberWitnessCount = firstTruthy(
     record?.member_witness_count,
@@ -669,10 +697,10 @@ function normalizeDecisionPackProfile(
       relationshipEvidenceCount && relationshipEvidenceLabel
         ? `${relationshipEvidenceLabel}. Raw inviter notes are not shown.`
         : holderRole && holderRole.toLowerCase() !== "member"
-        ? `Primary role: ${holderRole} inside ${communityLabel}. Active community contexts: ${activeCommunityCount || "primary only shown"}.`
+        ? `Primary role: ${holderRole} inside ${communityLabel}. ${evidenceScopeSummary}`
         : communityActivityCount
-          ? `Primary community activity is visible inside ${communityLabel}. Active community contexts: ${activeCommunityCount || "primary only shown"}.`
-          : "This paper shows identity, primary community scope, and wider evidence context when available; not a full profession record.",
+          ? `Primary community activity is visible inside ${communityLabel}. ${evidenceScopeSummary}`
+          : `${evidenceScopeSummary} This paper is not a full profession record.`,
     ],
     [
       "trust-shield",
@@ -761,6 +789,10 @@ function normalizeDecisionPackProfile(
     holderRole,
     activeMemberCount,
     activeCommunityCount,
+    evidenceScope,
+    evidenceScopeSummary,
+    evidenceScopeBoundary,
+    evidenceScopeReadingScope,
     memberWitnessCount,
     membershipStrengthLabel,
     membershipRenewalStatusLabel,

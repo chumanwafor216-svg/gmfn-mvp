@@ -366,13 +366,13 @@ assertContains(
 
 assertContains(
   "trust",
-  /TrustDocumentConfidenceRibbon[\s\S]*?trustPassportConfidenceRibbonItems[\s\S]*?Passport status[\s\S]*?Identity evidence[\s\S]*?Evidence record[\s\S]*?Community history[\s\S]*?Verification path/,
+  /TrustDocumentConfidenceRibbon[\s\S]*?trustPassportConfidenceRibbonItems[\s\S]*?Passport view[\s\S]*?Identity evidence[\s\S]*?What we checked[\s\S]*?Community history[\s\S]*?Check path/,
   "Trust Passport front package must expose a Trust Document Language confidence ribbon."
 );
 
 assertContains(
   "trust",
-  /data-gsn-trust-document-certificate="trust-passport"[\s\S]*?TrustDocumentSecurityPanel[\s\S]*?title="Trust Passport security"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This passport confirms"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This passport does not confirm"[\s\S]*?TrustDocumentFingerprint[\s\S]*?label="Trust Passport record reference"/,
+  /data-gsn-trust-document-certificate="trust-passport"[\s\S]*?TrustDocumentSecurityPanel[\s\S]*?title="Audit Details"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This passport confirms"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This passport does not confirm"[\s\S]*?TrustDocumentFingerprint[\s\S]*?label="Trust Passport record reference"/,
   "Trust Passport front package must render the Trust Document Language security, boundary, and record-reference sequence."
 );
 

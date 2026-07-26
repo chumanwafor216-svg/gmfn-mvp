@@ -1188,6 +1188,10 @@ def verify_trust_slip_public(
         "community_context": merchant_view.get("community_context")
         or full_summary.get("community_context")
         or {},
+        "evidence_scope": merchant_view.get("evidence_scope")
+        or merchant_summary.get("evidence_scope")
+        or full_summary.get("evidence_scope")
+        or {},
         "cci_explainer": merchant_view.get("cci_explainer")
         or merchant_summary.get("cci_explainer")
         or full_summary.get("cci_explainer")
@@ -1224,6 +1228,9 @@ def verify_trust_slip_public(
         top_level_phone_verified = merchant_summary.get("phone_verified")
     identity_context = merchant_view_out.get("identity_context") or {}
     community_context = merchant_view_out.get("community_context") or {}
+    evidence_scope = merchant_view_out.get("evidence_scope") or {}
+    if not isinstance(evidence_scope, dict):
+        evidence_scope = {}
     cci_explainer = merchant_view_out.get("cci_explainer") or {}
     cci_public_label = _safe_str(
         cci_explainer.get("public_label"),
@@ -1299,6 +1306,7 @@ def verify_trust_slip_public(
         "community": community,
         "identity_context": identity_context if visibility_level != "minimal" else {},
         "community_context": community_context if visibility_level != "minimal" else {},
+        "evidence_scope": evidence_scope,
         "community_confirmation": community_confirmation if visibility_level != "minimal" else {
             "relay_available": bool(community_confirmation.get("relay_available")),
             "plain_language": community_confirmation.get("plain_language"),
@@ -1312,6 +1320,8 @@ def verify_trust_slip_public(
         "community_member_count": community_context.get("active_member_count"),
         "active_member_count": community_context.get("active_member_count"),
         "total_member_count": community_context.get("total_member_count"),
+        "active_clan_count": evidence_scope.get("active_community_count"),
+        "active_community_count": evidence_scope.get("active_community_count"),
         "trust_band": band,
         "band": band,
         "status": getattr(slip, "status", None),

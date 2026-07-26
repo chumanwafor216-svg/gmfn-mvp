@@ -602,6 +602,9 @@ export default function TrustSlipVerifyPage() {
     communityActivityCategories,
     communityActivityLabel,
     activeCommunityCount,
+    evidenceScopeSummary,
+    evidenceScopeBoundary,
+    evidenceScopeReadingScope,
     verifyPath,
     verifyUrl,
     compactTrustLimit,
@@ -1246,6 +1249,9 @@ export default function TrustSlipVerifyPage() {
           communityActivityCategories={communityActivityCategories}
           communityActivityLabel={communityActivityLabel}
           activeCommunityCount={activeCommunityCount}
+          evidenceScopeSummary={evidenceScopeSummary}
+          evidenceScopeBoundary={evidenceScopeBoundary}
+          evidenceScopeReadingScope={evidenceScopeReadingScope}
           visibleBand={visibleBand}
           visibleBandLabel={visibleBandLabel}
           visibleBandMeaning={visibleBandMeaning}
