@@ -970,6 +970,40 @@ export default function TrustSlipVerifyPublicPaper({
   const decisionNextStep = validNow
     ? "For important decisions, request instant community confirmation before relying on this paper."
     : "Ask the holder for a fresh TrustSlip before relying on this paper.";
+  const recordTrustReasonTiles = [
+    {
+      icon: "qr-record" as Gsn3DIconKey,
+      label: "Public code",
+      title: resolvedCode ? "Code resolved" : "Code limited",
+      text: resolvedCode
+        ? `This paper is tied to TrustSlip code ${resolvedCode}.`
+        : "Ask the holder for a fresh TrustSlip code before relying on this paper.",
+      tone: resolvedCode ? "trust" : "warning",
+    },
+    {
+      icon: "certificate-seal" as Gsn3DIconKey,
+      label: "Current window",
+      title: validNow ? "Valid now" : "Refresh first",
+      text: `Status: ${publicValidityLabel}. Expires: ${expiresAtLabel || "not shown"}.`,
+      tone: validNow ? "trust" : "warning",
+    },
+    {
+      icon: "public-globe" as Gsn3DIconKey,
+      label: "Verification path",
+      title: verifyUrl ? "Link and QR available" : "Link unavailable",
+      text: verifyUrl
+        ? "Use the live link or QR instead of relying on an old screenshot."
+        : "No public verification link is available for this paper yet.",
+      tone: verifyUrl ? "trust" : "warning",
+    },
+    {
+      icon: "community-building" as Gsn3DIconKey,
+      label: "Live confirmation",
+      title: validNow ? "Ask before important risk" : "Fresh paper needed",
+      text: decisionNextStep,
+      tone: validNow ? "neutral" : "warning",
+    },
+  ];
   const decisionPackProfileSignals = decisionPackProfile.relevantSignals.slice(0, 4);
   const decisionPackProfileGaps = decisionPackProfile.gapsToCheck.slice(0, 3);
   const decisionPackProfileChecks = decisionPackProfile.recommendedChecks.slice(0, 3);
@@ -1452,6 +1486,66 @@ export default function TrustSlipVerifyPublicPaper({
             >
               {recipientAccessRecord.note}
             </div>
+          </div>
+        </div>
+
+        <div
+          data-gsn-public-record-trust-reasons="decision-pack"
+          style={{
+            ...publicVerifyPanel("#FFFFFF", compact),
+            border: "1px solid rgba(37,78,119,0.14)",
+            display: "grid",
+            gap: compact ? 9 : 12,
+          }}
+        >
+          <div>
+            <div style={{ ...sectionLabel(), color: "#0B63D1" }}>
+              Why this record can be trusted
+            </div>
+            <h2
+              style={{
+                ...readableText(),
+                margin: "5px 0 0",
+                color: "#07172C",
+                fontSize: compact ? 18 : 22,
+                lineHeight: 1.12,
+                fontWeight: 1000,
+              }}
+            >
+              Check the live paper, then decide.
+            </h2>
+            <p
+              style={{
+                ...readableText(),
+                margin: "7px 0 0",
+                color: "#334155",
+                fontSize: compact ? 12 : 13.5,
+                lineHeight: 1.42,
+                fontWeight: 850,
+              }}
+            >
+              These signals show the record is current, traceable, and limited. They do not guarantee the holder or replace your own judgement.
+            </p>
+          </div>
+
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: compact ? "1fr" : "repeat(4, minmax(0, 1fr))",
+              gap: 8,
+            }}
+          >
+            {recordTrustReasonTiles.map((item) => (
+              <PublicReadingTile
+                key={item.label}
+                icon={item.icon}
+                label={item.label}
+                title={item.title}
+                text={item.text}
+                compact={compact}
+                tone={item.tone as "trust" | "warning" | "neutral"}
+              />
+            ))}
           </div>
         </div>
 

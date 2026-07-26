@@ -151690,3 +151690,30 @@ GSN-branded invite composer and invite-entry continuity.
   - local only so far; routine continuation publishing remains batch-frozen unless the product owner explicitly asks to push/deploy.
 - Next recommended step:
   - add a small recipient-facing `why this record can be trusted` grouping to the public verify paper if needed, reusing existing QR/code/expiry/live-confirmation evidence without adding new claims.
+## 2026-07-26 - Public Verify Trustability Grouping
+
+- Trigger:
+  - owner selected `1` to continue after the holder public Decision Pack share note.
+- Unabated truth:
+  - the public verify paper already had security/details deeper down, but a first-time recipient still had to mentally assemble why the record was checkable;
+  - this pass adds a recipient-facing grouping only. It does not add new trust claims, does not expose private Trust Passport data, does not change backend verification, and does not turn the paper into an approval or guarantee.
+- Changed:
+  - `frontend/src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx`
+    - added `recordTrustReasonTiles` for public code, current/expiry window, live link or QR, and live confirmation next step;
+    - added a compact `Why this record can be trusted` panel between `Why you received this` and `Decision Pack reading`;
+    - frames the signals as current, traceable, and limited, explicitly not a holder guarantee or replacement for recipient judgement.
+  - `frontend/tools/audit-public-trustslip-verify-boundary.mjs`
+    - tightened the recipient-first sequence audit to require `Why you received this`, `Why this record can be trusted`, and the Decision Pack question before deeper details;
+    - cages the code/currentness/QR/live-confirmation grouping against future overclaim drift.
+- Verification:
+  - passed `npm exec -- eslint src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx tools/audit-public-trustslip-verify-boundary.mjs` from `frontend`;
+  - passed `npm --prefix frontend run audit:public-trustslip-verify-boundary`;
+  - passed `npm --prefix frontend run audit:trust-passport-trustslip-boundary`;
+  - passed `npm --prefix frontend run audit:trust-actions`;
+  - passed `npm --prefix frontend run audit:proof-surfaces`;
+  - passed `npm --prefix frontend run audit:protected-button-freeze`;
+  - passed `npm --prefix frontend run build`.
+- Deployment:
+  - local only so far; routine continuation publishing remains batch-frozen unless the product owner explicitly asks to push/deploy.
+- Next recommended step:
+  - review whether the public TrustSlip first viewport is now becoming too dense on phone; if so, compact the first three recipient panels without removing their meaning.

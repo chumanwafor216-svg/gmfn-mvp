@@ -195,8 +195,14 @@ assertContains(
 );
 assertContains(
   "publicPaper",
-  /Public Decision Pack[\s\S]*?Why you received this[\s\S]*?Decision Pack reading[\s\S]*?Can I make a better decision with this evidence\?[\s\S]*?This document exists to reduce uncertainty, not eliminate risk[\s\S]*?GSN provides trustworthy evidence; the recipient remains responsible for the decision[\s\S]*?Evidence focus[\s\S]*?What to inspect/,
-  "Public TrustSlip paper must answer the recipient decision question before deeper security details."
+  /Public Decision Pack[\s\S]*?Why you received this[\s\S]*?Why this record can be trusted[\s\S]*?Check the live paper, then decide[\s\S]*?current, traceable, and limited[\s\S]*?do not guarantee the holder or replace your own judgement[\s\S]*?Decision Pack reading[\s\S]*?Can I make a better decision with this evidence\?[\s\S]*?This document exists to reduce uncertainty, not eliminate risk[\s\S]*?GSN provides trustworthy evidence; the recipient remains responsible for the decision[\s\S]*?Evidence focus[\s\S]*?What to inspect/,
+  "Public TrustSlip paper must answer why the recipient received it, why the record is checkable, and the decision question before deeper security details."
+);
+
+assertContains(
+  "publicPaper",
+  /const recordTrustReasonTiles = \[[\s\S]*?Public code[\s\S]*?Code resolved[\s\S]*?Current window[\s\S]*?Status: \$\{publicValidityLabel\}[\s\S]*?Verification path[\s\S]*?live link or QR[\s\S]*?Live confirmation[\s\S]*?decisionNextStep[\s\S]*?\];[\s\S]*?data-gsn-public-record-trust-reasons="decision-pack"[\s\S]*?recordTrustReasonTiles\.map/,
+  "Public TrustSlip paper must group code, currentness, QR/link, and live-confirmation trust reasons without adding new claims."
 );
 
 assertContains(
