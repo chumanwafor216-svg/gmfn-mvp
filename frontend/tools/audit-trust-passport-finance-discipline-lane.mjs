@@ -61,14 +61,14 @@ assertContains(
 
 assertContains(
   "trust",
-  /activeTrustPassportLane === "finance" \? "block" : "none"[\s\S]*?Finance Discipline[\s\S]*?What money discipline says about trust/,
+  /activeTrustPassportLane === "finance" \? "block" : "none"[\s\S]*?Finance Discipline[\s\S]*?What money discipline adds to the evidence/,
   "Finance Discipline lane must open with a plain-language lead gated to the finance lane."
 );
 
 assertContains(
   "trust",
   /It does not[\s\S]*?move money[\s\S]*?create a bank guarantee[\s\S]*?start auto-debit[\s\S]*?Finance[\s\S]*?fuller money story/,
-  "Finance Discipline lane must clearly separate Trust Passport trust signals from actual Finance money movement."
+  "Finance Discipline lane must clearly separate Trust Passport financial evidence signals from actual Finance money movement."
 );
 
 assertContains(

@@ -511,6 +511,13 @@ async function runTrustPassportScenario(browser, baseURL) {
   await expect(state.page.getByText("Community evidence before trust reading", { exact: true })).toHaveCount(0);
   await expect(state.page.getByText("5. Trust surfaces", { exact: true })).toHaveCount(0);
 
+  await state.page.getByText("Finance Discipline", { exact: true }).first().click();
+  await expect(state.page.getByText("What money discipline adds to the evidence", { exact: true })).toBeVisible();
+  await expect(state.page.getByText("This lane explains money-related evidence signals. It does not move money, create a bank guarantee, or start auto-debit. Finance remains the place for the fuller money story.", { exact: true })).toBeVisible();
+  await expect(state.page.getByText("GSN is showing whether the record carries enough financial-discipline evidence for careful decisions. It is not promising repayment, collecting money, or replacing the Finance page.", { exact: true })).toBeVisible();
+  await expect(state.page.getByText("What money discipline says about trust", { exact: true })).toHaveCount(0);
+  await expect(state.page.getByText("This lane explains the trust-facing money signals", { exact: false })).toHaveCount(0);
+
   await expect(state.page.locator('[data-gsn-trust-document-certificate="trust-passport"]')).toHaveCount(1);
   await expect(state.page.locator('[data-gsn-trust-document-certificate="trustslip-holder"]')).toHaveCount(0);
   await expect(state.page.getByText("This passport confirms", { exact: true })).toHaveCount(1);

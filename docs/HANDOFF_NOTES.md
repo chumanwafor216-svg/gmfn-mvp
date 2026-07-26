@@ -152437,3 +152437,39 @@ GSN-branded invite composer and invite-entry continuity.
   - local only so far; do not push/deploy unless the owner explicitly selects `2` or says push/deploy.
 - Next recommended step:
   - commit this evidence-story surface-language slice locally, then either continue the next small Trust Passport evidence-language cleanup on `1` or push/deploy the accumulated local commits on `2`.
+## 2026-07-26 - Trust Passport Finance Evidence Language
+
+- Trigger:
+  - owner selected `1` after the Evidence Story surface-language slice was committed locally.
+- Unabated truth:
+  - this pass cleans private `/app/trust` Finance Discipline lane presentation only;
+  - product terms such as `Trust limit` / `trust-limit signal` remain in place because the current specs still define them as bounded financial signals, not approved limits;
+  - this is not a finance engine, lender approval, banking workflow, guarantee workflow, repayment promise, backend evidence model, Decision Pack generator, Evidence Ledger route, Behavioural Placement schema, or verified-community model.
+- Changed:
+  - `frontend/src/pages/TrustScorePage.tsx`
+    - changes `What money discipline says about trust` to `What money discipline adds to the evidence`;
+    - changes the lead sentence from `trust-facing money signals` to `money-related evidence signals`;
+    - changes the plain rule from evidence for `trust decisions` to `financial-discipline evidence for careful decisions` while preserving the non-repayment/non-collection boundary.
+  - `frontend/tools/audit-trust-passport-finance-discipline-lane.mjs`
+    - updates the finance-lane source cage to protect the new evidence-language heading and boundary message.
+  - `frontend/tools/smoke-trust-passport-trustslip-boundary.mjs`
+    - clicks the Finance Discipline lane and asserts the new heading, lead, and plain-rule copy render;
+    - asserts the old `What money discipline says about trust` and `trust-facing money signals` wording does not render.
+  - `docs/GSN_TRUST_PASSPORT_PURPOSE_AUDIT.md`
+    - clarifies that Finance Discipline evidence is not banking, lending, guarantee, or an approved limit.
+- Verification:
+  - passed `npm exec -- eslint src/pages/TrustScorePage.tsx tools/audit-trust-passport-finance-discipline-lane.mjs tools/smoke-trust-passport-trustslip-boundary.mjs` from `frontend`;
+  - passed direct `node tools/audit-trust-passport-finance-discipline-lane.mjs` from `frontend`;
+  - passed direct `node tools/audit-trust-passport-front-package.mjs` from `frontend`;
+  - passed `npm --prefix frontend run audit:trust-passport-lane-map`;
+  - passed `npm --prefix frontend run audit:trust-passport-trustslip-boundary`;
+  - passed direct `node tools/audit-trust-passport-button-inventory.mjs` from `frontend`;
+  - non-escalated `npm --prefix frontend run smoke:trust-passport-trustslip-boundary` hit sandbox `spawn EPERM` while starting Vite/esbuild;
+  - passed escalated `npm --prefix frontend run smoke:trust-passport-trustslip-boundary`;
+  - passed `npm --prefix frontend run audit:protected-button-freeze`;
+  - passed `npm --prefix frontend run build`;
+  - passed `git diff --check` before the handoff entry.
+- Deployment:
+  - local only so far; do not push/deploy unless the owner explicitly selects `2` or says push/deploy.
+- Next recommended step:
+  - commit this finance evidence-language slice locally, then either continue the next small Trust Passport evidence-language cleanup on `1` or push/deploy the accumulated local commits on `2`.

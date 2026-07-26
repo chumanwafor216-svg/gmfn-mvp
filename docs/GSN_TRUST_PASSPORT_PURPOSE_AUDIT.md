@@ -218,7 +218,7 @@ Avoid:
 | Identity & Evidence Reading | Current evidence posture, evidence depth, and simple interpretation. | Trust score/explanation, TrustSlip summary, Trust Passport VM. | CCI Reading, Trust Timeline. | Reading is not approval. |
 | Evidence Story | Evidence movement, helpful evidence, and pressure signals. | Trust Events, explainability, timeline. | Trust Timeline, evidence pack. | Event count is not proof by itself. |
 | Community Confirmation | Community record, membership/currentness, witness strength, live confirmation readiness. | TrustSlip community context, confirmation policy, public community/member records. | Community record, member credential, confirmation policy. | Membership/witness evidence is scoped. |
-| Finance Discipline | Trust-limit signal, repayment/support/guarantee evidence, exposure context. | Finance/loan/support records and Trust Events. | Finance, Loans, Guarantor Inbox. | Not a bank, lender, guarantee, or approved limit. |
+| Finance Discipline | Trust-limit signal, repayment/support/guarantee evidence, exposure context. | Finance/loan/support records and Trust Events. | Finance, Loans, Guarantor Inbox. | Financial evidence is not banking, lending, guarantee, or approved limit. |
 | Documents / TrustSlip | TrustSlip status, code, verify path, export/copy actions. | TrustSlip summary and public verify path. | TrustSlip, public verify. | TrustSlip is portable current evidence, not full Passport. |
 | Repair or Next Step | What evidence is missing or what action is cleanest next. | Identity signals, trust reasons, notifications/action inbox. | Identity & Integrity, Notifications. | Do not route users to pages that cannot complete the task. |
 

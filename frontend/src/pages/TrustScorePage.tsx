@@ -5110,7 +5110,7 @@ export default function TrustScorePage() {
                 marginTop: 8,
               }}
             >
-              What money discipline says about trust
+              What money discipline adds to the evidence
             </div>
             <p
               style={{
@@ -5119,7 +5119,7 @@ export default function TrustScorePage() {
                 margin: "8px 0 0",
               }}
             >
-              This lane explains the trust-facing money signals. It does not
+              This lane explains money-related evidence signals. It does not
               move money, create a bank guarantee, or start auto-debit. Finance
               remains the place for the fuller money story.
             </p>
@@ -5194,8 +5194,8 @@ export default function TrustScorePage() {
                   Plain rule
                 </div>
                 <p style={{ ...helperText(), margin: "8px 0 0" }}>
-                  GSN is showing whether the record looks disciplined enough for
-                  trust decisions. It is not promising repayment, collecting
+                  GSN is showing whether the record carries enough financial-discipline evidence
+                  for careful decisions. It is not promising repayment, collecting
                   money, or replacing the Finance page.
                 </p>
               </div>
