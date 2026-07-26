@@ -1,3 +1,43 @@
+## CURRENT LOCAL STATE - 2026-07-26 - Trust Passport audit cages aligned locally
+
+Owner trigger:
+- Owner selected `1` after the Trust Passport mobile visual sweep passed locally.
+
+Unabated truth:
+- This was an audit-cage maintenance slice, not a new UI feature.
+- `audit:trust-passport-front-package` and `audit:trust-passport-lane-map` still expected the old always-visible `3. What this evidence helps you decide` section.
+- The UI had already deliberately moved that decision-use content behind the stable `Decision support details` disclosure, so the audits were stale rather than the page being wrong.
+- Updated the audits to require the collapsed `Decision support details` contract and still verify that the plain `What this evidence helps you decide` rows and `item.meaning` copy exist inside the disclosure.
+- No backend route, schema, evidence extraction, scoring, TrustEvent, permission, deployment behavior, or frontend app runtime code changed.
+
+Changed:
+- `frontend/tools/audit-trust-passport-front-package.mjs`
+  - Replaced the old always-visible section expectation with the `Decision support details` disclosure contract.
+- `frontend/tools/audit-trust-passport-lane-map.mjs`
+  - Updated the default Identity & Evidence Reading lane mapping to treat decision-use evidence as collapsed detail.
+
+Routes/screens affected:
+- Signed-in Trust Passport / TrustScore route audit coverage only.
+- No public TrustSlip route behavior changed in this slice.
+
+Verification:
+- Passed `npm --prefix frontend run audit:trust-passport-front-package`.
+- Passed `npm --prefix frontend run audit:trust-passport-lane-map`.
+- Passed `npm --prefix frontend run audit:trust-passport-evidence-story-lane`.
+- Passed `npm --prefix frontend run audit:trust-passport-finance-discipline-lane`.
+- Passed `npm --prefix frontend run audit:trust-passport-community-confirmation-lane`.
+- Passed `npm --prefix frontend run audit:trust-passport-repair-lane`.
+- Passed `npm --prefix frontend run audit:trust-passport-button-inventory`.
+- Passed `npm --prefix frontend run audit:trust-passport-trustslip-boundary`.
+- Passed `npm exec -- eslint tools/audit-trust-passport-front-package.mjs tools/audit-trust-passport-lane-map.mjs` from `frontend`.
+- Passed `npm --prefix frontend run audit:protected-button-freeze`.
+- Passed `npm --prefix frontend run build`.
+
+Deployment:
+- Local only. Not pushed or deployed; owner must select `2` or explicitly say push/deploy.
+
+Recommended next step:
+- The local Trust Passport batch is now better caged. Either publish/deploy the batch, or do a human phone pass on real signed-in Trust Passport data before more Trust Passport UI changes.
 ## CURRENT LOCAL STATE - 2026-07-26 - Trust Passport mobile visual sweep passed locally
 
 Owner trigger:

@@ -139,7 +139,7 @@ assertContains(
 [
   "Identity & Community Overview",
   "2. Current evidence reading",
-  "3. What this evidence helps you decide",
+  "Decision support details",
   "4. Why the evidence reads this way",
   "5. Evidence surfaces",
   "6. What changed in the evidence?",
@@ -155,8 +155,8 @@ assertContains(
 
 assertContains(
   "trust",
-  /3\. What this evidence helps you decide[\s\S]*?These lines do not make the decision[\s\S]*?cannot support before a recipient asks for live confirmation[\s\S]*?passportVm\.trustQuestions\.map[\s\S]*?\{item\.meaning\}/,
-  "Trust Passport decision-use summary must show plain meaning lines, not status labels alone."
+  /data-trust-passport-standing-decision-details="collapsed"[\s\S]*?debugId="trust-score\.standing-decision-details\.toggle"[\s\S]*?aria-expanded=\{standingDecisionDetailsOpen\}[\s\S]*?Decision support details[\s\S]*?standingDecisionDetailsOpen \?[\s\S]*?What this evidence helps you decide[\s\S]*?These lines show what this record can and cannot support before a recipient asks for live confirmation\.[\s\S]*?passportVm\.trustQuestions\.map[\s\S]*?\{item\.meaning\}/,
+  "Trust Passport decision-use summary must stay behind the stable Decision support details disclosure and show plain meaning lines, not status labels alone."
 );
 
 assertNotContains(
