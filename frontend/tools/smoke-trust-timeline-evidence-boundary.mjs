@@ -301,7 +301,7 @@ async function runTimelineScenario(browser, baseURL) {
   await expectVisibleText(state.page, "Visibility-bound evidence");
   await expectVisibleText(state.page, "does not approve credit, move money, or authorize release of goods or services");
   await expectVisibleText(state.page, "Record reference for this visible signed-in Trust Timeline.");
-  await expectVisibleText(state.page, "Evidence Share Copy");
+  await expectVisibleText(state.page, "Share Copy");
   await expectVisibleText(state.page, packId);
   await expectVisibleText(state.page, "The share copy follows your TrustSlip visibility level and leaves");
   await expectVisibleText(state.page, "out private contact details and complete private records.");

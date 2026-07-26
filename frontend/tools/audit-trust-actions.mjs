@@ -1242,7 +1242,7 @@ assertContains(
 
 assertContains(
   "src/pages/TrustTimelinePage.tsx",
-  /Evidence Share Copy[\s\S]*?Visibility-bound review file[\s\S]*?Download share copy[\s\S]*?leaves[\s\S]*?out private contact details and complete private records/,
+  /Share Copy[\s\S]*?Private details removed[\s\S]*?Download share copy[\s\S]*?leaves[\s\S]*?out private contact details and complete private records/,
   "Trust Timeline evidence export must preserve the displayed evidence reference and present the file as a visibility-bound share copy."
 );
 
@@ -1266,13 +1266,13 @@ assertContains(
 
 assertContains(
   "src/pages/TrustTimelinePage.tsx",
-  /TrustDocumentConfidenceRibbon[\s\S]*?trustTimelineConfidenceRibbonItems[\s\S]*?Timeline status[\s\S]*?Record integrity[\s\S]*?Evidence chain[\s\S]*?Verification path[\s\S]*?Last registry update/,
+  /TrustDocumentConfidenceRibbon[\s\S]*?trustTimelineConfidenceRibbonItems[\s\S]*?Timeline view[\s\S]*?Can this be checked\?[\s\S]*?Visible events[\s\S]*?Check path[\s\S]*?Last update/,
   "Trust Timeline must expose the Trust Document Language confidence ribbon."
 );
 
 assertContains(
   "src/pages/TrustTimelinePage.tsx",
-  /data-gsn-trust-document-certificate="trust-timeline"[\s\S]*?TrustDocumentRegistryMasthead[\s\S]*?title="Trust Timeline Evidence Record"[\s\S]*?TrustDocumentConfidenceRibbon[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This timeline confirms"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This timeline does not confirm"[\s\S]*?TrustDocumentSecurityPanel[\s\S]*?title="Trust Timeline security"[\s\S]*?TrustDocumentFingerprint[\s\S]*?label="Trust Timeline record reference"/,
+  /data-gsn-trust-document-certificate="trust-timeline"[\s\S]*?TrustDocumentRegistryMasthead[\s\S]*?title="Trust Timeline Evidence Record"[\s\S]*?TrustDocumentConfidenceRibbon[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This timeline confirms"[\s\S]*?TrustDocumentBoundaryPanel[\s\S]*?title="This timeline does not confirm"[\s\S]*?TrustDocumentSecurityPanel[\s\S]*?title="Audit Details"[\s\S]*?TrustDocumentFingerprint[\s\S]*?label="Trust Timeline record reference"/,
   "Trust Timeline must render the Trust Document Language sequence with visible masthead record title, confidence, boundary, security, and record reference."
 );
 

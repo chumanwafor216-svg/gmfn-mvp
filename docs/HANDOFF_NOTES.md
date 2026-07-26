@@ -1,3 +1,39 @@
+## CURRENT LOCAL STATE - 2026-07-26 - Trust Timeline wording tightened
+
+Owner trigger:
+- Owner entered `11`, interpreted as continuing the local enhancement path rather than push/deploy.
+
+Unabated truth:
+- Runtime frontend code changed for the signed-in Trust Timeline evidence paper only.
+- This pass is copy/label tightening only. It does not change timeline events, score explanation, evidence ZIP/PDF generation, signed-in access, backend routes, schemas, permissions, or deployment config.
+- Older technical labels still exist on other surfaces where not part of this slice, especially holder TrustSlip ribbon audit terms.
+
+Changed:
+- `frontend/src/pages/TrustTimelinePage.tsx`
+  - Renamed confidence ribbon labels: `Timeline status` -> `Timeline view`, `Record integrity` -> `Can this be checked?`, `Evidence chain` -> `Visible events`, `Verification path` -> `Check path`, `Last registry update` -> `Last update`.
+  - Renamed `Trust Timeline security` to `Audit Details`.
+  - Renamed section headings from `Evidence Posture` to `Evidence Status`, `Latest trust change` to `Latest record movement`, `Evidence Share Copy` to `Share Copy`, and `Visibility-bound review file` to `Private details removed`.
+- `frontend/tools/audit-trust-actions.mjs`
+- `frontend/tools/smoke-trust-timeline-evidence-boundary.mjs`
+  - Updated audit/smoke contracts for the new Timeline wording.
+
+Routes/screens affected:
+- Signed-in Trust Timeline: `/app/trust-timeline`.
+- No backend route changed.
+
+Verification:
+- Passed `npm --prefix frontend run audit:trust-timeline-evidence-boundary`.
+- Passed `npm --prefix frontend run audit:trust-actions`.
+- Passed `npm --prefix frontend run audit:protected-button-freeze`.
+- Passed `npm --prefix frontend run smoke:trust-timeline-evidence-boundary` with escalation after sandbox `spawn EPERM`.
+- Passed `npm --prefix frontend run build`.
+- Passed `git diff --check`; Git still reports normal LF-to-CRLF working-copy warnings on touched files.
+
+Deployment:
+- Local runtime/docs change only at this point. Not pushed or deployed until owner selects `2` or explicitly says push/deploy.
+
+Recommended next step:
+- Either continue simplifying holder TrustSlip ribbon labels, or do a phone visual pass across TrustSlip, TrustSlip Verify, Trust Passport, and Trust Timeline before push/deploy.
 ## CURRENT LOCAL STATE - 2026-07-26 - Trust Passport aggregate wording tightened
 
 Owner trigger:

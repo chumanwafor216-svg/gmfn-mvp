@@ -414,31 +414,31 @@ export default function TrustTimelinePage() {
 
   const trustTimelineConfidenceRibbonItems: TrustDocumentRibbonItem[] = [
     {
-      label: "Timeline status",
+      label: "Timeline view",
       value: loading ? "Loading current record" : err ? "Needs refresh" : "Visible record loaded",
       tone: loading ? "info" : err ? "warn" : "good",
       detail: err ? "The latest timeline request did not complete." : "Signed-in trust timeline view.",
     },
     {
-      label: "Record integrity",
+      label: "Can this be checked?",
       value: packId ? "Evidence reference available" : "Evidence reference pending",
       tone: packId ? "good" : "info",
       detail: packId || "Downloadable pack reference has not loaded yet.",
     },
     {
-      label: "Evidence chain",
+      label: "Visible events",
       value: totals.total ? `${totals.total} visible events` : "No visible events yet",
       tone: totals.total ? "good" : "warn",
       detail: `${totals.pos} positive, ${totals.neg} caution or negative movement.`,
     },
     {
-      label: "Verification path",
+      label: "Check path",
       value: packId ? "PDF and share copy available" : "Refresh to load package",
       tone: packId ? "good" : "info",
       detail: "Timeline PDF and redacted evidence ZIP use signed-in access.",
     },
     {
-      label: "Last registry update",
+      label: "Last update",
       value: cleanRecordText(packMeta?.generated_at_utc || lastChange?.created_at, "Not shown yet"),
       tone: packMeta?.generated_at_utc || lastChange?.created_at ? "good" : "info",
     },
@@ -693,7 +693,7 @@ export default function TrustTimelinePage() {
             />
           </div>
           <TrustDocumentSecurityPanel
-            title="Trust Timeline security"
+            title="Audit Details"
             items={trustTimelineSecurityItems}
           />
           <TrustDocumentFingerprint
@@ -721,7 +721,7 @@ export default function TrustTimelinePage() {
               flexWrap: "wrap",
             }}
           >
-            <div style={sectionLabel()}>{sectionHeading("shield", "Evidence Posture")}</div>
+            <div style={sectionLabel()}>{sectionHeading("shield", "Evidence Status")}</div>
             <div style={{ fontSize: 12, ...helperText() }}>
               {totals.total} events - {totals.pos} positive - {totals.neg} negative
             </div>
@@ -739,7 +739,7 @@ export default function TrustTimelinePage() {
             }}
           >
             <div style={{ fontSize: 14, fontWeight: 800 }}>
-              Latest trust change
+              Latest record movement
             </div>
             <div style={{ marginTop: 8, ...helperText() }}>
               <div>
@@ -769,8 +769,8 @@ export default function TrustTimelinePage() {
               flexWrap: "wrap",
             }}
           >
-            <div style={sectionLabel()}>{sectionHeading("vault", "Evidence Share Copy")}</div>
-            <div style={{ fontSize: 12, ...helperText() }}>Visibility-bound review file</div>
+            <div style={sectionLabel()}>{sectionHeading("vault", "Share Copy")}</div>
+            <div style={{ fontSize: 12, ...helperText() }}>Private details removed</div>
           </div>
 
           <div style={{ marginTop: 10 }}>
