@@ -432,6 +432,16 @@ async function expectDecisionPackRecipientCard(page) {
   await expect(recipientCard).toContainText("Shared to support Employment Decision Pack.");
   await expect(recipientCard).toContainText("Employment Decision Pack");
   await expect(recipientCard).toContainText("Public Decision Pack");
+
+  const decisionReading = page.locator('[data-debug-id="trust-slip-verify.public.decision-pack-reading"]');
+  await expect(decisionReading).toBeVisible({ timeout: 30000 });
+  await expect(decisionReading).toContainText("Can I make a better decision with this evidence?");
+  await expect(decisionReading).toContainText("This document exists to reduce uncertainty, not eliminate risk.");
+  await expect(decisionReading).toContainText("the recipient remains responsible for the decision");
+  await expect(decisionReading).toContainText("Evidence focus");
+  await expect(decisionReading).toContainText("Next safe step");
+  await expect(decisionReading).toContainText("Check live confirmation");
+
   await expect(recipientCard).not.toContainText("public_context_from_link");
   await expect(recipientCard).not.toContainText("backend_access_context_only");
   await expect(recipientCard).not.toContainText("public_decision_pack");
@@ -579,7 +589,7 @@ async function main() {
         "no-code stayed on the public code checker without API calls;",
         "current and minimal records rendered public evidence without private/app chrome;",
         "expired, revoked, frozen, merchant-inactive, low-data, missing-window, no-relay, and unknown-code states stayed honest;",
-        "Decision Pack recipient-card wording stayed human and hid raw machine context;",
+        "Decision Pack recipient-card and reading stayed human, decision-first, and hid raw machine context;",
         "public verify requests carried no auth or selected-clan headers, even with signed-in local state.",
       ].join(" ")
     );

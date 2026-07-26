@@ -152112,3 +152112,30 @@ GSN-branded invite composer and invite-entry continuity.
   - local only so far; do not push/deploy unless the owner explicitly selects `2` or says push/deploy.
 - Next recommended step:
   - commit this holder consent-boundary slice locally, then either continue another small holder/recipient Decision Pack proof gap on `1` or push/deploy the accumulated local commits on `2`.
+## 2026-07-26 - Public Decision Pack Reading Smoke Guard
+
+- Trigger:
+  - owner selected `1` after the holder consent-storage boundary slice was committed locally.
+- Unabated truth:
+  - the public TrustSlip source audit already caged the Decision Pack reading copy: why the recipient received the pack, why the record is checkable, the reduce-uncertainty boundary, recipient responsibility, evidence focus, and next safe step;
+  - the browser smoke only proved the recipient-access card label, first-viewport position, and machine-status hiding. It did not prove the live rendered Decision Pack reading block carried the decision-first boundary;
+  - this pass strengthens proof only. It does not change runtime UI, backend evidence, access-ledger persistence, Decision Pack profile logic, scores, approvals, guarantees, payment authority, private Trust Passport disclosure, or recipient identity handling.
+- Changed:
+  - `frontend/tools/smoke-public-trustslip-verify-states.mjs`
+    - extends `expectDecisionPackRecipientCard` to assert the live public Decision Pack reading block renders: `Can I make a better decision with this evidence?`, `reduce uncertainty, not eliminate risk`, recipient responsibility, `Evidence focus`, `Next safe step`, and `Check live confirmation`;
+    - updates the smoke summary to report that the Decision Pack recipient card and reading stayed human, decision-first, and free of raw machine context.
+  - `frontend/tools/audit-evidence-display-boundary-suite.mjs`
+    - cages the stronger smoke assertions so future public TrustSlip smoke coverage cannot silently drop the Decision Pack reading proof.
+- Verification:
+  - passed `npm exec -- eslint tools/smoke-public-trustslip-verify-states.mjs tools/audit-evidence-display-boundary-suite.mjs` from `frontend`;
+  - passed `npm --prefix frontend run audit:evidence-display-boundary-suite`;
+  - passed `npm --prefix frontend run audit:public-trustslip-verify-boundary`;
+  - first `npm --prefix frontend run smoke:public-trustslip-verify-states` attempt hit sandbox `spawn EPERM` while starting Vite/esbuild;
+  - passed `npm --prefix frontend run smoke:public-trustslip-verify-states` with sandbox escalation;
+  - passed `npm --prefix frontend run audit:protected-button-freeze`;
+  - passed `npm --prefix frontend run build`;
+  - passed `git diff --check` before the handoff entry.
+- Deployment:
+  - local only so far; do not push/deploy unless the owner explicitly selects `2` or says push/deploy.
+- Next recommended step:
+  - commit this smoke-proof slice locally, then either continue another small Decision Pack proof gap on `1` or push/deploy the accumulated local commits on `2`.
