@@ -151839,3 +151839,31 @@ GSN-branded invite composer and invite-entry continuity.
   - local only so far; routine continuation publishing remains batch-frozen unless the product owner explicitly asks to push/deploy.
 - Next recommended step:
   - if continuing the Decision Pack line, add a tiny test/audit that prevents raw access scopes like `public_decision_pack` from being the primary visible wording on the recipient card while still allowing them in metadata.
+## 2026-07-26 - Public Verify Recipient Scope Copy
+
+- Trigger:
+  - owner selected `1` after the public TrustSlip recipient status copy fix.
+- Unabated truth:
+  - the public recipient card no longer leaked machine status, but its metadata could still show raw machine scope values such as `public_decision_pack` as primary visible wording;
+  - this pass is frontend view-model copy normalization only. It does not change URL query semantics, backend verification, public payload categories, private Trust Passport boundaries, scoring, approvals, guarantees, access logging, or deployment state.
+- Changed:
+  - `frontend/src/pages/trustSlipVerify/trustSlipVerifyViewModel.ts`
+    - added a small machine-scope label map so known scopes render as human labels such as `Public Decision Pack`, `Decision Pack`, `Public TrustSlip`, and `Standard public view`;
+    - unknown custom scopes still pass through unchanged so future intentional labels are not hidden.
+  - `frontend/tools/audit-public-trustslip-first-viewport.mjs`
+    - clarified that the recipient access record is fed by view-model labels.
+  - `frontend/tools/audit-public-trustslip-verify-boundary.mjs`
+    - cages the scope translation so `public_decision_pack` remains machine context, not primary recipient-card wording.
+- Verification:
+  - passed `npm exec -- eslint src/pages/trustSlipVerify/trustSlipVerifyViewModel.ts tools/audit-public-trustslip-first-viewport.mjs tools/audit-public-trustslip-verify-boundary.mjs` from `frontend`;
+  - passed `npm --prefix frontend run audit:public-trustslip-first-viewport`;
+  - passed `npm --prefix frontend run audit:public-trustslip-verify-boundary`;
+  - passed `npm --prefix frontend run audit:trust-passport-trustslip-boundary`;
+  - passed `npm --prefix frontend run audit:trust-actions`;
+  - passed `npm --prefix frontend run audit:proof-surfaces`;
+  - passed `npm --prefix frontend run audit:protected-button-freeze`;
+  - passed `npm --prefix frontend run build`.
+- Deployment:
+  - local only so far; routine continuation publishing remains batch-frozen unless the product owner explicitly asks to push/deploy.
+- Next recommended step:
+  - if continuing before push/deploy, consider a tiny public verify smoke script that asserts the rendered first-viewport text contains `Shared to support Employment Decision Pack` and `Public Decision Pack` while excluding `public_context_from_link` and `public_decision_pack` from the visible recipient-card text.

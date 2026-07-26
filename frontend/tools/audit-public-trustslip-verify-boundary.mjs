@@ -112,6 +112,11 @@ assertContains(
 
 assertContains(
   "viewModel",
+  /const rawAccessScope = firstTruthy\([\s\S]*?record\?\.access_scope[\s\S]*?machineAccessScopeLabels = new Map\(\[[\s\S]*?\["public_decision_pack", "Public Decision Pack"\][\s\S]*?\["public_trustslip", "Public TrustSlip"\][\s\S]*?const accessScope = firstTruthy\([\s\S]*?machineAccessScopeLabels\.get\(rawAccessScope\.toLowerCase\(\)\)[\s\S]*?rawAccessScope/,
+  "Public TrustSlip recipient access scope must translate known machine scopes into human metadata labels."
+);
+assertContains(
+  "viewModel",
   /const rawAccessStatus = firstTruthy\(record\?\.access_status, rawAccessRecord\?\.status\);[\s\S]*?machineAccessStatuses[\s\S]*?public_context_from_link[\s\S]*?backend_access_recorded[\s\S]*?`Shared to support \$\{accessPurpose\}\.`/,
   "Public TrustSlip recipient access status must translate machine statuses into human Decision Pack copy."
 );

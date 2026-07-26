@@ -97,7 +97,7 @@ assertContains(
 assertContains(
   "publicPaper",
   /data-debug-id="trust-slip-verify\.public\.recipient-access-record"[\s\S]*?gridTemplateColumns: compact \? "40px minmax\(0, 1fr\)" : "54px minmax\(0, 1fr\)"[\s\S]*?padding: compact \? 9 : 14[\s\S]*?Why you received this[\s\S]*?\{recipientAccessRecord\.status\}[\s\S]*?gridTemplateColumns: "repeat\(2, minmax\(0, 1fr\)\)"[\s\S]*?\["Recipient", recipientAccessRecord\.recipientLabel\][\s\S]*?\["Decision Pack", decisionPackPurpose\][\s\S]*?\["Scope", recipientAccessRecord\.scope\][\s\S]*?\["Access date", recipientAccessRecord\.accessedAtLabel\]/,
-  "Recipient access record must remain compact, decision-scoped, and readable in the first viewport."
+  "Recipient access record must remain compact, decision-scoped, and fed by view-model labels in the first viewport."
 );
 
 

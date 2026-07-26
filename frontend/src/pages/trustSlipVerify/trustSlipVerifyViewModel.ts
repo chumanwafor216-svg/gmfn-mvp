@@ -520,12 +520,23 @@ function normalizeDecisionPackProfile(
     rawAccessRecord?.share_purpose,
     "General Decision Pack"
   );
-  const accessScope = firstTruthy(
+  const rawAccessScope = firstTruthy(
     record?.access_scope,
     rawAccessRecord?.scope,
     rawAccessRecord?.visibility_level,
     record?.visibility_level,
     "Public TrustSlip only"
+  );
+  const machineAccessScopeLabels = new Map([
+    ["public_decision_pack", "Public Decision Pack"],
+    ["decision_pack", "Decision Pack"],
+    ["public_trustslip", "Public TrustSlip"],
+    ["public_trust_slip", "Public TrustSlip"],
+    ["standard", "Standard public view"],
+  ]);
+  const accessScope = firstTruthy(
+    machineAccessScopeLabels.get(rawAccessScope.toLowerCase()),
+    rawAccessScope
   );
   const rawAccessStatus = firstTruthy(record?.access_status, rawAccessRecord?.status);
   const machineAccessStatuses = new Set([
