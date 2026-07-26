@@ -72,6 +72,40 @@ has a documented reason to adapt it:
 The user should understand the document's authority and boundary before reading
 long evidence details.
 
+## Decision-First Trust Documents
+
+Official GSN documents must still feel authoritative, but the first read should
+work like clear airport signage, not a legal bundle. The first viewport should
+answer the recipient's question before showing dense evidence or repeated
+limitations.
+
+Use this hierarchy on TrustSlip, TrustSlip Verify, Trust Passport, public
+verification, merchant release, evidence packs, and future registry records:
+
+1. One big answer: `Known by community`, `Evidence building`, `Verification
+   required`, `Payment pending`, or a route-specific equivalent.
+2. Four quick facts: `Who?`, `Known for`, `Evidence status`, and `Next step`, or
+   route-specific equivalents.
+3. More details: witness status, TrustEvent categories, evidence chain,
+   validity, timestamps, policies, and audit trail behind disclosure controls.
+4. Full report: long legal, historical, or technical details after the quick
+   decision read.
+
+Boundary language remains mandatory, but repetition should be compressed into a
+single Decision Boundary box where possible:
+
+```text
+Decision Boundary
+- Community evidence
+- Not a guarantee
+- Not government ID
+- Not credit approval
+- Final decision remains yours
+```
+
+Do not make the recipient read repeated boundary paragraphs before they can see
+what decision the document is helping them make.
+
 ## Confidence Ribbon
 
 Every institutional record should carry a compact confidence ribbon near the

@@ -1,3 +1,39 @@
+## CURRENT LOCAL STATE - 2026-07-26 - Decision-first UX law codified locally
+
+Owner trigger:
+- Owner paused continuation with a crucial UX observation: GSN pages currently risk treating every detail as equally important, making first-time users read too much before understanding the decision being supported.
+
+Unabated truth:
+- The owner/wife observation exposes a real risk in the current enhancement direction. Evidence-language cleanup reduces overclaiming, but it does not by itself solve first-read comprehension.
+- This checkpoint codifies the UX law only. It does not redesign TrustSlip, Trust Passport, Decision Packs, Marketplace, finance, admin pages, or PDF layouts yet.
+- Future screen work should not keep adding text unless the first viewport already gives one big answer, four quick facts, and a clear next action.
+
+Changed:
+- `docs/DESIGN_SYSTEM.md`
+  - Added the Decision-First Hierarchy: one big answer, four quick facts, expandable details, full report last.
+  - Added the product law `Decision first. Evidence second. Explanation last.`
+  - Added the compact Decision Boundary box pattern.
+- `docs/UX_ACCEPTANCE_CHECKLIST.md`
+  - Added the 20-word decision test and hierarchy as acceptance requirements.
+- `docs/APP_WIDE_AUDIT_PROTOCOL.md`
+  - Added a page-failure rule for screens requiring more than 20 visible words before the supported decision is clear.
+  - Added the Decision Boundary box preference over repeated limitation paragraphs.
+- `docs/TRUST_DOCUMENT_LANGUAGE_PROTOCOL.md`
+  - Added Decision-First Trust Documents guidance for TrustSlip, TrustSlip Verify, Trust Passport, public verification, merchant release, evidence packs, and future registry records.
+- `docs/SCREEN_SPECS.md`
+  - Added the Global Decision-First Screen Rule for all screens.
+
+Routes/screens affected:
+- Documentation/protocol only. No runtime route, schema, API, permission, or deployment behavior changed.
+
+Verification:
+- Passed `git diff --check` after documentation edits with no whitespace errors.
+
+Deployment:
+- Local only. Not pushed or deployed; owner must select `2` or explicitly say push/deploy.
+
+Recommended next step:
+- Stop treating the next enhancement as only wording cleanup. The next real UX slice should apply the new law to a high-value screen, likely TrustSlip Verify or Trust Passport: first viewport one big answer, four quick facts, compact Decision Boundary, deeper details collapsed.
 ## CURRENT LOCAL STATE - 2026-07-26 - Trust Graph evidence-language slice added locally
 
 Owner trigger:

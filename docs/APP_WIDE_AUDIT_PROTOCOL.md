@@ -28,6 +28,20 @@ What should this user do here now?
 
 If the page cannot answer that quickly, the page fails the audit even if the
 code compiles and every button technically works.
+A page also fails if a user must read more than 20 visible words before they can
+understand the decision being supported. Use the GSN decision-first hierarchy:
+
+1. One big answer in the first viewport.
+2. Four quick facts: who, status, confidence, next action, or route-specific
+   equivalents.
+3. Expandable evidence, policy, validity, timestamp, and audit details.
+4. Full report only after the first decision is clear.
+
+The required product law is:
+
+```text
+Decision first. Evidence second. Explanation last.
+```
 
 ## Audit Order
 
@@ -135,6 +149,9 @@ Copy must also be concise and non-repetitive:
 - Say one idea once, in the place where the user needs it.
 - Remove repeated warnings, repeated explanations, and repeated paragraph
   summaries unless repetition is needed for legal/evidence clarity.
+- Prefer one compact Decision Boundary box over repeating the same `evidence,
+  not approval`, `not a guarantee`, `not government ID`, `not credit approval`,
+  and `recipient decides` paragraph across several cards.
 - Use institutional, polished wording: direct, calm, short, and complete.
 - Prefer `page`, `step`, `record`, `link`, `access code`, `payment step`, or
   `support step` over visible engineering words such as `route`, `token`,

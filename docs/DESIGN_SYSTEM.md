@@ -125,6 +125,45 @@ One screen should never feel like seven screens stacked together.
 
 Collapse, group, or move deeper content to its own page.
 
+### Decision-First Hierarchy
+
+No GSN page should require reading more than 20 visible words before a user
+understands what decision the page is helping them make.
+
+Every decision, evidence, verification, trust, finance, marketplace, support,
+and admin screen should open in this order:
+
+1. One big answer: a short state such as `Evidence building`, `Verified`,
+   `Needs review`, `Community known`, or `Payment pending`.
+2. Four quick facts: route-specific equivalents of `Who?`, `Status?`,
+   `Confidence?`, and `Next action?`.
+3. Expandable details: witness status, categories, evidence chain, validity,
+   timestamps, policies, boundaries, and audit trail stay behind disclosure
+   controls unless they are the immediate task.
+4. Full report: long history, technical detail, legal notices, and raw audit
+   context come last.
+
+Use this product law:
+
+```text
+Decision first. Evidence second. Explanation last.
+```
+
+Legal and evidence boundaries should be gathered into one compact Decision
+Boundary box where possible:
+
+```text
+Decision Boundary
+- Community evidence
+- Not a guarantee
+- Not government ID
+- Not credit approval
+- Final decision remains yours
+```
+
+Do not repeat the same boundary paragraph across several cards when one compact
+boundary box can carry the meaning.
+
 For phone layouts, `docs/GSN_MOBILE_UI_PROTOCOL.md` is the density and
 screenshot-readiness source of truth. Mobile task pages must show one decision,
 one current state, and one next action before exposing deeper details.

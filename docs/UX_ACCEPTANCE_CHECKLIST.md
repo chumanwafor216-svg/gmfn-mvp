@@ -3,6 +3,11 @@
 A screen is acceptable only if:
 
 - It has one obvious primary action.
+- It passes the 20-word decision test: before reading more than 20 visible words,
+  the user can tell what decision the page is helping them make.
+- It opens with one big answer, then four quick facts, then expandable details,
+  then the full report only where needed.
+- It follows `Decision first. Evidence second. Explanation last.`
 - It does not expose too many sections at once.
 - It follows the Focused Action Protocol: when one action is active, unrelated
   sections step back until the choice or result is complete.

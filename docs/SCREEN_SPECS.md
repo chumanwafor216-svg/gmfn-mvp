@@ -1,5 +1,21 @@
 # Screen Specs
 
+## Global Decision-First Screen Rule
+
+Every screen must make the supported decision clear before it explains the
+system. A first-time user should not need to read more than 20 visible words to
+understand the main state and next step.
+
+Default hierarchy:
+- one big answer;
+- four quick facts;
+- expandable details;
+- full report last.
+
+Use `Decision first. Evidence second. Explanation last.` for Trust Passport,
+TrustSlip, Decision Packs, verification, marketplace, finance, support, and
+admin surfaces.
+
 ## CoverPage
 
 Purpose:
