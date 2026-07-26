@@ -436,6 +436,10 @@ async function runTrustPassportScenario(browser, baseURL) {
     timeout: 60000,
   });
 
+  await expect(state.page.getByText("Aggregate Passport reading", { exact: true })).toBeVisible({ timeout: 30000 });
+  await expect(state.page.getByText("Aggregate reading", { exact: true })).toBeVisible();
+  await expect(state.page.getByText("Primary anchor", { exact: true }).first()).toBeVisible();
+  await expect(state.page.getByText("Community portfolio", { exact: true })).toBeVisible();
   await expect(
     state.page.getByRole("heading", { name: "Identity & Community Overview", exact: true })
   ).toBeVisible({ timeout: 30000 });

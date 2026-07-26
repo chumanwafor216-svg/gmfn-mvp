@@ -2799,11 +2799,27 @@ export default function TrustScorePage() {
     ["id", "Identity status", passportVm.identity.identityStatusLabel],
   ];
 
+  const activeCommunityTotal = positiveNumber(passportVm.technicalDetail.activeClans);
+  const activeCommunityCountLabel = `${activeClanCount} active ${
+    activeCommunityTotal === 1 ? "community" : "communities"
+  }`;
+  const aggregatePassportReading = passportVm.verdict.lowData
+    ? "Aggregate evidence building"
+    : passportVm.verdict.label;
+  const aggregatePassportReadingDetail = passportVm.verdict.lowData
+    ? passportVm.verdict.interpretation
+    : `${passportVm.verdict.evidenceMeaning}. Depth: ${passportVm.verdict.evidenceLabel}.`;
+  const primaryCommunityAnchorDetail =
+    passportVm.identity.communityName === "Not stated"
+      ? "Primary community anchor is not shown yet."
+      : `${currentRoleSummary}; ${passportVm.identity.communityId}.`;
+  const communityPortfolioDetail =
+    activeCommunityTotal > 1
+      ? "Aggregate reading can draw from more than one community context."
+      : "Portfolio is still building beyond the primary community.";
   const trustPassportDecisionAnswer = !trustSlipCode
     ? "Evidence setup needed"
-    : identityEvidence.score >= 60 && positiveNumber(passportVm.technicalDetail.activeClans) > 0
-      ? "Evidence record ready"
-      : "Evidence building";
+    : aggregatePassportReading;
   const trustPassportDecisionTone = !trustSlipCode
     ? "warn"
     : identityEvidence.score >= 60
@@ -2811,9 +2827,9 @@ export default function TrustScorePage() {
       : "info";
   const trustPassportDecisionLine = !trustSlipCode
     ? "Issue the public TrustSlip before sharing evidence."
-    : identityEvidence.score >= 60 && positiveNumber(passportVm.technicalDetail.activeClans) > 0
-      ? "Use the evidence lanes only when more detail is needed."
-      : "Add or confirm evidence before relying on this passport.";
+    : identityEvidence.score >= 60 && activeCommunityTotal > 0
+      ? "Aggregate reading first. Primary community is the anchor, not the whole judgement."
+      : "Build aggregate evidence before relying on this passport.";
   const trustPassportPrimaryActionLabel =
     safeStr(nextStep.ctaLabel).length <= 24 ? nextStep.ctaLabel : "Open next step";
   const trustPassportPrimaryAction = !trustSlipCode
@@ -2835,28 +2851,35 @@ export default function TrustScorePage() {
     boolean,
     boolean,
   ]> = [
-    ["id", "Who?", memberName, passportVm.identity.gmfnId, true, true],
     [
       "shield",
-      "Identity",
-      identityEvidenceStageWord(identityEvidence),
-      passportVm.identity.identityStatusLabel,
+      "Aggregate reading",
+      aggregatePassportReading,
+      aggregatePassportReadingDetail,
       identityEvidence.score >= 60,
       identityEvidence.score >= 35,
     ],
     [
       "community",
-      "Communities",
-      activeClanCount,
-      currentRoleSummary,
-      positiveNumber(passportVm.technicalDetail.activeClans) > 0,
+      "Primary anchor",
+      passportVm.identity.communityName,
+      primaryCommunityAnchorDetail,
+      passportVm.identity.communityName !== "Not stated",
+      true,
+    ],
+    [
+      "globe",
+      "Community portfolio",
+      activeCommunityCountLabel,
+      communityPortfolioDetail,
+      activeCommunityTotal > 1,
       true,
     ],
     ["evidence", "Next step", nextStep.ctaLabel, trustSlipCode ? "Use the evidence lanes below." : "Issue the public TrustSlip first.", Boolean(trustSlipCode), true],
   ];
   const trustPassportDecisionBoundaryRows: Array<[string, string]> = [
-    ["Private evidence", "Shown"],
-    ["Public TrustSlip", trustSlipCode ? "Available" : "Pending"],
+    ["Reading scope", "Aggregate"],
+    ["Primary anchor", "Separate"],
     ["Guarantee", "No"],
     ["Government ID", "No"],
     ["Final decision", "Yours"],
@@ -3234,7 +3257,7 @@ export default function TrustScorePage() {
                   lineHeight: 1.1,
                 }}
               >
-                Decision first
+                Aggregate Passport reading
               </div>
               <h1
                 style={{

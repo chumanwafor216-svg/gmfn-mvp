@@ -193,6 +193,16 @@ assertContains(
   /This is an evidence reading only\. It is not a character judgement, universal trust label, or decision about the person\./,
   "Trust Passport page language must keep evidence reading meaning separate from character judgement or decision support."
 );
+assertContains(
+  "trustPassport",
+  /const trustPassportDecisionFacts:[\s\S]*?"Aggregate reading"[\s\S]*?"Primary anchor"[\s\S]*?"Community portfolio"[\s\S]*?"Next step"[\s\S]*?const trustPassportDecisionBoundaryRows:[\s\S]*?"Reading scope", "Aggregate"[\s\S]*?"Primary anchor", "Separate"/,
+  "Trust Passport first viewport facts must order aggregate reading, primary community anchor, Community Portfolio, and next step before the compact boundary."
+);
+assertContains(
+  "trustPassport",
+  /data-trust-passport-decision-first="one-answer-four-facts"[\s\S]*?Aggregate Passport reading[\s\S]*?\{trustPassportDecisionAnswer\}[\s\S]*?data-trust-passport-decision-facts="four-quick-facts"/,
+  "Trust Passport first viewport must visibly label the headline as Aggregate Passport reading before the quick facts."
+);
 
 assertContains(
   "smoke",

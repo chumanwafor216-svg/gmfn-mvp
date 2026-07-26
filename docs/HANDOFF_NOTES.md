@@ -1,3 +1,44 @@
+## CURRENT LOCAL STATE - 2026-07-26 - Trust Passport first viewport aggregate-led locally
+
+Owner trigger:
+- Owner selected `1` after the trust evidence scope fix was pushed/deployed, then approved continuing with the next enhancement.
+
+Unabated truth:
+- This is a visual hierarchy and language-order fix on `/app/trust`, not a backend Trust Passport algorithm change.
+- The page already had decision-first structure, but its top facts still made identity/community count feel like the main reading.
+- The first viewport now leads with aggregate Passport reading, then separates the primary community anchor from the broader Community Portfolio.
+- This does not create aggregate evidence where the backend only returns one primary community. It makes the scope honest and faster to read.
+
+Changed:
+- `frontend/src/pages/TrustScorePage.tsx`
+  - Changed the top Trust Passport decision-card micro-heading from `Decision first` to `Aggregate Passport reading`.
+  - Changed the main answer to use the aggregate evidence reading label when a TrustSlip exists.
+  - Reordered the four quick facts to: `Aggregate reading`, `Primary anchor`, `Community portfolio`, `Next step`.
+  - Added first-card copy clarifying that the primary community is the anchor, not the whole judgement.
+  - Updated the compact Decision Boundary rows to distinguish `Reading scope: Aggregate` and `Primary anchor: Separate`.
+- `frontend/tools/audit-trust-passport-trustslip-boundary.mjs`
+  - Added guards requiring the aggregate-first fact order and visible `Aggregate Passport reading` heading.
+- `frontend/tools/smoke-trust-passport-trustslip-boundary.mjs`
+  - Added browser assertions for the new first-read Trust Passport phrases.
+
+Routes/screens affected:
+- Signed-in Trust Passport route `/app/trust` only.
+- TrustSlip holder `/app/trust-slip` remains covered by the same boundary smoke but was not visually changed in this slice.
+- Public TrustSlip Verify behavior unchanged.
+
+Verification:
+- Passed `npm --prefix frontend run audit:trust-passport-trustslip-boundary`.
+- Passed `npm --prefix frontend run audit:trust-actions`.
+- Passed ESLint on `TrustScorePage.tsx`, the updated audit, and the updated smoke.
+- Passed `npm --prefix frontend run audit:protected-button-freeze`.
+- Passed `npm --prefix frontend run build`.
+- Passed `npm --prefix frontend run smoke:trust-passport-trustslip-boundary` with escalation for local Vite/Chromium process launch.
+
+Deployment:
+- Local only. Not pushed or deployed; owner must select `2` or explicitly say push/deploy.
+
+Recommended next step:
+- Phone-review `/app/trust` first viewport. If it still feels crowded, the next honest fix is density, not more copy: reduce the decision card height or move the compact Decision Boundary below the first viewport.
 ## CURRENT LOCAL STATE - 2026-07-26 - Trust evidence scope clarified locally
 
 Owner trigger:
