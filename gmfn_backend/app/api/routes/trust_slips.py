@@ -27,6 +27,7 @@ from app.services.trust_slip_decision_packs import (
     build_decision_pack_profile,
     decision_pack_consent_share_to_holder_row,
     list_decision_pack_accesses_for_holder,
+    list_decision_pack_consent_shares_for_holder,
     normalize_decision_pack_context,
     record_decision_pack_access,
     record_decision_pack_consent_share,
@@ -889,6 +890,27 @@ def record_my_trust_slip_decision_pack_consent_share(
         "evidence_note": "A holder consent-share record is an audit marker only. It is separate from public TrustSlip reads and it is not behaviour evidence or a TrustEvent.",
     }
 
+
+@router.get("/me/decision-pack-consent-shares")
+def get_my_trust_slip_decision_pack_consent_shares(
+    limit: int = Query(default=12, ge=1, le=50),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Dict[str, Any]:
+    if getattr(current_user, "id", None) is None:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    items = list_decision_pack_consent_shares_for_holder(
+        db,
+        holder_user_id=int(current_user.id),
+        limit=int(limit),
+    )
+    return {
+        "ok": True,
+        "items": items,
+        "privacy_note": "Consent-share history shows holder copy/export audit markers only. It does not store recipient identity, copied text, raw TrustEvents, private notes, contacts, payment references, or bank details.",
+        "evidence_note": "A consent-share record is an audit marker, separate from public TrustSlip reads and not behaviour evidence or a TrustEvent.",
+    }
 
 @router.post("/me/issue")
 def issue_my_trust_slip(

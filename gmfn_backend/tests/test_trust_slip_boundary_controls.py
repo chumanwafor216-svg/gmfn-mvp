@@ -4,7 +4,7 @@ from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
 from app.db.database import SessionLocal
-from app.db.models import TrustEvent, TrustSlip, TrustSlipDecisionPackAccess, TrustSlipDecisionPackConsentShare
+from app.db.models import TrustEvent, TrustSlip, TrustSlipDecisionPackAccess, TrustSlipDecisionPackConsentShare, User
 
 
 def _create_trust_slip(*, code: str, holder_user_id: int = 1) -> int:
@@ -528,6 +528,111 @@ def test_holder_records_decision_pack_consent_share_without_trust_event_or_publi
     finally:
         db.close()
 
+
+def test_holder_reads_recent_decision_pack_consent_shares_without_recipient_or_copied_text(
+    client,
+    seed_clan_admin_membership,
+    override_current_user,
+):
+    _create_trust_slip(code="CONSENT-LIST")
+
+    first = client.post(
+        "/trust-slips/me/decision-pack-consent-shares",
+        json={
+            "decision_pack": "employment_decision",
+            "export_format": "summary",
+            "category_count": 1,
+            "event_ref_count": 2,
+        },
+    )
+    second = client.post(
+        "/trust-slips/me/decision-pack-consent-shares",
+        json={
+            "decision_pack": "business_partnership",
+            "export_format": "json",
+            "category_count": 3,
+            "event_ref_count": 4,
+        },
+    )
+    assert first.status_code == 200, first.text
+    assert second.status_code == 200, second.text
+
+    response = client.get("/trust-slips/me/decision-pack-consent-shares", params={"limit": 12})
+
+    assert response.status_code == 200, response.text
+    payload = response.json()
+    assert payload["ok"] is True
+    assert "holder copy/export audit markers only" in payload["privacy_note"]
+    assert "not behaviour evidence" in payload["evidence_note"]
+    assert "recipient identity" in payload["privacy_note"]
+    assert "copied text" in payload["privacy_note"]
+    assert len(payload["items"]) == 2
+    assert [item["export_format"] for item in payload["items"]] == ["json", "summary"]
+    assert payload["items"][0]["decision_pack"] == "business_partnership"
+    assert payload["items"][0]["access_purpose"] == "Business Partnership Decision Pack"
+    assert payload["items"][0]["category_count"] == 3
+    assert payload["items"][0]["event_ref_count"] == 4
+    assert payload["items"][1]["decision_pack"] == "employment_decision"
+    assert all("recipient_name" not in item for item in payload["items"])
+    assert all("recipient_email" not in item for item in payload["items"])
+    assert all("copied_text" not in item for item in payload["items"])
+    assert all("raw_events" not in item for item in payload["items"])
+
+    db = SessionLocal()
+    try:
+        assert db.query(TrustSlipDecisionPackConsentShare).count() == 2
+        assert db.query(TrustSlipDecisionPackAccess).count() == 0
+        assert db.query(TrustEvent).count() == 0
+    finally:
+        db.close()
+
+
+def test_holder_decision_pack_consent_share_list_is_holder_scoped(
+    client,
+    seed_clan_admin_membership,
+    override_current_user,
+):
+    db = SessionLocal()
+    try:
+        db.add(User(id=2, email="other-holder@example.com", hashed_password="hashed", role="user"))
+        db.commit()
+    finally:
+        db.close()
+
+    other_slip_id = _create_trust_slip(code="CONSENT-OTHER", holder_user_id=2)
+    db = SessionLocal()
+    try:
+        db.add(
+            TrustSlipDecisionPackConsentShare(
+                trust_slip_id=other_slip_id,
+                clan_id=1,
+                holder_user_id=2,
+                code="CONSENT-OTHER",
+                decision_pack_key="supplier_decision",
+                access_purpose="Supplier Decision Pack",
+                recipient_question="belongs to another holder",
+                decision_focus="other holder focus",
+                consent_scope="holder_private_decision_pack",
+                source="holder_private_preview",
+                export_format="summary",
+                category_count=1,
+                event_ref_count=1,
+                status="recorded",
+                created_at=datetime.now(timezone.utc),
+            )
+        )
+        db.commit()
+    finally:
+        db.close()
+
+    response = client.get("/trust-slips/me/decision-pack-consent-shares", params={"limit": 12})
+
+    assert response.status_code == 200, response.text
+    payload = response.json()
+    assert payload["items"] == []
+    assert "belongs to another holder" not in str(payload)
+    assert "CONSENT-OTHER" not in str(payload)
+    assert _trust_event_count() == 0
 
 def test_holder_decision_pack_consent_share_rejects_malformed_payload_before_write(
     client,

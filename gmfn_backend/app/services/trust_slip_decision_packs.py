@@ -945,6 +945,26 @@ def decision_pack_consent_share_to_holder_row(row: TrustSlipDecisionPackConsentS
     }
 
 
+def list_decision_pack_consent_shares_for_holder(
+    db: Session,
+    *,
+    holder_user_id: int,
+    limit: int = 12,
+) -> list[dict[str, Any]]:
+    bounded_limit = max(1, min(int(limit or 12), 50))
+    rows = (
+        db.query(TrustSlipDecisionPackConsentShare)
+        .filter(TrustSlipDecisionPackConsentShare.holder_user_id == int(holder_user_id))
+        .order_by(
+            TrustSlipDecisionPackConsentShare.created_at.desc(),
+            TrustSlipDecisionPackConsentShare.id.desc(),
+        )
+        .limit(bounded_limit)
+        .all()
+    )
+    return [decision_pack_consent_share_to_holder_row(row) for row in rows]
+
+
 def record_decision_pack_access(
     db: Session,
     *,

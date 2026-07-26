@@ -283,6 +283,30 @@ assertContains(
 );
 
 assertContains(
+  "api",
+  /getMyTrustSlipDecisionPackConsentShares[\s\S]*?\/trust-slips\/me\/decision-pack-consent-shares[\s\S]*?"GET"/,
+  "TrustSlip holder page must be able to read bounded holder consent-share history."
+);
+
+assertContains(
+  "trustSlip",
+  /getMyTrustSlipDecisionPackConsentShares[\s\S]*?normalizeTrustSlipDecisionPackConsentShares[\s\S]*?setDecisionPackConsentShares/,
+  "TrustSlip holder page must load and apply sanitized consent-share history."
+);
+
+assertContains(
+  "trustSlip",
+  /recordDecisionPackConsentShare[\s\S]*?const result = await api\.recordMyTrustSlipDecisionPackConsentShare[\s\S]*?normalizeTrustSlipDecisionPackConsentShares[\s\S]*?setDecisionPackConsentShares/,
+  "TrustSlip holder consent-share copy action must update the local ledger from the sanitized backend row."
+);
+
+assertContains(
+  "trustSlip",
+  /data-gsn-decision-pack-consent-share-ledger="holder"[\s\S]*?Recent consent exports[\s\S]*?Holder copy\/export audit trail[\s\S]*?No private Decision Pack exports are recorded yet[\s\S]*?Consent-share history records holder copy\/export markers only[\s\S]*?not public-read evidence[\s\S]*?recipient identity[\s\S]*?copied text[\s\S]*?raw TrustEvent history/,
+  "TrustSlip holder page must show consent-share history without turning it into recipient identity, copied text, or raw TrustEvent disclosure."
+);
+
+assertContains(
   "trustSlip",
   /data-gsn-decision-pack-access-ledger="holder"[\s\S]*?Recent public reads[\s\S]*?Decision Pack access ledger[\s\S]*?Access records show public read context only[\s\S]*?not TrustEvents[\s\S]*?recipient identity[\s\S]*?private Passport disclosure/,
   "TrustSlip holder page must show recent Decision Pack accesses as bounded public-read context only."

@@ -151623,3 +151623,43 @@ GSN-branded invite composer and invite-entry continuity.
   - local only so far; routine continuation publishing remains batch-frozen unless the product owner explicitly asks to push/deploy.
 - Next recommended step:
   - add a holder-visible recent consent-share list under the private Decision Pack preview so the holder can see what they copied/exported, still without recipient identity or copied text.
+
+## 2026-07-26 - Holder Decision Pack Consent Share History
+
+- Trigger:
+  - owner selected `1` to continue after the backend-recorded holder Decision Pack consent-share audit trail.
+- Unabated truth:
+  - the system could record a holder's private Decision Pack copy/export action, but the holder still had no in-app way to see those audit markers afterward;
+  - this pass adds holder visibility only. It does not expose recipient identity, copied text, raw TrustEvents, private notes, contacts, payment references, bank details, or public-read recipient context;
+  - a consent-share row remains an audit marker, not behaviour evidence, not a TrustEvent, and not a public TrustSlip read.
+- Changed:
+  - `gmfn_backend/app/services/trust_slip_decision_packs.py`
+    - added `list_decision_pack_consent_shares_for_holder` with holder scoping, bounded limit, newest-first ordering, and sanitized holder-row serialization.
+  - `gmfn_backend/app/api/routes/trust_slips.py`
+    - added signed-in holder route `GET /trust-slips/me/decision-pack-consent-shares`;
+    - returns `items`, `privacy_note`, and `evidence_note` describing the copy/export-only boundary.
+  - `frontend/src/lib/api.ts`
+    - added `getMyTrustSlipDecisionPackConsentShares`.
+  - `frontend/src/pages/TrustSlipPage.tsx`
+    - fetches recent holder consent-share markers with the TrustSlip page data;
+    - shows a compact `Recent consent exports` ledger under the private Decision Pack preview;
+    - updates the ledger immediately from the sanitized backend row after a successful copy/export audit record.
+  - `frontend/tools/audit-trust-passport-trustslip-boundary.mjs`
+    - cages the GET helper, page load path, after-copy local ledger update, and consent-share privacy boundary.
+  - `gmfn_backend/tests/test_trust_slip_boundary_controls.py`
+    - added tests proving holder consent-share history is sanitized, newest-first, holder-scoped, and does not create TrustEvents or public-read access rows.
+- Verification:
+  - passed `python -m py_compile gmfn_backend\app\db\models.py gmfn_backend\app\services\trust_slip_decision_packs.py gmfn_backend\app\api\routes\trust_slips.py gmfn_backend\tests\test_trust_slip_boundary_controls.py gmfn_backend\alembic\versions\20260726_add_trust_slip_decision_pack_consent_share.py`;
+  - passed `python -m pytest -q gmfn_backend\tests\test_trust_slip_boundary_controls.py` with 15 tests;
+  - passed `npm exec -- eslint src/lib/api.ts src/pages/TrustSlipPage.tsx tools/audit-trust-passport-trustslip-boundary.mjs` from `frontend`;
+  - passed `npm --prefix frontend run audit:trust-passport-trustslip-boundary`;
+  - passed `npm --prefix frontend run audit:public-trustslip-verify-boundary`;
+  - passed `npm --prefix frontend run audit:trust-actions`;
+  - passed `npm --prefix frontend run audit:proof-surfaces`;
+  - passed `npm --prefix frontend run audit:protected-button-freeze`;
+  - passed `npm --prefix frontend run build`;
+  - passed `git diff --check`.
+- Deployment:
+  - local only so far; routine continuation publishing remains batch-frozen unless the product owner explicitly asks to push/deploy.
+- Next recommended step:
+  - add recipient-named consent-share creation only if the product owner explicitly wants named recipient accountability, because that would change the privacy model and needs a deliberate consent design.

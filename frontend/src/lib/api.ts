@@ -2439,6 +2439,13 @@ export async function getMyTrustSlipDecisionPackEvidence(
     "GET"
   );
 }
+export async function getMyTrustSlipDecisionPackConsentShares(limit = 12): Promise<any> {
+  return httpJson(
+    `/trust-slips/me/decision-pack-consent-shares${buildQuery({ limit })}`,
+    "GET"
+  );
+}
+
 export async function recordMyTrustSlipDecisionPackConsentShare(params?: {
   decision_pack?: string;
   export_format?: "summary" | "json" | string;

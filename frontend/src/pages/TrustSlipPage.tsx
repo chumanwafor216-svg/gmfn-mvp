@@ -325,6 +325,7 @@ type TrustSlipPageData = {
   clan: any | null;
   summary: TrustSlipSummary | null;
   decisionPackAccesses: TrustSlipDecisionPackAccessRow[];
+  decisionPackConsentShares: TrustSlipDecisionPackConsentShareRow[];
 };
 
 type TrustSlipDecisionPackAccessRow = {
@@ -337,6 +338,22 @@ type TrustSlipDecisionPackAccessRow = {
   accessScope: string;
   source: string;
   visibilityLevel: string;
+  status: string;
+  createdAt: string;
+};
+
+type TrustSlipDecisionPackConsentShareRow = {
+  id: string;
+  code: string;
+  decisionPack: string;
+  accessPurpose: string;
+  recipientQuestion: string;
+  decisionFocus: string;
+  consentScope: string;
+  source: string;
+  exportFormat: string;
+  categoryCount: number;
+  eventRefCount: number;
   status: string;
   createdAt: string;
 };
@@ -1650,6 +1667,35 @@ function normalizeTrustSlipDecisionPackAccesses(raw: any): TrustSlipDecisionPack
     .filter((row: TrustSlipDecisionPackAccessRow) => row.code || row.accessPurpose || row.createdAt)
     .slice(0, 12);
 }
+function normalizeTrustSlipDecisionPackConsentShares(raw: any): TrustSlipDecisionPackConsentShareRow[] {
+  const rows = Array.isArray(raw?.items)
+    ? raw.items
+    : Array.isArray(raw?.shares)
+    ? raw.shares
+    : Array.isArray(raw)
+    ? raw
+    : [];
+
+  return rows
+    .map((row: any, index: number) => ({
+      id: firstTruthy(row?.id, `${index}`),
+      code: firstTruthy(row?.code, row?.trust_slip_code, row?.verification_code),
+      decisionPack: firstTruthy(row?.decision_pack, row?.decision_pack_key),
+      accessPurpose: firstTruthy(row?.access_purpose, row?.purpose, "Decision Pack"),
+      recipientQuestion: firstTruthy(row?.recipient_question, row?.access_note),
+      decisionFocus: firstTruthy(row?.decision_focus, row?.focus),
+      consentScope: firstTruthy(row?.consent_scope, "holder_private_decision_pack"),
+      source: firstTruthy(row?.source, "holder_private_preview"),
+      exportFormat: firstTruthy(row?.export_format, "summary"),
+      categoryCount: Number(row?.category_count ?? row?.categoryCount ?? 0) || 0,
+      eventRefCount: Number(row?.event_ref_count ?? row?.eventRefCount ?? 0) || 0,
+      status: firstTruthy(row?.status),
+      createdAt: firstTruthy(row?.created_at, row?.shared_at),
+    }))
+    .filter((row: TrustSlipDecisionPackConsentShareRow) => row.code || row.accessPurpose || row.createdAt)
+    .slice(0, 12);
+}
+
 function normalizeTrustSlipDecisionPackEvidence(raw: any): TrustSlipDecisionPackEvidenceExtract | null {
   const extract = raw?.evidence_extract || raw?.extract || raw;
   if (!extract || typeof extract !== "object") return null;
@@ -1720,7 +1766,7 @@ async function fetchTrustSlipPageData(
       clanHeaders
     );
 
-  const [meRes, clanRes, summaryRes, decisionPackAccessRes] = await Promise.all([
+  const [meRes, clanRes, summaryRes, decisionPackAccessRes, decisionPackConsentShareRes] = await Promise.all([
     typeof (api as any).getMe === "function"
       ? (api as any).getMe().catch(() => null)
       : Promise.resolve(null),
@@ -1766,6 +1812,9 @@ async function fetchTrustSlipPageData(
     typeof (api as any).getMyTrustSlipDecisionPackAccesses === "function"
       ? (api as any).getMyTrustSlipDecisionPackAccesses(12).catch(() => null)
       : Promise.resolve(null),
+    typeof (api as any).getMyTrustSlipDecisionPackConsentShares === "function"
+      ? (api as any).getMyTrustSlipDecisionPackConsentShares(12).catch(() => null)
+      : Promise.resolve(null),
   ]);
 
   return {
@@ -1773,6 +1822,7 @@ async function fetchTrustSlipPageData(
     clan: clanRes || null,
     summary: normalizeTrustSlipSummary(summaryRes),
     decisionPackAccesses: normalizeTrustSlipDecisionPackAccesses(decisionPackAccessRes),
+    decisionPackConsentShares: normalizeTrustSlipDecisionPackConsentShares(decisionPackConsentShareRes),
   };
 }
 
@@ -1885,6 +1935,8 @@ export default function TrustSlipPage() {
   const [currentClan, setCurrentClan] = useState<any>(null);
   const [summary, setSummary] = useState<TrustSlipSummary | null>(null);
   const [decisionPackAccesses, setDecisionPackAccesses] = useState<TrustSlipDecisionPackAccessRow[]>([]);
+  const [decisionPackConsentShares, setDecisionPackConsentShares] =
+    useState<TrustSlipDecisionPackConsentShareRow[]>([]);
   const [decisionPackEvidenceExtract, setDecisionPackEvidenceExtract] =
     useState<TrustSlipDecisionPackEvidenceExtract | null>(null);
   const [decisionPackEvidenceLoading, setDecisionPackEvidenceLoading] = useState(false);
@@ -1917,6 +1969,7 @@ export default function TrustSlipPage() {
     setCurrentClan(null);
     setSummary(null);
     setDecisionPackAccesses([]);
+    setDecisionPackConsentShares([]);
     setConfirmationOutcome(null);
     setMerchantRailLink(null);
   }, []);
@@ -1926,6 +1979,7 @@ export default function TrustSlipPage() {
     setCurrentClan(data.clan);
     setSummary(data.summary);
     setDecisionPackAccesses(data.decisionPackAccesses);
+    setDecisionPackConsentShares(data.decisionPackConsentShares);
   }, []);
 
   const guideItems = useMemo(() => buildTrustSlipGuideItems(), []);
@@ -3462,12 +3516,21 @@ export default function TrustSlipPage() {
 
     const eventRefCount = rows.reduce((total, category) => total + category.eventRefs.length, 0);
     try {
-      await api.recordMyTrustSlipDecisionPackConsentShare({
+      const result = await api.recordMyTrustSlipDecisionPackConsentShare({
         decision_pack: selectedPurposeOption.key,
         export_format: exportFormat,
         category_count: rows.length,
         event_ref_count: eventRefCount,
       });
+      const [recordedShare] = normalizeTrustSlipDecisionPackConsentShares({
+        items: [result?.item],
+      });
+      if (recordedShare) {
+        setDecisionPackConsentShares((existing) => [
+          recordedShare,
+          ...existing.filter((row) => row.id !== recordedShare.id),
+        ].slice(0, 12));
+      }
     } catch {
       showNotice(
         "error",
@@ -3864,6 +3927,125 @@ export default function TrustSlipPage() {
                   Copy safe JSON
                 </SubtleButton>
               </CardActionRow>
+
+              <div
+                data-gsn-decision-pack-consent-share-ledger="holder"
+                style={{
+                  borderTop: "1px solid rgba(214,170,69,0.22)",
+                  paddingTop: 9,
+                  display: "grid",
+                  gap: 7,
+                }}
+              >
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "minmax(0, 1fr) auto",
+                    gap: 8,
+                    alignItems: "center",
+                  }}
+                >
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ ...sectionLabel(), fontSize: isCompact ? 9 : 10 }}>
+                      Recent consent exports
+                    </div>
+                    <div
+                      style={{
+                        marginTop: 2,
+                        color: "#07172C",
+                        fontSize: isCompact ? 12 : 13,
+                        fontWeight: 950,
+                        lineHeight: 1.16,
+                      }}
+                    >
+                      Holder copy/export audit trail
+                    </div>
+                  </div>
+                  <span style={{ ...badge(Boolean(decisionPackConsentShares.length)), fontSize: isCompact ? 10 : 11 }}>
+                    {decisionPackConsentShares.length} saved
+                  </span>
+                </div>
+
+                {decisionPackConsentShares.length ? (
+                  <div style={{ display: "grid", gap: 6 }}>
+                    {decisionPackConsentShares.slice(0, 3).map((share) => (
+                      <div
+                        key={share.id}
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: isCompact
+                            ? "minmax(0, 1fr)"
+                            : "minmax(0, 1fr) minmax(122px, auto)",
+                          gap: 6,
+                          alignItems: "center",
+                          borderTop: "1px solid rgba(37,78,119,0.08)",
+                          paddingTop: 7,
+                          minWidth: 0,
+                        }}
+                      >
+                        <div style={{ minWidth: 0 }}>
+                          <div
+                            style={{
+                              color: "#07172C",
+                              fontSize: isCompact ? 11 : 12,
+                              fontWeight: 950,
+                              lineHeight: 1.15,
+                              overflowWrap: "anywhere",
+                            }}
+                          >
+                            {share.accessPurpose}
+                          </div>
+                          <div
+                            style={{
+                              marginTop: 2,
+                              color: "#526579",
+                              fontSize: isCompact ? 10 : 11,
+                              fontWeight: 800,
+                              lineHeight: 1.25,
+                              overflowWrap: "anywhere",
+                            }}
+                          >
+                            {share.exportFormat || "summary"} | {share.categoryCount} categor{share.categoryCount === 1 ? "y" : "ies"} | {share.eventRefCount} safe refs
+                          </div>
+                        </div>
+                        <div
+                          style={{
+                            color: "#39526C",
+                            fontSize: isCompact ? 10 : 11,
+                            fontWeight: 900,
+                            textAlign: isCompact ? "left" : "right",
+                            lineHeight: 1.2,
+                          }}
+                        >
+                          {safeDateTime(share.createdAt) || "Time not shown"}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div
+                    style={{
+                      color: "#526579",
+                      fontSize: isCompact ? 11 : 12,
+                      fontWeight: 850,
+                      lineHeight: 1.35,
+                    }}
+                  >
+                    No private Decision Pack exports are recorded yet.
+                  </div>
+                )}
+
+                <div
+                  style={{
+                    color: "#7A4A00",
+                    fontSize: isCompact ? 10 : 11,
+                    fontWeight: 900,
+                    lineHeight: 1.35,
+                  }}
+                >
+                  Consent-share history records holder copy/export markers only. It is not public-read evidence, recipient identity, copied text, or raw TrustEvent history.
+                </div>
+              </div>
             </div>
             <div
               data-gsn-decision-pack-access-ledger="holder"
