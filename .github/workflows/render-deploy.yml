@@ -123,12 +123,12 @@ jobs:
           for attempt in $(seq 1 18); do
             rm -f /tmp/gsn-frontend-assets.txt
             index_html="$(curl -fsSL -H 'Cache-Control: no-cache' -H 'Pragma: no-cache' "${public_url}/index.html?deploy_check=${GITHUB_SHA}-${attempt}")"
-            printf '%s' "$index_html" | grep -oE 'assets/[^"'"' ]+\.js' | sort -u > /tmp/gsn-frontend-assets.txt || true
+            printf '%s' "$index_html" | grep -oE "assets/[^\"' ]+\.js" | sort -u > /tmp/gsn-frontend-assets.txt || true
             for pass in $(seq 1 3); do
               while IFS= read -r asset; do
                 [ -n "$asset" ] || continue
                 js_body="$(curl -fsSL -H 'Cache-Control: no-cache' -H 'Pragma: no-cache' "${public_url}/${asset}?deploy_check=${GITHUB_SHA}-${attempt}-${pass}" || true)"
-                printf '%s' "$js_body" | grep -oE 'assets/[^"'"' ]+\.js' >> /tmp/gsn-frontend-assets.txt || true
+                printf '%s' "$js_body" | grep -oE "assets/[^\"' ]+\.js" >> /tmp/gsn-frontend-assets.txt || true
                 if printf '%s' "$js_body" | grep -q 'public_context_from_link'; then
                   echo "Frontend public URL is serving the Decision Pack build marker from ${asset}."
                   exit 0
