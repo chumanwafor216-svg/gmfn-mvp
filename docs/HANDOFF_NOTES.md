@@ -1,3 +1,42 @@
+## CURRENT LOCAL STATE - 2026-07-26 - Trust Passport mobile first viewport tightened locally
+
+Owner trigger:
+- Owner selected `1` after the aggregate-led Trust Passport first viewport was committed locally.
+
+Unabated truth:
+- The aggregate-led wording was correct, but the phone first viewport was still too tall for the intended `Decision first. Evidence second. Explanation last.` rule.
+- This change is a visual-density fix on `/app/trust`, not a new trust algorithm, backend aggregate calculation, or TrustSlip/Verify redesign.
+- The compact phone view now hides secondary fact details and keeps the Decision Boundary behind a stable disclosure; desktop still shows the full boundary box.
+- The browser smoke now enforces the real mobile height: the first action must stay above the lower viewport guard and the top decision card must stay below the capped card height.
+
+Changed:
+- `frontend/src/pages/TrustScorePage.tsx`
+  - Tightened only the top Trust Passport decision card on compact screens: smaller icon/header spacing, shorter fact cards, shorter primary action, and no exposed fact-detail text on phone.
+  - Changed the mobile Decision Boundary to a closed `StableDisclosureSummary` disclosure labelled `Decision Boundary / Open limits`.
+  - Kept the desktop Decision Boundary fully visible.
+- `frontend/tools/audit-trust-passport-trustslip-boundary.mjs`
+  - Added a guard requiring the compact mobile Decision Boundary disclosure while preserving the desktop full boundary box.
+- `frontend/tools/smoke-trust-passport-trustslip-boundary.mjs`
+  - Added mobile smoke checks for the closed boundary disclosure, hidden boundary rows before open, successful open, and first-card/action height limits.
+
+Routes/screens affected:
+- Signed-in Trust Passport route `/app/trust`.
+- TrustSlip holder `/app/trust-slip` and public Verify remain covered by the boundary smoke but were not visually changed in this density slice.
+
+Verification:
+- Passed `npm --prefix frontend run audit:trust-passport-trustslip-boundary`.
+- Passed `npm --prefix frontend run audit:trust-actions`.
+- Passed ESLint on `TrustScorePage.tsx`, the updated audit, and the updated smoke.
+- Passed `git diff --check`.
+- Passed `npm --prefix frontend run audit:protected-button-freeze`.
+- Passed `npm --prefix frontend run build`.
+- Passed `npm --prefix frontend run smoke:trust-passport-trustslip-boundary` with escalation for local Vite/Chromium process launch.
+
+Deployment:
+- Local only. Not pushed or deployed; owner must select `2` or explicitly say push/deploy.
+
+Recommended next step:
+- If the owner approves the phone feel, select `2` to push/deploy the two local commits together.
 ## CURRENT LOCAL STATE - 2026-07-26 - Trust Passport first viewport aggregate-led locally
 
 Owner trigger:

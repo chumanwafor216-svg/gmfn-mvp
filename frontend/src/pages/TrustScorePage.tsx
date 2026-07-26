@@ -12,6 +12,7 @@ import {
   DangerButton,
   PrimaryButton,
   SecondaryButton,
+  StableDisclosureSummary,
   SubtleButton,
 } from "../components/StableButton";
 import {
@@ -3230,21 +3231,21 @@ export default function TrustScorePage() {
               ? "1px solid rgba(214,170,69,0.30)"
               : "1px solid rgba(37,78,119,0.14)",
             boxShadow: "0 14px 36px rgba(7,23,44,0.08)",
-            padding: isCompact ? 12 : 16,
+            padding: isCompact ? 10 : 16,
             display: "grid",
-            gap: isCompact ? 10 : 12,
+            gap: isCompact ? 8 : 12,
           }}
         >
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: isCompact ? "44px minmax(0, 1fr)" : "58px minmax(0, 1fr) auto",
-              gap: isCompact ? 9 : 13,
+              gridTemplateColumns: isCompact ? "40px minmax(0, 1fr)" : "58px minmax(0, 1fr) auto",
+              gap: isCompact ? 8 : 13,
               alignItems: "center",
             }}
           >
             <span style={overviewIconBox(isCompact)}>
-              <GsnLegacyIcon name={trustPassportDecisionTone === "warn" ? "alert" : "shield"} size={isCompact ? 34 : 44} decorative />
+              <GsnLegacyIcon name={trustPassportDecisionTone === "warn" ? "alert" : "shield"} size={isCompact ? 30 : 44} decorative />
             </span>
             <div style={{ minWidth: 0 }}>
               <div
@@ -3263,7 +3264,7 @@ export default function TrustScorePage() {
                 style={{
                   margin: "4px 0 0",
                   color: "#07172C",
-                  fontSize: isCompact ? 24 : 32,
+                  fontSize: isCompact ? 22 : 32,
                   lineHeight: 1.04,
                   fontWeight: 1000,
                   letterSpacing: 0,
@@ -3271,7 +3272,7 @@ export default function TrustScorePage() {
               >
                 {trustPassportDecisionAnswer}
               </h1>
-              <p style={{ ...helperText(), margin: "5px 0 0", lineHeight: 1.32 }}>
+              <p style={{ ...helperText(), margin: "4px 0 0", lineHeight: 1.24, fontSize: isCompact ? 11.5 : undefined }}>
                 {trustPassportDecisionLine}
               </p>
             </div>
@@ -3290,22 +3291,22 @@ export default function TrustScorePage() {
             style={{
               display: "grid",
               gridTemplateColumns: isCompact ? "repeat(2, minmax(0, 1fr))" : "repeat(4, minmax(0, 1fr))",
-              gap: isCompact ? 7 : 9,
+              gap: isCompact ? 6 : 9,
             }}
           >
             {trustPassportDecisionFacts.map(([icon, label, title, detail, ok, muted]) => (
               <div
                 key={label}
                 style={{
-                  minHeight: isCompact ? 72 : 88,
+                  minHeight: isCompact ? 58 : 88,
                   borderRadius: isCompact ? 14 : 16,
                   border: "1px solid rgba(216,227,238,0.72)",
                   background: "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(241,247,255,0.96) 100%)",
-                  padding: isCompact ? "8px 9px" : "10px 12px",
+                  padding: isCompact ? "7px 8px" : "10px 12px",
                   overflow: "hidden",
                   display: "grid",
                   alignContent: "start",
-                  gap: 5,
+                  gap: isCompact ? 3 : 5,
                 }}
               >
                 <span
@@ -3314,7 +3315,7 @@ export default function TrustScorePage() {
                     alignItems: "center",
                     gap: 6,
                     color: "#617085",
-                    fontSize: isCompact ? 10.5 : 11.5,
+                    fontSize: isCompact ? 10 : 11.5,
                     fontWeight: 1000,
                     lineHeight: 1.12,
                   }}
@@ -3327,7 +3328,7 @@ export default function TrustScorePage() {
                 <span
                   style={{
                     color: "#07172C",
-                    fontSize: isCompact ? 13 : 14.5,
+                    fontSize: isCompact ? 12.5 : 14.5,
                     lineHeight: 1.12,
                     fontWeight: 1000,
                     overflowWrap: "break-word",
@@ -3336,16 +3337,18 @@ export default function TrustScorePage() {
                 >
                   {title}
                 </span>
-                <span style={{ ...helperText(), margin: 0, fontSize: isCompact ? 10.5 : 11.5, lineHeight: 1.24 }}>
-                  {detail}
-                </span>
+                {!isCompact ? (
+                  <span style={{ ...helperText(), margin: 0, fontSize: 11.5, lineHeight: 1.24 }}>
+                    {detail}
+                  </span>
+                ) : null}
               </div>
             ))}
           </div>
 
           <PrimaryButton
             onClick={() => openTrustRoute(trustPassportPrimaryAction.to)}
-            stableHeight={isCompact ? 48 : 54}
+            stableHeight={isCompact ? 46 : 54}
             fullWidth={isCompact}
             debugId="trust-score.decision-primary-next-step"
             style={{
@@ -3359,48 +3362,103 @@ export default function TrustScorePage() {
             {trustPassportPrimaryAction.label}
           </PrimaryButton>
 
-          <div
-            data-trust-passport-decision-boundary="compact"
-            style={{
-              borderRadius: isCompact ? 12 : 16,
-              border: "1px solid rgba(214,170,69,0.28)",
-              background: "#FFFDF7",
-              padding: isCompact ? 9 : 11,
-              display: "grid",
-              gap: 8,
-            }}
-          >
-            <div
+          {isCompact ? (
+            <details
+              data-trust-passport-decision-boundary="compact"
               style={{
-                color: "#7A4A00",
-                fontSize: isCompact ? 10.5 : 12,
-                letterSpacing: 0,
-                textTransform: "uppercase",
-                fontWeight: 1000,
-                lineHeight: 1.1,
+                borderRadius: 12,
+                border: "1px solid rgba(214,170,69,0.28)",
+                background: "#FFFDF7",
+                padding: 0,
+                overflow: "hidden",
               }}
             >
-              Decision Boundary
-            </div>
+              <StableDisclosureSummary
+                debugId="trust-score.decision-boundary.toggle"
+                stableHeight={38}
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "minmax(0, 1fr) auto",
+                  alignItems: "center",
+                  gap: 8,
+                  padding: "0 10px",
+                  color: "#7A4A00",
+                  background: "#FFFDF7",
+                  fontSize: 10.5,
+                  fontWeight: 1000,
+                  textTransform: "uppercase",
+                }}
+              >
+                <span>Decision Boundary</span>
+                <span style={{ color: "#07172C", fontSize: 10, textTransform: "none" }}>
+                  Open limits
+                </span>
+              </StableDisclosureSummary>
+              <div
+                style={{
+                  borderTop: "1px solid rgba(214,170,69,0.22)",
+                  padding: 9,
+                  display: "grid",
+                  gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                  gap: 6,
+                }}
+              >
+                {trustPassportDecisionBoundaryRows.map(([label, value]) => (
+                  <div key={label} style={{ minWidth: 0 }}>
+                    <div style={{ color: "#5F4100", fontSize: 9.5, fontWeight: 1000, lineHeight: 1.1 }}>
+                      {label}
+                    </div>
+                    <div style={{ marginTop: 2, color: "#07172C", fontSize: 11, fontWeight: 950, lineHeight: 1.15 }}>
+                      {value}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </details>
+          ) : (
             <div
+              data-trust-passport-decision-boundary="compact"
               style={{
+                borderRadius: 16,
+                border: "1px solid rgba(214,170,69,0.28)",
+                background: "#FFFDF7",
+                padding: 11,
                 display: "grid",
-                gridTemplateColumns: isCompact ? "repeat(2, minmax(0, 1fr))" : "repeat(5, minmax(0, 1fr))",
-                gap: 6,
+                gap: 8,
               }}
             >
-              {trustPassportDecisionBoundaryRows.map(([label, value]) => (
-                <div key={label} style={{ minWidth: 0 }}>
-                  <div style={{ color: "#5F4100", fontSize: isCompact ? 9.5 : 10.5, fontWeight: 1000, lineHeight: 1.1 }}>
-                    {label}
+              <div
+                style={{
+                  color: "#7A4A00",
+                  fontSize: 12,
+                  letterSpacing: 0,
+                  textTransform: "uppercase",
+                  fontWeight: 1000,
+                  lineHeight: 1.1,
+                }}
+              >
+                Decision Boundary
+              </div>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(5, minmax(0, 1fr))",
+                  gap: 6,
+                }}
+              >
+                {trustPassportDecisionBoundaryRows.map(([label, value]) => (
+                  <div key={label} style={{ minWidth: 0 }}>
+                    <div style={{ color: "#5F4100", fontSize: 10.5, fontWeight: 1000, lineHeight: 1.1 }}>
+                      {label}
+                    </div>
+                    <div style={{ marginTop: 2, color: "#07172C", fontSize: 12, fontWeight: 950, lineHeight: 1.15 }}>
+                      {value}
+                    </div>
                   </div>
-                  <div style={{ marginTop: 2, color: "#07172C", fontSize: isCompact ? 11 : 12, fontWeight: 950, lineHeight: 1.15 }}>
-                    {value}
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
+          )}
         </section>
         <section
           ref={laneSelectorRef}

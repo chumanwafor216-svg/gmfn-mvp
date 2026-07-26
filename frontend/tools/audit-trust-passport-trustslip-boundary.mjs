@@ -203,6 +203,11 @@ assertContains(
   /data-trust-passport-decision-first="one-answer-four-facts"[\s\S]*?Aggregate Passport reading[\s\S]*?\{trustPassportDecisionAnswer\}[\s\S]*?data-trust-passport-decision-facts="four-quick-facts"/,
   "Trust Passport first viewport must visibly label the headline as Aggregate Passport reading before the quick facts."
 );
+assertContains(
+  "trustPassport",
+  /isCompact \? \([\s\S]*?<details[\s\S]*?data-trust-passport-decision-boundary="compact"[\s\S]*?<StableDisclosureSummary[\s\S]*?debugId="trust-score\.decision-boundary\.toggle"[\s\S]*?stableHeight=\{38\}[\s\S]*?Open limits[\s\S]*?: \([\s\S]*?<div[\s\S]*?data-trust-passport-decision-boundary="compact"/,
+  "Trust Passport mobile first viewport must keep the Decision Boundary as a stable disclosure while desktop keeps the full boundary box."
+);
 
 assertContains(
   "smoke",

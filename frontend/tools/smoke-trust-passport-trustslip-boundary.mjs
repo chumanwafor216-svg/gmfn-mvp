@@ -440,6 +440,35 @@ async function runTrustPassportScenario(browser, baseURL) {
   await expect(state.page.getByText("Aggregate reading", { exact: true })).toBeVisible();
   await expect(state.page.getByText("Primary anchor", { exact: true }).first()).toBeVisible();
   await expect(state.page.getByText("Community portfolio", { exact: true })).toBeVisible();
+  const decisionBoundary = state.page.locator('[data-trust-passport-decision-boundary="compact"]');
+  await expect(decisionBoundary).toBeVisible();
+  await expect(state.page.locator('details[data-trust-passport-decision-boundary="compact"]:not([open])')).toHaveCount(1);
+  await expect(decisionBoundary.getByText("Open limits", { exact: true })).toBeVisible();
+  await expect(decisionBoundary.getByText("Reading scope", { exact: true })).toBeHidden();
+  const decisionCardMetrics = await state.page.evaluate(() => {
+    const card = document.querySelector('[data-trust-passport-decision-first="one-answer-four-facts"]');
+    const primaryAction = document.querySelector('[data-cta-id="trust-score.decision-primary-next-step"]');
+    const cardRect = card?.getBoundingClientRect();
+    const actionRect = primaryAction?.getBoundingClientRect();
+    return {
+      viewportHeight: window.innerHeight,
+      cardBottom: cardRect?.bottom || 0,
+      cardHeight: cardRect?.height || 0,
+      actionBottom: actionRect?.bottom || 0,
+    };
+  });
+  if (decisionCardMetrics.actionBottom > decisionCardMetrics.viewportHeight - 80) {
+    throw new Error(
+      `Trust Passport mobile first action is too low: ${JSON.stringify(decisionCardMetrics)}`
+    );
+  }
+  if (decisionCardMetrics.cardHeight > 380) {
+    throw new Error(
+      `Trust Passport mobile decision card is too tall: ${JSON.stringify(decisionCardMetrics)}`
+    );
+  }
+  await state.page.locator('[data-cta-id="trust-score.decision-boundary.toggle"]').click();
+  await expect(decisionBoundary.getByText("Reading scope", { exact: true })).toBeVisible();
   await expect(
     state.page.getByRole("heading", { name: "Identity & Community Overview", exact: true })
   ).toBeVisible({ timeout: 30000 });
