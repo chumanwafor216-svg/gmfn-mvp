@@ -1190,7 +1190,7 @@ function buildTrustJourneySummary(
         : voice === "direct"
         ? [
             "Recent activity is building trust.",
-            "Your visible conduct is improving trust strength.",
+            "Your visible conduct is improving the evidence reading.",
           ]
         : [
             "Your recent activity is building trust.",
@@ -1210,7 +1210,7 @@ function buildTrustJourneySummary(
           ]
         : voice === "direct"
         ? [
-            "Recent signals support stronger trust confidence.",
+            "Recent evidence signals support stronger confidence.",
             "Visible consistency is improving your path.",
           ]
         : [
@@ -1229,16 +1229,16 @@ function buildTrustJourneySummary(
       voice === "warm"
         ? [
             "A repair step is now important.",
-            "Some recent signals suggest your trust path needs gentle correction.",
+            "Some recent evidence signals suggest your evidence path needs gentle correction.",
           ]
         : voice === "direct"
         ? [
-            "A trust repair step is needed.",
-            "Recent signals weakened your trust path.",
+            "An evidence repair step is needed.",
+            "Recent evidence signals weakened your evidence path.",
           ]
         : [
-            "Recent signals suggest a trust repair step is needed.",
-            "Your trust path is showing weakening signals that need attention.",
+            "Recent evidence signals suggest an evidence repair step is needed.",
+            "Your evidence path is showing weakening signals that need attention.",
           ],
       "journey-heading-weakened",
       weakenedCount,
@@ -1509,16 +1509,16 @@ function buildRecoveryPath(params: {
       kind: "trust-repair",
       title: pickVariant(
         voice === "warm"
-          ? ["A trust repair step is now waiting.", "Let us repair this trust signal early."]
+          ? ["An evidence repair step is now waiting.", "Let us repair this evidence signal early."]
           : voice === "direct"
-          ? ["Trust repair is needed now.", "Repair this trust signal now."]
-          : ["A trust repair step is now open.", "A trust repair step is waiting."],
+          ? ["Evidence repair is needed now.", "Repair this evidence signal now."]
+          : ["An evidence repair step is now open.", "An evidence repair step is waiting."],
         "recovery-trust-title",
         voice
       ),
       detail:
         trustChangeExplainer.next[0] ||
-        "A trust repair step is needed now. Review what weakened your trust path and fix the next visible issue.",
+        "An evidence repair step is needed now. Review what weakened your evidence path and fix the next visible issue.",
       ctaLabel: "Open Trust Passport",
       ctaTo: guidanceTrustPassportTarget("repair"),
       severity: "important",

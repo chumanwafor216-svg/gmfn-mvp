@@ -152840,3 +152840,32 @@ GSN-branded invite composer and invite-entry continuity.
   - local only so far; do not push/deploy unless the owner explicitly selects `2` or says push/deploy.
 - Next recommended step:
   - commit this Open Trust local evidence-view slice locally, then either continue another small visible/shared wording cleanup on `1` or push/deploy the accumulated local commits on `2`.
+## 2026-07-26 - Shared Guidance Evidence Repair Language
+
+- Trigger:
+  - owner selected `1` after the Open Trust local evidence-view slice was committed locally.
+- Unabated truth:
+  - this pass cleans shared guidance journey/recovery copy only;
+  - it does not rename guidance action kinds such as `trust-repair`, Trust Passport route targets, CTA targets, backend APIs, trust-change explainer fields, or scoring logic;
+  - broad product terms such as trust path remain where they were not explicit verdict-like `trust strength` or `trust signal` wording;
+  - this is not a Decision Pack generator, Evidence Ledger route, Behavioural Placement schema, route redesign, scoring rewrite, or approval workflow.
+- Changed:
+  - `frontend/src/lib/guidance.ts`
+    - changes `trust strength` and `trust confidence` journey copy to evidence-reading/evidence-signal wording;
+    - changes weakened-path prompts from trust repair/trust path/trust signal wording to evidence repair/evidence path/evidence signal wording;
+    - changes recovery fallback detail from weakened trust path to weakened evidence path.
+  - `frontend/tools/audit-trust-actions.mjs`
+    - adds scoped guards rejecting the old shared guidance trust-strength/trust-signal/trust-repair phrases;
+    - asserts the new evidence-reading/evidence-repair wording remains present.
+- Verification:
+  - passed `npm exec -- eslint src/lib/guidance.ts tools/audit-trust-actions.mjs tools/audit-dashboard-actions.mjs tools/audit-identity-integrity-front-package.mjs` from `frontend`;
+  - passed direct `node tools/audit-trust-actions.mjs` from `frontend`;
+  - passed direct `node tools/audit-dashboard-actions.mjs` from `frontend`;
+  - passed direct `node tools/audit-identity-integrity-front-package.mjs` from `frontend`;
+  - passed `npm --prefix frontend run audit:protected-button-freeze`;
+  - passed `npm --prefix frontend run build`;
+  - passed `git diff --check` before the handoff entry.
+- Deployment:
+  - local only so far; do not push/deploy unless the owner explicitly selects `2` or says push/deploy.
+- Next recommended step:
+  - commit this shared guidance evidence-repair slice locally, then either continue another small visible/shared wording cleanup on `1` or push/deploy the accumulated local commits on `2`.

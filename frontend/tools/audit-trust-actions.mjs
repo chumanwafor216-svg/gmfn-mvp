@@ -1962,6 +1962,18 @@ assertContains(
   "Trust document snapshots must keep evidence-summary and evidence-reading wording."
 );
 
+assertNotContains(
+  "src/lib/guidance.ts",
+  /trust strength|trust confidence|trust signal|trust repair step|weakened your trust path|trust path needs|trust path is showing/i,
+  "Shared guidance must frame repair prompts as evidence readings and evidence repair, not trust strength or trust-signal verdicts."
+);
+
+assertContains(
+  "src/lib/guidance.ts",
+  /improving the evidence reading[\s\S]*?Recent evidence signals support stronger confidence[\s\S]*?evidence path needs gentle correction[\s\S]*?An evidence repair step is needed[\s\S]*?evidence signals weakened your evidence path[\s\S]*?evidence repair step is needed[\s\S]*?Evidence repair is needed now[\s\S]*?Repair this evidence signal now/,
+  "Shared guidance must keep evidence-reading and evidence-repair wording for trust journey prompts."
+);
+
 [
   "src/lib/marketWisdom.ts",
   "src/lib/trustDocumentActionGuide.ts",
